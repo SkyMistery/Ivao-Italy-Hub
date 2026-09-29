@@ -7,6 +7,7 @@ using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Settings;
 using IvaoHub.Modules.Training.Sheets;
 using IvaoHub.Modules.Training.Staff;
@@ -27,7 +28,9 @@ namespace IvaoHub.Modules.Training;
 /// staff's side of it: the list, accepting and refusing a request, assigning the trainer with the grant that lets them conduct
 /// it, and the job of the night that takes that grant back once the training is over; A8 the date: the trainer's proposals with
 /// the warnings of the calendar, the trainee's choice, the date set by hand, the session in the calendar, its reminder, and the
-/// closing of a training that found no date, by the staff or by the night.
+/// closing of a training that found no date, by the staff or by the night; A9 what the session came to: rescheduled with the notes
+/// of the staff, not attended, or reported with the evaluation sheet, the comments and the boxes that make the next training a mock
+/// exam — and what the trainee of a training never reads of it, even from the staff's side.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -70,8 +73,8 @@ public sealed class TrainingModule : ModuleBase
 
         services.AddScoped<TrainingReference>();
 
-        // Whether a report marks an item of the sheet: none before the reports (A9); a test may still answer first.
-        services.TryAddScoped<ISheetItemReports, NoSheetItemReports>();
+        // Whether a report marks an item of the sheet: the sheets the reports filled answer (A9); a test may still answer first.
+        services.TryAddScoped<ISheetItemReports, EvaluationSheetItemReports>();
 
         // The trainee's side of a training (A6a), and whether they passed the theory exam: their own word, until the network
         // says it (§12 n.15); a test may still answer first.
@@ -85,6 +88,7 @@ public sealed class TrainingModule : ModuleBase
         // jobs; and the reminders of the sessions, every quarter of an hour.
         services.AddScoped<StaffTrainings>();
         services.AddScoped<TrainingDates>();
+        services.AddScoped<TrainingSessions>();
         services.AddScoped<TrainingExpiryJob>();
         services.AddScoped<TrainingRemindersJob>();
         services.AddQuartz(quartz => quartz

@@ -57,6 +57,10 @@ function trainee(state: TrainingState, overrides: Partial<TraineeTrainingDto> = 
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
+    cooldownWaived: false,
+    generalComment: null,
+    sheet: [],
+    sessions: [],
     rowVersion: '2026-09-01T10:00:00.000001Z',
     ...overrides,
   };
@@ -99,7 +103,19 @@ function staff(state: TrainingState, overrides: Partial<StaffTrainingDto> = {}):
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
-    actions: { canDecide: false, canAssign: false, canConduct: false, canClose: false },
+    cooldownWaived: false,
+    generalComment: null,
+    staffComment: null,
+    sheet: [],
+    sessions: [],
+    reservedLeftOut: false,
+    actions: {
+      canDecide: false,
+      canAssign: false,
+      canConduct: false,
+      canClose: false,
+      canRecordOutcome: false,
+    },
     rowVersion: '2026-09-20T10:00:00.123456Z',
     ...overrides,
   };
@@ -274,7 +290,13 @@ test('a warning says another training by what the public calendar shows of it, a
 });
 
 test('whoever conducts proposes while the training waits for its date, and sets it by hand then and once it has one', () => {
-  const conduct = { canDecide: false, canAssign: false, canConduct: true, canClose: false };
+  const conduct = {
+    canDecide: false,
+    canAssign: false,
+    canConduct: true,
+    canClose: false,
+    canRecordOutcome: false,
+  };
 
   expect(dateSteps(staff('Assigned', { actions: conduct }))).toEqual({ propose: true, setByHand: true });
   expect(dateSteps(staff('Scheduled', { actions: conduct }))).toEqual({ propose: false, setByHand: true });

@@ -18,8 +18,8 @@ public enum SheetSection
 /// An item of the evaluation sheet, <c>trn_sheet_items</c> (design M3 §1.4): what a trainer marks after a session of a training
 /// on one ladder and rating, in the section that says how. The coordinator and the assistant of the training department write
 /// them (<c>Training.ManageSheets</c>), in every language of the division (§12 n.11), and the trainee reads them in a report.
-/// <para>A report keeps a copy of the items it marks (A9), so changing one never changes a report already written; and an item a
-/// report marks is switched off, never deleted (<see cref="ISheetItemReports"/>).</para>
+/// <para>A report keeps a copy of the items it marks (<see cref="TrainingEvaluation"/>, A9), so changing one never changes a report
+/// already written; and an item a report marks is switched off, never deleted (<see cref="ISheetItemReports"/>).</para>
 /// </summary>
 [Audited]
 [PermissionArea(TrainingPermissions.Area)]
@@ -61,16 +61,10 @@ public sealed class SheetItem : IOwnedByDepartment, IAuditable
 
 /// <summary>
 /// Whether a report marks an item of the sheet, which decides whether the item may be deleted or only switched off (design M3
-/// §1.4). The reports arrive with A9, which answers from the sheets they fill; until then no item has any. A test may register
-/// its own answer, as the tours did with theirs before their reports existed (M2, T6a).
+/// §1.4). The sheets the reports fill answer it since A9 (<see cref="EvaluationSheetItemReports"/>); until then no item had any. A
+/// test may register its own answer first, as the tours did with theirs before their reports existed (M2, T6a).
 /// </summary>
 public interface ISheetItemReports
 {
     Task<bool> AnyAsync(long itemId, CancellationToken cancellationToken = default);
-}
-
-/// <summary>The answer until the reports exist: no item has any.</summary>
-internal sealed class NoSheetItemReports : ISheetItemReports
-{
-    public Task<bool> AnyAsync(long itemId, CancellationToken cancellationToken = default) => Task.FromResult(false);
 }

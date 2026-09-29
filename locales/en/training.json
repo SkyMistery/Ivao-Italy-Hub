@@ -422,7 +422,15 @@
     "dateNotSettable": "A date is set only on a training with its trainer assigned that is still going on.",
     "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that meets it.",
     "dateNotConfirmed": "Something is in the calendar on that day already: look at the warnings and confirm the date.",
-    "trainingNotClosable": "Only an accepted training that is still going on can be closed."
+    "trainingNotClosable": "Only an accepted training that is still going on can be closed.",
+    "sessionStarted": "The session has already started: record how it went, a no-show or a reschedule instead.",
+    "sessionNotRecordable": "What a session came to is recorded only on a dated training, once its session has started.",
+    "reportMockExamAgain": "This training is a mock exam already: the one after it is not another mock exam.",
+    "sheetChanged": "The sheet of this training changed meanwhile: reload the page.",
+    "evaluationGradeOnTheory": "An item of theory has no grade: it is marked done, not done or to improve.",
+    "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5.",
+    "evaluationItemTwice": "An item of the sheet is written twice in this report.",
+    "evaluationMarkUnknown": "That mark is not one the sheet has."
   },
   "notifications": {
     "requestReceived": {
@@ -456,6 +464,10 @@
     "trainingClosed": {
       "title": "Trainings closed",
       "description": "An email when a training of yours is closed without a report."
+    },
+    "reportPublished": {
+      "title": "Training reports",
+      "description": "An email when the trainer publishes the report of a training of yours."
     }
   },
   "mail": {
@@ -493,12 +505,23 @@
       },
       "trainingClosed": {
         "subject": "[Training] Training closed: {{training}}",
-        "body": "Your training {{training}} has been closed.\n\n{{why}}\n\nA closure makes you wait for nothing: you can ask for the training again whenever you want.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "body": "Your training {{training}} has been closed.\n\n{{why}}\n\n{{after}}\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "sessionTrainee": "Your training is on this page:",
       "sessionTrainer": "The training in the back office:",
       "closedByStaff": "The training department closed it. The reason: {{reason}}",
-      "closedUnanswered": "You did not choose a date among the ones your trainer proposed in the time the division gives to choose one."
+      "closedUnanswered": "You did not choose a date among the ones your trainer proposed in the time the division gives to choose one.",
+      "closedNoWait": "A closure makes you wait for nothing: you can ask for the training again whenever you want.",
+      "closedNoShow": "The session of {{session}} UTC was marked as a no-show: the training did not take place because you were not there.",
+      "waitUntil": "You can ask for a training on this path again from {{date}} UTC.",
+      "noWait": "You can ask for a training on this path again whenever you want.",
+      "waitWaived": "The trainer took the waiting away: you can ask for your next training on this path whenever you want.",
+      "readyForMockExam": "The trainer marked you ready for the mock exam: your next request for this rating will be a mock exam.",
+      "readyForExam": "The trainer marked you ready for the exam, which is booked on the network's site.",
+      "reportPublished": {
+        "subject": "[Training] Report published: {{training}}",
+        "body": "{{trainer}} has published the report of your training {{training}}: the grades, the comments and the general comment are on the training's page.{{ready}}\n\n{{after}}\n\nThe report: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      }
     }
   }
 }

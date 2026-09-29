@@ -8,6 +8,7 @@ using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Settings;
 using IvaoHub.Modules.Training.Staff;
 using Microsoft.EntityFrameworkCore;
@@ -254,8 +255,9 @@ public sealed class TrainingRequests(
     }
 
     /// <summary>
-    /// Trainings as their trainee reads them, in the order given: with who trains each, and the dates still to come that its
-    /// trainer proposed while it waits for one (A8) — one query for them all, and one for the names.
+    /// Trainings as their trainee reads them, in the order given: with who trains each, the dates still to come that its trainer
+    /// proposed while it waits for one (A8), the sessions that are over and the sheet of its report (A9) — one query for them all of
+    /// each, and one for the names. Nothing reserved is read: not the notes of the staff on the sheet, not those of a session.
     /// </summary>
     public async Task<IReadOnlyList<TraineeTrainingDto>> DtosAsync(IReadOnlyList<Training> trainings, CancellationToken cancellationToken)
     {
@@ -272,6 +274,31 @@ public sealed class TrainingRequests(
                 .ThenBy(slot => slot.Id)
                 .ToListAsync(cancellationToken);
         var proposed = slots.ToLookup(slot => slot.TrainingId);
+
+        var ids = trainings.Select(training => training.Id).ToList();
+        List<SessionOf> sessions = ids.Count == 0
+            ? []
+            : await database.Sessions.AsNoTracking()
+                .Where(session => ids.Contains(session.TrainingId))
+                .OrderBy(session => session.StartsAtUtc)
+                .ThenBy(session => session.Id)
+                .Select(session => new SessionOf(session.TrainingId, new TraineeSessionDto(session.StartsAtUtc, session.Outcome)))
+                .ToListAsync(cancellationToken);
+        var over = sessions.ToLookup(row => row.TrainingId, row => row.Session);
+
+        var completed = trainings.Where(training => training.State == TrainingState.Completed).Select(training => training.Id).ToList();
+        List<ItemOf> items = completed.Count == 0
+            ? []
+            : await database.Evaluations.AsNoTracking()
+                .Where(evaluation => completed.Contains(evaluation.TrainingId))
+                .OrderBy(evaluation => evaluation.Sort)
+                .ThenBy(evaluation => evaluation.Id)
+                .Select(evaluation => new ItemOf(
+                    evaluation.TrainingId,
+                    new TraineeEvaluationDto(evaluation.Section, evaluation.Title, evaluation.Grade, evaluation.Mark, evaluation.TraineeComment)))
+                .ToListAsync(cancellationToken);
+        var reports = items.ToLookup(row => row.TrainingId, row => row.Item);
+
         var names = await people.NamesAsync(trainings.Select(training => training.TrainerVid), cancellationToken);
 
         return
@@ -299,6 +326,10 @@ public sealed class TrainingRequests(
                 training.CloseReason,
                 training.ReadyForMockExam,
                 training.ReadyForExam,
+                training.CooldownWaived,
+                training.GeneralComment,
+                [.. reports[training.Id]],
+                [.. over[training.Id]],
                 training.RowVersion)),
         ];
     }
@@ -377,6 +408,12 @@ public sealed class TrainingRequests(
         exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
 
     private static string? Trimmed(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    /// <summary>A session that is over, with the training it belongs to: what the trainee reads of it, and nothing more.</summary>
+    private sealed record SessionOf(long TrainingId, TraineeSessionDto Session);
+
+    /// <summary>An item of a report, with the training it belongs to: what the trainee reads of it, and nothing more.</summary>
+    private sealed record ItemOf(long TrainingId, TraineeEvaluationDto Item);
 
     /// <summary>A member as a request reads them.</summary>
     private sealed record Trainee(

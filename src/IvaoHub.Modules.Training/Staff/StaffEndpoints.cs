@@ -6,6 +6,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Sessions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -16,11 +17,13 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.Training.Staff;
 
 /// <summary>
-/// The staff's side of the trainings (design M3 §2.3, §2.4, §2.5, §4.2): the list, generated, with its views — to approve, to
-/// assign, in progress, to close, the history — and the page of one training with its verbs: read it, the trainers it may be
-/// given, accept, refuse, assign; and its dates (A8) — what a date meets, the dates proposed and one taken back, the date set by
-/// hand —, and closing it. Whoever holds <c>Training.View</c> reads every training, open and closed (R.1, d2); what they may do on
-/// one is the handler's answer on the row, and every refusal is a <c>ProblemDetails</c> field by field.
+/// The staff's side of the trainings (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the list, generated, with its views — to
+/// approve, to assign, in progress, to close, the history — and the page of one training with its verbs: read it, the trainers it
+/// may be given, accept, refuse, assign; its dates (A8) — what a date meets, the dates proposed and one taken back, the date set by
+/// hand —, and closing it; and what its session came to (A9) — rescheduled, not attended, reported. Whoever holds
+/// <c>Training.View</c> reads every training, open and closed (R.1, d2), through the one function that leaves out what is reserved
+/// for its trainee; what they may do on one is the handler's answer on the row, and every refusal is a <c>ProblemDetails</c> field by
+/// field.
 /// </summary>
 public static class StaffEndpoints
 {
@@ -112,6 +115,19 @@ public static class StaffEndpoints
         trainings.MapPost("/{id:long}/close", (long id, TrainingClosureDto body, StaffTrainings staff, TrainingDates dates, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
                 StepAsync(id, staff, catalog, user, http, training => dates.CloseAsync(training, body, http.RequestAborted)))
             .Step("TrainingClose");
+
+        // After the session (A9): rescheduled, not attended, or reported.
+        trainings.MapPost("/{id:long}/reschedule", (long id, TrainingRescheduleDto body, StaffTrainings staff, TrainingSessions sessions, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => sessions.RescheduleAsync(training, body, http.RequestAborted)))
+            .Step("TrainingReschedule");
+
+        trainings.MapPost("/{id:long}/no-show", (long id, TrainingNoShowDto body, StaffTrainings staff, TrainingSessions sessions, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => sessions.NoShowAsync(training, body, http.RequestAborted)))
+            .Step("TrainingNoShow");
+
+        trainings.MapPost("/{id:long}/report", (long id, TrainingReportDto body, StaffTrainings staff, TrainingSessions sessions, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => sessions.ReportAsync(training, body, http.RequestAborted)))
+            .Step("TrainingReport");
 
         return app;
     }
