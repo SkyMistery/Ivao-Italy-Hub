@@ -170,10 +170,8 @@ una fase dà per esistente esista o abbia la sua fase.
      vocabolario, le notifiche, la geografia) e ognuna ha la sua nota; possono andare in parallelo. **E10c** allarga anche la
      directory delle postazioni, **E10e** è nuova (sotto, «Trovato», punti 9 e 10).
   3. **E15 in due**: le prenotazioni ATC della rete sono del nucleo (n.6) e vengono prima; il resto è del modulo.
-  4. **La cancellazione nasce con M4a (E8a, E8b)** invece che in E15 — **proposta, da confermare da Carmine** (domanda nella PR di
-     E0): M4a va in produzione da solo, e senza `EventsPersonalData` la prenotazione di una persona cancellata resterebbe su uno slot
-     di un evento non concluso, sotto uno pseudonimo (nota `i-dati-dei-membri-negli-eventi` §4). Se Carmine dice no, E8a ed E8b si
-     riducono a «Duplica» e al giro di M4a, e la cancellazione torna in E15b.
+  4. **La cancellazione nasce con M4a (E8a, E8b)** invece che in E15 — proposta di E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184): M4a va in produzione da solo, e senza `EventsPersonalData` la prenotazione di una persona cancellata resterebbe su uno slot
+     di un evento non concluso, sotto uno pseudonimo (nota `i-dati-dei-membri-negli-eventi` §4).
   5. **E1 porta anche il personaggio dell'ED sul banco**, e quindi una nota breve: il seme dei tipi da solo sarebbe senza nota (caso
      (a)), come dice il piano 1.24.
   6. **`evt_events` nasce intera in E2** con tre colonne che il design §1.2 non elenca: i limiti di chi non vola che «l'evento può
@@ -468,7 +466,7 @@ stesso gate da assegnare.
 
 ### E8a — Nucleo: la cancellazione vede gli eventi
 
-Design §11.1; nota `i-dati-dei-membri-negli-eventi` (lo scostamento 4 di E0, **se Carmine lo conferma**). Branch
+Design §11.1; nota `i-dati-dei-membri-negli-eventi` (lo scostamento 4 di E0, deciso da Carmine). Branch
 `m4/e8a-erasure-events-core`. **PR del nucleo**, con una nota breve.
 
 1. **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows`** legge anche `EventsDbContext`, con le colonne `evt_` di M4a

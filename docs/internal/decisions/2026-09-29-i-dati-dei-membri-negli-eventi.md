@@ -3,7 +3,7 @@
 **Data:** 29 settembre 2026 — fase E0 di M4
 **Stato:** **decisa** (Carmine, 29 settembre 2026, sulla PR #180: [conferma di §17.1 e §17.2][ok] e [conferma di §17.3][ok3];
 §17.1 n.10 per il registro dei controllori e n.15, §17.3 n.1 per il registro dei piloti, e le risposte del secondo giro approvate da
-Carmine, design §R.3 c3). **Tranne** lo spostamento della cancellazione in M4a (§4), che è una proposta di E0 da confermare.
+Carmine, design §R.3 c3). Lo spostamento della cancellazione in M4a (§4), proposto in E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184).
 **Regola applicata:** piano §9.7, «Privacy dei membri» (di un membro il minimo necessario; ogni modulo scrive nel suo design che
 cosa conserva e per quanto); `CLAUDE.md` §2 (la cancellazione dei dati di una persona con `IPersonalDataEraser`, le colonne che
 nominano una persona chiamate `Vid`, `…Vid` o `…By`; nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona`) e §5, caso
@@ -59,8 +59,7 @@ nominano una persona chiamate `Vid`, `…Vid` o `…By`; nota `2026-09-25-la-can
 ## 4. Che cosa si tocca, e dove
 
 - **Ogni fase** che crea una tabella con una colonna che nomina una persona la chiama secondo la convenzione del nucleo.
-- **La cancellazione nasce con M4a**, non in fondo a M4b come il design §16 metteva (E15) — **proposta di questa fase, da
-  confermare** (domanda a Carmine nella PR di E0): M4a va in produzione da solo, per spegnere `ivao-booking`, e le prenotazioni sono
+- **La cancellazione nasce con M4a**, non in fondo a M4b come il design §16 metteva (E15) — proposta di questa fase, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184): M4a va in produzione da solo, per spegnere `ivao-booking`, e le prenotazioni sono
   dati di una persona dal primo giorno. Il nucleo scrive già lo pseudonimo nelle colonne dei contesti dei moduli
   (`PersonalDataErasure` li scorre tutti), ma **non cancella** le prenotazioni degli eventi non conclusi: senza `EventsPersonalData`
   uno slot resterebbe preso da uno pseudonimo. **E8a** (nucleo) allarga `ErasureTests` al contesto degli eventi, **E8b** scrive
