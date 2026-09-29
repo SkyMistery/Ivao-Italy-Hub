@@ -631,6 +631,7 @@
     "dateBlocked": "Quel giorno c'è già qualcosa nel calendario, e la divisione non accetta una data che lo incontra.",
     "dateNotConfirmed": "Quel giorno c'è già qualcosa nel calendario: guarda gli avvisi e conferma la data.",
     "trainingNotClosable": "Si chiude solo un training accettato e ancora in corso.",
+    "sessionStarted": "La sessione è già cominciata: registra com'è andata, un no-show o una rischedula.",
     "sessionNotRecordable": "Com'è andata una sessione si registra solo per un training con la data, dopo l'inizio della sessione.",
     "reportMockExamAgain": "Questo training è già un mock exam: il training dopo non è un altro mock exam.",
     "sheetChanged": "La scheda di questo training è cambiata nel frattempo: ricarica la pagina.",

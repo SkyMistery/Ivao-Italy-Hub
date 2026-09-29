@@ -11,6 +11,7 @@ using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
 using IvaoHub.Modules.Training.Sessions;
@@ -28,7 +29,8 @@ namespace IvaoHub.IntegrationTests;
 /// of the active items copied and an item left not applicable, which completes the training, keeps its session in the calendar, mails the
 /// trainee and makes them wait; the session rescheduled with its notes, which takes the training back to its dates and makes nobody wait;
 /// the no-show, which closes it with the waiting of a no-show; the box of the mock exam and the next request; who may record none of it;
-/// an item a report marked, which is not deleted any more; and the rule of note <c>le-note-riservate-e-il-trainee</c>: a trainer who is also
+/// a session that has started, which is recorded and never dated again nor closed (#149); an item a report marked, which is not deleted
+/// any more; and the rule of note <c>le-note-riservate-e-il-trainee</c>: a trainer who is also
 /// a trainee reads the staff's page of their own training without what is reserved, and another's with it, and the trainee reads nothing
 /// reserved from their own endpoints. The «done when» of A9 through the API.
 /// <para>⚠️ The staff of the training is seeded without an address (<c>CONTRIBUTING.md</c>, "Tests"): the trainers hold a position of
@@ -273,10 +275,13 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Equal(RequestRules.Open, path.GetProperty("refusal").GetString());
         Assert.Equal(JsonValueKind.Null, path.GetProperty("waitUntil").ValueKind);
 
-        // A second session, set by hand for a moment ago, reported with the waiting taken away: nothing to wait for after it.
-        var set = await DoneAsync(
-            await StepAsync(trainer, id, "date", new { startsAtUtc = DateTime.UtcNow.AddMinutes(-30), confirmed = true, rowVersion = proposed.GetProperty("rowVersion").GetDateTime() }, token),
+        // A second session, set by hand and then started a moment ago — nobody dates a training in the past (#149) —, reported with the
+        // waiting taken away: nothing to wait for after it.
+        await DoneAsync(
+            await StepAsync(trainer, id, "date", new { startsAtUtc = DateTime.UtcNow.AddHours(1), confirmed = true, rowVersion = proposed.GetProperty("rowVersion").GetDateTime() }, token),
             token);
+        await StartedAMomentAgoAsync(id, token);
+        var set = await PageAsync(trainer, id, token);
         var completed = await DoneAsync(
             await StepAsync(trainer, id, "report", Report(set.GetProperty("rowVersion").GetDateTime(), [], cooldownWaived: true), token),
             token);
@@ -400,6 +405,53 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         Assert.Empty(await SessionsOfAsync(id, token));
         Assert.Empty(await SessionsOfAsync(later, token));
+    }
+
+    /// <summary>
+    /// A session that has started is recorded — reported, a no-show or rescheduled —, never dated again by hand nor closed over (the
+    /// maintainer's answer on #149): both are refused on the state, the page no longer offers them, and nothing is written. Nor is a
+    /// training that waits for its date dated in the past, which would be a session nobody held.
+    /// </summary>
+    [Fact]
+    public async Task ASessionThatHasStartedIsRecordedNeitherDatedAgainNorClosed()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
+
+        // The coordinator closes trainings too, here: without Training.Approve the close would be forbidden, not refused.
+        await GrantAsync(CoordinatorVid, TrainingPermissions.Approve, token);
+        var started = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: CoordinatorVid, start: DateTime.UtcNow.AddMinutes(-30));
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var page = await PageAsync(coordinator, started, token);
+        var version = page.GetProperty("rowVersion").GetDateTime();
+        Assert.False(page.GetProperty("actions").GetProperty("canConduct").GetBoolean());
+        Assert.False(page.GetProperty("actions").GetProperty("canClose").GetBoolean());
+        Assert.True(page.GetProperty("actions").GetProperty("canRecordOutcome").GetBoolean());
+
+        using (var moved = await StepAsync(coordinator, started, "date", new { startsAtUtc = DateTime.UtcNow.AddDays(1), confirmed = true, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(moved, "state", TrainingDates.SessionStarted, token);
+        }
+
+        using (var closed = await StepAsync(coordinator, started, "close", new { reason = "trn-test: closed over a session", rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(closed, "state", TrainingDates.SessionStarted, token);
+        }
+
+        var stored = await StoredAsync(started, token);
+        Assert.Equal(TrainingState.Scheduled, stored.State);
+        Assert.Equal(version, stored.RowVersion);
+
+        // A training that waits for its date is not dated in the past either.
+        var waiting = await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Assigned, token, trainer: CoordinatorVid);
+        var waitingVersion = (await PageAsync(coordinator, waiting, token)).GetProperty("rowVersion").GetDateTime();
+        using (var past = await StepAsync(coordinator, waiting, "date", new { startsAtUtc = DateTime.UtcNow.AddMinutes(-10), confirmed = true, rowVersion = waitingVersion }, token))
+        {
+            await AssertRefusedAsync(past, "startsAtUtc", TrainingDates.SlotPassed, token);
+        }
+
+        Assert.Equal(TrainingState.Assigned, (await StoredAsync(waiting, token)).State);
+        Assert.Empty(await SessionsOfAsync(started, token));
     }
 
     /// <summary>
@@ -578,9 +630,11 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         var version = (await PageAsync(coordinator, id, cancellationToken)).GetProperty("rowVersion").GetDateTime();
         var rescheduled = await DoneAsync(await StepAsync(coordinator, id, "reschedule", new { notes = $"trn-test-reserved: {whose}, session", rowVersion = version }, cancellationToken), cancellationToken);
-        var set = await DoneAsync(
-            await StepAsync(coordinator, id, "date", new { startsAtUtc = DateTime.UtcNow.AddMinutes(-10), confirmed = true, rowVersion = rescheduled.GetProperty("rowVersion").GetDateTime() }, cancellationToken),
+        await DoneAsync(
+            await StepAsync(coordinator, id, "date", new { startsAtUtc = DateTime.UtcNow.AddHours(1), confirmed = true, rowVersion = rescheduled.GetProperty("rowVersion").GetDateTime() }, cancellationToken),
             cancellationToken);
+        await StartedAMomentAgoAsync(id, cancellationToken);
+        var set = await PageAsync(coordinator, id, cancellationToken);
         await DoneAsync(
             await StepAsync(
                 coordinator,
@@ -776,6 +830,19 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         database.Trainings.Add(training);
         await database.SaveChangesAsync(cancellationToken);
         return training.Id;
+    }
+
+    /// <summary>
+    /// A dated training whose session the installation moves to ten minutes ago, so that it may be recorded: nobody sets a date in
+    /// the past by hand (the maintainer's answer on #149).
+    /// </summary>
+    private async Task StartedAMomentAgoAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
+        var training = await database.Trainings.IgnoreQueryFilters().SingleAsync(row => row.Id == id, cancellationToken);
+        training.ScheduledStartUtc = DateTime.UtcNow.AddMinutes(-10);
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>A training requested through the API, taken by the installation to a session held a moment ago with its trainer.</summary>
