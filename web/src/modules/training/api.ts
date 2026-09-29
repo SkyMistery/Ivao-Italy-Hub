@@ -16,8 +16,9 @@ import {
 
 /**
  * Every call the screens of the training make (M3): the settings through the core's settings of a module, what they are
- * chosen from — the ratings and the positions the division trains, which the module asks of the core (A4) —, and the items
- * of the evaluation sheet through the CRUD engine (A5).
+ * chosen from — the ratings and the positions the division trains, which the module asks of the core (A4) —, the items
+ * of the evaluation sheet through the CRUD engine (A5), and the trainee's own side — their page, the request and its
+ * cancellation (A6).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -25,12 +26,18 @@ export type TrainingPositionDto = components['schemas']['TrainingPositionDto'];
 export type SheetItemDto = components['schemas']['SheetItemDto'];
 export type SheetItemListDto = components['schemas']['SheetItemListDto'];
 export type SheetItemPage = components['schemas']['PagedResultOfSheetItemListDto'];
+export type MyTrainingDto = components['schemas']['MyTrainingDto'];
+export type MyTrainingPathDto = components['schemas']['MyTrainingPathDto'];
+export type TraineeTrainingDto = components['schemas']['TraineeTrainingDto'];
+export type TrainingRequestWriteDto = components['schemas']['TrainingRequestWriteDto'];
+export type TrainingState = components['schemas']['TrainingState'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
 
 const settingsKey = ['training', 'settings'] as const;
 const sheetItemsKey = ['training', 'sheet-items'] as const;
+const mineKey = ['training', 'mine'] as const;
 
 export function settingsQuery() {
   return queryOptions({
@@ -143,6 +150,55 @@ export function useDeleteSheetItem() {
     // Not awaited: the screen that deleted still observes the row it deleted.
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: sheetItemsKey });
+    },
+  });
+}
+
+// ---- the trainee's side (A6) --------------------------------------------------------------------------------------------
+
+/**
+ * The trainee's page, the one answer both of their screens read (design M3 §4.1): who they are, where they stand on each
+ * ladder — what they may ask for, or the first rule that refuses with what it needs to say why —, the question on the
+ * theory, and their trainings, newest first.
+ */
+export function mineQuery() {
+  return queryOptions({
+    queryKey: mineKey,
+    queryFn: async (): Promise<MyTrainingDto> => unwrap(await api.GET('/api/training/mine')),
+  });
+}
+
+/**
+ * A request (§2.2): the training written — asked for, or refused by the hub when the trainee said the theory is not passed —
+ * or the refusals, field by field, as an `ApiError`. The page is read again either way: what the trainee may ask for now is
+ * the server's to say.
+ */
+export function useRequestTraining() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: TrainingRequestWriteDto): Promise<TraineeTrainingDto> =>
+      unwrap(await api.POST('/api/training/mine', { body })),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: mineKey });
+    },
+  });
+}
+
+/** A request taken back while nobody accepted it, at the version the trainee saw: 409 when it moved on since. */
+export function useCancelTraining() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (training: TraineeTrainingDto): Promise<TraineeTrainingDto> =>
+      unwrap(
+        await api.POST('/api/training/mine/{id}/cancel', {
+          params: { path: { id: training.id } },
+          body: { rowVersion: training.rowVersion },
+        }),
+      ),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: mineKey });
     },
   });
 }

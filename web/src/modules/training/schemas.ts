@@ -215,3 +215,58 @@ export function sheetItemFilters(search: {
     ? { kind: search.kind }
     : { kind: search.kind, rating: String(search.rating) };
 }
+
+// ---- the request (A6) ---------------------------------------------------------------------------------------------------
+
+type TrainingRequestWriteDto = components['schemas']['TrainingRequestWriteDto'];
+
+/**
+ * A request as the trainee writes it (design M3 §2.2): on a ladder trained on positions the position, a **closed** suggestion
+ * among the ones the server offers — `null` for the other ladder, where it is carried empty and never drawn —, and the two
+ * texts in their own words. The ladder and the rating are not fields: the page chose the ladder, and the rating is the one the
+ * server proposes. Nothing is required here: a position left out, a text too long are the server's to refuse, field by field,
+ * in the words of the language files.
+ */
+export function requestSchema(positions: readonly Suggestion[] | null) {
+  return z.object({
+    position:
+      positions === null
+        ? z.string().meta({ hidden: true })
+        : z.string().meta({ suggestions: positions, suggestionsOnly: true }),
+    availabilityText: z.string().meta({ multiline: true }),
+    notesText: z.string().meta({ multiline: true }),
+  });
+}
+
+export type RequestFormValues = z.output<ReturnType<typeof requestSchema>>;
+
+export const EMPTY_REQUEST: RequestFormValues = { position: '', availabilityText: '', notesText: '' };
+
+/** The request as the server takes it: the ladder, the rating the page proposed, and the answer on the theory if it was asked. */
+export function requestFromFormValues(
+  values: RequestFormValues,
+  proposed: { readonly kind: RatingKind; readonly number: number },
+  theoryPassed: boolean | null,
+): TrainingRequestWriteDto {
+  return {
+    kind: proposed.kind,
+    rating: proposed.number,
+    position: written(values.position),
+    availabilityText: written(values.availabilityText),
+    notesText: written(values.notesText),
+    theoryPassed,
+  };
+}
+
+/** `/training/request`: the ladder the request is on, when a link chose it — `/training/mine` does. */
+export const requestSearchSchema = z.object({
+  kind: z.enum(RATING_KINDS).optional(),
+});
+
+export type RequestSearch = z.output<typeof requestSearchSchema>;
+
+/** An empty box is no value, which is what the server reads as «not written». */
+function written(text: string): string | null {
+  const trimmed = text.trim();
+  return trimmed === '' ? null : trimmed;
+}

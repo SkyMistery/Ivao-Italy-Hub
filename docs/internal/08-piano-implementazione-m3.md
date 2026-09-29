@@ -1062,7 +1062,197 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   permessi della sessione di A5 l'ha rifiutato; i test sono stati letti contro il codice. Le pagine e il «fatta quando» sul banco sono di
   A6b.
 
-**Com'è andata (A6b)**: *(a fase chiusa)*
+**Com'è andata (A6b)** (26 settembre 2026, branch `m3/a6b-request-pages`, PR #144, in coda dopo #143):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — le rotte dei membri del manifest (`area: 'member'`, come il report dei tour: il login davanti, e al ritorno la stessa
+  pagina), `SchemaForm` con il suo `id` e `actionsElsewhere`, il suggerimento chiuso (`suggestionsOnly`), `ConfirmDialog` con una domanda
+  nei `children` e `confirmDisabled` (G14, T7a), `Notice`, `useNotice`, `EmptyState`, `RatingBadge`, `describeProblem`, `useMoment` —.
+  **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine; **nessun cambio del server**: le due pagine leggono
+  `GET /api/training/mine` di A6a così com'è (`pnpm gen:api` senza differenze).
+- **Fatto**, come il perimetro di A6b qui sopra:
+  1. **`/training/request`** (`web/src/modules/training/screens/request.tsx`): i dati del trainee in sola lettura — VID, nome, e del
+     percorso scelto il rating (`RatingBadge`) e le ore; **mai l'email** —; il percorso, ATC o pilota, a scelta con accanto il training
+     che sarebbe, e nell'indirizzo (`?kind=`); il training proposto, con «questo sarà un mock exam, come concordato con il trainer» quando
+     il server lo dice (R.6); per l'ATC la postazione fra quelle offerte (un suggerimento chiuso); disponibilità e note. **«Richiedi
+     training» apre la domanda sul teorico** (R.2: «Hai superato l'esame teorico per *rating*?», con il sito dell'esame quando
+     `theoryExamUrl` c'è), sì o no, e «Invia la richiesta» si accende solo con una risposta. Con il **«no»** la pagina dice, al posto del
+     form, «Prima di richiedere il training devi superare l'esame teorico *rating*», che la richiesta è registrata come rifiutata e che
+     non arriva nessuna mail; con il **«sì»** la conferma nell'angolo e `/training/mine`. Un percorso che il server rifiuta mostra la
+     frase del rifiuto e, dalla stessa risposta, fino a quando vale il ban (o «finché il dipartimento training non lo toglie»), che il
+     training aperto va chiuso prima, fino a quando e quanti giorni dura ancora l'attesa, la soglia di ore e le ore.
+  2. **`/training/mine`** (`screens/mine.tsx`): per ogni percorso il rating, le ore, il training che si può chiedere con «Richiedi
+     training» (verso `/training/request?kind=…`) o il rifiuto con il suo dettaglio — **l'attesa residua** compresa —, il mock exam, e
+     «pronto per l'esame»; poi **le richieste e i training**, dal più nuovo: lo stato (le parole di R.4), percorso, rating, postazione,
+     mock exam, quando è stata chiesta e il momento del suo stato, il motivo di un rifiuto (dell'hub o dello staff), le caselle del report
+     («pronto per il mock exam», «pronto per l'esame»), i due testi del trainee, e **«Annulla la richiesta»** solo su `Requested`, con
+     `ConfirmDialog` e la versione che il trainee ha visto.
+  3. **Le funzioni pure** in `screens/trainee.ts` (il percorso scelto, il dettaglio di un rifiuto, dove va un rifiuto della richiesta, il
+     momento di uno stato, «pronto per l'esame», i giorni che mancano, le ore) e i pezzi comuni alle due pagine in `screens/parts.tsx`;
+     `api.ts` (`mineQuery`, `useRequestTraining`, `useCancelTraining`, che rileggono la pagina), `schemas.ts` (`requestSchema`,
+     `requestFromFormValues`, `requestSearchSchema`), le due rotte nel manifest, le parole in `training.json` (`request`, `mine`,
+     `states`, `refusal`, `mockExam`, `theoryExam`, `unknown`), in italiano e in inglese, copiate da `pnpm i18n:sync`.
+  4. **I test**: Vitest `schemas.test.ts` (4 nuovi) e `screens/trainee.test.ts` (11); lo smoke `web/e2e/training-request.spec.ts` (5,
+     con l'API finta: la richiesta con il «sì», il «no», i rifiuti al loro posto, un percorso rifiutato con il suo dettaglio e il mock
+     exam dell'altro, `/training/mine` con l'annullamento); il giro sul banco `web/e2e/full/training-request.spec.ts`, **il «fatta
+     quando» di A6**: il trainee del banco chiede il training del rating dopo il suo scegliendo una postazione e lo trova in
+     `/training/mine`; una seconda richiesta ATC è rifiutata (la pagina non la offre, e il server rifiuta quella mandata di lato con
+     `requestOpen` sul campo `kind`); una da pilota passa. All'inizio e nel `finally` annulla le richieste rimaste in attesa.
+- **Scostamenti e precisazioni, piccoli**:
+  1. **La domanda sul teorico è `ConfirmDialog`**, il componente dell'elenco chiuso che fa già domande (G14): la risposta sta nei suoi
+     `children`, e la conferma **manda il form generato** per il suo `id` (`requestSubmit`), così i rifiuti del server arrivano campo per
+     campo come in ogni form. La finestra si apre dal suo pulsante, quindi prima che il form sia mandato: il form non ha regole nel
+     browser (sotto, 2), e un rifiuto del server dopo la risposta non registra niente — il teorico viene per ultimo (A6a) —; la domanda
+     si fa di nuovo, da capo, a ogni «Richiedi training». Il pulsante di `ConfirmDialog` è solo `ghost` o `secondary`: «Richiedi
+     training» è `secondary`.
+  2. **Nessuna regola nel browser**: la postazione obbligatoria e la lunghezza dei testi sono del server, che le rifiuta sul campo con le
+     parole dei file di lingua; `.min(1)` o `.max()` di zod le direbbero con le frasi inglesi di zod.
+  3. **Dove va un rifiuto**: quelli sui campi del form (postazione, testi) sul loro campo; gli altri (`kind`, `rating`, `theoryPassed`)
+     sopra il form, e la pagina rilegge il `GET`, così un rifiuto del percorso mette al posto del form la sua frase con i dettagli. Il
+     form ha per chiave il percorso e basta: un rating che il server ha cambiato tiene i testi scritti e il rifiuto che lo dice.
+  4. **«Annulla» è «Annulla la richiesta»**, e nella finestra «Sì, annulla la richiesta»: il pulsante della finestra che la chiude è
+     «Annulla» (`common.cancel`), e due «Annulla» uno accanto all'altro direbbero due cose opposte.
+  5. **Le date sono in UTC**, e la frase lo dice (l'attesa, il ban, una sessione); il giorno di una richiesta, di una decisione o di una
+     chiusura è una data.
+  6. **Come ci arriva un membro**: dall'indirizzo e dalla mail della richiesta ricevuta (`/training/mine`). Il menu pubblico è
+     editoriale — il TD ci mette una voce —, e `/training` con il pulsante e il blocco di `/me` sono di A10.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Un difetto del nucleo, non toccato**: nel **suggerimento chiuso** di `SchemaForm` (`Suggest`, `suggestionsOnly`), **chi scrive
+     per cercare e poi clicca un'opzione perde la scelta**: la casella torna vuota. Al `pointerdown` sull'opzione la casella perde il
+     fuoco, `onBlur` rimette il valore di prima perché il testo scritto non è un'opzione, la lista si ridisegna intera sotto il
+     puntatore, e il clic non arriva più all'opzione. Cliccare la casella e poi l'opzione, o scrivere il nominativo intero, funziona.
+     Misurato nel browser il 26 settembre 2026 (in jsdom non si vede: non consegna gli eventi di puntatore). Vale per ogni campo chiuso
+     dell'hub (la voce del menu, le postazioni nascoste delle impostazioni, qui la postazione della richiesta). È codice del nucleo:
+     detto al revisore su #144, e le spec scelgono la postazione dall'elenco o la scrivono intera, e lo dicono. **La correzione è la
+     fase del nucleo A6c, PR #145** (da `main`, non in coda, nota `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, «Proposta»): la
+     casella e la sua lista sono un campo solo, e la regola del campo chiuso vale quando il fuoco esce da tutte e due. L'idea scritta qui
+     per prima — tenere il fuoco nella casella annullando la pressione sulla lista — A6c l'ha provata e scartata: la barra di scorrimento
+     della lista non si trascina più.
+  2. **`pnpm i18n:check` non legge le chiavi con il namespace**: il suo schema (`[\w.-]+`) si ferma ai due punti di `t('training:…')`,
+     quindi le chiavi dei moduli non sono controllate. Le spec leggono le parole dai file di lingua e cadono su una chiave mostrata
+     nuda. Detto al revisore (lo script è del nucleo).
+  3. Nessun VID nuovo: A6b non ha test d'integrazione. Il prossimo libero resta **790022**.
+  4. ⚠️ **Una conferma nell'angolo si cerca con il testo esatto** (`{ exact: true }`): il toast di Radix la annuncia anche, per un
+     momento, in una `span` «Notification …» con `aria-live`. In locale era già sparita al controllo; **la prima CI della PR (a0961ae) è
+     caduta lì**, nello smoke, e il test è stato corretto.
+  5. **Guardato a mano**, e per chi guarda dopo: il pulsante «Richiedi training» è grigio (`secondary`, scostamento 1), più debole del
+     blu di un form senza domanda; un `triggerVariant` primario di `ConfirmDialog` sarebbe un'estensione del nucleo, e sta con il
+     difetto qui sopra fra le cose dette al revisore. L'intestazione del sito è larga 1044 px su un telefono di 375 px, in ogni pagina e
+     anche nella home: è del nucleo, non di questa fase.
+- **La coda**: A6b è nata in coda dopo #143 (A6a, pronta con la CI verde, in attesa della sessione master): la PR #144 è in bozza con
+  `(after #143)` e `Queued after #143.`. Quando #143 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `m3/a6a-request-server`, cece262): `dotnet build` senza avvisi; unità
+  **767/767** (come A6a: la fase non ha C#; `TrainingArchitectureTests` legge anche il TypeScript nuovo del modulo, ed è verde);
+  **integrazione intera senza filtro** **322/322** (come A6a); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test`
+  **509** in **64** file (le 494 in 63 di A6a e 15 nuovi); `pnpm e2e` **96** (le 91 e le 5 nuove); **`pnpm e2e:full` 42** su un **banco
+  nuovo** (le 41 e la spec nuova). La prima corsa, anch'essa su un banco nuovo, è finita 41/42: `tours-rules.spec.ts` è caduta su
+  `net::ERR_NO_BUFFER_SPACE`, un errore di socket di Windows nella navigazione di Chromium e non un'asserzione; rifatta sul banco
+  ricreato, 42/42. `pnpm gen:api` senza differenze (nessun endpoint cambiato); `pnpm i18n:sync` senza differenze dopo il commit che porta
+  le parole; nessun file C# toccato; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff verso `main`:
+  nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`, spento il banco di
+  A5 su richiesta a quella sessione): il trainee chiede ADC su una postazione con il «sì» e lo trova in `/training/mine`, risponde «no» sul
+  percorso pilota e legge la frase di R.2, annulla la richiesta ATC; in italiano e in inglese, tema chiaro e scuro, e largo 375 px.
+- **La CI** (`build-test` e `core-guard`) è verde dopo la correzione dello smoke: su e156e9b ed e178b1b, e sul merge del passo della coda
+  dopo #143 (f5e3cd6).
+- **Non verificato**: **che i test nuovi cadano su una copia indebolita del codice**: non tentato, perché la modalità di permessi l'ha
+  rifiutato in A5; i test sono stati letti contro il codice (lo smoke è caduto sulla sua prima versione, ed è così che è venuto fuori il
+  difetto del nucleo). **La mail del «sì» in Mailpit sul banco**: il giro non la legge (il test d'integrazione
+  di A6a prova l'intento in coda). **Un ban, un'attesa, una soglia di ore, il sito dell'esame e un 409 su un annullamento vecchio,
+  attraverso le pagine sul banco**: il banco non ne ha (nessun ban, nessun training completato, nessuna soglia, nessun `theoryExamUrl`);
+  le pagine li mostrano con l'API finta dello smoke, e il lato del server è dei test d'integrazione di A6a.
+- **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5855612519);
+  la PR era tornata in bozza perché il passo della coda dopo #143 l'aveva segnata pronta prima di questa correzione,
+  [commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5857989492)). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (f5e3cd6), spinto sul branch della fase; il merge verso l'alto della coda lo fa una volta sola la sessione
+  che coordina le correzioni.
+  1. **`main` nel branch** (3c79786), come il master ha chiesto su #144
+     ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5859555627)): A3b (#135) e le PR del maintainer
+     #160–#172. L'unico conflitto era in `HANDOFF-M3.md`. L'intestazione resta quella di A6b, che i branch sopra riscrivono per conto
+     loro; in «Lo stato» restano tutti i paragrafi, quello di A3b subito sotto quello di A6b, così il merge verso l'alto non tocca le righe
+     che i branch sopra hanno cambiato. `08` si è unito da solo. **Il catalogo di A3b non cambia niente di A6b**: le pagine del trainee sono
+     solo front end, e gli endpoint di A6a che leggono chiedono solo di essere entrati (`HubPolicies.SignedIn`); il training non ha
+     `IHasAssignee`, `[AlsoWrittenWith]` né permessi `OnlyForAssignee` (li porta A7, per il trainer). `TrainingRequestTests` è verde dopo il
+     merge.
+  2. **Invio nella postazione mandava la richiesta senza la domanda sul teorico** (da correggere; 2d20da4). Con `asksTheory` il form non
+     ha un pulsante di invio (`actionsElsewhere`), e la postazione è la sua sola casella di una riga. Per l'invio implicito dell'HTML, Invio
+     lì manda il form, e `form.submitHint` lo dice anche a chi usa un lettore di schermo. La richiesta partiva senza risposta se la finestra
+     non si era mai aperta (il server risponde `theoryPassed: errors.required`), o con una risposta data e poi annullata.
+     - **Ora ogni invio del form passa da una guardia** (`letThrough`, sull'evento `submit` in fase di cattura, prima che `SchemaForm` lo
+       veda). Va avanti solo l'invio che parte dalla conferma della finestra, dentro `requestSubmit`, con la risposta data; ogni altro invio
+       **apre la domanda come fa il pulsante** e non manda niente. La risposta si dimentica quando la finestra si chiude.
+     - **Perché Invio apre la domanda**, invece di non fare niente come nella strada del revisore (un ref che `sendWithAnswer` imposta e
+       `submit` controlla): con un Invio muto, «Premi Invio per salvare» sarebbe falso per questo form; così Invio porta al salvataggio,
+       passando dalla domanda. E la guardia prende la conferma nel momento in cui l'invio comincia, quindi una conferma che il form poi
+       rifiutasse non resterebbe indietro per l'invio dopo.
+     - **La finestra si apre dal suo pulsante** (un `click` sul pulsante di `ConfirmDialog`), perché `ConfirmDialog` tiene per sé il suo
+       `open`. Un `open` controllato sarebbe un cambio del nucleo, e qui non serve.
+     - **Lo smoke** ha due casi nuovi: Invio con la finestra mai aperta; «No», «Annulla», poi Invio. **Cadono tutti e due sul codice di
+       prima**, provato prima della correzione: la domanda non compare, e la richiesta parte.
+  3. **«Torna alla richiesta» dopo un «no» perdeva i testi** (nit; edfe7cb), perché il pulsante di `Declined` rimontava `RequestForm`. Il
+     form ora resta montato, **solo nascosto** mentre si legge il rifiuto dell'hub, e tornando c'è com'era. Il caso del «no» dello smoke
+     torna indietro e rilegge postazione e disponibilità; **cade sul codice di prima** (la postazione torna vuota).
+  4. **L'etichetta della postazione** (nit; 2912154): `` `${callsign} — ${name}` `` è nella chiave `training:positionChoice`, nelle due
+     lingue, come `ratingChoice`, con una funzione sola accanto a `ratingOptions` (`positionLabel`, `screens/ratings.ts`). La stessa
+     composizione era scritta anche nelle impostazioni (A4), che ora usano la stessa funzione. Il giro sul banco cerca l'opzione con le
+     stesse parole, lette dal file di lingua.
+  5. **La riga vecchia di «Non verificato»** qui sopra (nit): la CI dopo la correzione dello smoke è verde, e ora la voce «La CI» lo dice.
+  6. **Restano fuori, con il perché**:
+     - **I nit di `screens/mine.tsx`**: il `CardRoot` di Atmosphere al posto della card fatta a mano, il separatore `' · '` in una chiave,
+       `line-clamp-3` sui testi del trainee senza un modo di leggere il resto. A8b, A9b e A10b cambiano `mine.tsx`, e il merge verso l'alto
+       andrebbe in conflitto: **li fa una fase in cima alla coda**.
+     - **`canCancel` dal server** al posto di `isCancellable`, e `readyForExam`, in `trainee.ts`: oggi dicono la stessa cosa di A6a. Il
+       revisore dice di farlo **quando A7 e A8 aggiungono stati**.
+     - **`src/IvaoHub.Modules.Training/Refusals.cs`**: la copia del modulo la toglie **A10c**, che usa `Refusals` del nucleo (#152), come è
+       scritto in `HANDOFF-M3.md` sul branch di A10b.
+     - **La scelta da tastiera nel suggerimento chiuso** (scrivere, freccia giù, Invio) non funziona, anche su `main`. `Suggest` è del
+       nucleo, e il maintainer la prende come seguito (revisione di #145): non toccato.
+  7. **Verificato, in locale** (28 settembre 2026, sul merge e le tre correzioni, 2912154): `dotnet build` senza avvisi; unità **817/817**
+     (le 767 di A6b e le nuove di `main`); **integrazione intera senza filtro 345/345**; `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm test` **510** in **64** file; `pnpm e2e` **98** (le 96 e i due casi di Invio); **`pnpm e2e:full` 42/42** su un
+     banco nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b`, creato dal primo avvio). `pnpm gen:api` senza differenze; `pnpm i18n:sync` fatto, e le
+     copie in `locales/` sono nel commit dell'etichetta. **I test nuovi cadono sul codice di prima**: con lo smoke della richiesta scritto e
+     `request.tsx` ancora com'era (dopo il merge), 3 casi su 7 cadono — i due di Invio (la domanda non compare) e quello del «no» al
+     ritorno (la postazione è vuota) —; con le correzioni, 7 su 7.
+  8. **Non verificato**: Invio con un lettore di schermo vero, e in un browser diverso da Chromium (lo smoke gira solo lì; la guardia sta
+     sull'evento `submit`, che l'invio implicito manda in ogni browser). Invio sul banco: il giro completo sceglie la postazione dall'elenco
+     e manda con il pulsante, come prima; Invio lo prova lo smoke, con l'API finta. Nessuna prova a mano sul banco di anteprima.
+- **`main` dopo #177, e un Invio in più** (28–29 settembre 2026; [la revisione dopo le correzioni](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877191956),
+  approvabile appena `main` entra nel branch, e [la correzione che vale](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930):
+  il maintainer ha unito prima #177, quindi l'adattamento spetta a questo branch). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (b4bd304), spinto sul branch della fase con un push solo; i branch sopra prendono `main` al loro passo
+  della coda.
+  1. **`main` nel branch, in due merge**:
+     - c90dea9, `origin/main` a 1ae9100: A6c (#145), le correzioni di hosting del maintainer #173–#176, **#177** (la scelta da tastiera
+       nel campo suggerito, nota `2026-09-28-il-suggerimento-dalla-tastiera`) e #179 (i giri dei tour si riprendono i loro report); #171
+       e #172 c'erano già da 3c79786;
+     - 4b9f6bd, `origin/main` a efe057a: **A11a (#159)**, unita mentre giravano le suite del primo merge. Senza, #144 restava in
+       conflitto, e una PR in conflitto non ha la CI e non si unisce; la sessione che coordina le correzioni era d'accordo. Se `main` si
+       muove ancora prima del push, non si insegue.
+     - Tutte e due le volte l'unico conflitto era in `HANDOFF-M3.md`: l'intestazione resta quella del branch, che i branch sopra
+       riscrivono per conto loro; in «Lo stato» i blocchi nuovi di `main` vanno subito sotto quello di A6b, nel loro ordine (A11a, poi
+       A6c, sopra A3b), così il merge verso l'alto non tocca le righe che i branch sopra hanno cambiato. Dei blocchi di `main` non si
+       toglie niente; `08` si è unito da solo.
+     - **A11a e le pagine di A6b**: le pagine leggono gli endpoint del trainee di A6a, che chiedono solo di essere entrati; la regola del
+       FIR di A11a vale per i grant al team di un FIR, che il training avrà con A11b. L'integrazione intera, con `TrainingRequestTests`, è
+       verde dopo il merge.
+  2. **Un Invio in più** (c3db117) nel caso dello smoke «Enter in the position asks the question, as the button does». Da #177 Invio su
+     un'opzione accesa la sceglie e non manda il form, e in un campo chiuso che si cerca è accesa la prima opzione mostrata. Il caso
+     scriveva `XXAA_TWR` e premeva Invio una volta: quell'Invio ora sceglie la postazione, e la domanda non compare. Con un Invio in più
+     dopo il `fill` il primo sceglie, il secondo manda il form e `letThrough` fa la domanda, come prima; le asserzioni non cambiano. Il caso
+     «an answer taken back with «Cancel»» passa così com'è (non si cerca niente, niente è acceso, e Invio è del form), e `letThrough` non
+     cambia. **Misurato**: la spec sul solo primo merge (c90dea9) dà 6 su 7, e cade proprio quel caso; con la riga, 7 su 7.
+  3. **Verificato, in locale** (29 settembre 2026, su 4b9f6bd, con A11a): `dotnet build` senza avvisi; unità **836/836** (le 825 e
+     le 11 di A11a); **integrazione intera senza filtro 359/359** (le 353 e le 6 di A11a); `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm test` **529** in **68** file; `pnpm e2e` **111/111**
+     al primo giro (le 110 e quella di A11a), sotto il lucchetto della porta 4173; **`pnpm e2e:full` 42/42** al primo giro su un banco
+     nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b_main2`, creato dal primo avvio). Prima, sul solo primo merge (c3db117), tutto verde anche
+     lì: unità 825/825, integrazione 353/353, `pnpm test` 527 in 67 file, smoke 110/110, `e2e:full` 42/42 su `ivaohub_e2e_a6b_main`. Le
+     regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD`: nessun file del maintainer, nessuno del nucleo.
+  4. **Non verificato**: come sopra (8), Invio con un lettore di schermo vero, in un browser diverso da Chromium e sul banco; nessuna prova
+     a mano sul banco di anteprima. Il primo caso dello smoke sceglie ancora la postazione dall'elenco, e il suo commento dice ancora il
+     perché di prima di A6c (un clic dopo aver scritto andava perso): con A6c e #177 dentro, una spec può scrivere una parte del
+     nominativo. Resta com'è: l'adattamento chiesto era una riga. La CI su questo head si legge dopo il push.
 
 ### A7 — Accettare, rifiutare, assegnare
 
