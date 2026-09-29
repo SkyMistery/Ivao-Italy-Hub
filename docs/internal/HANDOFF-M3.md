@@ -13,20 +13,21 @@
 
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12b** (modulo: la cancellazione dei dati di un trainee, «persona cancellata» nelle
 pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, in bozza **in coda dopo #187** (A12a,
-in bozza in coda dopo #182, A11b, dopo #181, A7b, dopo #178, A10c, in cima alla coda: **#150, A9b, #151, A10a, e #153, A10b, sono unite** il
-29 settembre). La nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto di un altro membro,
+in bozza in coda dopo #182, A11b, in cima alla coda: **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29
+settembre). La nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto di un altro membro,
 affidato a un trainer che si cancella — è nata «Proposta» con [la domanda sulla
 #189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168), e **Carmine l'ha decisa** il 30 settembre, la (a)
 come raccomandato ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516)); la fase intera è scritta
 e provata. Il branch è nato dalla cima
-della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla sessione di A12a), con `main` a 2af5133: `main` con #149, #150, #151 e
-#153 sale al passo della coda di ogni branch, non prima, quindi **la PR è in conflitto con `main`** in questo file, come tutta la coda, **e
-non ha CI**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146),
-A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), la fase del nucleo A11a (#159) e #152 del maintainer. La **sessione master** di
+della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla sessione di A12a), con `main` a 2af5133: `main` con #149, #150, #151,
+#153, #178 e #181 sale al passo della coda di ogni branch, non prima, quindi **la PR è in conflitto con `main`** in questo file, come tutta
+la coda, **e non ha CI**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145),
+A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159)
+e #152 del maintainer. La **sessione master** di
 Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la
 PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo
-chiede sulla PR senza spingerci niente. **A10 è divisa in tre** (`08`, A10): A10a e A10b (unite) e **A10c** (#178); **A11 in due**,
-A11a (unita) e **A11b** (#182); **A12 in quattro**, **A12a** (#187), **A12b** (questa), A12c (solo con i codici di PATS: resta
+chiede sulla PR senza spingerci niente. **A10 è divisa in tre** (`08`, A10): A10a, A10b e A10c, unite; **A11 in due**, A11a (unita) e
+**A11b** (#182); **A12 in quattro**, **A12a** (#187), **A12b** (questa), A12c (solo con i codici di PATS: resta
 condizionata) e A12d. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
