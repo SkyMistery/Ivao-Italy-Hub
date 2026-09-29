@@ -191,7 +191,8 @@ export function isHubAddress(href: string): boolean {
 
 /**
  * What the staff may do on the dates of a training (§2.5), as the server's answer on the row allows (`canConduct`): propose dates
- * and take one back while it waits for its date, set the date by hand then and once it has one.
+ * and take one back while it waits for its date, set the date by hand then and once it has one — until its session starts, when
+ * the server stops offering it and the session is recorded instead (#149).
  */
 export function dateSteps(training: StaffTrainingDto): {
   readonly propose: boolean;

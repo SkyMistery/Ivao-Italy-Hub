@@ -1840,7 +1840,8 @@ banco, la raddoppierebbero.
      scelta avrebbe chiesto una chiave dal training alle date — circolare con quella in cascata dalle date al training — o due salvataggi
      per l'override.
   2. **L'override scrive solo l'inizio**, anche nel passato («una data qualunque»: una sessione tenuta prima del previsto), e nessuna
-     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto.
+     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto. ⚠️ *Superato per il passato* dalla risposta di Carmine su #149:
+     nessuno data un training nel passato (A9, «Le risposte di Carmine su #149»).
   3. **Le date si propongono insieme**, così il trainee riceve una mail sola, e con `Warn` la conferma è della proposta intera. Le regole
      di una proposta, sulla sua riga: una data ancora da venire, che finisca dopo l'inizio e duri al massimo 12 ore, non già proposta; al
      massimo 10 date ancora da venire in attesa. **Una data si ritira** finché il trainee non l'ha scelta (senza mail): il design non lo
@@ -2344,10 +2345,33 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   2. **Un giudizio fuori dall'elenco** su una voce di teoria si rifiuta con `training:errors.evaluationMarkUnknown`, non con
      `errors.required`. Il test di unità `AReportIsRefusedOnTheFieldOfTheItemItGetsWrong` dice tutti e due.
   3. **La mail del no-show** («The trainer marked…») non nomina più il trainer: il no-show lo registrano anche TC e TAC.
-  4. ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR: **una data forzata su una sessione già iniziata** (la domanda che
-     A8a aveva lasciato per A9: `SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione è cominciata; la raccomandazione è
-     rifiutarle da quando vale `TrainingSessions.IsRecordable`), e **gli scostamenti 1, 2 e 7**, che cambiano il design e vogliono la
-     sua risposta con il link.
+  4. Due punti aspettavano Carmine: **una data forzata su una sessione già iniziata** (la domanda che A8a aveva lasciato per A9) e **gli
+     scostamenti 1, 2 e 7**. Le risposte sono nella voce qui sotto.
+- **Le risposte di Carmine su #149** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158),
+  data in chat al master e postata da lui; il codice l'ha scritto la sessione che coordina la coda, sul branch temporaneo `fix3/a9a` da
+  `6020f33`):
+  1. **Gli scostamenti 1, 2 e 7 sono accettati**, con il link qui: l'esito si registra dall'inizio della sessione, un training `Completed`
+     resta nel calendario, «pronto per il mock exam» si rifiuta su un mock exam.
+  2. **Una sessione cominciata si registra, non si data più né si chiude**: da quando vale `TrainingSessions.IsRecordable`,
+     `TrainingDates.SetAsync` e `CloseAsync` rifiutano sullo stato con la chiave nuova **`training:errors.sessionStarted`** (in inglese e
+     in italiano), prima di guardare il resto del payload. La pagina dello staff smette di offrirli: in `StaffTrainings`, `canConduct` e
+     `canClose` sono falsi sulla sessione cominciata, e resta `canRecordOutcome`. Il commento di `dateSteps` (`screens/dates.ts`) lo dice.
+  3. **E nessuno data un training nel passato**: la data a mano prima di adesso si rifiuta con `slotPassed` su `startsAtUtc`, come la
+     scelta del trainee fra le date proposte — la risposta dice «(and a date in the past)». ⚠️ **Lo scostamento 2 di A8a non vale più**
+     per questa parte: l'override scriveva «anche nel passato» (una sessione tenuta prima del previsto); ora una sessione tenuta si
+     registra, e l'override è solo per un momento ancora da venire.
+  4. **I test**: il nuovo `TrainingSessionsTests.ASessionThatHasStartedIsRecordedNeitherDatedAgainNorClosed` (un `Scheduled` cominciato da
+     mezz'ora: la pagina non offre la data né la chiusura, i due passi rifiutati su `state` con `sessionStarted`, niente scritto; un
+     `Assigned` datato dieci minuti fa: `slotPassed`). Al coordinatore della classe il test dà `Training.Approve`, che gli altri test non
+     gli danno: senza, la chiusura sarebbe vietata (403) e non rifiutata. **Il test cade senza il rifiuto**, come Carmine chiede: su una
+     copia di `TrainingDates.cs` senza i tre controlli nuovi (e senza la `using` che restava inutile), la data a mano su una sessione
+     cominciata passa (200, spostata a domani) e il test cade alla riga del primo rifiuto; il file poi rimesso e ricompilato.
+  5. ⚠️ **Due test di A9a toccati, e perché**: `ASessionRescheduledTakesTheTrainingBackToItsDatesWithItsNotesAndMakesNobodyWait` e l'aiuto
+     `ReportedWithNotesAsync` datavano la seconda sessione a mano nel passato (`-30` e `-10` minuti), che ora si rifiuta. La datano un'ora
+     avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta `scheduled_start_utc` a dieci minuti fa come fa
+     l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
+  6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
+     pure (`daysAhead(4)`).
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
@@ -2490,10 +2514,19 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
   1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
      (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
-  2. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre
-     il design §4.2 dice «la scheda (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. I precedenti ci sono (la revisione
-     dei tour, la richiesta del training), ma lo scostamento è stato classificato (a)/(b) senza nota né domanda: o si accetta nel modulo,
-     o una fase del nucleo estende `SchemaForm`.
+  2. Un punto aspettava Carmine: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre il design §4.2 dice «la scheda
+     (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. La risposta è nella voce qui sotto.
+- **La risposta di Carmine su #150** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a9b`):
+  1. **La scheda disegnata nel modulo è accettata**: **scostamento dal design §4.2**, con il link qui. `SheetRow` resta com'è —
+     `RadioGroupRoot` e `Textarea` di Atmosphere, come `flightops/screens/review.tsx` —, e **nessuna fase del nucleo estende `SchemaForm`**
+     per la scheda. Il report nel suo insieme resta del form generato.
+  2. **Il giro sul banco non data più a ieri** (la risposta di Carmine su #149, sotto A9a: nessuno data un training nel passato): la
+     spec `training-the-report.spec.ts` data la sessione a mano **dieci secondi avanti** e aspetta che il server la dica da registrare
+     (`actions.canRecordOutcome`), sia la prima volta sia dopo la rischedula (`startedInAMoment`, al posto di `yesterdayAt`). Alla fine,
+     un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
+     non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
+     ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
@@ -2717,6 +2750,12 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
 
   I nit restano scritti lì: la corsa di due ban nello stesso istante (dichiarata), la ricerca per VID senza un test, la copia di
   `Refusals` che A10c toglie.
+- **Dopo le risposte di Carmine su #149 e #150** (29 settembre 2026, sul branch temporaneo `fix3/a10a`, con A9a e A9b nuove unite):
+  ⚠️ **un test di A10a toccato, e perché**: l'aiuto `TrainingTraineeTests.ReportedWithNotesAsync` datava la seconda sessione a mano dieci
+  minuti fa, che ora si rifiuta ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158): nessuno
+  data un training nel passato). La data un'ora avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta
+  `scheduled_start_utc` a dieci minuti fa come fa l'installazione, come in A9a; la versione si rilegge dalla pagina. Le asserzioni non
+  cambiano. Le spec del banco di A10a non datano né chiudono niente.
 
 **Com'è andata (A10b)** (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153, in coda dopo #151):
 
@@ -2962,7 +3001,8 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   4. **Il rating di un esame è uno di quelli che la divisione allena** (il vocabolario del nucleo, `HasPracticalTraining`), come per le
      voci della scheda: l'esame alla fine di un percorso del modulo. ⚠️ **Gli esami di PATS arrivano al rating 8** (§P: SEC, ATP): se il TD
      deve mettere in calendario anche quelli, è una domanda, perché il vocabolario del nucleo non dice quali rating hanno un esame e il
-     modulo non può scriverlo (estensione del nucleo, perimetro IVAO).
+     modulo non può scriverlo (estensione del nucleo, perimetro IVAO). ⚠️ *Superato* dalla risposta di Carmine su #178: ogni rating del
+     percorso, qui sotto nell'ultima voce.
   5. **Chi esamina è chi tiene `Training.ManageExams` sul dipartimento base**, come lo calcola un login (`IPermissionHolders`): TC, TAC, i
      TA e la direzione, e anche il web master e il superadmin, che tengono tutto per il nucleo. Nessuna regola di livelli scritta nel
      modulo: la dice `positionGrants`.
@@ -3047,6 +3087,32 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   3. Tre cose per Carmine, niente da cambiare se non lo chiede lui: un esame vecchio il cui TA ha perso la posizione risponde
      `examinerNotExaminer`; web master e superadmin compaiono fra gli esaminatori offerti (scostamento 5); un TC o TAC candidato di un esame
      può modificarlo (il design §3.1 non nega `ManageExams` all'interessato).
+- **La risposta di Carmine su #178** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a10c`, con la coda
+  sotto nuova unita): **gli esami prendono ogni rating da 5 a 8, l'8 compreso**, non solo quelli con un training pratico; resta nel modulo.
+  **Lo scostamento 4 non vale più**, e al suo posto:
+  1. **La regola** (`ExamWriteDtoValidator`, `Examined`): il rating dell'esame è **uno che il vocabolario del nucleo conosce sul suo
+     percorso**, allenato o no; se no, `training:errors.examRatingUnknown` sul campo (in inglese e in italiano), al posto di
+     `ratingNotTrained`, che resta degli altri form. **La postazione** la chiede solo un rating che ha un tipo di postazione (ADC, APC, ACC
+     su IVAO); per ogni altro è `examPositionNotAsked`, le cui parole ora dicono «di questo rating» e non «di questo percorso». Un esame SEC
+     o ATP va in calendario senza postazione, con il titolo del solo rating.
+  2. **Il form**: le scelte (`/api/training/exam-choices`) portano anche **`ratings`**, ogni rating dei due percorsi com'è nel vocabolario
+     (`TrainingRatingDto`, la stessa forma di `/api/training/ratings`), e `screens/exams.tsx` prende da lì i rating al posto di
+     `ratingsQuery`; `/api/training/ratings` resta dei rating allenati, per la scheda, le impostazioni e la richiesta. Gli aiuti del rating e
+     della postazione dicono la regola nuova. `schema.d.ts` rigenerato.
+  3. ⚠️ **Un'interpretazione, detta al revisore**: la risposta dice «da 5 a 8» e «ogni rating del vocabolario per il suo percorso». Il
+     vocabolario non dice quali rating hanno un esame, e il modulo non scrive numeri di rating (`TrainingArchitectureTests` lo ferma),
+     quindi la regola prende **ogni** rating del percorso — su IVAO dal 2 al 10 — e il TD sceglie fra 5 e 8. Se Carmine vuole che il form
+     offra e il server accetti solo da 5 a 8, è una parola del vocabolario del nucleo (quali rating hanno un esame), in una fase del nucleo
+     con la sua nota.
+  4. **I test**: il nuovo `TrainingExamTests.AnExamTakesAnyRatingOfItsLadderTheEighthToo` programma **un esame di rating 8 per ogni
+     percorso** (SEC e ATP: senza postazione, nel calendario con il titolo del rating; con una postazione, `examPositionNotAsked`) e uno del
+     primo rating. **Cade sulla regola vecchia**: su una copia di `TrainingExams.cs` con `HasPracticalTraining` di nuovo nella regola,
+     l'esame SEC è rifiutato (400 su `rating`) e il test cade lì; il file poi rimesso e ricompilato. ⚠️ **Due test di A10c toccati, e
+     perché**: `AnExamIsRefusedFieldByField` rifiutava il primo rating del percorso con `ratingNotTrained`, che ora si accetta: rifiuta un
+     rating che il vocabolario non conosce (`Unknown`, uno oltre il più alto) con `examRatingUnknown`; `TheFormOffersAnAdvisorThemselves…`
+     dice anche i `ratings` delle scelte, ogni rating del vocabolario. Nello smoke `training-exams.spec.ts` le scelte finte portano i
+     `ratings` con l'ottavo, e il form lo offre. L'aiuto `Untrained` è diventato `Unknown`.
 
 [c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
