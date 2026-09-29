@@ -2526,6 +2526,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingUpcomingSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingPublicSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5928,6 +5960,33 @@ export interface components {
             sort: number;
             /** Format: int32 */
             size: number;
+        };
+        /**
+         * @description A session as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when —
+         *     in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only, who: the trainee and the trainer, by
+         *     VID and by the name the hub has. To a visitor `Trainee` and `Trainer` are none, whatever the row holds.
+         */
+        PublicSessionDto: {
+            /**
+             * Format: int64
+             * @description The training, whose page is `/training/sessions/{id}`: the address of its entry of the calendar.
+             */
+            id: number;
+            /** @description The ladder. */
+            kind: components["schemas"]["RatingKind"];
+            /** @description The rating trained for, as the core's vocabulary names it. */
+            ratingShortName: null | string;
+            /** @description The position, on a ladder trained on positions; none for a pilot's training. */
+            position: null | string;
+            /**
+             * Format: date-time
+             * @description When the session starts.
+             */
+            startsAtUtc: string;
+            /** @description Over: its day is over in the division's time zone (§1.2), or its report is published. The report itself is never public. */
+            held: boolean;
+            trainee: null | components["schemas"]["TrainingMemberDto"];
+            trainer: null | components["schemas"]["TrainingMemberDto"];
         };
         /** @description A subtour of a container, as its parent's page lists it (note 2026-09-21-la-forma-dei-tour). */
         PublicSubtourDto: {
@@ -15308,6 +15367,55 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingUpcomingSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSessionDto"][];
+                };
+            };
+        };
+    };
+    TrainingPublicSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSessionDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

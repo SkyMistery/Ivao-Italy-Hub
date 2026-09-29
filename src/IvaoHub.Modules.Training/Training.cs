@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -275,6 +276,16 @@ public sealed class Training
     public static string SessionPath(long id) => string.Create(CultureInfo.InvariantCulture, $"/training/sessions/{id}");
 
     /// <summary>
+    /// The trainings whose session is public (§5.1; note <c>il-training-in-pubblico</c>): dated, or completed with the session its
+    /// report is about. One rule, read by the calendar (<see cref="Project"/>) and by the public pages and the block of the sessions
+    /// (A10b) — so a page never shows a session the calendar does not, nor the other way round. A query, so a database asks it too.
+    /// </summary>
+    public static readonly Expression<Func<Training, bool>> SessionIsPublic = training =>
+        (training.State == TrainingState.Scheduled || training.State == TrainingState.Completed) && training.ScheduledStartUtc != null;
+
+    private static readonly Func<Training, bool> SessionIsPublicHere = SessionIsPublic.Compile();
+
+    /// <summary>
     /// The session in the calendar (§5.1; note <c>il-training-in-pubblico</c>): one public entry of the kind <see cref="CalendarKind"/>
     /// while the training is dated, at its start, titled with its rating and its position — never a name nor a VID —, pointing at the
     /// page of the session; and it stays once the report is published, for the session held (A9). Nothing otherwise: a session
@@ -285,7 +296,7 @@ public sealed class Training
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (State is not (TrainingState.Scheduled or TrainingState.Completed) || ScheduledStartUtc is not { } start)
+        if (!SessionIsPublicHere(this) || ScheduledStartUtc is not { } start)
         {
             return null;
         }

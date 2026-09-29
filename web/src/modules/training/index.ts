@@ -1,5 +1,6 @@
 import type { ModuleManifest } from '../../shared/modules';
 
+import { approvalQueueBlock, myTrainingBlock, trainerQueueBlock, upcomingSessionsBlock } from './blocks';
 import { TRAINING_MANAGE_SETTINGS, TRAINING_MANAGE_SHEETS, TRAINING_VIEW } from './permissions';
 import {
   banFormSearchSchema,
@@ -11,6 +12,7 @@ import {
 } from './schemas';
 import { BanForm, BansPage } from './screens/bans';
 import { MinePage } from './screens/mine';
+import { PublicSessionPage, TrainingPublicPage } from './screens/public';
 import { RequestPage } from './screens/request';
 import { TrainingSettingsPage } from './screens/settings';
 import { SheetItemForm, SheetItemsPage } from './screens/sheets';
@@ -25,12 +27,26 @@ import { TraineeLookupPage, TraineePathPage } from './screens/trainees';
  * request is accepted or refused and its trainer assigned; A8 the dates — proposed by the trainer with what they meet,
  * chosen by the trainee on the page of their training, or set by hand —, the session, and the closing; A9 what the session
  * came to — rescheduled, not attended, or reported with the sheet —, on the same two pages of a training; A10a a trainee's
- * path as the staff reads it, and the bans.
+ * path as the staff reads it, and the bans; A10b the public side — the sessions still to be held and the page of one — and the
+ * four blocks of the pages and the dashboards.
  */
 export const trainingManifest: ModuleManifest = {
   key: 'training',
-  blocks: [],
+  blocks: [upcomingSessionsBlock, myTrainingBlock, trainerQueueBlock, approvalQueueBlock],
   routes: [
+    // The public side (A10b): the sessions still to be held with «Request training», and one session by its address — the one
+    // every entry of the calendar points at. Under `_public`, with the header and the footer of the site; the people in a session
+    // only for a signed in reader, as the server answers.
+    {
+      area: 'public',
+      path: '/training',
+      component: TrainingPublicPage,
+    },
+    {
+      area: 'public',
+      path: '/training/sessions/$id',
+      component: PublicSessionPage,
+    },
     // The trainee's pages (A6, A8): the request, their trainings and the page of one, only signed in — the login brings them
     // back here. Addresses of their own under the reserved segment, and none that takes every `/training/…`: an address below
     // it that the module does not answer is still the site's — a page that moved, or «not found».

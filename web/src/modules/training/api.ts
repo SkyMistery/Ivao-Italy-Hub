@@ -32,7 +32,8 @@ import {
  * cancellation (A6), the page of one training and the choice of its date (A8) —, and the staff's side — the list of the
  * trainings, the page of one, accepting, refusing and assigning its trainer (A7), what a date meets, the dates proposed and
  * one taken back, the date set by hand, and the closing (A8); what the session came to — rescheduled, not attended, or
- * reported with the sheet (A9); a trainee's path, and the bans given and lifted (A10a).
+ * reported with the sheet (A9); a trainee's path, and the bans given and lifted (A10a); and the site's — the sessions still to
+ * be held, and one session by the address of its entry of the calendar (A10b).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -68,6 +69,7 @@ export type TrainingEvaluationWriteDto = components['schemas']['TrainingEvaluati
 export type TrainingReportDto = components['schemas']['TrainingReportDto'];
 export type TraineePathDto = components['schemas']['TraineePathDto'];
 export type TraineeBanDto = components['schemas']['TraineeBanDto'];
+export type PublicSessionDto = components['schemas']['PublicSessionDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -590,6 +592,35 @@ export function useLiftBan() {
         queryClient.invalidateQueries({ queryKey: bansKey }),
         queryClient.invalidateQueries({ queryKey: pathKey }),
       ]);
+    },
+  });
+}
+
+// ---- the site (A10b) ----------------------------------------------------------------------------------------------------
+
+const sessionsKey = ['training', 'sessions'] as const;
+
+/**
+ * The sessions still to be held, the soonest first (design M3 §4.1): what `/training` shows. Anonymous; the trainee and the trainer
+ * are in it only for a signed in reader (note il-training-in-pubblico), which is the server's answer, not the page's choice.
+ */
+export function upcomingSessionsQuery() {
+  return queryOptions({
+    queryKey: [...sessionsKey, 'upcoming'] as const,
+    queryFn: async (): Promise<PublicSessionDto[]> => unwrap(await api.GET('/api/training/sessions')),
+  });
+}
+
+/**
+ * One session, by its training (§4.1): the page every entry of the calendar points at. `null` when the training has no session to
+ * show — not dated, or closed without one held.
+ */
+export function publicSessionQuery(id: number) {
+  return queryOptions({
+    queryKey: [...sessionsKey, 'one', id] as const,
+    queryFn: async (): Promise<PublicSessionDto | null> => {
+      const result = await api.GET('/api/training/sessions/{id}', { params: { path: { id } } });
+      return result.response.status === 404 ? null : unwrap(result);
     },
   });
 }

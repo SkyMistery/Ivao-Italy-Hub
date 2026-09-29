@@ -17,6 +17,55 @@
   "unknown": "non disponibile",
   "theoryExam": "Il sito dell'esame teorico",
   "mockExam": "Questo sarà un mock exam, come concordato con il trainer.",
+  "public": {
+    "title": "Training",
+    "lead": "Le sessioni di training della divisione, ATC e pilota: postazione, rating, data e ora. Per chiedere un training serve l'accesso.",
+    "upcoming": "I prossimi training",
+    "none": "Nessun training in programma.",
+    "people": "Trainee: {{trainee}} · Trainer: {{trainer}}",
+    "signIn": "Accedi per vedere chi fa ogni training.",
+    "back": "Tutti i training",
+    "session": {
+      "title": "Training {{title}}",
+      "position": "Postazione",
+      "rating": "Rating",
+      "when": "Data e ora",
+      "trainee": "Trainee",
+      "trainer": "Trainer",
+      "signIn": "Accedi per vedere il trainee e il trainer."
+    }
+  },
+  "blocks": {
+    "signIn": "Accedi per vedere i tuoi training.",
+    "upcomingSessions": {
+      "label": "Prossimi training",
+      "fields": {
+        "limit": "Quanti al massimo (0: tutti)"
+      }
+    },
+    "myTraining": {
+      "label": "Il mio training",
+      "datesToCome": "Il trainer proporrà le date della sessione.",
+      "lastReport": "Ultimo report: {{date}}."
+    },
+    "trainerQueue": {
+      "label": "I miei training da muovere",
+      "waiting": "In attesa della scelta del trainee",
+      "waitingDays_one": "senza scelta da {{count}} giorno",
+      "waitingDays_other": "senza scelta da {{count}} giorni",
+      "toPropose": "Date da proporre",
+      "toReport": "Report da scrivere",
+      "empty": "Nessun training da muovere, per ora."
+    },
+    "approvalQueue": {
+      "label": "Richieste da approvare e da assegnare",
+      "toApprove_one": "{{count}} richiesta da approvare",
+      "toApprove_other": "{{count}} richieste da approvare",
+      "toAssign_one": "{{count}} training da assegnare",
+      "toAssign_other": "{{count}} training da assegnare",
+      "empty": "Nessuna richiesta aspetta te."
+    }
+  },
   "states": {
     "Requested": "In attesa di accettazione",
     "Accepted": "Accettata, in attesa del trainer",

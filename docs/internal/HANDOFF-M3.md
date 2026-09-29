@@ -11,17 +11,18 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10a** (il percorso di un trainee e i ban), sul branch `m3/a10a-path-and-bans`,
-**PR #151** verso `main`, **in cima alla coda**: #150 (A9b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
-**Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b
-(#148), A9a (#149), A9b (#150) e la fase del nucleo A11a (#159). **In coda sopra A10a**, in bozza, ognuna dopo quella sotto: A10b (#153),
-A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). La **seconda risposta di Carmine su #135** (il trainer sulla regola
-delle righe affidate) la porta **A7b** (#181). **Carmine ha risposto** alle revisioni di #149 e di #150 (A9a e A9b qui sotto, le ultime
-voci): una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato — un test di A10a
-lo faceva, ora non più (A10a qui sotto) —, la scheda disegnata nel modulo è accettata. La **sessione master** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
-suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
-senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10b** (i quattro blocchi Data e le pagine pubbliche), sul branch
+`m3/a10b-blocks-and-public-pages`, **PR #153** verso `main`, **in cima alla coda**: #151 (A10a) è unita il 29 settembre, `main` è nel
+branch, e la PR è pronta a CI verde. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144),
+A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), la fase del nucleo A11a (#159) e **#152** del
+maintainer (`Refusals` nel nucleo: la copia del training la toglie A10c). **In coda sopra A10b**, in bozza, ognuna dopo quella sotto: A10c
+(#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** alle revisioni di #149 e di #150 (A9a e A9b qui
+sotto, le ultime voci): una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la
+scheda disegnata nel modulo è accettata; i test e le spec di A10b non datano nel passato né chiudono una sessione cominciata, e non
+cambiano. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla
+volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va
+rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace
+(`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -92,6 +93,74 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A10b (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153)
+
+- **Che cosa c'è** (codice del modulo, nessuna migrazione, nessuna domanda a Carmine; del nucleo solo **i due conteggi dei blocchi**, 38 → 42 in
+  `uiKit.test.ts` e 13 → 17 in `DataBlockEndToEndTests`, come Carmine ha deciso sulla #125, con la nota breve
+  `decisions/2026-09-27-i-conteggi-dei-blocchi-del-training.md`):
+  - **Le sessioni del sito** (`Public/PublicSessions.cs`): `GET /api/training/sessions` (le sessioni ancora da tenere, dal giorno di oggi nel
+    fuso della divisione, al massimo 50) e `GET /api/training/sessions/{id}` (la pagina a cui porta ogni voce del calendario; 404 per un
+    training senza sessione pubblica), anonimi; trainee e trainer, per VID e nome, **solo a chi ha fatto il login**. Che cosa è pubblico è una
+    regola sola, `Training.SessionIsPublic`, che legge anche la proiezione nel calendario.
+  - **I quattro blocchi Data**, tutti `AlwaysLive` (`Blocks/`, le metà in `web/src/modules/training/blocks/`): `training.upcomingSessions`
+    (la lista di `/training`, proprietà `limit`), `training.myTraining` (la risposta di `GET /api/training/mine`: per percorso il training
+    aperto e che cosa aspetta, che cosa si può chiedere o perché no, «pronto per l'esame», l'ultimo report), `training.trainerQueue` (dei
+    training di cui il lettore è il trainer: in evidenza le scelte in ritardo dopo `responseReminderDays`, le date da proporre, i report da
+    scrivere — `Staff/TrainerQueue.cs`), `training.approvalQueue` (da approvare e da assegnare, secondo l'unico handler, mai sulla propria
+    riga: quante e le 10 più vecchie). A un visitatore i tre personali rispondono soltanto `signedIn: false`. **Non sono in nessuna dashboard
+    del seme**: ce li mette chi compone `/me` e `/staff`, come `myTours`.
+  - **Le pagine** (`screens/public.tsx`, `screens/site.ts`): **`/training`** («Richiedi training», «I miei training» con il login, i prossimi
+    training) e **`/training/sessions/$id`** (postazione, rating, data e ora; con il login chi). `AskOrRefusal` e `ReadyForExamLine` (in
+    `screens/parts.tsx`) e `lastReported` (in `screens/trainee.ts`) sono i pezzi che `/training/mine` e il blocco del trainee hanno in comune.
+  - **I test**: `TrainingBlocksRulesTests` (unità), `TrainingBlocksTests` (integrazione, VID 790060–790067), `blocks/reading.test.ts` e
+    `screens/site.test.ts` (Vitest), `web/e2e/training-public.spec.ts` (smoke), `web/e2e/full/training-upcoming.spec.ts` (il «fatta quando»
+    sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10c** (gli esami, **può partire**: #135 è unita il 27 settembre alle 20:24 UTC): gli esami entrano in `PublicSessions` (la lista, il
+    blocco `training.upcomingSessions` e `/training`) senza VID né nomi per i visitatori; la regola pubblica di un esame si scrive una volta e la
+    leggono la proiezione e le pagine, come `Training.SessionIsPublic`; la voce `exam` del calendario ha bisogno di un indirizzo (la pagina di un
+    esame, o `/training`): da decidere lì. I due conteggi non si alzano: nessun blocco nuovo. **I tre punti del revisore sulla #146** per la riga
+    di un esame sono in `08`, sotto A10c: `[PermissionArea("Training")]` su `Exam`, con un test della spina dorsale in cui TC e TAC cambiano
+    l'esame di un altro dall'endpoint; DELETE, che lo tolgono HQ, TC, TAC e il TA a cui è assegnato, nessun altro (risposta 4 di Carmine sulla
+    #131), detto e provato; `DeniedToStakeholder` se l'esame nomina il suo candidato. ⚠️ **A10c toglie anche
+    `src/IvaoHub.Modules.Training/Refusals.cs`** e usa `IvaoHub.Core.Data.Crud.Refusals` con `CrudProblems.Validation(Refusals, …)`: lo chiede
+    la nota di #152 (`2026-09-27-i-rifiuti-di-un-form-nel-nucleo`, unita il 27 settembre alle 15:28, [commento di
+    Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298)) alla prima fase del collaboratore aperta dopo
+    il merge — A10b era già aperta, e A11a è del nucleo — e va scritto nel suo «Com'è andata» con quel link.
+  - **A7b** (il trainer sulla regola delle righe affidate): `training.trainerQueue` elenca già solo i training di cui il lettore è il trainer,
+    cioè le righe che A7b gli affida; e `TrainingBlocksTests` dà `Conduct` al trainer su tutto il dipartimento, non con il grant sulla riga che
+    A7b toglie: resta vero anche con la regola nuova.
+  - **A11a** (i capi FIR nel nucleo, la fase dopo): parte da `main`, fuori dalla coda, con la nota e la domanda a Carmine; oggi l'handler conosce
+    già un filtro per FIR (`FirStaffScope.Own` su una riga `IHasFir`, in `HubAuthorization`), e nel nucleo l'unica riga `IHasFir` è il
+    training: i test della spina dorsale vorranno con ogni probabilità il FIR sulla riga di prova, cioè una migrazione del contesto di prova,
+    lo stesso che A3b migra con `AddSampleAssignee` — per questo, e per l'handler e il guardiano in comune, il suo codice aspettava l'unione di
+    #135, arrivata il 27 settembre.
+  - **A11b** (i capi FIR nel modulo): la coda di `training.approvalQueue` è già la risposta dell'unico handler su ogni riga; quando A11a gli
+    insegna il FIR, il blocco lo segue da solo, e A11b lo prova.
+  - ⚠️ **Il banco dopo il giro di A10b**: `training-upcoming.spec.ts` (il nome viene dopo tutti gli altri giri del training) chiede un training
+    ATC del trainee del banco, lo fa accettare, assegnare e datare fra tre giorni attraverso l'API, e alla fine **lo chiude** (nessuna attesa
+    dopo una chiusura): il percorso ATC resta libero; il pilota resta come dopo A9b (mock exam dopo). Il banco va ricreato prima di ogni corsa.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, acceso dalla sessione di A10b con il codice di A10b e spento il 28
+    settembre, con il database che resta; lo script è `preview-bench.ps1` nel suo scratchpad): **#6** (ATC, LIRF_TWR) è ora **programmato
+    per il 29 settembre alle 18:00 UTC** (scelta la prima delle due date, dalla sua pagina, come trainee); #8 (il mock exam) è eseguito e
+    aspetta il report; le dashboard **`me` e `staff`** hanno i quattro blocchi del training (composte attraverso l'API del contenuto, come
+    farebbe il web team). Il trainer è nel roster.
+  - VID: il prossimo libero è **790068**.
+- **Trovato, detto al revisore**: a mano, il blocco del trainer diceva «i tuoi training aspettano il loro giorno» anche a chi non allena nessun
+  training — corretto in «Nessun training da muovere, per ora.» —; le pagine pubbliche dei moduli non hanno metadati SEO e la sitemap non le
+  conosce (nucleo, come `/tours`); nel pannello del browser lo screenshot della galleria non arriva.
+- **La coda**: la PR è in bozza con `(after #151)` e `Queued after #151.`; #151 è in coda dopo #150, dopo #149, dopo #148, dopo #147, dopo
+  #146, dopo #144. **#143 è stata unita alle 14:34 e il passo della coda di #144 l'ha fatto la sessione di A10b** (la sessione di A6b non c'era
+  più): `main` in `m3/a6b-request-pages` (f5e3cd6), tutte le suite, via la coda da #144, pronta a CI verde; poi il merge verso l'alto fino ad
+  A10b, in ordine (`08`, «Com'è andata (A10b)»). **#152 (`Refusals` nel nucleo) è arrivata dopo**, alle 15:28. **Il 28 settembre**, dopo
+  l'unione di #135 e le correzioni di revisione di A6b, A7 e A8a, `main` (a 4d424f9, con #152, #135 e le PR del maintainer fino a #172) è sceso
+  nella coda come il revisore ha chiesto sulla #144, e in A10b con il merge della testa nuova di A10a (9e82ad1, merge 5e349b4): nessun
+  conflitto, tutte le suite rifatte (i numeri in `08`). `main` è andato avanti ancora (#173, #174): se il revisore li vuole, lo chiede sulla
+  PR. **#151 (A10a) è unita il 29 settembre**, e il passo della coda di A10b l'ha fatto la sessione che la coordina: `main` nel branch con un
+  merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda di A9a, A9b e A10a —, build e **tutti** i
+  test di nuovo, via `(after #151)` dal titolo e `Queued after #151.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono `main` al
+  loro passo.
 
 ### Che cosa ha lasciato A10a (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151)
 

@@ -174,13 +174,21 @@ export function readyForExam(
     'id' | 'kind' | 'rating' | 'state' | 'completedAt' | 'readyForExam'
   >[],
 ): boolean {
-  const last = trainings
-    .filter((training) => training.kind === path.kind && training.state === 'Completed')
+  const last = lastReported(path.kind, trainings);
+
+  return last !== undefined && last.readyForExam && path.next !== null && last.rating === path.next.number;
+}
+
+/** The last training of a ladder whose report is published, the latest report first: the one the trainer's boxes are read on. */
+export function lastReported<T extends Pick<TraineeTrainingDto, 'id' | 'kind' | 'state' | 'completedAt'>>(
+  kind: RatingKind,
+  trainings: readonly T[],
+): T | undefined {
+  return trainings
+    .filter((training) => training.kind === kind && training.state === 'Completed')
     .sort(
       (one, other) => (other.completedAt ?? '').localeCompare(one.completedAt ?? '') || other.id - one.id,
     )[0];
-
-  return last !== undefined && last.readyForExam && path.next !== null && last.rating === path.next.number;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
