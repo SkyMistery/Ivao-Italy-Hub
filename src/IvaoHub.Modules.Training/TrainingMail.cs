@@ -99,7 +99,8 @@ public sealed class TrainingMail(
     /// <summary>
     /// A mail about the session in hand to both its people (§5.2: the date fixed, the reminder): the trainee, pointing at their page
     /// of the training, and the trainer, pointing at the staff's — each in their language, with who trains whom and when. Nothing
-    /// for a training with no date.
+    /// for a training with no date, and nothing to a trainer whose data was erased, who is nobody (A12b): the trainee still reads
+    /// who their trainer was, as «Deleted person», until the staff assign another.
     /// </summary>
     public async Task SessionAsync(string type, Training training, CancellationToken cancellationToken)
     {
@@ -111,26 +112,24 @@ public sealed class TrainingMail(
         }
 
         var names = await people.NamesAsync([training.TraineeVid, training.TrainerVid], cancellationToken);
-        var trainee = TrainingPeople.Label(training.TraineeVid, names);
-        var trainer = training.TrainerVid is { } vid ? TrainingPeople.Label(vid, names) : string.Empty;
 
         await SendAsync(type, training.TraineeVid, training, MinePathOf(training.Id), (data, locale) => Fill(data, locale, "training:mail.training.sessionTrainee"), cancellationToken);
 
-        if (training.TrainerVid is { } trainerVid)
+        if (training.TrainerVid is { } trainerVid && !TrainingPeople.IsErased(trainerVid))
         {
             await SendAsync(type, trainerVid, training, StaffPath(training.Id), (data, locale) => Fill(data, locale, "training:mail.training.sessionTrainer"), cancellationToken);
         }
 
         void Fill(IDictionary<string, string> data, string locale, string next)
         {
-            Name(data, "trainee", training.TraineeVid, trainee);
+            Name(data, locale, "trainee", training.TraineeVid, names);
             if (training.TrainerVid is { } named)
             {
-                Name(data, "trainer", named, trainer);
+                Name(data, locale, "trainer", named, names);
             }
             else
             {
-                data["trainer"] = trainer;
+                data["trainer"] = string.Empty;
             }
 
             data["session"] = Moment(start);
@@ -139,16 +138,18 @@ public sealed class TrainingMail(
     }
 
     /// <summary>
-    /// A person a mail names, the way the core finds a mail about them when their data is erased (note
-    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §7; A12b): the words under <paramref name="key"/> — their name and
-    /// VID, as the sentence says them — and the VID alone under <c>{key}Vid</c>, a name the erasure reads as a person's, as the mails of
-    /// the threads carry their sender's. Without it, a mail to somebody else that names them would keep their name after the erasure.
+    /// A person a mail names, in the recipient's language: their name and VID, the VID alone when the hub has no name, and the core's
+    /// word «Deleted person» for somebody whose data was erased — never the number in their place (A12b; Carmine's answer on #189) —,
+    /// under <paramref name="key"/>; and their VID alone under <c>{key}Vid</c>, a name the erasure reads as a person's (note
+    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §7), as the mails of the threads carry their sender's: without it, a
+    /// mail to somebody else that names them would keep their name after the erasure.
     /// </summary>
-    public static void Name(IDictionary<string, string> data, string key, int vid, string words)
+    public void Name(IDictionary<string, string> data, string locale, string key, int vid, IReadOnlyDictionary<int, string> names)
     {
         ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(names);
 
-        data[key] = words;
+        data[key] = TrainingPeople.IsErased(vid) ? Word(locale, "people.deleted") : TrainingPeople.Label(vid, names);
         data[key + "Vid"] = vid.ToString(CultureInfo.InvariantCulture);
     }
 

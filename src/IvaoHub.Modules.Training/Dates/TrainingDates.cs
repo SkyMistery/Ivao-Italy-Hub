@@ -559,7 +559,6 @@ public sealed class TrainingDates(
     private async Task TellProposedAsync(Training training, IReadOnlyList<TrainingSlot> slots, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([training.TrainerVid], cancellationToken);
-        var trainer = training.TrainerVid is { } vid ? TrainingPeople.Label(vid, names) : string.Empty;
         var dates = string.Join('\n', slots.OrderBy(slot => slot.StartsAtUtc).Select(slot => $"- {TrainingMail.Span(slot.StartsAtUtc, slot.EndsAtUtc)}"));
 
         await mail.SendAsync(
@@ -567,15 +566,15 @@ public sealed class TrainingDates(
             training.TraineeVid,
             training,
             TrainingMail.MinePathOf(training.Id),
-            (data, _) =>
+            (data, locale) =>
             {
                 if (training.TrainerVid is { } named)
                 {
-                    TrainingMail.Name(data, "trainer", named, trainer);
+                    mail.Name(data, locale, "trainer", named, names);
                 }
                 else
                 {
-                    data["trainer"] = trainer;
+                    data["trainer"] = string.Empty;
                 }
 
                 data["dates"] = dates;

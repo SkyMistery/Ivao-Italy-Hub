@@ -422,8 +422,6 @@ public sealed class StaffTrainings(
     private async Task TellAssignedAsync(Training training, int trainerVid, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([training.TraineeVid, trainerVid], cancellationToken);
-        var trainer = TrainingPeople.Label(trainerVid, names);
-        var trainee = TrainingPeople.Label(training.TraineeVid, names);
 
         await mail.SendAsync(
             TrainingNotifications.TrainerAssigned,
@@ -443,8 +441,8 @@ public sealed class StaffTrainings(
 
         void Fill(IDictionary<string, string> data, string locale, string next)
         {
-            TrainingMail.Name(data, "trainer", trainerVid, trainer);
-            TrainingMail.Name(data, "trainee", training.TraineeVid, trainee);
+            mail.Name(data, locale, "trainer", trainerVid, names);
+            mail.Name(data, locale, "trainee", training.TraineeVid, names);
             data["next"] = mail.Word(locale, next);
         }
     }
