@@ -3357,7 +3357,8 @@ e le domande il 27, la nota decisa e il codice il 28**:
 [r159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416
 [a159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723
 
-**Com'è andata (A11b)** (29 settembre 2026, branch `m3/a11b-fir-heads`, PR #182 verso `main`, in bozza in coda dopo #181):
+**Com'è andata (A11b)** (29–30 settembre 2026, branch `m3/a11b-fir-heads`, PR #182 verso `main`, in coda dopo #181 e, con #181 unita, in
+cima alla coda):
 
 - **Il branch e `main`**: il branch è nato da quello di A7b (ae28278, preparato dalla sessione di A7b) e **porta `main`** (efe057a:
   A11a, #159, unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), entrato con un merge (b5b6dee) **prima di scrivere codice**, perché
@@ -3406,6 +3407,15 @@ e le domande il 27, la nota decisa e il codice il 28**:
 
   `main` resta a 2af5133: #148 (A8b), unita alle 17:23 UTC, sale al passo della coda di ogni branch, e un merge con `main` sarebbe pulito
   (`git merge-tree`), quindi la PR resta senza conflitti e con la sua CI.
+- **In conflitto dopo #149, com'è atteso** (29 settembre, 18:22): con A9a unita, la PR è CONFLICTING con `main` sulla sola intestazione di
+  `HANDOFF-M3.md`, come #151, #153, #178 e #181; `main` sale in ogni branch al suo passo, e non si rifà il merge in su. La CI di a24268b,
+  partita prima, è verde.
+- **Il passo della coda dopo #181** (30 settembre): #181 (A7b) è unita il 29 settembre alle 23:04 UTC, e il revisore ha chiesto sulla #182
+  il passo della coda ([il suo commento][q182]). `main` (17941c0) è entrato con un merge (08cfbbb): porta solo documenti — `08` e
+  `HANDOFF-M3.md`, con il passo della coda di A7b e come un'installazione che ha girato A7 pulisce i grant del trainer —, e il codice è
+  quello di a24268b. Un conflitto, l'intestazione di `HANDOFF-M3.md`: quella di A11b in cima, ora in cima alla coda, con le notizie di
+  `main`; i blocchi di `main` sotto quello di A11b. Controllato con uno script: del file di `main` manca solo la sua intestazione. Via
+  `(after #181)` dal titolo e `Queued after #181.` dal corpo; la PR pronta dopo aver letto una volta la CI e i commenti.
 - **Classificata prima di scrivere** (`CLAUDE.md` §5): configurazione (caso a) e il meccanismo di A11a usato com'è (caso b): il team di
   un FIR come soggetto di un grant, `firStaffScope`, l'unico handler e il guardiano con il FIR della riga, la lista generata ristretta al
   FIR. **Il meccanismo basta**: nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna migrazione.
@@ -3516,7 +3526,15 @@ e le domande il 27, la nota decisa e il codice il 28**:
     differenze; le chiavi letterali `training:` 381, nessuna manca; `pnpm e2e` **153/153** al primo giro (le 152 di A7b e il caso di
     A11b), con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `dotnet
     format` sui 9 file C#: pulito; `core-guard`: sulla fase (23 file) nessun file del maintainer né del nucleo; verso `main` (116 file) i
-    due di A10b con la sua nota: PASS.
+    due di A10b con la sua nota: PASS. La CI della PR su a24268b: `build-test` e `core-guard` verdi;
+  - **dopo il passo della coda dopo #181** (08cfbbb: `main` a 17941c0, solo documenti in più, il codice di a24268b), tutto di nuovo:
+    `dotnet build` senza avvisi; unità **869/869**; **integrazione intera senza filtro 413/413** al primo giro; `pnpm lint`, `typecheck`,
+    `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api` senza differenze; le chiavi
+    letterali `training:` 381, nessuna manca; `pnpm e2e` **153/153** al primo giro, con il suo lucchetto; **`pnpm e2e:full`: al primo giro
+    47/48**, sotto il lucchetto di Mailpit (preso alle 01:16, dopo quello di A12b): è caduto `full/tours-rules.spec.ts:81` (dei tour, del
+    maintainer), un errore pubblico di una regola che non compare in 5 secondi — il codice è quello di a24268b, dove lo stesso giro ha dato
+    48/48 tre volte —; **rifatto su un banco ricreato, 48/48**. `dotnet format` sui 9 file C#: pulito; `core-guard` verso `main` (ora 23
+    file, la sola fase): nessun file del maintainer né del nucleo, PASS.
 - **Non verificato**:
   - **il «fatta quando» sul banco**: il banco e2e non ha un capo FIR (i personaggi di `/e2e/signin` e `e2e-server.mjs` sono nucleo);
     aggiungerne uno sarebbe una fase del nucleo a sé, con la sua nota. Lo provano i test d'integrazione, con i grant veri del file;
@@ -3528,6 +3546,7 @@ e le domande il 27, la nota decisa e il codice il 28**:
 [c144-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930
 [q146-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5886918007
 [r182]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467
+[q182]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5900753915
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 
