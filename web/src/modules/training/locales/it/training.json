@@ -569,6 +569,13 @@
       "description": "L'esame esce dal calendario dell'hub. L'esame vero resta com'è sulla rete."
     }
   },
+  "erasure": {
+    "closed": "Training finiti, tenuti nel registro senza il trainee e senza i suoi testi",
+    "open": "Training ancora aperti: chiesti, accettati, assegnati o datati",
+    "exams": "Esami nel calendario in cui è il candidato",
+    "bansInForce": "Ban dal training ancora in vigore, tenuti con il VID finché non finiscono",
+    "bansOver": "Ban dal training finiti o tolti"
+  },
   "sheets": {
     "title": "Scheda di valutazione",
     "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",

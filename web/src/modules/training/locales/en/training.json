@@ -569,6 +569,13 @@
       "description": "The exam leaves the calendar of the hub. The exam itself stays as it is on the network."
     }
   },
+  "erasure": {
+    "closed": "Trainings that are over, kept in the register without the trainee and without their texts",
+    "open": "Trainings still open: asked for, accepted, assigned or dated",
+    "exams": "Exams in the calendar where they are the candidate",
+    "bansInForce": "Training bans still in force, kept with the VID until they are over",
+    "bansOver": "Training bans over or lifted"
+  },
   "sheets": {
     "title": "Evaluation sheet",
     "description": "The items a trainer marks after a session, per path and rating: the practical ones with a grade from 1 to 5, the theory ones as done, not done or to improve. The trainee reads them in their report.",
