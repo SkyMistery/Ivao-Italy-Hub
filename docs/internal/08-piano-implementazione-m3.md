@@ -2202,6 +2202,13 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
   6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
      pure (`daysAhead(4)`).
+- **Il passo della coda dopo #148** (29 settembre 2026: #148 unita alle 15:23 UTC; l'ha fatto la sessione che coordina la coda): `main` nel
+  branch con un merge (9f812b9) — nessuna differenza di contenuto, `main` aveva solo il merge di #148, già nel branch —, via `(after #148)`
+  dal titolo e `Queued after #148.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (7b3f29a): `dotnet build` senza
+  avvisi; unità **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; Vitest **548/548** in 70 file; smoke **123/124** al primo giro — è caduta `tours-map.spec.ts:160`, la
+  mappa di un tour (M2), il flake noto sotto carico, con tre giri di suite insieme —, e la spec da sola con `--repeat-each 5` **10/10**;
+  **`e2e:full` 44/44** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
@@ -2357,6 +2364,12 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
      non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
      ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
+- **Il passo della coda dopo #149** (29 settembre 2026: #149 unita alle 16:22 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (01016d9) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A9b riscritta —, via `(after #149)` dal titolo e `Queued after #149.` dal corpo,
+  la PR pronta a CI verde. **Verificato di nuovo, in locale** (e232236), tutto al primo giro: `dotnet build` senza avvisi; unità
+  **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; Vitest **561/561** in 71 file; smoke **131/131**; **`e2e:full` 45/45** su un banco nuovo (127.0.0.1:5107).
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
@@ -2586,6 +2599,14 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   data un training nel passato). La data un'ora avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta
   `scheduled_start_utc` a dieci minuti fa come fa l'installazione, come in A9a; la versione si rilegge dalla pagina. Le asserzioni non
   cambiano. Le spec del banco di A10a non datano né chiudono niente.
+- **Il passo della coda dopo #150** (29 settembre 2026: #150 unita alle 17:23 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (b03691e) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9b; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10a riscritta —, via `(after #150)` dal titolo e `Queued after #150.` dal corpo,
+  la PR pronta a CI verde. I due punti della revisione (l'handoff sulla seconda risposta di #135 con il «Trovato» 1 del corpo, e l'elenco
+  per A12b dei posti che non trattano ancora una persona cancellata) erano già corretti, e ci sono. **Verificato di nuovo, in locale**
+  (d28cc98), tutto al primo giro: `dotnet build` senza avvisi; unità **860/860**; integrazione intera **393/393**; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`, `i18n:check` verdi; Vitest **567/567** in 72 file; smoke
+  **136/136**; **`e2e:full` 46/46** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A10b)** (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153, in coda dopo #151):
 
@@ -2763,6 +2784,13 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
      del nucleo, `?? DefaultLimit` con `DefaultLimit = 10`; lo zero resta «tutte, fino a 50», e lo schema zod ha `.max(50)`.
   2. **Scritto, non cambiato**: `TrainingBlocksTests` cerca la sessione a +3 h con `Assert.Single` in una lista di 50 al massimo, sul
      database condiviso. Diventerebbe instabile solo se altre classi lasciassero più di 49 training datati più vicini.
+- **Il passo della coda dopo #151** (29 settembre 2026: #151 unita alle 19:00 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (90f3cab) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda di A9a, A9b e
+  A10a; un conflitto, l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10b riscritta —, via `(after #151)` dal titolo e
+  `Queued after #151.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (3679678), tutto al primo giro: `dotnet build`
+  senza avvisi; unità **865/865**; integrazione intera **398/398**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; Vitest **573/573** in 74 file; smoke **144/144**; **`e2e:full` 47/47** su un banco nuovo
+  (127.0.0.1:5104).
 
 **Com'è andata (A10c)** (28 settembre 2026, branch `m3/a10c-exams`, PR #178, in coda dopo #153):
 
