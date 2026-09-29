@@ -1487,6 +1487,9 @@
       "vid": "VID"
     }
   },
+  "people": {
+    "deleted": "Deleted person"
+  },
   "modules": {
     "title": "Modules",
     "description": "What this build was compiled with, and whether each one is accepting changes.",

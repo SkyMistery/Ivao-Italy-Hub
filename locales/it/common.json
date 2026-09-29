@@ -1487,6 +1487,9 @@
       "vid": "VID"
     }
   },
+  "people": {
+    "deleted": "Persona cancellata"
+  },
   "modules": {
     "title": "Moduli",
     "description": "Con che cosa è stata compilata questa installazione, e se ciascuno accetta modifiche.",
