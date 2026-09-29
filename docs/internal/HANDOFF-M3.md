@@ -144,9 +144,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: il prossimo libero è **790060**.
 - **Trovato, detto al revisore**: la risposta 2 sulla #135 (sopra: oggi la porta A7b); `ConfirmDialog` non ha una dimensione per il suo
   pulsante (nucleo).
-- **La coda**: la PR è in bozza con `(after #150)` e `Queued after #150.`; #150 è in coda dopo #149 e #148, che è in cima (#147 è unita il 29
-  settembre). Quando #150 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di
-  nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A10a non c'è più).
+- **La coda**: #150 (A9b) è unita il 29 settembre, e il passo della coda di A10a l'ha fatto la sessione che la coordina (quella di A10a
+  non c'è più): `main` nel branch con un merge — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9b —, build e
+  **tutti** i test di nuovo, via `(after #150)` dal titolo e `Queued after #150.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono
+  `main` al loro passo.
 - **La revisione di #151** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/151#issuecomment-5891399650)):
   approvabile. Corretti questo paragrafo (la risposta 2 sulla #135, sopra), l'intestazione e il «Trovato» 1 del corpo; l'elenco per A12b è
   sopra. Nit: due ban nello stesso istante sullo stesso membro possono passare tutti e due `banAlreadyHolds` (letto prima di salvare,
