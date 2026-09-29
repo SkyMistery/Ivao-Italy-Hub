@@ -13,17 +13,19 @@
 
 **Ultimo aggiornamento:** 29 settembre 2026 — **fase A11b** (i capi FIR nel modulo), sul branch `m3/a11b-fir-heads`, **PR #182** verso
 `main`, in bozza **in coda dopo #181** (A7b, in bozza in coda dopo #178, A10c, in coda dopo #153, A10b, in coda dopo #151, A10a, in coda dopo
-#150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146, A7, in coda dopo #144, A6b). Il branch è
-nato da quello di A7b (ae28278) e **porta `main`** (efe057a: **A11a, #159**, unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), entrato con un
-merge prima di scrivere codice perché la fase usa il meccanismo di A11a — l'eccezione alla regola della coda, approvata dalla sessione che
-coordina il 29 settembre —: **finché la coda sotto non prende `main` ai suoi passi, l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads`
-mostra anche le modifiche di `main`**, e la PR non è in conflitto con `main`, quindi `build-test` gira. La **sessione master** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con `main`, lo
-chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A3b (#135), A6c (#145) e A11a (#159) sono
-unite**, e con loro **#152** del maintainer (`Refusals` nel nucleo) e **#177** (la tastiera del suggerimento: A6b aggiunge un Invio alla sua
-spec, e questo branch lo porta già, 8807e8a). **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178). **A11b**
-(questa) dà ai capi FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del
-loro FIR. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+#150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146, A7, pronta: **#144, A6b, è unita** il
+29 settembre alle 10:52 UTC). Il branch è nato da quello di A7b (ae28278) e **ha preso `main` prima della coda** (efe057a: **A11a, #159**,
+unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), con un merge prima di scrivere codice, perché la fase usa il meccanismo di A11a —
+l'eccezione alla regola della coda, approvata dalla sessione che coordina —. **Poi la coda l'ha raggiunto**: dopo #144 la sessione che
+coordina ha portato `main` (47e2f70, con #144 e #183) su per la coda fino ad A7b (e7b530a), che è entrata qui con un merge (1baf8fa): **ora
+l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra solo la fase**, e la PR, con `main` dentro, fa girare `build-test`. La
+**sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del
+collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140), A6a
+(#143), A3b (#135), A6c (#145), A11a (#159) e A6b (#144) sono unite**, e con loro **#152** del maintainer (`Refusals` nel nucleo), **#177** (la
+tastiera del suggerimento: lo smoke della richiesta ha un Invio in più, c3db117 di A6b e 8807e8a qui, lo stesso pezzo) e **#183** (il piano
+1.24 e il design di M4). **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178). **A11b** (questa) dà ai capi
+FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del loro FIR. In C# una
+chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
 cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
@@ -130,9 +132,14 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     il FIR (il seme lo salta, la schermata lo rifiuta).
   - ⚠️ **Il banco e2e non ha un capo FIR** (i personaggi sono nucleo): il «fatta quando» lo provano i test d'integrazione. Un CH sul banco
     sarebbe una fase del nucleo a sé.
-  - ⚠️ **Questo branch porta `main`** (efe057a: A11a, #173–#177 e #179) prima della coda: finché la coda sotto non prende `main` ai suoi
-    passi, `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra anche `main`. Per lo stesso motivo porta **l'Invio in più di A6b**
-    (c3db117, dopo #177) come commit suo, 8807e8a, con lo stesso pezzo: il merge che lo porta su da A7b sarà pulito.
+  - **Questo branch ha preso `main` prima della coda** (efe057a: A11a, #173–#177 e #179), e con esso **l'Invio in più di A6b** come
+    commit suo (8807e8a, lo stesso pezzo di c3db117). Poi la coda l'ha raggiunto: con A7b (e7b530a, merge 1baf8fa) è entrato `main` a
+    47e2f70, l'Invio di A6b si è unito senza conflitti, e `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra di nuovo solo la fase.
+    **Una fase che parte da qui** (A12a) ha già `main` a 47e2f70.
+  - ⚠️ **Un solo `e2e:full` alla volta** sulla macchina (la sessione che coordina, 29 settembre): Mailpit è condiviso, e due giri insieme
+    contano le mail l'uno dell'altro. Si prende `$env:TEMP\ivaohub-e2efull-mailpit.lock` come il lucchetto dello smoke.
+  - ⚠️ **`InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark`** (del nucleo, #175) ogni tanto va in
+    deadlock di MariaDB, anche da solo: se cade, si rilancia la classe con `-class` e si scrive.
   - VID: **790074–790078** sono di A11b (dalberone, 29 settembre; erano della correzione di A8a, che non li ha usati). Il range del
     training è tutto assegnato.
 - **La fase dopo**: **A12a** (nucleo: l'helper «persona cancellata» e `ErasureTests` con le colonne del training, con la sua nota nuova),

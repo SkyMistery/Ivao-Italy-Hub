@@ -3169,16 +3169,33 @@ e le domande il 27, la nota decisa e il codice il 28**:
 - **Il branch e `main`**: il branch è nato da quello di A7b (ae28278, preparato dalla sessione di A7b) e **porta `main`** (efe057a:
   A11a, #159, unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), entrato con un merge (b5b6dee) **prima di scrivere codice**, perché
   la fase usa sia le pagine della coda sia il meccanismo di A11a, che sta solo in `main`. È l'eccezione alla regola della coda («`main`
-  entra in ogni branch al suo passo»), approvata dalla sessione che coordina il 29 settembre. **Finché la coda sotto non prende `main` ai
-  suoi passi, l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra anche le modifiche di `main`**; la PR, con `main` dentro,
-  non è in conflitto e fa girare `build-test`. I conflitti del merge, risolti tenendo tutto: `HANDOFF-M3.md` (l'intestazione di A7b in
-  cima e quelle di `main` sotto; i blocchi di A11a e A6c subito sotto «Che cosa ha lasciato A7b»; nessuna riga dei due lati manca,
-  controllato con uno script) e `config/division.example.json` (le due aggiunte a `$comment.positionGrants`, di A7b e di A11a).
+  entra in ogni branch al suo passo»), approvata dalla sessione che coordina il 29 settembre. Finché la coda sotto non ha preso `main`,
+  l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostrava anche le modifiche di `main`; la PR, con `main` dentro, non era in
+  conflitto e ha fatto girare `build-test` (su 522fffa: verde). I conflitti del merge, risolti tenendo tutto: `HANDOFF-M3.md`
+  (l'intestazione di A7b in cima e quelle di `main` sotto; i blocchi di A11a e A6c subito sotto «Che cosa ha lasciato A7b»; nessuna riga
+  dei due lati manca, controllato con uno script) e `config/division.example.json` (le due aggiunte a `$comment.positionGrants`, di A7b e
+  di A11a).
 - **L'Invio in più di A6b** (8807e8a): con `main` c'è #177 (la tastiera del suggerimento), e lo smoke della richiesta di A6b cadeva su un
   caso (`training-request.spec.ts`, «Enter in the position asks the question»): il primo Invio ora sceglie la postazione. È **la stessa
-  modifica di una riga di c3db117 di A6b**, fatta qui perché questo branch porta #177 prima che la coda porti su A6b, come il master l'ha
-  chiesta a #144 ([il suo commento][c144-a11b]) e come l'ha chiesta a questo branch la sessione che coordina. Il pezzo è quello di A6b,
-  quindi il merge che porterà su c3db117 attraverso A7b sarà pulito.
+  modifica di una riga di c3db117 di A6b**, fatta qui perché questo branch portava #177 prima che la coda portasse su A6b, come il master
+  l'ha chiesta a #144 ([il suo commento][c144-a11b]) e come l'ha chiesta a questo branch la sessione che coordina. Il pezzo è quello di
+  A6b: il merge che ha portato su c3db117 attraverso A7b è stato pulito.
+- **Il passo della coda, dopo #144** (29 settembre): #144 (A6b) è unita alle 10:52 UTC, e il master ha chiesto su #146 il passo di A7 e
+  poi di portare il merge su per la coda ([il suo commento][q146-a11b]); l'ha fatto la sessione che coordina, perché le sessioni di A7–A7b
+  non ci sono più: ogni branch da A7 ad A7b ha `main` a 47e2f70 (#144 e #183, il piano 1.24 e il design di M4) e le seconde correzioni di
+  A7 e A8a; su A7b `StaffTrainings.cs` è quello di A7b, identico ad ae28278. **La cima nuova di A7b (e7b530a) è entrata qui con un merge
+  (1baf8fa)**, con due conflitti:
+  - `config/division.example.json`: A7b ha ora la frase di A11a come questo branch; resta l'aggiunta di A11b («The last two grants…»);
+  - `HANDOFF-M3.md` (merge a incroci, due basi): il file di A7b com'è nella coda, con l'intestazione di A11b al posto di quella di A7b e
+    il blocco di A11b in cima a «Lo stato». Le intestazioni vecchie di A11a, A3b e A6a, che `main` ha tolto con #144, restano tolte; i
+    blocchi di A11a e A6c stanno dove li mettono `main` e la coda, dopo quello di A6b. Controllato con uno script: del file di A7b manca
+    solo la sua intestazione; di quello di A11b, solo ciò che `main` o la coda hanno cambiato.
+
+  **Ora l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra solo la fase** (23 file). Due regole nuove della sessione che
+  coordina: **un solo `e2e:full` alla volta** sulla macchina, con il lucchetto `$env:TEMP\ivaohub-e2efull-mailpit.lock` (Mailpit è
+  condiviso: due giri insieme contano le mail l'uno dell'altro); e
+  `InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark` (del nucleo, #175) ogni tanto va in deadlock
+  di MariaDB: se cade, si rilancia la classe e si scrive.
 - **Classificata prima di scrivere** (`CLAUDE.md` §5): configurazione (caso a) e il meccanismo di A11a usato com'è (caso b): il team di
   un FIR come soggetto di un grant, `firStaffScope`, l'unico handler e il guardiano con il FIR della riga, la lista generata ristretta al
   FIR. **Il meccanismo basta**: nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna migrazione.
@@ -3273,7 +3290,15 @@ e le domande il 27, la nota decisa e il codice il 28**:
     4173; `pnpm e2e:full` **48/48** al primo giro su 127.0.0.1:5101 con `ivaohub_e2e_a11b` ricreato — il banco parte con `own` e i due
     grant al team seminati, e nessun giro ne risente —; `dotnet format --verify-no-changes` sui 9 file C# della fase: pulito; le regole di
     `core-guard` in PowerShell: sulla fase (`b5b6dee...HEAD`) nessun file del maintainer e nessuno del nucleo; verso `main`
-    (`origin/main...HEAD`) i due file del nucleo di A10b con la sua nota, che la coda porta già: PASS.
+    (`origin/main...HEAD`) i due file del nucleo di A10b con la sua nota, che la coda porta già: PASS. La CI della PR su 522fffa:
+    `build-test` e `core-guard` verdi;
+  - **dopo il passo della coda** (1baf8fa, con `main` a 47e2f70 e le seconde correzioni di A7 e A8a), tutto di nuovo: `dotnet build` senza
+    avvisi; unità **869/869**; **integrazione intera senza filtro 409/409** al primo giro (il test del marcatore d'inizializzazione non è
+    caduto); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api`
+    senza differenze; `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` 376, nessuna manca; `pnpm e2e` **153/153** al primo
+    giro, con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e con il lucchetto di Mailpit; `dotnet format`
+    sui 9 file C# della fase: pulito; `core-guard`: sulla fase (`origin/m3/a7b-trainer-assignee...HEAD`, 23 file) nessun file del
+    maintainer né del nucleo; verso `main` (131 file) i due di A10b con la sua nota: PASS.
 - **Non verificato**:
   - **il «fatta quando» sul banco**: il banco e2e non ha un capo FIR (i personaggi di `/e2e/signin` e `e2e-server.mjs` sono nucleo);
     aggiungerne uno sarebbe una fase del nucleo a sé, con la sua nota. Lo provano i test d'integrazione, con i grant veri del file;
@@ -3283,6 +3308,7 @@ e le domande il 27, la nota decisa e il codice il 28**:
   - **un capo di due FIR**: nessun test; il calcolo gli dà un permesso per FIR (A11a, i suoi test di unità).
 
 [c144-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930
+[q146-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5886918007
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 
