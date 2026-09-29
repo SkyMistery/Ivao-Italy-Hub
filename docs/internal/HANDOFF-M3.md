@@ -13,14 +13,14 @@
 
 **Ultimo aggiornamento:** 29 settembre 2026 — **fase A12a** (nucleo: la persona cancellata e le colonne del training in
 `ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, in bozza **in coda dopo #182** (A11b, in bozza in coda
-dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, dopo #149, A9a, dopo #148, A8b, dopo #147, A8a: **#146,
-A7, è unita** il 29 settembre, dopo #144, A6b). **Per ora solo la nota** (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`,
-**«Proposta»**) **e due domande a Carmine**: **il codice aspetta le risposte**. Il branch è nato dalla cima della coda (0b62481, preparato
-dalla sessione di A11b) e ha `main` a 47e2f70; con il `main` di oggi — **#146**, **#184** (il piano di M4, E0), **#185** e **#186** (la
+dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, dopo #149, A9a, dopo #148, A8b: **#146, A7, e #147, A8a,
+sono unite** il 29 settembre). La nota (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`) è nata «Proposta» con due domande, e
+**Carmine l'ha decisa** lo stesso giorno, come raccomandato; poi il codice. Il branch è nato dalla cima della coda (0b62481, preparato
+dalla sessione di A11b) e ha `main` a 47e2f70; con il `main` di oggi — #146, #147, **#184** (il piano di M4, E0), **#185** e **#186** (la
 versione 0.4.0, tag `v0.4.0`) — si unisce senza conflitti, e la PR fa girare `build-test`. `main` entra in ogni branch al suo passo della
 coda, non prima. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se
 un branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139),
-A5 (#140), A6a (#143), A3b (#135), A6c (#145), A11a (#159), A6b (#144) e A7 (#146) sono unite**, e con loro **#152** del maintainer
+A5 (#140), A6a (#143), A3b (#135), A6c (#145), A11a (#159), A6b (#144), A7 (#146) e A8a (#147) sono unite**, e con loro **#152** del maintainer
 (`Refusals` nel nucleo), **#177** (la tastiera del suggerimento) e **#183** (il piano 1.24 e il design di M4). **A10 è divisa in tre**
 (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178); **A11 in due**, A11a (unita) e **A11b** (#182); **A12 in quattro**, A12a
 (questa), A12b, A12c (solo con i codici di PATS) e A12d. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
@@ -103,30 +103,39 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A12a, per ora (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187 in bozza)
+### Che cosa ha lasciato A12a (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187)
 
-- **Che cosa c'è**: **solo la nota**, `decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`, **«Proposta»**, con due domande a
-  Carmine in [un commento sulla #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195). **Nessun codice**,
-  nessun file del nucleo (per `core-guard`: nucleo 0, una nota aggiunta). La forma proposta (nota §3):
-  - `personName(person, t)` e `isErased(vid)` in `web/src/shared/ui/people.ts`, esportati da `shared/ui`: «Deleted person» per uno
-    pseudonimo (un VID negativo), altrimenti `Nome (VID)` o il VID da solo; `NamedPerson` è `{ vid, name }`, la forma di
-    `TrainingMemberDto`;
-  - la parola `people.erased` in `locales/{en,it}/common.json` («Deleted person», «Persona cancellata»);
-  - la colonna **`person`** della lista generata, `col.person('trainee')` su un campo `{ vid, name } | null`, così anche una lista dice
-    «Deleted person» (la copia dei tour non ci arriva);
-  - **domanda 2**, `ErasureTests` (di Carmine): raccomandata la (c), il test legge i contesti di ogni modulo dal registro, come la
-    cancellazione, e la lista prende le 21 colonne `trn_`.
-- **Che cosa deve sapere la fase dopo**:
-  - **A12b usa l'helper di A12a, e non parte prima delle risposte di Carmine**: una fase non si mette in coda sopra una domanda (`08`,
-    «Regole di tutte le fasi»). Il branch `m3/a12b-training-erasure` **non** è preparato.
-  - ⚠️ **La copia dei tour** (`memberName`, `flightops:people.erased`) non si tocca: la sostituisce una sessione di Carmine.
-  - ⚠️ **Per A12b** (`08`, «Com'è andata (A12a)», «Trovato» n.4): `memberLabel` sta in 28 punti; i link al percorso di un trainee vanno
-    tolti per uno pseudonimo; **un training aperto affidato a un trainer che si cancella** resta affidato allo pseudonimo, e la mail
-    della sessione al trainee nominerebbe il trainer con il numero: la regola del design non ne parla, da decidere in A12b.
-  - Il banco di A12a: 127.0.0.1:**5102**, `ivaohub_e2e_a12a` (ancora nessun giro). Il banco dopo: **5105** (5103 e 5104 sono della sessione
-    che coordina).
-  - VID: A12a non ne usa (il test delle colonne non semina nessuno).
-- **La fase dopo**: il codice di A12a, sulla stessa PR, quando Carmine risponde; poi **A12b**.
+- **Che cosa c'è** (nucleo, con la nota nuova `decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`, **decisa** da Carmine:
+  [il suo commento sulla #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551), sì alla forma e la (c);
+  nessuna migrazione):
+  - **`web/src/shared/ui/people.ts`**, esportato da `shared/ui`: `NamedPerson` (`{ vid, name }`, la forma di `TrainingMemberDto`),
+    `isErased(vid)` (`vid < 0`: lo pseudonimo che il nucleo scrive al posto di una persona cancellata) e `personName(person, t)` —
+    «Deleted person» / «Persona cancellata» per uno pseudonimo, `Nome (VID)`, o il VID da solo quando l'hub non ha il nome;
+  - **la colonna `person` della lista generata**: `col.person('trainee')` su un campo `NamedPerson | null`, che `DataList` disegna con
+    `personName`; una cella vuota è una riga senza nessuno. Detto in `docs/UI-GUIDELINES.md`;
+  - **la parola `people.deleted`** in `locales/{en,it}/common.json`;
+  - **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows`** (di Carmine) legge i contesti di **ogni modulo abilitato** dal
+    `ModuleRegistry`, tranne quello di prova, e la sua lista ha le 21 colonne `trn_`.
+- **Che cosa deve sapere la fase dopo** (A12b):
+  - **Una persona nelle pagine del training** si scrive con `personName(person, t)` del nucleo, non con `memberLabel`; **in una lista**
+    con `col.person('trainee')` sul campo che il server manda (`trainee`, `trainer`, `givenBy`…), non con una colonna di testo
+    calcolata nella query (`traineeName`), che mostrerebbe lo pseudonimo come numero; **un link** a una persona (il percorso di un
+    trainee) si disegna solo se `!isErased(vid)`.
+  - ⚠️ **La parola è `people.deleted`, non `people.erased`**: quella è della copia dei tour (`flightops:people.erased`), e il catalogo
+    del server **non fa partire l'hub** se un modulo dichiara una chiave del nucleo («declared twice for the same language»). Vale per
+    ogni chiave nuova del nucleo: prima si cerca nei file dei moduli.
+  - ⚠️ **`ErasureTests` legge da solo ogni contesto dei moduli**: una colonna di persona nuova del training (`…Vid`, `…By`) lo fa cadere
+    finché la sua riga non è nella lista, che è un test condiviso: la riga, con una nota breve, e lo si dice al revisore.
+  - ⚠️ **Per A12b** (`08`, «Com'è andata (A12a)», «Trovato» n.4): `memberLabel` sta in 28 punti; **un training aperto affidato a un
+    trainer che si cancella** resta affidato allo pseudonimo (lo conduce solo chi tiene `Training.Edit`), e la mail della sessione al
+    trainee nominerebbe il trainer con il numero (`TrainingPeople.Label`): la regola del design non ne parla, da decidere in A12b.
+  - ⚠️ **La copia dei tour** (`memberName`) non si tocca: la sostituisce una sessione di Carmine.
+  - **A12c resta condizionata** (Carmine, nello stesso commento): il codice sorgente di PATS non esiste, c'è solo il database già
+    condiviso, quindi il significato dei codici oggi non si conosce.
+  - Il banco di A12a: 127.0.0.1:**5102**, `ivaohub_e2e_a12a`. Il banco di A12b: **5105** (5103 e 5104 sono della sessione che coordina).
+  - VID: A12a non ne usa (il test delle colonne non semina nessuno). Il range del training è tutto assegnato.
+- **La fase dopo**: **A12b** (modulo: `TrainingPersonalData`, «persona cancellata» nelle pagine del training, la conservazione), in coda
+  dopo #187.
 
 ### Che cosa ha lasciato A11b (29 settembre 2026, branch `m3/a11b-fir-heads`, PR #182)
 

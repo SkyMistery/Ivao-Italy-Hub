@@ -669,7 +669,9 @@ meccanismo suo.
 
 - **Le colonne seguono la convenzione**: `trainee_vid`, `trainer_vid`, `examiner_vid`, `decided_by`, `assigned_by`,
   `closed_by`, il `vid` e i `*_by` dei ban. Nessuna lista di VID in JSON. Il test che elenca le colonne di persona
-  (`ErasureTests`) le vedrà da solo.
+  (`ErasureTests`) le vede **da A12a**: prima leggeva solo i contesti del nucleo e dei tour; ora quelli di ogni modulo, come
+  la cancellazione, e la sua lista ha le 21 colonne `trn_` (nota `2026-09-29-la-persona-cancellata-nel-nucleo`, la (c) di
+  Carmine).
 - **`TrainingPersonalData : IPersonalDataEraser`**, **deciso** (§12 n.7), con le quattro risposte di Carmine della nota
   come regola:
   - i **training chiusi** del trainee (`Completed`, `NoShow`, `Closed`, `Rejected`, `Cancelled`) sono **il registro**:
@@ -686,7 +688,9 @@ meccanismo suo.
     pseudonimo, e i suoi testi restano perché parlano di altri (risposta 4).
 - **«Persona cancellata»**: dove il modulo mostra un VID (percorso del trainee, liste, pagina della sessione), un VID
   negativo diventa «persona cancellata» senza link. La nota dice che l'helper passa nel nucleo quando Training ne ha
-  bisogno: è questo il momento (n.10).
+  bisogno: è questo il momento (n.10). **Fatto in A12a** (#187): `personName` e `isErased` in
+  `web/src/shared/ui/people.ts` per le pagine, la colonna `col.person` per le liste generate, la parola `people.deleted`
+  del nucleo; A12b li usa al posto di `memberLabel`.
 
 ---
 
