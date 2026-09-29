@@ -1,8 +1,9 @@
 # La persona cancellata nel nucleo, e le colonne del training in `ErasureTests` (A12a)
 
 **Data:** 29 settembre 2026 — fase A12a di M3, PR del nucleo #187, in coda dopo #182
-**Stato:** **Proposta**: due domande a Carmine (§5), ognuna con una raccomandazione, in [un commento sulla #187][q1]. Il codice aspetta
-le risposte.
+**Stato:** **decisa** (Carmine, 29 settembre 2026, in chat alla sessione master, e pubblicata su sua istruzione [sulla #187][a1]): alle
+due domande di §5 ([il commento che le pone][q1]) **sì alla forma di §3** e **la (c)** per `ErasureTests`, tutte e due come
+raccomandato. La conseguenza per M4 (il punto 1 di E8a, §4) la porta nel piano il master, dopo l'unione.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**, e §0 regole 3 e 6. Tre cose, tutte su meccanismi che ci sono:
 
 - si **porta nel nucleo** un pezzo che la nota di T20b aveva già deciso di portarci quando un secondo modulo ne avesse bisogno
@@ -15,6 +16,7 @@ le risposte.
   iniziativa: come, lo decide lui (domanda 2).
 
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
+[a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
 
 ## 1. Che cosa serve
 
@@ -139,26 +141,29 @@ design hanno dato per mantenuta; costa le righe qui sopra, e per il training ogg
 
 ## 5. Le domande
 
-| # | Domanda | Raccomandazione | Le altre |
-|---|---|---|---|
-| 1 | La forma del pezzo nel nucleo (§3)? | **Sì, com'è scritta**: `personName` e `isErased` in `shared/ui/people.ts`, la parola `people.erased`, la colonna `col.person` della lista | solo la funzione; un componente; la parola dal server; il nome nella query di ogni modulo; un tipo C# comune |
-| 2 | Come legge `ErasureTests` le colonne del training (§4)? | **(c)**: i contesti di ogni modulo dal registro, tranne quello di prova, e le 21 righe `trn_` nella lista | (a) `TrainingDbContext` scritto nel test; (b) un test accanto, nei file del training |
+**Carmine ha preso le due raccomandazioni** (29 settembre 2026, [il suo commento sulla #187][a1]).
 
-## 6. Che cosa si tocca, dopo le risposte
+| # | Domanda | Risposta | Scartate |
+|---|---|---|---|
+| 1 | La forma del pezzo nel nucleo (§3)? | **Sì, com'è scritta**: `personName` e `isErased` in `shared/ui/people.ts`, la parola `people.erased`, la colonna `col.person` della lista, la riga in `docs/UI-GUIDELINES.md`; la copia dei tour e `memberLabel` del training restano come sono in questa PR | solo la funzione; un componente; la parola dal server; il nome nella query di ogni modulo; un tipo C# comune |
+| 2 | Come legge `ErasureTests` le colonne del training (§4)? | **(c)**: i contesti di ogni modulo abilitato, come li scorre la cancellazione, tranne quello di prova, e le 21 righe `trn_` nella lista. La conseguenza per M4 (il punto 1 di E8a) la porta nel piano il master | (a) `TrainingDbContext` scritto nel test; (b) un test accanto, nei file del training |
+
+## 6. Che cosa si tocca
 
 - **Nucleo**: `web/src/shared/ui/people.ts` e `people.test.ts` (nuovi), `web/src/shared/ui/index.ts`; `web/src/shared/list/columns.ts`,
   `DataList.tsx` e un test della colonna; `locales/en/common.json`, `locales/it/common.json`; `docs/UI-GUIDELINES.md`;
-  `tests/IvaoHub.IntegrationTests/ErasureTests.cs`, come risponde Carmine alla domanda 2.
+  `tests/IvaoHub.IntegrationTests/ErasureTests.cs`, con la (c).
 - **Documenti del modulo**: `07-design-m3.md` §6.1 (il test che «le vedrà da solo»), `08` («Com'è andata (A12a)»), `HANDOFF-M3.md`.
 - **Non si toccano**: il modulo dei tour; il modulo del training (A12b).
 
 ## Da portare nel piano
 
 - `00-piano-di-progettazione.md` §16 punto 16: «persona cancellata» è del nucleo — `personName` e `isErased`
-  (`web/src/shared/ui/people.ts`), la parola `people.erased`, la colonna `col.person` della lista generata; con la (c), il test delle
-  colonne di persona legge i contesti di ogni modulo. Versione e changelog.
+  (`web/src/shared/ui/people.ts`), la parola `people.erased`, la colonna `col.person` della lista generata; il test delle colonne di
+  persona legge i contesti di ogni modulo (la (c)). Versione e changelog.
 - `CLAUDE.md` §2, la riga «Erasing a person's data»: una pagina nomina una persona cancellata con `personName` del nucleo, una lista
   con `col.person`, mai con una copia sua.
 - `05-design-m2.md` §10.0: la copia dei tour lascia il posto a quella del nucleo (una sessione di Carmine).
 - `09-design-m4.md` §1.13, §11.1 e §13, e `10-piano-implementazione-m4.md` (E0 «Trovato» n.13 e n.14, E6b punto 4, E8a): l'helper c'è
-  (A12a); con la (c), il test vede da solo il contesto degli eventi e la fase che crea le tabelle scrive le loro righe.
+  (A12a); il test vede da solo il contesto degli eventi, e la fase che crea le tabelle scrive le loro righe (il punto 1 di E8a, che
+  Carmine ha affidato al master).
