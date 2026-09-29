@@ -157,9 +157,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   l'unione di #135 e le correzioni di revisione di A6b, A7 e A8a, `main` (a 4d424f9, con #152, #135 e le PR del maintainer fino a #172) è sceso
   nella coda come il revisore ha chiesto sulla #144, e in A10b con il merge della testa nuova di A10a (9e82ad1, merge 5e349b4): nessun
   conflitto, tutte le suite rifatte (i numeri in `08`). `main` è andato avanti ancora (#173, #174): se il revisore li vuole, lo chiede sulla
-  PR. Quando #151 sarà unita, il passo della coda di A10b — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo,
-  via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10b se è ancora viva, altrimenti quella della fase dopo
-  prima di cominciare.
+  PR. **#151 (A10a) è unita il 29 settembre**, e il passo della coda di A10b l'ha fatto la sessione che la coordina: `main` nel branch con un
+  merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda di A9a, A9b e A10a —, build e **tutti** i
+  test di nuovo, via `(after #151)` dal titolo e `Queued after #151.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono `main` al
+  loro passo.
 
 ### Che cosa ha lasciato A10a (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151)
 
