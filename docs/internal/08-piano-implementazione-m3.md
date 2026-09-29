@@ -1997,8 +1997,17 @@ banco, la raddoppierebbero.
   spec nuove cadano su una copia indebolita delle pagine** (la conferma degli avvisi tolta, per esempio): non tentato; le spec sono state
   lette contro il codice, e il fatto nuovo del server è provato sul codice di A8a (sopra). **Le pagine dello staff larghe 375 px**: hanno
   il difetto noto del nucleo a quella larghezza (A7).
-
-### A9 — Dopo la sessione
+- **Il passo della coda dopo #147 e la revisione di #148** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/148#issuecomment-5891398227);
+  la sessione di A8b non c'era più, l'ha fatto la sessione che coordina le correzioni): `main` nel branch con un merge (A7, A8a, #185,
+  #188), via `(after #147)`, l'intestazione di `HANDOFF-M3.md` rimessa in pari. I nit:
+  1. **Un tipo del calendario senza etichetta** nella lingua di chi legge non si dice più con la sua chiave grezza: «Nel calendario»
+     (`training:staff.dates.warning.anyKind`).
+  2. **La conferma della data scelta dal trainee** dice l'ora anche nel fuso della divisione, come il riquadro sopra
+     (`detail.dates.confirmTitle` con `{{local}}`).
+  3. **Il commento di `choosableSlots`** diceva che una data che passa a pagina aperta non si offre più; `now` è il momento in cui la
+     pagina è disegnata, quindi resta fino alla lettura dopo, e il server la rifiuta: corretto il commento, non il codice.
+  4. **Scritto, non corretto**: un avviso porta sempre alla pagina dello staff dell'altro training, e chi conduce con il permesso su una
+     riga sola (A7b) può non poterla aprire. Serve che il server dica se chi legge può aprirla; ⚠️ per A7b o una fase dopo.
 
 Design §1.3, §1.4, §2.6, §2.7, §2.8; note `le-note-riservate-e-il-trainee`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch
 `m3/a9-after-the-session`.
