@@ -4,9 +4,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Training;
 using IvaoHub.Modules.Training.Bans;
+using IvaoHub.Modules.Training.Blocks;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Exams;
@@ -23,7 +25,8 @@ namespace IvaoHub.IntegrationTests;
 /// the real host and the core's erasure, as the superadmin asks it: the register of the trainee's trainings stays, counted the same, under
 /// the pseudonym and without a text about them — in its rows and in the audit log —; their open trainings and their exams go, with their
 /// entries of the calendar; a ban in force keeps the VID until an erasure run after it is over; a mail to somebody else that names them
-/// goes; and a person whose data was erased has no path. What a member of the staff did stays under the pseudonym, with their words.
+/// goes; and a person whose data was erased has no path. What a member of the staff did stays under the pseudonym, with their words; an
+/// open training of another member assigned to an erased trainer goes back among the trainings to assign (Carmine's answer on #189).
 /// <para>The people are the class's own (A10a). The erasure takes the user of the VID it erases, which the next test seeds again; what
 /// stays under a pseudonym no cleaning of the class finds by VID, and each test takes it back (<see cref="CleanErasedAsync"/>).</para>
 /// </summary>
@@ -92,6 +95,7 @@ public sealed partial class TrainingTraineeTests
                 ("training:erasure.exams", 1, nameof(ErasureOutcome.Deleted)),
                 ("training:erasure.bansInForce", 1, nameof(ErasureOutcome.Kept)),
                 ("training:erasure.bansOver", 1, nameof(ErasureOutcome.Anonymised)),
+                ("training:erasure.assigned", 0, nameof(ErasureOutcome.Anonymised)),
             ];
             Assert.Equal(lines, TrainingLines(await superadmin.GetFromJsonAsync<JsonElement>(new Uri($"{ErasureEndpoints.Pattern}/{TraineeVid}", UriKind.Relative), token)));
 
@@ -174,6 +178,7 @@ public sealed partial class TrainingTraineeTests
                     ("training:erasure.exams", 0, nameof(ErasureOutcome.Deleted)),
                     ("training:erasure.bansInForce", 0, nameof(ErasureOutcome.Kept)),
                     ("training:erasure.bansOver", 1, nameof(ErasureOutcome.Anonymised)),
+                    ("training:erasure.assigned", 0, nameof(ErasureOutcome.Anonymised)),
                 },
                 TrainingLines(again));
             var ended = await StoredBanAsync(inForce, token);
@@ -232,6 +237,89 @@ public sealed partial class TrainingTraineeTests
         var ban = Assert.Single(await ReadListAsync(reader, $"{BanEndpoints.Pattern}?filter[vid]={OtherTraineeVid}", token));
         Assert.Equal(($"{marker} ban", pseudonym), (ban.GetProperty("reason").GetString(), Vid(ban, "givenBy")));
         Assert.Equal(JsonValueKind.Null, ban.GetProperty("givenBy").GetProperty("name").ValueKind);
+    }
+
+    /// <summary>
+    /// Carmine's answer on #189 (note 2026-09-29-il-training-affidato-a-chi-si-cancella): an open training of another member assigned to
+    /// a trainer who is erased stays assigned to the deleted person — the eraser does not touch it, and counts it — and goes back among
+    /// the trainings to assign, in the staff's list and in the block, out of «in progress»; meanwhile a mail that names its trainer says
+    /// «Deleted person», never the number, and nobody is written to in their place; «Assign» gives it to another trainer, with its date.
+    /// An exam they hold stays as it is.
+    /// </summary>
+    [Fact]
+    public async Task AnOpenTrainingOfAnErasedTrainerGoesBackAmongTheTrainingsToAssign()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (_, pilot) = Trained();
+        var (topAtc, topPilot) = (Ladder(RatingKind.Atc)[^1], Ladder(RatingKind.Pilot)[^1]);
+        await WriteSettingsAsync(new { conflictPolicy = "None", reminderLeadHours = 72 }, token);
+
+        // The trainer to erase is the trainer of the department who is a trainee too; another trainer of the department takes over, and
+        // the coordinator assigns.
+        await SeedPersonAsync(ReaderVid, "Test", "Reader", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{Division().Code}-T97");
+        await GrantAsync(CoordinatorVid, TrainingPermissions.Assign, token);
+
+        // Two trainings of other members assigned to them — one dated, of the trainee who has a mailbox; one waiting for its date — and
+        // an exam they hold.
+        var start = DateTime.UtcNow.AddDays(2);
+        var dated = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: TrainerTraineeVid, start: start);
+        var waiting = await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Assigned, token, trainer: TrainerTraineeVid);
+        var held = await AddExamAsync(pilot, StrangerVid, token, examiner: TrainerTraineeVid);
+        long[] theirs = [dated, waiting];
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        Assert.Empty((await QueueAsync(coordinator, StaffQueue.ToAssign, token)).Intersect(theirs));
+        Assert.Equal(theirs.Order(), (await QueueAsync(coordinator, StaffQueue.InProgress, token)).Intersect(theirs).Order());
+        var toAssignBefore = (await BlockAsync(coordinator, ApprovalQueueProvider.BlockType, token)).GetProperty("toAssign").GetProperty("count").GetInt32();
+
+        // The superadmin reads that two trainings will stay with a deleted person as their trainer, and erases them.
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var assigned = ("training:erasure.assigned", 2, nameof(ErasureOutcome.Anonymised));
+        Assert.Contains(assigned, TrainingLines(await superadmin.GetFromJsonAsync<JsonElement>(new Uri($"{ErasureEndpoints.Pattern}/{TrainerTraineeVid}", UriKind.Relative), token)));
+        var erased = await EraseAsync(superadmin, TrainerTraineeVid, token);
+        var pseudonym = erased.GetProperty("pseudonym").GetInt32();
+        Assert.Contains(assigned, TrainingLines(erased));
+
+        // Untouched: the same trainings, dated or waiting, assigned to the deleted person; the exam as it was, in the calendar.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
+            var stored = await database.Trainings.IgnoreQueryFilters().AsNoTracking().Where(row => theirs.Contains(row.Id)).ToDictionaryAsync(row => row.Id, token);
+            Assert.Equal((TrainingState.Scheduled, (int?)pseudonym), (stored[dated].State, stored[dated].TrainerVid));
+            Assert.Equal(start, stored[dated].ScheduledStartUtc!.Value, TimeSpan.FromSeconds(1));
+            Assert.Equal((TrainingState.Assigned, (int?)pseudonym), (stored[waiting].State, stored[waiting].TrainerVid));
+            Assert.Equal(pseudonym, (await database.Exams.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == held, token)).ExaminerVid);
+        }
+
+        Assert.True(await InTheCalendarAsync(Exam.SourceIdOf(held), token));
+
+        // Among the trainings to assign, in the list and in the block; no longer in progress.
+        Assert.Equal(theirs.Order(), (await QueueAsync(coordinator, StaffQueue.ToAssign, token)).Intersect(theirs).Order());
+        Assert.Empty((await QueueAsync(coordinator, StaffQueue.InProgress, token)).Intersect(theirs));
+        Assert.Equal(toAssignBefore + 2, (await BlockAsync(coordinator, ApprovalQueueProvider.BlockType, token)).GetProperty("toAssign").GetProperty("count").GetInt32());
+        var page = await PageAsync(coordinator, dated, token);
+        Assert.Equal((pseudonym, JsonValueKind.Null), (Vid(page, "trainer"), page.GetProperty("trainer").GetProperty("name").ValueKind));
+        Assert.True(page.GetProperty("actions").GetProperty("canAssign").GetBoolean());
+
+        // The reminder of the dated one names its trainer as a deleted person, by the core's word in the trainee's language, and nobody
+        // is written to in their place.
+        await RunRemindersAsync(token);
+        var (locale, data) = await LastMailAsync(TraineeVid, TrainingNotifications.Reminder, token);
+        Assert.Equal(await WordAsync(locale, "people.deleted"), data.GetProperty("trainer").GetString());
+        Assert.Equal(pseudonym.ToString(CultureInfo.InvariantCulture), data.GetProperty("trainerVid").GetString());
+        Assert.Equal(0, await MailsAsync(pseudonym, TrainingNotifications.Reminder, token));
+
+        // «Assign» gives it to another trainer, like any change of trainer: it keeps its date and leaves the trainings to assign. The
+        // version as the reminder left it: its mark moved the row.
+        var version = (await PageAsync(coordinator, dated, token)).GetProperty("rowVersion").GetDateTime();
+        var given = await ReadAsync(
+            await StepAsync(coordinator, dated, "assign", new { trainerVid = ReaderVid, rowVersion = version }, token),
+            HttpStatusCode.OK,
+            token);
+        Assert.Equal((ReaderVid, nameof(TrainingState.Scheduled)), (Vid(given, "trainer"), given.GetProperty("state").GetString()));
+        Assert.Equal(start, given.GetProperty("scheduledStartUtc").GetDateTime(), TimeSpan.FromSeconds(1));
+        Assert.DoesNotContain(dated, await QueueAsync(coordinator, StaffQueue.ToAssign, token));
+        Assert.Contains(dated, await QueueAsync(coordinator, StaffQueue.InProgress, token));
     }
 
     // ---- helpers of the erasure --------------------------------------------------------------------------------------------
@@ -298,8 +386,8 @@ public sealed partial class TrainingTraineeTests
         return slot.Id;
     }
 
-    /// <summary>An exam in five days, held by the coordinator, written as the installation: it goes into the calendar.</summary>
-    private async Task<long> AddExamAsync(Rating rating, int candidate, CancellationToken cancellationToken)
+    /// <summary>An exam in five days, held by the coordinator unless said otherwise, written as the installation: it goes into the calendar.</summary>
+    private async Task<long> AddExamAsync(Rating rating, int candidate, CancellationToken cancellationToken, int examiner = CoordinatorVid)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
@@ -309,11 +397,49 @@ public sealed partial class TrainingTraineeTests
             Rating = rating.Number,
             StartsAtUtc = DateTime.UtcNow.AddDays(5),
             CandidateVid = candidate,
-            ExaminerVid = CoordinatorVid,
+            ExaminerVid = examiner,
         };
         database.Exams.Add(exam);
         await database.SaveChangesAsync(cancellationToken);
         return exam.Id;
+    }
+
+    /// <summary>The trainings of one view of the staff's list, the newest first: the ones of a test are among the first hundred.</summary>
+    private static async Task<List<long>> QueueAsync(HttpClient client, string view, CancellationToken cancellationToken) =>
+    [
+        .. (await ReadListAsync(client, $"{StaffEndpoints.QueuePattern}?filter[{StaffQueue.Filter}]={view}&sort=createdAt&dir=desc&pageSize=100", cancellationToken))
+            .Select(row => row.GetProperty("id").GetInt64()),
+    ];
+
+    /// <summary>What a data block answers the reader, live.</summary>
+    private static async Task<JsonElement> BlockAsync(HttpClient client, string type, CancellationToken cancellationToken) =>
+        await ReadAsync(await client.GetAsync(new Uri($"/api/blocks/data/{type}", UriKind.Relative), cancellationToken), HttpStatusCode.OK, cancellationToken);
+
+    /// <summary>A run of the reminders of the sessions, as the job makes every quarter of an hour.</summary>
+    private async Task RunRemindersAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<TrainingRemindersJob>().RunAsync(cancellationToken);
+    }
+
+    /// <summary>The last mail of that type to that member: its language, and its data.</summary>
+    private async Task<(string Locale, JsonElement Data)> LastMailAsync(int vid, string type, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var mail = await scope.ServiceProvider.GetRequiredService<HubDbContext>().Notifications.AsNoTracking()
+            .Where(notification => notification.Vid == vid && notification.Type == type)
+            .OrderByDescending(notification => notification.Id)
+            .FirstAsync(cancellationToken);
+        return (mail.Locale, JsonDocument.Parse(mail.DataJson).RootElement.Clone());
+    }
+
+    /// <summary>A word of the language files as the server says it, never the key itself.</summary>
+    private async Task<string> WordAsync(string locale, string key)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var word = scope.ServiceProvider.GetRequiredService<LocaleCatalog>().Resolve(locale, key);
+        Assert.NotEqual(key, word);
+        return word;
     }
 
     private async Task<bool> InTheCalendarAsync(string source, CancellationToken cancellationToken)
