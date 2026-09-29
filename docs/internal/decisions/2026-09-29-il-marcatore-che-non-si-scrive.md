@@ -1,7 +1,8 @@
 # Il marcatore che non si scrive non ferma l'avvio
 
 **Data:** 29 settembre 2026
-**Stato:** **Proposta**, in attesa della risposta di Carmine (§6). Versione **0.3.1**, PATCH: solo una correzione, nessuna
+**Stato:** **decisa** (Carmine, 29 settembre 2026, in chat: «riprovare e avvisare, va bene così»; la risposta è arrivata
+in chat, quindi non c'è un link a un commento). Versione **0.3.1**, PATCH: solo una correzione, nessuna
 migrazione, nessuna pagina.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si corregge il marcatore d'inizializzazione
 (`2026-09-28-il-marcatore-d-inizializzazione.md`), nessun meccanismo nuovo. Cambio del nucleo, nella sua PR.
@@ -85,6 +86,9 @@ una riga che è solo un'ottimizzazione.
 riga d'audit e cambia solo `WriteAsync`. L'upsert (§4) toglierebbe la corsa invece di assorbirla, al prezzo di SQL a mano
 fuori dall'interceptor.
 
+**La risposta di Carmine** (29 settembre 2026, in chat, senza link perché non è su GitHub): «riprovare e avvisare, va bene
+così». Il codice resta quello del §3.
+
 ## 7. Che cosa non è verificato
 
 - **Due processi veri sul server** (Passenger dopo un caricamento): provato solo con scritture concorrenti nello stesso
@@ -99,5 +103,5 @@ fuori dall'interceptor.
   tutto. Corregge la frase «l'inserimento doppio dà un errore di chiave duplicata al secondo, che rilegge e aggiorna» della
   nota del marcatore (§2): può essere anche un deadlock, e da solo non bastava.
 - **§11.3 punto 2**: in `starts.txt` il passo `marker not written` accanto a `marker written`.
-- **La domanda del §6**, con la risposta di Carmine.
+- **La domanda del §6**, con la risposta di Carmine: riprovare e avvisare (29 set 2026, in chat).
 - `docs/DEPLOYING.md` e `CONTRIBUTING.md` sono aggiornati in questa PR.
