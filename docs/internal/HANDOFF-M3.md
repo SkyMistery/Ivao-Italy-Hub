@@ -140,9 +140,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A9b non ne usa; il prossimo libero resta **790052** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, detto al revisore**: lo scostamento della scheda (sopra) e il log del nucleo (sopra); le asserzioni di A6b, A7 e A8b non sono
   cambiate: i loro costruttori dei DTO finti dello smoke hanno i campi nuovi con valori neutri (`08`, A9b).
-- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, che è in cima (#147 è unita il 29
-  settembre). Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo,
-  via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9b non c'è più).
+- **La coda**: #149 (A9a) è unita il 29 settembre, e il passo della coda di A9b l'ha fatto la sessione che la coordina (quella di A9b non
+  c'è più): `main` nel branch con un merge — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a —, build e
+  **tutti** i test di nuovo, via `(after #149)` dal titolo e `Queued after #149.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono
+  `main` al loro passo.
 - **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141)):
   il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», la penultima voce).
 - **La risposta di Carmine** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556);
