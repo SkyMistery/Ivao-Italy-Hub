@@ -1,16 +1,23 @@
 import type { ModuleManifest } from '../../shared/modules';
 
-import { TRAINING_MANAGE_SETTINGS, TRAINING_MANAGE_SHEETS } from './permissions';
-import { requestSearchSchema, sheetItemFormSearchSchema, sheetItemsSearchSchema } from './schemas';
+import { TRAINING_MANAGE_SETTINGS, TRAINING_MANAGE_SHEETS, TRAINING_VIEW } from './permissions';
+import {
+  requestSearchSchema,
+  sheetItemFormSearchSchema,
+  sheetItemsSearchSchema,
+  staffTrainingsSearchSchema,
+} from './schemas';
 import { MinePage } from './screens/mine';
 import { RequestPage } from './screens/request';
 import { TrainingSettingsPage } from './screens/settings';
 import { SheetItemForm, SheetItemsPage } from './screens/sheets';
+import { StaffTrainingPage, StaffTrainingsPage } from './screens/staff';
 
 /**
  * The training (M3), as the front end knows it: `IvaoHub.Modules.Training` on the other side. A4 is the skeleton — the
  * section of the back office, with the settings in it —, A5 the evaluation sheet: its items, per ladder and rating; A6 the
- * trainee's side, the request and their own trainings.
+ * trainee's side, the request and their own trainings; A7 the staff's side, every training and the page of one, where a
+ * request is accepted or refused and its trainer assigned.
  */
 export const trainingManifest: ModuleManifest = {
   key: 'training',
@@ -29,6 +36,21 @@ export const trainingManifest: ModuleManifest = {
       area: 'member',
       path: '/training/mine',
       component: MinePage,
+    },
+    // The staff's side (A7): every training, open and closed, to whoever holds `Training.View` (R.1); what they may do on one
+    // is the server's answer on its page.
+    {
+      area: 'staff',
+      path: '/staff/training',
+      permission: TRAINING_VIEW,
+      validateSearch: staffTrainingsSearchSchema,
+      component: StaffTrainingsPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/training/$id',
+      permission: TRAINING_VIEW,
+      component: StaffTrainingPage,
     },
     {
       area: 'staff',

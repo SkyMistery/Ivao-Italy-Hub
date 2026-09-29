@@ -5,8 +5,12 @@ import { readFields } from '../../shared/forms';
 
 import {
   EMPTY_REQUEST,
+  STAFF_QUEUES,
+  assignFromFormValues,
+  assignSchema,
   emptySheetItem,
   ratingChoice,
+  rejectSchema,
   requestFromFormValues,
   requestSchema,
   requestSearchSchema,
@@ -18,6 +22,8 @@ import {
   sheetItemSchema,
   sheetItemToFormValues,
   sheetItemsSearchSchema,
+  staffTrainingsFilters,
+  staffTrainingsSearchSchema,
   type TrainingSettings,
 } from './schemas';
 
@@ -221,4 +227,50 @@ test('the address of the request reads the ladder a link chose, and only a ladde
   expect(requestSearchSchema.parse({ kind: 'Pilot' })).toEqual({ kind: 'Pilot' });
   expect(requestSearchSchema.parse({})).toEqual({});
   expect(requestSearchSchema.safeParse({ kind: 'Glider' }).success).toBe(false);
+});
+
+// ---- the staff's side (A7) ----------------------------------------------------------------------------------------------
+
+test('the views of the list are the server’s, in the order they are offered', () => {
+  expect(STAFF_QUEUES).toEqual(['toApprove', 'toAssign', 'inProgress', 'toClose', 'history']);
+});
+
+test('the list is narrowed to a view and to a ladder, each when it is chosen', () => {
+  expect(staffTrainingsFilters({})).toEqual({});
+  expect(staffTrainingsFilters({ queue: 'toApprove' })).toEqual({ queue: 'toApprove' });
+  expect(staffTrainingsFilters({ queue: 'history', kind: 'Pilot' })).toEqual({
+    queue: 'history',
+    kind: 'Pilot',
+  });
+});
+
+test('the address of the list reads the view and the ladder a link wrote, and nothing else', () => {
+  expect(staffTrainingsSearchSchema.parse({ queue: 'toAssign', kind: 'Atc' })).toMatchObject({
+    queue: 'toAssign',
+    kind: 'Atc',
+    page: 1,
+  });
+  expect(staffTrainingsSearchSchema.safeParse({ queue: 'someday' }).success).toBe(false);
+});
+
+test('a trainer is chosen among the candidates by VID, at the version the page read, and nothing chosen is nothing', () => {
+  const trainers = [{ value: '790101', label: 'Trainer (790101) · R5' }];
+  const [trainer, version] = readFields(assignSchema(trainers));
+  expect(trainer).toMatchObject({ path: 'trainerVid', choices: trainers });
+  expect(version).toMatchObject({ path: 'rowVersion', meta: { hidden: true } });
+
+  const written: components['schemas']['TrainingAssignmentDto'] = assignFromFormValues({
+    trainerVid: '790101',
+    rowVersion: '2026-09-26T10:00:00Z',
+  });
+  expect(written).toEqual({ trainerVid: 790101, rowVersion: '2026-09-26T10:00:00Z' });
+
+  // The server refuses it as a field left empty.
+  expect(assignFromFormValues({ trainerVid: '', rowVersion: 'x' }).trainerVid).toBe(0);
+});
+
+test('a refusal is a reason in the reader’s words, a box of text with no rule of its own', () => {
+  const [reason] = readFields(rejectSchema);
+  expect(reason).toMatchObject({ path: 'reason', meta: { multiline: true } });
+  expect(rejectSchema.parse({ reason: '' })).toEqual({ reason: '' });
 });

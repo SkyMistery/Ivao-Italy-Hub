@@ -1,17 +1,13 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
-using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
-using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Settings;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Training.Requests;
 
@@ -30,9 +26,7 @@ public sealed class TrainingRequests(
     IAtcPositionDirectory directory,
     ModuleSettingsStore settingsStore,
     ITheoryExamSource theory,
-    INotificationService notifications,
-    LocaleCatalog catalog,
-    IOptions<DivisionOptions> division,
+    TrainingMail mail,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -209,7 +203,7 @@ public sealed class TrainingRequests(
 
         if (training.State == TrainingState.Requested)
         {
-            await TellTheTraineeAsync(training, trainee, cancellationToken);
+            await TellTheTraineeAsync(training, cancellationToken);
         }
 
         return (training, null);
@@ -312,7 +306,7 @@ public sealed class TrainingRequests(
         return (history, bans);
     }
 
-    /// <summary>The signed in member as the core knows them: their name, their ratings and hours on both ladders, their language.</summary>
+    /// <summary>The signed in member as the core knows them: their name, and their ratings and hours on both ladders.</summary>
     private async Task<Trainee?> TraineeAsync(CancellationToken cancellationToken)
     {
         var vid = currentUser.Vid;
@@ -326,37 +320,21 @@ public sealed class TrainingRequests(
                 user.RatingAtc,
                 user.RatingPilot,
                 user.HoursAtc,
-                user.HoursPilot,
-                user.Locale);
+                user.HoursPilot);
     }
 
     /// <summary>
     /// The mail of a request received (§5.2), in the trainee's language: what they asked for — the ladder, the rating and the
     /// position —, whether it is a mock exam, and their page.
     /// </summary>
-    private async Task TellTheTraineeAsync(Training training, Trainee trainee, CancellationToken cancellationToken)
-    {
-        var options = division.Value;
-        var locale = trainee.Locale ?? options.DefaultLocale;
-
-        string?[] parts =
-        [
-            catalog.Resolve(locale, $"training:kinds.{training.Kind}"),
-            vocabulary.Find(training.Kind, training.Rating)?.ShortName,
-            training.Position,
-        ];
-
-        var data = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["training"] = string.Join(" · ", parts.Where(part => !string.IsNullOrEmpty(part))),
-            ["mockExam"] = training.IsMockExam ? catalog.Resolve(locale, "training:mail.training.mockExam") : string.Empty,
-            ["url"] = $"https://{options.Domain}/training/mine",
-        };
-
-        await notifications.QueueAsync(
-            new NotificationIntent(TrainingNotifications.RequestReceived, [NotificationRecipient.Member(training.TraineeVid)], data),
+    private Task TellTheTraineeAsync(Training training, CancellationToken cancellationToken) =>
+        mail.SendAsync(
+            TrainingNotifications.RequestReceived,
+            training.TraineeVid,
+            training,
+            TrainingMail.MinePath,
+            (data, locale) => data["mockExam"] = training.IsMockExam ? mail.Word(locale, "training:mail.training.mockExam") : string.Empty,
             cancellationToken);
-    }
 
     private static bool IsDuplicate(DbUpdateException exception) =>
         exception.InnerException?.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase) == true;
@@ -370,8 +348,7 @@ public sealed class TrainingRequests(
         int? RatingAtc,
         int? RatingPilot,
         decimal? HoursAtc,
-        decimal? HoursPilot,
-        string? Locale)
+        decimal? HoursPilot)
     {
         public int? RatingOf(RatingKind kind) => kind == RatingKind.Pilot ? RatingPilot : RatingAtc;
 

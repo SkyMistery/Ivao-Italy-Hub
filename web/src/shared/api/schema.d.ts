@@ -2206,6 +2206,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingQueueList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/queue/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingQueueGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingStaffPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/trainers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingTrainers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingAccept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingAssign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4990,6 +5102,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfStaffTrainingRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["StaffTrainingRowDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfTourConstraintListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["TourConstraintListDto"][];
@@ -6132,6 +6267,91 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /**
+         * @description What the reader may do on the training now, as the one handler answers on the row: a button is drawn when it said yes. Never
+         *     on a training of the reader's own, the super administrator included (§3).
+         */
+        StaffTrainingActionsDto: {
+            /** @description Accept or refuse the request (`Training.Approve`), while it waits. */
+            canDecide: boolean;
+            /** @description Assign the trainer or change them (`Training.Assign`), while the training is accepted and going on. */
+            canAssign: boolean;
+        };
+        /**
+         * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §4.2): the request with the trainee's rating and hours
+         *     when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, and what the
+         *     reader may do. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the fields
+         *     the trainee may not read — the notes of the staff, the report's comment for the staff — are not here, and arrive with the one
+         *     function of A9 that leaves them out for the row's trainee (note `le-note-riservate-e-il-trainee`). Never an address.
+         */
+        StaffTrainingDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            ratingShortName: null | string;
+            ratingNameKey: null | string;
+            isMockExam: boolean;
+            position: null | string;
+            airportIcao: null | string;
+            fir: null | string;
+            trainee: components["schemas"]["TrainingMemberDto"];
+            traineeRatingShortName: null | string;
+            /** Format: double */
+            traineeHoursAtRequest: null | number;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            theoryConfirmedAt: null | string;
+            theoryExamUrl: null | string;
+            availabilityText: null | string;
+            notesText: null | string;
+            state: components["schemas"]["TrainingState"];
+            rejection: null | components["schemas"]["TrainingRejection"];
+            rejectionReason: null | string;
+            decidedBy: null | components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            trainer: null | components["schemas"]["TrainingMemberDto"];
+            assignedBy: null | components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            assignedAt: null | string;
+            /** Format: date-time */
+            scheduledStartUtc: null | string;
+            /** Format: date-time */
+            completedAt: null | string;
+            closedBy: null | components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            closedAt: null | string;
+            readyForMockExam: boolean;
+            readyForExam: boolean;
+            actions: components["schemas"]["StaffTrainingActionsDto"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A training as the staff's list shows it (design M3 §4.2): what it is, whose it is, where it stands, and who trains it. The
+         *     short name of the rating is the core's vocabulary's; the names are the hub's. `CreatedAt` is when it was asked for,
+         *     named as the column the list sorts on.
+         */
+        StaffTrainingRowDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            ratingShortName: null | string;
+            isMockExam: boolean;
+            position: null | string;
+            state: components["schemas"]["TrainingState"];
+            trainee: components["schemas"]["TrainingMemberDto"];
+            trainer: null | components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            scheduledStartUtc: null | string;
+        };
         /** @description A tour the pilot started, with the measure of PilotProgress and the next leg while it is not done. */
         StartedTourDto: {
             /** Format: int64 */
@@ -6571,10 +6791,48 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /**
+         * @description Somebody who may train a training (§2.4): of the staff of the training — the direction and the training department, trainers
+         *     included —, known to the hub because they signed in, with a rating on its ladder at least the one trained, and never its
+         *     trainee.
+         */
+        TrainerCandidateDto: {
+            /**
+             * Format: int32
+             * @description Who they are.
+             */
+            vid: number;
+            /** @description Their name as the hub has it. */
+            name: string;
+            /** @description Their rating on the training's ladder, as the core's vocabulary names it. */
+            ratingShortName: null | string;
+            /** @description Their positions of the staff of the training, as the network spells them. */
+            positions: string[];
+            /** @description Whether they are the training's trainer already. */
+            isCurrent: boolean;
+        };
+        /** @description An assignment (§2.4): the trainer chosen among the candidates, and the version seen. */
+        TrainingAssignmentDto: {
+            /** Format: int32 */
+            trainerVid: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description The version of the training the trainee saw when they pressed «cancel». */
         TrainingCancellation: {
             /** Format: date-time */
             rowVersion: string;
+        };
+        /** @description The version of the training the reader saw when they pressed «accept». */
+        TrainingDecisionDto: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A person as the staff's pages name them: the VID that always is, and the name the hub has — none when it has none. */
+        TrainingMemberDto: {
+            /** Format: int32 */
+            vid: number;
+            name: null | string;
         };
         /** @description A position of the division a training may take place on, with the rating it is trained for. */
         TrainingPositionDto: {
@@ -6598,6 +6856,12 @@ export interface components {
         };
         /** @enum {unknown} */
         TrainingRejection: "TheoryNotPassed" | "Staff" | null;
+        /** @description A refusal of the staff (§2.3): the reason the trainee reads, and the version seen. */
+        TrainingRejectionDto: {
+            reason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description What a trainee sends to ask for a training (§2.2). */
         TrainingRequestWriteDto: {
             /** @description The ladder. */
@@ -13458,6 +13722,301 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingQueueList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfStaffTrainingRowDto"];
+                };
+            };
+        };
+    };
+    TrainingQueueGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingStaffPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingTrainers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainerCandidateDto"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingAccept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingDecisionDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingReject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingRejectionDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingAssign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingAssignmentDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {
