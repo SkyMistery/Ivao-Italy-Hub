@@ -1739,6 +1739,28 @@ training e non un altro.
      come ripulirli** (i grant con motivo `training: trainer`).
   3. Nit, già detti: nessun test fa condurre un TA il training assegnato a lui; un TA passa il guardiano su qualunque training con
      l'alternativa di `Approve`, e lo fermano gli endpoint (già noto da A7).
+- **Dopo le risposte di Carmine su #149, #150 e #178** (29 settembre 2026, 528edc6, [il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/181#issuecomment-5893690389)):
+  la testa nuova di A10c unita, con tre conflitti, ognuno risolto tenendo le due parti: l'intestazione di `HANDOFF-M3.md`; il commento di
+  `TrainingDates.CloseAsync` (la regola di A9, non su una sessione cominciata, e la frase di A7b, al trainer non resta niente da
+  condurre); `TrainingSessionsTests`, che tiene il test di A7b sul coordinatore attraverso l'endpoint e quello nuovo di A9a sulla sessione
+  cominciata. `StaffTrainings` si è unito da sé: `canConduct` e `canClose` falsi a sessione cominciata, sopra la regola di A7b. Verificato:
+  build senza avvisi, unità 869, integrazione 411, Vitest 578, smoke 152, `e2e:full` 48 (127.0.0.1:5103).
+- **Il passo della coda dopo #178** (30 settembre 2026: #178 unita alle 22:10 UTC del 29; l'ha fatto la sessione che coordina la coda):
+  `main` nel branch con un merge (bde3f05) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda; un
+  conflitto, l'intestazione di `HANDOFF-M3.md`, che tiene quella di A7b riscritta; il merge toglie anche il conflitto che teneva la PR
+  senza `build-test` —, via `(after #178)` dal titolo e `Queued after #178.` dal corpo, il corpo aggiornato, la PR pronta a CI verde.
+  **La richiesta del revisore** ([#181](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/181#issuecomment-5900069674)): come
+  un'installazione che ha già girato A7 pulisce i grant con scope del trainer (motivo `training: trainer`) è scritto in `HANDOFF-M3.md`,
+  nel paragrafo di A7b — dalla schermata «Permessi», o con la stessa condizione in SQL quando sono molti. **Verificato di nuovo, in
+  locale** (1ab6040): `dotnet build` senza avvisi; unità **869/869**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; Vitest **578/578** in 76 file; **`e2e:full` 48/48** su un banco nuovo (127.0.0.1:5103).
+  Due giri caduti per la macchina, scritti tutti:
+  1. **Integrazione intera 410/411** al primo giro: `PirepTests.ABanStopsTheReportsNotTheValidationAndThePilotsPageShowsIt` (M2) non si è
+     collegato a MariaDB («Unable to connect to any of the specified MySQL hosts»); di nuovo intera, **411/411**.
+  2. **Smoke 151/152** tre volte di fila, sempre `blocks.spec.ts:150` (del nucleo: l'immagine di un blocco), la prima con
+     `net::ERR_NO_BUFFER_SPACE`, le altre due senza che l'immagine comparisse in 30 s; la spec da sola con `--repeat-each 3` **12/12**; lo
+     smoke intero con `--workers=2` **152/152**. La macchina aveva circa 1.800 connessioni in TIME_WAIT, a fine giornata; sullo stesso
+     codice, alle 17:21 del 29, lo smoke intero era stato 152/152.
 
 [d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
 [r146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527
@@ -2372,6 +2394,13 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
   6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
      pure (`daysAhead(4)`).
+- **Il passo della coda dopo #148** (29 settembre 2026: #148 unita alle 15:23 UTC; l'ha fatto la sessione che coordina la coda): `main` nel
+  branch con un merge (9f812b9) — nessuna differenza di contenuto, `main` aveva solo il merge di #148, già nel branch —, via `(after #148)`
+  dal titolo e `Queued after #148.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (7b3f29a): `dotnet build` senza
+  avvisi; unità **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; Vitest **548/548** in 70 file; smoke **123/124** al primo giro — è caduta `tours-map.spec.ts:160`, la
+  mappa di un tour (M2), il flake noto sotto carico, con tre giri di suite insieme —, e la spec da sola con `--repeat-each 5` **10/10**;
+  **`e2e:full` 44/44** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
@@ -2527,6 +2556,12 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
      non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
      ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
+- **Il passo della coda dopo #149** (29 settembre 2026: #149 unita alle 16:22 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (01016d9) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A9b riscritta —, via `(after #149)` dal titolo e `Queued after #149.` dal corpo,
+  la PR pronta a CI verde. **Verificato di nuovo, in locale** (e232236), tutto al primo giro: `dotnet build` senza avvisi; unità
+  **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; Vitest **561/561** in 71 file; smoke **131/131**; **`e2e:full` 45/45** su un banco nuovo (127.0.0.1:5107).
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
@@ -2756,6 +2791,14 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   data un training nel passato). La data un'ora avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta
   `scheduled_start_utc` a dieci minuti fa come fa l'installazione, come in A9a; la versione si rilegge dalla pagina. Le asserzioni non
   cambiano. Le spec del banco di A10a non datano né chiudono niente.
+- **Il passo della coda dopo #150** (29 settembre 2026: #150 unita alle 17:23 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (b03691e) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9b; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10a riscritta —, via `(after #150)` dal titolo e `Queued after #150.` dal corpo,
+  la PR pronta a CI verde. I due punti della revisione (l'handoff sulla seconda risposta di #135 con il «Trovato» 1 del corpo, e l'elenco
+  per A12b dei posti che non trattano ancora una persona cancellata) erano già corretti, e ci sono. **Verificato di nuovo, in locale**
+  (d28cc98), tutto al primo giro: `dotnet build` senza avvisi; unità **860/860**; integrazione intera **393/393**; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`, `i18n:check` verdi; Vitest **567/567** in 72 file; smoke
+  **136/136**; **`e2e:full` 46/46** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A10b)** (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153, in coda dopo #151):
 
@@ -2933,6 +2976,13 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
      del nucleo, `?? DefaultLimit` con `DefaultLimit = 10`; lo zero resta «tutte, fino a 50», e lo schema zod ha `.max(50)`.
   2. **Scritto, non cambiato**: `TrainingBlocksTests` cerca la sessione a +3 h con `Assert.Single` in una lista di 50 al massimo, sul
      database condiviso. Diventerebbe instabile solo se altre classi lasciassero più di 49 training datati più vicini.
+- **Il passo della coda dopo #151** (29 settembre 2026: #151 unita alle 19:00 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (90f3cab) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda di A9a, A9b e
+  A10a; un conflitto, l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10b riscritta —, via `(after #151)` dal titolo e
+  `Queued after #151.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (3679678), tutto al primo giro: `dotnet build`
+  senza avvisi; unità **865/865**; integrazione intera **398/398**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; Vitest **573/573** in 74 file; smoke **144/144**; **`e2e:full` 47/47** su un banco nuovo
+  (127.0.0.1:5104).
 
 **Com'è andata (A10c)** (28 settembre 2026, branch `m3/a10c-exams`, PR #178, in coda dopo #153):
 
@@ -3113,6 +3163,17 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
      rating che il vocabolario non conosce (`Unknown`, uno oltre il più alto) con `examRatingUnknown`; `TheFormOffersAnAdvisorThemselves…`
      dice anche i `ratings` delle scelte, ogni rating del vocabolario. Nello smoke `training-exams.spec.ts` le scelte finte portano i
      `ratings` con l'ottavo, e il form lo offre. L'aiuto `Untrained` è diventato `Unknown`.
+- **Il passo della coda dopo #153** (29 settembre 2026: #153 unita alle 21:08 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (197698e) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10c riscritta; il merge toglie anche il conflitto che teneva la PR senza
+  `build-test` —, via `(after #153)` dal titolo e `Queued after #153.` dal corpo, la PR pronta a CI verde. Il revisore ha letto la risposta
+  di Carmine su #178 come messa nel codice ([il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5898945166)).
+  **Verificato di nuovo, in locale** (40c0dff): `dotnet build` senza avvisi; unità **870/870**; integrazione intera **407/408** al primo
+  giro — è caduto `ErasureTests.WhatIsAboutThePersonGoesAndWhatTheyDidForOthersStaysUnderThePseudonym` (del maintainer) alla riga che
+  cerca il VID `780095` come testo nel JSON di **tutto** il registro dell'audit del database condiviso: un numero di un'altra classe che lo
+  contiene per caso (i microsecondi di un'ora, per esempio) basta —, e di nuovo l'integrazione intera **408/408**; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`, `i18n:check` verdi; Vitest **578/578** in 76 file; smoke
+  **152/152**; **`e2e:full` 48/48** su un banco nuovo (127.0.0.1:5104).
 
 [c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
