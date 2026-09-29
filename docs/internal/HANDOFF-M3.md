@@ -127,7 +127,13 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **Questo branch ha preso `main` prima della coda** (efe057a: A11a, #173–#177 e #179), e con esso **l'Invio in più di A6b** come
     commit suo (8807e8a, lo stesso pezzo di c3db117). Poi la coda l'ha raggiunto: con A7b (e7b530a, merge 1baf8fa) è entrato `main` a
     47e2f70, l'Invio di A6b si è unito senza conflitti, e `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra di nuovo solo la fase.
-    **Una fase che parte da qui** (A12a) ha già `main` a 47e2f70.
+    Due passi dopo, sempre dalla sessione che coordina: b2ba9b5 (`main` a 2af5133 dopo #147, e le correzioni delle revisioni fino a #181;
+    merge 01c21a5) e 528edc6 (le risposte di Carmine su #149, #150 e #178; merge 6462912). **Una fase che parte da qui** (A12a, #187) ha
+    `main` a 2af5133; #148 (A8b), unita alle 17:23 UTC, sale al passo della coda di ogni branch.
+  - **La revisione** (su 0b62481, [il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)):
+    **approvabile**, con tre nit che non chiedono correzioni — il menu del capo FIR (sotto), il test di architettura che vuole `own` anche
+    nell'esempio (una divisione che scegliesse `all` avrebbe un test rosso, come già per i livelli), e il percorso di un VID qualunque che
+    a un capo FIR risponde 200 con la lista vuota (come allo staff oggi). Per la consegna serve il `config/division.json` del tag.
   - ⚠️ **Un solo `e2e:full` alla volta** sulla macchina (la sessione che coordina, 29 settembre): Mailpit è condiviso, e due giri insieme
     contano le mail l'uno dell'altro. Si prende `$env:TEMP\ivaohub-e2efull-mailpit.lock` come il lucchetto dello smoke.
   - ⚠️ **`InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark`** (del nucleo, #175) ogni tanto va in

@@ -3328,6 +3328,23 @@ e le domande il 27, la nota decisa e il codice il 28**:
   condiviso: due giri insieme contano le mail l'uno dell'altro); e
   `InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark` (del nucleo, #175) ogni tanto va in deadlock
   di MariaDB: se cade, si rilancia la classe e si scrive.
+- **La revisione della #182** (29 settembre, su 0b62481, [il commento del revisore][r182]): **approvabile**. Tre nit, nessuna correzione
+  chiesta: il menu che offre «Esami» e «Ban» a un capo FIR (del nucleo, da programmare per il maintainer, come dice la PR); il test di
+  architettura che vuole `own` anche in `division.example.json`, così una divisione che scegliesse `all` avrebbe un test rosso, come già
+  per i livelli delle voci; e il percorso di un VID qualunque, che a un capo FIR risponde 200 con la lista vuota, una perdita minima come
+  per lo staff oggi. Per la consegna, la funzione vuole il `config/division.json` del tag.
+- **Altri due passi della coda** (29 settembre), fatti dalla sessione che coordina da A8b ad A7b e portati qui con un merge ciascuno:
+  - **b2ba9b5** (merge 01c21a5, solo in locale): `main` a 2af5133 dopo #146 e #147 (con #185 e #188), e le correzioni delle revisioni del
+    master su #148, #149, #150, #151, #153, #178 e #181. Un conflitto, l'intestazione di `HANDOFF-M3.md`: quella di A11b in cima,
+    riscritta come le altre, e «Accanto alle fasi del modulo», che la coda ha tolto con A6c unita, resta tolto;
+  - **528edc6** (merge 6462912), subito dopo e senza spingere nel mezzo, come chiesto: **le risposte di Carmine** alle revisioni di #149,
+    #150 e #178 — una sessione cominciata si registra e non si data più a mano né si chiude (`training:errors.sessionStarted`), nessuno
+    data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso, l'8 compreso
+    (`ExamChoicesDto.Ratings`, `schema.d.ts` rigenerato) —. Un conflitto, di nuovo l'intestazione. I test e lo smoke di A11b non datano
+    training e non ne chiudono: niente da cambiare.
+
+  `main` resta a 2af5133: #148 (A8b), unita alle 17:23 UTC, sale al passo della coda di ogni branch, e un merge con `main` sarebbe pulito
+  (`git merge-tree`), quindi la PR resta senza conflitti e con la sua CI.
 - **Classificata prima di scrivere** (`CLAUDE.md` §5): configurazione (caso a) e il meccanismo di A11a usato com'è (caso b): il team di
   un FIR come soggetto di un grant, `firStaffScope`, l'unico handler e il guardiano con il FIR della riga, la lista generata ristretta al
   FIR. **Il meccanismo basta**: nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna migrazione.
@@ -3430,7 +3447,15 @@ e le domande il 27, la nota decisa e il codice il 28**:
     senza differenze; `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` 376, nessuna manca; `pnpm e2e` **153/153** al primo
     giro, con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e con il lucchetto di Mailpit; `dotnet format`
     sui 9 file C# della fase: pulito; `core-guard`: sulla fase (`origin/m3/a7b-trainer-assignee...HEAD`, 23 file) nessun file del
-    maintainer né del nucleo; verso `main` (131 file) i due di A10b con la sua nota: PASS.
+    maintainer né del nucleo; verso `main` (131 file) i due di A10b con la sua nota: PASS. La CI della PR su 0b62481: `build-test` e
+    `core-guard` verdi;
+  - **dopo gli altri due passi della coda** (6462912, sopra 01c21a5), tutto di nuovo, una volta sola: `dotnet build` senza avvisi; unità
+    **869/869**; **integrazione intera senza filtro 413/413** al primo giro (le 411 di A7b e le 2 di A11b); `pnpm lint`, `typecheck`,
+    `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api` e `pnpm i18n:sync` senza
+    differenze; le chiavi letterali `training:` 381, nessuna manca; `pnpm e2e` **153/153** al primo giro (le 152 di A7b e il caso di
+    A11b), con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `dotnet
+    format` sui 9 file C#: pulito; `core-guard`: sulla fase (23 file) nessun file del maintainer né del nucleo; verso `main` (116 file) i
+    due di A10b con la sua nota: PASS.
 - **Non verificato**:
   - **il «fatta quando» sul banco**: il banco e2e non ha un capo FIR (i personaggi di `/e2e/signin` e `e2e-server.mjs` sono nucleo);
     aggiungerne uno sarebbe una fase del nucleo a sé, con la sua nota. Lo provano i test d'integrazione, con i grant veri del file;
@@ -3441,6 +3466,7 @@ e le domande il 27, la nota decisa e il codice il 28**:
 
 [c144-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930
 [q146-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5886918007
+[r182]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 
