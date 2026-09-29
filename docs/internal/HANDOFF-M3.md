@@ -12,15 +12,16 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 29 settembre 2026 — **fase A9a** (dopo la sessione: il server), sul branch `m3/a9a-after-the-session-server`,
-**PR #149** verso `main`, in bozza **in coda dopo #148** (A8b, in cima alla coda: #147 è unita). **Sono in `main`**: A3 (#131), A3b (#135),
-A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147) e la fase del nucleo A11a (#159). **In coda
-sopra A9a**, in bozza, ognuna dopo quella sotto: A9b (#150), A10a (#151), A10b (#153), A10c (#178), A7b (#181), A11b (#182) e la fase del
-nucleo A12a (#187). **Carmine ha risposto** ai due punti della revisione di #149 ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158)):
-una sessione cominciata non si data più a mano né si chiude — si registra —, e nessuno data un training nel passato; gli scostamenti 1, 2
-e 7 sono accettati. Tutto nel codice e nei test (A9a qui sotto, l'ultima voce). La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
-`CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda
-(`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente.
-In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**PR #149** verso `main`, **in cima alla coda**: #148 (A8b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
+**Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b
+(#148) e la fase del nucleo A11a (#159). **In coda sopra A9a**, in bozza, ognuna dopo quella sotto: A9b (#150), A10a (#151), A10b (#153),
+A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** ai due punti della revisione di #149
+([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158)): una sessione cominciata non si data più a
+mano né si chiude — si registra —, e nessuno data un training nel passato; gli scostamenti 1, 2 e 7 sono accettati. Tutto nel codice e nei
+test (A9a qui sotto, l'ultima voce). La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via
+di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»),
+e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con
+il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -144,9 +145,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Trovato, detto al revisore**: l'unica asserzione cambiata di una fase sotto, in `TrainingStaffTests` (A7): diceva che la pagina dello
   staff non ha `staffComment`, il segno di A7 che i campi riservati non c'erano ancora; ora dice che c'è, vuoto su una richiesta, e che a un
   advisor non si toglie niente (`08`, A9, «Com'è andata (A9a)»).
-- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in cima (#147 è unita il 29 settembre). Quando #148 sarà
-  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
-  dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9a non c'è più).
+- **La coda**: #148 (A8b) è unita il 29 settembre, e il passo della coda di A9a l'ha fatto la sessione che la coordina (quella di A9a non
+  c'è più): `main` nel branch con un merge — nessuna differenza nel contenuto, `main` aveva solo il merge di #148, già nel branch —, build e
+  **tutti** i test di nuovo, via `(after #148)` dal titolo e `Queued after #148.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono
+  `main` al loro passo.
 - **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650)):
   i tre nit sono corretti (`08`, «Com'è andata (A9a)», la penultima voce).
 - **Le risposte di Carmine** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158);
