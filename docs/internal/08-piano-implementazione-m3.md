@@ -3570,12 +3570,24 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
     scritti a mano com'erano e la lista nuova **cade il test delle colonne** (mancano le righe `trn_`); con il registro ma **senza
     togliere il modulo di prova**, cade con `smp_items.created_by` al posto 76 — il contesto di un modulo entra da solo. Rimessi i file
     della fase e toccati perché la build li ricompilasse: 3/3 e 4/4.
-  - La CI della PR sul secondo push, di soli documenti (b185554): `build-test` e `core-guard` verdi.
+  - La CI della PR sul secondo push, di soli documenti (b185554): `build-test` e `core-guard` verdi; **sul codice (e3b84d7)** verdi tutti e
+    due (`build-test` in 21 minuti).
+- **Il passo della coda** (29 settembre, sera): la catena dopo #147 — `main` a 2af5133 (#146, #147, #184–#186, #188), le correzioni delle
+  revisioni da #148 a #181 e le risposte di Carmine alle revisioni di #149, #150 e #178 — è salita fino ad A11b (a24268b), che la sessione di
+  A11b mi ha scritto; è entrata qui con un merge (`8c64794`). **Un conflitto solo**, l'intestazione di `HANDOFF-M3.md`: quella di A12a resta
+  in cima, riscritta, e il paragrafo «Accanto alle fasi del modulo» resta tolto, come in A7b. Nessuna riga che uno dei due lati teneva è
+  andata persa (controllato riga per riga su `HANDOFF-M3.md`, `08` e i due `common.json`, dove restano i link legali di #188 e
+  `people.deleted`). **L'intervallo `m3/a11b-fir-heads...m3/a12a-deleted-person-core` mostra di nuovo solo la fase** (14 file). Poi tutto di
+  nuovo, una suite alla volta: `dotnet build` 0 avvisi; unità **869/869**; **integrazione intera, senza filtro, 413/413** al primo giro (i
+  409 e i 4 della catena); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file;
+  `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi `training:` 381, nessuna mancante; **`pnpm e2e` 153/153** al primo giro,
+  sotto il suo lucchetto; **`pnpm e2e:full` 48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `core-guard` sulla
+  fase: nessun file del maintainer, i 10 del nucleo con la nota, PASS.
 - **Non verificato**:
   - **le pagine**: il nucleo dà il pezzo, ma nessuna pagina lo usa ancora (A12b per il training, una sessione di Carmine per i tour);
     la colonna `person` è provata in Vitest, non su una schermata vera né nella galleria, che non la mostra;
   - **una mail** che nomini una persona cancellata: nessuna la scrive qui (nota §3, punto 2);
-  - **la CI sul codice**: la dirà la PR.
+  - **la CI dopo il passo della coda**: la dirà la PR.
 
 [q187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
 [a187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
