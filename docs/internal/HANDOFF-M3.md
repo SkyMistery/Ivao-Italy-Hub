@@ -121,8 +121,13 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     design (§3.2).
   - **A12b** (la cancellazione): gli esami del candidato si cancellano (design §6.1); le colonne sono `candidate_vid` ed `examiner_vid`, e la
     voce del calendario va via con l'esame solo se lo si elimina passando dal change tracker (come per i training, ⚠️ di A8a).
-  - ⚠️ **Il rating di un esame è uno di quelli allenati** (`HasPracticalTraining`): se il TD deve mettere in calendario anche gli esami SEC e
-    ATP (PATS li ha, rating 8), è una domanda — il vocabolario del nucleo non dice quali rating hanno un esame.
+  - ⚠️ **Il rating di un esame è ogni rating del suo percorso**, anche quelli per cui nessuno fa training — l'8 (SEC, ATP) compreso — (la
+    [risposta di Carmine su #178](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992); `08`, A10c, l'ultima
+    voce): la regola chiede al vocabolario del nucleo se conosce il rating sul percorso (`TrainingExams.RatingUnknown` se no), e la
+    postazione la chiede solo per un rating che ha un tipo di postazione. Il form prende i rating da `/api/training/exam-choices`
+    (`ratings`: ogni rating dei due percorsi), non più da `/api/training/ratings`, che resta dei rating allenati per gli altri form. Il
+    vocabolario non dice quali rating hanno un esame, e il modulo non scrive numeri (`TrainingArchitectureTests`): il form offre tutto il
+    percorso, e il TD sceglie fra 5 e 8.
   - ⚠️ **Gli smoke di A10b non fingono la lettura degli esami** (`/api/training/sessions/exams`): la pagina disegna le sessioni con l'avviso
     `public.examsUnread`. Uno spec nuovo di `/training` finga anche la lettura degli esami.
   - ⚠️ **Il banco dopo il giro di A10c**: `training-exams.spec.ts` inserisce un esame del pilota del banco (999002) esaminato dal web master

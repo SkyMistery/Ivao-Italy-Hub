@@ -2831,7 +2831,8 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   4. **Il rating di un esame è uno di quelli che la divisione allena** (il vocabolario del nucleo, `HasPracticalTraining`), come per le
      voci della scheda: l'esame alla fine di un percorso del modulo. ⚠️ **Gli esami di PATS arrivano al rating 8** (§P: SEC, ATP): se il TD
      deve mettere in calendario anche quelli, è una domanda, perché il vocabolario del nucleo non dice quali rating hanno un esame e il
-     modulo non può scriverlo (estensione del nucleo, perimetro IVAO).
+     modulo non può scriverlo (estensione del nucleo, perimetro IVAO). ⚠️ *Superato* dalla risposta di Carmine su #178: ogni rating del
+     percorso, qui sotto nell'ultima voce.
   5. **Chi esamina è chi tiene `Training.ManageExams` sul dipartimento base**, come lo calcola un login (`IPermissionHolders`): TC, TAC, i
      TA e la direzione, e anche il web master e il superadmin, che tengono tutto per il nucleo. Nessuna regola di livelli scritta nel
      modulo: la dice `positionGrants`.
@@ -2916,6 +2917,32 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   3. Tre cose per Carmine, niente da cambiare se non lo chiede lui: un esame vecchio il cui TA ha perso la posizione risponde
      `examinerNotExaminer`; web master e superadmin compaiono fra gli esaminatori offerti (scostamento 5); un TC o TAC candidato di un esame
      può modificarlo (il design §3.1 non nega `ManageExams` all'interessato).
+- **La risposta di Carmine su #178** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a10c`, con la coda
+  sotto nuova unita): **gli esami prendono ogni rating da 5 a 8, l'8 compreso**, non solo quelli con un training pratico; resta nel modulo.
+  **Lo scostamento 4 non vale più**, e al suo posto:
+  1. **La regola** (`ExamWriteDtoValidator`, `Examined`): il rating dell'esame è **uno che il vocabolario del nucleo conosce sul suo
+     percorso**, allenato o no; se no, `training:errors.examRatingUnknown` sul campo (in inglese e in italiano), al posto di
+     `ratingNotTrained`, che resta degli altri form. **La postazione** la chiede solo un rating che ha un tipo di postazione (ADC, APC, ACC
+     su IVAO); per ogni altro è `examPositionNotAsked`, le cui parole ora dicono «di questo rating» e non «di questo percorso». Un esame SEC
+     o ATP va in calendario senza postazione, con il titolo del solo rating.
+  2. **Il form**: le scelte (`/api/training/exam-choices`) portano anche **`ratings`**, ogni rating dei due percorsi com'è nel vocabolario
+     (`TrainingRatingDto`, la stessa forma di `/api/training/ratings`), e `screens/exams.tsx` prende da lì i rating al posto di
+     `ratingsQuery`; `/api/training/ratings` resta dei rating allenati, per la scheda, le impostazioni e la richiesta. Gli aiuti del rating e
+     della postazione dicono la regola nuova. `schema.d.ts` rigenerato.
+  3. ⚠️ **Un'interpretazione, detta al revisore**: la risposta dice «da 5 a 8» e «ogni rating del vocabolario per il suo percorso». Il
+     vocabolario non dice quali rating hanno un esame, e il modulo non scrive numeri di rating (`TrainingArchitectureTests` lo ferma),
+     quindi la regola prende **ogni** rating del percorso — su IVAO dal 2 al 10 — e il TD sceglie fra 5 e 8. Se Carmine vuole che il form
+     offra e il server accetti solo da 5 a 8, è una parola del vocabolario del nucleo (quali rating hanno un esame), in una fase del nucleo
+     con la sua nota.
+  4. **I test**: il nuovo `TrainingExamTests.AnExamTakesAnyRatingOfItsLadderTheEighthToo` programma **un esame di rating 8 per ogni
+     percorso** (SEC e ATP: senza postazione, nel calendario con il titolo del rating; con una postazione, `examPositionNotAsked`) e uno del
+     primo rating. **Cade sulla regola vecchia**: su una copia di `TrainingExams.cs` con `HasPracticalTraining` di nuovo nella regola,
+     l'esame SEC è rifiutato (400 su `rating`) e il test cade lì; il file poi rimesso e ricompilato. ⚠️ **Due test di A10c toccati, e
+     perché**: `AnExamIsRefusedFieldByField` rifiutava il primo rating del percorso con `ratingNotTrained`, che ora si accetta: rifiuta un
+     rating che il vocabolario non conosce (`Unknown`, uno oltre il più alto) con `examRatingUnknown`; `TheFormOffersAnAdvisorThemselves…`
+     dice anche i `ratings` delle scelte, ogni rating del vocabolario. Nello smoke `training-exams.spec.ts` le scelte finte portano i
+     `ratings` con l'ottavo, e il form lo offre. L'aiuto `Untrained` è diventato `Unknown`.
 
 [c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
