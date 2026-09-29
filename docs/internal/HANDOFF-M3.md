@@ -120,6 +120,19 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **In un'installazione già avviata** la voce di `positionGrants` di `Training.Conduct` è nuova (i livelli fanno l'impronta): la
     vecchia, a TC e TAC, resta come riga doppione. **I grant con scope scritti da A7** (motivo `training: trainer`) restano, inerti: il
     job non li toglie più. Sui banchi ce ne sono.
+  - ⚠️ **Per la consegna che porta A7b: come un'installazione che ha già girato A7 pulisce quei grant** (la richiesta del revisore sulla
+    #181). A7, a ogni assegnazione, ha scritto in `hub_user_grants` una riga per il trainer: `value` = `Training.Conduct`, `resource_scope`
+    = `training:training:{id}`, `reason` = `training: trainer`. Il job che la toglieva non c'è più, e con A7b il training non dichiara più
+    uno scope: nessuna riga la fa più valere, ma resta nella lista dei permessi. **Si puliscono dopo aver installato A7b**, in uno dei due
+    modi:
+    1. **Dalla schermata «Permessi»** (`/staff/admin/permissions`, con `Permissions.Manage`: il web master o un superadmin): si cerca
+       `training: trainer` (la ricerca guarda il permesso e il motivo) e si elimina ogni riga. Passa dal motore: l'eliminazione resta
+       nell'audit e rinnova la sessione di chi teneva il grant. È la strada da preferire, con poche righe.
+    2. **Con molte righe, da phpMyAdmin** sul database dell'installazione: prima si contano con
+       `SELECT COUNT(*) FROM hub_user_grants WHERE value = 'Training.Conduct' AND reason = 'training: trainer' AND resource_scope LIKE 'training:training:%';`,
+       poi le si toglie con la stessa condizione (`DELETE FROM hub_user_grants WHERE …`). Questa strada non lascia una riga d'audit e non
+       rinnova le sessioni aperte, e qui non serve: i grant non valevano già più.
+    Un'installazione che non ha mai girato A7 (nessuna riga con quel motivo) non ha niente da fare.
   - **`DELETE` di un training non esiste**: la lista dello staff è in sola lettura, e `DELETE` risponde 404.
   - **Il giro dello staff** (`full/training-staff.spec.ts`) fa entrare il trainer all'inizio e non lo fa più rientrare; anche i giri delle
     date, del report e dei prossimi training usano la sessione del trainer aperta all'inizio.
@@ -131,10 +144,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A7b non ne usa di nuovi (riusa quelli delle classi che cambia); il range del training è tutto assegnato.
 - **Trovato, detto al revisore**: la premessa del punto 3 del revisore («the guard says no») non vale per il training, per l'eccezione del
   membro (`08`, A7b, scostamento 4); i candidati non si ricavano da chi tiene `Conduct` (scostamento 3); `DELETE` risponde 404, non 405.
-- **La coda**: la PR è in bozza con `(after #178)` e `Queued after #178.`, **in conflitto con `main` e senza CI** (l'handoff, dopo #145 e
-  #176), come la coda sotto. Quando #178 sarà unita, il passo della coda di A7b — `main` nel branch con un merge (mai un rebase),
-  l'intestazione di A7b in cima a questo file e i blocchi nuovi di `main` sotto, build e **tutti** i test di nuovo, via la coda dal titolo
-  e dal corpo, la PR pronta a CI verde — lo fa la sessione di A7b se è ancora viva, altrimenti quella della fase dopo prima di cominciare.
+- **La coda**: #178 (A10c) è unita il 29 settembre, e il passo della coda di A7b l'ha fatto la sessione che la coordina: `main` nel branch
+  con un merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda —, l'intestazione di A7b in cima
+  a questo file e i blocchi di `main` sotto; il merge toglie anche il conflitto che teneva la PR senza `build-test`. Build e **tutti** i
+  test di nuovo, via `(after #178)` dal titolo e `Queued after #178.` dal corpo, il corpo aggiornato, la PR pronta a CI verde. Le PR sopra
+  prendono `main` al loro passo.
 
 ### Che cosa ha lasciato A10c (28 settembre 2026, branch `m3/a10c-exams`, PR #178)
 
