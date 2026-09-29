@@ -20,7 +20,8 @@ altro membro, affidato a un trainer che si cancella — è nata «Proposta» con
 come raccomandato ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516)); la fase intera è scritta
 e provata. Il branch è nato dalla cima della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla sessione di A12a), e **la coda
 l'ha raggiunto**: il passo di #182 dopo #181, con `main` a 17941c0, è salito per A11b (99421c2) e A12a (62eee6f) ed è entrato qui con un
-merge, solo documenti. **L'intervallo `m3/a12a-deleted-person-core...m3/a12b-training-erasure` mostra solo la fase.** **Sono in `main`**:
+merge (2fdc3a5), solo documenti. **L'intervallo `m3/a12a-deleted-person-core...m3/a12b-training-erasure` mostra solo la fase**, e il branch
+**si unisce senza conflitti con il `main` di oggi** (6704aad, con #190): la PR ha la CI. **Sono in `main`**:
 A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148),
 A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del maintainer. **In coda sopra A12b**:
 **A12d** (il giro completo e la chiusura di M3), la cui sessione è partita dal branch `m3/a12d-full-round`. **A11b** (#182) il revisore l'ha

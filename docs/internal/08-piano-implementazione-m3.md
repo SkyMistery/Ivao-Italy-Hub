@@ -3793,12 +3793,19 @@ parte**:
     dell'anteprima; con solo `StaffQueue.cs` di prima, sulla vista «da assegnare» (vuota invece dei due); con solo le mail di prima, sul
     promemoria (`-1` invece di «Persona cancellata»); il test di unità nuovo cade con `StaffQueue.cs` di prima. Rimessi e toccati: 8/8 e
     6/6.
+- **La coda sotto** (30 settembre, notte): la nuova cima di A12a (62eee6f) — il passo di #182 dopo #181, con `main` a 17941c0, arrivato
+  per A11b (99421c2), solo documenti — è entrata qui con un merge (`2fdc3a5`), come mi ha scritto la sessione di A12a. **Un conflitto
+  solo**, l'intestazione di `HANDOFF-M3.md`: quella di A12b in cima, riscritta, con ciò che quella di A12a diceva della coda e della
+  consegna di A11b; i paragrafi di A12a e A11b sotto prendono i loro. Nessuna riga che uno dei due lati teneva è andata persa
+  (controllato riga per riga su `HANDOFF-M3.md` e `08`). **Il codice non cambia** (nessun file fuori da `docs/` fra 71e04df e il
+  merge), quindi le suite qui sopra valgono com'erano; l'intervallo della fase mostra ancora solo la fase (41 file), e il branch
+  **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190 del maintainer): la PR ha di nuovo la CI.
 - **Non verificato**:
   - **una cancellazione sul banco**: nessun giro `e2e:full` cancella una persona — i personaggi del banco servono agli altri giri —; le
     pagine con una persona cancellata sono provate nello smoke, con l'API finta, e dalle risposte vere nei test d'integrazione;
   - **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: passano dallo stesso `TrainingMail.Name` del promemoria,
     ma nominano sempre qualcuno che c'è (il nuovo trainer, chi pubblica), e nessun test le fa con uno pseudonimo;
-  - **la CI**: la PR è in conflitto con `main` fino al suo passo della coda.
+  - **la CI**: fino al merge qui sopra la PR era in conflitto con `main` e non l'aveva; ora gira, e la dirà la PR.
 
 [q189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
 [a189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516
