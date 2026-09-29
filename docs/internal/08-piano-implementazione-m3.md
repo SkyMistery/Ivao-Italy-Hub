@@ -2784,6 +2784,13 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
      del nucleo, `?? DefaultLimit` con `DefaultLimit = 10`; lo zero resta «tutte, fino a 50», e lo schema zod ha `.max(50)`.
   2. **Scritto, non cambiato**: `TrainingBlocksTests` cerca la sessione a +3 h con `Assert.Single` in una lista di 50 al massimo, sul
      database condiviso. Diventerebbe instabile solo se altre classi lasciassero più di 49 training datati più vicini.
+- **Il passo della coda dopo #151** (29 settembre 2026: #151 unita alle 19:00 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (90f3cab) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda di A9a, A9b e
+  A10a; un conflitto, l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10b riscritta —, via `(after #151)` dal titolo e
+  `Queued after #151.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (3679678), tutto al primo giro: `dotnet build`
+  senza avvisi; unità **865/865**; integrazione intera **398/398**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; Vitest **573/573** in 74 file; smoke **144/144**; **`e2e:full` 47/47** su un banco nuovo
+  (127.0.0.1:5104).
 
 **Com'è andata (A10c)**: *(a fase chiusa)*
 
