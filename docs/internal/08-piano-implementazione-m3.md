@@ -3582,7 +3582,9 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
   409 e i 4 della catena); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file;
   `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi `training:` 381, nessuna mancante; **`pnpm e2e` 153/153** al primo giro,
   sotto il suo lucchetto; **`pnpm e2e:full` 48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `core-guard` sulla
-  fase: nessun file del maintainer, i 10 del nucleo con la nota, PASS.
+  fase: nessun file del maintainer, i 10 del nucleo con la nota, PASS. ⚠️ **Mentre il passo girava, #149 (A9a) è stata unita** (b2409aa,
+  16:22 UTC): il suo `HANDOFF-M3.md` va in conflitto con ogni branch della coda, A11b compreso, quindi la PR è in conflitto con `main` e
+  **non ha CI** finché `main` non entra al prossimo passo della coda; nessun merge di `main` di iniziativa.
 - **Non verificato**:
   - **le pagine**: il nucleo dà il pezzo, ma nessuna pagina lo usa ancora (A12b per il training, una sessione di Carmine per i tour);
     la colonna `person` è provata in Vitest, non su una schermata vera né nella galleria, che non la mostra;

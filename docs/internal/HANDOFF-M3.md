@@ -13,17 +13,17 @@
 
 **Ultimo aggiornamento:** 29 settembre 2026 — **fase A12a** (nucleo: la persona cancellata e le colonne del training in
 `ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, in bozza **in coda dopo #182** (A11b, in bozza in coda
-dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, dopo #149, A9a, in cima alla coda: **#148, A8b, è unita**
-il 29 settembre alle 17:23 UTC). La nota (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`) è nata «Proposta» con due domande, e
+dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, in cima alla coda: **#148, A8b, e #149, A9a, sono unite**
+il 29 settembre, alle 15:23 e alle 16:22 UTC). La nota (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`) è nata «Proposta» con due domande, e
 **Carmine l'ha decisa** lo stesso giorno, come raccomandato; poi il codice, con la CI verde su e3b84d7. Il branch è nato dalla cima della
 coda (0b62481, preparato dalla sessione di A11b); **poi la coda l'ha raggiunto**: la catena dopo #147 — `main` a 2af5133, con #146, #147,
 #184 (il piano di M4, E0), #185, #186 (la versione 0.4.0) e #188 — con le correzioni delle revisioni da #148 a #181 e **le risposte di
 Carmine alle revisioni di #149, #150 e #178** (una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un
 training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso, l'8 compreso) è salita fino
 ad A11b (a24268b) ed è entrata qui con un merge: **l'intervallo `m3/a11b-fir-heads...m3/a12a-deleted-person-core` mostra di nuovo solo la
-fase**. `main` con #148 (18028de) sale al passo della coda di ogni branch, non prima. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133),
-A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b (#148), la fase del nucleo A11a (#159) e #152 del
-maintainer. **A11b** (#182, sotto questa) il revisore l'ha trovata approvabile su 0b62481
+fase**. `main` con #148 e #149 (b2409aa) sale al passo della coda di ogni branch, non prima: **fino ad allora la PR è in conflitto con
+`main`** in questo file, come tutta la coda, **e non ha CI**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140),
+A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149), la fase del nucleo A11a (#159) e #152 del maintainer. **A11b** (#182, sotto questa) il revisore l'ha trovata approvabile su 0b62481
 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)). La **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
 suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza
