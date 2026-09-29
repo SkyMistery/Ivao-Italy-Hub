@@ -147,8 +147,7 @@ test('the trainer reschedules, then publishes a report with an item N/A and «re
     const id = await acceptedAndAssigned(trainee.request, context.request, standing, opened);
     await startedInAMoment(context.request, id);
 
-    // Signed in again: an assignment writes a grant, which asks its holder to enter again.
-    await signIn(trainer, 'trainer');
+    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
     const trainerPage = await trainer.newPage();
     const complaints = watch(trainerPage);
 

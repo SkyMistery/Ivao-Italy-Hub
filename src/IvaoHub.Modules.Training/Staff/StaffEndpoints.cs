@@ -27,7 +27,11 @@ namespace IvaoHub.Modules.Training.Staff;
 /// </summary>
 public static class StaffEndpoints
 {
-    /// <summary>The list: read only, the trainings change through the verbs of the page.</summary>
+    /// <summary>
+    /// The list: read only, the trainings change through the verbs of the page. It is the only generic resource of the training,
+    /// and it maps no write at all — no <c>DELETE</c> whoever asks, the trainer who conducts one included: a training leaves the
+    /// register through no verb (§6; A7b, the reviewer's point 2 on #146).
+    /// </summary>
     public const string QueuePattern = "/api/training/queue";
 
     public const string Pattern = "/api/training/trainings";

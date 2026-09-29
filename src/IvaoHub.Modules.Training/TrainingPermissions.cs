@@ -7,9 +7,9 @@ namespace IvaoHub.Modules.Training;
 /// module — and who holds them is <c>division.json → positionGrants</c> (§3.2), never this file.
 /// <para>Five are denied to whoever a training is about: nobody approves, assigns, conducts, edits or bans on a training of
 /// their own, the super administrator included (§3, §10).</para>
-/// <para>One reaches only the rows assigned to whoever holds it (<c>OnlyForAssignee</c>, note
-/// 2026-09-26-le-righe-affidate-a-chi-scrive): an examiner writes the exams assigned to them, and on any other exam the permission
-/// is worth what <see cref="Edit"/> is worth there (A10c).</para>
+/// <para>Two reach only the rows assigned to whoever holds them (<c>OnlyForAssignee</c>, note
+/// 2026-09-26-le-righe-affidate-a-chi-scrive): a trainer conducts the trainings assigned to them (A7b), an examiner writes the
+/// exams assigned to them (A10c), and on any other row the permission is worth what <see cref="Edit"/> is worth there.</para>
 /// </summary>
 public static class TrainingPermissions
 {
@@ -25,7 +25,11 @@ public static class TrainingPermissions
     /// <summary>Assigning the trainer, and changing them.</summary>
     public const string Assign = "Training.Assign";
 
-    /// <summary>Dates, rescheduling, no-show, sheet and report; a trainer holds it on the trainings assigned to them only (§3.3).</summary>
+    /// <summary>
+    /// Dates, rescheduling, no-show, sheet and report. It reaches only the trainings assigned to whoever holds it (§3.3, A7b): the
+    /// trainers and the advisors hold it by their position and conduct the trainings given to them, and on any other training it
+    /// is worth <see cref="Edit"/> — the coordinator and the assistant conduct every one.
+    /// </summary>
     public const string Conduct = "Training.Conduct";
 
     /// <summary>Everything on every training, and the permission the write guard asks of the staff's own rows.</summary>
@@ -50,7 +54,7 @@ public static class TrainingPermissions
         new(View, IsGlobal: false),
         new(Approve, IsGlobal: false, DeniedToStakeholder: true),
         new(Assign, IsGlobal: false, DeniedToStakeholder: true),
-        new(Conduct, IsGlobal: false, DeniedToStakeholder: true),
+        new(Conduct, IsGlobal: false, DeniedToStakeholder: true, OnlyForAssignee: true),
         new(Edit, IsGlobal: false, DeniedToStakeholder: true),
         new(ManageSheets, IsGlobal: false),
         new(ManageExams, IsGlobal: false, OnlyForAssignee: true),

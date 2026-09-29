@@ -1,34 +1,23 @@
 using System.Globalization;
-using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
-using IvaoHub.Core.Data.Crud;
-using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
-using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Quartz;
 
 namespace IvaoHub.Modules.Training.Staff;
 
 /// <summary>
-/// The night of the training (design M3 §5.3). First it closes the trainings whose trainee chose no date in the time the division
-/// gives — only when <c>maxResponseDays</c> is set (§2.5, §12 n.9; A8, <see cref="TrainingDates.CloseUnansweredAsync"/>) —; then it
-/// takes back the grants the assignment wrote on trainings that are over — reported, closed, not attended (A7) —, those closed a
-/// moment before included, because a grant with a scope travels in its holder's cookie and must not pile up (§3.3). Its holder is
-/// asked to sign in again, at night rather than when the report is just published: the cost decided with the grant (§12 n.1).
-/// <para>A grant is also taken back when its training has another trainer, or none: the assignment writes the new grant before
-/// the training and takes the old one after it, and a write that stopped half way leaves one behind. Not in the hour after it
-/// was written, which may be an assignment still under way.</para>
-/// <para>Past the filter of the members, as the staff reads: the job is nobody. It never throws: a failure is a row in
-/// <c>hub_jobs_log</c>, as for every job of the hub.</para>
+/// The night of the training (design M3 §5.3): it closes the trainings whose trainee chose no date in the time the division gives —
+/// only when <c>maxResponseDays</c> is set (§2.5, §12 n.9; A8, <see cref="TrainingDates.CloseUnansweredAsync"/>).
+/// <para>It takes no grant back: the trainer conducts the trainings assigned to them with the <c>Training.Conduct</c> of their
+/// position, and no grant is written on one training (§3.3, A7b). Until A7b this job also took back the grants the assignment of
+/// A7 wrote.</para>
+/// <para>It never throws: a failure is a row in <c>hub_jobs_log</c>, as for every job of the hub.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class TrainingExpiryJob(
-    TrainingDbContext database,
     HubDbContext hub,
-    ModuleGrants grants,
     TrainingDates dates,
     IClock clock,
     ILogger<TrainingExpiryJob> logger) : IJob
@@ -41,14 +30,11 @@ public sealed class TrainingExpiryJob(
     /// </summary>
     public const string Cron = "0 15 4 * * ?";
 
-    /// <summary>How long a grant of a training that has another trainer is left alone: an assignment may still be writing it.</summary>
-    private static readonly TimeSpan InFlight = TimeSpan.FromHours(1);
-
     private const int MaxMessageLength = 2000;
 
     public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);
 
-    /// <summary>Returns how many grants were taken back on this run.</summary>
+    /// <summary>Returns how many trainings were closed on this run.</summary>
     public async Task<int> RunAsync(CancellationToken cancellationToken = default)
     {
         var entry = new JobLogEntry { Job = JobName, StartedAt = clock.UtcNow, Status = "running" };
@@ -57,18 +43,14 @@ public sealed class TrainingExpiryJob(
 
         try
         {
-            // The closings first, so that the grants of the trainings closed tonight go tonight.
             var closed = await dates.CloseUnansweredAsync(entry.StartedAt, cancellationToken);
-            var taken = await TakeBackAsync(entry.StartedAt, cancellationToken);
 
             entry.FinishedAt = clock.UtcNow;
             entry.Status = "succeeded";
-            entry.Message = string.Create(
-                CultureInfo.InvariantCulture,
-                $"{closed} training(s) with no date chosen in time closed, {taken} grant(s) of trainings over or reassigned taken back");
+            entry.Message = string.Create(CultureInfo.InvariantCulture, $"{closed} training(s) with no date chosen in time closed");
             await hub.SaveChangesAsync(cancellationToken);
 
-            return taken;
+            return closed;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -83,46 +65,5 @@ public sealed class TrainingExpiryJob(
 
             return 0;
         }
-    }
-
-    /// <summary>
-    /// Every grant of <c>Training.Conduct</c> on one training, on any department — a division may move the module's —, taken back
-    /// unless its training is open and its holder is still the trainer.
-    /// </summary>
-    private async Task<int> TakeBackAsync(DateTime now, CancellationToken cancellationToken)
-    {
-        var held = new List<UserGrant>();
-        foreach (var department in Enum.GetValues<Department>())
-        {
-            held.AddRange((await grants.HeldAsync(TrainingPermissions.Conduct, department, cancellationToken))
-                .Where(grant => Training.IdOf(grant.ResourceScope) is not null));
-        }
-
-        if (held.Count == 0)
-        {
-            return 0;
-        }
-
-        var ids = held.Select(grant => Training.IdOf(grant.ResourceScope)!.Value).Distinct().ToList();
-        var trainings = await CrudSource.BackOffice<Training>(database).AsNoTracking()
-            .Where(training => ids.Contains(training.Id))
-            .Select(training => new { training.Id, training.State, training.TrainerVid })
-            .ToDictionaryAsync(training => training.Id, cancellationToken);
-
-        var taken = 0;
-        foreach (var grant in held)
-        {
-            var training = trainings.GetValueOrDefault(Training.IdOf(grant.ResourceScope)!.Value);
-            var over = training is null || !Training.IsOpen(training.State);
-            var reassigned = !over && training!.TrainerVid != grant.Vid && grant.CreatedAt <= now - InFlight;
-
-            if ((over || reassigned)
-                && await grants.TakeAsync(grant.Vid!.Value, grant.Value, grant.Department!.Value, grant.ResourceScope, cancellationToken))
-            {
-                taken++;
-            }
-        }
-
-        return taken;
     }
 }

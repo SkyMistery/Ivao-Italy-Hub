@@ -254,12 +254,15 @@ public sealed class TrainingRequestRulesTests
     }
 
     [Fact]
-    public void ATrainingIsScopedToItselfAndAboutItsTrainee()
+    public void ATrainingIsAboutItsTraineeAndAssignedToItsTrainer()
     {
         var training = new Training { Id = 42, TraineeVid = 4242 };
 
-        Assert.Equal($"{TrainingModule.ModuleKey}:training:42", training.ResourceScope);
-        Assert.Equal(Training.ScopeOf(42), training.ResourceScope);
+        // Assigned to nobody until a trainer is given it, then to the trainer (A7b): who conducts it is the row's to say.
+        Assert.Null(((IvaoHub.Core.Division.IHasAssignee)training).AssigneeVid);
+        training.TrainerVid = 4343;
+        Assert.Equal(4343, ((IvaoHub.Core.Division.IHasAssignee)training).AssigneeVid);
+
         Assert.Equal(4242, training.StakeholderVid);
         Assert.Equal(IvaoHub.Core.Division.Visibility.Members, training.Visibility);
     }

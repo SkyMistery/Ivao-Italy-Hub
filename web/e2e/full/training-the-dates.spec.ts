@@ -104,8 +104,7 @@ test('the trainer proposes two dates, the trainee chooses the one warned of anot
     ].map((mail) => mail.ID);
 
     // ---------------------------------------------------------------- the trainer proposes two dates, and confirms the warning
-    // Signed in again: an assignment writes a grant, which asks its holder to enter again.
-    await signIn(trainer, 'trainer');
+    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
     const trainerPage = await trainer.newPage();
     const complaints: string[] = [];
     for (const watched of [page, trainerPage]) {

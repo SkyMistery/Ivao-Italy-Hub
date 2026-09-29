@@ -91,8 +91,7 @@ test('a visitor reads the sessions to come without names, the calendar leads to 
     // ---------------------------------------------------------------- assigned: in the trainer's queue, dates to propose
     await step(context.request, id, 'accept', {});
     await step(context.request, id, 'assign', { trainerVid: BENCH_TRAINER });
-    // Signed in again: an assignment writes a grant, which asks its holder to enter again.
-    await signIn(trainer, 'trainer');
+    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
     const theirs = (await block(trainer.request, 'training.trainerQueue')) as { toPropose: Row[] };
     expect(theirs.toPropose.map((row) => row.id)).toContain(id);
 

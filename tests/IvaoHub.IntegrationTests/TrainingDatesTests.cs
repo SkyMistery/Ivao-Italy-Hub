@@ -34,8 +34,9 @@ namespace IvaoHub.IntegrationTests;
 /// round through the API.
 /// <para>⚠️ The staff of the training is seeded without an address (<c>CONTRIBUTING.md</c>, "Tests"): the trainer whose mail is
 /// looked for holds a position of the direction instead, as in <c>TrainingStaffTests</c> — the direction conducts every training
-/// —, and the trainer who conducts by the grant on one training alone has no mailbox. The entries of the calendar this class
-/// writes are of a kind of its own, so that nothing another class leaves behind warns a date of this one.</para>
+/// —, and the trainer of the department, who conducts the trainings assigned to them with the <c>Training.Conduct</c> of their
+/// position (A7b), has no mailbox. The entries of the calendar this class writes are of a kind of its own, so that nothing another
+/// class leaves behind warns a date of this one.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -44,7 +45,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     // and 790050–790051 A3b's; 790072–790079 were handed to the review of A8a.
     private const int TraineeVid = 790032;
     private const int TrainerVid = 790033;
-    private const int ScopedTrainerVid = 790034;
+    private const int DepartmentTrainerVid = 790034;
     private const int CoordinatorVid = 790035;
     private const int AdvisorVid = 790036;
     private const int OtherTraineeVid = 790037;
@@ -53,7 +54,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int StaffTraineeVid = 790073;
 
     private static readonly int[] Vids =
-        [TraineeVid, TrainerVid, ScopedTrainerVid, CoordinatorVid, AdvisorVid, OtherTraineeVid, StrangerVid, UnassignedTrainerVid, StaffTraineeVid];
+        [TraineeVid, TrainerVid, DepartmentTrainerVid, CoordinatorVid, AdvisorVid, OtherTraineeVid, StrangerVid, UnassignedTrainerVid, StaffTraineeVid];
 
     private const string GrantReason = "trn-test";
 
@@ -84,15 +85,18 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await SeedPersonAsync(
             TrainerVid, "Mailed", "Trainer", $"trn-test-{TrainerVid}@example.invalid", token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-ADIR");
 
-        // A trainer of the department with no mailbox, who conducts only by the grant on one training.
+        // A trainer of the department with no mailbox, who conducts the trainings assigned to them: Training.Conduct by their
+        // position, which reaches those alone (A7b).
         await SeedPersonAsync(
-            ScopedTrainerVid, "Scoped", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-T94");
+            DepartmentTrainerVid, "Department", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{code}-T94");
 
-        // The coordinator conducts and assigns every training, the advisor approves and closes: grants to their VID.
+        // The coordinator conducts and assigns every training, the advisor approves and closes: grants to their VID. Conducting a
+        // training assigned to somebody else takes Training.Edit, which a coordinator holds (A7b).
         await SeedPersonAsync(CoordinatorVid, "Test", "Coordinator", email: null, token, isStaff: true);
         await GrantAsync(CoordinatorVid, TrainingPermissions.View, token);
         await GrantAsync(CoordinatorVid, TrainingPermissions.Assign, token);
         await GrantAsync(CoordinatorVid, TrainingPermissions.Conduct, token);
+        await GrantAsync(CoordinatorVid, TrainingPermissions.Edit, token);
         await SeedPersonAsync(AdvisorVid, "Test", "Advisor", email: null, token, isStaff: true);
         await GrantAsync(AdvisorVid, TrainingPermissions.View, token);
         await GrantAsync(AdvisorVid, TrainingPermissions.Approve, token);
@@ -111,15 +115,14 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var day = Day(30);
 
         // That day: another training's session, whoever trains it, and an event of a kind the division checks.
-        var other = await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Scheduled, token, trainer: ScopedTrainerVid, start: day.AddHours(10));
+        var other = await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Scheduled, token, trainer: DepartmentTrainerVid, start: day.AddHours(10));
         await SeedEventAsync(day.AddHours(19), day.AddHours(21), token);
-        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
-        await GiveConductAsync(ScopedTrainerVid, id, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
 
         // "training" among the kinds too: the other session is one warning, not two.
         await WriteSettingsAsync(new { conflictPolicy = "Warn", conflictKinds = new[] { EventKind, Training.CalendarKind } }, token);
 
-        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
 
         // What the date meets, before anybody writes it: the other session by its rating and position, and the event.
         var conflicts = await trainer.GetFromJsonAsync<JsonElement>(Conflicts(id, day.AddHours(16), day.AddHours(18)), token);
@@ -150,7 +153,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(2, slots.Count);
         Assert.Equal(2, slots[0].GetProperty("warnings").GetArrayLength());
         Assert.Equal(0, slots[1].GetProperty("warnings").GetArrayLength());
-        Assert.Equal(ScopedTrainerVid, slots[0].GetProperty("proposedBy").GetProperty("vid").GetInt32());
+        Assert.Equal(DepartmentTrainerVid, slots[0].GetProperty("proposedBy").GetProperty("vid").GetInt32());
         Assert.True(page.GetProperty("actions").GetProperty("canConduct").GetBoolean());
         Assert.False(page.GetProperty("actions").GetProperty("canClose").GetBoolean());
 
@@ -165,7 +168,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             Assert.DoesNotContain(OtherTraineeVid.ToString(CultureInfo.InvariantCulture), stored.WarningsJson, StringComparison.Ordinal);
             Assert.DoesNotContain("Other", stored.WarningsJson, StringComparison.Ordinal);
-            Assert.DoesNotContain("Scoped", stored.WarningsJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("Department", stored.WarningsJson, StringComparison.Ordinal);
         }
 
         // Block: a date that meets the other session is refused on its own row, confirmed or not.
@@ -231,7 +234,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // The date keeps the staff's alone: a trainer of the department, who reads the training but not that entry, does not read
         // it through the date either.
-        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
         var slot = Assert.Single((await PageAsync(trainer, id, token)).GetProperty("slots").EnumerateArray());
         Assert.Equal(["trn-test staff"], Titles(slot.GetProperty("warnings")));
         Assert.DoesNotContain("trn-test department", Assert.Single(await SlotsOfAsync(id, token)).WarningsJson, StringComparison.Ordinal);
@@ -341,8 +344,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         var token = TestContext.Current.CancellationToken;
         var day = Day(50);
-        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
-        await GiveConductAsync(ScopedTrainerVid, id, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
@@ -362,8 +364,8 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
         }
 
-        // The trainer, by the grant on this training: dated by hand, the dates proposed gone, the calendar at the date.
-        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        // The trainer, to whom the training is assigned: dated by hand, the dates proposed gone, the calendar at the date.
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
         var set = await DoneAsync(await StepAsync(trainer, id, "date", new { startsAtUtc = day.AddHours(15), confirmed = false, rowVersion = version }, token), token);
         Assert.Equal(nameof(TrainingState.Scheduled), set.GetProperty("state").GetString());
         Assert.Equal(day.AddHours(15), set.GetProperty("scheduledStartUtc").GetDateTime());
@@ -405,9 +407,9 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     /// <summary>
     /// §3.3 on the verbs of the dates (review of A8a): a trainer of the department reads every training and conducts only the one given
-    /// to them — with <c>Training.View</c> by position and no grant on this training, they neither ask what a date meets nor propose,
-    /// withdraw or set one. Nor does the trainee, not even one of the staff who conducts every other training: nobody conducts a
-    /// training of their own (§3.1). Nothing is written.
+    /// to them — with <c>Training.View</c> and <c>Training.Conduct</c> by position (A7b) and this training given to another trainer, they
+    /// neither ask what a date meets nor propose, withdraw or set one. Nor does the trainee, not even one of the staff who conducts every
+    /// other training: nobody conducts a training of their own (§3.1). Nothing is written.
     /// </summary>
     [Fact]
     public async Task OnlyWhoeverConductsTheTrainingTouchesItsDates()
@@ -417,11 +419,10 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var (topAtc, topPilot) = (Ladder(RatingKind.Atc)[^1], Ladder(RatingKind.Pilot)[^1]);
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
 
-        // A trainer of the department who does not train this training: another trainer does, by the grant on it.
+        // A trainer of the department who does not train this training: another trainer does, to whom it is assigned.
         await SeedPersonAsync(
             UnassignedTrainerVid, "Unassigned", "Trainer", email: null, token, isStaff: true, atc: topAtc.Number, pilot: topPilot.Number, position: $"{Division().Code}-T93");
-        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
-        await GiveConductAsync(ScopedTrainerVid, id, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await AddSlotAsync(id, proposedDaysAgo: 1, token);
         var slot = Assert.Single(await SlotsOfAsync(id, token)).Id;
 
@@ -432,7 +433,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await GrantAsync(StaffTraineeVid, permission, token);
         }
 
-        var own = await AddTrainingAsync(StaffTraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        var own = await AddTrainingAsync(StaffTraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await AddSlotAsync(own, proposedDaysAgo: 1, token);
         var ownSlot = Assert.Single(await SlotsOfAsync(own, token)).Id;
 
@@ -639,29 +640,27 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
 
         // Dates proposed five days ago and none chosen; a proposal of yesterday; a training still without dates.
-        var waiting = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
-        await GiveConductAsync(ScopedTrainerVid, waiting, token);
+        var waiting = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await AddSlotAsync(waiting, proposedDaysAgo: 5, token);
-        var recent = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        var recent = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await AddSlotAsync(recent, proposedDaysAgo: 1, token);
-        var none = await AddTrainingAsync(TraineeVid, RatingKind.Pilot, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        var none = await AddTrainingAsync(TraineeVid, RatingKind.Pilot, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
 
-        // No time set — the default —: nothing closes by itself, and the ladder stays taken — the key of «one open training per
-        // ladder» refuses a second.
+        // No time set — the default —: nothing closes by itself, the night says it closed none, and the ladder stays taken — the key
+        // of «one open training per ladder» refuses a second.
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
-        await RunExpiryAsync(token);
+        Assert.Equal(0, await RunExpiryAsync(token));
         Assert.Equal(TrainingState.Assigned, (await StoredAsync(waiting, token)).State);
         await Assert.ThrowsAnyAsync<DbUpdateException>(() => AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Requested, token));
 
-        // Three days to choose: the first closes, as the hub, and its trainer's grant goes the same night.
+        // Three days to choose: the first closes, as the hub, and the night counts it among the ones it closed (A7b: what it returns).
         await WriteSettingsAsync(new { conflictPolicy = "None", maxResponseDays = 3 }, token);
-        await RunExpiryAsync(token);
+        Assert.True(await RunExpiryAsync(token) >= 1);
 
         var closed = await StoredAsync(waiting, token);
         Assert.Equal((TrainingState.Closed, (int?)null, (string?)null), (closed.State, closed.ClosedBy, closed.CloseReason));
         Assert.NotNull(closed.ClosedAt);
         Assert.Empty(await SlotsOfAsync(waiting, token));
-        Assert.Empty(await HoldersOfConductAsync(waiting, token));
         Assert.Equal(1, await MailsAsync(TraineeVid, TrainingNotifications.TrainingClosed, token));
 
         // Closed through the row, not around it: the key reads a column only the row writes, and the ladder is free again.
@@ -676,7 +675,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task AnotherTrainerTakesTheTrainingWithoutTheDatesTheFirstOneProposed()
     {
         var token = TestContext.Current.CancellationToken;
-        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await AddSlotAsync(id, proposedDaysAgo: 1, token);
 
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
@@ -697,11 +696,10 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         var token = TestContext.Current.CancellationToken;
         var day = Day(60);
-        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: ScopedTrainerVid);
-        await GiveConductAsync(ScopedTrainerVid, id, token);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
 
-        using var trainer = await SignedInAsync(ScopedTrainerVid, token);
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
         var version = (await PageAsync(trainer, id, token)).GetProperty("rowVersion").GetDateTime();
 
         // Two dates, one box left empty on each: required, each on its own field, the other box of the row left alone.
@@ -742,7 +740,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var day = Day(3);
         await WriteSettingsAsync(new { conflictPolicy = "Warn", conflictKinds = new[] { EventKind }, reminderLeadHours = 168 }, token);
 
-        await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Scheduled, token, trainer: ScopedTrainerVid, start: day.AddHours(10));
+        await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Scheduled, token, trainer: DepartmentTrainerVid, start: day.AddHours(10));
         var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: TrainerVid);
 
         // Two dates, the first on the day of the other session: warned, and confirmed.
@@ -850,10 +848,11 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await scope.ServiceProvider.GetRequiredService<TrainingRemindersJob>().RunAsync(cancellationToken);
     }
 
-    private async Task RunExpiryAsync(CancellationToken cancellationToken)
+    /// <summary>The night's run: how many trainings it closed.</summary>
+    private async Task<int> RunExpiryAsync(CancellationToken cancellationToken)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<TrainingExpiryJob>().RunAsync(cancellationToken);
+        return await scope.ServiceProvider.GetRequiredService<TrainingExpiryJob>().RunAsync(cancellationToken);
     }
 
     private async Task<Training> StoredAsync(long id, CancellationToken cancellationToken)
@@ -888,17 +887,6 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var key = id.ToString(CultureInfo.InvariantCulture);
         return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking()
             .CountAsync(entry => entry.Entity == "trn_trainings" && entry.EntityId == key, cancellationToken);
-    }
-
-    /// <summary>Who holds <c>Training.Conduct</c> on this training by a grant with its scope.</summary>
-    private async Task<List<int>> HoldersOfConductAsync(long id, CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var scopeOf = Training.ScopeOf(id);
-        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().UserGrants.AsNoTracking()
-            .Where(grant => grant.Value == TrainingPermissions.Conduct && grant.ResourceScope == scopeOf && grant.Vid != null)
-            .Select(grant => grant.Vid!.Value)
-            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
@@ -952,14 +940,6 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await database.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE trn_slots SET created_at = {DateTime.UtcNow.AddDays(-proposedDaysAgo)} WHERE id = {slot.Id}",
             cancellationToken);
-    }
-
-    /// <summary>The grant the assignment writes (A7): <c>Training.Conduct</c> on this training alone.</summary>
-    private async Task GiveConductAsync(int vid, long id, CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        Assert.Null(await scope.ServiceProvider.GetRequiredService<ModuleGrants>()
-            .GiveAsync(vid, TrainingPermissions.Conduct, Department.TD, Training.ScopeOf(id), GrantReason, cancellationToken));
     }
 
     /// <summary>

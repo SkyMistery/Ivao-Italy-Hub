@@ -58,14 +58,15 @@ public enum TrainingRejection
 /// the base department of the module (<see cref="IOwnedByDepartment"/>, the mask the interceptor keeps) and read by members only
 /// (<see cref="IVisible"/>); which member is the endpoints' business — the trainee reads their own through theirs, with no field
 /// of the staff's in it, the staff with <c>Training.View</c> (A7). It names the FIR of its position (<see cref="IHasFir"/>) for
-/// the heads of a FIR (A11), and a trainer is enabled on this training alone through its scope (<see cref="IHasResourceScope"/>,
-/// §3.3).</para>
+/// the heads of a FIR (A11), and it is assigned to its trainer (<see cref="IHasAssignee"/>, §3.3, A7b): <c>Training.Conduct</c>,
+/// which the trainers and the advisors hold by their position, reaches the trainings assigned to whoever holds it and no other,
+/// so no grant is ever written on one training.</para>
 /// <para>No participants, on purpose (§1.1): the core would give them <c>Training.View</c> on the row, and with it the notes of
 /// the staff.</para>
 /// <para>Three permissions write it besides <c>Training.Edit</c> (§3.4, A3; A7): whoever approves — the advisors —, whoever
-/// assigns, and the trainer, who holds <c>Training.Conduct</c> on the scope of this training alone. Each is asked by the write
-/// guard on this row's scope, never of its trainee, never to move it; none of them at creation, because the trainee creates
-/// it.</para>
+/// assigns, and whoever conducts it — its trainer, while it is assigned to them before the write and after it (A7b). Each is
+/// asked by the write guard as the single handler asks it, never of its trainee, never to move it; none of them at creation,
+/// because the trainee creates it, and none of them deletes it: no member takes a training out of the register (§6).</para>
 /// <para>Its session is in the division's one calendar (§5.1, A8; note <c>il-training-in-pubblico</c>): the training projects
 /// the session in hand (<see cref="IProjectable"/>), public, with its rating and position and nobody's name or VID, and the
 /// interceptor keeps the entry where the date is, in the same transaction, until the training stops being dated — or for good
@@ -79,7 +80,7 @@ public enum TrainingRejection
 [AlsoWrittenWith(TrainingPermissions.Assign)]
 [AlsoWrittenWith(TrainingPermissions.Conduct)]
 public sealed class Training
-    : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasResourceScope, IProjectable
+    : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasAssignee, IProjectable
 {
     /// <summary>As wide as a callsign in the core's reference of the positions a training copies it from.</summary>
     public const int MaxPositionLength = 32;
@@ -154,7 +155,10 @@ public sealed class Training
     /// <summary>When it was accepted or refused, by somebody or by the hub.</summary>
     public DateTime? DecidedAt { get; set; }
 
-    /// <summary>The trainer assigned (A7), who holds <c>Training.Conduct</c> on this training alone.</summary>
+    /// <summary>
+    /// The trainer assigned (A7): the member the training is assigned to (<see cref="IHasAssignee"/>), who conducts it with the
+    /// <c>Training.Conduct</c> of their position (A7b).
+    /// </summary>
     public int? TrainerVid { get; set; }
 
     public int? AssignedBy { get; set; }
@@ -250,7 +254,7 @@ public sealed class Training
 
     public int? StakeholderVid => TraineeVid;
 
-    public string ResourceScope => ScopeOf(Id);
+    int? IHasAssignee.AssigneeVid => TrainerVid;
 
     /// <summary>
     /// The short name of its rating, as the core's vocabulary says it: what the calendar calls the session. A projection is worked
@@ -325,20 +329,6 @@ public sealed class Training
             [],
             []);
     }
-
-    /// <summary>What every scope of a training starts with.</summary>
-    private const string ScopePrefix = TrainingModule.ModuleKey + ":training:";
-
-    /// <summary>The scope of a grant on one training (§3.3): what the assignment writes for the trainer (A7).</summary>
-    public static string ScopeOf(long id) => string.Create(CultureInfo.InvariantCulture, $"{ScopePrefix}{id}");
-
-    /// <summary>The training a scope of <see cref="ScopeOf"/> names; none for any other scope.</summary>
-    public static long? IdOf(string? scope) =>
-        scope is not null
-        && scope.StartsWith(ScopePrefix, StringComparison.Ordinal)
-        && long.TryParse(scope.AsSpan(ScopePrefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var id)
-            ? id
-            : null;
 
     /// <summary>The states of a training still going: only one of them per trainee and ladder (§2.2 point 2).</summary>
     public static bool IsOpen(TrainingState state) =>

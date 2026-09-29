@@ -11,16 +11,16 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10c** (gli esami nel calendario), sul branch `m3/a10c-exams`, **PR #178** verso `main`,
-**in cima alla coda**: #153 (A10b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde. **Sono in `main`**: A3
-(#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149),
-A9b (#150), A10a (#151), A10b (#153), la fase del nucleo A11a (#159) e **#152** del maintainer (`Refusals` nel nucleo: la copia del
-training l'ha tolta A10c). **In coda sopra A10c**, in bozza: A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha
-risposto** alla revisione di #178: **gli esami prendono ogni rating da 5 a 8**, l'8 compreso, non solo quelli con `HasPracticalTraining`
-([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992); A10c qui sotto, l'ultima voce): nel codice
-un esame prende ogni rating del suo percorso, e il revisore l'ha letto così ([#178](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5898945166));
-e alle revisioni di #149 e di #150 (A9a e A9b qui sotto): una sessione cominciata si registra e non si data più a mano né si chiude,
-nessuno data un training nel passato, la scheda disegnata nel modulo è accettata. La **sessione master** di Carmine (nota
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A7b** (il trainer sulla regola delle righe affidate), sul branch
+`m3/a7b-trainer-assignee`, **PR #181** verso `main`, **in cima alla coda**: #178 (A10c) è unita il 29 settembre, `main` è nel branch, e la
+PR è pronta a CI verde. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7
+(#146), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del
+maintainer. **In coda sopra A7b**, in bozza: A11b (#182), la fase del nucleo A12a (#187) e A12b (#189). **A7b** porta il trainer sulla
+regola delle righe affidate, com'è decisa da Carmine sulla #146: nessun grant, nessun job che lo toglie; **va unita prima di qualunque
+installazione con trainer veri**, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa
+deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto, le ultime voci): una
+sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo
+è accettata, gli esami prendono ogni rating del percorso — l'8 compreso —. La **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
 suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
 senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
@@ -94,6 +94,61 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A7b (28 settembre 2026, branch `m3/a7b-trainer-assignee`, PR #181)
+
+- **Che cosa c'è** (codice del modulo e configurazione; nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna
+  migrazione): **il trainer sulla regola delle righe affidate** di A3b, come l'ha decisa Carmine ([risposta 2 sulla
+  #135](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425), [decisione sulla
+  #146](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982), nota
+  `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`):
+  - il training **dichiara il suo trainer** (`IHasAssignee` con `TrainerVid`, in `Training.cs`) e non ha più uno scope suo
+    (`IHasResourceScope`, `ScopeOf`, `IdOf` via);
+  - **`Training.Conduct` è `OnlyForAssignee`** (e `DeniedToStakeholder`, com'era), e `positionGrants` lo dà ai quattro livelli del TD: TC,
+    TAC, TA, trainer. Ognuno conduce i training affidati a lui; su ogni altro il permesso vale `Training.Edit` (TC e TAC);
+  - **assegnare scrive solo la riga**: nessun grant, nessun rientro del trainer. **`training-expiry`** chiude soltanto (per tempo, con
+    `maxResponseDays`) e **`RunAsync` restituisce quanti training ha chiuso**;
+  - le parole dell'avviso e della mail dell'assegnazione non chiedono più al trainer di rientrare;
+  - `07` corretto (§1.1, §2.4, §3.2, §3.3, §5.3, §10, §11, §12 n.1).
+- **Che cosa deve sapere la fase dopo**:
+  - **Chi conduce un training** è il suo trainer (con `Conduct` per posizione) e chi ha `Training.Edit`; mai chi la riga riguarda. Si chiede
+    all'unico handler sulla riga (`StaffTrainings.MayAsync`), come prima: nessun codice del modulo guarda `TrainerVid` per decidere.
+  - ⚠️ **Il guardiano lascia scrivere il training a chi tiene `Approve`** (i TA), qualunque cosa scrivano: le tre alternative si sommano
+    (A7). Chi conduce lo decide l'endpoint.
+  - ⚠️ **Al trainee di un training il guardiano risponde con l'eccezione del membro sulla propria riga**, che non chiede permessi: che un
+    trainee non conduca il proprio training lo dice l'handler (`DeniedToStakeholder`), prima di tutto.
+  - ⚠️ **In un'installazione già avviata** la voce di `positionGrants` di `Training.Conduct` è nuova (i livelli fanno l'impronta): la
+    vecchia, a TC e TAC, resta come riga doppione. **I grant con scope scritti da A7** (motivo `training: trainer`) restano, inerti: il
+    job non li toglie più. Sui banchi ce ne sono.
+  - ⚠️ **Per la consegna che porta A7b: come un'installazione che ha già girato A7 pulisce quei grant** (la richiesta del revisore sulla
+    #181). A7, a ogni assegnazione, ha scritto in `hub_user_grants` una riga per il trainer: `value` = `Training.Conduct`, `resource_scope`
+    = `training:training:{id}`, `reason` = `training: trainer`. Il job che la toglieva non c'è più, e con A7b il training non dichiara più
+    uno scope: nessuna riga la fa più valere, ma resta nella lista dei permessi. **Si puliscono dopo aver installato A7b**, in uno dei due
+    modi:
+    1. **Dalla schermata «Permessi»** (`/staff/admin/permissions`, con `Permissions.Manage`: il web master o un superadmin): si cerca
+       `training: trainer` (la ricerca guarda il permesso e il motivo) e si elimina ogni riga. Passa dal motore: l'eliminazione resta
+       nell'audit e rinnova la sessione di chi teneva il grant. È la strada da preferire, con poche righe.
+    2. **Con molte righe, da phpMyAdmin** sul database dell'installazione: prima si contano con
+       `SELECT COUNT(*) FROM hub_user_grants WHERE value = 'Training.Conduct' AND reason = 'training: trainer' AND resource_scope LIKE 'training:training:%';`,
+       poi le si toglie con la stessa condizione (`DELETE FROM hub_user_grants WHERE …`). Questa strada non lascia una riga d'audit e non
+       rinnova le sessioni aperte, e qui non serve: i grant non valevano già più.
+    Un'installazione che non ha mai girato A7 (nessuna riga con quel motivo) non ha niente da fare.
+  - **`DELETE` di un training non esiste**: la lista dello staff è in sola lettura, e `DELETE` risponde 404.
+  - **Il giro dello staff** (`full/training-staff.spec.ts`) fa entrare il trainer all'inizio e non lo fa più rientrare; anche i giri delle
+    date, del report e dei prossimi training usano la sessione del trainer aperta all'inizio.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, acceso da A7b con la sua build e spento a fine fase, con il database che
+    resta; lo script è `preview-bench.ps1` nello scratchpad di A7b): **#6 è chiuso** (motivo «trn-test: chiuso per l'anteprima di A7b.»);
+    **#9** (ATC, ADC, LIMC_TWR) è **assegnato** al trainer del banco e aspetta le date; #8 (il mock exam) come prima. Il trainer tiene
+    `Training.Conduct` per posizione, e i tre grant con scope che A7 aveva scritto lì (#6, #7, #8), inerti.
+  - **A11b** parte solo quando #159 (A11a) è unita; altrimenti la prossima nell'ordine di `08` è **A12a** (nucleo).
+  - VID: A7b non ne usa di nuovi (riusa quelli delle classi che cambia); il range del training è tutto assegnato.
+- **Trovato, detto al revisore**: la premessa del punto 3 del revisore («the guard says no») non vale per il training, per l'eccezione del
+  membro (`08`, A7b, scostamento 4); i candidati non si ricavano da chi tiene `Conduct` (scostamento 3); `DELETE` risponde 404, non 405.
+- **La coda**: #178 (A10c) è unita il 29 settembre, e il passo della coda di A7b l'ha fatto la sessione che la coordina: `main` nel branch
+  con un merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda —, l'intestazione di A7b in cima
+  a questo file e i blocchi di `main` sotto; il merge toglie anche il conflitto che teneva la PR senza `build-test`. Build e **tutti** i
+  test di nuovo, via `(after #178)` dal titolo e `Queued after #178.` dal corpo, il corpo aggiornato, la PR pronta a CI verde. Le PR sopra
+  prendono `main` al loro passo.
 
 ### Che cosa ha lasciato A10c (28 settembre 2026, branch `m3/a10c-exams`, PR #178)
 

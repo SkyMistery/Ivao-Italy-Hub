@@ -8,7 +8,7 @@ namespace IvaoHub.UnitTests;
 /// <summary>
 /// The rules of the staff's side of a training (M3, A7; design M3 §1.2, §2.4, §4.2) with no database: who may train a training —
 /// never its trainee, the staff of the training only, with a rating at least the one trained —, when a session shows as held in
-/// the division's time zone, which the views of the list are made of, and the scope of the trainer's grant read back.
+/// the division's time zone, and which the views of the list are made of.
 /// <para>The ratings are a vocabulary of this test's making, not the network's (design M3 §10): the rule has to hold for whatever
 /// ladders the core is given — who stands above every trained rating always may, and no rule of the module says so.</para>
 /// </summary>
@@ -135,20 +135,6 @@ public sealed class TrainingStaffRulesTests
 
         static Training With(TrainingState state, DateTime? start = null) =>
             new() { Kind = RatingKind.Atc, Rating = 12, TraineeVid = TraineeVid, State = state, ScheduledStartUtc = start };
-    }
-
-    [Fact]
-    public void TheScopeOfTheTrainersGrantIsReadBackToItsTraining()
-    {
-        Assert.Equal("training:training:42", Training.ScopeOf(42));
-        Assert.Equal(42, Training.IdOf(Training.ScopeOf(42)));
-
-        // Another module's scope, another kind of row, or no number: not a training.
-        Assert.Null(Training.IdOf("flightops:tour:42"));
-        Assert.Null(Training.IdOf("training:exam:42"));
-        Assert.Null(Training.IdOf("training:training:"));
-        Assert.Null(Training.IdOf("training:training:-1"));
-        Assert.Null(Training.IdOf(null));
     }
 
     private static Training Accepted(RatingKind kind, int rating) =>

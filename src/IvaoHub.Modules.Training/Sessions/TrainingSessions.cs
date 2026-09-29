@@ -13,7 +13,7 @@ namespace IvaoHub.Modules.Training.Sessions;
 
 /// <summary>
 /// After the session (design M3 §2.6, §2.7, §2.8): one of three roads, which whoever conducts the training records once its session
-/// has started — its trainer by the grant on this training alone, the coordinator and the assistant on any (§3.3). Rescheduled for
+/// has started — its trainer, to whom it is assigned (A7b), the coordinator and the assistant on any (§3.3). Rescheduled for
 /// too little traffic (R.5): the session becomes a row with the internal notes, the training goes back to its dates (A8), and there
 /// is no report. Not attended: the session becomes a row, the training closes, and the waiting of a no-show runs (§2.2 point 3).
 /// Reported: the sheet filled from the active items, the comments and the three boxes; the session held; the training completed —

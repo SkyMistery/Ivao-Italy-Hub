@@ -95,7 +95,6 @@ public sealed class TrainingDbContext : ModuleDbContext
             training.ToTable("trn_trainings");
             training.HasKey(row => row.Id);
             training.Ignore(row => row.StakeholderVid);
-            training.Ignore(row => row.ResourceScope);
             training.Ignore(row => row.RatingShortName);
             training.Property(row => row.Position).HasMaxLength(Training.MaxPositionLength);
             training.Property(row => row.AirportIcao).HasMaxLength(Training.MaxAirportLength);

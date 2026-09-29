@@ -18,7 +18,7 @@ namespace IvaoHub.Modules.Training.Blocks;
 /// reports to write —, each a link to the page of the training where the step is taken. The three parts are
 /// <see cref="TrainerQueue"/>'s.
 /// <para>Always live and with no property, because it is the reader's. A training counts when the one handler says the reader may
-/// conduct it — the trainer on the scope of that training alone (§3.3), never on a training of their own —, the question the page of
+/// conduct it — the trainer on the trainings assigned to them (§3.3, A7b), never on a training of their own —, the question the page of
 /// the training asks before it offers a step. A visitor gets <c>signedIn: false</c>.</para>
 /// </summary>
 public sealed class TrainerQueueProvider(
