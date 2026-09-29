@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
@@ -30,7 +31,8 @@ namespace IvaoHub.Modules.Training;
 /// the warnings of the calendar, the trainee's choice, the date set by hand, the session in the calendar, its reminder, and the
 /// closing of a training that found no date, by the staff or by the night; A9 what the session came to: rescheduled with the notes
 /// of the staff, not attended, or reported with the evaluation sheet, the comments and the boxes that make the next training a mock
-/// exam — and what the trainee of a training never reads of it, even from the staff's side.
+/// exam — and what the trainee of a training never reads of it, even from the staff's side; A10a the trainee's path as the staff
+/// reads it, and the bans.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -44,9 +46,15 @@ public sealed class TrainingModule : ModuleBase
 
     public override IReadOnlyList<PermissionDescriptor> Permissions => TrainingPermissions.All;
 
+    /// <summary>
+    /// The staff's side: the trainings (A7), a trainee's path asked by VID and the bans (A10a) — read by whoever does training —, the
+    /// sheet (A5) and the settings (A4).
+    /// </summary>
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
         new NavItemDescriptor("training:nav.trainings", "/staff/training", TrainingPermissions.View),
+        new NavItemDescriptor("training:nav.trainees", "/staff/training/trainees", TrainingPermissions.View),
+        new NavItemDescriptor("training:nav.bans", "/staff/training/bans", TrainingPermissions.View),
         new NavItemDescriptor("training:nav.sheets", "/staff/training/sheets", TrainingPermissions.ManageSheets),
         new NavItemDescriptor("training:nav.settings", "/staff/training/settings", TrainingPermissions.ManageSettings),
     ];
@@ -89,6 +97,11 @@ public sealed class TrainingModule : ModuleBase
         services.AddScoped<StaffTrainings>();
         services.AddScoped<TrainingDates>();
         services.AddScoped<TrainingSessions>();
+
+        // The trainee's path as the staff reads it, and the bans (A10a).
+        services.AddScoped<TrainingBans>();
+        services.AddScoped<TraineePaths>();
+
         services.AddScoped<TrainingExpiryJob>();
         services.AddScoped<TrainingRemindersJob>();
         services.AddQuartz(quartz => quartz
@@ -111,5 +124,7 @@ public sealed class TrainingModule : ModuleBase
         endpoints.MapSheetItemEndpoints();
         endpoints.MapRequestEndpoints();
         endpoints.MapStaffEndpoints();
+        endpoints.MapTraineePathEndpoints();
+        endpoints.MapBanEndpoints();
     }
 }

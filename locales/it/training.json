@@ -3,6 +3,8 @@
   "nav": {
     "section": "Training",
     "trainings": "Richieste e training",
+    "trainees": "Trainee",
+    "bans": "Ban",
     "sheets": "Scheda di valutazione",
     "settings": "Impostazioni del training"
   },
@@ -393,6 +395,87 @@
       "byHub": "Chiusa dall'hub il {{date}}: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla."
     }
   },
+  "trainees": {
+    "title": "Trainee",
+    "description": "Il percorso di un trainee: dove si trova su ogni percorso, tutti i suoi training con il report, e i suoi ban.",
+    "open": "Apri il percorso",
+    "fields": {
+      "vid": "VID"
+    },
+    "hints": {
+      "vid": "Il VID del membro: il suo percorso si apre anche senza training, per bannarlo."
+    },
+    "pathDescription": "Dove si trova il trainee su ogni percorso, i suoi ban, e tutti i suoi training per percorso e rating.",
+    "ban": "Banna",
+    "sections": {
+      "ladders": "Dove si trova",
+      "bans": "Ban",
+      "trainings": "Training"
+    },
+    "rating": "Rating",
+    "hours": "Ore",
+    "readyForExamOn": "Pronto per l'esame {{rating}}, segnato dal trainer: l'esame si prenota sul sito della rete.",
+    "standing": {
+      "canAsk": "Può chiedere il training",
+      "mockExam": "Sarà un mock exam, come concordato con il trainer.",
+      "bannedUntil": "Ha un ban dal training fino al {{date}} UTC.",
+      "bannedForever": "Ha un ban dal training, finché qualcuno non lo toglie.",
+      "open": "Ha un training aperto su questo percorso.",
+      "openLink": "Aprilo",
+      "waiting": "Aspetta dopo l'ultimo training su questo percorso.",
+      "waitingUntil": "Aspetta dopo l'ultimo training su questo percorso: può chiedere di nuovo dal {{date}} UTC.",
+      "hours": "Questo training chiede {{minimum}} ore di connessione, e ne ha {{hours}}.",
+      "hoursUnknown": "Questo training chiede {{minimum}} ore di connessione, e l'hub non conosce le sue.",
+      "noPosition": "Per ora la divisione non offre una postazione su cui allenare questo rating.",
+      "nothingToAsk": "Dopo il suo rating non c'è un training da chiedere su questo percorso."
+    },
+    "noBans": "Nessun ban.",
+    "allBans": "I suoi ban nella lista",
+    "banForever": "Dal {{from}} UTC, finché qualcuno non lo toglie",
+    "banUntil": "Dal {{from}} UTC al {{until}} UTC",
+    "banReason": "Motivo: {{reason}}",
+    "banGivenBy": "Dato da {{name}}",
+    "banLiftedBy": "tolto da {{name}} il {{date}} UTC",
+    "noTrainings": "Ancora nessun training.",
+    "requestedAt": "chiesto il {{date}}",
+    "trainer": "Trainer: {{name}}",
+    "openTraining": "Apri il training"
+  },
+  "bans": {
+    "title": "Ban",
+    "description": "I membri a cui è vietato chiedere training, su tutti i percorsi: finché il ban vale non chiedono niente, e i training che hanno già aperti vanno avanti. Un ban non si cambia e non si elimina: per cambiarlo, lo si toglie e se ne dà un altro.",
+    "create": "Nuovo ban",
+    "formDescription": "Il membro legge il motivo e la fine in una mail, e non chiede training su nessun percorso fino alla fine — o, senza una fine, finché qualcuno non toglie il ban.",
+    "give": "Banna",
+    "given": "Ban dato.",
+    "toTrainee": "Percorso",
+    "lift": "Togli il ban",
+    "liftTitle": "Togliere il ban?",
+    "liftDescription": "Il membro può chiedere di nuovo training da subito. Il ban resta nella sua storia, con chi l'ha tolto e quando.",
+    "liftConfirm": "Sì, togli il ban",
+    "lifted": "Ban tolto.",
+    "fields": {
+      "traineeName": "Membro",
+      "status": "Stato",
+      "createdAt": "Dal",
+      "endsAt": "Fino al",
+      "reason": "Motivo",
+      "givenByName": "Dato da",
+      "vid": "VID del membro"
+    },
+    "hints": {
+      "vid": "A chi va il ban. Nessuno banna sé stesso.",
+      "reason": "Come lo leggerà il membro nella mail.",
+      "endsAt": "Lasciata vuota, il ban vale finché qualcuno non lo toglie."
+    },
+    "options": {
+      "status": {
+        "Holds": "In vigore",
+        "Over": "Finito",
+        "Lifted": "Tolto"
+      }
+    }
+  },
   "sheets": {
     "title": "Scheda di valutazione",
     "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
@@ -507,7 +590,10 @@
     "evaluationGradeOnTheory": "Una voce di teoria non ha un voto: si segna come fatta, non fatta o da migliorare.",
     "evaluationMarkOnPractice": "Una voce pratica non si segna come fatta: ha un voto da 1 a 5.",
     "evaluationItemTwice": "Una voce della scheda è scritta due volte in questo report.",
-    "evaluationMarkUnknown": "Questo giudizio non è tra quelli della scheda."
+    "evaluationMarkUnknown": "Questo giudizio non è tra quelli della scheda.",
+    "banEndsInThePast": "La fine del ban è già passata.",
+    "banAlreadyHolds": "Su questo membro c'è già un ban in vigore: toglilo prima di darne un altro.",
+    "banNotHolding": "Questo ban non è più in vigore: non c'è niente da togliere."
   },
   "notifications": {
     "requestReceived": {
@@ -545,6 +631,10 @@
     "reportPublished": {
       "title": "Report dei training",
       "description": "Una mail quando il trainer pubblica il report di un tuo training."
+    },
+    "banned": {
+      "title": "Ban dal training",
+      "description": "Una mail, con il motivo e fino a quando, quando il dipartimento training ti vieta di chiedere training."
     }
   },
   "mail": {
@@ -598,7 +688,13 @@
       "reportPublished": {
         "subject": "[Training] Report pubblicato: {{training}}",
         "body": "{{trainer}} ha pubblicato il report del tuo training {{training}}: i voti, i commenti e il commento generale sono nella pagina del training.{{ready}}\n\n{{after}}\n\nIl report: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
-      }
+      },
+      "banned": {
+        "subject": "[Training] Ban dal training",
+        "body": "Il dipartimento training ti ha vietato di chiedere training, su tutti i percorsi.\n\nIl motivo: {{reason}}\n\n{{until}} I training che hai già aperti vanno avanti come sono.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "bannedUntil": "Il ban vale fino al {{date}} UTC.",
+      "bannedUntilLifted": "Il ban vale finché il dipartimento training non lo toglie."
     }
   }
 }

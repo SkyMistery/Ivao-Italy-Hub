@@ -47,7 +47,7 @@ public sealed class TrainingMail(
     /// Queues a mail of <paramref name="type"/> to <paramref name="vid"/> about <paramref name="training"/>, pointing at
     /// <paramref name="path"/>; <paramref name="fill"/> adds what the type's sentence needs, in the recipient's language.
     /// </summary>
-    public async Task SendAsync(
+    public Task SendAsync(
         string type,
         int vid,
         Training training,
@@ -57,6 +57,29 @@ public sealed class TrainingMail(
     {
         ArgumentNullException.ThrowIfNull(training);
 
+        return SendAsync(
+            type,
+            vid,
+            path,
+            (data, locale) =>
+            {
+                data["training"] = Describe(training, locale);
+                fill?.Invoke(data, locale);
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Queues a mail of <paramref name="type"/> to <paramref name="vid"/> that is about no one training — a ban (A10a) —, pointing at
+    /// <paramref name="path"/>; <paramref name="fill"/> adds what the type's sentence needs, in the recipient's language.
+    /// </summary>
+    public async Task SendAsync(
+        string type,
+        int vid,
+        string path,
+        Action<IDictionary<string, string>, string>? fill,
+        CancellationToken cancellationToken)
+    {
         var options = division.Value;
         var locale = await hub.Users.AsNoTracking()
             .Where(user => user.Vid == vid)
@@ -65,7 +88,6 @@ public sealed class TrainingMail(
 
         var data = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["training"] = Describe(training, locale),
             ["url"] = $"https://{options.Domain}{path}",
         };
         fill?.Invoke(data, locale);

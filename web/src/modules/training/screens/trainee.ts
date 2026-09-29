@@ -18,13 +18,18 @@ export function mineTrainingHref(id: number): string {
   return `${MINE}/${String(id)}`;
 }
 
-/** The refusals the pages say more about, as the server sends them: a refusal is a bare key, and the details are the page's. */
+/**
+ * The refusals the pages say more about, as the server sends them: a refusal is a bare key, and the details are the page's. The
+ * staff's page of a trainee's path (A10a) says the last two in its own words too.
+ */
 export const REFUSALS = {
   banned: 'training:errors.requestBanned',
   open: 'training:errors.requestOpen',
   waiting: 'training:errors.requestWaiting',
   hoursUnknown: 'training:errors.requestHoursUnknown',
   hoursTooFew: 'training:errors.requestHoursTooFew',
+  nothingToAsk: 'training:errors.requestNothingToAsk',
+  noPosition: 'training:errors.requestNoPosition',
 } as const;
 
 /**
@@ -159,9 +164,16 @@ export function stateMoment(training: TraineeTrainingDto): string | null {
 /**
  * «Ready for the exam» on a ladder: the trainer's box on the last report of the ladder, while its rating is still the one the
  * trainee would train for next. Once the exam is passed the rating moves on, and the box is history: it stays on its training.
- * The mock exam needs no reading of this kind: whether the next training is one, the server says (`isMockExam`).
+ * The mock exam needs no reading of this kind: whether the next training is one, the server says (`isMockExam`). The trainee's
+ * trainings as they read them, or as the staff's page of their path does (A10a): the reading is the same.
  */
-export function readyForExam(path: MyTrainingPathDto, trainings: readonly TraineeTrainingDto[]): boolean {
+export function readyForExam(
+  path: MyTrainingPathDto,
+  trainings: readonly Pick<
+    TraineeTrainingDto,
+    'id' | 'kind' | 'rating' | 'state' | 'completedAt' | 'readyForExam'
+  >[],
+): boolean {
   const last = trainings
     .filter((training) => training.kind === path.kind && training.state === 'Completed')
     .sort(

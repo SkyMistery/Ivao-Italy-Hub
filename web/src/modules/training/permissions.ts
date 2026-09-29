@@ -8,3 +8,9 @@ export const TRAINING_VIEW = 'Training.View';
 export const TRAINING_MANAGE_SETTINGS = 'Training.ManageSettings';
 
 export const TRAINING_MANAGE_SHEETS = 'Training.ManageSheets';
+
+/**
+ * Banning a trainee and lifting a ban (§2.9, A10a): the list of the bans offers «ban» to whoever holds it somewhere. Whether the
+ * reader may ban one member — never themselves — is the server's answer on the path (`canBan`), and on every write.
+ */
+export const TRAINING_BAN = 'Training.Ban';

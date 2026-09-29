@@ -435,3 +435,47 @@ export function reportFromFormValues(
     rowVersion,
   };
 }
+
+// ---- the trainee's path and the bans (A10a) -----------------------------------------------------------------------------
+
+type TraineeBanWriteDto = components['schemas']['TraineeBanWriteDto'];
+
+/** The trainee's path is asked by VID (design M3 §4.2): the one thing the staff always has in hand, as for a pilot of the tours. */
+export const traineeLookupSchema = z.object({ vid: z.number().int().min(1).optional() });
+
+export type TraineeLookupValues = z.output<typeof traineeLookupSchema>;
+
+/** `/staff/training/bans`: the five of every list, and the member it is narrowed to. */
+export const bansSearchSchema = listSearchSchema.extend({ vid: z.coerce.number().int().optional() });
+
+export type BansSearch = z.output<typeof bansSearchSchema>;
+
+/** `/staff/training/bans/new?vid=`: «ban» from a trainee's path opens the form with the member written, and goes back there. */
+export const banFormSearchSchema = z.object({ vid: z.coerce.number().int().optional() });
+
+/**
+ * A ban (design M3 §2.9): the member, why — which they read in the mail —, and until when; left empty, until somebody lifts it. The
+ * end is an instant of the form, ISO in UTC with the division's own time under it. Nothing is required here: a member left out, a
+ * reason empty or too long, an end already gone by are the server's to refuse, each on its field.
+ */
+export const banSchema = z.object({
+  vid: z.number().int().optional(),
+  reason: z.string().meta({ multiline: true }),
+  endsAt: z.string().optional().meta({ datetime: true }),
+});
+
+export type BanFormValues = z.output<typeof banSchema>;
+
+/** A new ban, on the member of the path it was opened from when it was. */
+export function emptyBan(vid: number | undefined): BanFormValues {
+  return { ...(vid === undefined ? {} : { vid }), reason: '' };
+}
+
+/** The ban as the server takes it: a member left out as none, which it refuses; an empty reason as none; no end as none. */
+export function banFromFormValues(values: BanFormValues): TraineeBanWriteDto {
+  return {
+    vid: values.vid ?? 0,
+    reason: written(values.reason),
+    endsAt: values.endsAt === undefined || values.endsAt === '' ? null : values.endsAt,
+  };
+}

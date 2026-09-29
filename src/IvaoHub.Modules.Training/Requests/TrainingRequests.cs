@@ -40,7 +40,7 @@ public sealed class TrainingRequests(
     /// <summary>The trainee's page: who they are, where they stand on each ladder, and their trainings. None without their row.</summary>
     public async Task<MyTrainingDto?> MineAsync(CancellationToken cancellationToken)
     {
-        var trainee = await TraineeAsync(cancellationToken);
+        var trainee = await TraineeAsync(currentUser.Vid, cancellationToken);
         if (trainee is null)
         {
             return null;
@@ -48,6 +48,44 @@ public sealed class TrainingRequests(
 
         var settings = await settingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey, cancellationToken);
         var (history, bans) = await RecordAsync(trainee.Vid, cancellationToken);
+
+        return new MyTrainingDto(
+            trainee.Vid,
+            trainee.Name,
+            theory.AsksTheTrainee,
+            settings.TheoryExamUrl,
+            await PathsAsync(trainee, history, bans, settings, cancellationToken),
+            await DtosAsync([.. history.OrderByDescending(training => training.CreatedAt).ThenByDescending(training => training.Id)], cancellationToken));
+    }
+
+    /// <summary>
+    /// Where a member stands on each ladder, for the staff's page of their path (A10a; design M3 §4.2): the answer their own page gives,
+    /// worked out by the same rules from the same record — their trainings and their bans, which the caller has read already. A member
+    /// the hub does not know stands nowhere: without a rating nothing is proposed.
+    /// </summary>
+    public async Task<IReadOnlyList<MyTrainingPathDto>> PathsOfAsync(
+        int vid,
+        IReadOnlyList<Training> history,
+        IReadOnlyList<TraineeBan> bans,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(history);
+        ArgumentNullException.ThrowIfNull(bans);
+
+        var trainee = await TraineeAsync(vid, cancellationToken) ?? new Trainee(vid, string.Empty, null, null, null, null);
+        var settings = await settingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey, cancellationToken);
+
+        return await PathsAsync(trainee, history, bans, settings, cancellationToken);
+    }
+
+    /// <summary>Where the trainee stands on each ladder, in the order of the core's ladders.</summary>
+    private async Task<IReadOnlyList<MyTrainingPathDto>> PathsAsync(
+        Trainee trainee,
+        IReadOnlyList<Training> history,
+        IReadOnlyList<TraineeBan> bans,
+        TrainingSettings settings,
+        CancellationToken cancellationToken)
+    {
         var now = clock.UtcNow;
 
         var paths = new List<MyTrainingPathDto>();
@@ -71,13 +109,7 @@ public sealed class TrainingRequests(
                 standing.MinimumHours));
         }
 
-        return new MyTrainingDto(
-            trainee.Vid,
-            trainee.Name,
-            theory.AsksTheTrainee,
-            settings.TheoryExamUrl,
-            paths,
-            await DtosAsync([.. history.OrderByDescending(training => training.CreatedAt).ThenByDescending(training => training.Id)], cancellationToken));
+        return paths;
     }
 
     /// <summary>
@@ -97,7 +129,7 @@ public sealed class TrainingRequests(
             return (null, problems.Add("kind", "errors.required").Errors);
         }
 
-        var trainee = await TraineeAsync(cancellationToken);
+        var trainee = await TraineeAsync(currentUser.Vid, cancellationToken);
         if (trainee is null)
         {
             return (null, problems.Add("kind", RequestRules.NothingToAsk).Errors);
@@ -374,10 +406,9 @@ public sealed class TrainingRequests(
         return (history, bans);
     }
 
-    /// <summary>The signed in member as the core knows them: their name, and their ratings and hours on both ladders.</summary>
-    private async Task<Trainee?> TraineeAsync(CancellationToken cancellationToken)
+    /// <summary>A member as the core knows them — the one signed in, for their own pages —: their name, and their ratings and hours on both ladders.</summary>
+    private async Task<Trainee?> TraineeAsync(int vid, CancellationToken cancellationToken)
     {
-        var vid = currentUser.Vid;
         var user = await hub.Users.AsNoTracking().FirstOrDefaultAsync(row => row.Vid == vid, cancellationToken);
 
         return user is null

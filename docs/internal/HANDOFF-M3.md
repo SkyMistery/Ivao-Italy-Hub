@@ -11,15 +11,14 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
-**PR #150** verso `main`, **in cima alla coda**: #149 (A9a) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10a** (il percorso di un trainee e i ban), sul branch `m3/a10a-path-and-bans`,
+**PR #151** verso `main`, **in cima alla coda**: #150 (A9b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
 **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b
-(#148), A9a (#149) e la fase del nucleo A11a (#159). **In coda sopra A9b**, in bozza, ognuna dopo quella sotto: A10a (#151), A10b (#153),
-A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** alle revisioni di #149 e di #150: una
-sessione cominciata non si data più a mano né si chiude — si registra —, nessuno data un training nel passato, e gli scostamenti 1, 2 e 7
-di A9a sono accettati ([#149](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158)); **la scheda disegnata nel
-modulo è accettata**, e nessuna fase del nucleo estende `SchemaForm` ([#150](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556)).
-Tutto nel codice, nei test e in `08` (A9a e A9b qui sotto, le ultime voci). La **sessione master** di Carmine (nota
+(#148), A9a (#149), A9b (#150) e la fase del nucleo A11a (#159). **In coda sopra A10a**, in bozza, ognuna dopo quella sotto: A10b (#153),
+A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). La **seconda risposta di Carmine su #135** (il trainer sulla regola
+delle righe affidate) la porta **A7b** (#181). **Carmine ha risposto** alle revisioni di #149 e di #150 (A9a e A9b qui sotto, le ultime
+voci): una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato — un test di A10a
+lo faceva, ora non più (A10a qui sotto) —, la scheda disegnata nel modulo è accettata. La **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
 suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
 senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
@@ -93,6 +92,70 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A10a (27 settembre 2026, branch `m3/a10a-path-and-bans`, PR #151)
+
+- **A10 è divisa in apertura, in tre** (scritto in `08`, sotto A10): **A10a il percorso e i ban** (questa), **A10b i blocchi e le pagine
+  pubbliche** (la prossima, sul branch `m3/a10b-blocks-and-public-pages` da `m3/a10a-path-and-bans`), **A10c gli esami**, solo dopo che
+  **#135** (A3b) è unita: la riga di un esame si dichiara con ciò che A3b porta (`IHasAssignee`, `OnlyForAssignee`, `AlsoOnDeletion`), e una
+  parte che dipende da un cambio del nucleo in revisione non si mette in coda sopra la domanda.
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna nota nuova, **nessuna migrazione**):
+  - **Il percorso del trainee**, `GET /api/training/trainees/{vid}` (`Staff/TraineePaths.cs`, `Training.View`): dove si trova su ogni
+    percorso — la risposta della sua pagina, `MyTrainingPathDto`, da `TrainingRequests.PathsOfAsync` (i percorsi per un VID qualunque) —,
+    tutti i suoi training come le pagine dello staff (`StaffTrainings.PageAsync`: niente di riservato a un trainer che legge il proprio
+    percorso), i suoi ban, `canBan`. 404 per un VID di cui l'hub non sa niente.
+  - **I ban**, `/api/training/bans` (`Bans/TrainingBans.cs`, `Bans/BanEndpoints.cs`): lista e form generati, letti con `Training.View`,
+    scritti con `Training.Ban` (negato all'interessato, superadmin compreso); non si cambiano (`ReadOnlyRows`), non si eliminano, uno nuovo non
+    si somma a uno in vigore (`banAlreadyHolds`), la fine è ancora da venire (`banEndsInThePast`); **«Togli ban»** è `POST …/{id}/lift` con
+    la `rowVersion`, chi e quando. La mail **`training.banned`**.
+  - **Le pagine**: `/staff/training/trainees` (il VID) e `/staff/training/trainees/$id` (`screens/trainees.tsx`: i percorsi, i ban con «Togli
+    il ban», i training per percorso e rating in un `Accordion` con il report, «Banna»); `/staff/training/bans` e `/staff/training/bans/new`
+    (`screens/bans.tsx`); le funzioni pure in `screens/path.ts`; due voci nella barra dello staff; nella pagina di un training il nome del
+    trainee porta al suo percorso.
+  - **I test**: `TrainingBanRulesTests` (unità), `TrainingTraineeTests` (integrazione, VID 790052–790059, con il test della nota allargato
+    al percorso), `screens/path.test.ts` (Vitest), `web/e2e/training-trainee.spec.ts` (smoke), `web/e2e/full/training-the-trainee.spec.ts`
+    (il «fatta quando» sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10b** (i blocchi e le pagine pubbliche): `training.myTraining` ha già la sua risposta per percorso (`MyTrainingPathDto` di `GET
+    /api/training/mine`, con il ban in `refusal` e `bannedUntil`) e «pronto per l'esame» è `readyForExam` di `screens/trainee.ts`;
+    `training.trainerQueue` e `training.approvalQueue` sono le viste di `StaffQueue` (A7) e `TrainingDates.Unanswered` (A8a). La voce del
+    calendario porta ancora a `/training/sessions/{id}`, che è di A10b. **I due conteggi dei blocchi** (`uiKit.test.ts`,
+    `DataBlockEndToEndTests`) si alzano con la nota breve che A10 deve aggiungere (Carmine,
+    [commento sulla #125](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/125#issuecomment-5835026941)).
+  - **A10c** (gli esami): la forma della riga è nella nota di A3b §3.6, sul branch di #135; un TA deve vedere quali esami sono i suoi.
+  - ⚠️ **Il banco dopo il giro di A10a**: `training-the-trainee.spec.ts` (il nome viene dopo tutti gli altri giri del training) banna il
+    trainee del banco dal suo percorso e poi toglie il ban: il trainee resta con un ban **tolto** nella storia, e niente in vigore. All'inizio
+    toglie un ban lasciato in vigore da una corsa fermata a metà. Il resto del banco è come dopo A9b.
+  - **La risposta 2 di Carmine sulla #135** (il trainer conduce con la regola di A3b, senza grant con scope né job notturno) la porta
+    **A7b** (#181), decisa da Carmine sulla #146. Quando A10a è stata scritta non era in nessuna fase (`08`, A10, «Com'è andata (A10a)»,
+    «Trovato» 1): oggi sì.
+  - ⚠️ **Per A12b: dove una persona cancellata** (VID negativo, design §6.1: «Persona cancellata», senza link) **non è ancora trattata**,
+    dalla revisione di #151:
+    - `screens/staff.tsx`: il trainee porta sempre al suo percorso con `traineeHref`, anche con un VID negativo;
+    - `screens/path.ts`, riga 20 circa: l'indirizzo del percorso ignora il segno del VID;
+    - `api.ts`, riga 286 circa: `memberLabel` scrive il numero;
+    - la rotta `{vid:int}` del percorso accetta i negativi.
+    L'aiuto del nucleo (`personName`, `isErased`, la colonna `person`) è deciso sulla #187 (A12a).
+  - ⚠️ **Il router scrive il `?vid=` di un link fra virgolette nell'`href`** e lo rilegge giusto: una spec guarda l'indirizzo dopo il clic.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, lasciato acceso dalla sessione di A10a con il codice di A10a; lo script è
+    `preview-bench.ps1` nel suo scratchpad): il trainee 999002 ha un ban **tolto** (dato dal percorso e tolto dalla lista, a mano, il 27
+    settembre) e niente in vigore; il resto come dopo A9b — #6 (ATC, LIRF_TWR) aspetta la scelta fra le due date, #7 (pilota) è completato con
+    il report, #8 è il mock exam datato e pronto per un report —. Il trainer è nel roster.
+  - VID: il prossimo libero è **790060**.
+- **Trovato, detto al revisore**: la risposta 2 sulla #135 (sopra: oggi la porta A7b); `ConfirmDialog` non ha una dimensione per il suo
+  pulsante (nucleo).
+- **La coda**: #150 (A9b) è unita il 29 settembre, e il passo della coda di A10a l'ha fatto la sessione che la coordina (quella di A10a
+  non c'è più): `main` nel branch con un merge — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9b —, build e
+  **tutti** i test di nuovo, via `(after #150)` dal titolo e `Queued after #150.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono
+  `main` al loro passo.
+- **La revisione di #151** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/151#issuecomment-5891399650)):
+  approvabile. Corretti questo paragrafo (la risposta 2 sulla #135, sopra), l'intestazione e il «Trovato» 1 del corpo; l'elenco per A12b è
+  sopra. Nit: due ban nello stesso istante sullo stesso membro possono passare tutti e due `banAlreadyHolds` (letto prima di salvare,
+  dichiarato, rischio basso); la ricerca per VID (`BanEndpoints.cs`) non ha un test; `new Refusals()` in `TrainingBans.cs` è ancora la copia
+  del modulo, che A10c toglie.
+- **Dopo le risposte di Carmine su #149 e #150** (29 settembre 2026): l'aiuto `TrainingTraineeTests.ReportedWithNotesAsync` non data più la
+  sessione nel passato — ora si rifiuta —: la data un'ora avanti e la sposta a dieci minuti fa come l'installazione
+  (`StartedAMomentAgoAsync`, come in A9a). ⚠️ Una fase dopo che vuole una sessione cominciata fa lo stesso (`08`, A10a, l'ultima voce).
 
 ### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
 

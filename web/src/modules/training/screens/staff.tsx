@@ -100,6 +100,7 @@ import {
   staffTrainingHref,
   trainerChoices,
 } from './trainings';
+import { traineeHref } from './path';
 import { formatHours, splitRefusal } from './trainee';
 
 /**
@@ -384,7 +385,13 @@ function RequestDetails({ training }: { training: StaffTrainingDto }) {
   const place = [training.airportIcao, training.fir].filter((part) => part !== null).join(' · ');
 
   const rows: [string, ReactNode][] = [
-    [t('training:staff.request.trainee'), memberLabel(training.trainee)],
+    // The trainee's path beside the training (§4.2, A10a): every training of theirs, where they stand, their bans.
+    [
+      t('training:staff.request.trainee'),
+      <RouterAnchor key="trainee" href={traineeHref(training.trainee.vid)} className="underline">
+        {memberLabel(training.trainee)}
+      </RouterAnchor>,
+    ],
     [
       t('training:staff.request.rating'),
       training.traineeRatingShortName === null ? (

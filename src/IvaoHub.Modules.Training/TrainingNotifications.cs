@@ -3,7 +3,7 @@ namespace IvaoHub.Modules.Training;
 /// <summary>
 /// The kinds of notification of the training (design M3 §5.2), declared to the core through <c>IModule.NotificationTypes</c>.
 /// The words are in the module's language file: the mail under <c>mail.{type}</c>, the label of the profile under
-/// <c>notifications.{name}</c> of the <c>training</c> namespace. The ban's (§2.9) arrives with A10.
+/// <c>notifications.{name}</c> of the <c>training</c> namespace.
 /// </summary>
 public static class TrainingNotifications
 {
@@ -38,9 +38,15 @@ public static class TrainingNotifications
     /// <summary>The report of the session was published (§2.7, §5.2, A9): the trainee reads it on the page of the training. Its audience is the trainee.</summary>
     public const string ReportPublished = "training.reportPublished";
 
+    /// <summary>
+    /// The member was banned from asking for trainings (§2.9, §5.2, A10a), with the reason and until when. Its audience is the member
+    /// banned. Lifting the ban sends nothing: the design names no mail for it.
+    /// </summary>
+    public const string Banned = "training.banned";
+
     public static readonly IReadOnlyList<string> All =
     [
         RequestReceived, RequestAccepted, RequestRejected, TrainerAssigned, DatesProposed, DateConfirmed, Reminder, TrainingClosed,
-        ReportPublished,
+        ReportPublished, Banned,
     ];
 }

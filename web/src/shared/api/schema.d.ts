@@ -311,6 +311,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/trainees/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingTraineePath"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/bans/{id}/lift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingBanLift"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -2456,6 +2488,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["TrainingReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/bans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingBansList"];
+        put?: never;
+        post: operations["TrainingBansCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/bans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingBansGet"];
+        put: operations["TrainingBansUpdate"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4653,6 +4717,7 @@ export interface components {
         /**
          * @description Where the trainee stands on one ladder (§2.2): their rating and hours, the one training the hub proposes and on which
          *     positions, and the first rule that refuses a request now, with what the page needs to say why — a refusal is a bare key.
+         *     The staff's page of the trainee's path (A10a) reads the same answer, worked out by the same rules.
          */
         MyTrainingPathDto: {
             /** @description The ladder. */
@@ -5395,6 +5460,29 @@ export interface components {
         PagedResultOfTourRuleListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["TourRuleListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfTraineeBanDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["TraineeBanDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7034,6 +7122,58 @@ export interface components {
             aircraft: null | string;
         };
         /**
+         * @description A ban as the list, the form and the trainee's path read it (design M3 §2.9, §4.2): who, why, since when — it holds from the moment it
+         *     was given — and until when, who gave it, who lifted it and when, and whether it holds now. Never an address.
+         */
+        TraineeBanDto: {
+            /**
+             * Format: int64
+             * @description The ban.
+             */
+            id: number;
+            /** @description The member banned. */
+            trainee: components["schemas"]["TrainingMemberDto"];
+            /** @description Why, as the mail to the member says it. */
+            reason: string;
+            /**
+             * Format: date-time
+             * @description When it was given: it holds from then.
+             */
+            createdAt: string;
+            givenBy: null | components["schemas"]["TrainingMemberDto"];
+            /**
+             * Format: date-time
+             * @description Until when; none, until somebody lifts it.
+             */
+            endsAt: null | string;
+            liftedBy: null | components["schemas"]["TrainingMemberDto"];
+            /**
+             * Format: date-time
+             * @description When it was lifted.
+             */
+            liftedAt: null | string;
+            /** @description Whether it holds now: given, not over, not lifted. */
+            holds: boolean;
+            /**
+             * Format: date-time
+             * @description The version, for «lift the ban».
+             */
+            rowVersion: string;
+        };
+        /** @description The version of the ban the reader saw when they pressed «lift the ban». */
+        TraineeBanLiftDto: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description What the staff writes to ban a member (§2.9): who, why, and until when — none, until somebody lifts it. */
+        TraineeBanWriteDto: {
+            /** Format: int32 */
+            vid: number;
+            reason: null | string;
+            /** Format: date-time */
+            endsAt: null | string;
+        };
+        /**
          * @description An item of the report as its trainee reads it (design M3 §4.1): its section and title as the report copied them, the grade or the
          *     mark — neither: not applicable —, and the comment written for them. Never the note of the staff.
          */
@@ -7044,6 +7184,28 @@ export interface components {
             grade: null | number;
             mark: null | components["schemas"]["TheoryMark"];
             traineeComment: null | string;
+        };
+        /**
+         * @description The path of a trainee as the staff reads it (design M3 §4.2, §2.8, §2.9), the page `/staff/training/trainees/{vid}`: who they
+         *     are; where they stand on each ladder — their rating and hours, what they may ask for next or why not, a mock exam agreed with a
+         *     trainer, «ready for the exam», the waiting, a ban —, the answer their own page gives (MyTrainingPathDto); every
+         *     training of theirs, open and closed, newest first, as the staff's page of each one reads it; their bans; and whether the reader may
+         *     ban them.
+         */
+        TraineePathDto: {
+            /** @description The member, by VID and by the name the hub has. */
+            trainee: components["schemas"]["TrainingMemberDto"];
+            /** @description Where they stand on each ladder, in the order of the core's ladders. */
+            ladders: components["schemas"]["MyTrainingPathDto"][];
+            /**
+             * @description Their trainings, each as the staff's page of it (`StaffTrainings.PageAsync`): so a trainer who reads their own path reads it
+             *     without what is reserved, as on the page of each training (note `le-note-riservate-e-il-trainee`).
+             */
+            trainings: components["schemas"]["StaffTrainingDto"][];
+            /** @description Their bans, the newest first: the ones that hold, the ones over and the ones lifted. */
+            bans: components["schemas"]["TraineeBanDto"][];
+            /** @description Whether the reader may ban them now: `Training.Ban`, never on themselves. */
+            canBan: boolean;
         };
         /** @description A session that is over, as its trainee reads it (design M3 §4.1): when it was, and what it came to. Never a note. */
         TraineeSessionDto: {
@@ -7982,6 +8144,91 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TrainingPositionDto"][];
                 };
+            };
+        };
+    };
+    TrainingTraineePath: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vid: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineePathDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingBanLift: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TraineeBanLiftDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeBanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -14928,6 +15175,136 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingBansList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfTraineeBanDto"];
+                };
+            };
+        };
+    };
+    TrainingBansCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TraineeBanWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeBanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    TrainingBansGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeBanDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingBansUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TraineeBanWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeBanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
             };
             /** @description Conflict */
             409: {
