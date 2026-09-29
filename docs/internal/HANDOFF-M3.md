@@ -13,27 +13,16 @@
 
 **Ultimo aggiornamento:** 29 settembre 2026 — **fase A11b** (i capi FIR nel modulo), sul branch `m3/a11b-fir-heads`, **PR #182** verso
 `main`, in bozza **in coda dopo #181** (A7b, in bozza in coda dopo #178, A10c, in coda dopo #153, A10b, in coda dopo #151, A10a, in coda dopo
-#150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146, A7, pronta: **#144, A6b, è unita** il
-29 settembre alle 10:52 UTC). Il branch è nato da quello di A7b (ae28278) e **ha preso `main` prima della coda** (efe057a: **A11a, #159**,
-unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), con un merge prima di scrivere codice, perché la fase usa il meccanismo di A11a —
-l'eccezione alla regola della coda, approvata dalla sessione che coordina —. **Poi la coda l'ha raggiunto**: dopo #144 la sessione che
-coordina ha portato `main` (47e2f70, con #144 e #183) su per la coda fino ad A7b (e7b530a), che è entrata qui con un merge (1baf8fa): **ora
-l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra solo la fase**, e la PR, con `main` dentro, fa girare `build-test`. La
-**sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del
-collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140), A6a
-(#143), A3b (#135), A6c (#145), A11a (#159) e A6b (#144) sono unite**, e con loro **#152** del maintainer (`Refusals` nel nucleo), **#177** (la
-tastiera del suggerimento: lo smoke della richiesta ha un Invio in più, c3db117 di A6b e 8807e8a qui, lo stesso pezzo) e **#183** (il piano
-1.24 e il design di M4). **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178). **A11b** (questa) dà ai capi
-FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del loro FIR. In C# una
-chiave di un modulo si chiede con il namespace (`training:…`, #138).
-
-**Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
-cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
-front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
-è **decisa** da Carmine il 27 settembre 2026, come raccomandato
-([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813)): la casella e la sua lista sono un
-campo solo. Il revisore l'ha trovata approvabile appena la nota registra la risposta: il 28 settembre la risposta è registrata, e
-`main` è entrato nel branch con un merge (#142–#172), con build e suite rifatte.
+#150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in cima alla coda: #147 è unita). Il branch ha `main` dentro (2af5133), come la coda
+sotto, quindi la PR ha la sua CI: l'aveva preso prima della coda, per A11a (#159), e la coda l'ha raggiunto due volte, dopo #144 e dopo #147.
+**Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), la fase
+del nucleo A11a (#159) e #152 del maintainer. **In coda sopra A11b**, in bozza: la fase del nucleo A12a (#187). **A11b** dà ai capi FIR, CH e
+ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del loro FIR; **il revisore l'ha
+trovata approvabile** su 0b62481 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)), con tre
+nit che non chiedono correzioni. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di
+Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se
+un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con il
+namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -334,20 +323,32 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Il banco dopo il giro di A10a**: `training-the-trainee.spec.ts` (il nome viene dopo tutti gli altri giri del training) banna il
     trainee del banco dal suo percorso e poi toglie il ban: il trainee resta con un ban **tolto** nella storia, e niente in vigore. All'inizio
     toglie un ban lasciato in vigore da una corsa fermata a metà. Il resto del banco è come dopo A9b.
-  - ⚠️ **La risposta 2 di Carmine sulla #135** (il trainer conduce con la regola di A3b, senza grant con scope né job notturno) **non è in
-    nessuna fase**: A7 (#146) usa il grant con scope. Quando #135 sarà unita serve una fase del modulo che la porti (`08`, A10, «Com'è andata
-    (A10a)», «Trovato» 1). Detto al revisore.
+  - **La risposta 2 di Carmine sulla #135** (il trainer conduce con la regola di A3b, senza grant con scope né job notturno) la porta
+    **A7b** (#181), decisa da Carmine sulla #146. Quando A10a è stata scritta non era in nessuna fase (`08`, A10, «Com'è andata (A10a)»,
+    «Trovato» 1): oggi sì.
+  - ⚠️ **Per A12b: dove una persona cancellata** (VID negativo, design §6.1: «Persona cancellata», senza link) **non è ancora trattata**,
+    dalla revisione di #151:
+    - `screens/staff.tsx`: il trainee porta sempre al suo percorso con `traineeHref`, anche con un VID negativo;
+    - `screens/path.ts`, riga 20 circa: l'indirizzo del percorso ignora il segno del VID;
+    - `api.ts`, riga 286 circa: `memberLabel` scrive il numero;
+    - la rotta `{vid:int}` del percorso accetta i negativi.
+    L'aiuto del nucleo (`personName`, `isErased`, la colonna `person`) è deciso sulla #187 (A12a).
   - ⚠️ **Il router scrive il `?vid=` di un link fra virgolette nell'`href`** e lo rilegge giusto: una spec guarda l'indirizzo dopo il clic.
   - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, lasciato acceso dalla sessione di A10a con il codice di A10a; lo script è
     `preview-bench.ps1` nel suo scratchpad): il trainee 999002 ha un ban **tolto** (dato dal percorso e tolto dalla lista, a mano, il 27
     settembre) e niente in vigore; il resto come dopo A9b — #6 (ATC, LIRF_TWR) aspetta la scelta fra le due date, #7 (pilota) è completato con
     il report, #8 è il mock exam datato e pronto per un report —. Il trainer è nel roster.
   - VID: il prossimo libero è **790060**.
-- **Trovato, detto al revisore**: la risposta 2 sulla #135 (sopra); `ConfirmDialog` non ha una dimensione per il suo pulsante (nucleo).
-- **La coda**: la PR è in bozza con `(after #150)` e `Queued after #150.`; #150 è in coda dopo #149, dopo #148, dopo #147, dopo #146, dopo
-  #144, dopo #143. Quando #150 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di
-  nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10a se è ancora viva, altrimenti quella di A10b
-  prima di cominciare.
+- **Trovato, detto al revisore**: la risposta 2 sulla #135 (sopra: oggi la porta A7b); `ConfirmDialog` non ha una dimensione per il suo
+  pulsante (nucleo).
+- **La coda**: la PR è in bozza con `(after #150)` e `Queued after #150.`; #150 è in coda dopo #149 e #148, che è in cima (#147 è unita il 29
+  settembre). Quando #150 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di
+  nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A10a non c'è più).
+- **La revisione di #151** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/151#issuecomment-5891399650)):
+  approvabile. Corretti questo paragrafo (la risposta 2 sulla #135, sopra), l'intestazione e il «Trovato» 1 del corpo; l'elenco per A12b è
+  sopra. Nit: due ban nello stesso istante sullo stesso membro possono passare tutti e due `banAlreadyHolds` (letto prima di salvare,
+  dichiarato, rischio basso); la ricerca per VID (`BanEndpoints.cs`) non ha un test; `new Refusals()` in `TrainingBans.cs` è ancora la copia
+  del modulo, che A10c toglie.
 
 ### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
 
@@ -393,10 +394,13 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A9b non ne usa; il prossimo libero resta **790052** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, detto al revisore**: lo scostamento della scheda (sopra) e il log del nucleo (sopra); le asserzioni di A6b, A7 e A8b non sono
   cambiate: i loro costruttori dei DTO finti dello smoke hanno i campi nuovi con valori neutri (`08`, A9b).
-- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, dopo #147, dopo #146, dopo #144, dopo
-  #143. Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la
-  coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9b se è ancora viva, altrimenti quella di A10 prima di
-  cominciare.
+- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, che è in cima (#147 è unita il 29
+  settembre). Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo,
+  via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9b non c'è più).
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141)):
+  il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», l'ultima voce). ⚠️ **Aspetta Carmine**, e il master posta la
+  risposta sulla PR: **la scheda di valutazione è disegnata a mano** (`screens/staff.tsx`, `SheetRow`: `RadioGroupRoot`, `Textarea`), mentre
+  il design §4.2 la vuole generata dalle voci; o si accetta nel modulo, o una fase del nucleo estende `SchemaForm`.
 
 ### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
 
@@ -449,9 +453,15 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Trovato, detto al revisore**: l'unica asserzione cambiata di una fase sotto, in `TrainingStaffTests` (A7): diceva che la pagina dello
   staff non ha `staffComment`, il segno di A7 che i campi riservati non c'erano ancora; ora dice che c'è, vuoto su una richiesta, e che a un
   advisor non si toglie niente (`08`, A9, «Com'è andata (A9a)»).
-- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in coda dopo #147, dopo #146, dopo #144, dopo #143. Quando
-  #148 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal
-  titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9a se è ancora viva, altrimenti quella di A9b prima di cominciare.
+- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in cima (#147 è unita il 29 settembre). Quando #148 sarà
+  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
+  dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9a non c'è più).
+- **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650)):
+  i tre nit sono corretti (`08`, «Com'è andata (A9a)», l'ultima voce). ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR:
+  1. **una data forzata su una sessione già iniziata** (`TrainingDates.SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione
+     è cominciata; la raccomandazione è rifiutarle da quando vale `TrainingSessions.IsRecordable`);
+  2. **gli scostamenti 1, 2 e 7**: l'esito si registra dall'inizio della sessione (il design dice dal giorno dopo), un `Completed` resta nel
+     calendario, «pronto per il mock exam» si rifiuta su un mock exam.
 
 ### Che cosa ha lasciato A8b (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148)
 
@@ -492,9 +502,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A8b non ne usa; il prossimo libero resta **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, non toccato (nucleo)**, detto al revisore: `useMoment` non dà il giorno della settimana (i riquadri dicono solo la data);
   `pnpm i18n:check` e le chiavi con il namespace (sopra).
-- **La coda**: la PR è in bozza con `(after #147)` e `Queued after #147.`; #147 è in coda dopo #146, dopo #144, dopo #143. Quando #147 sarà
-  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
-  dal corpo, la PR pronta a CI verde — lo fa la sessione di A8b se è ancora viva, altrimenti quella di A9 prima di cominciare.
+- **La coda**: #147 è unita il 29 settembre, e il passo della coda è fatto: `main` nel branch, via `(after #147)`, i nit della revisione di
+  #148 (`08`, «Com'è andata (A8b)», l'ultima voce), la PR pronta a CI verde. ⚠️ **Resta scritto, non corretto**: un avviso porta sempre
+  alla pagina dello staff dell'altro training, che chi conduce con il permesso su una riga sola (A7b) può non poter aprire.
 
 ### Che cosa ha lasciato A8a (27 settembre 2026, branch `m3/a8a-dates-server`, PR #147)
 

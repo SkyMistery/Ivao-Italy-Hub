@@ -119,11 +119,18 @@ public sealed class TrainingSessionRulesTests
         Assert.Null(EvaluationSheet.Fill(items, [new(1, 1, null, null, null)]).Problems);
         Assert.Equal(["errors.number.range"], EvaluationSheet.Fill(items, [new(1, 6, null, null, null)]).Problems!["sheet[0].grade"]);
 
-        // An item that is not on the sheet — switched off meanwhile, or another rating's —, or one named twice: the page reads again.
+        // An item that is not on the sheet — switched off meanwhile, or another rating's —: the page reads again.
         Assert.Equal([EvaluationSheet.Changed], EvaluationSheet.Fill(items, [new(3, 4, null, null, null)]).Problems!["sheet"]);
+
+        // One named twice is not a sheet that changed: reading the page again would not help (review of #149).
         Assert.Equal(
-            [EvaluationSheet.Changed],
+            [EvaluationSheet.ItemTwice],
             EvaluationSheet.Fill(items, [new(1, 4, null, null, null), new(1, 2, null, null, null)]).Problems!["sheet"]);
+
+        // A mark that is none of the sheet's, on an item of theory: refused as such, not as a field left empty (review of #149).
+        Assert.Equal(
+            [EvaluationSheet.MarkUnknown],
+            EvaluationSheet.Fill(items, [new(2, null, (TheoryMark)99, null, null)]).Problems!["sheet[0].mark"]);
 
         // No item at all: a report of comments and boxes alone.
         var (empty, none) = EvaluationSheet.Fill([], []);

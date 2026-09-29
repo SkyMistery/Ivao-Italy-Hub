@@ -3,7 +3,9 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -11,7 +13,8 @@ namespace IvaoHub.IntegrationTests;
 /// <summary>
 /// The initialisation marker on the real database (note 2026-09-28-il-marcatore-d-inizializzazione): written only after a
 /// complete initialisation, read back by a start that changed nothing, and ignored by a start with another build or
-/// another configuration; two processes starting together both initialise.
+/// another configuration; two processes starting together both initialise; a mark that cannot be written, even after a
+/// deadlock, never fails the start (note 2026-09-29-il-marcatore-che-non-si-scrive).
 /// </summary>
 /// <remarks>The mark is one row shared by every host of the suite: a test here leaves it naming a key of its own, and the
 /// next host of any other class does a full initialisation, which is what every start did before the mark.</remarks>
@@ -137,6 +140,67 @@ public sealed class InitialisationMarkerTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.True((await RunAsync(key, _ => throw new InvalidOperationException("not again"), token)).Skipped);
     }
 
+    [Fact]
+    public async Task ADeadlockWhileWritingTheMarkIsTriedAgain()
+    {
+        // What happened under load (PR #146): the two writers of a start met as a deadlock, which EF reports wrapped, as a
+        // transient failure, and the start failed. Here the deadlock is made on purpose, with the marker as its victim.
+        var token = TestContext.Current.CancellationToken;
+        await RunAsync(NewKey(), _ => Task.CompletedTask, token);
+        var key = NewKey();
+
+        // The shape InnoDB reported: the row was just deleted and is not purged yet (an open snapshot keeps it), both
+        // transactions hold a shared lock on it and both want to write it.
+        await using var snapshot = await OpenOutsideThePoolAsync(token);
+        await ExecuteAsync(snapshot, "START TRANSACTION WITH CONSISTENT SNAPSHOT", token);
+        await ForgetAsync(token);
+
+        // The other one is made the heavier with rows of its own: MariaDB rolls back the lighter one, the marker.
+        await using var other = await OpenOutsideThePoolAsync(token);
+        await ExecuteAsync(other, "START TRANSACTION", token);
+        for (var row = 0; row < 20; row++)
+        {
+            await ExecuteAsync(other, $"{InsertSetting}('test.deadlock.{Guid.NewGuid():N}', '{{}}', 0, UTC_TIMESTAMP())", token);
+        }
+
+        await ExecuteAsync(other, $"SELECT value_json FROM hub_division_settings WHERE `key` = '{InitialisationMarker.SettingKey}' LOCK IN SHARE MODE", token);
+        var deadlocks = await DeadlocksAsync(token);
+
+        // The marker finds no mark and inserts: its duplicate check shares the lock, its insert waits for the other's. Then
+        // the other inserts too, and waits for the marker's: one of the two has to go.
+        var marking = RunAsync(key, _ => Task.CompletedTask, token);
+        await WaitForALockWaitAsync(token);
+        await ExecuteAsync(other, $"{InsertSetting}('{InitialisationMarker.SettingKey}', '{{}}', 0, UTC_TIMESTAMP())", token);
+        await ExecuteAsync(other, "ROLLBACK", token);
+        await ExecuteAsync(snapshot, "ROLLBACK", token);
+
+        var outcome = await marking;
+        Assert.False(outcome.Skipped);
+        Assert.Equal(deadlocks + 1, await DeadlocksAsync(token));
+        Assert.Equal(key.Build, (await ReadAsync(token))?.Build);
+    }
+
+    [Fact]
+    public async Task AMarkThatCannotBeWrittenDoesNotFailTheStart()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await ForgetAsync(token);
+
+        // Every write of the mark fails, as a database that refuses it would: the start still ends, initialised, unmarked.
+        var refusing = new RefuseTheMark();
+        await using (var host = new HubWebApplicationFactory(mariaDb.ConnectionString, extraInterceptor: refusing))
+        {
+            Assert.Equal("initialisation full: no marker", Initialisation(host));
+            Assert.Contains(host.Services.GetRequiredService<StartupTimings>().Steps, step => step.Name == "marker not written");
+        }
+
+        // Not another writer, so it is not tried again; and the next start does everything, as it did before the mark.
+        Assert.Equal(1, refusing.Refused);
+        Assert.Null(await ReadAsync(token));
+        await using var next = new HubWebApplicationFactory(mariaDb.ConnectionString);
+        Assert.Equal("initialisation full: no marker", Initialisation(next));
+    }
+
     private static InitialisationKey NewKey() =>
         new($"build-{Guid.NewGuid():N}", $"configuration-{Guid.NewGuid():N}", "seed", "9.9.9+test");
 
@@ -172,5 +236,85 @@ public sealed class InitialisationMarkerTests(MariaDbFixture mariaDb) : IAsyncLi
         await scope.ServiceProvider.GetRequiredService<HubDbContext>().DivisionSettings
             .Where(setting => setting.Key == InitialisationMarker.SettingKey)
             .ExecuteDeleteAsync(cancellationToken);
+    }
+
+    private const string InsertSetting = "INSERT INTO hub_division_settings (`key`, value_json, updated_by, updated_at) VALUES ";
+
+    /// <summary>A connection of the test's own, never pooled: one left inside a transaction takes its locks with it.</summary>
+    private async Task<MySqlConnection> OpenOutsideThePoolAsync(CancellationToken cancellationToken)
+    {
+        var connection = new MySqlConnection(new MySqlConnectionStringBuilder(mariaDb.ConnectionString) { Pooling = false }.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        return connection;
+    }
+
+    private static async Task ExecuteAsync(MySqlConnection connection, string sql, CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private async Task<long> DeadlocksAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SHOW GLOBAL STATUS LIKE 'Innodb_deadlocks'", connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        await reader.ReadAsync(cancellationToken);
+        return long.Parse(reader.GetString(1), System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Until a transaction waits for a lock: the marker's insert, behind the other transaction's shared lock.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms: asked more often, it keeps
+    /// answering what it saw the first time.</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand(
+            "SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The marker never waited for the other transaction's lock.");
+    }
+
+    /// <summary>Refuses every save that writes the mark, and counts them.</summary>
+    private sealed class RefuseTheMark : SaveChangesInterceptor
+    {
+        private int _refused;
+
+        public int Refused => _refused;
+
+        public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+        {
+            Refuse(eventData);
+            return result;
+        }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            Refuse(eventData);
+            return ValueTask.FromResult(result);
+        }
+
+        private void Refuse(DbContextEventData eventData)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<DivisionSetting>().Any(entry =>
+                    entry.Entity.Key == InitialisationMarker.SettingKey && entry.State is EntityState.Added or EntityState.Modified) == true)
+            {
+                Interlocked.Increment(ref _refused);
+                throw new DbUpdateException("The database refused the mark.");
+            }
+        }
     }
 }
