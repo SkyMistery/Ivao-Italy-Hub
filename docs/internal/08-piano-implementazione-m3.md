@@ -2174,10 +2174,31 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   2. **Un giudizio fuori dall'elenco** su una voce di teoria si rifiuta con `training:errors.evaluationMarkUnknown`, non con
      `errors.required`. Il test di unità `AReportIsRefusedOnTheFieldOfTheItemItGetsWrong` dice tutti e due.
   3. **La mail del no-show** («The trainer marked…») non nomina più il trainer: il no-show lo registrano anche TC e TAC.
-  4. ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR: **una data forzata su una sessione già iniziata** (la domanda che
-     A8a aveva lasciato per A9: `SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione è cominciata; la raccomandazione è
-     rifiutarle da quando vale `TrainingSessions.IsRecordable`), e **gli scostamenti 1, 2 e 7**, che cambiano il design e vogliono la
-     sua risposta con il link.
+  4. Due punti aspettavano Carmine: **una data forzata su una sessione già iniziata** (la domanda che A8a aveva lasciato per A9) e **gli
+     scostamenti 1, 2 e 7**. Le risposte sono nella voce qui sotto.
+- **Le risposte di Carmine su #149** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158),
+  data in chat al master e postata da lui; il codice l'ha scritto la sessione che coordina la coda, sul branch temporaneo `fix3/a9a` da
+  `6020f33`):
+  1. **Gli scostamenti 1, 2 e 7 sono accettati**, con il link qui: l'esito si registra dall'inizio della sessione, un training `Completed`
+     resta nel calendario, «pronto per il mock exam» si rifiuta su un mock exam.
+  2. **Una sessione cominciata si registra, non si data più né si chiude**: da quando vale `TrainingSessions.IsRecordable`,
+     `TrainingDates.SetAsync` e `CloseAsync` rifiutano sullo stato con la chiave nuova **`training:errors.sessionStarted`** (in inglese e
+     in italiano), prima di guardare il resto del payload. La pagina dello staff smette di offrirli: in `StaffTrainings`, `canConduct` e
+     `canClose` sono falsi sulla sessione cominciata, e resta `canRecordOutcome`. Il commento di `dateSteps` (`screens/dates.ts`) lo dice.
+  3. **E nessuno data un training nel passato**: la data a mano prima di adesso si rifiuta con `slotPassed` su `startsAtUtc`, come la
+     scelta del trainee fra le date proposte — la risposta dice «(and a date in the past)».
+  4. **I test**: il nuovo `TrainingSessionsTests.ASessionThatHasStartedIsRecordedNeitherDatedAgainNorClosed` (un `Scheduled` cominciato da
+     mezz'ora: la pagina non offre la data né la chiusura, i due passi rifiutati su `state` con `sessionStarted`, niente scritto; un
+     `Assigned` datato dieci minuti fa: `slotPassed`). Al coordinatore della classe il test dà `Training.Approve`, che gli altri test non
+     gli danno: senza, la chiusura sarebbe vietata (403) e non rifiutata. **Il test cade senza il rifiuto**, come Carmine chiede: su una
+     copia di `TrainingDates.cs` senza i tre controlli nuovi (e senza la `using` che restava inutile), la data a mano su una sessione
+     cominciata passa (200, spostata a domani) e il test cade alla riga del primo rifiuto; il file poi rimesso e ricompilato.
+  5. ⚠️ **Due test di A9a toccati, e perché**: `ASessionRescheduledTakesTheTrainingBackToItsDatesWithItsNotesAndMakesNobodyWait` e l'aiuto
+     `ReportedWithNotesAsync` datavano la seconda sessione a mano nel passato (`-30` e `-10` minuti), che ora si rifiuta. La datano un'ora
+     avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta `scheduled_start_utc` a dieci minuti fa come fa
+     l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
+  6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
+     pure (`daysAhead(4)`).
 
 **Com'è andata (A9b)**: *(a fase chiusa)*
 
