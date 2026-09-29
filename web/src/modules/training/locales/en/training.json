@@ -165,7 +165,7 @@
       "title": "Choose the date of the session",
       "lead": "Your trainer proposed these dates. Choose one: the session is fixed, and you both receive an email. If none of them suits you, write to your trainer.",
       "choose": "Choose this date",
-      "confirmTitle": "Fix the session on {{when}} UTC?",
+      "confirmTitle": "Fix the session on {{when}} UTC, that is {{local}}?",
       "confirmDescription": "Your trainer receives an email, and so do you. Only your trainer changes a date once it is fixed.",
       "confirm": "Yes, fix the session",
       "chosen": "Session fixed: {{when}} UTC.",
@@ -338,7 +338,8 @@
       "noWarnings": "No warning when it was proposed.",
       "warning": {
         "training": "{{ladder}} training {{what}}, {{when}} UTC",
-        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC",
+        "anyKind": "In the calendar"
       },
       "met": {
         "confirmTitle": "Something is in the calendar on those days already: look at the warnings, and confirm if the dates are fine all the same.",
@@ -502,7 +503,9 @@
     "reportMockExamAgain": "This training is a mock exam already: the one after it is not another mock exam.",
     "sheetChanged": "The sheet of this training changed meanwhile: reload the page.",
     "evaluationGradeOnTheory": "An item of theory has no grade: it is marked done, not done or to improve.",
-    "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5."
+    "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5.",
+    "evaluationItemTwice": "An item of the sheet is written twice in this report.",
+    "evaluationMarkUnknown": "That mark is not one the sheet has."
   },
   "notifications": {
     "requestReceived": {
@@ -584,7 +587,7 @@
       "closedByStaff": "The training department closed it. The reason: {{reason}}",
       "closedUnanswered": "You did not choose a date among the ones your trainer proposed in the time the division gives to choose one.",
       "closedNoWait": "A closure makes you wait for nothing: you can ask for the training again whenever you want.",
-      "closedNoShow": "The trainer marked the session of {{session}} UTC as a no-show: the training did not take place because you were not there.",
+      "closedNoShow": "The session of {{session}} UTC was marked as a no-show: the training did not take place because you were not there.",
       "waitUntil": "You can ask for a training on this path again from {{date}} UTC.",
       "noWait": "You can ask for a training on this path again whenever you want.",
       "waitWaived": "The trainer took the waiting away: you can ask for your next training on this path whenever you want.",

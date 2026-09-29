@@ -165,7 +165,7 @@
       "title": "Scegli la data della sessione",
       "lead": "Il tuo trainer ha proposto queste date. Scegline una: la sessione è fissata, e ricevete una mail tutti e due. Se nessuna ti va bene, scrivi al tuo trainer.",
       "choose": "Scegli questa data",
-      "confirmTitle": "Fissare la sessione il {{when}} UTC?",
+      "confirmTitle": "Fissare la sessione il {{when}} UTC, cioè {{local}}?",
       "confirmDescription": "Il trainer riceve una mail, e anche tu. Una data fissata la cambia solo il trainer.",
       "confirm": "Sì, fissa la sessione",
       "chosen": "Sessione fissata: {{when}} UTC.",
@@ -338,7 +338,8 @@
       "noWarnings": "Nessun avviso quando è stata proposta.",
       "warning": {
         "training": "Training {{ladder}} {{what}}, {{when}} UTC",
-        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC",
+        "anyKind": "Nel calendario"
       },
       "met": {
         "confirmTitle": "Quei giorni c'è già qualcosa nel calendario: guarda gli avvisi, e conferma se le date vanno bene lo stesso.",
@@ -502,7 +503,9 @@
     "reportMockExamAgain": "Questo training è già un mock exam: il training dopo non è un altro mock exam.",
     "sheetChanged": "La scheda di questo training è cambiata nel frattempo: ricarica la pagina.",
     "evaluationGradeOnTheory": "Una voce di teoria non ha un voto: si segna come fatta, non fatta o da migliorare.",
-    "evaluationMarkOnPractice": "Una voce pratica non si segna come fatta: ha un voto da 1 a 5."
+    "evaluationMarkOnPractice": "Una voce pratica non si segna come fatta: ha un voto da 1 a 5.",
+    "evaluationItemTwice": "Una voce della scheda è scritta due volte in questo report.",
+    "evaluationMarkUnknown": "Questo giudizio non è tra quelli della scheda."
   },
   "notifications": {
     "requestReceived": {
@@ -584,7 +587,7 @@
       "closedByStaff": "L'ha chiuso il dipartimento training. Il motivo: {{reason}}",
       "closedUnanswered": "Non hai scelto una data fra quelle proposte dal trainer nel tempo che la divisione dà per sceglierla.",
       "closedNoWait": "Una chiusura non ti fa aspettare: puoi chiedere di nuovo il training quando vuoi.",
-      "closedNoShow": "Il trainer ha segnato la sessione del {{session}} UTC come no-show: il training non si è tenuto perché non c'eri.",
+      "closedNoShow": "La sessione del {{session}} UTC è stata segnata come no-show: il training non si è tenuto perché non c'eri.",
       "waitUntil": "Potrai chiedere di nuovo un training su questo percorso dal {{date}} UTC.",
       "noWait": "Puoi chiedere di nuovo un training su questo percorso quando vuoi.",
       "waitWaived": "Il trainer ha tolto l'attesa: puoi chiedere il prossimo training su questo percorso quando vuoi.",

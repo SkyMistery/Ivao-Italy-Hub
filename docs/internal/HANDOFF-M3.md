@@ -11,24 +11,15 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
-**PR #150** verso `main`, in bozza **in coda dopo #149** (A9a, in bozza in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146,
-A7, in coda dopo #144, A6b, in coda dopo #143, A6a). **A6a** (il server della richiesta) è la **PR #143**, pronta con la CI verde, in attesa
-della **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch
-del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139) e A5 (#140)
-sono unite**; la fase del nucleo **A3b** (#135) è in bozza in una sessione sua, e **A6c** (#145, il suggerimento chiuso di `SchemaForm`) è
-pronta, da `main` e fuori dalla coda. **Il prossimo passo** è **A10** (blocchi, pagine pubbliche, percorso, esami, ban), sul branch
-`m3/a10-blocks-exams-bans` preparato da `m3/a9b-after-the-session-pages`, in coda dopo #150; A10 usa anche A3b (#135, `08`,
-«Parallelismo possibile»), che va avanti per conto suo: finché non è unita, la parte di A10 che la usa (cambiare e togliere un esame)
-aspetta. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
-
-**Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
-cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
-front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
-è **decisa** da Carmine il 27 settembre 2026, come raccomandato
-([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813)): la casella e la sua lista sono un
-campo solo. Il revisore l'ha trovata approvabile appena la nota registra la risposta: il 28 settembre la risposta è registrata, e
-`main` è entrato nel branch con un merge (#142–#172), con build e suite rifatte.
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
+**PR #150** verso `main`, in bozza **in coda dopo #149** (A9a, in coda dopo #148, A8b, in cima alla coda: #147 è unita). **Sono in `main`**:
+A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147) e la fase del nucleo
+A11a (#159). **In coda sopra A9b**, in bozza, ognuna dopo quella sotto: A10a (#151), A10b (#153), A10c (#178), A7b (#181), A11b (#182) e la
+fase del nucleo A12a (#187). **Aspetta Carmine** il punto della revisione di #150: la scheda di valutazione disegnata a mano invece che
+generata dalle voci (design §4.2), da accettare nel modulo o da portare in una fase del nucleo che estende `SchemaForm`. La **sessione
+master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto
+è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il
+master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -200,9 +191,15 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Trovato, detto al revisore**: l'unica asserzione cambiata di una fase sotto, in `TrainingStaffTests` (A7): diceva che la pagina dello
   staff non ha `staffComment`, il segno di A7 che i campi riservati non c'erano ancora; ora dice che c'è, vuoto su una richiesta, e che a un
   advisor non si toglie niente (`08`, A9, «Com'è andata (A9a)»).
-- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in coda dopo #147, dopo #146, dopo #144, dopo #143. Quando
-  #148 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal
-  titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9a se è ancora viva, altrimenti quella di A9b prima di cominciare.
+- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in cima (#147 è unita il 29 settembre). Quando #148 sarà
+  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
+  dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9a non c'è più).
+- **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650)):
+  i tre nit sono corretti (`08`, «Com'è andata (A9a)», l'ultima voce). ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR:
+  1. **una data forzata su una sessione già iniziata** (`TrainingDates.SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione
+     è cominciata; la raccomandazione è rifiutarle da quando vale `TrainingSessions.IsRecordable`);
+  2. **gli scostamenti 1, 2 e 7**: l'esito si registra dall'inizio della sessione (il design dice dal giorno dopo), un `Completed` resta nel
+     calendario, «pronto per il mock exam» si rifiuta su un mock exam.
 
 ### Che cosa ha lasciato A8b (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148)
 
@@ -243,9 +240,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A8b non ne usa; il prossimo libero resta **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, non toccato (nucleo)**, detto al revisore: `useMoment` non dà il giorno della settimana (i riquadri dicono solo la data);
   `pnpm i18n:check` e le chiavi con il namespace (sopra).
-- **La coda**: la PR è in bozza con `(after #147)` e `Queued after #147.`; #147 è in coda dopo #146, dopo #144, dopo #143. Quando #147 sarà
-  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
-  dal corpo, la PR pronta a CI verde — lo fa la sessione di A8b se è ancora viva, altrimenti quella di A9 prima di cominciare.
+- **La coda**: #147 è unita il 29 settembre, e il passo della coda è fatto: `main` nel branch, via `(after #147)`, i nit della revisione di
+  #148 (`08`, «Com'è andata (A8b)», l'ultima voce), la PR pronta a CI verde. ⚠️ **Resta scritto, non corretto**: un avviso porta sempre
+  alla pagina dello staff dell'altro training, che chi conduce con il permesso su una riga sola (A7b) può non poter aprire.
 
 ### Che cosa ha lasciato A8a (27 settembre 2026, branch `m3/a8a-dates-server`, PR #147)
 
