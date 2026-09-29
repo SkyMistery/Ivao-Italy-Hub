@@ -674,6 +674,11 @@ namespace IvaoHub.IntegrationTests.Migrations
                         .HasColumnType("int")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("Fir")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("fir");
+
                     b.Property<string>("OwnerDepartment")
                         .IsRequired()
                         .HasMaxLength(4)

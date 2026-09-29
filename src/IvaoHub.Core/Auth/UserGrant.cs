@@ -19,8 +19,9 @@ public enum GrantKind
 
 /// <summary>
 /// A permission given to (or taken from) a single VID — or, since M2, to a <b>position</b>: a
-/// department and one or more levels (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2) —
-/// on top of what the staff positions derive. A grant has exactly one of the two subjects.
+/// department and one or more levels (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2), or
+/// since M3 the team of a FIR at one or more levels (note 2026-09-27-i-capi-fir-sul-loro-fir) — on top of
+/// what the staff positions derive. A grant has exactly one of the three subjects.
 /// Effective permissions are derived, union grants, minus denies (design M0 section 3.7).
 /// Who granted it and when are the audit columns: <c>created_by</c> and <c>created_at</c>, not a
 /// second pair of columns saying the same thing.
@@ -50,13 +51,35 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
         set => PositionLevelsJson = value is null || value.Count == 0 ? null : JsonSerializer.Serialize(value.Distinct().Order().ToArray(), LevelsJson);
     }
 
+    /// <summary>
+    /// Whether the grant is for the team of a FIR (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): whoever holds a FIR
+    /// position at one of <see cref="PositionLevels"/> — the chief is a coordinator, the assistant chief an assistant, a FIR
+    /// advisor an advisor — holds it, on the FIR of that position when the division keeps FIR teams to their FIR
+    /// (<c>firStaffScope</c>). It names no FIR: which FIRs exist is IVAO's to say, never the grant's.
+    /// </summary>
+    public bool PositionFirTeam { get; set; }
+
     /// <summary>Whether a member holding these positions is who this grant is for, when it is for a position.</summary>
-    public bool IsHeldThrough(IEnumerable<StaffPosition> positions)
+    public bool IsHeldThrough(IEnumerable<StaffPosition> positions) => HeldThrough(positions).Any();
+
+    /// <summary>
+    /// The positions this grant is held through: those of its department at its levels, or — for the team of a FIR — the FIR
+    /// positions at them. None for a grant to a person, which its VID has already chosen.
+    /// </summary>
+    public IEnumerable<StaffPosition> HeldThrough(IEnumerable<StaffPosition> positions)
     {
         ArgumentNullException.ThrowIfNull(positions);
 
+        var levels = PositionLevels;
+
+        if (PositionFirTeam)
+        {
+            return positions.Where(position => position is { Department: null, Fir: not null } && levels.Contains(position.Level));
+        }
+
         return PositionDepartment is { } department
-            && positions.Any(position => position.Department == department && PositionLevels.Contains(position.Level));
+            ? positions.Where(position => position.Department == department && levels.Contains(position.Level))
+            : [];
     }
 
     public GrantKind Kind { get; set; }
@@ -105,11 +128,12 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
     /// </summary>
     int IAffectsUserSession.AffectedVid => Vid ?? 0;
 
-    /// <summary>A grant to a position decides the session of everybody who holds it now.</summary>
+    /// <summary>A grant to a position decides the session of everybody who holds it now: a FIR team's, of every FIR.</summary>
     StaffPositionSubject? IAffectsUserSession.AffectedPosition =>
-        PositionDepartment is { } department && PositionLevels.Count > 0
-            ? new StaffPositionSubject(department, PositionLevels)
-            : null;
+        PositionLevels.Count == 0 ? null
+        : PositionFirTeam ? new StaffPositionSubject(null, PositionLevels, FirTeam: true)
+        : PositionDepartment is { } department ? new StaffPositionSubject(department, PositionLevels)
+        : null;
 
     private static readonly JsonSerializerOptions LevelsJson = new() { Converters = { new JsonStringEnumConverter() } };
 }

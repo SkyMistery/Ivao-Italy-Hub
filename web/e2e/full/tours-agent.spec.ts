@@ -70,10 +70,9 @@ test('an agent with a token from the member’s page reads a report and its resu
     errors: number[];
     tokens: number[];
     programs: APIRequestContext[];
-    report: { id: number } | null;
-  } = { rules: [], errors: [], tokens: [], programs: [], report: null };
+  } = { rules: [], errors: [], tokens: [], programs: [] };
 
-  await removeBenchTours(context, 'bench-agent-');
+  await removeBenchTours(context, 'bench-agent-', pilotContext);
   try {
     await run();
   } finally {
@@ -81,19 +80,6 @@ test('an agent with a token from the member’s page reads a report and its resu
       await program.dispose();
     }
     flight.remove();
-    // The pilot takes the report back: a queued one counts towards the division's daily limit of the bench's pilot, and
-    // the other rounds report the same day's flight.
-    if (made.report !== null) {
-      const report = `/api/flightops/reports/${made.report.id}`;
-      const mine = await pilotContext.request.get(report);
-      if (mine.ok()) {
-        const rowVersion = ((await mine.json()) as { rowVersion: string }).rowVersion;
-        await pilotContext.request.post(`${report}/withdraw`, {
-          headers: asTheClientDoes,
-          data: { rowVersion },
-        });
-      }
-    }
     for (const token of made.tokens) {
       await context.request.post(`/api/me/tokens/${token}/revoke`, { headers: asTheClientDoes });
     }
@@ -103,7 +89,7 @@ test('an agent with a token from the member’s page reads a report and its resu
     for (const error of made.errors) {
       await context.request.delete(`/api/flightops/errors/${error}`, { headers: asTheClientDoes });
     }
-    await removeBenchTours(context, 'bench-agent-');
+    await removeBenchTours(context, 'bench-agent-', pilotContext);
     await pilotContext.close();
   }
 
@@ -180,7 +166,6 @@ test('an agent with a token from the member’s page reads a report and its resu
       (row) => row.tourId === tourId,
     );
     expect(item?.agentChecks).toEqual(['semicircularLevels']);
-    made.report = { id: item!.id };
 
     const read = await agent.get(`/api/flightops/agent/pireps/${item!.id}`);
     expect(read.status(), await read.text()).toBe(200);

@@ -57,12 +57,12 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
     arrival: benchAirports.milan,
   });
 
-  await removeBenchTours(context, 'bench-report-');
+  await removeBenchTours(context, 'bench-report-', context);
   try {
     await reportAndWithdraw();
   } finally {
     flight.remove();
-    await removeBenchTours(context, 'bench-report-');
+    await removeBenchTours(context, 'bench-report-', context);
   }
 
   async function reportAndWithdraw() {
