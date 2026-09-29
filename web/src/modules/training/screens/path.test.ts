@@ -99,6 +99,11 @@ test('the path of a trainee is under the page that asks for one, and a new ban c
   expect(banFormHref(790099)).toBe('/staff/training/bans/new?vid=790099');
 });
 
+test('a person whose data was erased has no path to link to (A12b): the pseudonym in their place is nobody', () => {
+  expect(traineeHref(-3)).toBeNull();
+  expect(traineeHref(-790099)).toBeNull();
+});
+
 test('a ladder says what the trainee may ask for, or the first rule that refuses with what the answer says beside it', () => {
   expect(ladderSays(ladder())).toEqual({ kind: 'canAsk', next, isMockExam: false });
   expect(ladderSays(ladder({ isMockExam: true }))).toEqual({ kind: 'canAsk', next, isMockExam: true });

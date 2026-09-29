@@ -11,7 +11,8 @@ import { englishCommon } from './locales';
  * stands on each ladder, their bans and every training of theirs, which opens on its report; «ban» from the path opens the form with
  * the member written and goes back there, and a refusal of the server lands under its field; the list of the bans lifts one, asked
  * first; a trainer reading their own path is told that what is reserved is not shown, and a reader who may not ban sees no button;
- * a head of a FIR (A11b), to whom the server sends the trainings of their FIR and neither the ladders nor the bans, is told so.
+ * a head of a FIR (A11b), to whom the server sends the trainings of their FIR and neither the ladders nor the bans, is told so; a
+ * person whose data was erased is a deleted person, with no path (A12b).
  * What the server decides is proved by `TrainingTraineeTests` and `TrainingFirHeadsTests` (integration); the round against the real
  * server is `full/training-the-trainee.spec.ts`.
  */
@@ -44,6 +45,7 @@ const words = JSON.parse(
     create: string;
     give: string;
     given: string;
+    toTrainee: string;
     lift: string;
     liftConfirm: string;
     lifted: string;
@@ -52,6 +54,13 @@ const words = JSON.parse(
   };
   errors: Record<string, string>;
 };
+
+/** The core's word for a person whose data was erased (A12a), which the lists and the pages say in the place of the pseudonym. */
+const deleted = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
+  ) as { people: { deleted: string } }
+).people.deleted;
 
 /** A sentence of the language file with its values in. */
 const filled = (sentence: string, values: Record<string, string>) =>
@@ -450,6 +459,49 @@ test('the list of the bans is newest first, and lifts a ban asked first', async 
       body: { rowVersion: '2026-09-25T10:00:00.123456Z' },
     },
   ]);
+});
+
+test('a ban of a person whose data was erased names them as a deleted person with no path to open, and a pseudonym has no path (A12b)', async ({
+  page,
+}) => {
+  // What the server sends once a banned member and the staff who banned them are erased: a pseudonym with no name in the place of
+  // each, and a ban over whose reason went with the member's data.
+  await stubThePath(page, {
+    rows: [
+      ban(),
+      ban({
+        id: 6,
+        trainee: { vid: -3, name: null },
+        givenBy: { vid: -4, name: null },
+        reason: '',
+        holds: false,
+        endsAt: '2026-09-20T10:00:00Z',
+        createdAt: '2026-09-10T10:00:00Z',
+      }),
+    ],
+  });
+  let asked = false;
+  await page.route('**/api/training/trainees/-3', (route) => {
+    asked = true;
+    return route.fulfill(json({}, 404));
+  });
+
+  await page.goto('/staff/training/bans');
+  const erased = page.getByRole('row').filter({ hasText: words.bans.options.status.Over! });
+  await expect(erased.getByRole('cell', { name: deleted, exact: true })).toHaveCount(2);
+  await expect(page.getByText('-3', { exact: true })).toHaveCount(0);
+
+  // Only the ban of a member who is still there opens their path.
+  await expect(erased.getByRole('link', { name: words.bans.toTrainee, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: words.bans.toTrainee, exact: true })).toHaveAttribute(
+    'href',
+    '/staff/training/trainees/790099',
+  );
+
+  // A pseudonym has no path: not found, without asking the server.
+  await page.goto('/staff/training/trainees/-3');
+  await expect(page.getByRole('heading', { name: englishCommon.notFound.title })).toBeVisible();
+  expect(asked).toBe(false);
 });
 
 test('a trainer reading their own path is told what is not shown, and one who may not ban sees no button', async ({

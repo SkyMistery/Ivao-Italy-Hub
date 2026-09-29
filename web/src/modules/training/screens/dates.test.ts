@@ -320,6 +320,25 @@ test('a closing is the staff’s with its reason, or the hub’s with none, and 
   expect(shownState(trainee('Completed', { held: true }))).toBe('Completed');
 });
 
+test('the staff’s answer tells the two closings by who closed it, so the staff’s stays theirs once an erasure took its reason', () => {
+  const coordinator = { vid: 790097, name: 'Test Coordinator' };
+  const closedAt = '2026-10-02T04:15:00Z';
+
+  expect(closingOf(staff('Closed', { closedAt, closedBy: coordinator, closeReason: 'No answer.' }))).toEqual({
+    by: 'staff',
+    at: closedAt,
+    reason: 'No answer.',
+  });
+  // The trainee's data erased (A12b): the reason is gone with it, and somebody of the staff still closed it — not the hub.
+  expect(closingOf(staff('Closed', { closedAt, closedBy: coordinator }))).toEqual({
+    by: 'staff',
+    at: closedAt,
+    reason: null,
+  });
+  // Nobody closed the hub's.
+  expect(closingOf(staff('Closed', { closedAt }))).toEqual({ by: 'hub', at: closedAt });
+});
+
 test('the dates of the form travel with a box left empty as nothing, and a refusal on a row lands on the form', () => {
   expect(
     proposalFromFormValues({

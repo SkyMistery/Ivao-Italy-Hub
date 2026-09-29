@@ -10,7 +10,8 @@ import { staffBootstrap, stubTheApi } from './fixtures';
  * asked of the server; the page of a request reminds whoever approves to check the theory exam, with its site, and the request
  * is accepted, or refused with a reason the dialog asks for first; the trainer is chosen among the ones the server offers, and
  * its refusal lands under the field; a step somebody else overtook reads the page again; a reader the server lets do nothing
- * sees no button. What the server decides is proved by `TrainingStaffTests` (integration); the round against the real server is
+ * sees no button; a person whose data was erased is a deleted person, with no path to open (A12b). What the server decides is
+ * proved by `TrainingStaffTests` and `TrainingTraineeTests` (integration); the round against the real server is
  * `full/training-staff.spec.ts`.
  */
 
@@ -34,10 +35,18 @@ const words = JSON.parse(
     assign: { submit: string; change: string; assigned: string; fields: { trainerVid: string } };
     accept: { button: string; done: string };
     reject: { button: string; done: string; fields: { reason: string } };
+    closing: { byStaff: string; byHub: string };
     refused: string;
   };
   errors: Record<string, string>;
 };
+
+/** The core's word for a person whose data was erased (A12a), which every page and list says in the place of the pseudonym. */
+const deleted = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
+  ) as { people: { deleted: string } }
+).people.deleted;
 
 /** The core's sentence for a conflict, which the page says in its notice. */
 const conflict = (
@@ -497,4 +506,63 @@ test('a reader the server lets do nothing on a training sees no button, and stil
   ).toBeVisible();
   await expect(page.getByRole('button', { name: words.staff.accept.button, exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: words.staff.reject.button, exact: true })).toHaveCount(0);
+});
+
+test('a person whose data was erased is a deleted person in the list and on the page, with no path to open (A12b)', async ({
+  page,
+}) => {
+  // What the server sends once the trainee and the trainer are erased: a pseudonym with no name in the place of each. The
+  // coordinator closed the training; its reason went with the trainee's data, and the closing is still theirs.
+  const erasedTrainee = { vid: -3, name: null };
+  const erasedTrainer = { vid: -4, name: null };
+  await stubTheStaff(page, {
+    rows: [row(41, 'Closed', { trainee: erasedTrainee, trainer: erasedTrainer })],
+    initial: training('Closed', {
+      trainee: erasedTrainee,
+      availabilityText: null,
+      decidedBy: coordinator,
+      decidedAt: '2026-09-21T09:00:00Z',
+      trainer: erasedTrainer,
+      assignedBy: coordinator,
+      assignedAt: '2026-09-21T09:30:00Z',
+      closedBy: coordinator,
+      closedAt: '2026-09-25T10:00:00Z',
+      closeReason: null,
+    }),
+  });
+
+  // The list: both of them deleted people, never the number in their place.
+  await page.goto('/staff/training');
+  await expect(page.getByRole('cell', { name: deleted, exact: true })).toHaveCount(2);
+  await expect(page.getByText('-3', { exact: true })).toHaveCount(0);
+
+  // The page: named as a deleted person, with no link to a path that is nobody's.
+  await page.goto('/staff/training/41');
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: filled(words.staff.pageTitle, { rating: 'ADC', trainee: deleted }),
+    }),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/staff/training/trainees/"]')).toHaveCount(0);
+  await expect(
+    page.getByText(
+      filled(words.staff.trainer.assigned, {
+        name: deleted,
+        by: 'Test Coordinator (790097)',
+        date: 'Sep 21, 2026',
+      }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  // Closed by the staff, not by the hub: who closed it tells the two apart, not the reason that is gone.
+  await expect(
+    page.getByText(
+      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: 'Sep 25, 2026' }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(filled(words.staff.closing.byHub, { date: 'Sep 25, 2026' }))).toHaveCount(0);
+  await expect(page.getByText('-3', { exact: true })).toHaveCount(0);
 });
