@@ -1,5 +1,5 @@
 import { ApiError } from '../../../shared/api/problem';
-import type { MyTrainingDto, MyTrainingPathDto, TraineeTrainingDto, TrainingState } from '../api';
+import type { MyTrainingDto, MyTrainingPathDto, ShownState, TraineeTrainingDto } from '../api';
 import type { RatingKind } from '../schemas';
 
 /**
@@ -12,6 +12,11 @@ import type { RatingKind } from '../schemas';
 /** The trainee's two pages, under the segment the module reserves; the mail of a request received points at the first. */
 export const MINE = '/training/mine';
 export const REQUEST = '/training/request';
+
+/** The page of one training of the trainee's (A8), where the date is chosen: the mails of its dates point at it. */
+export function mineTrainingHref(id: number): string {
+  return `${MINE}/${String(id)}`;
+}
 
 /** The refusals the pages say more about, as the server sends them: a refusal is a bare key, and the details are the page's. */
 export const REFUSALS = {
@@ -66,23 +71,26 @@ export function refusalDetail(path: MyTrainingPathDto): RefusalDetail | null {
 }
 
 /**
- * A refusal of the request split by where it belongs. The form draws its own fields — the position and the two texts —, and
- * the rest is about the request as a whole — the ladder, the rating proposed, the answer on the theory —, which would
- * otherwise land on a field the form does not have and be shown nowhere. Anything that is not a refusal with fields is the
- * form's, whose banner says it.
+ * A refusal split by where it belongs. The form draws its own fields — of the request the position and the two texts, of a
+ * proposal the start and the end of each date (A8), which a list names by row, so a rule may say which they are —, and the rest
+ * is about the request or the dates as a whole — the ladder, the rating proposed, the answer on the theory; the dates together,
+ * their confirmation, the state of the training —, which would otherwise land on a field the form does not have and be shown
+ * nowhere. Anything that is not a refusal with fields is the form's, whose banner says it.
  */
 export function splitRefusal(
   error: unknown,
-  formFields: readonly string[],
+  formFields: readonly string[] | ((field: string) => boolean),
 ): { form: Error | null; page: ApiError | null } {
   if (!(error instanceof ApiError) || error.problem?.errors === undefined) {
     return { form: error instanceof Error ? error : new Error(String(error)), page: null };
   }
 
+  const isFormField =
+    typeof formFields === 'function' ? formFields : (field: string) => formFields.includes(field);
   const inTheForm: Record<string, string[]> = {};
   const onThePage: Record<string, string[]> = {};
   for (const [field, keys] of Object.entries(error.problem.errors)) {
-    (formFields.includes(field) ? inTheForm : onThePage)[field] = keys;
+    (isFormField(field) ? inTheForm : onThePage)[field] = keys;
   }
 
   return {
@@ -107,14 +115,18 @@ export function isCancellable(training: TraineeTrainingDto): boolean {
   return training.state === 'Requested';
 }
 
-/** The colour of a state: going on in blue and indigo, done in green, refused in red, a no-show in orange, over in grey. */
+/**
+ * The colour of a state as the pages show it: going on in blue and indigo — held, waiting for its report, blue again —, done in
+ * green, refused in red, a no-show in orange, over in grey.
+ */
 export const STATE_COLOURS: Readonly<
-  Record<TrainingState, 'blue' | 'indigo' | 'green' | 'red' | 'orange' | 'gray'>
+  Record<ShownState, 'blue' | 'indigo' | 'green' | 'red' | 'orange' | 'gray'>
 > = {
   Requested: 'blue',
   Accepted: 'indigo',
   Assigned: 'indigo',
   Scheduled: 'indigo',
+  Held: 'blue',
   Completed: 'green',
   Rejected: 'red',
   Cancelled: 'gray',

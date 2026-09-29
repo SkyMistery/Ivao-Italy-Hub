@@ -325,3 +325,50 @@ export type AssignValues = z.output<ReturnType<typeof assignSchema>>;
 export function assignFromFormValues(values: AssignValues): TrainingAssignmentDto {
   return { trainerVid: Number(values.trainerVid), rowVersion: values.rowVersion };
 }
+
+// ---- the dates (A8) -----------------------------------------------------------------------------------------------------
+
+type TrainingSlotWriteDto = components['schemas']['TrainingSlotWriteDto'];
+
+/**
+ * The trainer's dates (design M3 §2.5), proposed together: each when it would start and end, an instant of the form — ISO in UTC,
+ * with the division's own time under it. The version of the training is not a field: it is the one the page has when the dates
+ * go, so that a page read again after somebody else's step keeps what was written. Nothing is required here: a box left empty, a
+ * date gone by, one too long are the server's to refuse, each on its own field.
+ */
+export const proposalSchema = z.object({
+  slots: z.array(
+    z.object({
+      startsAtUtc: z.string().optional().meta({ datetime: true }),
+      endsAtUtc: z.string().optional().meta({ datetime: true }),
+    }),
+  ),
+});
+
+export type ProposalValues = z.output<typeof proposalSchema>;
+
+/** A proposal starts with one date to write; the list adds the others. */
+export const EMPTY_PROPOSAL: ProposalValues = { slots: [{}] };
+
+/** The dates as the server takes them: a box left empty travels empty, and the server says it is required. */
+export function proposalFromFormValues(values: ProposalValues): TrainingSlotWriteDto[] {
+  return values.slots.map((slot) => ({
+    startsAtUtc: slot.startsAtUtc ?? null,
+    endsAtUtc: slot.endsAtUtc ?? null,
+  }));
+}
+
+/**
+ * The date set by hand (§2.5, d2): when the session starts — among the dates proposed or not, and gone by too, for a session
+ * held earlier than planned. Like the proposal, the version is the page's.
+ */
+export const dateSchema = z.object({
+  startsAtUtc: z.string().optional().meta({ datetime: true }),
+});
+
+export type DateValues = z.output<typeof dateSchema>;
+
+/** A closing of the staff (§2.5, R.3) asks what a refusal asks (A7): the reason, as the trainee will read it. */
+export const closeSchema = rejectSchema;
+
+export type CloseValues = RejectValues;

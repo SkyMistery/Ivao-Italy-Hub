@@ -108,10 +108,10 @@ public sealed class TrainingDates(
     }
 
     /// <summary>
-    /// The trainer's dates (§2.5), proposed together: each one to come, ending after it starts and within a session's length, not
-    /// proposed already, with no more of them waiting than the trainee is fairly offered; each with its warnings, which the policy
-    /// turns into a refusal of that date or into a confirmation asked of the proposal. Each keeps the warnings every reader of the
-    /// training may read (<see cref="DateConflicts.Kept"/>). Mails the trainee once.
+    /// The trainer's dates (§2.5), proposed together: each written whole, to come, ending after it starts and within a session's
+    /// length, not proposed already, with no more of them waiting than the trainee is fairly offered; each with its warnings, which
+    /// the policy turns into a refusal of that date or into a confirmation asked of the proposal. Each keeps the warnings every
+    /// reader of the training may read (<see cref="DateConflicts.Kept"/>). Mails the trainee once.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> ProposeAsync(
         Training training,
@@ -148,28 +148,42 @@ public sealed class TrainingDates(
         var moments = new List<(DateTime Start, DateTime End)>();
         for (var index = 0; index < proposed.Count; index++)
         {
-            var (start, end) = (Utc(proposed[index].StartsAtUtc), Utc(proposed[index].EndsAtUtc));
             var field = $"slots[{index}]";
+            var start = proposed[index].StartsAtUtc is { } written ? Utc(written) : (DateTime?)null;
+            var end = proposed[index].EndsAtUtc is { } until ? Utc(until) : (DateTime?)null;
 
-            if (start <= now)
+            // A box left empty is required on its own field (A8b); what can be said of the other one still is.
+            if (start is not { } from)
+            {
+                refusals.Add($"{field}.startsAtUtc", "errors.required");
+            }
+            else if (from <= now)
             {
                 refusals.Add($"{field}.startsAtUtc", SlotPassed);
             }
-            else if (existing.Exists(slot => slot.StartsAtUtc == start) || moments.Exists(moment => moment.Start == start))
+            else if (existing.Exists(slot => slot.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
             {
                 refusals.Add($"{field}.startsAtUtc", SlotTwice);
             }
 
-            if (end <= start)
+            if (end is not { } to)
             {
-                refusals.Add($"{field}.endsAtUtc", SlotEndsBeforeItStarts);
+                refusals.Add($"{field}.endsAtUtc", "errors.required");
             }
-            else if (end - start > MaxSlotLength)
+            else if (start is { } since)
             {
-                refusals.Add($"{field}.endsAtUtc", SlotTooLong);
-            }
+                if (to <= since)
+                {
+                    refusals.Add($"{field}.endsAtUtc", SlotEndsBeforeItStarts);
+                }
+                else if (to - since > MaxSlotLength)
+                {
+                    refusals.Add($"{field}.endsAtUtc", SlotTooLong);
+                }
 
-            moments.Add((start, end));
+                // Only a whole date is a moment: one with a box left empty is refused, and nothing below looks at it.
+                moments.Add((since, to));
+            }
         }
 
         if (!refusals.IsEmpty)
@@ -271,12 +285,12 @@ public sealed class TrainingDates(
             return Refuse("state", NotSettable);
         }
 
-        if (payload.StartsAtUtc == default)
+        if (payload.StartsAtUtc is not { } written || written == default)
         {
             return Refuse("startsAtUtc", "errors.required");
         }
 
-        var start = Utc(payload.StartsAtUtc);
+        var start = Utc(written);
         var settings = await SettingsAsync(cancellationToken);
         var found = await WarningsAsync(training, start, endsAtUtc: null, settings, cancellationToken);
         if (DateConflicts.Refusal(settings.ConflictPolicy, found.Shown.Count, payload.Confirmed) is { } refusal)

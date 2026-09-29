@@ -26,8 +26,9 @@ import {
  * Every call the screens of the training make (M3): the settings through the core's settings of a module, what they are
  * chosen from — the ratings and the positions the division trains, which the module asks of the core (A4) —, the items
  * of the evaluation sheet through the CRUD engine (A5), the trainee's own side — their page, the request and its
- * cancellation (A6) —, and the staff's side — the list of the trainings, the page of one, accepting, refusing and
- * assigning its trainer (A7).
+ * cancellation (A6), the page of one training and the choice of its date (A8) —, and the staff's side — the list of the
+ * trainings, the page of one, accepting, refusing and assigning its trainer (A7), what a date meets, the dates proposed and
+ * one taken back, the date set by hand, and the closing (A8).
  */
 
 export type TrainingRatingDto = components['schemas']['TrainingRatingDto'];
@@ -45,6 +46,13 @@ export type StaffTrainingRowDto = components['schemas']['StaffTrainingRowDto'];
 export type TrainerCandidateDto = components['schemas']['TrainerCandidateDto'];
 export type TrainingMemberDto = components['schemas']['TrainingMemberDto'];
 export type TrainingAssignmentDto = components['schemas']['TrainingAssignmentDto'];
+export type TraineeSlotDto = components['schemas']['TraineeSlotDto'];
+export type StaffSlotDto = components['schemas']['StaffSlotDto'];
+export type DateWarning = components['schemas']['DateWarning'];
+export type DateConflictsDto = components['schemas']['DateConflictsDto'];
+export type TrainingSlotWriteDto = components['schemas']['TrainingSlotWriteDto'];
+export type TrainingSlotsWriteDto = components['schemas']['TrainingSlotsWriteDto'];
+export type TrainingDateWriteDto = components['schemas']['TrainingDateWriteDto'];
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
 export const MODULE_KEY = 'training';
@@ -217,6 +225,41 @@ export function useCancelTraining() {
   });
 }
 
+/**
+ * One training of the trainee's (design M3 §4.1, A8): what `/training/mine` says of it, with its trainer and, while it waits for
+ * its date, the dates still to come to choose from. Another member's is a 404. Below the trainee's page in the cache, so every
+ * step of theirs reads it again too.
+ */
+export function mineOneQuery(id: number) {
+  return queryOptions({
+    queryKey: [...mineKey, 'one', id] as const,
+    queryFn: async (): Promise<TraineeTrainingDto> =>
+      unwrap(await api.GET('/api/training/mine/{id}', { params: { path: { id } } })),
+  });
+}
+
+/**
+ * The trainee's choice among the dates proposed (§2.5, d1), at the version of the training they saw: their training, dated, or
+ * the refusals — and a 409 when the trainer changed the dates meanwhile. Their pages are read again either way: what may be
+ * chosen now is the server's to say.
+ */
+export function useChooseDate(training: TraineeTrainingDto) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (slotId: number): Promise<TraineeTrainingDto> =>
+      unwrap(
+        await api.POST('/api/training/mine/{id}/choose', {
+          params: { path: { id: training.id } },
+          body: { slotId, rowVersion: training.rowVersion },
+        }),
+      ),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: mineKey });
+    },
+  });
+}
+
 // ---- the staff's side (A7) ----------------------------------------------------------------------------------------------
 
 const staffKey = ['training', 'staff'] as const;
@@ -231,8 +274,22 @@ export function memberLabel(member: TrainingMemberDto): string {
     : `${member.name} (${String(member.vid)})`;
 }
 
-/** A row of the list as the list draws it: the trainee and the trainer written out, for its columns of text. */
-export type StaffTrainingRow = StaffTrainingRowDto & {
+/**
+ * A state as the pages show it (R.4): a dated training whose day is over in the division's time zone shows as held (design M3
+ * §1.2), which nothing writes — the server says it (`held`).
+ */
+export type ShownState = TrainingState | 'Held';
+
+export function shownState(training: { readonly state: TrainingState; readonly held: boolean }): ShownState {
+  return training.state === 'Scheduled' && training.held ? 'Held' : training.state;
+}
+
+/**
+ * A row of the list as the list draws it: the trainee and the trainer written out, for its columns of text, and its state as
+ * the pages show it — held, from the day after its session.
+ */
+export type StaffTrainingRow = Omit<StaffTrainingRowDto, 'state'> & {
+  readonly state: ShownState;
   readonly traineeName: string;
   readonly trainerName: string | null;
 };
@@ -261,6 +318,7 @@ export function staffTrainingsQuery(
         ...page,
         items: page.items.map((row) => ({
           ...row,
+          state: shownState(row),
           traineeName: memberLabel(row.trainee),
           trainerName: row.trainer === null ? null : memberLabel(row.trainer),
         })),
@@ -287,11 +345,18 @@ export function trainerCandidatesQuery(id: number) {
   });
 }
 
-/** The three steps of the staff on a training, each answering with the page as it is afterwards. */
+/**
+ * The steps of the staff on a training, each answering with the page as it is afterwards: accept, refuse, assign (A7); the dates
+ * proposed, one taken back, the date set by hand, and the closing (A8).
+ */
 export type StaffStep =
   | { readonly step: 'accept'; readonly rowVersion: string }
   | { readonly step: 'reject'; readonly reason: string; readonly rowVersion: string }
-  | { readonly step: 'assign'; readonly assignment: TrainingAssignmentDto };
+  | { readonly step: 'assign'; readonly assignment: TrainingAssignmentDto }
+  | { readonly step: 'propose'; readonly proposal: TrainingSlotsWriteDto }
+  | { readonly step: 'withdraw'; readonly slotId: number; readonly rowVersion: string }
+  | { readonly step: 'date'; readonly date: TrainingDateWriteDto }
+  | { readonly step: 'close'; readonly reason: string; readonly rowVersion: string };
 
 export function useStaffStep(id: number) {
   const queryClient = useQueryClient();
@@ -318,6 +383,26 @@ export function useStaffStep(id: number) {
           return unwrap(
             await api.POST('/api/training/trainings/{id}/assign', { ...path, body: step.assignment }),
           );
+        case 'propose':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/slots', { ...path, body: step.proposal }),
+          );
+        case 'withdraw':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/slots/{slotId}/withdraw', {
+              params: { path: { id, slotId: step.slotId } },
+              body: { rowVersion: step.rowVersion },
+            }),
+          );
+        case 'date':
+          return unwrap(await api.POST('/api/training/trainings/{id}/date', { ...path, body: step.date }));
+        case 'close':
+          return unwrap(
+            await api.POST('/api/training/trainings/{id}/close', {
+              ...path,
+              body: { reason: step.reason, rowVersion: step.rowVersion },
+            }),
+          );
       }
     },
     onSuccess: async (page) => {
@@ -336,4 +421,29 @@ export function useStaffStep(id: number) {
       ]);
     },
   });
+}
+
+/**
+ * The page of a training read again, after a step somebody else overtook (409): a form of the dates keeps what was written in
+ * it, and the next press goes with the version there is now.
+ */
+export function useRereadStaffTraining(id: number): () => Promise<void> {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: staffTrainingQuery(id).queryKey });
+}
+
+/**
+ * What a date meets on the days it touches (design M3 §2.5), asked before anybody writes it by whoever may conduct the
+ * training: the division's policy, and the warnings — none when the policy is not to look. Without an end, the day it starts.
+ */
+export async function dateConflicts(
+  id: number,
+  startsAtUtc: string,
+  endsAtUtc: string | null,
+): Promise<DateConflictsDto> {
+  return unwrap(
+    await api.GET('/api/training/trainings/{id}/conflicts', {
+      params: { path: { id }, query: endsAtUtc === null ? { startsAtUtc } : { startsAtUtc, endsAtUtc } },
+    }),
+  );
 }

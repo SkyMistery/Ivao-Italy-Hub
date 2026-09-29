@@ -9,8 +9,11 @@ namespace IvaoHub.Modules.Training.Dates;
 /// </summary>
 public sealed record DateConflictsDto(ConflictPolicy Policy, IReadOnlyList<DateWarning> Warnings);
 
-/// <summary>A date proposed for the session (§2.5): when it would start and end, in UTC.</summary>
-public sealed record TrainingSlotWriteDto(DateTime StartsAtUtc, DateTime EndsAtUtc);
+/// <summary>
+/// A date proposed for the session (§2.5): when it would start and end, in UTC. Either may arrive empty, as the page sends a box
+/// nobody filled in (A8b), and is then refused as required on its own field.
+/// </summary>
+public sealed record TrainingSlotWriteDto(DateTime? StartsAtUtc, DateTime? EndsAtUtc);
 
 /// <summary>
 /// The trainer's dates (§2.5), proposed together, so the trainee is written to once: the dates; whether whoever proposes them has
@@ -23,9 +26,10 @@ public sealed record TrainingSlotWithdrawalDto(DateTime RowVersion);
 
 /// <summary>
 /// The date set by hand (§2.5, d2): whenever the session starts — among the dates proposed or not, before or after today —, with
-/// the same warnings and their confirmation, and the version of the training seen.
+/// the same warnings and their confirmation, and the version of the training seen. The start may arrive empty, and is then
+/// refused as required.
 /// </summary>
-public sealed record TrainingDateWriteDto(DateTime StartsAtUtc, bool Confirmed, DateTime RowVersion);
+public sealed record TrainingDateWriteDto(DateTime? StartsAtUtc, bool Confirmed, DateTime RowVersion);
 
 /// <summary>The trainee's choice among the dates proposed (§2.5), at the version of their training they saw.</summary>
 public sealed record TrainingSlotChoiceDto(long SlotId, DateTime RowVersion);

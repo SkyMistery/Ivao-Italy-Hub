@@ -1,19 +1,21 @@
 import { Badge, Button, H1, H2, H3, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { ConfirmDialog, EmptyState, Notice, RatingBadge, useNotice } from '../../../shared/ui';
-import { mineQuery, useCancelTraining, type MyTrainingPathDto, type TraineeTrainingDto } from '../api';
+import { EmptyState, Notice, RatingBadge } from '../../../shared/ui';
+import { mineQuery, shownState, type MyTrainingPathDto, type TraineeTrainingDto } from '../api';
 
-import { RefusalDetailText, StateBadge } from './parts';
+import { choosableSlots } from './dates';
+import { CancelRequest, OutcomeText, RefusalDetailText, StateBadge } from './parts';
 import {
   REQUEST,
   formatHours,
   isCancellable,
-  isTheoryRefusal,
+  mineTrainingHref,
   readyForExam,
   refusalDetail,
   stateMoment,
@@ -22,9 +24,9 @@ import {
 /**
  * The trainee's trainings (design M3 §4.1), `/training/mine`, for a signed in member: where they stand on each ladder — their
  * rating and hours, the training they may ask for next or why not now, how long the waiting still runs, what their trainer
- * marked them ready for — and every request and training of theirs, newest first, the refused and the cancelled ones too,
- * with «cancel» on a request nobody has accepted yet. One answer, `GET /api/training/mine`, the one the request reads: the
- * page decides nothing about the rules.
+ * marked them ready for — and every request and training of theirs, newest first, the refused, the cancelled and the closed
+ * ones too, with «cancel» on a request nobody has accepted yet and the page of each, where the date is chosen (A8). One answer,
+ * `GET /api/training/mine`, the one the request reads: the page decides nothing about the rules.
  */
 export function MinePage() {
   const { t, i18n } = useTranslation();
@@ -148,17 +150,23 @@ function PathCard({
   );
 }
 
-/** A request or a training of theirs: its state, what it is, when, why it was refused, and what the report marked. */
+/**
+ * A request or a training of theirs: its state, what it is, when, how it ended without a report, what the report marked, and
+ * its page — where the dates the trainer proposed are chosen, said here when there are some.
+ */
 function TrainingItem({ training }: { training: TraineeTrainingDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
+  // The dates still to come are counted from when the list was drawn, and stay the same while it is read.
+  const [drawnAt] = useState(() => Date.now());
   const at = stateMoment(training);
+  const toChoose = choosableSlots(training, drawnAt).length;
 
   return (
     <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <StateBadge state={training.state} />
+          <StateBadge state={shownState(training)} />
           <span className="font-semibold">{t(`training:kinds.${training.kind}`)}</span>
           {training.ratingShortName === null ? null : (
             <RatingBadge kind={training.kind} shortName={training.ratingShortName} />
@@ -183,14 +191,10 @@ function TrainingItem({ training }: { training: TraineeTrainingDto }) {
           ].join(' · ')}
         </span>
 
-        {training.state !== 'Rejected' ? null : (
-          <p className="text-sm">
-            {isTheoryRefusal(training)
-              ? t('training:mine.theoryRefusal')
-              : training.rejectionReason === null
-                ? t('training:mine.staffRefusal')
-                : t('training:mine.staffRefusalReason', { reason: training.rejectionReason })}
-          </p>
+        <OutcomeText training={training} />
+
+        {toChoose === 0 ? null : (
+          <p className="text-sm font-semibold">{t('training:mine.datesWaiting', { count: toChoose })}</p>
         )}
 
         {training.readyForMockExam || training.readyForExam ? (
@@ -218,36 +222,15 @@ function TrainingItem({ training }: { training: TraineeTrainingDto }) {
         )}
       </div>
 
-      {isCancellable(training) ? <CancelRequest training={training} /> : null}
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {/* Its page: the dates to choose from while there are some, and everything said of it (A8). */}
+        <Button asChild size="sm" variant={toChoose === 0 ? 'ghost' : 'primary'}>
+          <RouterAnchor href={mineTrainingHref(training.id)}>
+            {toChoose === 0 ? t('training:mine.open') : t('training:mine.chooseDate')}
+          </RouterAnchor>
+        </Button>
+        {isCancellable(training) ? <CancelRequest training={training} /> : null}
+      </div>
     </li>
-  );
-}
-
-/** «Cancel», while nobody has accepted the request (§2.2, d2): it stays on record, and makes nobody wait. */
-function CancelRequest({ training }: { training: TraineeTrainingDto }) {
-  const { t, i18n } = useTranslation();
-  const cancel = useCancelTraining();
-  const notice = useNotice();
-
-  return (
-    <ConfirmDialog
-      triggerText={t('training:mine.cancel')}
-      triggerVariant="secondary"
-      title={t('training:mine.cancelTitle')}
-      description={t('training:mine.cancelDescription')}
-      confirmText={t('training:mine.cancelConfirm')}
-      confirmVariant="destructive"
-      disabled={cancel.isPending}
-      onConfirm={() =>
-        cancel.mutate(training, {
-          onSuccess: () => notice({ tone: 'success', title: t('training:mine.cancelled') }),
-          onError: (error) =>
-            notice({
-              tone: 'error',
-              title: describeProblem(error, t, i18n.language) ?? t('errors.unknown'),
-            }),
-        })
-      }
-    />
   );
 }

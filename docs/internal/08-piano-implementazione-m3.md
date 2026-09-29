@@ -1857,9 +1857,157 @@ banco, la raddoppierebbero.
 [r143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666152
 [m144]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5859555627
 
-**Com'è andata (A8b)**: *(a fase chiusa)*
+**Com'è andata (A8b)** (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148, in coda dopo #147):
 
-### A9 — Dopo la sessione
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — la rotta `member` del manifest, come `/training/request` e `/training/mine`; il form generato con il campo `datetime` del
+  nucleo (il valore ISO in UTC, l'ora della divisione sotto: **nessun tipo di campo nuovo**) e la sua lista ripetibile per le date
+  proposte insieme; `ConfirmDialog` (con il campo generato nei `children` per la chiusura, come «Rifiuta» di A7), `Notice`, `useNotice`;
+  `useMoment` con il fuso della divisione, `useLocalized` e i tipi del calendario del bootstrap; `DataList` con la colonna dello stato —.
+  **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine. **Un cambio del server del modulo**, come la frase di A8
+  prevede (sotto, scostamento 1).
+- **Fatto**, come il perimetro di A8b qui sopra:
+  1. **`/training/mine/$id`** (`screens/traineeTraining.tsx`, rotta `member`): lo stato — «Eseguito» dal giorno dopo la sessione —, il
+     percorso, il rating e la postazione; quando è stata chiesta e il momento del suo stato; il trainer; **i riquadri delle date da
+     scegliere** (le date ancora da venire mentre il training aspetta la data), ognuno con inizio e fine in UTC e sotto nel fuso della
+     divisione, e «Scegli questa data», chiesto ancora una volta prima che parta, alla versione vista; **un 409** dice che il trainer ha
+     cambiato le date nel frattempo, e la pagina rilegge e mostra quelle di adesso; un rifiuto (`slotUnknown`, `slotPassed`, `state`) si
+     legge nell'angolo, e la pagina rilegge. Poi **la sessione** (UTC e fuso della divisione), **che cosa succede dopo** per ogni stato che
+     va avanti (in attesa, accettata, senza date, programmata, eseguita), **perché si è chiuso** — dal dipartimento training con il suo
+     motivo, o dall'hub perché la data non è stata scelta in tempo —, i due testi della richiesta e «Annulla la richiesta» su `Requested`.
+     Un training di un altro membro è «non trovato».
+  2. **`/training/mine`**: ogni training porta alla sua pagina («Apri»; «Scegli la data», in blu, con «Il trainer ha proposto N date:
+     scegli la tua.» quando ce ne sono); «Eseguito»; la chiusura con il suo motivo accanto al rifiuto, che c'era già.
+  3. **La pagina dello staff** (`screens/staff.tsx`), sotto la sezione del trainer, **«Le date»** mentre il training ha il trainer e va
+     avanti: **la sessione** (UTC e fuso della divisione; «La data l'ha scelta il trainee fra quelle proposte» o «fissata a mano»;
+     «Eseguita»); **le date proposte**, con ciò che l'hub ha trovato quando sono state scritte — un altro training per sigla e postazione,
+     con il link alla sua pagina; una voce del calendario per tipo, titolo nella lingua a schermo e indirizzo — e chi le ha proposte e
+     quando, «Già passata» per una data che non si sceglie più, e **«Ritira»** (chiesto prima); **«Proponi le date»**, il form generato con
+     la lista delle date (inizio e fine); **«Fissa la data a mano»**. In alto **«Chiudi il training»**, con il motivo in un campo generato
+     dentro `ConfirmDialog`; una sezione **«La chiusura»** dice chi l'ha chiuso e quando, e perché. `actions.canConduct` accende la
+     proposta e il ritiro in `Assigned` e l'override anche in `Scheduled` (`dateSteps`), `actions.canClose` la chiusura. **La lista** dice
+     «Eseguito» per una riga `held`.
+  4. **Gli avvisi prima di scrivere** (`useDatesWriter`, lo stesso per la proposta e per l'override): per ogni data scritta intera la
+     pagina chiede `GET …/conflicts`; con **`Warn`** e qualcosa trovato non scrive, e sotto il form mostra le date e ciò che incontrano
+     con «Proponi lo stesso» / «Fissa lo stesso», che manda di nuovo il form (per il suo `id`, come A6b) con `confirmed: true` — solo se le
+     date sono ancora quelle chieste, altrimenti chiede di nuovo —; con **`Block`** le date partono non confermate, il server rifiuta
+     quelle incontrate sul loro campo (`slots[i].startsAtUtc`) e la pagina mostra accanto ciò che ha trovato; con **`None`** nessun
+     avviso. **L'ultima parola resta del server**: un avviso nuovo fra la domanda e la scrittura è un rifiuto `confirmed`, detto sopra il
+     form, e la pressione dopo richiede. Una casella vuota non si chiede: il server dice che manca. I rifiuti sui campi del form (le
+     caselle di ogni riga, `startsAtUtc`) vanno sul campo, gli altri (`slots`, `confirmed`, `state`) sopra il form (`splitRefusal`, che ora
+     accetta anche una regola sui nomi dei campi, per le righe di una lista).
+  5. **Le funzioni pure** in `screens/dates.ts` (`choosableSlots`, `spanText`, `isWhole`, `sameDates`, `whatTheyMeet`, `asksConfirmation`,
+     `isRefused`, `warningSays`, `isHubAddress`, `dateSteps`, `closingOf`), `shownState` in `api.ts`; `WhenText`, `OutcomeText` e
+     `CancelRequest` (spostato da `mine.tsx`) in `parts.tsx`, per le due pagine del trainee e per quella dello staff; le chiamate in
+     `api.ts` (`mineOneQuery`, `useChooseDate`, i passi `propose`, `withdraw`, `date`, `close` di `useStaffStep`, `dateConflicts`,
+     `useRereadStaffTraining`), gli schemi in `schemas.ts` (`proposalSchema`, `dateSchema`, `closeSchema`); le parole (`states.Held`,
+     `time`, `detail`, `mine.*` nuove, `staff.sections`, `staff.session`, `staff.dates`, `staff.close`, `staff.closing`) in italiano e in
+     inglese, copiate da `pnpm i18n:sync`.
+  6. **I test**: Vitest `screens/dates.test.ts` (8); lo smoke `web/e2e/training-dates.spec.ts` (7, con l'API finta: i riquadri e la
+     scelta da `/training/mine`, la scelta superata dal trainer (409), la chiusura letta dal trainee, gli avvisi con `Warn` confermati
+     prima di scrivere e una data ritirata, il rifiuto con `Block`, la sessione e l'override, la chiusura con il motivo, «Eseguito» nella
+     lista); il giro sul banco `web/e2e/full/training-the-dates.spec.ts`, **il «fatta quando» di A8** (sotto); un fatto nuovo
+     d'integrazione in `TrainingDatesTests` (scostamento 1).
+- **Scostamenti e precisazioni, piccoli**:
+  1. **Un cambio del server del modulo**: A8a leggeva una casella di data lasciata vuota come l'istante zero, quindi un inizio vuoto «è già
+     passato» e una fine vuota «viene prima dell'inizio»; l'override rifiutava un inizio vuoto solo come valore predefinito, che il JSON
+     non manda (un `null` era un 400 generico, senza campo). I due DTO di scrittura ora hanno le date nullabili (`TrainingSlotWriteDto`,
+     `TrainingDateWriteDto`): una casella vuota è `errors.required` sul suo campo, e dell'altra casella della riga si dice ancora quello che
+     c'è da dire. Il tipo generato segue (`pnpm gen:api`). Provato da `ADateLeftEmptyIsRequiredOnItsOwnField`, **un fatto nuovo nella
+     classe di A8a** (nessun fatto esistente cambiato), che **cade sul codice di A8a** rimesso com'era — il server risponde con l'errore
+     generico di lettura del JSON — e passa su quello di A8b.
+  2. **La conferma degli avvisi non è una finestra**: `ConfirmDialog` si apre dal suo pulsante, e la domanda arriva dopo le risposte del
+     server; quindi è una `Notice` sotto il form, con il pulsante che manda di nuovo il form. Una finestra che si apre da sola sarebbe
+     un'estensione di `ConfirmDialog` (nucleo). La scelta della data del trainee, che per lui è per sempre, è invece una `ConfirmDialog`.
+  3. **I momenti in UTC, e sotto nel fuso della divisione** (`docs/UI-GUIDELINES.md`, «Times», come `DataList` e il campo `datetime`): le
+     date da scegliere e la sessione sono le ore che contano, e il trainee le legge dove vive. I giorni (la richiesta, la decisione, la
+     proposta) restano giorni, come in A6b e A7. **Il giorno della settimana nei riquadri non c'è**: `useMoment` non lo dà, e un altro
+     formatore sarebbe una seconda copia (nucleo; detto al revisore).
+  4. **La versione della riga non è un campo dei form delle date**: la pagina manda quella che ha quando le date partono, così dopo un 409
+     la pagina si rilegge e il form tiene ciò che è scritto; un form che è andato ricomincia vuoto (la sua `key` è un contatore). **Un
+     passo dello staff superato da qualcun altro (409) rilegge la pagina** (`useRefused`), anche Accetta e Rifiuta di A7, che prima lo
+     dicevano soltanto.
+  5. **«Eseguito» è uno stato mostrato** (`shownState`, `Held`), mai scritto: nel badge delle pagine e nella colonna della lista, dove la
+     riga porta `Held` al posto di `Scheduled` (`staff.options.state.Held`); il colore è il blu di ciò che aspetta, come `Requested`.
+  6. **Le regole della proposta dette prima** («al massimo 10 alla volta, di 12 ore al massimo») stanno nella frase sopra il form, oltre
+     che nei rifiuti del server: sono le stesse parole dei rifiuti, non regole nel browser.
+- **Test di A6b, A7 e A8a toccati, e perché**:
+  1. `web/e2e/training-request.spec.ts` (A6b) e `web/e2e/training-staff.spec.ts` (A7), lo smoke: i costruttori dei DTO finti hanno i
+     campi nuovi di A8a con valori neutri (`trainer: null`, `slots: []`, `held: false`, `closeReason: null`, `dateChosenByTrainee: false`,
+     le azioni nuove false), perché le pagine ora li leggono (una lista di date assente fa cadere `/training/mine`). Nessuna asserzione è
+     cambiata.
+  2. `TrainingDatesTests` (A8a): il fatto nuovo dello scostamento 1. Nessun fatto esistente è cambiato.
+- **I giri sul banco**: `training-the-dates.spec.ts` ha un nome che viene dopo `training-staff.spec.ts` e **riprende il training ATC che
+  A7 lascia `Assigned`** al trainer del banco (se gira da sola, ne chiede uno suo attraverso l'API); per «un altro training quel giorno»
+  il trainee chiede un training **pilota** (il giro di A6b annulla le sue richieste, quello di A7 lascia libero il percorso pilota), che lo
+  staff accetta, assegna al trainer del banco e data a mano alle 10:00 UTC del giorno della prima data, attraverso l'API. Il trainer, che
+  l'assegnazione ha fatto uscire, rientra e **propone due date dalla pagina** — la prima quel giorno, avvisata dalla sessione pilota con il
+  link alla sua pagina, e confermata —; il trainee **sceglie quella** da `/training/mine`; **un visitatore la trova nel calendario
+  pubblico** («sigla · postazione») e la pagina non nomina nessuno (né il trainee né il trainer, né i loro VID); **la mail `dateConfirmed`
+  arriva in Mailpit a tutti e due**; poi **lo staff chiude il training dalla pagina** con un motivo, la voce lascia il calendario e il
+  trainee legge il motivo. Nel `finally` chiude attraverso l'API ciò che la corsa ha lasciato aperto. **Nessun test di A6b o A7 è
+  cambiato** nel giro sul banco. Il banco va ricreato prima di ogni corsa, come già scritto.
+- **Il promemoria in Mailpit** (A8a, «Trovato» 4): **deciso di non aspettarlo nella spec** — il job gira ogni quarto d'ora, e aspettarlo
+  costerebbe fino a 15 minuti di CI —; il test d'integrazione di A8a lo prova attraverso il job. **Visto a mano sul banco di anteprima**
+  (27 settembre, sotto): una sessione entro le 24 ore di `reminderLeadHours`, scelta dal trainee alle 03:19; il giro del job delle 03:20
+  ha mandato **un** promemoria al trainee e **uno** al trainer, e il giro delle 03:35 nessun altro.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **La voce del calendario porta a `/training/sessions/{id}`, che ancora non esiste**: un visitatore che clicca una sessione nel
+     calendario pubblico trova «non trovato» finché A10 non fa la pagina (design §4.1). Detto al revisore.
+  2. **Per A9**: il flusso degli avvisi e i form delle date sono `useDatesWriter`, `ProposeDates` e `SetDate` in `staff.tsx`: la
+     rischedulazione, che riporta il training ad `Assigned`, li ritrova così come sono; le azioni del dopo sessione vanno nella sezione
+     «Le date», accanto alla sessione `Held`. La pagina del trainee ha già «che cosa succede dopo» per ogni stato: `Completed` e `NoShow`
+     sono di A9.
+  3. **Per A10**: «in attesa di scelta da N giorni» si conta dalle date proposte (`TrainingDates.Unanswered` di A8a); la pagina pubblica
+     della sessione è l'indirizzo della voce del calendario (sopra, 1).
+  4. ⚠️ **La trappola di A6b si è ripresentata**: una chiave del modulo che non esiste (`detail.dates.leadNoTrainer`, lasciata da una
+     stesura) è arrivata in un commit, e né `pnpm i18n:check` né le suite l'hanno vista (il ramo non si disegna mai: un training
+     `Assigned` ha sempre il trainer). Trovata prima della PR con uno script che confronta le chiavi letterali `t('training:…')` del
+     modulo con i suoi file di lingua, e tolta. Estendere `i18n:check` alle chiavi con il namespace è un cambio del nucleo (`web/scripts/`):
+     detto di nuovo al revisore, e nessun controllo di ripiego scritto nel modulo.
+  5. VID: A8b non ne usa di nuovi; il prossimo libero resta **790039**, poi **790045** (A3b usa 790040–790044 e 790050–790051).
+- **La coda**: A8b è nata in coda dopo #147 (A8a, in bozza in coda dopo #146, in coda dopo #144, in coda dopo #143): la PR è in bozza con
+  `(after #147)` e `Queued after #147.`. Quando #147 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (27 settembre 2026, sul branch da `m3/a8a-dates-server`, 25f1ac3): `dotnet build` senza avvisi; unità
+  **782/782** (come A8a: la fase non ha test di unità C#; `TrainingArchitectureTests` legge anche il TypeScript nuovo del modulo, ed è
+  verde); **integrazione intera senza filtro** **337/337** (le 336 di A8a e il fatto nuovo; la classe `TrainingDatesTests` da sola 8/8);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **527** in **66** file (le 519 in 65 di A8a e 8 nuovi); `pnpm
+  e2e` **108** (le 101 e le 7 nuove), al primo giro; **`pnpm e2e:full` 44** su un **banco nuovo** di questo worktree (127.0.0.1:5088,
+  `ivaohub_e2e_a8b`): le 43 e la spec nuova, al primo giro (su 249662b). Dopo l'ultima correzione (ddf0d31, la chiave inesistente di
+  «Trovato» 4): lint, typecheck e format verdi, lo smoke del training **17/17**, il Vitest del modulo **44**, le spec del training del giro
+  completo **7/7** su un banco ricreato di nuovo. Il fatto nuovo d'integrazione **cade sul codice di A8a** rimesso com'era (`git restore
+  --source=m3/a8a-dates-server` dei due file del server) e passa su quello di A8b, i file rimessi, toccati e ricompilati. `pnpm gen:api` e
+  `pnpm i18n:sync` nel commit che li porta; `dotnet format --verify-no-changes`
+  sui file C# toccati, test compresi; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff verso `main`:
+  nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`; la sessione di A7
+  ha spento il suo su richiesta): il trainer propone due date al training ATC del trainee, la prima nel giorno di una sessione pilota
+  (datata a mano dallo staff), e la conferma dall'avviso; il trainee le trova da `/training/mine` («Scegli la data») e sceglie la prima;
+  il calendario pubblico mostra «ADC · LIBD_TWR» e «PP» senza nomi; Mailpit ha «Date proposte», «Data fissata» a tutti e due e **un**
+  promemoria a testa (sopra; `hub_jobs_log`: il giro delle 01:20 UTC «2 session(s) reminded», quello delle 01:35 «0»). Lo staff sposta
+  la data a mano (vuota: «Questo campo è obbligatorio.» sul campo), ritira una data proposta, vede sulle caselle di una riga «Questa data
+  è già passata.» e «La fine viene prima dell'inizio.», chiude un training con il motivo, che il trainee legge; una data a cavallo della
+  mezzanotte UTC si legge con i due giorni in UTC e con uno solo nel fuso della divisione; «Eseguito» nella lista e nella pagina di un
+  training datato a mano nel passato. In italiano e in inglese, tema chiaro e scuro; le pagine del trainee larghe 375 px (quelle dello
+  staff hanno il difetto noto del nucleo a quella larghezza, A7).
+- **Non verificato**: la CI (la dirà la PR). **Il promemoria in Mailpit nella CI**: il giro sul banco non lo aspetta (sopra); visto a mano,
+  e provato dal test d'integrazione di A8a attraverso il job. **Un 409 della scelta del trainee e degli avvisi apparsi fra la domanda e
+  la scrittura, sul server vero**: la pagina li prova con l'API finta dello smoke, il server li prova A8a. **Una data a cavallo della
+  mezzanotte del fuso della divisione nei riquadri**: `spanText` la dice con i due giorni (il suo test Vitest), a mano non vista. **Che le
+  spec nuove cadano su una copia indebolita delle pagine** (la conferma degli avvisi tolta, per esempio): non tentato; le spec sono state
+  lette contro il codice, e il fatto nuovo del server è provato sul codice di A8a (sopra). **Le pagine dello staff larghe 375 px**: hanno
+  il difetto noto del nucleo a quella larghezza (A7).
+- **Il passo della coda dopo #147 e la revisione di #148** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/148#issuecomment-5891398227);
+  la sessione di A8b non c'era più, l'ha fatto la sessione che coordina le correzioni): `main` nel branch con un merge (A7, A8a, #185,
+  #188), via `(after #147)`, l'intestazione di `HANDOFF-M3.md` rimessa in pari. I nit:
+  1. **Un tipo del calendario senza etichetta** nella lingua di chi legge non si dice più con la sua chiave grezza: «Nel calendario»
+     (`training:staff.dates.warning.anyKind`).
+  2. **La conferma della data scelta dal trainee** dice l'ora anche nel fuso della divisione, come il riquadro sopra
+     (`detail.dates.confirmTitle` con `{{local}}`).
+  3. **Il commento di `choosableSlots`** diceva che una data che passa a pagina aperta non si offre più; `now` è il momento in cui la
+     pagina è disegnata, quindi resta fino alla lettura dopo, e il server la rifiuta: corretto il commento, non il codice.
+  4. **Scritto, non corretto**: un avviso porta sempre alla pagina dello staff dell'altro training, e chi conduce con il permesso su una
+     riga sola (A7b) può non poterla aprire. Serve che il server dica se chi legge può aprirla; ⚠️ per A7b o una fase dopo.
 
 Design §1.3, §1.4, §2.6, §2.7, §2.8; note `le-note-riservate-e-il-trainee`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch
 `m3/a9-after-the-session`.

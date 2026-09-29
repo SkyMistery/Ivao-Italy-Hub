@@ -1,17 +1,21 @@
-import { Badge } from '@ivao/atmosphere-react';
+import { Badge, Subtle } from '@ivao/atmosphere-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
+import { describeProblem } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import type { TrainingState } from '../api';
+import { ConfirmDialog, useNotice } from '../../../shared/ui';
+import { useCancelTraining, type ShownState, type TraineeTrainingDto } from '../api';
 
-import { MINE, STATE_COLOURS, daysUntil, formatHours, type RefusalDetail } from './trainee';
+import { closingOf, spanText } from './dates';
+import { MINE, STATE_COLOURS, daysUntil, formatHours, isTheoryRefusal, type RefusalDetail } from './trainee';
 
 /**
- * The pieces the trainee's two pages share (design M3 §4.1): what is said beside a refusal, the site of the theory exam, and
- * the state of a training. Pieces of the module's own screens, drawn from Atmosphere and the core's closed list, and not a
- * component of the list: nothing outside the training draws them.
+ * The pieces the trainee's pages share (design M3 §4.1), and what the staff's page shares with them: what is said beside a
+ * refusal, the site of the theory exam, the state of a training, when a date or a session is, how a training ended, and «cancel».
+ * Pieces of the module's own screens, drawn from Atmosphere and the core's closed list, and not a component of the list: nothing
+ * outside the training draws them.
  */
 
 /**
@@ -76,9 +80,106 @@ export function TheoryExamLink({ url }: { url: string }) {
   );
 }
 
-/** Where a training is, in its colour. */
-export function StateBadge({ state }: { state: TrainingState }) {
+/** Where a training is, in its colour: its state as the pages show it — held, from the day after its session (`shownState`). */
+export function StateBadge({ state }: { state: ShownState }) {
   const { t } = useTranslation();
 
   return <Badge variant="flat" color={STATE_COLOURS[state]} text={t(`training:states.${state}`)} />;
+}
+
+/**
+ * When a date proposed or a session is (§2.5): in UTC, and under it where the division lives (docs/UI-GUIDELINES.md, «Times») —
+ * the hub is read by people flying in one and organising in the other. A span without an end is its start; `emphasis` for the
+ * line a tile or an entry of a list is about.
+ */
+export function WhenText({
+  startsAtUtc,
+  endsAtUtc = null,
+  timezone,
+  emphasis = false,
+}: {
+  startsAtUtc: string;
+  endsAtUtc?: string | null;
+  timezone: string;
+  emphasis?: boolean;
+}) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+
+  return (
+    <span className="flex flex-col leading-tight">
+      <span className={emphasis ? 'font-semibold tabular-nums' : 'tabular-nums'}>
+        {t('training:time.utc', { when: spanText(startsAtUtc, endsAtUtc, moment) })}
+      </span>
+      <Subtle className="tabular-nums">
+        {t('training:time.local', {
+          when: spanText(startsAtUtc, endsAtUtc, moment, timezone),
+          zone: timezone,
+        })}
+      </Subtle>
+    </span>
+  );
+}
+
+/**
+ * How a training of the trainee's ended without a report, as they read it: refused — by the hub, because they said the theory is
+ * not passed, or by the staff with its reason —, or closed — by the staff with its reason, or by the hub, because they chose no
+ * date in time (§2.5). Nothing for a training that goes on or ended otherwise.
+ */
+export function OutcomeText({ training }: { training: TraineeTrainingDto }) {
+  const { t } = useTranslation();
+  const closing = closingOf(training);
+
+  if (training.state === 'Rejected') {
+    return (
+      <p className="text-sm">
+        {isTheoryRefusal(training)
+          ? t('training:mine.theoryRefusal')
+          : training.rejectionReason === null
+            ? t('training:mine.staffRefusal')
+            : t('training:mine.staffRefusalReason', { reason: training.rejectionReason })}
+      </p>
+    );
+  }
+
+  if (closing === null) {
+    return null;
+  }
+
+  return (
+    <p className="text-sm whitespace-pre-line">
+      {closing.by === 'staff'
+        ? t('training:mine.closedByStaff', { reason: closing.reason })
+        : t('training:mine.closedUnanswered')}
+    </p>
+  );
+}
+
+/** «Cancel», while nobody has accepted the request (§2.2, d2): it stays on record, and makes nobody wait. */
+export function CancelRequest({ training }: { training: TraineeTrainingDto }) {
+  const { t, i18n } = useTranslation();
+  const cancel = useCancelTraining();
+  const notice = useNotice();
+
+  return (
+    <ConfirmDialog
+      triggerText={t('training:mine.cancel')}
+      triggerVariant="secondary"
+      title={t('training:mine.cancelTitle')}
+      description={t('training:mine.cancelDescription')}
+      confirmText={t('training:mine.cancelConfirm')}
+      confirmVariant="destructive"
+      disabled={cancel.isPending}
+      onConfirm={() =>
+        cancel.mutate(training, {
+          onSuccess: () => notice({ tone: 'success', title: t('training:mine.cancelled') }),
+          onError: (error) =>
+            notice({
+              tone: 'error',
+              title: describeProblem(error, t, i18n.language) ?? t('errors.unknown'),
+            }),
+        })
+      }
+    />
+  );
 }

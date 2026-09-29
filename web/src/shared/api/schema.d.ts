@@ -7026,11 +7026,12 @@ export interface components {
         };
         /**
          * @description The date set by hand (§2.5, d2): whenever the session starts — among the dates proposed or not, before or after today —, with
-         *     the same warnings and their confirmation, and the version of the training seen.
+         *     the same warnings and their confirmation, and the version of the training seen. The start may arrive empty, and is then
+         *     refused as required.
          */
         TrainingDateWriteDto: {
             /** Format: date-time */
-            startsAtUtc: string;
+            startsAtUtc: null | string;
             confirmed: boolean;
             /** Format: date-time */
             rowVersion: string;
@@ -7114,12 +7115,15 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
-        /** @description A date proposed for the session (§2.5): when it would start and end, in UTC. */
+        /**
+         * @description A date proposed for the session (§2.5): when it would start and end, in UTC. Either may arrive empty, as the page sends a box
+         *     nobody filled in (A8b), and is then refused as required on its own field.
+         */
         TrainingSlotWriteDto: {
             /** Format: date-time */
-            startsAtUtc: string;
+            startsAtUtc: null | string;
             /** Format: date-time */
-            endsAtUtc: string;
+            endsAtUtc: null | string;
         };
         /**
          * @description Where a training is (design M3 §2.1). Stored by name, and no state is ever deleted: everything stays on record.
