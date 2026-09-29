@@ -2344,10 +2344,19 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
   1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
      (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
-  2. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre
-     il design §4.2 dice «la scheda (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. I precedenti ci sono (la revisione
-     dei tour, la richiesta del training), ma lo scostamento è stato classificato (a)/(b) senza nota né domanda: o si accetta nel modulo,
-     o una fase del nucleo estende `SchemaForm`.
+  2. Un punto aspettava Carmine: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre il design §4.2 dice «la scheda
+     (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. La risposta è nella voce qui sotto.
+- **La risposta di Carmine su #150** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a9b`):
+  1. **La scheda disegnata nel modulo è accettata**: **scostamento dal design §4.2**, con il link qui. `SheetRow` resta com'è —
+     `RadioGroupRoot` e `Textarea` di Atmosphere, come `flightops/screens/review.tsx` —, e **nessuna fase del nucleo estende `SchemaForm`**
+     per la scheda. Il report nel suo insieme resta del form generato.
+  2. **Il giro sul banco non data più a ieri** (la risposta di Carmine su #149, sotto A9a: nessuno data un training nel passato): la
+     spec `training-the-report.spec.ts` data la sessione a mano **dieci secondi avanti** e aspetta che il server la dica da registrare
+     (`actions.canRecordOutcome`), sia la prima volta sia dopo la rischedula (`startedInAMoment`, al posto di `yesterdayAt`). Alla fine,
+     un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
+     non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
+     ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 

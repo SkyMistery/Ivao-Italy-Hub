@@ -120,10 +120,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - **A10**: `ReportView`, `ReportBoxes` e `SessionList` leggono il DTO dello staff e quello del trainee: il percorso del trainee e il
     blocco `training.myTraining` («l'ultimo report») li riusano; «report da scrivere» di `training.trainerQueue` è
     `actions.canRecordOutcome`. ⚠️ **La scheda non è un campo di `SchemaForm`** (A9a, «Trovato» 1): A9b l'ha disegnata nella pagina con i
-    controlli di Atmosphere, come la validazione dei tour; se Carmine la vuole nel form generato, è un'estensione del nucleo (`08`, A9b,
-    scostamento 1).
+    controlli di Atmosphere, come la validazione dei tour, e **Carmine l'ha accettata nel modulo** — scostamento dal design §4.2, nessuna
+    fase del nucleo estende `SchemaForm` ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556);
+    `08`, A9b).
   - ⚠️ **Il banco dopo il giro di A9b**: `training-the-report.spec.ts` (il nome viene dopo tutti i giri del training) lascia un training
-    **pilota `Completed`** del trainee del banco, con la sua sessione di ieri nel calendario pubblico, «pronto per il mock exam» e senza
+    **pilota `Completed`** del trainee del banco, con la sua sessione nel calendario pubblico (datata a mano dieci secondi avanti e
+    aspettata: nel passato non si data più, la risposta di Carmine su #149), «pronto per il mock exam» e senza
     attesa: la richiesta pilota successiva del trainee è un **mock exam**. Le tre voci della scheda che scrive (segno `trn-report` nel titolo)
     le spegne alla fine. Una spec di A10 che vuole un percorso libero usa l'ATC, o sa del mock exam; il banco va ricreato prima di ogni
     corsa.
@@ -142,9 +144,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   settembre). Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo,
   via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9b non c'è più).
 - **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141)):
-  il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», l'ultima voce). ⚠️ **Aspetta Carmine**, e il master posta la
-  risposta sulla PR: **la scheda di valutazione è disegnata a mano** (`screens/staff.tsx`, `SheetRow`: `RadioGroupRoot`, `Textarea`), mentre
-  il design §4.2 la vuole generata dalle voci; o si accetta nel modulo, o una fase del nucleo estende `SchemaForm`.
+  il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», la penultima voce).
+- **La risposta di Carmine** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556);
+  `08`, «Com'è andata (A9b)», l'ultima voce): **la scheda disegnata nel modulo è accettata** (`screens/staff.tsx`, `SheetRow`:
+  `RadioGroupRoot`, `Textarea`), scostamento dal design §4.2; nessuna fase del nucleo estende `SchemaForm`. E per la risposta su #149
+  (A9a): la spec del giro data la sessione a mano dieci secondi avanti e aspetta che cominci (`startedInAMoment`), e una corsa fermata a
+  metà chiude con un no-show il training con la sessione cominciata.
 
 ### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
 
@@ -244,7 +249,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     **chiude** sia quello sia il training pilota che chiede per sé: dopo il giro il trainee del banco non ha training aperti. Una spec di A9
     che vuole un training con la sessione passata lo chiede da sé (richiesta, accettazione e assegnazione attraverso l'API, come fa questa
     spec) e lo data a mano nel passato — l'override lo permette —, con un nome che viene dopo `training-the-dates`. Il banco va ricreato
-    prima di ogni corsa.
+    prima di ogni corsa. ⚠️ *Nel passato non più*: dopo la risposta di Carmine su #149 si data pochi secondi avanti e si aspetta (A9a, A9b).
   - ⚠️ **La voce del calendario porta a `/training/sessions/{id}`, che ancora non c'è** (la pagina pubblica della sessione è di A10): un
     visitatore che la clicca trova «non trovato». Detto al revisore.
   - ⚠️ **Il promemoria in Mailpit non si aspetta nel giro sul banco** (fino a 15 minuti di CI): lo prova il test d'integrazione di A8a, e
