@@ -2868,6 +2868,15 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   **Le pagine dello staff larghe 375 px**: hanno il difetto noto del nucleo a quella larghezza (A7). **La PR del nucleo del revisore**
   che farà rifiutare a `VerifyAlternatives` un'entità senza `[PermissionArea]`: non c'è ancora; `Exam` la dichiara. **A mano, la pagina in
   inglese e a tema chiaro**, e **un 409** del form degli esami dalle pagine: provati dallo smoke e dal motore (`MapCrud`), non a mano.
+- **La revisione di #178** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891400515);
+  la sessione di A10c non c'era più, la coda l'ha portata la sessione che la coordina):
+  1. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **i rating degli esami**. `Exams/TrainingExams.cs` accetta solo i
+     rating con `HasPracticalTraining`, mentre il design §P dice da 5 a 8, quindi il rating 8 non si può programmare. Lo scostamento 4 lo
+     diceva una domanda, ma non era stato chiesto sulla PR.
+  2. **La CI** mancava perché il branch era in conflitto con `main`: ora `main` è sceso nella coda fino a qui, e la PR ha la sua CI.
+  3. Tre cose per Carmine, niente da cambiare se non lo chiede lui: un esame vecchio il cui TA ha perso la posizione risponde
+     `examinerNotExaminer`; web master e superadmin compaiono fra gli esaminatori offerti (scostamento 5); un TC o TAC candidato di un esame
+     può modificarlo (il design §3.1 non nega `ManageExams` all'interessato).
 
 [c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
