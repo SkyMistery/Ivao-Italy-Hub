@@ -1998,8 +1998,17 @@ banco, la raddoppierebbero.
   spec nuove cadano su una copia indebolita delle pagine** (la conferma degli avvisi tolta, per esempio): non tentato; le spec sono state
   lette contro il codice, e il fatto nuovo del server è provato sul codice di A8a (sopra). **Le pagine dello staff larghe 375 px**: hanno
   il difetto noto del nucleo a quella larghezza (A7).
-
-### A9 — Dopo la sessione
+- **Il passo della coda dopo #147 e la revisione di #148** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/148#issuecomment-5891398227);
+  la sessione di A8b non c'era più, l'ha fatto la sessione che coordina le correzioni): `main` nel branch con un merge (A7, A8a, #185,
+  #188), via `(after #147)`, l'intestazione di `HANDOFF-M3.md` rimessa in pari. I nit:
+  1. **Un tipo del calendario senza etichetta** nella lingua di chi legge non si dice più con la sua chiave grezza: «Nel calendario»
+     (`training:staff.dates.warning.anyKind`).
+  2. **La conferma della data scelta dal trainee** dice l'ora anche nel fuso della divisione, come il riquadro sopra
+     (`detail.dates.confirmTitle` con `{{local}}`).
+  3. **Il commento di `choosableSlots`** diceva che una data che passa a pagina aperta non si offre più; `now` è il momento in cui la
+     pagina è disegnata, quindi resta fino alla lettura dopo, e il server la rifiuta: corretto il commento, non il codice.
+  4. **Scritto, non corretto**: un avviso porta sempre alla pagina dello staff dell'altro training, e chi conduce con il permesso su una
+     riga sola (A7b) può non poterla aprire. Serve che il server dica se chi legge può aprirla; ⚠️ per A7b o una fase dopo.
 
 Design §1.3, §1.4, §2.6, §2.7, §2.8; note `le-note-riservate-e-il-trainee`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch
 `m3/a9-after-the-session`.
@@ -2158,6 +2167,17 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   compilano (i tipi e gli endpoint nascono qui). **Due scritture dello stesso training nello stesso momento** (un report e una
   rischedula): la versione della riga fa della seconda un 409 — provato con una versione vecchia, non con due richieste insieme. **La
   mail in Mailpit**: i test d'integrazione leggono le mail in coda; la consegna è del servizio del nucleo.
+- **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650);
+  la sessione di A9a non c'era più, i nit li ha corretti la sessione che coordina la coda):
+  1. **Una voce della scheda scritta due volte** in un report non si rifiuta più con `sheetChanged` («ricarica la pagina», che non
+     aiuterebbe) ma con `training:errors.evaluationItemTwice`; una voce che non è sulla scheda resta `sheetChanged`.
+  2. **Un giudizio fuori dall'elenco** su una voce di teoria si rifiuta con `training:errors.evaluationMarkUnknown`, non con
+     `errors.required`. Il test di unità `AReportIsRefusedOnTheFieldOfTheItemItGetsWrong` dice tutti e due.
+  3. **La mail del no-show** («The trainer marked…») non nomina più il trainer: il no-show lo registrano anche TC e TAC.
+  4. ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR: **una data forzata su una sessione già iniziata** (la domanda che
+     A8a aveva lasciato per A9: `SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione è cominciata; la raccomandazione è
+     rifiutarle da quando vale `TrainingSessions.IsRecordable`), e **gli scostamenti 1, 2 e 7**, che cambiano il design e vogliono la
+     sua risposta con il link.
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
@@ -2296,6 +2316,14 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   regola. **Il no-show attraverso le pagine sul server vero**: lo smoke lo fa con l'API finta, A9a prova il lato del server; sul banco i due
   percorsi del trainee servono al giro del report. **Le tre strade e la scheda larghe come un telefono**: le pagine dello staff hanno il
   difetto noto del nucleo a 375 px (A7).
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141);
+  la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
+  1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
+     (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
+  2. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre
+     il design §4.2 dice «la scheda (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. I precedenti ci sono (la revisione
+     dei tour, la richiesta del training), ma lo scostamento è stato classificato (a)/(b) senza nota né domanda: o si accetta nel modulo,
+     o una fase del nucleo estende `SchemaForm`.
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
@@ -2508,6 +2536,17 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   noto del nucleo a quella larghezza (A7). **I test nuovi del server sul codice di A9b**: non compilano (gli endpoint, i tipi e la mail
   nascono qui). **Il test della nota sul percorso su una copia indebolita del codice** (la chiamata a `ReservedFields.For` tolta): non
   tentato, perché la modalità di permessi l'ha rifiutato ad A9a; il test è stato letto contro il codice.
+- **La revisione di #151** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/151#issuecomment-5891399650);
+  la sessione di A10a non c'era più, le correzioni le ha fatte la sessione che coordina la coda): approvabile. Le due cose da correggere
+  erano documenti:
+  1. **`HANDOFF-M3.md` non era più vero**: la risposta 2 di Carmine sulla #135 oggi la porta A7b (#181), e l'intestazione diceva lo stato
+     del 27 settembre. Corretti tutti e due, e il «Trovato» 1 del corpo della PR.
+  2. **La persona cancellata non è ancora trattata** (design §6.1): è di A12, e l'elenco dei punti — il link al percorso in
+     `screens/staff.tsx`, `path.ts` che ignora il segno, `memberLabel` che scrive il numero, la rotta `{vid:int}` che accetta i negativi —
+     è in `HANDOFF-M3.md`, nel paragrafo di A10a, perché A12b non ne salti nessuno.
+
+  I nit restano scritti lì: la corsa di due ban nello stesso istante (dichiarata), la ricerca per VID senza un test, la copia di
+  `Refusals` che A10c toglie.
 
 **Com'è andata (A10b)** (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153, in coda dopo #151):
 
