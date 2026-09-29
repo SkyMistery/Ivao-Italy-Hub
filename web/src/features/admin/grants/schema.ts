@@ -30,6 +30,10 @@ export function grantSchema(bootstrap: Bootstrap, levelLabel: (level: string) =>
     // both; the server says so on the field when a form has neither or both.
     vid: z.number().int().optional(),
     positionDepartment: z.enum(DEPARTMENTS).optional(),
+    // …or the team of a FIR at those levels (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): the chiefs of every FIR,
+    // each on the rows of their own FIR when the division keeps FIR teams to their FIR. No FIR is named here: which FIRs
+    // exist is IVAO's to say. The server takes it only for a permission of an area whose rows say their FIR.
+    positionFirTeam: z.boolean(),
     positionLevels: z.array(z.string()).meta({
       multi: true,
       choices: STAFF_LEVELS.map((level) => ({ value: level, label: levelLabel(level) })),

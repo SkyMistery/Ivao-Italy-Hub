@@ -59,6 +59,7 @@ Per non ripeterle tredici volte:
 | A4a | Nucleo: le parole di più moduli — **trovata scrivendo A4** | A0 | il catalogo delle lingue del server tiene le parole di due moduli, ciascuno con il suo namespace |
 | A4 | Modulo: lo scheletro | A0, A4a | progetto, contesto, `Initial`, catalogo, `positionGrants` del TD, impostazioni, menu, segmento riservato |
 | A5 | Le voci della scheda | A1, A4 | `trn_sheet_items` tradotte, lista e form generati |
+| A6c | Nucleo: il suggerimento chiuso tiene la scelta — **trovata scrivendo A6b** | — | l'opzione cliccata dopo averne scritto una parte è quella scelta: la casella e la sua lista sono un campo solo |
 | A6a | La richiesta: il server — **A6 divisa in apertura** | A1, A2, A4 | `trn_trainings`, `trn_bans` (tabella), i controlli per percorso, il teorico, l'annullamento, la mail, gli endpoint del trainee |
 | A6b | La richiesta: le pagine | A6a | `/training/request` con la domanda sul teorico, `/training/mine` con l'annullamento, lo smoke e il giro sul banco |
 | A7 | Accettare, rifiutare, assegnare | A3, A6b | le pagine dello staff, il grant del trainer, il job che lo toglie |
@@ -80,7 +81,8 @@ prova sta nei test), A4 fa nascere il contesto del modulo — e possono andare a
 A0. A2 viene dopo A1 (stesso contesto, e il legame postazione→rating). Dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
 **in fila**, una sopra l'altra. **A3b** (nucleo, aggiunta il 25 settembre 2026 con la risposta di Carmine sulla #131) viene dopo A3,
 di cui estende il meccanismo, e prima di A10, che la usa; non migra il contesto del modulo, quindi può andare avanti in qualunque
-momento fra le due, in una sessione sua, accanto alle fasi del modulo.
+momento fra le due, in una sessione sua, accanto alle fasi del modulo. **A6c** (nucleo, trovata scrivendo A6b il 26 settembre 2026)
+tocca solo il front end del nucleo e non migra niente: va verso `main` quando è pronta, accanto alle fasi del modulo, senza coda.
 **L'ordine del design** (§11) resta: i capi FIR stanno in fondo di proposito, perché tutto il resto funziona senza e l'estensione
 più delicata non blocca il modulo (§12 n.3).
 
@@ -821,6 +823,115 @@ rilegge uguale.
   dell'eliminazione tolto, `[AlsoWrittenWith(ManageSheets, AlsoOnCreation = true)]` messo sull'entità —: la prova è stata rifiutata dalla
   modalità di permessi della sessione, e non l'ho aggirata; i test sono stati letti contro il codice. La scheda compilata e il report (A9).
 
+### A6c — Nucleo: il suggerimento chiuso tiene la scelta
+
+**Non era nel piano**: l'ha trovata la sessione di A6b il 26 settembre 2026, scrivendo lo smoke della richiesta (PR #144), come A4a fu
+trovata scrivendo A4; `dalberone` ha scelto di farla come fase del nucleo a sé (`CLAUDE.md` §0 regola 6). Nota nuova
+`2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`, **Decisa** da Carmine il 27 settembre 2026 come raccomandato ([risposta su
+#145][a145]), sulla domanda in un [commento su #145][q145]. Branch `m3/a6c-closed-suggestion`, da `main`, PR #145. **Non va in
+coda**: tocca solo il nucleo del front end e non migra `TrainingDbContext`, quindi la PR va verso `main` accanto a #143 (A6a) e #144
+(A6b), come A3b va avanti per conto suo. Sta qui, prima di A6, come A4a prima di A4.
+
+1. **Il problema**: nel suggerimento chiuso di `SchemaForm` (`Suggest` con `suggestionsOnly`) chi scrive una parte del valore per
+   cercare e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su una riga nuova —: la pressione porta il
+   fuoco nella lista, l'`onBlur` della casella rimette quello che c'era perché il testo scritto non è un'opzione, la lista torna intera
+   sotto il puntatore e il clic va a un'altra riga. Vale per ogni campo chiuso dell'hub: l'indirizzo di una voce del menu, le postazioni
+   nascoste delle impostazioni del training, la postazione della richiesta, gli aerei dei tour.
+2. **La proposta** (nota §3): **la casella e la sua lista sono un campo solo** — la regola del campo chiuso vale quando il fuoco esce da
+   tutte e due, anche quando esce dalla lista; tornare nella casella dalla lista non ricomincia la ricerca; una scelta è «quello che
+   c'era».
+
+**Test** (smoke, file nuovo `web/e2e/closed-suggestion.spec.ts`, sull'indirizzo di una voce del menu con l'API finta): l'opzione
+cliccata dopo averne scritto una parte è la scelta, e uscire dopo con un testo che non è un'opzione rimette la scelta; una pressione
+nella lista che non sceglie tiene la ricerca, e uscire da lì rimette il valore di prima; tornando nella casella la ricerca continua;
+Escape chiude e lascia il testo; la barra di scorrimento della lista si trascina. Cade sul codice di `main`.
+**Fatta quando**: la nota è decisa da Carmine, e la spec nuova e quelle che c'erano passano.
+
+**Com'è andata** (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): caso (b), il meccanismo c'è — il campo suggerito chiuso, nota
+  `2026-09-08-dove-puo-portare-una-voce-di-menu` — e ha un difetto; si corregge nel suo posto unico. Un file del nucleo
+  (`web/src/shared/forms/SchemaForm.tsx`, il componente `Suggest`), la nota nuova, la spec nuova; nessun file del maintainer, nessun
+  test che non ho scritto, nessuna schermata cambiata.
+- **Provato che la spec cade sul codice di oggi**, prima della correzione e di nuovo alla fine con `SchemaForm.tsx` di `main`: 4 prove
+  su 5 cadono proprio sul difetto — `/pilots` al posto di `/calendar` dopo il clic sull'opzione; `/pilots` al posto di `cal` dopo la
+  pressione su un'intestazione; 7 opzioni al posto di 1 tornando nella casella; `/pilots` al posto di `e` dopo aver trascinato la barra
+  —; la prova di Escape passa, perché è una promessa del campo di oggi.
+- ⚠️ **Scostamento dalla correzione proposta**: quella che A6b suggeriva — tenere il fuoco nella casella con
+  `onMouseDown={(event) => event.preventDefault()}` sulla lista — l'ho **fatta per prima e scartata**. Le prove erano tutte verdi, ma
+  **la barra di scorrimento della lista non si trascinava più**: Chromium non trascina una barra il cui `mousedown` è annullato
+  (misurato su un riquadro di prova nella pagina dello smoke: 611 px di scorrimento senza, 0 con). Oggi aprire la lista e trascinarne la
+  barra funziona, e le liste sono lunghe (le torri, i tipi di aereo). La forma rimasta è quella della nota §3, e la scelta fra le due è
+  la domanda a Carmine; la prova della barra è nella spec, con le barre accese per quel file (headless le nasconde).
+- **Provato che ogni pezzo serve**: tolto uno alla volta, cade la prova che lo tiene — senza la regola alla chiusura della lista, la
+  seconda (il campo lasciato dalla lista tiene `cal`); senza la guardia sul ritorno nella casella, la terza (7 opzioni); senza la scelta
+  scritta in `opened`, la prova del menu di `back-office.spec.ts` (clicca di nuovo la casella mentre la lista si sta chiudendo, e la
+  lista si riapre stretta sulla scelta).
+- **Trovato, per il revisore** (test del maintainer, non toccati):
+  1. `back-office.spec.ts`, «…a page past the hundredth can still be chosen»: scrive e clicca, e **passava anche con il difetto**,
+     perché la riga cliccata è per caso la prima anche della lista tornata intera (le pagine vengono prima delle schermate).
+  2. `back-office.spec.ts`, «…offers the addresses that exist, and stays open to be read»: il secondo clic sulla casella arriva
+     **mentre la lista si sta ancora chiudendo** (Radix ne anima l'uscita, e Playwright conta visibile un elemento che svanisce). Con la
+     correzione è quel clic a tenere il quarto pezzo; con la prima forma, senza un clic che riaprisse la lista, passava lo stesso.
+- **Verificato, in locale** (26 settembre 2026, sul branch da `main` a 4561b5b), le suite pesanti una alla volta: `dotnet build` senza
+  avvisi; unità **757/757** e **integrazione intera senza filtro** **315/315** (come `main`: nessun C# toccato); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 494 in 63 file (come `main`); `pnpm e2e` **96** (le 91 e le 5 nuove);
+  **`pnpm e2e:full` 41** su un **banco nuovo**, senza la mappa di base; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le regole di
+  `core-guard` rifatte in PowerShell sul diff verso `main`: nessun file del maintainer, uno del nucleo, la nota aggiunta. Con
+  `git merge-tree` contro i branch di #143 e #144: conflitti solo in cima a `HANDOFF-M3.md` e sulla riga della tabella qui sopra, dove
+  si tengono tutte le righe.
+- **Non verificato**: la CI (la dirà la PR); browser diversi da Chromium — Firefox e Safari spostano il fuoco su una pressione con le
+  loro regole, e la correzione legge solo `relatedTarget` e `document.activeElement`, ma nessuna prova ci ha girato —; uno schermo touch
+  (il tocco su un'opzione, il dito che scorre la lista); una risposta di Carmine diversa da quella raccomandata.
+- **Le correzioni della revisione** (28 settembre 2026; [i rilievi del revisore][r145], letti su `b065e49`: approvabile appena la nota
+  registra la risposta):
+  1. **La risposta di Carmine registrata** (afec5ce): la nota è *decisa*, con la riga di stato e il §5 che citano
+     [il suo commento][a145]; lo dicono anche l'intestazione di questa sezione e le parti di A6c in `HANDOFF-M3.md`.
+  2. **Tab dalla lista** (b04604f), una frase nella nota al §3.2. Il rilievo: la lista sta in un portale di Radix in fondo a `<body>`
+     e dopo non c'è niente che prende il fuoco, quindi in un Chrome vero il Tab andrebbe alla barra del browser, la lista non si
+     chiuderebbe sul Tab, e la regola si applicherebbe al fuoco o al clic successivo. **Misurato, non va così**: finché la lista è
+     aperta Radix mette uno `<span data-radix-focus-guard tabindex="0">` all'inizio e in fondo a `<body>`, dopo il portale. Il Tab
+     arriva lì, la lista si chiude e `/pilots` torna sul Tab stesso; Shift+Tab va all'ultimo link della pagina (`/legal`), con lo
+     stesso esito. Misurato con una spec usa-e-getta, mai spinta, su una porta mia (4197), nel Chromium headless di Playwright e nel
+     Chrome installato con la finestra (`channel: 'chrome'`, `--headed`). La frase dice questo, per scelta di `dalberone`, e che nessuna
+     prova della spec lo tiene.
+     - ⚠️ Letto, e raggiunto solo con uno script: se il fuoco lasciasse la pagina dalla lista senza posarsi altrove (un `blur()` da
+       script), un clic di ritorno nella casella avrebbe `relatedTarget` nullo e conterebbe come un arrivo: `cal` diventerebbe «quello
+       che c'era», e uscendo resterebbe `cal`. Nessuno dei gesti provati ci porta: il Tab si ferma sulla guardia; passando a
+       un'altra scheda e tornando il fuoco resta nella lista, e la ricerca continua (ma con l'emulazione del fuoco di Playwright,
+       quindi non è una prova piena).
+  3. **Il punto 4 lo tiene solo il tempo** (rilievo, scritto qui con 6e42143): la scelta scritta in `opened` la vede una prova solo
+     se si torna nella casella mentre la lista si sta ancora chiudendo, perché Radix ne anima l'uscita; a lista sparita il ritorno è
+     un arrivo che rilegge il valore, e il punto 4 non serve. Il 26 settembre, tolto il punto 4, cadeva la prova del menu di
+     `back-office.spec.ts`, e solo quella. Il revisore nomina anche la seconda metà della seconda prova della spec. Letta sul codice,
+     la spec non lo tiene: la prova che sceglie è la prima, e prima di tornare nella casella aspetta che la lista sia nascosta
+     (`toBeHidden`), quindi quel ritorno è un arrivo; la seconda non sceglie niente. Non l'ho rifatto oggi: togliere il pezzo per
+     prova è stato rifiutato dalla modalità di permessi della sessione, e non l'ho aggirato.
+  4. **La scelta da sola tastiera** (rilievo, scritto qui con 6e42143) — scrivere, freccia giù, Invio — **non funziona neanche su
+     `main`**: la casella sta fuori dalla radice di `cmdk`, che quindi non riceve né le frecce né Invio. Per lo stesso motivo Invio in
+     una casella chiusa invia il form, e questo conta per #144 (A6b). Non è di questa PR: il maintainer la prende come seguito.
+  5. **`main` unito nel branch** (b468d24), come il revisore ha chiesto: #142–#172, fra cui A6a (#143), A3b (#135) e i rifiuti di un
+     form nel nucleo (#152); nessuno tocca `SchemaForm.tsx` o la spec. Due conflitti, solo nei documenti, risolti tenendo tutto il
+     testo di `main` e rimettendo le parti di A6c: la tabella delle fasi qui sopra (le righe A6a, A6b e A7 di `main`, con A6c prima di
+     A6a, come A4a prima di A4) e la cima di «Lo stato» in `HANDOFF-M3.md` (A6c, poi A3b e A6a). Rispetto a `main` i due documenti
+     perdono una riga sola, quella del «Parallelismo possibile» che A6c allunga.
+
+  **Rifatto tutto sul merge** (28 settembre 2026), le suite pesanti una alla volta: `dotnet build` da capo (`--no-incremental`) senza
+  avvisi; unità **817/817**; **integrazione intera senza filtro** **345/345**; `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+  verdi; `pnpm test` 495 in 63 file; `pnpm e2e` **96** (con le 5 di `closed-suggestion.spec.ts`), sotto il lucchetto della 4173;
+  **`pnpm e2e:full` 41** su un **banco nuovo** (porta 5097, `ivaohub_e2e_a6c`), senza la mappa di base; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; le regole di `core-guard` rifatte in PowerShell sul diff verso `main` (qui non c'è la bash di
+  Git): nessun file del maintainer, uno del nucleo (`SchemaForm.tsx`), con la nota aggiunta. ⚠️ La prima corsa di `pnpm e2e` è caduta
+  su una prova del maintainer che A6c non tocca: `public-lists.spec.ts`, «a document whose slug is a department code is still
+  reachable», il cui titolo non è comparso in 5 s. Il suo file da solo, tre volte (`--repeat-each 3`), ha dato 15/15, e la seconda
+  corsa intera 96/96.
+  **Non verificato**: la CI su questo head, che leggo una volta alla fine; la prova del punto 4 (qui sopra); browser diversi da
+  Chromium e Chrome, e uno schermo touch, come prima.
+
+[q145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355
+[a145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813
+[r145]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725
+
 ### A6 — La richiesta
 
 Design §1.1, §1.2, §1.5-bis, §2.1, §2.2, §2.8, §4.1, §5.2; note `il-teorico-lo-dichiara-il-trainee`, `rating-e-postazioni-dal-nucleo`.
@@ -1109,6 +1220,42 @@ test —, e le pagine, con la finestra della domanda, lo smoke e il giro sul ban
   8. **Non verificato**: Invio con un lettore di schermo vero, e in un browser diverso da Chromium (lo smoke gira solo lì; la guardia sta
      sull'evento `submit`, che l'invio implicito manda in ogni browser). Invio sul banco: il giro completo sceglie la postazione dall'elenco
      e manda con il pulsante, come prima; Invio lo prova lo smoke, con l'API finta. Nessuna prova a mano sul banco di anteprima.
+- **`main` dopo #177, e un Invio in più** (28–29 settembre 2026; [la revisione dopo le correzioni](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877191956),
+  approvabile appena `main` entra nel branch, e [la correzione che vale](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930):
+  il maintainer ha unito prima #177, quindi l'adattamento spetta a questo branch). Su un branch temporaneo da
+  `origin/m3/a6b-request-pages` (b4bd304), spinto sul branch della fase con un push solo; i branch sopra prendono `main` al loro passo
+  della coda.
+  1. **`main` nel branch, in due merge**:
+     - c90dea9, `origin/main` a 1ae9100: A6c (#145), le correzioni di hosting del maintainer #173–#176, **#177** (la scelta da tastiera
+       nel campo suggerito, nota `2026-09-28-il-suggerimento-dalla-tastiera`) e #179 (i giri dei tour si riprendono i loro report); #171
+       e #172 c'erano già da 3c79786;
+     - 4b9f6bd, `origin/main` a efe057a: **A11a (#159)**, unita mentre giravano le suite del primo merge. Senza, #144 restava in
+       conflitto, e una PR in conflitto non ha la CI e non si unisce; la sessione che coordina le correzioni era d'accordo. Se `main` si
+       muove ancora prima del push, non si insegue.
+     - Tutte e due le volte l'unico conflitto era in `HANDOFF-M3.md`: l'intestazione resta quella del branch, che i branch sopra
+       riscrivono per conto loro; in «Lo stato» i blocchi nuovi di `main` vanno subito sotto quello di A6b, nel loro ordine (A11a, poi
+       A6c, sopra A3b), così il merge verso l'alto non tocca le righe che i branch sopra hanno cambiato. Dei blocchi di `main` non si
+       toglie niente; `08` si è unito da solo.
+     - **A11a e le pagine di A6b**: le pagine leggono gli endpoint del trainee di A6a, che chiedono solo di essere entrati; la regola del
+       FIR di A11a vale per i grant al team di un FIR, che il training avrà con A11b. L'integrazione intera, con `TrainingRequestTests`, è
+       verde dopo il merge.
+  2. **Un Invio in più** (c3db117) nel caso dello smoke «Enter in the position asks the question, as the button does». Da #177 Invio su
+     un'opzione accesa la sceglie e non manda il form, e in un campo chiuso che si cerca è accesa la prima opzione mostrata. Il caso
+     scriveva `XXAA_TWR` e premeva Invio una volta: quell'Invio ora sceglie la postazione, e la domanda non compare. Con un Invio in più
+     dopo il `fill` il primo sceglie, il secondo manda il form e `letThrough` fa la domanda, come prima; le asserzioni non cambiano. Il caso
+     «an answer taken back with «Cancel»» passa così com'è (non si cerca niente, niente è acceso, e Invio è del form), e `letThrough` non
+     cambia. **Misurato**: la spec sul solo primo merge (c90dea9) dà 6 su 7, e cade proprio quel caso; con la riga, 7 su 7.
+  3. **Verificato, in locale** (29 settembre 2026, su 4b9f6bd, con A11a): `dotnet build` senza avvisi; unità **836/836** (le 825 e
+     le 11 di A11a); **integrazione intera senza filtro 359/359** (le 353 e le 6 di A11a); `pnpm lint`, `typecheck`, `format:check`,
+     `i18n:check` verdi; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm test` **529** in **68** file; `pnpm e2e` **111/111**
+     al primo giro (le 110 e quella di A11a), sotto il lucchetto della porta 4173; **`pnpm e2e:full` 42/42** al primo giro su un banco
+     nuovo (127.0.0.1:5096, `ivaohub_e2e_a6b_main2`, creato dal primo avvio). Prima, sul solo primo merge (c3db117), tutto verde anche
+     lì: unità 825/825, integrazione 353/353, `pnpm test` 527 in 67 file, smoke 110/110, `e2e:full` 42/42 su `ivaohub_e2e_a6b_main`. Le
+     regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD`: nessun file del maintainer, nessuno del nucleo.
+  4. **Non verificato**: come sopra (8), Invio con un lettore di schermo vero, in un browser diverso da Chromium e sul banco; nessuna prova
+     a mano sul banco di anteprima. Il primo caso dello smoke sceglie ancora la postazione dall'elenco, e il suo commento dice ancora il
+     perché di prima di A6c (un clic dopo aver scritto andava perso): con A6c e #177 dentro, una spec può scrivere una parte del
+     nominativo. Resta com'è: l'adattamento chiesto era una riga. La CI su questo head si legge dopo il push.
 
 ### A7 — Accettare, rifiutare, assegnare
 
@@ -1300,7 +1447,8 @@ soltanto.
        maintainer ha fatto la prima installazione di prova (#160, #167, #169).
      - ⚠️ Resta una finestra di tre richieste insieme: un'assegnazione di X trova il grant proprio mentre il `catch` di un'altra, che
        ha letto sulla riga un trainer diverso, lo toglie. Grant e riga sono due salvataggi di due contesti; A7b toglie il grant, e con
-       lui la finestra.
+       lui la finestra. La notte toglie i grant ma non li ridà: per questo **A7b arriva prima di ogni installazione con trainer
+       veri** ([il revisore, dopo le correzioni][r146b]).
   2. **Il giro completo non passava due volte sullo stesso banco** (2327c05).
      - L'asserzione dello scheletro (`full/training-skeleton.spec.ts`, di A4, una sessione di `dalberone`) lascia fuori i grant con
        scope: il trainer tiene `Training.View` sul dipartimento, e un grant su un training solo non è un potere sul dipartimento.
@@ -1342,6 +1490,14 @@ soltanto.
      - Le tre alternative del training (`Approve`, `Assign`, `Conduct`) non sono segnate e non hanno `AlsoOnDeletion`:
        `PermissionCatalog.VerifyAlternatives` le lascia passare all'avvio.
      - Togliere un training resta di `Edit`, come prima. A7b sarà il primo permesso del training segnato.
+  9. **La seconda revisione** ([il commento][r146b], 28 settembre: approvabile nella forma decisa da Carmine):
+     - **Il nit della rilettura nel `catch`** (1feb55a). Se la rilettura del training, o la rimozione del grant, falliva nel `catch`,
+       la sua eccezione prendeva il posto di quella del conflitto, e chi legge avrebbe avuto un 500 invece del 409. Ora rilettura e
+       rimozione stanno in `TakeBackAfterConflictAsync`, che non lancia mai: un errore è un avviso nel log. Il grant che non ha
+       potuto giudicare resta alla notte, che lo toglie un'ora dopo se il training nomina un altro. Nessun test fa fallire il
+       database fra il salvataggio e la rilettura; `TrainingStaffTests` passa ancora, 8/8.
+     - **Il punto 1**, «A7b prima di ogni installazione con trainer veri»: scritto al punto 1 qui sopra, in A7b e in `HANDOFF-M3.md`.
+     - **Il nit di `Department.HQ`**: è già nella lista di A7b (punto 8).
   - **Verificato, in locale** (28 settembre 2026, dopo il merge, su a00fcd5 e i documenti):
     - `dotnet build` senza avvisi; unità **823/823**; **integrazione intera senza filtro** **353/353** (`TrainingStaffTests` da sola 8/8,
       anche prima del merge);
@@ -1369,6 +1525,10 @@ porta il trainer sulla [risposta 2 di Carmine su #135][a2-135]. Il punto d'arriv
 l'unione di #135** (A3b, unita il 27 settembre 2026), dalla cima della coda quando comincia, perché cambia i test di A7–A10a; in coda come
 le altre. Branch `m3/a7b-trainer-assignee`. Codice del modulo: la regola è del nucleo da A3b, e se le mancasse qualcosa è una fase del
 nucleo a sé, con la sua nota.
+
+⚠️ **Arriva prima di ogni installazione con trainer veri** ([il revisore sulla #146][r146b]). Fino ad A7b, con tre assegnazioni insieme
+il trainer che la riga nomina può restare senza grant (A7, «Le correzioni della revisione», punto 1), e la notte toglie i grant ma non
+li ridà.
 
 1. **Il training dichiara il suo trainer** con `IHasAssignee`: l'assegnatario è `TrainerVid`.
 2. **`Training.Conduct` è segnato `OnlyForAssignee`** nel catalogo del modulo, e lo tengono **per posizione** i TA e i trainer
@@ -1574,6 +1734,7 @@ training e non un altro.
 [m146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5869116757
 [a2-135]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5844250425
 [r147-a7b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/147#issuecomment-5855683074
+[r146b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5877192345
 
 ### A8 — Le date
 
@@ -2840,7 +3001,170 @@ stesso; chi lascia la posizione lo perde; il guardiano lascia scrivere la riga d
 (A11b): il capo FIR assegna nel suo FIR e non in un altro, e vede solo i suoi nella lista e nel blocco.
 **Fatta quando**: un CH assegna un training del suo FIR e riceve un rifiuto su quello di un altro FIR.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A11a)** (27–28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159 verso `main`, fuori dalla coda) — **la nota
+e le domande il 27, la nota decisa e il codice il 28**:
+
+- **Perché A11a adesso, e solo con la nota** (la scelta della sessione di A10b, sopra in A10, «Com'è andata (A10b)»): A10c aspetta #135
+  (A3b), A11b, A12a e A12b vengono dopo A10c, A12c solo con i codici di PATS. Il codice di A11a tocca lo stesso handler e lo stesso
+  guardiano di A3b, e i suoi test migrerebbero lo stesso contesto di prova (`AddSampleAssignee`): una base del nucleo ancora da unire
+  non si usa, e due fasi che migrano lo stesso contesto non vanno avanti insieme. Il branch è nato da `main` (51f946b, preparato dalla
+  sessione di A10b) e ha preso `main` fino a 32e8acd prima del primo commit, senza merge (nessun commit suo); la PR va verso `main`
+  senza `(after #N)`, come #135 e #145.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(b)**, tre meccanismi che si estendono — i grant a una posizione, la
+  regola del FIR dell'unico handler (`IHasFir`, `firStaffScope`), il filtro di dipartimento delle liste generate —, con due scelte che
+  sono di Carmine: la nota è **«Proposta»**.
+- **Fatto**: la nota `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`; la PR #159 in bozza; le due domande a Carmine in [un commento
+  sulla #159][q159]. **La forma proposta** (nota §3): il **team di un FIR** come seconda specie di posizione di un grant (`positionGrants`
+  con `"firTeam": true` e i livelli, senza nominare un FIR; la colonna `hub_user_grants.position_fir_team`); ogni permesso che dà porta
+  **il FIR della posizione** di chi lo tiene (`EffectivePermission.Fir`, nel claim `perm`), e raggiunge solo le righe `IHasFir` di quel
+  FIR; il FIR della riga viaggia con ogni domanda dell'handler e del guardiano, come lo scope, e una riga che cambia FIR chiede `Edit` sui
+  due FIR; la lista generata di un'entità `IHasFir` tiene anche le righe del FIR di chi legge, e il suo dipartimento non diventa «per
+  vedere». **Domanda 2**: chi dice che il permesso vale solo sul FIR — raccomandata la (a), `firStaffScope` com'è nel piano §4.1, con
+  IT da `all` a `own` in A11b; (b) sempre; (c) grant per grant.
+- **Scostamenti dal piano e dal design, scritti nella nota**:
+  1. **anche la lista generata**, non solo l'handler e il guardiano (qui sopra e design §8 n.2): senza, la lista per FIR di A11b
+     (design §4.2) sarebbe un filtro scritto a mano nel modulo;
+  2. **il soggetto non nomina un FIR** (qui sopra: «un soggetto FIR del grant a una posizione»): è il team di ogni FIR, e il FIR lo dà
+     la posizione di chi lo tiene, così `positionGrants` non scrive codici di FIR, che vengono da IVAO;
+  3. **`firStaffScope` resta l'interruttore**, nella raccomandazione della domanda 2: il design lo diceva «per tutta la divisione» come
+     un limite; la nota lo tiene perché è l'unica regola del FIR che c'è e il piano §4.1 le dà proprio questo significato. La lettera del
+     design è la (b).
+- **Trovato** (nota §7, e per chi viene dopo):
+  1. ⚠️ **Con `firStaffScope: own` la regola del FIR di oggi ferma tutti** quelli che non hanno il FIR della riga, il personale dei
+     dipartimenti compreso: TC, TAC, TA e trainer su ogni training ATC. Il piano §4.1 dice che limita i team FIR, e mai i coordinatori
+     di dipartimento. Non si vede perché IT ha `all` e nessun test la prova. **Il guardiano non guarda il FIR**.
+  2. **Per A11b**: un capo FIR terrà `Training.View` «da qualche parte», e alla domanda senza riga l'handler gli dice sì; ogni lettore
+     del modulo che non chiede l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato
+     uno per uno.
+  3. **Per il codice**: né `/api/me` né la firma di `HubClaims.ParsePermission` cambiano, perché un test del nucleo costruisce la risposta di
+     `/api/me` (`staffDestinations.test.tsx`) e un altro confronta la tupla di `ParsePermission`
+     (`ResourceScopeAndStakeholderTests`); `ICurrentUser` guadagna la domanda con il FIR con una risposta predefinita, così
+     `TestCurrentUser` resta com'è (nota §6).
+- **Le risposte e la revisione** (28 settembre 2026): **Carmine ha deciso** ([il suo commento][a159]) sì alla forma, alla condizione che
+  la nota correggesse prima del codice i punti 1 e 2 del revisore e rispondesse ai punti 3–5 ([i rilievi][r159]), e **la (a)**:
+  `firStaffScope` com'è nel piano §4.1, con IT da `all` a `own` in A11b. La nota, ora **decisa**, li porta dentro (nota §5):
+  1. **il FIR nel claim sta nel pezzo dello scope, dopo un `#`** (`Training.Assign:TD@#LIRR`): un lettore che non conosce il FIR — un
+     pacchetto di prima dopo un ritorno indietro, o `ParsePermission` — ci legge uno scope che nessuna riga dichiara, e lo legge chiuso;
+     la prima forma (`Training.Assign:TD#LIRR`) gli dava un dipartimento illeggibile, cioè «ogni dipartimento». E **un dipartimento che il
+     lettore del cookie non sa leggere non vale più «ogni dipartimento»**;
+  2. **la lista generata si allarga solo con i permessi con un FIR che sono il suo permesso di lettura** (`EffectiveReadPolicy`);
+  3. **un grant al team vale solo su un'area che ha un'entità `IHasFir`**, rifiutato dalla schermata e saltato dal seme, e la nota dice
+     dove l'handler chiede `HasAny`;
+  4. il senso nuovo di `firStaffScope` per chi è già su `own` o su `all` andrà in `FORKING.md` e in `division.example.json`;
+  5. i tre rami di `IsWrittenWithAnAlternative` con il FIR della riga, e la migrazione di prova dopo `AddSampleAssignee`.
+- **#135 è unita** (27 settembre, 20:24) e **`main` (4d424f9, con #135 e #160–#172) è entrato nel branch con un merge** il 28 settembre:
+  l'unico conflitto era in `HANDOFF-M3.md`, risolto tenendo tutti i paragrafi. Il codice parte da qui, con i VID **790080–790089**
+  (790068–790079 sono delle correzioni di A7 e A8a) e il banco **127.0.0.1:5098** (`ivaohub_e2e_a11a`).
+- **Il codice** (28 settembre), come nota §3 e §6:
+  1. **Il soggetto**: `UserGrant.PositionFirTeam` (la migrazione `AddGrantFirTeam` del nucleo, una colonna booleana), `IsHeldThrough` e
+     `HeldThrough` (le posizioni FIR, con un FIR e senza dipartimento, ai livelli del grant), `StaffPositionSubject` con il team;
+     `PositionGrantSeed.FirTeam` con `Department` facoltativo e il validatore di `division.json` («un dipartimento o il team, uno
+     solo»); il seme che salta con un avviso un grant al team su un'area senza FIR, e l'impronta `firTeam|…` (quella di un seme di oggi
+     non cambia); i DTO e il validatore della schermata (un soggetto solo fra tre; i livelli per le due posizioni; `firTeamArea`); la
+     casella nel form generato e la colonna nella lista (`web/src/features/admin/grants/`), le parole in `common.json` ed `errors.json`.
+  2. **Le aree con il FIR**: `PermissionCatalog.LearnAreasWithAFir` e `IsOfAnAreaWithAFir`, imparate da `HubPipeline.InitializeAsync`
+     dagli stessi modelli di `VerifyAlternatives`, con l'area del guardiano (`HubSaveChangesInterceptor.PermissionAreaOf`, prima privata).
+  3. **Il permesso sul FIR**: `EffectivePermission.Fir`; il calcolo lo scrive con `own`, uno per FIR (`Calculate(…, firStaffScope)`,
+     `own` se non si dice, dalla lettura del codice qui sotto); `PermissionSet.Has(…, fir)` e `ICurrentUser.Has(…, scope, fir)`, con la risposta predefinita; nel claim
+     `Nome:DIP@scope#FIR`, letto da `HubClaims.ReadPermission` (il lettore del cookie scarta un claim illeggibile), e `ParsePermission`, con
+     la sua firma, che rifiuta un dipartimento che non sa leggere; `BuildIdentity` che non porta «per vedere» il dipartimento di un
+     permesso con un FIR.
+  4. **L'unico handler**: la domanda sulla riga porta il FIR; la regola di `firStaffScope` di prima è tolta.
+  5. **Il guardiano**: `RequireAny` e i tre rami di `IsWrittenWithAnAlternative` con il FIR della riga (quello di prima per
+     un'eliminazione); una riga che cambia FIR chiede `Edit` sui due, e nessuna alternativa la sposta; le sessioni di chi tiene una
+     posizione FIR ai livelli di un grant al team (`HoldersOf`).
+  6. **La lista**: `TryNarrowToDepartments` riceve il permesso di lettura della lista e, su un'entità `IHasFir`, tiene le righe del
+     dipartimento e del FIR dei permessi con un FIR che hanno quel nome; nessun 403 «nessun dipartimento» a chi ne ha.
+  7. **I documenti pubblici**: `docs/FORKING.md` e i commenti di `config/division.example.json` (come si scrive un grant al team, che
+     cosa vuol dire `firStaffScope`, che cosa cambia per chi è già su `own` o su `all`).
+  8. **I test**: la spina dorsale `FirTeamPermissionTests` (6, su un host con `own` e due FIR finti, `XXAA` e `XXBB`, dati da una
+     directory dei FIR di prova: nessuna riga nei dati di riferimento condivisi); `SampleRecord` con il FIR (`AddSampleFir`, dopo
+     `AddSampleAssignee`) e la sua lista generata `/api/sample/records`; le unità `FirTeamPermissionRulesTests` (11); Vitest
+     `grants/firTeam.test.ts` (2); lo smoke `web/e2e/permissions-fir-team.spec.ts` (il form manda il team e i livelli).
+- **Scostamenti e precisazioni del codice**:
+  1. **`UserSyncService` carica anche i grant al team**: il login, il ricalcolo e «chi tiene un permesso» leggevano solo i grant `Vid = …`
+     o `PositionDepartment != null`, e un grant al team sarebbe rimasto fuori in silenzio. La nota nominava il file solo per
+     `firStaffScope`; il test «chi lascia la posizione» passa dal login vero e lo prova.
+  2. **L'handler ha un costruttore scritto**, non più primario: `division` non si legge più, e un parametro primario non letto ferma la
+     build (CS9113); resta nella firma, perché tre test di unità costruiscono l'handler con quei tre argomenti.
+  3. **Ogni permesso di un'area implica il suo `View`, non solo `Edit`**: il calcolo scrive il `View` accanto a ogni permesso dell'area
+     (`ViewOf`), con lo stesso FIR. L'esempio del punto 2 del revisore («`Training.Assign` non implica `View`») non si può costruire: un
+     capo con `Assign` dal team legge le righe del suo FIR, com'è giusto. Corretto nella nota (§3.5), e il caso negativo del test 6 è un
+     permesso di un'altra area.
+  4. **I sette test di §3.9 sono sei**: «l'handler e il guardiano dicono lo stesso» è in ognuno.
+  5. **L'aiuto della casella del team sta nell'aiuto dei livelli**: `SchemaForm` disegna un booleano come interruttore e non ne mostra
+     l'aiuto.
+  6. **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo**: il calcolo lo legge al login, e il cookie lo porta. Scritto in
+     `FORKING.md`; in IT il passaggio ad `own` arriva in A11b insieme ai primi grant al team, quindi nessun cookie vecchio ha un permesso
+     del team.
+- **Trovato, scrivendo il codice**:
+  1. **La regola del calcolo** (punto 3 qui sopra) è più larga del suo commento («Edit implies View»): non cambiata, detta al revisore.
+  2. **Il vecchio calcolo delle sessioni** di un grant a una posizione avrebbe preso, per un soggetto senza dipartimento, anche le
+     posizioni HQ: `HoldersOf` chiede una posizione con un FIR.
+  3. **Il test delle sessioni regge anche sul guardiano di `main`**, per la stessa ragione (sotto, «Verificato»).
+- **Verificato, per la nota** (27 settembre): la nota letta contro il codice di `main` (32e8acd) e contro quello del training sui branch
+  della coda (A7–A10b); le regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD` (nessun file del maintainer, nessuno del
+  nucleo, una nota aggiunta).
+- **Verificato, in locale** (28 settembre, sul branch dopo il merge di `main` 4d424f9, una suite alla volta):
+  1. `dotnet build IvaoHub.sln`: 0 avvisi, 0 errori; `dotnet format --verify-no-changes` sui 27 file C# toccati: pulito;
+  2. unità **828/828** (rifatte sullo stato finale, dopo l'ultimo ritocco alle lingue); integrazione intera, senza filtro,
+     **351/351**; le due classi nuove da sole, 11/11 e 6/6;
+  3. **la prova sul codice vecchio**: con `HubAuthorization.cs`, `HubSaveChangesInterceptor.cs`, `HubPipeline.cs` e
+     `MapCrudExtensions.cs` rimessi come su `main`, cadono **5 test di integrazione su 6** e **1 di unità su 11**, quello
+     dell'handler. Reggono dalle due parti i test di unità dei pezzi che restano (il claim, il calcolo, il catalogo, i validatori) e
+     quello delle sessioni, perché il vecchio calcolo prendeva già le posizioni senza dipartimento («Trovato, scrivendo il codice» 2 e
+     3). Rimessi i file della fase e toccati, perché la build li ricompilasse, tornano 11/11 e 6/6;
+  4. `pnpm lint`, `pnpm typecheck` e `pnpm format:check` puliti; `pnpm i18n:check`: 752 chiavi in en e it; `pnpm test`: **497/497** in
+     64 file; `pnpm gen:api`: le quattro righe di `positionFirTeam` in `schema.d.ts`, nel commit;
+  5. `pnpm e2e` **92/92**, con il lucchetto dello smoke su 4173. La prima volta era caduto il mio spec nuovo sull'ultima riga: la lista
+     aggiunge `?page=1…` all'indirizzo;
+  6. `pnpm e2e:full` **41/41** sul banco della fase, 127.0.0.1:5098, con `ivaohub_e2e_a11a` ricreato;
+  7. le regole di `core-guard` rifatte in PowerShell su `origin/main...HEAD`: nessun file del maintainer, 31 del nucleo, una nota
+     aggiunta, PASS.
+- **Non verificato**:
+  1. la CI: la dirà la PR;
+  2. la regola sul modulo vero, che arriva in A11b con i grant al team e `own`;
+  3. un cookie emesso sotto `all` dopo il passaggio a `own`: tiene il permesso del team su tutto il dipartimento fino al login dopo.
+     È scritto in `FORKING.md`, e in IT non ce n'è;
+  4. la schermata provata a mano in un browser: la disegna lo smoke, che spunta il team e guarda che cosa manda il form.
+- **La lettura del codice** (28 settembre, [il commento del revisore][c159], su 4880dc7 e contro `main` 663a355): **approvabile dopo due
+  cose**. I cinque rilievi della nota sono fatti, e due mutazioni di `FirTeamPermissionRulesTests` cadono come devono: `ReachesFir`
+  aperto alle righe senza FIR (2 test su 11) e il FIR tolto dall'esclusione dei dipartimenti «per vedere» (1 su 11). Il revisore segnala
+  al maintainer che la nota, dopo il suo sì, ha cambiato §3.5 da domanda in fatto (760dbc0). Le correzioni, in un push solo:
+  1. **`main` nel branch** (3beaa7f): 663a355, con #145 (A6c) e #171–#176. L'unico conflitto era in `HANDOFF-M3.md`, risolto tenendo
+     tutti i paragrafi, A11a sopra A6c; `HubPipeline.cs` si è unito da solo.
+  2. **La versione 0.3.0** (3f03aea): `main` era a 0.2.7, e una migrazione additiva del nucleo con una capacità nuova sono MINOR per la
+     regola scritta accanto al numero in `Directory.Build.props`. La nota lo dice nell'intestazione.
+  3. **Il calcolo, se non gli si dice `firStaffScope`, chiude** (3027dc0): il predefinito era `all`, che apre, e un chiamante futuro che
+     lo dimenticasse darebbe ai capi FIR tutto il dipartimento sotto `own`. **Scostamento dalla richiesta**: il revisore lo voleva
+     obbligatorio, ma così non compilerebbero tre test del maintainer (`EffectivePermissionsTests`, `ReachesEveryDepartmentTests`,
+     `ResourceScopeAndStakeholderTests`), che chiamano il calcolo con cinque argomenti e che il collaboratore non tocca (`CLAUDE.md` §0
+     regola 3). Per loro, senza grant al team, i due valori sono lo stesso. Il predefinito è diventato **`own`**, il lato che chiude, e
+     i chiamanti dell'hub passano quello della divisione. Nella nota, §6. Il test di unità che affermava il predefinito ora afferma
+     `own`, e **cade con il calcolo di prima** (1 su 11); rimesso il file e toccato, torna 11/11.
+  4. **Per A11b**, tutte e due chiudono e nessuna apre (anche in `HANDOFF-M3.md`):
+     - ⚠️ **`PermissionHolder.Has` non passa il FIR** (`Core/Auth/Permissions/PermissionHolders.cs`): un permesso con un FIR non
+       raggiunge mai una riga, quindi un capo FIR non è mai «titolare» di una riga, e nessun digest né notifica «a chi può farlo» gli
+       arriva. Se A11b ne vuole una, `Has` deve prendere il FIR: è una modifica del nucleo, una PR a sé (`CLAUDE.md` §0 regola 6);
+     - ⚠️ **`/api/me` non porta il FIR**, com'è deciso (nota §3.2): la SPA crede che un capo tenga `Training.Assign` su tutto il TD, e un
+       bottone disegnato dai permessi di `/api/me` compare anche sulle righe degli altri FIR, dove il server risponde 403. Le pagine del
+       training disegnano già i verbi di una riga dagli `actions` che l'handler ha risposto su quella riga (`permissions.ts`): A11b guarda
+       che ogni bottone su una riga passi di lì.
+- **Verificato, dopo la lettura del codice** (28 settembre, sul branch con `main` 663a355, una suite alla volta):
+  1. `dotnet build IvaoHub.sln`: 0 avvisi, 0 errori; `dotnet format --verify-no-changes` sui 27 file C# della fase: pulito;
+  2. unità **836/836**; integrazione intera, senza filtro, **359/359** (gli 8 in più sono di `main`);
+  3. `pnpm lint`, `pnpm typecheck` e `pnpm format:check` puliti; `pnpm i18n:check`: 752 chiavi; `pnpm test`: **507/507** in 67 file;
+     `pnpm gen:api` senza differenze;
+  4. `pnpm e2e` **99/99**, con il lucchetto su 4173 (le 7 in più sono di `main`); `pnpm e2e:full` **41/41** su 127.0.0.1:5098, con `ivaohub_e2e_a11a` ricreato;
+  5. le regole di `core-guard` in PowerShell su `origin/main...HEAD`: nessun file del maintainer, 32 del nucleo (in più
+     `Directory.Build.props`), una nota aggiunta, PASS.
+
+[c159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5877193067
+[q159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5857885144
+[r159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416
+[a159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723
+
+**Com'è andata (A11b)**: *(a fase chiusa)*
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 

@@ -67,6 +67,11 @@ cd web && pnpm install && pnpm dev      # the single page application
    at the first start that finds it, and a grant you delete from the permissions screen does not come
    back. A grant you add to the file later — because a new module expects it — is applied at the next
    start. The example file carries the grants the tours module expects for its base department.
+   A grant can also go to **the team of a FIR** instead of a department: `"firTeam": true` with the
+   levels (`Coordinator` is the chief of a FIR, `Assistant` the assistant chief, `Advisor` a FIR
+   advisor) and no `department`. It names no FIR — every FIR's team holds it — and it is only taken
+   for a permission of an area whose rows say their FIR (the trainings do); anywhere else the start
+   skips it with a warning and the permissions screen refuses it.
 5. **Translate the seeded templates and pages, or replace them.** `seed/content-templates/*.json`
    and `seed/content-pages/*.json` carry `{ "$t": "seed…" }` rather than sentences, resolved at seed
    time into the languages you listed — so a division that publishes only in Polish gets no English
@@ -99,8 +104,19 @@ screen, or look for the place where the division is hardcoded. There isn't one.
    Staff positions need no mapping table of yours either. They are matched as `^{code}-` and read
    with the department codes IVAO itself uses (`HQ`, `SOD`, `FOD`, `AOD`, `TD`, `MD`, `ED`, `PRD`,
    `WD`), so `XX-EC` is the events coordinator of division `XX` the same way `IT-EC` is of `IT`.
+   The positions of a FIR team are matched as `^{fir}-` for every FIR of your airspace (`XXXX-CH`,
+   `XXXX-ACH`, `XXXX-CHA1`); they belong to no department, and hold only what a grant to the team of
+   a FIR gives them.
    The super administrator list is read once, when the database holds none: after that the database
    is the truth and editing the file on the server achieves nothing.
+
+   `firStaffScope` says how far such a grant reaches. With `own`, each chief holds it **on the rows of
+   their own FIR** and on nothing else: not another FIR's rows, and not rows with no FIR. With `all` —
+   the default — the team holds it on the whole department, like any other grant, and is let in to see
+   that department's rows as any grantee is. The staff of your departments is never held to a FIR,
+   whichever you choose. ⚠️ Before this rule existed, `own` also stopped the department staff on every
+   row with a FIR; a division that was already on `own` sees them reach every FIR again. A change of
+   `firStaffScope` reaches each chief at their next sign in.
 2. **`locales/{lang}/*.json`** — every string a user ever sees. Add a language directory, keep the
    same keys as the others, and list the language in `division.json`. `pnpm i18n:check` fails when
    the sets diverge. There is one set for the whole product: the browser loads it, and so does the

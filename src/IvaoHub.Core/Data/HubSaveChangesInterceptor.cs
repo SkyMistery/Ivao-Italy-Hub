@@ -458,15 +458,18 @@ public sealed class HubSaveChangesInterceptor(
         // Held on one of the departments of the row: whoever creates a row of a module has to put in
         // at least one department they hold the permission on (M2, note
         // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). A row of one department has one.
-        RequireAny(permission, owned.OwnerDepartments);
+        // And on its FIR, for a permission held on one (M3, A11a).
+        RequireAny(permission, owned.OwnerDepartments, RowFir(entry));
 
         if (entry.State == EntityState.Modified
             && OriginalDepartments(entry) is var original
-            && !original.SequenceEqual(owned.OwnerDepartments))
+            && OriginalFir(entry) is var originalFir
+            && (!original.SequenceEqual(owned.OwnerDepartments) || !IsSameFir(originalFir, RowFir(entry))))
         {
             // Moving a row between departments needs the permission on both sides, or it would be
-            // a way of taking rows away from a department one row at a time.
-            RequireAny(permission, original);
+            // a way of taking rows away from a department one row at a time. The same between two
+            // FIRs (M3, A11a): the team of a FIR neither takes a row of another FIR nor gives one away.
+            RequireAny(permission, original, originalFir);
         }
     }
 
@@ -481,6 +484,9 @@ public sealed class HubSaveChangesInterceptor(
     /// (<see cref="IHasAssignee"/>): as the new row is, as the removed row was, and before and after a change, so a row is
     /// neither handed over nor taken. On any other row it does not count and <c>Edit</c> decides, which is what the single
     /// handler answers.</para>
+    /// <para>Every one of them is asked with the row's FIR as well (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): one the
+    /// team of a FIR holds on its own FIR writes the rows of that FIR — the new row's, the removed row's, and the same before
+    /// and after a change, since no alternative moves a row between FIRs any more than between departments.</para>
     /// </summary>
     private bool IsWrittenWithAnAlternative(EntityEntry entry, IOwnedByDepartment owned)
     {
@@ -491,6 +497,7 @@ public sealed class HubSaveChangesInterceptor(
 
         var alternatives = entry.Metadata.ClrType.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false);
         var scope = (entry.Entity as IHasResourceScope)?.ResourceScope;
+        var fir = RowFir(entry);
         var theirs = alternatives.Any(alternative => catalogue.IsOnlyForAssignee(alternative.Permission))
             && IsAssignedToTheWriter(entry);
 
@@ -501,19 +508,37 @@ public sealed class HubSaveChangesInterceptor(
         {
             EntityState.Added => alternatives.Any(alternative => alternative.AlsoOnCreation
                 && Reaches(alternative)
-                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department))),
+                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, null, fir))),
 
             EntityState.Modified => alternatives.Any(alternative => Reaches(alternative)
-                    && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope)))
-                && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments),
+                    && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope, fir)))
+                && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments)
+                && IsSameFir(OriginalFir(entry), fir),
 
             EntityState.Deleted => theirs && alternatives.Any(alternative => alternative.AlsoOnDeletion
                 && catalogue.IsOnlyForAssignee(alternative.Permission)
-                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope))),
+                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope, fir))),
 
             _ => false,
         };
     }
+
+    /// <summary>
+    /// The FIR the row says it belongs to (<see cref="IHasFir"/>, M3, A11a): the new row's or the changed row's as it is being
+    /// written, the removed row's as it was. None for a row that does not say one.
+    /// </summary>
+    private static string? RowFir(EntityEntry entry) =>
+        entry.State == EntityState.Deleted ? OriginalFir(entry) : (entry.Entity as IHasFir)?.Fir;
+
+    /// <summary>The FIR the row said before this write, read from the original values, as its departments are.</summary>
+    private static string? OriginalFir(EntityEntry entry) =>
+        entry.Entity is IHasFir && entry.State != EntityState.Added
+            ? (entry.OriginalValues.ToObject() as IHasFir)?.Fir
+            : (entry.Entity as IHasFir)?.Fir;
+
+    /// <summary>Two FIRs are the same one as IVAO writes them, without regard to case; two rows with no FIR are alike.</summary>
+    private static bool IsSameFir(string? before, string? after) =>
+        string.Equals(before, after, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Whether the row is assigned to the writer (<see cref="IHasAssignee"/>): the new row for a creation, the row as it was for
@@ -549,9 +574,9 @@ public sealed class HubSaveChangesInterceptor(
         return DepartmentMask.Departments(mask);
     }
 
-    private void RequireAny(string permission, IReadOnlyList<Department> departments)
+    private void RequireAny(string permission, IReadOnlyList<Department> departments, string? fir)
     {
-        if (departments.Any(department => currentUser.Has(permission, department)))
+        if (departments.Any(department => currentUser.Has(permission, department, null, fir)))
         {
             return;
         }
@@ -667,10 +692,7 @@ public sealed class HubSaveChangesInterceptor(
     {
         foreach (var position in pending.StalePositions)
         {
-            var levels = position.Levels.Cast<StaffLevel?>().ToArray();
-            pending.StaleSessions.UnionWith(pending.Context.Set<UserStaffPosition>()
-                .Where(held => held.Department == position.Department && levels.Contains(held.Level))
-                .Select(held => held.Vid));
+            pending.StaleSessions.UnionWith(HoldersOf(pending, position));
         }
     }
 
@@ -678,12 +700,23 @@ public sealed class HubSaveChangesInterceptor(
     {
         foreach (var position in pending.StalePositions)
         {
-            var levels = position.Levels.Cast<StaffLevel?>().ToArray();
-            pending.StaleSessions.UnionWith(await pending.Context.Set<UserStaffPosition>()
-                .Where(held => held.Department == position.Department && levels.Contains(held.Level))
-                .Select(held => held.Vid)
-                .ToListAsync(cancellationToken));
+            pending.StaleSessions.UnionWith(await HoldersOf(pending, position).ToListAsync(cancellationToken));
         }
+    }
+
+    /// <summary>
+    /// Who holds a position today: at one of its levels, of its department — or, for the team of a FIR, of any FIR, a FIR
+    /// position being one with a FIR and no department (M3, A11a).
+    /// </summary>
+    private static IQueryable<int> HoldersOf(Pending pending, StaffPositionSubject position)
+    {
+        var levels = position.Levels.Cast<StaffLevel?>().ToArray();
+        var held = pending.Context.Set<UserStaffPosition>().Where(row => levels.Contains(row.Level));
+
+        return (position.FirTeam
+                ? held.Where(row => row.Fir != null && row.Department == null)
+                : held.Where(row => row.Department == position.Department))
+            .Select(row => row.Vid);
     }
 
     private static void RefreshStaleSessions(Pending pending)
@@ -856,7 +889,15 @@ public sealed class HubSaveChangesInterceptor(
     }
 
     private static string ResolvePermissionArea(DbContext context, Type entityType) =>
-        PermissionAreas.GetOrAdd((context.GetType(), entityType), key =>
+        PermissionAreaOf(context.GetType(), entityType);
+
+    /// <summary>
+    /// The permission area of an entity of a context, the one this guard asks <c>{Area}.Edit</c> of: what
+    /// <see cref="PermissionAreaAttribute"/> says, or the name of the set the entity is exposed as. The hub also asks it
+    /// when it starts, for the areas whose rows say their FIR (M3, A11a).
+    /// </summary>
+    public static string PermissionAreaOf(Type contextType, Type entityType) =>
+        PermissionAreas.GetOrAdd((contextType, entityType), key =>
         {
             if (key.Entity.GetCustomAttributes(typeof(PermissionAreaAttribute), inherit: false)
                 is [PermissionAreaAttribute declared, ..])

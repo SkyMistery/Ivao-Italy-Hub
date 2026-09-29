@@ -91,12 +91,31 @@ public sealed class HubPolicyProvider(IOptions<AuthorizationOptions> options, Pe
 /// here and nowhere else: a module that wanted its own rule would be writing a second answer to a
 /// question that already has one (plan section 16.2).
 /// </summary>
-public sealed class DepartmentAuthorizationHandler(
-    ICurrentUser currentUser,
-    IOptions<DivisionOptions> division,
-    PermissionCatalog catalogue)
-    : AuthorizationHandler<PermissionRequirement>
+public sealed class DepartmentAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
+    private readonly ICurrentUser _currentUser;
+    private readonly PermissionCatalog _catalogue;
+
+    /// <param name="currentUser">Who is asking.</param>
+    /// <param name="division">
+    /// No longer read (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): whether the team of a FIR is kept to its FIR —
+    /// <c>firStaffScope</c> — is decided when the permissions are computed, and travels with each of them as the FIR it is held
+    /// on. It stays in the signature so that the container, and the tests that build the handler, stay as they are.
+    /// </param>
+    /// <param name="catalogue">Which permission is denied to the member a row is about, which reads, which is only for the assignee.</param>
+    public DepartmentAuthorizationHandler(
+        ICurrentUser currentUser,
+        IOptions<DivisionOptions> division,
+        PermissionCatalog catalogue)
+    {
+        ArgumentNullException.ThrowIfNull(currentUser);
+        ArgumentNullException.ThrowIfNull(division);
+        ArgumentNullException.ThrowIfNull(catalogue);
+
+        _currentUser = currentUser;
+        _catalogue = catalogue;
+    }
+
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
@@ -119,8 +138,8 @@ public sealed class DepartmentAuthorizationHandler(
         // be that pilot does not either — this is the one place the role does not bypass a policy
         // (decision note of 15 September 2026, design M2 section 7.3).
         if (resource is IHasStakeholder { StakeholderVid: { } stakeholder }
-            && stakeholder == currentUser.Vid
-            && catalogue.IsDeniedToStakeholder(permission))
+            && stakeholder == _currentUser.Vid
+            && _catalogue.IsDeniedToStakeholder(permission))
         {
             return false;
         }
@@ -128,8 +147,8 @@ public sealed class DepartmentAuthorizationHandler(
         // Whoever takes part in a row reads it, whichever department owns it: the sender of a thread and whoever was
         // added to it (M2, T14). Only reading — which, for a thread, is also what answers it.
         if (resource is IHasParticipants participating
-            && currentUser.IsAuthenticated
-            && participating.ParticipantVids.Contains(currentUser.Vid)
+            && _currentUser.IsAuthenticated
+            && participating.ParticipantVids.Contains(_currentUser.Vid)
             && IsRead(permission))
         {
             return true;
@@ -139,10 +158,11 @@ public sealed class DepartmentAuthorizationHandler(
         // any department, or globally, is enough, and the department is checked row by row later.
         // Denying here would close the list of their own department to every coordinator. A permission
         // that reaches only the rows assigned to the asker answers the same (M3, A3b): there is no row
-        // to be assigned yet, and that is what offers an examiner "new exam" and lists it in /api/me.
+        // to be assigned yet, and that is what offers an examiner "new exam" and lists it in /api/me. So does
+        // a permission held on one FIR (M3, A11a): held somewhere, it opens the menu and the list.
         if (resource is not IOwnedByDepartment owned)
         {
-            return currentUser.HasAny(permission);
+            return _currentUser.HasAny(permission);
         }
 
         // A row the resource shares for reading is readable by whoever holds the read permission
@@ -150,7 +170,7 @@ public sealed class DepartmentAuthorizationHandler(
         // below is what a write still has to pass, and it is untouched.
         if (resource is ISharedForReading { IsSharedForReading: true } && IsRead(permission))
         {
-            return currentUser.HasAny(permission);
+            return _currentUser.HasAny(permission);
         }
 
         // Held on one of the departments of the row is held on the row: a row of one department has
@@ -160,18 +180,14 @@ public sealed class DepartmentAuthorizationHandler(
         // The scope of the row travels with the question. A permission held without one reaches
         // every row, as it always has; one granted on a single row reaches that row only, which is
         // how "this validator, on this tour" is said (M2, note of 15 September 2026).
+        //
+        // And so does its FIR (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): a permission the team of a FIR holds on
+        // its own FIR reaches the rows of that FIR and no other; one held without a FIR — by a department's staff, or by a
+        // grant to a member — is never stopped by the FIR, as plan section 4.1 has always said. The rule that stood here until
+        // then stopped everybody without the row's FIR, the department's staff included, whenever the division said "own".
         var scope = (resource as IHasResourceScope)?.ResourceScope;
-        if (!owned.OwnerDepartments.Any(department => currentUser.Has(permission, department, scope)))
-        {
-            return false;
-        }
-
-        // When the division keeps FIR teams to their own FIR, a row that belongs to a FIR is only
-        // theirs; whoever reaches every department is above the distinction.
-        if (division.Value.FirStaffScope == FirStaffScope.Own
-            && resource is IHasFir { Fir: { } fir }
-            && !currentUser.HasAllDepartments
-            && !currentUser.Firs.Contains(fir))
+        var fir = (resource as IHasFir)?.Fir;
+        if (!owned.OwnerDepartments.Any(department => _currentUser.Has(permission, department, scope, fir)))
         {
             return false;
         }
@@ -181,10 +197,10 @@ public sealed class DepartmentAuthorizationHandler(
         // nobody, or of an entity that says nothing about it — it is worth what the area's Edit is worth
         // there, the permission the interceptor's guard falls back to as well. An examiner changes their
         // own exams, and whoever edits the area every exam.
-        if (catalogue.IsOnlyForAssignee(permission)
-            && (resource as IHasAssignee)?.AssigneeVid != currentUser.Vid)
+        if (_catalogue.IsOnlyForAssignee(permission)
+            && (resource as IHasAssignee)?.AssigneeVid != _currentUser.Vid)
         {
-            return catalogue.EditOf(permission) is { } edit
+            return _catalogue.EditOf(permission) is { } edit
                 && !string.Equals(edit, permission, StringComparison.Ordinal)
                 && IsAllowed(resource, edit);
         }
@@ -198,5 +214,5 @@ public sealed class DepartmentAuthorizationHandler(
     /// already decided in one place, the same one "Edit implies View" is decided in.
     /// </summary>
     private bool IsRead(string permission) =>
-        string.Equals(catalogue.ViewOf(permission), permission, StringComparison.Ordinal);
+        string.Equals(_catalogue.ViewOf(permission), permission, StringComparison.Ordinal);
 }

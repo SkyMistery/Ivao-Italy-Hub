@@ -13,6 +13,8 @@ public sealed record GrantListDto(
     int? Vid,
     Department? PositionDepartment,
     IReadOnlyList<StaffLevel> PositionLevels,
+    // For the team of a FIR, each on the rows of their own FIR when the division keeps FIR teams to their FIR (M3, A11a).
+    bool PositionFirTeam,
     string Value,
     Department? Department,
     // The single row the grant is about, when it is about one. Shown, never set here: the module
@@ -31,6 +33,7 @@ public sealed record GrantDetailDto(
     int? Vid,
     Department? PositionDepartment,
     IReadOnlyList<StaffLevel> PositionLevels,
+    bool PositionFirTeam,
     GrantKind Kind,
     string Value,
     Department? Department,
@@ -53,8 +56,9 @@ public sealed record GrantDetailDto(
 /// grant is asleep" indistinguishable.</para>
 /// </summary>
 /// <para>The subject is a member (<c>vid</c>) <b>or</b> a position (<c>positionDepartment</c> with
-/// <c>positionLevels</c>), never both (M2). The two position fields are last and optional, so a client
-/// that only knows grants to a person keeps writing them unchanged.</para>
+/// <c>positionLevels</c>), never both (M2) — or, since M3, the team of a FIR (<c>positionFirTeam</c> with
+/// <c>positionLevels</c>, A11a). The position fields are last and optional, so a client that only knows
+/// grants to a person keeps writing them unchanged.</para>
 public sealed record GrantWriteDto(
     int? Vid,
     GrantKind Kind,
@@ -65,7 +69,8 @@ public sealed record GrantWriteDto(
     string? Reason,
     DateTime RowVersion,
     Department? PositionDepartment = null,
-    IReadOnlyList<StaffLevel>? PositionLevels = null);
+    IReadOnlyList<StaffLevel>? PositionLevels = null,
+    bool PositionFirTeam = false);
 
 /// <summary>Entity to payload and back. Generated, like every other mapping of the hub.</summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
