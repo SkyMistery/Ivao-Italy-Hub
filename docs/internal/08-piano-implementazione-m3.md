@@ -1728,6 +1728,17 @@ training e non un altro.
     anteprima l'assegnazione è passata dall'API);
   - **la pagina in inglese e a tema chiaro, e larga 375 px**: niente di nuovo da vedere (le schermate non cambiano), e il difetto noto del
     back office a 375 px (A7) resta.
+- **La revisione di #181** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/181#issuecomment-5891400972);
+  la sessione di A7b non c'era più, la coda l'ha portata la sessione che la coordina): approvabile.
+  1. **Il corpo della PR non era più vero**: diceva la PR in conflitto con `main` e senza `build-test`, e la CI fra le cose non verificate.
+     La CI c'è dal 29 settembre, da quando `main` è sceso nella coda; il corpo è aggiornato con i numeri del 29 settembre. Anche il «Non
+     verificato» qui sopra, sulla CI, vale solo per il 28.
+  2. **Per Carmine, niente da cambiare qui**: A7 (#146) è in `main` e nelle versioni 0.4.0 e 0.4.1, e ogni assegnazione lì scrive un
+     `Training.Conduct` con scope. Dopo A7b quei grant non servono più e il job notturno non li toglie (scostamento 5); la vecchia riga di
+     TC e TAC su `Conduct` resta accanto alla nuova in un'installazione già avviata (scostamento 2). **La consegna che porta A7b deve dire
+     come ripulirli** (i grant con motivo `training: trainer`).
+  3. Nit, già detti: nessun test fa condurre un TA il training assegnato a lui; un TA passa il guardiano su qualunque training con
+     l'alternativa di `Approve`, e lo fermano gli endpoint (già noto da A7).
 
 [d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
 [r146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527
