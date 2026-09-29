@@ -54,14 +54,27 @@ public sealed class PositionGrantSeeder(
                 logger.LogWarning(
                     "division.json: the grant of {Permission} to {Department} {Levels} is not applied: the permission is unknown or global.",
                     seed.Permission,
-                    seed.Department,
+                    Subject(seed),
+                    string.Join(", ", seed.Levels));
+                continue;
+            }
+
+            // A grant to the team of a FIR only names a permission of an area whose rows say their FIR (M3, A11a): anywhere
+            // else it would reach no row. The screen refuses it too, and it is not remembered either, so it applies on the
+            // start that brings such rows.
+            if (seed.FirTeam && !catalogue.IsOfAnAreaWithAFir(seed.Permission))
+            {
+                logger.LogWarning(
+                    "division.json: the grant of {Permission} to the team of a FIR {Levels} is not applied: no row of its area says its FIR.",
+                    seed.Permission,
                     string.Join(", ", seed.Levels));
                 continue;
             }
 
             database.UserGrants.Add(new UserGrant
             {
-                PositionDepartment = seed.Department,
+                PositionDepartment = seed.FirTeam ? null : seed.Department,
+                PositionFirTeam = seed.FirTeam,
                 PositionLevels = seed.Levels,
                 Kind = GrantKind.Permission,
                 Value = seed.Permission,
@@ -98,7 +111,8 @@ public sealed class PositionGrantSeeder(
 
     /// <summary>
     /// What makes two seeds the same seed: who, which levels, which permission, on which department and
-    /// with which effect. Reordering the levels in the file is not a new seed.
+    /// with which effect. Reordering the levels in the file is not a new seed. Who is a department, or
+    /// the team of a FIR (M3, A11a), which no department is called.
     /// </summary>
     public static string Fingerprint(PositionGrantSeed seed)
     {
@@ -106,12 +120,16 @@ public sealed class PositionGrantSeeder(
 
         return string.Join(
             '|',
-            seed.Department.ToString(),
+            Subject(seed),
             string.Join(',', seed.Levels.Distinct().Order().Select(level => level.ToString())),
             seed.Permission,
             seed.Scope?.ToString() ?? "*",
             seed.Deny ? "deny" : "grant");
     }
+
+    /// <summary>Who a seed is for: its department, or the team of a FIR — a word no department is called.</summary>
+    private static string Subject(PositionGrantSeed seed) =>
+        seed.FirTeam ? "firTeam" : seed.Department?.ToString() ?? string.Empty;
 
     /// <summary>
     /// The seeds already applied. A row written before T5 holds a number — the count of what it applied —

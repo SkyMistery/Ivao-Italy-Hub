@@ -88,7 +88,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
   const flight = replayFlight({ vid: pilotVid, departure: benchAirports.rome, arrival: benchAirports.milan });
   const made: { rule?: number; error?: number } = {};
 
-  await removeBenchTours(context, 'bench-dispute-');
+  await removeBenchTours(context, 'bench-dispute-', pilotContext);
   try {
     await dispute();
   } finally {
@@ -99,7 +99,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
     if (made.error !== undefined) {
       await context.request.delete(`/api/flightops/errors/${made.error}`, { headers: asTheClientDoes });
     }
-    await removeBenchTours(context, 'bench-dispute-');
+    await removeBenchTours(context, 'bench-dispute-', pilotContext);
     await assistantContext.close();
     await pilotContext.close();
   }

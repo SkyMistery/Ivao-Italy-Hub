@@ -32,8 +32,8 @@ public sealed class TrainingRemindersJob(
     public const string JobName = "training-reminders";
 
     /// <summary>
-    /// Every quarter of an hour, five minutes past, off the quarter the tours' own job runs on: a reminder leaves at most a quarter
-    /// of an hour after its moment. The same in every time zone.
+    /// Every quarter of an hour, five minutes past, off the quarter other jobs of the hub run on: a reminder leaves at most a
+    /// quarter of an hour after its moment. The same in every time zone.
     /// </summary>
     public const string Cron = "0 5/15 * * * ?";
 

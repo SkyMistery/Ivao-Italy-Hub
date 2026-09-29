@@ -1399,7 +1399,7 @@
     "description": "Permessi dati a un membro per nome, o a una posizione — un dipartimento a certi livelli — oltre a quelli che danno già le posizioni dello staff.",
     "create": "Nuovo permesso",
     "edit": "Modifica permesso",
-    "formHint": "Scrivi un VID per un membro, oppure un dipartimento e i suoi livelli per chi ha quella posizione: mai tutti e due. Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su un permesso.",
+    "formHint": "Scrivi un VID per un membro, un dipartimento e i suoi livelli per chi ha quella posizione, oppure spunta il team di un FIR e scegli i livelli: uno solo dei tre. Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su un permesso.",
     "delete": {
       "title": "Eliminare questo permesso?",
       "description": "Il membro lo perde alla richiesta successiva, e non si può annullare."
@@ -1416,6 +1416,7 @@
       "reason": "Motivo",
       "updatedAt": "Ultima modifica",
       "positionDepartment": "Posizione: dipartimento",
+      "positionFirTeam": "Posizione: il team di un FIR",
       "positionLevels": "Posizione: livelli"
     },
     "options": {
@@ -1439,7 +1440,7 @@
     "hints": {
       "expiresAt": "Vuoto significa che il permesso non scade.",
       "vid": "Per un solo membro. Lascialo vuoto per dare il permesso a una posizione.",
-      "positionLevels": "Chi ha una posizione di questo dipartimento a uno di questi livelli ha il permesso, e lo perde con la posizione."
+      "positionLevels": "Chi ha una posizione di questo dipartimento a uno di questi livelli ha il permesso, e lo perde con la posizione. Per il team di un FIR il capo è il coordinator e il vice l'assistant: se la divisione tiene i team FIR sul loro FIR, ognuno lo ha solo sulle righe del suo, e così si dà solo un permesso le cui righe dicono il loro FIR."
     }
   },
   "superadmins": {
