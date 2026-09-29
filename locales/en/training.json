@@ -500,6 +500,7 @@
     "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that meets it.",
     "dateNotConfirmed": "Something is in the calendar on that day already: look at the warnings and confirm the date.",
     "trainingNotClosable": "Only an accepted training that is still going on can be closed.",
+    "sessionStarted": "The session has already started: record how it went, a no-show or a reschedule instead.",
     "sessionNotRecordable": "What a session came to is recorded only on a dated training, once its session has started.",
     "reportMockExamAgain": "This training is a mock exam already: the one after it is not another mock exam.",
     "sheetChanged": "The sheet of this training changed meanwhile: reload the page.",
