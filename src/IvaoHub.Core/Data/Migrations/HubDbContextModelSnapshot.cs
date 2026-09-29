@@ -308,6 +308,10 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(4)")
                         .HasColumnName("position_department");
 
+                    b.Property<bool>("PositionFirTeam")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("position_fir_team");
+
                     b.Property<string>("PositionLevelsJson")
                         .HasColumnType("json")
                         .HasColumnName("position_levels_json");

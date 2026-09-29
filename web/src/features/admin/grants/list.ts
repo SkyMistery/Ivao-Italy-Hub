@@ -11,9 +11,10 @@ import type { GrantListDto } from './queries';
  * rather than gone, and it will wake up on its own if the position comes back.
  */
 export const grantColumns: readonly ColumnSpec<GrantListDto>[] = [
-  // Who: a member, or a department at some of its levels (M2).
+  // Who: a member, a department at some of its levels (M2), or the team of a FIR at them (M3, A11a).
   col.number('vid', { sortable: true }),
   col.department('positionDepartment'),
+  col.boolean('positionFirTeam'),
   col.list('positionLevels'),
   col.text('value', { sortable: true }),
   col.department('department'),

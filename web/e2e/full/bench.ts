@@ -431,13 +431,24 @@ export async function releasedTourWithOneLeg(
  * The tours a run left behind, recognised by the start of their address: deleted, or — the server refuses to delete a
  * tour with reports (`tourHasReports`, design M2 §1.2.2) — hidden, which puts them on no public page and in no other
  * spec's way. One already hidden is left as it is.
+ *
+ * With the person who flew on them, their reports are taken back first (`takeBackReports`): every spec that reports
+ * passes its pilot, or the next runs on the same bench find the division's daily limit already reached.
  */
-export async function removeBenchTours(context: BrowserContext, slugPrefix: string): Promise<void> {
+export async function removeBenchTours(
+  context: BrowserContext,
+  slugPrefix: string,
+  pilot?: BrowserContext,
+): Promise<void> {
   const response = await context.request.get(`/api/flightops/tours?pageSize=100&q=${slugPrefix}`);
   expect(response.status()).toBe(200);
 
   const found = ((await response.json()) as { items: { id: number; isHidden: boolean }[] }).items;
   for (const tour of found.filter((row) => !row.isHidden)) {
+    if (pilot !== undefined) {
+      await takeBackReports(context, pilot, tour.id);
+    }
+
     const removed = await context.request.delete(`/api/flightops/tours/${tour.id}`, {
       headers: asTheClientDoes,
     });
@@ -451,6 +462,63 @@ export async function removeBenchTours(context: BrowserContext, slugPrefix: stri
       data: { action: 'Hide' },
     });
     expect(hidden.status(), await hidden.text()).toBeLessThan(300);
+  }
+}
+
+/**
+ * A pilot's reports on a tour, taken back so that they count for nothing. The division's daily limit (design M2 §3.6)
+ * counts every report neither rejected nor withdrawn by the UTC day of its take-off, and every round flies the same
+ * day's flight (`replay.ts`, yesterday): what one run leaves counted, the next runs find against them — on 28 September
+ * 2026 the third full round on one bench had its eleventh report of the day refused (`reportDivisionDailyLimit`).
+ *
+ * A report is never deleted, so it is taken back the way the product allows: a decision reopened by the member of staff
+ * who took it (§4.2.1) and let go to the queue, and every queued report withdrawn by its pilot (§3.1). A rejection
+ * already counts for nothing and stays as it is. Only on a tour the pilot still sees: a hidden tour is gone for them,
+ * and so is withdrawing from it — which is why `removeBenchTours` does this before it hides one.
+ */
+async function takeBackReports(staff: BrowserContext, pilot: BrowserContext, tourId: number): Promise<void> {
+  type Report = { id: number; status: string; rowVersion: string };
+  const mine = async (): Promise<Report[]> => {
+    const response = await pilot.request.get(`/api/flightops/tours/${tourId}/reports/mine`);
+    // Not a tour the pilot sees: never made ready, so never reported on.
+    if (response.status() === 404) {
+      return [];
+    }
+    expect(response.status(), await response.text()).toBe(200);
+    return ((await response.json()) as { reports: Report[] }).reports;
+  };
+
+  const step = async (id: number, verb: string, data: object): Promise<string> => {
+    const response = await staff.request.post(`/api/flightops/review/${id}/${verb}`, {
+      headers: asTheClientDoes,
+      data,
+    });
+    expect(response.status(), `${verb} report ${id}: ${await response.text()}`).toBe(200);
+    return ((await response.json()) as { rowVersion: string }).rowVersion;
+  };
+
+  for (const report of await mine()) {
+    let rowVersion = report.rowVersion;
+    if (report.status === 'Accepted' || report.status === 'ToModify') {
+      rowVersion = await step(report.id, 'reopen', {
+        reason: 'The bench takes its report back.',
+        rowVersion,
+      });
+    } else if (report.status === 'InReview') {
+      // Taken by whoever holds it now, or by anybody once its lease is over: taking one's own again only renews it.
+      rowVersion = await step(report.id, 'take', { rowVersion });
+    } else {
+      continue;
+    }
+    await step(report.id, 'release', { rowVersion });
+  }
+
+  for (const report of (await mine()).filter((row) => row.status === 'Queued')) {
+    const withdrawn = await pilot.request.post(`/api/flightops/reports/${report.id}/withdraw`, {
+      headers: asTheClientDoes,
+      data: { rowVersion: report.rowVersion },
+    });
+    expect(withdrawn.status(), `withdraw report ${report.id}: ${await withdrawn.text()}`).toBe(200);
   }
 }
 
