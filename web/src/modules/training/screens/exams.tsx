@@ -14,7 +14,6 @@ import {
   examQuery,
   examsListQuery,
   memberLabel,
-  ratingsQuery,
   useDeleteExam,
   useSaveExam,
   type ExamRow,
@@ -111,9 +110,10 @@ export function ExamsPage() {
 }
 
 /**
- * A new exam, or one to change (§2.8): the rating, the position of an exam on one, when, the candidate by VID, and the examiner among
- * the ones the server offers — an advisor only themselves, whoever edits the area every examiner the hub knows. Taking an exam off the
- * calendar is asked first; the exam itself stays the network's.
+ * A new exam, or one to change (§2.8): the rating — any of the path, as the server offers them, the ones nobody trains for too
+ * (#178) —, the position of an exam on one, when, the candidate by VID, and the examiner among the ones the server offers — an advisor
+ * only themselves, whoever edits the area every examiner the hub knows. Taking an exam off the calendar is asked first; the exam itself
+ * stays the network's.
  */
 export function ExamForm() {
   const { t, i18n } = useTranslation();
@@ -124,7 +124,6 @@ export function ExamForm() {
   const writes = holdsPermissionAnywhere(bootstrap, TRAINING_MANAGE_EXAMS);
 
   const exam = useQuery({ ...examQuery(Number(id)), enabled: writes && !isNew }).data ?? null;
-  const ratings = useQuery({ ...ratingsQuery(), enabled: writes }).data;
   const choices = useQuery({ ...examChoicesQuery(), enabled: writes }).data;
   const save = useSaveExam(isNew ? null : Number(id));
   const remove = useDeleteExam();
@@ -133,7 +132,7 @@ export function ExamForm() {
     return <NotFound />;
   }
 
-  if ((!isNew && exam === null) || ratings === undefined || choices === undefined) {
+  if ((!isNew && exam === null) || choices === undefined) {
     return null;
   }
 
@@ -170,7 +169,7 @@ export function ExamForm() {
           // rather than sent back stale and answered 409.
           key={exam?.rowVersion ?? 'new'}
           schema={examSchema({
-            ratings: ratingOptions(ratings, t),
+            ratings: ratingOptions(choices.ratings, t),
             positions: choices.positions.map((position): Suggestion => ({
               value: position.callsign,
               label: positionLabel(position, t),

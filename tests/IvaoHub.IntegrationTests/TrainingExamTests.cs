@@ -360,7 +360,7 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// <summary>
     /// How the coordinator, the assistant and the direction choose the examiner of an exam they enter for somebody else (note §3.6): the
     /// form offers the examiners the one handler lets the reader give an exam to — an advisor themselves, the coordinator every one the
-    /// hub knows, never a trainer —, and the positions; a trainer is offered nothing.
+    /// hub knows, never a trainer —, every rating of the two ladders (#178), and the positions; a trainer is offered nothing.
     /// </summary>
     [Fact]
     public async Task TheFormOffersAnAdvisorThemselvesAndTheCoordinatorEveryExaminer()
@@ -372,6 +372,10 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var only = Assert.Single(theAdvisors.GetProperty("examiners").EnumerateArray());
         Assert.Equal((AdvisorVid, "Test Advisor"), (only.GetProperty("vid").GetInt32(), only.GetProperty("name").GetString()));
         Assert.NotEmpty(theAdvisors.GetProperty("positions").EnumerateArray());
+        Assert.Equal(
+            [.. Enum.GetValues<RatingKind>().SelectMany(Vocabulary().Ladder).Select(rating => $"{rating.Kind} {rating.Number} {rating.ShortName}")],
+            theAdvisors.GetProperty("ratings").EnumerateArray()
+                .Select(rating => $"{rating.GetProperty("kind").GetString()} {rating.GetProperty("number").GetInt32()} {rating.GetProperty("shortName").GetString()}"));
 
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         var theCoordinators = await ReadAsync(await coordinator.GetAsync(new Uri(ExamEndpoints.ChoicesPattern, UriKind.Relative), token), HttpStatusCode.OK, token);
@@ -391,9 +395,9 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
-    /// An exam is refused field by field, before any permission is asked: a rating the division does not train for, a position missing,
-    /// unknown or on a ladder examined without one, no date, no candidate, and an examiner who is the candidate, who puts no exam in
-    /// the calendar, or whom the hub does not know.
+    /// An exam is refused field by field, before any permission is asked: a rating that is not one of its ladder, a position missing,
+    /// unknown or on a rating examined without one, no date, no candidate, and an examiner who is the candidate, who puts no exam in the
+    /// calendar, or whom the hub does not know.
     /// </summary>
     [Fact]
     public async Task AnExamIsRefusedFieldByField()
@@ -402,7 +406,7 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var (atc, pilot) = Trained();
         var position = await PositionAsync(atc, token);
         var starts = Minute(DateTime.UtcNow.AddDays(9));
-        var untrained = Untrained(atc.Kind);
+        var unknown = Unknown(atc.Kind);
 
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
 
@@ -412,7 +416,7 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Contains(key, Refusal(problem, field));
         }
 
-        await RefusedAsync(Body(untrained, position, starts, CandidateVid, AdvisorVid), "rating", "training:errors.ratingNotTrained");
+        await RefusedAsync(Body(unknown, null, starts, CandidateVid, AdvisorVid), "rating", TrainingExams.RatingUnknown);
         await RefusedAsync(Body(atc, null, starts, CandidateVid, AdvisorVid), "position", "errors.required");
         await RefusedAsync(Body(atc, "TRNTEST_NOWHERE", starts, CandidateVid, AdvisorVid), "position", TrainingExams.PositionUnknown);
         await RefusedAsync(Body(pilot, position, starts, CandidateVid, AdvisorVid), "position", TrainingExams.PositionNotAsked);
@@ -425,6 +429,41 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // The position as the directory spells it, whatever the case it was written in.
         var created = await ReadAsync(await PostAsync(coordinator, Body(atc, $" {position.ToLowerInvariant()} ", starts, CandidateVid, AdvisorVid), token), HttpStatusCode.Created, token);
         Assert.Equal(position, created.GetProperty("position").GetString());
+    }
+
+    /// <summary>
+    /// An exam takes any rating of its ladder, the ones nobody trains for too (the maintainer's answer on #178): the eighth rating of each
+    /// ladder — the network examines it, and the division trains nobody for it — is scheduled without a position, and a position on it is
+    /// refused, as on a pilot's exam; so is the first rating of a ladder, since the vocabulary does not say which ratings have an exam.
+    /// </summary>
+    [Fact]
+    public async Task AnExamTakesAnyRatingOfItsLadderTheEighthToo()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Minute(DateTime.UtcNow.AddDays(11));
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        foreach (var kind in Enum.GetValues<RatingKind>())
+        {
+            var eighth = Vocabulary().Find(kind, 8);
+            Assert.NotNull(eighth);
+            Assert.False(eighth.HasPracticalTraining, $"Nobody trains for the eighth {kind} rating.");
+            Assert.Null(eighth.PositionType);
+
+            var created = await ReadAsync(await PostAsync(coordinator, Body(eighth, null, starts, CandidateVid, AdvisorVid), token), HttpStatusCode.Created, token);
+            Assert.Equal(
+                (kind.ToString(), 8, JsonValueKind.Null),
+                (created.GetProperty("kind").GetString(), created.GetProperty("rating").GetInt32(), created.GetProperty("position").ValueKind));
+            var entry = await CalendarEntryAsync(created.GetProperty("id").GetInt64(), token);
+            Assert.Equal(eighth.ShortName, entry!.Title.Get("en"));
+
+            var problem = await ReadAsync(await PostAsync(coordinator, Body(eighth, "TRNTEST_POS", starts, CandidateVid, AdvisorVid), token), HttpStatusCode.BadRequest, token);
+            Assert.Contains(TrainingExams.PositionNotAsked, Refusal(problem, "position"));
+        }
+
+        var first = Vocabulary().Ladder(RatingKind.Atc)[0];
+        Assert.False(first.HasPracticalTraining, "Nobody trains for the first rating of a ladder.");
+        await ReadAsync(await PostAsync(coordinator, Body(first, null, starts, OtherCandidateVid, AdvisorVid), token), HttpStatusCode.Created, token);
     }
 
     /// <summary>
@@ -667,14 +706,16 @@ public sealed class TrainingExamTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return (ratings.First(rating => rating.Kind == RatingKind.Atc), ratings.First(rating => rating.Kind == RatingKind.Pilot));
     }
 
-    /// <summary>A rating of the ladder the division does not train for: the first one, below every trained rating.</summary>
-    private Rating Untrained(RatingKind kind)
+    /// <summary>The ratings the host knows: the core's vocabulary.</summary>
+    private RatingVocabulary Vocabulary()
     {
         using var scope = _factory.Services.CreateScope();
-        var untrained = scope.ServiceProvider.GetRequiredService<RatingVocabulary>().Ladder(kind).First();
-        Assert.False(untrained.HasPracticalTraining, "The first rating of a ladder has no practical training.");
-        return untrained;
+        return scope.ServiceProvider.GetRequiredService<RatingVocabulary>();
     }
+
+    /// <summary>A rating the vocabulary does not know on the ladder: one past its highest.</summary>
+    private Rating Unknown(RatingKind kind) =>
+        new(kind, Vocabulary().Ladder(kind).Max(rating => rating.Number) + 1, "TRNTEST", HasPracticalTraining: false, PositionType: null);
 
     /// <summary>A position of the division the rating is trained on, as the core's directory spells it.</summary>
     private async Task<string> PositionAsync(Rating rating, CancellationToken cancellationToken)

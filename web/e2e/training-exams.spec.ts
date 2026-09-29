@@ -144,7 +144,9 @@ function detail(id: number, overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** The ratings the other forms of the training offer, the trained ones; an exam takes any rating of the path, the eighth too (#178). */
 const ratings = [{ kind: 'Atc', number: 5, shortName: 'ADC', nameKey: 'ratings.Atc.ADC' }];
+const examined = [...ratings, { kind: 'Atc', number: 8, shortName: 'SEC', nameKey: 'ratings.Atc.SEC' }];
 const positions = [{ callsign: 'XXAA_TWR', name: 'Example Tower', ratingShortName: 'ADC' }];
 
 interface Seen {
@@ -177,7 +179,9 @@ async function stubTheExams(
   await stubTheApi(page);
   await page.route('**/api/me', (route) => route.fulfill(json(bootstrap)));
   await page.route('**/api/training/ratings', (route) => route.fulfill(json(ratings)));
-  await page.route('**/api/training/exam-choices', (route) => route.fulfill(json({ examiners, positions })));
+  await page.route('**/api/training/exam-choices', (route) =>
+    route.fulfill(json({ ratings: examined, examiners, positions })),
+  );
   await page.route('**/api/training/exams?**', (route) => {
     seen.lists.push(decodeURIComponent(route.request().url()));
     return route.fulfill(json({ items: rows, page: 1, pageSize: 25, total: rows.length }));
@@ -275,6 +279,8 @@ test('an advisor enters an exam of their own, and a refusal of the server lands 
 
   const rating = page.getByText(words.exams.fields.rating!, { exact: true }).locator('..');
   await rating.getByRole('combobox').click();
+  // Every rating of the path the server offers for an exam, the eighth too, which nobody trains for (#178).
+  await expect(page.getByRole('option', { name: /SEC/ })).toBeVisible();
   await page.getByRole('option', { name: /ADC/ }).click();
   await page.getByLabel(words.exams.fields.position!, { exact: true }).click();
   await page.getByRole('option', { name: /Example Tower/ }).click();

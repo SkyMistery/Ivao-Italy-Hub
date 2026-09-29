@@ -18,8 +18,9 @@ import { staffTrainingHref } from './trainings';
  */
 
 /**
- * The dates a trainee chooses among (§2.5, d1): while the training waits for its date, the ones still to come — the server sends
- * only those, and one that goes by while the page is open is offered no more —, the soonest first.
+ * The dates a trainee chooses among (§2.5, d1): while the training waits for its date, the ones still to come, the soonest first.
+ * The server sends only those; `now` is the moment the page was drawn, so one that goes by while the page is open stays until the
+ * page is read again, and the server refuses it if chosen.
  */
 export function choosableSlots(training: TraineeTrainingDto, now: number): TraineeSlotDto[] {
   if (training.state !== 'Assigned') {
@@ -190,7 +191,8 @@ export function isHubAddress(href: string): boolean {
 
 /**
  * What the staff may do on the dates of a training (§2.5), as the server's answer on the row allows (`canConduct`): propose dates
- * and take one back while it waits for its date, set the date by hand then and once it has one.
+ * and take one back while it waits for its date, set the date by hand then and once it has one — until its session starts, when
+ * the server stops offering it and the session is recorded instead (#149).
  */
 export function dateSteps(training: StaffTrainingDto): {
   readonly propose: boolean;

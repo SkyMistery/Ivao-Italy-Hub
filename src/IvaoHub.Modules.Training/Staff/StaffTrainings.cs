@@ -102,9 +102,11 @@ public sealed class StaffTrainings(
 
         var canDecide = training.State == TrainingState.Requested && await MayAsync(training, TrainingPermissions.Approve);
         var canAssign = IsAssignable(training.State) && await MayAsync(training, TrainingPermissions.Assign);
-        var canConduct = TrainingDates.IsDatable(training.State) && await MayAsync(training, TrainingPermissions.Conduct);
-        var canClose = TrainingDates.IsClosable(training.State) && await MayAsync(training, TrainingPermissions.Approve);
-        var canRecordOutcome = TrainingSessions.IsRecordable(training, clock.UtcNow) && await MayAsync(training, TrainingPermissions.Conduct);
+        // A session that has started is recorded: its date is no longer set by hand, nor the training closed (#149).
+        var started = TrainingSessions.IsRecordable(training, clock.UtcNow);
+        var canConduct = TrainingDates.IsDatable(training.State) && !started && await MayAsync(training, TrainingPermissions.Conduct);
+        var canClose = TrainingDates.IsClosable(training.State) && !started && await MayAsync(training, TrainingPermissions.Approve);
+        var canRecordOutcome = started && await MayAsync(training, TrainingPermissions.Conduct);
 
         var page = new StaffTrainingDto(
             training.Id,

@@ -116,6 +116,11 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
   Something moved in the database by hand while the code stayed the same (`dotnet ef database update <older>`, a
   template setting deleted to seed it again) is not seen: delete that row too, and the next start does everything.
   `diagnostics/starts.txt` says which of the two a start did.
+- **A MariaDB deadlock is not a `DbUpdateException`**: EF reports it as an `InvalidOperationException` ("likely due to
+  a transient failure") with the `MySqlException` two levels down, so a `catch (DbUpdateException)` lets it through. Walk
+  the chain for `MySqlErrorCode.LockDeadlock`. Two inserts of the same key meet as one whenever the row was just deleted
+  and not purged yet. To wait for a lock in a test, poll `information_schema.INNODB_TRX` no more often than every
+  100 ms: read faster, InnoDB keeps answering from its cache.
 - **Quartz cron expressions run in local time.**
 - **CI does not run `dotnet format`** on the whole solution; format the files you touch
   (`dotnet format --include <files>`).

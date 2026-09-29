@@ -445,7 +445,8 @@ public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
     /// <summary>
     /// A training of <paramref name="trainee"/> taken through every step that writes something reserved, by the coordinator: a session
-    /// rescheduled with its notes, a date set by hand a moment ago, and the report with a note on the item and a comment for the staff.
+    /// rescheduled with its notes, a date set by hand that the installation then moves to a moment ago — nobody dates a training in the
+    /// past (the maintainer's answer on #149) —, and the report with a note on the item and a comment for the staff.
     /// </summary>
     private async Task<long> ReportedWithNotesAsync(int trainee, long item, string whose, CancellationToken cancellationToken)
     {
@@ -454,10 +455,12 @@ public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
         var version = (await PageAsync(coordinator, id, cancellationToken)).GetProperty("rowVersion").GetDateTime();
         var rescheduled = await ReadAsync(await StepAsync(coordinator, id, "reschedule", new { notes = $"trn-test-reserved: {whose}, session", rowVersion = version }, cancellationToken), HttpStatusCode.OK, cancellationToken);
-        var set = await ReadAsync(
-            await StepAsync(coordinator, id, "date", new { startsAtUtc = DateTime.UtcNow.AddMinutes(-10), confirmed = true, rowVersion = rescheduled.GetProperty("rowVersion").GetDateTime() }, cancellationToken),
+        await ReadAsync(
+            await StepAsync(coordinator, id, "date", new { startsAtUtc = DateTime.UtcNow.AddHours(1), confirmed = true, rowVersion = rescheduled.GetProperty("rowVersion").GetDateTime() }, cancellationToken),
             HttpStatusCode.OK,
             cancellationToken);
+        await StartedAMomentAgoAsync(id, cancellationToken);
+        var set = await PageAsync(coordinator, id, cancellationToken);
         await ReadAsync(
             await StepAsync(
                 coordinator,
@@ -520,6 +523,16 @@ public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetim
         await using var scope = _factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<TrainingDbContext>().TraineeBans.IgnoreQueryFilters()
             .CountAsync(ban => ban.Vid == vid, cancellationToken);
+    }
+
+    /// <summary>A dated training whose session the installation moves to ten minutes ago, so that it may be recorded.</summary>
+    private async Task StartedAMomentAgoAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
+        var training = await database.Trainings.IgnoreQueryFilters().SingleAsync(row => row.Id == id, cancellationToken);
+        training.ScheduledStartUtc = DateTime.UtcNow.AddMinutes(-10);
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>A ban until somebody lifts it, written as the installation.</summary>

@@ -221,7 +221,7 @@
       "title": "Choose the date of the session",
       "lead": "Your trainer proposed these dates. Choose one: the session is fixed, and you both receive an email. If none of them suits you, write to your trainer.",
       "choose": "Choose this date",
-      "confirmTitle": "Fix the session on {{when}} UTC?",
+      "confirmTitle": "Fix the session on {{when}} UTC, that is {{local}}?",
       "confirmDescription": "Your trainer receives an email, and so do you. Only your trainer changes a date once it is fixed.",
       "confirm": "Yes, fix the session",
       "chosen": "Session fixed: {{when}} UTC.",
@@ -394,7 +394,8 @@
       "noWarnings": "No warning when it was proposed.",
       "warning": {
         "training": "{{ladder}} training {{what}}, {{when}} UTC",
-        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC",
+        "anyKind": "In the calendar"
       },
       "met": {
         "confirmTitle": "Something is in the calendar on those days already: look at the warnings, and confirm if the dates are fine all the same.",
@@ -548,8 +549,8 @@
       "whose": "Yours"
     },
     "hints": {
-      "rating": "The rating examined: only the ratings with a practical training can be chosen.",
-      "position": "For an ATC exam only: a position of the division the rating is trained on. Empty for a pilot's exam.",
+      "rating": "The rating examined: any rating of the path, the ones nobody trains for too.",
+      "position": "Only for the exam of a rating trained on positions: one of the division's for that rating. Empty for any other exam.",
       "candidateVid": "Who is examined, by VID only. Nobody examines themselves.",
       "examinerVid": "The exam is assigned to them: they change it and take it off the calendar. An advisor enters only their own exams."
     },
@@ -676,15 +677,19 @@
     "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that meets it.",
     "dateNotConfirmed": "Something is in the calendar on that day already: look at the warnings and confirm the date.",
     "trainingNotClosable": "Only an accepted training that is still going on can be closed.",
+    "sessionStarted": "The session has already started: record how it went, a no-show or a reschedule instead.",
     "sessionNotRecordable": "What a session came to is recorded only on a dated training, once its session has started.",
     "reportMockExamAgain": "This training is a mock exam already: the one after it is not another mock exam.",
     "sheetChanged": "The sheet of this training changed meanwhile: reload the page.",
     "evaluationGradeOnTheory": "An item of theory has no grade: it is marked done, not done or to improve.",
     "evaluationMarkOnPractice": "An item of practice is not marked done: it has a grade from 1 to 5.",
+    "evaluationItemTwice": "An item of the sheet is written twice in this report.",
+    "evaluationMarkUnknown": "That mark is not one the sheet has.",
     "banEndsInThePast": "The end of the ban has already gone by.",
     "banAlreadyHolds": "A ban already holds on this member: lift it before giving another.",
     "banNotHolding": "This ban no longer holds: there is nothing to lift.",
-    "examPositionNotAsked": "An exam on this path has no position.",
+    "examRatingUnknown": "This is not a rating of the path.",
+    "examPositionNotAsked": "An exam of this rating has no position.",
     "examinerIsCandidate": "Nobody examines themselves: the examiner is not the candidate.",
     "examinerNotExaminer": "Only somebody who puts exams in the calendar, and has signed in to the hub at least once, can be the examiner."
   },
@@ -772,7 +777,7 @@
       "closedByStaff": "The training department closed it. The reason: {{reason}}",
       "closedUnanswered": "You did not choose a date among the ones your trainer proposed in the time the division gives to choose one.",
       "closedNoWait": "A closure makes you wait for nothing: you can ask for the training again whenever you want.",
-      "closedNoShow": "The trainer marked the session of {{session}} UTC as a no-show: the training did not take place because you were not there.",
+      "closedNoShow": "The session of {{session}} UTC was marked as a no-show: the training did not take place because you were not there.",
       "waitUntil": "You can ask for a training on this path again from {{date}} UTC.",
       "noWait": "You can ask for a training on this path again whenever you want.",
       "waitWaived": "The trainer took the waiting away: you can ask for your next training on this path whenever you want.",

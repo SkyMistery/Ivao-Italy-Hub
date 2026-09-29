@@ -16,7 +16,8 @@ import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
  *
  * Who is who: the trainee is the pilot of the tours (`?as=pilot`), the trainer `?as=trainer`, the staff the bench's web master
  * (every permission, not a trainer). The training is asked for, accepted, assigned and dated through the API — A6's, A7's and A8's
- * steps, whose pages their own rounds drive —; the sheet of its rating is written here, through the API, and switched off at the
+ * steps, whose pages their own rounds drive —, a few seconds ahead, and the run waits for its session to start: nobody dates a
+ * training in the past (the maintainer's answer on #149). The sheet of its rating is written here, through the API, and switched off at the
  * end: an item a report marked is never deleted (A9a). ⚠️ The report leaves the training completed for good, its session in the
  * public calendar, and the trainee's next pilot request a mock exam with no waiting: this file's name sorts after every other
  * round of the training — Playwright runs the files in the order of their names, one worker —, and the bench is made anew
@@ -75,6 +76,7 @@ interface MyTraining {
 interface StaffTraining {
   readonly state: string;
   readonly rowVersion: string;
+  readonly actions: { readonly canRecordOutcome: boolean };
 }
 
 interface SheetItemRow {
@@ -141,9 +143,9 @@ test('the trainer reschedules, then publishes a report with an item N/A and «re
       expect(written.status(), await written.text()).toBeLessThan(300);
     }
 
-    // ---------------------------------------------------------------- asked, accepted, assigned, dated in the past
+    // ---------------------------------------------------------------- asked, accepted, assigned, its session started
     const id = await acceptedAndAssigned(trainee.request, context.request, standing, opened);
-    await step(context.request, id, 'date', { startsAtUtc: yesterdayAt(16), confirmed: true });
+    await startedInAMoment(context.request, id);
 
     // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
     const trainerPage = await trainer.newPage();
@@ -174,7 +176,7 @@ test('the trainer reschedules, then publishes a report with an item N/A and «re
     ).toBeVisible();
 
     // ---------------------------------------------------------------- dated again, and the report written from the page
-    await step(context.request, id, 'date', { startsAtUtc: yesterdayAt(17), confirmed: true });
+    await startedInAMoment(context.request, id);
     await trainerPage.reload();
     await expect(
       trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.report }),
@@ -297,11 +299,25 @@ async function signIn(context: BrowserContext, as: 'pilot' | 'trainer' | null): 
   expect(response.status(), await response.text()).toBe(200);
 }
 
-/** Yesterday at that hour, in UTC: a session that has started and whose day is over, wherever the division lives. */
-function yesterdayAt(hour: number): string {
-  const moment = new Date(Date.now() - 86_400_000);
-  moment.setUTCHours(hour, 0, 0, 0);
-  return moment.toISOString().replace('.000Z', 'Z');
+/**
+ * The session dated by hand a few seconds ahead, and waited for until the server says it may be recorded: nobody dates a training
+ * in the past, and a session is recorded from its start (the maintainer's answers on #149).
+ */
+async function startedInAMoment(staff: APIRequestContext, id: number): Promise<void> {
+  await step(staff, id, 'date', {
+    startsAtUtc: new Date(Date.now() + 10_000).toISOString(),
+    confirmed: true,
+  });
+  await expect
+    .poll(
+      async () => {
+        const now = await staff.get(`/api/training/trainings/${String(id)}`);
+        expect(now.status(), await now.text()).toBe(200);
+        return ((await now.json()) as StaffTraining).actions.canRecordOutcome;
+      },
+      { message: 'the session has started', timeout: 60_000, intervals: [2_000] },
+    )
+    .toBe(true);
 }
 
 /** The row of the sheet an item's title names. */
@@ -362,7 +378,10 @@ async function acceptedAndAssigned(
   return id;
 }
 
-/** A training this run opened, closed by the staff while it goes on, or taken back by its trainee while nobody accepted it. */
+/**
+ * A training this run opened, closed by the staff while it goes on, or taken back by its trainee while nobody accepted it; one
+ * whose session has started is recorded as a no-show instead, since nobody closes over it (#149).
+ */
 async function closeIfOpen(staff: APIRequestContext, trainee: APIRequestContext, id: number): Promise<void> {
   const now = await staff.get(`/api/training/trainings/${String(id)}`);
   if (now.status() !== 200) {
@@ -376,6 +395,8 @@ async function closeIfOpen(staff: APIRequestContext, trainee: APIRequestContext,
       data: { rowVersion: training.rowVersion },
     });
     expect(cancelled.status(), await cancelled.text()).toBe(200);
+  } else if (training.state === 'Scheduled' && training.actions.canRecordOutcome) {
+    await step(staff, id, 'no-show', {});
   } else if (['Accepted', 'Assigned', 'Scheduled'].includes(training.state)) {
     await step(staff, id, 'close', { reason: REASON });
   }
