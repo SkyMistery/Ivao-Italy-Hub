@@ -269,7 +269,13 @@ function DatesToChoose({
                 <ConfirmDialog
                   triggerText={t('training:detail.dates.choose')}
                   triggerVariant="secondary"
-                  title={t('training:detail.dates.confirmTitle', { when })}
+                  title={t('training:detail.dates.confirmTitle', {
+                    when,
+                    local: t('training:time.local', {
+                      when: spanText(slot.startsAtUtc, slot.endsAtUtc, moment, timezone),
+                      zone: timezone,
+                    }),
+                  })}
                   description={t('training:detail.dates.confirmDescription')}
                   confirmText={t('training:detail.dates.confirm')}
                   confirmVariant="primary"
