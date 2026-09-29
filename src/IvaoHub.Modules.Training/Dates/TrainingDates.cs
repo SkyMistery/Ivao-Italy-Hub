@@ -6,6 +6,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Settings;
 using IvaoHub.Modules.Training.Staff;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,12 @@ public sealed class TrainingDates(
     public const string NotSettable = "training:errors.dateNotSettable";
 
     public const string NotClosable = "training:errors.trainingNotClosable";
+
+    /// <summary>
+    /// The date set by hand, or the closing, of a training whose session has started (A9, the maintainer's answer on #149): from
+    /// then on the way is the report, the no-show or the reschedule.
+    /// </summary>
+    public const string SessionStarted = "training:errors.sessionStarted";
 
     /// <summary>The longest a date proposed may last: a session of an evening, and room to spare.</summary>
     public static readonly TimeSpan MaxSlotLength = TimeSpan.FromHours(12);
@@ -264,8 +271,8 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// The date set by hand (§2.5, d2), by whoever conducts the training — its trainer, the coordinator and the assistant —: any
-    /// moment, among the dates proposed or not, with the same warnings and the same policy. The proposals go, and both are mailed
-    /// as for a date chosen.
+    /// moment still to come, among the dates proposed or not, with the same warnings and the same policy; never over a session that
+    /// has started, which is recorded instead (A9). The proposals go, and both are mailed as for a date chosen.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> SetAsync(
         Training training,
@@ -285,12 +292,24 @@ public sealed class TrainingDates(
             return Refuse("state", NotSettable);
         }
 
+        // A session that has started is recorded, never dated again (the maintainer's answer on #149).
+        if (TrainingSessions.IsRecordable(training, clock.UtcNow))
+        {
+            return Refuse("state", SessionStarted);
+        }
+
         if (payload.StartsAtUtc is not { } written || written == default)
         {
             return Refuse("startsAtUtc", "errors.required");
         }
 
+        // Nor is a training dated in the past: that would be a session nobody held.
         var start = Utc(written);
+        if (start <= clock.UtcNow)
+        {
+            return Refuse("startsAtUtc", SlotPassed);
+        }
+
         var settings = await SettingsAsync(cancellationToken);
         var found = await WarningsAsync(training, start, endsAtUtc: null, settings, cancellationToken);
         if (DateConflicts.Refusal(settings.ConflictPolicy, found.Shown.Count, payload.Confirmed) is { } refusal)
@@ -350,7 +369,8 @@ public sealed class TrainingDates(
     /// <summary>
     /// A training closed by the staff (§2.5, R.3: the trainee never answered, or anything else), with <c>Training.Approve</c> and a
     /// reason the trainee reads: accepted and still going on — dated too, whose session then leaves the calendar and stays on
-    /// record. Nobody closes a training of their own. The trainer's grant goes the same night (A7).
+    /// record, but not once that session has started, which is recorded instead (A9). Nobody closes a training of their own. The
+    /// trainer's grant goes the same night (A7).
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> CloseAsync(
         Training training,
@@ -368,6 +388,12 @@ public sealed class TrainingDates(
         if (!IsClosable(training.State))
         {
             return Refuse("state", NotClosable);
+        }
+
+        // A session that has started is reported, a no-show or rescheduled, not closed over (the maintainer's answer on #149).
+        if (TrainingSessions.IsRecordable(training, clock.UtcNow))
+        {
+            return Refuse("state", SessionStarted);
         }
 
         var reason = string.IsNullOrWhiteSpace(payload.Reason) ? null : payload.Reason.Trim();
