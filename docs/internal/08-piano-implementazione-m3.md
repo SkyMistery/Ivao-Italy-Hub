@@ -2364,6 +2364,12 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
      non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
      ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
+- **Il passo della coda dopo #149** (29 settembre 2026: #149 unita alle 16:22 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (01016d9) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A9b riscritta —, via `(after #149)` dal titolo e `Queued after #149.` dal corpo,
+  la PR pronta a CI verde. **Verificato di nuovo, in locale** (e232236), tutto al primo giro: `dotnet build` senza avvisi; unità
+  **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; Vitest **561/561** in 71 file; smoke **131/131**; **`e2e:full` 45/45** su un banco nuovo (127.0.0.1:5107).
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
