@@ -4145,10 +4145,13 @@ export interface components {
             text?: null | string;
         };
         /**
-         * @description What the form of an exam chooses from: the examiners the reader may give an exam to — themselves, for an advisor; every examiner
-         *     the hub knows, for whoever edits the area — by VID and name, and the positions of the division the ratings are trained on.
+         * @description What the form of an exam chooses from: every rating of the two ladders, as the core's vocabulary has them (the maintainer's answer on
+         *     #178: the exams go up to the eighth rating, which nobody trains for); the examiners the reader may give an exam to — themselves, for
+         *     an advisor; every examiner the hub knows, for whoever edits the area — by VID and name; and the positions of the division the
+         *     ratings are trained on.
          */
         ExamChoicesDto: {
+            ratings: components["schemas"]["TrainingRatingDto"][];
             examiners: components["schemas"]["TrainingMemberDto"][];
             positions: components["schemas"]["TrainingPositionDto"][];
         };

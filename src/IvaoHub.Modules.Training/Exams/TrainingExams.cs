@@ -67,17 +67,23 @@ public sealed record ExamWriteDto(
     DateTime RowVersion);
 
 /// <summary>
-/// What the form of an exam chooses from: the examiners the reader may give an exam to — themselves, for an advisor; every examiner
-/// the hub knows, for whoever edits the area — by VID and name, and the positions of the division the ratings are trained on.
+/// What the form of an exam chooses from: every rating of the two ladders, as the core's vocabulary has them (the maintainer's answer on
+/// #178: the exams go up to the eighth rating, which nobody trains for); the examiners the reader may give an exam to — themselves, for
+/// an advisor; every examiner the hub knows, for whoever edits the area — by VID and name; and the positions of the division the
+/// ratings are trained on.
 /// </summary>
-public sealed record ExamChoicesDto(IReadOnlyList<TrainingMemberDto> Examiners, IReadOnlyList<TrainingPositionDto> Positions);
+public sealed record ExamChoicesDto(
+    IReadOnlyList<TrainingRatingDto> Ratings,
+    IReadOnlyList<TrainingMemberDto> Examiners,
+    IReadOnlyList<TrainingPositionDto> Positions);
 
 /// <summary>
-/// The rules of an exam on its own (design M3 §1.5, §2.8): a rating the division trains for, as the core's vocabulary says — the exam at
-/// the end of a path of the module —; on a ladder examined on positions, one of the division's for that rating, and on the other none;
-/// when; the candidate; and an examiner who is not the candidate and who puts exams in the calendar — who holds
-/// <c>Training.ManageExams</c> on the base department, as a sign in computes it (note <c>2026-09-26-gli-esaminatori</c>). Messages are
-/// i18n keys. Whether the reader may give the exam to that examiner is not a rule of the payload: the one handler answers it on the row.
+/// The rules of an exam on its own (design M3 §1.5, §2.8): a rating of its ladder, as the core's vocabulary has it — every one, trained
+/// or not, the eighth too (the maintainer's answer on #178) —; for a rating trained on a kind of position, one of the division's for
+/// it, and for any other none; when; the candidate; and an examiner who is not the candidate and who puts exams in the calendar — who
+/// holds <c>Training.ManageExams</c> on the base department, as a sign in computes it (note <c>2026-09-26-gli-esaminatori</c>). Messages
+/// are i18n keys. Whether the reader may give the exam to that examiner is not a rule of the payload: the one handler answers it on the
+/// row.
 /// </summary>
 public sealed class ExamWriteDtoValidator : AbstractValidator<ExamWriteDto>
 {
@@ -89,20 +95,20 @@ public sealed class ExamWriteDtoValidator : AbstractValidator<ExamWriteDto>
 
         RuleFor(exam => exam.Kind).IsInEnum().WithMessage("errors.required");
         RuleFor(exam => exam.Rating)
-            .Must((exam, _) => Trained(vocabulary, exam) is not null)
-            .WithMessage("training:errors.ratingNotTrained");
+            .Must((exam, _) => Examined(vocabulary, exam) is not null)
+            .WithMessage(TrainingExams.RatingUnknown);
 
         RuleFor(exam => exam.Position)
             .Cascade(CascadeMode.Stop)
             .Must(position => !string.IsNullOrWhiteSpace(position)).WithMessage("errors.required")
             .MustAsync(async (exam, position, cancellationToken) =>
-                (await directory.ForRatingAsync(Trained(vocabulary, exam)!, cancellationToken))
+                (await directory.ForRatingAsync(Examined(vocabulary, exam)!, cancellationToken))
                     .Any(offered => string.Equals(offered.Callsign, position!.Trim(), StringComparison.OrdinalIgnoreCase)))
             .WithMessage(TrainingExams.PositionUnknown)
-            .When(exam => Trained(vocabulary, exam)?.PositionType is not null);
+            .When(exam => Examined(vocabulary, exam)?.PositionType is not null);
         RuleFor(exam => exam.Position)
             .Must(string.IsNullOrWhiteSpace).WithMessage(TrainingExams.PositionNotAsked)
-            .When(exam => Trained(vocabulary, exam) is { PositionType: null });
+            .When(exam => Examined(vocabulary, exam) is { PositionType: null });
 
         RuleFor(exam => exam.StartsAtUtc).NotNull().WithMessage("errors.required");
         RuleFor(exam => exam.CandidateVid).GreaterThan(0).WithMessage("errors.required");
@@ -115,9 +121,11 @@ public sealed class ExamWriteDtoValidator : AbstractValidator<ExamWriteDto>
             .WithMessage(TrainingExams.ExaminerNotExaminer);
     }
 
-    /// <summary>The rating of the exam, when the division trains for it; none otherwise.</summary>
-    private static Rating? Trained(RatingVocabulary vocabulary, ExamWriteDto exam) =>
-        vocabulary.Find(exam.Kind, exam.Rating) is { HasPracticalTraining: true } rating ? rating : null;
+    /// <summary>
+    /// The rating of the exam, when the vocabulary knows it on the exam's ladder; none otherwise. Which ratings have an exam the vocabulary
+    /// does not say, and the module writes no rating of its own: every one of the ladder is taken.
+    /// </summary>
+    private static Rating? Examined(RatingVocabulary vocabulary, ExamWriteDto exam) => vocabulary.Find(exam.Kind, exam.Rating);
 }
 
 /// <summary>
@@ -136,6 +144,9 @@ public sealed class TrainingExams(
     IHttpContextAccessor http,
     ICurrentUser currentUser)
 {
+    /// <summary>A rating the vocabulary does not know on the exam's ladder.</summary>
+    public const string RatingUnknown = "training:errors.examRatingUnknown";
+
     /// <summary>A position that is not one of the division's for the rating: the same words as a request's.</summary>
     public const string PositionUnknown = "training:errors.requestPositionUnknown";
 
@@ -166,8 +177,9 @@ public sealed class TrainingExams(
 
     /// <summary>
     /// What the form chooses from (note 2026-09-26-le-righe-affidate-a-chi-scrive §3.6, «how the direction, the coordinator and the
-    /// assistant choose the examiner of an exam they enter for somebody else»): of the examiners, the ones the one handler lets the
-    /// reader give an exam to — an advisor only themselves, whoever edits the area every one —, by name; and the positions.
+    /// assistant choose the examiner of an exam they enter for somebody else»): every rating of the two ladders; of the examiners, the
+    /// ones the one handler lets the reader give an exam to — an advisor only themselves, whoever edits the area every one —, by name; and
+    /// the positions.
     /// </summary>
     public async Task<ExamChoicesDto> ChoicesAsync(CancellationToken cancellationToken)
     {
@@ -188,7 +200,12 @@ public sealed class TrainingExams(
             .ThenBy(member => member.Vid)
             .ToList();
 
-        return new ExamChoicesDto(examiners, await reference.PositionsAsync(cancellationToken));
+        var ratings = Enum.GetValues<RatingKind>()
+            .SelectMany(vocabulary.Ladder)
+            .Select(rating => new TrainingRatingDto(rating.Kind, rating.Number, rating.ShortName, rating.NameKey))
+            .ToList();
+
+        return new ExamChoicesDto(ratings, examiners, await reference.PositionsAsync(cancellationToken));
     }
 
     /// <summary>The exams of a page of the list, each read for whoever looks: theirs or not, and whether the handler lets them change it.</summary>
