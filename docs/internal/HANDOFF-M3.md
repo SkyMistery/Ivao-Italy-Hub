@@ -25,35 +25,6 @@ spec, e questo branch lo porta già, 8807e8a). **A10 è divisa in tre** (`08`, A
 (questa) dà ai capi FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del
 loro FIR. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
-**Ultimo aggiornamento:** 28 settembre 2026 — **fase A11a** (nucleo: i capi FIR), sul branch `m3/a11a-fir-heads-core`, **PR #159**
-verso `main`, **fuori dalla coda** come A3b e A6c. **La nota è decisa** (`decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`: sì alla
-forma, con i cinque rilievi del revisore dentro; la (a), `firStaffScope`, con IT a `own` in A11b), **A3b (#135) è unita** dal 27
-settembre, e **il codice di A11a è fatto**. **Il revisore l'ha trovato approvabile** dopo due cose
-([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5877193067)), fatte: `main` (663a355, con #145 e
-#171–#176) è entrato nel branch con un merge, e la versione è **0.3.0**. In più il calcolo, se non gli si dice `firStaffScope`, ora
-chiude. La PR aspetta la CI e il via di Carmine. **A6c (#145) è unita** il 28 settembre. La coda del training (#144, #146–#151, #153) è
-ancora aperta, con le sue correzioni in sessioni sue; i paragrafi «Che cosa ha lasciato» delle fasi della coda stanno sui loro branch
-finché non sono unite. **Le fasi dopo**: A10c (gli esami), che l'unione di #135 libera, da `m3/a10b-blocks-and-public-pages` con `main` dentro, avviata da questa
-sessione a fine A11a; A11b, A12a e A12b dopo A10c, e A11b anche dopo l'unione di #159. In C# una chiave di un modulo si chiede con il
-namespace (`training:…`, #138).
-
-**Ultimo aggiornamento:** 27 settembre 2026 — **fase A3b** (nucleo: le righe affidate a chi scrive), sul branch
-`m3/a3b-entrusted-rows`, **PR #135** verso `main`. La nota è decisa da Carmine: sì alla forma, e sì al trainer di A7 con la stessa
-regola. Il revisore ha trovato il codice approvabile appena in pari con `main`
-([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/135#issuecomment-5847984026)). `main` era 68 commit più avanti di
-5ddba1f (A4, A4a, A5, A6a, #152 e gli altri) ed è entrato nel branch con un merge; build e suite rifatte. Aspettano A3b: A7 (#146), che
-usa la regola per il trainer; A10, per gli esami; A11a (#159), che tocca lo stesso handler e lo stesso guardiano.
-
-**Ultimo aggiornamento:** 26 settembre 2026 — **fase A6a** (la richiesta, il server), sul branch `m3/a6a-request-server`, **PR #143**
-verso `main`: **A6 si è divisa in apertura** in A6a (il server) e A6b (le pagine), come `08` prevedeva. **A5 (#140) è unita** (18:44), e
-`main` è entrato nel branch con un merge insieme alla #141 del maintainer: **il revisore ora è la «sessione master»** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0), che unisce sul via di Carmine e, se un branch del collaboratore va rimesso in pari con
-`main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133) e A4 (#139) sono unite**; la fase del nucleo **A3b** (#135) è
-in bozza in una sessione sua. **Il prossimo passo** è **A6b** (le pagine della richiesta), sul branch `m3/a6b-request-pages` preparato da
-`m3/a6a-request-server`, in coda dopo #143; poi **A7**, in coda dopo A6b (dalle fasi del modulo in poi tutto migra `TrainingDbContext`:
-in fila); A7 usa A3, e A3b va avanti per conto suo prima di A10 (`08`, «Parallelismo possibile»). In C# una chiave di un modulo si chiede
-con il namespace (`training:…`, #138).
-
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
 cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
 front end e non migra niente): va avanti accanto ad A6a e A6b come A3b. La sua nota, `2026-09-26-il-suggerimento-chiuso-tiene-la-scelta`,
@@ -207,84 +178,6 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   #176), come la coda sotto. Quando #178 sarà unita, il passo della coda di A7b — `main` nel branch con un merge (mai un rebase),
   l'intestazione di A7b in cima a questo file e i blocchi nuovi di `main` sotto, build e **tutti** i test di nuovo, via la coda dal titolo
   e dal corpo, la PR pronta a CI verde — lo fa la sessione di A7b se è ancora viva, altrimenti quella della fase dopo prima di cominciare.
-
-### Che cosa ha lasciato A11a (28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159)
-
-- **Che cosa c'è** (nucleo; nota `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, **decisa** da Carmine sulla #159,
-  [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723), con i cinque
-  [rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416) dentro):
-  - **Il team di un FIR** come seconda specie di posizione di un grant: `UserGrant.PositionFirTeam` (migrazione `AddGrantFirTeam`), in
-    `positionGrants` `{ "firTeam": true, "levels": [...], "permission": "...", "scope": "..." }` senza `department` e senza nominare un
-    FIR (il `Coordinator` è il capo, l'`Assistant` il vice, l'`Advisor` un CHA). Il seme e la schermata dei permessi lo accettano solo per
-    un permesso di un'area che ha un'entità `IHasFir` (le impara il catalogo all'avvio: `LearnAreasWithAFir`, `IsOfAnAreaWithAFir`).
-  - **Con `firStaffScope: own`** ogni permesso che dà porta il FIR della posizione (`EffectivePermission.Fir`; nel claim
-    `Nome:DIP@#FIR`, letto chiuso da chi non conosce il FIR) e raggiunge solo le righe `IHasFir` di quel FIR: nell'unico handler, nel
-    guardiano (una riga che cambia FIR chiede `Edit` sui due) e nella lista generata (solo con i permessi che sono la sua lettura). Con
-    `all` è del dipartimento come ogni grant. Il personale dei dipartimenti non è mai fermato dal FIR: la regola di prima è tolta.
-  - Un claim con un dipartimento illeggibile non vale più niente (era «ogni dipartimento»).
-  - I test: `FirTeamPermissionTests` (spina dorsale, 6), `FirTeamPermissionRulesTests` (unità, 11), `grants/firTeam.test.ts`, lo smoke
-    `permissions-fir-team.spec.ts`.
-- **Che cosa deve sapere A11b** (il modulo):
-  - In `config/division.json` due righe al team del FIR — `Training.View` e `Training.Assign`, livelli `Coordinator` e `Assistant`,
-    `scope: TD` — e **`firStaffScope: own`** (risposta 2 di Carmine). Il training è già `IHasFir` e la sua area è `Training`: i grant
-    passano. La pagina, l'assegnazione e `training.approvalQueue` seguono l'unico handler, `/staff/training` il motore; i training dei
-    piloti restano di TC e TAC; un capo FIR assegna un training già accettato (non ha `Approve`).
-  - ⚠️ **Ogni permesso di un'area implica il suo `View`** (il calcolo), sullo stesso FIR: un capo con `Assign` dal team legge i training
-    del suo FIR anche senza il grant di `View`. E alla domanda senza riga l'handler gli dice sì: ogni lettore del modulo che non chiede
-    l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato uno per uno.
-  - ⚠️ **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo** (il calcolo lo legge al login): mettere `own` insieme ai grant.
-  - ⚠️ **`PermissionHolder.Has` non passa il FIR** (dalla lettura del codice): un capo FIR non è mai «titolare» di una riga, quindi nessun
-    digest né notifica «a chi può farlo» gli arriva. Se A11b ne vuole una, `Has` deve prendere il FIR: modifica del nucleo, una PR a sé.
-  - ⚠️ **`/api/me` non porta il FIR**, com'è deciso: un bottone disegnato dai permessi di `/api/me` compare anche sulle righe degli altri
-    FIR, e il server risponde 403. Ogni bottone su una riga del training passa dagli `actions` che l'handler ha risposto su quella riga.
-  - Il calcolo, se non gli si dice `firStaffScope`, prende `own`, il lato che chiude; i chiamanti dell'hub passano quello della divisione.
-- **Per chi scrive un test con i FIR**: l'host di `FirTeamPermissionTests` mostra come dire `own` e due FIR finti senza toccare i dati di
-  riferimento condivisi (una directory dei FIR di prova); VID **790080–790089** sono di A11a.
-- **Trovato, detto al revisore**: la regola del calcolo è più larga del suo commento («Edit implies View»); il vecchio calcolo delle
-  sessioni di un grant a una posizione senza dipartimento avrebbe preso anche le posizioni HQ.
-- **La fase dopo**: **A10c** (gli esami), da `m3/a10b-blocks-and-public-pages` con `main` dentro, in coda dopo #153; A11b, A12a e A12b dopo
-  A10c, e A11b anche dopo l'unione di #159, perché usa il team del FIR. Questa sessione prepara il branch di A10c e la avvia.
-
-### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145)
-
-- **Perché c'è**: la sessione di A6b l'ha trovata scrivendo lo smoke della richiesta (#144): nel **suggerimento chiuso** di `SchemaForm`
-  (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
-  una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
-  `dalberone` ha scelto una fase del nucleo a sé, come A4a.
-- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **decisa** da Carmine il 27 settembre 2026
-  come raccomandato — [la sua risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813) — alla
-  [domanda su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
-  - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
-    («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
-    della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
-    la ricerca; una scelta scrive `opened`. Nessuna schermata cambiata.
-  - la spec nuova **`web/e2e/closed-suggestion.spec.ts`** (5 prove sull'indirizzo di una voce del menu, con l'API finta), che cade sul
-    codice di `main`.
-- **Che cosa deve sapere la fase dopo**:
-  - **Dopo il merge una spec può scrivere per cercare in un campo chiuso** e poi cliccare l'opzione. Le spec di A6b
-    (`web/e2e/training-request.spec.ts`, `web/e2e/full/training-request.spec.ts`) scelgono la postazione dall'elenco **apposta**, e sono
-    in coda su #144: non si toccano in questa PR; potranno scrivere una parte del nominativo in una fase dopo il merge.
-  - ⚠️ **Non si annulla la pressione su una lista in un popover** (`onMouseDown` con `preventDefault`) per tenere il fuoco altrove:
-    **Chromium non trascina più la barra di scorrimento** di quella lista (misurato: 611 px senza, 0 con). Era la correzione proposta da
-    A6b, fatta per prima e scartata. E **Playwright headless nasconde le barre** (`--hide-scrollbars`): una prova che ne preme una le
-    riaccende con `test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })` in cima al file.
-  - ⚠️ **Dopo una pressione sulla lista il fuoco sta nella lista** (come prima di A6c): un tasto scritto lì non va nella casella; le
-    frecce e Invio sono di `cmdk`, e un clic sulla casella ci torna con la ricerca di prima.
-  - Nessun VID e nessuno slug usati.
-- **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
-  file e nella tabella di `08`, e si tengono tutti i paragrafi.
-- **Dopo la risposta e la revisione** (28 settembre 2026;
-  [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725)):
-  - la nota è decisa, con la risposta e il link; lo dicono anche `08` e questo file;
-  - `main` è entrato nel branch con un merge (b468d24: #142–#172, fra cui A6a, A3b e #152), con i conflitti solo in `08` e qui,
-    risolti tenendo tutto; build e suite rifatte (i numeri sono in `08`, A6c, «Le correzioni della revisione»);
-  - ⚠️ **il Tab dalla lista non esce dalla pagina**: finché la lista è aperta, Radix mette uno
-    `<span data-radix-focus-guard tabindex="0">` in fondo a `<body>`, dopo il portale. Il Tab ci arriva, e la lista si chiude con la
-    regola (misurato; nota §3.2);
-  - ⚠️ **la scelta da sola tastiera** (scrivere, freccia giù, Invio) non funziona, neanche su `main`: la casella sta fuori dalla radice
-    di `cmdk`, e per questo Invio in una casella chiusa invia il form (conta per #144). La prende il maintainer come seguito;
-  - il punto 4 (la scelta scritta in `opened`) lo tiene solo il tempo: lo vede la prova del menu di `back-office.spec.ts`, che torna
-    nella casella mentre la lista si sta chiudendo.
 
 ### Che cosa ha lasciato A10c (28 settembre 2026, branch `m3/a10c-exams`, PR #178)
 
@@ -645,7 +538,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Le correzioni della revisione di #147** (28 settembre 2026; il dettaglio con i commit è in `08`, «Com'è andata (A8a)»):
   - **Gli avvisi salvati con una data si fermano a ciò che ogni lettore del training può leggere** (`DateConflicts.Kept`, il tetto del
     nucleo `VisibilityCeiling.For(Staff)`): chi propone vede e conferma tutto ciò che legge; la data tiene le voci di tutti, dei membri e
-    dello staff, mai quelle di un solo dipartimento. La forma degli avvisi non cambia.
+    dello staff, mai quelle di un solo dipartimento. La forma degli avvisi non cambia. ⚠️ **Il tetto è lo staff** (seconda revisione di
+    #147, punto 1): chi tenesse `Training.View` per un grant senza essere staff leggerebbe, negli avvisi salvati, i titoli delle voci
+    visibili solo allo staff. Oggi `View` lo tiene solo lo staff del TD; se un giorno lo si desse a un membro qualunque, il tetto va
+    abbassato.
   - **La chiusura tiene la data della sessione** (il registro, design §6) e toglie solo le date proposte: il calendario, il promemoria e
     «Eseguito» guardano lo stato. ⚠️ **Per A9a**: il suo commento di `Training.ScheduledStartUtc` («… closed») e il suo scostamento 2
     («come la chiusura di A8a») non valgono più (`08`, «Com'è andata (A8a)», correzione 3).
@@ -686,7 +582,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     ([commento su #146](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982)): dopo
     l'unione di #135 la fase **A7b** porta il trainer sulla regola di A3b (`IHasAssignee` sul training, `Training.Conduct` segnato
     `OnlyForAssignee` e tenuto per posizione da TA e trainer, via il grant e la sua metà del job). Nota
-    `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`; la lista della fase è in `08`, A7b.
+    `2026-09-27-il-trainer-sulla-regola-delle-righe-affidate`; la lista della fase è in `08`, A7b. ⚠️ **A7b arriva prima di ogni
+    installazione con trainer veri** ([il revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5877192345)):
+    fino ad allora, con tre assegnazioni insieme il trainer che la riga nomina può restare senza grant, e la notte non lo ridà.
   - **Le mail** `requestAccepted`, `requestRejected` (con il motivo) e `trainerAssigned` (al trainee e al trainer, ognuno nella sua
     lingua), attraverso **`TrainingMail`**, che usa anche la `requestReceived` di A6a.
   - **Le pagine** `web/src/modules/training/screens/staff.tsx`: `/staff/training` (lista generata, filtri Mostra e Percorso, voce «Richieste
@@ -726,7 +624,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Le correzioni della revisione** (28 settembre 2026, [la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527);
   i dettagli, commit per commit, in `08`, A7):
   - **Un 409 non toglie più il grant al trainer che il training nomina** (d23a812): il `catch` dell'assegnazione rilegge il training e
-    toglie il grant solo se la riga non nomina quel trainer. Il test nuovo di `TrainingStaffTests` cade sul codice di prima.
+    toglie il grant solo se la riga non nomina quel trainer. Il test nuovo di `TrainingStaffTests` cade sul codice di prima. Dopo la
+    seconda revisione (1feb55a) rilettura e rimozione stanno in `TakeBackAfterConflictAsync`, che non lancia mai: se falliscono, il 409
+    esce lo stesso, e il grant che non hanno potuto giudicare resta alla notte.
   - **Dopo un 409 la pagina dello staff si rilegge** (caf6d4e): `useStaffStep` invalida la pagina e i trainer su un errore, il form si
     ridisegna con la versione nuova, e il conflitto dell'assegnazione lo dice un avviso (`useRefused`, `isConflict`).
   - **Il giro sul banco** (2327c05): lo scheletro lascia fuori i grant con scope; la spec dello staff annulla all'inizio una richiesta
@@ -804,6 +704,96 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
       cambiano quel file;
     - `canCancel` dal server, al posto di `isCancellable` e `readyForExam`, quando A7 e A8 aggiungono stati;
     - `Training/Refusals.cs` lo toglie A10c.
+- **`main` dopo #177** (28–29 settembre 2026; i dettagli in `08`, A6b): `main` è entrato nel branch con due merge, come il revisore ha
+  chiesto per unire la PR: c90dea9 (A6c, #145, #173–#176, **#177**, la scelta da tastiera nel campo suggerito, e #179) e 4b9f6bd
+  (**A11a, #159**, unita nel frattempo). Tutte e due le volte l'unico conflitto era qui: i blocchi di A11a e di A6c stanno subito sotto
+  questo.
+  - ⚠️ **Per una spec, da #177**: in un campo chiuso che si cerca, il primo Invio sceglie l'opzione accesa (la prima mostrata) e non manda
+    il form; il form parte dal secondo. Per questo il caso dello smoke «Enter in the position asks the question» ha **un Invio in più**
+    dopo il `fill` (c3db117, [la correzione del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930)).
+    `letThrough` non cambia.
+  - Con A6c e #177 dentro, una spec può scrivere una parte del nominativo e sceglierlo, con un clic o con Invio; le spec di A6b scelgono
+    ancora dall'elenco.
+  - Suite rifatte sull'head con A11a: unità 836, integrazione intera 359, `pnpm test` 529, smoke 111, `e2e:full` 42/42 su un
+    banco nuovo.
+
+### Che cosa ha lasciato A11a (28 settembre 2026, branch `m3/a11a-fir-heads-core`, PR #159)
+
+- **Che cosa c'è** (nucleo; nota `decisions/2026-09-27-i-capi-fir-sul-loro-fir.md`, **decisa** da Carmine sulla #159,
+  [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723), con i cinque
+  [rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416) dentro):
+  - **Il team di un FIR** come seconda specie di posizione di un grant: `UserGrant.PositionFirTeam` (migrazione `AddGrantFirTeam`), in
+    `positionGrants` `{ "firTeam": true, "levels": [...], "permission": "...", "scope": "..." }` senza `department` e senza nominare un
+    FIR (il `Coordinator` è il capo, l'`Assistant` il vice, l'`Advisor` un CHA). Il seme e la schermata dei permessi lo accettano solo per
+    un permesso di un'area che ha un'entità `IHasFir` (le impara il catalogo all'avvio: `LearnAreasWithAFir`, `IsOfAnAreaWithAFir`).
+  - **Con `firStaffScope: own`** ogni permesso che dà porta il FIR della posizione (`EffectivePermission.Fir`; nel claim
+    `Nome:DIP@#FIR`, letto chiuso da chi non conosce il FIR) e raggiunge solo le righe `IHasFir` di quel FIR: nell'unico handler, nel
+    guardiano (una riga che cambia FIR chiede `Edit` sui due) e nella lista generata (solo con i permessi che sono la sua lettura). Con
+    `all` è del dipartimento come ogni grant. Il personale dei dipartimenti non è mai fermato dal FIR: la regola di prima è tolta.
+  - Un claim con un dipartimento illeggibile non vale più niente (era «ogni dipartimento»).
+  - I test: `FirTeamPermissionTests` (spina dorsale, 6), `FirTeamPermissionRulesTests` (unità, 11), `grants/firTeam.test.ts`, lo smoke
+    `permissions-fir-team.spec.ts`.
+- **Che cosa deve sapere A11b** (il modulo):
+  - In `config/division.json` due righe al team del FIR — `Training.View` e `Training.Assign`, livelli `Coordinator` e `Assistant`,
+    `scope: TD` — e **`firStaffScope: own`** (risposta 2 di Carmine). Il training è già `IHasFir` e la sua area è `Training`: i grant
+    passano. La pagina, l'assegnazione e `training.approvalQueue` seguono l'unico handler, `/staff/training` il motore; i training dei
+    piloti restano di TC e TAC; un capo FIR assegna un training già accettato (non ha `Approve`).
+  - ⚠️ **Ogni permesso di un'area implica il suo `View`** (il calcolo), sullo stesso FIR: un capo con `Assign` dal team legge i training
+    del suo FIR anche senza il grant di `View`. E alla domanda senza riga l'handler gli dice sì: ogni lettore del modulo che non chiede
+    l'handler sulla riga né passa dal motore (il percorso del trainee e i suoi ban, per esempio) va guardato uno per uno.
+  - ⚠️ **Cambiare `firStaffScope` arriva a ogni capo al suo login dopo** (il calcolo lo legge al login): mettere `own` insieme ai grant.
+  - ⚠️ **`PermissionHolder.Has` non passa il FIR** (dalla lettura del codice): un capo FIR non è mai «titolare» di una riga, quindi nessun
+    digest né notifica «a chi può farlo» gli arriva. Se A11b ne vuole una, `Has` deve prendere il FIR: modifica del nucleo, una PR a sé.
+  - ⚠️ **`/api/me` non porta il FIR**, com'è deciso: un bottone disegnato dai permessi di `/api/me` compare anche sulle righe degli altri
+    FIR, e il server risponde 403. Ogni bottone su una riga del training passa dagli `actions` che l'handler ha risposto su quella riga.
+  - Il calcolo, se non gli si dice `firStaffScope`, prende `own`, il lato che chiude; i chiamanti dell'hub passano quello della divisione.
+- **Per chi scrive un test con i FIR**: l'host di `FirTeamPermissionTests` mostra come dire `own` e due FIR finti senza toccare i dati di
+  riferimento condivisi (una directory dei FIR di prova); VID **790080–790089** sono di A11a.
+- **Trovato, detto al revisore**: la regola del calcolo è più larga del suo commento («Edit implies View»); il vecchio calcolo delle
+  sessioni di un grant a una posizione senza dipartimento avrebbe preso anche le posizioni HQ.
+- **La fase dopo**: **A10c** (gli esami), da `m3/a10b-blocks-and-public-pages` con `main` dentro, in coda dopo #153; A11b, A12a e A12b dopo
+  A10c, e A11b anche dopo l'unione di #159, perché usa il team del FIR. Questa sessione prepara il branch di A10c e la avvia.
+
+### Che cosa ha lasciato A6c (26 settembre 2026, branch `m3/a6c-closed-suggestion`, PR #145)
+
+- **Perché c'è**: la sessione di A6b l'ha trovata scrivendo lo smoke della richiesta (#144): nel **suggerimento chiuso** di `SchemaForm`
+  (`suggestionsOnly`) chi scrive una parte del valore e poi clicca un'opzione si ritrova la casella con il valore di prima — vuota su
+  una riga nuova. Vale per ogni campo chiuso dell'hub (menu, postazioni nascoste, postazione della richiesta, aerei dei tour).
+  `dalberone` ha scelto una fase del nucleo a sé, come A4a.
+- **Che cosa c'è** (nota `decisions/2026-09-26-il-suggerimento-chiuso-tiene-la-scelta.md`, **decisa** da Carmine il 27 settembre 2026
+  come raccomandato — [la sua risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855560813) — alla
+  [domanda su #145](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5849495355)):
+  - in `Suggest` (`web/src/shared/forms/SchemaForm.tsx`) **la casella e la sua lista sono un campo solo**: la regola del campo chiuso
+    («uscire con qualcosa che nessuno ha offerto rimette quello che c'era») vale quando il fuoco esce da tutte e due — dall'`onBlur`
+    della casella, o dalla chiusura della lista quando il fuoco non è nella casella —; tornare nella casella dalla lista non ricomincia
+    la ricerca; una scelta scrive `opened`. Nessuna schermata cambiata.
+  - la spec nuova **`web/e2e/closed-suggestion.spec.ts`** (5 prove sull'indirizzo di una voce del menu, con l'API finta), che cade sul
+    codice di `main`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Dopo il merge una spec può scrivere per cercare in un campo chiuso** e poi cliccare l'opzione. Le spec di A6b
+    (`web/e2e/training-request.spec.ts`, `web/e2e/full/training-request.spec.ts`) scelgono la postazione dall'elenco **apposta**, e sono
+    in coda su #144: non si toccano in questa PR; potranno scrivere una parte del nominativo in una fase dopo il merge.
+  - ⚠️ **Non si annulla la pressione su una lista in un popover** (`onMouseDown` con `preventDefault`) per tenere il fuoco altrove:
+    **Chromium non trascina più la barra di scorrimento** di quella lista (misurato: 611 px senza, 0 con). Era la correzione proposta da
+    A6b, fatta per prima e scartata. E **Playwright headless nasconde le barre** (`--hide-scrollbars`): una prova che ne preme una le
+    riaccende con `test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })` in cima al file.
+  - ⚠️ **Dopo una pressione sulla lista il fuoco sta nella lista** (come prima di A6c): un tasto scritto lì non va nella casella; le
+    frecce e Invio sono di `cmdk`, e un clic sulla casella ci torna con la ricerca di prima.
+  - Nessun VID e nessuno slug usati.
+- **La PR non va in coda**: se #143 o #144 sono unite prima, `main` entra nel branch con un merge; i conflitti stanno in cima a questo
+  file e nella tabella di `08`, e si tengono tutti i paragrafi.
+- **Dopo la risposta e la revisione** (28 settembre 2026;
+  [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/145#issuecomment-5855612725)):
+  - la nota è decisa, con la risposta e il link; lo dicono anche `08` e questo file;
+  - `main` è entrato nel branch con un merge (b468d24: #142–#172, fra cui A6a, A3b e #152), con i conflitti solo in `08` e qui,
+    risolti tenendo tutto; build e suite rifatte (i numeri sono in `08`, A6c, «Le correzioni della revisione»);
+  - ⚠️ **il Tab dalla lista non esce dalla pagina**: finché la lista è aperta, Radix mette uno
+    `<span data-radix-focus-guard tabindex="0">` in fondo a `<body>`, dopo il portale. Il Tab ci arriva, e la lista si chiude con la
+    regola (misurato; nota §3.2);
+  - ⚠️ **la scelta da sola tastiera** (scrivere, freccia giù, Invio) non funziona, neanche su `main`: la casella sta fuori dalla radice
+    di `cmdk`, e per questo Invio in una casella chiusa invia il form (conta per #144). La prende il maintainer come seguito;
+  - il punto 4 (la scelta scritta in `opened`) lo tiene solo il tempo: lo vede la prova del menu di `back-office.spec.ts`, che torna
+    nella casella mentre la lista si sta chiudendo.
 
 ### Che cosa ha lasciato A3b (26 settembre 2026, branch `m3/a3b-entrusted-rows`, PR #135)
 
