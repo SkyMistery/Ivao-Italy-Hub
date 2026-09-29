@@ -130,7 +130,13 @@ const coordinatorBootstrap = {
   ],
 };
 
-const nothing = { canDecide: false, canAssign: false, canConduct: false, canClose: false };
+const nothing = {
+  canDecide: false,
+  canAssign: false,
+  canConduct: false,
+  canClose: false,
+  canRecordOutcome: false,
+};
 const conducting = { ...nothing, canConduct: true };
 
 // ---- the trainee's side ------------------------------------------------------------------------------------------------
@@ -163,6 +169,10 @@ function mineOne(state: string, overrides: Record<string, unknown> = {}) {
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
+    cooldownWaived: false,
+    generalComment: null,
+    sheet: [],
+    sessions: [],
     rowVersion: '2026-09-26T12:00:00.123456Z',
     ...overrides,
   };
@@ -376,6 +386,12 @@ function staffTraining(state: string, overrides: Record<string, unknown> = {}) {
     closeReason: null,
     readyForMockExam: false,
     readyForExam: false,
+    cooldownWaived: false,
+    generalComment: null,
+    staffComment: null,
+    sheet: [],
+    sessions: [],
+    reservedLeftOut: false,
     actions: nothing,
     rowVersion: '2026-09-21T10:00:00.123456Z',
     ...overrides,

@@ -4,16 +4,21 @@ import type { components } from '../../shared/api/schema';
 import { readFields } from '../../shared/forms';
 
 import {
+  EMPTY_REPORT,
   EMPTY_REQUEST,
   STAFF_QUEUES,
   assignFromFormValues,
   assignSchema,
   emptySheetItem,
+  notesFromFormValues,
   ratingChoice,
   rejectSchema,
+  reportFromFormValues,
+  reportSchema,
   requestFromFormValues,
   requestSchema,
   requestSearchSchema,
+  rescheduleSchema,
   settingsFromFormValues,
   settingsSchema,
   settingsToFormValues,
@@ -273,4 +278,60 @@ test('a refusal is a reason in the reader’s words, a box of text with no rule 
   const [reason] = readFields(rejectSchema);
   expect(reason).toMatchObject({ path: 'reason', meta: { multiline: true } });
   expect(rejectSchema.parse({ reason: '' })).toEqual({ reason: '' });
+});
+
+// ---- after the session (A9) ---------------------------------------------------------------------------------------------
+
+test('the notes of a session rescheduled are a box of text that may stay empty, and an empty one is none', () => {
+  const [notes] = readFields(rescheduleSchema);
+  expect(notes).toMatchObject({ path: 'notes', meta: { multiline: true } });
+  expect(notesFromFormValues({ notes: '  ' })).toBeNull();
+  expect(notesFromFormValues({ notes: ' Too little traffic on the frequency. ' })).toBe(
+    'Too little traffic on the frequency.',
+  );
+});
+
+test('the report draws its two comments and its three boxes, and on a mock exam never «ready for the mock exam»', () => {
+  const drawn = (isMockExam: boolean) =>
+    readFields(reportSchema(isMockExam))
+      .filter((field) => field.meta.hidden !== true)
+      .map((field) => field.path);
+
+  expect(drawn(false)).toEqual([
+    'generalComment',
+    'staffComment',
+    'readyForMockExam',
+    'readyForExam',
+    'cooldownWaived',
+  ]);
+  expect(drawn(true)).toEqual(['generalComment', 'staffComment', 'readyForExam', 'cooldownWaived']);
+  expect(reportSchema(true).parse(EMPTY_REPORT)).toEqual(EMPTY_REPORT);
+});
+
+test('the report goes as the server takes it: the sheet the page wrote, the comments with an empty one as none, the boxes', () => {
+  const sheet: components['schemas']['TrainingEvaluationWriteDto'][] = [
+    { itemId: 7, grade: 4, mark: null, traineeComment: 'Clear readbacks.', staffNote: null },
+  ];
+
+  const written: components['schemas']['TrainingReportDto'] = reportFromFormValues(
+    {
+      generalComment: ' A good session. ',
+      staffComment: '',
+      readyForMockExam: true,
+      readyForExam: false,
+      cooldownWaived: true,
+    },
+    sheet,
+    '2026-09-27T10:00:00.1Z',
+  );
+
+  expect(written).toEqual({
+    sheet,
+    generalComment: 'A good session.',
+    staffComment: null,
+    readyForMockExam: true,
+    readyForExam: false,
+    cooldownWaived: true,
+    rowVersion: '2026-09-27T10:00:00.1Z',
+  });
 });

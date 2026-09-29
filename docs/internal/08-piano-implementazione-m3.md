@@ -2210,7 +2210,166 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   mappa di un tour (M2), il flake noto sotto carico, con tre giri di suite insieme —, e la spec da sola con `--repeat-each 5` **10/10**;
   **`e2e:full` 44/44** su un banco nuovo (127.0.0.1:5106).
 
-**Com'è andata (A9b)**: *(a fase chiusa)*
+**Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
+
+- **Classificata prima del codice** (`CLAUDE.md` §5): codice del modulo (caso a) dentro meccanismi che ci sono, usati così come sono
+  (caso b) — la pagina dedicata dello staff (A7) e quella del trainee (A8b); `SchemaForm` per il report nel suo insieme (i due commenti e
+  le tre caselle, con `hidden` sulla casella del mock exam) e per gli appunti della rischedula dentro `ConfirmDialog` (come «Rifiuta» di A7
+  e la chiusura di A8b), con `id` e `actionsElsewhere` per «Pubblica» chiesto prima (come la domanda sul teorico di A6b); `ConfirmDialog`
+  per il no-show e per la pubblicazione; i controlli di Atmosphere (`RadioGroupRoot`, `RadioGroupItem`, `Label`, `Textarea`, `Badge`) per le
+  righe della scheda, come la pagina di validazione dei tour segna gli errori del catalogo con `Checkbox` e `Label` e come la pagina della
+  richiesta usa già `RadioGroupRoot` (A6b); `describeProblem` per i rifiuti di una riga; `useLocalized`, `useMoment`, `Notice`,
+  `useNotice`. **Nessun file del nucleo**, nessuna nota nuova, nessuna domanda a Carmine, **nessun cambio del server**: le pagine leggono i
+  DTO di A9a così come sono (`pnpm gen:api` senza differenze).
+  - **La scheda non è un campo di `SchemaForm`** (A9a, «Trovato» 1): le sue righe hanno un'etichetta che viene dai dati (il titolo della
+    voce) e un controllo che dipende dalla sezione (il voto per la pratica, la spunta per la teoria), mentre `SchemaForm` disegna le stesse
+    caselle per ogni riga con le etichette dei file di lingua: un campo con l'etichetta dai dati, o un tipo di campo nuovo, sarebbe
+    un'estensione del nucleo, con la sua nota e la sua PR. La scheda è quindi una parte della pagina dedicata del modulo, composta con i
+    controlli di Atmosphere, e il report nel suo insieme è il form generato: la stessa divisione della pagina di validazione dei tour (M2
+    §4.3: la tabella degli errori con i controlli di Atmosphere, la decisione con il form generato). Il design §4.2 dice «la scheda (form
+    generato dalle voci)»: le righe sono generate dalle voci che il server manda, i controlli no (scostamento 1, detto al revisore).
+- **Fatto**, come il perimetro di A9b qui sopra:
+  1. **La pagina dello staff** (`screens/staff.tsx`): nella sezione «Le date», accanto alla sessione, quando il server dice
+     `actions.canRecordOutcome` (dall'inizio della sessione, A9a), una riga che dice le tre strade, **«Rischedula»** — gli appunti interni,
+     facoltativi, in un campo generato dentro `ConfirmDialog`: la sessione va fra quelle passate con i suoi appunti, il training torna ad
+     aspettare la data e la sezione ripropone da sola la proposta e la data a mano (`dateSteps`) — e **«No-show»**, chiesto prima. Una
+     sezione **«Il report»**: per ogni voce di `sheet`, nell'ordine del server, il titolo nella lingua a schermo e la sezione, i voti da 1 a
+     5 (pratica) o le spunte Fatto, Non fatto, Da migliorare (teoria) con **«N/A» per primo, e scelto finché non si sceglie altro**, il
+     commento per il trainee e la nota per lo staff; poi il form generato — il commento generale per il trainee, il commento per lo staff,
+     «Pronto per il mock exam» (mai su un mock exam: `isMockExam`), «Pronto per l'esame», «Nessuna attesa dopo questo training» —, e
+     **«Pubblica il report»**, chiesto prima. Una sezione **«Le sessioni»** con lo storico (la data in UTC e nel fuso della divisione,
+     l'esito, gli appunti interni, chi l'ha registrata e quando), e per un training completato **il report pubblicato** (chi l'ha pubblicato
+     e quando, dalla sessione `Held`; per voce il voto, la spunta o N/A, «Per il trainee: …» e «Per lo staff: …»; i due commenti; le
+     caselle). **`reservedLeftOut`**: in cima alla pagina, a un trainer che legge il proprio training, un avviso che le note che lo staff
+     scrive per sé non gli sono mostrate.
+  2. **Il report manda una voce per ogni riga della pagina**, nel suo ordine, una riga non toccata con niente segnato (N/A, d4): così
+     `sheet[2]` di un rifiuto è la terza riga a schermo, e un commento su una voce N/A arriva. **I rifiuti** (`splitReportRefusal`): quelli
+     dei campi del form generato sul loro campo; quelli di una riga (`sheet[i].grade|mark|traineeComment|staffNote`) sotto il controllo della
+     riga, nelle parole dei file di lingua (`describeProblem` su un rifiuto ridotto a quel campo, `refusalOn`); gli altri (`sheet` con
+     `sheetChanged`, `state`) sopra il form. **`sheetChanged` e un 409 rileggono la pagina** tenendo ciò che è scritto: le righe si
+     ritrovano per voce, una voce accesa nel frattempo entra N/A, e i rifiuti di riga di prima si lasciano cadere (contavano le righe di
+     prima).
+  3. **La pagina del trainee** (`screens/traineeTraining.tsx`): per un training completato **il report** — pubblicato il…, per voce il
+     voto, la spunta o N/A e il commento per lui, il commento generale, le caselle «Pronto per il mock exam», «Pronto per l'esame», «Attesa
+     tolta dal trainer» —, **mai** note riservate né appunti: il suo DTO non li ha, e la pagina non disegna nemmeno le etichette dello staff;
+     **le sessioni passate** (rischedulata, no-show, eseguita, con la data); **«che cosa succede dopo»** per `Completed` e `NoShow`
+     (`detail.next.*`) e, dal percorso di quel training in `GET /api/training/mine`, fino a quando dura l'attesa, o «Puoi chiedere il
+     prossimo training…» con «Richiedi training» e — quando il server lo dice — «Questo sarà un mock exam, come concordato con il trainer».
+  4. **`/training/mine`**: un training completato dice «Il trainer ha pubblicato il report.» e porta alla sua pagina con «Leggi il
+     report»; le caselle del report sono il pezzo comune `ReportBoxes`, con «Attesa tolta dal trainer» accanto alle due che c'erano.
+  5. **Le funzioni pure** in `screens/report.ts` (`recordsOutcome`, `choicesOf`, `sheetEntries`, `evaluationSays`, `splitReportRefusal`,
+     `refusalOn`, `asksRereading`, `publishedBy`, `nextOnTheLadder`, `OUTCOME_COLOURS`); i pezzi comuni in `screens/parts.tsx`
+     (`ReportView`, `ReportBoxes`, `SessionList`), per la pagina dello staff e per quelle del trainee; `api.ts` (i tipi nuovi, i passi
+     `reschedule`, `noShow` e `report` di `useStaffStep`); `schemas.ts` (`rescheduleSchema`, `notesFromFormValues`, `reportSchema`,
+     `EMPTY_REPORT`, `reportFromFormValues`); le parole (`outcomes`, `marks`, `report`, `sessions`, `mine.cooldownWaived|reportReady|readReport`,
+     `detail.next.Completed|NoShow`, `detail.askAgain|report|sessions`, `staff.reserved`, `staff.sections.sessions|report`,
+     `staff.session.recordable`, `staff.reschedule`, `staff.noShow`, `staff.report`) in italiano e in inglese, copiate da `pnpm i18n:sync`.
+  6. **I test**: Vitest `screens/report.test.ts` (10) e `schemas.test.ts` (3 nuovi); lo smoke `web/e2e/training-report.spec.ts` (7, con
+     l'API finta: la scheda compilata e il report pubblicato, chiesto prima; un rifiuto su una riga e la scheda cambiata che rilegge la
+     pagina; la rischedula con gli appunti e la proposta che torna; il no-show chiesto prima; il mock exam senza la sua casella e il trainer
+     che legge il proprio training; il report letto dal trainee senza niente dello staff; il no-show letto dal trainee con l'attesa); il giro
+     sul banco `web/e2e/full/training-the-report.spec.ts`, **il «fatta quando» di A9** (sotto).
+- **Scostamenti e precisazioni, piccoli**:
+  1. **La scheda è disegnata dal modulo, il report nel suo insieme dal form generato** (sopra): il design §4.2 dice «la scheda (form generato
+     dalle voci)». Detto al revisore: se Carmine vuole la scheda nel form generato, è un'estensione di `SchemaForm` (un campo con
+     l'etichetta dai dati e il controllo per sezione), fase del nucleo con la sua nota.
+  2. **«Pubblica» è chiesto prima** (`ConfirmDialog`), come ogni passo di questa pagina che non si disfa (accetta, rifiuta, ritira una
+     data, chiudi, no-show): il report non si cambia più, e il trainee lo legge subito e riceve una mail.
+  3. **Il report manda tutte le righe**, anche quelle N/A: il server accetta le due forme (A9a: una voce che nessuna riga segna, o la cui
+     riga non segna niente, è N/A), e così l'indice di un rifiuto è la riga a schermo.
+  4. **La rischedula e il no-show stanno nella sezione «Le date», accanto alla sessione; il report in una sezione sua sotto**, «Il report»,
+     che per un training completato mostra il report pubblicato: la scheda è lunga, e la sezione serve anche dopo, quando «Le date» non c'è
+     più. **Lo storico delle sessioni** è anch'esso una sezione, «Le sessioni», in ogni stato che ne ha una (anche un training chiuso dopo
+     una rischedula).
+  5. **«Che cosa succede dopo» legge anche `GET /api/training/mine`**, il percorso del training: l'attesa (`waitUntil`) o la richiesta
+     successiva con il mock exam (`refusal`, `isMockExam`), che ci sono da A6a. Nessun cambio del server.
+  6. **L'esito `Held` di una sessione si dice «Eseguita»**, come lo stato mostrato «Eseguito» (A8b).
+- **Test di A6b, A7 e A8b toccati, e perché**: lo smoke `web/e2e/training-request.spec.ts` (A6b), `web/e2e/training-staff.spec.ts` (A7) e
+  `web/e2e/training-dates.spec.ts` (A8b): i costruttori dei DTO finti hanno i campi nuovi di A9a con valori neutri (`cooldownWaived: false`,
+  `generalComment: null`, `staffComment: null`, `sheet: []`, `sessions: []`, `reservedLeftOut: false`, `canRecordOutcome: false`), perché le
+  pagine ora li leggono (una lista assente fa cadere la pagina); prettier ha riscritto su più righe due oggetti `actions`. **Nessuna
+  asserzione è cambiata.**
+- **Il giro sul banco** (`training-the-report.spec.ts`, un nome che viene dopo tutti gli altri giri del training): il trainee chiede un
+  training **pilota** (il giro di A8b lascia liberi i due percorsi), che lo staff accetta, assegna al trainer del banco e data a mano a
+  **ieri**, attraverso l'API; la spec scrive attraverso l'API tre voci della scheda di quel rating (due di pratica e una di teoria, con un
+  segno nel titolo). Il trainer, rientrato, **rischedula dalla pagina** con gli appunti — la proposta torna, e la sessione è fra quelle
+  passate con i suoi appunti —; datato di nuovo a ieri, **compila la scheda dalla pagina** (un voto con un commento e una nota, una spunta,
+  una voce lasciata N/A), il commento generale e quello per lo staff, «Pronto per il mock exam» e «Nessuna attesa…», e **pubblica**. Il
+  trainee lo legge da `/training/mine` («Leggi il report»): il voto, la spunta, N/A, il suo commento, il commento generale, le caselle, la
+  sessione rischedulata e quella eseguita — **e il testo della sua pagina non contiene né la nota, né il commento per lo staff, né gli
+  appunti** —; la sua pagina e **la richiesta successiva dicono «Questo sarà un mock exam, come concordato con il trainer»**; **la mail del
+  report arriva in Mailpit**. Alla fine le voci si spengono (una voce segnata da un report non si elimina; una che nessun report ha usato,
+  lasciata da una corsa fermata a metà, si elimina). **Nessun test di A6b, A7 o A8b è cambiato** nel giro sul banco. ⚠️ Il training resta
+  completato, con la sua sessione nel calendario pubblico, e la richiesta pilota successiva del trainee è un mock exam senza attesa: il banco
+  va ricreato prima di ogni corsa, come già scritto.
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. **Per A10**: `ReportView`, `ReportBoxes` e `SessionList` (`screens/parts.tsx`) leggono il DTO dello staff e quello del trainee: il
+     percorso del trainee (§4.2) e il blocco `training.myTraining` («l'ultimo report», §4.3) li riusano; «report da scrivere» di
+     `training.trainerQueue` è `actions.canRecordOutcome` (A9a).
+  2. **Non toccato (nucleo)**, detto al revisore: il log delle richieste scrive **500**, con un ERR e la traccia, per una
+     `DomainRefusalException` che il client riceve come **400** — `app.UseExceptionHandler()` sta fuori da `app.UseSerilogRequestLogging()`
+     (`src/IvaoHub.Web/Program.cs`), quindi il log della richiesta vede l'eccezione passare prima che il gestore la traduca —. Lo si vede sul
+     banco eliminando una voce usata da un report (`sheetItemUsed`), e vale per ogni rifiuto di questo tipo (anche i tour).
+  3. VID: A9b non ne usa; il prossimo libero resta **790052**.
+- **La coda**: A9b è nata in coda dopo #149 (A9a, in bozza in coda dopo #148, dopo #147, dopo #146, dopo #144, dopo #143): la PR è in bozza
+  con `(after #149)` e `Queued after #149.`. Quando #149 sarà unita, il passo della coda (`CONTRIBUTING.md`, «Phases in a queue»): `main` nel
+  branch con un merge, build e tutti i test di nuovo, via la coda, e la PR pronta con la CI verde.
+- **Verificato, in locale** (27 settembre 2026, sul branch da `m3/a9a-after-the-session-server`, af16a73): `dotnet build` senza avvisi
+  (nessun file C# cambiato); unità **788/788** (come A9a: la fase non ha test C#; `TrainingArchitectureTests` legge anche il TypeScript
+  nuovo del modulo, ed è verde); **integrazione intera senza filtro** **343/343** (come A9a: nessun cambio del server); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi, e lo script che confronta le chiavi letterali `training:` del modulo con i file di lingua;
+  `pnpm test` **540** in **67** file (le 527 in 66 di A9a e le 13 nuove); `pnpm e2e` **115** (le 108 e le 7 nuove; il solo training prima
+  23/24: il filtro della spec nuova su «rescheduled» prendeva anche l'avviso nell'angolo, un `li` anch'esso, e ora filtra per il badge);
+  **`pnpm e2e:full` 45** su un **banco nuovo** di questo worktree (127.0.0.1:5093, `ivaohub_e2e_a9b`) al primo giro intero, e di nuovo
+  **45/45** su un banco ricreato con una pubblicazione nuova, dopo le due correzioni trovate a mano (sotto); la spec nuova da sola si era
+  fermata prima sul posto di una voce (`sort` fino a 999: la spec aveva 9000), corretto nella spec. **Lo smoke nuovo cade sul codice di
+  A9a**: con i sei file delle pagine e delle chiamate rimessi da `m3/a9a-after-the-session-server`, `training-report.spec.ts` 0/7; rimessi
+  com'erano sul branch (e toccati), 7/7. `pnpm gen:api` senza differenze (nessun endpoint cambiato); `pnpm i18n:sync` nel commit; nessun
+  file C# toccato, quindi niente `dotnet format`; le regole di `core-guard` rifatte in PowerShell sull'intervallo della fase e sul diff
+  verso `main`: nessun file del maintainer, nessuno del nucleo. **A mano**, sul banco di anteprima (127.0.0.1:5090, `ivaohub_preview`; la
+  sessione di A8b ha spento il suo su richiesta), in italiano: come trainer, sul training pilota #7 (la sessione del 25 settembre,
+  eseguita), le tre strade accanto alla sessione, la sezione «Il report» con l'avviso di un rating senza voci, poi — scritte tre voci per
+  quel rating (pratica, teoria, pratica) — la scheda; **rischedulato dalla pagina** con gli appunti (il training di nuovo «Trainer
+  assegnato», la proposta e la data a mano di nuovo lì, «Le sessioni» con gli appunti e chi li ha registrati); datato di nuovo a mano nel
+  passato; la scheda compilata (4 con un commento e una nota, «Da migliorare», N/A), i due commenti, «Pronto per il mock exam» e «Nessuna
+  attesa…», **pubblicato**, chiesto prima; il report pubblicato. Come trainee: `/training/mine` («Il trainer ha pubblicato il report.», le
+  caselle, «Leggi il report»), la pagina di #7 con il report, le sessioni e «che cosa succede dopo» con «Questo sarà un mock exam, come
+  concordato con il trainer.» e «Richiedi training» — **e nel suo testo nessuna delle note dello staff** —; `/training/request?kind=Pilot`
+  dice il mock exam; la mail «Report pubblicato» in Mailpit. **Trovato a mano e corretto**: le linee fra le voci del report avevano il
+  colore del testo (`divide-y` senza colore, in Tailwind v4: aggiunto `divide-border`); la conferma di «Rischedula» era rossa (il
+  predefinito di `ConfirmDialog` è distruttivo): ora blu, e il no-show resta rosso. Sul banco ripubblicato con le correzioni: la pagina del
+  trainee in inglese larga 375 px, in tema chiaro e scuro; la pagina dello staff in inglese a tema scuro, con il report pubblicato e — su un
+  training nuovo del trainee, #8, un **mock exam** chiesto, accettato, assegnato e datato a ieri attraverso l'API — la scheda da compilare,
+  **senza la casella «Pronto per il mock exam»**. #8 resta sul banco di anteprima, pronto per un report scritto a mano.
+- **Non verificato**: la CI (la dirà la PR). **Un rifiuto di una riga e `sheetChanged` contro il server vero**: le pagine li trattano nello
+  smoke, con l'API finta; il lato del server è dei test d'integrazione di A9a. **Un trainer che legge il proprio training sul server vero**
+  (`reservedLeftOut`): il banco non ha un trainer che sia anche trainee; lo smoke lo disegna, e il test d'integrazione di A9a prova la
+  regola. **Il no-show attraverso le pagine sul server vero**: lo smoke lo fa con l'API finta, A9a prova il lato del server; sul banco i due
+  percorsi del trainee servono al giro del report. **Le tre strade e la scheda larghe come un telefono**: le pagine dello staff hanno il
+  difetto noto del nucleo a 375 px (A7).
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141);
+  la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
+  1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
+     (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
+  2. Un punto aspettava Carmine: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre il design §4.2 dice «la scheda
+     (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. La risposta è nella voce qui sotto.
+- **La risposta di Carmine su #150** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a9b`):
+  1. **La scheda disegnata nel modulo è accettata**: **scostamento dal design §4.2**, con il link qui. `SheetRow` resta com'è —
+     `RadioGroupRoot` e `Textarea` di Atmosphere, come `flightops/screens/review.tsx` —, e **nessuna fase del nucleo estende `SchemaForm`**
+     per la scheda. Il report nel suo insieme resta del form generato.
+  2. **Il giro sul banco non data più a ieri** (la risposta di Carmine su #149, sotto A9a: nessuno data un training nel passato): la
+     spec `training-the-report.spec.ts` data la sessione a mano **dieci secondi avanti** e aspetta che il server la dica da registrare
+     (`actions.canRecordOutcome`), sia la prima volta sia dopo la rischedula (`startedInAMoment`, al posto di `yesterdayAt`). Alla fine,
+     un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
+     non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
+     ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
+- **Il passo della coda dopo #149** (29 settembre 2026: #149 unita alle 16:22 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (01016d9) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A9b riscritta —, via `(after #149)` dal titolo e `Queued after #149.` dal corpo,
+  la PR pronta a CI verde. **Verificato di nuovo, in locale** (e232236), tutto al primo giro: `dotnet build` senza avvisi; unità
+  **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; Vitest **561/561** in 71 file; smoke **131/131**; **`e2e:full` 45/45** su un banco nuovo (127.0.0.1:5107).
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 

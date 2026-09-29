@@ -19,7 +19,8 @@ import { TraineeTrainingPage } from './screens/traineeTraining';
  * section of the back office, with the settings in it —, A5 the evaluation sheet: its items, per ladder and rating; A6 the
  * trainee's side, the request and their own trainings; A7 the staff's side, every training and the page of one, where a
  * request is accepted or refused and its trainer assigned; A8 the dates — proposed by the trainer with what they meet,
- * chosen by the trainee on the page of their training, or set by hand —, the session, and the closing.
+ * chosen by the trainee on the page of their training, or set by hand —, the session, and the closing; A9 what the session
+ * came to — rescheduled, not attended, or reported with the sheet —, on the same two pages of a training.
  */
 export const trainingManifest: ModuleManifest = {
   key: 'training',

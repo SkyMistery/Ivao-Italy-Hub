@@ -11,17 +11,18 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A9a** (dopo la sessione: il server), sul branch `m3/a9a-after-the-session-server`,
-**PR #149** verso `main`, **in cima alla coda**: #148 (A8b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A9b** (dopo la sessione: le pagine), sul branch `m3/a9b-after-the-session-pages`,
+**PR #150** verso `main`, **in cima alla coda**: #149 (A9a) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde.
 **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b
-(#148) e la fase del nucleo A11a (#159). **In coda sopra A9a**, in bozza, ognuna dopo quella sotto: A9b (#150), A10a (#151), A10b (#153),
-A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** ai due punti della revisione di #149
-([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158)): una sessione cominciata non si data più a
-mano né si chiude — si registra —, e nessuno data un training nel passato; gli scostamenti 1, 2 e 7 sono accettati. Tutto nel codice e nei
-test (A9a qui sotto, l'ultima voce). La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via
-di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»),
-e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con
-il namespace (`training:…`, #138).
+(#148), A9a (#149) e la fase del nucleo A11a (#159). **In coda sopra A9b**, in bozza, ognuna dopo quella sotto: A10a (#151), A10b (#153),
+A10c (#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** alle revisioni di #149 e di #150: una
+sessione cominciata non si data più a mano né si chiude — si registra —, nessuno data un training nel passato, e gli scostamenti 1, 2 e 7
+di A9a sono accettati ([#149](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158)); **la scheda disegnata nel
+modulo è accettata**, e nessuna fase del nucleo estende `SchemaForm` ([#150](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556)).
+Tutto nel codice, nei test e in `08` (A9a e A9b qui sotto, le ultime voci). La **sessione master** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
+suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
+senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -92,6 +93,64 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A9b (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150)
+
+- **Che cosa c'è** (codice del modulo, solo front end: nessun file del nucleo, nessun cambio del server, nessuna nota nuova, nessuna
+  migrazione):
+  - **La pagina dello staff** (`web/src/modules/training/screens/staff.tsx`): nella sezione «Le date», accanto alla sessione, quando il
+    server dice `actions.canRecordOutcome` (dall'inizio della sessione), **«Rischedula»** (gli appunti interni in un campo generato dentro
+    `ConfirmDialog`; dopo, il training è `Assigned` e la sezione ripropone da sola la proposta e la data a mano) e **«No-show»** (chiesto
+    prima). La sezione **«Il report»**: la scheda — per voce i voti da 1 a 5 o le spunte, con **«N/A» per primo e scelto**, il commento per
+    il trainee e la nota per lo staff, con i controlli di Atmosphere (`RadioGroupRoot`, `Textarea`) — e il form generato del report (i due
+    commenti, «pronto per il mock exam» mai su un mock exam, «pronto per l'esame», «nessuna attesa»), con **«Pubblica il report»** chiesto
+    prima; per un training completato il report pubblicato. La sezione **«Le sessioni»** (lo storico), e l'avviso di **`reservedLeftOut`**
+    in cima a un trainer che legge il proprio training.
+  - **La pagina del trainee** (`screens/traineeTraining.tsx`): il report (voti, spunte, N/A, i commenti per lui, il commento generale, le
+    caselle) **senza niente dello staff**, le sessioni passate, e «che cosa succede dopo» per `Completed` e `NoShow` con l'attesa o la
+    richiesta successiva — un mock exam quando il server lo dice — dal percorso di `GET /api/training/mine`. **`/training/mine`**: «Il
+    trainer ha pubblicato il report.» e «Leggi il report».
+  - **I pezzi**: le funzioni pure in `screens/report.ts` (la scheda come la manda il report — **una voce per ogni riga a schermo**, così
+    `sheet[2]` di un rifiuto è la terza riga —, i rifiuti divisi fra il form, le righe e la pagina, che cosa rilegge la pagina, chi ha
+    pubblicato, che cosa viene dopo sul percorso), `ReportView`, `ReportBoxes` e `SessionList` in `screens/parts.tsx` (per lo staff e per il
+    trainee), i passi `reschedule`, `noShow` e `report` di `useStaffStep`, `reportSchema` e `rescheduleSchema` in `schemas.ts`.
+  - **I test**: `screens/report.test.ts` e `schemas.test.ts` (Vitest), `web/e2e/training-report.spec.ts` (lo smoke),
+    `web/e2e/full/training-the-report.spec.ts` (il «fatta quando» di A9 sul banco, con la rischedula dalla pagina e la mail del report).
+- **Che cosa deve sapere la fase dopo**:
+  - **A10**: `ReportView`, `ReportBoxes` e `SessionList` leggono il DTO dello staff e quello del trainee: il percorso del trainee e il
+    blocco `training.myTraining` («l'ultimo report») li riusano; «report da scrivere» di `training.trainerQueue` è
+    `actions.canRecordOutcome`. ⚠️ **La scheda non è un campo di `SchemaForm`** (A9a, «Trovato» 1): A9b l'ha disegnata nella pagina con i
+    controlli di Atmosphere, come la validazione dei tour, e **Carmine l'ha accettata nel modulo** — scostamento dal design §4.2, nessuna
+    fase del nucleo estende `SchemaForm` ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556);
+    `08`, A9b).
+  - ⚠️ **Il banco dopo il giro di A9b**: `training-the-report.spec.ts` (il nome viene dopo tutti i giri del training) lascia un training
+    **pilota `Completed`** del trainee del banco, con la sua sessione nel calendario pubblico (datata a mano dieci secondi avanti e
+    aspettata: nel passato non si data più, la risposta di Carmine su #149), «pronto per il mock exam» e senza
+    attesa: la richiesta pilota successiva del trainee è un **mock exam**. Le tre voci della scheda che scrive (segno `trn-report` nel titolo)
+    le spegne alla fine. Una spec di A10 che vuole un percorso libero usa l'ATC, o sa del mock exam; il banco va ricreato prima di ogni
+    corsa.
+  - ⚠️ **Il log delle richieste dice 500 per un rifiuto del dominio** che il client riceve come 400 (`UseExceptionHandler` fuori da
+    `UseSerilogRequestLogging`, nucleo): un ERR con la traccia nel log del banco, per esempio eliminando una voce usata, non è un errore
+    della spec. Detto al revisore.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, lasciato acceso dalla sessione di A9b con il codice di A9b; lo script è
+    `preview-bench.ps1` nel suo scratchpad): il training pilota #7 è **completato** (rischedulato una volta, poi il report con 4/5, «Da
+    migliorare», N/A, «pronto per il mock exam», senza attesa); **#8** è il pilota successivo del trainee, un **mock exam** datato a ieri e
+    assegnato al trainer del banco, **pronto per un report** scritto a mano; #6 (ATC, LIRF_TWR) aspetta ancora la scelta fra le due date;
+    per il rating PP ci sono tre voci della scheda scritte da A9b (due di pratica e una di teoria). Il trainer è nel roster.
+  - VID: A9b non ne usa; il prossimo libero resta **790052** (A3b usa 790040–790044 e 790050–790051).
+- **Trovato, detto al revisore**: lo scostamento della scheda (sopra) e il log del nucleo (sopra); le asserzioni di A6b, A7 e A8b non sono
+  cambiate: i loro costruttori dei DTO finti dello smoke hanno i campi nuovi con valori neutri (`08`, A9b).
+- **La coda**: #149 (A9a) è unita il 29 settembre, e il passo della coda di A9b l'ha fatto la sessione che la coordina (quella di A9b non
+  c'è più): `main` nel branch con un merge — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9a —, build e
+  **tutti** i test di nuovo, via `(after #149)` dal titolo e `Queued after #149.` dal corpo, la PR pronta a CI verde. Le PR sopra prendono
+  `main` al loro passo.
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141)):
+  il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», la penultima voce).
+- **La risposta di Carmine** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556);
+  `08`, «Com'è andata (A9b)», l'ultima voce): **la scheda disegnata nel modulo è accettata** (`screens/staff.tsx`, `SheetRow`:
+  `RadioGroupRoot`, `Textarea`), scostamento dal design §4.2; nessuna fase del nucleo estende `SchemaForm`. E per la risposta su #149
+  (A9a): la spec del giro data la sessione a mano dieci secondi avanti e aspetta che cominci (`startedInAMoment`), e una corsa fermata a
+  metà chiude con un no-show il training con la sessione cominciata.
 
 ### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
 
@@ -192,7 +251,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     **chiude** sia quello sia il training pilota che chiede per sé: dopo il giro il trainee del banco non ha training aperti. Una spec di A9
     che vuole un training con la sessione passata lo chiede da sé (richiesta, accettazione e assegnazione attraverso l'API, come fa questa
     spec) e lo data a mano nel passato — l'override lo permette —, con un nome che viene dopo `training-the-dates`. Il banco va ricreato
-    prima di ogni corsa.
+    prima di ogni corsa. ⚠️ *Nel passato non più*: dopo la risposta di Carmine su #149 si data pochi secondi avanti e si aspetta (A9a, A9b).
   - ⚠️ **La voce del calendario porta a `/training/sessions/{id}`, che ancora non c'è** (la pagina pubblica della sessione è di A10): un
     visitatore che la clicca trova «non trovato». Detto al revisore.
   - ⚠️ **Il promemoria in Mailpit non si aspetta nel giro sul banco** (fino a 15 minuti di CI): lo prova il test d'integrazione di A8a, e
