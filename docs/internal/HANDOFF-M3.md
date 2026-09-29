@@ -135,10 +135,13 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - VID: A9b non ne usa; il prossimo libero resta **790052** (A3b usa 790040–790044 e 790050–790051).
 - **Trovato, detto al revisore**: lo scostamento della scheda (sopra) e il log del nucleo (sopra); le asserzioni di A6b, A7 e A8b non sono
   cambiate: i loro costruttori dei DTO finti dello smoke hanno i campi nuovi con valori neutri (`08`, A9b).
-- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, dopo #147, dopo #146, dopo #144, dopo
-  #143. Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la
-  coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9b se è ancora viva, altrimenti quella di A10 prima di
-  cominciare.
+- **La coda**: la PR è in bozza con `(after #149)` e `Queued after #149.`; #149 è in coda dopo #148, che è in cima (#147 è unita il 29
+  settembre). Quando #149 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo,
+  via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9b non c'è più).
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141)):
+  il nit della chiave di `SessionList` è corretto (`08`, «Com'è andata (A9b)», l'ultima voce). ⚠️ **Aspetta Carmine**, e il master posta la
+  risposta sulla PR: **la scheda di valutazione è disegnata a mano** (`screens/staff.tsx`, `SheetRow`: `RadioGroupRoot`, `Textarea`), mentre
+  il design §4.2 la vuole generata dalle voci; o si accetta nel modulo, o una fase del nucleo estende `SchemaForm`.
 
 ### Che cosa ha lasciato A9a (27 settembre 2026, branch `m3/a9a-after-the-session-server`, PR #149)
 

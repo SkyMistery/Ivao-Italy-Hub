@@ -2316,6 +2316,14 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   regola. **Il no-show attraverso le pagine sul server vero**: lo smoke lo fa con l'API finta, A9a prova il lato del server; sul banco i due
   percorsi del trainee servono al giro del report. **Le tre strade e la scheda larghe come un telefono**: le pagine dello staff hanno il
   difetto noto del nucleo a 375 px (A7).
+- **La revisione di #150** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891399141);
+  la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
+  1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
+     (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
+  2. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre
+     il design §4.2 dice «la scheda (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. I precedenti ci sono (la revisione
+     dei tour, la richiesta del training), ma lo scostamento è stato classificato (a)/(b) senza nota né domanda: o si accetta nel modulo,
+     o una fase del nucleo estende `SchemaForm`.
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
