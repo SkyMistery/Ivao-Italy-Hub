@@ -2578,6 +2578,14 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
   data un training nel passato). La data un'ora avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta
   `scheduled_start_utc` a dieci minuti fa come fa l'installazione, come in A9a; la versione si rilegge dalla pagina. Le asserzioni non
   cambiano. Le spec del banco di A10a non datano né chiudono niente.
+- **Il passo della coda dopo #150** (29 settembre 2026: #150 unita alle 17:23 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (b03691e) — nessun codice nuovo, `main` portava solo i documenti del passo della coda di A9b; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10a riscritta —, via `(after #150)` dal titolo e `Queued after #150.` dal corpo,
+  la PR pronta a CI verde. I due punti della revisione (l'handoff sulla seconda risposta di #135 con il «Trovato» 1 del corpo, e l'elenco
+  per A12b dei posti che non trattano ancora una persona cancellata) erano già corretti, e ci sono. **Verificato di nuovo, in locale**
+  (d28cc98), tutto al primo giro: `dotnet build` senza avvisi; unità **860/860**; integrazione intera **393/393**; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`, `i18n:check` verdi; Vitest **567/567** in 72 file; smoke
+  **136/136**; **`e2e:full` 46/46** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A10b)**: *(a fase chiusa)*
 
