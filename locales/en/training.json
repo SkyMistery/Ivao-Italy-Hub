@@ -575,7 +575,8 @@
     "open": "Trainings still open: asked for, accepted, assigned or dated",
     "exams": "Exams in the calendar where they are the candidate",
     "bansInForce": "Training bans still in force, kept with the VID until they are over",
-    "bansOver": "Training bans over or lifted"
+    "bansOver": "Training bans over or lifted",
+    "assigned": "Open trainings of other members assigned to them: they stay with a deleted person as their trainer, among the trainings to assign"
   },
   "sheets": {
     "title": "Evaluation sheet",

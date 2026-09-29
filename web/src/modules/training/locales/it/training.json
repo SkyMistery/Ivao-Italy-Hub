@@ -574,7 +574,8 @@
     "open": "Training ancora aperti: chiesti, accettati, assegnati o datati",
     "exams": "Esami nel calendario in cui è il candidato",
     "bansInForce": "Ban dal training ancora in vigore, tenuti con il VID finché non finiscono",
-    "bansOver": "Ban dal training finiti o tolti"
+    "bansOver": "Ban dal training finiti o tolti",
+    "assigned": "Training aperti di altri membri affidati a lui: restano a una persona cancellata come trainer, fra quelli da assegnare"
   },
   "sheets": {
     "title": "Scheda di valutazione",

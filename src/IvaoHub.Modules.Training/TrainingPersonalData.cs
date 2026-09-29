@@ -29,6 +29,11 @@ namespace IvaoHub.Modules.Training;
 /// proposed, exams entered or held, bans given or lifted — stays, and so do their words, which are about others (answer 4 of the note
 /// of T20b). Nothing here writes a VID: the core writes the pseudonym into every <c>vid</c>/<c>*_vid</c>/<c>*_by</c> column
 /// afterwards, the rows kept apart.
+/// <para>An open training of another member assigned to them stays assigned to the deleted person, untouched, and goes back among the
+/// trainings to assign until somebody gives it to another trainer (Carmine's answer on #189, note
+/// <c>2026-09-29-il-training-affidato-a-chi-si-cancella</c>; <c>StaffQueue.ToAssign</c>): the lines count it, so the superadmin knows
+/// before confirming. Setting it back from here would empty the audit history of that member's training (the note, §2). An exam they
+/// hold stays as it is.</para>
 /// </summary>
 public sealed class TrainingPersonalData(TrainingDbContext database, IClock clock) : IPersonalDataEraser
 {
@@ -45,7 +50,8 @@ public sealed class TrainingPersonalData(TrainingDbContext database, IClock cloc
             open: states.Count(Training.IsOpen),
             exams: await Exams(vid).CountAsync(cancellationToken),
             inForce: bans.Count(ban => ban.Holds(now)),
-            over: bans.Count(ban => !ban.Holds(now)));
+            over: bans.Count(ban => !ban.Holds(now)),
+            assigned: await AssignedToThem(vid).CountAsync(cancellationToken));
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -101,6 +107,9 @@ public sealed class TrainingPersonalData(TrainingDbContext database, IClock cloc
             }
         }
 
+        // Counted, not touched: the core writes the pseudonym as their trainer, and the staff find them among the ones to assign.
+        var assigned = await AssignedToThem(vid).CountAsync(cancellationToken);
+
         await database.SaveChangesAsync(cancellationToken);
 
         return Lines(
@@ -108,7 +117,8 @@ public sealed class TrainingPersonalData(TrainingDbContext database, IClock cloc
             open: open.Count,
             exams: exams.Count,
             inForce: bans.Count(ban => ban.Holds(now)),
-            over: bans.Count(ban => !ban.Holds(now)));
+            over: bans.Count(ban => !ban.Holds(now)),
+            assigned: assigned);
     }
 
     /// <summary>Every training the person asked for, whoever conducts it.</summary>
@@ -120,12 +130,19 @@ public sealed class TrainingPersonalData(TrainingDbContext database, IClock cloc
 
     private IQueryable<TraineeBan> Bans(int vid) => CrudSource.BackOffice<TraineeBan>(database).Where(ban => ban.Vid == vid);
 
-    private static IReadOnlyList<ErasureLine> Lines(int closed, int open, int exams, int inForce, int over) =>
+    /// <summary>The open trainings of other members assigned to the person as their trainer: the ones that go back to be assigned.</summary>
+    private IQueryable<Training> AssignedToThem(int vid) =>
+        CrudSource.BackOffice<Training>(database).Where(training => training.TrainerVid == vid
+            && training.TraineeVid != vid
+            && (training.State == TrainingState.Assigned || training.State == TrainingState.Scheduled));
+
+    private static IReadOnlyList<ErasureLine> Lines(int closed, int open, int exams, int inForce, int over, int assigned) =>
     [
         new("training:erasure.closed", closed, ErasureOutcome.Anonymised),
         new("training:erasure.open", open, ErasureOutcome.Deleted),
         new("training:erasure.exams", exams, ErasureOutcome.Deleted),
         new("training:erasure.bansInForce", inForce, ErasureOutcome.Kept),
         new("training:erasure.bansOver", over, ErasureOutcome.Anonymised),
+        new("training:erasure.assigned", assigned, ErasureOutcome.Anonymised),
     ];
 }
