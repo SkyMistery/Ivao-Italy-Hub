@@ -28,7 +28,7 @@ generati, `Refusals`, `ISubmittedByMembers`, le impostazioni dei moduli, le noti
    erano già prese (§17.1 n.16).
 3. **Il caricamento** (§17.1 n.7): una **tabella incollata** da un foglio di calcolo o un **CSV**, con una riga d'intestazione;
    **niente `.xlsx`**. Tutto o niente, i rifiuti per riga con `Refusals`; le catene controllate (ordine, aeroporto che coincide, uno
-   scalo ogni due tratte, la distanza minima fra una tratta e l'altra); aggiunge, o sostituisce gli slot pubblici **liberi**.
+   scalo ogni due tratte, almeno `bookingGapMinutes` minuti fra l'arrivo di una tratta e la partenza della successiva); aggiunge, o sostituisce gli slot pubblici **liberi**.
 4. **Gli slot privati** (§17.1 n.6): un aeroporto è per forza dell'evento, il pilota sceglie l'altro e il suo orario. Il sistema li
    **genera** dagli slot pubblici e dalla **capacità** di ogni scalo — movimenti per ora, oppure arrivi e partenze per ora,
    **configurabile per evento** —, a intervalli regolari nei buchi; rigenerare sostituisce i privati liberi. Un arrivo può chiedere

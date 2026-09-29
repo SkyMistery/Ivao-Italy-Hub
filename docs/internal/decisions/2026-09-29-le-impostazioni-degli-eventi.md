@@ -51,7 +51,6 @@ generata. **I predefiniti non conoscono la divisione**: i valori di IT (AS3, i t
 |---|---|
 | I predefiniti di IT nel codice (AS3, `rfe`…) | il fork «XX» partirebbe con un rating e dei tipi di IT |
 | 30 minuti fra due prenotazioni | Carmine: 10 |
-| Candidature chiuse 2 giorni prima e roster lo stesso giorno | lo staff non avrebbe un giorno per correggere |
 
 ## 4. Che cosa si tocca, e dove
 

@@ -33,7 +33,8 @@ raccomandato).
    (`ModuleBaseDepartment.Keep`), quindi AOD, staff dei FIR, FOD e MD lavorano su ogni evento **nella loro parte**. Il «a cura di»
    resta per chi cura **tutto** l'evento insieme all'ED (un evento con il SOD).
 4. **I grant**, in `division.json → positionGrants` (design §6.2):
-   - **EC ed EAC** tutto;
+   - **EC ed EAC** tutto **tranne `EventReports.Edit`**: dei PIREP di supporto hanno solo `View`, perché li valida chi ne ha il
+     compito, oggi l'MD (design §6.2, §5.3);
    - **EA1–9**: `Events.View` ed `Edit`, `EventRoutes.*`, `EventBookings.*`, `EventAtc.*`, `EventReports.View`;
    - **AOD, a tutti i livelli**: `Events.View`, `EventAtc.*`;
    - **staff dei FIR** (CH, ACH, CHA) con **`firTeam`**: `EventAtc.*`, sulle sole postazioni del loro FIR quando la divisione ha

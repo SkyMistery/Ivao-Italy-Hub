@@ -44,7 +44,9 @@ nominano una persona chiamate `Vid`, `…Vid` o `…By`; nota `2026-09-25-la-can
    iscrizioni e posti di **eventi non conclusi** si **cancellano** (lo slot torna libero, il turno si scopre e lo staff lo vede);
    quelli di eventi conclusi e i PIREP **restano con lo pseudonimo**, senza i dati del volo privato e senza note; **il registro di
    affidabilità diventa di nessuno** — i turni restano con lo pseudonimo e le statistiche non cambiano —; quello che la persona ha
-   fatto **come staff** resta con lo pseudonimo. Le colonne che nominano una persona seguono la convenzione del nucleo
+   fatto **come staff** resta con lo pseudonimo. **Iscrizioni e posti di un evento in presenza** sono un'estensione di questa nota al
+   design §11.1, che li elenca solo in §4-bis e in §11: dicono chi viene di persona e dove, quindi si trattano come le prenotazioni
+   (cancellati se l'evento non è concluso, e comunque dopo `inPersonRetentionMonths`). Le colonne che nominano una persona seguono la convenzione del nucleo
    (`booker_vid`, `controller_vid`, `vid`, `decided_by`, `cancelled_by`, `attendance_by`…).
 
 ## 3. Alternative scartate
@@ -63,8 +65,8 @@ nominano una persona chiamate `Vid`, `…Vid` o `…By`; nota `2026-09-25-la-can
   dati di una persona dal primo giorno. Il nucleo scrive già lo pseudonimo nelle colonne dei contesti dei moduli
   (`PersonalDataErasure` li scorre tutti), ma **non cancella** le prenotazioni degli eventi non conclusi: senza `EventsPersonalData`
   uno slot resterebbe preso da uno pseudonimo. **E8a** (nucleo) allarga `ErasureTests` al contesto degli eventi, **E8b** scrive
-  `EventsPersonalData` per le righe di M4a; **E15c** e **E17** lo allargano alle righe di M4b e di M4c.
-- **La conservazione** (`events-retention`) nasce in **E15c** per le righe dei piloti e in **E17** per quelle in presenza: la prima
+  `EventsPersonalData` per le righe di M4a; **E15b** lo allarga alle righe di M4b, **E16** e **E17** a quelle di M4c.
+- **La conservazione** (`events-retention`) nasce in **E15b** per le righe dei piloti e in **E17** per quelle in presenza: la prima
   riga da cancellare arriva 3 mesi dopo il primo evento in presenza, 24 mesi dopo il primo evento a slot.
 
 ## Da portare nel piano

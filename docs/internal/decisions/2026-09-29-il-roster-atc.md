@@ -75,7 +75,7 @@ n.9, n.10 e n.16, §17.2 n.3, §17.3 n.3.
 **E10b** (nucleo) le sessioni condivise per VID; **E10c** (nucleo) il vocabolario dei rating e le postazioni della divisione;
 **E11a** postazioni e disponibilità; **E11b** la proposta e la correzione; **E12** la pubblicazione per data, le mail, la pagina del
 roster, i turni in `/me`, la cessione, `events.atcCoverage`; **E13b** i no-show confermati e il registro; **E15a** (nucleo) e
-**E15c** le prenotazioni di IVAO accanto al roster.
+**E15b** le prenotazioni di IVAO accanto al roster.
 
 ## Da portare nel piano
 

@@ -55,7 +55,7 @@
 
 **E3a** annullare ed eliminare con `DeletePolicy`; **E3b** pubblicare, l'uscita programmata, la fine, il calendario, la ricerca, gli
 usi dei file, `events-release`; **E4** il 404 al pubblico e la lista senza i conclusi; **E8b** «Duplica» per quello che M4a ha;
-**E15c** e **E17** «Duplica» per le righe di M4b e di M4c.
+**E15b** e **E17** «Duplica» per le righe di M4b e di M4c.
 
 ## Da portare nel piano
 

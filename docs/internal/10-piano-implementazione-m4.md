@@ -89,7 +89,7 @@ Per non ripeterle trenta volte:
 | E6a | Prenotare: il server | E5 | `evt_bookings`, i verbi, la compatibilità sotto blocco, la rotazione intera, togliere |
 | E6b | Prenotare: le pagine | E6a | la lista degli slot con «Prenota», `/events/mine`, `events.myEvents`, il promemoria del giorno prima |
 | E7 | Gli slot privati | E6b | il generatore, la prenotazione del privato, la partenza collegata |
-| E8a | Nucleo: la cancellazione vede gli eventi | E7 | `ErasureTests` legge `EventsDbContext` |
+| E8a | Nucleo: la cancellazione vede gli eventi | E6a | `ErasureTests` legge `EventsDbContext` |
 | E8b | «Duplica», la cancellazione, il giro di M4a | E7, E8a | «Duplica» per M4a, `EventsPersonalData` per le righe di M4a, `pnpm e2e:full` di M4a |
 | E9 | Fuori dal repository | E8b, la produzione | il Gate Manager legge l'hub (prove su `prova-ponte-rfo`); il primo evento vero; `ivao-booking` spento (Carmine) |
 
@@ -121,7 +121,10 @@ Per non ripeterle trenta volte:
 
 **Parallelismo possibile.** Le fasi del nucleo non migrano `EventsDbContext` e vanno avanti accanto al modulo: **E1** accanto a E2 (E3a
 ne ha bisogno); **E10a–E10e** già durante M4a, ognuna in una sessione sua (nessuna migra il contesto del nucleo, per quanto si vede
-oggi; se due lo migrano, vanno in fila); **E15a** in qualunque momento prima di E15b; **E8a** dopo E7, perché legge le colonne di M4a.
+oggi; se due lo migrano, vanno in fila); **E15a** in qualunque momento prima di E15b; **E8a** dopo E6a, che porta l'ultima colonna di persona di M4a (E7 non migra).
+**Se M4c viene prima di M4b**, E16 fa nascere anche `evt_event_stats` (intera, come in E13a, che allora non la migra più) per le
+somme delle risposte, ed E17 `events-retention`; `ErasureTests` legge già il contesto degli eventi da E8a, che sta in M4a sotto
+e E16 scrive nella lista le sue colonne.
 Dalle fasi del modulo in poi tutto migra `EventsDbContext`: **in fila**. **M4c** si mette in coda dopo E8b **oppure** dopo E15b: se
 arriva prima un evento in presenza, E16–E17 vanno prima di M4b, e le fasi di M4b si accodano sopra E17 (la regola della conservazione
 qui sotto dice chi fa nascere `events-retention`).
@@ -265,7 +268,7 @@ Design §0.4, §1.1, §1.2, §1.3, §1.12, §6; note `chi-lavora-sugli-eventi`, 
    (`__EFMigrationsHistory_events`), in `IvaoHub.Web/Modules.cs`, nel `.sln`, nell'host e nei test di unità. **Migrazione
    `Initial`** con:
    - **`evt_events` intera** (design §1.2): `slug` univoco, `kind`, i cinque interruttori, `organizer`, `external_url`, `title` e
-     `summary` tradotti, `body_json`, `banner_media_id`, le cinque date, `has_roster` e `shift_minutes`, `in_person` e `venue`
+     `summary` tradotti, `body_json`, `banner_media_id`, le quattro date (`visible_from_utc`, `booking_opens_at_utc`, `starts_at_utc`, `ends_at_utc`), `has_roster` e `shift_minutes`, `in_person` e `venue`
      tradotto, `status` e `published_at`, `visibility`, `cancelled_at`, `cancelled_by`, `cancellation_note` tradotta,
      `roster_proposed_at`, `after_done_at`, **i tre limiti per l'evento** (scostamento 6 di E0), `row_version`, e le colonne del
      nucleo (maschera, audit);
@@ -277,7 +280,8 @@ Design §0.4, §1.1, §1.2, §1.3, §1.12, §6; note `chi-lavora-sugli-eventi`, 
    impostazioni), i18n `events` in `it` e `en` (`pnpm i18n:sync`); `web/src/modules/index.ts`.
 3. **Il catalogo** delle cinque aree (design §6.1), `DeniedToStakeholder` su `EventAtc.Edit` ed `EventReports.Edit`; **i
    `positionGrants`** della nota `chi-lavora-sugli-eventi` §2.4 in `config/division.json` e in `config/division.example.json`, con
-   `scope: ED`: ED `Coordinator`/`Assistant` tutto; ED `Advisor` come la nota; AOD, FOD e MD a tutti i loro livelli (`Coordinator`,
+   `scope: ED`: ED `Coordinator`/`Assistant` tutto **tranne `EventReports.Edit`** (dei PIREP solo `View`: li valida l'MD, design §6.2);
+   ED `Advisor` come la nota; AOD, FOD e MD a tutti i loro livelli (`Coordinator`,
    `Assistant`, `Advisor`); lo staff dei FIR con `firTeam: true` su `EventAtc.*`, che prende effetto in E11a.
 4. **`EventsSettings`** con i campi di M4a — `kindPresets` (chiavi che esistono nei tipi del calendario, come `conflictKinds` del
    training), `bookingGapMinutes` (10), `pilotRetentionMonths` (24), `reminderLeadHours` (24) —, dietro `Events.ManageSettings`,
@@ -522,7 +526,8 @@ Design §5.1, §9.1, §13 n.2; nota `dopo-l-evento-e-gli-award`. Branch `m4/e10a
 nota.
 
 1. **`IvaoSessionQuery`** con il VID **facoltativo**: le sessioni per aeroporto (`departureId`, `arrivalId`) e finestra, a pagine
-   (`perPage` ≤ 100) **oltre il tetto di oggi di 200**, con un limite dichiarato da chi chiama (il job lavora a lotti).
+   (la documentazione dice `perPage` fino a 100, il client ne chiede 50, «what the API was measured to accept», `IvaoTracker.cs`: la
+   misura è di E10a) **oltre il tetto di oggi di 200**, con un limite dichiarato da chi chiama (il job lavora a lotti).
 2. **Il tipo di connessione** (`connectionType`: `PILOT`, `ATC`) come filtro e nel DTO (E0, «Trovato», punto 6).
 3. **Misurato con il token vero**, prima del codice: se il token dell'applicazione basta a ogni lettura, i limiti di chiamate, la forma
    di una pagina senza VID. Le fixture con una modalità nuova di `tools/record-ivao-fixtures.mjs`, con le persone tolte.
@@ -661,7 +666,7 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
 Design §1.10, §4.5 (la proposta), §5.1, §10.2; note `dopo-l-evento-e-gli-award`, `il-roster-atc`. Branch `m4/e13a-after-checks`.
 Dopo E12, E10a ed E10b.
 
-1. **`evt_event_stats`** (migrazione): i numeri del design §1.10, per sempre.
+1. **`evt_event_stats`** (migrazione, se E16 non l'ha già fatta nascere): i numeri del design §1.10, per sempre.
 2. **`events-after`**, ogni ora, **a lotti** che finiscono dentro una richiesta, da `after_done_at` e `flown_checked_at`: per ogni
    prenotazione le sessioni del pilota fra partenza e arrivo (`flown_at`, il callsign non conta); **chi ha volato senza prenotare**
    (E10a), solo il numero; i turni con le sessioni (E10b, o il tracker ATC per VID) → presente o **no-show proposto**, con chi ha
@@ -778,6 +783,8 @@ Design §4-bis.1, §4-bis.2, §11; nota `gli-eventi-in-presenza`. Branch `m4/e16
    avvisano anche gli iscritti.
 4. **Lo staff** (`EventBookings.View`/`Edit`): le iscrizioni con **le somme**, «togli».
 5. **`EventsPersonalData`** e `ErasureTests` per le iscrizioni; l'impostazione `inPersonRetentionMonths`.
+6. **Se M4b non c'è ancora**: `evt_event_stats` nasce qui, intera (tutte le colonne del design §1.10), per le somme; E13a allora
+   non la migra.
 
 **Test**: integrazione: le risposte validate per tipo, un'obbligatoria senza risposta rifiutata; le somme; il ritiro dopo l'inizio
 rifiutato; la cancellazione di un iscritto. E2e: il pilota si iscrive rispondendo a tre domande.
