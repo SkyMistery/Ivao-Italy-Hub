@@ -61,6 +61,14 @@ public static class HubClaims
     /// </summary>
     private const char ScopeSeparator = '@';
 
+    /// <summary>
+    /// Separates, inside the scope's part, the FIR a permission is held on (M3, A11a): <c>Training.Assign:TD@#LIRR</c>.
+    /// <para>Inside the scope's part on purpose (note 2026-09-27-i-capi-fir-sul-loro-fir §3.2, the reviewer's point 1): a
+    /// reader that does not know it — a package from before a rollback, or <see cref="ParsePermission"/> — reads a scope no
+    /// row declares, and the permission reaches no row. Closed, never "every department". A scope never holds it.</para>
+    /// </summary>
+    private const char FirSeparator = '#';
+
     /// <summary>Writes a permission as a single claim value; no department means every department.</summary>
     public static string FormatPermission(EffectivePermission permission)
     {
@@ -68,34 +76,81 @@ public static class HubClaims
             ? $"{permission.Name}{DepartmentSeparator}{department}"
             : permission.Name;
 
-        return permission.ResourceScope is { Length: > 0 } scope
-            ? $"{value}{ScopeSeparator}{scope}"
+        var where = permission.Fir is { Length: > 0 } fir
+            ? $"{permission.ResourceScope}{FirSeparator}{fir}"
+            : permission.ResourceScope;
+
+        return where is { Length: > 0 }
+            ? $"{value}{ScopeSeparator}{where}"
             : value;
     }
 
-    /// <summary>Reads back a permission claim value.</summary>
+    /// <summary>
+    /// Reads back a permission claim value the way every reader before M3 read it: the scope is whatever follows <c>@</c>, a
+    /// FIR included, which no row declares — so a permission held on a FIR reaches no row through this reading.
+    /// <para>A department it cannot read is refused (<see cref="FormatException"/>) rather than read as "every department",
+    /// which is what a missing department means (M3, A11a). The cookie reader asks <see cref="ReadPermission"/>.</para>
+    /// </summary>
     public static (string Name, Department? Department, string? ResourceScope) ParsePermission(string value)
+    {
+        var (name, department, scope, readable) = Split(value);
+
+        return readable
+            ? (name, department, scope)
+            : throw new FormatException($"The permission claim '{value}' names a department this hub does not know.");
+    }
+
+    /// <summary>
+    /// Reads a permission claim value into what the cookie holds: the scope and the FIR apart (M3, A11a). Null for a claim
+    /// that names a department this hub does not know, or a FIR with no name: such a claim is worth nothing, where a missing
+    /// department would have been worth every department (note 2026-09-27-i-capi-fir-sul-loro-fir §3.2).
+    /// </summary>
+    public static EffectivePermission? ReadPermission(string value, string source)
+    {
+        var (name, department, where, readable) = Split(value);
+        if (!readable)
+        {
+            return null;
+        }
+
+        var scope = where;
+        string? fir = null;
+        if (where is not null && where.IndexOf(FirSeparator, StringComparison.Ordinal) is var hash and >= 0)
+        {
+            fir = where[(hash + 1)..];
+            scope = where[..hash];
+            if (fir.Length == 0)
+            {
+                return null;
+            }
+        }
+
+        return new EffectivePermission(name, department, source, scope is { Length: > 0 } ? scope : null, fir);
+    }
+
+    /// <summary>The name, the department and what follows <c>@</c>; not readable when the department is not one of ours.</summary>
+    private static (string Name, Department? Department, string? Where, bool Readable) Split(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        string? scope = null;
+        string? where = null;
         var at = value.IndexOf(ScopeSeparator, StringComparison.Ordinal);
         if (at >= 0)
         {
-            scope = value[(at + 1)..];
+            where = value[(at + 1)..];
             value = value[..at];
         }
 
         var separator = value.IndexOf(DepartmentSeparator, StringComparison.Ordinal);
         if (separator < 0)
         {
-            return (value, null, scope);
+            return (value, null, where, true);
         }
 
         var name = value[..separator];
         return Enum.TryParse<Department>(value[(separator + 1)..], out var department)
-            ? (name, department, scope)
-            : (name, null, scope);
+            ? (name, department, where, true)
+            : (name, null, where, false);
     }
 
     /// <summary>
@@ -191,10 +246,15 @@ public static class HubClaims
         // them (note 2026-09-13-contenuti-centralizzati, section 3.1: "the permission to see and handle
         // them all"). It used to be dropped here, which gave the permission everywhere and a list
         // of nobody's rows -- the same bug as above, one level up.
+        //
+        // ⚠️ Except a permission held on one FIR (M3, A11a): the team of a FIR is not part of the department, and sees the rows
+        // of its FIR through the permission itself — in the single handler, and in the lists that read with it
+        // (note 2026-09-27-i-capi-fir-sul-loro-fir §3.5).
         var granted = materialisedPermissions
             .Where(permission => permission.Source.StartsWith(
                 EffectivePermissionsCalculator.GrantSourcePrefix,
                 StringComparison.Ordinal))
+            .Where(permission => permission.Fir is null)
             .ToArray();
 
         var reached = materialised

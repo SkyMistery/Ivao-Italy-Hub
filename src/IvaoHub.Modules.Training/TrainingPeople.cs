@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace IvaoHub.Modules.Training;
 
 /// <summary>
-/// The people of the trainings as the hub knows them (plan §16.13: whoever signed in): their names by VID, read from the core as
-/// FlightOps reads its pilots, and how a page or a mail writes one of them. A name is never copied onto a training (design M3 §6).
+/// The people of the trainings as the hub knows them (plan §16.13: whoever signed in): their names by VID, read from the core's
+/// members, and how a page or a mail writes one of them. A name is never copied onto a training (design M3 §6).
 /// </summary>
 public sealed class TrainingPeople(HubDbContext hub)
 {

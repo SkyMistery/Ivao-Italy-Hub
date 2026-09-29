@@ -111,6 +111,11 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
   it: destructure at the call site.
 - **Playwright**: `ConfirmDialog` has role `alertdialog`; a `SchemaForm` select keeps its value after submit, so
   scope assertions to the row; list pages add `?page=1…` to their URL.
+- **A start skips the migrations and the seeds when nothing changed** since the last start that ran them: the same
+  build, the same division options, the same `seed/` (the row `startup.initialised` of `hub_division_settings`).
+  Something moved in the database by hand while the code stayed the same (`dotnet ef database update <older>`, a
+  template setting deleted to seed it again) is not seen: delete that row too, and the next start does everything.
+  `diagnostics/starts.txt` says which of the two a start did.
 - **Quartz cron expressions run in local time.**
 - **CI does not run `dotnet format`** on the whole solution; format the files you touch
   (`dotnet format --include <files>`).
