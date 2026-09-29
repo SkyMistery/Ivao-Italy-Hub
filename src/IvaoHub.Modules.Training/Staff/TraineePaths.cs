@@ -95,11 +95,15 @@ public static class TraineePathEndpoints
 {
     public const string Pattern = "/api/training/trainees";
 
+    /// <summary>
+    /// The path of a trainee by VID. A person whose data was erased is a negative number in what stays, and has no path to read (design
+    /// M3 §6.1, A12b): the route takes no VID below one, which is answered 404 like a VID the hub knows nothing of.
+    /// </summary>
     public static IEndpointRouteBuilder MapTraineePathEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet($"{Pattern}/{{vid:int}}", async (int vid, TraineePaths paths, HttpContext http) =>
+        app.MapGet($"{Pattern}/{{vid:int:min(1)}}", async (int vid, TraineePaths paths, HttpContext http) =>
                 await paths.ReadAsync(vid, http.RequestAborted) is { } path ? Results.Ok(path) : Results.NotFound())
             .WithTags("TrainingTrainees")
             .WithName("TrainingTraineePath")

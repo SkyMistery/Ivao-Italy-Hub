@@ -195,7 +195,10 @@ public sealed class TrainingBans(
         return [.. bans.Select(ban => Row(ban, names, now))];
     }
 
-    /// <summary>A ban as a row; without the names when the caller has none to give.</summary>
+    /// <summary>
+    /// A ban as a row; without the names when the caller has none to give. Nobody gave a ban the installation wrote (<c>0</c>); a ban
+    /// given by somebody whose data was erased was given by that deleted person, whom the pages name as such (A12b).
+    /// </summary>
     public static TraineeBanDto Row(TraineeBan ban, IReadOnlyDictionary<int, string> names, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(ban);
@@ -206,7 +209,7 @@ public sealed class TrainingBans(
             TrainingPeople.Member(ban.Vid, names)!,
             ban.Reason,
             ban.CreatedAt,
-            TrainingPeople.Member(ban.CreatedBy > 0 ? ban.CreatedBy : null, names),
+            TrainingPeople.Member(ban.CreatedBy != 0 ? ban.CreatedBy : null, names),
             ban.EndsAt,
             TrainingPeople.Member(ban.LiftedBy, names),
             ban.LiftedAt,
