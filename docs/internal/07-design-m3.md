@@ -696,10 +696,12 @@ meccanismo suo.
   dei testi che vanno, e la pagina dello staff riconosce la chiusura da chi l'ha fatta —; «persona cancellata» in ogni
   pagina e lista del modulo, e **nessun percorso per uno pseudonimo** (la rotta non prende un VID sotto 1); le mail che
   nominano una persona portano anche il suo VID, così la cancellazione le trova (`TrainingMail.Name`).
-- ⚠️ **Da decidere** (nota `2026-09-29-il-training-affidato-a-chi-si-cancella`, domanda sulla #189): un training aperto di
-  un altro membro, affidato a un trainer che si cancella, resta affidato allo pseudonimo; la raccomandazione è che torni
-  fra i training da assegnare e che le mail dicano «Persona cancellata». Fino alla risposta resta come lo lascia la
-  regola delle colonne.
+- **Un training aperto di un altro membro, affidato a un trainer che si cancella** (nota
+  `2026-09-29-il-training-affidato-a-chi-si-cancella`, **decisa** da Carmine sulla #189, la (a)): resta affidato alla
+  persona cancellata — l'eraser non lo tocca, e l'anteprima lo conta — e **torna fra quelli da assegnare** (la vista
+  «da assegnare» e il blocco `training.approvalQueue`), fuori da «in corso» e «da chiudere», finché «Assegna» non lo dà a
+  un altro trainer con la sua data; le mail che nominano il trainer dicono «Persona cancellata». Un esame affidato a un
+  esaminatore che si cancella resta com'è, con «Persona cancellata» nella lista; lo cambia chi tiene `Training.Edit`.
 
 ---
 

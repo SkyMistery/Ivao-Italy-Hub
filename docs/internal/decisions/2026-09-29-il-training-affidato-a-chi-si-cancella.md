@@ -1,13 +1,16 @@
 # Il training aperto affidato a chi si cancella (A12b)
 
 **Data:** 29 settembre 2026 — fase A12b di M3, PR del modulo #189, in coda dopo #187
-**Stato:** **Proposta** — la domanda di §4 è per Carmine, in [un commento sulla #189][q1]
+**Stato:** **decisa** (Carmine, 30 settembre 2026, in chat alla sessione master, e pubblicata su sua istruzione [sulla #189][a1]):
+alla domanda di §4 ([il commento che la pone][q1]) **la (a)**, come raccomandato. La parte è scritta su questo branch con i suoi test
+(§6).
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)** per la parte che chiede una scelta: che cosa fa il modulo di una riga **aperta di
 un altro membro**, affidata a chi si cancella, che la regola del modulo (nota `2026-09-25-la-cancellazione-dei-dati-di-un-trainee`)
-non dice. Il resto di A12b — l'eraser sui dati del trainee, «persona cancellata» nelle pagine, la conservazione — è (b) e non
-aspetta.
+non dice. Il resto di A12b — l'eraser sui dati del trainee, «persona cancellata» nelle pagine, la conservazione — è (b) e non ha
+aspettato.
 
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
+[a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516
 
 ## 1. Che cosa serve decidere
 
@@ -46,18 +49,34 @@ trainer resta con lo pseudonimo), ma non si perde: torna dove lo staff guarda pe
 
 ## 4. La domanda
 
-| # | Domanda | Raccomandazione | Le altre |
-|---|---|---|---|
-| 1 | Un training aperto di un altro membro, affidato a un trainer che si cancella (e un esame affidato a un esaminatore che si cancella): che cosa ne fa il modulo? | **(a)**: resta affidato alla persona cancellata; l'anteprima lo conta; torna nella vista «da assegnare» (e nel blocco) finché qualcuno non lo riassegna; le mail dicono «Persona cancellata». L'esame resta com'è | (b) rimesso «Accettato» o chiuso dall'eraser: vuole il nucleo; (c) resta affidato, e basta |
+**Carmine ha preso la raccomandazione** (30 settembre 2026, [il suo commento sulla #189][a1]).
 
-**Che cosa aspetta la risposta**: soltanto questa parte — la riga dell'anteprima, la vista, le parole delle mail — con i suoi test.
-Fino ad allora il training resta come lo lascia la regola delle colonne, cioè come (c).
+| # | Domanda | Risposta | Scartate |
+|---|---|---|---|
+| 1 | Un training aperto di un altro membro, affidato a un trainer che si cancella (e un esame affidato a un esaminatore che si cancella): che cosa ne fa il modulo? | **(a)**: resta affidato alla persona cancellata, e l'eraser non lo tocca; l'anteprima e il risultato lo contano con una riga del modulo; la vista «da assegnare» e il blocco `training.approvalQueue` lo prendono (`trainer_vid < 0`), fuori da «in corso» e «da chiudere», finché «Assegna» non lo dà a un altro trainer; le mail che nominano il trainer (la data fissata, il promemoria) dicono «Persona cancellata», mai il numero. L'esame resta com'è, con «Persona cancellata» nella lista, e lo cambia `Training.Edit`. Tutto nel modulo | (b) rimesso «Accettato» o chiuso dall'eraser: vuole il nucleo; (c) resta affidato, e basta |
 
 ## 5. Che cosa si tocca, con (a)
 
 `src/IvaoHub.Modules.Training/TrainingPersonalData.cs` (la riga), `Staff/StaffQueue.cs` (le tre viste), `TrainingMail.cs` (la
 parola per uno pseudonimo in una mail), le parole del modulo (`erasure.*`), i test d'integrazione (la vista, la riga, la mail del
 promemoria). Nessun file del nucleo.
+
+## 6. Com'è scritto
+
+- **La riga** `training:erasure.assigned` (`TrainingPersonalData`): i training `Assigned` o `Scheduled` di altri membri il cui
+  `trainer_vid` è la persona, contati e non toccati; il nucleo scrive poi lo pseudonimo.
+- **Le viste** (`StaffQueue.Narrow`): «da assegnare» prende un training `Assigned` o `Scheduled` con `trainer_vid < 0`, datato o no,
+  tenuto o no; «in corso» e «da chiudere» prendono solo un trainer che c'è (o nessuno). Ogni training resta in una vista sola (il test di
+  unità lo dice). Il blocco `training.approvalQueue` legge la stessa vista, e la conta per chi tiene `Training.Assign`.
+- **Le mail**: un solo metodo scrive una persona in una mail, parole e VID, nella lingua di chi la riceve (`TrainingMail.Name`): per uno
+  pseudonimo la parola del nucleo `people.deleted`; `TrainingPeople.IsErased` dice che cos'è uno pseudonimo (negativo, come `isErased`
+  delle pagine). A un trainer cancellato non si scrive niente. Vale per ogni mail del modulo che nomina qualcuno, non solo per le due
+  della risposta: la data fissata e il promemoria, e anche le date proposte (da chi conduce al posto del trainer), il trainer assegnato
+  e il report pubblicato, che però nominano sempre qualcuno che c'è.
+- **I test**: `TrainingTraineeTests.AnOpenTrainingOfAnErasedTrainerGoesBackAmongTheTrainingsToAssign` (integrazione: la riga, la vista e
+  il blocco, il promemoria, «Assegna» che lo riprende con la sua data, l'esame com'era) e
+  `TrainingStaffRulesTests.AnOpenTrainingWhoseTrainerWasErasedIsToAssignAndInNoOtherView` (unità). Sul codice di prima cadono tutti e due,
+  e quello d'integrazione per ogni pezzo tolto da solo.
 
 ## Da portare nel piano
 
