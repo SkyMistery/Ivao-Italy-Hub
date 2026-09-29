@@ -332,6 +332,7 @@ export function SessionList({
   timezone,
 }: {
   sessions: readonly {
+    readonly id?: number;
     readonly startsAtUtc: string;
     readonly outcome: SessionOutcome;
     readonly internalNotes?: string | null;
@@ -346,9 +347,10 @@ export function SessionList({
   return (
     <ul className="flex flex-col gap-3">
       {sessions.map((session, index) => (
-        // The server's order, the earliest first, which nothing changes while the list is on screen.
+        // The staff's sessions carry their id; the trainee's do not, and keep the server's order, the earliest first, which
+        // nothing changes while the list is on screen.
         <li
-          key={index}
+          key={session.id ?? index}
           className="border-border flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-start sm:justify-between"
         >
           <div className="flex min-w-0 flex-col gap-2">

@@ -27,6 +27,12 @@ public static class EvaluationSheet
     /// <summary>The sheet sent is not the training's any more — an item switched off or changed meanwhile —: the page reads it again.</summary>
     public const string Changed = "training:errors.sheetChanged";
 
+    /// <summary>The refusal of an item of the sheet written twice in one report.</summary>
+    public const string ItemTwice = "training:errors.evaluationItemTwice";
+
+    /// <summary>The refusal of a mark on an item of theory that is none of the marks the sheet has.</summary>
+    public const string MarkUnknown = "training:errors.evaluationMarkUnknown";
+
     /// <summary>A grade on an item of theory, which is marked instead.</summary>
     public const string GradeOnTheory = "training:errors.evaluationGradeOnTheory";
 
@@ -50,8 +56,9 @@ public static class EvaluationSheet
     /// <summary>
     /// The sheet a report fills (§1.4, §2.7): one evaluation per item, in the order given, each a copy of its item — the title, the
     /// section, the place — with the entry that marks it. An item no entry names, or whose entry marks nothing, is not applicable (d4).
-    /// Refused, field by field: an entry for an item that is not on the sheet, or a second one for the same item; a grade out of its
-    /// range, or on an item of theory; a mark on an item of practice; a comment or a note too long. Returns the sheet, or the refusals.
+    /// Refused, field by field: an entry for an item that is not on the sheet (the sheet changed), or a second one for the same item; a
+    /// grade out of its range, or on an item of theory; a mark on an item of practice, or one the sheet does not have; a comment or a
+    /// note too long. Returns the sheet, or the refusals.
     /// </summary>
     public static (IReadOnlyList<TrainingEvaluation>? Sheet, IReadOnlyDictionary<string, string[]>? Problems) Fill(
         IReadOnlyList<SheetItem> items,
@@ -67,9 +74,16 @@ public static class EvaluationSheet
         for (var index = 0; index < entries.Count; index++)
         {
             var entry = entries[index];
-            if (!onTheSheet.TryGetValue(entry.ItemId, out var item) || !marked.TryAdd(entry.ItemId, (entry, index)))
+            if (!onTheSheet.TryGetValue(entry.ItemId, out var item))
             {
                 refusals.Add(Field, Changed);
+                continue;
+            }
+
+            // An item written twice is not a sheet that changed meanwhile: reloading the page would not help.
+            if (!marked.TryAdd(entry.ItemId, (entry, index)))
+            {
+                refusals.Add(Field, ItemTwice);
                 continue;
             }
 
@@ -95,7 +109,7 @@ public static class EvaluationSheet
 
                 if (entry.Mark is { } mark && !Enum.IsDefined(mark))
                 {
-                    refusals.Add($"{row}.mark", "errors.required");
+                    refusals.Add($"{row}.mark", MarkUnknown);
                 }
             }
 

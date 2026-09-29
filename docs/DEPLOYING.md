@@ -63,7 +63,9 @@ content seed: its `START` line says `initialisation skipped` and which steps; th
 `initialisation full` and why. The mark is the row `startup.initialised` of `hub_division_settings`. After changing
 something **in the database by hand** that a start should act on (a template's seed setting deleted to seed it again),
 delete that row too, and the next start does everything
-(`docs/internal/decisions/2026-09-28-il-marcatore-d-inizializzazione.md`).
+(`docs/internal/decisions/2026-09-28-il-marcatore-d-inizializzazione.md`). A mark that cannot be written never stops a
+start: the log has a warning, the `START` line the step `marker not written`, and the next start initialises fully again
+(`docs/internal/decisions/2026-09-29-il-marcatore-che-non-si-scrive.md`).
 
 ## What the server needs
 

@@ -18,8 +18,9 @@ import { staffTrainingHref } from './trainings';
  */
 
 /**
- * The dates a trainee chooses among (§2.5, d1): while the training waits for its date, the ones still to come — the server sends
- * only those, and one that goes by while the page is open is offered no more —, the soonest first.
+ * The dates a trainee chooses among (§2.5, d1): while the training waits for its date, the ones still to come, the soonest first.
+ * The server sends only those; `now` is the moment the page was drawn, so one that goes by while the page is open stays until the
+ * page is read again, and the server refuses it if chosen.
  */
 export function choosableSlots(training: TraineeTrainingDto, now: number): TraineeSlotDto[] {
   if (training.state !== 'Assigned') {
