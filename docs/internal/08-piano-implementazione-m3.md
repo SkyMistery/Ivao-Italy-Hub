@@ -1739,6 +1739,28 @@ training e non un altro.
      come ripulirli** (i grant con motivo `training: trainer`).
   3. Nit, già detti: nessun test fa condurre un TA il training assegnato a lui; un TA passa il guardiano su qualunque training con
      l'alternativa di `Approve`, e lo fermano gli endpoint (già noto da A7).
+- **Dopo le risposte di Carmine su #149, #150 e #178** (29 settembre 2026, 528edc6, [il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/181#issuecomment-5893690389)):
+  la testa nuova di A10c unita, con tre conflitti, ognuno risolto tenendo le due parti: l'intestazione di `HANDOFF-M3.md`; il commento di
+  `TrainingDates.CloseAsync` (la regola di A9, non su una sessione cominciata, e la frase di A7b, al trainer non resta niente da
+  condurre); `TrainingSessionsTests`, che tiene il test di A7b sul coordinatore attraverso l'endpoint e quello nuovo di A9a sulla sessione
+  cominciata. `StaffTrainings` si è unito da sé: `canConduct` e `canClose` falsi a sessione cominciata, sopra la regola di A7b. Verificato:
+  build senza avvisi, unità 869, integrazione 411, Vitest 578, smoke 152, `e2e:full` 48 (127.0.0.1:5103).
+- **Il passo della coda dopo #178** (30 settembre 2026: #178 unita alle 22:10 UTC del 29; l'ha fatto la sessione che coordina la coda):
+  `main` nel branch con un merge (bde3f05) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda; un
+  conflitto, l'intestazione di `HANDOFF-M3.md`, che tiene quella di A7b riscritta; il merge toglie anche il conflitto che teneva la PR
+  senza `build-test` —, via `(after #178)` dal titolo e `Queued after #178.` dal corpo, il corpo aggiornato, la PR pronta a CI verde.
+  **La richiesta del revisore** ([#181](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/181#issuecomment-5900069674)): come
+  un'installazione che ha già girato A7 pulisce i grant con scope del trainer (motivo `training: trainer`) è scritto in `HANDOFF-M3.md`,
+  nel paragrafo di A7b — dalla schermata «Permessi», o con la stessa condizione in SQL quando sono molti. **Verificato di nuovo, in
+  locale** (1ab6040): `dotnet build` senza avvisi; unità **869/869**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; Vitest **578/578** in 76 file; **`e2e:full` 48/48** su un banco nuovo (127.0.0.1:5103).
+  Due giri caduti per la macchina, scritti tutti:
+  1. **Integrazione intera 410/411** al primo giro: `PirepTests.ABanStopsTheReportsNotTheValidationAndThePilotsPageShowsIt` (M2) non si è
+     collegato a MariaDB («Unable to connect to any of the specified MySQL hosts»); di nuovo intera, **411/411**.
+  2. **Smoke 151/152** tre volte di fila, sempre `blocks.spec.ts:150` (del nucleo: l'immagine di un blocco), la prima con
+     `net::ERR_NO_BUFFER_SPACE`, le altre due senza che l'immagine comparisse in 30 s; la spec da sola con `--repeat-each 3` **12/12**; lo
+     smoke intero con `--workers=2` **152/152**. La macchina aveva circa 1.800 connessioni in TIME_WAIT, a fine giornata; sullo stesso
+     codice, alle 17:21 del 29, lo smoke intero era stato 152/152.
 
 [d146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
 [r146]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855673527
