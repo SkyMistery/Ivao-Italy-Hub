@@ -1670,7 +1670,8 @@ banco, la raddoppierebbero.
      scelta avrebbe chiesto una chiave dal training alle date — circolare con quella in cascata dalle date al training — o due salvataggi
      per l'override.
   2. **L'override scrive solo l'inizio**, anche nel passato («una data qualunque»: una sessione tenuta prima del previsto), e nessuna
-     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto.
+     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto. ⚠️ *Superato per il passato* dalla risposta di Carmine su #149:
+     nessuno data un training nel passato (A9, «Le risposte di Carmine su #149»).
   3. **Le date si propongono insieme**, così il trainee riceve una mail sola, e con `Warn` la conferma è della proposta intera. Le regole
      di una proposta, sulla sua riga: una data ancora da venire, che finisca dopo l'inizio e duri al massimo 12 ore, non già proposta; al
      massimo 10 date ancora da venire in attesa. **Una data si ritira** finché il trainee non l'ha scelta (senza mail): il design non lo
@@ -2174,10 +2175,33 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   2. **Un giudizio fuori dall'elenco** su una voce di teoria si rifiuta con `training:errors.evaluationMarkUnknown`, non con
      `errors.required`. Il test di unità `AReportIsRefusedOnTheFieldOfTheItemItGetsWrong` dice tutti e due.
   3. **La mail del no-show** («The trainer marked…») non nomina più il trainer: il no-show lo registrano anche TC e TAC.
-  4. ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR: **una data forzata su una sessione già iniziata** (la domanda che
-     A8a aveva lasciato per A9: `SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione è cominciata; la raccomandazione è
-     rifiutarle da quando vale `TrainingSessions.IsRecordable`), e **gli scostamenti 1, 2 e 7**, che cambiano il design e vogliono la
-     sua risposta con il link.
+  4. Due punti aspettavano Carmine: **una data forzata su una sessione già iniziata** (la domanda che A8a aveva lasciato per A9) e **gli
+     scostamenti 1, 2 e 7**. Le risposte sono nella voce qui sotto.
+- **Le risposte di Carmine su #149** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158),
+  data in chat al master e postata da lui; il codice l'ha scritto la sessione che coordina la coda, sul branch temporaneo `fix3/a9a` da
+  `6020f33`):
+  1. **Gli scostamenti 1, 2 e 7 sono accettati**, con il link qui: l'esito si registra dall'inizio della sessione, un training `Completed`
+     resta nel calendario, «pronto per il mock exam» si rifiuta su un mock exam.
+  2. **Una sessione cominciata si registra, non si data più né si chiude**: da quando vale `TrainingSessions.IsRecordable`,
+     `TrainingDates.SetAsync` e `CloseAsync` rifiutano sullo stato con la chiave nuova **`training:errors.sessionStarted`** (in inglese e
+     in italiano), prima di guardare il resto del payload. La pagina dello staff smette di offrirli: in `StaffTrainings`, `canConduct` e
+     `canClose` sono falsi sulla sessione cominciata, e resta `canRecordOutcome`. Il commento di `dateSteps` (`screens/dates.ts`) lo dice.
+  3. **E nessuno data un training nel passato**: la data a mano prima di adesso si rifiuta con `slotPassed` su `startsAtUtc`, come la
+     scelta del trainee fra le date proposte — la risposta dice «(and a date in the past)». ⚠️ **Lo scostamento 2 di A8a non vale più**
+     per questa parte: l'override scriveva «anche nel passato» (una sessione tenuta prima del previsto); ora una sessione tenuta si
+     registra, e l'override è solo per un momento ancora da venire.
+  4. **I test**: il nuovo `TrainingSessionsTests.ASessionThatHasStartedIsRecordedNeitherDatedAgainNorClosed` (un `Scheduled` cominciato da
+     mezz'ora: la pagina non offre la data né la chiusura, i due passi rifiutati su `state` con `sessionStarted`, niente scritto; un
+     `Assigned` datato dieci minuti fa: `slotPassed`). Al coordinatore della classe il test dà `Training.Approve`, che gli altri test non
+     gli danno: senza, la chiusura sarebbe vietata (403) e non rifiutata. **Il test cade senza il rifiuto**, come Carmine chiede: su una
+     copia di `TrainingDates.cs` senza i tre controlli nuovi (e senza la `using` che restava inutile), la data a mano su una sessione
+     cominciata passa (200, spostata a domani) e il test cade alla riga del primo rifiuto; il file poi rimesso e ricompilato.
+  5. ⚠️ **Due test di A9a toccati, e perché**: `ASessionRescheduledTakesTheTrainingBackToItsDatesWithItsNotesAndMakesNobodyWait` e l'aiuto
+     `ReportedWithNotesAsync` datavano la seconda sessione a mano nel passato (`-30` e `-10` minuti), che ora si rifiuta. La datano un'ora
+     avanti con lo stesso passo, e l'aiuto nuovo `StartedAMomentAgoAsync` sposta `scheduled_start_utc` a dieci minuti fa come fa
+     l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
+  6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
+     pure (`daysAhead(4)`).
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
@@ -2320,10 +2344,19 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   la sessione di A9b non c'era più, il nit l'ha corretto la sessione che coordina la coda):
   1. **La chiave di `SessionList`**: le sessioni dello staff portano il loro `id` e la lista lo usa; quelle del trainee non lo portano
      (`TraineeSessionDto` ha solo l'inizio e l'esito) e restano all'indice, nell'ordine del server che niente cambia a pagina aperta.
-  2. ⚠️ **Aspetta Carmine**, e il master posta la risposta sulla PR: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre
-     il design §4.2 dice «la scheda (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. I precedenti ci sono (la revisione
-     dei tour, la richiesta del training), ma lo scostamento è stato classificato (a)/(b) senza nota né domanda: o si accetta nel modulo,
-     o una fase del nucleo estende `SchemaForm`.
+  2. Un punto aspettava Carmine: **la scheda è disegnata a mano** (`SheetRow`, scostamento 1), mentre il design §4.2 dice «la scheda
+     (form generato dalle voci)» e `CLAUDE.md` §2 vuole i form generati. La risposta è nella voce qui sotto.
+- **La risposta di Carmine su #150** (29 settembre 2026, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/150#issuecomment-5891427556),
+  data in chat al master e postata da lui; scritta dalla sessione che coordina la coda, sul branch temporaneo `fix3/a9b`):
+  1. **La scheda disegnata nel modulo è accettata**: **scostamento dal design §4.2**, con il link qui. `SheetRow` resta com'è —
+     `RadioGroupRoot` e `Textarea` di Atmosphere, come `flightops/screens/review.tsx` —, e **nessuna fase del nucleo estende `SchemaForm`**
+     per la scheda. Il report nel suo insieme resta del form generato.
+  2. **Il giro sul banco non data più a ieri** (la risposta di Carmine su #149, sotto A9a: nessuno data un training nel passato): la
+     spec `training-the-report.spec.ts` data la sessione a mano **dieci secondi avanti** e aspetta che il server la dica da registrare
+     (`actions.canRecordOutcome`), sia la prima volta sia dopo la rischedula (`startedInAMoment`, al posto di `yesterdayAt`). Alla fine,
+     un training di questa corsa con la sessione cominciata e non registrata — una corsa fermata a metà — si chiude con un **no-show**,
+     non con la chiusura dello staff, che ora lo rifiuta. Il resto della spec non cambia. ⚠️ Il racconto del giro qui sopra («datato a
+     ieri») e il giro a mano (datato «nel passato») sono di prima della risposta.
 
 ### A10 — Blocchi, pagine pubbliche, percorso, esami, ban
 
