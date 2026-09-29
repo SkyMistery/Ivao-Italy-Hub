@@ -14,3 +14,9 @@ export const TRAINING_MANAGE_SHEETS = 'Training.ManageSheets';
  * reader may ban one member — never themselves — is the server's answer on the path (`canBan`), and on every write.
  */
 export const TRAINING_BAN = 'Training.Ban';
+
+/**
+ * Putting exams in the calendar (§2.8, A10c): the list of the exams offers «new exam» to whoever holds it somewhere. Which exams the
+ * reader may change — their own, or every one for whoever edits the area — is the server's answer on each row (`mayEdit`).
+ */
+export const TRAINING_MANAGE_EXAMS = 'Training.ManageExams';

@@ -4,6 +4,7 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Exams;
 using IvaoHub.Modules.Training.Staff;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -39,9 +40,32 @@ public sealed record PublicSessionDto(
     TrainingMemberDto? Trainer);
 
 /// <summary>
+/// An exam as the site shows it (design M3 §4.1, §4.3; note <c>il-training-in-pubblico</c>): the position, the rating and when, as its
+/// entry of the calendar says them, and, to a signed in reader only, the candidate and the examiner — by VID and nothing else, because
+/// of an exam the hub keeps nothing else of either (the training department's request, <c>HANDOFF-M3.md</c>). To a visitor
+/// <c>CandidateVid</c> and <c>ExaminerVid</c> are none, whatever the row holds.
+/// </summary>
+/// <param name="Id">The exam.</param>
+/// <param name="Kind">The ladder.</param>
+/// <param name="RatingShortName">The rating examined, as the core's vocabulary names it.</param>
+/// <param name="Position">The position, on a ladder examined on positions; none for a pilot's exam.</param>
+/// <param name="StartsAtUtc">When the exam starts.</param>
+/// <param name="CandidateVid">Who is examined, to a signed in reader only.</param>
+/// <param name="ExaminerVid">Who examines, to a signed in reader only.</param>
+public sealed record PublicExamDto(
+    long Id,
+    RatingKind Kind,
+    string? RatingShortName,
+    string? Position,
+    DateTime StartsAtUtc,
+    int? CandidateVid,
+    int? ExaminerVid);
+
+/// <summary>
 /// The sessions of the trainings as the site shows them (design M3 §4.1, §4.3; note <c>il-training-in-pubblico</c>): the ones still
 /// to be held, for <c>/training</c> and for the block <c>training.upcomingSessions</c>, and one by its address, for the page every
-/// entry of the calendar points at. Composed once here and read by the two endpoints and by the block, as the tours' public side is.
+/// entry of the calendar points at; and the exams still to come beside them (A10c). Composed once here and read by the endpoints and
+/// by the block, as the tours' public side is.
 /// <para>A training is read by members only (<c>IVisible</c>), so a visitor passes the filter here, through the back office's source:
 /// what leaves is its public session and nothing else — only a training <see cref="Training.SessionIsPublic"/> says has one, the rule
 /// the calendar reads, and of it only what the calendar shows already, the rating, the position and when. The people are the hub's
@@ -94,6 +118,44 @@ public sealed class PublicSessions(
         return training is null ? null : (await DtosAsync([training], HeldBefore(), cancellationToken))[0];
     }
 
+    /// <summary>
+    /// The exams still to come (§4.3, A10c): on a day that is not over in the division's time zone, like the sessions. An exam has no
+    /// state and every exam is in the calendar, so this is the whole of the rule — what a visitor reads of it is the same rating, position
+    /// and time its entry of the calendar shows (<see cref="Exam.Project"/>).
+    /// </summary>
+    public static IQueryable<Exam> UpcomingExams(IQueryable<Exam> exams, DateTime heldBefore)
+    {
+        ArgumentNullException.ThrowIfNull(exams);
+
+        return exams.Where(exam => exam.StartsAtUtc >= heldBefore);
+    }
+
+    /// <summary>
+    /// The exams still to come, the soonest first: at most <paramref name="limit"/>, and never more than <see cref="MaxItems"/>. The
+    /// candidate and the examiner by VID to a signed in reader, and to a visitor nothing of either.
+    /// </summary>
+    public async Task<IReadOnlyList<PublicExamDto>> UpcomingExamsAsync(int? limit, CancellationToken cancellationToken)
+    {
+        var exams = await UpcomingExams(database.Exams.AsNoTracking(), HeldBefore())
+            .OrderBy(exam => exam.StartsAtUtc)
+            .ThenBy(exam => exam.Id)
+            .Take(limit is { } most && most > 0 ? Math.Min(most, MaxItems) : MaxItems)
+            .ToListAsync(cancellationToken);
+
+        var signedIn = currentUser.IsAuthenticated;
+        return
+        [
+            .. exams.Select(exam => new PublicExamDto(
+                exam.Id,
+                exam.Kind,
+                vocabulary.Find(exam.Kind, exam.Rating)?.ShortName,
+                exam.Position,
+                exam.StartsAtUtc,
+                signedIn ? exam.CandidateVid : null,
+                signedIn ? exam.ExaminerVid : null)),
+        ];
+    }
+
     private async Task<IReadOnlyList<PublicSessionDto>> DtosAsync(
         IReadOnlyList<Training> trainings,
         DateTime heldBefore,
@@ -121,12 +183,15 @@ public sealed class PublicSessions(
 }
 
 /// <summary>
-/// The two reads of the site (design M3 §4.1): the sessions still to be held, for <c>/training</c>, and one session, for
-/// <c>/training/sessions/{id}</c>. Anonymous, and answered for whoever asks: the people only to a signed in reader.
+/// The reads of the site (design M3 §4.1): the sessions still to be held and the exams still to come, for <c>/training</c>, and one
+/// session, for <c>/training/sessions/{id}</c>. Anonymous, and answered for whoever asks: the people only to a signed in reader.
 /// </summary>
 public static class PublicSessionEndpoints
 {
     public const string Pattern = "/api/training/sessions";
+
+    /// <summary>The exams still to come (A10c): beside the sessions, and never taken for one — a session's address is a number.</summary>
+    public const string ExamsPattern = Pattern + "/exams";
 
     public static IEndpointRouteBuilder MapPublicSessionEndpoints(this IEndpointRouteBuilder app)
     {
@@ -145,6 +210,12 @@ public static class PublicSessionEndpoints
             .WithName("TrainingPublicSession")
             .Produces<PublicSessionDto>()
             .Produces(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
+
+        sessions.MapGet("/exams", async (PublicSessions publicSessions, HttpContext http) =>
+                Results.Ok(await publicSessions.UpcomingExamsAsync(limit: null, http.RequestAborted)))
+            .WithName("TrainingUpcomingExams")
+            .Produces<IReadOnlyList<PublicExamDto>>()
             .AllowAnonymous();
 
         return app;

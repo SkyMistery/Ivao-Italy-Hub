@@ -3,6 +3,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Dates;
+using IvaoHub.Modules.Training.Exams;
 using IvaoHub.Modules.Training.Sessions;
 using IvaoHub.Modules.Training.Sheets;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ namespace IvaoHub.Modules.Training.Data;
 /// context maps and leaves out of its migrations, and it is never touched again. The tables of the module arrive with the
 /// phases that need them, one additive migration each: the items of the evaluation sheet first (A5), then the trainings, whole,
 /// and the bans (A6a), then the dates the trainers propose (A8), then the sessions that are over and the sheets the reports
-/// filled (A9).</para>
+/// filled (A9), then the exams in the calendar (A10c).</para>
 /// </summary>
 public sealed class TrainingDbContext : ModuleDbContext
 {
@@ -25,21 +26,26 @@ public sealed class TrainingDbContext : ModuleDbContext
     /// <param name="currentUser">Who reads and writes, for the filters and the guard of the core.</param>
     /// <param name="vocabulary">
     /// The core's ratings: every training this context tracks is told the short name of its own (<see cref="Training.RatingShortName"/>),
-    /// because the session it projects into the calendar is called by it (A8), and a projection is worked out by the row itself.
+    /// because the session it projects into the calendar is called by it (A8), and a projection is worked out by the row itself; every
+    /// exam is told the vocabulary, and names its rating when it projects, because its rating may change after it was read (A10c).
     /// </param>
     public TrainingDbContext(DbContextOptions<TrainingDbContext> options, ICurrentUser? currentUser = null, RatingVocabulary? vocabulary = null)
         : base(options, currentUser)
     {
         if (vocabulary is not null)
         {
-            // ⚠️ Only a training this context tracks is told its short name. One read with AsNoTracking and handed to the core's
-            // ProjectionRefresh, or one of a context built without the vocabulary (dotnet ef's, a test's by hand), projects the
-            // title of its session with no rating: its position alone, and a pilot's training, which has none, becomes "#id".
+            // ⚠️ Only a row this context tracks is told. One read with AsNoTracking and handed to the core's ProjectionRefresh, or
+            // one of a context built without the vocabulary (dotnet ef's, a test's by hand), projects its title with no rating: its
+            // position alone, and a pilot's training or exam, which has none, becomes "#id".
             ChangeTracker.Tracked += (_, tracked) =>
             {
                 if (tracked.Entry.Entity is Training training)
                 {
                     training.RatingShortName = vocabulary.Find(training.Kind, training.Rating)?.ShortName;
+                }
+                else if (tracked.Entry.Entity is Exam exam)
+                {
+                    exam.Knows(vocabulary);
                 }
             };
         }
@@ -56,6 +62,8 @@ public sealed class TrainingDbContext : ModuleDbContext
     public DbSet<TrainingSession> Sessions => Set<TrainingSession>();
 
     public DbSet<TrainingEvaluation> Evaluations => Set<TrainingEvaluation>();
+
+    public DbSet<Exam> Exams => Set<Exam>();
 
     /// <summary>The enums of the training are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
@@ -160,6 +168,19 @@ public sealed class TrainingDbContext : ModuleDbContext
 
             // No key towards the items: the report reads its copy of them. «Does a report mark this item?» reads this index.
             evaluation.HasIndex(row => row.SheetItemId);
+        });
+
+        modelBuilder.Entity<Exam>(exam =>
+        {
+            exam.ToTable("trn_exams");
+            exam.HasKey(row => row.Id);
+            exam.Ignore(row => row.RatingShortName);
+            exam.Property(row => row.Position).HasMaxLength(Training.MaxPositionLength);
+            exam.HasRowVersion(row => row.RowVersion);
+
+            // The exams still to come, the soonest first (the site); and an examiner's own (the list, «mine»).
+            exam.HasIndex(row => row.StartsAtUtc);
+            exam.HasIndex(row => row.ExaminerVid);
         });
     }
 }

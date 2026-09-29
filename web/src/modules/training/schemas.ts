@@ -479,3 +479,74 @@ export function banFromFormValues(values: BanFormValues): TraineeBanWriteDto {
     endsAt: values.endsAt === undefined || values.endsAt === '' ? null : values.endsAt,
   };
 }
+
+// ---- the exams (A10c) ---------------------------------------------------------------------------------------------------
+
+type ExamDto = components['schemas']['ExamDto'];
+type ExamWriteDto = components['schemas']['ExamWriteDto'];
+
+/** What the form of an exam chooses from, already in the language on screen. */
+export interface ExamChoices {
+  readonly ratings: readonly ChoiceOption[];
+  readonly positions: readonly Suggestion[];
+  readonly examiners: readonly ChoiceOption[];
+}
+
+/**
+ * An exam in the calendar (design M3 §1.5, §2.8): the rating — chosen, with its ladder in the value of the choice —, the position of an
+ * exam on a ladder examined on positions — a **closed** suggestion among the division's —, when it starts, an instant of the form, the
+ * candidate by VID, and the examiner, chosen among the ones the server offers the reader — an advisor only themselves. Of the
+ * candidate and of the examiner the VID and nothing else (the training department's request). Beyond the rating nothing is required
+ * here: a position missing or on the wrong ladder, no date, no candidate, an examiner who is the candidate are the server's to refuse,
+ * each on its field.
+ */
+export function examSchema(choices: ExamChoices) {
+  return z.object({
+    rating: z.string().min(1).meta({ choices: choices.ratings }),
+    position: z.string().meta({ suggestions: choices.positions, suggestionsOnly: true }),
+    startsAtUtc: z.string().optional().meta({ datetime: true }),
+    candidateVid: z.number().int().optional(),
+    examinerVid: z.string().meta({ choices: choices.examiners }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type ExamFormValues = z.output<ReturnType<typeof examSchema>>;
+
+/** A new exam, with the reader as its examiner when they are among the ones offered. */
+export function emptyExam(examinerVid: number | undefined): ExamFormValues {
+  return {
+    rating: '',
+    position: '',
+    examinerVid: examinerVid === undefined ? '' : String(examinerVid),
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+export function examToFormValues(exam: ExamDto): ExamFormValues {
+  return {
+    rating: ratingChoice(exam.kind, exam.rating),
+    position: exam.position ?? '',
+    startsAtUtc: exam.startsAtUtc,
+    candidateVid: exam.candidateVid,
+    examinerVid: String(exam.examinerVid),
+    rowVersion: exam.rowVersion,
+  };
+}
+
+/** The exam as the server takes it: an empty box travels as none, or as zero for a VID, which the server refuses. */
+export function examFromFormValues(values: ExamFormValues): ExamWriteDto {
+  return {
+    ...fromRatingChoice(values.rating),
+    position: written(values.position),
+    startsAtUtc: values.startsAtUtc === undefined || values.startsAtUtc === '' ? null : values.startsAtUtc,
+    candidateVid: values.candidateVid ?? 0,
+    examinerVid: values.examinerVid === '' ? 0 : Number(values.examinerVid),
+    rowVersion: values.rowVersion,
+  };
+}
+
+/** `/staff/training/exams`: the five of every list, and whether it is narrowed to the exams assigned to the reader. */
+export const examsSearchSchema = listSearchSchema.extend({ mine: z.boolean().optional() });
+
+export type ExamsSearch = z.output<typeof examsSearchSchema>;

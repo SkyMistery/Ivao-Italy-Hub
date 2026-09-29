@@ -8,24 +8,37 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { describeProblem } from '../../../shared/forms';
 import { EmptyState, NotFound, Notice, RatingBadge } from '../../../shared/ui';
-import { memberLabel, publicSessionQuery, upcomingSessionsQuery, type PublicSessionDto } from '../api';
+import {
+  memberLabel,
+  publicSessionQuery,
+  upcomingExamsQuery,
+  upcomingSessionsQuery,
+  type PublicExamDto,
+  type PublicSessionDto,
+} from '../api';
 
 import { StateBadge, WhenText } from './parts';
-import { TRAINING, sessionHref, sessionTitle } from './site';
+import { TRAINING, sessionHref, sessionTitle, upcomingLines } from './site';
 import { MINE, REQUEST } from './trainee';
 
 /**
  * The public side of the training (design M3 §4.1; note il-training-in-pubblico): `/training`, with the sessions still to be held and
- * «Request training», and `/training/sessions/$id`, the page of one session, where every entry of the calendar points. What arrives is
- * what the reader may see, decided by the server: a visitor reads the position, the rating, the date and the time; a signed in reader
- * reads who too — the trainee and the trainer, by name and VID. The page decides nothing about it.
+ * the exams still to come (A10c) and «Request training», and `/training/sessions/$id`, the page of one session, where every entry of
+ * the calendar of a training points; the entry of an exam points at `/training`. What arrives is what the reader may see, decided by
+ * the server: a visitor reads the position, the rating, the date and the time; a signed in reader reads who too — the trainee and the
+ * trainer by name and VID, the candidate and the examiner by VID alone. The page decides nothing about it.
  */
 
 export function TrainingPublicPage() {
   const { t, i18n } = useTranslation();
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const sessions = useQuery(upcomingSessionsQuery());
+  const exams = useQuery(upcomingExamsQuery());
   const signedIn = bootstrap?.user !== null && bootstrap?.user !== undefined;
+
+  // The exams are drawn beside the sessions; when they cannot be read, the sessions still are, and the page says so.
+  const examsUnread = exams.isError ? <Notice tone="error" title={t('training:public.examsUnread')} /> : null;
+  const comingExams = exams.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
@@ -52,16 +65,23 @@ export function TrainingPublicPage() {
             tone="error"
             title={describeProblem(sessions.error, t, i18n.language) ?? t('errors.unknown')}
           />
-        ) : sessions.data === undefined || bootstrap === undefined ? (
+        ) : sessions.data === undefined || bootstrap === undefined || exams.isPending ? (
           <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
-        ) : sessions.data.length === 0 ? (
-          <EmptyState title={t('training:public.none')} />
+        ) : sessions.data.length === 0 && comingExams.length === 0 ? (
+          <>
+            <EmptyState title={t('training:public.none')} />
+            {examsUnread}
+          </>
         ) : (
-          <UpcomingSessionList
-            sessions={sessions.data}
-            timezone={bootstrap.division.timezone}
-            signedIn={signedIn}
-          />
+          <>
+            <UpcomingSessionList
+              sessions={sessions.data}
+              exams={comingExams}
+              timezone={bootstrap.division.timezone}
+              signedIn={signedIn}
+            />
+            {examsUnread}
+          </>
         )}
       </section>
     </div>
@@ -69,16 +89,21 @@ export function TrainingPublicPage() {
 }
 
 /**
- * The sessions still to be held (§4.3), the soonest first, as `/training` and the block `training.upcomingSessions` draw them: each by
- * its rating and position — a link to its page —, when, in UTC and where the division lives, and who, when the server said it. A
- * visitor is told once, under the list, that signing in shows who.
+ * The sessions still to be held and the exams still to come (§4.3), the soonest first, as `/training` and the block
+ * `training.upcomingSessions` draw them — at most `limit` of them, when a block asks for fewer: a session by its rating and position —
+ * a link to its page —, an exam as such; when, in UTC and where the division lives; and who, when the server said it. A visitor is told
+ * once, under the list, that signing in shows who.
  */
 export function UpcomingSessionList({
   sessions,
+  exams = [],
+  limit,
   timezone,
   signedIn,
 }: {
   sessions: readonly PublicSessionDto[];
+  exams?: readonly PublicExamDto[];
+  limit?: number;
   timezone: string;
   signedIn: boolean;
 }) {
@@ -89,30 +114,13 @@ export function UpcomingSessionList({
     <div className="flex flex-col gap-3">
       {/* The lines between the sessions in the colour of the border: without one they take the colour of the text. */}
       <ul className="divide-border flex flex-col divide-y">
-        {sessions.map((session) => (
-          <li
-            key={session.id}
-            className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between"
-          >
-            <div className="flex min-w-0 flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <RouterAnchor href={sessionHref(session.id)} className="font-semibold underline">
-                  {sessionTitle(session)}
-                </RouterAnchor>
-                <span className="text-muted-foreground text-sm">{t(`training:kinds.${session.kind}`)}</span>
-              </div>
-              {session.trainee === null && session.trainer === null ? null : (
-                <Subtle>
-                  {t('training:public.people', {
-                    trainee: session.trainee === null ? t('training:unknown') : memberLabel(session.trainee),
-                    trainer: session.trainer === null ? t('training:unknown') : memberLabel(session.trainer),
-                  })}
-                </Subtle>
-              )}
-            </div>
-            <WhenText startsAtUtc={session.startsAtUtc} timezone={timezone} emphasis />
-          </li>
-        ))}
+        {upcomingLines(sessions, exams, limit).map((line) =>
+          line.type === 'session' ? (
+            <SessionLine key={line.key} session={line.session} timezone={timezone} />
+          ) : (
+            <ExamLine key={line.key} exam={line.exam} timezone={timezone} />
+          ),
+        )}
       </ul>
       {signedIn ? null : (
         <p className="text-muted-foreground text-sm">
@@ -122,6 +130,61 @@ export function UpcomingSessionList({
         </p>
       )}
     </div>
+  );
+}
+
+/** A session still to be held: by its rating and position, a link to its page, and the trainee and the trainer when the server said. */
+function SessionLine({ session, timezone }: { session: PublicSessionDto; timezone: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <RouterAnchor href={sessionHref(session.id)} className="font-semibold underline">
+            {sessionTitle(session)}
+          </RouterAnchor>
+          <span className="text-muted-foreground text-sm">{t(`training:kinds.${session.kind}`)}</span>
+        </div>
+        {session.trainee === null && session.trainer === null ? null : (
+          <Subtle>
+            {t('training:public.people', {
+              trainee: session.trainee === null ? t('training:unknown') : memberLabel(session.trainee),
+              trainer: session.trainer === null ? t('training:unknown') : memberLabel(session.trainer),
+            })}
+          </Subtle>
+        )}
+      </div>
+      <WhenText startsAtUtc={session.startsAtUtc} timezone={timezone} emphasis />
+    </li>
+  );
+}
+
+/**
+ * An exam still to come (A10c): by its rating and position, as its entry of the calendar — the exam itself is the network's, so there
+ * is no page of it —, and the candidate and the examiner by VID when the server said.
+ */
+function ExamLine({ exam, timezone }: { exam: PublicExamDto; timezone: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold">{t('training:public.exam', { title: sessionTitle(exam) })}</span>
+          <span className="text-muted-foreground text-sm">{t(`training:kinds.${exam.kind}`)}</span>
+        </div>
+        {exam.candidateVid === null && exam.examinerVid === null ? null : (
+          <Subtle>
+            {t('training:public.examPeople', {
+              candidate: exam.candidateVid === null ? t('training:unknown') : String(exam.candidateVid),
+              examiner: exam.examinerVid === null ? t('training:unknown') : String(exam.examinerVid),
+            })}
+          </Subtle>
+        )}
+      </div>
+      <WhenText startsAtUtc={exam.startsAtUtc} timezone={timezone} emphasis />
+    </li>
   );
 }
 

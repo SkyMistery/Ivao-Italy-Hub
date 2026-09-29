@@ -3,6 +3,7 @@
     "section": "Training",
     "trainings": "Richieste e training",
     "trainees": "Trainee",
+    "exams": "Esami",
     "bans": "Ban",
     "sheets": "Scheda di valutazione",
     "settings": "Impostazioni del training"
@@ -18,11 +19,14 @@
   "mockExam": "Questo sarà un mock exam, come concordato con il trainer.",
   "public": {
     "title": "Training",
-    "lead": "Le sessioni di training della divisione, ATC e pilota: postazione, rating, data e ora. Per chiedere un training serve l'accesso.",
-    "upcoming": "I prossimi training",
-    "none": "Nessun training in programma.",
+    "lead": "Le sessioni di training e gli esami della divisione, ATC e pilota: postazione, rating, data e ora. Per chiedere un training serve l'accesso.",
+    "upcoming": "I prossimi training ed esami",
+    "none": "Nessun training né esame in programma.",
     "people": "Trainee: {{trainee}} · Trainer: {{trainer}}",
-    "signIn": "Accedi per vedere chi fa ogni training.",
+    "exam": "Esame {{title}}",
+    "examPeople": "Candidato: {{candidate}} · Esaminatore: {{examiner}}",
+    "examsUnread": "Gli esami in programma non si possono leggere ora.",
+    "signIn": "Accedi per vedere chi fa ogni training ed esame.",
     "back": "Tutti i training",
     "session": {
       "title": "Training {{title}}",
@@ -37,7 +41,7 @@
   "blocks": {
     "signIn": "Accedi per vedere i tuoi training.",
     "upcomingSessions": {
-      "label": "Prossimi training",
+      "label": "Prossimi training ed esami",
       "fields": {
         "limit": "Quanti al massimo (0: tutti)"
       }
@@ -524,6 +528,45 @@
       }
     }
   },
+  "exams": {
+    "title": "Esami",
+    "description": "Gli esami nel calendario della divisione. L'esame si prenota, si svolge e si valuta sulla rete: qui si mette solo in calendario. Chi esamina inserisce i suoi esami; un advisor cambia e toglie dal calendario solo gli esami assegnati a lui. Del candidato e dell'esaminatore, solo il VID.",
+    "create": "Nuovo esame",
+    "edit": "Modifica esame",
+    "formDescription": "L'esame entra nel calendario pubblico con rating, postazione, data e ora, senza nomi né VID; chi ha fatto l'accesso legge i due VID nella pagina del training.",
+    "fields": {
+      "startsAtUtc": "Data e ora",
+      "ratingShortName": "Rating",
+      "rating": "Rating",
+      "position": "Postazione",
+      "candidate": "Candidato",
+      "candidateVid": "VID del candidato",
+      "examiner": "Esaminatore",
+      "examinerVid": "Esaminatore",
+      "whose": "Tuo"
+    },
+    "hints": {
+      "rating": "Il rating dell'esame: ogni rating del percorso, anche quelli per cui nessuno fa training.",
+      "position": "Solo per l'esame di un rating che si allena su una postazione: una della divisione per quel rating. Vuota per ogni altro esame.",
+      "candidateVid": "Chi fa l'esame, solo con il VID. Nessuno esamina sé stesso.",
+      "examinerVid": "L'esame è assegnato a lui: lo cambia e lo toglie dal calendario. Un advisor inserisce solo i suoi esami."
+    },
+    "options": {
+      "whose": {
+        "Mine": "Sì",
+        "Other": "No"
+      }
+    },
+    "filters": {
+      "examiner": "Esaminatore",
+      "anyExaminer": "Chiunque",
+      "mine": "Io"
+    },
+    "delete": {
+      "title": "Togliere l'esame dal calendario?",
+      "description": "L'esame esce dal calendario dell'hub. L'esame vero resta com'è sulla rete."
+    }
+  },
   "sheets": {
     "title": "Scheda di valutazione",
     "description": "Le voci che il trainer valuta dopo una sessione, per percorso e rating: quelle pratiche con un voto da 1 a 5, quelle di teoria come fatte, non fatte o da migliorare. Il trainee le legge nel suo report.",
@@ -641,7 +684,11 @@
     "evaluationMarkUnknown": "Questo giudizio non è tra quelli della scheda.",
     "banEndsInThePast": "La fine del ban è già passata.",
     "banAlreadyHolds": "Su questo membro c'è già un ban in vigore: toglilo prima di darne un altro.",
-    "banNotHolding": "Questo ban non è più in vigore: non c'è niente da togliere."
+    "banNotHolding": "Questo ban non è più in vigore: non c'è niente da togliere.",
+    "examRatingUnknown": "Questo non è un rating del percorso.",
+    "examPositionNotAsked": "Un esame di questo rating non ha una postazione.",
+    "examinerIsCandidate": "Nessuno esamina sé stesso: l'esaminatore non è il candidato.",
+    "examinerNotExaminer": "Può essere l'esaminatore solo chi mette gli esami in calendario ed è entrato nell'hub almeno una volta."
   },
   "notifications": {
     "requestReceived": {

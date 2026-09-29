@@ -343,6 +343,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/exam-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingExamChoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -2526,6 +2542,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/exams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingExamsList"];
+        put?: never;
+        post: operations["TrainingExamsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/exams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingExamsGet"];
+        put: operations["TrainingExamsUpdate"];
+        post?: never;
+        delete: operations["TrainingExamsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/training/sessions": {
         parameters: {
             query?: never;
@@ -2550,6 +2598,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["TrainingPublicSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/sessions/exams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingUpcomingExams"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4081,6 +4145,100 @@ export interface components {
             text?: null | string;
         };
         /**
+         * @description What the form of an exam chooses from: every rating of the two ladders, as the core's vocabulary has them (the maintainer's answer on
+         *     #178: the exams go up to the eighth rating, which nobody trains for); the examiners the reader may give an exam to — themselves, for
+         *     an advisor; every examiner the hub knows, for whoever edits the area — by VID and name; and the positions of the division the
+         *     ratings are trained on.
+         */
+        ExamChoicesDto: {
+            ratings: components["schemas"]["TrainingRatingDto"][];
+            examiners: components["schemas"]["TrainingMemberDto"][];
+            positions: components["schemas"]["TrainingPositionDto"][];
+        };
+        /** @description An exam as the form loads it: the ladder and the rating, the position, when, and the candidate and the examiner by VID. */
+        ExamDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            position: null | string;
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: int32 */
+            candidateVid: number;
+            /** Format: int32 */
+            examinerVid: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description An exam as the list of the staff shows it (design M3 §4.2): what, where and when, the candidate and the examiner by VID — and, for
+         *     whoever reads it, whether it is theirs, assigned to them, and whether they may change it and take it off the calendar, as the one
+         *     handler answers on the row. An advisor sees which exams are theirs, and is offered no step on anybody else's (note
+         *     2026-09-26-le-righe-affidate-a-chi-scrive §3.6).
+         */
+        ExamRowDto: {
+            /**
+             * Format: int64
+             * @description The exam.
+             */
+            id: number;
+            /** @description The ladder. */
+            kind: components["schemas"]["RatingKind"];
+            /**
+             * Format: int32
+             * @description The rating examined, by the number the hub keeps.
+             */
+            rating: number;
+            /** @description The rating examined, as the core's vocabulary names it. */
+            ratingShortName: null | string;
+            /** @description The position of an exam on a ladder examined on positions. */
+            position: null | string;
+            /**
+             * Format: date-time
+             * @description When the exam starts.
+             */
+            startsAtUtc: string;
+            /**
+             * Format: int32
+             * @description Who is examined.
+             */
+            candidateVid: number;
+            /**
+             * Format: int32
+             * @description Who examines, the member the exam is assigned to.
+             */
+            examinerVid: number;
+            /** @description Whether the reader is the examiner. */
+            mine: boolean;
+            /** @description Whether the reader may change it and take it off the calendar. */
+            mayEdit: boolean;
+            /**
+             * Format: date-time
+             * @description The version.
+             */
+            rowVersion: string;
+        };
+        /**
+         * @description What the staff writes of an exam (design M3 §1.5): the ladder and the rating, the position of an exam on one, when, the candidate
+         *     and the examiner by VID. Its department is the module's base department, which the payload does not carry.
+         */
+        ExamWriteDto: {
+            kind: components["schemas"]["RatingKind"];
+            /** Format: int32 */
+            rating: number;
+            position: null | string;
+            /** Format: date-time */
+            startsAtUtc: null | string;
+            /** Format: int32 */
+            candidateVid: number;
+            /** Format: int32 */
+            examinerVid: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
          * @description What a controller allowed (design M2 §3.3); each kind declares which checks it softens (Toursystem ADR-014).
          * @enum {unknown}
          */
@@ -5144,6 +5302,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfExamRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["ExamRowDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfGrantListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["GrantListDto"][];
@@ -5897,6 +6078,40 @@ export interface components {
             category: components["schemas"]["ErrorCategory"];
             /** Format: int32 */
             yearlyMax: null | number;
+        };
+        /**
+         * @description An exam as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when, as its
+         *     entry of the calendar says them, and, to a signed in reader only, the candidate and the examiner — by VID and nothing else, because
+         *     of an exam the hub keeps nothing else of either (the training department's request, `HANDOFF-M3.md`). To a visitor
+         *     `CandidateVid` and `ExaminerVid` are none, whatever the row holds.
+         */
+        PublicExamDto: {
+            /**
+             * Format: int64
+             * @description The exam.
+             */
+            id: number;
+            /** @description The ladder. */
+            kind: components["schemas"]["RatingKind"];
+            /** @description The rating examined, as the core's vocabulary names it. */
+            ratingShortName: null | string;
+            /** @description The position, on a ladder examined on positions; none for a pilot's exam. */
+            position: null | string;
+            /**
+             * Format: date-time
+             * @description When the exam starts.
+             */
+            startsAtUtc: string;
+            /**
+             * Format: int32
+             * @description Who is examined, to a signed in reader only.
+             */
+            candidateVid: null | number;
+            /**
+             * Format: int32
+             * @description Who examines, to a signed in reader only.
+             */
+            examinerVid: null | number;
         };
         /**
          * @description One leg of a tour as the public page and the map draw it (design M2 §8.1): the two airports with their coordinates —
@@ -8288,6 +8503,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TrainingExamChoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamChoicesDto"];
+                };
             };
         };
     };
@@ -15374,6 +15609,163 @@ export interface operations {
             };
         };
     };
+    TrainingExamsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfExamRowDto"];
+                };
+            };
+        };
+    };
+    TrainingExamsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExamWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    TrainingExamsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingExamsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExamWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingExamsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     TrainingUpcomingSessions: {
         parameters: {
             query?: never;
@@ -15420,6 +15812,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TrainingUpcomingExams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicExamDto"][];
+                };
             };
         };
     };

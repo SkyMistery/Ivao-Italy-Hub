@@ -11,18 +11,19 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10b** (i quattro blocchi Data e le pagine pubbliche), sul branch
-`m3/a10b-blocks-and-public-pages`, **PR #153** verso `main`, **in cima alla coda**: #151 (A10a) è unita il 29 settembre, `main` è nel
-branch, e la PR è pronta a CI verde. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144),
-A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), la fase del nucleo A11a (#159) e **#152** del
-maintainer (`Refusals` nel nucleo: la copia del training la toglie A10c). **In coda sopra A10b**, in bozza, ognuna dopo quella sotto: A10c
-(#178), A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha risposto** alle revisioni di #149 e di #150 (A9a e A9b qui
-sotto, le ultime voci): una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la
-scheda disegnata nel modulo è accettata; i test e le spec di A10b non datano nel passato né chiudono una sessione cominciata, e non
-cambiano. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla
-volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va
-rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace
-(`training:…`, #138).
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A10c** (gli esami nel calendario), sul branch `m3/a10c-exams`, **PR #178** verso `main`,
+**in cima alla coda**: #153 (A10b) è unita il 29 settembre, `main` è nel branch, e la PR è pronta a CI verde. **Sono in `main`**: A3
+(#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149),
+A9b (#150), A10a (#151), A10b (#153), la fase del nucleo A11a (#159) e **#152** del maintainer (`Refusals` nel nucleo: la copia del
+training l'ha tolta A10c). **In coda sopra A10c**, in bozza: A7b (#181), A11b (#182) e la fase del nucleo A12a (#187). **Carmine ha
+risposto** alla revisione di #178: **gli esami prendono ogni rating da 5 a 8**, l'8 compreso, non solo quelli con `HasPracticalTraining`
+([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992); A10c qui sotto, l'ultima voce): nel codice
+un esame prende ogni rating del suo percorso, e il revisore l'ha letto così ([#178](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5898945166));
+e alle revisioni di #149 e di #150 (A9a e A9b qui sotto): una sessione cominciata si registra e non si data più a mano né si chiude,
+nessuno data un training nel passato, la scheda disegnata nel modulo è accettata. La **sessione master** di Carmine (nota
+`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
+suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
+senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -93,6 +94,59 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A10c (28 settembre 2026, branch `m3/a10c-exams`, PR #178)
+
+- **Che cosa c'è** (codice del modulo, una migrazione, `AddExams`; nessun file del nucleo, nessuna domanda a Carmine):
+  - **`trn_exams`** (`Exams/Exam.cs`), con la forma di A3b per la riga: `[PermissionArea("Training")]`, `[AlsoWrittenWith(ManageExams,
+    AlsoOnCreation = true, AlsoOnDeletion = true)]`, `IHasAssignee` con l'esaminatore; nel catalogo `Training.ManageExams` è
+    `OnlyForAssignee`. L'esame **non** dice il suo candidato come persona di cui è (niente `IHasStakeholder`), e `ManageExams` resta negato a
+    nessuno, com'è nel design §3.1; il form rifiuta un esaminatore che è il candidato. Un TA inserisce, cambia e toglie i suoi esami; HQ, TC
+    e TAC tutti. **Del candidato e dell'esaminatore solo il VID**, nella riga e nelle pagine.
+  - **La lista e il form** (`Exams/ExamEndpoints.cs`, `Exams/TrainingExams.cs`, `screens/exams.tsx`): `/staff/training/exams` (letta con
+    `Training.View`; ogni riga dice `mine` e `mayEdit`, la risposta dell'unico handler; «Io» restringe ai propri) e `/staff/training/exams/$id`
+    (scritta con `ManageExams`, **senza `DeletePolicy`**). Le scelte del form (`/api/training/exam-choices`): gli esaminatori che l'handler
+    lascia dare al lettore — un TA solo sé stesso, chi ha `Edit` tutti; chi esamina lo dice `IPermissionHolders` del nucleo — e le postazioni.
+  - **Il calendario e il sito**: ogni esame è una voce pubblica di tipo `exam` (rating · postazione) che porta a `/training`;
+    `GET /api/training/sessions/exams` e il campo `exams` del blocco `training.upcomingSessions` danno gli esami ancora da venire, con i VID
+    solo a chi ha fatto il login; `/training` e il blocco li mettono con le sessioni in un elenco solo.
+  - **Via la copia `Refusals.cs`** del modulo: si usa quella del nucleo.
+  - **I test**: `TrainingExamRulesTests` (unità), `TrainingExamTests` (integrazione, VID 790068–790071 e 790090–790094), `screens/upcoming.test.ts`
+    e `exams.test.ts` (Vitest), `web/e2e/training-exams.spec.ts` (smoke), `web/e2e/full/training-exams.spec.ts` (il «fatta quando» sul banco).
+- **Che cosa deve sapere la fase dopo**:
+  - **A7b** (il trainer sulla regola delle righe affidate): la forma è la stessa degli esami — `[PermissionArea("Training")]` c'è già su
+    `Training`; `Conduct` segnato `OnlyForAssignee` **e** `DeniedToStakeholder` (lo è già), e su `Training` DELETE non esiste (un training
+    non si elimina: nessun `AlsoOnDeletion`). `TrainingExamTests` è il modello per i suoi test: l'endpoint e, per ogni caso, l'handler e il
+    guardiano chiesti direttamente.
+  - **A11b** (i capi FIR nel modulo): gli esami non dicono il loro FIR (`IHasFir` no): un capo FIR non ne vede né ne scrive, com'è nel
+    design (§3.2).
+  - **A12b** (la cancellazione): gli esami del candidato si cancellano (design §6.1); le colonne sono `candidate_vid` ed `examiner_vid`, e la
+    voce del calendario va via con l'esame solo se lo si elimina passando dal change tracker (come per i training, ⚠️ di A8a).
+  - ⚠️ **Il rating di un esame è ogni rating del suo percorso**, anche quelli per cui nessuno fa training — l'8 (SEC, ATP) compreso — (la
+    [risposta di Carmine su #178](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5891427992); `08`, A10c, l'ultima
+    voce): la regola chiede al vocabolario del nucleo se conosce il rating sul percorso (`TrainingExams.RatingUnknown` se no), e la
+    postazione la chiede solo per un rating che ha un tipo di postazione. Il form prende i rating da `/api/training/exam-choices`
+    (`ratings`: ogni rating dei due percorsi), non più da `/api/training/ratings`, che resta dei rating allenati per gli altri form. Il
+    vocabolario non dice quali rating hanno un esame, e il modulo non scrive numeri (`TrainingArchitectureTests`): il form offre tutto il
+    percorso, e il TD sceglie fra 5 e 8.
+  - ⚠️ **Gli smoke di A10b non fingono la lettura degli esami** (`/api/training/sessions/exams`): la pagina disegna le sessioni con l'avviso
+    `public.examsUnread`. Uno spec nuovo di `/training` finga anche la lettura degli esami.
+  - ⚠️ **Il banco dopo il giro di A10c**: `training-exams.spec.ts` inserisce un esame del pilota del banco (999002) esaminato dal web master
+    (999001) e lo toglie alla fine (e all'inizio, se un giro fallito l'ha lasciato); non tocca nessun training.
+  - ⚠️ **La colonna booleana del nucleo** (`col.boolean`) dice «Attivo» e «Non attivo»: una colonna sì/no che non è un interruttore si scrive
+    come parola del modulo (`col.badge` con le sue `options`), come «Tuo» negli esami — trovato a mano sul banco di anteprima.
+  - **Il banco di anteprima** (127.0.0.1:5090, `ivaohub_preview`, spento a fine fase, con il database che resta; lo script è
+    `preview-bench.ps1` nello scratchpad di A10c): c'è un esame ACC su LIRR_NE_CTR il 2 ottobre alle 18:00 UTC, del pilota del banco,
+    esaminato dal web master.
+  - VID: **790068–790071** e **790090–790094** sono di A10c.
+- **Trovato, detto al revisore**: il test di A4 sui cinque permessi negati all'interessato (design §3.1) ha fermato una prima stesura che
+  segnava `ManageExams` `DeniedToStakeholder` — se Carmine vuole che il candidato non scriva il suo esame, è una modifica di §3.1 e di quel
+  test —; `VerifyAlternatives` non guarda ancora `[PermissionArea]` (la piccola PR del nucleo annunciata dal revisore sulla #146).
+- **La coda**: #153 (A10b) è unita il 29 settembre, e il passo della coda di A10c l'ha fatto la sessione che la coordina (quella di A10c
+  non c'è più): `main` nel branch con un merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda —,
+  l'intestazione di A10c in cima a questo file e i blocchi di `main` sotto; il merge toglie anche il conflitto che teneva la PR senza
+  `build-test`. Build e **tutti** i test di nuovo, via `(after #153)` dal titolo e `Queued after #153.` dal corpo, la PR pronta a CI verde.
+  Le PR sopra prendono `main` al loro passo.
 
 ### Che cosa ha lasciato A10b (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153)
 
