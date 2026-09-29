@@ -5,6 +5,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -15,9 +16,10 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.Training.Staff;
 
 /// <summary>
-/// The staff's side of the trainings (design M3 §2.3, §2.4, §4.2): the list, generated, with its views — to approve, to assign,
-/// in progress, to close, the history — and the page of one training with its verbs: read it, the trainers it may be given,
-/// accept, refuse, assign. Whoever holds <c>Training.View</c> reads every training, open and closed (R.1, d2); what they may do on
+/// The staff's side of the trainings (design M3 §2.3, §2.4, §2.5, §4.2): the list, generated, with its views — to approve, to
+/// assign, in progress, to close, the history — and the page of one training with its verbs: read it, the trainers it may be
+/// given, accept, refuse, assign; and its dates (A8) — what a date meets, the dates proposed and one taken back, the date set by
+/// hand —, and closing it. Whoever holds <c>Training.View</c> reads every training, open and closed (R.1, d2); what they may do on
 /// one is the handler's answer on the row, and every refusal is a <c>ProblemDetails</c> field by field.
 /// </summary>
 public static class StaffEndpoints
@@ -56,10 +58,10 @@ public static class StaffEndpoints
             options.SearchFields.Add(training => training.TraineeVid.ToString());
             options.CustomFilters[StaffQueue.Filter] = (query, view) => StaffQueue.Narrow(query, view, StaffQueue.HeldBefore(clock.UtcNow, zone));
 
-            options.ToList = training => StaffTrainings.Row(training, noNames, vocabulary);
+            options.ToList = training => StaffTrainings.Row(training, noNames, vocabulary, StaffQueue.HeldBefore(clock.UtcNow, zone));
             options.ToListPage = (trainings, services, cancellationToken) =>
                 services.GetRequiredService<StaffTrainings>().RowsAsync(trainings, cancellationToken);
-            options.ToDetail = training => StaffTrainings.Row(training, noNames, vocabulary);
+            options.ToDetail = training => StaffTrainings.Row(training, noNames, vocabulary, StaffQueue.HeldBefore(clock.UtcNow, zone));
         });
 
         var trainings = app.MapGroup(Pattern).WithTags("TrainingStaff").RequireAuthorization(TrainingPermissions.View);
@@ -88,7 +90,53 @@ public static class StaffEndpoints
                 StepAsync(id, staff, catalog, user, http, training => staff.AssignAsync(training, body, http.RequestAborted)))
             .Step("TrainingAssign");
 
+        // The dates (A8): what a date meets, the dates proposed and one taken back, the date set by hand; and the closing.
+        trainings.MapGet("/{id:long}/conflicts", ConflictsAsync)
+            .WithName("TrainingDateConflicts")
+            .Produces<DateConflictsDto>()
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound);
+
+        trainings.MapPost("/{id:long}/slots", (long id, TrainingSlotsWriteDto body, StaffTrainings staff, TrainingDates dates, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => dates.ProposeAsync(training, body, http.RequestAborted)))
+            .Step("TrainingSlotsPropose");
+
+        trainings.MapPost("/{id:long}/slots/{slotId:long}/withdraw", (long id, long slotId, TrainingSlotWithdrawalDto body, StaffTrainings staff, TrainingDates dates, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => dates.WithdrawAsync(training, slotId, body.RowVersion, http.RequestAborted)))
+            .Step("TrainingSlotWithdraw");
+
+        trainings.MapPost("/{id:long}/date", (long id, TrainingDateWriteDto body, StaffTrainings staff, TrainingDates dates, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => dates.SetAsync(training, body, http.RequestAborted)))
+            .Step("TrainingDateSet");
+
+        trainings.MapPost("/{id:long}/close", (long id, TrainingClosureDto body, StaffTrainings staff, TrainingDates dates, LocaleCatalog catalog, ICurrentUser user, HttpContext http) =>
+                StepAsync(id, staff, catalog, user, http, training => dates.CloseAsync(training, body, http.RequestAborted)))
+            .Step("TrainingClose");
+
         return app;
+    }
+
+    /// <summary>
+    /// What a date meets (§2.5), to whoever may conduct the training — the dates are theirs to propose and to set —: the policy and
+    /// the warnings of the days from <paramref name="startsAtUtc"/> to <paramref name="endsAtUtc"/>, or of the day it starts on.
+    /// </summary>
+    private static async Task<IResult> ConflictsAsync(
+        long id,
+        DateTime startsAtUtc,
+        DateTime? endsAtUtc,
+        StaffTrainings staff,
+        TrainingDates dates,
+        HttpContext http)
+    {
+        var training = await staff.FindAsync(id, tracked: false, http.RequestAborted);
+        if (training is null)
+        {
+            return Results.NotFound();
+        }
+
+        return await staff.MayAsync(training, TrainingPermissions.Conduct)
+            ? Results.Ok(await dates.ConflictsAsync(training, startsAtUtc, endsAtUtc, http.RequestAborted))
+            : Results.StatusCode(StatusCodes.Status403Forbidden);
     }
 
     /// <summary>What every step answers: the page as it is afterwards, or why not.</summary>

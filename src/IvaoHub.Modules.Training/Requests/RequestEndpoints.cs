@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Training.Dates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -10,12 +11,12 @@ using Microsoft.EntityFrameworkCore;
 namespace IvaoHub.Modules.Training.Requests;
 
 /// <summary>
-/// The trainee's endpoints (design M3 §2.2, §4.1): their page — where they stand on each ladder, the question on the theory,
-/// their trainings —, the request, one training of theirs, and its cancellation. Four hand written verbs, because a request is
-/// not a form over a row: it is a set of checks across the trainee's history, whose every refusal is the <c>ProblemDetails</c>
-/// of the generated forms, field by field.
+/// The trainee's endpoints (design M3 §2.2, §2.5, §4.1): their page — where they stand on each ladder, the question on the
+/// theory, their trainings —, the request, one training of theirs, its cancellation, and the choice of its date among the ones
+/// the trainer proposed (A8). Hand written verbs, because a request is not a form over a row: it is a set of checks across the
+/// trainee's history, whose every refusal is the <c>ProblemDetails</c> of the generated forms, field by field.
 /// <para>Any signed in member: a trainee is not a role. Every verb reads only the caller's own trainings, through a DTO with no
-/// field of the staff's (§1.1); the staff's side is A7's. The pages that read them are A6b's.</para>
+/// field of the staff's (§1.1); the staff's side is A7's. The pages that read them are A6b's, and A8b's for the dates.</para>
 /// </summary>
 public static class RequestEndpoints
 {
@@ -49,6 +50,13 @@ public static class RequestEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict);
 
+        mine.MapPost("/{id:long}/choose", ChooseAsync)
+            .WithName("TrainingChooseDate")
+            .Produces<TraineeTrainingDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
+
         return app;
     }
 
@@ -70,13 +78,47 @@ public static class RequestEndpoints
 
         return training is null
             ? CrudProblems.Validation(problems!, new Dictionary<string, string[]>(), catalog, currentUser.Locale)
-            : Results.Created($"{Pattern}/{training.Id}", requests.ToDto(training));
+            : Results.Created($"{Pattern}/{training.Id}", await requests.ToDtoAsync(training, http.RequestAborted));
     }
 
     private static async Task<IResult> ReadAsync(long id, TrainingRequests requests, HttpContext http) =>
         await requests.OwnAsync(id, tracked: false, http.RequestAborted) is { } training
-            ? Results.Ok(requests.ToDto(training))
+            ? Results.Ok(await requests.ToDtoAsync(training, http.RequestAborted))
             : Results.NotFound();
+
+    /// <summary>
+    /// The date the trainee chooses among the ones proposed (§2.5): their training, dated, or the refusals; 409 when it moved since
+    /// they read it — a date proposed or taken back meanwhile, for one.
+    /// </summary>
+    private static async Task<IResult> ChooseAsync(
+        long id,
+        TrainingSlotChoiceDto payload,
+        TrainingRequests requests,
+        TrainingDates dates,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var training = await requests.OwnAsync(id, tracked: true, http.RequestAborted);
+        if (training is null)
+        {
+            return Results.NotFound();
+        }
+
+        try
+        {
+            var problems = await dates.ChooseAsync(training, payload, http.RequestAborted);
+            return problems is null
+                ? Results.Ok(await requests.ToDtoAsync(training, http.RequestAborted))
+                : CrudProblems.Validation(problems, new Dictionary<string, string[]>(), catalog, currentUser.Locale);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
+        }
+    }
 
     private static async Task<IResult> CancelAsync(
         long id,
@@ -96,7 +138,7 @@ public static class RequestEndpoints
         {
             var problems = await requests.CancelAsync(training, payload.RowVersion, http.RequestAborted);
             return problems is null
-                ? Results.Ok(requests.ToDto(training))
+                ? Results.Ok(await requests.ToDtoAsync(training, http.RequestAborted))
                 : CrudProblems.Validation(problems, new Dictionary<string, string[]>(), catalog, currentUser.Locale);
         }
         catch (DbUpdateConcurrencyException)

@@ -14,13 +14,13 @@ import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
  * Who is who: the trainee is the pilot of the tours (`?as=pilot`, AS3), the staff is the bench's web master (every permission,
  * and no rating: not a trainer), the trainer is `?as=trainer` (a trainer's position, SEC).
  *
- * ⚠️ It leaves the training assigned: a trainee cancels only a request nobody accepted, and on A7's code nothing closes an
- * accepted training — the staff's closure is A8's. So it runs after the request of A6b (`training-request.spec.ts`, which wants
- * no training open on either ladder at its start: Playwright runs the files in the order of their names, one worker), and on
- * A7's code alone a second run on a bench that survived the first finds the ATC path taken, here and in A6b's round, and says
- * so rather than working around it. What it can take back, it does: a request an earlier run left waiting, at the start, and
- * this run's, if it stopped before the acceptance. A grant of the trainer on a training that is over is the night's to take
- * back (`training-expiry`), and a bench that survives between runs may still show one: it is let be.
+ * It takes back what it opens, so that a second run on a bench that survived the first finds the ATC path free, here and in
+ * A6b's round (review of #146, point 2): at its end this run's training is closed by the staff with a reason — the staff's
+ * closure of A8 —, or cancelled by the trainee while nobody accepted it; at its start, whatever an earlier run left going on the
+ * ladder is taken back the same way, since a run stopped half way reaches no end. It runs after the request of A6b
+ * (`training-request.spec.ts`, which wants no training open on either ladder at its start: Playwright runs the files in the order
+ * of their names, one worker). A grant of the trainer on a training that is over is the night's to take back
+ * (`training-expiry`), and a bench that survives between runs may still show one: it is let be.
  */
 
 const words = englishTraining();
@@ -47,6 +47,12 @@ const TRAINER_ADDRESS = 'bench-trainer@bench.test';
 /** The states of a training still going (design M3 §2.1): a trainer's grant on one of these is a training they conduct. */
 const GOING = ['Requested', 'Accepted', 'Assigned', 'Scheduled'];
 
+/** The states the staff closes a training from (§2.1, A8): accepted and still going on. */
+const CLOSABLE = ['Accepted', 'Assigned', 'Scheduled'];
+
+/** Why the staff closes what a run leaves going: the trainee reads it on their page and in the mail. */
+const REASON = 'trn-test: closed by the round of the staff.';
+
 test('a request is accepted and assigned, and the trainer, signed in again, conducts that training alone', async ({
   page,
   context,
@@ -62,13 +68,16 @@ test('a request is accepted and assigned, and the trainer, signed in again, cond
   try {
     // ---------------------------------------------------------------- the trainee asks, as A6 has them ask
     await signIn(trainee, 'pilot');
-    // A request an earlier run left waiting — it stopped before the acceptance — is taken back first.
+    await signIn(context, null);
+    // What an earlier run left going is taken back first: a request still waiting, by the trainee; an ATC training accepted,
+    // assigned or dated, by the staff.
     await cancelWaiting(trainee.request);
+    await closeGoing(context.request, trainee.request, (row) => row.kind === 'Atc');
     const before = await mine(trainee.request);
     const atc = before.paths.find((path) => path.kind === 'Atc')!;
     expect(
       atc.refusal,
-      "the trainee may ask for an ATC training: on A7's code nothing closes one an earlier run accepted (the staff's closure is A8's), so the bench is recreated before a second run",
+      'the trainee may ask for an ATC training: what an earlier run left going on the ladder was taken back above',
     ).toBeNull();
     const position = atc.positions[0]!.callsign;
 
@@ -88,7 +97,6 @@ test('a request is accepted and assigned, and the trainer, signed in again, cond
     const training = `${words.kinds.Atc} · ${atc.next!.shortName} · ${position}`;
 
     // ---------------------------------------------------------------- the staff finds it among the requests to approve
-    await signIn(context, null);
     const complaints: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error' && !message.text().includes('favicon')) {
@@ -194,6 +202,9 @@ test('a request is accepted and assigned, and the trainer, signed in again, cond
         });
         expect(cancelled.status(), await cancelled.text()).toBe(200);
       }
+
+      // Accepted, assigned or dated, it is closed by the staff with a reason (A8): the next run finds the ATC path free.
+      await closeGoing(context.request, trainee.request, (row) => row.id === requested);
     }
 
     await trainee.close();
@@ -220,6 +231,26 @@ async function cancelWaiting(request: APIRequestContext): Promise<void> {
       data: { rowVersion: training.rowVersion },
     });
     expect(cancelled.status(), await cancelled.text()).toBe(200);
+  }
+}
+
+/**
+ * The trainee's trainings past the request and still going, those `which` picks, closed by the staff with a reason at the
+ * version they have (A8): once accepted, the trainee takes them back no more.
+ */
+async function closeGoing(
+  staff: APIRequestContext,
+  trainee: APIRequestContext,
+  which: (row: MyTraining['trainings'][number]) => boolean,
+): Promise<void> {
+  for (const training of (await mine(trainee)).trainings.filter(
+    (row) => CLOSABLE.includes(row.state) && which(row),
+  )) {
+    const closed = await staff.post(`/api/training/trainings/${String(training.id)}/close`, {
+      headers: asTheClientDoes,
+      data: { reason: REASON, rowVersion: training.rowVersion },
+    });
+    expect(closed.status(), await closed.text()).toBe(200);
   }
 }
 

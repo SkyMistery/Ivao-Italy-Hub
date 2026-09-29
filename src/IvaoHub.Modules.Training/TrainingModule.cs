@@ -4,6 +4,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
 using IvaoHub.Modules.Training.Settings;
@@ -24,7 +25,9 @@ namespace IvaoHub.Modules.Training;
 /// permissions, the settings, and what the settings are chosen from; A5 the items of the evaluation sheet; A6a the training
 /// itself, from the trainee's side: the request, its checks and its cancellation, and the trainee's own trainings; A7 the
 /// staff's side of it: the list, accepting and refusing a request, assigning the trainer with the grant that lets them conduct
-/// it, and the job of the night that takes that grant back once the training is over.
+/// it, and the job of the night that takes that grant back once the training is over; A8 the date: the trainer's proposals with
+/// the warnings of the calendar, the trainee's choice, the date set by hand, the session in the calendar, its reminder, and the
+/// closing of a training that found no date, by the staff or by the night.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -72,15 +75,25 @@ public sealed class TrainingModule : ModuleBase
 
         // The trainee's side of a training (A6a), and whether they passed the theory exam: their own word, until the network
         // says it (§12 n.15); a test may still answer first.
+        services.AddScoped<TrainingPeople>();
         services.AddScoped<TrainingMail>();
         services.AddScoped<TrainingRequests>();
         services.TryAddScoped<ITheoryExamSource, TraineeDeclaration>();
 
-        // The staff's side (A7), and the night that takes back the grants of the trainers of trainings that are over, in the
-        // division's own zone like the core's nightly jobs.
+        // The staff's side (A7), the dates (A8), and their jobs: the night that closes the trainings nobody dated in time and
+        // takes back the grants of the trainers of trainings that are over, in the division's own zone like the core's nightly
+        // jobs; and the reminders of the sessions, every quarter of an hour.
         services.AddScoped<StaffTrainings>();
+        services.AddScoped<TrainingDates>();
         services.AddScoped<TrainingExpiryJob>();
-        services.AddQuartz(quartz => quartz.AddJob<TrainingExpiryJob>(job => job.WithIdentity(TrainingExpiryJob.JobName)));
+        services.AddScoped<TrainingRemindersJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<TrainingExpiryJob>(job => job.WithIdentity(TrainingExpiryJob.JobName))
+            .AddJob<TrainingRemindersJob>(job => job.WithIdentity(TrainingRemindersJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(TrainingRemindersJob.JobName)
+                .WithIdentity($"{TrainingRemindersJob.JobName}-quarterly")
+                .WithCronSchedule(TrainingRemindersJob.Cron)));
         services.AddOptions<QuartzOptions>()
             .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
                 .ForJob(TrainingExpiryJob.JobName)

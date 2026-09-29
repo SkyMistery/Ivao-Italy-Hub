@@ -1,4 +1,3 @@
-using System.Globalization;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
@@ -7,11 +6,13 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Training.Staff;
 
@@ -34,6 +35,8 @@ public enum StaffResult
 /// are two saves of two contexts: the grant goes first, so a trainer never holds the training without it, and one left behind by
 /// a write that failed is taken back here or by the job of the night (<see cref="TrainingExpiryJob"/>).</para>
 /// <para>The mails go after the save, through the one notification service (<see cref="TrainingMail"/>).</para>
+/// <para>The dates of a training (A8) are <see cref="TrainingDates"/>'s: the page shows them — the dates proposed with their
+/// warnings, the session and whether it shows as held — and says whether the reader may conduct it or close it.</para>
 /// </summary>
 public sealed class StaffTrainings(
     TrainingDbContext database,
@@ -43,9 +46,11 @@ public sealed class StaffTrainings(
     ILogger<StaffTrainings> logger,
     ModuleSettingsStore settingsStore,
     TrainingMail mail,
+    TrainingPeople people,
     IAuthorizationService authorization,
     IHttpContextAccessor http,
     ICurrentUser currentUser,
+    IOptions<DivisionOptions> division,
     IClock clock)
 {
     /// <summary>What marks the grants the assignment writes, among the grants of the back office.</summary>
@@ -67,19 +72,32 @@ public sealed class StaffTrainings(
     public static bool IsAssignable(TrainingState state) =>
         state is TrainingState.Accepted or TrainingState.Assigned or TrainingState.Scheduled;
 
-    /// <summary>The page of one training: the request, the decision, the trainer, and what the reader may do on it now.</summary>
+    /// <summary>
+    /// The page of one training: the request, the decision, the trainer, the dates proposed and the session, the closing, and what
+    /// the reader may do on it now.
+    /// </summary>
     public async Task<StaffTrainingDto> PageAsync(Training training, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(training);
 
-        var names = await NamesAsync(
-            [training.TraineeVid, training.DecidedBy, training.TrainerVid, training.AssignedBy, training.ClosedBy],
+        var slots = await database.Slots.AsNoTracking()
+            .Where(slot => slot.TrainingId == training.Id)
+            .OrderBy(slot => slot.StartsAtUtc)
+            .ThenBy(slot => slot.Id)
+            .ToListAsync(cancellationToken);
+        var names = await people.NamesAsync(
+            [
+                training.TraineeVid, training.DecidedBy, training.TrainerVid, training.AssignedBy, training.ClosedBy,
+                .. slots.Select(slot => (int?)slot.CreatedBy),
+            ],
             cancellationToken);
         var settings = await settingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey, cancellationToken);
         var rating = vocabulary.Find(training.Kind, training.Rating);
 
         var canDecide = training.State == TrainingState.Requested && await MayAsync(training, TrainingPermissions.Approve);
         var canAssign = IsAssignable(training.State) && await MayAsync(training, TrainingPermissions.Assign);
+        var canConduct = TrainingDates.IsDatable(training.State) && await MayAsync(training, TrainingPermissions.Conduct);
+        var canClose = TrainingDates.IsClosable(training.State) && await MayAsync(training, TrainingPermissions.Approve);
 
         return new StaffTrainingDto(
             training.Id,
@@ -91,7 +109,7 @@ public sealed class StaffTrainings(
             training.Position,
             training.AirportIcao,
             training.Fir,
-            Member(training.TraineeVid, names)!,
+            TrainingPeople.Member(training.TraineeVid, names)!,
             vocabulary.Find(training.Kind, training.TraineeRatingAtRequest)?.ShortName,
             training.TraineeHoursAtRequest,
             training.CreatedAt,
@@ -102,18 +120,30 @@ public sealed class StaffTrainings(
             training.State,
             training.Rejection,
             training.RejectionReason,
-            Member(training.DecidedBy, names),
+            TrainingPeople.Member(training.DecidedBy, names),
             training.DecidedAt,
-            Member(training.TrainerVid, names),
-            Member(training.AssignedBy, names),
+            TrainingPeople.Member(training.TrainerVid, names),
+            TrainingPeople.Member(training.AssignedBy, names),
             training.AssignedAt,
+            [
+                .. slots.Select(slot => new StaffSlotDto(
+                    slot.Id,
+                    slot.StartsAtUtc,
+                    slot.EndsAtUtc,
+                    DateWarnings.Read(slot.WarningsJson),
+                    TrainingPeople.Member(slot.CreatedBy, names)!,
+                    slot.CreatedAt)),
+            ],
             training.ScheduledStartUtc,
+            StaffQueue.IsHeld(training, clock.UtcNow, division.Value.ResolveTimeZone()),
+            training.ChosenSlotId is not null,
             training.CompletedAt,
-            Member(training.ClosedBy, names),
+            TrainingPeople.Member(training.ClosedBy, names),
             training.ClosedAt,
+            training.CloseReason,
             training.ReadyForMockExam,
             training.ReadyForExam,
-            new StaffTrainingActionsDto(canDecide, canAssign),
+            new StaffTrainingActionsDto(canDecide, canAssign, canConduct, canClose),
             training.RowVersion);
     }
 
@@ -122,15 +152,19 @@ public sealed class StaffTrainings(
     {
         ArgumentNullException.ThrowIfNull(trainings);
 
-        var names = await NamesAsync(
+        var names = await people.NamesAsync(
             [.. trainings.Select(training => (int?)training.TraineeVid), .. trainings.Select(training => training.TrainerVid)],
             cancellationToken);
+        var heldBefore = StaffQueue.HeldBefore(clock.UtcNow, division.Value.ResolveTimeZone());
 
-        return [.. trainings.Select(training => Row(training, names, vocabulary))];
+        return [.. trainings.Select(training => Row(training, names, vocabulary, heldBefore))];
     }
 
-    /// <summary>A row of the list; without the names when the caller has none to give.</summary>
-    public static StaffTrainingRowDto Row(Training training, IReadOnlyDictionary<int, string> names, RatingVocabulary vocabulary)
+    /// <summary>
+    /// A row of the list; without the names when the caller has none to give. A dated training whose session started before
+    /// <paramref name="heldBefore"/> — today's first moment in the division's time zone — shows as held.
+    /// </summary>
+    public static StaffTrainingRowDto Row(Training training, IReadOnlyDictionary<int, string> names, RatingVocabulary vocabulary, DateTime heldBefore)
     {
         ArgumentNullException.ThrowIfNull(training);
         ArgumentNullException.ThrowIfNull(names);
@@ -144,10 +178,11 @@ public sealed class StaffTrainings(
             training.IsMockExam,
             training.Position,
             training.State,
-            Member(training.TraineeVid, names)!,
-            Member(training.TrainerVid, names),
+            TrainingPeople.Member(training.TraineeVid, names)!,
+            TrainingPeople.Member(training.TrainerVid, names),
             training.CreatedAt,
-            training.ScheduledStartUtc);
+            training.ScheduledStartUtc,
+            StaffQueue.IsHeld(training, heldBefore));
     }
 
     /// <summary>
@@ -259,7 +294,9 @@ public sealed class StaffTrainings(
     /// <summary>
     /// Assigns the trainer, or changes them (§2.4): somebody the rule of <see cref="TrainerChoice"/> lets train it, asked again
     /// here whatever the page offered. Writes their grant on this training and takes the previous trainer's away (§3.3); an
-    /// accepted training becomes <c>Assigned</c>, a dated one keeps its date. Mails the trainee and the trainer.
+    /// accepted training becomes <c>Assigned</c>, a dated one keeps its date. Every date proposed that the trainee has not chosen
+    /// goes (A8), whoever proposed it — the previous trainer, or the coordinator or the assistant, who conduct every training —:
+    /// the new trainer proposes their own. Mails the trainee and the trainer.
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> AssignAsync(
         Training training,
@@ -315,6 +352,8 @@ public sealed class StaffTrainings(
             training.State = TrainingState.Assigned;
         }
 
+        database.Slots.RemoveRange(await database.Slots.Where(slot => slot.TrainingId == training.Id).ToListAsync(cancellationToken));
+
         try
         {
             await database.SaveChangesAsync(cancellationToken);
@@ -365,9 +404,9 @@ public sealed class StaffTrainings(
     /// </summary>
     private async Task TellAssignedAsync(Training training, int trainerVid, CancellationToken cancellationToken)
     {
-        var names = await NamesAsync([training.TraineeVid, trainerVid], cancellationToken);
-        var trainer = Label(trainerVid, names);
-        var trainee = Label(training.TraineeVid, names);
+        var names = await people.NamesAsync([training.TraineeVid, trainerVid], cancellationToken);
+        var trainer = TrainingPeople.Label(trainerVid, names);
+        var trainee = TrainingPeople.Label(training.TraineeVid, names);
 
         await mail.SendAsync(
             TrainingNotifications.TrainerAssigned,
@@ -424,31 +463,6 @@ public sealed class StaffTrainings(
                 held[user.Vid])),
         ];
     }
-
-    /// <summary>The names the hub has for these people, by VID; whoever it does not know is left out.</summary>
-    private async Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int?> vids, CancellationToken cancellationToken)
-    {
-        var wanted = vids.OfType<int>().Distinct().ToList();
-        if (wanted.Count == 0)
-        {
-            return new Dictionary<int, string>();
-        }
-
-        return (await hub.Users.AsNoTracking()
-                .Where(user => wanted.Contains(user.Vid))
-                .Select(user => new { user.Vid, user.FirstName, user.LastName })
-                .ToListAsync(cancellationToken))
-            .ToDictionary(user => user.Vid, user => $"{user.FirstName} {user.LastName}".Trim());
-    }
-
-    private static TrainingMemberDto? Member(int? vid, IReadOnlyDictionary<int, string> names) =>
-        vid is { } known ? new TrainingMemberDto(known, names.GetValueOrDefault(known)) : null;
-
-    /// <summary>A person in a mail: their name and VID, or the VID alone when the hub has no name.</summary>
-    private static string Label(int vid, IReadOnlyDictionary<int, string> names) =>
-        names.GetValueOrDefault(vid) is { Length: > 0 } name
-            ? string.Create(CultureInfo.InvariantCulture, $"{name} ({vid})")
-            : vid.ToString(CultureInfo.InvariantCulture);
 
     private static (StaffResult, IReadOnlyDictionary<string, string[]>) Refuse(string field, string key) =>
         (StaffResult.Refused, new Refusals().Add(field, key).Errors);

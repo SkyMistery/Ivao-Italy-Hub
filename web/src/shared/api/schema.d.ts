@@ -2206,6 +2206,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/mine/{id}/choose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingChooseDate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/training/queue": {
         parameters: {
             query?: never;
@@ -2312,6 +2328,86 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["TrainingAssign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TrainingDateConflicts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingSlotsPropose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/slots/{slotId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingSlotWithdraw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingDateSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/trainings/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TrainingClose"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3279,6 +3375,11 @@ export interface components {
          */
         CheckRanBy: "Server" | "Agent";
         /**
+         * @description What happens when a trainer proposes a date that meets something in the calendar (design M3 §2.5).
+         * @enum {unknown}
+         */
+        ConflictPolicy: "Warn" | "Block" | "None";
+        /**
          * @description A message in full. Everything but the status is read only on the screen and read only on the
          *     server: what the sender wrote is not the department's to edit, which is why the write payload
          *     below carries the status and nothing else.
@@ -3684,6 +3785,55 @@ export interface components {
             copied: number;
             skipped: string[];
         };
+        /**
+         * @description What the hub finds on the days of a date (design M3 §2.5), before anybody writes it: the division's policy, so the page knows
+         *     whether a warning asks for a confirmation or refuses the date, and the warnings — none when the policy is not to look.
+         */
+        DateConflictsDto: {
+            policy: components["schemas"]["ConflictPolicy"];
+            warnings: components["schemas"]["DateWarning"][];
+        };
+        /**
+         * @description One thing the hub found on the days a date touches (design M3 §2.5), as it was when the date was looked at: another training
+         *     with its session then — its ladder, rating and position, which the public calendar shows too, and never whose it is —, or an
+         *     entry of the calendar of one of the kinds of `conflictKinds`, with its title and its address. A date the trainer proposes
+         *     keeps its warnings (TrainingSlot) for whoever reads the training, so nobody's name or VID is in them, and no entry
+         *     that only one department reads (`DateConflicts.Kept`).
+         */
+        DateWarning: {
+            /** @description A training, or an entry of the calendar. */
+            kind: components["schemas"]["DateWarningKind"];
+            /**
+             * Format: date-time
+             * @description When it starts: the session of the training, the entry.
+             */
+            startsAtUtc: string;
+            /**
+             * Format: date-time
+             * @description When the entry ends; none for a session, and for an entry with no end.
+             */
+            endsAtUtc: null | string;
+            /**
+             * Format: int64
+             * @description The other training, for the staff's page of it.
+             */
+            trainingId: null | number;
+            trainingKind: null | components["schemas"]["RatingKind"];
+            /** @description Its rating, as the core's vocabulary names it. */
+            ratingShortName: null | string;
+            /** @description Its position; none for a pilot's. */
+            position: null | string;
+            /** @description The kind of the entry, as the calendar names it. */
+            calendarKind: null | string;
+            title: null | components["schemas"]["LocalizedOfstring"];
+            /** @description Where the entry is read, when it has an address. */
+            url: null | string;
+        };
+        /**
+         * @description What a warning of a date is about (design M3 §2.5). Stored by name.
+         * @enum {unknown}
+         */
+        DateWarningKind: "Training" | "Calendar";
         /**
          * @description Owner of a row. These are the department codes IVAO itself uses, so a staff position maps onto a
          *     department without a translation table (plan section 7). Stored as a string, never as a number.
@@ -6267,6 +6417,19 @@ export interface components {
          * @enum {unknown}
          */
         StaffLevel: "Coordinator" | "Assistant" | "Advisor" | "Member";
+        /** @description A date proposed, as the staff reads it (§4.2): when, what the hub warned about then, and who proposed it when. */
+        StaffSlotDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            warnings: components["schemas"]["DateWarning"][];
+            proposedBy: components["schemas"]["TrainingMemberDto"];
+            /** Format: date-time */
+            proposedAt: string;
+        };
         /**
          * @description What the reader may do on the training now, as the one handler answers on the row: a button is drawn when it said yes. Never
          *     on a training of the reader's own, the super administrator included (§3).
@@ -6276,13 +6439,22 @@ export interface components {
             canDecide: boolean;
             /** @description Assign the trainer or change them (`Training.Assign`), while the training is accepted and going on. */
             canAssign: boolean;
+            /**
+             * @description Propose dates, take one back, set the date by hand (`Training.Conduct`, A8), while the training has its trainer and goes
+             *     on: dates are proposed while it waits for one, and the date is set by hand then or once it has one.
+             */
+            canConduct: boolean;
+            /** @description Close it with a reason (`Training.Approve`, A8), while it is accepted and going on. */
+            canClose: boolean;
         };
         /**
-         * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §4.2): the request with the trainee's rating and hours
-         *     when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, and what the
-         *     reader may do. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the fields
-         *     the trainee may not read — the notes of the staff, the report's comment for the staff — are not here, and arrive with the one
-         *     function of A9 that leaves them out for the row's trainee (note `le-note-riservate-e-il-trainee`). Never an address.
+         * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §4.2): the request with the trainee's rating and
+         *     hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer, the dates
+         *     proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's choice
+         *     or set by hand —, the closing with its reason, and what the reader may do. Read with `Training.View`, which the core never
+         *     denies, so the trainee of the row reads it too: the fields the trainee may not read — the notes of the staff, the report's
+         *     comment for the staff — are not here, and arrive with the one function of A9 that leaves them out for the row's trainee (note
+         *     `le-note-riservate-e-il-trainee`). Never an address.
          */
         StaffTrainingDto: {
             /** Format: int64 */
@@ -6317,13 +6489,17 @@ export interface components {
             assignedBy: null | components["schemas"]["TrainingMemberDto"];
             /** Format: date-time */
             assignedAt: null | string;
+            slots: components["schemas"]["StaffSlotDto"][];
             /** Format: date-time */
             scheduledStartUtc: null | string;
+            held: boolean;
+            dateChosenByTrainee: boolean;
             /** Format: date-time */
             completedAt: null | string;
             closedBy: null | components["schemas"]["TrainingMemberDto"];
             /** Format: date-time */
             closedAt: null | string;
+            closeReason: null | string;
             readyForMockExam: boolean;
             readyForExam: boolean;
             actions: components["schemas"]["StaffTrainingActionsDto"];
@@ -6333,7 +6509,8 @@ export interface components {
         /**
          * @description A training as the staff's list shows it (design M3 §4.2): what it is, whose it is, where it stands, and who trains it. The
          *     short name of the rating is the core's vocabulary's; the names are the hub's. `CreatedAt` is when it was asked for,
-         *     named as the column the list sorts on.
+         *     named as the column the list sorts on. `Held` says a dated training shows as held (§1.2): its day is over in the
+         *     division's time zone, which nothing writes.
          */
         StaffTrainingRowDto: {
             /** Format: int64 */
@@ -6351,6 +6528,7 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             scheduledStartUtc: null | string;
+            held: boolean;
         };
         /** @description A tour the pilot started, with the measure of PilotProgress and the next leg while it is not done. */
         StartedTourDto: {
@@ -6757,10 +6935,23 @@ export interface components {
             arrivalIcao: null | string;
             aircraft: null | string;
         };
+        /** @description A date proposed, as its trainee chooses it: nothing but when (§4.1). The warnings are the staff's. */
+        TraineeSlotDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+        };
         /**
-         * @description A training as its trainee reads it (§1.1, §4.1). It has no field the trainee does not read — no comment of the staff, and
-         *     later no note of the sheet —, so their endpoints cannot hand one over whatever the row holds. `RequestedAt` is when
-         *     they asked for it; `RejectionReason` why the staff refused it, as the mail says it (A7).
+         * @description A training as its trainee reads it (§1.1, §4.1). It has no field the trainee does not read — no comment of the staff, no
+         *     warning of a date, and later no note of the sheet —, so their endpoints cannot hand one over whatever the row holds.
+         *     `RequestedAt` is when they asked for it; `RejectionReason` why the staff refused it, as the mail says it (A7).
+         *     `Trainer` is who trains it, as the mail of the assignment names them; `Slots` the dates proposed to choose from, the
+         *     ones still to come, while the training waits for its date (A8); `Held` says a dated training shows as held, from the day
+         *     after its session in the division's time zone (§1.2); `CloseReason` why the staff closed it — none when the hub did,
+         *     because the trainee chose no date in time (A8).
          */
         TraineeTrainingDto: {
             /** Format: int64 */
@@ -6780,12 +6971,16 @@ export interface components {
             requestedAt: string;
             /** Format: date-time */
             decidedAt: null | string;
+            trainer: null | components["schemas"]["TrainingMemberDto"];
+            slots: components["schemas"]["TraineeSlotDto"][];
             /** Format: date-time */
             scheduledStartUtc: null | string;
+            held: boolean;
             /** Format: date-time */
             completedAt: null | string;
             /** Format: date-time */
             closedAt: null | string;
+            closeReason: null | string;
             readyForMockExam: boolean;
             readyForExam: boolean;
             /** Format: date-time */
@@ -6820,6 +7015,23 @@ export interface components {
         };
         /** @description The version of the training the trainee saw when they pressed «cancel». */
         TrainingCancellation: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A training closed by the staff (§2.5): the reason the trainee reads, and the version seen. */
+        TrainingClosureDto: {
+            reason: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description The date set by hand (§2.5, d2): whenever the session starts — among the dates proposed or not, before or after today —, with
+         *     the same warnings and their confirmation, and the version of the training seen.
+         */
+        TrainingDateWriteDto: {
+            /** Format: date-time */
+            startsAtUtc: string;
+            confirmed: boolean;
             /** Format: date-time */
             rowVersion: string;
         };
@@ -6879,6 +7091,35 @@ export interface components {
             notesText: null | string;
             /** @description The trainee's answer on the theory exam; none when they were not asked. */
             theoryPassed: null | boolean;
+        };
+        /** @description The trainee's choice among the dates proposed (§2.5), at the version of their training they saw. */
+        TrainingSlotChoiceDto: {
+            /** Format: int64 */
+            slotId: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description The trainer's dates (§2.5), proposed together, so the trainee is written to once: the dates; whether whoever proposes them has
+         *     seen their warnings and confirms them, which the policy `Warn` asks; and the version of the training they saw.
+         */
+        TrainingSlotsWriteDto: {
+            slots: null | components["schemas"]["TrainingSlotWriteDto"][];
+            confirmed: boolean;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A date taken back before the trainee chose it, at the version of the training seen. */
+        TrainingSlotWithdrawalDto: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A date proposed for the session (§2.5): when it would start and end, in UTC. */
+        TrainingSlotWriteDto: {
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
         };
         /**
          * @description Where a training is (design M3 §2.1). Stored by name, and no state is ever deleted: everything stays on record.
@@ -13739,6 +13980,55 @@ export interface operations {
             };
         };
     };
+    TrainingChooseDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingSlotChoiceDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraineeTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     TrainingQueueList: {
         parameters: {
             query?: {
@@ -13990,6 +14280,270 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TrainingAssignmentDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingDateConflicts: {
+        parameters: {
+            query: {
+                startsAtUtc: string;
+                endsAtUtc?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DateConflictsDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingSlotsPropose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingSlotsWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingSlotWithdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                slotId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingSlotWithdrawalDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingDateSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingDateWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTrainingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TrainingClose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingClosureDto"];
             };
         };
         responses: {

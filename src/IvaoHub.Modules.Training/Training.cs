@@ -1,6 +1,8 @@
 using System.Globalization;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 
 namespace IvaoHub.Modules.Training;
 
@@ -63,6 +65,9 @@ public enum TrainingRejection
 /// assigns, and the trainer, who holds <c>Training.Conduct</c> on the scope of this training alone. Each is asked by the write
 /// guard on this row's scope, never of its trainee, never to move it; none of them at creation, because the trainee creates
 /// it.</para>
+/// <para>Its session is in the division's one calendar (§5.1, A8; note <c>il-training-in-pubblico</c>): the training projects
+/// the session in hand (<see cref="IProjectable"/>), public, with its rating and position and nobody's name or VID, and the
+/// interceptor keeps the entry where the date is, in the same transaction, until the training stops being dated.</para>
 /// <para>It sits at the root of the module because a class of this name in a namespace below the module's would be hidden
 /// there by the module's own namespace.</para>
 /// </summary>
@@ -71,7 +76,8 @@ public enum TrainingRejection
 [AlsoWrittenWith(TrainingPermissions.Approve)]
 [AlsoWrittenWith(TrainingPermissions.Assign)]
 [AlsoWrittenWith(TrainingPermissions.Conduct)]
-public sealed class Training : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasResourceScope
+public sealed class Training
+    : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasResourceScope, IProjectable
 {
     /// <summary>As wide as a callsign in the core's reference of the positions a training copies it from.</summary>
     public const int MaxPositionLength = 32;
@@ -147,16 +153,25 @@ public sealed class Training : IOwnedByDepartment, IAuditable, IVisible, ISubmit
 
     public DateTime? AssignedAt { get; set; }
 
-    /// <summary>When the session in hand starts (A8); a session already over is a row of the sessions (A9).</summary>
+    /// <summary>
+    /// When the session in hand starts (A8): the date the trainee chose, or the one set by hand; none while it is still to be
+    /// fixed. A training closed keeps it on record (§6), no longer in hand: only a dated training is in the calendar, is reminded
+    /// or shows as held. A session already over is a row of the sessions (A9).
+    /// </summary>
     public DateTime? ScheduledStartUtc { get; set; }
 
-    /// <summary>The availability the trainee chose among the trainer's (A8); none when the date was set by hand.</summary>
+    /// <summary>
+    /// Which of the trainer's proposals the trainee chose (A8), kept once the proposals are gone (§1.3); none when the date was set
+    /// by hand.
+    /// </summary>
     public long? ChosenSlotId { get; set; }
 
     /// <summary>
     /// When the reminder of the session in hand left (design M3 §5.3): once per session, and cleared with the date. Not in the
     /// table of §1.2, which lists the session in hand on this row; §5.3 puts the reminder on it, and A8 would otherwise migrate.
+    /// The job's own bookkeeping (A8): writing it alone is not a change of the training, so it is not audited and moves nothing.
     /// </summary>
+    [NotAudited]
     public DateTime? RemindedAt { get; set; }
 
     /// <summary>The trainer's box of the report (A9): the next request on the same rating is a mock exam (§2.8).</summary>
@@ -226,6 +241,69 @@ public sealed class Training : IOwnedByDepartment, IAuditable, IVisible, ISubmit
     public int? StakeholderVid => TraineeVid;
 
     public string ResourceScope => ScopeOf(Id);
+
+    /// <summary>
+    /// The short name of its rating, as the core's vocabulary says it: what the calendar calls the session. A projection is worked
+    /// out by the row itself, which asks no service, so the context that tracks a training tells it (<c>TrainingDbContext</c>);
+    /// none from a context that was given no vocabulary. Not a column.
+    /// </summary>
+    public string? RatingShortName { get; set; }
+
+    public string SourceModule => TrainingModule.ModuleKey;
+
+    public string SourceId => SourceIdOf(Id);
+
+    /// <summary>What the source of every projection of a training starts with, in the module's projections.</summary>
+    public const string SourcePrefix = "training:";
+
+    /// <summary>The kind of the calendar the session is an entry of: the division's own word for a training (§5.1).</summary>
+    public const string CalendarKind = "training";
+
+    /// <summary>The source of the projections of one training.</summary>
+    public static string SourceIdOf(long id) => string.Create(CultureInfo.InvariantCulture, $"{SourcePrefix}{id}");
+
+    /// <summary>The public page of a session (§4.1, A10), where its entry of the calendar points.</summary>
+    public static string SessionPath(long id) => string.Create(CultureInfo.InvariantCulture, $"/training/sessions/{id}");
+
+    /// <summary>
+    /// The session in hand, in the calendar (§5.1; note <c>il-training-in-pubblico</c>): one public entry of the kind
+    /// <see cref="CalendarKind"/> while the training is dated, at its start, titled with its rating and its position — never a name
+    /// nor a VID —, pointing at the page of the session. Nothing otherwise: a training closed without a session held leaves the
+    /// calendar. The sessions held join with A9. Nothing in the search either (§5.1).
+    /// </summary>
+    public ProjectionSnapshot? Project(ProjectionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (State != TrainingState.Scheduled || ScheduledStartUtc is not { } start)
+        {
+            return null;
+        }
+
+        string?[] parts = [RatingShortName, Position];
+        var title = string.Join(" · ", parts.Where(part => !string.IsNullOrEmpty(part)));
+        if (title.Length == 0)
+        {
+            title = string.Create(CultureInfo.InvariantCulture, $"#{Id}");
+        }
+
+        return new ProjectionSnapshot(
+            Search: null,
+            [
+                new CalendarProjection(
+                    CalendarKind,
+                    start,
+                    EndsAtUtc: null,
+                    AllDay: false,
+                    OwnerDepartment,
+                    Visibility.Public,
+                    SessionPath(Id),
+                    new Localized<string>(context.Locales.Select(locale => KeyValuePair.Create(locale, title))),
+                    Description: null),
+            ],
+            [],
+            []);
+    }
 
     /// <summary>What every scope of a training starts with.</summary>
     private const string ScopePrefix = TrainingModule.ModuleKey + ":training:";

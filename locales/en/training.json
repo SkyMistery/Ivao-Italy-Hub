@@ -306,7 +306,19 @@
     "trainerIsTrainee": "Nobody is the trainer of their own training.",
     "trainerNotStaff": "Only the staff of the training who has signed in to the hub at least once can be the trainer.",
     "trainerRatingTooLow": "Their rating on this path is below the one this training is for.",
-    "trainerAlready": "They are the trainer of this training already."
+    "trainerAlready": "They are the trainer of this training already.",
+    "datesNotProposable": "Dates are proposed only for a training with its trainer assigned and no date yet.",
+    "slotPassed": "This date has already gone by.",
+    "slotEndsBeforeItStarts": "The end comes before the start.",
+    "slotTooLong": "A date proposed lasts 12 hours at most.",
+    "slotTwice": "This date is among the ones proposed already.",
+    "slotsTooMany": "At most 10 dates are proposed to the trainee at a time.",
+    "slotUnknown": "This date is no longer among the ones proposed: reload the page.",
+    "slotNotChoosable": "A date is chosen only while the training waits for its date.",
+    "dateNotSettable": "A date is set only on a training with its trainer assigned that is still going on.",
+    "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that meets it.",
+    "dateNotConfirmed": "Something is in the calendar on that day already: look at the warnings and confirm the date.",
+    "trainingNotClosable": "Only an accepted training that is still going on can be closed."
   },
   "notifications": {
     "requestReceived": {
@@ -324,6 +336,22 @@
     "trainerAssigned": {
       "title": "Trainers assigned",
       "description": "An email when a trainer is assigned to a training of yours, or you are assigned a training as its trainer."
+    },
+    "datesProposed": {
+      "title": "Dates proposed by the trainer",
+      "description": "An email when the trainer proposes the dates of the session of a training of yours."
+    },
+    "dateConfirmed": {
+      "title": "Dates of the sessions",
+      "description": "An email when the date of a training session is fixed, as its trainee or as its trainer."
+    },
+    "reminder": {
+      "title": "Reminders of the sessions",
+      "description": "An email before a training session, as its trainee or as its trainer."
+    },
+    "trainingClosed": {
+      "title": "Trainings closed",
+      "description": "An email when a training of yours is closed without a report."
     }
   },
   "mail": {
@@ -346,7 +374,27 @@
         "body": "{{trainer}} is the trainer of the training of {{trainee}}: {{training}}.\n\n{{next}}\n\n{{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "assignedTrainee": "Your trainer will propose the dates of the session. Your trainings are on this page:",
-      "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office. The next time you open the hub it asks you to sign in again: from then on the training is yours to conduct. The page of the training:"
+      "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office. The next time you open the hub it asks you to sign in again: from then on the training is yours to conduct. The page of the training:",
+      "datesProposed": {
+        "subject": "[Training] Dates proposed: {{training}}",
+        "body": "{{trainer}} has proposed the dates for the session of your training {{training}}, in UTC:\n\n{{dates}}\n\nChoose yours on the training's page: {{url}}\n\nIf none of them suits you, write to your trainer.\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "dateConfirmed": {
+        "subject": "[Training] Date fixed: {{training}}, {{session}} UTC",
+        "body": "The session of the training {{training}}, of {{trainee}} with {{trainer}}, is fixed: {{session}} UTC.\n\n{{next}}\n\n{{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "reminder": {
+        "subject": "[Training] Reminder: {{training}}, {{session}} UTC",
+        "body": "A reminder: the session of the training {{training}}, of {{trainee}} with {{trainer}}, is on {{session}} UTC.\n\n{{next}}\n\n{{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "trainingClosed": {
+        "subject": "[Training] Training closed: {{training}}",
+        "body": "Your training {{training}} has been closed.\n\n{{why}}\n\nA closure makes you wait for nothing: you can ask for the training again whenever you want.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "sessionTrainee": "Your training is on this page:",
+      "sessionTrainer": "The training in the back office:",
+      "closedByStaff": "The training department closed it. The reason: {{reason}}",
+      "closedUnanswered": "You did not choose a date among the ones your trainer proposed in the time the division gives to choose one."
     }
   }
 }
