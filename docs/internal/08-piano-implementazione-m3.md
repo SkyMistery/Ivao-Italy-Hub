@@ -2167,6 +2167,17 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
   compilano (i tipi e gli endpoint nascono qui). **Due scritture dello stesso training nello stesso momento** (un report e una
   rischedula): la versione della riga fa della seconda un 409 — provato con una versione vecchia, non con due richieste insieme. **La
   mail in Mailpit**: i test d'integrazione leggono le mail in coda; la consegna è del servizio del nucleo.
+- **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650);
+  la sessione di A9a non c'era più, i nit li ha corretti la sessione che coordina la coda):
+  1. **Una voce della scheda scritta due volte** in un report non si rifiuta più con `sheetChanged` («ricarica la pagina», che non
+     aiuterebbe) ma con `training:errors.evaluationItemTwice`; una voce che non è sulla scheda resta `sheetChanged`.
+  2. **Un giudizio fuori dall'elenco** su una voce di teoria si rifiuta con `training:errors.evaluationMarkUnknown`, non con
+     `errors.required`. Il test di unità `AReportIsRefusedOnTheFieldOfTheItemItGetsWrong` dice tutti e due.
+  3. **La mail del no-show** («The trainer marked…») non nomina più il trainer: il no-show lo registrano anche TC e TAC.
+  4. ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR: **una data forzata su una sessione già iniziata** (la domanda che
+     A8a aveva lasciato per A9: `SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione è cominciata; la raccomandazione è
+     rifiutarle da quando vale `TrainingSessions.IsRecordable`), e **gli scostamenti 1, 2 e 7**, che cambiano il design e vogliono la
+     sua risposta con il link.
 
 **Com'è andata (A9b)**: *(a fase chiusa)*
 

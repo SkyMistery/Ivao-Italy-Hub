@@ -142,9 +142,15 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Trovato, detto al revisore**: l'unica asserzione cambiata di una fase sotto, in `TrainingStaffTests` (A7): diceva che la pagina dello
   staff non ha `staffComment`, il segno di A7 che i campi riservati non c'erano ancora; ora dice che c'è, vuoto su una richiesta, e che a un
   advisor non si toglie niente (`08`, A9, «Com'è andata (A9a)»).
-- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in coda dopo #147, dopo #146, dopo #144, dopo #143. Quando
-  #148 sarà unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal
-  titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A9a se è ancora viva, altrimenti quella di A9b prima di cominciare.
+- **La coda**: la PR è in bozza con `(after #148)` e `Queued after #148.`; #148 è in cima (#147 è unita il 29 settembre). Quando #148 sarà
+  unita, il passo della coda — `main` nel branch con un merge (mai un rebase), build e **tutti** i test di nuovo, via la coda dal titolo e
+  dal corpo, la PR pronta a CI verde — lo fa la sessione che coordina la coda (quella di A9a non c'è più).
+- **La revisione di #149** (29 settembre 2026, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891398650)):
+  i tre nit sono corretti (`08`, «Com'è andata (A9a)», l'ultima voce). ⚠️ **Aspettano Carmine**, e il master posta le risposte sulla PR:
+  1. **una data forzata su una sessione già iniziata** (`TrainingDates.SetAsync` e `CloseAsync` accettano un `Scheduled` la cui sessione
+     è cominciata; la raccomandazione è rifiutarle da quando vale `TrainingSessions.IsRecordable`);
+  2. **gli scostamenti 1, 2 e 7**: l'esito si registra dall'inizio della sessione (il design dice dal giorno dopo), un `Completed` resta nel
+     calendario, «pronto per il mock exam» si rifiuta su un mock exam.
 
 ### Che cosa ha lasciato A8b (27 settembre 2026, branch `m3/a8b-dates-pages`, PR #148)
 
