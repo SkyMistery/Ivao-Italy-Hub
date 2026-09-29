@@ -142,11 +142,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Trovato, detto al revisore**: il test di A4 sui cinque permessi negati all'interessato (design §3.1) ha fermato una prima stesura che
   segnava `ManageExams` `DeniedToStakeholder` — se Carmine vuole che il candidato non scriva il suo esame, è una modifica di §3.1 e di quel
   test —; `VerifyAlternatives` non guarda ancora `[PermissionArea]` (la piccola PR del nucleo annunciata dal revisore sulla #146).
-- **La coda**: la PR è in bozza con `(after #153)` e `Queued after #153.`, **in conflitto con `main` e senza CI** (l'handoff, dopo #145):
-  per la sessione che coordina, `main` entra in ogni branch al suo passo della coda, e le suite locali sono verdi. Quando #153 sarà unita, il
-  passo della coda di A10c — `main` nel branch con un merge (mai un rebase), l'intestazione di A10c in cima a questo file e i blocchi nuovi di
-  `main` sotto, build e **tutti** i test di nuovo, via la coda dal titolo e dal corpo, la PR pronta a CI verde — lo fa la sessione di A10c se è
-  ancora viva, altrimenti quella della fase dopo prima di cominciare.
+- **La coda**: #153 (A10b) è unita il 29 settembre, e il passo della coda di A10c l'ha fatto la sessione che la coordina (quella di A10c
+  non c'è più): `main` nel branch con un merge — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda —,
+  l'intestazione di A10c in cima a questo file e i blocchi di `main` sotto; il merge toglie anche il conflitto che teneva la PR senza
+  `build-test`. Build e **tutti** i test di nuovo, via `(after #153)` dal titolo e `Queued after #153.` dal corpo, la PR pronta a CI verde.
+  Le PR sopra prendono `main` al loro passo.
 
 ### Che cosa ha lasciato A10b (27 settembre 2026, branch `m3/a10b-blocks-and-public-pages`, PR #153)
 
