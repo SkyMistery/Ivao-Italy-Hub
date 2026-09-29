@@ -17,10 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { SchemaForm } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { NotFound, Notice, PageShell, RatingBadge } from '../../../shared/ui';
+import { NotFound, Notice, PageShell, RatingBadge, personName } from '../../../shared/ui';
 import {
   banStatus,
-  memberLabel,
   shownState,
   traineePathQuery,
   type MyTrainingPathDto,
@@ -77,8 +76,9 @@ export function TraineeLookupPage() {
         locales={bootstrap.division.locales}
         labels="training:trainees"
         onSubmit={async (values) => {
-          if (values.vid !== undefined) {
-            await navigate({ href: traineeHref(values.vid) });
+          const href = values.vid === undefined ? null : traineeHref(values.vid);
+          if (href !== null) {
+            await navigate({ href });
           }
         }}
         submitLabel={t('training:trainees.open')}
@@ -89,7 +89,8 @@ export function TraineeLookupPage() {
 
 export function TraineePathPage() {
   const { t } = useTranslation();
-  // `$id`, like every other screen of the module: it is the trainee's VID.
+  // `$id`, like every other screen of the module: it is the trainee's VID. A pseudonym — a person whose data was erased, a negative
+  // number — has no path (A12b), and is not asked for.
   const { id = '' } = useParams({ strict: false });
   const known = /^\d+$/.test(id);
   const path = useQuery({ ...traineePathQuery(Number(id)), enabled: known });
@@ -115,7 +116,7 @@ function TraineePathScreen({ path }: { path: TraineePathDto }) {
 
   return (
     <PageShell
-      title={memberLabel(path.trainee)}
+      title={personName(path.trainee, t)}
       description={t('training:trainees.pathDescription')}
       breadcrumb={[
         { label: t('training:nav.section') },
@@ -301,11 +302,13 @@ function BanLines({ bans, canLift }: { bans: readonly TraineeBanDto[]; canLift: 
       {bans.map((ban) => {
         const status = banStatus(ban);
         const who = [
-          ban.givenBy === null ? null : t('training:trainees.banGivenBy', { name: memberLabel(ban.givenBy) }),
+          ban.givenBy === null
+            ? null
+            : t('training:trainees.banGivenBy', { name: personName(ban.givenBy, t) }),
           ban.liftedBy === null || ban.liftedAt === null
             ? null
             : t('training:trainees.banLiftedBy', {
-                name: memberLabel(ban.liftedBy),
+                name: personName(ban.liftedBy, t),
                 date: moment(ban.liftedAt),
               }),
         ].filter((part) => part !== null);
@@ -418,7 +421,7 @@ function TrainingItem({ training }: { training: StaffTrainingDto }) {
           <p className="text-sm">
             {training.trainer === null
               ? t('training:staff.trainer.none')
-              : t('training:trainees.trainer', { name: memberLabel(training.trainer) })}
+              : t('training:trainees.trainer', { name: personName(training.trainer, t) })}
           </p>
           {training.scheduledStartUtc === null ? null : (
             <WhenText
@@ -432,7 +435,7 @@ function TrainingItem({ training }: { training: StaffTrainingDto }) {
               {published === null ? null : (
                 <p className="text-sm">
                   {t('training:report.publishedBy', {
-                    name: memberLabel(published.by),
+                    name: personName(published.by, t),
                     date: moment(published.at, { time: false }),
                   })}
                 </p>

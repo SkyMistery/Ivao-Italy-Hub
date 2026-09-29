@@ -2,7 +2,8 @@ import { expect, test } from 'vitest';
 
 import { ApiError } from '../../../shared/api/problem';
 import { listSearchSchema } from '../../../shared/list';
-import { memberLabel, type StaffTrainingDto, type TrainerCandidateDto, type TrainingState } from '../api';
+import { createTestI18n } from '../../../test/harness';
+import type { StaffTrainingDto, TrainerCandidateDto, TrainingState } from '../api';
 import type { StaffTrainingsSearch } from '../schemas';
 
 import { decisionOf, isConflict, listOrder, staffTrainingHref, trainerChoices } from './trainings';
@@ -97,24 +98,22 @@ test('a queue of work is read oldest first, every other view and the whole list 
 });
 
 test('the trainers are offered with their name, VID, rating and positions, the one already assigned left out', () => {
-  const choices = trainerChoices([
-    candidate(790101, { positions: ['XX-DIR'] }),
-    candidate(790102, { isCurrent: true }),
-    candidate(790103, { ratingShortName: null, positions: [] }),
-    candidate(790104, { name: '', positions: ['XX-TC', 'XX-T02'] }),
-  ]);
+  // A person is written by the core's `personName` (A12b), which `people.test.ts` proves: the name and the VID, or the VID alone.
+  const choices = trainerChoices(
+    [
+      candidate(790101, { positions: ['XX-DIR'] }),
+      candidate(790102, { isCurrent: true }),
+      candidate(790103, { ratingShortName: null, positions: [] }),
+      candidate(790104, { name: '', positions: ['XX-TC', 'XX-T02'] }),
+    ],
+    createTestI18n().getFixedT('en', null),
+  );
 
   expect(choices).toEqual([
     { value: '790101', label: 'Trainer 790101 (790101) · R5 · XX-DIR' },
     { value: '790103', label: 'Trainer 790103 (790103)' },
     { value: '790104', label: '790104 · R5 · XX-TC, XX-T02' },
   ]);
-});
-
-test('a person is named by the name the hub has and the VID, or by the VID alone', () => {
-  expect(memberLabel({ vid: 790099, name: 'Test Trainee' })).toBe('Test Trainee (790099)');
-  expect(memberLabel({ vid: 790099, name: null })).toBe('790099');
-  expect(memberLabel({ vid: 790099, name: '' })).toBe('790099');
 });
 
 test('the decision is read from the state: none, accepted, refused with its reason, the hub for the theory, cancelled', () => {

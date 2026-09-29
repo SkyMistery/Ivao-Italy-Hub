@@ -234,11 +234,11 @@
     "open": "Open",
     "fields": {
       "createdAt": "Requested on",
-      "traineeName": "Trainee",
+      "trainee": "Trainee",
       "ratingShortName": "Rating",
       "position": "Position",
       "state": "State",
-      "trainerName": "Trainer"
+      "trainer": "Trainer"
     },
     "options": {
       "state": {
@@ -510,12 +510,12 @@
     "liftConfirm": "Yes, lift the ban",
     "lifted": "Ban lifted.",
     "fields": {
-      "traineeName": "Member",
+      "trainee": "Member",
       "status": "Status",
       "createdAt": "Since",
       "endsAt": "Until",
       "reason": "Reason",
-      "givenByName": "Given by",
+      "givenBy": "Given by",
       "vid": "VID of the member"
     },
     "hints": {

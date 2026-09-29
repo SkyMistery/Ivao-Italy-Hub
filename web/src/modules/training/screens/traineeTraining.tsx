@@ -8,9 +8,8 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { ApiError } from '../../../shared/api/problem';
 import { describeProblem } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { ConfirmDialog, NotFound, RatingBadge, useNotice } from '../../../shared/ui';
+import { ConfirmDialog, NotFound, RatingBadge, personName, useNotice } from '../../../shared/ui';
 import {
-  memberLabel,
   mineOneQuery,
   mineQuery,
   shownState,
@@ -110,7 +109,7 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
           ].join(' · ')}
         </span>
         {training.trainer === null ? null : (
-          <p>{t('training:detail.trainer', { name: memberLabel(training.trainer) })}</p>
+          <p>{t('training:detail.trainer', { name: personName(training.trainer, t) })}</p>
         )}
       </header>
 

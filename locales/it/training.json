@@ -234,11 +234,11 @@
     "open": "Apri",
     "fields": {
       "createdAt": "Richiesta il",
-      "traineeName": "Trainee",
+      "trainee": "Trainee",
       "ratingShortName": "Rating",
       "position": "Postazione",
       "state": "Stato",
-      "trainerName": "Trainer"
+      "trainer": "Trainer"
     },
     "options": {
       "state": {
@@ -510,12 +510,12 @@
     "liftConfirm": "Sì, togli il ban",
     "lifted": "Ban tolto.",
     "fields": {
-      "traineeName": "Membro",
+      "trainee": "Membro",
       "status": "Stato",
       "createdAt": "Dal",
       "endsAt": "Fino al",
       "reason": "Motivo",
-      "givenByName": "Dato da",
+      "givenBy": "Dato da",
       "vid": "VID del membro"
     },
     "hints": {

@@ -9,6 +9,7 @@ import {
   type ListSearch,
   type Page,
 } from '../../shared/list';
+import type { NamedPerson } from '../../shared/ui';
 
 import {
   banFromFormValues,
@@ -290,16 +291,6 @@ export function useChooseDate(training: TraineeTrainingDto) {
 const staffKey = ['training', 'staff'] as const;
 
 /**
- * A person as the staff's pages name them: the name the hub has, and the VID that always is. (The core's helper for a person
- * whose data was erased arrives with A12a; no data of a trainee is erased before A12b.)
- */
-export function memberLabel(member: TrainingMemberDto): string {
-  return member.name === null || member.name === ''
-    ? String(member.vid)
-    : `${member.name} (${String(member.vid)})`;
-}
-
-/**
  * A state as the pages show it (R.4): a dated training whose day is over in the division's time zone shows as held (design M3
  * §1.2), which nothing writes — the server says it (`held`).
  */
@@ -310,14 +301,10 @@ export function shownState(training: { readonly state: TrainingState; readonly h
 }
 
 /**
- * A row of the list as the list draws it: the trainee and the trainer written out, for its columns of text, and its state as
- * the pages show it — held, from the day after its session.
+ * A row of the list as the list draws it: its state as the pages show it — held, from the day after its session. The trainee and the
+ * trainer are the people the server sent, which the list's `person` column writes (A12a): «Deleted person» for a pseudonym (A12b).
  */
-export type StaffTrainingRow = Omit<StaffTrainingRowDto, 'state'> & {
-  readonly state: ShownState;
-  readonly traineeName: string;
-  readonly trainerName: string | null;
-};
+export type StaffTrainingRow = Omit<StaffTrainingRowDto, 'state'> & { readonly state: ShownState };
 
 /**
  * A page of the staff's list (design M3 §4.2): every training, or those of one view — to approve, to assign, in progress, to
@@ -339,15 +326,7 @@ export function staffTrainingsQuery(
         }),
       );
 
-      return {
-        ...page,
-        items: page.items.map((row) => ({
-          ...row,
-          state: shownState(row),
-          traineeName: memberLabel(row.trainee),
-          trainerName: row.trainer === null ? null : memberLabel(row.trainer),
-        })),
-      };
+      return { ...page, items: page.items.map((row) => ({ ...row, state: shownState(row) })) };
     },
   });
 }
@@ -526,10 +505,11 @@ export function banStatus(ban: { readonly holds: boolean; readonly liftedAt: str
   return ban.liftedAt === null ? 'Over' : 'Lifted';
 }
 
-/** A row of the bans as the list draws it: the member and who gave it written out, and how it stands, as a cell draws a word. */
+/**
+ * A row of the bans as the list draws it: how it stands, as a cell draws a word. The member and who gave it are the people the server
+ * sent, which the list's `person` column writes (A12a).
+ */
 export interface BanRow extends TraineeBanDto {
-  readonly traineeName: string;
-  readonly givenByName: string | null;
   readonly status: BanStatus;
 }
 
@@ -548,15 +528,7 @@ export function bansListQuery(search: BansSearch) {
         }),
       );
 
-      return {
-        ...page,
-        items: page.items.map((ban) => ({
-          ...ban,
-          traineeName: memberLabel(ban.trainee),
-          givenByName: ban.givenBy === null ? null : memberLabel(ban.givenBy),
-          status: banStatus(ban),
-        })),
-      };
+      return { ...page, items: page.items.map((ban) => ({ ...ban, status: banStatus(ban) })) };
     },
   });
 }
@@ -651,12 +623,13 @@ export function upcomingExamsQuery() {
 const examsKey = ['training', 'exams'] as const;
 
 /**
- * A row of the exams as the list draws it: the candidate and the examiner by VID, as text — a VID is a name, not a quantity —, and
- * whether it is the reader's as a word of the module: the core's yes and no of a column are the words of a switch, on and off.
+ * A row of the exams as the list draws it: the candidate and the examiner as people with no name — the hub keeps their VID alone —,
+ * which the list's `person` column writes as the VID, or «Deleted person» for a pseudonym (A12b); and whether it is the reader's as a
+ * word of the module: the core's yes and no of a column are the words of a switch, on and off.
  */
 export interface ExamRow extends ExamRowDto {
-  readonly candidate: string;
-  readonly examiner: string;
+  readonly candidate: NamedPerson;
+  readonly examiner: NamedPerson;
   readonly whose: 'Mine' | 'Other';
 }
 
@@ -684,8 +657,8 @@ export function examsListQuery(search: ExamsSearch, reader: number | undefined) 
         ...page,
         items: page.items.map((exam) => ({
           ...exam,
-          candidate: String(exam.candidateVid),
-          examiner: String(exam.examinerVid),
+          candidate: { vid: exam.candidateVid, name: null },
+          examiner: { vid: exam.examinerVid, name: null },
           whose: exam.mine ? ('Mine' as const) : ('Other' as const),
         })),
       };

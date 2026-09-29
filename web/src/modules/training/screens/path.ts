@@ -1,3 +1,4 @@
+import { isErased } from '../../../shared/ui';
 import type { BanStatus, MyTrainingPathDto, StaffTrainingDto, TrainingRatingDto } from '../api';
 import { RATING_KINDS, type RatingKind } from '../schemas';
 
@@ -15,8 +16,12 @@ export const TRAINEES = '/staff/training/trainees';
 /** The bans, generated; a new one is `new`, with the member of the path it was opened from in `?vid=`. */
 export const BANS = '/staff/training/bans';
 
-export function traineeHref(vid: number): string {
-  return `${TRAINEES}/${String(vid)}`;
+/**
+ * The path of a trainee; none for a person whose data was erased (design M3 §6.1, A12b): the pseudonym in their place is nobody's, it
+ * has no path — the server answers 404 —, and a page draws the person without a link.
+ */
+export function traineeHref(vid: number): string | null {
+  return isErased(vid) ? null : `${TRAINEES}/${String(vid)}`;
 }
 
 /** «Ban»: the form of a new ban, with the member written when the path of one opened it, and back there once it is given. */
