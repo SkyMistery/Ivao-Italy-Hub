@@ -132,7 +132,7 @@ E10e è nuova); E15 in due (il nucleo prima); **E8a/E8b**: la cancellazione nasc
 
 ### E0 — Note di decisione e questo piano
 
-Design §16, §17, §18. Branch `m4/e0-decisions`. Documenti, nessun codice.
+Design §16, §17, §18. Branch `m4/e0-decisions`, PR #184. Documenti, nessun codice.
 
 1. **Dieci note** in `decisions/`, una per decisione o gruppo coerente di §17, ognuna con il link al commento di Carmine che la
    decide e con «Da portare nel piano»:
@@ -154,7 +154,7 @@ Design §16, §17, §18. Branch `m4/e0-decisions`. Documenti, nessun codice.
 una fase dà per esistente esista o abbia la sua fase.
 **Fatta quando**: il master l'ha letta e Carmine dà il via al merge.
 
-**Com'è andata** (29 settembre 2026, branch `m4/e0-decisions`):
+**Com'è andata** (29 settembre 2026, branch `m4/e0-decisions`, PR #184):
 
 - **Dieci note, per trenta decisioni** (§17.1 n.1–n.17, §17.2 n.1–n.7, §17.3 n.1–n.6): le decisioni che si tengono stanno insieme;
   i predefiniti di §17.2 n.6 hanno una nota sola, perché ogni fase ci trovi il suo. Il piano 1.24 porta già quasi tutta la §18 del

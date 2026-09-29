@@ -6,7 +6,7 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase E0** (note di decisione e piano), sul branch `m4/e0-decisions`, PR verso `main`.
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase E0** (note di decisione e piano), sul branch `m4/e0-decisions`, **PR #184** verso `main`.
 **Il prossimo passo**, a E0 unita: **E1** (nucleo: i tipi del calendario e l'ED sul banco) ed **E2** (lo scheletro), che possono
 andare avanti insieme in due sessioni; E3a le aspetta tutte e due. Le fasi del nucleo di M4b (**E10a–E10e**) possono partire già
 durante M4a, ognuna in una sessione sua.
@@ -61,7 +61,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E0 (29 settembre 2026, branch `m4/e0-decisions`)
+### Che cosa ha lasciato E0 (29 settembre 2026, branch `m4/e0-decisions`, PR #184)
 
 - **Che cosa c'è**: dieci note in `decisions/`, una per decisione o gruppo coerente di §17 del design, ognuna con il link al
   commento di Carmine sulla #180 che la decide e con «Da portare nel piano» — `i-tre-blocchi-e-che-cosa-resta-fuori-da-m4`,
@@ -74,7 +74,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   nucleo: ogni fase del nucleo (E1, E8a, E10a–E10e, E15a) porta **la sua nota nuova**. ⚠️ **`core-guard` non giudica le PR di
   `SkyMistery`**, quindi il check è verde anche senza la nota: la regola la tiene chi scrive.
 - ⚠️ **Proposta in attesa di Carmine**: la cancellazione dei dati di una persona nasce con M4a (E8a, E8b) invece che in E15. La
-  domanda è nella PR di E0; se la risposta è no, E8a ed E8b si riducono e la cancellazione torna in E15b (`10`, E0, scostamento 4).
+  domanda è nella PR #184; se la risposta è no, E8a ed E8b si riducono e la cancellazione torna in E15b (`10`, E0, scostamento 4).
 - ⚠️ **Quello che il design dava per esistente e non c'è** (`10`, E0, «Trovato», punti 6–10): il tracker vuole il VID e non dice il
   tipo di connessione; le sessioni condivise non hanno il VID; il vocabolario dei rating non conosce `GND`, `DEL`, `DEP` né il minimo
   di una postazione; la directory delle postazioni cerca solo per rating; la distanza sta nel modulo dei tour. Ognuno ha la sua fase
