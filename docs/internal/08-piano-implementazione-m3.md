@@ -1670,7 +1670,8 @@ banco, la raddoppierebbero.
      scelta avrebbe chiesto una chiave dal training alle date — circolare con quella in cascata dalle date al training — o due salvataggi
      per l'override.
   2. **L'override scrive solo l'inizio**, anche nel passato («una data qualunque»: una sessione tenuta prima del previsto), e nessuna
-     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto.
+     proposta: `chosen_slot_id` resta vuoto, come A6a aveva scritto. ⚠️ *Superato per il passato* dalla risposta di Carmine su #149:
+     nessuno data un training nel passato (A9, «Le risposte di Carmine su #149»).
   3. **Le date si propongono insieme**, così il trainee riceve una mail sola, e con `Warn` la conferma è della proposta intera. Le regole
      di una proposta, sulla sua riga: una data ancora da venire, che finisca dopo l'inizio e duri al massimo 12 ore, non già proposta; al
      massimo 10 date ancora da venire in attesa. **Una data si ritira** finché il trainee non l'ha scelta (senza mail): il design non lo
@@ -2186,7 +2187,9 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      in italiano), prima di guardare il resto del payload. La pagina dello staff smette di offrirli: in `StaffTrainings`, `canConduct` e
      `canClose` sono falsi sulla sessione cominciata, e resta `canRecordOutcome`. Il commento di `dateSteps` (`screens/dates.ts`) lo dice.
   3. **E nessuno data un training nel passato**: la data a mano prima di adesso si rifiuta con `slotPassed` su `startsAtUtc`, come la
-     scelta del trainee fra le date proposte — la risposta dice «(and a date in the past)».
+     scelta del trainee fra le date proposte — la risposta dice «(and a date in the past)». ⚠️ **Lo scostamento 2 di A8a non vale più**
+     per questa parte: l'override scriveva «anche nel passato» (una sessione tenuta prima del previsto); ora una sessione tenuta si
+     registra, e l'override è solo per un momento ancora da venire.
   4. **I test**: il nuovo `TrainingSessionsTests.ASessionThatHasStartedIsRecordedNeitherDatedAgainNorClosed` (un `Scheduled` cominciato da
      mezz'ora: la pagina non offre la data né la chiusura, i due passi rifiutati su `state` con `sessionStarted`, niente scritto; un
      `Assigned` datato dieci minuti fa: `slotPassed`). Al coordinatore della classe il test dà `Training.Approve`, che gli altri test non
