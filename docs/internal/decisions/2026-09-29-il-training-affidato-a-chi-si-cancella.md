@@ -1,11 +1,13 @@
 # Il training aperto affidato a chi si cancella (A12b)
 
-**Data:** 29 settembre 2026 — fase A12b di M3, PR del modulo, in coda dopo #187
-**Stato:** **Proposta** — la domanda di §4 è per Carmine, in un commento sulla PR di A12b
+**Data:** 29 settembre 2026 — fase A12b di M3, PR del modulo #189, in coda dopo #187
+**Stato:** **Proposta** — la domanda di §4 è per Carmine, in [un commento sulla #189][q1]
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)** per la parte che chiede una scelta: che cosa fa il modulo di una riga **aperta di
 un altro membro**, affidata a chi si cancella, che la regola del modulo (nota `2026-09-25-la-cancellazione-dei-dati-di-un-trainee`)
 non dice. Il resto di A12b — l'eraser sui dati del trainee, «persona cancellata» nelle pagine, la conservazione — è (b) e non
 aspetta.
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
 
 ## 1. Che cosa serve decidere
 
