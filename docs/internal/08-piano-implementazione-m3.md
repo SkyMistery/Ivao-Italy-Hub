@@ -2202,6 +2202,13 @@ report letto dal trainee, lo smoke e il giro sul banco, la raddoppierebbero.
      l'installazione; la versione si rilegge dalla pagina. Le asserzioni non cambiano.
   6. **Nessun test di A8a toccato**: le date a mano e le chiusure di `TrainingDatesTests` sono tutte nel futuro; le spec del banco di A8b
      pure (`daysAhead(4)`).
+- **Il passo della coda dopo #148** (29 settembre 2026: #148 unita alle 15:23 UTC; l'ha fatto la sessione che coordina la coda): `main` nel
+  branch con un merge (9f812b9) — nessuna differenza di contenuto, `main` aveva solo il merge di #148, già nel branch —, via `(after #148)`
+  dal titolo e `Queued after #148.` dal corpo, la PR pronta a CI verde. **Verificato di nuovo, in locale** (7b3f29a): `dotnet build` senza
+  avvisi; unità **858/858**; integrazione intera **388/388**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; Vitest **548/548** in 70 file; smoke **123/124** al primo giro — è caduta `tours-map.spec.ts:160`, la
+  mappa di un tour (M2), il flake noto sotto carico, con tre giri di suite insieme —, e la spec da sola con `--repeat-each 5` **10/10**;
+  **`e2e:full` 44/44** su un banco nuovo (127.0.0.1:5106).
 
 **Com'è andata (A9b)** (27 settembre 2026, branch `m3/a9b-after-the-session-pages`, PR #150, in coda dopo #149):
 
