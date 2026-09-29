@@ -18,8 +18,17 @@ public sealed class UpcomingSessionsProvider(PublicSessions sessions, ICurrentUs
 {
     public const string BlockType = "training.upcomingSessions";
 
-    /// <summary>At most this many sessions; nothing written, or none, as many as <see cref="PublicSessions.MaxItems"/>.</summary>
+    /// <summary>
+    /// At most this many sessions: nothing written, <see cref="DefaultLimit"/>, as the block's schema; zero, as many as
+    /// <see cref="PublicSessions.MaxItems"/>.
+    /// </summary>
     public const string LimitProperty = "limit";
+
+    /// <summary>
+    /// How many sessions a block that writes no limit shows — one saved through the API or a seed, which the editor's default never
+    /// reached; the same ten as the schema's default, like the core's blocks.
+    /// </summary>
+    public const int DefaultLimit = 10;
 
     public string Key => BlockType;
 
@@ -27,6 +36,7 @@ public sealed class UpcomingSessionsProvider(PublicSessions sessions, ICurrentUs
         new JsonObject
         {
             ["signedIn"] = currentUser.IsAuthenticated,
-            ["items"] = BlockAnswers.Of(await sessions.UpcomingAsync(BlockProps.Number(props, LimitProperty), cancellationToken)),
+            ["items"] = BlockAnswers.Of(
+                await sessions.UpcomingAsync(BlockProps.Number(props, LimitProperty) ?? DefaultLimit, cancellationToken)),
         };
 }

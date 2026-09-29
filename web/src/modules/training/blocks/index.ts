@@ -74,8 +74,9 @@ export const upcomingSessionsBlock: BlockRegistration = {
   kind: 'Data',
   alwaysLive: true,
   schema: z.object({
-    // Zero is every session, up to the server's bound: a property that is not written is not a way of asking for none.
-    limit: z.number().int().min(0).default(10),
+    // Zero is every session, up to the server's bound of 50: a property that is not written is not a way of asking for none, and the
+    // server takes the same ten for it.
+    limit: z.number().int().min(0).max(50).default(10),
   }),
   component: UpcomingSessionsBlock,
   example: { limit: 5 },
