@@ -546,8 +546,8 @@
       "whose": "Tuo"
     },
     "hints": {
-      "rating": "Il rating dell'esame: si scelgono solo i rating con un training pratico.",
-      "position": "Solo per un esame ATC: una postazione della divisione su cui si allena il rating. Vuota per un esame pilota.",
+      "rating": "Il rating dell'esame: ogni rating del percorso, anche quelli per cui nessuno fa training.",
+      "position": "Solo per l'esame di un rating che si allena su una postazione: una della divisione per quel rating. Vuota per ogni altro esame.",
       "candidateVid": "Chi fa l'esame, solo con il VID. Nessuno esamina sé stesso.",
       "examinerVid": "L'esame è assegnato a lui: lo cambia e lo toglie dal calendario. Un advisor inserisce solo i suoi esami."
     },
@@ -685,7 +685,8 @@
     "banEndsInThePast": "La fine del ban è già passata.",
     "banAlreadyHolds": "Su questo membro c'è già un ban in vigore: toglilo prima di darne un altro.",
     "banNotHolding": "Questo ban non è più in vigore: non c'è niente da togliere.",
-    "examPositionNotAsked": "Un esame su questo percorso non ha una postazione.",
+    "examRatingUnknown": "Questo non è un rating del percorso.",
+    "examPositionNotAsked": "Un esame di questo rating non ha una postazione.",
     "examinerIsCandidate": "Nessuno esamina sé stesso: l'esaminatore non è il candidato.",
     "examinerNotExaminer": "Può essere l'esaminatore solo chi mette gli esami in calendario ed è entrato nell'hub almeno una volta."
   },
