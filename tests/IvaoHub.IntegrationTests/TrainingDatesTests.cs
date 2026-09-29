@@ -688,6 +688,27 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The retention of design M3 §6, written down in A12b: the dates proposed live only while the training waits for its date. The
+    /// trainee's choice, the date set by hand, the night's closing and another trainer take them (the tests above); so does the staff's
+    /// closing of a training that waits.
+    /// </summary>
+    [Fact]
+    public async Task TheStaffsClosingOfATrainingThatWaitsForItsDateTakesTheDatesProposed()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
+        await AddSlotAsync(id, proposedDaysAgo: 1, token);
+
+        using var advisor = await SignedInAsync(AdvisorVid, token);
+        var version = (await PageAsync(advisor, id, token)).GetProperty("rowVersion").GetDateTime();
+        var closed = await DoneAsync(await StepAsync(advisor, id, "close", new { reason = "trn-test: no answer", rowVersion = version }, token), token);
+
+        Assert.Equal(nameof(TrainingState.Closed), closed.GetProperty("state").GetString());
+        Assert.Empty(closed.GetProperty("slots").EnumerateArray());
+        Assert.Empty(await SlotsOfAsync(id, token));
+    }
+
+    /// <summary>
     /// A box of a date left empty (A8b): the page sends it as it is, and the server says it is required on its own field — never
     /// that an empty start has gone by, or that an empty end comes before the start.
     /// </summary>
