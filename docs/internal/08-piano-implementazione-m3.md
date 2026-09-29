@@ -2971,6 +2971,17 @@ pubbliche, che da soli sono già una PR come quelle di A8 e A9, in mezzo.
      rating che il vocabolario non conosce (`Unknown`, uno oltre il più alto) con `examRatingUnknown`; `TheFormOffersAnAdvisorThemselves…`
      dice anche i `ratings` delle scelte, ogni rating del vocabolario. Nello smoke `training-exams.spec.ts` le scelte finte portano i
      `ratings` con l'ottavo, e il form lo offre. L'aiuto `Untrained` è diventato `Unknown`.
+- **Il passo della coda dopo #153** (29 settembre 2026: #153 unita alle 21:08 UTC; l'ha fatto la sessione che coordina la coda): `main`
+  nel branch con un merge (197698e) — nessun codice nuovo rispetto alla coda, `main` portava i documenti dei passi della coda; un conflitto,
+  l'intestazione di `HANDOFF-M3.md`, che tiene quella di A10c riscritta; il merge toglie anche il conflitto che teneva la PR senza
+  `build-test` —, via `(after #153)` dal titolo e `Queued after #153.` dal corpo, la PR pronta a CI verde. Il revisore ha letto la risposta
+  di Carmine su #178 come messa nel codice ([il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/178#issuecomment-5898945166)).
+  **Verificato di nuovo, in locale** (40c0dff): `dotnet build` senza avvisi; unità **870/870**; integrazione intera **407/408** al primo
+  giro — è caduto `ErasureTests.WhatIsAboutThePersonGoesAndWhatTheyDidForOthersStaysUnderThePseudonym` (del maintainer) alla riga che
+  cerca il VID `780095` come testo nel JSON di **tutto** il registro dell'audit del database condiviso: un numero di un'altra classe che lo
+  contiene per caso (i microsecondi di un'ora, per esempio) basta —, e di nuovo l'integrazione intera **408/408**; `pnpm gen:api` e
+  `pnpm i18n:sync` senza differenze; `lint`, `typecheck`, `format:check`, `i18n:check` verdi; Vitest **578/578** in 76 file; smoke
+  **152/152**; **`e2e:full` 48/48** su un banco nuovo (127.0.0.1:5104).
 
 [c143]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/143#issuecomment-5855666298
 
