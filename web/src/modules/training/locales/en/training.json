@@ -132,7 +132,7 @@
       "title": "Choose the date of the session",
       "lead": "Your trainer proposed these dates. Choose one: the session is fixed, and you both receive an email. If none of them suits you, write to your trainer.",
       "choose": "Choose this date",
-      "confirmTitle": "Fix the session on {{when}} UTC?",
+      "confirmTitle": "Fix the session on {{when}} UTC, that is {{local}}?",
       "confirmDescription": "Your trainer receives an email, and so do you. Only your trainer changes a date once it is fixed.",
       "confirm": "Yes, fix the session",
       "chosen": "Session fixed: {{when}} UTC.",
@@ -261,7 +261,8 @@
       "noWarnings": "No warning when it was proposed.",
       "warning": {
         "training": "{{ladder}} training {{what}}, {{when}} UTC",
-        "calendar": "{{kind}}: {{what}}, {{when}} UTC"
+        "calendar": "{{kind}}: {{what}}, {{when}} UTC",
+        "anyKind": "In the calendar"
       },
       "met": {
         "confirmTitle": "Something is in the calendar on those days already: look at the warnings, and confirm if the dates are fine all the same.",

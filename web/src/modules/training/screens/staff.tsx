@@ -712,8 +712,12 @@ function WarningList({ warnings }: { warnings: readonly DateWarning[] }) {
     return <p className="text-muted-foreground">{t('training:staff.dates.noWarnings')}</p>;
   }
 
+  // A kind the bootstrap does not name in the reader's language is said as "in the calendar", never by its raw key.
   const calendarKind = (key: string | null) =>
-    key === null ? '' : read(bootstrap.calendarKinds.find((kind) => kind.key === key)?.label) || key;
+    key === null
+      ? ''
+      : read(bootstrap.calendarKinds.find((kind) => kind.key === key)?.label) ||
+        t('training:staff.dates.warning.anyKind');
 
   return (
     <ul className="flex list-disc flex-col gap-1 pl-5">
