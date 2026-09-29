@@ -1,8 +1,8 @@
 # La persona cancellata nel nucleo, e le colonne del training in `ErasureTests` (A12a)
 
-**Data:** 29 settembre 2026 — fase A12a di M3, PR del nucleo, in coda dopo #182
-**Stato:** **Proposta**: due domande a Carmine (§5), ognuna con una raccomandazione, in un commento sulla PR. Il codice aspetta le
-risposte.
+**Data:** 29 settembre 2026 — fase A12a di M3, PR del nucleo #187, in coda dopo #182
+**Stato:** **Proposta**: due domande a Carmine (§5), ognuna con una raccomandazione, in [un commento sulla #187][q1]. Il codice aspetta
+le risposte.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**, e §0 regole 3 e 6. Tre cose, tutte su meccanismi che ci sono:
 
 - si **porta nel nucleo** un pezzo che la nota di T20b aveva già deciso di portarci quando un secondo modulo ne avesse bisogno
@@ -13,6 +13,8 @@ risposte.
   screen» (`web/src/shared/list/columns.ts`);
 - si tocca **un test del maintainer**, `ErasureTests`, come `08` dice da A0. Un test che non si è scritto non si cambia di propria
   iniziativa: come, lo decide lui (domanda 2).
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
 
 ## 1. Che cosa serve
 

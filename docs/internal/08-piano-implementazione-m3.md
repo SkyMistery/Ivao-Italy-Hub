@@ -3339,4 +3339,47 @@ pagine; `ErasureTests` con le colonne del training. Il giro completo verde.
 il rapporto di chiusura è scritto. A M3 chiusa **PATS resta acceso solo per il feed del calendario dei trainer**, fino all'iCal del
 nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A12a)** (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187 verso `main`, in bozza in coda dopo #182) —
+**per ora la nota e le domande**:
+
+- **Perché solo la nota**: A12a è una fase del nucleo (qui sopra, «Regole di tutte le fasi»), e la forma apre due scelte che sono di
+  Carmine, una delle quali sul suo test (`ErasureTests`, T20b): la nota è **«Proposta»** e il codice aspetta le risposte (`CLAUDE.md`
+  §5), come in A11a. Il branch è nato dalla cima della coda, `m3/a11b-fir-heads` a 0b62481, preparato dalla sessione di A11b con
+  `--no-track`; ha già `main` a 47e2f70, e si unisce senza conflitti con il `main` di oggi (dopo #146, #184–#186). L'intervallo della
+  fase è `m3/a11b-fir-heads...m3/a12a-deleted-person-core`.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(b)**. Si porta nel nucleo l'helper che la nota di T20b (§3) aveva già
+  deciso di portarci; si estende la lista generata di un tipo di colonna; si tocca un test del maintainer, e come lo decide lui.
+- **Fatto**: la nota `decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`; la PR #187 in bozza; le due domande a Carmine in [un
+  commento sulla #187][q187]. **La forma proposta** (nota §3): `personName(person, t)` e `isErased(vid)` in
+  `web/src/shared/ui/people.ts`, la parola `people.erased` nei file di lingua del nucleo, e una colonna **`person`** della lista generata
+  (`col.person('trainee')`), che `DataList` disegna con `personName`. **Domanda 2**: come `ErasureTests` legge le 21 colonne del
+  training — raccomandata la (c), i contesti di ogni modulo dal registro, come li scorre la cancellazione, tranne quello di prova; (a)
+  `TrainingDbContext` scritto nel test; (b) un test accanto, nei file del training.
+- **Scostamenti dal piano e dal design, scritti nella nota**:
+  1. **anche una colonna della lista**, non solo la funzione (qui sopra: «l'helper»): il design §6.1 chiede «le liste», e la copia dei
+     tour non ci arriva, perché una lista calcola i nomi nella query, dove non c'è `t`;
+  2. **con la (c)**, `ErasureTests` legge i contesti di ogni modulo e non soltanto `TrainingDbContext` (qui sopra: «che legge anche
+     `TrainingDbContext`»). Cambia anche il piano di M4: la prima fase degli eventi che crea una colonna di persona scrive le sue righe
+     nella lista, e del punto 1 di E8a non resta niente (nota §4).
+- **Trovato** (nota §2, e per chi viene dopo):
+  1. **La coda dei PIREP mostrerebbe lo pseudonimo come numero**: la copia dei tour lo dice nel suo commento. Non si tocca (`CLAUDE.md`
+     §0 regola 2); la sostituisce una sessione di Carmine.
+  2. **Il piano di M4 aspetta lo stesso pezzo** per la scheda «Prenotazioni» dello staff, una lista generata (E6b), e **allarga lo
+     stesso test** agli eventi (E8a): chi arriva secondo tiene tutte e due le liste.
+  3. **Le colonne di persona del training sono 21**, tutte con un nome della convenzione; `trn_evaluations` non ne ha, nessuna è una
+     chiave, nessuna colonna JSON porta VID.
+  4. **Per A12b**: `memberLabel` sta in 28 punti; i link al percorso di un trainee (`traineeHref`: la pagina di un training, l'azione
+     della lista dei ban) vanno tolti per uno pseudonimo; le pagine degli esami mostrano solo VID, e `personName({ vid, name: null }, t)`
+     dà lì il VID o «Deleted person». ⚠️ **Un training aperto affidato a un trainer che si cancella** resta affidato allo pseudonimo (la
+     risposta 4 della nota di T20b: ciò che ha fatto come trainer resta), quindi lo conduce solo chi tiene `Training.Edit`, e la mail
+     della sessione al trainee nominerebbe il trainer con il numero (`TrainingPeople.Label`): la regola del design (§6.1) parla dei
+     training del trainee e di quelli condotti, non di questo. Da decidere in A12b, forse con una domanda a Carmine.
+- **Quando Carmine risponde**: la nota registra le risposte con il link al suo commento, poi il codice (nota §6), i test (Vitest della
+  funzione e della colonna; `ErasureTests` come deciso), la prova sul codice vecchio, tutte le suite una alla volta, e qui il resto.
+- **Non verificato**: tutto il codice, che non c'è. Le 21 colonne sono lette nelle entità e nello snapshot delle migrazioni, non ancora
+  prodotte dal test. Per un documento non si è compilato né provato niente: il codice sotto è la cima di A11b, di cui A11b ha fatto
+  girare le suite (#182).
+
+[q187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
+
+Le altre tre PR (A12b, A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.

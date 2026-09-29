@@ -11,21 +11,19 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A11b** (i capi FIR nel modulo), sul branch `m3/a11b-fir-heads`, **PR #182** verso
-`main`, in bozza **in coda dopo #181** (A7b, in bozza in coda dopo #178, A10c, in coda dopo #153, A10b, in coda dopo #151, A10a, in coda dopo
-#150, A9b, in coda dopo #149, A9a, in coda dopo #148, A8b, in coda dopo #147, A8a, in coda dopo #146, A7, pronta: **#144, A6b, è unita** il
-29 settembre alle 10:52 UTC). Il branch è nato da quello di A7b (ae28278) e **ha preso `main` prima della coda** (efe057a: **A11a, #159**,
-unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), con un merge prima di scrivere codice, perché la fase usa il meccanismo di A11a —
-l'eccezione alla regola della coda, approvata dalla sessione che coordina —. **Poi la coda l'ha raggiunto**: dopo #144 la sessione che
-coordina ha portato `main` (47e2f70, con #144 e #183) su per la coda fino ad A7b (e7b530a), che è entrata qui con un merge (1baf8fa): **ora
-l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra solo la fase**, e la PR, con `main` dentro, fa girare `build-test`. La
-**sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se un branch del
-collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139), A5 (#140), A6a
-(#143), A3b (#135), A6c (#145), A11a (#159) e A6b (#144) sono unite**, e con loro **#152** del maintainer (`Refusals` nel nucleo), **#177** (la
-tastiera del suggerimento: lo smoke della richiesta ha un Invio in più, c3db117 di A6b e 8807e8a qui, lo stesso pezzo) e **#183** (il piano
-1.24 e il design di M4). **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178). **A11b** (questa) dà ai capi
-FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e il percorso di un trainee senza ciò che non è del loro FIR. In C# una
-chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A12a** (nucleo: la persona cancellata e le colonne del training in
+`ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, in bozza **in coda dopo #182** (A11b, in bozza in coda
+dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, dopo #149, A9a, dopo #148, A8b, dopo #147, A8a: **#146,
+A7, è unita** il 29 settembre, dopo #144, A6b). **Per ora solo la nota** (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`,
+**«Proposta»**) **e due domande a Carmine**: **il codice aspetta le risposte**. Il branch è nato dalla cima della coda (0b62481, preparato
+dalla sessione di A11b) e ha `main` a 47e2f70; con il `main` di oggi — **#146**, **#184** (il piano di M4, E0), **#185** e **#186** (la
+versione 0.4.0, tag `v0.4.0`) — si unisce senza conflitti, e la PR fa girare `build-test`. `main` entra in ogni branch al suo passo della
+coda, non prima. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine e, se
+un branch del collaboratore va rimesso in pari con `main`, lo chiede sulla PR senza spingerci niente. **A3 (#131), A4a (#133), A4 (#139),
+A5 (#140), A6a (#143), A3b (#135), A6c (#145), A11a (#159), A6b (#144) e A7 (#146) sono unite**, e con loro **#152** del maintainer
+(`Refusals` nel nucleo), **#177** (la tastiera del suggerimento) e **#183** (il piano 1.24 e il design di M4). **A10 è divisa in tre**
+(`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178); **A11 in due**, A11a (unita) e **A11b** (#182); **A12 in quattro**, A12a
+(questa), A12b, A12c (solo con i codici di PATS) e A12d. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 **Accanto alle fasi del modulo** (26 settembre 2026): la fase del nucleo **A6c** — il suggerimento chiuso di `SchemaForm` tiene la scelta
 cliccata dopo aver scritto —, sul branch `m3/a6c-closed-suggestion`, **PR #145** verso `main`, **non in coda** (tocca solo il nucleo del
@@ -104,6 +102,31 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A12a, per ora (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187 in bozza)
+
+- **Che cosa c'è**: **solo la nota**, `decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`, **«Proposta»**, con due domande a
+  Carmine in [un commento sulla #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195). **Nessun codice**,
+  nessun file del nucleo (per `core-guard`: nucleo 0, una nota aggiunta). La forma proposta (nota §3):
+  - `personName(person, t)` e `isErased(vid)` in `web/src/shared/ui/people.ts`, esportati da `shared/ui`: «Deleted person» per uno
+    pseudonimo (un VID negativo), altrimenti `Nome (VID)` o il VID da solo; `NamedPerson` è `{ vid, name }`, la forma di
+    `TrainingMemberDto`;
+  - la parola `people.erased` in `locales/{en,it}/common.json` («Deleted person», «Persona cancellata»);
+  - la colonna **`person`** della lista generata, `col.person('trainee')` su un campo `{ vid, name } | null`, così anche una lista dice
+    «Deleted person» (la copia dei tour non ci arriva);
+  - **domanda 2**, `ErasureTests` (di Carmine): raccomandata la (c), il test legge i contesti di ogni modulo dal registro, come la
+    cancellazione, e la lista prende le 21 colonne `trn_`.
+- **Che cosa deve sapere la fase dopo**:
+  - **A12b usa l'helper di A12a, e non parte prima delle risposte di Carmine**: una fase non si mette in coda sopra una domanda (`08`,
+    «Regole di tutte le fasi»). Il branch `m3/a12b-training-erasure` **non** è preparato.
+  - ⚠️ **La copia dei tour** (`memberName`, `flightops:people.erased`) non si tocca: la sostituisce una sessione di Carmine.
+  - ⚠️ **Per A12b** (`08`, «Com'è andata (A12a)», «Trovato» n.4): `memberLabel` sta in 28 punti; i link al percorso di un trainee vanno
+    tolti per uno pseudonimo; **un training aperto affidato a un trainer che si cancella** resta affidato allo pseudonimo, e la mail
+    della sessione al trainee nominerebbe il trainer con il numero: la regola del design non ne parla, da decidere in A12b.
+  - Il banco di A12a: 127.0.0.1:**5102**, `ivaohub_e2e_a12a` (ancora nessun giro). Il banco dopo: **5105** (5103 e 5104 sono della sessione
+    che coordina).
+  - VID: A12a non ne usa (il test delle colonne non semina nessuno).
+- **La fase dopo**: il codice di A12a, sulla stessa PR, quando Carmine risponde; poi **A12b**.
 
 ### Che cosa ha lasciato A11b (29 settembre 2026, branch `m3/a11b-fir-heads`, PR #182)
 
