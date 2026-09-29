@@ -30,28 +30,50 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 28 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.22**: la diagnostica della richiesta (#168)
-e la sua misura, la coda del codice aggiornata e sette correzioni di una revisione del piano; la 1.21 ha portato l'hosting
-misurato sulla prova (#164–#166), la 1.20 l'avvio da qualunque cartella (#162).
-**L'hub è online su `test.it.ivao.aero` con la 0.2.2** (tag `v0.2.2` su `94925a8`), caricata da Carmine via FTP in `webapp/`
-dello staging lasciato da Ivao.It, database `itivao_test`. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+**Ultimo aggiornamento:** 29 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.24**: i capi FIR sul loro FIR (A11a, #159,
+il grant al team di un FIR e `firStaffScope` che vale solo per lui), il campo suggerito che tiene la scelta (A6c, #145) e si
+sceglie dalla tastiera (#177), le pagine della richiesta di training (A6b, #144), i giri dei tour che si riprendono i PIREP
+(#179, solo test) e **il design di M4** (#180). La 1.23 ha portato l'avvio misurato sul server (#171–#175, 0.2.3–0.2.7), la 1.22
+la diagnostica della richiesta (#168), la 1.21 l'hosting misurato sulla prova (#164–#166), la 1.20 l'avvio da qualunque
+cartella (#162).
+**L'hub è online su `test.it.ivao.aero` con la 0.2.7** (tag `v0.2.7` su `91017ba`), caricata da Carmine via FTP in `webapp/`
+dello staging lasciato da Ivao.It, database `itivao_test`. **La 0.3.0 è pronta da consegnare** (tag `v0.3.0` su `efe057a`,
+creato in locale: A11a e la tastiera): è la **prima migrazione del nucleo dalla 0.2.0** (`AddGrantFirTeam`, additiva), quindi va
+consegnata quando qualcuno può ripristinare (piano §11.3 punto 5). La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
 Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
-`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md`, **riscritto dalla #169 com'è il server** (`webapp/`, `itivao_test`,
-carica Carmine); un foglio con la versione solo quando una consegna ha istruzioni sue. Il login dello staff funziona, e
-`startup.txt` dice `access private: staff only, not indexed`.
-**La diagnostica della richiesta** (`GET /api/admin/diagnostics/request`, un JSON del super amministratore, non una pagina) ha
-trovato perché il registro scrive `127.0.0.1` per tutti: **un salto in più** davanti all'hub. `X-Forwarded-For` arriva con tre
-voci, l'ultima `127.0.0.1`, e il limite 1 prende quella; la correzione, `ForwardLimit = null`, è la 0.2.3 (piano §11.3 punto 9).
-⚠️ **Da risolvere prima della produzione**: l'indirizzo del visitatore (0.2.3), l'avvio a freddo di 8–10 s, gli header della
-home (piano §11.3 punti 3 e 9). **La coda del codice** (Carmine, piano 1.22): 1 ✅ diagnostica della richiesta (0.2.2) → 2
-l'indirizzo del visitatore, `ForwardLimit = null` (0.2.3) → 3 avvio più veloce + `diagnostics/starts.txt` + le due correzioni
-della revisione della #162, `division.json` accanto all'assembly per primo e le parti delle stringhe di connessione nascoste in
-`startup-error.txt` (0.2.4) → 4 il controllo all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato, prima di
-A10 (0.2.5) → 5 job che recuperano + POST dell'operazione pianificata di Plesk (0.3.0) → 6 la strada A della #164, solo se sul
-server l'avvio scende sotto ~3 s.
-M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a, **ancora aperte e in conflitto** con
-`main`, da rimettere in pari.
+`docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md` (`webapp/`, `itivao_test`, carica Carmine); un foglio con la versione
+solo quando una consegna ha istruzioni sue. Il login dello staff funziona, e `startup.txt` dice `access private: staff only, not
+indexed`.
+**Chiusi**: l'indirizzo del visitatore (0.2.3, `ForwardLimit = null`: sul server l'hub crede l'indirizzo che vede Cloudflare,
+non più `127.0.0.1`); il primo accesso che falliva sul nonce (0.2.6: il consenso di IVAO perde il nonce, e il giro riparte una
+volta; verificato sul server); la lingua regionale del browser (0.2.5). L'avvio è più veloce (0.2.4, ReadyToRun e le migrazioni
+dei moduli solo se pendenti; 0.2.7, il marcatore d'inizializzazione), e `diagnostics/starts.txt` misura ogni avvio.
+⚠️ **Resta prima della produzione** (piano §2.5 riga di Passenger, §11.3 punti 3, 6 e 9):
+- **l'avvio a freddo**: dopo un silenzio il primo visitatore aspetta **~5 s** (prima risposta 5,35 s di mediana con la 0.2.7), e
+  dal codice resta poco da togliere; **a volte un doppio avvio**: dopo un avvio lento Passenger spegne il processo appena dopo
+  la prima risposta, e la pagina paga un secondo avvio (2 su 8 e 2 su 11). Lo toglie solo l'host; l'hub che chiama sé stesso
+  **aspetta** (Carmine, 28 set 2026), se mai con il sì di Ivao.It;
+- **la home senza gli header dell'hub**: la strada A **non ora** (Carmine, domanda 3 della #166), un limite noto e scritto;
+- **i job mentre l'hub dorme**: finché non recuperano, girano solo a processo vivo.
+
+**La coda del codice del nucleo** (piano 1.23, invariata dalla 1.24): fatti 0.2.2 diagnostica, 0.2.3 indirizzo, 0.2.4 avvio +
+`starts.txt`, 0.2.5 lingua, 0.2.6 nonce, 0.2.7 marcatore; la 0.3.0 è andata ad A11a e alla tastiera. Restano: 1 il controllo
+all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato, **prima di A10** (i punti per A7 e A10 sono sulla #146) → 2
+job che recuperano + POST dell'operazione pianificata di Plesk → 3 la strada A, solo se l'avvio scende sotto ~3 s → 4 l'hub che
+chiama sé stesso: aspetta. Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
+`hub.lang`, un giro futuro. Da A11a, se il maintainer vuole: `firStaffScope` **obbligatorio** nel calcolo dei permessi (oggi ha
+il predefinito `own`, per non toccare tre suoi test), in una PR sua.
+**M3** (`dalberone`, `HANDOFF-M3.md`): **unite A0–A5 (con A4a), A3b, A6a, A6b, A6c e A11a**. In coda:
+- **#146 (A7) e #147 (A8a) approvabili**, in attesa che `dalberone` unisca `main` nei loro branch;
+- in bozza, in fila: #148 (A8b), #149 (A9a), #150 (A9b), #151 (A10a), #153 (A10b), #178 (A10c);
+- **#181 (A7b)**, il trainer sulla regola delle righe affidate: **deve entrare prima che ci siano trainer veri**;
+- **#182 (A11b)**, i capi FIR nel modulo, con IT a `firStaffScope: own`.
+**M4** (Events): **il design è unito** (`09-design-m4.md`, #180, deciso da Carmine il 29 set 2026): tre blocchi — **M4a** eventi e
+prenotazioni, spegne `ivao-booking`; **M4b** ATC e dopo evento; **M4c** eventi in presenza. Fuori da M4: la prenotazione automatica
+su IVAO (un meccanismo nuovo, con una nota sua), gli stand e il Gate Manager dentro il sito; l'esportazione con il token per il Gate
+Manager resta in M4a. **Il prossimo passo è la fase E0**: le note di §17 e delle estensioni, e `10-piano-implementazione-m4.md`
+(fasi E0–E17), scritti da una **sessione di lavoro** in un worktree suo.
 Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di

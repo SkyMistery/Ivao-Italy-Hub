@@ -93,7 +93,8 @@
       "globalPermission": "A permission that is not scoped to a department cannot be granted by hand.",
       "notStaff": "That VID is not staff of this division, or has never signed in.",
       "alreadyExpired": "Choose a date in the future, or leave it empty for a grant that does not expire.",
-      "subject": "A permission is given to a member or to a position: fill in one of the two.",
+      "subject": "A permission is given to a member, to a department's position or to the team of a FIR: fill in one of the three.",
+      "firTeamArea": "The team of a FIR holds a permission on the rows of its FIR: choose one whose rows say their FIR.",
       "levelsRequired": "A position needs at least one level."
     },
     "superadmin": {
