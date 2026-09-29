@@ -95,16 +95,8 @@
         "href": "https://www.ivao.aero"
       },
       {
-        "label": "Termini e condizioni",
-        "href": "https://www.ivao.aero/termsandconditions.htm"
-      },
-      {
-        "label": "Informativa sulla privacy",
-        "href": "https://www.ivao.aero/privacy.htm"
-      },
-      {
-        "label": "Regolamento",
-        "href": "https://www.ivao.aero/rules.htm"
+        "label": "Regole, regolamento e privacy",
+        "href": "https://wiki.ivao.aero/en/home/ivao/information"
       }
     ],
     "disclaimer": "{{division}} è una divisione di IVAO, una rete di simulazione di volo senza scopo di lucro. Niente di quanto pubblicato qui è destinato all'aviazione reale."

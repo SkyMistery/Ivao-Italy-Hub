@@ -8,6 +8,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace IvaoHub.Core.Services;
 
@@ -24,12 +25,16 @@ namespace IvaoHub.Core.Services;
 /// once and only once, so doing it again is only time. Two processes that start together without a valid mark both
 /// initialise, as every start did before the mark, and both write it.</para>
 /// <para>Anything that fails while reading it means a full initialisation, never a failed start: on the very first start
-/// the table does not exist yet.</para>
+/// the table does not exist yet. Anything that fails while writing it is a warning, never a failed start either: the
+/// initialisation has succeeded, and a mark not written only means that the next start does it again.</para>
 /// </remarks>
 public sealed class InitialisationMarker(HubDbContext database, IClock clock, ILogger<InitialisationMarker> logger)
 {
     /// <summary>The row of <c>hub_division_settings</c> that holds the mark.</summary>
     public const string SettingKey = "startup.initialised";
+
+    /// <summary>How many times the mark is written before giving up, when every failure is another process writing it too.</summary>
+    private const int WriteAttempts = 5;
 
     /// <summary>
     /// Runs <paramref name="initialise"/> unless the mark says that a start with this very <paramref name="key"/> has
@@ -56,8 +61,8 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
         logger.LogInformation("A full initialisation: {Changes}.", string.Join("; ", changes));
         await initialise(cancellationToken);
 
-        await WriteAsync(key, cancellationToken);
-        timings?.Step("marker written");
+        var written = await WriteAsync(key, cancellationToken);
+        timings?.Step(written ? "marker written" : "marker not written");
 
         return new InitialisationOutcome(Skipped: false, changes, stored);
     }
@@ -83,35 +88,73 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
         }
     }
 
-    private async Task WriteAsync(InitialisationKey key, CancellationToken cancellationToken)
+    /// <summary>
+    /// Writes the mark; says whether it did. A mark not written is never a failed start (note
+    /// 2026-09-29-il-marcatore-che-non-si-scrive): the initialisation has already succeeded, and the next start only does it
+    /// again.
+    /// </summary>
+    private async Task<bool> WriteAsync(InitialisationKey key, CancellationToken cancellationToken)
     {
         var value = JsonSerializer.Serialize(new StoredInitialisation(
             key.Build, key.Configuration, key.Seed, key.Stamp, clock.UtcNow));
 
         for (var attempt = 1; ; attempt++)
         {
-            var row = await database.DivisionSettings.FirstOrDefaultAsync(setting => setting.Key == SettingKey, cancellationToken);
-            if (row is null)
-            {
-                row = new DivisionSetting { Key = SettingKey };
-                database.DivisionSettings.Add(row);
-            }
-
-            row.ValueJson = value;
-            row.UpdatedAt = clock.UtcNow;
-
             try
             {
+                var row = await database.DivisionSettings.FirstOrDefaultAsync(setting => setting.Key == SettingKey, cancellationToken);
+                if (row is null)
+                {
+                    row = new DivisionSetting { Key = SettingKey };
+                    database.DivisionSettings.Add(row);
+                }
+
+                row.ValueJson = value;
+                row.UpdatedAt = clock.UtcNow;
+
                 await database.SaveChangesAsync(cancellationToken);
-                return;
+                return true;
             }
-            catch (DbUpdateException) when (attempt == 1)
+            catch (Exception exception) when (exception is DbException or DbUpdateException or InvalidOperationException
+                && !cancellationToken.IsCancellationRequested)
             {
-                // Another process initialised at the same moment and wrote the row between our read and our insert. Its
-                // mark is as true as ours; ours is written over it, as an update this time.
+                // Whatever the database did with our changes, the next attempt reads the row again.
                 database.ChangeTracker.Clear();
+
+                if (attempt < WriteAttempts && IsAnotherWriter(exception))
+                {
+                    // Another process initialised at the same moment and wrote the row first: its mark is as true as ours,
+                    // and ours is written over it, as an update this time. On MariaDB the two can also meet as a deadlock --
+                    // both inserts wait on a row just deleted and not yet purged -- and the database has already rolled us
+                    // back. A moment apart, so that two losers do not meet again.
+                    await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(10, 50) * attempt), cancellationToken);
+                    continue;
+                }
+
+                logger.LogWarning(
+                    exception,
+                    "The initialisation marker could not be written ({Reason}): the initialisation succeeded, and the next start does it again.",
+                    exception.GetBaseException().Message);
+                return false;
             }
         }
+    }
+
+    /// <summary>
+    /// A duplicate key or a deadlock: another process wrote the same row at the same moment, and trying again resolves it.
+    /// EF reports a deadlock wrapped, as a transient failure, so the whole chain is looked at.
+    /// </summary>
+    private static bool IsAnotherWriter(Exception? exception)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry or MySqlErrorCode.LockDeadlock })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
