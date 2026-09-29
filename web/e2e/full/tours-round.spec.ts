@@ -165,7 +165,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     errors: [],
   };
 
-  await removeBenchTours(context, 'bench-round-');
+  await removeBenchTours(context, 'bench-round-', pilotContext.context);
   try {
     await round();
   } finally {
@@ -176,7 +176,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     for (const error of made.errors) {
       await context.request.delete(`/api/flightops/errors/${error}`, { headers: asTheClientDoes });
     }
-    await removeBenchTours(context, 'bench-round-');
+    await removeBenchTours(context, 'bench-round-', pilotContext.context);
     if (made.template !== undefined) {
       await context.request.delete(`/api/flightops/tours/${made.template}`, { headers: asTheClientDoes });
     }

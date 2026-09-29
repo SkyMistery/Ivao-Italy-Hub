@@ -40,6 +40,12 @@ public sealed class StartupTimings
         }
     }
 
+    /// <summary>
+    /// What the start did about the initialisation of the database, in words: full and why, or skipped and which steps
+    /// (<see cref="InitialisationMarker"/>). Null until the start has decided, and in a process that never initialises.
+    /// </summary>
+    public string? Initialisation { get; set; }
+
     public IReadOnlyList<StartupStep> Steps
     {
         get

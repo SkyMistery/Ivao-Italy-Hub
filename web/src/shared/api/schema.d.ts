@@ -4118,6 +4118,7 @@ export interface components {
             vid: null | number;
             positionDepartment: null | components["schemas"]["Department"];
             positionLevels: components["schemas"]["StaffLevel"][];
+            positionFirTeam: boolean;
             kind: components["schemas"]["GrantKind"];
             value: string;
             department: null | components["schemas"]["Department"];
@@ -4161,6 +4162,7 @@ export interface components {
             vid: null | number;
             positionDepartment: null | components["schemas"]["Department"];
             positionLevels: components["schemas"]["StaffLevel"][];
+            positionFirTeam: boolean;
             value: string;
             department: null | components["schemas"]["Department"];
             resourceScope: null | string;
@@ -4194,6 +4196,8 @@ export interface components {
             rowVersion: string;
             positionDepartment?: null | components["schemas"]["Department"];
             positionLevels?: null | components["schemas"]["StaffLevel"][];
+            /** @default false */
+            positionFirTeam: boolean;
         };
         HttpValidationProblemDetails: {
             type?: null | string;

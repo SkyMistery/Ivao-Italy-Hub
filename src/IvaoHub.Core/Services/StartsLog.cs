@@ -54,18 +54,22 @@ public static partial class StartsLog
         TimeSpan took,
         string previous,
         ProcessMemory memory,
-        IReadOnlyList<StartupStep> steps)
+        IReadOnlyList<StartupStep> steps,
+        string? initialisation = null)
     {
         ArgumentNullException.ThrowIfNull(build);
         ArgumentNullException.ThrowIfNull(steps);
 
-        var version = build.ShortCommit is { } commit ? $"{build.Version}+{commit}" : build.Version;
         var stepList = string.Join(", ", steps.Select(step => string.Create(
             CultureInfo.InvariantCulture, $"{step.Name} {step.Duration.TotalMilliseconds:0}")));
 
+        // Whether the start initialised the database or found it initialised, and why (note
+        // 2026-09-28-il-marcatore-d-inizializzazione): right after the time, which it explains.
+        var init = initialisation is null ? string.Empty : $"  {initialisation}";
+
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"{Stamp(atUtc)}  {Start,-6}  pid {pid,-7}  {version}  ready in {took.TotalSeconds:0.00} s  previous: {previous}  " +
+            $"{Stamp(atUtc)}  {Start,-6}  pid {pid,-7}  {build.Stamp}  ready in {took.TotalSeconds:0.00} s{init}  previous: {previous}  " +
             $"{memory}  steps ms: {stepList}");
     }
 
@@ -263,7 +267,8 @@ public static partial class StartsLog
     private static string Header() =>
         "# starts.txt: one line for every start of the hub and one for every stop, always appended. The times are UTC.\n" +
         "#\n" +
-        "# START   ready in = from the creation of the process to the moment it accepts requests; previous = what\n" +
+        "# START   ready in = from the creation of the process to the moment it accepts requests; initialisation = full\n" +
+        "#         (and why) or skipped (and which steps: nothing changed since the last full one); previous = what\n" +
         "#         happened to the process of the start before; memory when ready; steps ms = where the time went.\n" +
         "# STOP    an orderly stop: how long the process lived, the requests it answered, when the first answer left\n" +
         "#         (from the creation of the process: what the visitor who woke it waited), memory and its peak.\n" +
