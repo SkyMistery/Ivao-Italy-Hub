@@ -6,6 +6,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
@@ -199,15 +200,23 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// Every column the erasure gives the pseudonym to, read from the models of the real host (note §3). A new column of a
     /// person that follows the convention changes this list, and whoever adds it sees it here; one that does not follow it
     /// would be missed by the erasure, and this is the list a review compares a new table against.
+    /// <para>The contexts are the core's and those of every module the erasure goes through, so a module's are read the day
+    /// it is born (note <c>2026-09-29-la-persona-cancellata-nel-nucleo</c>, answer 2).</para>
     /// </summary>
     [Fact]
     public async Task TheColumnsThatNameAPersonAreTheOnesTheErasureKnows()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
+        var modules = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
         DbContext[] contexts =
         [
             scope.ServiceProvider.GetRequiredService<HubDbContext>(),
-            scope.ServiceProvider.GetRequiredService<IvaoHub.Modules.FlightOps.Data.FlightOpsDbContext>(),
+
+            // Every module of the hub, the way the erasure goes through them; the test module is not one of the hub's.
+            .. modules.Enabled
+                .Where(module => module.Key != SampleModule.ModuleKey)
+                .SelectMany(module => module.DbContextTypes)
+                .Select(type => (DbContext)scope.ServiceProvider.GetRequiredService(type)),
         ];
 
         var columns = contexts
@@ -299,6 +308,27 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         "hub_user_staff_positions.vid (key)",
         "hub_user_tokens.vid (key)",
         "hub_users.vid (key)",
+        "trn_bans.created_by",
+        "trn_bans.lifted_by",
+        "trn_bans.updated_by",
+        "trn_bans.vid",
+        "trn_exams.candidate_vid",
+        "trn_exams.created_by",
+        "trn_exams.examiner_vid",
+        "trn_exams.updated_by",
+        "trn_sessions.created_by",
+        "trn_sessions.updated_by",
+        "trn_sheet_items.created_by",
+        "trn_sheet_items.updated_by",
+        "trn_slots.created_by",
+        "trn_slots.updated_by",
+        "trn_trainings.assigned_by",
+        "trn_trainings.closed_by",
+        "trn_trainings.created_by",
+        "trn_trainings.decided_by",
+        "trn_trainings.trainee_vid",
+        "trn_trainings.trainer_vid",
+        "trn_trainings.updated_by",
     ];
 
     private static int Line(JsonElement response, string key) =>
