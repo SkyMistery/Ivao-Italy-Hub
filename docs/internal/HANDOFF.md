@@ -30,11 +30,16 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 28 settembre 2026, notte — **M2 è chiusa** (T0–T20c). Piano **1.23**: l'avvio misurato sul server,
-con le cinque PR del nucleo #171–#175 (0.2.3–0.2.7); la 1.22 ha portato la diagnostica della richiesta (#168), la 1.21
-l'hosting misurato sulla prova (#164–#166), la 1.20 l'avvio da qualunque cartella (#162).
+**Ultimo aggiornamento:** 29 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.24**: i capi FIR sul loro FIR (A11a, #159,
+il grant al team di un FIR e `firStaffScope` che vale solo per lui), il campo suggerito che tiene la scelta (A6c, #145) e si
+sceglie dalla tastiera (#177), le pagine della richiesta di training (A6b, #144), i giri dei tour che si riprendono i PIREP
+(#179, solo test) e **il design di M4** (#180). La 1.23 ha portato l'avvio misurato sul server (#171–#175, 0.2.3–0.2.7), la 1.22
+la diagnostica della richiesta (#168), la 1.21 l'hosting misurato sulla prova (#164–#166), la 1.20 l'avvio da qualunque
+cartella (#162).
 **L'hub è online su `test.it.ivao.aero` con la 0.2.7** (tag `v0.2.7` su `91017ba`), caricata da Carmine via FTP in `webapp/`
-dello staging lasciato da Ivao.It, database `itivao_test`. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+dello staging lasciato da Ivao.It, database `itivao_test`. **La 0.3.0 è pronta da consegnare** (tag `v0.3.0` su `efe057a`,
+creato in locale: A11a e la tastiera): è la **prima migrazione del nucleo dalla 0.2.0** (`AddGrantFirTeam`, additiva), quindi va
+consegnata quando qualcuno può ripristinare (piano §11.3 punto 5). La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
 Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
 `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md` (`webapp/`, `itivao_test`, carica Carmine); un foglio con la versione
@@ -52,13 +57,23 @@ dei moduli solo se pendenti; 0.2.7, il marcatore d'inizializzazione), e `diagnos
 - **la home senza gli header dell'hub**: la strada A **non ora** (Carmine, domanda 3 della #166), un limite noto e scritto;
 - **i job mentre l'hub dorme**: finché non recuperano, girano solo a processo vivo.
 
-**La coda del codice** (piano 1.23): fatti 0.2.2 diagnostica, 0.2.3 indirizzo, 0.2.4 avvio + `starts.txt`, 0.2.5 lingua,
-0.2.6 nonce, 0.2.7 marcatore. Restano: 1 il controllo all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato,
-**prima di A10** (i punti per A7 e A10 sono sulla #146) → 2 job che recuperano + POST dell'operazione pianificata di Plesk →
-3 la strada A, solo se l'avvio scende sotto ~3 s → 4 l'hub che chiama sé stesso: aspetta. Notato e non fatto (#173): la SPA non
-applica il `user.locale` del bootstrap quando manca il cookie `hub.lang`, un giro futuro.
-M3: unite fino ad A6a (#143) e la fase del nucleo A3b (#135); in coda A6b–A10b, A6c e A11a di `dalberone`, **ancora aperte e in
-conflitto** con `main` dal 27 set, da rimettere in pari.
+**La coda del codice del nucleo** (piano 1.23, invariata dalla 1.24): fatti 0.2.2 diagnostica, 0.2.3 indirizzo, 0.2.4 avvio +
+`starts.txt`, 0.2.5 lingua, 0.2.6 nonce, 0.2.7 marcatore; la 0.3.0 è andata ad A11a e alla tastiera. Restano: 1 il controllo
+all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato, **prima di A10** (i punti per A7 e A10 sono sulla #146) → 2
+job che recuperano + POST dell'operazione pianificata di Plesk → 3 la strada A, solo se l'avvio scende sotto ~3 s → 4 l'hub che
+chiama sé stesso: aspetta. Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
+`hub.lang`, un giro futuro. Da A11a, se il maintainer vuole: `firStaffScope` **obbligatorio** nel calcolo dei permessi (oggi ha
+il predefinito `own`, per non toccare tre suoi test), in una PR sua.
+**M3** (`dalberone`, `HANDOFF-M3.md`): **unite A0–A5 (con A4a), A3b, A6a, A6b, A6c e A11a**. In coda:
+- **#146 (A7) e #147 (A8a) approvabili**, in attesa che `dalberone` unisca `main` nei loro branch;
+- in bozza, in fila: #148 (A8b), #149 (A9a), #150 (A9b), #151 (A10a), #153 (A10b), #178 (A10c);
+- **#181 (A7b)**, il trainer sulla regola delle righe affidate: **deve entrare prima che ci siano trainer veri**;
+- **#182 (A11b)**, i capi FIR nel modulo, con IT a `firStaffScope: own`.
+**M4** (Events): **il design è unito** (`09-design-m4.md`, #180, deciso da Carmine il 29 set 2026): tre blocchi — **M4a** eventi e
+prenotazioni, spegne `ivao-booking`; **M4b** ATC e dopo evento; **M4c** eventi in presenza. Fuori da M4: la prenotazione automatica
+su IVAO (un meccanismo nuovo, con una nota sua), gli stand e il Gate Manager dentro il sito; l'esportazione con il token per il Gate
+Manager resta in M4a. **Il prossimo passo è la fase E0**: le note di §17 e delle estensioni, e `10-piano-implementazione-m4.md`
+(fasi E0–E17), scritti da una **sessione di lavoro** in un worktree suo.
 Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
