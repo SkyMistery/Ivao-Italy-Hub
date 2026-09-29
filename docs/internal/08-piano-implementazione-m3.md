@@ -3665,6 +3665,15 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
   fase: nessun file del maintainer, i 10 del nucleo con la nota, PASS. ⚠️ **Mentre il passo girava, #149 (A9a) è stata unita** (b2409aa,
   16:22 UTC): il suo `HANDOFF-M3.md` va in conflitto con ogni branch della coda, A11b compreso, quindi la PR è in conflitto con `main` e
   **non ha CI** finché `main` non entra al prossimo passo della coda; nessun merge di `main` di iniziativa.
+- **Il secondo passo della coda** (30 settembre, notte): unite #150, #151, #153, #178 e #181, A11b è in cima alla coda, e il suo passo ha
+  portato `main` (17941c0) nel suo branch (99421c2), che la sessione di A11b mi ha scritto; è entrato qui con un merge (`2c5b37b`). Porta
+  **solo documenti** (`08` e `HANDOFF-M3.md`: nessun file fuori da `docs`), quindi il codice è quello delle suite qui sopra; un conflitto solo,
+  l'intestazione dell'handoff, riscritta. Il branch si unisce senza conflitti con il `main` di dopo (6704aad, con #190): **la PR non è più in
+  conflitto e ha di nuovo la CI**. Le suite rifatte comunque, una alla volta, come chiede `CONTRIBUTING.md` dopo un merge di `main`, tutte
+  al primo giro: `dotnet build` 0 avvisi; unità **869/869**; integrazione intera **413/413**; `pnpm lint`, `typecheck`, `format:check`
+  puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file; `pnpm gen:api` senza differenze; le chiavi `training:` 381, nessuna
+  mancante; **`pnpm e2e` 153/153**; **`pnpm e2e:full` 48/48** sul banco ricreato, sotto il lucchetto di Mailpit; `core-guard` sulla fase:
+  PASS.
 - **Non verificato**:
   - **le pagine**: il nucleo dà il pezzo, ma nessuna pagina lo usa ancora (A12b per il training, una sessione di Carmine per i tour);
     la colonna `person` è provata in Vitest, non su una schermata vera né nella galleria, che non la mostra;
