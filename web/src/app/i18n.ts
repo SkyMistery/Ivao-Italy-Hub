@@ -3,6 +3,8 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpBackend from 'i18next-http-backend';
 import { initReactI18next } from 'react-i18next';
 
+import { FALLBACK_LANGUAGE, spokenLanguage } from '../shared/i18n/language';
+
 /**
  * The division owns its languages: `locales/{lng}/{ns}.json` at the root of the repository is the
  * only source of user facing text, read by the SPA and by the backend as well.
@@ -21,11 +23,24 @@ import { initReactI18next } from 'react-i18next';
  * They are passed in rather than read from `app/registry` directly, because the registry pulls in
  * every block component of the application and half of those reach back here — the
  * composition root is where the two meet, and it is the one place with no cycle to make.
+ *
+ * ⚠️ Only a language that has files is ever asked for. A browser in `en-GB` or `it-IT` used to make
+ * i18next fetch `/locales/en-GB/*.json` first — one 404 per namespace on every load, before the
+ * fallback (test.it.ivao.aero, 28 September 2026). The files that exist are known at build time
+ * (`__HUB_LANGUAGES__`, from the directories under `locales/`), and a detected tag is reduced to its
+ * language before i18next sees it, so `en-GB` becomes `en` and a language with no files becomes
+ * the fallback. The division's own list arrives later, with the bootstrap, and narrows it
+ * (`useDivisionLanguage`).
  */
-export const DEFAULT_LOCALE = 'en';
 export const LOCALE_COOKIE = 'hub.lang';
 
-export function createI18n(namespaces: readonly string[]): I18n {
+/** The languages the build shipped files for: one per directory under `locales/`. */
+export const SHIPPED_LANGUAGES: readonly string[] = __HUB_LANGUAGES__;
+
+export function createI18n(
+  namespaces: readonly string[],
+  languages: readonly string[] = SHIPPED_LANGUAGES,
+): I18n {
   const instance = i18next.createInstance();
 
   void instance
@@ -33,7 +48,10 @@ export function createI18n(namespaces: readonly string[]): I18n {
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
-      fallbackLng: DEFAULT_LOCALE,
+      fallbackLng: FALLBACK_LANGUAGE,
+      // A language outside this list is never loaded, fallback included; and with no regional tag
+      // in it, nothing regional is either.
+      supportedLngs: [...languages],
       ns: [...namespaces],
       defaultNS: 'common',
       // A namespace is where a file is, never part of a key: the server proves it, because it
@@ -46,6 +64,10 @@ export function createI18n(namespaces: readonly string[]): I18n {
         order: ['cookie', 'navigator'],
         lookupCookie: LOCALE_COOKIE,
         caches: [],
+        // Each tag the browser lists becomes its language before i18next picks one, so that
+        // `en-GB, it` means English: left to itself i18next prefers an exact match anywhere in the
+        // list (`it`) to the reader's first choice.
+        convertDetectedLanguage: (tag: string) => spokenLanguage(tag, languages) ?? tag,
       },
       interpolation: { escapeValue: false },
     });

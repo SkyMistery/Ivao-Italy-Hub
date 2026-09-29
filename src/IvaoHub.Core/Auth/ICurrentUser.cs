@@ -57,6 +57,15 @@ public interface ICurrentUser
     bool Has(string permission, Department department, string? resourceScope = null);
 
     /// <summary>
+    /// <see cref="Has(string, Department, string?)"/> on a row that also says its FIR (<c>IHasFir</c>, M3, A11a, note
+    /// 2026-09-27-i-capi-fir-sul-loro-fir): a permission held on one FIR — a FIR team's — reaches the rows of that FIR and no
+    /// other, and one held without a FIR reaches them all. Answered by <see cref="PermissionSet"/> from
+    /// <see cref="Permissions"/>, so that every implementation gives the same answer.
+    /// </summary>
+    bool Has(string permission, Department department, string? resourceScope, string? fir) =>
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope, fir);
+
+    /// <summary>
     /// True when the user holds the permission somewhere: on one department, on all of them, or
     /// as a global permission. It answers "may they do this at all", which is the only thing that
     /// can be asked before a row is in hand — opening a list, for instance (design M0 section 3.7).
@@ -121,6 +130,9 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
     public bool Has(string permission, Department department, string? resourceScope = null) =>
         PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope);
 
+    public bool Has(string permission, Department department, string? resourceScope, string? fir) =>
+        PermissionSet.Has(Permissions, IsSuperadmin, permission, department, resourceScope, fir);
+
     public bool HasAny(string permission) =>
         PermissionSet.HasAny(Permissions, IsSuperadmin, permission);
 
@@ -131,13 +143,10 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
             return Snapshot.Anonymous(division.DefaultLocale);
         }
 
+        // A claim this hub cannot read is worth nothing — never "every department" (M3, A11a).
         var permissions = principal.FindAll(HubClaims.Permission)
-            .Select(claim => HubClaims.ParsePermission(claim.Value))
-            .Select(parsed => new EffectivePermission(
-                parsed.Name,
-                parsed.Department,
-                "cookie",
-                parsed.ResourceScope))
+            .Select(claim => HubClaims.ReadPermission(claim.Value, "cookie"))
+            .OfType<EffectivePermission>()
             .ToArray();
 
         var departments = principal.FindAll(HubClaims.Department)

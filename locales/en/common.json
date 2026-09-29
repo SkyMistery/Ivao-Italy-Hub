@@ -1399,7 +1399,7 @@
     "description": "Permissions given to a member by name, or to a position — a department at some of its levels — on top of what the staff positions already give.",
     "create": "New permission",
     "edit": "Edit permission",
-    "formHint": "Fill in a VID for one member, or a department and its levels for whoever holds that position: never both. A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
+    "formHint": "Fill in a VID for one member, a department and its levels for whoever holds that position, or tick the team of a FIR and choose its levels: only one of the three. A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
     "delete": {
       "title": "Delete this permission?",
       "description": "The member loses it on their very next request, and this cannot be undone."
@@ -1416,6 +1416,7 @@
       "reason": "Reason",
       "updatedAt": "Last change",
       "positionDepartment": "Position: department",
+      "positionFirTeam": "Position: the team of a FIR",
       "positionLevels": "Position: levels"
     },
     "options": {
@@ -1439,7 +1440,7 @@
     "hints": {
       "expiresAt": "Empty means the grant never expires.",
       "vid": "For one member. Leave it empty to give the permission to a position.",
-      "positionLevels": "Whoever holds a position of this department at one of these levels holds the permission, and stops holding it with the position."
+      "positionLevels": "Whoever holds a position of this department at one of these levels holds the permission, and stops holding it with the position. For the team of a FIR, the chief is the coordinator and the assistant chief the assistant: when the division keeps FIR teams to their own FIR, each holds it on the rows of their FIR only, and only a permission whose rows say their FIR can be given this way."
     }
   },
   "superadmins": {
