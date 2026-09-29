@@ -148,7 +148,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Le correzioni della revisione di #147** (28 settembre 2026; il dettaglio con i commit è in `08`, «Com'è andata (A8a)»):
   - **Gli avvisi salvati con una data si fermano a ciò che ogni lettore del training può leggere** (`DateConflicts.Kept`, il tetto del
     nucleo `VisibilityCeiling.For(Staff)`): chi propone vede e conferma tutto ciò che legge; la data tiene le voci di tutti, dei membri e
-    dello staff, mai quelle di un solo dipartimento. La forma degli avvisi non cambia.
+    dello staff, mai quelle di un solo dipartimento. La forma degli avvisi non cambia. ⚠️ **Il tetto è lo staff** (seconda revisione di
+    #147, punto 1): chi tenesse `Training.View` per un grant senza essere staff leggerebbe, negli avvisi salvati, i titoli delle voci
+    visibili solo allo staff. Oggi `View` lo tiene solo lo staff del TD; se un giorno lo si desse a un membro qualunque, il tetto va
+    abbassato.
   - **La chiusura tiene la data della sessione** (il registro, design §6) e toglie solo le date proposte: il calendario, il promemoria e
     «Eseguito» guardano lo stato. ⚠️ **Per A9a**: il suo commento di `Training.ScheduledStartUtc` («… closed») e il suo scostamento 2
     («come la chiusura di A8a») non valgono più (`08`, «Com'è andata (A8a)», correzione 3).
