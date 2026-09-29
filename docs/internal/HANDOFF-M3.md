@@ -11,25 +11,21 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 29 settembre 2026 — **fase A12a** (nucleo: la persona cancellata e le colonne del training in
-`ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, in bozza **in coda dopo #182** (A11b, in bozza in coda
-dopo #181, A7b, dopo #178, A10c, dopo #153, A10b, dopo #151, A10a, dopo #150, A9b, in cima alla coda: **#148, A8b, e #149, A9a, sono unite**
-il 29 settembre, alle 15:23 e alle 16:22 UTC). La nota (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`) è nata «Proposta» con due domande, e
-**Carmine l'ha decisa** lo stesso giorno, come raccomandato; poi il codice, con la CI verde su e3b84d7. Il branch è nato dalla cima della
-coda (0b62481, preparato dalla sessione di A11b); **poi la coda l'ha raggiunto**: la catena dopo #147 — `main` a 2af5133, con #146, #147,
-#184 (il piano di M4, E0), #185, #186 (la versione 0.4.0) e #188 — con le correzioni delle revisioni da #148 a #181 e **le risposte di
-Carmine alle revisioni di #149, #150 e #178** (una sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un
-training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso, l'8 compreso) è salita fino
-ad A11b (a24268b) ed è entrata qui con un merge: **l'intervallo `m3/a11b-fir-heads...m3/a12a-deleted-person-core` mostra di nuovo solo la
-fase**. `main` con #148 e #149 (b2409aa) sale al passo della coda di ogni branch, non prima: **fino ad allora la PR è in conflitto con
-`main`** in questo file, come tutta la coda, **e non ha CI**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140),
-A6a (#143), A6b (#144), A6c (#145), A7 (#146), A8a (#147), A8b (#148), A9a (#149), la fase del nucleo A11a (#159) e #152 del maintainer. **A11b** (#182, sotto questa) il revisore l'ha trovata approvabile su 0b62481
-([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)). La **sessione master** di Carmine (nota
-`2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
-suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza
-spingerci niente. **A10 è divisa in tre** (`08`, A10): **A10a** (#151), **A10b** (#153) e **A10c** (#178); **A11 in due**, A11a (unita) e
-**A11b** (#182); **A12 in quattro**, A12a (questa), A12b, A12c (solo con i codici di PATS) e A12d. In C# una chiave di un modulo si chiede con
-il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 29 settembre 2026 — **fase A12b** (modulo: la cancellazione dei dati di un trainee, «persona cancellata» nelle
+pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, in bozza **in coda dopo #187** (A12a,
+in bozza in coda dopo #182, A11b, dopo #181, A7b, dopo #178, A10c, in cima alla coda: **#150, A9b, #151, A10a, e #153, A10b, sono unite** il
+29 settembre). **Una parte aspetta una domanda a Carmine**: la nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md`
+è «Proposta», con [la domanda sulla #189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168) — un training
+aperto di un altro membro, affidato a un trainer che si cancella —; il resto della fase è scritto e provato. Il branch è nato dalla cima
+della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla sessione di A12a), con `main` a 2af5133: `main` con #149, #150, #151 e
+#153 sale al passo della coda di ogni branch, non prima, quindi **la PR è in conflitto con `main`** in questo file, come tutta la coda, **e
+non ha CI**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146),
+A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), la fase del nucleo A11a (#159) e #152 del maintainer. La **sessione master** di
+Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la
+PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo
+chiede sulla PR senza spingerci niente. **A10 è divisa in tre** (`08`, A10): A10a e A10b (unite) e **A10c** (#178); **A11 in due**,
+A11a (unita) e **A11b** (#182); **A12 in quattro**, **A12a** (#187), **A12b** (questa), A12c (solo con i codici di PATS: resta
+condizionata) e A12d. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -100,6 +96,45 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A12b (29 settembre 2026, branch `m3/a12b-training-erasure`, PR #189)
+
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna migrazione; una nota nuova, **«Proposta»**, con una domanda aperta):
+  - **`TrainingPersonalData : IPersonalDataEraser`** (`src/IvaoHub.Modules.Training/TrainingPersonalData.cs`), la regola della nota
+    `2026-09-25-la-cancellazione-dei-dati-di-un-trainee`: i training finiti del trainee restano nel registro **senza testi** (i due della
+    richiesta, il motivo di un rifiuto e di una chiusura, i commenti del report, gli appunti delle sessioni, commenti e note della scheda);
+    quelli aperti e gli esami in cui è candidato si cancellano **dal change tracker**, con le loro voci del calendario; un ban in vigore resta
+    con `ErasureRequest.Keep`, uno finito o tolto perde il motivo. Cinque righe `training:erasure.*` nell'anteprima del superadmin;
+  - **le mail nominano le persone anche per VID** (`TrainingMail.Name`: `traineeVid`, `trainerVid`), così la cancellazione del nucleo le
+    trova e le toglie;
+  - **«Persona cancellata» in ogni pagina e lista del modulo**: `personName` del nucleo al posto di `memberLabel` (che non c'è più),
+    `col.person` nelle liste dei training, dei ban e degli esami; **nessun link a uno pseudonimo** (`traineeHref` risponde `null`) e
+    **nessun percorso** (`/api/training/trainees/{vid:int:min(1)}`); un ban dato da una persona cancellata la nomina; la chiusura dello staff
+    si riconosce da `closedBy` (il motivo va via con i dati del trainee). I quattro punti lasciati dalla revisione di #151 (paragrafo di
+    A10a, qui sotto) sono fatti;
+  - **la conservazione verificata**: le disponibilità vanno via a sessione decisa per ogni strada (A8), la chiusura dello staff provata
+    ora; il registro resta;
+  - i test: `TrainingTraineeTests.Erasure.cs` (2), un test in `TrainingDatesTests`, Vitest in `path.test.ts` e `dates.test.ts`, quattro
+    casi smoke in `training-staff`, `training-trainee` e `training-exams`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **La domanda aperta** ([sulla #189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168)): un training
+    aperto di un altro membro, affidato a un trainer che si cancella, **resta affidato allo pseudonimo**; lo conduce solo chi tiene
+    `Training.Edit`, nessuna vista lo segnala, e il promemoria al trainee nomina il trainer con il numero (`TrainingPeople.Label`).
+    Raccomandata la (a): l'anteprima lo conta, torna fra quelli «da assegnare» (`StaffQueue`, e il blocco `training.approvalQueue`), le mail
+    dicono «Persona cancellata». Quando Carmine risponde, la parte si scrive in questa fase (#189), con i suoi test. **Dall'eraser un training
+    non si rimette «Accettato» né si chiude**: in modalità cancellazione l'interceptor svuoterebbe la storia d'audit del training di un altro
+    membro (nota §2).
+  - ⚠️ **Una mail che nomina una persona** la scrive con `TrainingMail.Name(data, "trainee" | "trainer", vid, parole)`, non con
+    `data["trainee"] = …`: senza il VID accanto, la cancellazione di quella persona lascia il suo nome nella mail di un altro.
+  - ⚠️ **Una persona in una pagina del modulo** si scrive con `personName(person, t)`, in una lista con `col.person`, e un link al suo
+    percorso passa da `traineeHref`, che per uno pseudonimo non dà un indirizzo.
+  - ⚠️ **Un test che cancella una persona** la semina e la cancella tutta sua, e a fine test toglie ciò che resta con il suo pseudonimo
+    (`CleanErasedAsync`): la pulizia di una classe trova le righe per VID, non per pseudonimo. `TrainingTraineeTests` cancella 790052 e
+    790053, che ogni test semina di nuovo.
+  - **A12c resta condizionata** (i codici di PATS non si conoscono: Carmine sulla #187); **A12d** (il giro completo e la chiusura di M3)
+    aspetta questa fase intera, domanda compresa.
+  - Il banco di A12b: 127.0.0.1:**5105**, `ivaohub_e2e_a12b`. VID: nessuno nuovo (A12b riusa le persone di A10a).
+- **La fase dopo**: la parte della domanda, quando Carmine risponde; poi **A12d**, in coda dopo #189.
 
 ### Che cosa ha lasciato A12a (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187)
 

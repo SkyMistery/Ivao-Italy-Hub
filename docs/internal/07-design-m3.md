@@ -655,7 +655,8 @@ Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, 
 
 - **Il registro dei training resta**: richieste, stati, sessioni, schede, report e **ban** sono la storia del percorso
   di un membro, e il TD ci torna anni dopo (PATS li tiene dal 2014). Vanno via solo le **disponibilità** a sessione
-  decisa.
+  decisa: la scelta del trainee, la data a mano, la chiusura — dello staff o della notte — e un trainer cambiato le
+  tolgono tutte (A8; verificato e provato in A12b).
 - **Che cosa è personale**: il VID di trainee e trainer, i testi liberi della richiesta, commenti e note. Nome ed email
   non si copiano: si leggono dal nucleo.
 
@@ -691,6 +692,14 @@ meccanismo suo.
   bisogno: è questo il momento (n.10). **Fatto in A12a** (#187): `personName` e `isErased` in
   `web/src/shared/ui/people.ts` per le pagine, la colonna `col.person` per le liste generate, la parola `people.deleted`
   del nucleo; A12b li usa al posto di `memberLabel`.
+- **Fatto in A12b** (#189): `TrainingPersonalData` con la regola qui sopra — il motivo di una chiusura dello staff è uno
+  dei testi che vanno, e la pagina dello staff riconosce la chiusura da chi l'ha fatta —; «persona cancellata» in ogni
+  pagina e lista del modulo, e **nessun percorso per uno pseudonimo** (la rotta non prende un VID sotto 1); le mail che
+  nominano una persona portano anche il suo VID, così la cancellazione le trova (`TrainingMail.Name`).
+- ⚠️ **Da decidere** (nota `2026-09-29-il-training-affidato-a-chi-si-cancella`, domanda sulla #189): un training aperto di
+  un altro membro, affidato a un trainer che si cancella, resta affidato allo pseudonimo; la raccomandazione è che torni
+  fra i training da assegnare e che le mail dicano «Persona cancellata». Fino alla risposta resta come lo lascia la
+  regola delle colonne.
 
 ---
 

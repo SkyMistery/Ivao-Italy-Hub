@@ -55,7 +55,7 @@ Fino ad allora il training resta come lo lascia la regola delle colonne, cioè c
 
 ## 5. Che cosa si tocca, con (a)
 
-`src/IvaoHub.Modules.Training/People/TrainingPersonalData.cs` (la riga), `Staff/StaffQueue.cs` (le tre viste), `TrainingMail.cs` (la
+`src/IvaoHub.Modules.Training/TrainingPersonalData.cs` (la riga), `Staff/StaffQueue.cs` (le tre viste), `TrainingMail.cs` (la
 parola per uno pseudonimo in una mail), le parole del modulo (`erasure.*`), i test d'integrazione (la vista, la riga, la mail del
 promemoria). Nessun file del nucleo.
 
