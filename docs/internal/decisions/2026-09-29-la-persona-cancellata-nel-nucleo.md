@@ -69,7 +69,8 @@ raccomandato. La conseguenza per M4 (il punto 1 di E8a, §4) la porta nel piano 
      e le liste hanno il punto 3.
 2. **La parola**: `people.erased` in `locales/en/common.json` («Deleted person») e `locales/it/common.json` («Persona cancellata»),
    le parole della copia dei tour. Essendo del nucleo, la legge anche il back end: una mail che un giorno dovesse nominare una
-   persona cancellata chiede questa chiave al catalogo. Qui non se ne scrive nessuna.
+   persona cancellata chiede questa chiave al catalogo. Qui non se ne scrive nessuna. ⚠️ Nel codice la chiave è **`people.deleted`**:
+   `people.erased` è già della copia dei tour, e il catalogo del server non lascia a un modulo una chiave del nucleo (§7).
 3. **La lista**: un tipo di colonna **`person`** in `columns.ts` — `col.person('trainee')`, su un campo `NamedPerson | null`,
    `sortable` come gli altri — che `DataList` disegna con `personName`. Una lista mostra «Deleted person» come una pagina, e nessun
    modulo calcola più i nomi nella query. Una riga in `docs/UI-GUIDELINES.md` («Screens are configuration, not markup»), accanto a
@@ -145,7 +146,7 @@ design hanno dato per mantenuta; costa le righe qui sopra, e per il training ogg
 
 | # | Domanda | Risposta | Scartate |
 |---|---|---|---|
-| 1 | La forma del pezzo nel nucleo (§3)? | **Sì, com'è scritta**: `personName` e `isErased` in `shared/ui/people.ts`, la parola `people.erased`, la colonna `col.person` della lista, la riga in `docs/UI-GUIDELINES.md`; la copia dei tour e `memberLabel` del training restano come sono in questa PR | solo la funzione; un componente; la parola dal server; il nome nella query di ogni modulo; un tipo C# comune |
+| 1 | La forma del pezzo nel nucleo (§3)? | **Sì, com'è scritta**: `personName` e `isErased` in `shared/ui/people.ts`, la parola `people.erased` (nel codice `people.deleted`, §7), la colonna `col.person` della lista, la riga in `docs/UI-GUIDELINES.md`; la copia dei tour e `memberLabel` del training restano come sono in questa PR | solo la funzione; un componente; la parola dal server; il nome nella query di ogni modulo; un tipo C# comune |
 | 2 | Come legge `ErasureTests` le colonne del training (§4)? | **(c)**: i contesti di ogni modulo abilitato, come li scorre la cancellazione, tranne quello di prova, e le 21 righe `trn_` nella lista. La conseguenza per M4 (il punto 1 di E8a) la porta nel piano il master | (a) `TrainingDbContext` scritto nel test; (b) un test accanto, nei file del training |
 
 ## 6. Che cosa si tocca
@@ -156,10 +157,20 @@ design hanno dato per mantenuta; costa le righe qui sopra, e per il training ogg
 - **Documenti del modulo**: `07-design-m3.md` §6.1 (il test che «le vedrà da solo»), `08` («Com'è andata (A12a)»), `HANDOFF-M3.md`.
 - **Non si toccano**: il modulo dei tour; il modulo del training (A12b).
 
+## 7. Trovato scrivendo il codice
+
+- **La parola del nucleo non può chiamarsi `people.erased`.** Il catalogo delle lingue del server (`LocaleCatalog.AddModules`, nota
+  `2026-09-26-le-parole-di-piu-moduli`) tiene una chiave del nucleo come del nucleo e **rifiuta all'avvio** un modulo che la dichiara
+  di nuovo: con `people.erased` in `common.json` e la stessa chiave in `flightops.json` (la copia dei tour) l'hub non parte — «The
+  translation key 'people.erased' is declared twice for the same language», caduto su tutti i test d'integrazione che avviano
+  l'host. La copia dei tour non si tocca, quindi la parola del nucleo è **`people.deleted`** («Deleted person», «Persona
+  cancellata»): è la stessa decisione, con un'altra chiave. Quando una sessione di Carmine sostituirà la copia dei tour con
+  `personName`, `flightops:people.erased` potrà andare via con lei.
+
 ## Da portare nel piano
 
 - `00-piano-di-progettazione.md` §16 punto 16: «persona cancellata» è del nucleo — `personName` e `isErased`
-  (`web/src/shared/ui/people.ts`), la parola `people.erased`, la colonna `col.person` della lista generata; il test delle colonne di
+  (`web/src/shared/ui/people.ts`), la parola `people.deleted`, la colonna `col.person` della lista generata; il test delle colonne di
   persona legge i contesti di ogni modulo (la (c)). Versione e changelog.
 - `CLAUDE.md` §2, la riga «Erasing a person's data»: una pagina nomina una persona cancellata con `personName` del nucleo, una lista
   con `col.person`, mai con una copia sua.
