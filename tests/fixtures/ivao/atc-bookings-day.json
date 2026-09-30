@@ -1,0 +1,222 @@
+[
+  {
+    "id": 65639,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIMM_WS2_CTR",
+    "createdAt": "2026-07-13T07:30:41.000Z",
+    "user": {
+      "id": 761070
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1984,
+      "centerId": "LIMM",
+      "atcCallsign": "Milano Radar",
+      "military": false,
+      "frequency": 135.455,
+      "composePosition": "LIMM_WS2_CTR"
+    }
+  },
+  {
+    "id": 65674,
+    "startDate": "2026-07-27T18:30:00.000Z",
+    "endDate": "2026-07-27T20:30:00.000Z",
+    "voice": true,
+    "training": "exam",
+    "atcPosition": "EDDF_APP",
+    "subcenter": null,
+    "createdAt": "2026-07-13T17:56:40.000Z",
+    "user": {
+      "id": 761071
+    },
+    "atcPositionRef": {
+      "id": 2498,
+      "airportId": "EDDF",
+      "atcCallsign": "Langen Radar",
+      "military": false,
+      "frequency": 120.805,
+      "composePosition": "EDDF_APP"
+    },
+    "subcenterRef": null
+  },
+  {
+    "id": 66030,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LFFF_CTR",
+    "createdAt": "2026-07-21T11:11:35.000Z",
+    "user": {
+      "id": 761072
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 3876,
+      "centerId": "LFFF",
+      "atcCallsign": "Paris Control",
+      "military": false,
+      "frequency": 120.955,
+      "composePosition": "LFFF_CTR"
+    }
+  },
+  {
+    "id": 66255,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_SU_CTR",
+    "createdAt": "2026-07-25T17:46:33.000Z",
+    "user": {
+      "id": 761073
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1172,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 128.8,
+      "composePosition": "LIRR_SU_CTR"
+    }
+  },
+  {
+    "id": 66259,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LFPG_APP",
+    "subcenter": null,
+    "createdAt": "2026-07-25T20:57:47.000Z",
+    "user": {
+      "id": 761074
+    },
+    "atcPositionRef": {
+      "id": 3988,
+      "airportId": "LFPG",
+      "atcCallsign": "De Gaulle Approach",
+      "military": false,
+      "frequency": 125.83,
+      "composePosition": "LFPG_APP"
+    },
+    "subcenterRef": null
+  },
+  {
+    "id": 66295,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T22:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_NE_CTR",
+    "createdAt": "2026-07-26T19:47:52.000Z",
+    "user": {
+      "id": 761075
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1174,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 124.2,
+      "composePosition": "LIRR_NE_CTR"
+    }
+  },
+  {
+    "id": 66315,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_NC_CTR",
+    "createdAt": "2026-07-27T09:18:58.000Z",
+    "user": {
+      "id": 761076
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 3584,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 131.2,
+      "composePosition": "LIRR_NC_CTR"
+    }
+  },
+  {
+    "id": 66325,
+    "startDate": "2026-07-27T23:00:00.000Z",
+    "endDate": "2026-07-28T01:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "SBGR_TWR",
+    "subcenter": null,
+    "createdAt": "2026-07-27T13:25:45.000Z",
+    "user": {
+      "id": 761077
+    },
+    "atcPositionRef": {
+      "id": 3751,
+      "airportId": "SBGR",
+      "atcCallsign": "Guarulhos Tower",
+      "military": false,
+      "frequency": 135.2,
+      "composePosition": "SBGR_TWR"
+    },
+    "subcenterRef": null
+  },
+  {
+    "id": 66326,
+    "startDate": "2026-07-27T19:00:00.000Z",
+    "endDate": "2026-07-27T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LIMC_TWR",
+    "subcenter": null,
+    "createdAt": "2026-07-27T13:56:39.000Z",
+    "user": {
+      "id": 761078
+    },
+    "atcPositionRef": {
+      "id": 3901,
+      "airportId": "LIMC",
+      "atcCallsign": "Malpensa Tower",
+      "military": false,
+      "frequency": 128.35,
+      "composePosition": "LIMC_TWR"
+    },
+    "subcenterRef": null
+  },
+  {
+    "id": 66336,
+    "startDate": "2026-07-27T18:00:00.000Z",
+    "endDate": "2026-07-27T20:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LIRF_TWR",
+    "subcenter": null,
+    "createdAt": "2026-07-27T16:42:05.000Z",
+    "user": {
+      "id": 761079
+    },
+    "atcPositionRef": {
+      "id": 3957,
+      "airportId": "LIRF",
+      "atcCallsign": "Fiume Tower",
+      "military": false,
+      "frequency": 118.7,
+      "composePosition": "LIRF_TWR"
+    },
+    "subcenterRef": null
+  }
+]
