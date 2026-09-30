@@ -656,7 +656,7 @@
     "calendarKindUnknown": "One of these is not a kind of the calendar.",
     "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it.",
     "requestBanned": "You have a ban from the training: while it holds you cannot ask for a training.",
-    "requestOpen": "You already have a training open on this path: one at a time.",
+    "requestOpen": "You already have a training open.",
     "requestWaiting": "The waiting after your last training on this path is not over yet.",
     "requestNothingToAsk": "There is no training to ask for on this path after your rating.",
     "requestHoursUnknown": "The hub does not know your connection hours yet: sign out and sign in again.",
