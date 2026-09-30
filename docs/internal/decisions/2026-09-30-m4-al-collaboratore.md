@@ -45,8 +45,8 @@ conoscenza che gli manca; quella conoscenza il master la consegna **per iscritto
   voleva scritti prima di E2) e la trappola dei test dei contatti (MD esatto, `IT-EC` con un indirizzo).
 - **`.github/PULL_REQUEST_TEMPLATE.md`**: l'esempio di «Phase and design» e la voce dell'handoff senza nominare solo M3.
 - **`docs/internal/HANDOFF-M4.md`**: la sezione «Per chi prende M4 (`dalberone`)».
-- ⚠️ **`10-piano-implementazione-m4.md`** («Regole di tutte le fasi», la voce «Chi scrive» e l'avviso su `core-guard`) parla ancora
-  delle sessioni di lavoro di Carmine: è un documento del modulo, quindi lo corregge `dalberone` in E1, con «Com'è andata».
+- **`10-piano-implementazione-m4.md`** («Regole di tutte le fasi»: la voce «Chi scrive» e l'avviso su `core-guard`), corretto dal
+  master nella stessa PR; da qui il documento è di `dalberone`.
 
 ## 5. Da portare nel piano
 

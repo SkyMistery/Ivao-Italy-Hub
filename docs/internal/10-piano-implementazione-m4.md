@@ -14,9 +14,11 @@
 
 Per non ripeterle trenta volte:
 
-- **Chi scrive**: una sessione di lavoro di Carmine per fase, **nel suo worktree**, mai nella cartella principale. Si ferma a CI verde
-  (`build-test`, `core-guard`), avvisa il master e **non unisce**; scrive «Com'è andata» qui e «Che cosa ha lasciato <fase>» in
-  `HANDOFF-M4.md`; **non tocca** la versione e il changelog del piano né `HANDOFF.md`, che porta il master dopo il merge.
+- **Chi scrive**: **`dalberone`**, il collaboratore, tutta M4, fasi del nucleo comprese (nota `2026-09-30-m4-al-collaboratore`,
+  piano 1.25; questa riga diceva «una sessione di lavoro di Carmine»). Una sessione per fase; si ferma a CI verde (`build-test`,
+  `core-guard`), segna la PR pronta e **non unisce**: il master la legge e la unisce sul via di Carmine. Scrive «Com'è andata» qui e
+  «Che cosa ha lasciato <fase>» in `HANDOFF-M4.md`; **non tocca** la versione dell'hub, il piano né `HANDOFF.md`, che porta il
+  master dopo il merge. Le regole assolute del collaboratore sono in `CLAUDE.md` §0.
 - **Una fase per sessione, un branch `m4/e<N>-<slug>`, una PR verso `main`** con il template compilato onestamente, compresa la
   sezione «For the reviewer» (`CONTRIBUTING.md`, «Working a phase»): fase e sezioni del design, note, file del nucleo toccati e
   perché, scostamenti, i comandi eseguiti con il risultato, **che cosa non è stato verificato**.
@@ -32,10 +34,9 @@ Per non ripeterle trenta volte:
   una nota nuova** in `decisions/` che dice quale meccanismo si estende e perché il modulo non ne fa a meno. Le note di E0 registrano
   le decisioni; **la forma nel codice è della nota della fase** (la lezione di A0 di M3). Se la forma apre una domanda, la nota è
   «Proposta», la domanda va a Carmine con un commento sulla PR, e il codice che ne dipende aspetta.
-  ⚠️ **`core-guard` non giudica le PR del proprietario del repository** (`.github/workflows/core-guard.yml`, il passo «Judge them»),
-  e le sessioni di lavoro di Carmine aprono le PR come `SkyMistery`: il check resta verde anche su un file del nucleo senza nota.
-  Queste regole le tiene chi scrive e le controlla il master. Se un giorno scrivesse gli eventi un collaboratore, `core-guard.sh`
-  riconosce oggi come suo solo il training (`OWN='[Tt]raining'`): va allargato prima, ed è un file del maintainer.
+  `core-guard` giudica le PR del collaboratore: dal piano 1.25 `core-guard.sh` riconosce come suoi anche i file degli eventi
+  (`OWN='[Tt]raining|/[Ee]vents'`: il modulo, i suoi test e le sue spec; `SampleEvents.cs`, il modulo di prova, resta del nucleo),
+  e un file del nucleo senza una nota nuova fa cadere il check.
 - **I file del maintainer** non li tocca una fase: il piano 00, `HANDOFF.md`, i documenti 00–06 e 09, le note già unite, `CLAUDE.md`,
   `CONTRIBUTING.md`, `.github/`, `.claude/`, `ArchitectureTests.cs`. Un controllo di architettura che riguarda solo gli eventi sta in
   un file di test del modulo (`EventsArchitectureTests`, E2). **Un test condiviso si tocca solo nei due casi in cui il test lo
@@ -184,7 +185,8 @@ una fase dà per esistente esista o abbia la sua fase.
      l'impostazione.
 - **Trovato leggendo il codice** (29 settembre 2026, `main` a `47e2f70`), e scritto nelle fasi che ne dipendono:
   1. ⚠️ **`core-guard` non giudica le PR del proprietario** (`core-guard.yml`, «Judge them»), e `core-guard.sh` riconosce come modulo
-     del collaboratore solo il training (`OWN='[Tt]raining'`): nelle «Regole di tutte le fasi».
+     del collaboratore solo il training (`OWN='[Tt]raining'`): nelle «Regole di tutte le fasi». *Superato dal piano 1.25: M4 la
+     scrive `dalberone` e `core-guard.sh` riconosce anche gli eventi.*
   2. **Il seme dei tipi del calendario** (`seed/calendar-kinds/kinds.json`: `event`, `training`, `exam`, `tour`, `meeting`,
      `deadline`) si ricorda chiave per chiave e lascia com'è una chiave scritta a mano (`ContentSeeder.SeedCalendarKindsAsync`):
      `rfe`, `rfo`, `mse`, `onlineDay` sono un seme e basta (E1). Training li aspetta: `TrainingSettings.ConflictKinds` è `["event"]`

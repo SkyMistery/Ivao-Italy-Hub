@@ -79,9 +79,11 @@ del nucleo, e quella che affida M4 a `dalberone`. **La coda di M3 è vuota**: re
   ha A7 senza A7b**: sulla prova non si assegnano training fino alla consegna dopo. **La prossima è la `0.5.0`** (A7b, A11b e le altre
   fasi di M3 sono funzionalità nuove, con migrazioni): la alza il master prima del tag (§15 punto 2e).
 - **Toccati:** §6.1 punto 1, §9.2 riga Training, §9.5, §9.7 «Privacy dei membri», §11.3 punti 2 e 5, §13 righe M3 e M4, §15 punto 2e,
-  §16 punto 16, la nota in coda al punto «Nel training» della 1.19, `HANDOFF.md`. **Restano al maintainer** (file che il master non
-  tocca in questa PR): la riga «Erasing a person's data» di `CLAUDE.md` §2 (una pagina nomina una persona cancellata con `personName`,
-  una lista con `col.person`, mai con una copia sua) e `05-design-m2.md` §10.0 (la copia dei tour lascia il posto a quella del nucleo).
+  §16 punto 16, la nota in coda al punto «Nel training» della 1.19, `HANDOFF.md`. **Nella stessa PR, con il sì di Carmine in chat**: la riga
+  «Erasing a person's data» di `CLAUDE.md` §2 (una pagina nomina una persona cancellata con `personName`, una lista con `col.person`,
+  mai con una copia sua), `05-design-m2.md` §10.0 (la copia dei tour resta finché una sessione non la sostituisce), `09-design-m4.md`
+  §1.13, §11.1, §13, `10-…` (E8a tolta, «Chi scrive») e `HANDOFF-M4.md`; e per la nota `m4-al-collaboratore` `CLAUDE.md` §0 e §9,
+  `CONTRIBUTING.md`, il template della PR e `core-guard.sh`.
 
 [d125a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5855560982
 [d125b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158
