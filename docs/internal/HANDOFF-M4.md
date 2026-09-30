@@ -6,10 +6,12 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E1** (nucleo: i tipi del calendario e l'ED sul banco), sul branch
-`m4/e1-calendar-kinds`, **PR #200** verso `main`, del nucleo, senza coda.
-**Il prossimo passo**: **E2** (lo scheletro), che può andare avanti accanto a E1; **E3a** aspetta tutte e due unite. Le fasi del nucleo
-di M4b (**E10a–E10e**) possono partire già durante M4a, ognuna in una sessione sua.
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase E2** (modulo: lo scheletro), sul branch `m4/e2-events-skeleton`, **PR #209**
+verso `main`, la prima fase del modulo (nessuna coda sotto). E1 è unita (#200); le fasi del nucleo E10a–E10e ed E15a sono partite lo
+stesso giorno, ognuna nella sua PR.
+**Il prossimo passo**: la **risposta di Carmine** alla nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` (la domanda è sulla PR
+di E2): con la (b), raccomandata, la fase del nucleo **E2b** prima di **E3a**; con la (a), i nove grant di chi collabora in una riga
+ciascuno e tre test del maintainer da cambiare (li cambia lui). **E3a** aspetta E2 unita e quella risposta.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -110,6 +112,46 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E2 (30 settembre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
+
+- **Che cosa c'è** (il dettaglio in `10`, E2, «Com'è andata»):
+  - **Il modulo** `src/IvaoHub.Modules.Events/` (referenzia solo il nucleo), registrato **per primo** in `IvaoHub.Web/Modules.cs` e in
+    `web/src/modules/index.ts` (eventi, tour, training); `EventsDbContext` con `__EFMigrationsHistory_events` e la migrazione
+    **`Initial`** (`20260930170049_Initial`), che **non si tocca più**: `evt_events` **intera** e `evt_event_airports`.
+  - **Le entità** alla radice del progetto: `Event` (maschera, `IVisible`, `IPublishable`, audit, `[Audited]`, scope
+    `events:event:{id}` con `Event.ScopeOf`) ed `EventAirport` (maschera, audit, lo scope del suo evento). Nessun endpoint, nessuna
+    proiezione, nessun validatore del CRUD ancora.
+  - **Il catalogo** `EventsPermissions` (12 permessi, 5 aree, `DeniedToStakeholder` su `EventAtc.Edit` ed `EventReports.Edit`) e **i
+    grant** dell'ED (11) e del team di un FIR (2, su `EventAtc.*`) nei due file della divisione.
+  - **Le impostazioni** `EventsSettings` (`Settings/EventsSettings.cs`: `kindPresets`, `bookingGapMinutes`, `pilotRetentionMonths`,
+    `reminderLeadHours`) con i validatori, e la schermata generata `/staff/events/settings` (`web/src/modules/events/`), l'unica voce
+    della sezione «Eventi» del back office.
+  - **Il segmento riservato** `events`; le parole `events` in `web/src/modules/events/locales/` (e le copie in `locales/`).
+  - **I test**: `EventsArchitectureTests` ed `EventsSettingsTests` (unità), `EventsSkeletonTests` ed `EventsXxDivisionTests`
+    (integrazione, VID 761001–761005), `web/src/modules/events/schemas.test.ts`, `web/e2e/full/events-skeleton.spec.ts` (il personaggio
+    dell'ED, `?as=events`); le cinque righe `evt_` in `ErasureTests`, con la nota breve
+    `2026-09-30-le-colonne-degli-eventi-in-erasuretests`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **I grant di AOD, FOD e MD non ci sono.** Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello che vede
+    (`HubClaims.BuildIdentity`), e i nove del design sarebbero i primi grant a una posizione fra due dipartimenti: con loro la suite
+    d'integrazione intera ha tre rossi del maintainer (`SeveralDepartmentsTests` ×2, `SearchEndpointTests`). La nota
+    `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` («Proposta») pone la domanda a Carmine e raccomanda la fase del nucleo **E2b**.
+    `EventsArchitectureTests` li tiene fuori dai due file finché la tabella del design non li riprende: **un grant del seme applicato non
+    si toglie più togliendolo dal file**. E3a, che prova FOD e AOD sull'evento, aspetta.
+  - **Le colonne di `evt_events`**: `starts_at_utc` ed `ends_at_utc` obbligatorie, `visible_from_utc` e `booking_opens_at_utc`
+    facoltative, `shift_minutes` e i tre limiti vuoti = l'impostazione, `visibility` è una colonna (E3a la chiude a `Public` e `Members`
+    nel validatore), `kind` lunga come una chiave del calendario (32). Le regole di «Pubblica» sono di E3b.
+  - **E3a** scrive l'interfaccia delle righe figlie dell'evento (come `ITourChild`) con `CrudOptions.BeforeAuthorize`, e aggiunge
+    `AddValidatorsFromAssemblyContaining` con la prima risorsa del CRUD (come A5 per il training): E2 non li ha.
+  - **Le due verifiche del design §6.3** non chiedono il nucleo: l'intestazione per lo staff dei FIR da un endpoint dell'area ATC con
+    `EventAtc.View` senza risorsa, le disponibilità per postazione con l'unico handler chiesto sulla postazione (`10`, E2, «Le due
+    verifiche»). Le scrive in codice E11a.
+  - ⚠️ **Fino a E11a ogni avvio scrive due avvisi** sui grant del team di un FIR («not applied: no row of its area says its FIR»): è
+    voluto; il primo avvio con una riga `IHasFir` dell'area `EventAtc` li applica.
+  - **La schermata delle impostazioni** offre, accanto ai tipi del calendario, un tipo che un preset nomina e il calendario non ha più
+    (con la sua chiave come parola), perché la riga si veda e si tolga: il salvataggio la rifiuta sulla riga.
+- ⚠️ **Nessuna mappa di base per `pnpm e2e:full`** in nessun worktree (30 settembre): le spec la tollerano, come in CI.
 
 ### Che cosa ha lasciato E1 (30 settembre 2026, branch `m4/e1-calendar-kinds`, PR #200, del nucleo, senza coda)
 
