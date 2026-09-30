@@ -770,7 +770,62 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
 **Test**: gli unit dei tour, verdi; unit del nucleo sulla distanza fra due aeroporti noti.
 **Fatta quando**: i tour e il nucleo hanno un calcolo solo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Fatto** (nota nuova `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, scelta tecnica, con una richiesta a Carmine):
+  - **`src/IvaoHub.Core/Airspace/GreatCircle.cs`**, namespace `IvaoHub.Core.Airspace`: `GeoPoint`, `GreatCircle.DistanceNm` e
+    `GreatCircle.DistanceNmRounded`, con gli stessi nomi, le stesse firme e lo stesso codice della copia dei tour (la costante, la
+    formula, il `Min`, l'arrotondamento al decimo). Un modulo chiede a `IAirportDirectory.FindAsync` dove sono i due aeroporti e
+    misura con `GreatCircle`. Nessuna registrazione, nessuna migrazione, nessun endpoint, niente nel browser;
+  - **`tests/IvaoHub.UnitTests/GreatCircleTests.cs`** (unità, 8): le domande di `LegTests` al nucleo, con le stesse risposte; due
+    antipodi sono mezza circonferenza (a 0°, 8°, 12°, 34°, su due meridiani) e un grado attraverso l'antimeridiano è un grado; **il
+    test gemello**, che confronta il nucleo e la copia dei tour su 189 punti ognuno con ognuno (35.721 coppie: gli aeroporti dei
+    test, i bordi, una griglia del globo) e vuole lo stesso double, bit per bit, e lo stesso decimo.
+- ⚠️ **Scostamento dalla lettera del punto 1** («accanto alle coordinate di `IAirportDirectory`», nota §3): il calcolo sta in
+  `Core/Airspace/`, accanto ai contorni dei FIR, non accanto a `AirportDirectory.cs` in `Core/Ivao/`. Non nomina IVAO (`CLAUDE.md`
+  §3), e **in `IvaoHub.Core.Ivao` gli stessi nomi fanno cadere la build dei tour**: `TrackChecks.cs`, `PirepSubmission.cs` e
+  `PirepTests.Checks.cs` (un test del maintainer) importano sia `IvaoHub.Core.Ivao` sia `IvaoHub.Modules.FlightOps.Legs` —
+  provato, `CS0104` («'GeoPoint' è un riferimento ambiguo») su `TrackChecks.cs`.
+- ⚠️ **Scostamento dal punto 1 e dalla «Fatta quando»** («i tour lo usano da lì», «un calcolo solo»): passare i tour al nucleo è una
+  modifica di `src/IvaoHub.Modules.FlightOps/`, che il collaboratore non fa (`CLAUDE.md` §0 regola 2, `core-guard`). **La copia dei
+  tour resta**, e la sostituisce una sessione di Carmine, come `memberName` dopo A12a di M3: [la richiesta sulla #206][r206], e il
+  passaggio scritto riga per riga nella nota (§5; nessuna migrazione, i numeri sono gli stessi). Fino ad allora un calcolo solo per i
+  numeri — il test gemello — e due copie nel codice.
+- **Un test in più** di quelli che questa fase chiedeva: il test gemello. Le prove sui valori sono al decimo, e non vedono un raggio
+  cambiato (nota §6, punto 3).
+- **Trovato** (nota §6): agli antipodi `h` passa 1 di un'unità nell'ultima cifra (77.455 volte su due milioni di coppie a caso;
+  misurato con uno script su .NET 10), ma `Math.Sqrt` riporta 1 più un'unità esattamente a 1, quindi l'arcoseno non dà mai NaN, **anche
+  senza `Math.Min(1, h)`**. Il `Min` resta com'è nei tour: lo stesso codice, e una guardia che non costa niente.
+- **Verificato, in locale** (30 settembre 2026, una suite alla volta): `dotnet build IvaoHub.sln` 0 avvisi; unità **893/893**
+  (gli 8 nuovi); `GreatCircleTests` con `LegTests` da sole **18/18**; **integrazione intera, senza filtro, 430/430** al primo giro
+  (7,6 minuti); **le prove al contrario**, sul file del nucleo e poi rimesso: con il raggio arrotondato a 3440,065 le sette prove sui
+  valori passano e cade solo il test gemello; arrotondando a due decimali cadono il test gemello e quello del decimo; senza
+  `Math.Min(1, h)` resta tutto verde (il perché qui sopra); con il namespace `IvaoHub.Core.Ivao` la build dei tour cade (`CS0104`);
+  `dotnet format --verify-no-changes` sui due file C# pulito; in `web/`, dove niente cambia, `pnpm lint`, `typecheck`,
+  `format:check` e `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80 file, `pnpm gen:api` senza differenze; le regole
+  di `core-guard` rifatte in PowerShell su tutto il branch contro `main` (`c107c98`): nessun file del maintainer né dei tour, un file
+  del nucleo (`GreatCircle.cs`) con la nota nuova, PASS. La CI sulla cima di allora (`2a8ef3e`): `build-test` e `core-guard` verdi.
+- **Dopo la revisione** ([osservazioni del revisore sulla #206][v206], «approvable», niente da correggere: il calcolo com'è nei tour,
+  `Core/Airspace/` giusto come `FirBoundary.cs`) e **le risposte di Carmine** (30 settembre 2026, pubblicate dal master sulla #206 su
+  sua istruzione: [risposte][a206]): i tour passano al `GreatCircle` del nucleo **in una sua sessione, dopo l'unione** di questa PR;
+  **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master. Registrate nella nota (intestazione, §5, «Da portare nel piano») e
+  nell'handoff; nessun cambio al codice.
+- **Il merge di `main`** (chiesto dal revisore nello stesso commento): unita la #208 (E10b), la PR era in conflitto con `main` su
+  `HANDOFF-M4.md`, dove tutte e due le fasi avevano scritto in cima. `origin/main` (`c98b272`) è entrato con un merge (`291cc17`), mai
+  un rebase. **Un conflitto solo**, `HANDOFF-M4.md`: l'intestazione di E10e, con E10b unita e quello che E11b ed E13a ci trovano; le
+  due voci barrate nella riga di che cosa mancava; «Che cosa ha lasciato E10e» in cima e quello di E10b sotto. Nessuna riga dei due
+  lati è andata persa (controllato riga per riga); `10` si è unito da solo, con tutte e due le «Com'è andata». Poi di nuovo, una suite
+  alla volta, tutte al primo giro: `dotnet build` 0 avvisi; unità **893/893**; **integrazione intera, senza filtro, 435/435** (i 430 e
+  i 5 di E10b, 8 minuti); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80
+  file; `core-guard` contro `main` (`c98b272`): la PR mostra solo i cinque file della fase, nessun file del maintainer né dei tour, un
+  file del nucleo con la nota nuova, PASS.
+- **Non verificato**: la CI (la dice la PR); `pnpm e2e` e `pnpm e2e:full` (nessuna schermata cambia); i numeri su Linux — il test
+  gemello confronta due calcoli nello stesso processo e vale anche lì, ma che `h` passi 1 a 8°, 12° e 34° è misurato su Windows (il
+  test afferma solo la mezza circonferenza); il passaggio dei tour al nucleo, che è di Carmine.
+
+[r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
+[v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
+[a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
 
 ### E11a — Postazioni e disponibilità
 
