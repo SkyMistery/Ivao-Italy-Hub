@@ -86,6 +86,7 @@ import {
   type Met,
   type WrittenDate,
 } from './dates';
+import { historySays } from './history';
 import { ReportView, SessionList, StateBadge, TheoryExamLink, WhenText } from './parts';
 import {
   NOT_APPLICABLE,
@@ -124,6 +125,9 @@ import { formatHours, splitRefusal } from './trainee';
  *
  * A person is written the way every page of the hub writes one (`personName`), and a person whose data was erased is «Deleted
  * person», with no link to a path (A12b): the list with its `person` column, the page with the core's helper.
+ *
+ * At the bottom of the page, the history of the training's changes (A13b): every step, who took it and when, as the server read
+ * it from the core's audit log — and never to the trainee reading their own training, whom it is left out for with what is reserved.
  */
 
 const columns: readonly ColumnSpec<StaffTrainingRow>[] = [
@@ -291,6 +295,13 @@ function StaffTrainingScreen({ training }: { training: StaffTrainingDto }) {
         {closingOf(training) === null ? null : (
           <Section title={t('training:staff.sections.closing')}>
             <ClosingDetails training={training} />
+          </Section>
+        )}
+
+        {/* Every change, read from the core's audit log (A13b): never the trainee's, whom the server leaves it out for. */}
+        {training.history.length === 0 ? null : (
+          <Section title={t('training:staff.sections.history')}>
+            <History training={training} />
           </Section>
         )}
       </div>
@@ -1178,6 +1189,40 @@ function ClosingDetails({ training }: { training: StaffTrainingDto }) {
         </p>
       )}
     </div>
+  );
+}
+
+// ---- the history (A13b) ---------------------------------------------------------------------------------------------------
+
+/**
+ * The history of the training's changes (A13b; note lo-storico-di-un-training), the oldest first: when each step was taken — in
+ * UTC, and under it where the division lives —, and what it was, with who took it and, for a refusal or a closing, why. What each
+ * step was is the server's reading of the core's audit log; `historySays` says it.
+ */
+function History({ training }: { training: StaffTrainingDto }) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+  const { bootstrap } = useRouteContext({ from: '/_staff' });
+
+  return (
+    <ol className="flex flex-col gap-3">
+      {training.history.map((entry, index) => {
+        const says = historySays(entry, t, moment);
+
+        return (
+          // The server's order, which nothing changes while the page is on screen: a line has no identifier of its own.
+          <li key={index} className="flex flex-col gap-1 text-sm sm:flex-row sm:gap-6">
+            <div className="sm:w-60 sm:shrink-0">
+              <WhenText startsAtUtc={entry.at} timezone={bootstrap.division.timezone} />
+            </div>
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="break-words">{says.text}</p>
+              {says.reason === null ? null : <p className="break-words whitespace-pre-line">{says.reason}</p>}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

@@ -79,6 +79,7 @@ function training(
     staffComment: null,
     sheet: [],
     sessions: [],
+    history: [],
     reservedLeftOut: false,
     actions: {
       canDecide: false,
