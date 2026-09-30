@@ -14,8 +14,10 @@
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12b** (modulo: la cancellazione dei dati di un trainee, «persona cancellata» nelle
 pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, **in cima alla coda**: **#187, A12a,
 è unita** il 30 settembre alle 00:48 UTC, e `main` (4e21fbc) è entrato nel branch con un merge senza conflitti e **senza nessun file** (il
-suo albero è quello della cima di A12a, già entrata qui); la PR diventa pronta dopo aver letto una volta la CI verde e i rilievi del
-master, che li scrive sulla #189 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770)).
+suo albero è quello della cima di A12a, già entrata qui). Il master l'ha trovata **approvabile**, niente di bloccante ([i suoi
+rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851)): lo «should fix» era il passo della coda, il nit
+della forma neutra in italiano è fatto, gli altri hanno la risposta sulla PR (`08`, A12b); la PR diventa pronta dopo aver letto una volta
+la CI verde.
 **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29 settembre, **#182, A11b,** il 30 alle 00:03 UTC. La
 nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto
 di un altro membro, affidato a un trainer che si cancella — è nata «Proposta» con [la domanda sulla
