@@ -16,22 +16,12 @@ namespace IvaoHub.Core.Ivao;
 public static class IvaoAtcBookingReader
 {
     /// <summary>
-    /// The bookings of an answer, in the order IVAO gave them; <see langword="null"/> when the answer is not a list of them at
-    /// all, which is «could not read», not «nobody booked». A row that is not a booking is left out, as one odd row of the
+    /// The bookings of a day, in the order IVAO gave them; <see langword="null"/> when the answer is not the bare array the day
+    /// is, which is «could not read», not «nobody booked». A row that is not a booking is left out, as one odd row of the
     /// tracker is.
     /// </summary>
-    public static IReadOnlyList<AtcBookingDto>? ReadBookings(JsonElement root)
-    {
-        var rows = root.ValueKind switch
-        {
-            JsonValueKind.Array => root.EnumerateArray(),
-            JsonValueKind.Object when root.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array =>
-                items.EnumerateArray(),
-            _ => (JsonElement.ArrayEnumerator?)null,
-        };
-
-        return rows is { } list ? [.. list.Select(ReadBooking).OfType<AtcBookingDto>()] : null;
-    }
+    public static IReadOnlyList<AtcBookingDto>? ReadBookings(JsonElement root) =>
+        root.ValueKind == JsonValueKind.Array ? [.. root.EnumerateArray().Select(ReadBooking).OfType<AtcBookingDto>()] : null;
 
     /// <summary>One booking, or <see langword="null"/> for a row without a position, its two times or the member.</summary>
     public static AtcBookingDto? ReadBooking(JsonElement item)

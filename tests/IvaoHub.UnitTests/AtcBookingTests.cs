@@ -103,6 +103,8 @@ public sealed class AtcBookingTests
         // What IVAO answers to a date it cannot read — with a 400, but the reader must not need the status to tell.
         using var refusal = JsonDocument.Parse("""{ "message": "Validation failed (invalid date format)", "statusCode": 400 }""");
         using var empty = JsonDocument.Parse("[]");
+
+        // What the paged list of the bookings (/v2/atc/bookings) answers: a shape of another endpoint, never of the day.
         using var paged = JsonDocument.Parse("""
             { "items": [ { "atcPosition": "LIRF_TWR", "startDate": "2001-01-01T18:00:00.000Z", "endDate": "2001-01-01T20:00:00.000Z",
               "user": { "id": 761079 } } ], "totalItems": 1, "perPage": 100, "page": 1, "pages": 1 }
@@ -110,7 +112,7 @@ public sealed class AtcBookingTests
 
         Assert.Null(IvaoAtcBookingReader.ReadBookings(refusal.RootElement));
         Assert.Empty(IvaoAtcBookingReader.ReadBookings(empty.RootElement)!);
-        Assert.Equal("LIRF_TWR", Assert.Single(IvaoAtcBookingReader.ReadBookings(paged.RootElement)!).Callsign);
+        Assert.Null(IvaoAtcBookingReader.ReadBookings(paged.RootElement));
     }
 
     [Theory]
