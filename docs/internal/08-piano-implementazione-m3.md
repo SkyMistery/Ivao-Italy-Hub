@@ -3848,16 +3848,39 @@ parte**:
   tutte le suite qui sopra — valgono per lui. La PR mostra verso `main` solo la fase (41 file). Via `(after #187)` dal titolo e
   `Queued after #187.` dal corpo. La parte della risposta (a) era già nel codice, con i suoi test, e la nota ha il link alla risposta.
   La PR diventa pronta dopo aver letto una volta la CI verde e i rilievi del master.
+- **La revisione del master** ([i suoi rilievi sulla #189][r189], 30 settembre): **approvabile nel merito**, niente di bloccante nel
+  codice; lo «should fix» era il conflitto con `main` sull'handoff, cioè il passo della coda qui sopra. **I nit**:
+  1. **la forma neutra**: `training:erasure.assigned` diceva «affidati a lui», al maschile; ora «affidati a questa persona come
+     trainer: restano affidati a una persona cancellata», e `erasure.exams`, due righe sopra, che aveva lo stesso difetto («in cui è il
+     candidato»), dice «in cui questa persona è candidata» (`dd40214`). Le chiavi non cambiano; l'inglese diceva già «them»;
+  2. **la parola dell'esito della riga `assigned`** (`Anonymised`, ma quelle righe le tocca il nucleo): **resta**. Nel nucleo vuol dire
+     «le righe restano, senza la persona: il suo VID diventa lo pseudonimo» (`IPersonalDataEraser.cs`), che è quello che succede, chiunque
+     lo scriva, ed è la parola che il nucleo stesso usa per le righe in cui scrive lo pseudonimo senza che un eraser le tocchi
+     (`erasure.lines.named`, `erasure.lines.participation`); `Kept` vuol dire «restano come sono», e non è vero: il VID cambia;
+  3. **lo scostamento 3** (le ore e il rating al momento della richiesta): il master lo porta a Carmine;
+  4. **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: **non ci si arriva**, quindi nessun test le può fare
+     senza piantare uno stato che l'hub non ha mai: «Assegna» rifiuta un VID sotto 1 e un training aperto non ha mai un trainee
+     cancellato (l'eraser cancella i suoi training aperti prima che il nucleo scriva lo pseudonimo); il report nomina chi lo pubblica,
+     che è entrato nell'hub. Il «Non verificato» qui sotto ora lo dice.
+
+  Dopo la correzione tutte le suite di nuovo, una alla volta, tutte al primo giro: `dotnet build` 0 avvisi; unità **870/870**;
+  **integrazione intera, senza filtro, 424/424**; `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` **783** chiavi;
+  `pnpm test` **582/582** in 78 file; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` **387**,
+  nessuna mancante; **`pnpm e2e` 157/157**, sotto il lucchetto di 4173; **`pnpm e2e:full` 48/48**, sul banco ricreato e sotto il
+  lucchetto di Mailpit; le regole di `core-guard` verso `main`: 41 file, nessuno del maintainer né del nucleo, la nota aggiunta,
+  **PASS**. Nessun file C# cambia, quindi niente `dotnet format`.
 - **Non verificato**:
   - **una cancellazione sul banco**: nessun giro `e2e:full` cancella una persona — i personaggi del banco servono agli altri giri —; le
     pagine con una persona cancellata sono provate nello smoke, con l'API finta, e dalle risposte vere nei test d'integrazione;
   - **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: passano dallo stesso `TrainingMail.Name` del promemoria,
-    ma nominano sempre qualcuno che c'è (il nuovo trainer, chi pubblica), e nessun test le fa con uno pseudonimo;
+    ma **non ci si arriva** (nit 4 della revisione, qui sopra): «Assegna» rifiuta un VID sotto 1, un training aperto non ha mai un
+    trainee cancellato, e il report nomina chi lo pubblica; nessun test le fa con uno pseudonimo;
   - **la CI dopo il secondo merge e il passo della coda** (qui sopra): verde su `4d91517`; sulla cima nuova la dirà la PR.
 
 [q189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
 [a189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516
 [m189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770
+[r189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851
 
 **Com'è andata (A12d)** (30 settembre 2026, branch `m3/a12d-full-round`, PR #191 verso `main`, in bozza in coda dopo #189) — **il giro
 completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a Carmine, nessun file del nucleo**:

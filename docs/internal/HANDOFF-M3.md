@@ -12,28 +12,33 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12d** (il giro completo di M3 sul banco, il modulo del training in `docs/FORKING.md`,
-il rapporto di chiusura `decisions/2026-09-30-m3-review.md`), sul branch `m3/a12d-full-round`, **PR #191** verso `main`, in bozza **in coda
-dopo #189** (A12b, **in cima alla coda**: diventa pronta dopo aver letto una volta la CI verde e i rilievi del master, che li scrive sulla
-#189, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770)). **È l'ultima fase di M3 in `08`**:
-A12c resta condizionata, perché il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
-#187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Nessuna domanda a Carmine, nessun file del nucleo.
-**#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29 settembre; **#182, A11b,** il 30 alle 00:03 UTC e **#187,
-A12a,** alle 00:48. Il branch è nato dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e **la
-coda l'ha raggiunto due volte attraverso A12b**, sempre con un merge: il passo di #182 dopo #181, con `main` a 17941c0 (3e5065f, solo
-documenti), e il passo di #187 dopo #182 — `main` con #182, #187 e #190 del maintainer (l'accesso dalla pagina d'errore, la versione 0.4.2),
-e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`) —, dalla cima di A12b 4b5a6a9. **L'intervallo
-`m3/a12b-training-erasure...m3/a12d-full-round` mostra solo la fase**, e il branch **si unisce senza conflitti con il `main` di oggi**
-(4e21fbc): la PR ha la CI. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145),
-A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159),
-A11b (#182), **la fase del nucleo A12a (#187)** e #152 del maintainer. Per la consegna di A11b serve il `config/division.json` del tag, e
-**un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve sapere la fase dopo»). **Carmine
-ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione cominciata si registra e non si data più a mano
-né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso,
-l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla
-volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va
-rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. **A10 è divisa in tre** (`08`, A10): A10a (#151), A10b (#153)
-e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182), unite; **A12 in quattro**, A12a (#187, unita), A12b (#189), A12c (solo con i
-codici di PATS: resta condizionata) e A12d (questa). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+il rapporto di chiusura `decisions/2026-09-30-m3-review.md`), sul branch `m3/a12d-full-round`, **PR #191** verso `main`. **La coda di M3 è
+vuota**: **#189, A12b, è unita** il 30 settembre alle 07:27 UTC (il master l'aveva trovata approvabile, [i suoi
+rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851)), e `main` (a617767) è entrato qui con un merge: è il
+passo della coda di #191, e la PR non è più in coda. **È l'ultima fase di M3 in `08`**. Il master, [sulla
+#189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250), ha scritto che la coda è vuota e ha descritto A12d come
+ancora da scrivere: A12d è la #191, scritta e provata, e il passo della coda glielo dice sulla #191. **A12c resta fuori**: il codice sorgente di
+PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
+#187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)); nello stesso commento sulla #189 il master apre una
+strada — ricavare i codici dai dati di PATS e scriverli in una nota «Proposta», una tabella codice → significato con quanto se ne è sicuri e
+nessun dato personale, su cui il maintainer decide se A12c si fa —, e **tentarla è una scelta di `dalberone`, non ancora presa**: finché non
+decide, A12c resta fuori. Nessuna domanda a Carmine, nessun file del nucleo. **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b,
+sono unite** il 29 settembre; **#182, A11b,** il 30 alle 00:03 UTC, **#187, A12a,** alle 00:48 e **#189, A12b,** alle 07:27. Il branch è nato
+dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e la coda l'ha raggiunto tre volte, sempre
+con un merge: il passo di #182 dopo #181 (3e5065f, solo documenti), quello di #187 dopo #182 (91af2e5: `main` con #182, #187 e #190 del
+maintainer, l'accesso dalla pagina d'errore e la versione 0.4.2, e il nit 1 della revisione di #187) e ora `main` dopo #189. **L'intervallo
+`main...m3/a12d-full-round` mostra solo la fase** (5 file). **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a
+(#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178),
+la fase del nucleo A11a (#159), A11b (#182), la fase del nucleo A12a (#187), **A12b (#189)** e #152 del maintainer. Per la consegna di A11b
+serve il `config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che
+cosa deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
+cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è
+accettata, gli esami prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
+`CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda
+(`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente.
+**A10 è divisa in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182), unite; **A12
+in quattro**, A12a (#187) e A12b (#189), unite, A12c (fuori finché `dalberone` non decide se tentare i codici dai dati) e A12d (questa). In
+C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
