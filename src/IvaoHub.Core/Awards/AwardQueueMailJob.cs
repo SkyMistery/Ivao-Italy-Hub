@@ -14,8 +14,9 @@ using Quartz;
 namespace IvaoHub.Core.Awards;
 
 /// <summary>
-/// Once a day, whoever may assign an award hears about the signals that entered the queue since the last mail (M4, E10d, note
-/// 2026-09-30-la-mail-a-chi-assegna-gli-award): how many, how many wait in all, and one line per reason. The queue is read here,
+/// Once a day, at the division's <see cref="DivisionOptions.AwardDigestTime"/>, whoever may assign an award hears about the signals
+/// that entered the queue since the last mail (M4, E10d, note 2026-09-30-la-mail-a-chi-assegna-gli-award, decided by Carmine): how
+/// many, how many wait in all, and one line per reason; nothing on a day with no new signal. The queue is read here,
 /// in the core, so a signal is told whichever module wrote it — the tours' and the events' alike — and no module asks for it.
 /// <para>Told once: the signal remembers when (<see cref="AwardSignal.NotifiedAt"/>), marked in the same save as the mail's rows,
 /// so a run that is late or runs twice tells nothing twice. A signal handled or dismissed before the run is told nothing.</para>
@@ -35,8 +36,12 @@ public sealed class AwardQueueMailJob(
     /// <summary>Name under which the runs are recorded.</summary>
     public const string JobName = "award-queue-mail";
 
-    /// <summary>Every day at 07:00 in the division's own time zone: the morning, like the digests of the validators.</summary>
-    public const string Cron = "0 0 7 * * ?";
+    /// <summary>
+    /// Every day at that time, in the time zone the trigger is given: the division's own, at its
+    /// <see cref="DivisionOptions.AwardDigestTime"/> — a setting of the division, never a schedule written here (Carmine).
+    /// </summary>
+    public static string CronAt(TimeOnly time) =>
+        string.Create(CultureInfo.InvariantCulture, $"0 {time.Minute} {time.Hour} * * ?");
 
     /// <summary>Longest failure message kept on the log row; the log file has the rest.</summary>
     private const int MaxMessageLength = 2000;

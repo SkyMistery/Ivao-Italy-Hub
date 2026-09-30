@@ -15,16 +15,21 @@ public static class AwardServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Once a day in the division's own time zone, like the review reminder of a document: the hour is the morning of the
-        // people who read it, not the server's.
+        // Once a day, at the time the division sets (awardDigestTime, 07:00 when left out) in its own time zone, like the review
+        // reminder of a document: the hour is the morning of the people who read it, not the server's.
         services.AddScoped<AwardQueueMailJob>();
         services.AddQuartz(quartz => quartz.AddJob<AwardQueueMailJob>(job => job.WithIdentity(AwardQueueMailJob.JobName)));
         services.AddOptions<QuartzOptions>()
             .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
                 .ForJob(AwardQueueMailJob.JobName)
-                .WithIdentity($"{AwardQueueMailJob.JobName}-daily")
-                .WithCronSchedule(AwardQueueMailJob.Cron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
+                .WithIdentity(TriggerName)
+                .WithCronSchedule(
+                    AwardQueueMailJob.CronAt(division.Value.ResolveAwardDigestTime()),
+                    schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
 
         return services;
     }
+
+    /// <summary>The daily trigger of the mail, by name: what a test reads to see which hour it was given.</summary>
+    public const string TriggerName = $"{AwardQueueMailJob.JobName}-daily";
 }
