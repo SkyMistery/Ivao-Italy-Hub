@@ -5,10 +5,17 @@
 postazioni su IVAO **accanto al roster, alla richiesta, in sola lettura** (§17.2 n.3 del design `09-design-m4.md`, decisa sulla
 #180; nota `2026-09-29-il-roster-atc` §2.9; estensione n.6 del design §13; piano §10). Nessuna domanda nuova: la forma — una domanda
 per finestra, il VID e non il nome, una fixture che il banco ripete ogni giorno — sta dentro quello che è deciso, e le alternative
-sono al §4.
+sono al §4. **Dopo la revisione** ([rilievi del revisore sulla #207][r207]): **nessuna cache e al più sette giorni per richiesta
+sono confermati da Carmine** (30 settembre 2026, in chat al master, che l'ha pubblicata sulla PR su sua istruzione: [risposta][ok207])
+— la pagina del roster legge le prenotazioni fresche a ogni apertura, e con IVAO lento aspetta e poi dice che non sono disponibili,
+mentre il resto del roster funziona —; e **la fixture non tiene più niente che ritrovi una prenotazione** attraverso l'API di IVAO
+(§3.3).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende l'unico client di IVAO (`IIvaoApiClient`, `IvaoApiClient` e
 `FixtureIvaoApiClient`, con un lettore solo per tutti e due) dentro il perimetro di IVAO (`CLAUDE.md` §3, piano §4.2), e il modulo
 degli eventi non chiama IVAO né lo nomina. È una PR del nucleo, prima di E15b che la usa (`CLAUDE.md` §0 regola 6).
+
+[r207]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/207#issuecomment-5916573282
+[ok207]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/207#issuecomment-5916738183
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -41,10 +48,12 @@ Con uno script usa e getta fuori dal repository, che stampava forme, conteggi e 
 - **`position`** è **il principio del nominativo, senza maiuscole**, per gli aeroporti e per i settori: `LICC` dà torre e
   avvicinamento di Cagliari, `LI` tutte le italiane, `licc_twr` la torre, `TWR` niente; una postazione che non esiste, 200 e un array
   vuoto.
-- **Quanto indietro e quanto avanti**: lo storico risponde ancora a due anni; avanti, qualche prenotazione fino a tre o quattro
-  settimane.
-- Anche `/v2/atc/bookings?date=` (a pagine, `perPage` fino a 100) e `/v2/atc/bookings/{id}` rispondono con lo stesso token: non
-  servono.
+- **Quanto indietro e quanto avanti**: lo storico risponde ancora a due anni (63 prenotazioni il 30 settembre 2024), ma non prima del
+  2023: nessuna il 15 giugno 2023, né negli anni prima misurati (2005–2022), né il 1° gennaio 2001. Avanti, qualche prenotazione fino
+  a tre o quattro settimane.
+- Anche `/v2/atc/bookings?date=` (a pagine, `perPage` fino a 100, `{ items, totalItems, perPage, page, pages }`) e
+  `/v2/atc/bookings/{id}` rispondono con lo stesso token: non servono. ⚠️ Tutte e tre le chiamate danno la prenotazione **con il suo
+  membro**: l'`id` di una prenotazione, o il suo giorno con il nominativo, ritrovano la persona (§3.3).
 
 ## 3. La forma nel codice
 
@@ -56,11 +65,12 @@ Con uno script usa e getta fuori dal repository, che stampava forme, conteggi e 
   «nessuno ha prenotato». L'interfaccia ha una risposta predefinita, «non disponibile», come `GetAtcPositionsAsync` di A2 di M3: i
   quattro doppi dei test scritti prima continuano a compilare, e nessuno li tocca.
 - **`IvaoApiClient`**: la GET con il token dell'applicazione, attraverso `ReadOrNothingAsync`, che serviva già alle postazioni.
-  **Nessuna cache**: la leggono in pochi (lo staff di un roster), e una risposta vecchia di un minuto nasconderebbe la prenotazione
-  appena fatta.
+  **Nessuna cache** (confermato da Carmine, [risposta][ok207]): la leggono in pochi (lo staff di un roster), e una risposta vecchia di
+  un minuto nasconderebbe la prenotazione appena fatta.
 - **`IvaoAtcBookingReader`** (`IvaoAtcBookings.cs`): **un lettore solo** per il client vero e per quello delle fixture, come quello
-  del tracker. Una riga senza nominativo, senza i due orari o senza il VID si salta; una risposta che non è un elenco è `null`. Del
-  membro tiene **solo il VID**. I suoi `Text` e `Moment` sono suoi, come negli otto file del nucleo che leggono il JSON di un
+  del tracker. Una riga senza nominativo, senza i due orari o senza il VID si salta; una risposta che non è l'array nudo del giorno è
+  `null`, anche la forma a pagine di `/v2/atc/bookings`, che il giorno non manda (un nit del revisore: la prima versione la leggeva).
+  Del membro tiene **solo il VID**. I suoi `Text` e `Moment` sono suoi, come negli otto file del nucleo che leggono il JSON di un
   servizio esterno.
 
 ### 3.2 La domanda del modulo: `IAtcBookingSource`
@@ -76,7 +86,9 @@ Con uno script usa e getta fuori dal repository, che stampava forme, conteggi e 
   prenotazione non c'è. Una finestra vuota non chiede niente.
 - **Al più sette giorni** (`IAtcBookingSource.MaxDays`), una chiamata per giorno: un evento dura ore, e un Online Day della divisione
   tocca due giorni di UTC. Oltre, la risposta è «non disponibile» con un avviso nel log, **non un'eccezione**: una data sbagliata in un
-  evento non deve far cadere la pagina.
+  evento non deve far cadere la pagina. Con IVAO lento una finestra di sette giorni sono sette chiamate in fila, ognuna con i tempi
+  della resilienza, mentre la pagina aspetta: **confermato da Carmine così com'è** ([risposta][ok207]) — i dati freschi contano più di
+  una pagina veloce per i pochi dello staff che la aprono.
 - **`AtcBookingDto(Callsign, StartsAt, EndsAt, Vid, Kind)`**, con `AtcBookingKind` `Controlling`, `Training`, `Exam`. **Il VID e non
   il nome**: la pagina nomina un membro dell'hub come nomina chiunque (`personName`), e chi non è mai entrato nell'hub con il suo
   numero; i nomi che IVAO dà di chi non è dell'hub non arrivano al modulo. Niente divisione, rating, frequenza né `voice`: nessuna
@@ -86,11 +98,18 @@ Con uno script usa e getta fuori dal repository, che stampava forme, conteggi e 
 
 - **`tools/record-ivao-fixtures.mjs --bookings <nome> <asVid> <yyyy-mm-dd> <prefisso…>`**: il giorno di IVAO, **le prenotazioni che
   cominciano quel giorno** sulle postazioni dei prefissi (per principio, come IVAO); **la persona tolta**: ogni membro diventa
-  `asVid`, `asVid + 1`… nell'ordine in cui compare, e l'oggetto `user` tiene solo quel numero; il resto com'è. Stampa i VID usati.
-- **`atc-bookings-day.json`**, registrato il 30 settembre con `--bookings day 761070 2026-07-27 LIRF LIMC LIBD LIBG LFPG LIRR LIMM
-  LIBB LFFF SBGR_TWR EDDF_APP`: il 27 luglio 2026 sulle stazioni del banco (le postazioni di `atc-positions-world.json` e
-  `subcenters-world.json`), più l'esame di `EDDF_APP` e `SBGR_TWR` dalle 23 all'1. Dieci prenotazioni, cinque su un settore, dieci
-  persone: **VID 761070–761079**, quelli di E15a (liberi al grep).
+  `asVid`, `asVid + 1`… nell'ordine in cui compare, e l'oggetto `user` tiene solo quel numero (un `user` che manca resta com'è: nit del
+  revisore, la prima versione cadeva). **E niente che ritrovi la prenotazione** attraverso l'API di IVAO (§2; rilievo del revisore):
+  `id` e `createdAt` tolti, e il giorno spostato sul **1° gennaio 2001**, dove IVAO non ha prenotazioni, con gli orari del giorno.
+  Il resto com'è. Stampa i VID usati.
+- **`atc-bookings-day.json`**, registrato il 30 settembre con `--bookings day 761070 <un giorno> LIRF LIMC LIBD LIBG LFPG LIRR LIMM
+  LIBB LFFF SBGR_TWR EDDF_APP`: un giorno vero, che né il file né questa nota dicono, sulle stazioni del banco (le postazioni di
+  `atc-positions-world.json` e `subcenters-world.json`), più l'esame di `EDDF_APP` e `SBGR_TWR` dalle 23 all'1. Dieci prenotazioni,
+  cinque su un settore, dieci persone: **VID 761070–761079**, quelli di E15a (liberi al grep).
+- ⚠️ **Che cosa resta**: chi volesse potrebbe ancora cercare il giorno confrontando nominativi e orari con lo storico di IVAO, un giorno
+  alla volta; nel file non c'è più niente che lo trovi con una domanda sola. **La prima registrazione**, con `id`, `createdAt` e il
+  giorno vero, resta nella storia del branch (il commit `fbb11ac`, e il giorno nei testi dei commit `fbb11ac` e `43528ea`): fuori da
+  `main` la tiene solo un merge a squash, che è una scelta del maintainer; la storia pubblicata non si riscrive.
 - **`FixtureIvaoApiClient`: un giorno che si ripete**, come `whazzup.json`. Il giorno chiesto, qualunque sia, riceve le prenotazioni
   registrate spostate su di lui, più quella a cavallo della mezzanotte del giorno prima; con la regola del giorno misurata (§2) e la
   `position` per principio. Così sul banco senza credenziali un evento di qualunque data ha delle prenotazioni accanto al roster
@@ -98,7 +117,8 @@ Con uno script usa e getta fuori dal repository, che stampava forme, conteggi e 
 
 ### 3.4 I test
 
-`AtcBookingTests` (unità, nuovo): il lettore sul giorno registrato (e che del membro resti solo il numero) e sulle righe strane; il
+`AtcBookingTests` (unità, nuovo): il lettore sul giorno registrato (e che del membro resti solo il numero, senza `id`, `createdAt` né
+il giorno vero) e sulle righe strane, e la forma a pagine che non è il giorno; il
 client vero contro un IVAO finto — la richiesta con il giorno, la postazione e il token dell'applicazione; sei risposte sbagliate, IVAO
 irraggiungibile e il token rifiutato rispondono «non disponibile» —; il client delle fixture su un giorno qualunque; la sorgente presa
 dalla DI del nucleo: la finestra, la mezzanotte una volta sola, il nominativo intero, un giorno che non risponde, la settimana e la
@@ -117,6 +137,8 @@ finestra vuota. Nessuna chiamata a IVAO.
 | L'`id` di IVAO nel DTO | serviva solo a togliere i doppioni della mezzanotte, che il nucleo toglie per valore; un modulo non ci costruisce un link a IVAO |
 | Un'eccezione oltre i sette giorni | una data sbagliata in un evento farebbe cadere la pagina |
 | Una fixture per data | il banco mostrerebbe delle prenotazioni solo nei giorni registrati, già passati |
+| Nella fixture, togliere solo `id` e `createdAt` (il rilievo alla lettera) | il giorno con il nominativo ritrova lo stesso la prenotazione, e il suo membro, con `/daily` (§2): il giorno si sposta |
+| Spostare anche gli orari | la fixture perderebbe la forma che prova (la sera, la mezzanotte); senza il giorno, gli orari non trovano niente con una domanda sola |
 | Tutto il giorno della rete nella fixture | una settantina di persone da togliere, per dieci VID dei test; le stazioni del banco bastano |
 | Gli aiuti di lettura del JSON messi in comune | otto file del nucleo hanno i loro (`IvaoTracker.cs`, `IvaoAtcPosition.cs`, `IvaoWhazzup.cs`, `NoaaWeatherClient.cs`…); metterli insieme è un'altra PR |
 
@@ -135,6 +157,6 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 
 - **§10**, la riga «Prenotazioni ATC dell'evento»: misurato (§2) — il token dell'applicazione basta, senza scope; il giorno elenca ogni
   prenotazione che lo tocca, e `position` è il principio del nominativo; la domanda del nucleo è **`IAtcBookingSource`** (una finestra,
-  al più sette giorni, `null` = non disponibile); nessuna cache.
+  al più sette giorni, `null` = non disponibile); nessuna cache — le ultime due **confermate da Carmine** ([risposta][ok207]).
 - **§4.2**, il perimetro di IVAO: `IAtcBookingSource`, in `Core/Ivao/`, è una domanda che un modulo fa senza nominare la rete, come le
   directory.

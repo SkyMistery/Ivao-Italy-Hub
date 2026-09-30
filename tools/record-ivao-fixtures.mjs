@@ -45,9 +45,9 @@
  * that began the day before belongs to that day — of the positions whose callsign starts with one of the prefixes, the way
  * IVAO matches its own position parameter (the start of a callsign, in any case). The person is taken out: the members become
  * <asVid>, <asVid> + 1… in the order they first appear, and the user object IVAO embeds — names, division, rating — keeps
- * only that number. The VIDs it used are printed: keep them inside the range your tests own. So is everything that would find
- * the booking again through IVAO's own API: its id and its createdAt are left out, and the bookings are moved onto 1 January
- * 2001, a day IVAO has none of, with their times of day.
+ * only that number. The VIDs it used are printed: keep them inside the range your tests own. What would find a booking, and its
+ * member, again through IVAO's own API is taken out too: its id and its createdAt are left out, and the bookings are moved onto
+ * 1 January 2001, a day IVAO has none of, with their times of day.
  *
  *   node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]
  *

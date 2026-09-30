@@ -88,9 +88,9 @@ five seconds, and the outline is dropped all the same.
 the bookings `/v2/atc/bookings/daily` listed for one real day that started that day on the stations of the bench's positions, plus
 an exam (`EDDF_APP`) and one across midnight (`SBGR_TWR`, 23:00 to 01:00). Ten bookings, five of them on a sector. The people are
 taken out: each member became one of the VIDs 761070–761079, the range of phase E15a, and the user object IVAO embeds — names,
-division, rating — keeps only that number. So is everything that finds a booking, and its member, again through IVAO's own API:
-the booking's `id` and `createdAt` are left out, and the day is moved onto 1 January 2001, when IVAO has no bookings, with its times
-of day. Which day it was is written nowhere.
+division, rating — keeps only that number. What would find a booking, and its member, again through IVAO's own API is taken out
+too: the booking's `id` and `createdAt` are left out, and the day is moved onto 1 January 2001, when IVAO has no bookings, with its
+times of day. Which day it was is written nowhere.
 
 The fixture client answers **any day** with it, like `whazzup.json` answers any evening: the recorded bookings moved onto the day
 asked, and the one across midnight of the day before. So a bench with no credentials has bookings beside an event of any date.
