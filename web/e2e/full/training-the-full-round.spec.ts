@@ -15,7 +15,7 @@ import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
  * the trainer proposes two dates from the page of the training; the trainee chooses the first among the tiles of their page, and
  * its session is in the public calendar with nobody's name; once the session has started, the trainer marks the sheet and
  * publishes the report; the trainee reads it without anything the staff wrote for itself; the staff finds the training in the
- * history; and the mail of every step reached whoever it is for, once.
+ * history, and on its page every step of the round with who took it (A13b); and the mail of every step reached whoever it is for, once.
  *
  * The rounds of the phases prove each step on its own, and set up the steps before theirs through the API (A6b–A10c); this one is
  * the chain, as the training department will live it. What each step refuses, and the other roads — a refusal, a reschedule, a
@@ -442,6 +442,31 @@ test('the full round: asked for, accepted, assigned, dates proposed and one chos
     await over.getByRole('link', { name: words.staff.open }).click();
     await expect(page).toHaveURL(new RegExp(`/staff/training/${String(trainingId)}$`));
 
+    // ---------------------------------------------------------------- and its history: every step, who took it (A13b)
+    // Read by the server from the core's audit log: the request, the staff's acceptance and assignment, the dates proposed, the
+    // trainee's choice, the report — each with who took it. The staff is the bench's web master, whose name this file does not write.
+    const history = page
+      .locator('section', {
+        has: page.getByRole('heading', { level: 2, name: words.staff.sections.history, exact: true }),
+      })
+      .getByRole('listitem');
+    const pilot = `Bench Pilot (${String(TRAINEE)})`;
+    const benchTrainer = `Bench Trainer (${String(BENCH_TRAINER)})`;
+    const before = (sentence: string, value: string) => sentence.split(`{{${value}}}`)[0]!;
+    await expect(history).toHaveCount(6);
+    await expect(history.nth(0)).toContainText(filled(words.staff.history.requested, { name: pilot }));
+    await expect(history.nth(1)).toContainText(filled(words.staff.history.accepted, { name: '' }).trim());
+    await expect(history.nth(2)).toContainText(
+      filled(words.staff.history.assigned, { name: '', trainer: benchTrainer }).trim(),
+    );
+    await expect(history.nth(3)).toContainText(
+      filled(words.staff.history.datesChanged, { name: benchTrainer }),
+    );
+    await expect(history.nth(4)).toContainText(
+      filled(before(words.staff.history.dateChosen, 'date'), { name: pilot }),
+    );
+    await expect(history.nth(5)).toContainText(filled(words.staff.history.completed, { name: benchTrainer }));
+
     // ---------------------------------------------------------------- the mail of every step, once, to whoever it is for
     const session = `${training}, ${wallClock(soon).replace('T', ' ')} UTC`;
     const expected: readonly (readonly [MailType, string, string])[] = [
@@ -674,7 +699,15 @@ function englishTraining() {
       title: string;
       open: string;
       options: { state: { Completed: string } };
-      sections: { dates: string; report: string };
+      sections: { dates: string; report: string; history: string };
+      history: {
+        requested: string;
+        accepted: string;
+        assigned: string;
+        datesChanged: string;
+        dateChosen: string;
+        completed: string;
+      };
       theoryReminder: { title: string };
       accept: { button: string; done: string };
       assign: { submit: string; fields: { trainerVid: string } };

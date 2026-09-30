@@ -122,6 +122,9 @@ public sealed class TrainingModule : ModuleBase
         services.AddScoped<TrainingDates>();
         services.AddScoped<TrainingSessions>();
 
+        // The history of a training's changes on the staff's page, read from the core's audit log (A13b).
+        services.AddScoped<TrainingHistory>();
+
         // The trainee's path as the staff reads it, and the bans (A10a).
         services.AddScoped<TrainingBans>();
         services.AddScoped<TraineePaths>();

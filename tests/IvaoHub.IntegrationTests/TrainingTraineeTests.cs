@@ -60,10 +60,11 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
     private const string ItemStem = "trn-test-a10a";
 
     /// <summary>
-    /// The fields of the staff's page of a training that are reserved (note <c>le-note-riservate-e-il-trainee</c> §4), the same three
-    /// A9a's test lists: the path shows every training as that page, so the rule has to leave them out there too.
+    /// The fields of the staff's page of a training that are reserved (note <c>le-note-riservate-e-il-trainee</c> §4), the same ones A9a's
+    /// test lists — the history of the training's changes too, since A13b: the path shows every training as that page, so the rule has to
+    /// leave them out there too.
     /// </summary>
-    private static readonly string[] ReservedOnThePage = ["staffComment", "sheet[].staffNote", "sessions[].internalNotes"];
+    private static readonly string[] ReservedOnThePage = ["staffComment", "sheet[].staffNote", "sessions[].internalNotes", "history"];
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -372,18 +373,21 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
 
         using var trainerTrainee = await SignedInAsync(TrainerTraineeVid, token);
 
-        // Another trainee's path: every reserved field, as written.
+        // Another trainee's path: every reserved field, as written, and the history of the steps above — the installation's by nobody.
         var theirs = OnThePath(await PathAsync(trainerTrainee, OtherTraineeVid, token), another);
         Assert.False(theirs.GetProperty("reservedLeftOut").GetBoolean());
         Assert.Equal(
-            ["trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session"],
+            [
+                "trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session",
+                "Requested Rescheduled DateSet DateMoved Completed",
+            ],
             ReservedValues(theirs, item));
 
         // Their own: readable, with every reserved field left out — nowhere in the answer.
         var text = await trainerTrainee.GetStringAsync(new Uri($"{TraineePathEndpoints.Pattern}/{TrainerTraineeVid}", UriKind.Relative), token);
         var mine = OnThePath(JsonDocument.Parse(text).RootElement.Clone(), own);
         Assert.True(mine.GetProperty("reservedLeftOut").GetBoolean());
-        Assert.Equal(new string?[] { null, null, null }, ReservedValues(mine, item));
+        Assert.Equal(new string?[] { null, null, null, null }, ReservedValues(mine, item));
         Assert.DoesNotContain("trn-test-reserved", text, StringComparison.Ordinal);
 
         // What they read anyway stays: the grade and the comment for them, the general comment, the sessions.
@@ -395,7 +399,10 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
         // The coordinator reads the trainer-trainee's path whole: the rule is about who reads, not about whose path it is.
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         Assert.Equal(
-            ["trn-test-reserved: own, staff", "trn-test-reserved: own, item", "trn-test-reserved: own, session"],
+            [
+                "trn-test-reserved: own, staff", "trn-test-reserved: own, item", "trn-test-reserved: own, session",
+                "Requested Rescheduled DateSet DateMoved Completed",
+            ],
             ReservedValues(OnThePath(await PathAsync(coordinator, TrainerTraineeVid, token), own), item));
     }
 
@@ -428,20 +435,25 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
     private static async Task<List<JsonElement>> ReadListAsync(HttpClient client, string address, CancellationToken cancellationToken) =>
         [.. (await client.GetFromJsonAsync<JsonElement>(new Uri(address, UriKind.Relative), cancellationToken)).GetProperty("items").EnumerateArray()];
 
-    /// <summary>The value of each field of <see cref="ReservedOnThePage"/>, in its order: on the item of this class, and on the session rescheduled.</summary>
+    /// <summary>
+    /// The value of each field of <see cref="ReservedOnThePage"/>, in its order: on the item of this class, on the session rescheduled,
+    /// and the history as the events it lists — none when it lists nothing.
+    /// </summary>
     private static List<string?> ReservedValues(JsonElement page, long item)
     {
-        Assert.Equal(["staffComment", "sheet[].staffNote", "sessions[].internalNotes"], ReservedOnThePage);
+        Assert.Equal(["staffComment", "sheet[].staffNote", "sessions[].internalNotes", "history"], ReservedOnThePage);
 
         var onTheItem = page.GetProperty("sheet").EnumerateArray().Single(each => each.GetProperty("itemId").GetInt64() == item);
         var rescheduled = page.GetProperty("sessions").EnumerateArray()
             .Single(each => each.GetProperty("outcome").GetString() == nameof(SessionOutcome.Rescheduled));
+        var history = page.GetProperty("history").EnumerateArray().Select(entry => entry.GetProperty("event").GetString()).ToList();
 
         return
         [
             page.GetProperty("staffComment").GetString(),
             onTheItem.GetProperty("staffNote").GetString(),
             rescheduled.GetProperty("internalNotes").GetString(),
+            history.Count == 0 ? null : string.Join(' ', history),
         ];
     }
 

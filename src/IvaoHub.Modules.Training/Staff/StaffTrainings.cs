@@ -39,7 +39,8 @@ public enum StaffResult
 /// <para>The dates of a training (A8) are <see cref="TrainingDates"/>'s: the page shows them — the dates proposed with their
 /// warnings, the session and whether it shows as held — and says whether the reader may conduct it or close it. What its session
 /// came to (A9) is <see cref="TrainingSessions"/>'s: the page shows the sessions that are over, the sheet and the report, and says
-/// whether the reader may record it — without what is reserved when the reader is the trainee (<see cref="ReservedFields"/>).</para>
+/// whether the reader may record it — without what is reserved when the reader is the trainee (<see cref="ReservedFields"/>).
+/// The history of its changes (A13b) is <see cref="TrainingHistory"/>'s, read from the core's audit log; the page names its people.</para>
 /// </summary>
 public sealed class StaffTrainings(
     TrainingDbContext database,
@@ -48,6 +49,7 @@ public sealed class StaffTrainings(
     ModuleSettingsStore settingsStore,
     TrainingMail mail,
     TrainingPeople people,
+    TrainingHistory history,
     IAuthorizationService authorization,
     IHttpContextAccessor http,
     ICurrentUser currentUser,
@@ -72,9 +74,9 @@ public sealed class StaffTrainings(
 
     /// <summary>
     /// The page of one training: the request, the decision, the trainer, the dates proposed and the session, the sessions that are
-    /// over, the sheet and the report, the closing, and what the reader may do on it now. The one place the staff's answer on a
-    /// training is built: every endpoint of the staff answers with it, and it leaves out what is reserved when the reader is the
-    /// training's trainee (<see cref="ReservedFields"/>; note <c>le-note-riservate-e-il-trainee</c>).
+    /// over, the sheet and the report, the closing, the history of its changes, and what the reader may do on it now. The one place
+    /// the staff's answer on a training is built: every endpoint of the staff answers with it, and it leaves out what is reserved
+    /// when the reader is the training's trainee (<see cref="ReservedFields"/>; note <c>le-note-riservate-e-il-trainee</c>).
     /// </summary>
     public async Task<StaffTrainingDto> PageAsync(Training training, CancellationToken cancellationToken)
     {
@@ -90,11 +92,13 @@ public sealed class StaffTrainings(
             .OrderBy(session => session.StartsAtUtc)
             .ThenBy(session => session.Id)
             .ToListAsync(cancellationToken);
+        var lines = await history.ReadAsync(training.Id, cancellationToken);
         var names = await people.NamesAsync(
             [
                 training.TraineeVid, training.DecidedBy, training.TrainerVid, training.AssignedBy, training.ClosedBy,
                 .. slots.Select(slot => (int?)slot.CreatedBy),
                 .. sessions.Select(session => (int?)session.CreatedBy),
+                .. lines.SelectMany(line => new[] { line.ByVid, line.TrainerVid, line.PreviousTrainerVid }),
             ],
             cancellationToken);
         var settings = await settingsStore.GetAsync<TrainingSettings>(TrainingModule.ModuleKey, cancellationToken);
@@ -164,6 +168,17 @@ public sealed class StaffTrainings(
                     session.InternalNotes,
                     TrainingPeople.Member(session.CreatedBy, names)!,
                     session.CreatedAt)),
+            ],
+            [
+                .. lines.Select(line => new TrainingHistoryEntryDto(
+                    line.At,
+                    TrainingPeople.Member(line.ByVid, names),
+                    line.Event,
+                    TrainingPeople.Member(line.TrainerVid, names),
+                    TrainingPeople.Member(line.PreviousTrainerVid, names),
+                    line.Date,
+                    line.PreviousDate,
+                    line.Reason)),
             ],
             ReservedLeftOut: false,
             new StaffTrainingActionsDto(canDecide, canAssign, canConduct, canClose, canRecordOutcome),

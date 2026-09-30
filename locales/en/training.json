@@ -269,7 +269,7 @@
     },
     "pageTitle": "{{rating}} training of {{trainee}}",
     "pageTitleNoRating": "Training of {{trainee}}",
-    "reserved": "This training is yours: the notes the staff writes for itself — on the sheet, in the report and on a session rescheduled — are not shown to you.",
+    "reserved": "This training is yours: the notes the staff writes for itself — on the sheet, in the report and on a session rescheduled — and the history of its changes are not shown to you.",
     "sections": {
       "request": "The request",
       "decision": "The decision",
@@ -277,7 +277,8 @@
       "dates": "The dates",
       "sessions": "The sessions",
       "report": "The report",
-      "closing": "The closing"
+      "closing": "The closing",
+      "history": "The history"
     },
     "request": {
       "trainee": "Trainee",
@@ -446,6 +447,27 @@
     "closing": {
       "byStaff": "Closed by {{name}} on {{date}}.",
       "byHub": "Closed by the hub on {{date}}: the trainee chose no date in the time the division gives to choose one."
+    },
+    "history": {
+      "hub": "The hub",
+      "requested": "{{name}} asked for the training.",
+      "rejectedForTheory": "The hub refused the request: the trainee answered that the theory exam was not passed yet.",
+      "accepted": "{{name}} accepted the request.",
+      "rejected": "{{name}} refused the request.",
+      "assigned": "{{name}} assigned the trainer: {{trainer}}.",
+      "trainerChanged": "{{name}} changed the trainer: {{from}} → {{to}}.",
+      "datesChanged": "{{name}} changed the dates proposed.",
+      "dateChosen": "{{name}} chose the date among the ones proposed: {{date}}.",
+      "dateSet": "{{name}} set the date by hand: {{date}}.",
+      "dateMoved": "{{name}} moved the date: {{from}} → {{to}}.",
+      "rescheduled": "{{name}} rescheduled the session: {{date}}.",
+      "noShow": "{{name}} marked the session as a no-show: {{date}}.",
+      "completed": "{{name}} published the report.",
+      "closed": "{{name}} closed the training.",
+      "closedByHub": "The hub closed the training: the trainee chose no date in the time the division gives to choose one.",
+      "cancelled": "{{name}} cancelled the request.",
+      "changed": "{{name}} changed the training: what changed is no longer on record.",
+      "erased": "{{name}} erased the trainee's data: the training stays in the register, without its texts."
     }
   },
   "trainees": {

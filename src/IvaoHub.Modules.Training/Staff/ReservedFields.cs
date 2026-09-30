@@ -7,8 +7,10 @@ namespace IvaoHub.Modules.Training.Staff;
 /// on a training passes through here, once, as <see cref="StaffTrainings.PageAsync"/> builds it: when the reader is its trainee —
 /// whoever they are, the coordinator, the direction and the super administrator included —, the reserved fields are left out and
 /// the page says so. The row stays readable: this is the shape of the answer, not an authorization.
-/// <para>Reserved are the report's comment for the staff, the note of the staff on every item of the sheet, and the internal notes of
-/// every session. A phase that adds a reserved field adds it here, and the test of the note lists them.</para>
+/// <para>Reserved are the report's comment for the staff, the note of the staff on every item of the sheet, the internal notes of
+/// every session, and the history of the training's changes (A13b: Carmine's answer on #197, not by the trainee — their own page says
+/// where their training stands, and the history names the staff at every step). A phase that adds a reserved field adds it here, and
+/// the test of the note lists them.</para>
 /// </summary>
 public static class ReservedFields
 {
@@ -24,6 +26,7 @@ public static class ReservedFields
                 StaffComment = null,
                 Sheet = [.. page.Sheet.Select(item => item with { StaffNote = null })],
                 Sessions = [.. page.Sessions.Select(session => session with { InternalNotes = null })],
+                History = [],
                 ReservedLeftOut = true,
             };
     }

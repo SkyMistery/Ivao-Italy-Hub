@@ -6906,12 +6906,13 @@ export interface components {
          * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
          *     rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
          *     the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
-         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, and what the reader
-         *     may do. Never an address. `Sheet` is the copy a completed training's report keeps; while the training is dated, the active
-         *     items of its ladder and rating as a report would mark them now, with nothing marked; none otherwise. Read with
-         *     `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of `ReservedFields`
-         *     leaves out what is reserved when they do — `StaffComment`, the `StaffNote` of every item of the sheet, the
-         *     `InternalNotes` of every session — and says so in `ReservedLeftOut` (note `le-note-riservate-e-il-trainee`).
+         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
+         *     changes (A13b), and what the reader may do. Never an address. `Sheet` is the copy a completed training's report keeps; while
+         *     the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
+         *     otherwise. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of
+         *     `ReservedFields` leaves out what is reserved when they do — `StaffComment`, the `StaffNote` of every item of the
+         *     sheet, the `InternalNotes` of every session, the `History` — and says so in `ReservedLeftOut` (note
+         *     `le-note-riservate-e-il-trainee`; the history, Carmine's answer on #197: not by the trainee).
          */
         StaffTrainingDto: {
             /** Format: int64 */
@@ -6964,6 +6965,7 @@ export interface components {
             staffComment: null | string;
             sheet: components["schemas"]["StaffEvaluationDto"][];
             sessions: components["schemas"]["StaffSessionDto"][];
+            history: components["schemas"]["TrainingHistoryEntryDto"][];
             reservedLeftOut: boolean;
             actions: components["schemas"]["StaffTrainingActionsDto"];
             /** Format: date-time */
@@ -7626,6 +7628,40 @@ export interface components {
             /** @description What the staff and the trainers read of it, and the trainee never does. */
             staffNote: null | string;
         };
+        /**
+         * @description A line of the history of a training (A13b; note `2026-09-30-lo-storico-di-un-training`): when, who — none for the hub itself —,
+         *     and what happened, with the trainers, the dates and the reason it names; the people named as the page names them, a person whose
+         *     data was erased by their pseudonym. Read from the core's audit log by TrainingHistory, never written.
+         */
+        TrainingHistoryEntryDto: {
+            /**
+             * Format: date-time
+             * @description When it was written.
+             */
+            at: string;
+            by: null | components["schemas"]["TrainingMemberDto"];
+            /** @description What happened. */
+            event: components["schemas"]["TrainingHistoryEvent"];
+            trainer: null | components["schemas"]["TrainingMemberDto"];
+            previousTrainer: null | components["schemas"]["TrainingMemberDto"];
+            /**
+             * Format: date-time
+             * @description The date chosen, set or moved to; for a session rescheduled or not attended, the date of that session.
+             */
+            date: null | string;
+            /**
+             * Format: date-time
+             * @description The date before it was moved.
+             */
+            previousDate: null | string;
+            /** @description Why the staff refused or closed it. */
+            reason: null | string;
+        };
+        /**
+         * @description What a line of the history of a training says happened (A13b, note `2026-09-30-lo-storico-di-un-training`). Sent by name.
+         * @enum {unknown}
+         */
+        TrainingHistoryEvent: "Requested" | "RejectedForTheory" | "Accepted" | "Rejected" | "Assigned" | "TrainerChanged" | "DatesChanged" | "DateChosen" | "DateSet" | "DateMoved" | "Rescheduled" | "NoShow" | "Completed" | "Closed" | "Cancelled" | "Changed" | "Erased";
         /** @description A person as the staff's pages name them: the VID that always is, and the name the hub has — none when it has none. */
         TrainingMemberDto: {
             /** Format: int32 */

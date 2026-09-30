@@ -268,7 +268,7 @@
     },
     "pageTitle": "Training {{rating}} di {{trainee}}",
     "pageTitleNoRating": "Training di {{trainee}}",
-    "reserved": "Questo training è tuo: le note che lo staff scrive per sé — nella scheda, nel report e su una sessione rischedulata — non ti sono mostrate.",
+    "reserved": "Questo training è tuo: le note che lo staff scrive per sé — nella scheda, nel report e su una sessione rischedulata — e lo storico delle sue modifiche non ti sono mostrati.",
     "sections": {
       "request": "La richiesta",
       "decision": "La decisione",
@@ -276,7 +276,8 @@
       "dates": "Le date",
       "sessions": "Le sessioni",
       "report": "Il report",
-      "closing": "La chiusura"
+      "closing": "La chiusura",
+      "history": "Lo storico"
     },
     "request": {
       "trainee": "Trainee",
@@ -445,6 +446,27 @@
     "closing": {
       "byStaff": "Chiusa da {{name}} il {{date}}.",
       "byHub": "Chiusa dall'hub il {{date}}: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla."
+    },
+    "history": {
+      "hub": "L'hub",
+      "requested": "{{name}} ha chiesto il training.",
+      "rejectedForTheory": "L'hub ha rifiutato la richiesta: il trainee ha risposto di non aver ancora superato l'esame teorico.",
+      "accepted": "{{name}} ha accettato la richiesta.",
+      "rejected": "{{name}} ha rifiutato la richiesta.",
+      "assigned": "{{name}} ha assegnato il trainer: {{trainer}}.",
+      "trainerChanged": "{{name}} ha cambiato il trainer: {{from}} → {{to}}.",
+      "datesChanged": "{{name}} ha cambiato le date proposte.",
+      "dateChosen": "{{name}} ha scelto la data fra quelle proposte: {{date}}.",
+      "dateSet": "{{name}} ha fissato la data a mano: {{date}}.",
+      "dateMoved": "{{name}} ha spostato la data: {{from}} → {{to}}.",
+      "rescheduled": "{{name}} ha rischedulato la sessione: {{date}}.",
+      "noShow": "{{name}} ha segnato la sessione come no-show: {{date}}.",
+      "completed": "{{name}} ha pubblicato il report.",
+      "closed": "{{name}} ha chiuso il training.",
+      "closedByHub": "L'hub ha chiuso il training: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla.",
+      "cancelled": "{{name}} ha annullato la richiesta.",
+      "changed": "{{name}} ha modificato il training: che cosa è cambiato non è più registrato.",
+      "erased": "{{name}} ha cancellato i dati del trainee: il training resta nel registro, senza i suoi testi."
     }
   },
   "trainees": {

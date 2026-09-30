@@ -155,6 +155,16 @@ public sealed partial class TrainingTraineeTests
             Assert.All(page.GetProperty("sessions").EnumerateArray(), session => Assert.Equal(JsonValueKind.Null, session.GetProperty("internalNotes").ValueKind));
             Assert.Equal(CoordinatorVid, (await PageAsync(reader, closed, token)).GetProperty("closedBy").GetProperty("vid").GetInt32());
 
+            // Its history says what happened and when, and no longer what (A13b): the erasure emptied every row of it in the log, so the
+            // request is still the request, every step after it a change, and the erasure itself the last, by the superadmin who asked.
+            var history = page.GetProperty("history").EnumerateArray().ToArray();
+            Assert.Equal(nameof(TrainingHistoryEvent.Requested), history[0].GetProperty("event").GetString());
+            Assert.All(history[1..^1], entry => Assert.Equal(nameof(TrainingHistoryEvent.Changed), entry.GetProperty("event").GetString()));
+            Assert.Equal((nameof(TrainingHistoryEvent.Erased), SuperadminVid), (history[^1].GetProperty("event").GetString(), Vid(history[^1], "by")));
+            Assert.All(history, entry => Assert.Equal(
+                (JsonValueKind.Null, JsonValueKind.Null, JsonValueKind.Null),
+                (entry.GetProperty("trainer").ValueKind, entry.GetProperty("date").ValueKind, entry.GetProperty("reason").ValueKind)));
+
             // No path for a pseudonym. The VID's own still answers, for the ban it keeps.
             using (var none = await reader.GetAsync(new Uri($"{TraineePathEndpoints.Pattern}/{pseudonym}", UriKind.Relative), token))
             {
@@ -228,10 +238,25 @@ public sealed partial class TrainingTraineeTests
             (Vid(page, "trainee"), Vid(page, "trainer"), Vid(page, "decidedBy"), Vid(page, "assignedBy")));
         Assert.Equal(JsonValueKind.Null, page.GetProperty("trainer").GetProperty("name").ValueKind);
         Assert.Equal(
-            [$"trn-test-reserved: {marker}, staff", $"trn-test-reserved: {marker}, item", $"trn-test-reserved: {marker}, session"],
+            [
+                $"trn-test-reserved: {marker}, staff", $"trn-test-reserved: {marker}, item", $"trn-test-reserved: {marker}, session",
+                "Requested Rescheduled DateSet DateMoved Completed",
+            ],
             ReservedValues(page, item));
         Assert.Equal($"trn-test: {marker}, general", page.GetProperty("generalComment").GetString());
         Assert.All(page.GetProperty("sessions").EnumerateArray(), session => Assert.Equal(pseudonym, Vid(session, "recordedBy")));
+
+        // Its history keeps every step, what and when, with the deleted person where they took it (A13b): the core wrote the pseudonym
+        // into the log as into the row, and emptied nothing — the training is not theirs. The installation's steps are nobody's.
+        Assert.Equal(
+            [
+                (nameof(TrainingHistoryEvent.Requested), (int?)null), (nameof(TrainingHistoryEvent.Rescheduled), pseudonym),
+                (nameof(TrainingHistoryEvent.DateSet), pseudonym), (nameof(TrainingHistoryEvent.DateMoved), (int?)null),
+                (nameof(TrainingHistoryEvent.Completed), pseudonym),
+            ],
+            page.GetProperty("history").EnumerateArray().Select(entry => (
+                entry.GetProperty("event").GetString(),
+                entry.GetProperty("by").ValueKind == JsonValueKind.Null ? (int?)null : Vid(entry, "by"))));
 
         // The ban they gave, with its reason, given by the deleted person (not by nobody).
         var ban = Assert.Single(await ReadListAsync(reader, $"{BanEndpoints.Pattern}?filter[vid]={OtherTraineeVid}", token));

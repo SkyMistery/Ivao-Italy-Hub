@@ -39,9 +39,10 @@ namespace IvaoHub.IntegrationTests;
 /// address and position are taken back with everything else this class writes. Who writes the training without an endpoint is
 /// the identity a login puts in the cookie, read by the host's own current user, as in <c>AlternativeWritePermissionTests</c>:
 /// a permission that reaches only the rows assigned to whoever holds it (A3b's rule) is exactly what these tests prove.</para>
+/// <para>The history of a training's changes on its page (A13b) is proved in <c>TrainingStaffTests.History.cs</c>, with these people.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
-public sealed class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
+public sealed partial class TrainingStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     // The range the training module owns in the shared database (CONTRIBUTING.md): 790001–790021 are A1's to A6a's.
     private const int TraineeVid = 790022;

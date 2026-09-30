@@ -164,12 +164,15 @@ public sealed class TrainingSessionRulesTests
         Assert.Same(page, whole);
         Assert.False(whole.ReservedLeftOut);
 
-        // The trainee reads it without the report's comment for the staff, the notes on the items and those on the sessions.
+        // The trainee reads it without the report's comment for the staff, the notes on the items and those on the sessions, and
+        // without the history of the training's changes (A13b: not by the trainee).
         var theirs = ReservedFields.For(page, readerVid: TraineeVid);
         Assert.True(theirs.ReservedLeftOut);
         Assert.Null(theirs.StaffComment);
         Assert.All(theirs.Sheet, item => Assert.Null(item.StaffNote));
         Assert.All(theirs.Sessions, session => Assert.Null(session.InternalNotes));
+        Assert.NotEmpty(page.History);
+        Assert.Empty(theirs.History);
 
         // What they read anyway stays: the grades and marks, the comments for them, the general comment, the sessions themselves.
         Assert.Equal(page.GeneralComment, theirs.GeneralComment);
@@ -177,7 +180,7 @@ public sealed class TrainingSessionRulesTests
         Assert.Equal(page.Sessions.Select(session => (session.Id, session.StartsAtUtc, session.Outcome)), theirs.Sessions.Select(session => (session.Id, session.StartsAtUtc, session.Outcome)));
 
         // Nothing else of the page changes: the rest of it, compared as a whole with the reserved fields put back.
-        Assert.Equal(page, theirs with { StaffComment = page.StaffComment, Sheet = page.Sheet, Sessions = page.Sessions, ReservedLeftOut = false });
+        Assert.Equal(page, theirs with { StaffComment = page.StaffComment, Sheet = page.Sheet, Sessions = page.Sessions, History = page.History, ReservedLeftOut = false });
     }
 
     [Fact]
@@ -276,6 +279,11 @@ public sealed class TrainingSessionRulesTests
             [
                 new StaffSessionDto(7, Now.AddDays(-8), SessionOutcome.Rescheduled, "Nobody around: only the taxi done.", trainer, Now.AddDays(-8)),
                 new StaffSessionDto(8, Now.AddDays(-1), SessionOutcome.Held, null, trainer, Now),
+            ],
+            History:
+            [
+                new TrainingHistoryEntryDto(Now.AddDays(-20), trainee, TrainingHistoryEvent.Requested, null, null, null, null, null),
+                new TrainingHistoryEntryDto(Now.AddDays(-18), trainer, TrainingHistoryEvent.Assigned, trainer, null, null, null, null),
             ],
             ReservedLeftOut: false,
             new StaffTrainingActionsDto(false, false, false, false, false),

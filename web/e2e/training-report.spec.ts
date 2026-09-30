@@ -205,6 +205,7 @@ function staffTraining(state: string, overrides: Record<string, unknown> = {}) {
     staffComment: null,
     sheet: [],
     sessions: [],
+    history: [],
     reservedLeftOut: false,
     actions: nothing,
     rowVersion: '2026-09-26T10:00:00.123456Z',
