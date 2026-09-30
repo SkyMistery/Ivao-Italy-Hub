@@ -3866,7 +3866,11 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
   intera, con la parte decisa da Carmine sulla #189), con `main` a 2af5133. L'intervallo della fase è
   `m3/a12b-training-erasure...m3/a12d-full-round`. **La coda l'ha raggiunto prima della PR**: il passo di #182 dopo #181, con `main` a
   17941c0, è salito per A11b, A12a e A12b (4d91517, solo documenti) ed è entrato qui con un merge (3e5065f), senza conflitti e senza righe
-  perse. Il branch si unisce senza conflitti con il `main` di oggi (6704aad, con #190): la PR ha la CI.
+  perse. **Poi, con la PR aperta, il passo di #187 dopo #182** (#182 unita il 30 alle 00:03 UTC, #187 alle 00:48): `main` a 4e21fbc — #182,
+  #187 e #190 del maintainer (l'accesso dalla pagina d'errore, 0.4.2) — e il nit 1 della revisione di #187, dalla cima di A12b 4b5a6a9, con
+  un merge (91af2e5): un conflitto solo, l'intestazione dell'handoff (quella di A12d in cima, riscritta), e nessuna riga persa. Il codice
+  cambia per #190 (`IvaoAuthenticationExtensions.cs`, `AuthenticationTests.cs`, `Directory.Build.props`) e per un commento di `columns.ts`:
+  le suite di nuovo, qui sotto. Il branch si unisce senza conflitti con il `main` di oggi (4e21fbc): la PR ha la CI.
 - **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(a)** — una spec del modulo in `web/e2e/full/`, un documento pubblico, una
   nota che conta —; nessun meccanismo nuovo, nessuna scelta da chiedere. Il giro non ha trovato difetti del modulo da correggere.
 - **Fatto** (commit `1644f6c` la spec, `1e5f8bf` `FORKING.md`, `815905b` il rapporto, e quello di questi documenti):
@@ -3898,7 +3902,7 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
      quelle degli altri ancora in viaggio (l'oggetto nomina la postazione), e perché il percorso ATC resti libero per i giri dopo e per
      questo stesso su un banco sopravvissuto;
   4. **`FORKING.md` dice anche lo stato in cima**: «the only tag is still `v0.1.0-m0`» non era più vero;
-  5. **il rapporto misura sul codice di questo branch**, che porta ogni fase, non su `main`, dove tre fasi non sono ancora.
+  5. **il rapporto misura sul codice di questo branch**, che porta ogni fase, non su `main`, dove A12b non è ancora.
 - **Verificato** (30 settembre 2026, in locale, una suite alla volta, sul codice dei due commit, che il merge 3e5065f — solo documenti —
   non cambia):
   - il giro completo da solo, sul banco ricreato (127.0.0.1:5108, `ivaohub_e2e_a12d`) e sotto il lucchetto di Mailpit: **1/1** al primo
@@ -3912,9 +3916,17 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
     giro, sotto il lucchetto di 4173; **`pnpm e2e:full` 49/49** al primo giro (10,3 minuti), sul banco ricreato e sotto il lucchetto di
     Mailpit — il giro completo e, subito dopo, quello del report, che lui non disturba; nessun test saltato;
     le regole di `core-guard` in PowerShell sulla fase: nessun file del maintainer, nessuno del nucleo, la nota aggiunta, **PASS**.
-    Nessun file C# toccato: `dotnet format` non serve.
+    Nessun file C# toccato: `dotnet format` non serve;
+  - la CI della PR su 252919c: `core-guard` e **`build-test` verdi**, con lo smoke 157 e **`e2e:full` 49**, il giro completo compreso;
+  - **dopo il passo della coda di #187** (91af2e5, sul codice con #190), di nuovo una suite alla volta: `dotnet build` 0 avvisi; unità
+    **870/870**; **integrazione intera, senza filtro, 424/424** al primo giro (i 417 e i sette casi nuovi di #190 in `AuthenticationTests`);
+    lint, typecheck e format puliti, `i18n:check` 783, `pnpm test` **582/582**, `gen:api` senza differenze, le chiavi `training:` 387;
+    **`pnpm e2e` 157/157**; **`pnpm e2e:full`** al primo giro **47/49**, con il giro completo e quello del report verdi e due spec del
+    nucleo cadute — `contacts.spec.ts:115`, perché il timbro casuale del giro conteneva «new» («munewaq2») e `getByText('New')`, che non è
+    esatto, trovava anche l'oggetto del messaggio; `round.spec.ts:204`, scaduta a 30 secondi aspettando un titolo dell'anteprima —; rifatto
+    sul banco ricreato, **49/49**. `core-guard` sulla fase: PASS.
 - **Non verificato**:
-  - **la CI**: la PR la ha, e il «fatta quando» chiede il giro completo anche lì; la dice la PR;
+  - **la CI dopo il passo della coda di #187**: su 252919c era verde, con il giro completo; su questa testa la dice la PR;
   - **una cancellazione sul banco**: la prova del registro contato uguale è di A12b, in integrazione
     (`TrainingTraineeTests.AnErasedTraineeLeavesTheRegisterCountedTheSameWithoutTheirTextsAndABanInForce`); cancellare un personaggio del
     banco romperebbe gli altri giri;

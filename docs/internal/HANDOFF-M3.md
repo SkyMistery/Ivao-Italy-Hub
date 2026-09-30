@@ -131,6 +131,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Le mail di un giro si riconoscono dall'oggetto**, che nomina il training (percorso, rating, postazione): due giri sulla stessa
     postazione non distinguono le loro mail da quelle dell'altro ancora in viaggio. Il giro completo usa la seconda postazione per questo;
     un giro nuovo che guarda le mail ne scelga una che nessuno usa, o legga il testo.
+  - ⚠️ **Due spec del nucleo sono cadute una volta nel giro intero** (dopo il passo della coda di #187): `contacts.spec.ts:115`, quando il
+    timbro casuale del giro contiene «new» — `getByText('New')` non è esatto, e trova anche l'oggetto del messaggio —, e `round.spec.ts:204`,
+    scaduta sotto carico. Rifatto, 49/49. Sono file del nucleo: il primo è detto al revisore sulla #191. Si rifà il giro e si scrivono tutti
+    e due, come per `template.spec.ts` (A12b).
   - **M3 non ha una fase dopo in `08`.** A12c resta condizionata ai codici di PATS; che cosa resta aperto lo dice il rapporto, e i
     passi del piano li porta il master dopo l'unione.
   - Il banco di A12d: 127.0.0.1:**5108**, `ivaohub_e2e_a12d`. VID: nessuno nuovo (i personaggi del banco).
