@@ -4,13 +4,16 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status, 25 September 2026: M0, M1 and M2 are on `main`; the only tag is still `v0.1.0-m0`.**
+> **Status, 30 September 2026: M0, M1, M2 and M3 are on `main`.** Releases are tags `v<version>`,
+> each with its package on the GitHub release ([`DELIVERING.md`](DELIVERING.md)).
 > M0 is the foundations and the generic backbone: configuration, sign-in, permissions, the CRUD
 > engine, the generated back office screens, the module boundary. M1 is the public site around them:
 > pages from templates, navigation, news, documents, media, search, the calendar, contacts and
 > notifications. M2 is the first module, **the tours** (`flightops`): tours and their legs, the
 > pilots' reports against the network's tracker, automatic checks, validation, disputes and awards.
-> The training module (M3) is being written. Everything below holds for `main`.
+> M3 is the second, **the training** (`training`): a member's request for the next rating, the
+> trainers, the dates of the sessions, the reports, and the exams in the calendar. The events module
+> (M4) is being written. Everything below holds for `main`.
 
 ## Forking it, start to finish
 
@@ -328,6 +331,127 @@ report with a **personal token** (`/me/tokens`, audience `flightops.agent`) and 
 outcome. Nothing is needed on your server to allow it, and the hub works without one: those checks
 then show as "not available" and the validator judges them by eye. If somebody in your division wants
 to write one, [`docs/agent-contract.md`](agent-contract.md) is the whole contract, with `curl` examples.
+
+## The training module
+
+The training (`training`) is the second module, and every build has it too: a division that trains
+nobody simply receives no requests. It follows a member from a request to a report:
+
+- a member asks for the training of the rating after their own, as a controller or as a pilot — a
+  controller on one of the division's positions —, and the hub applies the rules by itself: one
+  request at a time on each path, the waiting after the last training, the connection hours, a ban;
+- the training department accepts or refuses the request, and assigns a trainer rated at least as
+  high as the rating trained;
+- the trainer proposes dates, warned of what the calendar already holds on those days; the trainee
+  chooses one, and the session enters the one calendar of the hub;
+- after the session the trainer reschedules it, marks a no-show, or fills in the evaluation sheet of
+  the rating and publishes the report, which the trainee reads without the notes the staff keeps for
+  itself; a report can mark the trainee ready for a mock exam, or for the exam;
+- the exams go into the calendar too, and every step writes to whoever it concerns.
+
+What a fork decides about it is, again, configuration and data.
+
+### Who manages it
+
+`division.json` gives the module its base department (`"modules": { "training": { "baseDepartment":
+"TD" } }`), and the positions of the training department are read like any other: `XX-TC` is its
+coordinator, `XX-TAC` the assistant, `XX-TA1` to `XX-TA9` its advisors, and `XX-T01` to `XX-T99` its
+trainers, who are members of the department. `positionGrants` in the example file gives them what the
+module expects:
+
+| Permission | What it allows | Coordinator, assistant | Advisors | Trainers |
+| --- | --- | --- | --- | --- |
+| `Training.View` | every training in the back office, the notes of the staff included | ✓ | ✓ | ✓ |
+| `Training.Approve` | accept or refuse a request, close a training | ✓ | ✓ | |
+| `Training.Assign` | choose the trainer, and change them | ✓ | | |
+| `Training.Conduct` | the dates, the session, the report | ✓ | ✓ | ✓ |
+| `Training.Edit` | everything, on every training | ✓ | | |
+| `Training.ManageSheets` | the evaluation sheets | ✓ | | |
+| `Training.ManageExams` | the exams in the calendar | ✓ | ✓ | |
+| `Training.Ban` | ban a member from asking for trainings, and lift the ban | ✓ | | |
+| `Training.ManageSettings` | the settings below | ✓ | | |
+
+`Training.Conduct` reaches **only the trainings assigned to whoever holds it**; on any other it counts
+as `Training.Edit`. So a trainer conducts their own trainings and nobody else's, and assigning or
+changing a trainer writes no grant and signs nobody out. Nobody approves, assigns or conducts their
+own training, nor bans themselves — the super administrator included. The trainers offered for a
+training are the staff of the training — the department and the direction — who have signed in to the
+hub at least once, with a rating on its path at least the one trained. Change the levels in the file,
+not in code.
+
+The last two grants of the example go to **the team of a FIR**: its chief and its assistant chief see
+and assign the trainings on the positions of their own FIR, and nothing else of the training, with the
+`firStaffScope: own` the example sets. A division whose FIRs have no such staff leaves the two out.
+
+### Its settings
+
+The department changes them from `/staff/training/settings`, and none of them assumes anything about
+your division:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `minimumHours` | none | the connection hours a request needs, per path and rating |
+| `cooldownDays` | 5 | days to wait after a training before the next on the same path, unless the trainer took the waiting away |
+| `noShowCooldownDays` | 14 | the same, after a session the trainee did not come to |
+| `maxResponseDays` | none | days a trainee has to choose a date before the training closes by itself; none means never |
+| `responseReminderDays` | 3 | days without a choice before the trainer's queue shows the training as waiting |
+| `conflictPolicy` | `Warn` | a proposed date that meets the calendar: warned and confirmed, refused (`Block`), or not checked (`None`) |
+| `conflictKinds` | `event` | the kinds of calendar entry a date is checked against |
+| `reminderLeadHours` | 24 | how long before a session its reminder leaves |
+| `hiddenPositions` | none | the positions of the division your department does not train on |
+| `theoryExamUrl` | none | where the theory exam is taken |
+
+**`theoryExamUrl`** is the one to set on day one. The network's API does not say whether a member has
+passed the theory exam of a rating, so the hub asks them: before a request is sent, the trainee answers
+whether they have. A "no" is recorded as a request the hub refused by itself, and nobody is written to;
+a "yes" goes to the department, and whoever approves the request is reminded to check it on the
+network. The address is the link beside that question and beside that reminder — empty, neither says
+where the exam is taken. It must be an absolute `http` or `https` address.
+
+### Ratings, positions and hours
+
+None of them is configuration. Which ratings the network has, in which order, which of them have a
+practical training and on which kind of position, are the network's rules: they live in the core's
+vocabulary of ratings (`Core/Ivao/`), and the module only asks it. A member's ratings and connection
+hours come from their IVAO profile, at every sign in. The positions a request offers are the
+division's positions of the snapshot above that train the rating, less `hiddenPositions`.
+
+### Pages, blocks and mails
+
+- **The pages**: `/training`, public, with the sessions and the exams to come — rating, position and
+  time, and nobody's name or VID until the reader signs in —; `/training/sessions/{id}`, where an entry
+  of the calendar points; `/training/request` and `/training/mine` for a member; `/staff/training` and
+  the pages under it for the department. The module reserves the first segment of an address,
+  `training`: no page of yours can be called that.
+- **Four Data blocks**, placed with the editor like any other: `training.upcomingSessions` on a public
+  page, `training.myTraining` on `/me`, `training.trainerQueue` and `training.approvalQueue` on
+  `/staff` or on the department's dashboard. The hub places none of them for you.
+- **The mails**, ten kinds, each of which a member can switch off from their profile: a request
+  received, accepted or refused; a trainer assigned; the dates proposed; a date fixed; the reminder
+  before a session; a report published; a training closed without one; a ban. They go through the
+  core's notifications, like every mail of the hub. The module has two jobs: the reminders, every
+  quarter of an hour, and, when `maxResponseDays` is set, the nightly closing of the trainings whose
+  trainee chose no date.
+
+### What it keeps
+
+The register stays: requests, states, sessions, sheets, reports and bans are the history of a member's
+path, and a department goes back to it years later. Only the dates a trainer proposed go, once a date is
+fixed or the training is closed. When the super administrator erases the data of a person, the trainings
+they finished stay in the register under a pseudonym and without the texts about them; the ones still
+open, and the exams where they are the candidate, are deleted; a ban still in force stays with their
+VID until it is over. What they did as staff — the trainings they conducted, their decisions — stays
+under the pseudonym, and a training still open that was assigned to them goes back among those to
+assign.
+
+### What it does not do
+
+- **Import the history of an earlier training system.** A division that has one starts from an empty
+  register.
+- **Give the trainers a calendar feed.** The hub has no iCal feed yet.
+- **Group trainings, GCAs and flight briefings.**
+- **The exam itself**, which is booked, held and graded on the network. The hub puts it in the calendar,
+  and keeps only the VIDs of the candidate and of the examiner.
 
 ## What a division never has to touch
 

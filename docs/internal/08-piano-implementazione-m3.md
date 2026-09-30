@@ -2203,6 +2203,8 @@ banco, la raddoppierebbero.
   4. **Scritto, non corretto**: un avviso porta sempre alla pagina dello staff dell'altro training, e chi conduce con il permesso su una
      riga sola (A7b) può non poterla aprire. Serve che il server dica se chi legge può aprirla; ⚠️ per A7b o una fase dopo.
 
+### A9 — Dopo la sessione
+
 Design §1.3, §1.4, §2.6, §2.7, §2.8; note `le-note-riservate-e-il-trainee`, `il-tempo-per-la-data-e-le-voci-della-scheda`. Branch
 `m3/a9-after-the-session`.
 
@@ -3880,4 +3882,92 @@ parte**:
 [m189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770
 [r189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851
 
-Le altre due PR (A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.
+**Com'è andata (A12d)** (30 settembre 2026, branch `m3/a12d-full-round`, PR #191 verso `main`, in coda dopo #189 fino alla sua unione) — **il giro
+completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a Carmine, nessun file del nucleo**:
+
+- **Il branch**: preparato dalla sessione di A12b con `--no-track` dalla cima della coda, `m3/a12b-training-erasure` a 71e04df (la fase
+  intera, con la parte decisa da Carmine sulla #189), con `main` a 2af5133. L'intervallo della fase è
+  `m3/a12b-training-erasure...m3/a12d-full-round`. **La coda l'ha raggiunto prima della PR**: il passo di #182 dopo #181, con `main` a
+  17941c0, è salito per A11b, A12a e A12b (4d91517, solo documenti) ed è entrato qui con un merge (3e5065f), senza conflitti e senza righe
+  perse. **Poi, con la PR aperta, il passo di #187 dopo #182** (#182 unita il 30 alle 00:03 UTC, #187 alle 00:48): `main` a 4e21fbc — #182,
+  #187 e #190 del maintainer (l'accesso dalla pagina d'errore, 0.4.2) — e il nit 1 della revisione di #187, dalla cima di A12b 4b5a6a9, con
+  un merge (91af2e5): un conflitto solo, l'intestazione dell'handoff (quella di A12d in cima, riscritta), e nessuna riga persa. Il codice
+  cambia per #190 (`IvaoAuthenticationExtensions.cs`, `AuthenticationTests.cs`, `Directory.Build.props`) e per un commento di `columns.ts`:
+  le suite di nuovo, qui sotto. **Infine #189 è unita** (il 30 alle 07:27 UTC), e il passo della coda di #191 ha portato `main` (a617767)
+  con un merge (028507d): un conflitto solo, l'intestazione dell'handoff, e nessuna riga persa; il codice cambia solo per due frasi italiane
+  del modulo (A12b, dd40214). La PR non è più in coda: l'intervallo `main...m3/a12d-full-round` mostra solo la fase (5 file).
+- **A12c, e il commento del master sulla #189** ([il commento][close189]): il master ha scritto che la coda di M3 è vuota e ha descritto A12d
+  come ancora da scrivere; A12d è la #191, e il passo della coda glielo dice sulla PR. Su A12c apre una strada — ricavare i codici dai dati
+  di PATS e scriverli in una nota «Proposta», una tabella codice → significato con quanto se ne è sicuri e nessun dato personale, su cui il
+  maintainer decide se A12c si fa —: **è una scelta di `dalberone`, non ancora presa**. A12d non apre A12c, e il rapporto dice che resta
+  fuori finché `dalberone` non decide.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(a)** — una spec del modulo in `web/e2e/full/`, un documento pubblico, una
+  nota che conta —; nessun meccanismo nuovo, nessuna scelta da chiedere. Il giro non ha trovato difetti del modulo da correggere.
+- **Fatto** (commit `1644f6c` la spec, `1e5f8bf` `FORKING.md`, `815905b` il rapporto, e quello di questi documenti):
+  - **il giro completo**, `web/e2e/full/training-the-full-round.spec.ts`: un training ATC del trainee del banco dalla richiesta al report,
+    per le pagine vere e ogni passo sulla pagina di chi lo fa, nessuno per l'API — la richiesta su una postazione con la domanda sul
+    teorico; lo staff che la trova fra quelle da approvare, la legge con il promemoria e con i testi del trainee, la accetta e la assegna
+    al trainer del banco; il trainer che propone due date; il trainee che sceglie la prima fra i riquadri, e la sessione nel calendario
+    pubblico senza nomi; a sessione cominciata, la scheda segnata e il report pubblicato; il trainee che lo legge senza le note dello
+    staff; lo staff che trova il training nello storico —, e **la mail di ogni passo, una volta sola, a chi è per** (otto mail di sei tipi:
+    quattro nessun giro le guardava). Pulisce all'inizio ciò che un giro fermato a metà ha lasciato aperto sul percorso ATC — una sessione
+    già cominciata la rischedula e poi la chiude, che non fa aspettare nessuno — e alla fine il suo training, se non è arrivato al report;
+    le voci della scheda le scrive per l'API e alla fine le spegne;
+  - **`docs/FORKING.md`**: la sezione «The training module» — che cosa fa; chi lo gestisce, con le posizioni del TD come l'hub le legge e
+    i `positionGrants` dell'esempio in una tabella, il team di un FIR compreso; le impostazioni con i predefiniti, e `theoryExamUrl` con
+    il perché; da dove vengono rating, postazioni e ore; pagine, blocchi, mail e job; che cosa tiene e che cosa porta via una
+    cancellazione; che cosa non fa — e lo stato in cima (M3 su `main`, le release sono tag con il loro pacchetto);
+  - **il rapporto di chiusura**, `decisions/2026-09-30-m3-review.md`, come quelli di M1 e M2: il conto contro il design, i **26 endpoint
+    scritti a mano** accanto a 4 risorse `MapCrud`, per famiglia e con la decisione di ognuno (0 CRUD a mano, 0 eccezioni dichiarate, 0
+    endpoint del nucleo), **l'eccezione della nota `le-note-riservate-e-il-trainee` contata** (una funzione, un chiamante, due endpoint,
+    tre campi, due test), le estensioni del nucleo, gli scostamenti, il volume, che cosa resta aperto e che cosa portare nel piano;
+  - **in questo piano**, l'intestazione `### A9 — Dopo la sessione`, persa in un commit di documenti del 29 settembre (09cfeeb, la
+    revisione di #151): il testo della fase c'era, il titolo no.
+- **Scostamenti dal piano e dal design**:
+  1. **le voci della scheda il giro le scrive per l'API**, non dalla loro schermata: comporre la scheda è il giro di A5, e la catena di §10
+     comincia dalla richiesta. Come nel giro del report;
+  2. **il giro guarda anche le mail di ogni passo e lo storico dello staff**, che §10 non nomina: sono il «fatto» di §0.1 («partono le mail
+     di ogni passaggio», «trainer e staff vedono lo storico»);
+  3. **la seconda postazione** offerta, e un report **senza attesa e senza mock exam**: perché le mail di questo giro si riconoscano da
+     quelle degli altri ancora in viaggio (l'oggetto nomina la postazione), e perché il percorso ATC resti libero per i giri dopo e per
+     questo stesso su un banco sopravvissuto;
+  4. **`FORKING.md` dice anche lo stato in cima**: «the only tag is still `v0.1.0-m0`» non era più vero;
+  5. **il rapporto misura sul codice di questo branch**, cioè `main` con questa fase.
+- **Verificato** (30 settembre 2026, in locale, una suite alla volta, sul codice dei due commit, che il merge 3e5065f — solo documenti —
+  non cambia):
+  - il giro completo da solo, sul banco ricreato (127.0.0.1:5108, `ivaohub_e2e_a12d`) e sotto il lucchetto di Mailpit: **1/1** al primo
+    giro, in 3,9 minuti (fino alla scelta della data pochi secondi, poi l'attesa della sessione e delle mail);
+  - **la prova che non passa comunque**: con la mail dell'accettazione tolta dal codice (`StaffTrainings.AcceptAsync`, mai in un commit),
+    sullo stesso banco, **il giro cade proprio lì** — «requestAccepted to bench-pilot@bench.test» — e tutto il resto passa, anche su un
+    banco sopravvissuto al primo giro. Rimesso il file e toccato perché la build lo ricompilasse;
+  - `dotnet build IvaoHub.sln` 0 avvisi; `IvaoHub.UnitTests.exe` **870/870**; **`IvaoHub.IntegrationTests.exe` intero, senza filtro,
+    417/417** al primo giro; `pnpm lint`, `typecheck`, `format:check` puliti; `pnpm i18n:check` **783** chiavi; `pnpm test` **582/582** in
+    78 file; `pnpm gen:api` senza differenze; le chiavi letterali `training:` **387**, nessuna mancante; **`pnpm e2e` 157/157** al primo
+    giro, sotto il lucchetto di 4173; **`pnpm e2e:full` 49/49** al primo giro (10,3 minuti), sul banco ricreato e sotto il lucchetto di
+    Mailpit — il giro completo e, subito dopo, quello del report, che lui non disturba; nessun test saltato;
+    le regole di `core-guard` in PowerShell sulla fase: nessun file del maintainer, nessuno del nucleo, la nota aggiunta, **PASS**.
+    Nessun file C# toccato: `dotnet format` non serve;
+  - la CI della PR su 252919c: `core-guard` e **`build-test` verdi**, con lo smoke 157 e **`e2e:full` 49**, il giro completo compreso;
+  - **dopo il passo della coda di #187** (91af2e5, sul codice con #190), di nuovo una suite alla volta: `dotnet build` 0 avvisi; unità
+    **870/870**; **integrazione intera, senza filtro, 424/424** al primo giro (i 417 e i sette casi nuovi di #190 in `AuthenticationTests`);
+    lint, typecheck e format puliti, `i18n:check` 783, `pnpm test` **582/582**, `gen:api` senza differenze, le chiavi `training:` 387;
+    **`pnpm e2e` 157/157**; **`pnpm e2e:full`** al primo giro **47/49**, con il giro completo e quello del report verdi e due spec del
+    nucleo cadute — `contacts.spec.ts:115`, perché il timbro casuale del giro conteneva «new» («munewaq2») e `getByText('New')`, che non è
+    esatto, trovava anche l'oggetto del messaggio; `round.spec.ts:204`, scaduta a 30 secondi aspettando un titolo dell'anteprima —; rifatto
+    sul banco ricreato, **49/49**. `core-guard` sulla fase: PASS;
+  - la CI della PR su b3fae45: `core-guard` e **`build-test` verdi**, con lo smoke 157 e **`e2e:full` 49**, il giro completo compreso;
+  - **dopo il passo della coda di #189** (028507d, `main` a a617767), di nuovo una suite alla volta: `dotnet build` 0 avvisi; unità
+    **870/870**; **integrazione intera, senza filtro, 424/424** al primo giro; lint, typecheck e format puliti, `i18n:check` 783,
+    `pnpm test` **582/582**, `gen:api` e `i18n:sync` senza differenze, le chiavi `training:` 387; **`pnpm e2e` 157/157**; **`pnpm e2e:full`
+    49/49** al primo giro (10,0 minuti), sul banco ricreato. `core-guard` sulla fase: PASS.
+- **Non verificato**:
+  - **la CI dopo il passo della coda di #189**: su 252919c e su b3fae45 era verde, con il giro completo; su questa testa la dice la PR;
+  - **una cancellazione sul banco**: la prova del registro contato uguale è di A12b, in integrazione
+    (`TrainingTraineeTests.AnErasedTraineeLeavesTheRegisterCountedTheSameWithoutTheirTextsAndABanInForce`); cancellare un personaggio del
+    banco romperebbe gli altri giri;
+  - **il promemoria nel giro**: il job gira ogni quarto d'ora, cinque minuti dopo, e il banco non lo fa partire a comando (A8a, «Trovato»
+    n.4).
+
+[close189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250
+
+A12c, se si farà, scriverà qui il suo «Com'è andata».
