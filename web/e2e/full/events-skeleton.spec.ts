@@ -13,7 +13,8 @@ import { benchUrl, readInEnglish, whileWaitingFor } from './bench';
  * are saved and read back after a reload. The coordinator holds only what `division.json` gives the events department,
  * through the grants of the position — the web master of the bench reaches every department and would pass with any.
  *
- * The settings are put back as they were in a `finally`: the bench survives between runs.
+ * The settings are put back as they were in a `finally`, and a preset of this spec that an interrupted run left behind is taken
+ * out at the start: the bench survives between runs.
  */
 
 const events = englishEvents();
@@ -36,7 +37,15 @@ test('the coordinator of the events finds the section, and saves a preset and a 
 
   const before = await context.request.get(settingsUrl);
   expect(before.status(), await before.text()).toBe(200);
-  const saved = (await before.json()) as Settings;
+  const found = (await before.json()) as Settings;
+
+  // A run stopped before its `finally` leaves its preset behind: taken out first, or the one added below would be a second one,
+  // which the server refuses. What is put back at the end is the bench without it.
+  const saved = { ...found, kindPresets: found.kindPresets.filter((preset) => preset.kind !== 'rfe') };
+  if (saved.kindPresets.length !== found.kindPresets.length) {
+    const cleaned = await context.request.put(settingsUrl, { headers: asTheClientDoes, data: saved });
+    expect(cleaned.status(), await cleaned.text()).toBe(200);
+  }
 
   // The new preset goes after the ones a bench may already hold.
   const row = saved.kindPresets.length;

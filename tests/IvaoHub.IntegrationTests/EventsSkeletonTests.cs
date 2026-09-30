@@ -57,7 +57,30 @@ public sealed class EventsSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await GrantAsync(ViewerVid, EventsPermissions.View, token);
     }
 
-    public ValueTask DisposeAsync() => _factory.DisposeAsync();
+    /// <summary>
+    /// What the class seeded is taken back — the grants to its VIDs and the positions it gave them —, so that no class after it
+    /// finds a staff of the events department it did not seed. The members themselves stay, as every class leaves its own: the hub
+    /// never deletes a member by hand, their erasure is the core's.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        int[] vids = [CoordinatorVid, AssistantVid, AdvisorVid, ManagerVid, ViewerVid];
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+            database.UserGrants.RemoveRange(await database.UserGrants
+                .Where(grant => grant.Reason == GrantReason && grant.Vid.HasValue && vids.Contains(grant.Vid.Value))
+                .ToListAsync());
+            database.UserStaffPositions.RemoveRange(await database.UserStaffPositions
+                .Where(position => vids.Contains(position.Vid))
+                .ToListAsync());
+            await database.SaveChangesAsync();
+        }
+
+        await _factory.DisposeAsync();
+    }
 
     [Fact]
     public async Task TheGrantsOfTheEventsDepartmentArriveOnceAndReachItsPeople()

@@ -88,10 +88,11 @@ public sealed partial class EventsArchitectureTests
         };
 
         // ⚠️ Whoever collaborates — the ATC operations the ATC, the flight operations the routes, the membership the reports of
-        // support, at every level and on every event (§6.2, §17.2 n.2) — waits for the answer to the note
-        // 2026-09-30-i-grant-di-chi-collabora-sugli-eventi (E2): a grant held on the events department puts a position of another
-        // department inside it, for everything it sees, which is more than its part. A grant of the seed is applied once and
-        // never taken back by the file, so none of these goes in before the answer; then they move into the table above.
+        // support, at every level and on every event (§6.2, §17.2 n.2) — waits for the core phase E2b (note
+        // 2026-09-30-i-grant-di-chi-collabora-sugli-eventi, answer (b) of the maintainer on #209): until then a grant held on the
+        // events department puts a position of another department inside it, for everything it sees, which is more than its part.
+        // A grant of the seed is applied once and never taken back by the file, so none of these goes in before E2b; then they
+        // move into the table above.
         (string Subject, string Permission)[] waiting =
         [
             (nameof(Department.AOD), EventsPermissions.View),
