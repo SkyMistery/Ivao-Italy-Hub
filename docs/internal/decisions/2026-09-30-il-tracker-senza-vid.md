@@ -5,12 +5,18 @@
 decisa da Carmine sulla #180 ([conferma di §17.1 e §17.2][ok]; nota `2026-09-29-dopo-l-evento-e-gli-award` §2.1), con quello che
 E0 ha trovato in più (`10-piano-implementazione-m4.md`, E0, «Trovato», punto 6: il tipo di connessione e le pagine oltre 200).
 Nessuna domanda nuova per Carmine. **Una misura cambia il client di IVAO per tutti**: un tentativo aspetta 20 secondi invece di 10
-(§3.4), perché con 10 una ricerca per aeroporto non riuscirebbe mai.
+(§3.4), perché con 10 una ricerca per aeroporto non riuscirebbe mai. Il revisore ha portato a Carmine le due cose che toccano ogni
+chiamata a IVAO — i 20 secondi per tentativo (campionamento a 40, totale 30) e `null` invece di un'eccezione per la ricerca dei
+tour —, e **Carmine ha risposto sì a tutte e due** (30 settembre 2026, in chat al master, che l'ha pubblicato sulla PR su sua
+istruzione: [risposta][ok210]). Dopo la revisione ([osservazioni][r210]) le fixture stanno su una data inventata e il `Limit` ha un
+tetto nel nucleo (§6).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende l'unico client di IVAO — `IIvaoApiClient`, `IvaoApiClient`,
 `FixtureIvaoApiClient` — e il suo lettore unico, `IvaoTrackerReader`; il modulo degli eventi non parla con IVAO (`CLAUDE.md` §3). È
 una PR del nucleo, prima di E13a che la usa (`CLAUDE.md` §0 regola 6).
 
 [ok]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/180#issuecomment-5880522987
+[ok210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792
+[r210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917019730
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -81,12 +87,15 @@ chiuse.
   prima, `new IvaoSessionQuery(vid, from, to, …)`: nessuna riga del modulo dei tour cambia.
 - **Il tipo di connessione** è `IvaoConnectionType` — `Pilot`, `Atc`, `Observer`, `FollowMe`, le quattro parole del tracker —,
   scritto e letto con le parole di IVAO in un posto solo, il lettore.
-- **`Limit`**, dichiarato da chi chiama (`init`, almeno 1; predefinito **200**, il tetto di oggi, per un pilota che sceglie il suo
-  volo): quante sessioni al più si leggono, dalla più recente. Il job di E13a dichiara il suo: quello che un giro può portare.
+- **`Limit`**, dichiarato da chi chiama (`init`, da 1 a **`MaxLimit` = 1000**; predefinito **200**, il tetto di prima, per un
+  pilota che sceglie il suo volo): quante sessioni al più si leggono, dalla più recente. Il job di E13a dichiara il suo: quello che
+  un giro può portare. **Il tetto lo tiene il nucleo** (dopo la revisione, §6): dieci pagine, una quindicina di secondi di IVAO; la
+  finestra più grande che leggono gli eventi — le partenze o gli arrivi di un aeroporto nella finestra di un evento — ne ha qualche
+  centinaio (EDDF in una settimana intera: 305 partenze; Roma nel design: 441 prenotazioni in tutto).
 - **`PageSize` è 100** (§2 punto 2), e una pagina chiede `min(100, Limit)` righe (`PerPage`): un limite di cinque non scarica cento
   righe.
-- **Una domanda senza VID né aeroporto resta permessa**: IVAO la accetta, il limite la tiene piccola, e nessuno la usa. Niente da
-  vietare.
+- **Una domanda senza VID né aeroporto resta permessa**: IVAO la accetta, il limite con il suo tetto la tiene piccola (al più mille
+  sessioni, e le pagine prima dell'ultima sono veloci), e nessuno la usa. Niente da vietare.
 
 ### 3.2 La risposta — `SearchSessionsAsync`, la stessa
 
@@ -101,7 +110,7 @@ chiuse.
   prima usciva un'eccezione (§2 punto 12). Ora le pagine passano da `ReadOrNothingAsync`, come le postazioni ATC (A2 di M3): «non
   abbiamo potuto guardare» non è «non c'è». ⚠️ **Per i tour** vuol dire che, se IVAO non risponde affatto, la pagina del pilota dice
   «tracker non disponibile» (`flightops:errors.trackerUnavailable`, quello che già dice per una risposta rifiutata) invece di un
-  errore 500.
+  errore 500. **Confermato da Carmine** ([risposta][ok210]).
 - **`IvaoTrackerSessionDto.ConnectionType`**, una proprietà `init` sotto il costruttore, come le quattro di `IvaoAirportDto` (T1): i
   test che costruiscono il DTO a mano non cambiano, e lì vale `null`. ⚠️ **Gli aeroporti del DTO restano quelli della prima
   revisione**: una sessione trovata per la sua partenza da un aeroporto può dirne un altro (la sessione LIPZ→LIRF poi LIRF→LICR,
@@ -125,7 +134,7 @@ chiuse.
 - Il gestore standard del client dei dati aspetta **20 secondi per tentativo**, più dei 15 del gateway di IVAO: torna la risposta
   di IVAO — la pagina, o il suo 504 —, mai un taglio dell'hub. **Il totale resta 30 secondi**: una chiamata che non risponde costa
   quanto prima (un tentativo e l'inizio di un secondo, invece di due e l'inizio di un terzo). Per le chiamate veloci non cambia
-  niente.
+  niente. **Confermato da Carmine**, con il campionamento a 40 ([risposta][ok210]).
 - Il campionamento dell'interruttore passa da 30 a **40 secondi**: è la regola del gestore stesso (almeno il doppio di un
   tentativo), che altrimenti rifiuta le opzioni al primo uso — provato: con 30 la lettura delle opzioni lancia
   `OptionsValidationException`.
@@ -144,9 +153,14 @@ chiuse.
   (come lì); **ogni membro una VID** del campo che si dà allo script (i test contano persone, e chi si collega due volte resta uno),
   nell'ordine in cui compare — con più membri che VID lo script non scrive niente; il callsign di un pilota diventa `TST` e il numero
   del membro; **gli identificativi delle sessioni e dei piani sono rinumerati** (da 1000001 e da 2000001), perché è all'identificativo
-  di una sessione che IVAO risponde con il nome. Il callsign di un controllore resta: nomina una postazione. Prima di scrivere, lo
-  script controlla che nel testo non restino una VID vera né un nome.
-- **Registrato**: LIRF, 28 settembre 2026, 16:00–17:59:59 UTC, come VID 761020–761028 (a E10a erano date le 761020–761029): 4
+  di una sessione che IVAO risponde con il nome; **via `rating`, `serverId` e `software*`**; e **tutta la sera va sul 1° gennaio
+  2001**, ogni istante con lo stesso scarto, così restano le ore e i rapporti fra le sessioni e se ne va la data, che con l'aeroporto
+  ritroverebbe le sessioni vere (dopo la revisione, §6; lo stesso giorno delle prenotazioni di E15a, #207). Il tracker non ha nessuna
+  sessione nel 2001 (misurato il 1° ottobre 2026: tutta la rete, tutto l'anno, 0). Il callsign di un controllore resta: nomina una
+  postazione. Prima di scrivere, lo script controlla che nel testo non restino una VID vera, un nome, uno dei campi tolti né un
+  giorno vero.
+- **Registrato**: LIRF, una sera fra le 16:00 e le 17:59:59 UTC (il 30 settembre 2026, e di nuovo il 1° ottobre con lo script
+  corretto, dalla stessa finestra), spostata sul 1° gennaio 2001, come VID 761020–761028 (a E10a erano date le 761020–761029): 4
   partenze, 6 arrivi, la torre; 10 sessioni di 9 membri — uno collegato due volte, un volo di 38 secondi, e la sessione LIPZ→LIRF
   poi LIRF→LICR, partenza e arrivo di LIRF insieme. La finestra è scelta perché ci stiano nove persone e questi casi.
 - Il tentativo ripetuto che lo script faceva per le postazioni (`getWorld`) serve anche qui, per la pagina lenta: diventa uno solo,
@@ -173,7 +187,9 @@ chiuse.
 | Leggere a parte la coda lenta (pagine più piccole, o la finestra ristretta sull'ultima riga) | misurato: è lenta la pagina che contiene l'ultima riga, di qualunque misura sia; non si evita |
 | Il tempo più lungo solo per le pagine del tracker (un generatore di timeout che guarda la richiesta) | più macchinoso, e senza guadagno: alle chiamate veloci 20 s non cambiano niente, e il caso peggiore resta 30 s |
 | Anche il totale più lungo, perché dopo un 504 stia un secondo tentativo intero | una chiamata che non risponde costerebbe di più a chi aspetta una pagina; un 504 lo riprova il giro dopo del job |
-| Rifiutare una domanda senza VID né aeroporto | il limite la tiene piccola, IVAO la accetta, e nessuno la usa |
+| Rifiutare una domanda senza VID né aeroporto | il limite con il suo tetto la tiene piccola, IVAO la accetta, e nessuno la usa |
+| Un limite senza tetto, come nella prima stesura | un chiamante poteva far leggere a IVAO la rete pagina dopo pagina: il tetto lo tiene il nucleo (revisione, §6) |
+| Le fixture sul giorno vero, con `rating`, `serverId` e il software | con l'aeroporto e l'ora, la data ritrova le sessioni vere su IVAO, e con loro VID e nome (revisione, §6) |
 | Tutte le persone di una registrazione in una VID sola, come `--list` dei tour | «chi ha volato senza prenotare» conta persone |
 | Tenere callsign e identificativi veri, come le fixture dei tour | sono sconosciuti, e l'identificativo di una sessione riporta al nome, su IVAO |
 | Le pagine per i test tagliate dal file dell'aeroporto | la forma della pagina (`pages: 0`, la pagina dopo l'ultima) si prova su pagine vere, come ogni forma di IVAO in queste fixture |
@@ -196,14 +212,28 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
   d'integrazione e di unità, restano com'erano.
 - **Nessuna riga** del modulo dei tour né di un altro modulo.
 
+## 6. Dopo la revisione (#210)
+
+Le [osservazioni del revisore][r210] (30 settembre 2026) chiedevano due correzioni, fatte il 1° ottobre:
+
+1. **I dati personali nelle fixture**: la data vera, al secondo, con l'aeroporto, ritrovava su IVAO le sessioni vere, e con loro VID
+   e nome. Ora tutta la sera sta sul 1° gennaio 2001 con uno scarto fisso, e `rating`, `serverId` e `software*` non ci sono più; il
+   controllo finale dello script li cerca, con i giorni veri (§3.5). Registrata di nuovo dalla stessa finestra: stesse sessioni, stesse
+   VID, stessi identificativi. Un test di unità controlla la data e i campi nel file.
+2. **Un tetto sul `Limit`**: `MaxLimit` = 1000, tenuto dal nucleo nell'`init` (§3.1), con il suo test.
+
+E le due cose che il revisore ha chiesto a Carmine — i 20 secondi per tentativo e `null` per la ricerca dei tour — hanno avuto il
+suo sì ([risposta][ok210]).
+
 ## Da portare nel piano
 
 - **§10, riga «Eventi (M4b)»**: nella colonna *Auth*, il token dell'applicazione (`client_credentials`) basta, misurato il 30
   settembre 2026 (E10a); la forma nel codice è `IvaoSessionQuery` con il VID facoltativo, `ConnectionType` e il `Limit` di chi
-  chiama; **la pagina con l'ultima riga di una domanda per aeroporto costa a IVAO ~10,5 s**, e le domande lente in parallelo ricevono
-  504 dal gateway (15 s): una alla volta.
+  chiama, **al più 1000** (il tetto lo tiene il nucleo); **la pagina con l'ultima riga di una domanda per aeroporto costa a IVAO
+  ~10,5 s**, e le domande lente in parallelo ricevono 504 dal gateway (15 s): una alla volta. Le fixture del tracker senza VID stanno
+  su un giorno inventato, il 1° gennaio 2001, senza rating, server e software.
 - **§10, riga «Tour (M2): il volo del PIREP»**: pagine da 100, non più 50; un IVAO che non risponde è «tracker non disponibile», non
   un errore.
 - **§10, il paragrafo sotto la tabella** (`IvaoApiClient` con il circuit breaker): un tentativo aspetta 20 secondi, più del gateway
-  di IVAO; il totale resta 30.
+  di IVAO, e l'interruttore campiona su 40; il totale resta 30 (Carmine, [risposta][ok210]).
 - `09-design-m4.md` §9.1 («Da misurare nella fase del nucleo»): misurato qui. Il design non si tocca; la misura vale da questa nota.
