@@ -1,6 +1,10 @@
 {
   "kinds": [
     { "key": "event", "label": { "$t": "seed.calendarKinds.event" }, "colour": "blue", "sort": 10 },
+    { "key": "rfe", "label": { "$t": "seed.calendarKinds.rfe" }, "colour": "blue", "sort": 11 },
+    { "key": "rfo", "label": { "$t": "seed.calendarKinds.rfo" }, "colour": "blue", "sort": 12 },
+    { "key": "mse", "label": { "$t": "seed.calendarKinds.mse" }, "colour": "blue", "sort": 13 },
+    { "key": "online-day", "label": { "$t": "seed.calendarKinds.onlineDay" }, "colour": "blue", "sort": 14 },
     { "key": "training", "label": { "$t": "seed.calendarKinds.training" }, "colour": "green", "sort": 20 },
     { "key": "exam", "label": { "$t": "seed.calendarKinds.exam" }, "colour": "red", "sort": 25 },
     { "key": "tour", "label": { "$t": "seed.calendarKinds.tour" }, "colour": "purple", "sort": 30 },
