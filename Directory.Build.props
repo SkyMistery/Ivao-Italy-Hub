@@ -58,7 +58,7 @@
       Its shape is kept by a test (`BuildInfoTests`): three numbers separated by dots, no "v" in front,
       no suffix.
     -->
-    <Version>0.4.3</Version>
+    <Version>0.5.0</Version>
     <!-- The default, written out because `BuildInfo` depends on it: without it the commit is gone. -->
     <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
