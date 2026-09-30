@@ -38,7 +38,9 @@ should not start and behave like somebody else's.
 
 1. **`config/division.json`.** `code` and `countryId` are yours, `locales` is the languages you
    publish in, `defaultLocale` is the one a reader gets when theirs is not among them, `timezone`
-   decides when the nightly jobs run, `icaoPrefixes` is validated at start up so a typo is not
+   decides when the nightly jobs run, `awardDigestTime` (07:00 when left out) is when, in that
+   time zone, whoever may assign the awards gets the day's mail about the new signals of the award
+   queue, `icaoPrefixes` is validated at start up so a typo is not
    silent, and **`superAdmins` must be your own VIDs** — see the warning further down. Naming an
    optional module you do not have is a warning at every start rather than an error, so you can keep
    the key for a module you have not merged yet.

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace IvaoHub.Core.Division;
 
@@ -98,6 +99,26 @@ public sealed record DivisionOptions
     /// this file is for, and a fork writes its own without a screen or a table.</para>
     /// </summary>
     public Dictionary<string, string> DepartmentMailboxes { get; init; } = [];
+
+    /// <summary>The time the mail to whoever assigns the awards goes out when the division says nothing.</summary>
+    public const string DefaultAwardDigestTime = "07:00";
+
+    /// <summary>
+    /// When, every day, whoever assigns the awards is told about the signals that entered the queue since the last mail: a
+    /// time of day in <see cref="Timezone"/>, written <c>HH:mm</c>, and <c>07:00</c> when left out — the morning of the people
+    /// who read it. A day with no new signal sends nothing (M4, E10d, note 2026-09-30-la-mail-a-chi-assegna-gli-award:
+    /// Carmine wanted it a setting of the division, not a schedule written in the code).
+    /// </summary>
+    public string AwardDigestTime { get; init; } = DefaultAwardDigestTime;
+
+    /// <summary>
+    /// <see cref="AwardDigestTime"/> as a time of day. The validator refuses one that is not <c>HH:mm</c> at start up; the
+    /// default is only so that a schedule can never be the thing that stops the site, as with the time zone.
+    /// </summary>
+    public TimeOnly ResolveAwardDigestTime() =>
+        TimeOnly.TryParseExact(AwardDigestTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time)
+            ? time
+            : TimeOnly.ParseExact(DefaultAwardDigestTime, "HH:mm", CultureInfo.InvariantCulture);
 
     /// <summary>
     /// The kinds of content a department marks ready and somebody with <c>Content.Approve</c>

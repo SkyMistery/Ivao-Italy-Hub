@@ -4,7 +4,7 @@ namespace IvaoHub.Core.Notifications;
 /// The kinds of notification of the core. A type is three things at once, and that is deliberate:
 /// the root of the template keys in <c>mail.json</c>, the preference a member switches off, and the
 /// label the profile screen shows — one value, so the three cannot drift.
-/// <para>M1 had five; M2 adds the two of the threads. Another one of the core is a line here, a pair of keys in every language file
+/// <para>M1 had five; M2 adds the two of the threads, M4 the one of the award queue. Another one of the core is a line here, a pair of keys in every language file
 /// and nothing else: that is the whole reason the preferences are a table and not a column. A
 /// module's types are the module's (<c>IModule.NotificationTypes</c>), and every type the
 /// installation knows is <see cref="NotificationTypeCatalog"/>.</para>
@@ -44,9 +44,16 @@ public static class NotificationTypes
     /// <summary>A page the reader marked ready has been sent back, with a note. Its audience is that person.</summary>
     public const string ContentSentBack = "content.sentBack";
 
+    /// <summary>
+    /// New signals have entered the award queue (M4, E10d, note 2026-09-30-la-mail-a-chi-assegna-gli-award), whichever module
+    /// wrote them. Its audience is whoever holds <c>Awards.Assign</c>, told once about each signal: <c>AwardQueueMailJob</c>
+    /// writes when it told them.
+    /// </summary>
+    public const string AwardToAssign = "award.toAssign";
+
     /// <summary>The core's, in the order the profile screen lists them, before the modules'.</summary>
     public static readonly IReadOnlyList<string> All =
-        [ContactReceived, ContactThreadOpened, ContactThreadReplied, DocumentReviewDue, ContentReadyForApproval, ContentApproved, ContentSentBack];
+        [ContactReceived, ContactThreadOpened, ContactThreadReplied, DocumentReviewDue, ContentReadyForApproval, ContentApproved, ContentSentBack, AwardToAssign];
 
     /// <summary>The key of the subject line of a type, in <c>locales/{lang}/mail.json</c>.</summary>
     public static string SubjectKey(string type) => $"mail.{type}.subject";
