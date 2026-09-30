@@ -1042,8 +1042,8 @@ function ProposeDates({ training, timezone }: { training: StaffTrainingDto; time
 
 /**
  * The date set by hand (§2.5, d2), by whoever conducts the training: when the session starts, among the dates proposed or not —
- * gone by too, for a session held earlier than planned —, with what it meets asked first. The dates proposed go, and the trainee
- * and the trainer are written to.
+ * still to come: nobody dates a training in the past (#149) —, with what it meets asked first. The dates proposed go, and
+ * the trainee and the trainer are written to.
  */
 function SetDate({ training, timezone }: { training: StaffTrainingDto; timezone: string }) {
   const { t, i18n } = useTranslation();

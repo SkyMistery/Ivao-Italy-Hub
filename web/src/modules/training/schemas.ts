@@ -377,8 +377,8 @@ export function proposalFromFormValues(values: ProposalValues): TrainingSlotWrit
 }
 
 /**
- * The date set by hand (§2.5, d2): when the session starts — among the dates proposed or not, and gone by too, for a session
- * held earlier than planned. Like the proposal, the version is the page's.
+ * The date set by hand (§2.5, d2): when the session starts — among the dates proposed or not, and still to come: nobody dates a
+ * training in the past (#149). Like the proposal, the version is the page's.
  */
 export const dateSchema = z.object({
   startsAtUtc: z.string().optional().meta({ datetime: true }),
