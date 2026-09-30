@@ -15,6 +15,7 @@ using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Quartz;
 using Xunit;
 
@@ -156,6 +157,22 @@ public sealed class AwardQueueMailTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // Once: a second run finds nothing new, and writes nothing.
         Assert.Equal(0, await RunAsync(token));
         Assert.Single(await ToldAsync(AssignerVid, since, token), row => row.DataJson.Contains(marker, StringComparison.Ordinal));
+    }
+
+    /// <summary>The host's own schedule: the division's hour (<c>awardDigestTime</c>), in the division's time zone.</summary>
+    [Fact]
+    public async Task TheHostSendsItAtTheHourOfTheDivisionInItsTimeZone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var division = _factory.Services.GetRequiredService<IOptions<DivisionOptions>>().Value;
+
+        var scheduler = await _factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(token);
+        var trigger = Assert.IsAssignableFrom<ICronTrigger>(
+            await scheduler.GetTrigger(new TriggerKey(AwardServiceCollectionExtensions.TriggerName), token));
+
+        Assert.Equal(AwardQueueMailJob.CronAt(division.ResolveAwardDigestTime()), trigger.CronExpressionString);
+        Assert.Equal(division.ResolveTimeZone().Id, trigger.TimeZone.Id);
+        Assert.Equal(AwardQueueMailJob.JobName, trigger.JobKey.Name);
     }
 
     // ---- helpers ---------------------------------------------------------------------------------
