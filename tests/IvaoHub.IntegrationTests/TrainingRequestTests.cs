@@ -408,6 +408,30 @@ public sealed class TrainingRequestTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task TheWordsUnderTheSiteOfTheExamWrittenInNoLanguageAreNone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var trainee = await SignedInAsync(OtherVid, token);
+
+        // Blank in every language, as the API can save them — the form sends none —: the trainee's page has no words to draw (A13,
+        // review of #196), and the site stays.
+        await WriteSettingsAsync(
+            new { theoryExamUrl = "https://trn-test.example.invalid/theory", theoryExamHint = new { it = "  ", en = string.Empty } },
+            token);
+
+        try
+        {
+            var page = await trainee.GetFromJsonAsync<JsonElement>(Mine, token);
+            Assert.Equal("https://trn-test.example.invalid/theory", page.GetProperty("theoryExamUrl").GetString());
+            Assert.Empty(page.GetProperty("theoryExamHint").EnumerateObject());
+        }
+        finally
+        {
+            await ForgetSettingsAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task TheDatabaseKeepsOneOpenTrainingPerTraineeAndLadder()
     {
         var token = TestContext.Current.CancellationToken;

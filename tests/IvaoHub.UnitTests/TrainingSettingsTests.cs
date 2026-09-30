@@ -112,13 +112,31 @@ public sealed class TrainingSettingsTests
     [Fact]
     public void TheWordsUnderTheLinkToTheExamAreASentenceOrTwoInEachLanguage()
     {
+        const string Site = "https://exam.example.org/theory";
         var bound = new string('x', TrainingSettingsValidator.MaxHintLength);
-        Assert.True(Validator.Validate(new TrainingSettings { TheoryExamHint = bound.L(bound) }).IsValid);
+        Assert.True(Validator.Validate(new TrainingSettings { TheoryExamUrl = Site, TheoryExamHint = bound.L(bound) }).IsValid);
 
         // One language too long is enough; that each language of the division is written is the save's rule, which knows them.
         Assert.Equal(
             [("theoryExamHint", "errors.text.tooLong")],
-            Failures(Validator.Validate(new TrainingSettings { TheoryExamHint = "ok".L(bound + "x") })));
+            Failures(Validator.Validate(new TrainingSettings { TheoryExamUrl = Site, TheoryExamHint = "ok".L(bound + "x") })));
+    }
+
+    [Fact]
+    public void TheWordsUnderTheLinkToTheExamAskForTheSiteTheyAreReadUnder()
+    {
+        // Written without a site, they would be read nowhere (review of #196): refused on their own field.
+        Assert.Equal(
+            [("theoryExamHint", "training:errors.theoryExamHintWithoutUrl")],
+            Failures(Validator.Validate(new TrainingSettings { TheoryExamHint = "Clicca «Prenota».".L("Click «Book».") })));
+
+        // Blank in every language they are no words at all, and ask for nothing; with the site they are fine.
+        Assert.True(Validator.Validate(new TrainingSettings { TheoryExamHint = " ".L(string.Empty) }).IsValid);
+        Assert.True(Validator.Validate(new TrainingSettings
+        {
+            TheoryExamUrl = "https://exam.example.org/theory",
+            TheoryExamHint = "Clicca «Prenota».".L("Click «Book»."),
+        }).IsValid);
     }
 
     [Fact]

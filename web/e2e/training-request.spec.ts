@@ -493,3 +493,33 @@ test('the trainee reads their ladders and their trainings, and cancels a request
   expect(sent).toEqual([{ id: '41', body: { rowVersion: open.rowVersion } }]);
   await expect(page.getByRole('button', { name: words.mine.cancel, exact: true })).toHaveCount(0);
 });
+
+test('the page of a request the hub refused for the theory has the site of the exam and what to do there', async ({
+  page,
+}) => {
+  const declined = training(40, 'Rejected', {
+    rejection: 'TheoryNotPassed',
+    decidedAt: '2026-09-20T10:00:00Z',
+  });
+  const refused = training(39, 'Rejected', {
+    rejection: 'Staff',
+    rejectionReason: 'Not enough hours yet.',
+    decidedAt: '2026-09-20T10:00:00Z',
+  });
+
+  await stubTheTrainee(page, { answer: () => mine([atc, pilot], [declined, refused]) });
+  await page.route('**/api/training/mine/40', (route) => route.fulfill(json(declined)));
+  await page.route('**/api/training/mine/39', (route) => route.fulfill(json(refused)));
+
+  // The hub's own refusal, on its page (A13; review of #196): the site of the exam, and what to do there in the reader's language.
+  await page.goto('/training/mine/40');
+  await expect(page.getByText(words.mine.theoryRefusal)).toBeVisible();
+  await expect(page.getByRole('link', { name: words.theoryExam })).toHaveAttribute('href', EXAM);
+  await expect(page.getByText(HINT.en, { exact: true })).toBeVisible();
+
+  // A refusal of the staff is not about the theory: its page has neither.
+  await page.goto('/training/mine/39');
+  await expect(page.getByText('Not enough hours yet.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('link', { name: words.theoryExam })).toHaveCount(0);
+  await expect(page.getByText(HINT.en, { exact: true })).toHaveCount(0);
+});

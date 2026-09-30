@@ -147,6 +147,11 @@ public sealed class TrainingSettingsValidator : AbstractValidator<TrainingSettin
         RuleFor(settings => settings.TheoryExamHint)
             .Must(hint => hint is null || hint.Values.All(text => text is null || text.Length <= MaxHintLength))
             .WithMessage("errors.text.tooLong");
+
+        // The words are read under the link to the site, and without a site there is no link to read them under (review of #196).
+        RuleFor(settings => settings.TheoryExamHint)
+            .Must((settings, hint) => !TrainingSettings.IsWritten(hint) || settings.TheoryExamUrl is not null)
+            .WithMessage("training:errors.theoryExamHintWithoutUrl");
     }
 }
 

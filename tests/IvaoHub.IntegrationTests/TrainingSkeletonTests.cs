@@ -203,6 +203,16 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
                 Assert.Empty((await manager.GetFromJsonAsync<JsonElement>(SettingsUri, token)).GetProperty("theoryExamHint").EnumerateObject());
             }
 
+            // Words written without the site they are read under would be read nowhere (review of #196): refused on their field.
+            var orphan = Settings(reread);
+            orphan["theoryExamUrl"] = JsonSerializer.SerializeToElement<object?>(null);
+            using (var refused = await manager.PutAsJsonAsync(SettingsUri, orphan, token))
+            {
+                Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+                var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+                Assert.Equal(["training:errors.theoryExamHintWithoutUrl"], errors.GetProperty("theoryExamHint").EnumerateArray().Select(key => key.GetString()));
+            }
+
             // Viewing the trainings is not managing them.
             using (var read = await viewer.GetAsync(SettingsUri, token))
             {
