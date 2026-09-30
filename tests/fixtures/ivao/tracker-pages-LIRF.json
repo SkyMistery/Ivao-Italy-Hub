@@ -1,0 +1,163 @@
+{
+  "asked": "departureId=LIRF&from=2026-09-28T16:00:00.000Z&to=2026-09-28T17:59:59.000Z&perPage=2",
+  "pages": [
+    {
+      "items": [
+        {
+          "time": 4312,
+          "createdAt": "2026-09-28T17:27:44.000Z",
+          "updatedAt": "2026-09-28T18:39:36.000Z",
+          "id": 1000010,
+          "userId": 761020,
+          "callsign": "TST001",
+          "rating": 5,
+          "serverId": "WS1-EUW2",
+          "softwareTypeId": "altitude/win",
+          "softwareVersion": "1.13.0.33",
+          "connectionType": "PILOT",
+          "sandbagging": false,
+          "isMilitary": false,
+          "isWorldTour": false,
+          "completedAt": "2026-09-28T18:39:36.000Z",
+          "flightPlans": [
+            {
+              "id": 2000010,
+              "arrivalId": "LFKJ",
+              "departureId": "LIRF",
+              "aircraftId": "A320"
+            },
+            {
+              "id": 2000011,
+              "arrivalId": "LFKJ",
+              "departureId": "LIRF",
+              "aircraftId": "A320"
+            }
+          ],
+          "softwareType": {
+            "id": "altitude/win",
+            "name": "Altitude/win"
+          }
+        },
+        {
+          "time": 38,
+          "createdAt": "2026-09-28T17:18:55.000Z",
+          "updatedAt": "2026-09-28T17:19:33.000Z",
+          "id": 1000009,
+          "userId": 761021,
+          "callsign": "TST002",
+          "rating": 3,
+          "serverId": "WS1-EUW2",
+          "softwareTypeId": "altitude/win",
+          "softwareVersion": "1.13.0.33",
+          "connectionType": "PILOT",
+          "sandbagging": false,
+          "isMilitary": false,
+          "isWorldTour": false,
+          "completedAt": "2026-09-28T17:19:33.000Z",
+          "flightPlans": [
+            {
+              "id": 2000009,
+              "arrivalId": "LICJ",
+              "departureId": "LIRF",
+              "aircraftId": "A20N"
+            }
+          ],
+          "softwareType": {
+            "id": "altitude/win",
+            "name": "Altitude/win"
+          }
+        }
+      ],
+      "totalItems": 4,
+      "perPage": 2,
+      "page": 1,
+      "pages": 2
+    },
+    {
+      "items": [
+        {
+          "time": 8390,
+          "createdAt": "2026-09-28T16:46:10.000Z",
+          "updatedAt": "2026-09-28T19:06:00.000Z",
+          "id": 1000007,
+          "userId": 761023,
+          "callsign": "TST004",
+          "rating": 5,
+          "serverId": "WS1-EUW2",
+          "softwareTypeId": "altitude/win",
+          "softwareVersion": "1.13.0.33",
+          "connectionType": "PILOT",
+          "sandbagging": false,
+          "isMilitary": false,
+          "isWorldTour": false,
+          "completedAt": "2026-09-28T19:06:00.000Z",
+          "flightPlans": [
+            {
+              "id": 2000006,
+              "arrivalId": "LIRF",
+              "departureId": "LIPZ",
+              "aircraftId": "A321"
+            },
+            {
+              "id": 2000007,
+              "arrivalId": "LICR",
+              "departureId": "LIRF",
+              "aircraftId": "A321"
+            }
+          ],
+          "softwareType": {
+            "id": "altitude/win",
+            "name": "Altitude/win"
+          }
+        },
+        {
+          "time": 6274,
+          "createdAt": "2026-09-28T16:06:40.000Z",
+          "updatedAt": "2026-09-28T17:51:14.000Z",
+          "id": 1000001,
+          "userId": 761028,
+          "callsign": "TST009",
+          "rating": 4,
+          "serverId": "WS1-EUW2",
+          "softwareTypeId": "altitude/win",
+          "softwareVersion": "1.13.0.33",
+          "connectionType": "PILOT",
+          "sandbagging": false,
+          "isMilitary": false,
+          "isWorldTour": false,
+          "completedAt": "2026-09-28T17:51:14.000Z",
+          "flightPlans": [
+            {
+              "id": 2000001,
+              "arrivalId": "LICC",
+              "departureId": "LIRF",
+              "aircraftId": "A21N"
+            }
+          ],
+          "softwareType": {
+            "id": "altitude/win",
+            "name": "Altitude/win"
+          }
+        }
+      ],
+      "totalItems": 4,
+      "perPage": 2,
+      "page": 2,
+      "pages": 2
+    },
+    {
+      "items": [],
+      "totalItems": 4,
+      "perPage": 2,
+      "page": 3,
+      "pages": 2
+    }
+  ],
+  "nothing": {
+    "items": [],
+    "totalItems": 0,
+    "perPage": 2,
+    "page": 1,
+    "pages": 0
+  }
+}
