@@ -264,6 +264,15 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
     [InlineData("https://evil.example", "/")]
     [InlineData("/staff/links", "/staff/links")]
     [InlineData(null, "/")]
+    // A sign-in started from a page that only explains a refusal comes back home, not to the refusal
+    // (test installation, 29 Sep 2026: signed in as a superadmin and shown the error page).
+    [InlineData("/login-error", "/")]
+    [InlineData("/login-error?code=notAllowed", "/")]
+    [InlineData("/LOGIN-ERROR/", "/")]
+    [InlineData("/forbidden", "/")]
+    [InlineData("/forbidden#top", "/")]
+    [InlineData("/login-errors", "/login-errors")]
+    [InlineData("/forbidden-zone", "/forbidden-zone")]
     public void OnlyLocalReturnUrlsSurvive(string? returnUrl, string expected)
     {
         Assert.Equal(expected, IvaoAuthenticationExtensions.SafeReturnUrl(returnUrl));

@@ -117,6 +117,8 @@ export const col = {
    * computed inside its query, where there is no language to say "Deleted person" in, so a name
    * written there would show the pseudonym as a number (note
    * `2026-09-29-la-persona-cancellata-nel-nucleo`). An empty cell is a row with nobody in it yet.
+   * `sortable` only when the server declares the field in `CrudOptions.Sortable`, like every
+   * column, and then it sorts by the name, which is what the cell shows.
    */
   person<TRow>(field: PersonKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
     return { kind: 'person', field, sortable: options.sortable ?? false };

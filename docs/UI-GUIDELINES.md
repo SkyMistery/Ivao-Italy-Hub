@@ -285,7 +285,9 @@ alone when the hub has no name, and **"Deleted person"** for somebody whose data
 writes a negative number in their place, and a list never shows it. It is the sentence a page gets
 from `personName` in `shared/ui/people.ts`, with `isErased` to leave out a link to such a person.
 A list does not write a person's name inside its query instead: a page of rows is computed where
-there is no language, so the pseudonym would stay a number.
+there is no language, so the pseudonym would stay a number. Like every column, it is `sortable` only
+when the server declares it in `CrudOptions.Sortable`, and then it sorts by the name, which is what
+the cell shows.
 
 A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
 and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
