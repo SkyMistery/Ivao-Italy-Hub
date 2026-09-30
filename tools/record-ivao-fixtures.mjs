@@ -45,7 +45,9 @@
  * that began the day before belongs to that day — of the positions whose callsign starts with one of the prefixes, the way
  * IVAO matches its own position parameter (the start of a callsign, in any case). The person is taken out: the members become
  * <asVid>, <asVid> + 1… in the order they first appear, and the user object IVAO embeds — names, division, rating — keeps
- * only that number. The VIDs it used are printed: keep them inside the range your tests own.
+ * only that number. The VIDs it used are printed: keep them inside the range your tests own. So is everything that would find
+ * the booking again through IVAO's own API: its id and its createdAt are left out, and the bookings are moved onto 1 January
+ * 2001, a day IVAO has none of, with their times of day.
  *
  *   node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]
  *
@@ -310,23 +312,32 @@ if (bookingsOnly) {
   const starts = prefixes.map((prefix) => prefix.toUpperCase());
   const callsignOf = (booking) => (booking.atcPosition ?? booking.subcenter ?? "").toUpperCase();
   const dayOf = (moment) => new Date(moment).toISOString().slice(0, 10);
+  // IVAO lists no booking before 2023 (measured on 30 September 2026). Moved onto this day, the bookings keep their times of
+  // day, and the real day — which, with a callsign, finds the booking and its member through IVAO's own API — is not in the file.
+  const standIn = "2001-01-01";
+  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`);
+  const moved = (moment) => new Date(Date.parse(moment) + shift).toISOString();
   const people = new Map();
   const bookings = (await get(`/v2/atc/bookings/daily?date=${date}`))
     .filter((booking) => dayOf(booking.startDate) === date)
     .filter((booking) => starts.some((start) => callsignOf(booking).startsWith(start)))
-    .map((booking) => {
-      if (!people.has(booking.user.id)) people.set(booking.user.id, asVid + people.size);
-      // Every field where IVAO put it; of the person, only the number that stands for them.
-      return Object.fromEntries(Object.entries(booking).map(([key, value]) =>
-        [key, key === "user" ? { id: people.get(booking.user.id) } : value]));
+    // The booking's own number and the moment it was made find it again through IVAO's API: they are left out.
+    .map(({ id, createdAt, ...booking }) => {
+      const member = booking.user?.id;
+      if (member !== undefined && !people.has(member)) people.set(member, asVid + people.size);
+      // Every other field where IVAO put it; of the person, only the number that stands for them.
+      return Object.fromEntries(Object.entries(booking).map(([key, value]) => [
+        key,
+        key === "user" ? value && { id: people.get(value.id) } : key === "startDate" || key === "endDate" ? moved(value) : value,
+      ]));
     });
   writeFileSync(join(outDir, `atc-bookings-${process.argv[3]}.json`), JSON.stringify(bookings, null, 2));
   const count = (test) => bookings.filter(test).length;
   console.log(
-    `recorded ${bookings.length} booking(s) of ${date} on ${new Set(bookings.map(callsignOf)).size} position(s): `
+    `recorded ${bookings.length} booking(s) on ${new Set(bookings.map(callsignOf)).size} position(s), moved onto ${standIn}: `
       + `${count((booking) => booking.subcenter)} on a sector, ${count((booking) => booking.training === "training")} training, `
       + `${count((booking) => booking.training === "exam")} exam, `
-      + `${count((booking) => dayOf(booking.endDate) !== date)} across midnight`,
+      + `${count((booking) => dayOf(booking.endDate) !== standIn)} across midnight`,
   );
   console.log(people.size ? `people: ${people.size}, as VID ${asVid} to ${asVid + people.size - 1}` : "nobody booked them");
   process.exit(0);

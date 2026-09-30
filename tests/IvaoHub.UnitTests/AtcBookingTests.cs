@@ -18,13 +18,15 @@ namespace IvaoHub.UnitTests;
 
 /// <summary>
 /// The network's ATC bookings (M4, E15a), read against one real day: <c>atc-bookings-day.json</c>, recorded with the real token on
-/// 30 September 2026 (<c>tools/record-ivao-fixtures.mjs --bookings day 761070 2026-07-27 …</c>) — the bookings of the bench's
-/// positions that started on 27 July 2026, with an exam and one across midnight, the people replaced by VIDs 761070–761079.
-/// Nothing here calls IVAO: the real client is asked through an IVAO that answers however the test says.
+/// 30 September 2026 (<c>tools/record-ivao-fixtures.mjs --bookings day 761070 &lt;day&gt; …</c>) — the bookings of the bench's
+/// positions that started that day, with an exam and one across midnight, the people replaced by VIDs 761070–761079 and the day
+/// moved onto 1 January 2001, so that nothing in the file finds a booking again through IVAO's API. Nothing here calls IVAO: the
+/// real client is asked through an IVAO that answers however the test says.
 /// </summary>
 public sealed class AtcBookingTests
 {
-    private static readonly DateOnly Recorded = new(2026, 7, 27);
+    /// <summary>The day the tool moves a recorded day onto: IVAO has no booking before 2023.</summary>
+    private static readonly DateOnly Recorded = new(2001, 1, 1);
 
     /// <summary>A day the fixture was not recorded on, for the bench that shows it on any day.</summary>
     private static readonly DateOnly AnyDay = new(2031, 3, 14);
@@ -54,12 +56,18 @@ public sealed class AtcBookingTests
     }
 
     [Fact]
-    public void TheRecordedDayKeepsNothingOfThePeopleButTheirNumber()
+    public void TheRecordedDayKeepsNothingOfThePeopleButTheirNumberNorAnythingThatFindsThemAgain()
     {
-        // IVAO sends the member with their names, division and rating; the tool keeps the number that stands for them.
         foreach (var row in IvaoFixtures.Read("atc-bookings-day.json").EnumerateArray())
         {
+            // IVAO sends the member with their names, division and rating; the tool keeps the number that stands for them.
             Assert.Equal(["id"], row.GetProperty("user").EnumerateObject().Select(property => property.Name));
+
+            // The booking's own number, the moment it was made and its real day would each find it, and its member, through
+            // IVAO's API (reviewer's finding on #207): none of them is left.
+            Assert.False(row.TryGetProperty("id", out _));
+            Assert.False(row.TryGetProperty("createdAt", out _));
+            Assert.StartsWith("2001-01-01T", row.GetProperty("startDate").GetString(), StringComparison.Ordinal);
         }
     }
 
@@ -68,17 +76,17 @@ public sealed class AtcBookingTests
     {
         using var answer = JsonDocument.Parse("""
             [
-              { "startDate": "2026-07-27T19:00:00.000Z", "endDate": "2026-07-27T21:00:00.000Z", "user": { "id": 761070 } },
-              { "atcPosition": "LIRF_TWR", "endDate": "2026-07-27T21:00:00.000Z", "user": { "id": 761070 } },
-              { "atcPosition": "LIRF_TWR", "startDate": "2026-07-27T19:00:00.000Z", "endDate": "later",
+              { "startDate": "2001-01-01T19:00:00.000Z", "endDate": "2001-01-01T21:00:00.000Z", "user": { "id": 761070 } },
+              { "atcPosition": "LIRF_TWR", "endDate": "2001-01-01T21:00:00.000Z", "user": { "id": 761070 } },
+              { "atcPosition": "LIRF_TWR", "startDate": "2001-01-01T19:00:00.000Z", "endDate": "later",
                 "user": { "id": 761070 } },
-              { "atcPosition": "LIRF_TWR", "startDate": "2026-07-27T19:00:00.000Z", "endDate": "2026-07-27T21:00:00.000Z" },
-              { "atcPosition": "LIRF_TWR", "startDate": "2026-07-27T19:00:00.000Z", "endDate": "2026-07-27T21:00:00.000Z",
+              { "atcPosition": "LIRF_TWR", "startDate": "2001-01-01T19:00:00.000Z", "endDate": "2001-01-01T21:00:00.000Z" },
+              { "atcPosition": "LIRF_TWR", "startDate": "2001-01-01T19:00:00.000Z", "endDate": "2001-01-01T21:00:00.000Z",
                 "user": { "id": "761070" } },
               "not even an object",
               {
                 "atcPosition": null, "subcenter": " lirr_ne_ctr ", "training": "training",
-                "startDate": "2026-07-27T19:00:00.000Z", "endDate": "2026-07-27T21:00:00.000Z",
+                "startDate": "2001-01-01T19:00:00.000Z", "endDate": "2001-01-01T21:00:00.000Z",
                 "user": { "id": 761071, "firstName": "Some", "lastName": "Body" }
               }
             ]
@@ -96,7 +104,7 @@ public sealed class AtcBookingTests
         using var refusal = JsonDocument.Parse("""{ "message": "Validation failed (invalid date format)", "statusCode": 400 }""");
         using var empty = JsonDocument.Parse("[]");
         using var paged = JsonDocument.Parse("""
-            { "items": [ { "atcPosition": "LIRF_TWR", "startDate": "2026-07-27T18:00:00.000Z", "endDate": "2026-07-27T20:00:00.000Z",
+            { "items": [ { "atcPosition": "LIRF_TWR", "startDate": "2001-01-01T18:00:00.000Z", "endDate": "2001-01-01T20:00:00.000Z",
               "user": { "id": 761079 } } ], "totalItems": 1, "perPage": 100, "page": 1, "pages": 1 }
             """);
 
@@ -115,8 +123,8 @@ public sealed class AtcBookingTests
     {
         var value = training is null ? "null" : $"\"{training}\"";
         using var answer = JsonDocument.Parse($$"""
-            { "atcPosition": "LIRF_TWR", "training": {{value}}, "startDate": "2026-07-27T18:00:00.000Z",
-              "endDate": "2026-07-27T20:00:00.000Z", "user": { "id": 761079 } }
+            { "atcPosition": "LIRF_TWR", "training": {{value}}, "startDate": "2001-01-01T18:00:00.000Z",
+              "endDate": "2001-01-01T20:00:00.000Z", "user": { "id": 761079 } }
             """);
 
         Assert.Equal(kind, IvaoAtcBookingReader.ReadBooking(answer.RootElement)!.Kind);
@@ -134,7 +142,7 @@ public sealed class AtcBookingTests
         var bookings = await Client(ivao, cache).GetDailyAtcBookingsAsync(Recorded, " lirf_twr ", token);
 
         var asked = Assert.Single(ivao.Asked);
-        Assert.Equal("/v2/atc/bookings/daily?date=2026-07-27&position=LIRF_TWR", asked.PathAndQuery);
+        Assert.Equal("/v2/atc/bookings/daily?date=2001-01-01&position=LIRF_TWR", asked.PathAndQuery);
         Assert.Equal("Bearer application-token", asked.Authorization);
 
         // The client hands on what IVAO answered: which of it is the position asked for is the source's to say.
@@ -280,7 +288,7 @@ public sealed class AtcBookingTests
     {
         var token = TestContext.Current.CancellationToken;
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var ivao = new Ivao(request => request.RequestUri!.Query.Contains("2026-07-28", StringComparison.Ordinal)
+        var ivao = new Ivao(request => request.RequestUri!.Query.Contains("2001-01-02", StringComparison.Ordinal)
             ? Json("<html>maintenance</html>", HttpStatusCode.BadGateway)
             : Json(IvaoFixtures.Read("atc-bookings-day.json").GetRawText()));
         using var hub = Hub(Client(ivao, cache));
