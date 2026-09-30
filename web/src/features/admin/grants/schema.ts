@@ -5,9 +5,9 @@ import { DEPARTMENTS } from '../../../shared/api/department';
 
 /**
  * The form of a grant. It mirrors `GrantWriteDto` and carries nothing else: the three rules that
- * actually matter — the permission has to be one the catalogue knows, it may never be a global one,
- * and the VID has to be staff of this division — are the server's, and are answered by it with an
- * i18n key per field (design M0 §7.5).
+ * actually matter — the permission has to be one the catalogue knows, it may never be a global one
+ * save the few a grant may confer, and the VID has to be staff of this division — are the server's,
+ * and are answered by it with an i18n key per field (design M0 §7.5).
  *
  * The schema is built from the bootstrap rather than written out, because the set of permissions
  * depends on which modules the installation was built with. That is also why `value` is a
@@ -18,10 +18,11 @@ import { DEPARTMENTS } from '../../../shared/api/department';
 export const STAFF_LEVELS = ['Coordinator', 'Assistant', 'Advisor', 'Member'] as const;
 
 export function grantSchema(bootstrap: Bootstrap, levelLabel: (level: string) => string = (level) => level) {
-  // Only the departmental ones. A global permission is refused by the server, and offering one in
-  // a select would be offering a choice whose only outcome is a refusal.
+  // The departmental ones, and a global one only when a grant may confer it — who assigns the awards
+  // (M4, E10f). Any other global permission is refused by the server, and offering one in a select
+  // would be offering a choice whose only outcome is a refusal.
   const grantable = bootstrap.registries.permissions
-    .filter((permission) => !permission.isGlobal)
+    .filter((permission) => !permission.isGlobal || permission.grantableAlthoughGlobal)
     .map((permission) => permission.name);
 
   return z.object({
