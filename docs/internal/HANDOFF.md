@@ -30,7 +30,10 @@
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **M2 è chiusa** (T0–T20c). Piano **1.25**: **tutta la coda di M3** (A7, A8a–A8b,
+**Ultimo aggiornamento:** 30 settembre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori). Piano **1.26**: **la
+chiusura di M3** (A12d, #191: il giro completo del training, `docs/FORKING.md` sul training, il rapporto
+`decisions/2026-09-30-m3-review.md`) e **il controllo all'avvio rinforzato** (#193, 0.4.3, la voce 1 della coda del codice). Piano
+1.25: **tutta la coda di M3** (A7, A8a–A8b,
 A9a–A9b, A10a–A10c, A7b, A11b, la fase del nucleo A12a e A12b: #146–#153, #178, #181, #182, #187, #189), con il trainer sulla regola
 delle righe affidate (A7b), «persona cancellata» nel nucleo e `ErasureTests` su ogni modulo (A12a), il training affidato a chi si
 cancella (A12b); **la fase E0 di M4** (#184, dieci note e `10-piano-implementazione-m4.md`); il marcatore che non si scrive non ferma
@@ -42,8 +45,8 @@ le pagine della richiesta di training (#144) e il design di M4 (#180); la 1.23 l
 via FTP in `webapp/` dello staging lasciato da Ivao.It, database `itivao_test`; porta anche la 0.3.0 (A11a e la tastiera, con
 `AddGrantFirTeam`, la prima migrazione del nucleo dalla 0.2.0). La `v0.4.0` (`2f5822d`) è stata costruita e **saltata**. ⚠️ **La
 0.4.1 ha A7 senza A7b**: sulla prova **non si assegnano training** fino alla consegna dopo (A7 scriverebbe i grant con scope che A7b
-lascia inerti). **`main` è alla 0.4.2; la prossima consegna è la `0.5.0`** (A7b, A11b e le altre fasi di M3, con migrazioni del
-modulo): il master alza la versione prima del tag. Nella consegna della 0.5.0: il `config/division.json` del tag (A7b e A11b cambiano
+lascia inerti). **`main` è alla 0.4.3 (#193); la prossima consegna è la `0.5.0`** (A7b, A11b e le altre fasi di M3, con migrazioni
+del modulo; la 0.4.3 ci entra senza cambiare niente): il master alza la versione prima del tag. Nella consegna della 0.5.0: il `config/division.json` del tag (A7b e A11b cambiano
 `positionGrants` e portano IT a `firStaffScope: own`), e se la prova ha grant con motivo `training: trainer` si tolgono dopo
 (`HANDOFF-M3.md`, A7b). La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
@@ -63,19 +66,24 @@ dei moduli solo se pendenti; 0.2.7, il marcatore d'inizializzazione), e `diagnos
 - **la home senza gli header dell'hub**: la strada A **non ora** (Carmine, domanda 3 della #166), un limite noto e scritto;
 - **i job mentre l'hub dorme**: finché non recuperano, girano solo a processo vivo.
 
-**La coda del codice del nucleo** (piano 1.23, invariata dalla 1.24 e dalla 1.25): fatti 0.2.2 diagnostica, 0.2.3 indirizzo, 0.2.4
+**La coda del codice del nucleo** (piano 1.23; la 1.26 segna fatta la voce 1): fatti 0.2.2 diagnostica, 0.2.3 indirizzo, 0.2.4
 avvio + `starts.txt`, 0.2.5 lingua, 0.2.6 nonce, 0.2.7 marcatore; la 0.3.0 è andata ad A11a e alla tastiera; fuori coda 0.3.1 (il
-marcatore che non si scrive) e 0.4.2 (l'accesso dalla pagina d'errore). Restano: 1 il controllo
-all'avvio di A3b (`PermissionCatalog.VerifyAlternatives`) rinforzato — era «**prima di A10**» (i punti per A7 e A10 sono sulla #146),
-e ⚠️ **A10 è unita senza**: resta da fare → 2
+marcatore che non si scrive) e 0.4.2 (l'accesso dalla pagina d'errore). ✅ **1, il controllo all'avvio di A3b rinforzato, è fatto**
+(0.4.3, #193, nota `2026-09-30-il-controllo-all-avvio-rinforzato`): arrivato dopo A10 e non prima, ma nessuna dichiarazione di oggi
+viola le regole nuove; l'avvio rifiuta ora sei dichiarazioni di un permesso segnato che farebbero rispondere diversamente handler e
+guardiano (piano §16 punto 2). Restano: 2
 job che recuperano + POST dell'operazione pianificata di Plesk → 3 la strada A, solo se l'avvio scende sotto ~3 s → 4 l'hub che
 chiama sé stesso: aspetta. Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
 `hub.lang`, un giro futuro. Da A11a, se il maintainer vuole: `firStaffScope` **obbligatorio** nel calcolo dei permessi (oggi ha
 il predefinito `own`, per non toccare tre suoi test), in una PR sua.
-**M3** (`dalberone`, `HANDOFF-M3.md`): **unite A0–A12b**, l'ultima (#189) il 30 set 2026; **la coda è vuota**. Restano:
-- **A12c**, l'archivio di PATS, **condizionata**: il sorgente di PATS non esiste, c'è solo il database, e il significato dei codici
-  oggi non si conosce (Carmine sulla #187); si fa solo se `dalberone` lo ricava;
-- **A12d**, il giro completo e **la chiusura di M3**, con il rapporto (gli endpoint a mano contati per famiglia, sotto).
+**M3** (`dalberone`, `HANDOFF-M3.md`): ✅ **chiusa il 30 set 2026** con A12d (#191): unite A0–A12d, il giro completo
+`web/e2e/full/training-the-full-round.spec.ts`, la sezione sul training di `docs/FORKING.md`, e il rapporto
+`decisions/2026-09-30-m3-review.md` — la previsione del design ha tenuto; CRUD a mano non dichiarati 0, eccezioni dichiarate 0, 26
+endpoint a mano del modulo per famiglia accanto a 4 risorse `MapCrud`, 0 endpoint nuovi del nucleo (piano §16 punto 6); l'eccezione
+delle note riservate contata (§16 punto 2). **A12c**, l'archivio di PATS, **resta fuori**: il sorgente di PATS non esiste, c'è solo
+il database (Carmine sulla #187); ricavare i codici dai dati in una nota «Proposta» (la strada del master sulla #189) è una scelta di
+`dalberone`, non presa; se si farà, è una fase a sé dopo la chiusura (piano §15 punto 7). **I quattordici punti aperti** stanno nel
+rapporto, «Che cosa resta aperto, detto prima di chiudere». Il debito n.6 di §10 (le posizioni FIR) è chiuso da A11a e A11b.
 ⚠️ Da A11b il menu offre a un capo FIR «Esami» e «Ban», che gli rispondono 403 (una lista vuota): toglierli vuole il nucleo, proposta
 detta al revisore sulla #182. ⚠️ `e2e/full/template.spec.ts:139`, del nucleo, può cadere una volta nel giro completo (A12b).
 **M4** (Events): **il design è unito** (`09-design-m4.md`, #180) e **la fase E0 anche** (#184, 29 set 2026): dieci note sulle
@@ -90,10 +98,10 @@ E10a–E10e, E15a, ognuna una PR a sé con la sua nota): decisa da Carmine in ch
 scartata l'alternativa del nucleo alle sue sessioni di lavoro. `core-guard` giudica ora anche i file degli eventi come suoi, e
 `HANDOFF-M4.md` ha la sezione «Per chi prende M4» con quello che le sessioni del maintainer sanno.
 Il rapporto è
-`decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
-`dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
-chiusura di M3 e di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia con
-la sua decisione — la tabella di `2026-09-25-m2-review.md` è il modello.
+`decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 è chiusa
+(`HANDOFF-M3.md`, `2026-09-30-m3-review.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il
+rapporto di chiusura di M4 porta CRUD a mano non dichiarati 0, al più un'eccezione dichiarata, e ogni endpoint a mano nella sua famiglia
+con la sua decisione — le tabelle di `2026-09-25-m2-review.md` e `2026-09-30-m3-review.md` sono il modello.
 
 > **Che cosa ha lasciato T20c** (nota `2026-09-25-le-rifiniture-di-m2`, piano 1.12): Carmine ha preso le quattro raccomandazioni. **Un
 > modulo porta i suoi componenti dal manifest**: `ModuleManifest.components` (`{ name, sample }`, facoltativo), composto da
@@ -2352,7 +2360,11 @@ cosa**, ed è la ragione per cui si rileggono insieme a fine fase.
    permessi e non ha un contesto: entrambi i rami sono scritti, testati con un modulo finto, e non
    ancora esercitati da un modulo reale. Il primo vero è M2 (Events), ma se un modulo di M1 li tocca
    è lì che si scopre se `AddModuleDbContext<T>` regge.
-6. **Le posizioni FIR non danno nessun permesso** (§6 punto 1). È la lettura più restrittiva del
+6. ~~**Le posizioni FIR non danno nessun permesso** (§6 punto 1).~~ **Chiuso da M3** (A11a, #159, e
+   A11b, #182; nota `2026-09-27-i-capi-fir-sul-loro-fir`, piano 1.24; rapporto
+   `decisions/2026-09-30-m3-review.md`, piano 1.26): un grant può andare al team di un FIR, e con
+   `firStaffScope: own` il permesso porta il FIR della posizione e raggiunge solo le righe `IHasFir` di
+   quel FIR; IT è a `own` da A11b. Il testo di allora: è la lettura più restrittiva del
    design, scelta in F2 apposta perché una correzione possa solo allargare. `firStaffScope` esiste
    in `division.json` e in M1 va deciso cosa significa davvero.
 7. **`LocalizedExtensions` vive in `src/` e non ha chiamanti di produzione** (nota di revisione di
