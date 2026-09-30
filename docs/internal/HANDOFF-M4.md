@@ -10,8 +10,9 @@
 `m4/e10e-great-circle-core`, **PR #206** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua sessione,
 **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E10d**, **E15a**); sono unite E1 (#200) ed E10b (#208).
 **Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
-presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo. Il passaggio dei tour al calcolo del nucleo è di
-una sessione di Carmine (nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, §5).
+presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo. Il passaggio dei tour al calcolo del nucleo lo fa
+una sessione di Carmine **dopo l'unione di E10e** (sua risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`,
+§5).
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -131,9 +132,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - **Che cosa deve sapere la fase dopo**:
   - ⚠️ **Il namespace è `IvaoHub.Core.Airspace`, non `IvaoHub.Core.Ivao`** (accanto ai contorni dei FIR, geometria che non è di IVAO):
     in `Ivao` gli stessi nomi fanno cadere la build dei tour (`CS0104` su `TrackChecks.cs`, provato; nota §2 punto 3).
-  - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine (nota
-    §5, e [la richiesta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005)). Fino ad allora
-    il test gemello tiene le due copie uguali; con il passaggio se ne va anche lui.
+  - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine
+    **dopo l'unione di E10e** ([sua risposta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685),
+    alla [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005); nota §5). Fino ad allora il test
+    gemello tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la distanza fra
+    due aeroporti è `GreatCircle` del nucleo, mai una copia), che aggiunge il master.
   - **E14a ed E14b** la trovano qui: la distanza di una voce di un PIREP con `DistanceNmRounded` se la colonna è al decimo, come
     `fo_legs.distance_nm`, e `MinLegDistance` confrontata con quel numero.
   - Agli antipodi `h` può passare 1 di un'unità nell'ultima cifra, ma la radice lo riporta a 1: nessun NaN, misurato (nota §6).

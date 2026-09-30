@@ -731,12 +731,28 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
   `dotnet format --verify-no-changes` sui due file C# pulito; in `web/`, dove niente cambia, `pnpm lint`, `typecheck`,
   `format:check` e `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80 file, `pnpm gen:api` senza differenze; le regole
   di `core-guard` rifatte in PowerShell su tutto il branch contro `main` (`c107c98`): nessun file del maintainer né dei tour, un file
-  del nucleo (`GreatCircle.cs`) con la nota nuova, PASS.
+  del nucleo (`GreatCircle.cs`) con la nota nuova, PASS. La CI sulla cima di allora (`2a8ef3e`): `build-test` e `core-guard` verdi.
+- **Dopo la revisione** ([osservazioni del revisore sulla #206][v206], «approvable», niente da correggere: il calcolo com'è nei tour,
+  `Core/Airspace/` giusto come `FirBoundary.cs`) e **le risposte di Carmine** (30 settembre 2026, pubblicate dal master sulla #206 su
+  sua istruzione: [risposte][a206]): i tour passano al `GreatCircle` del nucleo **in una sua sessione, dopo l'unione** di questa PR;
+  **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master. Registrate nella nota (intestazione, §5, «Da portare nel piano») e
+  nell'handoff; nessun cambio al codice.
+- **Il merge di `main`** (chiesto dal revisore nello stesso commento): unita la #208 (E10b), la PR era in conflitto con `main` su
+  `HANDOFF-M4.md`, dove tutte e due le fasi avevano scritto in cima. `origin/main` (`c98b272`) è entrato con un merge (`291cc17`), mai
+  un rebase. **Un conflitto solo**, `HANDOFF-M4.md`: l'intestazione di E10e, con E10b unita e quello che E11b ed E13a ci trovano; le
+  due voci barrate nella riga di che cosa mancava; «Che cosa ha lasciato E10e» in cima e quello di E10b sotto. Nessuna riga dei due
+  lati è andata persa (controllato riga per riga); `10` si è unito da solo, con tutte e due le «Com'è andata». Poi di nuovo, una suite
+  alla volta, tutte al primo giro: `dotnet build` 0 avvisi; unità **893/893**; **integrazione intera, senza filtro, 435/435** (i 430 e
+  i 5 di E10b, 8 minuti); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80
+  file; `core-guard` contro `main` (`c98b272`): la PR mostra solo i cinque file della fase, nessun file del maintainer né dei tour, un
+  file del nucleo con la nota nuova, PASS.
 - **Non verificato**: la CI (la dice la PR); `pnpm e2e` e `pnpm e2e:full` (nessuna schermata cambia); i numeri su Linux — il test
   gemello confronta due calcoli nello stesso processo e vale anche lì, ma che `h` passi 1 a 8°, 12° e 34° è misurato su Windows (il
   test afferma solo la mezza circonferenza); il passaggio dei tour al nucleo, che è di Carmine.
 
 [r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
+[v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
+[a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
 
 ### E11a — Postazioni e disponibilità
 

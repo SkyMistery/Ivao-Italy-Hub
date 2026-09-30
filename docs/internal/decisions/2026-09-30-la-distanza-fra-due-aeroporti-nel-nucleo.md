@@ -7,6 +7,9 @@ di supporto e la regola di award `MinLegDistance` la chiedono al nucleo (design 
 `2026-09-29-dopo-l-evento-e-gli-award` §2.4 e §4, decisa sulla #180). Nessuna domanda su una decisione nuova; **uno scostamento dalla
 lettera del piano** (§3: il calcolo sta in `Core/Airspace/`, non accanto a `AirportDirectory.cs` in `Core/Ivao/`) e **una richiesta a
 Carmine** (§5): la copia dei tour resta com'è in questa PR, e la sostituisce una sua sessione, come `memberName` dopo A12a di M3.
+**Le risposte di Carmine** (30 settembre 2026, pubblicate dal master sulla #206 su sua istruzione: [risposte][a206]): **i tour passano
+al `GreatCircle` del nucleo in una sua sessione, dopo l'unione di questa PR**; **sì alla riga in `CLAUDE.md` §2**, che aggiunge il
+master («Da portare nel piano»). Il revisore ha trovato la PR «approvable» ([osservazioni][v206]), `Core/Airspace/` compreso.
 **Regola applicata:** `CLAUDE.md` §2 («a piece used in two places is written once») e §5, caso **(b)**: un pezzo del modulo dei tour
 passa nel nucleo perché un secondo modulo ne ha bisogno, e un modulo non ne referenzia un altro. È una PR del nucleo, prima di E14a ed
 E14b che la usano (`CLAUDE.md` §0 regola 6).
@@ -93,8 +96,12 @@ E14b che la usano (`CLAUDE.md` §0 regola 6).
   sessione, prima di E14a se gli torna comodo. Nessun codice di questa PR ne dipende: il passaggio dei tour si fa quando lui vuole, e
   fino ad allora la «Fatta quando» di E10e («i tour e il nucleo hanno un calcolo solo») è vera a metà: un calcolo solo per i numeri,
   due copie nel codice.
+- **La risposta** (30 settembre 2026, [risposte di Carmine sulla #206][a206], pubblicate dal master su sua istruzione): **il passaggio
+  lo fa una sua sessione, dopo l'unione di questa PR**, come raccomandato. Fino ad allora due copie con gli stessi numeri.
 
 [r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
+[a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
+[v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
 
 ## 6. Trovato scrivendo il codice
 
@@ -132,5 +139,5 @@ E14b che la usano (`CLAUDE.md` §0 regola 6).
   (§3); i tour lo useranno dopo il passaggio di una sessione di Carmine (§5).
 - `05-design-m2.md` §0.5 (la riga «Distanza GCD») e `06-piano-implementazione-m2.md` (T7a): la GCD dei tour è quella del nucleo,
   quando la sessione di Carmine avrà tolto la copia.
-- Se Carmine lo vuole, una riga nella tabella di `CLAUDE.md` §2: la distanza fra due aeroporti è `GreatCircle` del nucleo con le
-  coordinate di `IAirportDirectory`, mai una copia.
+- **Una riga nella tabella di `CLAUDE.md` §2** — Carmine la vuole ([risposta][a206]), e la aggiunge il master: la distanza fra due
+  aeroporti è `GreatCircle` del nucleo con le coordinate di `IAirportDirectory`, mai una copia.
