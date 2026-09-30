@@ -49,15 +49,19 @@ public sealed class RefDataSyncJob(
             var airports = await SyncAirportsAsync(countryId, cancellationToken);
             var aircraft = await SyncAircraftAsync(cancellationToken);
             var (positions, sectors) = await SyncAtcPositionsAsync(countryId, cancellationToken);
+            var fras = await SyncFrasAsync(countryId, cancellationToken);
 
             await database.SaveChangesAsync(cancellationToken);
 
+            // The FRAs say how the run went in the message and not in the status: a division may have none at all, and
+            // "partial" every night would teach everybody to stop reading it.
             entry.FinishedAt = clock.UtcNow;
             entry.Status = Outcome(centers, airports, positions, sectors);
             entry.Message = string.Create(
                 CultureInfo.InvariantCulture,
                 $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)")
-                + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world");
+                + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world")
+                + string.Create(CultureInfo.InvariantCulture, $", {fras} FRA(s) for {countryId}");
 
             await database.SaveChangesAsync(cancellationToken);
 
@@ -383,6 +387,56 @@ public sealed class RefDataSyncJob(
         }
 
         return (positions.Count, sectors.Count);
+    }
+
+    /// <summary>
+    /// The FRAs of the positions of the division's country (M4, E10c): a few hundred rows, written like the positions. An
+    /// answer that did not come back leaves the table as it was; one that did drops the FRAs IVAO no longer lists — a
+    /// division that lifts a minimum must not keep the roster from a controller the next evening.
+    /// </summary>
+    private async Task<int> SyncFrasAsync(string countryId, CancellationToken cancellationToken)
+    {
+        var incoming = await ivao.GetFrasAsync(countryId, cancellationToken);
+        if (incoming.Count == 0)
+        {
+            logger.LogWarning("IVAO returned no FRA for {Country}; that table is left alone.", countryId);
+            return 0;
+        }
+
+        var existing = await database.IvaoFras.ToDictionaryAsync(
+            fra => fra.Id.ToString(CultureInfo.InvariantCulture),
+            StringComparer.Ordinal,
+            cancellationToken);
+
+        foreach (var fra in incoming)
+        {
+            var key = fra.Id.ToString(CultureInfo.InvariantCulture);
+            if (!existing.TryGetValue(key, out var row))
+            {
+                row = new IvaoFra { Id = fra.Id };
+                database.IvaoFras.Add(row);
+                existing[key] = row;
+            }
+
+            row.Callsign = fra.Callsign;
+            row.MinimumRating = fra.MinimumRating;
+            row.Days = fra.Days;
+            row.StartsAt = fra.StartsAt;
+            row.EndsAt = fra.EndsAt;
+            row.OnDate = fra.OnDate;
+            row.IsActive = fra.IsActive;
+            row.RawJson = fra.RawJson;
+            row.SyncedAt = clock.UtcNow;
+        }
+
+        Prune(
+            database.IvaoFras,
+            existing,
+            incoming.Select(fra => fra.Id.ToString(CultureInfo.InvariantCulture)),
+            countryId,
+            "FRA");
+
+        return incoming.Count;
     }
 
     /// <summary>
