@@ -244,6 +244,9 @@ internal sealed class AwardSignalConfiguration : IEntityTypeConfiguration<AwardS
         builder.Property(signal => signal.Reason).HasMaxLength(256).IsRequired();
         builder.HasIndex(signal => new { signal.SourceModule, signal.SourceId, signal.Vid }).IsUnique();
         builder.HasIndex(signal => new { signal.Vid, signal.Status });
+
+        // "Which signals has nobody been told about yet?", asked by the mail to whoever assigns (M4, E10d).
+        builder.HasIndex(signal => new { signal.Status, signal.NotifiedAt });
     }
 }
 
