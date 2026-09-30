@@ -6,10 +6,10 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E1** (nucleo: i tipi del calendario e l'ED sul banco), sul branch
-`m4/e1-calendar-kinds`, **PR #200** verso `main`, del nucleo, senza coda.
-**Il prossimo passo**: **E2** (lo scheletro), che può andare avanti accanto a E1; **E3a** aspetta tutte e due unite. Le fasi del nucleo
-di M4b (**E10a–E10e**) possono partire già durante M4a, ognuna in una sessione sua.
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10a** (nucleo: le sessioni del tracker senza VID), sul branch
+`m4/e10a-tracker-without-vid`, **PR #210** verso `main`, del nucleo, senza coda.
+**Il prossimo passo**: le fasi partite insieme a E10a vanno avanti ognuna per sé — **E2** (lo scheletro, poi **E3a** con E1 già unita)
+e le altre del nucleo di M4b (**E10b–E10e**, **E15a**). E10a serve a **E13a**, che aspetta anche E12 ed E10b.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -110,6 +110,34 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10a (30 settembre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica, nessuna domanda nuova; le misure del 30
+  settembre sono lì, §2):
+  - **La domanda senza VID**: `IvaoSessionQuery(int? Vid, from, to, departure, arrival, IvaoConnectionType? ConnectionType)` con
+    `Limit` (`init`, predefinito 200); `SearchSessionsAsync` è la stessa di prima, dalla più recente, senza doppioni, al più `Limit`,
+    `null` quando IVAO non si è potuto chiedere; `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker
+    stanno nel lettore (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
+  - **Il client di IVAO aspetta 20 s per tentativo** (il totale resta 30): con i 10 standard nessun aeroporto si leggeva.
+  - **Le fixture**: `tools/record-ivao-fixtures.mjs --sessions-at`; `tests/fixtures/ivao/tracker-airport-LIRF.json` (una sera di
+    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO). Senza VID,
+    `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto.
+  - **I test**: `IvaoTrackerWithoutVidTests` e `IvaoApiTimeoutTests` (unità).
+- **Che cosa deve sapere la fase dopo** (E13a, e chiunque legga il tracker senza VID):
+  - ⚠️ **Una domanda per aeroporto che trova qualcosa costa ~10,5 s** (la pagina con l'ultima riga, sempre), e **due insieme
+    ricevono 504** dal gateway di IVAO: una alla volta, poche per giro del job.
+  - ⚠️ **La finestra è sull'inizio della sessione**, estremi compresi: per chi era già connesso, `FromUtc` va allargato.
+  - ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione del piano. Una
+    sessione può tornare da tutte e due: si conta per `Id`.
+  - ⚠️ **Il DTO dice gli aeroporti della prima revisione**: trovata per la partenza da LIRF, una sessione può dire LIPZ.
+  - **Il limite si dichiara**: con esattamente `Limit` sessioni la risposta può essere tagliata, e il resto sta prima della più
+    vecchia.
+  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte); 761029 non è usata.
+  - Il punto «La richiesta al tracker oggi» di «Per chi prende M4», qui sopra (`PageSize = 50`, `MaxSessions = 200`), è superato:
+    le pagine sono da 100 e il tetto è il `Limit` di chi chiama.
+- ⚠️ **Per i tour cambiano due cose, nessuna nei loro test**: le pagine sono da 100, e se IVAO non risponde affatto la ricerca dà
+  `null` («tracker non disponibile») invece di lanciare.
 
 ### Che cosa ha lasciato E1 (30 settembre 2026, branch `m4/e1-calendar-kinds`, PR #200, del nucleo, senza coda)
 

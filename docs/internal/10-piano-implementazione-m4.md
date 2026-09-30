@@ -592,7 +592,74 @@ nota.
 **Test**: unit sul lettore con le fixture (pagine, pagina vuota, errore a metà); integrazione: i tour, che usano il VID, invariati.
 **Fatta quando**: le sessioni di un aeroporto in una finestra si leggono a pagine, e le misure sono nella nota.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Misurato prima del codice** (nota nuova `2026-09-30-il-tracker-senza-vid`, §2), con il token dell'applicazione e script fuori dal
+  repository che stampano solo forme, conteggi e tempi: **il token dell'applicazione basta** per ogni lettura (senza VID, per VID con
+  `connectionType`, piani e tracce di una sessione trovata senza VID); `perPage` fino a **100** (101 → 400); la finestra filtra
+  **l'inizio** della sessione, estremi compresi; un aeroporto da solo si trova in **una revisione qualunque** del piano, due insieme
+  nella **stessa**; i tipi di connessione sono `PILOT`, `ATC`, `OBS`, `FOLME`; ogni riga porta l'oggetto `user` con **nome e
+  cognome**; nessun rate limit dichiarato, il gateway rinuncia a 15 s; e **la pagina con l'ultima riga di una domanda per aeroporto
+  costa a IVAO ~10–11,5 s**, piena o no (le altre 0,2–0,6 s, per VID 65–118 ms), e dieci insieme ricevono 504. Sul codice di `main`
+  la pipeline dell'hub tagliava ogni tentativo a 10 s: una ricerca per aeroporto finiva sempre in una `TimeoutRejectedException`
+  lanciata dopo 30 s.
+- **Fatto** (scelta tecnica, nessuna domanda nuova):
+  - `IvaoSessionQuery` con il **VID facoltativo**, `ConnectionType` (`IvaoConnectionType`: `Pilot`, `Atc`, `Observer`,
+    `FollowMe`) e il **`Limit` di chi chiama** (`init`, almeno 1, predefinito 200, il tetto di prima); `PageSize` 100 e `PerPage`
+    (`min(100, Limit)`); `IvaoTrackerSessionDto.ConnectionType`, una proprietà `init`;
+  - nel lettore unico, **il giro delle pagine** (`IvaoTrackerReader.ReadPagesAsync`: dalla più recente, senza doppioni, fino
+    all'ultima pagina, a una pagina vuota o al limite; `null` se una pagina manca) e **la regola del tracker** (`Answers`); il client
+    vero chiede le pagine con `ReadOrNothingAsync`, quello delle fixture risponde senza VID da `tracker-airport-<ICAO>.json` con la
+    regola e l'ordine di IVAO;
+  - **il gestore del client dei dati aspetta 20 s per tentativo** (più dei 15 del gateway di IVAO), campiona l'interruttore su 40 s
+    (la sua regola: almeno due tentativi), e il totale resta 30 s;
+  - `tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>`, con le persone tolte (l'oggetto `user`,
+    una VID per membro, i callsign dei piloti, gli identificativi rinumerati) e un ultimo controllo che non scrive se resta una VID
+    vera o un nome; il tentativo ripetuto delle postazioni diventa di tutte e due le modalità (`getPatiently`);
+  - **le fixture** `tracker-airport-LIRF.json` e `tracker-pages-LIRF.json`: LIRF, 28 settembre 2026, 16:00–17:59:59 UTC, 10 sessioni
+    di 9 membri come VID 761020–761028 (uno collegato due volte, un volo di 38 s, la torre, e un piano passato da LIPZ→LIRF a
+    LIRF→LICR); la loro sezione in `tests/fixtures/ivao/README.md`;
+  - **i test**, di unità: `IvaoTrackerWithoutVidTests` (16: le pagine registrate, la finestra vuota, la pagina vuota, l'errore a
+    metà, il limite, oltre 200, i doppioni, la regola misurata, le parole del tracker, il client delle fixture, e il client vero con
+    un IVAO recitato dal test — la domanda senza `userId` a pagine da 100, e una pagina che non arriva che dà `null`) e
+    `IvaoApiTimeoutTests` (1: il tempo per tentativo e la regola del gestore).
+- **Scostamenti** dal piano e dal design, ognuno nella nota:
+  1. ⚠️ **Il tempo per tentativo del client di IVAO passa da 10 a 20 s per tutte le chiamate** (nota §3.4): il piano non lo
+     chiedeva, ma senza nessun aeroporto si legge. Il totale resta 30 s, quindi una chiamata che non risponde costa quanto prima.
+  2. ⚠️ **Una ricerca del tracker a cui IVAO non risponde affatto ora dà `null` invece di lanciare** (nota §3.2): per i tour,
+     «tracker non disponibile» invece di un 500 — quello che il commento dell'interfaccia prometteva già.
+  3. **Le pagine da 100 anche per i tour**, e il client delle fixture ordina dalla più recente con la regola delle revisioni: per le
+     fixture dei tour il risultato non cambia (nessuna loro sessione ha aeroporti diversi fra una revisione e l'altra: controllato).
+  4. **Le fixture tolgono più della persona** di quelle dei tour — i callsign dei piloti e gli identificativi —, perché sono
+     sconosciuti (nota §3.5).
+  5. **Nessun test d'integrazione nuovo**: «i tour invariati» sono i loro test, che ci sono, verdi e non toccati; la domanda senza VID
+     del client delle fixture — lo stesso oggetto che serve il banco — è provata in unità.
+- **Trovato, e scritto per chi viene dopo** (E13a):
+  1. ⚠️ **Ogni domanda per aeroporto che trova qualcosa costa ~10,5 s, e due lente insieme ricevono 504**: il job chiede una domanda
+     alla volta, poche per giro.
+  2. ⚠️ **La finestra è sull'inizio della sessione**: per chi era già connesso all'inizio dell'evento, `FromUtc` va allargato.
+  3. ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione; una sessione che
+     torna da tutte e due si conta una volta (`Id`).
+  4. ⚠️ **Il DTO porta gli aeroporti della prima revisione**: la sessione trovata per la partenza da LIRF può dire LIPZ.
+  5. **`callsign` filtra per l'inizio del nominativo** (misurato, non usato): se un giorno servirà chi ha aperto una postazione senza
+     conoscerne il VID.
+- **Verificato, in locale** (30 settembre 2026, sul branch, prima del commit dei documenti): `dotnet build` senza avvisi; unità
+  **902/902** (17 nuove); **integrazione intera senza filtro 430/430** (6,9 minuti); `dotnet format --verify-no-changes` sui sette
+  file C#; in `web/` `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594 in 80 file, `pnpm gen:api` senza
+  differenze. Due prove al contrario: con il campionamento dell'interruttore a 30 s la lettura delle opzioni lancia
+  (`IvaoApiTimeoutTests` rosso), e con `ReadAsync` al posto di `ReadOrNothingAsync` il test della pagina che non arriva cade con
+  l'eccezione. **Contro IVAO vero**, con un programma fuori dal repository costruito su `AddIvaoIntegration()` (non un test): sul
+  codice di `main` la ricerca per aeroporto finisce in una `TimeoutRejectedException` dopo 30 s; sul codice nuovo gli arrivi di LIRF
+  in una sera (13) in 12,0 s, le partenze di EDDF in una settimana (**305**, oltre 200) in 12,6 s, con `Limit` 250 in 1,75 s, e una
+  ricerca per VID come quelle dei tour in 118 ms. Le regole di `core-guard` rifatte in PowerShell sul diff dalla base: nessun file
+  del maintainer, sette del nucleo, la nota nuova.
+- **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
+  di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
+  pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata
+  a cui IVAO vero non risponde affatto, con i 20 s per tentativo (in unità sì, con la pagina che non arriva); la pagina del pilota
+  dei tour quando IVAO non risponde (ora «tracker non disponibile»: provato sul client, non sulla pagina); `pnpm e2e` ed `e2e:full`,
+  perché nessuna schermata cambia — il client delle fixture, che il banco usa anche per i tour, è provato in unità con la fixture dei
+  tour (780001), non sul banco.
 
 ### E10b — Nucleo: le sessioni condivise per VID
 
