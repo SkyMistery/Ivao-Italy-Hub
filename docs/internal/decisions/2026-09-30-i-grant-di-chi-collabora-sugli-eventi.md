@@ -1,13 +1,16 @@
 # I grant di chi collabora sugli eventi: il permesso, non il dipartimento
 
 **Data:** 30 settembre 2026 — fase E2 di M4 (lo scheletro), PR #209
-**Stato:** **Proposta** — la domanda è a Carmine con un commento sulla PR ([la domanda][q]); la risposta si registra qui con il
-link. Fino ad allora **i nove grant di AOD, FOD e MD non entrano in `division.json`** (§3), e la fase E3a, che li prova, aspetta.
+**Stato:** **decisa** (Carmine, 30 settembre 2026, in chat alla sessione master, e pubblicata su sua istruzione [sulla #209][a],
+alla [domanda][q]): **la (b)**, come raccomandato — un grant a una posizione su un dipartimento che non è il suo dà il permesso, non
+il dipartimento; **una fase del nucleo a sé, E2b, con la sua nota, prima di E3a**; i nove grant di AOD, FOD e MD si seminano dopo
+E2b, e non in E2 (§3).
 **Regola applicata:** `CLAUDE.md` §0 regola 3 (un test del maintainer che va rosso dice che il cambio è sbagliato, non il test) e
 §5: la raccomandazione (§2, (b)) estende un meccanismo del nucleo, quindi è una PR del nucleo a sé, con la sua nota, prima del
 codice del modulo che la usa (regola 6). Design `09-design-m4.md` §1.1, §6.2; nota `2026-09-29-chi-lavora-sugli-eventi` §2.3–§2.4.
 
-[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5916540465
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
 
 ## 1. Che cosa è venuto fuori scrivendo i grant
 
@@ -43,10 +46,10 @@ codice del modulo che la usa (regola 6). Design `09-design-m4.md` §1.1, §6.2; 
   (oggetto e mittente nella lista, il dettaglio rifiutato dall'unico handler, `ContactsEndpoints.cs:37`); le righe
   `Visibility.Department` dell'ED nella ricerca e nelle pagine. Per una trentina di persone, per ogni evento a venire.
 
-## 2. La domanda
+## 2. La domanda, e la risposta
 
-Chi ha che cosa resta com'è deciso (design §6.2); la domanda è **fin dove arriva un grant a una posizione su un dipartimento che non è
-il suo**.
+Chi ha che cosa resta com'è deciso (design §6.2); la domanda ([sulla #209][q]) era **fin dove arriva un grant a una posizione su un
+dipartimento che non è il suo**.
 
 - **(a) Com'è scritto, con l'allargamento.** I nove grant entrano in `division.json`; chi collabora entra nell'ED per quello che vede,
   secondo la regola del 6 settembre. Nessun codice del nucleo. I tre test del maintainer vogliono un «esterno» che nessun grant porta
@@ -75,23 +78,31 @@ di» proprio perché «darebbe loro tutto l'evento, non la loro parte»: (a) dar
 scritta per una persona che aiuta un dipartimento, non per tre dipartimenti interi; e la coda dei contatti dell'ED è fatta di messaggi
 di membri. (b) è la stessa regola che il nucleo ha già per il team di un FIR, scritta una volta.
 
-## 3. Che cosa fa E2 intanto
+**La risposta di Carmine** (30 settembre 2026, in chat alla sessione master, pubblicata su sua istruzione [sulla #209][a]): **la (b)**
+com'è scritta qui sopra — `BuildIdentity` lascia quel dipartimento fuori dai claim `dept`, la lista generata aggiunge le righe dei
+dipartimenti su cui il lettore tiene per quella via il permesso di lettura della lista, l'unico handler, il guardiano e il filtro globale
+non cambiano, un grant a una persona resta come il 6 settembre, i suoi test restano come sono —, e **in una fase del nucleo a sé, E2b,
+con la sua nota, prima di E3a**; i nove grant di chi collabora si seminano dopo di lei.
+
+| Domanda | Risposta | Scartata |
+|---|---|---|
+| Fin dove arriva un grant a una posizione su un dipartimento che non è il suo? | **(b)**: il permesso, non il dipartimento; fase del nucleo **E2b** prima di E3a | (a) l'allargamento della regola del 6 settembre, con tre test del maintainer da cambiare; chi collabora nel «a cura di» |
+
+## 3. Che cosa fa E2
 
 - **In `config/division.json` e `config/division.example.json`** ci sono gli **11 grant dell'ED** (EC ed EAC tutto tranne
   `EventReports.Edit`, EA1–9 senza `Events.Delete` né `Events.ManageSettings`) e i **2 del team di un FIR** su `EventAtc.*`, che con
   `own` non entrano nei claim e comunque aspettano la prima riga `IHasFir` dell'area (E11a: fino ad allora il seme li salta con un
   avviso e non li ricorda). Suite d'integrazione intera verde così (la PR dice le corse).
 - **I nove di chi collabora non ci sono**: un grant del seme si applica una volta e non si toglie più togliendolo dal file (nota
-  `chi-lavora-sugli-eventi`, «Da portare nel piano»), quindi non entra prima della risposta. `EventsArchitectureTests` li elenca come
-  in attesa di questa nota e li rifiuta nei due file finché non passano nella tabella del design.
-- **Con (a)** i nove entrano con una riga ciascuno, nella fase che segue la risposta (o in E2, se la risposta arriva durante la
-  revisione), e il maintainer cambia i suoi tre test. **Con (b)** entrano con la fase E2b del nucleo, o subito dopo, prima di E3a.
+  `chi-lavora-sugli-eventi`, «Da portare nel piano»), quindi entrano **dopo E2b**, non in E2 — con E2b stessa o con la fase che la
+  segue, prima di E3a. `EventsArchitectureTests` li elenca come in attesa e li rifiuta nei due file finché non passano nella tabella
+  del design. E2b non la scrive E2: la sua sessione la prepara la sessione che coordina.
 
 ## Da portare nel piano
 
-- **Con (a)**: §6.3 del piano (i grant a una posizione): un grant a una posizione su un altro dipartimento fa entrare in quel
-  dipartimento, per ciò che vede, **ogni** titolare della posizione — detto ad alta voce come il 6 settembre.
-- **Con (b)**: §6.3 e §16.2–§16.3 (i grant, l'unico handler, la lista generata): un grant a una posizione su un dipartimento che non è
-  il suo dà il permesso sulle righe di quel dipartimento, non il dipartimento; la nota del 6 settembre vale per i grant a una persona.
-  In `10-piano-implementazione-m4.md`, la fase del nucleo **E2b** fra E2 ed E3a.
-- In tutti e due i casi: nessun cambio al design §6.2 (chi ha che cosa resta com'è).
+- §6.3 e §16.2–§16.3 (i grant, l'unico handler, la lista generata): un grant a una posizione su un dipartimento che non è il suo dà il
+  permesso sulle righe di quel dipartimento, non il dipartimento; la nota del 6 settembre vale per i grant a una persona. La forma nel
+  codice è della nota di E2b.
+- `10-piano-implementazione-m4.md`: la fase del nucleo **E2b** fra E2 ed E3a, e i nove grant di chi collabora dopo di lei.
+- Nessun cambio al design §6.2: chi ha che cosa resta com'è.
