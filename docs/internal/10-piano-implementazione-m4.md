@@ -606,7 +606,55 @@ Design §4.3, §4.5, §9.3, §13 n.3; nota `il-roster-atc`. Branch `m4/e10b-shar
 **Test**: integrazione sulla vista di prova (come quelle di `IAtcActivitySource` oggi); `none` risponde «non disponibile».
 **Fatta quando**: la storia di un controllore per postazione si legge dal nucleo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Fatto** (nota nuova `2026-09-30-le-sessioni-condivise-per-vid`, scelta tecnica, nessuna domanda nuova), tutto in
+  `src/IvaoHub.Core/Atc/`:
+  - **il VID nelle presenze**: `AtcPresence.Vid` (`int?`), una proprietà `init` sotto il costruttore, letta dalla colonna `vid` della
+    vista (`UserId` di vIPI); `null` dove l'archivio non lo dice. Non esce dai tour, che costruiscono le loro risposte campo per campo
+    (`AtcContactDto`, `AgentAtcPresenceDto`): nessun cambio del contratto OpenAPI;
+  - **la domanda nuova** `IAtcActivitySource.SessionsOfAsync(vid, fromUtc, toUtc)`: le connessioni di un controllore aperte
+    nell'intervallo, nella forma della domanda di T12 (`AtcActivity`), per i due usi del design — un anno per l'esperienza (§4.3,
+    `Of(callsign)` è una postazione), l'ora di un turno per la presenza (§4.5, `Covers` separa «non c'era» da «non si sa»); chi ha
+    coperto la postazione è la domanda di T12 con i VID;
+  - `VipiAtcActivitySource` legge le due domande con **una query** sulla vista (quella di T12, con il filtro su `vid`);
+    `UnavailableAtcActivitySource` risponde `null` a tutte e due;
+  - `AtcActivitySourceTests` (integrazione, nuovo): la vista scritta come la migrazione di vIPI, **in un database suo**, con all'utente
+    dell'hub solo il `SELECT` sulla vista; l'ora di un turno e chi ha coperto, un anno per postazione con la copertura per metà, un VID
+    mai visto, `none`, un archivio scritto prima di E10b, la vista sparita, la stringa di connessione mancante.
+- ⚠️ **Scostamento: una correzione che la fase non chiedeva** (nota, §4; un commit a sé, `fix(core): …`). Con `atcData: vipi` e
+  `ConnectionStrings:AtcData` non ancora nei segreti **l'hub non partiva**: il contesto della vista arrivava dal costruttore della
+  sorgente, quindi si costruiva fuori dal suo `try`, e all'avvio la sorgente la costruisce il seeder dei contenuti (attraverso i
+  fornitori dei blocchi Data dei tour, fino ad `AtcProposer`). La classe prometteva «non disponibile» e il suo `catch` aspettava già
+  quell'eccezione: ora il contesto si chiede dentro il `try` (`IServiceProvider`, come `PersonalDataErasure`). La prova nuova cade con
+  la sorgente di prima, all'avvio dell'host. La nota la tratta come quello che è: il comportamento già scritto, non una decisione nuova.
+- **Scelte piccole, scritte nella nota**:
+  1. la domanda nuova ha **un corpo predefinito nell'interfaccia** che risponde «non disponibile», come
+     `IIvaoApiClient.GetAtcPositionsAsync` (A2 di M3): senza, il doppio di `AtcContactsTests` (del maintainer) non compilerebbe;
+  2. `Vid` è una proprietà sotto il costruttore e `int?`: il costruttore di T12 non cambia, e lo 0 è già l'installazione nelle colonne
+     di persona;
+  3. **un controllore per domanda**: vIPI indicizza `(UserId, StartUtc)` (letto nel suo modello, `Digital_vIPI`, il 30 settembre);
+  4. **il tipo di una postazione non passa** da qui: lo dice la directory di E10c; la colonna `position` della vista e il `SessionId`
+     restano fuori finché una fase non li chiede.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Un host dei test d'integrazione senza `useIvaoFixtures` chiede un token a IVAO** quando `ref_ivao_centers` è vuota
+     (`HubPipeline`, la sincronizzazione all'avvio): 400, ma cinque chiamate vere a ogni avvio finché la tabella resta vuota — nel primo
+     giro della classe da sola, a ogni suo host. `AtcActivitySourceTests` passa `useIvaoFixtures: true`; l'host di prova in generale è
+     del nucleo e fuori da questa fase (nella PR, per il revisore).
+  2. **E10b non tocca `Core/Ivao/`**, che «Per chi prende M4» dell'handoff metteva fra le sue: l'archivio è `Core/Atc/`.
+  3. **Il `SessionId` della vista è l'id della sessione di IVAO** (vIPI lo copia dal whazzup, `IvaoWhazzupClient`): se E14a vorrà
+     scrivere quale sessione ha trovato per un turno, è lo stesso id del tracker, qualunque sia la fonte.
+- **Verificato, in locale** (30 settembre 2026, sul branch prima del commit dei documenti): `dotnet build` senza avvisi, anche
+  `--no-incremental`; unità **885/885**; **integrazione intera senza filtro 435/435** (8,7 minuti; 5 nuove), sul codice dei primi due
+  commit — il terzo cambia solo un commento —; `AtcActivitySourceTests` da sola 5/5, con le fixture nessuna chiamata a IVAO (senza,
+  cinque per host); le controprove: senza il filtro su `vid`, e senza il VID nelle presenze, cadono le due prove del VID (2 rosse su 4
+  ogni volta); la prova della correzione cade con la sorgente di prima, all'avvio dell'host; `dotnet format --verify-no-changes` sui
+  tre file C#; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **594 in 80 file**; `pnpm gen:api` senza
+  differenze; le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, due del nucleo
+  (`Core/Atc/`), la nota nuova — passa.
+- **Non verificato**: la CI (la dice la PR); la vista vera di vIPI su `itivao_atc` (il test la riscrive dalla migrazione di vIPI, e la
+  prova e la produzione non hanno ancora `atcData`); il costo di `SessionsOfAsync` sul server condiviso (l'indice c'è nel modello di
+  vIPI, non l'ho misurato sul server); `pnpm e2e` e `pnpm e2e:full`, non girati perché nessuna schermata cambia.
 
 ### E10c — Nucleo: rating e postazioni della divisione
 

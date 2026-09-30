@@ -9,7 +9,8 @@
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase E15a** (nucleo: le prenotazioni ATC della rete), sul branch
 `m4/e15a-network-atc-bookings`, **PR #207** verso `main`, del nucleo, senza coda.
 **Il prossimo passo**: **E2** (lo scheletro), che può andare avanti accanto a E1; **E3a** aspetta tutte e due unite. Le fasi del nucleo
-di M4b (**E10a–E10e**) sono partite il 30 settembre insieme a E2 e a E15a, ognuna in una sessione sua; **E15b** aspetta E14b ed E15a.
+di M4b (**E10a–E10e**) sono partite il 30 settembre insieme a E2 e a E15a, ognuna in una sessione sua (E10b è unita, #208); **E11b** ed
+**E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E15b** aspetta E14b ed E15a.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -96,7 +97,8 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 
 **Che cosa manca, e quale fase lo porta**: ~~i tipi `rfe`, `rfo`, `mse`, `onlineDay` e uno staff degli eventi sul banco (E1)~~
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
-senza VID, con il tipo di connessione (E10a); il VID nelle sessioni condivise (E10b); il rating preferito e minimo, le postazioni della
+senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
+controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
 divisione per nominativo (E10c); la mail a chi assegna (E10d); la distanza nel nucleo (E10e); ~~le prenotazioni ATC della rete
 (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato E15a»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
@@ -146,6 +148,43 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - ⚠️ **Trappole trovate** (nota, §2): la `position` di IVAO è **il principio del nominativo** (`LI` = tutte le italiane); una
   prenotazione a cavallo della mezzanotte è nell'elenco di **tutti e due** i giorni, una che finisce alle 00:00 anche del giorno dopo;
   `date` con un'ora che non è 00:00 dà un elenco vuoto; `user` porta anche `rating`, che la documentazione non dice.
+
+### Che cosa ha lasciato E10b (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-le-sessioni-condivise-per-vid.md`, scelta tecnica, nessuna domanda nuova), tutto in
+  `src/IvaoHub.Core/Atc/`:
+  - **il VID in ogni presenza**: `AtcPresence.Vid` (`int?`, una proprietà `init` sotto il costruttore), dalla colonna `vid` della
+    vista; `null` dove l'archivio non lo dice (un doppio di un test), che non è il VID di nessuno. Non esce dai tour (le loro risposte
+    si costruiscono campo per campo): il contratto OpenAPI non cambia;
+  - **la domanda nuova** `IAtcActivitySource.SessionsOfAsync(vid, fromUtc, toUtc)`: le connessioni di un controllore aperte
+    nell'intervallo, nella forma della domanda dei tour (`AtcActivity`: le presenze e da quando l'archivio è completo, per la divisione
+    e per il mondo). Un controllore per domanda: vIPI indicizza `(UserId, StartUtc)`;
+  - **«non disponibile»** (`null`) con `atcData.source: none`, con un archivio scritto prima di E10b (la domanda ha un corpo
+    predefinito nell'interfaccia, come `IIvaoApiClient.GetAtcPositionsAsync`), con un archivio che non si legge;
+  - **corretto**: con `atcData: vipi` e senza `ConnectionStrings:AtcData` **l'hub non partiva** — il contesto della vista si
+    costruiva con la sorgente, fuori dal suo `try`, e all'avvio il seeder dei contenuti la costruisce attraverso i blocchi dei tour —;
+    ora parte e risponde «non disponibile» (nota §4, un commit a sé);
+  - **i test**: `AtcActivitySourceTests` (integrazione), con la vista di vIPI in **un database suo** e all'utente dell'hub solo il
+    `SELECT` sulla vista.
+- **Che cosa deve sapere la fase dopo**:
+  - **E11b** (l'esperienza, design §4.3): una domanda per candidato, `SessionsOfAsync(vid, adesso − experienceMonths, adesso)`, e
+    `Of(callsign)` per una postazione. «Più spesso» (sessioni o minuti) e «quel tipo» sono del modulo, e **il tipo di un nominativo lo
+    dà la directory di E10c**, non questa interfaccia (la colonna `position` della vista non passa). `null` = il criterio non c'è; una
+    lista vuota = nessuna esperienza.
+  - **E13a** (la presenza, §4.5): `SessionsOfAsync(vid, turno.da, turno.a).Of(callsign)` per il titolare; chi ha coperto:
+    `OnlineAsync(turno.da, turno.a).Of(callsign)` con un `Vid` diverso dal titolare. ⚠️ I minuti dentro il turno li conta il modulo:
+    una connessione ancora aperta ha `EndedAt` nullo, una riconnessione sono due connessioni, e la prima può cominciare prima del
+    turno. ⚠️ `Covers(callsign, turno.da)` falso vuol dire «non si sa» (`Unknown`), non un no-show. Con `null` il ripiego è il tracker
+    per VID con `connectionType=ATC` (E10a): la scelta fra le due fonti è del modulo.
+  - ⚠️ **`Vid` è `int?`**: `presence.Vid == turno.ControllerVid` con un `null` non conferma nessuno, ed è voluto.
+  - ⚠️ **E10b non tocca `Core/Ivao/`**, a differenza di quello che dice «Per chi prende M4» (con E10a ed E15a): l'archivio è
+    `Core/Atc/`, e non è il client di IVAO.
+  - ⚠️ **Un host dei test d'integrazione senza `useIvaoFixtures` chiede un token a IVAO** quando `ref_ivao_centers` è vuota (la
+    sincronizzazione all'avvio, `HubPipeline`): rifiutato con un 400, ma sono chiamate vere, cinque a ogni avvio finché la tabella
+    resta vuota. I test degli eventi che avviano un host passino `useIvaoFixtures: true`, come `AtcPositionTests` e
+    `AtcActivitySourceTests`.
+  - `docs/FORKING.md` e `config/division.example.json` descrivono l'archivio per i tour, e restano veri: la metà degli eventi la scrive
+    E15b.
 
 ### Che cosa ha lasciato E1 (30 settembre 2026, branch `m4/e1-calendar-kinds`, PR #200, del nucleo, senza coda)
 
