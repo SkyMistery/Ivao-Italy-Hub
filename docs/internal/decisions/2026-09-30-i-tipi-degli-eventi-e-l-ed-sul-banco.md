@@ -4,11 +4,15 @@
 **Stato:** **scelta tecnica**, per dare forma nel codice a decisioni già prese da Carmine: l'estensione n.1 del design
 (`09-design-m4.md` §13), la nota `2026-09-29-i-tipi-di-evento` §2.1 (§17.2 n.1 del design, decisa sulla #180) e il personaggio
 dell'ED che `10-piano-implementazione-m4.md` chiede in E1. Nessuna domanda nuova, ma **uno scostamento di grafia** dal design e dal
-piano (§2.2): la chiave dell'Online Day è `online-day`, perché `onlineDay` è una chiave che il vocabolario rifiuta.
+piano (§2.2): la chiave dell'Online Day è `online-day`, perché `onlineDay` è una chiave che il vocabolario rifiuta. **La grafia è
+confermata da Carmine** (30 settembre 2026, in chat al master, che l'ha pubblicata sulla PR #200 su sua istruzione: [risposta][ok200]):
+`online-day`, e la chiave della traduzione resta `seed.calendarKinds.onlineDay`.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono due meccanismi del nucleo che esistono già — il seme dei tipi del
 calendario (`seed/calendar-kinds/kinds.json`, `ContentSeeder.SeedCalendarKindsAsync`) e i personaggi del banco e2e (`E2ESignIn`,
 `web/scripts/e2e-server.mjs`) — e il modulo non ne scrive una copia sua. È una PR del nucleo, prima di E2 ed E3a che la usano
 (`CLAUDE.md` §0 regola 6).
+
+[ok200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912372176
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -55,8 +59,9 @@ calendario (`seed/calendar-kinds/kinds.json`, `ContentSeeder.SeedCalendarKindsAs
 - **Le fasi dopo scrivono `online-day`**: `kindPresets` (E2), il form dell'evento (E3a) e, quando la divisione vorrà l'Online Day
   fra i tipi che avvisano un trainer, i `conflictKinds` del training (un'impostazione, nessun codice).
 - È una grafia, non una decisione nuova: la decisione (il tipo è una chiave del vocabolario) resta quella di Carmine, e la chiave
-  segue la regola che il vocabolario ha da quando esiste (G13 di M1, nota `2026-09-08-tipi-di-evento-di-divisione`). Il revisore la guarda per prima; se Carmine preferisce un'altra grafia che il
-  vocabolario accetti, è una riga del seme e una dei test.
+  segue la regola che il vocabolario ha da quando esiste (G13 di M1, nota `2026-09-08-tipi-di-evento-di-divisione`). Il revisore
+  l'ha portata a Carmine, che l'ha **confermata** il 30 settembre 2026 ([risposta sulla #200][ok200]): `online-day`, la chiave della
+  traduzione `seed.calendarKinds.onlineDay`, le note già unite e il design restano come sono scritti.
 
 ### 2.3 Un test del file del seme
 

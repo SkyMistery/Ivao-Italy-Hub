@@ -285,8 +285,13 @@ personaggio del banco, come A1 di M3).
   dell'Online Day è `online-day`, non `onlineDay`** (nota, §2.2). La chiave di un tipo ha la forma di uno slug
   (`CalendarKindWriteDtoValidator`, `^[a-z0-9]+(?:-[a-z0-9]+)*$`), e il validatore la rilegge **a ogni salvataggio**, anche di una riga
   che c'è già: un `onlineDay` seminato sarebbe una riga che il web master non salva più, nemmeno per cambiarle colore, senza
-  rinominarla. `online-day` è la grafia che il back office stesso propone da «Online Day» (`slugify`). **Le fasi dopo scrivono
-  `online-day`**: `kindPresets` (E2), il form (E3a), e i `conflictKinds` del training quando la divisione lo vorrà.
+  rinominarla. `online-day` è la grafia che il back office stesso propone da «Online Day» (`slugify`). **Confermata da Carmine** il
+  30 settembre 2026, in chat al master, che l'ha pubblicata sulla PR su sua istruzione ([risposta sulla #200][ok200]). **Le fasi dopo
+  scrivono `online-day`**: `kindPresets` (E2), il form (E3a), e i `conflictKinds` del training quando la divisione lo vorrà.
+- **Dopo la revisione** ([osservazioni del revisore sulla #200][r200], «approvable», niente di bloccante): la conferma di Carmine qui
+  sopra, registrata nella nota, qui e nell'handoff; nessun cambio al codice. Le due osservazioni per dopo — il commento di
+  `TrainingSettings.cs:57` e l'elenco dei personaggi del banco in `CONTRIBUTING.md` — sono del training e del maintainer (sotto,
+  «Trovato», punti 2 e 3).
 - **Scelte piccole, scritte nella nota**: il colore (blu, come `event`: la tavolozza ha tre colori liberi per quattro tipi, e il colore
   di un tipo esiste per raggruppare); il nome «Bench Events», come gli altri personaggi dal loro `?as=`; **un test di unità in più**,
   che `10` non chiedeva: nessun test leggeva `seed/calendar-kinds/` (`ContentSeedTests` legge template e pagine), e il seeder non passa
@@ -313,6 +318,9 @@ personaggio del banco, come A1 di M3).
   d'integrazione, con il seme passato due volte); le etichette italiane nel browser oltre «una parola, non una chiave» (le afferma
   esatte il test d'integrazione); i permessi degli eventi del personaggio, che arrivano con E2; `pnpm e2e:full` con la mappa di base,
   che non c'è né nella cartella principale né negli altri worktree (le spec tollerano il 404 di `/tiles/`, come in CI).
+
+[ok200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912372176
+[r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
 
 ### E2 — Modulo: lo scheletro
 
