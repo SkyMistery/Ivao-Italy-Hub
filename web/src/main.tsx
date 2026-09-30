@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { HubProviders } from './app/Providers';
+import { reloadWhenAChunkIsGone } from './app/newBuild';
 import { createI18n } from './app/i18n';
 import { registry } from './app/registry';
 import { createHubRouter } from './app/router';
@@ -30,6 +31,10 @@ import '@fontsource/nunito-sans/600.css';
 import '@fontsource/nunito-sans/700.css';
 import '@fontsource/nunito-sans/800.css';
 import './styles/index.css';
+
+// A chunk that a delivery removed from the server loads the page again, once (note
+// 2026-09-30-la-pagina-dopo-una-consegna). Before anything imports one.
+reloadWhenAChunkIsGone();
 
 const queryClient = new QueryClient();
 
