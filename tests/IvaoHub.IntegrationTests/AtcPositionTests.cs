@@ -13,11 +13,13 @@ using Xunit;
 namespace IvaoHub.IntegrationTests;
 
 /// <summary>
-/// The ATC positions of IVAO in the snapshot of the reference data, and the question a module asks of them (M3, A2, note
+/// The ATC positions of IVAO in the snapshot of the reference data, and the questions a module asks of them (M3, A2, note
 /// <c>decisions/2026-09-25-le-postazioni-atc-e-il-tipo-exam.md</c>): the world is copied, each of IVAO's two lists is
 /// refreshed and pruned on its own and never on an empty answer, and the directory answers the positions of the division
-/// a rating is trained on. The client reads the answers of the world recorded on 25 September 2026
-/// (<c>tests/fixtures/ivao/atc-positions-world.json</c>, <c>subcenters-world.json</c>).
+/// a rating is trained on — and, since M4's E10c (note <c>decisions/2026-09-30-il-rating-preferito-e-il-minimo-di-una-postazione.md</c>),
+/// every position of the division and the ones among some callsigns, each with its kind and FIR. The client reads the
+/// answers of the world recorded on 25 September 2026 (<c>tests/fixtures/ivao/atc-positions-world.json</c>,
+/// <c>subcenters-world.json</c>).
 /// <para>No VID and no slug: the only rows written here are positions whose callsigns carry a <c>Q</c> no station of the
 /// fixtures has, and every test takes its own back.</para>
 /// </summary>
@@ -167,13 +169,13 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // division's; ground and delivery are not what the vocabulary trains an ADC on.
         var towers = await directory.ForRatingAsync(Atc(ratings, "ADC"), token);
         Assert.Equal(["LIBD_TWR", "LIMC_E_TWR", "LIMC_TWR", "LIRF_E_TWR", "LIRF_TWR"], towers.Select(tower => tower.Callsign));
-        Assert.Equal(new AtcPositionDto("LIRF_TWR", "Fiume Tower", "LIRF", "LIRR"), towers[^1]);
+        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR"), towers[^1]);
         Assert.Equal("LIMM", Assert.Single(towers, tower => tower.Callsign == "LIMC_TWR").Fir);
 
         // An APC on the approaches. Grottaglie is Italian, but the bench does not know its airport, and a position whose
         // airport the hub does not know belongs to nobody.
         var approaches = await directory.ForRatingAsync(Atc(ratings, "APC"), token);
-        Assert.Contains(new AtcPositionDto("LIRF_AWL_APP", "Roma Radar", "LIRF", "LIRR"), approaches);
+        Assert.Contains(new AtcPositionDto("LIRF_AWL_APP", "APP", "Roma Radar", "LIRF", "LIRR"), approaches);
         Assert.All(approaches, approach => Assert.EndsWith("_APP", approach.Callsign, StringComparison.Ordinal));
         Assert.DoesNotContain(approaches, approach => approach.AirportIcao == "LFPG");
         Assert.DoesNotContain(approaches, approach => approach.Callsign == "LIBG_APP");
@@ -181,7 +183,7 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // An ACC on the sectors of the division's FIRs, with no airport, and the military ones among them: the training
         // department uses some, and leaves out the rest with a setting of its module.
         var sectors = await directory.ForRatingAsync(Atc(ratings, "ACC"), token);
-        Assert.Contains(new AtcPositionDto("LIRR_NE_CTR", "Roma Radar", null, "LIRR"), sectors);
+        Assert.Contains(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR"), sectors);
         Assert.Contains(sectors, sector => sector.Callsign == "LIRR_MIL_CTR");
         Assert.All(sectors, sector => Assert.Null(sector.AirportIcao));
         Assert.DoesNotContain(sectors, sector => sector.Fir == "LFFF");
@@ -234,6 +236,97 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.DoesNotContain(towers, tower => tower.AirportIcao != "LFPG");
 
         Assert.Empty(await directory.ForRatingAsync(Atc(ratings, "ACC"), token));
+    }
+
+    [Fact]
+    public async Task TheDirectoryAnswersEveryPositionOfTheDivisionWithItsKindAndFir()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var directory = scope.ServiceProvider.GetRequiredService<IAtcPositionDirectory>();
+        var positions = await directory.OfDivisionAsync(token);
+
+        // The positions of the bench's three Italian airports and the sectors of their three FIRs, of every kind IVAO lists
+        // — delivery, ground, ATIS, FSS and the military ones too —: what an event's positions are chosen from (design M4
+        // §4.1). Paris is another division's; Grottaglie is Italian, but the bench does not know its airport.
+        Assert.Equal(
+            [
+                "LIBB_ES_CTR", "LIBB_EU_CTR", "LIBB_FSS", "LIBB_MIL_CTR", "LIBD_ATIS", "LIBD_CS0_APP", "LIBD_TWR",
+                "LIMC_ANE_APP", "LIMC_ANW_APP", "LIMC_ASW_APP", "LIMC_ATIS", "LIMC_DEL", "LIMC_E_TWR", "LIMC_MAR_APP",
+                "LIMC_N_GND", "LIMC_TWR", "LIMC_W_GND", "LIMM_ES2_CTR", "LIMM_ES5_CTR", "LIMM_FSS", "LIMM_MIL_CTR",
+                "LIMM_WS2_CTR", "LIMM_WS5_CTR", "LIRF_AEM_APP", "LIRF_AET_APP", "LIRF_ATIS", "LIRF_AWL_APP", "LIRF_DEL",
+                "LIRF_E_TWR", "LIRF_GND", "LIRF_PN1_APP", "LIRF_PS1_APP", "LIRF_TW1_APP", "LIRF_TWR", "LIRF_W_GND",
+                "LIRR_ES_CTR", "LIRR_EW_CTR", "LIRR_FSS", "LIRR_MIL_CTR", "LIRR_NC_CTR", "LIRR_NE1_CTR", "LIRR_NE_CTR",
+                "LIRR_NW_CTR", "LIRR_OV_CTR", "LIRR_PLN_FSS", "LIRR_SU_CTR", "LIRR_TS_CTR", "LIRR_US_CTR",
+            ],
+            positions.Select(position => position.Callsign).Order(StringComparer.Ordinal));
+
+        // Each with its kind, which a module hands to the vocabulary, and its FIR, which an event's row copies (IHasFir).
+        Assert.Contains(new AtcPositionDto("LIRF_DEL", "DEL", "Fiume Delivery", "LIRF", "LIRR"), positions);
+        Assert.Contains(new AtcPositionDto("LIMC_N_GND", "GND", "Malpensa Ground North", "LIMC", "LIMM"), positions);
+        Assert.Contains(new AtcPositionDto("LIBD_ATIS", "ATIS", "Bari ATIS", "LIBD", "LIBB"), positions);
+        Assert.Contains(new AtcPositionDto("LIRR_FSS", "FSS", "Roma Information", null, "LIRR"), positions);
+        Assert.Contains(new AtcPositionDto("LIMM_MIL_CTR", "CTR", "Milano Military", null, "LIMM"), positions);
+
+        // What the directory answered for a rating before is a part of this answer, row for row and in the same order.
+        foreach (var rating in scope.ServiceProvider.GetRequiredService<RatingVocabulary>().Ladder(RatingKind.Atc))
+        {
+            Assert.Equal(
+                positions.Where(position => position.Type == rating.PositionType),
+                await directory.ForRatingAsync(rating, token));
+        }
+    }
+
+    [Fact]
+    public async Task TheDirectoryFindsThePositionsOfTheDivisionByTheirCallsigns()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var directory = scope.ServiceProvider.GetRequiredService<IAtcPositionDirectory>();
+
+        // A tower written the way a form may send it, and a sector: each comes with its kind and its FIR, and is found by
+        // its callsign in any case.
+        var found = await directory.FindAsync([" lirf_twr ", "LIRR_NE_CTR", "LIRR_NE_CTR"], token);
+        Assert.Equal(["LIRF_TWR", "LIRR_NE_CTR"], found.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal(new AtcPositionDto("LIRF_TWR", "TWR", "Fiume Tower", "LIRF", "LIRR"), found["LIRF_TWR"]);
+        Assert.Equal(new AtcPositionDto("LIRR_NE_CTR", "CTR", "Roma Radar", null, "LIRR"), found["lirr_ne_ctr"]);
+
+        // Another division's tower and sector, a position whose airport the hub does not know, a callsign IVAO does not
+        // list, and nothing at all: absent, never an error.
+        Assert.Empty(await directory.FindAsync(["LFPG_TWR", "LFFF_E_CTR", "LIBG_APP", "LIRF_ZZ_TWR", "", "  "], token));
+        Assert.Empty(await directory.FindAsync([], token));
+    }
+
+    [Fact]
+    public async Task AnotherDivisionFindsItsOwnPositionsOfEveryKind()
+    {
+        // The same snapshot, read by a hub whose countryId is FR: every position of Paris, its departure among them — a
+        // kind no Italian airport of the bench has —, and none of Italy's, by the list or by the callsign.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        var division = _factory.Services.GetRequiredService<IOptions<DivisionOptions>>().Value with { CountryId = "FR" };
+        await using var french = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton(Options.Create(division))));
+
+        await using var scope = french.Services.CreateAsyncScope();
+        var directory = scope.ServiceProvider.GetRequiredService<IAtcPositionDirectory>();
+
+        var positions = await directory.OfDivisionAsync(token);
+        Assert.Equal(17, positions.Count);
+        Assert.All(positions, position =>
+        {
+            Assert.Equal("LFPG", position.AirportIcao);
+            Assert.Equal("LFFF", position.Fir);
+        });
+        Assert.Contains(new AtcPositionDto("LFPG_DEP", "DEP", "De Gaulle Departure", "LFPG", "LFFF"), positions);
+
+        var found = await directory.FindAsync(["lfpg_dep", "LIRF_TWR"], token);
+        Assert.Equal("LFPG_DEP", Assert.Single(found).Key);
     }
 
     // ---- helpers -----------------------------------------------------------------------------
