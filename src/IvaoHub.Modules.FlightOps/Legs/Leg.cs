@@ -1,4 +1,5 @@
 using System.Text.Json;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Division;
 using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;

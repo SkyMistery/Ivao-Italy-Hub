@@ -44,4 +44,10 @@ public sealed class AwardSignal
     public DateTime? HandledAt { get; set; }
 
     public int? HandledBy { get; set; }
+
+    /// <summary>
+    /// When whoever assigns was told about it (M4, E10d, note 2026-09-30-la-mail-a-chi-assegna-gli-award); null while nobody
+    /// has been. Written once by <c>AwardQueueMailJob</c>, in the same save as the mail, and never by a module.
+    /// </summary>
+    public DateTime? NotifiedAt { get; set; }
 }

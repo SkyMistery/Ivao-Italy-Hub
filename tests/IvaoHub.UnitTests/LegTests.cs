@@ -5,51 +5,13 @@ using Xunit;
 namespace IvaoHub.UnitTests;
 
 /// <summary>
-/// The pieces of T7a that need no database: the great circle (taken from Toursystem with its tests), the estimated
-/// time with the numbers of the design (M2 §1.5), the checks of the shape of a tour for every kind that has legs
-/// (§1.2.1, §2), and the numbering that keeps no holes (§1.4.1).
+/// The pieces of T7a that need no database: the estimated time with the numbers of the design (M2 §1.5), the checks of
+/// the shape of a tour for every kind that has legs (§1.2.1, §2), and the numbering that keeps no holes (§1.4.1). The
+/// great circle is the core's, and <see cref="GreatCircleTests"/> asks it the questions this class used to ask.
 /// </summary>
 public sealed class LegTests
 {
-    // Real coordinates. The expected values were computed with an independent implementation, not with this one.
-    private static readonly GeoPoint Lirf = new(41.8002777778, 12.2388888889);
-    private static readonly GeoPoint Liml = new(45.4451, 9.27674);
-    private static readonly GeoPoint Egll = new(51.470748, -0.459909);
-    private static readonly GeoPoint Lime = new(45.6739, 9.7042);
-    private static readonly GeoPoint Lflj = new(45.396999, 6.63472);
-    private static readonly GeoPoint Kjfk = new(40.639801, -73.7789);
-
     private static readonly HashSet<string> Known = ["AAAA", "BBBB", "CCCC"];
-
-    [Fact]
-    public void TheGreatCircleIsRightOnThreeOrdersOfMagnitude()
-    {
-        Assert.Equal(253.9, GreatCircle.DistanceNm(Lirf, Liml), 1);
-        Assert.Equal(130.1, GreatCircle.DistanceNm(Lime, Lflj), 1);
-        Assert.Equal(779.6, GreatCircle.DistanceNm(Lirf, Egll), 1);
-        Assert.Equal(3707.2, GreatCircle.DistanceNm(Lirf, Kjfk), 1);
-        Assert.Equal(10807.3, GreatCircle.DistanceNm(new GeoPoint(90, 0), new GeoPoint(-90, 0)), 1);
-
-        // The historical definition of the nautical mile: sixty per degree on the equator.
-        Assert.Equal(60.0, GreatCircle.DistanceNm(new GeoPoint(0, 0), new GeoPoint(0, 1)), 0);
-    }
-
-    [Fact]
-    public void TheGreatCircleHasNoDirectionNoNaNAndATenthOfAMile()
-    {
-        Assert.Equal(GreatCircle.DistanceNm(Lirf, Kjfk), GreatCircle.DistanceNm(Kjfk, Lirf), 6);
-
-        // With the naive formula on the cosine this is NaN: the argument of the arccosine goes past 1.
-        Assert.Equal(0, GreatCircle.DistanceNm(Lirf, Lirf));
-        Assert.Equal(0m, GreatCircle.DistanceNmRounded(Egll, Egll));
-
-        // Fiumicino and Urbe are some fifteen miles apart: where a formula that loses digits shows it.
-        Assert.InRange(GreatCircle.DistanceNm(Lirf, new GeoPoint(41.9519, 12.4989)), 12, 20);
-
-        var rounded = GreatCircle.DistanceNmRounded(Lirf, Liml);
-        Assert.Equal(253.9m, rounded);
-        Assert.Equal(1, rounded.Scale);
-    }
 
     [Theory]
     // An A320 at 450 kt with k = 5 % and c = 20 minutes, the design's example (§1.5).
