@@ -1,3 +1,5 @@
+import type { NamedPerson } from '../ui/people';
+
 /**
  * How a list declares its columns. A feature writes `col.localized('title')` and nothing else: no
  * cell renderer, no header, no date formatting, no badge (design M0 §7.5).
@@ -18,7 +20,8 @@ export type ColumnSpec<TRow> =
   | { kind: 'department'; field: TextKey<TRow>; sortable: boolean }
   | { kind: 'badge'; field: TextKey<TRow>; sortable: boolean; labels: string; editable: readonly string[] }
   | { kind: 'media'; field: NumberKey<TRow>; sortable: boolean }
-  | { kind: 'file'; field: NumberKey<TRow>; sortable: boolean };
+  | { kind: 'file'; field: NumberKey<TRow>; sortable: boolean }
+  | { kind: 'person'; field: PersonKey<TRow>; sortable: boolean };
 
 type KeysOfType<TRow, TValue> = {
   [K in keyof TRow & string]: TRow[K] extends TValue ? K : never;
@@ -29,6 +32,7 @@ type NumberKey<TRow> = KeysOfType<TRow, number | null>;
 type ListKey<TRow> = KeysOfType<TRow, readonly string[] | null>;
 type BooleanKey<TRow> = KeysOfType<TRow, boolean | null>;
 type LocalizedKey<TRow> = KeysOfType<TRow, Record<string, string> | null>;
+type PersonKey<TRow> = KeysOfType<TRow, NamedPerson | null>;
 
 /** `sortable` defaults to false: a column the server did not declare sortable answers 400. */
 type Options = { sortable?: boolean };
@@ -104,6 +108,20 @@ export const col = {
    */
   file<TRow>(field: NumberKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
     return { kind: 'file', field, sortable: options.sortable ?? false };
+  },
+
+  /**
+   * A person, written the way every page writes one (`personName`): the name with the VID, the VID
+   * alone, or "Deleted person" for somebody whose data was erased. The field is the person as the
+   * server sent it, `{ vid, name }`, and not a text the screen made of it: a page of a list is
+   * computed inside its query, where there is no language to say "Deleted person" in, so a name
+   * written there would show the pseudonym as a number (note
+   * `2026-09-29-la-persona-cancellata-nel-nucleo`). An empty cell is a row with nobody in it yet.
+   * `sortable` only when the server declares the field in `CrudOptions.Sortable`, like every
+   * column, and then it sorts by the name, which is what the cell shows.
+   */
+  person<TRow>(field: PersonKey<TRow>, options: Options = {}): ColumnSpec<TRow> {
+    return { kind: 'person', field, sortable: options.sortable ?? false };
   },
 
   /**

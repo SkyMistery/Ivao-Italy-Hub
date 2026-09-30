@@ -12,6 +12,7 @@ export { ContactForm } from './ContactForm';
 export { MessageThread, type MessageThreadValue } from './MessageThread';
 export { StaffSidebar, type StaffSidebarEntry, type StaffSidebarGroup } from './StaffSidebar';
 export { contactSchema, type ContactFormValues } from './contact';
+export { isErased, personName, type NamedPerson } from './people';
 export {
   CALENDAR_KIND_COLOURS,
   CALENDAR_SCREEN_VIEWS,

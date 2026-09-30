@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
-import { DepartmentBadge, EmptyState, StatusBadge, useNotice } from '../ui';
+import { DepartmentBadge, EmptyState, StatusBadge, personName, useNotice, type NamedPerson } from '../ui';
 import type { ColumnSpec } from './columns';
 import type { ListSearch } from './search';
 
@@ -329,6 +329,10 @@ function Cell<TRow>({
           {t('list.file')}
         </a>
       ) : null;
+
+    case 'person':
+      // The person as the server sent it, written here where the language is: a pseudonym reads as "Deleted person".
+      return <>{value === null || value === undefined ? '' : personName(value as NamedPerson, t)}</>;
 
     case 'text':
       return <>{typeof value === 'string' ? value : ''}</>;

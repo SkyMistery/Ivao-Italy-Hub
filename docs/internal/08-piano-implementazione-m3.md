@@ -3577,4 +3577,127 @@ pagine; `ErasureTests` con le colonne del training. Il giro completo verde.
 il rapporto di chiusura è scritto. A M3 chiusa **PATS resta acceso solo per il feed del calendario dei trainer**, fino all'iCal del
 nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata (A12a)** (29 settembre 2026, branch `m3/a12a-deleted-person-core`, PR #187 verso `main`, in bozza in coda dopo #182) —
+**la nota e le domande, poi le risposte di Carmine e il codice, lo stesso giorno**:
+
+- **Perché prima la nota**: A12a è una fase del nucleo (qui sopra, «Regole di tutte le fasi»), e la forma apriva due scelte che sono di
+  Carmine, una delle quali sul suo test (`ErasureTests`, T20b): la nota è nata **«Proposta»** e il codice ha aspettato le risposte
+  (`CLAUDE.md` §5), come in A11a. Il branch è nato dalla cima della coda, `m3/a11b-fir-heads` a 0b62481, preparato dalla sessione di
+  A11b con `--no-track`; ha `main` a 47e2f70, e si unisce senza conflitti con il `main` di oggi (dopo #146, #147 e #184–#186).
+  L'intervallo della fase è `m3/a11b-fir-heads...m3/a12a-deleted-person-core`.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(b)**. Si porta nel nucleo l'helper che la nota di T20b (§3) aveva già
+  deciso di portarci; si estende la lista generata di un tipo di colonna; si tocca un test del maintainer, e come lo decide lui.
+- **La nota e le domande**: `decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`, la PR #187 in bozza, le due domande a Carmine in
+  [un commento sulla #187][q187]: la forma nel nucleo (nota §3), e come `ErasureTests` legge le 21 colonne del training — (a)
+  `TrainingDbContext` scritto nel test, (b) un test accanto nei file del training, **(c) i contesti di ogni modulo dal registro**, come
+  li scorre la cancellazione, tranne quello di prova.
+- **Le risposte** (29 settembre, Carmine in chat alla sessione master, pubblicate su sua istruzione: [il commento sulla #187][a187]):
+  **sì alla forma** e **la (c)**, tutte e due come raccomandato; la copia dei tour e `memberLabel` del training restano come sono in
+  questa PR, e la conseguenza per M4 (il punto 1 di E8a) la porta nel piano il master dopo l'unione. **Su A12c**, nello stesso
+  commento: il codice sorgente di PATS non esiste, c'è solo il database già condiviso, quindi il significato dei codici oggi non si
+  conosce; **A12c resta condizionata**. La nota, ora **decisa**, lo registra con il link.
+- **Fatto** (commit `b8f515a`, `c41a43e`, `608d843`):
+  - **`web/src/shared/ui/people.ts`**, esportato da `shared/ui`: `NamedPerson` (`{ vid, name }`, la forma di `TrainingMemberDto` e del
+    `MemberDto` dei tour), `isErased(vid)` (`vid < 0`) e `personName(person, t)` — «Deleted person» per uno pseudonimo, `Nome (VID)`, o
+    il VID da solo;
+  - **la colonna `person` della lista generata**: `col.person('trainee')` su un campo `NamedPerson | null`, disegnata da `DataList` con
+    `personName`; una cella vuota è una riga senza nessuno (un training non assegnato). La riga in `docs/UI-GUIDELINES.md`, accanto a
+    `col.file`;
+  - **la parola `people.deleted`** in `locales/{en,it}/common.json` («Deleted person», «Persona cancellata») — non `people.erased`,
+    qui sotto;
+  - **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows`** legge i contesti del nucleo e di ogni modulo abilitato dal
+    `ModuleRegistry`, tranne `SampleModule`, e la sua lista ha le 21 righe `trn_` (97 righe);
+  - i test Vitest `web/src/shared/ui/people.test.ts` (2) e `web/src/shared/list/DataList.test.tsx` (1); `07` §6.1 corretto.
+- **Scostamenti dal piano e dal design, scritti nella nota**:
+  1. **anche una colonna della lista**, non solo la funzione (qui sopra: «l'helper»): il design §6.1 chiede «le liste», e la copia dei
+     tour non ci arriva, perché una lista calcola i nomi nella query, dove non c'è `t`;
+  2. **con la (c)**, `ErasureTests` legge i contesti di ogni modulo e non soltanto `TrainingDbContext` (qui sopra: «che legge anche
+     `TrainingDbContext`»). Cambia anche il piano di M4: la prima fase degli eventi che crea una colonna di persona scrive le sue righe
+     nella lista, e del punto 1 di E8a non resta niente (nota §4);
+  3. **la parola è `people.deleted`**, non `people.erased` come la nota proponeva e Carmine ha preso (nota §7): **il catalogo delle
+     lingue del server rifiuta all'avvio** una chiave del nucleo che un modulo dichiara di nuovo (`LocaleCatalog.AddModules`, nota
+     `2026-09-26-le-parole-di-piu-moduli`), e `people.erased` c'è già in `flightops.json`, la copia dei tour, che non si tocca. Trovato
+     al primo giro di `ErasureTests`: l'host non partiva («declared twice for the same language»), e i quattro test cadevano. È la stessa
+     decisione con un'altra chiave; quando una sessione di Carmine sostituirà la copia dei tour, `flightops:people.erased` andrà via con
+     lei.
+- **Trovato** (nota §2, e per chi viene dopo):
+  1. **La coda dei PIREP mostrerebbe lo pseudonimo come numero**: la copia dei tour lo dice nel suo commento. Non si tocca (`CLAUDE.md`
+     §0 regola 2); la sostituisce una sessione di Carmine.
+  2. **Il piano di M4 aspetta lo stesso pezzo** per la scheda «Prenotazioni» dello staff, una lista generata (E6b), e **allarga lo
+     stesso test** agli eventi (E8a): chi arriva secondo tiene tutte e due le liste.
+  3. **Le colonne di persona del training sono 21**, tutte con un nome della convenzione; `trn_evaluations` non ne ha, nessuna è una
+     chiave, nessuna colonna JSON porta VID. Lette prima nelle entità e nello snapshot, ora le produce il test: sono le stesse.
+  4. **Per A12b**: `memberLabel` sta in 28 punti; i link al percorso di un trainee (`traineeHref`: la pagina di un training, l'azione
+     della lista dei ban) vanno tolti per uno pseudonimo; le pagine degli esami mostrano solo VID, e `personName({ vid, name: null }, t)`
+     dà lì il VID o «Deleted person». ⚠️ **Un training aperto affidato a un trainer che si cancella** resta affidato allo pseudonimo (la
+     risposta 4 della nota di T20b: ciò che ha fatto come trainer resta), quindi lo conduce solo chi tiene `Training.Edit`, e la mail
+     della sessione al trainee nominerebbe il trainer con il numero (`TrainingPeople.Label`): la regola del design (§6.1) parla dei
+     training del trainee e di quelli condotti, non di questo. Da decidere in A12b, forse con una domanda a Carmine.
+- **Verificato** (29 settembre, in locale, una suite alla volta, sul codice finale `608d843`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `IvaoHub.UnitTests.exe` **869/869**; **`IvaoHub.IntegrationTests.exe` intero, senza filtro,
+    409/409** al primo giro (nessun test nuovo: `ErasureTests` cambia il suo; `InitialisationMarkerTests` non è caduto); `ErasureTests`
+    da sola **4/4**;
+  - `pnpm lint`, `typecheck`, `format:check` puliti; `pnpm i18n:check` **783** chiavi (le 782 di prima e `people.deleted`); `pnpm test`
+    **581/581** in 78 file (i 578 di prima e i 3 nuovi, in 2 file nuovi); `pnpm gen:api` senza differenze (l'API non cambia); le chiavi
+    letterali `training:` 376, nessuna mancante; **`pnpm e2e` 153/153** al primo giro, sotto il lucchetto di 4173; **`pnpm e2e:full`
+    48/48** al primo giro, sul banco ricreato (127.0.0.1:5102, `ivaohub_e2e_a12a`) e sotto il lucchetto di Mailpit, preso quando la
+    sessione che coordina l'ha lasciato;
+    `dotnet format --verify-no-changes` sul file C# della fase (`ErasureTests.cs`): pulito; le regole di `core-guard` in PowerShell:
+    sulla fase (`origin/m3/a11b-fir-heads...HEAD`) nessun file del maintainer, 10 del nucleo con la nota aggiunta, PASS; verso `main`
+    anche i due di A10b con la sua nota, che la coda porta già: PASS;
+  - **la prova sul codice vecchio**: con `columns.ts`, `DataList.tsx` e i due `common.json` come sulla base (0b62481), **cadono tutti e
+    due i file Vitest nuovi** (`col.person is not a function`; «expected 'people.deleted' to be 'Deleted person'»); con i due contesti
+    scritti a mano com'erano e la lista nuova **cade il test delle colonne** (mancano le righe `trn_`); con il registro ma **senza
+    togliere il modulo di prova**, cade con `smp_items.created_by` al posto 76 — il contesto di un modulo entra da solo. Rimessi i file
+    della fase e toccati perché la build li ricompilasse: 3/3 e 4/4.
+  - La CI della PR sul secondo push, di soli documenti (b185554): `build-test` e `core-guard` verdi; **sul codice (e3b84d7)** verdi tutti e
+    due (`build-test` in 21 minuti).
+- **Il passo della coda** (29 settembre, sera): la catena dopo #147 — `main` a 2af5133 (#146, #147, #184–#186, #188), le correzioni delle
+  revisioni da #148 a #181 e le risposte di Carmine alle revisioni di #149, #150 e #178 — è salita fino ad A11b (a24268b), che la sessione di
+  A11b mi ha scritto; è entrata qui con un merge (`8c64794`). **Un conflitto solo**, l'intestazione di `HANDOFF-M3.md`: quella di A12a resta
+  in cima, riscritta, e il paragrafo «Accanto alle fasi del modulo» resta tolto, come in A7b. Nessuna riga che uno dei due lati teneva è
+  andata persa (controllato riga per riga su `HANDOFF-M3.md`, `08` e i due `common.json`, dove restano i link legali di #188 e
+  `people.deleted`). **L'intervallo `m3/a11b-fir-heads...m3/a12a-deleted-person-core` mostra di nuovo solo la fase** (14 file). Poi tutto di
+  nuovo, una suite alla volta: `dotnet build` 0 avvisi; unità **869/869**; **integrazione intera, senza filtro, 413/413** al primo giro (i
+  409 e i 4 della catena); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file;
+  `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi `training:` 381, nessuna mancante; **`pnpm e2e` 153/153** al primo giro,
+  sotto il suo lucchetto; **`pnpm e2e:full` 48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `core-guard` sulla
+  fase: nessun file del maintainer, i 10 del nucleo con la nota, PASS. ⚠️ **Mentre il passo girava, #149 (A9a) è stata unita** (b2409aa,
+  16:22 UTC): il suo `HANDOFF-M3.md` va in conflitto con ogni branch della coda, A11b compreso, quindi la PR è in conflitto con `main` e
+  **non ha CI** finché `main` non entra al prossimo passo della coda; nessun merge di `main` di iniziativa.
+- **Il secondo passo della coda** (30 settembre, notte): unite #150, #151, #153, #178 e #181, A11b è in cima alla coda, e il suo passo ha
+  portato `main` (17941c0) nel suo branch (99421c2), che la sessione di A11b mi ha scritto; è entrato qui con un merge (`2c5b37b`). Porta
+  **solo documenti** (`08` e `HANDOFF-M3.md`: nessun file fuori da `docs`), quindi il codice è quello delle suite qui sopra; un conflitto solo,
+  l'intestazione dell'handoff, riscritta. Il branch si unisce senza conflitti con il `main` di dopo (6704aad, con #190): **la PR non è più in
+  conflitto e ha di nuovo la CI**. Le suite rifatte comunque, una alla volta, come chiede `CONTRIBUTING.md` dopo un merge di `main`, tutte
+  al primo giro: `dotnet build` 0 avvisi; unità **869/869**; integrazione intera **413/413**; `pnpm lint`, `typecheck`, `format:check`
+  puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file; `pnpm gen:api` senza differenze; le chiavi `training:` 381, nessuna
+  mancante; **`pnpm e2e` 153/153**; **`pnpm e2e:full` 48/48** sul banco ricreato, sotto il lucchetto di Mailpit; `core-guard` sulla fase:
+  PASS.
+- **Il passo della coda di #187** (30 settembre, 00:03 UTC: **#182 è unita**): `main` (a004c20, con #182, che il branch aveva già dalla coda,
+  e con #190 del maintainer, la versione 0.4.2 e la sua nota) è entrato con un merge **senza conflitti** (`2a35868`): la PR mostra verso
+  `main` solo i 14 file della fase, e `core-guard` verso `main` passa (nessun file del maintainer, i 10 del nucleo con la nota). Via
+  `(after #182)` dal titolo e `Queued after #182.` dal corpo. Tutte le suite di nuovo, una alla volta, tutte al primo giro: `dotnet build`
+  0 avvisi; unità **869/869**; integrazione intera **420/420** (i 413 e i 7 di #190); `pnpm lint`, `typecheck`, `format:check` puliti;
+  `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file; `pnpm gen:api` senza differenze; le chiavi `training:` 381, nessuna mancante;
+  **`pnpm e2e` 153/153**; **`pnpm e2e:full` 48/48** sul banco ricreato, sotto il lucchetto di Mailpit (preso quando A12d l'ha lasciato).
+- **La revisione del master** ([il suo commento sulla #187][r187], 30 settembre): **approvabile**, niente di bloccante; «should know» la
+  chiave `people.deleted` (nota §7: il master scrive nel piano quella vera). **Due nit**, a scelta del collaboratore:
+  1. **su che cosa ordina il server una colonna `person`**: ora lo dicono il commento di `col.person` e `UI-GUIDELINES.md` — `sortable`
+     solo quando il server la dichiara in `CrudOptions.Sortable`, come ogni colonna, e allora per nome, che è quello che la cella mostra.
+     Solo commenti e linee guida: rifatti `pnpm lint`, `format:check`, `typecheck` (puliti) e i Vitest della lista e delle persone (8/8);
+  2. **`ErasureTests` vede i moduli abilitati nell'host di prova**, come la cancellazione (`PersonalDataErasure.cs:104`): **non cambia**, è
+     la lettera della risposta di Carmine («every enabled module, the way the erasure goes through them»). Oggi nell'host di prova i moduli
+     sono tutti accesi. Il punto più largo — un'installazione che spegne un modulo lo toglie anche dalla cancellazione, e le sue righe
+     restano con il VID — è del meccanismo del nucleo, non di questa fase: detto al revisore, per Carmine se lo vuole.
+- **Non verificato**:
+  - **le pagine**: il nucleo dà il pezzo, ma nessuna pagina lo usa ancora (A12b per il training, una sessione di Carmine per i tour);
+    la colonna `person` è provata in Vitest, non su una schermata vera né nella galleria, che non la mostra;
+  - **una mail** che nomini una persona cancellata: nessuna la scrive qui (nota §3, punto 2);
+  - **la CI dopo il passo della coda**: la dirà la PR.
+
+[q187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
+[a187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
+[r187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982
+
+Le altre tre PR (A12b, A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.
