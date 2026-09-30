@@ -14,9 +14,11 @@
 
 Per non ripeterle trenta volte:
 
-- **Chi scrive**: una sessione di lavoro di Carmine per fase, **nel suo worktree**, mai nella cartella principale. Si ferma a CI verde
-  (`build-test`, `core-guard`), avvisa il master e **non unisce**; scrive «Com'è andata» qui e «Che cosa ha lasciato <fase>» in
-  `HANDOFF-M4.md`; **non tocca** la versione e il changelog del piano né `HANDOFF.md`, che porta il master dopo il merge.
+- **Chi scrive**: **`dalberone`**, il collaboratore, tutta M4, fasi del nucleo comprese (nota `2026-09-30-m4-al-collaboratore`,
+  piano 1.25; questa riga diceva «una sessione di lavoro di Carmine»). Una sessione per fase; si ferma a CI verde (`build-test`,
+  `core-guard`), segna la PR pronta e **non unisce**: il master la legge e la unisce sul via di Carmine. Scrive «Com'è andata» qui e
+  «Che cosa ha lasciato <fase>» in `HANDOFF-M4.md`; **non tocca** la versione dell'hub, il piano né `HANDOFF.md`, che porta il
+  master dopo il merge. Le regole assolute del collaboratore sono in `CLAUDE.md` §0.
 - **Una fase per sessione, un branch `m4/e<N>-<slug>`, una PR verso `main`** con il template compilato onestamente, compresa la
   sezione «For the reviewer» (`CONTRIBUTING.md`, «Working a phase»): fase e sezioni del design, note, file del nucleo toccati e
   perché, scostamenti, i comandi eseguiti con il risultato, **che cosa non è stato verificato**.
@@ -25,25 +27,25 @@ Per non ripeterle trenta volte:
   «For the reviewer» nomina l'intervallo della fase (`git diff m4/<prima>...m4/<dopo>`). Una correzione sotto sale con un merge,
   mai con un rebase. **Una fase che aspetta una risposta di Carmine non si mette in coda sopra la domanda.**
 - **Le fasi del modulo vanno in fila**: migrano tutte `EventsDbContext`, e due fasi che migrano lo stesso contesto non vanno avanti
-  insieme. **Le fasi del nucleo** (E1, E8a, E10a–E10e, E15a) **possono correre in parallelo** accanto a quelle del modulo, ognuna
+  insieme. **Le fasi del nucleo** (E1, E10a–E10e, E15a) **possono correre in parallelo** accanto a quelle del modulo, ognuna
   verso `main` quando è pronta, senza coda, purché non migrino anche loro lo stesso contesto (il nucleo); devono essere **unite
   prima** della fase del modulo che le usa, che fino ad allora aspetta.
 - **Una fase del nucleo è una PR a sé** (`CLAUDE.md` §0 regola 6, §5 caso (b)), prima del codice del modulo che la usa, e **aggiunge
   una nota nuova** in `decisions/` che dice quale meccanismo si estende e perché il modulo non ne fa a meno. Le note di E0 registrano
   le decisioni; **la forma nel codice è della nota della fase** (la lezione di A0 di M3). Se la forma apre una domanda, la nota è
   «Proposta», la domanda va a Carmine con un commento sulla PR, e il codice che ne dipende aspetta.
-  ⚠️ **`core-guard` non giudica le PR del proprietario del repository** (`.github/workflows/core-guard.yml`, il passo «Judge them»),
-  e le sessioni di lavoro di Carmine aprono le PR come `SkyMistery`: il check resta verde anche su un file del nucleo senza nota.
-  Queste regole le tiene chi scrive e le controlla il master. Se un giorno scrivesse gli eventi un collaboratore, `core-guard.sh`
-  riconosce oggi come suo solo il training (`OWN='[Tt]raining'`): va allargato prima, ed è un file del maintainer.
+  `core-guard` giudica le PR del collaboratore: dal piano 1.25 `core-guard.sh` riconosce come suoi anche i file degli eventi
+  (`OWN='[Tt]raining|/[Ee]vents'`: il modulo, i suoi test e le sue spec; `SampleEvents.cs`, il modulo di prova, resta del nucleo),
+  e un file del nucleo senza una nota nuova fa cadere il check.
 - **I file del maintainer** non li tocca una fase: il piano 00, `HANDOFF.md`, i documenti 00–06 e 09, le note già unite, `CLAUDE.md`,
   `CONTRIBUTING.md`, `.github/`, `.claude/`, `ArchitectureTests.cs`. Un controllo di architettura che riguarda solo gli eventi sta in
   un file di test del modulo (`EventsArchitectureTests`, E2). **Un test condiviso si tocca solo nei due casi in cui il test lo
   chiede**, e la PR lo dice al revisore:
   - **i conteggi dei blocchi** (`web/src/features/admin/uiKit.test.ts`, `DataBlockEndToEndTests`) si alzano di uno per ogni blocco
     nuovo, come ha deciso Carmine per A10 di M3 ([commento sulla #125][c125]) e come dice `CONTRIBUTING.md`;
-  - **le colonne che nominano una persona** in `ErasureTests` (da E8a): una fase che aggiunge una colonna `…Vid` o `…By` la scrive
-    nella lista, perché il test esiste per far pensare alla cancellazione di quella colonna.
+  - **le colonne che nominano una persona** in `ErasureTests` (da **E2**, che crea `evt_events` con `cancelled_by`): il test legge
+    da solo i contesti di ogni modulo (A12a di M3, #187), quindi una fase che aggiunge una colonna `…Vid` o `…By` la scrive nella
+    lista, o il test va rosso; esiste per far pensare alla cancellazione di quella colonna.
 - **Migrazioni solo additive**, una per fase. L'`Initial` del modulo nasce in **E2** e da lì non si tocca. Una tabella nasce
   **intera** nella fase che la crea, con le colonne che le fasi dopo useranno, così nessuna fase la rimigra (come `trn_trainings` in
   A6 di M3).
@@ -89,8 +91,8 @@ Per non ripeterle trenta volte:
 | E6a | Prenotare: il server | E5 | `evt_bookings`, i verbi, la compatibilità sotto blocco, la rotazione intera, togliere |
 | E6b | Prenotare: le pagine | E6a | la lista degli slot con «Prenota», `/events/mine`, `events.myEvents`, il promemoria del giorno prima |
 | E7 | Gli slot privati | E6b | il generatore, la prenotazione del privato, la partenza collegata |
-| E8a | Nucleo: la cancellazione vede gli eventi | E6a | `ErasureTests` legge `EventsDbContext` |
-| E8b | «Duplica», la cancellazione, il giro di M4a | E7, E8a | «Duplica» per M4a, `EventsPersonalData` per le righe di M4a, `pnpm e2e:full` di M4a |
+| ~~E8a~~ | ~~Nucleo: la cancellazione vede gli eventi~~ — **tolta** | — | A12a di M3 (#187) fa leggere a `ErasureTests` ogni modulo; le righe `evt_` le scrive E2 e chi aggiunge una colonna |
+| E8b | «Duplica», la cancellazione, il giro di M4a | E7 | «Duplica» per M4a, `EventsPersonalData` per le righe di M4a, `pnpm e2e:full` di M4a |
 | E9 | Fuori dal repository | E8b, la produzione | il Gate Manager legge l'hub (prove su `prova-ponte-rfo`); il primo evento vero; `ivao-booking` spento (Carmine) |
 
 **M4b — l'ATC e il dopo evento**
@@ -121,9 +123,9 @@ Per non ripeterle trenta volte:
 
 **Parallelismo possibile.** Le fasi del nucleo non migrano `EventsDbContext` e vanno avanti accanto al modulo: **E1** accanto a E2 (E3a
 ne ha bisogno); **E10a–E10e** già durante M4a, ognuna in una sessione sua (nessuna migra il contesto del nucleo, per quanto si vede
-oggi; se due lo migrano, vanno in fila); **E15a** in qualunque momento prima di E15b; **E8a** dopo E6a, che porta l'ultima colonna di persona di M4a (E7 non migra).
+oggi; se due lo migrano, vanno in fila); **E15a** in qualunque momento prima di E15b. (E8a, che doveva seguire E6a, è tolta: sotto, la sua sezione.)
 **Se M4c viene prima di M4b**, E16 fa nascere anche `evt_event_stats` (intera, come in E13a, che allora non la migra più) per le
-somme delle risposte, ed E17 `events-retention`; `ErasureTests` legge già il contesto degli eventi da E8a, che sta in M4a sotto
+somme delle risposte, ed E17 `events-retention`; `ErasureTests` legge già il contesto degli eventi (da A12a di M3),
 e E16 scrive nella lista le sue colonne.
 Dalle fasi del modulo in poi tutto migra `EventsDbContext`: **in fila**. **M4c** si mette in coda dopo E8b **oppure** dopo E15b: se
 arriva prima un evento in presenza, E16–E17 vanno prima di M4b, e le fasi di M4b si accodano sopra E17 (la regola della conservazione
@@ -131,7 +133,8 @@ qui sotto dice chi fa nascere `events-retention`).
 
 **Le divisioni rispetto al design §16** (le ragioni in «Com'è andata» di E0): E3, E6, E11, E13, E14 in due PR (server e forma prima,
 pagine o seconda metà dopo, come A6a/A6b di M3); E10 in cinque PR del nucleo, due in più del design (E10c allarga anche le postazioni,
-E10e è nuova); E15 in due (il nucleo prima); **E8a/E8b**: la cancellazione nasce con M4a.
+E10e è nuova); E15 in due (il nucleo prima); **E8b**: la cancellazione nasce con M4a (E8a, la sua metà del nucleo, è tolta dopo
+A12a di M3).
 
 ### E0 — Note di decisione e questo piano
 
@@ -173,7 +176,7 @@ una fase dà per esistente esista o abbia la sua fase.
      vocabolario, le notifiche, la geografia) e ognuna ha la sua nota; possono andare in parallelo. **E10c** allarga anche la
      directory delle postazioni, **E10e** è nuova (sotto, «Trovato», punti 9 e 10).
   3. **E15 in due**: le prenotazioni ATC della rete sono del nucleo (n.6) e vengono prima; il resto è del modulo.
-  4. **La cancellazione nasce con M4a (E8a, E8b)** invece che in E15 — proposta di E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184): M4a va in produzione da solo, e senza `EventsPersonalData` la prenotazione di una persona cancellata resterebbe su uno slot
+  4. **La cancellazione nasce con M4a (E8a, E8b; E8a poi tolta dopo A12a di M3)** invece che in E15 — proposta di E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184): M4a va in produzione da solo, e senza `EventsPersonalData` la prenotazione di una persona cancellata resterebbe su uno slot
      di un evento non concluso, sotto uno pseudonimo (nota `i-dati-dei-membri-negli-eventi` §4).
   5. **E1 porta anche il personaggio dell'ED sul banco**, e quindi una nota breve: il seme dei tipi da solo sarebbe senza nota (caso
      (a)), come dice il piano 1.24.
@@ -182,7 +185,8 @@ una fase dà per esistente esista o abbia la sua fase.
      l'impostazione.
 - **Trovato leggendo il codice** (29 settembre 2026, `main` a `47e2f70`), e scritto nelle fasi che ne dipendono:
   1. ⚠️ **`core-guard` non giudica le PR del proprietario** (`core-guard.yml`, «Judge them»), e `core-guard.sh` riconosce come modulo
-     del collaboratore solo il training (`OWN='[Tt]raining'`): nelle «Regole di tutte le fasi».
+     del collaboratore solo il training (`OWN='[Tt]raining'`): nelle «Regole di tutte le fasi». *Superato dal piano 1.25: M4 la
+     scrive `dalberone` e `core-guard.sh` riconosce anche gli eventi.*
   2. **Il seme dei tipi del calendario** (`seed/calendar-kinds/kinds.json`: `event`, `training`, `exam`, `tour`, `meeting`,
      `deadline`) si ricorda chiave per chiave e lascia com'è una chiave scritta a mano (`ContentSeeder.SeedCalendarKindsAsync`):
      `rfe`, `rfo`, `mse`, `onlineDay` sono un seme e basta (E1). Training li aspetta: `TrainingSettings.ConflictKinds` è `["event"]`
@@ -217,9 +221,11 @@ una fase dà per esistente esista o abbia la sua fase.
      nucleo). Nessun blocco `eventList` esiste già: il design M1 lo nominava soltanto.
   13. **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows` legge solo il contesto del nucleo e quello dei tour**, con
      una lista scritta a mano; **a runtime** invece la cancellazione scorre i contesti di tutti i moduli e scrive lo pseudonimo
-     (`PersonalDataErasure`), ma non cancella niente: E8a ed E8b.
+     (`PersonalDataErasure`), ma non cancella niente: E8a ed E8b. **Risolto da A12a di M3** (#187, 29 settembre): il test legge i
+     contesti di ogni modulo abilitato (l'opzione (c)), quindi vede gli eventi da E2; E8a è tolta, E8b resta.
   14. ⚠️ **L'helper «persona cancellata» non è nel nucleo** (A12a di M3, aperta): c'è solo `memberName` nel front end dei tour, che un
-     altro modulo non importa. La prima pagina degli eventi con i nomi è E6b: lì la domanda.
+     altro modulo non importa. La prima pagina degli eventi con i nomi è E6b: lì la domanda. **Risolto da A12a di M3** (#187, 29
+     settembre): `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person`.
   15. **`/me` non ha un seme con i blocchi dei moduli** (`seed/content-pages/me.json`): `events.myEvents` si aggiunge dal back office,
      come `flightops.myTours`. Nessun seme da toccare.
   16. **La finestra dei tour si chiama `ReleaseAt`**, non `visible_from`: la forma è la stessa, il nome del campo degli eventi resta
@@ -430,9 +436,9 @@ Design §3.3, §3.8, §7.1, §7.2, §7.3 (`events.myEvents`); nota `gli-slot-e-l
 2. **`/events/mine`**: le mie prenotazioni, anche passate, con «ritira».
 3. **Il blocco `events.myEvents`** nelle due metà (`signedIn: false` a un visitatore), i conteggi più uno; si mette in `/me` dal back
    office, come `flightops.myTours`.
-4. **La scheda «Prenotazioni»** dello staff: lista generata, «togli» con il motivo. ⚠️ **I nomi di una persona cancellata**
-   (E0, «Trovato», punto 14): se A12a di M3 non è unita, la domanda va a Carmine **in apertura di E6b** — aspettare l'helper del nucleo
-   o farlo nascere in una fase del nucleo degli eventi, che A12a poi riusa —, e le parti con i nomi aspettano la risposta.
+4. **La scheda «Prenotazioni»** dello staff: lista generata, «togli» con il motivo. **I nomi di una persona cancellata**
+   (E0, «Trovato», punto 14) con l'helper del nucleo di A12a di M3 (#187, unita): `personName` nelle pagine, `isErased` prima di un
+   link, `col.person` nella lista; mai una copia degli eventi.
 5. **`events-reminders`**, ogni 15 minuti: **`bookingReminder`** `reminderLeadHours` prima dell'EOBT, le prenotazioni vicine dello
    stesso evento in una mail sola, con la rotta del FOD se c'è; una volta sola (`reminded_at`). Tipo di notifica spegnibile.
 
@@ -470,18 +476,12 @@ stesso gate da assegnare.
 
 ### E8a — Nucleo: la cancellazione vede gli eventi
 
-Design §11.1; nota `i-dati-dei-membri-negli-eventi` (lo scostamento 4 di E0, deciso da Carmine). Branch
-`m4/e8a-erasure-events-core`. **PR del nucleo**, con una nota breve.
-
-1. **`ErasureTests.TheColumnsThatNameAPersonAreTheOnesTheErasureKnows`** legge anche `EventsDbContext`, con le colonne `evt_` di M4a
-   nella lista (`evt_bookings.booker_vid`, `evt_events.cancelled_by`, `evt_bookings.unflown_excused_by`…). Da qui ogni fase che
-   aggiunge una colonna di persona la scrive nella lista (regole di tutte le fasi).
-2. ⚠️ **A12a di M3** allarga lo stesso test al training: chi arriva secondo unisce `main` e tiene tutte e due le liste.
-
-**Test**: il test allargato, verde; una colonna `…Vid` finta aggiunta e tolta lo fa cadere.
-**Fatta quando**: il test vede le colonne di M4a.
-
-**Com'è andata**: *(a fase chiusa)*
+~~PR del nucleo che faceva leggere `EventsDbContext` a `ErasureTests`.~~ **Tolta** (piano 1.25, dal master su incarico di Carmine,
+nota `2026-09-29-la-persona-cancellata-nel-nucleo`): A12a di M3 (#187) ha scelto l'opzione (c), e il test legge da solo i contesti di
+ogni modulo abilitato, quindi anche quello degli eventi. Le prime righe `evt_` della lista le scrive **E2**, che crea `evt_events` con
+`cancelled_by` (senza, il test va rosso), e poi ogni fase che aggiunge una colonna di persona (regole di tutte le fasi). Il vecchio
+punto 2, mettersi in pari con A12a, non serve più: A12a è unita. La sezione resta perché i collegamenti a E8a non si rompano; le
+altre fasi non si rinumerano.
 
 ### E8b — «Duplica», la cancellazione, il giro completo di M4a
 

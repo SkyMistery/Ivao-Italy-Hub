@@ -34,7 +34,8 @@ Answer honestly: a "yes" is not a rejection, it is a decision that has to be jus
 <!-- Required on every pull request that is not the maintainer's (CLAUDE.md sections 0 and 9). The reviewer reads
      the branch with this in hand; a pull request without it goes back. Be precise: file paths, not adjectives. -->
 
-- **Phase and design**: <!-- e.g. "L3 of 08-piano-implementazione-m3.md, implements 07-design-m3.md §4.2–§4.4" -->
+- **Phase and design**: <!-- the phase in the module's implementation plan and the design sections it implements, e.g.
+  "E3a of 10-piano-implementazione-m4.md, implements 09-design-m4.md §1.1–§1.3, §6.1" -->
 - **Decisions**: <!-- each new note under docs/internal/decisions/, and the link to the maintainer's comment that
   answered it. "None" is a valid answer. A decision no maintainer answered is not a decision: say so. -->
 - **Core touched**: <!-- every file outside the module (the core-guard check lists them), and for each one which
@@ -45,5 +46,5 @@ Answer honestly: a "yes" is not a rejection, it is a decision that has to be jus
 - **Commands run and their result**: <!-- the exact commands: build, unit tests, the whole integration suite with no
   filter, pnpm lint/typecheck/test, pnpm e2e:full. Paste the counts. -->
 - **Not verified**: <!-- what you did not run, could not run, or only inferred. Nothing is a bad answer here. -->
-- **HANDOFF-M3.md**: <!-- updated with "Che cosa ha lasciato <phase>": yes / no, why -->
+- **The module's HANDOFF** (`HANDOFF-M3.md`, `HANDOFF-M4.md`): <!-- updated with "Che cosa ha lasciato <phase>": yes / no, why -->
 
