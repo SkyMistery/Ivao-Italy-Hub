@@ -89,9 +89,12 @@ E14b che la usano (`CLAUDE.md` §0 regola 6).
   da `GreatCircleTests` il test gemello e i due alias, che non hanno più niente da confrontare (i due fatti sulla distanza di
   `LegTests` ripetono allora quelli di `GreatCircleTests`: se tenerli è suo); il commento di `web/src/shared/ui/greatCircle.ts` dice
   «in the core». **Nessuna migrazione**: `fo_legs.distance_nm` ha già i numeri del nucleo (il test gemello).
-- **La richiesta** va a Carmine in un commento sulla PR di questa fase. Nessun codice di questa PR ne dipende: il passaggio dei tour si
-  fa quando lui vuole, e fino ad allora la «Fatta quando» di E10e («i tour e il nucleo hanno un calcolo solo») è vera a metà: un
-  calcolo solo per i numeri, due copie nel codice.
+- **La richiesta** è andata a Carmine in [un commento sulla #206][r206], con la raccomandazione: il passaggio fatto da una sua
+  sessione, prima di E14a se gli torna comodo. Nessun codice di questa PR ne dipende: il passaggio dei tour si fa quando lui vuole, e
+  fino ad allora la «Fatta quando» di E10e («i tour e il nucleo hanno un calcolo solo») è vera a metà: un calcolo solo per i numeri,
+  due copie nel codice.
+
+[r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
 
 ## 6. Trovato scrivendo il codice
 

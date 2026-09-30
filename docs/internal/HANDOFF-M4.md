@@ -131,7 +131,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il namespace è `IvaoHub.Core.Airspace`, non `IvaoHub.Core.Ivao`** (accanto ai contorni dei FIR, geometria che non è di IVAO):
     in `Ivao` gli stessi nomi fanno cadere la build dei tour (`CS0104` su `TrackChecks.cs`, provato; nota §2 punto 3).
   - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine (nota
-    §5, e la richiesta sulla PR). Fino ad allora il test gemello tiene le due copie uguali; con il passaggio se ne va anche lui.
+    §5, e [la richiesta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005)). Fino ad allora
+    il test gemello tiene le due copie uguali; con il passaggio se ne va anche lui.
   - **E14a ed E14b** la trovano qui: la distanza di una voce di un PIREP con `DistanceNmRounded` se la colonna è al decimo, come
     `fo_legs.distance_nm`, e `MinLegDistance` confrontata con quel numero.
   - Agli antipodi `h` può passare 1 di un'unità nell'ultima cifra, ma la radice lo riporta a 1: nessun NaN, misurato (nota §6).

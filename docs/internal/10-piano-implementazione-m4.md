@@ -667,7 +667,7 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
   provato, `CS0104` («'GeoPoint' è un riferimento ambiguo») su `TrackChecks.cs`.
 - ⚠️ **Scostamento dal punto 1 e dalla «Fatta quando»** («i tour lo usano da lì», «un calcolo solo»): passare i tour al nucleo è una
   modifica di `src/IvaoHub.Modules.FlightOps/`, che il collaboratore non fa (`CLAUDE.md` §0 regola 2, `core-guard`). **La copia dei
-  tour resta**, e la sostituisce una sessione di Carmine, come `memberName` dopo A12a di M3: la richiesta in un commento sulla PR, e il
+  tour resta**, e la sostituisce una sessione di Carmine, come `memberName` dopo A12a di M3: [la richiesta sulla #206][r206], e il
   passaggio scritto riga per riga nella nota (§5; nessuna migrazione, i numeri sono gli stessi). Fino ad allora un calcolo solo per i
   numeri — il test gemello — e due copie nel codice.
 - **Un test in più** di quelli che questa fase chiedeva: il test gemello. Le prove sui valori sono al decimo, e non vedono un raggio
@@ -687,6 +687,8 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
 - **Non verificato**: la CI (la dice la PR); `pnpm e2e` e `pnpm e2e:full` (nessuna schermata cambia); i numeri su Linux — il test
   gemello confronta due calcoli nello stesso processo e vale anche lì, ma che `h` passi 1 a 8°, 12° e 34° è misurato su Windows (il
   test afferma solo la mezza circonferenza); il passaggio dei tour al nucleo, che è di Carmine.
+
+[r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
 
 ### E11a — Postazioni e disponibilità
 
