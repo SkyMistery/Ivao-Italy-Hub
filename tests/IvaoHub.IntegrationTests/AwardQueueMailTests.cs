@@ -50,7 +50,9 @@ public sealed class AwardQueueMailTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
+        // With the fixtures: a host started on a database whose snapshot of IVAO is still empty would otherwise ask IVAO for it
+        // (E10b's handoff), and no test calls IVAO.
+        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
         var token = TestContext.Current.CancellationToken;
 
         // The host runs the job on its own schedule; paused before any signal exists, the only runs that can tell them are the
