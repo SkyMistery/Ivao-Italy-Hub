@@ -398,7 +398,7 @@
       },
       "met": {
         "confirmTitle": "Quei giorni c'è già qualcosa nel calendario: guarda gli avvisi, e conferma se le date vanno bene lo stesso.",
-        "refusedTitle": "Quei giorni c'è già qualcosa nel calendario, e la divisione non accetta una data che lo incontra: cambia le date segnate."
+        "refusedTitle": "Quei giorni c'è già qualcosa nel calendario, e la divisione non accetta una data in conflitto con un'altra voce: cambia le date segnate."
       },
       "withdraw": {
         "button": "Ritira",
@@ -627,7 +627,7 @@
       "noShowCooldownDays": "Giorni di attesa dopo un no-show",
       "maxResponseDays": "Giorni per scegliere la data prima che il training si chiuda",
       "responseReminderDays": "Giorni senza una data scelta prima dell'avviso al trainer",
-      "conflictPolicy": "Quando una data proposta incontra il calendario",
+      "conflictPolicy": "Quando una data proposta è in conflitto con un'altra voce del calendario",
       "conflictKinds": "Tipi del calendario controllati",
       "reminderLeadHours": "Ore di anticipo del promemoria di una sessione",
       "hiddenPositions": "Postazioni non usate per il training",
@@ -683,7 +683,7 @@
     "slotUnknown": "Questa data non è più fra quelle proposte: ricarica la pagina.",
     "slotNotChoosable": "La data si sceglie solo mentre il training aspetta la sua data.",
     "dateNotSettable": "La data si fissa solo a un training con il trainer assegnato e ancora in corso.",
-    "dateBlocked": "Quel giorno c'è già qualcosa nel calendario, e la divisione non accetta una data che lo incontra.",
+    "dateBlocked": "Quel giorno c'è già qualcosa nel calendario, e la divisione non accetta una data in conflitto con un'altra voce.",
     "dateNotConfirmed": "Quel giorno c'è già qualcosa nel calendario: guarda gli avvisi e conferma la data.",
     "trainingNotClosable": "Si chiude solo un training accettato e ancora in corso.",
     "sessionStarted": "La sessione è già cominciata: registra com'è andata, un no-show o una rischedula.",

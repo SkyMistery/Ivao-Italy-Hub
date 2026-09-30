@@ -399,7 +399,7 @@
       },
       "met": {
         "confirmTitle": "Something is in the calendar on those days already: look at the warnings, and confirm if the dates are fine all the same.",
-        "refusedTitle": "Something is in the calendar on those days already, and the division does not accept a date that meets it: change the dates marked."
+        "refusedTitle": "Something is in the calendar on those days already, and the division does not accept a date that conflicts with another entry: change the dates marked."
       },
       "withdraw": {
         "button": "Take back",
@@ -628,7 +628,7 @@
       "noShowCooldownDays": "Days to wait after a no-show",
       "maxResponseDays": "Days to choose a date before the training closes",
       "responseReminderDays": "Days without a chosen date before the trainer is alerted",
-      "conflictPolicy": "When a proposed date meets the calendar",
+      "conflictPolicy": "When a proposed date conflicts with another calendar entry",
       "conflictKinds": "Calendar kinds checked",
       "reminderLeadHours": "Hours before a session the reminder is sent",
       "hiddenPositions": "Positions not used for training",
@@ -684,7 +684,7 @@
     "slotUnknown": "This date is no longer among the ones proposed: reload the page.",
     "slotNotChoosable": "A date is chosen only while the training waits for its date.",
     "dateNotSettable": "A date is set only on a training with its trainer assigned that is still going on.",
-    "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that meets it.",
+    "dateBlocked": "Something is in the calendar on that day already, and the division does not accept a date that conflicts with another entry.",
     "dateNotConfirmed": "Something is in the calendar on that day already: look at the warnings and confirm the date.",
     "trainingNotClosable": "Only an accepted training that is still going on can be closed.",
     "sessionStarted": "The session has already started: record how it went, a no-show or a reschedule instead.",
