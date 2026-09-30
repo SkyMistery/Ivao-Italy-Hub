@@ -17,15 +17,16 @@ namespace IvaoHub.UnitTests;
 
 /// <summary>
 /// The tracker asked without a VID (M4, E10a): what happened at an airport in a window, read page after page. The
-/// fixtures are one evening at Rome Fiumicino, 28 September 2026 from 16:00 to 17:59:59 UTC, recorded from the live API
-/// with <c>tools/record-ivao-fixtures.mjs --sessions-at</c> and the people taken out (the nine members are VIDs 761020–761028):
-/// four departures, six arrivals and the tower — one pilot connected twice, and one flight filed from LIPZ to Rome and then
-/// from Rome to LICR, which is what tells how the tracker matches an airport.
+/// fixtures are one evening at Rome Fiumicino, from 16:00 to 17:59:59 UTC, recorded from the live API with
+/// <c>tools/record-ivao-fixtures.mjs --sessions-at</c> and the people taken out: the nine members are VIDs 761020–761028, and
+/// the evening is moved onto 1 January 2001, a day the tracker has no session of. Four departures, six arrivals and the
+/// tower — one pilot connected twice, and one flight filed from LIPZ to Rome and then from Rome to LICR, which is what
+/// tells how the tracker matches an airport.
 /// </summary>
 public sealed class IvaoTrackerWithoutVidTests
 {
-    private static readonly DateTime From = new(2026, 9, 28, 16, 0, 0, DateTimeKind.Utc);
-    private static readonly DateTime To = new(2026, 9, 28, 17, 59, 59, DateTimeKind.Utc);
+    private static readonly DateTime From = new(2001, 1, 1, 16, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime To = new(2001, 1, 1, 17, 59, 59, DateTimeKind.Utc);
 
     /// <summary>The flight whose plan went LIPZ to Rome in its first revision and Rome to LICR in its second.</summary>
     private const long Refiled = 1000007;
@@ -46,10 +47,19 @@ public sealed class IvaoTrackerWithoutVidTests
         // Nine members as the VIDs the events' tests own, one of them twice; no member object, and no pilot's own callsign.
         Assert.All(sessions, session => Assert.InRange(session.Vid, 761020, 761029));
         Assert.Equal(9, sessions.Select(session => session.Vid).Distinct().Count());
-        Assert.All(sessions, session => Assert.DoesNotContain("\"user\"", session.RawJson, StringComparison.Ordinal));
         Assert.All(
             sessions.Where(session => session.ConnectionType == IvaoConnectionType.Pilot),
             session => Assert.StartsWith("TST", session.Callsign, StringComparison.Ordinal));
+
+        // Nor what would find the real connections again: their day, their rating, server or software.
+        Assert.All(sessions, session => Assert.Equal(new DateTime(2001, 1, 1), session.StartedAt.Date));
+        Assert.All(sessions, session =>
+        {
+            foreach (var field in new[] { "user", "rating", "serverId", "softwareTypeId", "softwareVersion", "softwareType" })
+            {
+                Assert.DoesNotContain($"\"{field}\"", session.RawJson, StringComparison.Ordinal);
+            }
+        });
     }
 
     [Fact]
@@ -74,7 +84,7 @@ public sealed class IvaoTrackerWithoutVidTests
     [Fact]
     public void TheWindowHoldsTheSessionsThatStartedInItAndBothEndsCount()
     {
-        var started = new DateTime(2026, 9, 28, 16, 46, 10, DateTimeKind.Utc);
+        var started = new DateTime(2001, 1, 1, 16, 46, 10, DateTimeKind.Utc);
 
         Assert.Equal([Refiled], Found(new IvaoSessionQuery(null, started, started, ArrivalIcao: "LIRF")));
         Assert.DoesNotContain(Refiled, Found(new IvaoSessionQuery(null, started.AddSeconds(1), To, ArrivalIcao: "LIRF")));
@@ -246,7 +256,7 @@ public sealed class IvaoTrackerWithoutVidTests
         Assert.DoesNotContain("userId", text, StringComparison.Ordinal);
         Assert.Contains("departureId=LIRF", text, StringComparison.Ordinal);
         Assert.Contains("connectionType=ATC", text, StringComparison.Ordinal);
-        Assert.Contains("2026-09-28T16%3A00%3A00", text, StringComparison.Ordinal);
+        Assert.Contains("2001-01-01T16%3A00%3A00", text, StringComparison.Ordinal);
 
         // The tracker's own words, in capitals: anything else is refused with a 400.
         Assert.Equal(

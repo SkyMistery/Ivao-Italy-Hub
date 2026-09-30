@@ -58,10 +58,13 @@
  * tracker-pages-<ICAO>.json, for the tests of the reading.
  * These are strangers, not a member's own flights, so more of the person goes: the member object is dropped; each member
  * becomes one VID of <firstVid>..<lastVid>, in the order they first appear (with more members than VIDs nothing is
- * written: pick a shorter window); a pilot's callsign becomes TST and the member's number; and the identifiers of the
- * sessions and of their flight plans are renumbered, because a session's identifier is what IVAO answers a name to. A
- * controller's callsign stays: it names a position, not a person. The page holding the last row of an airport's answer
- * takes IVAO about ten seconds (measured on 30 September 2026), so this takes a minute or two.
+ * written: pick a shorter window); a pilot's callsign becomes TST and the member's number; the identifiers of the
+ * sessions and of their flight plans are renumbered, because a session's identifier is what IVAO answers a name to; the
+ * rating, the server and the software of each connection are dropped; and the whole evening is moved onto 1 January 2001,
+ * a day the tracker has no session of, every moment by the same offset — the times of day and the relations between the
+ * sessions stay, and no date leads back to the real ones. A controller's callsign stays: it names a position, not a person. The last look writes nothing that still holds a real VID, a name,
+ * one of the dropped fields or a real day. The page holding the last row of an airport's answer takes IVAO about ten
+ * seconds (measured on 30 September 2026), so this takes a minute or two.
  */
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -379,15 +382,29 @@ if (sessionsAt) {
       if (!planIds.has(plan.id)) planIds.set(plan.id, 2_000_001 + planIds.size);
     }
   }
-  const withoutPeople = ({ user, userStaffPositions, ...row }) => {
+  // The whole evening moves onto a day the tracker has no session of (none in 2001, measured on 1 October 2026), every
+  // moment by the same offset: the times of day and the relations between the sessions stay, the real date goes.
+  const standIn = "2001-01-01";
+  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${from.toISOString().slice(0, 10)}T00:00:00Z`);
+  const moved = (moment) => new Date(Date.parse(moment) + shift).toISOString();
+  const instant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+  const movedEverywhere = (value) =>
+    Array.isArray(value) ? value.map(movedEverywhere)
+      : value && typeof value === "object"
+        ? Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, movedEverywhere(inner)]))
+        : typeof value === "string" && instant.test(value) ? moved(value) : value;
+
+  // The person, and what else a connection could be found again by besides its moment: its rating, server and software.
+  const dropped = ["user", "userStaffPositions", "rating", "serverId", "softwareTypeId", "softwareVersion", "softwareType"];
+  const withoutPeople = (row) => {
     if (!sessionIds.has(row.id)) throw new Error("A session that was not in the window a moment ago: record again.");
-    return {
-      ...row,
+    return movedEverywhere({
+      ...Object.fromEntries(Object.entries(row).filter(([key]) => !dropped.includes(key))),
       id: sessionIds.get(row.id),
       userId: members.get(row.userId),
       callsign: row.connectionType === "ATC" ? row.callsign : `TST${String(members.get(row.userId) - firstVid + 1).padStart(3, "0")}`,
       flightPlans: (row.flightPlans ?? []).map((plan) => ({ ...plan, id: planIds.get(plan.id) })),
-    };
+    });
   };
 
   // The departures again, two to a page as IVAO pages them, then the page past the last one; and a window with nothing.
@@ -400,15 +417,26 @@ if (sessionsAt) {
 
   const airport = JSON.stringify(rows.map(withoutPeople), null, 2);
   const paged = JSON.stringify({
-    asked: `departureId=${icao}&from=${from.toISOString()}&to=${to.toISOString()}&perPage=2`,
+    asked: `departureId=${icao}&from=${moved(from.toISOString())}&to=${moved(to.toISOString())}&perPage=2`,
     pages: pages.map((page) => ({ ...page, items: page.items.map(withoutPeople) })),
     nothing,
   }, null, 2);
 
-  // The last look before anything is written: no real VID, and no name.
+  // The last look before anything is written: no real VID, no name, none of the dropped fields, and no day the sessions
+  // really happened on.
+  const days = new Set([from, to].map((moment) => moment.toISOString().slice(0, 10)));
+  const collectDays = (value) => {
+    if (Array.isArray(value)) value.forEach(collectDays);
+    else if (value && typeof value === "object") Object.values(value).forEach(collectDays);
+    else if (typeof value === "string" && instant.test(value)) days.add(value.slice(0, 10));
+  };
+  collectDays(rows);
+  const found = new RegExp(`"(firstName|lastName|${dropped.join("|")})"`);
   for (const text of [airport, paged]) {
-    if ([...members.keys()].some((real) => new RegExp(`\\b${real}\\b`).test(text)) || /"(user|firstName|lastName)"/.test(text)) {
-      console.error("A person is still in what would be written: nothing written.");
+    if ([...members.keys()].some((real) => new RegExp(`\\b${real}\\b`).test(text))
+      || found.test(text)
+      || [...days].some((day) => text.includes(day))) {
+      console.error("A person, or what finds them again, is still in what would be written: nothing written.");
       process.exit(1);
     }
   }
@@ -418,8 +446,9 @@ if (sessionsAt) {
   const changed = rows.filter((row) => new Set((row.flightPlans ?? []).map((plan) => `${plan.departureId}-${plan.arrivalId}`)).size > 1);
   console.log(
     `recorded ${icao}: ${departures.length} departure(s), ${arrivals.length} arrival(s), ${controllers.length} ATC session(s); `
-      + `${rows.length} session(s) of ${members.size} member(s), written as VIDs ${firstVid}-${firstVid + members.size - 1}; `
-      + `${changed.length} with airports that changed between revisions; ${pages.length - 1} page(s) of two, and the one past them`,
+      + `${rows.length} session(s) of ${members.size} member(s), written as VIDs ${firstVid}-${firstVid + members.size - 1}, `
+      + `moved onto ${standIn}; ${changed.length} with airports that changed between revisions; `
+      + `${pages.length - 1} page(s) of two, and the one past them`,
   );
   process.exit(0);
 }
