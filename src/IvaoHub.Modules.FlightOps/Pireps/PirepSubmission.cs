@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
