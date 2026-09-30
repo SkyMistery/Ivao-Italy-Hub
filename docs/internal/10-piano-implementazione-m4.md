@@ -685,7 +685,9 @@ nota.
 **Fatta quando**: un segnale nuovo arriva nella casella di chi assegna.
 
 **Com'è andata** (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo senza coda, da `main` a `c107c98`; `main`
-a `c98b272`, con E10b (#208), unita prima dei documenti):
+a `c98b272`, con E10b (#208), unita prima dei documenti; `main` a `04718e6`, con E10e (#206), unita dopo la prima pubblicazione, quando
+#205 era diventata CONFLICTING — solo `HANDOFF-M4.md`, l'intestazione e la riga «Che cosa manca», risolte tenendo il paragrafo di ogni
+fase):
 
 - **La domanda prima del codice.** La forma non era ovvia: con E14b, validare i PIREP di un RFE fa da cento a trecento segnali in pochi
   giorni. La nota è andata a Carmine come «Proposta», con la PR in bozza e le domande in un [commento][q205]; il codice che ne
@@ -746,7 +748,10 @@ a `c98b272`, con E10b (#208), unita prima dei documenti):
       due worker si sono contesi il primo accesso del web master (`Duplicate entry '999001'`), e `full/awards.spec.ts:24` è caduta in
       206 ms. `--workers=2` vale per lo smoke, non per `e2e:full`;
     - le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, 15 del nucleo, la nota nuova —
-      passa.
+      passa;
+  - **dopo il merge di E10e** (#206): `dotnet build` senza avvisi, unità **906/906**, integrazione intera senza filtro **437/437** (6,8 minuti). Il
+    merge porta solo `Core/Airspace/GreatCircle.cs`, i suoi test di unità e documenti, e nessun file web, schermata o migrazione: le
+    suite web ed e2e qui sopra non sono state rifatte.
 - **Non verificato**:
   - la CI (la dice la PR);
   - **la mail vera in Mailpit o nel browser**. Il banco non ha nessuno con `Awards.Assign` e una casella, e il job gira solo alla sua
