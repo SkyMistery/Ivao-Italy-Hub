@@ -49,6 +49,16 @@ public sealed class PermissionCatalog
                     $"'{descriptor.Name}' is the View permission of its area, and the area's View permission is never "
                     + "OnlyForAssignee: the lists narrow by department and would show the rows anyway.");
             }
+
+            if (string.Equals(EditOf(descriptor.Name), descriptor.Name, StringComparison.Ordinal))
+            {
+                // The area's Edit is what a marked permission falls back on, on a row not assigned to the writer: marked, it
+                // would fall back on itself, and whoever writes the whole area would write only their own rows in the handler
+                // and every row in the guard (note 2026-09-30-il-controllo-all-avvio-rinforzato).
+                throw new InvalidOperationException(
+                    $"'{descriptor.Name}' is the Edit permission of its area, and the area's Edit permission is never "
+                    + "OnlyForAssignee: it is what a marked permission is worth on a row not assigned to the writer.");
+            }
         }
 
         All = [.. _byName.Values];
@@ -125,18 +135,25 @@ public sealed class PermissionCatalog
     /// could not honour as written (M3, A3b, note 2026-09-26-le-righe-affidate-a-chi-scrive §3.5-bis): <c>AlsoOnDeletion</c> on
     /// a permission not marked <c>OnlyForAssignee</c>, which would delete nothing, and a marked permission on an entity that
     /// does not say whom a row is assigned to (<see cref="IHasAssignee"/>), which would be worth <c>Edit</c> and nothing more.
+    /// <para>And three more ways a marked permission would let the handler and the guard answer differently on the same row
+    /// (note 2026-09-30-il-controllo-all-avvio-rinforzato): its <c>Edit</c> is not the one of the entity's area, which the
+    /// handler falls back on and the guard does not; the entity has no department (<see cref="IOwnedByDepartment"/>), which
+    /// the guard asks the alternative on; the entity says whom a row is about (<see cref="IHasStakeholder"/>) and the permission
+    /// is not <c>DeniedToStakeholder</c>, when the guard keeps the stakeholder out of every alternative.</para>
     /// <para>The hub calls it when it starts, on the model of every context, so that a wrong declaration stops the start
-    /// rather than turning into a 403 nobody can explain.</para>
+    /// rather than turning into a 403 nobody can explain. <paramref name="areaOf"/> is the area the guard asks <c>Edit</c> of,
+    /// which the hub works out from the context; without it only an area declared with <see cref="PermissionAreaAttribute"/>
+    /// is checked.</para>
     /// </summary>
-    public void VerifyAlternatives(IEnumerable<Type> entities)
+    public void VerifyAlternatives(IEnumerable<Type> entities, Func<Type, string?>? areaOf = null)
     {
         ArgumentNullException.ThrowIfNull(entities);
+        areaOf ??= DeclaredAreaOf;
 
         var wrong = entities
             .Distinct()
             .SelectMany(entity => entity.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false)
-                .Select(alternative => WhatIsWrong(entity, alternative)))
-            .OfType<string>()
+                .SelectMany(alternative => WhatIsWrong(entity, areaOf(entity), alternative)))
             .ToArray();
 
         if (wrong.Length > 0)
@@ -145,21 +162,47 @@ public sealed class PermissionCatalog
         }
     }
 
-    private string? WhatIsWrong(Type entity, AlsoWrittenWithAttribute alternative)
+    private IEnumerable<string> WhatIsWrong(Type entity, string? area, AlsoWrittenWithAttribute alternative)
     {
-        if (IsOnlyForAssignee(alternative.Permission))
+        var permission = alternative.Permission;
+
+        if (!IsOnlyForAssignee(permission))
         {
-            return typeof(IHasAssignee).IsAssignableFrom(entity)
-                ? null
-                : $"{entity.Name} is also written with {alternative.Permission}, which reaches only the rows assigned to the "
-                    + "writer, but it does not say whom a row is assigned to (IHasAssignee).";
+            if (alternative.AlsoOnDeletion)
+            {
+                yield return $"{entity.Name} lets {permission} delete (AlsoOnDeletion), which only a permission that reaches "
+                    + "the rows assigned to the writer may do (OnlyForAssignee).";
+            }
+
+            yield break;
         }
 
-        return alternative.AlsoOnDeletion
-            ? $"{entity.Name} lets {alternative.Permission} delete (AlsoOnDeletion), which only a permission that reaches "
-                + "the rows assigned to the writer may do (OnlyForAssignee)."
-            : null;
+        if (!typeof(IHasAssignee).IsAssignableFrom(entity))
+        {
+            yield return $"{entity.Name} is also written with {permission}, which reaches only the rows assigned to the "
+                + "writer, but it does not say whom a row is assigned to (IHasAssignee).";
+        }
+
+        if (area is not null && !string.Equals(EditOf(permission), $"{area}.Edit", StringComparison.Ordinal))
+        {
+            yield return $"{entity.Name} is also written with {permission}, which on a row not assigned to the writer is "
+                + $"worth {EditOf(permission) ?? "nothing"}, but the entity's area is written with {area}.Edit.";
+        }
+
+        if (!typeof(IOwnedByDepartment).IsAssignableFrom(entity))
+        {
+            yield return $"{entity.Name} is also written with {permission}, which reaches only the rows assigned to the "
+                + "writer, but it has no department to ask it on (IOwnedByDepartment).";
+        }
+
+        if (typeof(IHasStakeholder).IsAssignableFrom(entity) && !IsDeniedToStakeholder(permission))
+        {
+            yield return $"{entity.Name} says whom a row is about (IHasStakeholder) and is also written with {permission}, "
+                + "which is not DeniedToStakeholder: the endpoint would let the stakeholder in and the save would not.";
+        }
     }
+
+    private static string? DeclaredAreaOf(Type entity) => entity.GetCustomAttribute<PermissionAreaAttribute>(inherit: false)?.Area;
 
     private string? OfTheSameArea(string name, string action)
     {

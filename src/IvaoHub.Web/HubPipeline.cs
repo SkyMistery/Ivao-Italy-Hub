@@ -186,7 +186,7 @@ internal static class HubPipeline
         {
             var model = ((DbContext)scope.ServiceProvider.GetRequiredService(contextType)).Model;
             var entities = model.GetEntityTypes().Select(entity => entity.ClrType).ToArray();
-            catalogue.VerifyAlternatives(entities);
+            catalogue.VerifyAlternatives(entities, entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity));
 
             // The areas whose rows say their FIR, the only ones a grant to the team of a FIR may name a permission of (M3,
             // A11a): the seed of positionGrants and the permissions screen ask the catalogue, from here on.
