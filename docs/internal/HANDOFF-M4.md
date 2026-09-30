@@ -49,7 +49,8 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 **Che cosa manca, e quale fase lo porta**: i tipi `rfe`, `rfo`, `mse`, `onlineDay` e uno staff degli eventi sul banco (E1); le sessioni
 senza VID, con il tipo di connessione (E10a); il VID nelle sessioni condivise (E10b); il rating preferito e minimo, le postazioni della
 divisione per nominativo (E10c); la mail a chi assegna (E10d); la distanza nel nucleo (E10e); le prenotazioni ATC della rete (E15a);
-`ErasureTests` sugli eventi (E8a); l'helper «persona cancellata» (A12a di M3, ⚠️ in E6b).
+l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
+1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
 ## Per i test
 
@@ -69,11 +70,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   `dopo-l-evento-e-gli-award`, `gli-eventi-in-presenza`, `le-impostazioni-degli-eventi`, `i-dati-dei-membri-negli-eventi`. Il piano
   1.24 porta già quasi tutta la §18 del design: ogni nota dice che cosa c'è e che cosa resta. E `10-piano-implementazione-m4.md`: le
   regole di tutte le fasi e le fasi E0–E17, con E3, E6, E11, E13, E14 in due PR, E10 in cinque PR del nucleo (E10a–E10e), E15 in due
-  (E15a del nucleo), E8 in due (E8a del nucleo); «Com'è andata» di E0 è già scritto.
+  (E15a del nucleo), E8 in due (E8a del nucleo, poi **tolta** nel piano 1.25 dopo A12a di M3); «Com'è andata» di E0 è già scritto.
 - **Che cosa deve sapere la fase dopo**: le note di E0 registrano le decisioni, **non** la forma nel codice delle estensioni del
-  nucleo: ogni fase del nucleo (E1, E8a, E10a–E10e, E15a) porta **la sua nota nuova**. ⚠️ **`core-guard` non giudica le PR di
+  nucleo: ogni fase del nucleo (E1, E10a–E10e, E15a) porta **la sua nota nuova**. ⚠️ **`core-guard` non giudica le PR di
   `SkyMistery`**, quindi il check è verde anche senza la nota: la regola la tiene chi scrive.
-- **La cancellazione dei dati di una persona nasce con M4a** (E8a, E8b) invece che in E15: proposta di E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184) (`10`, E0,
+- **La cancellazione dei dati di una persona nasce con M4a** (E8b; E8a poi tolta) invece che in E15: proposta di E0, **decisa da Carmine** il 29 settembre 2026, in chat, come raccomandato («sì, come raccomandi tu», alla domanda della PR #184) (`10`, E0,
   scostamento 4).
 - ⚠️ **Quello che il design dava per esistente e non c'è** (`10`, E0, «Trovato», punti 6–10): il tracker vuole il VID e non dice il
   tipo di connessione; le sessioni condivise non hanno il VID; il vocabolario dei rating non conosce `GND`, `DEL`, `DEP` né il minimo

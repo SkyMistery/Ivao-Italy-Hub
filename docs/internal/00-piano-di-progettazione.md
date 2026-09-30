@@ -24,9 +24,10 @@ nucleo. **La coda di M3 è vuota**: restano A12c, condizionata, e A12d. Sulla pr
   migrazione; decisa da Carmine in chat e pubblicata su sua istruzione, [commento][d125e]: **sì alla forma** e **la (c)**):
   `personName`, `isErased`, `NamedPerson` in `web/src/shared/ui/people.ts`, la parola **`people.deleted`** — ⚠️ non `people.erased`
   come diceva la risposta: il catalogo del server rifiuta una chiave del nucleo che un modulo dichiara già (`flightops:people.erased`) —,
-  la colonna `col.person` della lista generata; `ErasureTests` legge i contesti di **ogni modulo abilitato**. Per M4 **il punto 1 di E8a
-  non serve più** (§13 riga M4). La riga «Erasing a person's data» di `CLAUDE.md` §2 e `05-design-m2.md` §10.0 restano al maintainer
-  (§16 punto 16, §13 riga M4).
+  la colonna `col.person` della lista generata; `ErasureTests` legge i contesti di **ogni modulo abilitato**. Per M4 **E8a è tolta**: il test
+  vede da solo il contesto degli eventi, e da E2 ogni fase che crea una colonna di persona scrive la sua riga (§13 riga M4). La riga
+  «Erasing a person's data» di `CLAUDE.md` §2, `05-design-m2.md` §10.0, `09-design-m4.md` §1.13, §11.1, §13 e `10-…` (E8a tolta, la
+  regola delle colonne da E2) sono aggiornati in questa stessa PR, secondo la nota (§16 punto 16, §13 riga M4).
 - **Il training affidato a chi si cancella** (`2026-09-29-il-training-affidato-a-chi-si-cancella`, #189, A12b; decisa da Carmine in chat
   e pubblicata su sua istruzione, [commento][d125f], **la (a)**): un training aperto di un altro membro affidato a un trainer che si
   cancella resta alla persona cancellata e torna fra quelli **da assegnare**; un esame resta com'è. Con `TrainingPersonalData` e
@@ -47,9 +48,9 @@ nucleo. **La coda di M3 è vuota**: restano A12c, condizionata, e A12d. Sulla pr
   `dopo-l-evento…`, `gli-slot…`, `il-roster…`: il piano 1.24 le porta già, verificato in §7, §9.1, §9.2, §9.7, §10, §13; `le-impostazioni…`
   sta nel design); le altre cinque dicono che cosa manca:
   - **§13 riga M4**: le fasi sono quelle di `10-…`, che divide E3, E6, E10, E11, E13, E14 e E15 in PR più piccole e aggiunge tre fasi del
-    nucleo (E8a, E10c allargata alle postazioni, E10e); **E0 scrive le note di §17, non quelle delle estensioni del nucleo**, che porta ognuna la sua
+    nucleo (E8a, poi tolta dopo A12a; E10c allargata alle postazioni; E10e); **E0 scrive le note di §17, non quelle delle estensioni del nucleo**, che porta ognuna la sua
     fase del nucleo;
-  - **la cancellazione nasce con M4a** (E8a–E8b, non in E15): proposta di E0, **decisa da Carmine in chat** sulla #184 («sì, come
+  - **la cancellazione nasce con M4a** (E8b, non in E15): proposta di E0, **decisa da Carmine in chat** sulla #184 («sì, come
     raccomandi tu»), perché M4a va in produzione da solo e le prenotazioni sono dati di una persona dal primo giorno;
   - **§9.7 «Privacy dei membri»**: quanto tiene il modulo (le prenotazioni e i PIREP dei piloti 24 mesi, le iscrizioni in presenza e i
     posti delle attività 3 mesi, i turni ATC per sempre), con il job `events-retention`;

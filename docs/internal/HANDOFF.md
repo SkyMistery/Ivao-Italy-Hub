@@ -79,12 +79,12 @@ il predefinito `own`, per non toccare tre suoi test), in una PR sua.
 ⚠️ Da A11b il menu offre a un capo FIR «Esami» e «Ban», che gli rispondono 403 (una lista vuota): toglierli vuole il nucleo, proposta
 detta al revisore sulla #182. ⚠️ `e2e/full/template.spec.ts:139`, del nucleo, può cadere una volta nel giro completo (A12b).
 **M4** (Events): **il design è unito** (`09-design-m4.md`, #180) e **la fase E0 anche** (#184, 29 set 2026): dieci note sulle
-decisioni di §17, `10-piano-implementazione-m4.md` con le fasi (M4a E1–E9, M4b E10a–E15b, M4c E16–E17; le fasi del nucleo E1, E8a,
-E10a–E10e, E15a accanto al modulo) e `HANDOFF-M4.md`. **La cancellazione nasce con M4a** (E8a–E8b, decisa da Carmine in chat sulla
-#184). ⚠️ **Il punto 1 di E8a non serve più**: con la (c) di A12a `ErasureTests` legge già i contesti di ogni modulo abilitato, quindi
+decisioni di §17, `10-piano-implementazione-m4.md` con le fasi (M4a E1–E9, M4b E10a–E15b, M4c E16–E17; le fasi del nucleo E1,
+E10a–E10e, E15a accanto al modulo) e `HANDOFF-M4.md`. **La cancellazione nasce con M4a** (E8b, decisa da Carmine in chat sulla
+#184). ⚠️ **E8a è tolta** (piano 1.25): con la (c) di A12a `ErasureTests` legge già i contesti di ogni modulo abilitato, quindi
 `EventsDbContext` appena il modulo è registrato; ne segue che **da E2** (la prima tabella `evt_`, con `cancelled_by`) ogni fase che crea
-una colonna di persona scrive la sua riga nella lista del test, o il test cade. `10-…` e le note di E0 non si correggono: lo dice
-questo paragrafo e il piano (§13 riga M4). **Il prossimo passo è E1** (nucleo: i tipi `rfe`, `rfo`, `mse`, `onlineDay` nel seme e il
+una colonna di persona scrive la sua riga nella lista del test, o il test cade. `09-…`, `10-…` e `HANDOFF-M4.md` sono corretti nella
+PR del piano 1.25; le note di E0 non si toccano. **Il prossimo passo è E1** (nucleo: i tipi `rfe`, `rfo`, `mse`, `onlineDay` nel seme e il
 personaggio dell'ED sul banco e2e, con una nota breve). **Chi scrive M4 non è deciso**: Carmine sceglie fra `dalberone` su tutta M4,
 oppure `dalberone` sul modulo da E2 e le fasi del nucleo (E1, E10a–E10e…) alle sue sessioni di lavoro.
 Il rapporto è
