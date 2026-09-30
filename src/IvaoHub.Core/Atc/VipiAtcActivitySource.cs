@@ -35,7 +35,18 @@ public sealed class VipiAtcActivitySource(
     /// <summary>The oldest rows move once a night, when vIPI prunes; an hour is plenty.</summary>
     private static readonly TimeSpan CoverageLifetime = TimeSpan.FromHours(1);
 
-    public async Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
+    public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        ReadAsync(null, fromUtc, toUtc, cancellationToken);
+
+    /// <summary>
+    /// The same rows as <see cref="OnlineAsync"/>, one controller's. The view's <c>vid</c> is vIPI's <c>UserId</c>, which vIPI
+    /// indexes together with the start (<c>(UserId, StartUtc)</c>, read in its model on 30 September 2026): months of one
+    /// controller are a short walk of that index, not of the archive.
+    /// </summary>
+    public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        ReadAsync(vid, fromUtc, toUtc, cancellationToken);
+
+    private async Task<AtcActivity?> ReadAsync(int? vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken)
     {
         if (toUtc < fromUtc)
         {
@@ -47,9 +58,15 @@ public sealed class VipiAtcActivitySource(
             var coverage = await CoverageAsync(cancellationToken);
             var earliest = fromUtc - LongestConnection;
 
-            var rows = await database.Sessions
-                .Where(row => row.StartUtc <= toUtc && row.StartUtc >= earliest && (row.EndUtc == null || row.EndUtc >= fromUtc))
-                .Select(row => new { row.Callsign, row.Frequency, row.StartUtc, row.EndUtc })
+            var sessions = database.Sessions
+                .Where(row => row.StartUtc <= toUtc && row.StartUtc >= earliest && (row.EndUtc == null || row.EndUtc >= fromUtc));
+            if (vid is { } controller)
+            {
+                sessions = sessions.Where(row => row.Vid == controller);
+            }
+
+            var rows = await sessions
+                .Select(row => new { row.Vid, row.Callsign, row.Frequency, row.StartUtc, row.EndUtc })
                 .ToListAsync(cancellationToken);
 
             return new AtcActivity(
@@ -58,7 +75,10 @@ public sealed class VipiAtcActivitySource(
                         row.Callsign.Trim().ToUpperInvariant(),
                         string.IsNullOrWhiteSpace(row.Frequency) ? null : row.Frequency.Trim(),
                         DateTime.SpecifyKind(row.StartUtc, DateTimeKind.Utc),
-                        row.EndUtc is { } end ? DateTime.SpecifyKind(end, DateTimeKind.Utc) : null)),
+                        row.EndUtc is { } end ? DateTime.SpecifyKind(end, DateTimeKind.Utc) : null)
+                    {
+                        Vid = row.Vid,
+                    }),
                 ],
                 coverage.Division,
                 coverage.World,

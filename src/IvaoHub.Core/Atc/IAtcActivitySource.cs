@@ -1,9 +1,11 @@
 namespace IvaoHub.Core.Atc;
 
 /// <summary>
-/// "Which positions were online in this interval?" — the one question the hub asks of an archive of ATC sessions (design M2
-/// §6.5). The tours module asks it to propose the controllers a pilot contacted (§3.3) and to tell whether an exemption's
-/// position was online; nothing it answers decides anything by itself.
+/// "Which positions were online in this interval?" — the question the hub asks of an archive of ATC sessions (design M2
+/// §6.5), and "which connections did this controller open in it?", the same question about one person (design M4 §13 n.3).
+/// The tours module asks the first to propose the controllers a pilot contacted (§3.3) and to tell whether an exemption's
+/// position was online; the events module asks the second for a controller's experience of a position (design M4 §4.3) and
+/// for their presence on a shift (§4.5). Nothing either answers decides anything by itself.
 /// <para>An archive is an <b>optional</b> integration of the core (note 2026-09-14-dati-condivisi-con-vipi §3.4): a division
 /// that has none gets <see langword="null"/>, which a caller shows as «not available» and never as «failed». Which archive
 /// it is lives in this folder and nowhere else; an architecture test holds that line.</para>
@@ -11,10 +13,21 @@ namespace IvaoHub.Core.Atc;
 public interface IAtcActivitySource
 {
     /// <summary>
-    /// The positions online at some moment between <paramref name="fromUtc"/> and <paramref name="toUtc"/>, or
-    /// <see langword="null"/> when there is no archive or it could not be read.
+    /// The positions online at some moment between <paramref name="fromUtc"/> and <paramref name="toUtc"/>, each with the
+    /// controller who had it, or <see langword="null"/> when there is no archive or it could not be read.
     /// </summary>
     Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The connections of the controller <paramref name="vid"/> open at some moment between <paramref name="fromUtc"/> and
+    /// <paramref name="toUtc"/> — months of them for the positions they open most (<see cref="AtcActivity.Of"/> is one
+    /// position), a shift's window for whether they were there —, or <see langword="null"/> when there is no archive or it
+    /// could not be read (M4, E10b, note 2026-09-30-le-sessioni-condivise-per-vid).
+    /// <para>⚠️ By default an archive cannot ask by controller and answers «not available»: one written before E10b — the
+    /// doubles of the tests among them — keeps compiling and says so.</para>
+    /// </summary>
+    Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        Task.FromResult<AtcActivity?>(null);
 }
 
 /// <summary>One connection of a controller, as the archive keeps it.</summary>
@@ -24,6 +37,12 @@ public interface IAtcActivitySource
 /// <param name="EndedAt">Null while the connection is still open.</param>
 public sealed record AtcPresence(string Callsign, string? Frequency, DateTime StartedAt, DateTime? EndedAt)
 {
+    /// <summary>
+    /// The controller who had the position (M4, E10b): who covered it, when a shift's controller did not. Null where the
+    /// archive does not say — a double written before E10b —, which is nobody's VID.
+    /// </summary>
+    public int? Vid { get; init; }
+
     /// <summary>
     /// The place a callsign names: what comes before the first underscore — an airport (<c>LIRF</c>) or a region
     /// (<c>LIRR</c>).
@@ -43,10 +62,12 @@ public sealed record AtcPresence(string Callsign, string? Frequency, DateTime St
 }
 
 /// <summary>
-/// What the archive had for an interval: the connections, and how far back it is complete — for the division's own
-/// positions and for the rest of the world, which an archive may have started keeping later, or keep for less time.
+/// What the archive had for an interval: the connections — everybody's, or one controller's —, and how far back it is
+/// complete — for the division's own positions and for the rest of the world, which an archive may have started keeping
+/// later, or keep for less time.
 /// <para>That is what separates «the position was not online» from «we cannot know»: a position the archive does not list
-/// is offline only where the archive covers the whole interval.</para>
+/// is offline only where the archive covers the whole interval — and a controller it does not list on a position was not
+/// on it only there.</para>
 /// </summary>
 public sealed record AtcActivity(
     IReadOnlyList<AtcPresence> Online,
@@ -77,5 +98,8 @@ public sealed record AtcActivity(
 public sealed class UnavailableAtcActivitySource : IAtcActivitySource
 {
     public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        Task.FromResult<AtcActivity?>(null);
+
+    public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
         Task.FromResult<AtcActivity?>(null);
 }
