@@ -616,7 +616,8 @@ nota.
   - `tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>`, con le persone tolte (l'oggetto `user`,
     una VID per membro, i callsign dei piloti, gli identificativi rinumerati) e un ultimo controllo che non scrive se resta una VID
     vera o un nome; il tentativo ripetuto delle postazioni diventa di tutte e due le modalità (`getPatiently`);
-  - **le fixture** `tracker-airport-LIRF.json` e `tracker-pages-LIRF.json`: LIRF, 28 settembre 2026, 16:00–17:59:59 UTC, 10 sessioni
+  - **le fixture** `tracker-airport-LIRF.json` e `tracker-pages-LIRF.json`: LIRF, una sera fra le 16:00 e le 17:59:59 UTC (dopo la
+    revisione spostata sul 1° gennaio 2001: qui sotto), 10 sessioni
     di 9 membri come VID 761020–761028 (uno collegato due volte, un volo di 38 s, la torre, e un piano passato da LIPZ→LIRF a
     LIRF→LICR); la loro sezione in `tests/fixtures/ivao/README.md`;
   - **i test**, di unità: `IvaoTrackerWithoutVidTests` (16: le pagine registrate, la finestra vuota, la pagina vuota, l'errore a
@@ -658,6 +659,24 @@ nota.
   tenuti tutti e due i paragrafi con E10a sopra; `10` si è unito da sé. Rifatti: build senza avvisi, unità **902/902**,
   **integrazione intera senza filtro 435/435** (7,5 minuti, i test di E10b compresi), le regole di `core-guard` dalla base nuova
   (uguali: sette file del nucleo, la nota). Il web non è toccato dal merge.
+- **Dopo la revisione** ([osservazioni del revisore sulla #210][r210], «approvabile dopo due correzioni»; fatte il 1° ottobre 2026):
+  1. **Le fixture su un giorno inventato**: la data vera, al secondo, con l'aeroporto, ritrovava su IVAO le sessioni vere, e con
+     loro VID e nome. Lo script sposta tutta la sera sul **1° gennaio 2001** (il tracker non ha sessioni nel 2001: misurato, 0 in
+     tutto l'anno; lo stesso giorno delle prenotazioni di E15a), ogni istante con lo stesso scarto, e toglie `rating`, `serverId` e
+     `software*`; il suo controllo finale rifiuta i campi tolti e i giorni veri. Registrata di nuovo dalla stessa finestra: stesse
+     sessioni, stesse VID, stessi identificativi. I test leggono il giorno nuovo, e uno controlla la data e i campi nel file. La data
+     vera è tolta anche da questi documenti. ⚠️ **La prima registrazione resta nella storia del branch** (il commit `92c7a84`, il suo
+     messaggio e il primo «Com'è andata» hanno la data vera, e le fixture di allora `rating`, `serverId` e il software): la storia
+     spinta non si riscrive, e come unire la #210 è una scelta del master; scritto sulla PR.
+  2. **Un tetto sul `Limit`**: `MaxLimit` = 1000, tenuto dal nucleo nell'`init`, con il suo test.
+  3. **Carmine ha detto sì** alle due domande del revisore — i 20 s per tentativo (campionamento 40, totale 30) e `null` per la
+     ricerca dei tour quando IVAO non risponde ([risposta sulla #210][ok210]) —, registrato nella nota (§6).
+  4. **`main` unito di nuovo** (E10e #206, il passaggio dei tour al calcolo del nucleo #211, E10d #205): il conflitto era solo in
+     `HANDOFF-M4.md`; l'intestazione di E10a tiene anche lo stato di `main`, e restano i paragrafi di tutte le fasi. Rifatti: build
+     senza avvisi, unità **920/920**, **integrazione intera senza filtro 437/437** (7,8 minuti), in `web/` `pnpm lint`,
+     `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594, `pnpm gen:api` senza differenze, `dotnet format` sui file
+     toccati, le regole di `core-guard` (sette file del nucleo, la nota). E15a (#207) è ancora aperta: se entra prima, si unisce di
+     nuovo.
 - **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
   di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
   pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata
@@ -665,6 +684,9 @@ nota.
   dei tour quando IVAO non risponde (ora «tracker non disponibile»: provato sul client, non sulla pagina); `pnpm e2e` ed `e2e:full`,
   perché nessuna schermata cambia — il client delle fixture, che il banco usa anche per i tour, è provato in unità con la fixture dei
   tour (780001), non sul banco.
+
+[r210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917019730
+[ok210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792
 
 ### E10b — Nucleo: le sessioni condivise per VID
 
