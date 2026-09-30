@@ -47,8 +47,8 @@ There are four roles, and the repository enforces them (rulesets on `main` and o
    up-to-date `main`, **one pull request per
    phase**. Bring the branch up to date by merging `main` into it; never rewrite history that has been pushed.
    **You do not wait for a merge to start the next phase**: branch it from the previous phase's branch and queue its
-   pull request as `CONTRIBUTING.md` ("Phases in a queue") says — always to `main`, as a draft, until the one below
-   is merged.
+   pull request as `CONTRIBUTING.md` ("Phases in a queue") says — always to `main`, ready (not a draft) and marked
+   `(after #N)` until the one below is merged.
 5. **The first pull request of a module is its design, with no code** (the module's design document:
    `docs/internal/07-design-m3.md` for Training), and no code is written until the maintainer has approved it (plan
    0.72: "every module gets a short design document before the code"). For Events the design
