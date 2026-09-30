@@ -3,9 +3,9 @@ namespace IvaoHub.Core.Atc;
 /// <summary>
 /// "Which positions were online in this interval?" — the question the hub asks of an archive of ATC sessions (design M2
 /// §6.5), and "which connections did this controller open in it?", the same question about one person (design M4 §13 n.3).
-/// The tours module asks the first to propose the controllers a pilot contacted (§3.3) and to tell whether an exemption's
-/// position was online; the events module asks the second for a controller's experience of a position (design M4 §4.3) and
-/// for their presence on a shift (§4.5). Nothing either answers decides anything by itself.
+/// The tours module asks the first to propose the controllers a pilot contacted (design M2 §3.3) and to tell whether an
+/// exemption's position was online; the events module asks the second for a controller's experience of a position (design M4
+/// §4.3) and for their presence on a shift (§4.5). Nothing either answers decides anything by itself.
 /// <para>An archive is an <b>optional</b> integration of the core (note 2026-09-14-dati-condivisi-con-vipi §3.4): a division
 /// that has none gets <see langword="null"/>, which a caller shows as «not available» and never as «failed». Which archive
 /// it is lives in this folder and nowhere else; an architecture test holds that line.</para>
