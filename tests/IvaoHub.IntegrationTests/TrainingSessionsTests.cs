@@ -59,9 +59,10 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
     /// <summary>
     /// The fields of the staff's page that are reserved (note <c>le-note-riservate-e-il-trainee</c> §4): listed here, so that a reserved
-    /// field a later phase adds, and the rule forgets, shows in the review of this list.
+    /// field a later phase adds, and the rule forgets, shows in the review of this list. The history of the training's changes is one
+    /// since A13b (Carmine's answer on #197: not by the trainee).
     /// </summary>
-    private static readonly string[] ReservedOnThePage = ["staffComment", "sheet[].staffNote", "sessions[].internalNotes"];
+    private static readonly string[] ReservedOnThePage = ["staffComment", "sheet[].staffNote", "sessions[].internalNotes", "history"];
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -506,17 +507,20 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         using var trainerTrainee = await SignedInAsync(TrainerTraineeVid, token);
 
-        // Another trainee's: every reserved field, as written.
+        // Another trainee's: every reserved field, as written — and the history of the steps above, the installation's by nobody.
         var theirs = await PageAsync(trainerTrainee, another, token);
         Assert.False(theirs.GetProperty("reservedLeftOut").GetBoolean());
         Assert.Equal(
-            ["trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session"],
+            [
+                "trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session",
+                "Requested Rescheduled DateSet DateMoved Completed",
+            ],
             ReservedValues(theirs, item));
 
         // Their own: readable — the row is theirs to read like any other —, and every reserved field left out.
         var mine = await PageAsync(trainerTrainee, own, token);
         Assert.True(mine.GetProperty("reservedLeftOut").GetBoolean());
-        Assert.Equal(new string?[] { null, null, null }, ReservedValues(mine, item));
+        Assert.Equal(new string?[] { null, null, null, null }, ReservedValues(mine, item));
         Assert.DoesNotContain("trn-test-reserved", mine.ToString(), StringComparison.Ordinal);
 
         // What they read anyway stays: the grade and the comment for them, the general comment, the sessions.
@@ -680,20 +684,25 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         return id;
     }
 
-    /// <summary>The value of each field of <see cref="ReservedOnThePage"/>, in its order: on the item of this class, and on the session rescheduled.</summary>
+    /// <summary>
+    /// The value of each field of <see cref="ReservedOnThePage"/>, in its order: on the item of this class, on the session rescheduled,
+    /// and the history as the events it lists — none when it lists nothing.
+    /// </summary>
     private static List<string?> ReservedValues(JsonElement page, long item)
     {
-        Assert.Equal(["staffComment", "sheet[].staffNote", "sessions[].internalNotes"], ReservedOnThePage);
+        Assert.Equal(["staffComment", "sheet[].staffNote", "sessions[].internalNotes", "history"], ReservedOnThePage);
 
         var onTheItem = page.GetProperty("sheet").EnumerateArray().Single(each => each.GetProperty("itemId").GetInt64() == item);
         var rescheduled = page.GetProperty("sessions").EnumerateArray()
             .Single(each => each.GetProperty("outcome").GetString() == nameof(SessionOutcome.Rescheduled));
+        var history = page.GetProperty("history").EnumerateArray().Select(entry => entry.GetProperty("event").GetString()).ToList();
 
         return
         [
             page.GetProperty("staffComment").GetString(),
             onTheItem.GetProperty("staffNote").GetString(),
             rescheduled.GetProperty("internalNotes").GetString(),
+            history.Count == 0 ? null : string.Join(' ', history),
         ];
     }
 
@@ -707,6 +716,7 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.DoesNotContain("staffComment", text, StringComparison.Ordinal);
         Assert.DoesNotContain("staffNote", text, StringComparison.Ordinal);
         Assert.DoesNotContain("internalNotes", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"history\"", text, StringComparison.Ordinal);
     }
 
     /// <summary>The items of a sheet this class wrote, in their order: others of the same rating may be on it too.</summary>
