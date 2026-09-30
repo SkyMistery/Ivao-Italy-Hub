@@ -284,10 +284,10 @@ test('«no» to the theory is sent all the same, and the screen says why the req
   await question.getByRole('button', { name: words.request.theory.confirm }).click();
 
   // The hub's own refusal, on the screen and nowhere else: no mail goes for it. Under it the site of the exam and what to do
-  // there to book it (A13).
+  // there to book it (A13) — in the notice: the question has them too, and for a moment it is still closing.
   await expect(page.getByText(words.request.declined.title.replace('{{rating}}', 'ADC'))).toBeVisible();
   await expect(page.getByRole('link', { name: words.theoryExam })).toHaveAttribute('href', EXAM);
-  await expect(page.getByText(HINT.en, { exact: true })).toBeVisible();
+  await expect(page.getByRole('status').getByText(HINT.en, { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/training\/request$/);
   expect(sent).toHaveLength(1);
   expect(sent[0]).toMatchObject({ kind: 'Atc', position: 'XXBB_TWR', theoryPassed: false });
