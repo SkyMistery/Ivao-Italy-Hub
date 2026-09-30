@@ -263,7 +263,64 @@ personaggio del banco, come A1 di M3).
 `tour` e `deadline`). E2e: `?as=events` entra come `IT-EC`.
 **Fatta quando**: su un banco nuovo `/api/me` elenca i quattro tipi e il personaggio dell'ED entra.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e1-calendar-kinds`, PR #200, del nucleo senza coda, da `main` a `21da19d`):
+
+- **Fatto** (nota nuova `2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco`, scelta tecnica, nessuna domanda nuova):
+  - **i quattro tipi** in `seed/calendar-kinds/kinds.json`: `rfe`, `rfo`, `mse`, **`online-day`**, blu come `event` e subito dopo
+    (`sort` 11–14); le etichette «RFE», «RFO», «MSE», «Online Day» in `locales/*/seed.json` (chiavi `seed.calendarKinds.rfe`, `.rfo`,
+    `.mse`, `.onlineDay`). **Nessun codice del seeder**: si ricorda chiave per chiave e salta una chiave scritta a mano da A2 di M3, e
+    il marcatore d'inizializzazione conta anche `seed/`, quindi i quattro arrivano anche a un database già avviato;
+  - **il personaggio dell'ED** sul banco: `/e2e/signin?as=events`, VID 999005, «Bench Events», `IT-EC`, nessuna casella, nessun rating
+    né ora. In `E2ESignIn` le opzioni dell'assistente dei tour diventano `E2EStaffOptions` (posizioni, nessuna casella) e servono a
+    tutti e due; `E2EOptions.Events`, `E2ESignIn.AsEvents`; `web/scripts/e2e-server.mjs` e il README delle spec;
+  - **i test**: `CalendarKindSeedTests` (integrazione, scritto in A2) con due casi nuovi — i quattro arrivano accanto agli altri sei, e
+    un `rfe` scritto a mano resta com'è mentre gli altri tre arrivano — e gli aiuti resi generali (i due casi di `exam` uguali);
+    `CalendarKindsXxDivisionTests` (integrazione, nuovo): il fork «XX», avviato su un database suo (`ivaohub_xx_kinds`), nasce con
+    ogni tipo del seme, i quattro compresi, con la **sola** parola inglese del suo file — senza toccare `ForkabilityXxDivisionTests`;
+    `CalendarKindSeedFileTests` (unità, nuovo): ogni tipo del seme passa dal validatore del back office, e i quattro ci sono;
+    `web/e2e/full/events-bench.spec.ts`: il personaggio entra come `IT-EC`, e il suo `/api/me` dice un membro del solo ED
+    (`hasAllDepartments: false`, `departments: ['ED']`) ed elenca i quattro tipi con le parole del seme;
+  - `docs/FORKING.md`: le parole del calendario che un fork riceve dal seme, e dove si cambiano.
+- ⚠️ **Scostamento dal design (§1.2, §1.12, §8.1, §13 n.1), dalla nota `i-tipi-di-evento` e dal piano (§9.5): la chiave
+  dell'Online Day è `online-day`, non `onlineDay`** (nota, §2.2). La chiave di un tipo ha la forma di uno slug
+  (`CalendarKindWriteDtoValidator`, `^[a-z0-9]+(?:-[a-z0-9]+)*$`), e il validatore la rilegge **a ogni salvataggio**, anche di una riga
+  che c'è già: un `onlineDay` seminato sarebbe una riga che il web master non salva più, nemmeno per cambiarle colore, senza
+  rinominarla. `online-day` è la grafia che il back office stesso propone da «Online Day» (`slugify`). **Confermata da Carmine** il
+  30 settembre 2026, in chat al master, che l'ha pubblicata sulla PR su sua istruzione ([risposta sulla #200][ok200]). **Le fasi dopo
+  scrivono `online-day`**: `kindPresets` (E2), il form (E3a), e i `conflictKinds` del training quando la divisione lo vorrà.
+- **Dopo la revisione** ([osservazioni del revisore sulla #200][r200], «approvable», niente di bloccante): la conferma di Carmine qui
+  sopra, registrata nella nota, qui e nell'handoff; nessun cambio al codice. Le due osservazioni per dopo — il commento di
+  `TrainingSettings.cs:57` e l'elenco dei personaggi del banco in `CONTRIBUTING.md` — sono del training e del maintainer (sotto,
+  «Trovato», punti 2 e 3).
+- **Scelte piccole, scritte nella nota**: il colore (blu, come `event`: la tavolozza ha tre colori liberi per quattro tipi, e il colore
+  di un tipo esiste per raggruppare); il nome «Bench Events», come gli altri personaggi dal loro `?as=`; **un test di unità in più**,
+  che `10` non chiedeva: nessun test leggeva `seed/calendar-kinds/` (`ContentSeedTests` legge template e pagine), e il seeder non passa
+  dal validatore, quindi `onlineDay` sarebbe partito senza che niente lo dicesse. Provato al contrario: con `onlineDay` nel seme il test
+  dice «Key errors.slug.invalid», con un'etichetta che non esiste «Label errors.localized.missing».
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Il web master del banco (`IT-WM`) raggiunge ogni dipartimento** (`RolePermissionMatrix.ReachesEveryDepartment`) e ha ogni
+     permesso di ogni modulo: una spec degli eventi che entra come lui passa con qualunque `positionGrants`. Le spec che provano che
+     cosa può l'ED entrano con `?as=events` (dopo il login: il grant scritto fa rientrare, `CONTRIBUTING.md`).
+  2. **Il commento di `TrainingSettings.ConflictKinds`** dice che l'Online Day si aggiunge quando M4 ne crea il tipo: ora c'è, ed è
+     `online-day`. Il predefinito resta `["event"]` (una divisione lo aggiunge dalle impostazioni del training); il commento è del
+     modulo del training, e una PR del nucleo non lo tocca.
+  3. **`CONTRIBUTING.md`** («Tests») nomina solo `?as=pilot` e `?as=assistant`: è del maintainer; il README delle spec li elenca tutti
+     e cinque.
+- **Verificato, in locale** (30 settembre 2026, sul branch prima del commit dei documenti): `dotnet build` senza avvisi; unità
+  **880/880**; **integrazione intera senza filtro 428/428** (6,8 minuti), le due classi toccate da sole 5/5, e
+  `CalendarKindsXxDivisionTests` rossa togliendo l'inglese di `rfe` da `locales/en/seed.json` («… which the English file lacks»), poi
+  il file rimesso; `dotnet format --verify-no-changes` sui quattro file C#; `pnpm lint`, `typecheck` (che comprende `e2e/`),
+  `format:check`, `i18n:check` verdi; `pnpm test` 591 in 79 file; `pnpm gen:api` e `i18n:sync` senza differenze; `pnpm e2e
+  --workers=2` **161/161** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 50/50 al primo giro** su un banco suo
+  (`http://127.0.0.1:5111`, `ivaohub_e2e_e1` tolto prima, dietro il lock di Mailpit), la spec nuova compresa; le regole di
+  `core-guard` rifatte in PowerShell su `git diff origin/main...HEAD`: nessun file del maintainer, otto del nucleo, la nota nuova.
+- **Non verificato**: la CI (la dice la PR); i quattro tipi su un'installazione vera già avviata (il test lo rifà sul database
+  d'integrazione, con il seme passato due volte); le etichette italiane nel browser oltre «una parola, non una chiave» (le afferma
+  esatte il test d'integrazione); i permessi degli eventi del personaggio, che arrivano con E2; `pnpm e2e:full` con la mappa di base,
+  che non c'è né nella cartella principale né negli altri worktree (le spec tollerano il 404 di `/tiles/`, come in CI).
+
+[ok200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912372176
+[r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
 
 ### E2 — Modulo: lo scheletro
 

@@ -86,6 +86,12 @@ cd web && pnpm install && pnpm dev      # the single page application
    `/pilots`, `/atc` and `/about`, published, with filler prose that names no division in
    particular — and one **dashboard per department**, which is the page a department opens its own
    back office on and arranges as it likes.
+
+   The words of the calendar come the same way, from `seed/calendar-kinds/kinds.json`: `event` and
+   the four kinds of the events module (`rfe`, `rfo`, `mse`, `online-day`), `training`, `exam`,
+   `tour`, `meeting` and `deadline`, each remembered one key at a time. Rename, recolour or retire
+   them at `/staff/admin/calendar-kinds`; a word you wrote there before a release seeds the same key
+   is left as you wrote it.
 6. **Write your pages.** `/staff/<department>/content` — new from a template, edit, publish. Nothing
    about a page is in the code.
 7. **Put them in the menu.** `/staff/<web department>/menu` is the navigation of your site: a row

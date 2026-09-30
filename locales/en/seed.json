@@ -193,6 +193,10 @@
     },
     "calendarKinds": {
       "event": "Event",
+      "rfe": "RFE",
+      "rfo": "RFO",
+      "mse": "MSE",
+      "onlineDay": "Online Day",
       "training": "Training",
       "exam": "Exam",
       "tour": "Tour",

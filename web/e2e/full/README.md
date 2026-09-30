@@ -51,8 +51,11 @@ E2E_SKIP_PUBLISH=1 pnpm e2e:full
   `E2E:Enabled` is the other; the flag anywhere else stops the application (`HubConfiguration`).
   `POST /e2e/signin?as=pilot` signs in a second person, a pilot with no position and a mailbox
   of Mailpit: nobody validates their own reports, so the validation round needs two (M2, T13b).
-  `?as=assistant` is a third, an assistant coordinator of the tours' department (T14b), and
-  `?as=trainer` a fourth, a trainer of the training department with a mailbox (M3, A1). Every
+  `?as=assistant` is a third, an assistant coordinator of the tours' department (T14b),
+  `?as=trainer` a fourth, a trainer of the training department with a mailbox (M3, A1), and
+  `?as=events` a fifth, a coordinator of the events department with no mailbox (M4, E1): the web
+  master reaches every department, so the events' round needs somebody who holds only what the
+  division gives that department. Every
   person can carry IVAO ratings and connection hours, as a real sign in writes them: the pilot is
   also the trainee of the training's round (AS3 and FS3, hours above any threshold), the trainer
   stands above every rating a division trains (SEC and ATP).

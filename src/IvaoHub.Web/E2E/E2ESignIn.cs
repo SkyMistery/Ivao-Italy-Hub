@@ -69,7 +69,7 @@ internal sealed class E2EOptions : E2EPersonOptions
     /// (M2, T14b). Whoever decided a report does not judge its dispute, so upholding one needs somebody who holds
     /// <c>Tours.ReopenDecisions</c> and did not decide it. No mailbox. Left out, <c>?as=assistant</c> is a 404.
     /// </summary>
-    public E2EAssistantOptions? Assistant { get; set; }
+    public E2EStaffOptions? Assistant { get; set; }
 
     /// <summary>
     /// A fourth person, a trainer of the training department, signed in with <c>?as=trainer</c> (M3, A1): the training is
@@ -77,6 +77,15 @@ internal sealed class E2EOptions : E2EPersonOptions
     /// least as high as the one trained. A mailbox, because a trainer is written to. Left out, <c>?as=trainer</c> is a 404.
     /// </summary>
     public E2ETrainerOptions? Trainer { get; set; }
+
+    /// <summary>
+    /// A fifth person, a coordinator of the events department, signed in with <c>?as=events</c> (M4, E1): the web master
+    /// reaches every department and holds every permission of every module, so a round of the events signed in as them
+    /// would pass whatever the division gives the events department. This one holds only that — the grants of its
+    /// position (note <c>decisions/2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco.md</c>). No mailbox until a mail of the
+    /// events' staff needs one. Left out, <c>?as=events</c> is a 404.
+    /// </summary>
+    public E2EStaffOptions? Events { get; set; }
 }
 
 /// <summary>The bench's pilot: a member of the division and nothing else — and, since M3, the trainee of the round.</summary>
@@ -87,8 +96,11 @@ internal sealed class E2EPilotOptions : E2EPersonOptions
     public string Email { get; set; } = string.Empty;
 }
 
-/// <summary>The bench's assistant: a member of staff, with positions as IVAO spells them, and no mailbox.</summary>
-internal sealed class E2EAssistantOptions : E2EPersonOptions
+/// <summary>
+/// A member of staff of the bench, with positions as IVAO spells them, and no mailbox: the assistant of the tours (T14b)
+/// and the coordinator of the events (M4, E1).
+/// </summary>
+internal sealed class E2EStaffOptions : E2EPersonOptions
 {
     public IList<string> Positions { get; init; } = [];
 }
@@ -129,10 +141,14 @@ internal static class E2ESignIn
     /// <summary>The value of <c>?as=</c> that signs in the fourth person, the trainer (M3, A1).</summary>
     public const string AsTrainer = "trainer";
 
+    /// <summary>The value of <c>?as=</c> that signs in the fifth person, the coordinator of the events (M4, E1).</summary>
+    public const string AsEvents = "events";
+
     /// <summary>
-    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c>, <c>?as=assistant</c> or
-    /// <c>?as=trainer</c>, as the configured pilot, assistant or trainer —, creating them on first use. The cookie it writes is the one a real login writes, so what the suite exercises afterwards — the
-    /// security stamp, the permission claims, the department guard — is the real thing.
+    /// Signs the caller in as the configured staff member — or, with <c>?as=pilot</c>, <c>?as=assistant</c>,
+    /// <c>?as=trainer</c> or <c>?as=events</c>, as the configured pilot, assistant, trainer or coordinator of the events —,
+    /// creating them on first use. The cookie it writes is the one a real login writes, so what the suite exercises
+    /// afterwards — the security stamp, the permission claims, the department guard — is the real thing.
     /// </summary>
     public static void MapE2ESignIn(this WebApplication app)
     {
@@ -154,13 +170,15 @@ internal static class E2ESignIn
             var options = e2e.Value;
             var settings = division.Value;
 
-            // Who, of the four: the member of staff, the pilot, the assistant, the trainer — or nobody the bench configured.
+            // Who, of the five: the member of staff, the pilot, the assistant, the trainer, the coordinator of the events — or
+            // nobody the bench configured.
             (E2EPersonOptions Person, string? Email, IList<string> Positions)? person = @as switch
             {
                 null => (options, null, options.Positions),
                 AsPilot when options.Pilot is { } pilot => (pilot, pilot.Email, []),
                 AsAssistant when options.Assistant is { } assistant => (assistant, null, assistant.Positions),
                 AsTrainer when options.Trainer is { } trainer => (trainer, trainer.Email, trainer.Positions),
+                AsEvents when options.Events is { } events => (events, null, events.Positions),
                 _ => null,
             };
 
