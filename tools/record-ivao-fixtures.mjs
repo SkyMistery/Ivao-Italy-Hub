@@ -38,6 +38,15 @@
  * placeholders, the staff positions an empty list, and the connection times keep their shape and lose their values.
  * What IVAO sent for the ratings and the times is printed, so that the unit can be compared with the member's page.
  *
+ *   node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]
+ *
+ * records the ATC bookings of one day (M4, E15a) as /v2/atc/bookings/daily answers them for that UTC day, into
+ * atc-bookings-<name>.json: the bookings that start on the day — IVAO lists one across midnight on both days, and the one
+ * that began the day before belongs to that day — of the positions whose callsign starts with one of the prefixes, the way
+ * IVAO matches its own position parameter (the start of a callsign, in any case). The person is taken out: the members become
+ * <asVid>, <asVid> + 1… in the order they first appear, and the user object IVAO embeds — names, division, rating — keeps
+ * only that number. The VIDs it used are printed: keep them inside the range your tests own.
+ *
  *   node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]
  *
  * records public reference data: the ATC positions of the airports named, as /v2/ATCPositions/all answers them, into
@@ -60,17 +69,23 @@ const outDir = join(root, "tests/fixtures/ivao");
 const listed = process.argv[2] === "--list";
 const airportsOnly = process.argv[2] === "--airports";
 const profileOnly = process.argv[2] === "--me";
+const bookingsOnly = process.argv[2] === "--bookings";
 const positionsOnly = process.argv[2] === "--positions";
 const referenceOnly = airportsOnly || positionsOnly;
 const vid = listed || referenceOnly || profileOnly ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
 const asVid = Number(profileOnly ? process.argv[3] : process.argv[4] ?? 780001);
-if (referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid) {
+if (
+  bookingsOnly
+    ? !asVid || process.argv.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(process.argv[5])
+    : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
+) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
       + "or a list of flights:        node tools/record-ivao-fixtures.mjs --list <file.json> <asVid>\n"
       + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]\n"
       + "or your own profile:         node tools/record-ivao-fixtures.mjs --me <asVid>\n"
+      + "or the ATC bookings of a day: node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]\n"
       + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]",
   );
   process.exit(1);
@@ -287,6 +302,33 @@ if (airportsOnly) {
     console.log(`recorded ${icao}: ${airports.at(-1).runways.length} runway end(s)`);
   }
   writeFileSync(join(outDir, `airports-${process.argv[3]}.json`), JSON.stringify(airports, null, 2));
+  process.exit(0);
+}
+
+if (bookingsOnly) {
+  const [date, ...prefixes] = process.argv.slice(5);
+  const starts = prefixes.map((prefix) => prefix.toUpperCase());
+  const callsignOf = (booking) => (booking.atcPosition ?? booking.subcenter ?? "").toUpperCase();
+  const dayOf = (moment) => new Date(moment).toISOString().slice(0, 10);
+  const people = new Map();
+  const bookings = (await get(`/v2/atc/bookings/daily?date=${date}`))
+    .filter((booking) => dayOf(booking.startDate) === date)
+    .filter((booking) => starts.some((start) => callsignOf(booking).startsWith(start)))
+    .map((booking) => {
+      if (!people.has(booking.user.id)) people.set(booking.user.id, asVid + people.size);
+      // Every field where IVAO put it; of the person, only the number that stands for them.
+      return Object.fromEntries(Object.entries(booking).map(([key, value]) =>
+        [key, key === "user" ? { id: people.get(booking.user.id) } : value]));
+    });
+  writeFileSync(join(outDir, `atc-bookings-${process.argv[3]}.json`), JSON.stringify(bookings, null, 2));
+  const count = (test) => bookings.filter(test).length;
+  console.log(
+    `recorded ${bookings.length} booking(s) of ${date} on ${new Set(bookings.map(callsignOf)).size} position(s): `
+      + `${count((booking) => booking.subcenter)} on a sector, ${count((booking) => booking.training === "training")} training, `
+      + `${count((booking) => booking.training === "exam")} exam, `
+      + `${count((booking) => dayOf(booking.endDate) !== date)} across midnight`,
+  );
+  console.log(people.size ? `people: ${people.size}, as VID ${asVid} to ${asVid + people.size - 1}` : "nobody booked them");
   process.exit(0);
 }
 
