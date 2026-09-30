@@ -2,6 +2,7 @@ using System.Data.Common;
 using IvaoHub.Core.Division;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ namespace IvaoHub.Core.Atc;
 /// <see langword="null"/>, «not available», and the report is sent all the same.</para>
 /// </summary>
 public sealed class VipiAtcActivitySource(
-    VipiShareDbContext database,
+    IServiceProvider services,
     IMemoryCache cache,
     IOptions<DivisionOptions> division,
     ILogger<VipiAtcActivitySource> logger) : IAtcActivitySource
@@ -55,7 +56,11 @@ public sealed class VipiAtcActivitySource(
 
         try
         {
-            var coverage = await CoverageAsync(cancellationToken);
+            // Built here, inside the try, and not handed in: a connection string not yet in the secrets is thrown while the
+            // context is built, and it is «not available» like a server that does not answer — not a hub that fails to start
+            // because something it builds at start-up asks for this source.
+            var database = services.GetRequiredService<VipiShareDbContext>();
+            var coverage = await CoverageAsync(database, cancellationToken);
             var earliest = fromUtc - LongestConnection;
 
             var sessions = database.Sessions
@@ -92,7 +97,9 @@ public sealed class VipiAtcActivitySource(
         }
     }
 
-    private async Task<(DateTime? Division, DateTime? World)> CoverageAsync(CancellationToken cancellationToken)
+    private async Task<(DateTime? Division, DateTime? World)> CoverageAsync(
+        VipiShareDbContext database,
+        CancellationToken cancellationToken)
     {
         if (cache.TryGetValue(CoverageKey, out (DateTime?, DateTime?) cached))
         {

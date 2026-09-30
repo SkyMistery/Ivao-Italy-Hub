@@ -183,6 +183,24 @@ public sealed class AtcActivitySourceTests(MariaDbFixture mariaDb) : IAsyncLifet
         Assert.Null(await archive.OnlineAsync(ShiftFrom, ShiftTo, token));
     }
 
+    /// <summary>
+    /// A division that names the archive before its connection string is in the secrets: the hub starts, and the archive is
+    /// «not available», as its source has always said. Until E10b the view's context was built with the source, outside the
+    /// source's own try, and the start of the hub failed on it.
+    /// </summary>
+    [Fact]
+    public async Task AnArchiveNamedBeforeItsConnectionStringIsNotAvailable()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var host = WithArchive(AtcDataOptions.Vipi, archive: null);
+        await using var scope = host.Services.CreateAsyncScope();
+        var archive = scope.ServiceProvider.GetRequiredService<IAtcActivitySource>();
+
+        Assert.IsType<VipiAtcActivitySource>(archive);
+        Assert.Null(await archive.OnlineAsync(ShiftFrom, ShiftTo, token));
+        Assert.Null(await archive.SessionsOfAsync(Controller, ShiftFrom, ShiftTo, token));
+    }
+
     // ---- helpers -----------------------------------------------------------------------------
 
     /// <summary>
