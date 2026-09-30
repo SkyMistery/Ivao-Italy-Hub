@@ -44,11 +44,11 @@ Letto e misurato il 30 settembre 2026, con il token dell'applicazione (`client_c
 - **Gli FRA dell'Italia** (`/v2/fras?countryId=IT&expand=true`: 4 pagine da 100 righe, 0,3–0,4 secondi e 58 KB l'una):
   - **392 righe**: **353 per postazione**, su **202 postazioni** (la directory ne conta circa 230 in Italia, A2), e **39 per
     membro** — tutte eccezioni, senza un minimo —; nessuna lista nera (`isBlacklist`); 381 attive, 11 spente.
-  - **I minimi**: AS1 21 righe, AS2 16, AS3 75, **ADC 181**, APC 40, **CAI 20** — le postazioni chiuse a chi non è CAI: i planner,
-    alcuni settori d'avvicinamento (tre di Roma), la delivery di Malpensa, e le `_I_TWR`, con la riga spenta. Per tipo: `TWR` da
-    AS1 a CAI, `GND` da AS1 ad ADC, `DEL` da AS3 a CAI, `APP` da AS3 a CAI, `CTR` ADC, APC o CAI, `FSS` ADC o CAI. **Nessun minimo
-    per tipo**, quindi: ogni postazione ha il suo.
-  - **Il minimo cambia con l'ora e con il giorno**: 114 postazioni hanno più righe, quasi sempre giorno e notte (`LIBD_TWR` AS3
+  - **I minimi** (il numero di IVAO: 2 AS1, 3 AS2, 4 AS3, 5 ADC, 6 APC, 10 CAI): AS1 21 righe, AS2 16, AS3 75, **ADC 181**, APC
+    40, **CAI 20** — le postazioni chiuse a chi non è CAI: i planner, un settore di Roma, alcuni avvicinamenti (tre di Roma), la
+    delivery di Malpensa, e le `_I_TWR`, con la riga spenta. Per tipo: `TWR` da AS1 a CAI, `GND` da AS1 ad ADC, `DEL` da AS3 a
+    CAI, `APP` da AS3 a CAI, `CTR` ADC, APC o CAI, `FSS` ADC o CAI. **Nessun minimo per tipo**, quindi: ogni postazione ha il suo.
+  - **Il minimo cambia con l'ora e con il giorno**: 114 postazioni hanno più righe, quasi sempre giorno e notte (`LIBD_TWR` AS2
     dalle 08 alle 23, ADC dalle 23 alle 08) o feriali e fine settimana (`LIMC_ANE_APP` ADC fino alle 17 nei feriali e fino alle 12
     il sabato e la domenica, APC dopo).
   - **Cinque righe hanno una data**, tutte di settembre: due chiudono due avvicinamenti per una sera (CAI, 18:30–21:30), tre aprono
