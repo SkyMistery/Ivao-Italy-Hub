@@ -49,7 +49,9 @@ public sealed class EventsXxDivisionTests(MariaDbFixture mariaDb) : IAsyncLifeti
         _previousRoot = Environment.GetEnvironmentVariable(HubPaths.RootVariable);
         Environment.SetEnvironmentVariable(HubPaths.RootVariable, _root);
 
-        _factory = new HubWebApplicationFactory(await FreshDatabaseAsync(token));
+        // With the recorded answers of the network: on a database of its own the reference data are empty, and a host started without
+        // them asks the network for a token at every start (E10b's warning in HANDOFF-M4.md); no test calls the network.
+        _factory = new HubWebApplicationFactory(await FreshDatabaseAsync(token), useIvaoFixtures: true);
     }
 
     public async ValueTask DisposeAsync()

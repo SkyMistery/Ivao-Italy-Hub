@@ -45,7 +45,9 @@ public sealed class EventsSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString);
+        // The recorded answers of the network: a host started without them asks the network for a token while the reference
+        // data are empty (E10b's warning in HANDOFF-M4.md), and no test calls the network.
+        _factory = new HubWebApplicationFactory(mariaDb.ConnectionString, useIvaoFixtures: true);
         var token = TestContext.Current.CancellationToken;
 
         await SeedUserAsync(CoordinatorVid, "IT-EC", token);
