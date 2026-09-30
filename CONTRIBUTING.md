@@ -7,11 +7,12 @@ traps this project has already paid for once. How to install and run the hub is 
 
 ## Working a phase
 
-1. **Start from an up-to-date `main`**, on a branch `m3/<phase>-<slug>`, or from the branch of the previous phase if
-   its pull request is still open (see "Phases in a queue" below). Check `gh pr list` first: another session may be
-   working on the same files.
-2. **Read before writing**: `docs/internal/HANDOFF-M3.md` (where things stand), the module design, the phase in the
-   implementation plan, and the plan sections they point to. Read the plan before calling anything in the existing
+1. **Start from an up-to-date `main`**, on a branch with the milestone's prefix (`m3/<phase>-<slug>` for Training,
+   `m4/e<N>-<slug>` for Events), or from the branch of the previous phase if its pull request is still open (see
+   "Phases in a queue" below). Check `gh pr list` first: another session may be working on the same files.
+2. **Read before writing**: the module's handoff (`docs/internal/HANDOFF-M3.md`, `docs/internal/HANDOFF-M4.md`: where
+   things stand), the module design, the phase in the implementation plan (`08-piano-implementazione-m3.md`,
+   `10-piano-implementazione-m4.md`), and the plan sections they point to. Read the plan before calling anything in the existing
    code a defect: many things that look odd are decisions with a note.
 3. **Classify before writing** (CLAUDE.md section 5). If the phase needs the core to change, stop: that is a note, a
    question to the maintainer, and a separate pull request.
@@ -20,7 +21,7 @@ traps this project has already paid for once. How to install and run the hub is 
    merge proves nothing here, because start-up guards and generated files interact. Never force-push a branch that
    is under review.
 6. **Done** means: CI green (`build-test` and `core-guard`), the template's "For the reviewer" filled in,
-   `HANDOFF-M3.md` updated. Then the master (the maintainer's reviewing session, CLAUDE.md section 0) reads it and
+   the module's handoff updated. Then the master (the maintainer's reviewing session, CLAUDE.md section 0) reads it and
    posts its findings; when it is ready, the maintainer gives the go and the master merges it — or sends it back.
    If your branch must catch up with `main`, the master asks you on the pull request: it never pushes to your branch.
 
@@ -29,14 +30,15 @@ traps this project has already paid for once. How to install and run the hub is 
 You do not wait for the merge of one phase to start the next. The master can read several phases in one go, and merges
 them in order on the maintainer's go.
 
-- **Branch** the next phase from the branch of the previous one (`git switch -c m3/<next> m3/<previous>`), still one
-  phase per session and one pull request per phase.
+- **Branch** the next phase from the branch of the previous one (`git switch -c m3/<next> m3/<previous>`; `m4/` for
+  Events), still one phase per session and one pull request per phase.
 - **The pull request always targets `main`**, never another branch: that way CI and `core-guard` run on it, and
   nothing has to be retargeted before the merge. Until the phase below is merged its diff also shows the commits
   below; that is expected.
 - **Open it as a draft**, with `(after #N)` at the end of the title and `Queued after #N.` as the first line of the
   body, where #N is the pull request of the phase below. A draft cannot be merged, so the order cannot go wrong.
-  In "For the reviewer", name the range that is this phase's own: `git diff m3/<previous>...m3/<next>`.
+  In "For the reviewer", name the range that is this phase's own: `git diff m3/<previous>...m3/<next>` (or
+  `m4/…`).
 - **A fix asked on a phase below** goes on that phase's branch, and then you merge that branch into every branch
   above it, in order. Merge, never rebase.
 - **When #N is merged**: merge `main` into the next branch, build and run the tests again, remove `(after #N)`, and
@@ -56,7 +58,11 @@ chat, a commit, an issue or a pull request.
   filter, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm e2e:full` when the change has a screen. The smoke
   suite alone has gone green while CI went red on the full round.
 - **Reserved for the Training module**: VIDs `790001–790099` in integration tests, slugs starting with `trn-test-`.
+- **Reserved for the Events module**: VIDs `761001–761099` in integration tests, slugs starting with `evt-test-`.
   Grep a VID before using it (`grep -rn "<vid>" tests/`).
+- **The contacts tests assert the exact recipients of MD and seed an events coordinator with an address**
+  (`ContactsAndNotificationsTests`, position `IT-EC`), so an Events test seeds no ED or MD staff with an email address: it gives
+  permissions with grants to a VID, and a position, when one is needed, without an address.
 - **Integration tests share one MariaDB**, and xUnit orders the classes differently on your machine and in CI. So:
   seed staff of a department nobody asserts exactly (the contacts tests assert the exact recipients for AOD, ED,
   FOD, MD and **TD** — seeding a TD coordinator in a Training test can break them in CI only); make uploaded bytes

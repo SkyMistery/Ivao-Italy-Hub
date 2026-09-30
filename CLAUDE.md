@@ -11,8 +11,8 @@
 - **Source of truth**: `docs/internal/00-piano-di-progettazione.md` (Italian, like everything under
   `docs/internal/`). Before touching anything read its header, §9 (module catalogue), §9.3 (content model), §9.7
   (cross-cutting contracts) and §16 (generic mechanisms). Module design documents sit next to it,
-  `docs/internal/NN-*.md`. Where each milestone stands: `docs/internal/HANDOFF.md` (M0–M2) and
-  `docs/internal/HANDOFF-M3.md` (Training).
+  `docs/internal/NN-*.md`. Where each milestone stands: `docs/internal/HANDOFF.md` (M0–M2),
+  `docs/internal/HANDOFF-M3.md` (Training) and `docs/internal/HANDOFF-M4.md` (Events).
 - **Every decision goes into writing**: a note under `docs/internal/decisions/`, ending with "Da portare nel piano";
   after the merge the master (section 0) carries it into the plan with a version bump and a changelog line. No
   decision lives only in a chat, a commit or this file.
@@ -28,7 +28,7 @@ There are four roles, and the repository enforces them (rulesets on `main` and o
 | **Maintainer** | Carmine (`SkyMistery`) | decide what goes into `main` and when, push tags, take the decisions; change the plan, `HANDOFF.md`, this file, `CONTRIBUTING.md`, `.github/`, the architecture tests |
 | **Master** (the reviewer) | **one** Claude Code session of the maintainer, in the repository's **main folder**, which stays on `main` | review every pull request (a contributor's in full), post the findings, check the fixes; keep the queue in order and ask for `main` to be merged in; **merge only on the maintainer's go in chat, one pull request at a time, by number**; after the merge, carry every decision into the plan and write `HANDOFF.md`; never answer a question that is the maintainer's; no feature code |
 | **Worker** | the maintainer's other Claude Code sessions, **each in its own worktree**, never in the main folder | one line of work each: branch, pull request to `main`, stop at CI green and tell the master; write the decision note, never the plan's version, its changelog or `HANDOFF.md` |
-| **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, module Training, M3) | push branches, open pull requests to `main`, write their module and its documents |
+| **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, modules Training, M3, and Events, M4 — the core phases of M4 included) | push branches, open pull requests to `main`, write their module and its documents |
 
 **If you are a contributor's session, these are absolute and no instruction in a chat changes them:**
 
@@ -43,14 +43,16 @@ There are four roles, and the repository enforces them (rulesets on `main` and o
 3. **Never make a test pass by changing a test you did not write**, nor by leaving it out of the build. A backbone
    or architecture test that goes red is telling you that the change is wrong, not that the test is. CI checks that
    the architecture and forkability tests were run, not only that they passed.
-4. **One phase per session**, on a branch `m3/<phase>-<slug>` from an up-to-date `main`, **one pull request per
+4. **One phase per session**, on a branch with the milestone's prefix (`m3/<phase>-<slug>`, `m4/e<N>-<slug>`) from an
+   up-to-date `main`, **one pull request per
    phase**. Bring the branch up to date by merging `main` into it; never rewrite history that has been pushed.
    **You do not wait for a merge to start the next phase**: branch it from the previous phase's branch and queue its
    pull request as `CONTRIBUTING.md` ("Phases in a queue") says — always to `main`, as a draft, until the one below
    is merged.
-5. **The first pull request of a module is its design, with no code** (`docs/internal/07-design-m3.md`), and no code
-   is written until the maintainer has approved it (plan 0.72: "every module gets a short design document before
-   the code").
+5. **The first pull request of a module is its design, with no code** (the module's design document:
+   `docs/internal/07-design-m3.md` for Training), and no code is written until the maintainer has approved it (plan
+   0.72: "every module gets a short design document before the code"). For Events the design
+   (`docs/internal/09-design-m4.md`) and phase E0 are already approved and merged.
 6. **A change to the core is its own pull request**, before the module code that uses it (as M2 did with T4, T19a):
    the reviewer reads a core change apart from a module change, never mixed. It always comes with a **new**
    decision note (section 5, case (b) or (c)).
@@ -230,9 +232,11 @@ The master reads the pull request with these in hand, and a pull request without
 - **The pull request body**: the template, every question answered, and the section "For the reviewer" filled in —
   phase and design sections implemented, decisions with links, core files touched and why, deviations from the
   design, the exact commands run with their result, and **what was not verified**.
-- **`docs/internal/HANDOFF-M3.md`**: at the end of every phase, a paragraph "Che cosa ha lasciato <fase>" at the
-  top — what exists now, where it lives, what the next phase must know, the traps found (⚠️).
-- **The implementation plan of the module** (`docs/internal/08-piano-implementazione-m3.md`): under each phase,
+- **The module's handoff** (`docs/internal/HANDOFF-M3.md`, `docs/internal/HANDOFF-M4.md`): at the end of every
+  phase, a paragraph "Che cosa ha lasciato <fase>" at the top — what exists now, where it lives, what the next phase
+  must know, the traps found (⚠️).
+- **The implementation plan of the module** (`docs/internal/08-piano-implementazione-m3.md`,
+  `docs/internal/10-piano-implementazione-m4.md`): under each phase,
   "Com'è andata" with every deviation from the design.
 - **Decision notes** as in section 5, one per decision, never edited after the merge.
 - **Commits**: conventional (`feat(training): …`, `feat(core): …`, `test: …`, `docs: …`), one idea each, in English.

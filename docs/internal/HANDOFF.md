@@ -84,9 +84,11 @@ E10a–E10e, E15a accanto al modulo) e `HANDOFF-M4.md`. **La cancellazione nasce
 #184). ⚠️ **E8a è tolta** (piano 1.25): con la (c) di A12a `ErasureTests` legge già i contesti di ogni modulo abilitato, quindi
 `EventsDbContext` appena il modulo è registrato; ne segue che **da E2** (la prima tabella `evt_`, con `cancelled_by`) ogni fase che crea
 una colonna di persona scrive la sua riga nella lista del test, o il test cade. `09-…`, `10-…` e `HANDOFF-M4.md` sono corretti nella
-PR del piano 1.25; le note di E0 non si toccano. **Il prossimo passo è E1** (nucleo: i tipi `rfe`, `rfo`, `mse`, `onlineDay` nel seme e il
-personaggio dell'ED sul banco e2e, con una nota breve). **Chi scrive M4 non è deciso**: Carmine sceglie fra `dalberone` su tutta M4,
-oppure `dalberone` sul modulo da E2 e le fasi del nucleo (E1, E10a–E10e…) alle sue sessioni di lavoro.
+PR del piano 1.25; le note di E0 non si toccano. **Il prossimo passo è E1**, di `dalberone` (nucleo: i tipi `rfe`, `rfo`, `mse`, `onlineDay` nel
+seme e il personaggio dell'ED sul banco e2e, con una nota breve). **M4 la scrive `dalberone`, tutta**, fasi del nucleo comprese (E1,
+E10a–E10e, E15a, ognuna una PR a sé con la sua nota): decisa da Carmine in chat il 30 set 2026, nota `2026-09-30-m4-al-collaboratore`;
+scartata l'alternativa del nucleo alle sue sessioni di lavoro. `core-guard` giudica ora anche i file degli eventi come suoi, e
+`HANDOFF-M4.md` ha la sezione «Per chi prende M4» con quello che le sessioni del maintainer sanno.
 Il rapporto è
 `decisions/2026-09-25-m2-review.md`. Resta **T21** (l'app Python del validatore), fuori da questo repository; M3 va avanti con
 `dalberone` (`HANDOFF-M3.md`). **Da M2 gli endpoint scritti a mano si contano per famiglia** (Carmine, piano §16.6): il rapporto di
