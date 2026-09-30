@@ -670,7 +670,66 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
 **Test**: unit sul vocabolario (i tipi, i bordi, un rating sconosciuto); integrazione sulla directory con le fixture delle postazioni.
 **Fatta quando**: il vocabolario dice il preferito e il minimo, e la directory trova una postazione della divisione per nominativo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre – 1° ottobre 2026, branch `m4/e10c-ratings-and-positions`, PR #204, del nucleo senza coda, da `main` a
+`c107c98`, con `main` preso due volte con un merge: E10b, poi E10d ed E10e):
+
+- **Prima del codice, da dove vengono le regole** (nota nuova `2026-09-30-il-rating-preferito-e-il-minimo-di-una-postazione`, §2):
+  le «Regulations» di IVAO (ATC Operations, A.1) dividono le postazioni per servizio, ma **nessuna regola di IVAO dice un rating
+  «preferito»**: è la regola dell'ED; **il minimo di una postazione è il suo FRA**, una regola di IVAO per postazione, con giorni, ore
+  o una data, che l'API `core` dà (`/v2/fras`). Misurati per l'Italia con il token dell'applicazione: 392 righe, 353 per postazione su
+  202 postazioni e 39 eccezioni per membro; minimi da AS1 a CAI, che cambiano con l'ora e il giorno. La nota era **«Proposta»**, con
+  due domande sulla PR ([domande][q204]); il codice che ne dipendeva ha aspettato.
+- **Deciso da Carmine** il 30 settembre, in chat al master, che ha pubblicato le risposte sulla #204 su sua istruzione
+  ([risposte][ok204]): **il minimo è l'FRA**, come raccomandato, **con un'aggiunta** — chi fa i turni può andare sotto l'FRA, e l'hub
+  gli dice di toglierlo su IVAO per quel controllore: un avviso, mai un rifiuto —; **i preferiti**: AS3 su `DEL`, APC su `DEP`, ADC su
+  `FSS` (la raccomandazione era ADC, APC, nessuno), `ATIS` nessuno.
+- **Fatto**:
+  - **il vocabolario**: `Rating.PreferredOn` e `RatingVocabulary.PreferredFor(tipo)`, con i dati di Carmine; un tipo su due rating
+    è rifiutato;
+  - **la directory**: `OfDivisionAsync()`, `FindAsync(nominativi)` e il tipo in `AtcPositionDto`; `MinimaAsync(nominativi)` con
+    `AtcPositionMinimum.Over(da, a)`, il più alto minimo attivo nella finestra; una query sola «della divisione» per le domande delle
+    postazioni;
+  - **gli FRA nel nucleo**, come le postazioni in A2: `ref_ivao_fras` (migrazione `AddIvaoFras`), `IIvaoApiClient.GetFrasAsync` con
+    il corpo predefinito vuoto, il client vero a pagine (`members=false&expand=true&perPage=100`: una pagina che fallisce vale nessuna
+    risposta), un lettore solo per i due client (`Core/Ivao/IvaoFra.cs`), la sincronizzazione notturna dopo le postazioni, con il
+    conteggio nel messaggio e la potatura solo su una risposta piena;
+  - **le parole dell'avviso** nel nucleo, `atcPositions.belowMinimum` in `locales/*/common.json` (`AtcPositionMinimum.BelowMinimumKey`);
+  - **le misure**: `tools/record-ivao-fixtures.mjs --fras`, la fixture `fras-IT.json` (94 FRA delle postazioni del banco, registrata
+    il 30 settembre con il client OAuth di `dalberone`, con il suo permesso), il README delle fixture, `docs/FORKING.md`.
+- **Scostamenti**:
+  1. **Il minimo lo dice la directory, non il vocabolario** (design §1.13): è un dato di una postazione, che cambia con l'ora, non
+     una regola di un tipo. Deciso con la risposta 1.
+  2. **La fase è cresciuta** di una tabella di riferimento, una chiamata di IVAO e una modalità dello strumento delle fixture, come
+     A2: il piano la dava come un'estensione del vocabolario.
+  3. **Una chiave del nucleo per l'avviso**, che nessuno legge ancora: le sue parole nominano IVAO, e il modulo non può scriverle
+     (`CLAUDE.md` §3); le usa E11b.
+  4. **`FindAsync` risponde a lotti** (un dizionario per nominativo), come `IAirportDirectory.FindAsync`: serve al form (un
+     nominativo) e al proponente (tutti quelli di un evento).
+  5. **`AtcPositionTests`** (scritto in A2 da questa stessa mano): i tre DTO attesi prendono il tipo; nessuna asserzione tolta.
+  6. **La migrazione è stata rifatta sopra quella di E10d** (`AddAwardSignalNotifiedAt`): le due fasi migrano il contesto del nucleo, e
+     E10d è stata unita prima.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **IVAO manda il VID di un membro due volte** in una riga di un FRA (`userId` e `user_id`): chi toglie le persone da una
+     risposta di IVAO le toglie tutte e due. Lo strumento e il lettore lo fanno.
+  2. **Le forme vere non sono quelle della documentazione**: gli orari `23:00:00` (non `23:00`), la data `2026-09-12` (non una data con
+     l'ora); il nominativo arriva solo con `expand=true`, perché la riga nomina la postazione con l'identificativo di IVAO.
+  3. **IVAO ha il suo controllo** «questo VID può aprire questa postazione ora?» (`/v2/fras/check/{callsign}/{vid}`): esatto, ma una
+     chiamata per candidato; non usato (nota §4).
+  4. **Il nome di IVAO dell'ACC è «Centre Controller»** (il vocabolario lo scrive così dal 25 settembre), non «Area Control Centre».
+  5. **La sessione si è fermata a metà** la sera del 30 settembre (il limite d'uso dell'account) e ha ripreso il 1° ottobre.
+- **Verificato, in locale**: il 30 settembre, sulla prima metà (vocabolario con i quattro tipi decisi e directory): `dotnet build` senza
+  avvisi, unità 911/911, **integrazione intera senza filtro 433/433** (505 s), `pnpm lint`, `typecheck`, `format:check`, `i18n:check`,
+  `pnpm test` 594 in 80 file, `pnpm gen:api` senza differenze. Il 1° ottobre, dopo il merge di E10d ed E10e e con tutto E10c: `dotnet
+  build` senza avvisi; unità **984/984**; **integrazione intera senza filtro INTEGRAZIONE**; `AtcPositionTests` da sola 13/13; `pnpm
+  lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 594 in 80 file; `pnpm gen:api` senza differenze; `dotnet format
+  --verify-no-changes` sui file C# toccati; le regole di `core-guard` rifatte in PowerShell sul diff dalla base del merge.
+- **Non verificato**: la CI (la dice la PR); **il fuso degli orari degli FRA** (letti UTC, come ogni orario di IVAO: nessuna fonte lo
+  dice); come IVAO combina due FRA che valgono insieme (il più alto, deciso da Carmine); il giro notturno delle 03:15 con IVAO vero
+  (provati il client delle fixture, la lettura a pagine con un IVAO finto e la sincronizzazione chiamata dai test); una divisione con
+  più di 5000 FRA; `pnpm e2e` ed `e2e:full`, perché nessuna schermata cambia.
+
+[q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
+[ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
 
 ### E10d — Nucleo: la mail a chi assegna gli award
 

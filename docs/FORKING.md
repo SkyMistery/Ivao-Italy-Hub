@@ -158,6 +158,12 @@ positions of the airports and the sectors of the FIRs, about 13 000 rows. Which 
 division's is read the same way: the positions of the airports of your `countryId`, and the sectors
 of your FIRs.
 
+Since the events module it holds your division's **FRAs** too — the lowest rating IVAO lets connect
+to each of your positions, by day and hour or for one date — asked for your `countryId`, and only
+the rows of a position: the exceptions your staff give one member stay on IVAO. The roster of an
+event proposes nobody below them. A division with no FRA has none, and the snapshot says so every
+night in the message of the run.
+
 Two more things are fetched from outside IVAO, both optional and both named in one folder of the
 core each:
 

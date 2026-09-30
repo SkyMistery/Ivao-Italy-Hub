@@ -6,10 +6,10 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10d** (nucleo: la mail a chi assegna gli award), sul branch
-`m4/e10d-award-assigner-mail`, **PR #205** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua
-sessione, **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E15a**); sono unite E1 (#200), E10b (#208) ed
-E10e (#206).
+**Ultimo aggiornamento:** 1° ottobre 2026 — **fase E10c** (nucleo: rating e postazioni della divisione), sul branch
+`m4/e10c-ratings-and-positions`, **PR #204** verso `main`, del nucleo, senza coda, con le risposte di Carmine. Sono unite E1 (#200),
+E10b (#208), E10e (#206), E10d (#205) e il passaggio dei tour al calcolo del nucleo (#211); sono aperte **E2** (#209), **E10a** (#210) ed
+**E15a** (#207).
 **Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
 presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli
 award, e non chiama niente. Il passaggio dei tour al calcolo del nucleo lo fa una sessione di Carmine **dopo l'unione di E10e** (sua
@@ -102,8 +102,8 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 **Che cosa manca, e quale fase lo porta**: ~~i tipi `rfe`, `rfo`, `mse`, `onlineDay` e uno staff degli eventi sul banco (E1)~~
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
 senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
-controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
-divisione per nominativo (E10c); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
+controllore: sotto, «Che cosa ha lasciato E10b»); ~~il rating preferito e minimo, le postazioni della
+divisione per nominativo (E10c)~~ **portati da E10c** (il minimo è l'FRA di IVAO: sotto, «Che cosa ha lasciato E10c»); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
 lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
 lasciato E10e»); le prenotazioni ATC della rete (E15a);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
@@ -118,6 +118,45 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10c (1° ottobre 2026, branch `m4/e10c-ratings-and-positions`, PR #204, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-rating-preferito-e-il-minimo-di-una-postazione.md`, **decisa da Carmine**, in chat
+  al master e pubblicata su sua istruzione [sulla #204](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164)),
+  tutto in `src/IvaoHub.Core/Ivao/`:
+  - **il rating preferito** per un tipo di postazione: `RatingVocabulary.PreferredFor(tipo)` e `Rating.PreferredOn`. I dati sono di
+    Carmine: **AS3** su `DEL`; **ADC** su `FSS`, `GND`, `TWR`; **APC** su `APP`, `DEP`; **ACC** su `CTR`; **nessuno** su `ATIS`.
+    «Ha il preferito» è `IsAtLeast(Atc, rating, PreferredFor(tipo).Number)`; `null` = nessuno è preferito su quel tipo;
+  - **le postazioni della divisione**: `IAtcPositionDirectory.OfDivisionAsync()` (tutte, militari e ATIS compresi) e
+    `FindAsync(nominativi)` (a lotti, per nominativo in qualunque maiuscola, come `IAirportDirectory.FindAsync`); **`AtcPositionDto`
+    porta il tipo** (`Type`), accanto a nominativo, nome, aeroporto e **FIR** (per una postazione d'aeroporto, quello del suo aeroporto);
+  - **il minimo di una postazione è il suo FRA su IVAO**: `MinimaAsync(nominativi)` → un `AtcPositionMinimum` per nominativo, e
+    `Over(da, a)` dà il **numero di IVAO** del rating più alto fra gli FRA attivi che valgono in qualche momento del turno (giorno e
+    notte, feriali e fine settimana, una data, oltre la mezzanotte); `null` = nessun minimo. Gli FRA stanno in **`ref_ivao_fras`**
+    (migrazione del nucleo `AddIvaoFras`, dopo quella di E10d), rinfrescati **ogni notte** con i dati di riferimento, solo le righe per
+    postazione (**nessuna persona**), potati solo su una risposta piena; il conteggio è nel messaggio del giro, non nel suo esito;
+  - **le parole dell'avviso** sotto il minimo — togli l'FRA su IVAO per quel controllore —: la chiave del nucleo
+    `atcPositions.belowMinimum` (`AtcPositionMinimum.BelowMinimumKey`), perché nominano IVAO;
+  - **le misure**: `tools/record-ivao-fixtures.mjs --fras <paese> [ICAO…]`, e la fixture `tests/fixtures/ivao/fras-IT.json` (94 FRA
+    delle postazioni del banco, 30 settembre 2026);
+  - **i test**: `RatingVocabularyTests`, `IvaoFraReaderTests` e `AtcPositionMinimumTests` (unità), `AtcPositionTests` (integrazione).
+- **Che cosa deve sapere la fase dopo**:
+  - **E11a**: la scelta delle postazioni con `OfDivisionAsync()`, il controllo del nominativo e la copia del FIR con `FindAsync`; il
+    tipo non va salvato sulla riga (lo sa la directory).
+  - **E11b**: «chi può» = almeno `minimumAtcRating` **e** almeno `minima[callsign].Over(turno.da, turno.a)` quando non è `null`, sempre
+    con `IsAtLeast` (un numero che il vocabolario non conosce non lo raggiunge nessuno); il proponente **non va mai sotto**. «Chi prima»
+    = `PreferredFor(position.Type)`. **La correzione a mano può andare sotto l'FRA**: è un **avviso**, mai un rifiuto, con le parole di
+    `atcPositions.belowMinimum` (decisione di Carmine sulla #204); lo stesso per la cessione di un turno (E12).
+  - ⚠️ **Il minimo è un numero di IVAO** (`int?`), non un `Rating`: confrontalo con `IsAtLeast`, mai con `>=`.
+  - ⚠️ **Gli orari degli FRA si leggono UTC**, come ogni orario di IVAO: non verificato (nessuna fonte lo dice).
+  - ⚠️ **Le eccezioni per membro restano su IVAO**: un controllore che lo staff ha già sbloccato su IVAO resta «sotto il minimo» per
+    l'hub, e l'avviso compare lo stesso.
+  - ⚠️ **L'ordine dei nominativi è quello del database** (`utf8mb4_unicode_ci`: `_` prima delle cifre, `LIRR_NE_CTR` prima di
+    `LIRR_NE1_CTR`): un test non lo confronti con un ordinamento `Ordinal`.
+  - ⚠️ **E10a ed E15a** (#210, #207, aperte) toccano gli stessi file del client di IVAO (`IIvaoApiClient.cs`, `IvaoApiClient.cs`,
+    `FixtureIvaoApiClient.cs`), lo strumento delle fixture e il loro README: chi arriva dopo fa il merge e tiene tutte le modalità. **E10c
+    migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione sopra `main`
+    (come ha fatto E10c dopo E10d).
 
 ### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
 

@@ -1,25 +1,31 @@
 # Il rating preferito, il minimo di una postazione e le postazioni per nominativo (E10c)
 
-**Data:** 30 settembre 2026 — fase E10c di M4, PR del nucleo
-**Stato:** **Proposta** — due domande a Carmine (§5), sulla PR di questa fase. Le postazioni per nominativo (§3.3) e la forma del
-rating preferito (§3.1) sono una scelta tecnica, senza domande. **Il codice che dipende dalle risposte aspetta**: il minimo di una
-postazione, e il preferito di `DEL`, `DEP`, `FSS` e `ATIS`.
+**Data:** 30 settembre 2026 — fase E10c di M4, PR del nucleo (#204)
+**Stato:** **decisa** (Carmine, 30 settembre 2026, in chat al master, che ha pubblicato le risposte sulla #204 su sua istruzione:
+[risposte][ok204]). Le due domande di §5 erano sulla PR ([domande][q204]): **il minimo di una postazione è il suo FRA su IVAO**, come
+raccomandato, **con un'aggiunta** (§3.2: chi fa i turni può mettere qualcuno sotto l'FRA, e l'hub gli dice di togliere l'FRA su
+IVAO per quel controllore — un avviso, mai un rifiuto); **il rating preferito** è AS3 su `DEL`, APC su `DEP`, **ADC su `FSS`**,
+accanto a TWR e GND ADC, APP APC, CTR ACC; `ATIS` resta senza, come raccomandato. Le postazioni per nominativo (§3.3) e la forma
+nel codice sono una scelta tecnica.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono il vocabolario dei rating (`Core/Ivao/RatingVocabulary.cs`, A1 di
-M3) e la directory delle postazioni (`Core/Ivao/AtcPositionDirectory.cs`, A2 di M3), nel perimetro IVAO del nucleo (§3); con la
-risposta raccomandata alla domanda 1, anche la sincronizzazione dei dati di riferimento di IVAO (`RefDataSyncJob`, come le
-postazioni in A2). Il modulo non ne scrive una copia sua. È una PR del nucleo, prima di E11a ed E11b che la usano (`CLAUDE.md` §0
-regola 6). Design `09-design-m4.md` §1.13, §4.1, §4.3, §13 n.4; nota `2026-09-29-il-roster-atc` §2.2.
+M3), la directory delle postazioni (`Core/Ivao/AtcPositionDirectory.cs`, A2 di M3) e la sincronizzazione dei dati di riferimento di
+IVAO (`RefDataSyncJob`, come le postazioni in A2), nel perimetro IVAO del nucleo (§3). Il modulo non ne scrive una copia sua. È una
+PR del nucleo, prima di E11a ed E11b che la usano (`CLAUDE.md` §0 regola 6). Design `09-design-m4.md` §1.13, §4.1, §4.3, §4.4, §13
+n.4; nota `2026-09-29-il-roster-atc` §2.2.
+
+[ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
+[q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
 - **Il proponente del roster** (E11b, design §4.3) chiede per ogni turno **chi può** — almeno `minimumAtcRating` e almeno **il
   minimo della postazione** — e **chi prima**: chi ha **il rating preferito** per il tipo della postazione. Il modulo non scrive
-  numeri né nomi di rating (nota `il-roster-atc` §2.2): le due risposte sono del nucleo (design §1.13, estensione n.4). Oggi il
-  vocabolario sa soltanto su quale tipo si allena un rating (`Rating.PositionType`: ADC `TWR`, APC `APP`, ACC `CTR`), niente di
+  numeri né nomi di rating (nota `il-roster-atc` §2.2): le due risposte sono del nucleo (design §1.13, estensione n.4). Il
+  vocabolario sapeva soltanto su quale tipo si allena un rating (`Rating.PositionType`: ADC `TWR`, APC `APP`, ACC `CTR`), niente di
   `GND`, `DEL`, `DEP`, `FSS` e `ATIS`, e nessun minimo di una postazione (`10`, E0, «Trovato», punto 8).
 - **La scheda ATC dello staff** (E11a, design §4.1) sceglie le postazioni dell'evento dall'elenco del nucleo e copia sulla riga il
-  **FIR** (`IHasFir`), che fa vedere a un capo FIR le postazioni del suo FIR. Oggi la directory risponde solo «le postazioni su cui
-  si allena questo rating» (`ForRatingAsync`), senza il tipo e senza una ricerca per nominativo (`10`, E0, «Trovato», punto 9).
+  **FIR** (`IHasFir`), che fa vedere a un capo FIR le postazioni del suo FIR. La directory rispondeva solo «le postazioni su cui si
+  allena questo rating» (`ForRatingAsync`), senza il tipo e senza una ricerca per nominativo (`10`, E0, «Trovato», punto 9).
 
 ## 2. Da dove vengono le regole
 
@@ -29,12 +35,11 @@ Letto e misurato il 30 settembre 2026, con il token dell'applicazione (`client_c
   le `DEL`, le `GND` e le `TWR` (A.1.1); il **controllo terminale** le `APP` e le `DEP`, e le `TWR` che hanno anche una TMA (A.1.2);
   il **controllo d'area** le postazioni d'area, i `CTR` (A.1.3); le **FSS** sono un servizio a sé (A.1.4). `ATIS` non c'è: non è
   una postazione di controllo. I tre rating con un training pratico portano il nome di uno dei tre servizi di controllo —
-  **Aerodrome Controller** (ADC), **Approach Controller** (APC), **Area Control Centre** (ACC), i nomi di `ratings.Atc.*` —; nessuno
-  porta quello delle FSS.
-- **Un rating «preferito» IVAO non lo scrive da nessuna parte**: è la regola dell'ED (Carmine, c1, design §R.3 e §17.1 n.9), che
-  mette su ogni tipo il rating che porta il nome del suo servizio — TWR e GND l'ADC, APP l'APC, ACC l'ACC. Per `DEL` e `DEP` la
-  stessa regola ha una risposta dalle definizioni di IVAO (A.1.1 e A.1.2 li mettono con GND e TWR, e con APP); per `FSS` e `ATIS`
-  nessuna regola pubblicata dà un rating.
+  **Aerodrome Controller** (ADC), **Approach Controller** (APC), **Centre Controller** (ACC), i nomi di `ratings.Atc.*`.
+- **Un rating «preferito» IVAO non lo scrive da nessuna parte**: è la regola dell'ED, di Carmine — TWR e GND l'ADC, APP l'APC, ACC
+  l'ACC (c1, design §R.3 e §17.1 n.9) — e, per gli altri quattro tipi che IVAO elenca, la sua risposta sulla #204: AS3 su `DEL`, APC
+  su `DEP`, ADC su `FSS`, nessuno su `ATIS`. La raccomandazione era ADC su `DEL` e nessuno su `FSS`, dalle definizioni di IVAO: ha
+  deciso diversamente, e i dati del vocabolario sono i suoi.
 - **Il minimo di una postazione è il suo FRA** (*Facility Rating Assignment*): la regola di IVAO su chi può connettersi a una
   postazione — un rating minimo, per giorni della settimana e ore oppure per una data, attiva o spenta —, più le righe **per
   membro**, che fanno un'eccezione per una persona. Gli FRA delle postazioni di una divisione li decide la divisione; quelli delle
@@ -53,55 +58,71 @@ Letto e misurato il 30 settembre 2026, con il token dell'applicazione (`client_c
     il sabato e la domenica, APC dopo).
   - **Cinque righe hanno una data**, tutte di settembre: due chiudono due avvicinamenti per una sera (CAI, 18:30–21:30), tre aprono
     una postazione a una persona per qualche ora — l'eccezione che lo staff dà per un evento o per un esame.
+  - **La forma di una riga**: `id`, `userId` (e il suo doppione `user_id`: vuoti nelle righe per postazione), `atcPositionId` o
+    `subcenterId` (gli identificativi di IVAO, non il nominativo: il nominativo arriva con `expand=true`, nella postazione espansa,
+    `composePosition`), `minAtc`, `startTime` ed `endTime` come `23:00:00` (la documentazione scrive `23:00`), `dayMon`…`daySun`,
+    `date` come `2026-09-12` (la documentazione la dice una data con l'ora), `active`, `isBlacklist`.
 
 [regs]: https://wiki.ivao.aero/en/home/ivao/regulations
 [hq]: https://wiki.ivao.aero/en/home/atcoperations/HQAirspace/FRAPolicy-AreasOutsideDivisions
 [api]: https://api.ivao.aero/docs/core-json
 
-## 3. La proposta
+## 3. Le decisioni, e la forma nel codice
 
 ### 3.1 Il rating preferito, nel vocabolario
 
 - **Ogni rating dice su quali tipi di postazione è il preferito** (`Rating.PreferredOn`, i tipi come IVAO li scrive), e il
-  vocabolario risponde **`PreferredFor(tipo)`**: il rating più basso che è il preferito su quel tipo; nessuno per un tipo su cui
-  nessun rating lo è, e per un tipo che non conosce. «Ha il rating preferito» è `IsAtLeast` con quel rating: un SEC è preferito
-  dove lo è l'ADC. Un tipo scritto su due rating è un errore del vocabolario, come un numero scritto due volte.
-- **I dati di IVAO**, proposti: ADC su `DEL`, `GND`, `TWR`; APC su `APP`, `DEP`; ACC su `CTR`; **nessuno** su `FSS` e `ATIS`.
-  `TWR`, `GND`, `APP` e `CTR` sono la regola di Carmine (c1) e vanno nel codice subito; `DEL` e `DEP` sono la stessa regola sulle
-  definizioni di IVAO; `FSS` e `ATIS` restano senza, perché IVAO non dà loro un rating: su un tipo senza preferito il proponente
-  non divide i candidati con questo criterio, e valgono gli altri. **Domanda 2**, per questi quattro.
+  vocabolario risponde **`PreferredFor(tipo)`**: il rating che è il preferito su quel tipo, in qualunque maiuscola; nessuno per un
+  tipo su cui nessun rating lo è, e per un tipo che non conosce. «Ha il rating preferito» è `IsAtLeast` con quel rating: un SEC è
+  preferito dove lo è l'ADC. Un tipo scritto su due rating è un errore del vocabolario, come un numero scritto due volte.
+- **I dati di IVAO**, di Carmine: **AS3** su `DEL`; **ADC** su `FSS`, `GND`, `TWR`; **APC** su `APP`, `DEP`; **ACC** su `CTR`;
+  **nessuno** su `ATIS` — su un tipo senza preferito il proponente non divide i candidati con questo criterio, e valgono gli altri.
 - `PositionType` resta com'è: dice **su che cosa si allena** un rating, una domanda del training. L'ADC si allena sulla `TWR` ed è
-  il preferito anche su `DEL` e `GND`: sono due dati, non uno.
+  il preferito anche su `GND` e `FSS`; l'AS3 non si allena su niente ed è il preferito su `DEL`: sono due dati, non uno.
 - ⚠️ Una `TWR` che ha anche una TMA (A.1.2) resta una `TWR`: il tipo è quello che IVAO pubblica, e la TMA nei dati non c'è.
 
-### 3.2 Il minimo di una postazione: gli FRA, nella directory — raccomandato
+### 3.2 Il minimo di una postazione: gli FRA, nella directory
 
 - **Il minimo di una postazione è quello dei suoi FRA su IVAO**, e lo dice la **directory**, non il vocabolario: è un dato di una
   postazione, che la divisione cambia e che cambia con l'ora (§2), non una regola di un tipo. **Scostamento dal design §1.13**, che
   lo metteva nel vocabolario pensando a una regola per tipo che non esiste.
-- **Gli FRA per postazione della divisione** (`members=false`: nessuna persona entra nell'hub) in una tabella di riferimento,
-  `ref_ivao_fras`, rinfrescata ogni notte con i dati di IVAO, dopo le postazioni, e potata solo su una risposta piena (la regola del
-  3 settembre, come in A2); `IIvaoApiClient` con un membro in più, predefinito vuoto come quello delle postazioni; un lettore solo
-  per i due client; le fixture registrate con una modalità nuova di `tools/record-ivao-fixtures.mjs`.
-- **La risposta**: il minimo di una postazione **per una finestra** (un turno) — il rating più alto fra gli FRA attivi della
-  postazione che valgono in qualche momento della finestra: quelli con una data in quella data, gli altri nei loro giorni, anche a
-  cavallo della mezzanotte. Chi è sotto non potrebbe aprire la postazione per tutto il turno. **Nessun FRA, nessun minimo suo**:
-  vale `minimumAtcRating`. Il proponente prende il più alto dei due.
-- **Le eccezioni per membro restano su IVAO**: il roster non le vede. Lo staff che aggiunge un controllore sotto il minimo riceve un
-  **avviso**, non un rifiuto (design §4.4), e gli dà l'eccezione su IVAO come fa oggi (le righe con una data).
-- ⚠️ **Da verificare nel codice**, dopo la risposta: il fuso degli orari degli FRA (UTC, come tutto IVAO, è la lettura più
-  probabile) e come IVAO combina due righe che valgono insieme (il più alto è la lettura prudente, e le due righe con una data
-  misurate alzano il minimo).
-- **Domanda 1.** Con questa risposta la fase cresce di una tabella del nucleo (migrazione additiva) e di una chiamata di IVAO, come
-  A2. E11a non ne ha bisogno, E11b sì.
+- **Gli FRA per postazione della divisione** — mai quelli per membro: `members=false`, e il lettore salta comunque una riga che
+  nomina qualcuno, quindi **nessuna persona entra nell'hub** — in una tabella di riferimento, **`ref_ivao_fras`** (la chiave di IVAO,
+  il nominativo, il minimo, i giorni come bit di `DayOfWeek`, l'inizio e la fine come ore del giorno, la data, «attiva», la riga
+  grezza, `synced_at`; un indice sul nominativo), con la migrazione additiva **`AddIvaoFras`** del contesto del nucleo, scritta dopo
+  quella di E10d (`AddAwardSignalNotifiedAt`: le due fasi migrano lo stesso contesto, e vanno in fila).
+- **Da IVAO**: `IIvaoApiClient.GetFrasAsync(paese)`, con un'**implementazione predefinita vuota** come le postazioni di A2 (i doppi
+  dei test del maintainer non cambiano); il client vero legge `/v2/fras?countryId=…&members=false&expand=true&perPage=100` **pagina
+  per pagina**, e **una pagina che fallisce vale nessuna risposta** — metà degli FRA poterebbe l'altra metà —, mai un'eccezione
+  (come le postazioni); oltre 50 pagine, nessuna risposta. **Un lettore solo** per i due client (`IvaoFraReader`, `Core/Ivao/IvaoFra.cs`).
+- **Ogni notte**, nella sincronizzazione dei dati di riferimento, dopo le postazioni e nello stesso salvataggio: upsert per chiave
+  di IVAO, e **potatura solo su una risposta piena** (la regola del 3 settembre). Il conteggio va **nel messaggio** del giro, non
+  nel suo esito: una divisione può non avere FRA, e un giro «partial» ogni notte insegnerebbe a non leggerlo più.
+- **La risposta**: `IAtcPositionDirectory.MinimaAsync(nominativi)` → per ogni nominativo un **`AtcPositionMinimum`**, che dice
+  **`Over(da, a)`**: il numero di IVAO del rating più alto fra gli FRA **attivi** della postazione che valgono in qualche momento
+  della finestra — quelli con una data in quella data, gli altri nei loro giorni, anche oltre la mezzanotte (una fine che non viene
+  dopo l'inizio è del giorno dopo; `00:00`–`00:00` è il giorno intero) —, perché chi è sotto sarebbe rifiutato per una parte del
+  turno. **Nessun FRA che vale, nessun minimo** (null): vale `minimumAtcRating`, e il proponente prende il più alto dei due. Il
+  numero si confronta con `IsAtLeast`, per cui un rating che il vocabolario non conosce non è almeno niente.
+- **L'aggiunta di Carmine**: chi fa i turni **può** mettere un controllore sotto il minimo — lo staff toglie l'FRA a quella persona
+  su IVAO —, e l'hub **glielo dice**, con l'istruzione di togliere l'FRA della postazione su IVAO per quel controllore: **un avviso,
+  mai un rifiuto** (design §4.4, la correzione; anche la cessione di un turno, §4.4-bis). Il proponente invece non va mai sotto: è
+  la regola di «chi può». Il nucleo dà il minimo; **l'avviso lo mostra il modulo** (E11b, E12), e le sue parole — nominano IVAO e
+  il suo FRA, quindi stanno nel perimetro IVAO (`CLAUDE.md` §3) — sono una chiave del nucleo, `atcPositions.belowMinimum` in
+  `locales/*/common.json`, che il modulo usa così com'è.
+- ⚠️ **Il fuso degli orari degli FRA** si legge **UTC**, come ogni orario di IVAO (le prenotazioni ATC, il tracker, il sito della
+  divisione scrivono UTC): la documentazione non lo dice e nessuna fonte pubblica lo mostra. Non verificato.
+- ⚠️ **Come IVAO combina due righe che valgono insieme** non è scritto: il più alto, deciso da Carmine, è anche la lettura prudente
+  (le due righe con una data misurate alzano il minimo).
 
-### 3.3 Le postazioni della divisione per nominativo, nella directory — scelta tecnica
+### 3.3 Le postazioni della divisione per nominativo, nella directory
 
 - **`OfDivisionAsync()`**: tutte le postazioni della divisione, per nominativo: l'elenco da cui lo staff sceglie quelle di un evento
-  (E11a). Nessuna cache né endpoint, come `ForRatingAsync`: il modulo lo chiede dal suo, e cambia una volta per notte.
-- **`FindAsync(nominativo)`**: la postazione della divisione con quel nominativo, scritto in qualunque maiuscola; nessuna per un
-  nominativo che IVAO non elenca o che è di un'altra divisione. È il controllo del form di E11a, con la copia del FIR, e la domanda
-  del proponente.
+  (E11a), militari e ATIS compresi — quali aprire lo decide lo staff. Nessuna cache né endpoint, come `ForRatingAsync`: il modulo lo
+  chiede dal suo, e cambia una volta per notte.
+- **`FindAsync(nominativi)`**: le postazioni della divisione fra quei nominativi, per nominativo in qualunque maiuscola, a lotti come
+  `IAirportDirectory.FindAsync`; un nominativo che IVAO non elenca, o di un'altra divisione, semplicemente non c'è. È il controllo del
+  form di E11a, con la copia del FIR, e la domanda del proponente.
 - **`AtcPositionDto` porta il tipo** (`Type`) accanto a nominativo, nome, aeroporto e FIR: il modulo lo passa al vocabolario
   (`PreferredFor`) senza nominarlo. Lo porta anche `ForRatingAsync`: il training legge nominativo, nome, aeroporto e FIR, e non
   cambia.
@@ -117,38 +138,52 @@ Letto e misurato il 30 settembre 2026, con il token dell'applicazione (`client_c
 | Il minimo nel vocabolario, come il design §1.13 | il vocabolario è la conoscenza fissa di IVAO; il minimo di una postazione cambia con l'ora e con le scelte della divisione |
 | Il controllo di IVAO per ogni candidato (`/v2/fras/check/{callsign}/{vid}`) | esatto — vede anche le eccezioni e le date —, ma una chiamata per candidato, postazione e turno, centinaia per un roster, e la proposta dipenderebbe da IVAO in quel momento |
 | Anche le righe per membro | i dati di una persona in una tabella di riferimento, per eccezioni che lo staff dà su IVAO dopo aver deciso il roster |
-| Il preferito su `FSS` all'ACC, perché è una stazione del FIR come i `CTR` | IVAO non dà un rating alle FSS, che danno informazioni e non controllano il traffico |
+| Un rifiuto sotto l'FRA | Carmine: lo staff toglie l'FRA a una persona su IVAO, quindi l'hub avvisa e lascia fare |
+| L'esito del giro «partial» senza FRA, come per le postazioni | una divisione senza FRA sarebbe «partial» ogni notte; il conteggio sta nel messaggio |
+| Una pagina fallita letta come le pagine arrivate | la potatura toglierebbe gli FRA delle pagine mancanti |
+| Il minimo come `Rating` del vocabolario | un numero che il vocabolario non conosce diventerebbe «nessun minimo»; con il numero e `IsAtLeast` diventa «nessuno può» |
 | Il preferito dove il rating si allena (`PositionType`) | un tipo per rating: l'ADC resterebbe senza la `GND`, che Carmine gli dà |
 | Una seconda classe di postazione con il tipo, per non toccare `AtcPositionDto` | la stessa cosa scritta due volte; il training non legge il campo nuovo |
 | Il tipo della postazione salvato sulla riga dell'evento | lo sa la directory; il modulo lo chiede quando serve |
+| Le parole dell'avviso nel modulo | nominano IVAO: fuori dal perimetro (`CLAUDE.md` §3) |
 
-## 5. Le domande a Carmine
+## 5. Le domande a Carmine, e le risposte
 
 1. **Il minimo di una postazione è il suo FRA su IVAO?** Il nucleo legge ogni notte gli FRA per postazione della divisione (non
    quelli per membro), e per un turno vale il più alto fra quelli attivi in quelle ore; senza FRA vale solo `minimumAtcRating`.
-   **Raccomandato: sì** (§3.2). L'alternativa è nessun minimo della postazione (§4, prima riga).
-2. **Il rating preferito di `DEL`, `DEP`, `FSS` e `ATIS`**: **raccomandato** l'ADC su `DEL` e l'APC su `DEP`, come le definizioni
-   di IVAO; nessuno su `FSS` e `ATIS` (§3.1).
+   Raccomandato: sì. **Risposta: sì**, con l'aggiunta dell'avviso che chiede di togliere l'FRA su IVAO (§3.2).
+2. **Il rating preferito di `DEL`, `DEP`, `FSS` e `ATIS`**: raccomandato l'ADC su `DEL` e l'APC su `DEP`, nessuno su `FSS` e `ATIS`.
+   **Risposta: AS3 su `DEL`, APC su `DEP`, ADC su `FSS`**; `ATIS` non nominato, quindi nessuno, come raccomandato (§3.1).
 
 ## 6. Che cosa si tocca
 
 Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 
-- **Il vocabolario**: `Core/Ivao/RatingVocabulary.cs` (`PreferredOn`, `PreferredFor`, i dati di IVAO).
-- **La directory**: `Core/Ivao/AtcPositionDirectory.cs` (`OfDivisionAsync`, `FindAsync`, il tipo nel DTO).
-- **Con la risposta 1 raccomandata**: `Core/Ivao/IIvaoApiClient.cs`, `IvaoApiClient.cs`, `FixtureIvaoApiClient.cs`, un file nuovo
-  per la riga e il lettore degli FRA, `RefDataSyncJob.cs`, `Core/Data/HubDbContext.cs`, `RefSchemaConfiguration.cs`, una
-  migrazione additiva del contesto del nucleo e il suo snapshot, `tools/record-ivao-fixtures.mjs`, `tests/fixtures/ivao/README.md`
-  e le fixture nuove.
-- **Test**: `RatingVocabularyTests` (unità: i tipi, i bordi, un tipo sconosciuto) e `AtcPositionTests` (integrazione, sulle fixture
-  delle postazioni: per nominativo, tutta la divisione, un'altra divisione), scritti in A1 e A2 di M3 da questa stessa mano; in
-  `AtcPositionTests` i tre DTO attesi prendono il tipo, nessuna asserzione tolta. Nessun test del maintainer cambiato.
+- **Il vocabolario**: `Core/Ivao/RatingVocabulary.cs` (`PreferredOn`, `PreferredFor`, i dati di Carmine).
+- **La directory**: `Core/Ivao/AtcPositionDirectory.cs` (`OfDivisionAsync`, `FindAsync`, `MinimaAsync`, il tipo nel DTO,
+  `AtcPositionRule`, `AtcPositionMinimum`).
+- **Gli FRA**: `Core/Ivao/IvaoFra.cs` (nuovo: la riga, quella del client e il lettore), `Core/Ivao/IIvaoApiClient.cs`,
+  `IvaoApiClient.cs`, `FixtureIvaoApiClient.cs`, `RefDataSyncJob.cs`, `Core/Data/HubDbContext.cs`, `RefSchemaConfiguration.cs`, la
+  migrazione `AddIvaoFras` e lo snapshot del contesto del nucleo.
+- **Le parole dell'avviso**: `locales/en/common.json`, `locales/it/common.json` (`atcPositions.belowMinimum`).
+- **Le misure**: `tools/record-ivao-fixtures.mjs` (la modalità `--fras`), `tests/fixtures/ivao/README.md`, la fixture
+  `fras-IT.json` (94 FRA delle postazioni del banco, nessuna persona), `docs/FORKING.md`.
+- **Test**: `RatingVocabularyTests` (unità: i tipi, i bordi, un tipo sconosciuto) e `AtcPositionTests` (integrazione, sulle fixture:
+  per nominativo, tutta la divisione, un'altra divisione, gli FRA scritti, rinfrescati e potati, il minimo per un turno), scritti in
+  A1 e A2 di M3 da questa stessa mano: in `AtcPositionTests` i tre DTO attesi prendono il tipo, nessuna asserzione tolta.
+  `IvaoFraReaderTests` e `AtcPositionMinimumTests` (unità, nuovi). Nessun test del maintainer cambiato.
 
 ## Da portare nel piano
 
 - **§9.1, riga «Dati di riferimento IVAO»**, e **§4.2** (il perimetro IVAO): il vocabolario dei rating dice anche **il rating
-  preferito per un tipo di postazione** (ADC sulle postazioni d'aerodromo, APC su quelle terminali, ACC sui `CTR`: le definizioni
-  di IVAO e la regola dell'ED); `IAtcPositionDirectory` dà anche **le postazioni della divisione per nominativo**, con tipo e FIR.
-- **Con la risposta 1**: §9.1 e **§7, schema `ref_`**, la riga `ivao_fras`; **§10**, la riga degli FRA (`/v2/fras` per paese, solo
-  le righe per postazione, `client_credentials`, ogni notte); il minimo di una postazione lo dice la directory, dagli FRA, e non il
-  vocabolario (scostamento dal design §1.13, che non si tocca).
+  preferito per un tipo di postazione** (la regola dell'ED: AS3 `DEL`; ADC `FSS`, `GND`, `TWR`; APC `APP`, `DEP`; ACC `CTR`; nessuno
+  `ATIS`); `IAtcPositionDirectory` dà anche **le postazioni della divisione per nominativo**, con tipo e FIR, e **il minimo di una
+  postazione per un turno**, dagli FRA di IVAO.
+- **§7, schema `ref_`**: la riga `ivao_fras` — PK `id` di IVAO; `callsign`, `minimum_rating`, `days`, `starts_at`, `ends_at`,
+  `on_date`, `is_active`, `raw_json`, `synced_at`; gli FRA per postazione del paese della divisione, potati solo su una risposta piena;
+  indice sul nominativo.
+- **§10, tabella dell'API**: la riga degli FRA — `/v2/fras?countryId=…&members=false&expand=true`, cento per pagina, `client_credentials`,
+  ogni notte con il resto dei dati di riferimento; mai le righe per membro.
+- **§9.7, collaborazioni ATC↔Events** e design §1.13, §4.4 (che non si toccano): il minimo di una postazione è il suo FRA e lo dice la
+  directory, non il vocabolario; sotto l'FRA la correzione e la cessione avvisano, con l'istruzione di toglierlo su IVAO, e non
+  rifiutano.
