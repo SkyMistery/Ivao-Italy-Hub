@@ -186,12 +186,16 @@ public sealed class RatingVocabularyTests
     [InlineData("GND", "ADC")]
     [InlineData("APP", "APC")]
     [InlineData("CTR", "ACC")]
+    [InlineData("DEL", "AS3")] // and the maintainer's answer on #204 for the other four kinds IVAO lists
+    [InlineData("DEP", "APC")]
+    [InlineData("FSS", "ADC")]
+    [InlineData("ATIS", null)] // nobody's shift: nobody comes first
     [InlineData("twr", "ADC")] // the kind as IVAO spells it, in any case
     [InlineData(" APP ", "APC")]
     [InlineData("XYZ", null)] // a kind this vocabulary does not know: nobody comes first for the rating
     [InlineData("", null)]
     [InlineData(null, null)]
-    public void OnAKindOfPositionTheRatingNamedAfterItsServiceComesFirst(string? positionType, string? expected)
+    public void OnAKindOfPositionTheDivisionsRuleSaysWhoComesFirst(string? positionType, string? expected)
     {
         Assert.Equal(expected, Ivao.PreferredFor(positionType)?.ShortName);
     }
@@ -203,8 +207,14 @@ public sealed class RatingVocabularyTests
     [InlineData("TWR", 8, true)] // a SEC comes first wherever an ADC does: it follows from the order
     [InlineData("GND", 4, false)]
     [InlineData("GND", 5, true)]
+    [InlineData("DEL", 3, false)] // an AS2
+    [InlineData("DEL", 4, true)]
+    [InlineData("FSS", 4, false)]
+    [InlineData("FSS", 5, true)]
     [InlineData("APP", 5, false)]
     [InlineData("APP", 6, true)]
+    [InlineData("DEP", 5, false)]
+    [InlineData("DEP", 6, true)]
     [InlineData("CTR", 6, false)]
     [InlineData("CTR", 7, true)]
     [InlineData("CTR", 10, true)] // the top of the ladder
@@ -219,12 +229,13 @@ public sealed class RatingVocabularyTests
     }
 
     [Fact]
-    public void OnlyTheTrainedAtcRatingsArePreferredOnAKindOfPosition()
+    public void EachKindOfPositionIsPreferredOnOneAtcRating()
     {
         // Where a rating comes first and where it is trained are two answers: the ADC is trained on the tower alone (A1 of
-        // M3) and comes first on the ground as well.
+        // M3) and comes first on the ground and on a flight service station as well; the AS3, trained for nothing, comes
+        // first on a delivery.
         Assert.Equal(
-            ["ADC: GND TWR", "APC: APP", "ACC: CTR"],
+            ["AS3: DEL", "ADC: FSS GND TWR", "APC: APP DEP", "ACC: CTR"],
             Ivao.Ladder(RatingKind.Atc)
                 .Where(rating => rating.PreferredOn.Count > 0)
                 .Select(rating => $"{rating.ShortName}: {string.Join(' ', rating.PreferredOn)}"));

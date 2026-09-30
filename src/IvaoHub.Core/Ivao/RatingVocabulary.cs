@@ -25,9 +25,9 @@ public sealed record Rating(RatingKind Kind, int Number, string ShortName, bool 
 
     /// <summary>
     /// The kinds of ATC position, as IVAO spells them in <c>position</c>, on which a controller holding at least this rating
-    /// comes first when a roster is proposed (M4, E10c; design M4 §1.13, §4.3): the positions of the service the rating is
-    /// named after, an Aerodrome Controller's being the aerodrome's. Another question than <see cref="PositionType"/>, the
-    /// one kind a rating is trained on. Empty for a rating preferred on none, and for every pilot's.
+    /// comes first when a roster is proposed (M4, E10c; design M4 §1.13, §4.3): an ADC on a tower, an AS3 on a delivery.
+    /// Another question than <see cref="PositionType"/>, the one kind a rating is trained on. Empty for a rating preferred on
+    /// none, and for every pilot's.
     /// </summary>
     public IReadOnlyList<string> PreferredOn { get; init; } = [];
 }
@@ -145,9 +145,11 @@ public sealed class RatingVocabulary
 /// endpoint that lists them. The ratings a division trains in practice — ADC, APC, ACC; PP, SPP, CP — and the positions it
 /// trains them on are how IVAO's training works today, confirmed by the staff of a training department; no position IVAO
 /// publishes carries a rating (<c>/v2/ATCPositions/all</c> and <c>/v2/subcenters/all</c>, the same day).
-/// <para>The kinds each rating is preferred on (M4, E10c, note of 30 September 2026) are the rule of the division's events
-/// department — on a kind of position, the rating named after its service comes first — over the services IVAO's
-/// Regulations divide the positions into (ATC Operations, A.1): aerodrome control, terminal control, area control.</para>
+/// <para>The kinds each rating is preferred on (M4, E10c, note of 30 September 2026) are no rule IVAO publishes: they are
+/// the rule of the events department, as the maintainer decided it — AS3 on the deliveries; ADC on the grounds, the towers
+/// and the flight service stations; APC on the approaches and the departures; ACC on the sectors; nobody on an ATIS. The
+/// minimum of a position is not here: it is IVAO's FRA of that position, which changes with the hour and which
+/// <see cref="IAtcPositionDirectory.MinimaAsync"/> answers.</para>
 /// <para>This is IVAO knowledge, so it lives in the IVAO perimeter of the core (plan §4.2) and a module never repeats it:
 /// the names are keys of the core's language files (<see cref="Rating.NameKey"/>), IVAO's own English names.</para>
 /// </summary>
@@ -157,9 +159,9 @@ public static class IvaoRatings
     [
         new(RatingKind.Atc, 2, "AS1", false, null),
         new(RatingKind.Atc, 3, "AS2", false, null),
-        new(RatingKind.Atc, 4, "AS3", false, null),
-        new(RatingKind.Atc, 5, "ADC", true, "TWR") { PreferredOn = ["GND", "TWR"] },
-        new(RatingKind.Atc, 6, "APC", true, "APP") { PreferredOn = ["APP"] },
+        new(RatingKind.Atc, 4, "AS3", false, null) { PreferredOn = ["DEL"] },
+        new(RatingKind.Atc, 5, "ADC", true, "TWR") { PreferredOn = ["FSS", "GND", "TWR"] },
+        new(RatingKind.Atc, 6, "APC", true, "APP") { PreferredOn = ["APP", "DEP"] },
         new(RatingKind.Atc, 7, "ACC", true, "CTR") { PreferredOn = ["CTR"] },
         new(RatingKind.Atc, 8, "SEC", false, null),
         new(RatingKind.Atc, 9, "SAI", false, null),
