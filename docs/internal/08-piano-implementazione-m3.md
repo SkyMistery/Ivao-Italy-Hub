@@ -3971,3 +3971,113 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
 [close189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250
 
 A12c, se si farà, scriverà qui il suo «Com'è andata».
+
+### A13 — Le correzioni della prova sul banco
+
+M3 è chiusa (piano 1.26). Il 30 settembre 2026 `dalberone` ha provato il modulo sul **banco di anteprima**: due istanze dell'hub
+pubblicato di `main` su un database solo, sei persone, e un training per ogni stato di ogni vista dello staff. Le persone erano:
+
+- tre trainee, AS3, ADC e APC;
+- tre dello staff, HQ, il TC e un trainer.
+
+Ne sono uscite **sei correzioni**, in **due PR**:
+
+- **A13a — le parole e l'esame teorico** (branch `m3/a13-bench-fixes`):
+  1. la conferma di una data dice che **una data fissata può essere cambiata solo in accordo con il trainer**, e lo dice anche la
+     pagina del training programmato;
+  2. il rifiuto di una richiesta con un training aperto dice solo **«Hai già un training aperto.»**;
+  3. **chi non ha superato l'esame teorico** trova il sito dell'esame e che cosa fare lì per richiederlo:
+     - sotto la domanda;
+     - nell'avviso del rifiuto;
+     - accanto alla richiesta rifiutata, nei suoi training.
+
+     Il sito è già un'impostazione (`theoryExamUrl`, §12 n.12). Le parole sono un'impostazione nuova, `theoryExamHint`, tradotta, che
+     scrive la divisione;
+  4. **la data della richiesta nel calendario non è un difetto del modulo**, e si scrive qui perché non si cerchi di nuovo;
+  5. nelle impostazioni, **«Quando una data proposta è in conflitto con un'altra voce del calendario»**, e non «incontra il
+     calendario». Questa l'ha chiesta `dalberone` più tardi, guardando l'installazione di prova.
+- **A13b — lo storico delle modifiche di un training** (branch `m3/a13b-training-history`): i cambi di un training restano scritti e
+  si leggono nella pagina dello staff. Alcuni esempi sono il trainer, la data e lo stato. È una **funzione nuova** (`CLAUDE.md` §5,
+  caso (c)): prima la nota `2026-09-30-lo-storico-di-un-training` con la domanda a Carmine, poi il codice. Il suo «Com'è andata» va
+  qui sotto quando arriva.
+
+**Com'è andata (A13a)** (30 settembre 2026, branch `m3/a13-bench-fixes`, da `main` a 6261ffd). **Quattro commit di codice e uno di una
+spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine.**
+
+- **Classificata prima di scrivere** (`CLAUDE.md` §5):
+  - 1, 2 e 5 sono caso **(a)**: chiavi i18n;
+  - 3 è caso **(a)**, un'impostazione del modulo accanto a quella che c'era. Il testo nomina un bottone del sito della rete, e il
+    modulo non nomina né siti né bottoni della rete (`CLAUDE.md` §3). Per questo il testo è della divisione come il suo indirizzo, e
+    non una chiave i18n;
+  - 4 non è un difetto;
+  - lo storico è caso **(c)**: va in A13b.
+- **Fatto** (commit `1e1a58c`, `922155a`, `adf66ac`, `177bb50` la spec, `8e5f2f3`, e quello di questi documenti):
+  - **`training:detail.dates.confirmDescription` e `training:detail.next.Scheduled`**: «Una data fissata può essere cambiata solo in
+    accordo con il trainer», in italiano e in inglese;
+  - **`training:errors.requestOpen`**: «Hai già un training aperto.». Il riquadro del percorso dice già quale percorso, e la riga
+    sotto dice quando se ne potrà chiedere un altro;
+  - **`training:settings.fields.conflictPolicy`**: «Quando una data proposta è in conflitto con un'altra voce del calendario». Con lo
+    stesso verbo cambiano i due rifiuti che il trainer legge quando la divisione non accetta una data così (`training:errors.dateBlocked`
+    e il titolo del rifiuto delle date), che dicevano «una data che lo incontra»;
+  - **`TrainingSettings.TheoryExamHint`**:
+    - è un `Localized<string>`, **vuoto e mai nullo** finché il dipartimento non lo scrive;
+    - ogni lingua ha al massimo 500 caratteri;
+    - è scritto in ogni lingua della divisione o in nessuna. Questa è la regola del salvataggio, che conosce le lingue;
+    - `MyTrainingDto` lo porta, vuoto se è bianco in ogni lingua;
+    - le pagine del trainee lo mostrano sotto il link, nella lingua di chi legge, in tre posti:
+      - nella domanda sul teorico;
+      - nell'avviso del rifiuto dell'hub;
+      - accanto a un rifiuto per la teoria fra i suoi training e sulla sua pagina. Qui prima **non c'era nemmeno il link**;
+    - il promemoria dello staff resta con il solo link;
+    - il form delle impostazioni ha la sua casella tradotta;
+  - **`docs/FORKING.md`**: `theoryExamHint` nella tabella delle impostazioni del training, e che cosa è.
+- **La data della richiesta nel calendario (punto 4)**:
+  - il calendario ha **solo le sessioni datate**: `Training.SessionIsPublic` vuol dire programmato, o completato con la sua sessione;
+  - sul banco le sessioni già avvenute erano datate quaranta secondi dopo la richiesta, perché l'hub non accetta date nel passato (A9,
+    [Carmine sulla #149][a13-149]). Così cadevano nello stesso minuto della richiesta e sembravano la richiesta;
+  - la prova sul banco: il PP di AS3 è entrato nel calendario l'8 ottobre, quando AS3 ha scelto la data, e non il 30 settembre della
+    richiesta; le richieste aperte, rifiutate e annullate non ci sono.
+- **Trovato**:
+  1. ⚠️ **Un `Localized<T>` letto dal JSON non è mai nullo.** Il convertitore del nucleo (`LocalizedJsonConverter`, `HandleNull`)
+     legge `null` come vuoto. Un'impostazione tradotta che esce dal suo archivio, o che arriva nel corpo di un salvataggio, è quindi
+     vuota e non nulla, e una regola «se c'è, in ogni lingua» con `is not null` rifiutava ogni salvataggio. L'ha trovato il test del
+     fork XX (`TrainingXxDivisionTests`). Il campo è non nullo, come vuole il nucleo, e la regola guarda se è scritto in qualche
+     lingua (`TrainingSettings.IsWritten`). Il test dello scheletro salva un valore vuoto e uno nullo;
+  2. su un'installazione vera `theoryExamUrl` e `theoryExamHint` restano vuoti finché il TD non li scrive (`docs/FORKING.md` li dice
+     tutti e due). Sul banco di anteprima li ha scritti la sessione.
+- **Scostamenti dal design**:
+  1. **un'impostazione in più**, `theoryExamHint` (design §1.6), da portare nel piano con la riga delle impostazioni;
+  2. **il sito dell'esame accanto a un rifiuto per la teoria**, fra i training del trainee e sulla sua pagina. Il design lo metteva
+     solo nella domanda e nel promemoria di chi approva (§12 n.12).
+- **Verificato** (30 settembre 2026, in locale, una suite alla volta):
+  - `dotnet build IvaoHub.sln`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **877/877**;
+  - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 424/424** al primo giro. Prima, le classi toccate da sole: 21/21, e al primo
+    giro 20/21, con la trappola del «Trovato» n.1;
+  - `pnpm lint`, `typecheck`, `format:check`: puliti;
+  - `pnpm i18n:check`: **783** chiavi;
+  - `pnpm test`: **583/583** in 78 file, anche dopo l'ultimo commit;
+  - `pnpm gen:api`: la sola differenza di `MyTrainingDto`, nel commit;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**:
+    - al primo giro **155/157**. È caduta la spec nuova di A13a (`training-request.spec.ts:258`): le parole si trovavano due volte,
+      nell'avviso e nella domanda che si stava ancora chiudendo, ed è stata corretta (`177bb50`). È caduta anche
+      `closed-suggestion.spec.ts:121`, del nucleo;
+    - ripetute cinque volte: `training-request.spec.ts` **35/35** e `closed-suggestion.spec.ts` **25/25**;
+    - poi due giri interi, ognuno con **una** spec del nucleo diversa caduta: `blocks.spec.ts:164`, un timeout (ripetuta tre volte,
+      **12/12**), e `collections.spec.ts:61`. Con 1865 socket in `TIME_WAIT` è l'esaurimento dei socket già visto;
+    - aspettato che i socket scendessero sotto 300, **157/157 con `--workers=2`**, e di nuovo **157/157** dopo l'ultimo commit;
+  - **`pnpm e2e:full`: 49/49** al primo giro, in 9,8 minuti, sul banco ricreato (127.0.0.1:**5109**, `ivaohub_e2e_a13`) e sotto il
+    lucchetto di Mailpit. Il giro è partito prima di `8e5f2f3`, che cambia solo valori i18n;
+  - le regole di `core-guard` in PowerShell sulla fase: nessun file del maintainer, nessuno del nucleo, **PASS**;
+  - **sul banco di anteprima**, con la build pubblicata di questo branch e le due impostazioni scritte:
+    - le frasi nuove si leggono;
+    - il link e le parole compaiono nella domanda e sotto le richieste rifiutate di AS3;
+    - la casella tradotta nelle impostazioni ha il valore salvato.
+- **Non verificato**:
+  - **la CI** della PR, che la dice la PR;
+  - **la conferma della scelta di una data**: sul banco di anteprima nessun trainee che entra ha oggi date da scegliere. La frase
+    è la chiave `training:detail.dates.confirmDescription`, e la leggono le spec delle date;
+  - **l'inglese sul banco**: le pagine si sono lette in italiano. Le parole inglesi le legge la spec e2e della richiesta, e le frasi
+    le tiene `i18n:check`.
+
+[a13-149]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158

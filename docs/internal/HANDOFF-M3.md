@@ -11,34 +11,47 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A12d** (il giro completo di M3 sul banco, il modulo del training in `docs/FORKING.md`,
-il rapporto di chiusura `decisions/2026-09-30-m3-review.md`), sul branch `m3/a12d-full-round`, **PR #191** verso `main`. **La coda di M3 è
-vuota**: **#189, A12b, è unita** il 30 settembre alle 07:27 UTC (il master l'aveva trovata approvabile, [i suoi
-rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851)), e `main` (a617767) è entrato qui con un merge: è il
-passo della coda di #191, e la PR non è più in coda. **È l'ultima fase di M3 in `08`**. Il master, [sulla
-#189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250), ha scritto che la coda è vuota e ha descritto A12d come
-ancora da scrivere: A12d è la #191, scritta e provata, e il passo della coda glielo dice sulla #191. **A12c resta fuori**: il codice sorgente di
-PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
-#187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)); nello stesso commento sulla #189 il master apre una
-strada — ricavare i codici dai dati di PATS e scriverli in una nota «Proposta», una tabella codice → significato con quanto se ne è sicuri e
-nessun dato personale, su cui il maintainer decide se A12c si fa —, e **tentarla è una scelta di `dalberone`, non ancora presa**: finché non
-decide, A12c resta fuori. Nessuna domanda a Carmine, nessun file del nucleo. **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b,
-sono unite** il 29 settembre; **#182, A11b,** il 30 alle 00:03 UTC, **#187, A12a,** alle 00:48 e **#189, A12b,** alle 07:27. Il branch è nato
-dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e la coda l'ha raggiunto tre volte, sempre
-con un merge: il passo di #182 dopo #181 (3e5065f, solo documenti), quello di #187 dopo #182 (91af2e5: `main` con #182, #187 e #190 del
-maintainer, l'accesso dalla pagina d'errore e la versione 0.4.2, e il nit 1 della revisione di #187) e ora `main` dopo #189. **L'intervallo
-`main...m3/a12d-full-round` mostra solo la fase** (5 file). **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a
-(#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178),
-la fase del nucleo A11a (#159), A11b (#182), la fase del nucleo A12a (#187), **A12b (#189)** e #152 del maintainer. Per la consegna di A11b
-serve il `config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che
-cosa deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
-cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è
-accettata, gli esami prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
-`CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda
-(`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente.
-**A10 è divisa in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182), unite; **A12
-in quattro**, A12a (#187) e A12b (#189), unite, A12c (fuori finché `dalberone` non decide se tentare i codici dai dati) e A12d (questa). In
-C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13a**, le correzioni della prova sul banco: tre frasi e le parole della divisione
+sul sito dell'esame teorico. Branch `m3/a13-bench-fixes`, da `main` a 6261ffd (0.5.0).
+
+**M3 è chiusa e tutta in `main`** (piano 1.26):
+
+- **#191, A12d,** è unita il 30 settembre, dopo **#189, A12b**;
+- **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b
+  (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159), A11b
+  (#182), la fase del nucleo A12a (#187), A12b (#189), A12d (#191) e #152 del maintainer.
+
+**A13 nasce dalla prova del modulo sul banco di anteprima** di `dalberone` (30 settembre):
+
+- **A13a** fa queste correzioni;
+- **A13b** fa lo storico delle modifiche di un training. Prima c'è la nota `2026-09-30-lo-storico-di-un-training` con la domanda a
+  Carmine, poi il codice (`08`, A13).
+
+**A12c resta fuori**: il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
+#187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Il master apre una strada [sulla
+#189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250): ricavare i codici dai dati di PATS e scriverli in una
+nota «Proposta», con una tabella codice → significato, quanto se ne è sicuri e nessun dato personale. Su quella nota il maintainer decide
+se A12c si fa. **Tentarla è una scelta di `dalberone`, non ancora presa.**
+
+**Da sapere prima di cominciare**:
+
+- **Per la consegna di A11b** serve il `config/division.json` del tag.
+- **Un'installazione che ha già girato A7 pulisce a mano i grant del trainer**: lo dice A7b qui sotto, in «Che cosa deve sapere la fase
+  dopo».
+- **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto):
+  - una sessione cominciata si registra, e non si data più a mano né si chiude;
+  - nessuno data un training nel passato;
+  - la scheda disegnata nel modulo è accettata;
+  - gli esami prendono ogni rating del percorso, l'8 compreso.
+- **Come si unisce**: la **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine,
+  una PR alla volta. Quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»). Se un
+  branch va rimesso in pari con `main`, il master lo chiede sulla PR senza spingerci niente.
+- **Le fasi divise**:
+  - **A10 in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite;
+  - **A11 in due**: A11a (#159) e A11b (#182), unite;
+  - **A12 in quattro**: A12a (#187), A12b (#189) e A12d (#191), unite, e A12c fuori;
+  - **A13 in due**: A13a (questa) e A13b.
+- In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -109,6 +122,35 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A13a (30 settembre 2026, branch `m3/a13-bench-fixes`)
+
+- **Da dove viene**: M3 era chiusa. Il 30 settembre `dalberone` l'ha provata sul **banco di anteprima**: l'hub pubblicato di `main` in
+  due istanze su un database solo, sei persone, un training per ogni stato. Poi ha guardato anche l'installazione di prova. Ne sono
+  uscite sei correzioni: A13a ne fa cinque, la sesta è A13b (`08`, A13).
+- **Che cosa c'è** (quattro commit di codice e uno di una spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine):
+  - **tre frasi**:
+    - «Una data fissata può essere cambiata solo in accordo con il trainer», nella conferma di una data e nella pagina del training
+      programmato;
+    - «Hai già un training aperto.», il rifiuto con un training aperto;
+    - «Quando una data proposta è in conflitto con un'altra voce del calendario», nelle impostazioni. Lo stesso verbo è nei due rifiuti
+      di una data che il trainer legge;
+  - **le parole della divisione sul sito dell'esame teorico**: l'impostazione nuova `TrainingSettings.TheoryExamHint`, tradotta, che
+    dice che cosa fare sul sito di `theoryExamUrl` per richiedere l'esame. Chi non l'ha superato trova il link e le parole:
+    - nella domanda;
+    - nell'avviso del rifiuto;
+    - accanto alla richiesta rifiutata, fra i suoi training e sulla sua pagina. Qui prima non c'era nemmeno il link;
+  - **`docs/FORKING.md`** ha la nuova impostazione nella tabella di quelle del training;
+  - **la data della richiesta nel calendario**: non è un difetto, e `08` (A13) dice perché. Il calendario ha solo le sessioni datate.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Un `Localized<T>` che arriva dal JSON non è mai nullo**: il convertitore del nucleo legge `null` come vuoto. Un campo tradotto
+    di un'impostazione o di un DTO di scrittura si dichiara non nullo, e «è scritto?» si chiede sui valori, non su `null`
+    (`TrainingSettings.IsWritten`). Una regola con `is not null` rifiutava ogni salvataggio delle impostazioni.
+  - Le due impostazioni dell'esame restano **vuote** su un'installazione nuova: le scrive il TD in «Impostazioni del training». Sul
+    banco di anteprima le ha scritte la sessione, con il sito dell'esame della rete e il suo «Exam status page».
+  - Il banco di anteprima: 127.0.0.1–4:5090 e 127.0.0.5–6:5091, database `ivaohub_preview_m3`.
+- **La fase dopo**: **A13b** (branch `m3/a13b-training-history`), lo storico delle modifiche di un training nella pagina dello staff,
+  letto dal registro di audit. Prima la nota `2026-09-30-lo-storico-di-un-training` con la domanda a Carmine, poi il codice.
 
 ### Che cosa ha lasciato A12d (30 settembre 2026, branch `m3/a12d-full-round`, PR #191)
 
