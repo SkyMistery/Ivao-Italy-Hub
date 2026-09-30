@@ -3700,7 +3700,8 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
 [a187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
 [r187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982
 
-**Com'è andata (A12b)** (29–30 settembre 2026, branch `m3/a12b-training-erasure`, PR #189 verso `main`, in bozza in coda dopo #187) —
+**Com'è andata (A12b)** (29–30 settembre 2026, branch `m3/a12b-training-erasure`, PR #189 verso `main`, in cima alla coda da quando #187
+è unita) —
 **l'eraser del modulo, «persona cancellata» nelle pagine e la conservazione; una domanda a Carmine, decisa il 30 settembre, e la sua
 parte**:
 
@@ -3816,15 +3817,44 @@ parte**:
   consegna di A11b; i paragrafi di A12a e A11b sotto prendono i loro. Nessuna riga che uno dei due lati teneva è andata persa
   (controllato riga per riga su `HANDOFF-M3.md` e `08`). **Il codice non cambia** (nessun file fuori da `docs/` fra 71e04df e il
   merge), quindi le suite qui sopra valgono com'erano; l'intervallo della fase mostra ancora solo la fase (41 file), e il branch
-  **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190 del maintainer): la PR ha di nuovo la CI.
+  **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190 del maintainer): la PR ha di nuovo la CI. **La CI su
+  `4d91517`**, letta una volta a giro finito: `build-test` (21 minuti, 00:00–00:21 UTC) e `core-guard` **verdi**.
+- **La coda sotto, la seconda volta** (30 settembre, 00:03 UTC: **#182 è unita**): la nuova cima di A12a (7675de3) — il passo di #187
+  dopo #182, con `main` a a004c20 (#182, che il branch aveva già dalla coda, e #190 del maintainer: l'accesso dalla pagina d'errore, la
+  versione 0.4.2 e la sua nota), e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`: il commento di `col.person` e
+  `UI-GUIDELINES.md`) — è entrata qui con un merge (`7d9a062`), come mi ha scritto la sessione di A12a. **Un conflitto solo**,
+  l'intestazione di `HANDOFF-M3.md`: quella di A12b in cima, riscritta; i paragrafi di A12a sotto prendono i loro. Nessuna riga che uno
+  dei due lati teneva è andata persa (controllato riga per riga su `HANDOFF-M3.md`, `08`, `UI-GUIDELINES.md` e `columns.ts`). **Questa
+  volta il codice cambia** (#190, nel nucleo dell'accesso, con i suoi test), quindi tutte le suite di nuovo, una alla volta, al primo
+  giro tranne una caduta del giro completo (sotto): `dotnet build` 0 avvisi; unità **870/870**; **integrazione intera, senza filtro,
+  424/424** (i 417 e i 7 di #190); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` **783** chiavi; `pnpm test`
+  **582/582** in 78 file; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` **387**, nessuna mancante;
+  **`pnpm e2e` 157/157**, sotto il lucchetto di 4173; `dotnet format --verify-no-changes` sui 15 file C# della fase: pulito; le regole
+  di `core-guard` in PowerShell sulla fase: nessun file del maintainer, nessuno del nucleo, la nota aggiunta, **PASS**. L'intervallo
+  della fase mostra ancora solo la fase (41 file). **`pnpm e2e:full`**, sul banco ricreato e sotto il lucchetto di Mailpit, ogni giro:
+  1. **47/48**: è caduto **`template.spec.ts:139`, un test del nucleo** (l'anteprima a tre larghezze): alla riga 185 legge **una volta
+     sola, senza aspettare**, quante colonne ha la sezione a finestra larga, e ne ha trovata 1 invece di 2 — la riga 199, per la
+     finestra stretta, aspetta con `expect.poll`. Nei due giri di prima (qui sopra) era passato;
+  2. quel test da solo, `--repeat-each=5`: **5/5**;
+  3. il giro intero di nuovo, sul banco ricreato: **48/48**.
+
+  La fase non tocca l'editor né l'anteprima, e il file è del nucleo: non toccato, detto al revisore. È lo stesso genere di caduta che
+  la CI aveva trovato in G19 nello stesso file (`11ddb38`: una misura presa prima che la pagina fosse disegnata).
+- **Il passo della coda di #189** (30 settembre, 00:48 UTC: **#187 è unita**; [il commento del master sulla #189][m189]): `main`
+  (4e21fbc) è entrato con un merge (`0087db1`) senza conflitti e **senza nessun file**: il suo albero è quello della cima di A12a
+  (7675de3), già entrata qui con il merge qui sopra, e l'albero del branch dopo il merge è lo stesso di `7d9a062`, su cui sono girate
+  tutte le suite qui sopra — valgono per lui. La PR mostra verso `main` solo la fase (41 file). Via `(after #187)` dal titolo e
+  `Queued after #187.` dal corpo. La parte della risposta (a) era già nel codice, con i suoi test, e la nota ha il link alla risposta.
+  La PR diventa pronta dopo aver letto una volta la CI verde e i rilievi del master.
 - **Non verificato**:
   - **una cancellazione sul banco**: nessun giro `e2e:full` cancella una persona — i personaggi del banco servono agli altri giri —; le
     pagine con una persona cancellata sono provate nello smoke, con l'API finta, e dalle risposte vere nei test d'integrazione;
   - **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: passano dallo stesso `TrainingMail.Name` del promemoria,
     ma nominano sempre qualcuno che c'è (il nuovo trainer, chi pubblica), e nessun test le fa con uno pseudonimo;
-  - **la CI**: fino al merge qui sopra la PR era in conflitto con `main` e non l'aveva; ora gira, e la dirà la PR.
+  - **la CI dopo il secondo merge e il passo della coda** (qui sopra): verde su `4d91517`; sulla cima nuova la dirà la PR.
 
 [q189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
 [a189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516
+[m189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770
 
 Le altre due PR (A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.

@@ -12,19 +12,22 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12b** (modulo: la cancellazione dei dati di un trainee, «persona cancellata» nelle
-pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, in bozza **in coda dopo #187** (A12a,
-**in cima alla coda**, pronta dopo la sua CI: **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29 settembre, e
-**#182, A11b,** il 30 alle 00:03 UTC). La nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto
+pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, **in cima alla coda**: **#187, A12a,
+è unita** il 30 settembre alle 00:48 UTC, e `main` (4e21fbc) è entrato nel branch con un merge senza conflitti e **senza nessun file** (il
+suo albero è quello della cima di A12a, già entrata qui); la PR diventa pronta dopo aver letto una volta la CI verde e i rilievi del
+master, che li scrive sulla #189 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770)).
+**#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29 settembre, **#182, A11b,** il 30 alle 00:03 UTC. La
+nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto
 di un altro membro, affidato a un trainer che si cancella — è nata «Proposta» con [la domanda sulla
 #189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168), e **Carmine l'ha decisa** il 30 settembre, la (a)
 come raccomandato ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516)); la fase intera è scritta
 e provata, con la CI verde su 4d91517. Il branch è nato dalla cima della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla
 sessione di A12a), e **la coda l'ha raggiunto due volte attraverso A12a**, sempre con un merge: il passo di #182 dopo #181, con `main` a
 17941c0 (2fdc3a5, solo documenti), e il passo di #187 dopo #182, con `main` a a004c20 — #182 e #190 del maintainer, l'accesso dalla pagina
-d'errore e la versione 0.4.2 — e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`). **L'intervallo
-`m3/a12a-deleted-person-core...m3/a12b-training-erasure` mostra solo la fase.** **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4
-(#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151),
-A10b (#153), A10c (#178), la fase del nucleo A11a (#159), **A11b (#182)** e #152 del maintainer. **In coda sopra A12b**: **A12d** (il giro
+d'errore e la versione 0.4.2 — e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`). **La PR mostra verso `main`
+solo la fase** (41 file). **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c
+(#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo
+A11a (#159), A11b (#182), **la fase del nucleo A12a (#187)** e #152 del maintainer. **In coda sopra A12b**: **A12d** (#191, il giro
 completo e la chiusura di M3), la cui sessione lavora sul branch `m3/a12d-full-round`. Per la consegna di A11b serve il
 `config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa
 deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
@@ -146,6 +149,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Un test che cancella una persona** la semina e la cancella tutta sua, e a fine test toglie ciò che resta con il suo pseudonimo
     (`CleanErasedAsync`): la pulizia di una classe trova le righe per VID, non per pseudonimo. `TrainingTraineeTests` cancella 790052,
     790053 e 790054, che ogni test semina di nuovo.
+  - ⚠️ **`e2e/full/template.spec.ts:139`, del nucleo, può cadere una volta nel giro completo**: alla riga 185 legge senza aspettare
+    quante colonne ha la sezione nell'anteprima larga. Dopo il passo di #187 ha letto 1 invece di 2 (47/48); da solo 5/5, e il giro
+    dopo 48/48. Si rifà e si riporta ogni giro; il file è del nucleo, e il revisore lo sa (`08`, A12b).
   - **A12c resta condizionata** (i codici di PATS non si conoscono: Carmine sulla #187).
   - Il banco di A12b: 127.0.0.1:**5105**, `ivaohub_e2e_a12b`. VID: nessuno nuovo (A12b riusa le persone di A10a).
 - **La fase dopo**: **A12d** (il giro completo e la chiusura di M3), in coda dopo #189.
