@@ -10,9 +10,10 @@ import { staffBootstrap, stubTheApi } from './fixtures';
  * asked of the server; the page of a request reminds whoever approves to check the theory exam, with its site, and the request
  * is accepted, or refused with a reason the dialog asks for first; the trainer is chosen among the ones the server offers, and
  * its refusal lands under the field; a step somebody else overtook reads the page again; a reader the server lets do nothing
- * sees no button; a person whose data was erased is a deleted person, with no path to open (A12b). What the server decides is
- * proved by `TrainingStaffTests` and `TrainingTraineeTests` (integration); the round against the real server is
- * `full/training-staff.spec.ts`.
+ * sees no button; a person whose data was erased is a deleted person, with no path to open (A12b); and the history of the
+ * training's changes says every step with who took it and when, the hub's own as the hub's, and is not there for a trainer
+ * reading their own training (A13b). What the server decides is proved by `TrainingStaffTests` and `TrainingTraineeTests`
+ * (integration); the round against the real server is `full/training-staff.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -22,13 +23,16 @@ const words = JSON.parse(
   kinds: Record<string, string>;
   theoryExam: string;
   states: Record<string, string>;
+  time: { utc: string; local: string };
   staff: {
     title: string;
     open: string;
     pageTitle: string;
+    reserved: string;
     options: { state: Record<string, string> };
     queues: Record<string, string>;
-    sections: { trainer: string };
+    sections: { trainer: string; history: string };
+    history: Record<string, string>;
     theoryReminder: { title: string };
     decision: { reason: string; accepted: string };
     trainer: { none: string; assigned: string };
@@ -159,6 +163,7 @@ function training(state: string, overrides: Record<string, unknown> = {}) {
     staffComment: null,
     sheet: [],
     sessions: [],
+    history: [],
     reservedLeftOut: false,
     actions: {
       canDecide: false,
@@ -565,4 +570,151 @@ test('a person whose data was erased is a deleted person in the list and on the 
   ).toBeVisible();
   await expect(page.getByText(filled(words.staff.closing.byHub, { date: 'Sep 25, 2026' }))).toHaveCount(0);
   await expect(page.getByText('-3', { exact: true })).toHaveCount(0);
+});
+
+// ---- the history of a training's changes (A13b) ----------------------------------------------------------------------------
+
+/** A line of the history as the server sends it, read from the core's audit log: who, what, and what it names. */
+function step(
+  at: string,
+  by: { vid: number; name: string | null } | null,
+  event: string,
+  names: Record<string, unknown> = {},
+) {
+  return {
+    at,
+    by,
+    event,
+    trainer: null,
+    previousTrainer: null,
+    date: null,
+    previousDate: null,
+    reason: null,
+    ...names,
+  };
+}
+
+/** The history section of the page: its heading, and its lines in order. */
+const historyOf = (page: Page) =>
+  page.locator('section', {
+    has: page.getByRole('heading', { level: 2, name: words.staff.sections.history, exact: true }),
+  });
+
+test('the history says every step of the training, who took it and when, a deleted person as one and a reason apart (A13b)', async ({
+  page,
+}) => {
+  // Given first to a trainer whose data was erased since, then to another; a date chosen, moved, the session rescheduled, and the
+  // training closed by the coordinator with a reason.
+  const erased = { vid: -4, name: null };
+  await stubTheStaff(page, {
+    initial: training('Closed', {
+      decidedBy: coordinator,
+      decidedAt: '2026-09-21T09:00:00Z',
+      trainer,
+      assignedBy: coordinator,
+      assignedAt: '2026-09-22T08:00:00Z',
+      closedBy: coordinator,
+      closedAt: '2026-09-27T16:45:00Z',
+      closeReason: 'No answer from the trainee.',
+      history: [
+        step('2026-09-20T10:00:00Z', trainee, 'Requested'),
+        step('2026-09-21T09:00:00Z', coordinator, 'Accepted'),
+        step('2026-09-21T09:30:00Z', coordinator, 'Assigned', { trainer: erased }),
+        step('2026-09-22T08:00:00Z', coordinator, 'TrainerChanged', { previousTrainer: erased, trainer }),
+        step('2026-09-22T18:00:00Z', trainer, 'DatesChanged'),
+        step('2026-09-23T07:15:00Z', trainee, 'DateChosen', { date: '2026-09-25T13:00:00Z' }),
+        step('2026-09-24T12:00:00Z', trainer, 'DateMoved', {
+          previousDate: '2026-09-25T13:00:00Z',
+          date: '2026-09-26T18:30:00Z',
+        }),
+        step('2026-09-26T19:40:00Z', trainer, 'Rescheduled', { date: '2026-09-26T18:30:00Z' }),
+        step('2026-09-27T16:45:00Z', coordinator, 'Closed', { reason: 'No answer from the trainee.' }),
+      ],
+    }),
+  });
+
+  await page.goto('/staff/training/41');
+  const lines = historyOf(page).getByRole('listitem');
+  await expect(lines).toHaveCount(9);
+
+  // Each step in the page's words, with who took it; the trainers by name, the erased one as a deleted person; dates in UTC.
+  const said = [
+    filled(words.staff.history.requested!, { name: 'Test Trainee (790099)' }),
+    filled(words.staff.history.accepted!, { name: 'Test Coordinator (790097)' }),
+    filled(words.staff.history.assigned!, { name: 'Test Coordinator (790097)', trainer: deleted }),
+    filled(words.staff.history.trainerChanged!, {
+      name: 'Test Coordinator (790097)',
+      from: deleted,
+      to: 'Test Trainer (790098)',
+    }),
+    filled(words.staff.history.datesChanged!, { name: 'Test Trainer (790098)' }),
+    filled(words.staff.history.dateChosen!, {
+      name: 'Test Trainee (790099)',
+      date: filled(words.time.utc, { when: 'Sep 25, 2026, 13:00' }),
+    }),
+    filled(words.staff.history.dateMoved!, {
+      name: 'Test Trainer (790098)',
+      from: filled(words.time.utc, { when: 'Sep 25, 2026, 13:00' }),
+      to: filled(words.time.utc, { when: 'Sep 26, 2026, 18:30' }),
+    }),
+    filled(words.staff.history.rescheduled!, {
+      name: 'Test Trainer (790098)',
+      date: filled(words.time.utc, { when: 'Sep 26, 2026, 18:30' }),
+    }),
+    filled(words.staff.history.closed!, { name: 'Test Coordinator (790097)' }),
+  ];
+  for (const [index, sentence] of said.entries()) {
+    await expect(lines.nth(index).getByText(sentence, { exact: true })).toBeVisible();
+  }
+
+  // When, in UTC and where the division lives; the reason of the closing on a line of its own.
+  await expect(
+    lines.first().getByText(filled(words.time.utc, { when: 'Sep 20, 2026, 10:00' }), { exact: true }),
+  ).toBeVisible();
+  await expect(
+    lines
+      .first()
+      .getByText(filled(words.time.local, { when: 'Sep 20, 2026, 12:00', zone: 'Europe/Rome' }), {
+        exact: true,
+      }),
+  ).toBeVisible();
+  await expect(
+    lines.last().getByText(filled(words.staff.decision.reason, { reason: 'No answer from the trainee.' }), {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  // Never the pseudonym's number in the place of a person.
+  await expect(historyOf(page).getByText('-4')).toHaveCount(0);
+});
+
+test('the hub’s own steps are the hub’s, and a trainer reading their own training finds no history (A13b)', async ({
+  page,
+}) => {
+  // The trainee said the theory is not passed: the request, and the hub's refusal at the same moment.
+  await stubTheStaff(page, {
+    initial: training('Rejected', {
+      rejection: 'TheoryNotPassed',
+      decidedAt: '2026-09-20T10:00:00Z',
+      history: [
+        step('2026-09-20T10:00:00Z', trainee, 'Requested'),
+        step('2026-09-20T10:00:00Z', null, 'RejectedForTheory'),
+      ],
+    }),
+  });
+
+  await page.goto('/staff/training/41');
+  const lines = historyOf(page).getByRole('listitem');
+  await expect(lines).toHaveCount(2);
+  await expect(lines.last().getByText(words.staff.history.rejectedForTheory!, { exact: true })).toBeVisible();
+
+  // Their own, as the server answers a trainer who is its trainee: nothing reserved, and no history — no section at all.
+  await page.route('**/api/training/trainings/41', (route) =>
+    route.fulfill(
+      json(training('Assigned', { trainee: trainer, trainer: coordinator, reservedLeftOut: true })),
+    ),
+  );
+  await page.reload();
+  await expect(page.getByText(words.staff.reserved, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: words.staff.sections.history })).toHaveCount(0);
 });
