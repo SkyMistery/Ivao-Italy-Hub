@@ -6,13 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10e** (nucleo: la distanza fra due aeroporti), sul branch
-`m4/e10e-great-circle-core`, **PR #206** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua sessione,
-**E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E10d**, **E15a**); sono unite E1 (#200) ed E10b (#208).
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10d** (nucleo: la mail a chi assegna gli award), sul branch
+`m4/e10d-award-assigner-mail`, **PR #205** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua
+sessione, **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E15a**); sono unite E1 (#200), E10b (#208) ed
+E10e (#206).
 **Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
-presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo. Il passaggio dei tour al calcolo del nucleo lo fa
-una sessione di Carmine **dopo l'unione di E10e** (sua risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`,
-§5).
+presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli
+award, e non chiama niente. Il passaggio dei tour al calcolo del nucleo lo fa una sessione di Carmine **dopo l'unione di E10e** (sua
+risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, §5). **La fase del nucleo che rende `Awards.Assign`
+concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -101,8 +103,9 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
 senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
 controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
-divisione per nominativo (E10c); la mail a chi assegna (E10d); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in
-`Core/Airspace/`: sotto, «Che cosa ha lasciato E10e»); le prenotazioni ATC della rete (E15a);
+divisione per nominativo (E10c); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
+lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
+lasciato E10e»); le prenotazioni ATC della rete (E15a);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -115,6 +118,35 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-mail-a-chi-assegna-gli-award.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643)):
+  - **Il riepilogo a chi assegna gli award**: `AwardQueueMailJob` (`award-queue-mail`, `src/IvaoHub.Core/Awards/`) gira una volta al
+    giorno all'ora di **`division.json → awardDigestTime`** (`HH:mm` nell'ora della divisione, **07:00** se manca; IT non la scrive).
+    Legge la coda del nucleo e, **solo se** sono entrati segnali nuovi, manda a chi ha `Awards.Assign` (`IPermissionHolders`,
+    superadmin compresi) **una mail**: quanti segnali nuovi, quanti in attesa, una riga per motivo e award proposto con il numero,
+    **senza VID**, il link a `/staff/awards/queue`. Tipo del nucleo **`award.toAssign`**: nel profilo da solo, spegnibile.
+  - **Il segno** `cms_award_signals.notified_at` (migrazione del nucleo `AddAwardSignalNotifiedAt`; le righe già in coda sono segnate
+    come dette): un segnale si racconta una volta sola, nello stesso salvataggio delle righe della mail, e uno gestito o scartato prima
+    del giro non si racconta.
+  - **Per ogni modulo**: il job non guarda `source_module`, e il modulo dei tour non è cambiato.
+  - **I test**: `AwardQueueMailTests` (integrazione: un segnale dei tour e uno di prova; chi l'ha spento e chi non ha il permesso; una
+    volta sola; l'ora dell'host), `AwardQueueMailLinesTests` e `AwardDigestTimeTests` (unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14b** proietta i segnali e basta, senza chiamare niente; la mail parte all'ora di `awardDigestTime` dopo il segnale. Il suo
+    «fatta quando» sul banco è il segnale in coda: il banco non ha nessuno con `Awards.Assign` e una casella (il web master non ne
+    ha), e il job gira solo alla sua ora. La mail la prova `AwardQueueMailTests`.
+  - ⚠️ **Oggi l'MD non ha `Awards.Assign`**: è un permesso globale, e un grant non dà mai un permesso globale (nota §5). Coda e mail
+    sono di DIR, ADIR, WM, AWM e dei superadmin. **Carmine ha deciso** che diventi concedibile, **in una fase del nucleo sua** (la
+    prepara la sessione che coordina, non E10d): quando ci sarà, la mail arriverà all'MD da sola.
+  - ⚠️ **Gli snapshot dei contesti dei moduli** vedono `notified_at` solo al loro prossimo `migrations add` (lo scarto innocuo di
+    T4b). Una fase che fa nascere o migra un contesto dopo E10d se la trova nello snapshot come tabella esclusa: è giusto così.
+  - ⚠️ **In un test d'integrazione un job del nucleo gira da solo nell'host**: un test che lo fa girare lo mette prima in pausa
+    (`ISchedulerFactory`, come `TourTests`) e passa `useIvaoFixtures: true` (l'avviso di E10b qui sotto).
+  - ⚠️ **E10d migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione
+    sopra `main`.
 
 ### Che cosa ha lasciato E10e (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo, senza coda)
 
