@@ -432,6 +432,9 @@ public static class MapCrudExtensions
     /// <paramref name="readPermission"/> on, through the team of that FIR (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir):
     /// that FIR's and that department's, and with that permission only — another one held on the FIR opens nothing here. The
     /// department such a permission is held on is not one the reader belongs to, so it reaches nothing else.</para>
+    /// <para>The same way, it holds the rows of a department the reader holds <paramref name="readPermission"/> on from outside
+    /// it — a grant to a position of another department (M4, E2b, note 2026-10-01-il-permesso-non-il-dipartimento): that
+    /// department's, with that permission only, and nothing else of the department anywhere.</para>
     /// </summary>
     private static bool TryNarrowToDepartments<TEntity>(
         ICurrentUser currentUser,
@@ -449,26 +452,45 @@ public static class MapCrudExtensions
         }
 
         // What implies the list's reading is already in the set: the calculator writes an area's View next to every permission of
-        // the area it gives — Edit and the others — with the same FIR.
+        // the area it gives — Edit and the others — with the same FIR, and held from outside when that one is.
+        var reading = currentUser.Permissions
+            .Where(held => string.Equals(held.Name, readPermission, StringComparison.Ordinal))
+            .ToArray();
+
         var onTheirFir = typeof(IHasFir).IsAssignableFrom(typeof(TEntity))
-            ? currentUser.Permissions
-                .Where(held => held.Fir is not null && string.Equals(held.Name, readPermission, StringComparison.Ordinal))
+            ? reading
+                .Where(held => held.Fir is not null)
                 .Select(held => (held.Department, Fir: held.Fir!))
                 .Distinct()
                 .ToArray()
             : [];
 
-        if (currentUser.Departments.Count == 0 && onTheirFir.Length == 0)
+        // "Or of a department they read this list on from outside it." Held across the department, not on one row of it: one
+        // held on a single row opens that row to the handler and no list.
+        var fromOutside = reading
+            .Where(held => held is { FromOutside: true, Fir: null, ResourceScope: null })
+            .Select(held => held.Department)
+            .ToArray();
+
+        // On every department from outside, the whole of this list — and still nothing of any department anywhere else.
+        if (fromOutside.Any(department => department is null))
+        {
+            return true;
+        }
+
+        var departments = currentUser.Departments.Concat(fromOutside.OfType<Department>()).Distinct().ToList();
+
+        if (departments.Count == 0 && onTheirFir.Length == 0)
         {
             forbidden = Results.StatusCode(StatusCodes.Status403Forbidden);
             return false;
         }
 
-        var departments = currentUser.Departments.ToList();
         var entity = Expression.Parameter(typeof(TEntity), "entity");
 
         // One of theirs: the row's department in their list, or — for a row in the care of several
-        // departments (M2) — a bit in common between the row's mask and theirs.
+        // departments (M2) — a bit in common between the row's mask and theirs. Theirs here counts
+        // the departments they read this list on from outside (M4, E2b).
         var readable = InDepartments<TEntity>(entity, departments);
 
         // "Mine, or one of the ones this resource shares." The engine is not told what makes a row

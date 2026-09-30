@@ -23,12 +23,21 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// grant to the team of a FIR gives when the division keeps FIR teams to their FIR (M3, A11a, note
 /// 2026-09-27-i-capi-fir-sul-loro-fir). Null is the ordinary case, held on every row whatever its FIR.
 /// </param>
+/// <param name="FromOutside">
+/// True when the permission is held on its department <b>from outside it</b>: given by a grant to a position of another
+/// department, or to the team of a FIR, which has none (M4, E2b, note 2026-10-01-il-permesso-non-il-dipartimento). It is
+/// held there all the same — the single handler and the guard do not look at it —, but it gives the permission and not the
+/// department: its holder reaches that department's rows through the permission itself, in the lists that read with it, and
+/// is not inside the department for the purpose of seeing. False is the ordinary case: a position on its own department, a
+/// grant to a person (note 2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento), a super administrator.
+/// </param>
 public readonly record struct EffectivePermission(
     string Name,
     Department? Department,
     string Source,
     string? ResourceScope = null,
-    string? Fir = null);
+    string? Fir = null,
+    bool FromOutside = false);
 
 /// <summary>
 /// Answering "does this person hold that permission?" against a set of effective permissions.
@@ -176,12 +185,15 @@ public static class EffectivePermissionsCalculator
 
             foreach (var fir in firs)
             {
+                // From outside the department it is held on (M4, E2b): a grant to a position of another department, or to the
+                // team of a FIR, gives the permission and not the department. One held on a FIR says so already, by its FIR.
                 effective.Add(new EffectivePermission(
                     grant.Value,
                     grant.Department,
                     $"{GrantSourcePrefix}{grant.Id}",
                     grant.ResourceScope,
-                    fir));
+                    fir,
+                    FromOutside: fir is null && grant.GivesThePermissionNotTheDepartment));
             }
         }
 
@@ -203,10 +215,15 @@ public static class EffectivePermissionsCalculator
         // by a grant, and the cookie would then carry the identical claim twice. The role wins,
         // because "they hold it anyway" is the more useful thing to show an administrator who is
         // about to delete the grant.
+        //
+        // And between two grants, the one that also gives the department (M4, E2b): the same permission reached from outside
+        // the department and by a grant to the person is the person's, which lets them in — dropping it would take the
+        // department away from somebody a grant by name had let in.
         return [.. effective
             .OrderBy(permission => permission.Name, StringComparer.Ordinal)
             .ThenBy(permission => permission.Department)
             .ThenBy(permission => Rank(permission.Source))
+            .ThenBy(permission => permission.FromOutside)
             .ThenBy(permission => permission.Source, StringComparer.Ordinal)
             .ThenBy(permission => permission.ResourceScope, StringComparer.Ordinal)
             .ThenBy(permission => permission.Fir, StringComparer.Ordinal)

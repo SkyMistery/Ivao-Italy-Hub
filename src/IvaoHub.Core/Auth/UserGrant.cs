@@ -82,6 +82,17 @@ public sealed class UserGrant : IAuditable, IAffectsUserSession
             : [];
     }
 
+    /// <summary>
+    /// Whether the grant gives its permission and not the department it is held on (M4, E2b, note
+    /// 2026-10-01-il-permesso-non-il-dipartimento): a grant to a position on a department that is not the position's own —
+    /// on another one, or on every one (no <see cref="Department"/>) — or to the team of a FIR, whose positions have none.
+    /// Its holders reach that department's rows through the permission, and are not let into the department for what they
+    /// see. A grant to a person lets them in, as decided on 6 September; a grant to a position on its own department has
+    /// nothing to add, the position is there already.
+    /// </summary>
+    public bool GivesThePermissionNotTheDepartment =>
+        PositionFirTeam || (PositionDepartment is { } own && Department != own);
+
     public GrantKind Kind { get; set; }
 
     /// <summary>The permission name, for example <c>Links.Edit</c>.</summary>
