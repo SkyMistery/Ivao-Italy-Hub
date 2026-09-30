@@ -1,6 +1,6 @@
 # Chi assegna gli award, con un grant (E10f)
 
-**Data:** 1 ottobre 2026 — fase E10f di M4, PR del nucleo #212
+**Data:** 1 ottobre 2026 — fase E10f di M4, PR del nucleo #213
 **Stato:** **decisa** (Carmine, 30 settembre 2026, in chat alla sessione master, e pubblicata su sua istruzione [sulla #205][a1],
 risposta 2), alla domanda del [commento della #205][q1], §2: **`Awards.Assign` diventa un permesso globale che un grant può dare**,
 detto sul permesso, **solo per `Awards.Assign`** (mai `Permissions.Manage` né lo stato di superadmin); la divisione lo dà all'MD con un
@@ -85,7 +85,7 @@ il permesso, qualunque cosa glielo dia, e non cambia.
    lascia fuori quelle tenute su un FIR (A11a). Fra due voci uguali di due grant — la `Awards.View` portata da `Awards.Assign` e la stessa
    data da un grant «su tutti i dipartimenti» — il calcolatore tiene quella che porta dentro, così un permesso globale non toglie niente
    a un grant che c'era.
-   - **La stessa forma di E2b.** La sessione di E2b (decisa da Carmine sulla #209, [risposta 1][e2b]: un grant a una posizione su un
+   - **La stessa forma di E2b.** La sessione di E2b (PR #212, decisa da Carmine sulla #209, [risposta 1][e2b]: un grant a una posizione su un
      dipartimento che non è il suo dà il permesso e non il dipartimento) introduce lo stesso campo con lo stesso nome, per il suo caso.
      Le due PR corrono insieme: chi arriva seconda su `main` tiene una dichiarazione sola e somma i due punti in cui il calcolatore lo
      mette a vero (E2b: una posizione su un dipartimento non suo; E10f: un permesso globale, da qualunque grant). Il grant a un VID di

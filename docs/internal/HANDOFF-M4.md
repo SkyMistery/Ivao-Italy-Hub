@@ -6,15 +6,13 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10d** (nucleo: la mail a chi assegna gli award), sul branch
-`m4/e10d-award-assigner-mail`, **PR #205** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua
-sessione, **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E15a**); sono unite E1 (#200), E10b (#208) ed
-E10e (#206).
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E10f** (nucleo: `Awards.Assign` dato con un grant, deciso da Carmine sulla #205), sul
+branch `m4/e10f-grantable-award-assign`, **PR #213** verso `main`, del nucleo, senza coda. Corrono, ognuna nella sua sessione, **E2** (lo
+scheletro, #209), **E2b** (nucleo, #212) e le altre fasi del nucleo di M4b (**E10a**, #210; **E10c**, #204; **E15a**, #207); sono unite E1 (#200), E10b (#208), E10d
+(#205) ed E10e (#206), e il passaggio dei tour al calcolo del nucleo (#211).
 **Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
 presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli
-award, e non chiama niente. Il passaggio dei tour al calcolo del nucleo lo fa una sessione di Carmine **dopo l'unione di E10e** (sua
-risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, §5). **La fase del nucleo che rende `Awards.Assign`
-concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
+award, e non chiama niente: con E10f il riepilogo arriva anche al coordinatore e all'assistente dell'MD.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -118,6 +116,43 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10f (1 ottobre 2026, branch `m4/e10f-grantable-award-assign`, PR #213, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-01-chi-assegna-gli-award-con-un-grant.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643), risposta 2):
+  - **`Awards.Assign` si dà con un grant, ed è il solo globale così**: il campo `PermissionDescriptor.GrantableAlthoughGlobal`, detto sul
+    permesso come `DeniedToStakeholder`, vero solo per `Awards.Assign` in `CorePermissions`. Il catalogo risponde con
+    `IsClosedToGrants(name)`, la domanda che fanno il calcolatore, la schermata dei permessi e il seme; e non nasce se
+    `Permissions.Manage` si dichiarasse concedibile.
+  - **Solo intero**: il calcolatore lo tiene (su nessun dipartimento, come un ruolo) solo da un grant senza dipartimento, senza scope e
+    non al team di un FIR; un rifiuto intero lo toglie anche a chi lo ha per ruolo (DIR, ADIR, WM, AWM). La schermata rifiuta il dipartimento
+    (**`errors.grant.globalDepartment`**, chiave nuova), il team di un FIR (`firTeamArea`, com'era) e gli altri globali
+    (`globalPermission`, con un testo nuovo); il seme salta uno `scope`. **`ModuleGrants` rifiuta ancora ogni globale.**
+  - **Il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, vero per un grant di un permesso globale e per la
+    `Awards.View` che porta; `HubClaims.BuildIdentity` lo lascia fuori dai claim `dept`. Senza, un grant senza dipartimento mette chi lo
+    tiene **dentro tutti i dipartimenti** (l'ha trovato la sessione di E2b; misurato: `user.departments` del coordinatore dell'MD
+    passava da `["MD"]` a tutti e nove).
+  - **La divisione**: `config/division.json` dà `Awards.Assign` al **coordinatore e all'assistente dell'MD** (primo dei `positionGrants`,
+    senza `scope`); lo stesso in `config/division.example.json`, e `docs/FORKING.md` spiega l'eccezione.
+  - **Il browser**: `/api/me → registries.permissions[].grantableAlthoughGlobal`; la schermata dei permessi offre `Awards.Assign`.
+  - **I test**: `GrantableGlobalPermissionTests` (unità, 11), `AwardsAssignByGrantTests` (integrazione, 4, VID 761080–761083),
+    `web/src/features/admin/grants/grantable.test.ts` (2); **tolto il caso `Awards.Assign`** da
+    `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` (test di Carmine: il cambio l'ha deciso lui).
+- **Che cosa deve sapere la fase dopo**:
+  - **Il riepilogo di E10d arriva all'MD da solo**, dal primo avvio dopo il rilascio: il seme nuovo si applica una volta, poi si cambia
+    dalla schermata dei permessi. **E14b** non cambia niente.
+  - ⚠️ **Nei test d'integrazione l'MD ha `Awards.Assign`**, perché l'host legge `config/division.json`: un coordinatore o un assistente
+    dell'MD seminato da un test (i contatti seminano `IT-MC` con un indirizzo) è fra chi assegna. `AwardQueueMailTests` conta per le sue
+    persone e non se ne accorge; un test nuovo che conta i destinatari del riepilogo faccia lo stesso.
+  - ⚠️ **I livelli dell'MD** (coordinatore e assistente) sono una lettura del piano 0.77, non una risposta di Carmine: se vuole gli
+    advisor, è una parola in `division.json`.
+  - ⚠️ **`FromOutside` è lo stesso campo di E2b** (PR #212, decisa sulla #209: un grant a una posizione su un dipartimento non suo dà il permesso
+    e non il dipartimento), con la stessa forma: ultimo parametro di `EffectivePermission`, la stessa preferenza nella deduplicazione, la
+    stessa riga in `BuildIdentity`. Chi arriva seconda su `main` tiene una dichiarazione sola e somma le due condizioni del calcolatore.
+    E2b porta anche il segno nel cookie e la metà «liste»: fino ad allora **chi non è dentro nessun dipartimento** (il capo di un FIR a cui
+    si desse `Awards.Assign` con un grant a un VID) apre la coda ma ha la lista degli award a 403. L'MD non ne è toccato.
+  - Un **permesso globale di un modulo** resta chiuso ai grant, a meno che dica `GrantableAlthoughGlobal`: con una nota sua.
 
 ### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
 
