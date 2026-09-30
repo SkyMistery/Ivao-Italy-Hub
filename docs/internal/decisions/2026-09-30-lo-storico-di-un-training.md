@@ -1,7 +1,9 @@
 # Lo storico delle modifiche di un training (A13b)
 
-**Data:** 30 settembre 2026 — fase A13b di M3, in coda dopo A13a
-**Stato:** **proposta**: la domanda di §5 va a Carmine sulla PR di A13b, e il codice aspetta la sua risposta.
+**Data:** 30 settembre 2026 — fase A13b di M3, PR #197, in coda dopo #196 (A13a)
+**Stato:** **proposta**: la domanda di §5 è a Carmine [sulla #197][q197], e il codice aspetta la sua risposta.
+
+[q197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5909936323
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: è una funzione nuova del modulo, anche se non scrive niente di nuovo. Il meccanismo
 che tiene le modifiche c'è già (§2); nuova è la pagina che le legge.
 
