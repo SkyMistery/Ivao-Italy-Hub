@@ -395,18 +395,25 @@ your division:
 | `noShowCooldownDays` | 14 | the same, after a session the trainee did not come to |
 | `maxResponseDays` | none | days a trainee has to choose a date before the training closes by itself; none means never |
 | `responseReminderDays` | 3 | days without a choice before the trainer's queue shows the training as waiting |
-| `conflictPolicy` | `Warn` | a proposed date that meets the calendar: warned and confirmed, refused (`Block`), or not checked (`None`) |
+| `conflictPolicy` | `Warn` | a proposed date that conflicts with another calendar entry: warned and confirmed, refused (`Block`), or not checked (`None`) |
 | `conflictKinds` | `event` | the kinds of calendar entry a date is checked against |
 | `reminderLeadHours` | 24 | how long before a session its reminder leaves |
 | `hiddenPositions` | none | the positions of the division your department does not train on |
 | `theoryExamUrl` | none | where the theory exam is taken |
+| `theoryExamHint` | none | what to do on that site to book the exam, in every language of the division |
 
 **`theoryExamUrl`** is the one to set on day one. The network's API does not say whether a member has
 passed the theory exam of a rating, so the hub asks them: before a request is sent, the trainee answers
 whether they have. A "no" is recorded as a request the hub refused by itself, and nobody is written to;
 a "yes" goes to the department, and whoever approves the request is reminded to check it on the
-network. The address is the link beside that question and beside that reminder — empty, neither says
-where the exam is taken. It must be an absolute `http` or `https` address.
+network. The address is the link beside that question, beside the refusal the trainee reads and beside
+that reminder — empty, none of them says where the exam is taken. It must be an absolute `http` or
+`https` address.
+
+**`theoryExamHint`** is what the trainee reads under that link: what to do on the site to book the
+exam — which page, which button. It is yours to write, like the address, because the site is the
+network's and the hub names none of its pages; it is written in every language of the division or in
+none, and empty it adds nothing under the link.
 
 ### Ratings, positions and hours
 

@@ -346,13 +346,22 @@ public sealed class TrainingRequestTests(MariaDbFixture mariaDb) : IAsyncLifetim
             {
                 hiddenPositions = new[] { hidden },
                 minimumHours = new[] { new { kind = nameof(RatingKind.Atc), rating = atc.Number, hours = 1000 } },
+                theoryExamUrl = "https://trn-test.example.invalid/theory",
+                theoryExamHint = new { it = "trn-test Lì clicca «Prenota».", en = "trn-test Click «Book» there." },
             },
             token);
 
         try
         {
+            // The page has the site of the theory exam and what to do there, in every language of the division, for the page to
+            // read its own (A13).
+            var page = await trainee.GetFromJsonAsync<JsonElement>(Mine, token);
+            Assert.Equal("https://trn-test.example.invalid/theory", page.GetProperty("theoryExamUrl").GetString());
+            Assert.Equal("trn-test Click «Book» there.", page.GetProperty("theoryExamHint").GetProperty("en").GetString());
+            Assert.Equal("trn-test Lì clicca «Prenota».", page.GetProperty("theoryExamHint").GetProperty("it").GetString());
+
             // The page leaves the hidden position out, and shows the threshold the hours are below.
-            var path = Path(await trainee.GetFromJsonAsync<JsonElement>(Mine, token), RatingKind.Atc);
+            var path = Path(page, RatingKind.Atc);
             Assert.Equal(RequestRules.HoursTooFew, path.GetProperty("refusal").GetString());
             Assert.Equal(1000, path.GetProperty("minimumHours").GetInt32());
             Assert.Equal(TraineeHours, path.GetProperty("hours").GetDecimal());
@@ -394,6 +403,30 @@ public sealed class TrainingRequestTests(MariaDbFixture mariaDb) : IAsyncLifetim
         finally
         {
             // Put back as a fresh installation has them, for whoever reads them next.
+            await ForgetSettingsAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task TheWordsUnderTheSiteOfTheExamWrittenInNoLanguageAreNone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var trainee = await SignedInAsync(OtherVid, token);
+
+        // Blank in every language, as the API can save them — the form sends none —: the trainee's page has no words to draw (A13,
+        // review of #196), and the site stays.
+        await WriteSettingsAsync(
+            new { theoryExamUrl = "https://trn-test.example.invalid/theory", theoryExamHint = new { it = "  ", en = string.Empty } },
+            token);
+
+        try
+        {
+            var page = await trainee.GetFromJsonAsync<JsonElement>(Mine, token);
+            Assert.Equal("https://trn-test.example.invalid/theory", page.GetProperty("theoryExamUrl").GetString());
+            Assert.Empty(page.GetProperty("theoryExamHint").EnumerateObject());
+        }
+        finally
+        {
             await ForgetSettingsAsync(CancellationToken.None);
         }
     }

@@ -4899,6 +4899,11 @@ export interface components {
             asksTheory: boolean;
             /** @description Where the theory exam is taken, for the question; none until the division writes it. */
             theoryExamUrl: null | string;
+            /**
+             * @description What to do on that site to book the exam, in every language of the division, shown under its link (A13); empty until the
+             *     division writes it.
+             */
+            theoryExamHint: components["schemas"]["LocalizedOfstring"];
             /** @description One per ladder, in the order of the core's ladders. */
             paths: components["schemas"]["MyTrainingPathDto"][];
             /** @description Every training of theirs, requests refused and cancelled included. */

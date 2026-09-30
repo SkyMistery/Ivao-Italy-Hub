@@ -53,9 +53,12 @@ const saved: TrainingSettings = {
   reminderLeadHours: 24,
   hiddenPositions: ['XX_TWR'],
   theoryExamUrl: 'https://exam.example.org/theory',
+  theoryExamHint: { it: 'Clicca «Prenota» per richiedere l’esame.', en: 'Click «Book» to ask for the exam.' },
 };
 
 const known = ['event', 'meeting'];
+
+const locales = ['it', 'en'];
 
 test('the form has a field for every setting, and nothing else', () => {
   const fields = readFields(settingsSchema({ ratings: [], kinds: [], positions: [] })).map(
@@ -66,11 +69,28 @@ test('the form has a field for every setting, and nothing else', () => {
 });
 
 test('the settings come back from the form as they went in', () => {
-  expect(settingsFromFormValues(settingsToFormValues(saved, known))).toEqual(saved);
+  expect(settingsFromFormValues(settingsToFormValues(saved, known, locales))).toEqual(saved);
+});
+
+test('the words under the link to the exam are a translated field, with a box in every language of the division', () => {
+  const field = readFields(settingsSchema({ ratings: [], kinds: [], positions: [] })).find(
+    (node) => node.path === 'theoryExamHint',
+  );
+  expect(field?.kind).toBe('localized');
+
+  const values = settingsToFormValues(
+    { ...saved, theoryExamHint: { it: 'Solo in italiano' } },
+    known,
+    locales,
+  );
+  expect(values.theoryExamHint).toEqual({ it: 'Solo in italiano', en: '' });
+
+  // Written in one language only, it goes as it is: the server says which language is missing.
+  expect(settingsFromFormValues(values).theoryExamHint).toEqual({ it: 'Solo in italiano', en: '' });
 });
 
 test('the same rung of the two ladders is two different choices', () => {
-  const values = settingsToFormValues(saved, known);
+  const values = settingsToFormValues(saved, known, locales);
 
   expect(values.minimumHours.map((row) => row.rating)).toEqual([
     ratingChoice('Atc', 3),
@@ -79,19 +99,29 @@ test('the same rung of the two ladders is two different choices', () => {
   expect(new Set(values.minimumHours.map((row) => row.rating)).size).toBe(2);
 });
 
-test('nothing chosen is sent as nothing: no time limit, and no site of the exam', () => {
-  const values = settingsToFormValues({ ...saved, maxResponseDays: null, theoryExamUrl: null }, known);
+test('nothing chosen is sent as nothing: no time limit, no site of the exam, no words under its link', () => {
+  const values = settingsToFormValues(
+    { ...saved, maxResponseDays: null, theoryExamUrl: null, theoryExamHint: {} },
+    known,
+    locales,
+  );
 
   expect(values.maxResponseDays).toBeUndefined();
   expect(values.theoryExamUrl).toBe('');
+  expect(values.theoryExamHint).toEqual({ it: '', en: '' });
 
-  const back = settingsFromFormValues({ ...values, theoryExamUrl: '   ' });
+  const back = settingsFromFormValues({
+    ...values,
+    theoryExamUrl: '   ',
+    theoryExamHint: { it: ' ', en: '' },
+  });
   expect(back.maxResponseDays).toBeNull();
   expect(back.theoryExamUrl).toBeNull();
+  expect(back.theoryExamHint).toEqual({});
 });
 
 test('a kind the calendar no longer has is left out, because the form has no box to take it off with', () => {
-  expect(settingsToFormValues(saved, ['event']).conflictKinds).toEqual(['event']);
+  expect(settingsToFormValues(saved, ['event'], locales).conflictKinds).toEqual(['event']);
 });
 
 // ---- the evaluation sheet (A5) ------------------------------------------------------------------------------------------

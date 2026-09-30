@@ -1,4 +1,5 @@
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Sessions;
@@ -15,6 +16,10 @@ namespace IvaoHub.Modules.Training.Requests;
 /// <param name="Name">Their name as the network gives it, read only: it is changed on the network.</param>
 /// <param name="AsksTheory">Whether the request asks the trainee about the theory exam (<see cref="ITheoryExamSource"/>).</param>
 /// <param name="TheoryExamUrl">Where the theory exam is taken, for the question; none until the division writes it.</param>
+/// <param name="TheoryExamHint">
+/// What to do on that site to book the exam, in every language of the division, shown under its link (A13); empty until the
+/// division writes it.
+/// </param>
 /// <param name="Paths">One per ladder, in the order of the core's ladders.</param>
 /// <param name="Trainings">Every training of theirs, requests refused and cancelled included.</param>
 public sealed record MyTrainingDto(
@@ -22,6 +27,7 @@ public sealed record MyTrainingDto(
     string Name,
     bool AsksTheory,
     string? TheoryExamUrl,
+    Localized<string> TheoryExamHint,
     IReadOnlyList<MyTrainingPathDto> Paths,
     IReadOnlyList<TraineeTrainingDto> Trainings);
 

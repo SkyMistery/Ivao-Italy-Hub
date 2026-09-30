@@ -29,7 +29,7 @@ import {
   WhenText,
 } from './parts';
 import { nextOnTheLadder } from './report';
-import { MINE, REQUEST, isCancellable, stateMoment } from './trainee';
+import { MINE, REQUEST, isCancellable, isTheoryRefusal, stateMoment } from './trainee';
 
 /**
  * The page of one training of the trainee's (design M3 §4.1; A8, A9), `/training/mine/$id`, for its signed in trainee — the mails
@@ -66,6 +66,9 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
   const { bootstrap } = useRouteContext({ from: '/_member' });
+  // The site of the theory exam, beside a refusal for it (A13): the trainee's page of the trainings says where it is, and is asked
+  // only for such a refusal (review of #196).
+  const mine = useQuery({ ...mineQuery(), enabled: isTheoryRefusal(training) });
   // The dates still to come are the ones offered when the page was drawn; a choice reads the page again.
   const [drawnAt] = useState(() => Date.now());
   const slots = choosableSlots(training, drawnAt);
@@ -128,7 +131,7 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
         </section>
       ) : null}
 
-      <OutcomeText training={training} />
+      <OutcomeText training={training} exam={mine.data ?? null} />
 
       {/* What comes next, as the trainee is told it: a state that goes on has one, and so has one its session ended (A9); a
           training refused or closed has said it above. */}

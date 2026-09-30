@@ -1,9 +1,12 @@
 using FluentValidation;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Training.Reference;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Training.Settings;
 
@@ -65,6 +68,17 @@ public sealed record TrainingSettings
 
     /// <summary>Where the theory exam is taken: in the question a trainee answers and in the reminder of whoever approves (§12 n.12).</summary>
     public string? TheoryExamUrl { get; init; }
+
+    /// <summary>
+    /// What a trainee reads under the link to that site, in every language of the division: what to do there to book the exam
+    /// (A13). The site's own words are the division's to write, never the code's, like its address; empty until it writes them —
+    /// never null, as the core reads a translated field that is missing.
+    /// </summary>
+    public Localized<string> TheoryExamHint { get; init; } = Localized<string>.Empty;
+
+    /// <summary>Whether the department wrote the words under the link in some language: then it writes them in every one.</summary>
+    public static bool IsWritten(Localized<string>? hint) =>
+        hint is not null && hint.Values.Any(text => !string.IsNullOrWhiteSpace(text));
 }
 
 /// <summary>
@@ -77,6 +91,9 @@ public sealed class TrainingSettingsValidator : AbstractValidator<TrainingSettin
 {
     /// <summary>More hours than anybody asks for a rating: a threshold above it is a typing mistake.</summary>
     public const int MaxHours = 10_000;
+
+    /// <summary>The bound of the words under the link to the site of the exam, in each language: a sentence or two, not a page.</summary>
+    public const int MaxHintLength = 500;
 
     public TrainingSettingsValidator(RatingVocabulary vocabulary)
     {
@@ -126,22 +143,41 @@ public sealed class TrainingSettingsValidator : AbstractValidator<TrainingSettin
                 && (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
             .When(settings => settings.TheoryExamUrl is not null)
             .WithMessage("errors.url.absolute");
+
+        RuleFor(settings => settings.TheoryExamHint)
+            .Must(hint => hint is null || hint.Values.All(text => text is null || text.Length <= MaxHintLength))
+            .WithMessage("errors.text.tooLong");
+
+        // The words are read under the link to the site, and without a site there is no link to read them under (review of #196).
+        RuleFor(settings => settings.TheoryExamHint)
+            .Must((settings, hint) => !TrainingSettings.IsWritten(hint) || settings.TheoryExamUrl is not null)
+            .WithMessage("training:errors.theoryExamHintWithoutUrl");
     }
 }
 
 /// <summary>
-/// The rules of a save: those of the values, and the two that read what the hub knows — the kinds of the calendar, and the
-/// positions the division trains on. A position the core no longer has is refused on its row, so that the department sees it
-/// and takes it out, rather than finding it gone.
+/// The rules of a save: those of the values, and the three that read what the hub knows — the kinds of the calendar, the
+/// positions the division trains on, and its languages. A position the core no longer has is refused on its row, so that the
+/// department sees it and takes it out, rather than finding it gone; the words under the link to the site of the exam are
+/// written in every language of the division, or not at all (A13), as every translated field of the hub is.
 /// </summary>
 public sealed class TrainingSettingsSaveValidator : AbstractValidator<TrainingSettings>
 {
-    public TrainingSettingsSaveValidator(RatingVocabulary vocabulary, TrainingReference reference, HubDbContext hub)
+    public TrainingSettingsSaveValidator(
+        RatingVocabulary vocabulary,
+        TrainingReference reference,
+        HubDbContext hub,
+        IOptions<DivisionOptions> division)
     {
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(hub);
+        ArgumentNullException.ThrowIfNull(division);
 
         Include(new TrainingSettingsValidator(vocabulary));
+
+        RuleFor(settings => settings.TheoryExamHint)
+            .Required(division.Value)
+            .When(settings => TrainingSettings.IsWritten(settings.TheoryExamHint));
 
         RuleFor(settings => settings.ConflictKinds)
             .MustAsync(async (keys, cancellationToken) =>

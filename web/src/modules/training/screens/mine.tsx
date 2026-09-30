@@ -7,7 +7,13 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { EmptyState, Notice, RatingBadge } from '../../../shared/ui';
-import { mineQuery, shownState, type MyTrainingPathDto, type TraineeTrainingDto } from '../api';
+import {
+  mineQuery,
+  shownState,
+  type MyTrainingDto,
+  type MyTrainingPathDto,
+  type TraineeTrainingDto,
+} from '../api';
 
 import { choosableSlots } from './dates';
 import { AskOrRefusal, CancelRequest, OutcomeText, ReadyForExamLine, ReportBoxes, StateBadge } from './parts';
@@ -70,7 +76,7 @@ export function MinePage() {
         ) : (
           <ul className="flex flex-col divide-y">
             {trainings.map((training) => (
-              <TrainingItem key={training.id} training={training} />
+              <TrainingItem key={training.id} training={training} exam={mine.data} />
             ))}
           </ul>
         )}
@@ -115,11 +121,17 @@ function PathCard({
 }
 
 /**
- * A request or a training of theirs: its state, what it is, when, how it ended without a report, that its report is published and
- * what the trainer's boxes on it say, and its page — where the dates the trainer proposed are chosen, said here when there are
- * some, and where the report is read.
+ * A request or a training of theirs: its state, what it is, when, how it ended without a report — the site of the theory exam
+ * beside a refusal for it (A13) —, that its report is published and what the trainer's boxes on it say, and its page — where the
+ * dates the trainer proposed are chosen, said here when there are some, and where the report is read.
  */
-function TrainingItem({ training }: { training: TraineeTrainingDto }) {
+function TrainingItem({
+  training,
+  exam,
+}: {
+  training: TraineeTrainingDto;
+  exam: Pick<MyTrainingDto, 'theoryExamUrl' | 'theoryExamHint'>;
+}) {
   const { t } = useTranslation();
   const moment = useMoment();
   // The dates still to come are counted from when the list was drawn, and stay the same while it is read.
@@ -156,7 +168,7 @@ function TrainingItem({ training }: { training: TraineeTrainingDto }) {
           ].join(' · ')}
         </span>
 
-        <OutcomeText training={training} />
+        <OutcomeText training={training} exam={exam} />
 
         {toChoose === 0 ? null : (
           <p className="text-sm font-semibold">{t('training:mine.datesWaiting', { count: toChoose })}</p>
