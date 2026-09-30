@@ -16,7 +16,10 @@ namespace IvaoHub.Modules.Training.Blocks;
 /// <param name="Oldest">The oldest requests first, at most <see cref="ApprovalQueueProvider.MaxItems"/>, as the staff's list shows them.</param>
 public sealed record TrainingQueueDto(int Count, IReadOnlyList<StaffTrainingRowDto> Oldest);
 
-/// <summary>The requests to accept or refuse, and the trainings accepted with no trainer yet, that wait for the reader.</summary>
+/// <summary>
+/// The requests to accept or refuse, and the trainings to assign — accepted with no trainer yet, or open with a trainer whose data was
+/// erased (A12b) —, that wait for the reader.
+/// </summary>
 public sealed record ApprovalQueueDto(TrainingQueueDto ToApprove, TrainingQueueDto ToAssign);
 
 /// <summary>
@@ -24,7 +27,7 @@ public sealed record ApprovalQueueDto(TrainingQueueDto ToApprove, TrainingQueueD
 /// is looking — the views «to approve» and «to assign» of the staff's list (<see cref="StaffQueue"/>), the oldest first, each a link to
 /// the page of the training and the whole view a link to the list.
 /// <para>Always live and with no property, because it is the reader's. A training counts when the one handler says the reader may take
-/// the step on it — <c>Training.Approve</c> for a request, <c>Training.Assign</c> for an accepted training —, which is never on a
+/// the step on it — <c>Training.Approve</c> for a request, <c>Training.Assign</c> for a training to assign —, which is never on a
 /// training of their own (§3), and for a head of a FIR only on one of their FIR (A11b): the chief and the assistant chief of a FIR
 /// assign the trainings of their FIR and approve none, so they see the trainings to assign of their FIR and nothing to approve. A
 /// visitor gets <c>signedIn: false</c>.</para>

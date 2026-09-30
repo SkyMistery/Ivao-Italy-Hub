@@ -4,6 +4,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Blocks;
 using IvaoHub.Modules.Training.Data;
@@ -40,7 +41,8 @@ namespace IvaoHub.Modules.Training;
 /// the calendar, which whoever examines enters, changes and takes off it, on the rows assigned to them; A7b the trainer on the
 /// same rule, with no grant of their own: the training says who its trainer is, and they conduct it with the permission of their
 /// position; A11b the heads of a FIR, the chief and the assistant chief, who see and assign the trainings of their own FIR and no
-/// other, through the grants to the team of a FIR and the division's <c>firStaffScope</c>, with no line of the module naming a FIR.
+/// other, through the grants to the team of a FIR and the division's <c>firStaffScope</c>, with no line of the module naming a FIR;
+/// A12b its half of erasing a person's data: the register of the trainings stays, without the trainee and without their texts.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,
@@ -126,6 +128,9 @@ public sealed class TrainingModule : ModuleBase
 
         // The exams in the calendar (A10c).
         services.AddScoped<TrainingExams>();
+
+        // The training's half of erasing a person's data (A12b): the register stays without them, the rest about them goes.
+        services.AddScoped<IPersonalDataEraser, TrainingPersonalData>();
 
         // The sessions as the site shows them, and the four blocks (A10b).
         services.AddScoped<PublicSessions>();

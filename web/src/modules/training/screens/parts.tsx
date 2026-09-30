@@ -6,9 +6,8 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { ConfirmDialog, RatingBadge, useNotice } from '../../../shared/ui';
+import { ConfirmDialog, RatingBadge, personName, useNotice } from '../../../shared/ui';
 import {
-  memberLabel,
   useCancelTraining,
   type MyTrainingPathDto,
   type SessionOutcome,
@@ -426,7 +425,7 @@ export function SessionList({
             {session.recordedBy === undefined || session.recordedAt === undefined ? null : (
               <Subtle>
                 {t('training:sessions.recordedBy', {
-                  name: memberLabel(session.recordedBy),
+                  name: personName(session.recordedBy, t),
                   date: moment(session.recordedAt, { time: false }),
                 })}
               </Subtle>

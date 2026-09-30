@@ -7,6 +7,10 @@ namespace IvaoHub.Modules.Training.Staff;
 /// progress, to close — held and still without a report —, and the history. Left out, the list holds every training.
 /// <para>A session shows as held from the day after its own, in the division's time zone (§1.2): nothing writes it, so «to close»
 /// and «in progress» are told apart by the moment today began there, which the list asks for at every read.</para>
+/// <para>A training still open whose trainer's data was erased is one to assign again (A12b; Carmine's answer on #189, note
+/// <c>2026-09-29-il-training-affidato-a-chi-si-cancella</c>): it stays assigned to the deleted person — a negative number, the
+/// pseudonym the core writes —, whom nobody is, and waits in «to assign» rather than «in progress» or «to close» until somebody gives
+/// it to another trainer with «Assign», like any change of trainer.</para>
 /// </summary>
 public static class StaffQueue
 {
@@ -16,7 +20,7 @@ public static class StaffQueue
     /// <summary>Requests waiting to be accepted or refused.</summary>
     public const string ToApprove = "toApprove";
 
-    /// <summary>Accepted, with no trainer yet.</summary>
+    /// <summary>Accepted with no trainer yet, or still open with a trainer whose data was erased: to be given to somebody.</summary>
     public const string ToAssign = "toAssign";
 
     /// <summary>With a trainer, the session still to come: to be dated, or dated for today or later.</summary>
@@ -39,14 +43,19 @@ public static class StaffQueue
     {
         ArgumentNullException.ThrowIfNull(trainings);
 
+        // The trainer of an open training is somebody, or the pseudonym of somebody whose data was erased — negative, and nobody.
         return view switch
         {
             ToApprove => trainings.Where(training => training.State == TrainingState.Requested),
-            ToAssign => trainings.Where(training => training.State == TrainingState.Accepted),
-            InProgress => trainings.Where(training => training.State == TrainingState.Assigned
-                || (training.State == TrainingState.Scheduled
-                    && (training.ScheduledStartUtc == null || training.ScheduledStartUtc >= heldBefore))),
-            ToClose => trainings.Where(training => training.State == TrainingState.Scheduled && training.ScheduledStartUtc < heldBefore),
+            ToAssign => trainings.Where(training => training.State == TrainingState.Accepted
+                || ((training.State == TrainingState.Assigned || training.State == TrainingState.Scheduled) && training.TrainerVid < 0)),
+            InProgress => trainings.Where(training => (training.TrainerVid == null || training.TrainerVid > 0)
+                && (training.State == TrainingState.Assigned
+                    || (training.State == TrainingState.Scheduled
+                        && (training.ScheduledStartUtc == null || training.ScheduledStartUtc >= heldBefore)))),
+            ToClose => trainings.Where(training => (training.TrainerVid == null || training.TrainerVid > 0)
+                && training.State == TrainingState.Scheduled
+                && training.ScheduledStartUtc < heldBefore),
             History => trainings.Where(training => training.State == TrainingState.Completed
                 || training.State == TrainingState.Rejected
                 || training.State == TrainingState.Cancelled

@@ -222,7 +222,6 @@ public sealed class TrainingSessions(
     private async Task TellPublishedAsync(Training training, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([currentUser.Vid], cancellationToken);
-        var author = TrainingPeople.Label(currentUser.Vid, names);
         var until = RequestRules.WaitUntil([training], training.Kind, await SettingsAsync(cancellationToken));
 
         await mail.SendAsync(
@@ -238,7 +237,7 @@ public sealed class TrainingSessions(
                     training.ReadyForExam ? mail.Word(locale, "training:mail.training.readyForExam") : null,
                 ];
 
-                data["trainer"] = author;
+                mail.Name(data, locale, "trainer", currentUser.Vid, names);
                 data["ready"] = string.Concat(ready.OfType<string>().Select(sentence => $"\n\n{sentence}"));
                 data["after"] = training.CooldownWaived
                     ? mail.Word(locale, "training:mail.training.waitWaived")

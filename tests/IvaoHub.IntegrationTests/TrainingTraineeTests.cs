@@ -11,6 +11,7 @@ using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training;
 using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
+using IvaoHub.Modules.Training.Exams;
 using IvaoHub.Modules.Training.Reference;
 using IvaoHub.Modules.Training.Requests;
 using IvaoHub.Modules.Training.Sessions;
@@ -33,9 +34,10 @@ namespace IvaoHub.IntegrationTests;
 /// <para>⚠️ The staff of the training is seeded without an address (<c>CONTRIBUTING.md</c>, "Tests"): only the trainee, who holds no
 /// position, has a mailbox, for the mail of the ban. The items of the sheet this class writes carry <see cref="ItemStem"/> in their
 /// title.</para>
+/// <para>The erasure of a person's data in the training (A12b) is in <c>TrainingTraineeTests.Erasure.cs</c>, with the same people.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
-public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetime
+public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetime
 {
     // The range the training module owns in the shared database (CONTRIBUTING.md): 790001–790039 and 790045–790049 are A1's to
     // A9a's, 790040–790044 and 790050–790051 A3b's.
@@ -779,8 +781,9 @@ public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
     /// <summary>
     /// What this class leaves: the trainings of its people with their dates, sessions and sheets and their entries of the calendar, their
-    /// bans, its items of the sheet, the grants and positions of its people, their mails, the settings, the addresses and the super
-    /// administrator — so no later class counts them.
+    /// exams with theirs (A12b), their bans, its items of the sheet, the grants and positions of its people, their mails, the settings,
+    /// the addresses and the super administrator — so no later class counts them. What an erasure left under a pseudonym is each test's
+    /// to take back (<c>CleanErasedAsync</c>).
     /// </summary>
     private async Task CleanAsync(CancellationToken cancellationToken)
     {
@@ -789,10 +792,16 @@ public sealed class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyncLifetim
         var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
 
         var ids = await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).Select(row => row.Id).ToListAsync(cancellationToken);
-        var sources = ids.Select(Training.SourceIdOf).ToList();
+        var exams = training.Exams.IgnoreQueryFilters().Where(exam => Vids.Contains(exam.CandidateVid) || Vids.Contains(exam.ExaminerVid));
+        List<string> sources =
+        [
+            .. ids.Select(Training.SourceIdOf),
+            .. (await exams.Select(exam => exam.Id).ToListAsync(cancellationToken)).Select(Exam.SourceIdOf),
+        ];
         await hub.CalendarEntries.IgnoreQueryFilters()
             .Where(entry => entry.SourceModule == TrainingModule.ModuleKey && sources.Contains(entry.SourceId))
             .ExecuteDeleteAsync(cancellationToken);
+        await exams.ExecuteDeleteAsync(cancellationToken);
 
         // The dates, the sessions and the sheets go with their trainings (the keys cascade).
         await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).ExecuteDeleteAsync(cancellationToken);

@@ -25,15 +25,18 @@ import { BANS, banFormHref, traineeHref } from './path';
  * until when, why, who gave it —, the generated form of a new one, and «lift the ban». A ban is never changed nor deleted: to change
  * one, it is lifted and another is given. Whoever does training reads them; whoever holds `Training.Ban` gives and lifts them, never
  * on themselves — the server says so on every write.
+ *
+ * The member and who gave the ban are the list's `person` columns: «Deleted person» for somebody whose data was erased, whose ban
+ * stays in the history without them (A12b) — and with no path to open.
  */
 
 const columns: readonly ColumnSpec<BanRow>[] = [
-  col.text('traineeName'),
+  col.person('trainee'),
   col.badge('status', 'training:bans'),
   col.date('createdAt', { sortable: true }),
   col.date('endsAt', { sortable: true }),
   col.text('reason'),
-  col.text('givenByName'),
+  col.person('givenBy'),
 ];
 
 export function BansPage() {
@@ -72,15 +75,21 @@ export function BansPage() {
         timezone={bootstrap.division.timezone}
         search={search}
         onSearchChange={onSearchChange}
-        actions={(row) => (
-          <span className="flex flex-wrap gap-1">
-            <Button asChild variant="ghost" size="sm">
-              <RouterAnchor href={traineeHref(row.trainee.vid)}>{t('training:bans.toTrainee')}</RouterAnchor>
-            </Button>
-            {/* Offered where it may go through; the server asks again, and never lets anybody lift a ban of their own. */}
-            {bans && row.holds && row.trainee.vid !== reader ? <LiftBan ban={row} /> : null}
-          </span>
-        )}
+        actions={(row) => {
+          const path = traineeHref(row.trainee.vid);
+
+          return (
+            <span className="flex flex-wrap gap-1">
+              {path === null ? null : (
+                <Button asChild variant="ghost" size="sm">
+                  <RouterAnchor href={path}>{t('training:bans.toTrainee')}</RouterAnchor>
+                </Button>
+              )}
+              {/* Offered where it may go through; the server asks again, and never lets anybody lift a ban of their own. */}
+              {bans && row.holds && row.trainee.vid !== reader ? <LiftBan ban={row} /> : null}
+            </span>
+          );
+        }}
         {...(create === null ? {} : { emptyAction: create })}
       />
     </PageShell>
@@ -136,7 +145,7 @@ export function BanForm() {
     return <NotFound />;
   }
 
-  const back = vid === undefined ? BANS : traineeHref(vid);
+  const back = (vid === undefined ? null : traineeHref(vid)) ?? BANS;
   const title = t('training:bans.create');
 
   return (
@@ -161,7 +170,7 @@ export function BanForm() {
         onSubmit={async (values) => {
           const given = await give.mutateAsync(values);
           notice({ tone: 'success', title: t('training:bans.given') });
-          await navigate({ href: vid === undefined ? BANS : traineeHref(given.trainee.vid) });
+          await navigate({ href: (vid === undefined ? null : traineeHref(given.trainee.vid)) ?? BANS });
         }}
         submitLabel={t('training:bans.give')}
         secondaryAction={

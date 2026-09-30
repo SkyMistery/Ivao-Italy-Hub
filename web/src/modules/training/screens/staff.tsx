@@ -20,10 +20,17 @@ import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
-import { ConfirmDialog, NotFound, Notice, PageShell, RatingBadge, useNotice } from '../../../shared/ui';
+import {
+  ConfirmDialog,
+  NotFound,
+  Notice,
+  PageShell,
+  RatingBadge,
+  personName,
+  useNotice,
+} from '../../../shared/ui';
 import {
   dateConflicts,
-  memberLabel,
   shownState,
   staffTrainingQuery,
   staffTrainingsQuery,
@@ -114,15 +121,18 @@ import { formatHours, splitRefusal } from './trainee';
  * Everything the page may do is the server's answer (`actions`): a button is drawn when the handler said yes on the row, and a
  * refusal comes back field by field. Who may train a training, what a date meets and which items a report marks are the server's
  * answers too, never worked out here. What is reserved never reaches a trainer reading their own training (`reservedLeftOut`).
+ *
+ * A person is written the way every page of the hub writes one (`personName`), and a person whose data was erased is «Deleted
+ * person», with no link to a path (A12b): the list with its `person` column, the page with the core's helper.
  */
 
 const columns: readonly ColumnSpec<StaffTrainingRow>[] = [
   col.date('createdAt', { sortable: true }),
-  col.text('traineeName'),
+  col.person('trainee'),
   col.text('ratingShortName'),
   col.text('position'),
   col.badge('state', 'training:staff'),
-  col.text('trainerName'),
+  col.person('trainer'),
 ];
 
 export function StaffTrainingsPage() {
@@ -208,7 +218,7 @@ export function StaffTrainingPage() {
 function StaffTrainingScreen({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
-  const trainee = memberLabel(training.trainee);
+  const trainee = personName(training.trainee, t);
   const accepted = decisionOf(training).kind === 'accepted';
 
   return (
@@ -361,7 +371,7 @@ function TheoryReminder({ training }: { training: StaffTrainingDto }) {
     <Notice
       tone="warning"
       title={t('training:staff.theoryReminder.title', {
-        trainee: memberLabel(training.trainee),
+        trainee: personName(training.trainee, t),
         rating: training.ratingShortName ?? '',
       })}
       description={
@@ -383,14 +393,20 @@ function RequestDetails({ training }: { training: StaffTrainingDto }) {
   const { t, i18n } = useTranslation();
   const day = useDay();
   const place = [training.airportIcao, training.fir].filter((part) => part !== null).join(' · ');
+  const path = traineeHref(training.trainee.vid);
 
   const rows: [string, ReactNode][] = [
-    // The trainee's path beside the training (§4.2, A10a): every training of theirs, where they stand, their bans.
+    // The trainee's path beside the training (§4.2, A10a): every training of theirs, where they stand, their bans. A person whose
+    // data was erased has none, and is named without a link (A12b).
     [
       t('training:staff.request.trainee'),
-      <RouterAnchor key="trainee" href={traineeHref(training.trainee.vid)} className="underline">
-        {memberLabel(training.trainee)}
-      </RouterAnchor>,
+      path === null ? (
+        personName(training.trainee, t)
+      ) : (
+        <RouterAnchor key="trainee" href={path} className="underline">
+          {personName(training.trainee, t)}
+        </RouterAnchor>
+      ),
     ],
     [
       t('training:staff.request.rating'),
@@ -437,7 +453,7 @@ function DecisionDetails({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
   const day = useDay();
   const decision = decisionOf(training);
-  const name = (member: StaffTrainingDto['decidedBy']) => (member === null ? '' : memberLabel(member));
+  const name = (member: StaffTrainingDto['decidedBy']) => (member === null ? '' : personName(member, t));
 
   switch (decision.kind) {
     case 'none':
@@ -477,8 +493,8 @@ function TrainerDetails({ training }: { training: StaffTrainingDto }) {
         {training.trainer === null
           ? t('training:staff.trainer.none')
           : t('training:staff.trainer.assigned', {
-              name: memberLabel(training.trainer),
-              by: training.assignedBy === null ? '' : memberLabel(training.assignedBy),
+              name: personName(training.trainer, t),
+              by: training.assignedBy === null ? '' : personName(training.assignedBy, t),
               date: training.assignedAt === null ? '' : day(training.assignedAt),
             })}
       </p>
@@ -498,7 +514,7 @@ function AssignTrainer({ training }: { training: StaffTrainingDto }) {
   const refused = useRefused(training.id);
   const step = useStaffStep(training.id);
   const candidates = useQuery(trainerCandidatesQuery(training.id));
-  const choices = useMemo(() => trainerChoices(candidates.data ?? []), [candidates.data]);
+  const choices = useMemo(() => trainerChoices(candidates.data ?? [], t), [candidates.data, t]);
   const schema = useMemo(() => assignSchema(choices), [choices]);
 
   if (candidates.isPending) {
@@ -555,7 +571,7 @@ function AssignTrainer({ training }: { training: StaffTrainingDto }) {
         notice({
           tone: 'success',
           title: t('training:staff.assign.assigned', {
-            name: page.trainer === null ? '' : memberLabel(page.trainer),
+            name: page.trainer === null ? '' : personName(page.trainer, t),
           }),
         });
       }}
@@ -717,7 +733,7 @@ function ProposedDates({
             <WarningList warnings={slot.warnings} />
             <Subtle>
               {t('training:staff.dates.proposedBy', {
-                name: memberLabel(slot.proposedBy),
+                name: personName(slot.proposedBy, t),
                 date: day(slot.proposedAt),
               })}
             </Subtle>
@@ -1132,7 +1148,11 @@ function CloseTraining({ training }: { training: StaffTrainingDto }) {
   );
 }
 
-/** Who closed the training, when, and why: the staff with its reason, or the hub, because the trainee chose no date in time. */
+/**
+ * Who closed the training, when, and why: the staff with its reason, or the hub, because the trainee chose no date in time. Told by
+ * who closed it, which the staff's answer says (A8a): the reason of a closing of the staff goes with the data of a trainee who is
+ * erased, and the closing stays theirs (A12b).
+ */
 function ClosingDetails({ training }: { training: StaffTrainingDto }) {
   const { t } = useTranslation();
   const day = useDay();
@@ -1148,11 +1168,15 @@ function ClosingDetails({ training }: { training: StaffTrainingDto }) {
     <div className="flex flex-col gap-1 text-sm">
       <p>
         {t('training:staff.closing.byStaff', {
-          name: training.closedBy === null ? '' : memberLabel(training.closedBy),
+          name: training.closedBy === null ? '' : personName(training.closedBy, t),
           date: day(closing.at),
         })}
       </p>
-      <p className="whitespace-pre-line">{t('training:staff.decision.reason', { reason: closing.reason })}</p>
+      {closing.reason === null ? null : (
+        <p className="whitespace-pre-line">
+          {t('training:staff.decision.reason', { reason: closing.reason })}
+        </p>
+      )}
     </div>
   );
 }
@@ -1482,7 +1506,7 @@ function Published({ training }: { training: StaffTrainingDto }) {
     <div className="flex flex-col gap-4">
       {published === null ? null : (
         <p className="text-sm">
-          {t('training:report.publishedBy', { name: memberLabel(published.by), date: day(published.at) })}
+          {t('training:report.publishedBy', { name: personName(published.by, t), date: day(published.at) })}
         </p>
       )}
       <ReportView report={training} audience="staff" />

@@ -5,6 +5,7 @@ import type {
   StaffTrainingDto,
   TraineeSlotDto,
   TraineeTrainingDto,
+  TrainingMemberDto,
 } from '../api';
 import type { RatingKind } from '../schemas';
 
@@ -206,22 +207,30 @@ export function dateSteps(training: StaffTrainingDto): {
 
 /**
  * Who closed a training and why (§2.5, R.3): the staff, with the reason the trainee reads; or the hub, because the trainee chose
- * no date in the time the division gives — its closing has no reason. None for a training that is not closed.
+ * no date in the time the division gives — its closing has nobody and no reason. None for a training that is not closed.
+ *
+ * Nobody is the sure sign of the hub's closing (A8a): the staff's answer says who closed it (`closedBy`), and a closing of the staff
+ * keeps saying who once its reason went with the trainee's data (A12b) — `reason` is none then. The trainee's own answer does not say
+ * who, and is read by the reason, which the training of a trainee who is still there always keeps.
  */
 export type Closing =
-  | { readonly by: 'staff'; readonly at: string; readonly reason: string }
+  | { readonly by: 'staff'; readonly at: string; readonly reason: string | null }
   | { readonly by: 'hub'; readonly at: string };
 
 export function closingOf(training: {
   readonly state: TraineeTrainingDto['state'];
   readonly closedAt: string | null;
   readonly closeReason: string | null;
+  readonly closedBy?: TrainingMemberDto | null;
 }): Closing | null {
   if (training.state !== 'Closed' || training.closedAt === null) {
     return null;
   }
 
-  return training.closeReason === null
+  const byTheHub =
+    training.closedBy === undefined ? training.closeReason === null : training.closedBy === null;
+
+  return byTheHub
     ? { by: 'hub', at: training.closedAt }
     : { by: 'staff', at: training.closedAt, reason: training.closeReason };
 }

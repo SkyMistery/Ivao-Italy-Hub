@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { RatingBadge } from '../../../shared/ui';
-import { memberLabel, type StaffTrainingRowDto } from '../api';
+import { RatingBadge, personName } from '../../../shared/ui';
+import type { StaffTrainingRowDto } from '../api';
 import { staffTrainingHref } from '../screens/trainings';
 
 /**
@@ -34,7 +34,7 @@ export function QueueRow({ row, children }: { row: StaffTrainingRowDto; children
     <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
       <span className="flex min-w-0 flex-wrap items-center gap-2">
         <RouterAnchor href={staffTrainingHref(row.id)} className="font-semibold underline">
-          {memberLabel(row.trainee)}
+          {personName(row.trainee, t)}
         </RouterAnchor>
         {row.ratingShortName === null ? null : (
           <RatingBadge kind={row.kind} shortName={row.ratingShortName} />

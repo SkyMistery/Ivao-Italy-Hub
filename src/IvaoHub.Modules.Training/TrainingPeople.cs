@@ -37,7 +37,10 @@ public sealed class TrainingPeople(HubDbContext hub)
         return vid is { } known ? new TrainingMemberDto(known, names.GetValueOrDefault(known)) : null;
     }
 
-    /// <summary>A person in a mail: their name and VID, or the VID alone when the hub has no name.</summary>
+    /// <summary>
+    /// A person in a mail: their name and VID, or the VID alone when the hub has no name. Never for somebody whose data was erased,
+    /// whom a mail calls by the core's word instead (<see cref="TrainingMail.Name"/>).
+    /// </summary>
     public static string Label(int vid, IReadOnlyDictionary<int, string> names)
     {
         ArgumentNullException.ThrowIfNull(names);
@@ -46,4 +49,11 @@ public sealed class TrainingPeople(HubDbContext hub)
             ? string.Create(CultureInfo.InvariantCulture, $"{name} ({vid})")
             : vid.ToString(CultureInfo.InvariantCulture);
     }
+
+    /// <summary>
+    /// Whether a VID is the pseudonym of somebody whose data was erased (A12b): a negative number, new for every erasure and tied to
+    /// nobody (note <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c>, answer 1) — the rule of the core's <c>isErased</c> of
+    /// the pages. Nobody is written to under it, and a mail names it as a deleted person.
+    /// </summary>
+    public static bool IsErased(int vid) => vid < 0;
 }

@@ -1,6 +1,9 @@
+import type { TFunction } from 'i18next';
+
 import { ApiError } from '../../../shared/api/problem';
 import type { ChoiceOption } from '../../../shared/forms';
-import { memberLabel, type StaffTrainingDto, type TrainerCandidateDto, type TrainingMemberDto } from '../api';
+import { personName } from '../../../shared/ui';
+import type { StaffTrainingDto, TrainerCandidateDto, TrainingMemberDto } from '../api';
 import type { StaffTrainingsSearch } from '../schemas';
 
 /**
@@ -35,13 +38,13 @@ export function listOrder(search: StaffTrainingsSearch): StaffTrainingsSearch {
  * The trainers the form offers: every candidate but the trainer already assigned, each with their name and VID, their rating
  * on the ladder and their positions of the staff of the training, which say who they are.
  */
-export function trainerChoices(candidates: readonly TrainerCandidateDto[]): ChoiceOption[] {
+export function trainerChoices(candidates: readonly TrainerCandidateDto[], t: TFunction): ChoiceOption[] {
   return candidates
     .filter((candidate) => !candidate.isCurrent)
     .map((candidate) => ({
       value: String(candidate.vid),
       label: [
-        memberLabel({ vid: candidate.vid, name: candidate.name }),
+        personName({ vid: candidate.vid, name: candidate.name }, t),
         candidate.ratingShortName,
         candidate.positions.join(', '),
       ]

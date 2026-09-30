@@ -234,11 +234,11 @@
     "open": "Open",
     "fields": {
       "createdAt": "Requested on",
-      "traineeName": "Trainee",
+      "trainee": "Trainee",
       "ratingShortName": "Rating",
       "position": "Position",
       "state": "State",
-      "trainerName": "Trainer"
+      "trainer": "Trainer"
     },
     "options": {
       "state": {
@@ -510,12 +510,12 @@
     "liftConfirm": "Yes, lift the ban",
     "lifted": "Ban lifted.",
     "fields": {
-      "traineeName": "Member",
+      "trainee": "Member",
       "status": "Status",
       "createdAt": "Since",
       "endsAt": "Until",
       "reason": "Reason",
-      "givenByName": "Given by",
+      "givenBy": "Given by",
       "vid": "VID of the member"
     },
     "hints": {
@@ -569,6 +569,14 @@
       "title": "Take the exam off the calendar?",
       "description": "The exam leaves the calendar of the hub. The exam itself stays as it is on the network."
     }
+  },
+  "erasure": {
+    "closed": "Trainings that are over, kept in the register without the trainee and without their texts",
+    "open": "Trainings still open: asked for, accepted, assigned or dated",
+    "exams": "Exams in the calendar where they are the candidate",
+    "bansInForce": "Training bans still in force, kept with the VID until they are over",
+    "bansOver": "Training bans over or lifted",
+    "assigned": "Open trainings of other members assigned to them: they stay with a deleted person as their trainer, among the trainings to assign"
   },
   "sheets": {
     "title": "Evaluation sheet",

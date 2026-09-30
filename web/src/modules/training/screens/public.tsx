@@ -7,9 +7,8 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { describeProblem } from '../../../shared/forms';
-import { EmptyState, NotFound, Notice, RatingBadge } from '../../../shared/ui';
+import { EmptyState, NotFound, Notice, RatingBadge, personName } from '../../../shared/ui';
 import {
-  memberLabel,
   publicSessionQuery,
   upcomingExamsQuery,
   upcomingSessionsQuery,
@@ -26,7 +25,8 @@ import { MINE, REQUEST } from './trainee';
  * the exams still to come (A10c) and «Request training», and `/training/sessions/$id`, the page of one session, where every entry of
  * the calendar of a training points; the entry of an exam points at `/training`. What arrives is what the reader may see, decided by
  * the server: a visitor reads the position, the rating, the date and the time; a signed in reader reads who too — the trainee and the
- * trainer by name and VID, the candidate and the examiner by VID alone. The page decides nothing about it.
+ * trainer by name and VID, the candidate and the examiner by VID alone, and «Deleted person» for somebody whose data was erased
+ * (A12b). The page decides nothing about it.
  */
 
 export function TrainingPublicPage() {
@@ -149,8 +149,8 @@ function SessionLine({ session, timezone }: { session: PublicSessionDto; timezon
         {session.trainee === null && session.trainer === null ? null : (
           <Subtle>
             {t('training:public.people', {
-              trainee: session.trainee === null ? t('training:unknown') : memberLabel(session.trainee),
-              trainer: session.trainer === null ? t('training:unknown') : memberLabel(session.trainer),
+              trainee: session.trainee === null ? t('training:unknown') : personName(session.trainee, t),
+              trainer: session.trainer === null ? t('training:unknown') : personName(session.trainer, t),
             })}
           </Subtle>
         )}
@@ -177,8 +177,14 @@ function ExamLine({ exam, timezone }: { exam: PublicExamDto; timezone: string })
         {exam.candidateVid === null && exam.examinerVid === null ? null : (
           <Subtle>
             {t('training:public.examPeople', {
-              candidate: exam.candidateVid === null ? t('training:unknown') : String(exam.candidateVid),
-              examiner: exam.examinerVid === null ? t('training:unknown') : String(exam.examinerVid),
+              candidate:
+                exam.candidateVid === null
+                  ? t('training:unknown')
+                  : personName({ vid: exam.candidateVid, name: null }, t),
+              examiner:
+                exam.examinerVid === null
+                  ? t('training:unknown')
+                  : personName({ vid: exam.examinerVid, name: null }, t),
             })}
           </Subtle>
         )}
@@ -271,13 +277,13 @@ function SessionScreen({
         {session.trainee === null ? null : (
           <>
             <dt className="text-muted-foreground">{t('training:public.session.trainee')}</dt>
-            <dd>{memberLabel(session.trainee)}</dd>
+            <dd>{personName(session.trainee, t)}</dd>
           </>
         )}
         {session.trainer === null ? null : (
           <>
             <dt className="text-muted-foreground">{t('training:public.session.trainer')}</dt>
-            <dd>{memberLabel(session.trainer)}</dd>
+            <dd>{personName(session.trainer, t)}</dd>
           </>
         )}
       </dl>

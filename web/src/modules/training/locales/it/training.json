@@ -233,11 +233,11 @@
     "open": "Apri",
     "fields": {
       "createdAt": "Richiesta il",
-      "traineeName": "Trainee",
+      "trainee": "Trainee",
       "ratingShortName": "Rating",
       "position": "Postazione",
       "state": "Stato",
-      "trainerName": "Trainer"
+      "trainer": "Trainer"
     },
     "options": {
       "state": {
@@ -509,12 +509,12 @@
     "liftConfirm": "Sì, togli il ban",
     "lifted": "Ban tolto.",
     "fields": {
-      "traineeName": "Membro",
+      "trainee": "Membro",
       "status": "Stato",
       "createdAt": "Dal",
       "endsAt": "Fino al",
       "reason": "Motivo",
-      "givenByName": "Dato da",
+      "givenBy": "Dato da",
       "vid": "VID del membro"
     },
     "hints": {
@@ -568,6 +568,14 @@
       "title": "Togliere l'esame dal calendario?",
       "description": "L'esame esce dal calendario dell'hub. L'esame vero resta com'è sulla rete."
     }
+  },
+  "erasure": {
+    "closed": "Training finiti, tenuti nel registro senza il trainee e senza i suoi testi",
+    "open": "Training ancora aperti: chiesti, accettati, assegnati o datati",
+    "exams": "Esami nel calendario in cui questa persona è candidata",
+    "bansInForce": "Ban dal training ancora in vigore, tenuti con il VID finché non finiscono",
+    "bansOver": "Ban dal training finiti o tolti",
+    "assigned": "Training aperti di altri membri affidati a questa persona come trainer: restano affidati a una persona cancellata, fra quelli da assegnare"
   },
   "sheets": {
     "title": "Scheda di valutazione",

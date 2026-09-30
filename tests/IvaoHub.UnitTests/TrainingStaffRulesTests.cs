@@ -137,6 +137,37 @@ public sealed class TrainingStaffRulesTests
             new() { Kind = RatingKind.Atc, Rating = 12, TraineeVid = TraineeVid, State = state, ScheduledStartUtc = start };
     }
 
+    /// <summary>
+    /// Carmine's answer on #189 (A12b): a training still open whose trainer's data was erased — a negative VID, the pseudonym — is one to
+    /// assign again, dated or not, held or not, and in no other view; one of a trainer who is still there stays in progress, and one
+    /// over stays in the history whoever its trainer was.
+    /// </summary>
+    [Fact]
+    public void AnOpenTrainingWhoseTrainerWasErasedIsToAssignAndInNoOtherView()
+    {
+        var heldBefore = new DateTime(2026, 9, 26, 0, 0, 0, DateTimeKind.Utc);
+        Training[] all =
+        [
+            With(TrainingState.Assigned, trainer: -3),
+            With(TrainingState.Scheduled, trainer: -3, start: heldBefore.AddHours(3)),
+            With(TrainingState.Scheduled, trainer: -3, start: heldBefore.AddHours(-3)),
+            With(TrainingState.Assigned, trainer: TraineeVid + 1),
+            With(TrainingState.Completed, trainer: -3),
+        ];
+
+        Assert.Equal([0, 1, 2], View(StaffQueue.ToAssign));
+        Assert.Equal([3], View(StaffQueue.InProgress));
+        Assert.Empty(View(StaffQueue.ToClose));
+        Assert.Equal([4], View(StaffQueue.History));
+        Assert.Equal(all.Length, StaffQueue.All.Sum(view => View(view).Length));
+
+        int[] View(string view) =>
+            [.. StaffQueue.Narrow(all.AsQueryable(), view, heldBefore)!.Select(training => Array.IndexOf(all, training))];
+
+        static Training With(TrainingState state, int trainer, DateTime? start = null) =>
+            new() { Kind = RatingKind.Atc, Rating = 12, TraineeVid = TraineeVid, TrainerVid = trainer, State = state, ScheduledStartUtc = start };
+    }
+
     private static Training Accepted(RatingKind kind, int rating) =>
         new() { Kind = kind, Rating = rating, TraineeVid = TraineeVid, State = TrainingState.Accepted };
 

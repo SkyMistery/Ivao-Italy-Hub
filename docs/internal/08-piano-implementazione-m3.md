@@ -3700,4 +3700,184 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
 [a187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
 [r187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982
 
-Le altre tre PR (A12b, A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.
+**Com'è andata (A12b)** (29–30 settembre 2026, branch `m3/a12b-training-erasure`, PR #189 verso `main`, in cima alla coda da quando #187
+è unita) —
+**l'eraser del modulo, «persona cancellata» nelle pagine e la conservazione; una domanda a Carmine, decisa il 30 settembre, e la sua
+parte**:
+
+- **Il branch**: preparato dalla sessione di A12a con `--no-track` dalla cima della coda, `m3/a12a-deleted-person-core` a ba557bb (con
+  `main` a 2af5133). L'intervallo della fase è `m3/a12a-deleted-person-core...m3/a12b-training-erasure`. Nasce in conflitto con `main`
+  (l'handoff, dopo #149, #150, #151 e #153, unita due minuti prima che la PR si aprisse) e senza CI, come tutta la coda: `main` entra al
+  suo passo della coda.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(b)** — il modulo si aggancia al meccanismo del nucleo
+  (`IPersonalDataEraser`, `ErasureRequest.Keep`, la convenzione delle colonne, «persona cancellata» di A12a) —, **tranne una parte (c)**:
+  un training aperto di un altro membro, affidato a un trainer che si cancella, che la regola del modulo non dice (A7b n.4, A12a
+  «Trovato» n.4). Prima la nota **«Proposta»** `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` e la PR in bozza con
+  [la domanda][q189] (raccomandata la (a): resta affidato alla persona cancellata, l'anteprima lo conta, torna nella vista «da
+  assegnare», le mail dicono «Persona cancellata»); quella parte ha aspettato la risposta, il resto no. Dall'eraser il training non si
+  rimette «Accettato» né si chiude: in modalità cancellazione l'interceptor svuoterebbe la storia d'audit di un training di un altro
+  membro (nota §2). **La risposta** (30 settembre, Carmine in chat alla sessione master, pubblicata su sua istruzione: [il commento sulla
+  #189][a189]): **la (a)**, come raccomandato; la nota ora è **decisa** e dice com'è scritta (§6).
+- **Fatto** (commit `84c9df5`, `0310805`, `821b080`, `beb2901`, `3259336`, `4874823`, `49d81f1`):
+  - **`TrainingPersonalData : IPersonalDataEraser`** (`src/IvaoHub.Modules.Training/TrainingPersonalData.cs`, registrato in
+    `TrainingModule`), con la regola della nota `la-cancellazione-dei-dati-di-un-trainee`: i training **finiti** del trainee restano
+    nel registro e perdono i testi — i due della richiesta, il motivo di un rifiuto e di una chiusura, i due commenti del report, gli
+    appunti delle sessioni, i commenti e le note della scheda —; quelli **aperti** si cancellano **dal change tracker** (A8a n.11: la
+    voce del calendario va nello stesso salvataggio), con date, sessioni e scheda; gli **esami** in cui è candidato si cancellano, con la
+    loro voce; un **ban in vigore** resta con `ErasureRequest.Keep`, uno finito o tolto perde il motivo. Anteprima ed esecuzione con cinque
+    righe `training:erasure.*`; idempotente: una seconda cancellazione trova solo il ban tenuto, e lo anonimizza quando è finito;
+  - **le mail nominano le persone anche per VID** (`TrainingMail.Name`: `traineeVid`, `trainerVid` accanto al nome), così la
+    cancellazione del nucleo le trova (qui sotto, «Trovato» n.1);
+  - **nessun percorso per uno pseudonimo**: la rotta è `GET /api/training/trainees/{vid:int:min(1)}` (404 sotto 1), `traineeHref` non dà
+    un indirizzo per uno pseudonimo, la pagina del percorso non chiede un VID negativo;
+  - **un ban dato da una persona cancellata la nomina** (`givenBy` con lo pseudonimo) invece di nessuno: solo lo `0` dell'installazione
+    è nessuno (`TrainingBans.Row`);
+  - **«Persona cancellata» nelle pagine** (i quattro punti della revisione di #151 compresi): `personName` del nucleo nei 28 punti di
+    `memberLabel`, che va via con il suo test Vitest; `col.person` nelle liste dei training (`trainee`, `trainer`), dei ban (`trainee`,
+    `givenBy`) e degli esami (`candidate`, `examiner`, senza nome: resta solo il VID), con le chiavi dei campi rinominate; la pagina di un
+    training nomina uno pseudonimo senza link, la lista dei ban non offre il suo percorso; `/training` e la pagina di una sessione dicono
+    «Persona cancellata» per un trainee, un trainer o un esaminatore cancellato;
+  - **la chiusura dello staff si riconosce da chi l'ha chiusa** (A8a n.4: `closed_by` vuoto è il segno sicuro): `closingOf` legge
+    `closedBy` quando la risposta lo porta (quella dello staff), e la pagina dello staff dice ancora chi ha chiuso un training il cui
+    motivo è andato con i dati del trainee; la risposta del trainee, che non lo porta, si legge ancora dal motivo;
+  - **la conservazione, verificata**: il registro resta (nessun `DELETE` di un training, A7b); le disponibilità vanno via a sessione
+    decisa — nel codice di A8 (`TrainingDates.Date`, `Close`, `StaffTrainings.AssignAsync`) e nei test di A8a (la scelta del trainee, la
+    data a mano, la chiusura della notte, un altro trainer); il test nuovo prova l'ultima strada, la chiusura dello staff di un training
+    che aspetta la data (`TrainingDatesTests.TheStaffsClosingOfATrainingThatWaitsForItsDateTakesTheDatesProposed`);
+  - **la parte della risposta** (commit `b28e37f`, `1cd03bb`, `9d0c4df`): un training aperto di un altro membro affidato a un trainer che
+    si cancella resta affidato alla persona cancellata, e l'eraser non lo tocca ma lo conta (la sesta riga, `training:erasure.assigned`);
+    la vista **«da assegnare»** (`StaffQueue.ToAssign`), e con lei il blocco `training.approvalQueue`, prende un training `Assigned` o
+    `Scheduled` con `trainer_vid < 0`, che esce da «in corso» e «da chiudere», finché «Assegna» non lo dà a un altro trainer con la sua
+    data; **ogni mail del modulo che nomina qualcuno** passa da un metodo solo (`TrainingMail.Name`, nella lingua di chi la riceve), che
+    per uno pseudonimo scrive la parola del nucleo `people.deleted`, e a un trainer cancellato non si scrive niente
+    (`TrainingPeople.IsErased`). Un esame affidato a un esaminatore cancellato resta com'è;
+  - **i test**: `TrainingTraineeTests.Erasure.cs` (parziale della classe di A10a, con le sue persone, come `PirepTests.Erasure` nei
+    tour; la pulizia della classe prende anche gli esami): la cancellazione di un trainee — il registro contato uguale prima e dopo,
+    nessun testo con il segno del test nelle righe né nell'audit, i training aperti e l'esame del candidato spariti con le loro voci del
+    calendario (quello di un altro resta), il ban in vigore tenuto e poi anonimizzato da una seconda cancellazione a ban finito, la mail
+    della data al trainer sparita, le pagine dello staff con lo pseudonimo, nessun percorso per lui —, quella di un membro dello staff —
+    il suo lavoro e le sue parole restano con lo pseudonimo, il ban dato compreso — e quella di un trainer con due training aperti di
+    altri — contati, fra quelli da assegnare nella lista e nel blocco, il promemoria con «Persona cancellata» nella lingua del trainee,
+    «Assegna» che ne riprende uno con la sua data, l'esame com'era —; un test di unità delle viste (`TrainingStaffRulesTests`: un
+    training aperto di un trainer cancellato è da assegnare e in nessun'altra vista); Vitest (`path.test.ts`, `dates.test.ts`); smoke
+    (`training-staff`, `training-trainee`, `training-exams`: quattro casi nuovi).
+- **Scostamenti dal piano e dal design**:
+  1. **anche le mail** (qui sotto, «Trovato» n.1): `08` non le nomina, ma senza il VID accanto al nome la cancellazione lasciava il nome
+     di una persona cancellata nelle mail dell'altra;
+  2. **il motivo di una chiusura dello staff va via** con gli altri testi: la nota del trainee elenca i testi prima che A8 aggiungesse
+     `close_reason`, ma dice «tutti i testi liberi che parlano di lui»; A8a n.4 l'aveva previsto, e la pagina ora distingue da `closedBy`;
+  3. **restano le ore e il rating del trainee al momento della richiesta** (`trainee_hours_at_request`, `trainee_rating_at_request`): la
+     regola tiene «stati, date, rating, voti e spunte», e non sono testi; con lo pseudonimo non nominano nessuno. Detto al revisore;
+  4. **uno pseudonimo non ha un percorso** (404), non una pagina «Persona cancellata»: il design dice «senza link», e la revisione di
+     #151 chiedeva che la rotta non prendesse i negativi.
+- **Trovato** (anche in `HANDOFF-M3.md`):
+  1. **Le mail del training nominavano le persone solo a parole.** Il nucleo trova le notifiche *su* una persona dal suo VID in una
+     proprietà che si chiama come una persona (`vid`, `*Vid`, `*By`: `AuditRedaction.Mentions`), come portano le mail dei fili
+     (`ContactThreads`) e delle segnalazioni dei tour; quelle del training scrivevano «Nome (VID)» in `trainee`/`trainer`, e dopo la
+     cancellazione di uno dei due la mail all'altro restava con il suo nome. Caso (b): il meccanismo c'è, il modulo lo usa. Il test lo
+     prova, e sul codice vecchio cade (la mail resta: 1 invece di 0).
+  2. **`TrainingBans.Row` diceva «nessuno»** per chi aveva dato un ban con un VID non positivo (`CreatedBy > 0`): una persona cancellata
+     spariva dal ban invece di esserci come tale.
+  3. **La domanda** (nota nuova, [sulla #189][q189], decisa [la (a)][a189]): un training aperto affidato a un trainer che si cancella
+     restava affidato allo pseudonimo, lo conduceva solo chi tiene `Training.Edit`, nessuna vista lo segnalava, e il promemoria al trainee
+     nominava il trainer con il numero; ora torna fra quelli da assegnare e le mail dicono «Persona cancellata». Un esame affidato a un
+     esaminatore che si cancella resta com'è: il form lo mostra senza esaminatore, e il salvataggio ne chiede uno.
+  4. ⚠️ **Il promemoria sposta la versione del training** (il suo segno `reminded_at` è una scrittura della riga): una pagina letta prima
+     del giro del job riceve 409 a «Assegna». Il test d'integrazione rilegge la pagina dopo il giro; nelle pagine vere il 409 fa già
+     rileggere la pagina.
+- **Verificato** (29–30 settembre 2026, in locale, una suite alla volta; vedi anche il corpo della PR):
+  - sul codice prima dell'ultimo test (`4874823`): `dotnet build IvaoHub.sln` 0 avvisi; `IvaoHub.UnitTests.exe` **869/869**;
+    **`IvaoHub.IntegrationTests.exe` intero, senza filtro, 415/415** al primo giro (i 413 di A12a e i 2 nuovi); `TrainingTraineeTests` da
+    sola **7/7**; dopo il test della conservazione (`49d81f1`) `TrainingDatesTests` da sola **13/13**; su `49d81f1` di nuovo: `dotnet
+    build` 0 avvisi, unità **869/869**, **integrazione intera, senza filtro, 416/416** al primo giro;
+  - **dopo la risposta** (`9d0c4df`): `TrainingTraineeTests` da sola **8/8**, `TrainingStaffRulesTests` **6/6**; `dotnet build` 0 avvisi,
+    unità **870/870**, **integrazione intera, senza filtro, 417/417** al primo giro; le chiavi letterali `training:` **387** (con
+    `erasure.assigned`); il web e lo smoke di nuovo, qui sotto;
+  - `pnpm lint`, `typecheck`, `format:check` puliti; `pnpm i18n:check` **783** chiavi; `pnpm test` **582/582** in 78 file (i 581 di A12a,
+    meno il test di `memberLabel`, più i due nuovi); `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi letterali `training:`
+    **386**, nessuna mancante (le 381 e le cinque `erasure.*`); **`pnpm e2e` 157/157** al primo giro, sotto il lucchetto di 4173 (i 153 e
+    i 4 nuovi); **`pnpm e2e:full` 48/48** al primo giro, sul banco ricreato (127.0.0.1:5105, `ivaohub_e2e_a12b`) e sotto il lucchetto di
+    Mailpit. Dopo la risposta di nuovo: lint, typecheck e format puliti, `i18n:check` 783, `pnpm test` 582/582, `gen:api` e `i18n:sync`
+    senza differenze, **`pnpm e2e` 157/157**, **`pnpm e2e:full` 48/48** al primo giro, sul banco ricreato;
+    `dotnet format --verify-no-changes` sugli 11 file C# della fase: pulito; le regole di `core-guard` in PowerShell sulla fase: nessun file
+    del maintainer, nessuno del nucleo, la nota aggiunta, **PASS**;
+  - **la prova sul codice vecchio**: con gli 8 sorgenti della fase come sulla base (ba557bb) **cadono tutti e due i test d'integrazione
+    nuovi** (le righe dell'anteprima vuote; `givenBy` nullo); con l'eraser ma **senza il VID nelle mail** cade quello del trainee sulla
+    mail del trainer (1 invece di 0); con **la rotta di prima** cade sul percorso dello pseudonimo (200 invece di 404); in Vitest, con
+    `path.ts` e `dates.ts` come sulla base, **cadono i due casi nuovi**; nello smoke, con il codice web del modulo come sulla base,
+    **cadono esattamente i quattro casi nuovi** (20 passano). Rimessi i file e toccati perché la build li ricompilasse: 7/7 e 16/16, e
+    lo smoke intero, dopo, 157/157. Il test della conservazione passa anche sul codice di A8, e deve: prova una strada che c'era già.
+    **Per la parte della risposta**: con gli 8 sorgenti come prima di lei (`38e3988`) il test d'integrazione nuovo cade sulla riga
+    dell'anteprima; con solo `StaffQueue.cs` di prima, sulla vista «da assegnare» (vuota invece dei due); con solo le mail di prima, sul
+    promemoria (`-1` invece di «Persona cancellata»); il test di unità nuovo cade con `StaffQueue.cs` di prima. Rimessi e toccati: 8/8 e
+    6/6.
+- **La coda sotto** (30 settembre, notte): la nuova cima di A12a (62eee6f) — il passo di #182 dopo #181, con `main` a 17941c0, arrivato
+  per A11b (99421c2), solo documenti — è entrata qui con un merge (`2fdc3a5`), come mi ha scritto la sessione di A12a. **Un conflitto
+  solo**, l'intestazione di `HANDOFF-M3.md`: quella di A12b in cima, riscritta, con ciò che quella di A12a diceva della coda e della
+  consegna di A11b; i paragrafi di A12a e A11b sotto prendono i loro. Nessuna riga che uno dei due lati teneva è andata persa
+  (controllato riga per riga su `HANDOFF-M3.md` e `08`). **Il codice non cambia** (nessun file fuori da `docs/` fra 71e04df e il
+  merge), quindi le suite qui sopra valgono com'erano; l'intervallo della fase mostra ancora solo la fase (41 file), e il branch
+  **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190 del maintainer): la PR ha di nuovo la CI. **La CI su
+  `4d91517`**, letta una volta a giro finito: `build-test` (21 minuti, 00:00–00:21 UTC) e `core-guard` **verdi**.
+- **La coda sotto, la seconda volta** (30 settembre, 00:03 UTC: **#182 è unita**): la nuova cima di A12a (7675de3) — il passo di #187
+  dopo #182, con `main` a a004c20 (#182, che il branch aveva già dalla coda, e #190 del maintainer: l'accesso dalla pagina d'errore, la
+  versione 0.4.2 e la sua nota), e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`: il commento di `col.person` e
+  `UI-GUIDELINES.md`) — è entrata qui con un merge (`7d9a062`), come mi ha scritto la sessione di A12a. **Un conflitto solo**,
+  l'intestazione di `HANDOFF-M3.md`: quella di A12b in cima, riscritta; i paragrafi di A12a sotto prendono i loro. Nessuna riga che uno
+  dei due lati teneva è andata persa (controllato riga per riga su `HANDOFF-M3.md`, `08`, `UI-GUIDELINES.md` e `columns.ts`). **Questa
+  volta il codice cambia** (#190, nel nucleo dell'accesso, con i suoi test), quindi tutte le suite di nuovo, una alla volta, al primo
+  giro tranne una caduta del giro completo (sotto): `dotnet build` 0 avvisi; unità **870/870**; **integrazione intera, senza filtro,
+  424/424** (i 417 e i 7 di #190); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` **783** chiavi; `pnpm test`
+  **582/582** in 78 file; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` **387**, nessuna mancante;
+  **`pnpm e2e` 157/157**, sotto il lucchetto di 4173; `dotnet format --verify-no-changes` sui 15 file C# della fase: pulito; le regole
+  di `core-guard` in PowerShell sulla fase: nessun file del maintainer, nessuno del nucleo, la nota aggiunta, **PASS**. L'intervallo
+  della fase mostra ancora solo la fase (41 file). **`pnpm e2e:full`**, sul banco ricreato e sotto il lucchetto di Mailpit, ogni giro:
+  1. **47/48**: è caduto **`template.spec.ts:139`, un test del nucleo** (l'anteprima a tre larghezze): alla riga 185 legge **una volta
+     sola, senza aspettare**, quante colonne ha la sezione a finestra larga, e ne ha trovata 1 invece di 2 — la riga 199, per la
+     finestra stretta, aspetta con `expect.poll`. Nei due giri di prima (qui sopra) era passato;
+  2. quel test da solo, `--repeat-each=5`: **5/5**;
+  3. il giro intero di nuovo, sul banco ricreato: **48/48**.
+
+  La fase non tocca l'editor né l'anteprima, e il file è del nucleo: non toccato, detto al revisore. È lo stesso genere di caduta che
+  la CI aveva trovato in G19 nello stesso file (`11ddb38`: una misura presa prima che la pagina fosse disegnata).
+- **Il passo della coda di #189** (30 settembre, 00:48 UTC: **#187 è unita**; [il commento del master sulla #189][m189]): `main`
+  (4e21fbc) è entrato con un merge (`0087db1`) senza conflitti e **senza nessun file**: il suo albero è quello della cima di A12a
+  (7675de3), già entrata qui con il merge qui sopra, e l'albero del branch dopo il merge è lo stesso di `7d9a062`, su cui sono girate
+  tutte le suite qui sopra — valgono per lui. La PR mostra verso `main` solo la fase (41 file). Via `(after #187)` dal titolo e
+  `Queued after #187.` dal corpo. La parte della risposta (a) era già nel codice, con i suoi test, e la nota ha il link alla risposta.
+  La PR diventa pronta dopo aver letto una volta la CI verde e i rilievi del master.
+- **La revisione del master** ([i suoi rilievi sulla #189][r189], 30 settembre): **approvabile nel merito**, niente di bloccante nel
+  codice; lo «should fix» era il conflitto con `main` sull'handoff, cioè il passo della coda qui sopra. **I nit**:
+  1. **la forma neutra**: `training:erasure.assigned` diceva «affidati a lui», al maschile; ora «affidati a questa persona come
+     trainer: restano affidati a una persona cancellata», e `erasure.exams`, due righe sopra, che aveva lo stesso difetto («in cui è il
+     candidato»), dice «in cui questa persona è candidata» (`dd40214`). Le chiavi non cambiano; l'inglese diceva già «them»;
+  2. **la parola dell'esito della riga `assigned`** (`Anonymised`, ma quelle righe le tocca il nucleo): **resta**. Nel nucleo vuol dire
+     «le righe restano, senza la persona: il suo VID diventa lo pseudonimo» (`IPersonalDataEraser.cs`), che è quello che succede, chiunque
+     lo scriva, ed è la parola che il nucleo stesso usa per le righe in cui scrive lo pseudonimo senza che un eraser le tocchi
+     (`erasure.lines.named`, `erasure.lines.participation`); `Kept` vuol dire «restano come sono», e non è vero: il VID cambia;
+  3. **lo scostamento 3** (le ore e il rating al momento della richiesta): il master lo porta a Carmine;
+  4. **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: **non ci si arriva**, quindi nessun test le può fare
+     senza piantare uno stato che l'hub non ha mai: «Assegna» rifiuta un VID sotto 1 e un training aperto non ha mai un trainee
+     cancellato (l'eraser cancella i suoi training aperti prima che il nucleo scriva lo pseudonimo); il report nomina chi lo pubblica,
+     che è entrato nell'hub. Il «Non verificato» qui sotto ora lo dice.
+
+  Dopo la correzione tutte le suite di nuovo, una alla volta, tutte al primo giro: `dotnet build` 0 avvisi; unità **870/870**;
+  **integrazione intera, senza filtro, 424/424**; `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` **783** chiavi;
+  `pnpm test` **582/582** in 78 file; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` **387**,
+  nessuna mancante; **`pnpm e2e` 157/157**, sotto il lucchetto di 4173; **`pnpm e2e:full` 48/48**, sul banco ricreato e sotto il
+  lucchetto di Mailpit; le regole di `core-guard` verso `main`: 41 file, nessuno del maintainer né del nucleo, la nota aggiunta,
+  **PASS**. Nessun file C# cambia, quindi niente `dotnet format`.
+- **Non verificato**:
+  - **una cancellazione sul banco**: nessun giro `e2e:full` cancella una persona — i personaggi del banco servono agli altri giri —; le
+    pagine con una persona cancellata sono provate nello smoke, con l'API finta, e dalle risposte vere nei test d'integrazione;
+  - **le mail del trainer assegnato e del report pubblicato con uno pseudonimo**: passano dallo stesso `TrainingMail.Name` del promemoria,
+    ma **non ci si arriva** (nit 4 della revisione, qui sopra): «Assegna» rifiuta un VID sotto 1, un training aperto non ha mai un
+    trainee cancellato, e il report nomina chi lo pubblica; nessun test le fa con uno pseudonimo;
+  - **la CI dopo il secondo merge e il passo della coda** (qui sopra): verde su `4d91517`; sulla cima nuova la dirà la PR.
+
+[q189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168
+[a189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516
+[m189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770
+[r189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851
+
+Le altre due PR (A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.

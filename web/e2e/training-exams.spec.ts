@@ -17,8 +17,9 @@ import { englishCommon } from './locales';
  * only on the ones the server says they may change, and narrows to their own; the form offers the examiners the server gives the
  * reader, sends the exam, and puts a refusal of the server under its field; whoever edits the area changes and takes off the calendar
  * an exam of somebody else's; a reader who enters no exams is offered no form; `/training` and the block draw the exams still to come
- * beside the sessions, with the VIDs only for a signed in reader. What the server decides is proved by `TrainingExamTests`
- * (integration); the round against the real server is `full/training-exams.spec.ts`.
+ * beside the sessions, with the VIDs only for a signed in reader; an examiner whose data was erased is a deleted person (A12b). What
+ * the server decides is proved by `TrainingExamTests` and `TrainingTraineeTests` (integration); the round against the real server is
+ * `full/training-exams.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -44,6 +45,13 @@ const words = JSON.parse(
   };
   errors: Record<string, string>;
 };
+
+/** The core's word for a person whose data was erased (A12a), which the lists and the pages say in the place of the pseudonym. */
+const deleted = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
+  ) as { people: { deleted: string } }
+).people.deleted;
 
 /** A sentence of the language file with its values in. */
 const filled = (sentence: string, values: Record<string, string>) =>
@@ -455,6 +463,39 @@ test('a signed in member reads the candidate and the examiner of an exam by VID'
     }),
   ).toBeVisible();
   await expect(page.getByText(words.public.none, { exact: true })).toHaveCount(0);
+});
+
+test('an examiner whose data was erased is a deleted person in the list of the staff, never the number (A12b)', async ({
+  page,
+}) => {
+  // What the server sends once the examiner is erased: the pseudonym in their place.
+  await stubTheExams(page, {
+    bootstrap: coordinatorBootstrap,
+    rows: [row(63, { examinerVid: -5, mine: false, mayEdit: true })],
+  });
+
+  await page.goto('/staff/training/exams');
+  const erased = page.getByRole('row').filter({ hasText: '790099' });
+  await expect(erased.getByRole('cell', { name: deleted, exact: true })).toBeVisible();
+  await expect(page.getByText('-5', { exact: true })).toHaveCount(0);
+});
+
+test('a signed in member reads an examiner whose data was erased as a deleted person on /training (A12b)', async ({
+  page,
+}) => {
+  await stubTheSite(
+    page,
+    [],
+    [exam(53, at(1, 9), { candidateVid: 790099, examinerVid: -5 })],
+    memberBootstrap,
+  );
+
+  await page.goto('/training');
+  await expect(
+    page.getByText(filled(words.public.examPeople, { candidate: '790099', examiner: deleted }), {
+      exact: true,
+    }),
+  ).toBeVisible();
 });
 
 test('when the exams cannot be read, /training still shows the sessions and says so', async ({ page }) => {

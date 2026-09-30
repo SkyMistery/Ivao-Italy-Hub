@@ -8,12 +8,11 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { holdsPermissionAnywhere } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem, type Suggestion } from '../../../shared/forms';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
-import { ConfirmDialog, NotFound, Notice, PageShell } from '../../../shared/ui';
+import { ConfirmDialog, NotFound, Notice, PageShell, personName } from '../../../shared/ui';
 import {
   examChoicesQuery,
   examQuery,
   examsListQuery,
-  memberLabel,
   useDeleteExam,
   useSaveExam,
   type ExamRow,
@@ -28,7 +27,8 @@ import { positionLabel, ratingOptions } from './ratings';
  * does training reads them; whoever examines — the coordinator, the assistant and the advisors of the department, and the direction —
  * enters them. An advisor changes and takes off the calendar only the exams assigned to them, and whoever edits the area every one:
  * each row says whether it is the reader's and whether they may change it (`mine`, `mayEdit`), which is the server's answer, so the
- * page offers no step the server would refuse. Of the candidate and of the examiner, the VID and nothing else.
+ * page offers no step the server would refuse. Of the candidate and of the examiner, the VID and nothing else — «Deleted person» for
+ * somebody whose data was erased (A12b).
  */
 
 export const EXAMS = '/staff/training/exams';
@@ -37,8 +37,8 @@ const columns: readonly ColumnSpec<ExamRow>[] = [
   col.date('startsAtUtc', { sortable: true }),
   col.text('ratingShortName'),
   col.text('position'),
-  col.text('candidate'),
-  col.text('examiner'),
+  col.person('candidate'),
+  col.person('examiner'),
   col.badge('whose', 'training:exams'),
 ];
 
@@ -177,7 +177,7 @@ export function ExamForm() {
             })),
             examiners: choices.examiners.map((member) => ({
               value: String(member.vid),
-              label: memberLabel(member),
+              label: personName(member, t),
             })),
           })}
           defaults={
