@@ -1,15 +1,26 @@
 # La mail a chi assegna gli award (E10d)
 
-**Data:** 30 settembre 2026 — fase E10d di M4, PR del nucleo
-**Stato:** **Proposta.** La forma nel codice (§3) è una scelta tecnica. **Il ritmo della mail** (§4, domanda 1) è una domanda a
-Carmine, e il codice che ne dipende aspetta la sua risposta. **Chi ha `Awards.Assign` in IT** (§5, domanda 2) è una cosa trovata
-leggendo il codice: non cambia il codice di questa PR, ma decide a chi arriva la mail.
+**Data:** 30 settembre 2026 — fase E10d di M4, PR del nucleo #205
+**Stato:** **decisa** (Carmine, 30 settembre 2026, in chat alla sessione master, e pubblicata su sua istruzione [sulla #205][a1]),
+alle due domande del [commento che le pone][q1]:
+1. **(B), deciso**: un riepilogo al giorno, solo se sono entrati segnali nuovi dall'ultimo, senza VID. **E l'orario si configura**:
+   è un'impostazione della divisione, con le 07:00 nell'ora della divisione come predefinito, non un orario scritto nel codice (§4,
+   «La risposta»).
+2. **(a)**: `Awards.Assign` diventa un permesso globale che un grant può dare, detto sul permesso e solo per lui (mai
+   `Permissions.Manage` né lo stato di superadmin); la divisione lo dà all'MD con un `positionGrant`. **In una PR del nucleo sua**, con
+   la sua nota, prima di E10d o accanto: **non in questa** (§5).
+
+La forma nel codice (§3) è una scelta tecnica, uguale per ogni risposta.
+
 **Regola applicata:** `CLAUDE.md` §2 (le notifiche sono del servizio del nucleo, i moduli pubblicano intenti; il segnale di award è
 una proiezione `IProjectable`) e §5, caso **(b)**. Si estendono due meccanismi del nucleo che ci sono già: la coda degli award
 (`cms_award_signals`, che i moduli scrivono solo attraverso l'interceptor) e il servizio delle notifiche con le preferenze per tipo.
 **Nessun modulo scrive niente**: i tour non si toccano, ed E14b non dovrà chiamare nessuno. È una PR del nucleo, prima di E14b che la
 usa (`CLAUDE.md` §0 regola 6). Da dove viene: la nota `2026-09-29-dopo-l-evento-e-gli-award` §2 punto 5 (decisa da Carmine sulla
 #180), il design `09-design-m4.md` §5.4, §8.3 e §13 n.5, il piano §9.1 (riga Award) e `10-piano-implementazione-m4.md`, E10d.
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5915953993
+[a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -78,8 +89,8 @@ usa (`CLAUDE.md` §0 regola 6). Da dove viene: la nota `2026-09-29-dopo-l-evento
    `https://{dominio}/staff/awards/queue`.
 5. **Vale per ogni modulo**: il job non guarda `source_module`. I tour, gli eventi (E14b) e il modulo di prova passano dalla stessa
    coda, e nessun modulo cambia.
-6. **Nel contenitore**: `AddHubAwards()`, nuovo, in `src/IvaoHub.Core/Awards/`, con il job e il suo orario; una riga in `Program.cs`
-   accanto a `AddHubNotifications()`.
+6. **Nel contenitore**: `AddHubAwards()`, nuovo, in `src/IvaoHub.Core/Awards/`, con il job e il suo trigger; una riga in `Program.cs`
+   accanto a `AddHubNotifications()`. L'orario del trigger è della divisione (§4, «La risposta»).
 7. **I test**: al §6.
 
 ## 4. Domanda 1: il ritmo della mail
@@ -91,12 +102,12 @@ Il codice del §3 è lo stesso. Cambiano quando gira il job e che cosa porta una
   segnale nuovo in coda»).
   ⚠️ **Le raffiche.** Con E14b, accettare un PIREP di supporto segnala una o più regole di award. Un RFE con cento piloti e venti
   controllori fa da cento a trecento segnali nei giorni della validazione, cioè altrettante mail per ognuno di quelli che hanno
-  `Awards.Assign`: oggi, in IT, il direttore e il suo assistente, il web master e il suo assistente e il superadmin (§5). E chi valida
+  `Awards.Assign`: oggi, in IT, DIR e ADIR, WM e AWM e il superadmin (§5). E chi valida
   riceverebbe una mail per ogni PIREP che ha appena accettato: in IT, dice c1, l'MD fa tutte e due le cose. Chi assegna finirebbe per
   spegnerla, e a quel punto non saprebbe più nemmeno dei tour completati.
 - **(B) Un riepilogo al giorno.** Alle 07:00 nell'ora della divisione, **solo se** sono entrati segnali nuovi dall'ultimo riepilogo.
   La mail dice quanti segnali sono nuovi e quanti aspettano in tutto; poi una riga per ogni motivo e award proposto, con il numero (per
-  esempio «Ha completato il tour "Giro d'Italia" — Award del Giro: 3»), **senza VID**; poi il link alla coda.
+  esempio «Ha completato il tour "Giro d'Italia" (Award del Giro): 3»), **senza VID**; poi il link alla coda.
   - È il ritmo degli altri due riepiloghi dello staff: i validatori dei tour (`flightops.reviewDigest`) e quelli degli eventi
     (`reportsToValidate`, E14b). Anche il giorno in cui si valida un RFE, al più una mail al giorno.
   - Senza VID, la mail non porta i dati di una persona: la cancellazione non deve cercarli (`PersonalDataErasure.cs:271-284`), e la
@@ -109,9 +120,24 @@ Il codice del §3 è lo stesso. Cambiano quando gira il job e che cosa porta una
 
 **Raccomandazione: (B).** Con (A) la mail la spegnerebbe proprio chi deve riceverla.
 
+**La risposta** (Carmine, [sulla #205][a1]): **(B), deciso**, un riepilogo al giorno, solo se sono entrati segnali nuovi dall'ultimo,
+senza VID. **E l'orario si configura**: è un'impostazione della divisione, con le 07:00 nell'ora della divisione come predefinito, non
+un orario scritto nel codice. Nel codice:
+
+- **`division.json → awardDigestTime`** (`DivisionOptions.AwardDigestTime`), un'ora del giorno scritta `HH:mm` nell'ora della
+  divisione (`timezone`), **`07:00` se manca**. Il validatore del file rifiuta all'avvio un valore che non è `HH:mm`, con il nome del
+  campo, come fa per il fuso; `ResolveAwardDigestTime()` torna alle 07:00 per un valore che il validatore non avrebbe lasciato passare,
+  come `ResolveTimeZone()` torna a UTC, perché un orario non deve mai essere quello che ferma il sito.
+- **Il trigger del job si costruisce da lì** (`AwardQueueMailJob.CronAt`, in `AddHubAwards`), nel fuso della divisione, come quello
+  della revisione dei documenti. Quartz lo costruisce all'avvio: un orario cambiato vale dal riavvio dopo, come il fuso.
+- **Perché in `division.json`** e non in una tabella: è il posto delle scelte della divisione che il nucleo legge (il fuso, le caselle
+  dei dipartimenti, `contentApproval`), e il nucleo non ha una schermata di impostazioni sua (quelle di `hub_division_settings` sono dei
+  moduli, `ModuleSettingsStore`). IT non scrive la chiave e ha le 07:00; `config/division.example.json` e `docs/FORKING.md` dicono che
+  cosa fa.
+
 **Che cosa cambia per E14b.** `10` dice che E14b è fatta quando «un PIREP accettato mette un segnale nella coda degli award, e chi
-assegna riceve la mail (E10d)». Con (B) la mail parte il mattino dopo: sul banco si vede il segnale in coda, e la mail la prova il test
-d'integrazione di questa fase.
+assegna riceve la mail (E10d)». Con (B) la mail parte all'ora di `awardDigestTime` dopo il segnale: sul banco si vede il segnale in
+coda, e la mail la prova il test d'integrazione di questa fase.
 
 ## 5. Domanda 2: chi ha `Awards.Assign` in IT (trovato; non cambia il codice di questa PR)
 
@@ -125,7 +151,7 @@ d'integrazione di questa fase.
   il seme dei grant lo salta (`PositionGrantSeeder.cs:52`), e anche `ModuleGrants.cs:46`. Il test di Carmine
   `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` lo fissa proprio con `Awards.Assign` (riga 194). Il piano §6.3 dice
   meno del codice: «un grant non può mai conferire `Permissions.Manage` né lo stato di superadmin».
-- **Chi lo ha davvero, oggi**: solo il direttore e il suo assistente, il web master e il suo assistente (le posizioni che raggiungono
+- **Chi lo ha davvero, oggi**: solo la direzione (DIR, ADIR) e il web (WM, AWM) (le posizioni che raggiungono
   ogni dipartimento hanno tutti i permessi globali: `RolePermissionMatrix.ReachesEveryDepartment`, `EffectivePermissionsCalculator.cs:229-243`),
   e i superadmin. **L'MD non vede la coda degli award**, e la mail di questa PR arriverebbe a quelle persone, non all'MD.
 - **Il codice di questa PR non cambia.** La mail va a chi ha il permesso, qualunque cosa glielo dia, e arriverà all'MD il giorno in cui
@@ -136,6 +162,12 @@ d'integrazione di questa fase.
     calcolatore, il validatore dei grant, il seme e il caso `Awards.Assign` del test di Carmine;
   - **(b)** lasciare com'è: assegnano il direttore, il web e il superadmin, e si correggono il piano, il design di M4 e la nota di T4b.
 - **Raccomandazione: (a)**, perché è quello che il piano ha sempre detto («configurazione, non codice»); in una PR a sé, fuori da E10d.
+- **La risposta** (Carmine, [sulla #205][a1]): **(a)**. `Awards.Assign` diventa un permesso globale che un grant **può** dare, detto sul
+  permesso, solo per `Awards.Assign` (mai `Permissions.Manage` né lo stato di superadmin); la divisione lo dà all'MD con un
+  `positionGrant`, come dice il piano. **In una PR del nucleo sua**, con la sua nota, prima di E10d o accanto; il caso `Awards.Assign`
+  di `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` cambia lì, apposta e con quella nota. **Non in E10d**: una fase
+  per sessione, e la prepara la sessione che coordina. Qui non si toccano le regole dei grant né quel test; la mail arriverà all'MD da
+  sola, quando il suo `positionGrant` gli darà il permesso.
 
 ## 6. I test
 
@@ -150,7 +182,10 @@ d'integrazione di questa fase.
   - Un segnale scartato prima del giro non si racconta, e ogni segnale detto ha il suo `notified_at`.
   - Il test mette in pausa il job del suo host, perché nessun giro nascosto lo anticipi. Alla fine toglie le sue righe e toglie il
     superadmin alle sue persone.
-- **Unità**: le righe della mail, se la risposta al §4 è (B): un motivo e un award con il numero, l'ordine, un segnale senza award.
+  - **L'ora dell'host**: il trigger del job è `awardDigestTime` della divisione, nel suo fuso.
+- **Unità**: le righe della mail (`AwardQueueMailLinesTests`: un motivo e un award con il numero, l'ordine, un segnale senza award o
+  con un award che non c'è più, nessun VID); l'ora (`AwardDigestTimeTests`: il trigger all'ora della divisione nel suo fuso, le 07:00
+  quando la divisione non dice niente, un valore che non è `HH:mm` ferma l'avvio).
 - **Nessun test del maintainer cambia.** I test che contano le notifiche filtrano per tipo o per le loro persone; `NotificationTemplateTests`
   e `ReviewTests` leggono l'elenco dei tipi e trovano da soli quello nuovo.
 
@@ -168,8 +203,9 @@ d'integrazione di questa fase.
 
 - **Nucleo**: `Content/AwardSignal.cs` (`NotifiedAt`), `Data/Configurations/CmsSchemaConfiguration.cs` (l'indice), la migrazione
   `AddAwardSignalNotifiedAt` e lo snapshot del contesto del nucleo, `Awards/AwardQueueMailJob.cs` e `Awards/AwardServiceCollectionExtensions.cs`
-  (nuovi), `Notifications/NotificationTypes.cs`, `src/IvaoHub.Web/Program.cs`, `locales/{en,it}/mail.json` e `common.json`; i test del
-  §6.
+  (nuovi), `Notifications/NotificationTypes.cs`, `Division/DivisionOptions.cs` (`AwardDigestTime`) e `DivisionOptionsValidator.cs`,
+  `src/IvaoHub.Web/Program.cs`, `locales/{en,it}/mail.json` e `common.json`; i test del §6.
+- **Documenti pubblici**: `config/division.example.json` (la chiave, con il suo commento) e `docs/FORKING.md`.
 - ⚠️ **Gli snapshot dei contesti dei moduli** (tour, training, modulo di prova) non vedono la colonna finché non fanno il loro prossimo
   `migrations add`: è lo scarto innocuo già visto in T4b e T14 (`HANDOFF.md`, T14). Nessun codice di un modulo cambia.
 - ⚠️ **Migra il contesto del nucleo.** Se un'altra fase del nucleo di M4 lo migra insieme a questa, chi viene unita per seconda rifà la
@@ -179,8 +215,11 @@ d'integrazione di questa fase.
 
 ## Da portare nel piano
 
-- **§9.1, riga Award**: la mail a chi assegna è un job del nucleo sulla coda, con il tipo `award.toAssign`, il segno `notified_at` e il
-  ritmo deciso al §4.
-- **§9.1 e §6.3**: chi ha `Awards.Assign` in IT, secondo la risposta al §5; se è (b), anche il design di M4 (§R.3, §5.4, §8.3) e la nota
-  di T4b dicono «oggi l'MD».
-- **`10-piano-implementazione-m4.md`, E14b, «Fatta quando»**: la mail secondo il ritmo del §4.
+- **§9.1, riga Award**: la mail a chi assegna è **un riepilogo al giorno** di un job del nucleo sulla coda (`AwardQueueMailJob`), solo
+  se sono entrati segnali nuovi, senza VID, con il tipo `award.toAssign` e il segno `notified_at`; vale per i segnali di ogni modulo.
+- **§4.1, `division.json`**: la chiave facoltativa **`awardDigestTime`** (`HH:mm`, nell'ora della divisione, 07:00 se manca), rifiutata
+  all'avvio se non è un'ora.
+- **§9.1 e §6.3**: `Awards.Assign` concedibile con un grant arriva con la sua PR del nucleo e la sua nota (§5, la risposta), non con
+  questa.
+- **`10-piano-implementazione-m4.md`, E14b, «Fatta quando»**: la mail parte all'ora di `awardDigestTime` dopo il segnale (§4); sul
+  banco si vede il segnale in coda.

@@ -684,7 +684,80 @@ nota.
 **Test**: integrazione: un segnale di un tour e uno di prova avvisano chi assegna, non chi l'ha spento, una volta.
 **Fatta quando**: un segnale nuovo arriva nella casella di chi assegna.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo senza coda, da `main` a `c107c98`; `main`
+a `c98b272`, con E10b (#208), unita prima dei documenti):
+
+- **La domanda prima del codice.** La forma non era ovvia: con E14b, validare i PIREP di un RFE fa da cento a trecento segnali in pochi
+  giorni. La nota è andata a Carmine come «Proposta», con la PR in bozza e le domande in un [commento][q205]; il codice che ne
+  dipendeva ha aspettato la [risposta][a205] (Carmine, in chat al master, pubblicata su sua istruzione).
+- **Fatto** (nota nuova `2026-09-30-la-mail-a-chi-assegna-gli-award`, **decisa**):
+  - **il riepilogo al giorno**: `AwardQueueMailJob` (`award-queue-mail`, `src/IvaoHub.Core/Awards/`) gira all'ora di
+    `division.json → awardDigestTime` (`HH:mm` nell'ora della divisione, 07:00 se manca). Solo se sono entrati segnali nuovi, manda a
+    chi ha `Awards.Assign` (`IPermissionHolders`) una mail con una riga per motivo e award proposto e il numero, senza VID. Il tipo del
+    nucleo è `award.toAssign`, nel profilo da solo; le parole stanno in `locales/{en,it}/mail.json` e `common.json`;
+  - **il segno** `cms_award_signals.notified_at`, con l'indice `(status, notified_at)`: la migrazione `AddAwardSignalNotifiedAt` segna
+    come dette le righe già in coda, e il job lo scrive nello stesso salvataggio delle righe della mail;
+  - **l'ora della divisione**: `DivisionOptions.AwardDigestTime` e il suo controllo in `DivisionOptionsValidator`; il trigger si
+    costruisce da lì (`AwardQueueMailJob.CronAt`, in `AddHubAwards`); `config/division.example.json` e `docs/FORKING.md` la spiegano;
+  - **i test**, con i VID `761050–761055`:
+    - `AwardQueueMailTests` (integrazione, nuovo). Un segnale dei tour (la proiezione dell'iscrizione, salvata dal contesto dei tour)
+      e uno del modulo di prova arrivano a chi assegna, in una mail, una volta. Non arrivano a chi l'ha spenta dal profilo, né a chi
+      non ha il permesso. Un segnale scartato prima del giro non si racconta. L'ora dell'host è quella della divisione, nel suo fuso;
+    - `AwardQueueMailLinesTests` e `AwardDigestTimeTests` (unità).
+- **Scostamenti**:
+  1. **Il ritmo.** Il design (§8.3) e la nota di E0 dicevano «quando entra un segnale nuovo in coda», e `10` lasciava alla nota la
+     scelta. **Carmine ha scelto il riepilogo al giorno, con l'ora configurabile**: la mail parte all'ora di `awardDigestTime` dopo il
+     segnale, non subito. Il «fatta quando» di E10d vale a quell'ora; quello di E14b cambia allo stesso modo (nota, «Da portare nel
+     piano»).
+  2. **Un'impostazione nuova della divisione**, `awardDigestTime`, che `10` non prevedeva: la chiede la risposta di Carmine.
+  3. ⚠️ **Trovato: l'MD non può avere `Awards.Assign`**. Un grant non dà mai un permesso globale, e un test di Carmine lo fissa. Il piano
+     (§9.1), la nota di T4b e il design di M4 dicevano l'MD. Carmine ha deciso che `Awards.Assign` diventi concedibile, **in una fase
+     del nucleo sua**: qui non si toccano le regole dei grant né quel test. Fino ad allora coda e mail sono di DIR, ADIR, WM, AWM e dei
+     superadmin.
+- **Scelte piccole, scritte nella nota**:
+  - il segno si scrive anche quando nessuno riceve la mail, come in `DocumentReviewJob`;
+  - la migrazione segna come dette le righe già in coda;
+  - nei test chi assegna è un superadmin senza posizioni: un grant non può dare il permesso, e senza posizioni non entra fra i
+    destinatari che `ContactsAndNotificationsTests` conta esatti;
+  - il test mette in pausa il job del suo host, come `TourTests`.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **I primi giri della classe nuova, da sola, avviavano l'host senza le fixture di IVAO**: su una fotografia vuota l'host chiede
+     un token a IVAO all'avvio (l'avviso di E10b). Ora la classe passa `useIvaoFixtures: true` (un commit a sé), e da sola non fa
+     nessuna chiamata (contate nel log: zero).
+  2. `dotnet format --verify-no-changes` su `src/IvaoHub.Web/Program.cs` segnala l'ordine degli `using` (IMPORTS). C'è già su `main`;
+     E10d aggiunge solo una riga lontana dagli `using`, e i file della fase sono in ordine.
+  3. Gli snapshot dei contesti dei moduli prendono `notified_at` al loro prossimo `migrations add`: è lo scarto innocuo di T4b.
+- **Verificato, in locale** (30 settembre 2026):
+  - **prima della risposta**, sul codice di (B) con l'ora fissa: build senza avvisi, unità 889/889, integrazione intera senza filtro
+    431/431 (8,4 minuti), `pnpm test` 594/594;
+  - **le controprove**, sul codice della fase rimesso e ritoccato dopo ogni prova. Senza il filtro «in attesa» cade l'integrazione
+    (il segnale scartato viene raccontato). Senza il segno cade (`notified_at` vuoto). Con l'ora scritta nel codice cade la prova del
+    trigger (atteso `0 30 18 * * ?`, trovato `0 0 7 * * ?`);
+  - **sul codice definitivo, con `main` unita**:
+    - `dotnet build` senza avvisi; `dotnet format --verify-no-changes` sui file C# della fase;
+    - unità **898/898**; **integrazione intera senza filtro 437/437** (7,7 minuti); `AwardQueueMailTests` da sola 2/2;
+    - `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **594 in 80 file**; `pnpm gen:api` e `i18n:sync`
+      senza differenze;
+    - `pnpm e2e --workers=2`: **162/163** al primo giro, poi **163/163**. Era caduta `training-staff.spec.ts:379` con
+      `net::ERR_ADDRESS_IN_USE` alla navigazione, con circa 900 socket in TIME_WAIT; da sola, con `--repeat-each=3`, ha dato 3/3;
+    - `pnpm e2e:full` **50/50** al primo giro (9,9 minuti), su un banco suo (`http://127.0.0.1:5116`, `ivaohub_e2e_e10d` tolto
+      prima), dietro il lock di Mailpit. ⚠️ Un primo tentativo con `--workers=2` è stato fermato a metà, per un errore mio:
+      `playwright.full.config.ts` vuole **un worker solo** («two workers would publish over each other's page»). Sul banco nuovo i
+      due worker si sono contesi il primo accesso del web master (`Duplicate entry '999001'`), e `full/awards.spec.ts:24` è caduta in
+      206 ms. `--workers=2` vale per lo smoke, non per `e2e:full`;
+    - le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, 15 del nucleo, la nota nuova —
+      passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - **la mail vera in Mailpit o nel browser**. Il banco non ha nessuno con `Awards.Assign` e una casella, e il job gira solo alla sua
+    ora. La prova il test d'integrazione, che la rende con le parole vere e controlla che non resti un segnaposto;
+  - due processi che fanno girare il job nello stesso secondo: è il limite di ogni job (nota, §3 punto 3);
+  - un orario cambiato in `division.json` su un'installazione vera (vale dal riavvio, come il fuso);
+  - la migrazione su un database con segnali già in coda: il test parte da una coda vuota, e la catena intera la prova
+    `MigrationsApplyOnRealMariaDbTests`.
+
+[q205]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5915953993
+[a205]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643
 
 ### E10e — Nucleo: la distanza fra due aeroporti
 
