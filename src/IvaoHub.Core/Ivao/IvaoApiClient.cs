@@ -277,33 +277,28 @@ public sealed class IvaoApiClient(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var sessions = new List<IvaoTrackerSessionDto>();
-        for (var page = 1; ; page++)
+        // The pages are read the way the fixtures are (IvaoTrackerReader), and a page that fails fails the whole answer,
+        // even after one that succeeded: half a list of flights would let a pilot conclude theirs is not there. A page that
+        // could not be had at all — a timeout, a connection dropped — is "could not look" as much as a refusal is, never an
+        // exception: the page holding the last session of an airport takes IVAO about ten seconds (measured on 30
+        // September 2026, M4 E10a), and its gateway gives up at fifteen.
+        var asked = query.ToQueryString();
+        var answer = await IvaoTrackerReader.ReadPagesAsync(
+            query,
+            (page, token) => ReadOrNothingAsync($"/v2/tracker/sessions?{asked}&page={page}&perPage={query.PerPage}", token),
+            cancellationToken);
+
+        if (answer is not { } read)
         {
-            var payload = await ReadAsync(
-                $"/v2/tracker/sessions?{query.ToQueryString()}&page={page}&perPage={IvaoSessionQuery.PageSize}",
-                cancellationToken);
-
-            // A page that fails after the first one has succeeded is still a failure: half a list of
-            // flights would let a pilot conclude theirs is not there.
-            if (payload is not { } root)
-            {
-                return null;
-            }
-
-            var (rows, pages) = IvaoTrackerReader.ReadSessions(root);
-            sessions.AddRange(rows);
-
-            if (page >= pages || sessions.Count >= IvaoSessionQuery.MaxSessions || rows.Count == 0)
-            {
-                break;
-            }
+            return null;
         }
 
-        logger.LogInformation("Read {Count} tracker session(s) for {Vid} from IVAO.", sessions.Count, query.Vid);
-        return sessions.Count > IvaoSessionQuery.MaxSessions
-            ? sessions[..IvaoSessionQuery.MaxSessions]
-            : sessions;
+        logger.LogInformation(
+            "Read {Count} of {Total} tracker session(s) from IVAO for {Query}.",
+            read.Sessions.Count,
+            read.Total,
+            asked);
+        return read.Sessions;
     }
 
     public async Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(
@@ -403,8 +398,9 @@ public sealed class IvaoApiClient(
 
     /// <summary>
     /// <see cref="ReadAsync"/>, with a call that fails read as no answer: for the answers whose failure must stay their own
-    /// (the ATC positions). Every other reference call still fails the run, as it always has. Not the caller's
-    /// cancellation: that one is theirs.
+    /// (the ATC positions), and for the pages of the tracker, whose searches answer null when IVAO could not be asked
+    /// (M4, E10a). Every other reference call still fails the run, as it always has. Not the caller's cancellation: that
+    /// one is theirs.
     /// </summary>
     private async Task<JsonElement?> ReadOrNothingAsync(string path, CancellationToken cancellationToken)
     {
