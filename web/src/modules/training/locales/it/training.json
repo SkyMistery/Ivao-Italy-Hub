@@ -572,10 +572,10 @@
   "erasure": {
     "closed": "Training finiti, tenuti nel registro senza il trainee e senza i suoi testi",
     "open": "Training ancora aperti: chiesti, accettati, assegnati o datati",
-    "exams": "Esami nel calendario in cui è il candidato",
+    "exams": "Esami nel calendario in cui questa persona è candidata",
     "bansInForce": "Ban dal training ancora in vigore, tenuti con il VID finché non finiscono",
     "bansOver": "Ban dal training finiti o tolti",
-    "assigned": "Training aperti di altri membri affidati a lui: restano a una persona cancellata come trainer, fra quelli da assegnare"
+    "assigned": "Training aperti di altri membri affidati a questa persona come trainer: restano affidati a una persona cancellata, fra quelli da assegnare"
   },
   "sheets": {
     "title": "Scheda di valutazione",
