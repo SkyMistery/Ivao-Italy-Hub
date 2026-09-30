@@ -266,13 +266,19 @@ public sealed class IvaoTrackerWithoutVidTests
     }
 
     [Fact]
-    public void APageIsAFullOneOrTheLimitAndTheLimitIsAtLeastOne()
+    public void APageIsAFullOneOrTheLimitAndTheLimitHasAFloorAndACeiling()
     {
         Assert.Equal(100, Departures().PerPage);
         Assert.Equal(30, (Departures() with { Limit = 30 }).PerPage);
-        Assert.Equal(100, (Departures() with { Limit = 1000 }).PerPage);
+        Assert.Equal(100, (Departures() with { Limit = IvaoSessionQuery.MaxLimit }).PerPage);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => Departures() with { Limit = 0 });
+
+        // The core keeps the ceiling itself: not even a caller without a VID or an airport reads the network page after
+        // page, however much it asks for.
+        Assert.Equal(1000, IvaoSessionQuery.MaxLimit);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Departures() with { Limit = IvaoSessionQuery.MaxLimit + 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IvaoSessionQuery(null, From, To) { Limit = int.MaxValue });
     }
 
     [Fact]

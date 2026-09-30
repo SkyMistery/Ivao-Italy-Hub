@@ -125,20 +125,31 @@ public sealed record IvaoSessionQuery(
     /// </summary>
     public const int DefaultLimit = 200;
 
+    /// <summary>
+    /// The most a caller may declare: ten pages, about fifteen seconds of IVAO's time. The largest window the events read —
+    /// the departures or the arrivals of one airport over an event — holds a few hundred: a whole week at Frankfurt was 305
+    /// departures (measured on 30 September 2026), and the design's evening at Rome 441 bookings in all. The core keeps the
+    /// ceiling itself, so that no caller can make it read the network page after page by mistake.
+    /// </summary>
+    public const int MaxLimit = 1000;
+
     private readonly int _limit = DefaultLimit;
 
     /// <summary>
-    /// The most sessions the caller will read, newest first: the pages stop there. It is the caller's to declare, because
-    /// an airport on the evening of an event holds more than a pilot's list, and a job reads what one run can carry. An
-    /// answer with fewer sessions than the limit is all there is; one with exactly as many may have been cut, and what is
-    /// left is in the part of the window before the oldest of them.
+    /// The most sessions the caller will read, newest first: the pages stop there. It is the caller's to declare, up to
+    /// <see cref="MaxLimit"/>, because an airport on the evening of an event holds more than a pilot's list, and a job reads
+    /// what one run can carry. An answer with fewer sessions than the limit is all there is; one with exactly as many may have
+    /// been cut, and what is left is in the part of the window before the oldest of them.
     /// </summary>
     public int Limit
     {
         get => _limit;
-        init => _limit = value >= 1
+        init => _limit = value is >= 1 and <= MaxLimit
             ? value
-            : throw new ArgumentOutOfRangeException(nameof(Limit), value, "A search reads at least one session.");
+            : throw new ArgumentOutOfRangeException(
+                nameof(Limit),
+                value,
+                string.Create(CultureInfo.InvariantCulture, $"A search reads from one to {MaxLimit} sessions."));
     }
 
     /// <summary>The rows a page is asked for: a full page, or the limit when that is smaller.</summary>
