@@ -6,12 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E2** (modulo: lo scheletro), sul branch `m4/e2-events-skeleton`, **PR #209**
-verso `main`, la prima fase del modulo (nessuna coda sotto). E1 è unita (#200); le fasi del nucleo E10a–E10e ed E15a sono partite lo
-stesso giorno, ognuna nella sua PR.
-**Il prossimo passo**: la **risposta di Carmine** alla nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` (la domanda è sulla PR
-di E2): con la (b), raccomandata, la fase del nucleo **E2b** prima di **E3a**; con la (a), i nove grant di chi collabora in una riga
-ciascuno e tre test del maintainer da cambiare (li cambia lui). **E3a** aspetta E2 unita e quella risposta.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2** (modulo: lo scheletro), sul branch `m4/e2-events-skeleton`, **PR #209**
+verso `main`, la prima fase del modulo (nessuna coda sotto), con `main` unito dopo E10b (#208), E10e (#206), i tour sulla distanza del
+nucleo (#211) ed E10d (#205). È unita anche E1 (#200); corrono, ognuna nella sua sessione, **E2b**, **E10a**, **E10c** ed **E15a**.
+**Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
+#209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
+dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11b** ed **E13a** trovano in E10b la storia di un
+controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
+riepilogo a chi assegna gli award, e non chiama niente. **La fase del nucleo che rende `Awards.Assign` concedibile con un grant**
+(decisa da Carmine sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -98,8 +101,11 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 
 **Che cosa manca, e quale fase lo porta**: ~~i tipi `rfe`, `rfo`, `mse`, `onlineDay` e uno staff degli eventi sul banco (E1)~~
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
-senza VID, con il tipo di connessione (E10a); il VID nelle sessioni condivise (E10b); il rating preferito e minimo, le postazioni della
-divisione per nominativo (E10c); la mail a chi assegna (E10d); la distanza nel nucleo (E10e); le prenotazioni ATC della rete (E15a);
+senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
+controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
+divisione per nominativo (E10c); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
+lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
+lasciato E10e»); le prenotazioni ATC della rete (E15a);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -113,11 +119,13 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E2 (30 settembre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
+### Che cosa ha lasciato E2 (30 settembre – 1 ottobre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
 
 - **Che cosa c'è** (il dettaglio in `10`, E2, «Com'è andata»):
   - **Il modulo** `src/IvaoHub.Modules.Events/` (referenzia solo il nucleo), registrato **per primo** in `IvaoHub.Web/Modules.cs` e in
-    `web/src/modules/index.ts` (eventi, tour, training); `EventsDbContext` con `__EFMigrationsHistory_events` e la migrazione
+    `web/src/modules/index.ts` (eventi, tour, training: la sezione Eventi per prima nel back office, **confermata da Carmine**
+    [sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)); `EventsDbContext` con
+    `__EFMigrationsHistory_events` e la migrazione
     **`Initial`** (`20260930170049_Initial`), che **non si tocca più**: `evt_events` **intera** e `evt_event_airports`.
   - **Le entità** alla radice del progetto: `Event` (maschera, `IVisible`, `IPublishable`, audit, `[Audited]`, scope
     `events:event:{id}` con `Event.ScopeOf`) ed `EventAirport` (maschera, audit, lo scope del suo evento). Nessun endpoint, nessuna
@@ -133,12 +141,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     dell'ED, `?as=events`); le cinque righe `evt_` in `ErasureTests`, con la nota breve
     `2026-09-30-le-colonne-degli-eventi-in-erasuretests`.
 - **Che cosa deve sapere la fase dopo**:
-  - ⚠️ **I grant di AOD, FOD e MD non ci sono.** Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello che vede
-    (`HubClaims.BuildIdentity`), e i nove del design sarebbero i primi grant a una posizione fra due dipartimenti: con loro la suite
-    d'integrazione intera ha tre rossi del maintainer (`SeveralDepartmentsTests` ×2, `SearchEndpointTests`). La nota
-    `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` («Proposta») pone la domanda a Carmine e raccomanda la fase del nucleo **E2b**.
-    `EventsArchitectureTests` li tiene fuori dai due file finché la tabella del design non li riprende: **un grant del seme applicato non
-    si toglie più togliendolo dal file**. E3a, che prova FOD e AOD sull'evento, aspetta.
+  - ⚠️ **I grant di AOD, FOD e MD non ci sono, e aspettano E2b.** Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello che
+    vede (`HubClaims.BuildIdentity`), e i nove del design sarebbero i primi grant a una posizione fra due dipartimenti: con loro la suite
+    d'integrazione intera ha tre rossi del maintainer (`SeveralDepartmentsTests` ×2, `SearchEndpointTests`). **Carmine ha deciso la (b)**
+    della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`
+    ([sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)): un grant a una posizione su un
+    dipartimento che non è il suo dà il permesso, non il dipartimento, in una fase del nucleo a sé, **E2b**, prima di E3a; i nove si
+    seminano dopo di lei. `EventsArchitectureTests` li tiene fuori dai due file finché la tabella del design non li riprende: **un grant
+    del seme applicato non si toglie più togliendolo dal file**. E3a, che prova FOD e AOD sull'evento, aspetta E2b.
+  - ⚠️ **I test d'integrazione degli eventi avviano l'host con `useIvaoFixtures: true`** (l'avviso di E10b qui sotto): senza, un host
+    chiede un token a IVAO quando `ref_ivao_centers` è vuota. `EventsSkeletonTests` si riprende alla fine di ogni test i grant e le
+    posizioni che dà ai suoi VID; i membri restano, come in ogni classe.
   - **Le colonne di `evt_events`**: `starts_at_utc` ed `ends_at_utc` obbligatorie, `visible_from_utc` e `booking_opens_at_utc`
     facoltative, `shift_minutes` e i tre limiti vuoti = l'impostazione, `visibility` è una colonna (E3a la chiude a `Public` e `Members`
     nel validatore), `kind` lunga come una chiave del calendario (32). Le regole di «Pubblica» sono di E3b.
@@ -152,6 +165,97 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La schermata delle impostazioni** offre, accanto ai tipi del calendario, un tipo che un preset nomina e il calendario non ha più
     (con la sua chiave come parola), perché la riga si veda e si tolga: il salvataggio la rifiuta sulla riga.
 - ⚠️ **Nessuna mappa di base per `pnpm e2e:full`** in nessun worktree (30 settembre): le spec la tollerano, come in CI.
+
+### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-mail-a-chi-assegna-gli-award.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643)):
+  - **Il riepilogo a chi assegna gli award**: `AwardQueueMailJob` (`award-queue-mail`, `src/IvaoHub.Core/Awards/`) gira una volta al
+    giorno all'ora di **`division.json → awardDigestTime`** (`HH:mm` nell'ora della divisione, **07:00** se manca; IT non la scrive).
+    Legge la coda del nucleo e, **solo se** sono entrati segnali nuovi, manda a chi ha `Awards.Assign` (`IPermissionHolders`,
+    superadmin compresi) **una mail**: quanti segnali nuovi, quanti in attesa, una riga per motivo e award proposto con il numero,
+    **senza VID**, il link a `/staff/awards/queue`. Tipo del nucleo **`award.toAssign`**: nel profilo da solo, spegnibile.
+  - **Il segno** `cms_award_signals.notified_at` (migrazione del nucleo `AddAwardSignalNotifiedAt`; le righe già in coda sono segnate
+    come dette): un segnale si racconta una volta sola, nello stesso salvataggio delle righe della mail, e uno gestito o scartato prima
+    del giro non si racconta.
+  - **Per ogni modulo**: il job non guarda `source_module`, e il modulo dei tour non è cambiato.
+  - **I test**: `AwardQueueMailTests` (integrazione: un segnale dei tour e uno di prova; chi l'ha spento e chi non ha il permesso; una
+    volta sola; l'ora dell'host), `AwardQueueMailLinesTests` e `AwardDigestTimeTests` (unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14b** proietta i segnali e basta, senza chiamare niente; la mail parte all'ora di `awardDigestTime` dopo il segnale. Il suo
+    «fatta quando» sul banco è il segnale in coda: il banco non ha nessuno con `Awards.Assign` e una casella (il web master non ne
+    ha), e il job gira solo alla sua ora. La mail la prova `AwardQueueMailTests`.
+  - ⚠️ **Oggi l'MD non ha `Awards.Assign`**: è un permesso globale, e un grant non dà mai un permesso globale (nota §5). Coda e mail
+    sono di DIR, ADIR, WM, AWM e dei superadmin. **Carmine ha deciso** che diventi concedibile, **in una fase del nucleo sua** (la
+    prepara la sessione che coordina, non E10d): quando ci sarà, la mail arriverà all'MD da sola.
+  - ⚠️ **Gli snapshot dei contesti dei moduli** vedono `notified_at` solo al loro prossimo `migrations add` (lo scarto innocuo di
+    T4b). Una fase che fa nascere o migra un contesto dopo E10d se la trova nello snapshot come tabella esclusa: è giusto così.
+  - ⚠️ **In un test d'integrazione un job del nucleo gira da solo nell'host**: un test che lo fa girare lo mette prima in pausa
+    (`ISchedulerFactory`, come `TourTests`) e passa `useIvaoFixtures: true` (l'avviso di E10b qui sotto).
+  - ⚠️ **E10d migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione
+    sopra `main`.
+
+### Che cosa ha lasciato E10e (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo.md`, scelta tecnica, con una richiesta a
+  Carmine):
+  - **La distanza fra due aeroporti nel nucleo**: `GreatCircle.DistanceNm(GeoPoint, GeoPoint)`, in miglia nautiche, e
+    `GreatCircle.DistanceNmRounded`, al decimo (una metà va al decimo pari), con `GeoPoint(Latitude, Longitude)` in gradi — in
+    `src/IvaoHub.Core/Airspace/GreatCircle.cs`, namespace **`IvaoHub.Core.Airspace`**. È il codice dei tour con i loro numeri: la
+    distanza fra i due aeroporti, non le miglia volate.
+  - **Come la usa un modulo**: chiede a `IAirportDirectory.FindAsync` dove sono gli aeroporti (un `FindAsync` solo per tutte le voci),
+    prende le coordinate con un pattern (`is { Latitude: { } …, Longitude: { } … }`: un aeroporto senza coordinate non ha distanza) e
+    misura con `GreatCircle`. Nessuna registrazione, nessuna migrazione, nessun endpoint.
+  - **I test**: `tests/IvaoHub.UnitTests/GreatCircleTests.cs` (unità, 8): le domande di `LegTests` al nucleo con le stesse risposte,
+    gli antipodi e l'antimeridiano, e **il test gemello**, che confronta il nucleo e la copia dei tour bit per bit su 35.721 coppie.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Il namespace è `IvaoHub.Core.Airspace`, non `IvaoHub.Core.Ivao`** (accanto ai contorni dei FIR, geometria che non è di IVAO):
+    in `Ivao` gli stessi nomi fanno cadere la build dei tour (`CS0104` su `TrackChecks.cs`, provato; nota §2 punto 3).
+  - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine
+    **dopo l'unione di E10e** ([sua risposta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685),
+    alla [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005); nota §5). Fino ad allora il test
+    gemello tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la distanza fra
+    due aeroporti è `GreatCircle` del nucleo, mai una copia), che aggiunge il master.
+  - **E14a ed E14b** la trovano qui: la distanza di una voce di un PIREP con `DistanceNmRounded` se la colonna è al decimo, come
+    `fo_legs.distance_nm`, e `MinLegDistance` confrontata con quel numero.
+  - Agli antipodi `h` può passare 1 di un'unità nell'ultima cifra, ma la radice lo riporta a 1: nessun NaN, misurato (nota §6).
+
+### Che cosa ha lasciato E10b (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-le-sessioni-condivise-per-vid.md`, scelta tecnica, nessuna domanda nuova), tutto in
+  `src/IvaoHub.Core/Atc/`:
+  - **il VID in ogni presenza**: `AtcPresence.Vid` (`int?`, una proprietà `init` sotto il costruttore), dalla colonna `vid` della
+    vista; `null` dove l'archivio non lo dice (un doppio di un test), che non è il VID di nessuno. Non esce dai tour (le loro risposte
+    si costruiscono campo per campo): il contratto OpenAPI non cambia;
+  - **la domanda nuova** `IAtcActivitySource.SessionsOfAsync(vid, fromUtc, toUtc)`: le connessioni di un controllore aperte
+    nell'intervallo, nella forma della domanda dei tour (`AtcActivity`: le presenze e da quando l'archivio è completo, per la divisione
+    e per il mondo). Un controllore per domanda: vIPI indicizza `(UserId, StartUtc)`;
+  - **«non disponibile»** (`null`) con `atcData.source: none`, con un archivio scritto prima di E10b (la domanda ha un corpo
+    predefinito nell'interfaccia, come `IIvaoApiClient.GetAtcPositionsAsync`), con un archivio che non si legge;
+  - **corretto**: con `atcData: vipi` e senza `ConnectionStrings:AtcData` **l'hub non partiva** — il contesto della vista si
+    costruiva con la sorgente, fuori dal suo `try`, e all'avvio il seeder dei contenuti la costruisce attraverso i blocchi dei tour —;
+    ora parte e risponde «non disponibile» (nota §4, un commit a sé);
+  - **i test**: `AtcActivitySourceTests` (integrazione), con la vista di vIPI in **un database suo** e all'utente dell'hub solo il
+    `SELECT` sulla vista.
+- **Che cosa deve sapere la fase dopo**:
+  - **E11b** (l'esperienza, design §4.3): una domanda per candidato, `SessionsOfAsync(vid, adesso − experienceMonths, adesso)`, e
+    `Of(callsign)` per una postazione. «Più spesso» (sessioni o minuti) e «quel tipo» sono del modulo, e **il tipo di un nominativo lo
+    dà la directory di E10c**, non questa interfaccia (la colonna `position` della vista non passa). `null` = il criterio non c'è; una
+    lista vuota = nessuna esperienza.
+  - **E13a** (la presenza, §4.5): `SessionsOfAsync(vid, turno.da, turno.a).Of(callsign)` per il titolare; chi ha coperto:
+    `OnlineAsync(turno.da, turno.a).Of(callsign)` con un `Vid` diverso dal titolare. ⚠️ I minuti dentro il turno li conta il modulo:
+    una connessione ancora aperta ha `EndedAt` nullo, una riconnessione sono due connessioni, e la prima può cominciare prima del
+    turno. ⚠️ `Covers(callsign, turno.da)` falso vuol dire «non si sa» (`Unknown`), non un no-show. Con `null` il ripiego è il tracker
+    per VID con `connectionType=ATC` (E10a): la scelta fra le due fonti è del modulo.
+  - ⚠️ **`Vid` è `int?`**: `presence.Vid == turno.ControllerVid` con un `null` non conferma nessuno, ed è voluto.
+  - ⚠️ **E10b non tocca `Core/Ivao/`**, a differenza di quello che dice «Per chi prende M4» (con E10a ed E15a): l'archivio è
+    `Core/Atc/`, e non è il client di IVAO.
+  - ⚠️ **Un host dei test d'integrazione senza `useIvaoFixtures` chiede un token a IVAO** quando `ref_ivao_centers` è vuota (la
+    sincronizzazione all'avvio, `HubPipeline`): rifiutato con un 400, ma sono chiamate vere, cinque a ogni avvio finché la tabella
+    resta vuota. I test degli eventi che avviano un host passino `useIvaoFixtures: true`, come `AtcPositionTests` e
+    `AtcActivitySourceTests`.
+  - `docs/FORKING.md` e `config/division.example.json` descrivono l'archivio per i tour, e restano veri: la metà degli eventi la scrive
+    E15b.
 
 ### Che cosa ha lasciato E1 (30 settembre 2026, branch `m4/e1-calendar-kinds`, PR #200, del nucleo, senza coda)
 

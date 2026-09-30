@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -101,6 +102,14 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
         else if (!IsKnownTimeZone(options.Timezone))
         {
             failures.Add($"division.json: 'timezone' ({options.Timezone}) is not a time zone this machine knows.");
+        }
+
+        // The hour of a daily mail (M4, E10d): a typo here would move it to midnight without a word, or never send it.
+        if (!TimeOnly.TryParseExact(options.AwardDigestTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+        {
+            failures.Add(
+                $"division.json: 'awardDigestTime' ({options.AwardDigestTime}) must be a time of day written \"HH:mm\", "
+                + "for example \"07:00\", or left out for 07:00.");
         }
 
         foreach (var (department, mailbox) in options.DepartmentMailboxes)

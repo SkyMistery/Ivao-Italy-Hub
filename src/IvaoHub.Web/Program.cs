@@ -182,6 +182,9 @@ builder.Services.AddAtcActivity();
 // talks to a mail server: a module publishes an intent (plan section 9.7).
 builder.Services.AddHubNotifications();
 
+// The mail to whoever assigns the awards, about the signals every module writes into the core's queue (M4, E10d).
+builder.Services.AddHubAwards();
+
 // The login is the one place an outsider can make the server do work before proving anything.
 builder.Services.AddRateLimiter(options =>
 {

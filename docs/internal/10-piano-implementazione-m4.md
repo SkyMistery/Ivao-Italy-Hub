@@ -695,7 +695,55 @@ Design §4.3, §4.5, §9.3, §13 n.3; nota `il-roster-atc`. Branch `m4/e10b-shar
 **Test**: integrazione sulla vista di prova (come quelle di `IAtcActivitySource` oggi); `none` risponde «non disponibile».
 **Fatta quando**: la storia di un controllore per postazione si legge dal nucleo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Fatto** (nota nuova `2026-09-30-le-sessioni-condivise-per-vid`, scelta tecnica, nessuna domanda nuova), tutto in
+  `src/IvaoHub.Core/Atc/`:
+  - **il VID nelle presenze**: `AtcPresence.Vid` (`int?`), una proprietà `init` sotto il costruttore, letta dalla colonna `vid` della
+    vista (`UserId` di vIPI); `null` dove l'archivio non lo dice. Non esce dai tour, che costruiscono le loro risposte campo per campo
+    (`AtcContactDto`, `AgentAtcPresenceDto`): nessun cambio del contratto OpenAPI;
+  - **la domanda nuova** `IAtcActivitySource.SessionsOfAsync(vid, fromUtc, toUtc)`: le connessioni di un controllore aperte
+    nell'intervallo, nella forma della domanda di T12 (`AtcActivity`), per i due usi del design — un anno per l'esperienza (§4.3,
+    `Of(callsign)` è una postazione), l'ora di un turno per la presenza (§4.5, `Covers` separa «non c'era» da «non si sa»); chi ha
+    coperto la postazione è la domanda di T12 con i VID;
+  - `VipiAtcActivitySource` legge le due domande con **una query** sulla vista (quella di T12, con il filtro su `vid`);
+    `UnavailableAtcActivitySource` risponde `null` a tutte e due;
+  - `AtcActivitySourceTests` (integrazione, nuovo): la vista scritta come la migrazione di vIPI, **in un database suo**, con all'utente
+    dell'hub solo il `SELECT` sulla vista; l'ora di un turno e chi ha coperto, un anno per postazione con la copertura per metà, un VID
+    mai visto, `none`, un archivio scritto prima di E10b, la vista sparita, la stringa di connessione mancante.
+- ⚠️ **Scostamento: una correzione che la fase non chiedeva** (nota, §4; un commit a sé, `fix(core): …`). Con `atcData: vipi` e
+  `ConnectionStrings:AtcData` non ancora nei segreti **l'hub non partiva**: il contesto della vista arrivava dal costruttore della
+  sorgente, quindi si costruiva fuori dal suo `try`, e all'avvio la sorgente la costruisce il seeder dei contenuti (attraverso i
+  fornitori dei blocchi Data dei tour, fino ad `AtcProposer`). La classe prometteva «non disponibile» e il suo `catch` aspettava già
+  quell'eccezione: ora il contesto si chiede dentro il `try` (`IServiceProvider`, come `PersonalDataErasure`). La prova nuova cade con
+  la sorgente di prima, all'avvio dell'host. La nota la tratta come quello che è: il comportamento già scritto, non una decisione nuova.
+- **Scelte piccole, scritte nella nota**:
+  1. la domanda nuova ha **un corpo predefinito nell'interfaccia** che risponde «non disponibile», come
+     `IIvaoApiClient.GetAtcPositionsAsync` (A2 di M3): senza, il doppio di `AtcContactsTests` (del maintainer) non compilerebbe;
+  2. `Vid` è una proprietà sotto il costruttore e `int?`: il costruttore di T12 non cambia, e lo 0 è già l'installazione nelle colonne
+     di persona;
+  3. **un controllore per domanda**: vIPI indicizza `(UserId, StartUtc)` (letto nel suo modello, `Digital_vIPI`, il 30 settembre);
+  4. **il tipo di una postazione non passa** da qui: lo dice la directory di E10c; la colonna `position` della vista e il `SessionId`
+     restano fuori finché una fase non li chiede.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Un host dei test d'integrazione senza `useIvaoFixtures` chiede un token a IVAO** quando `ref_ivao_centers` è vuota
+     (`HubPipeline`, la sincronizzazione all'avvio): 400, ma cinque chiamate vere a ogni avvio finché la tabella resta vuota — nel primo
+     giro della classe da sola, a ogni suo host. `AtcActivitySourceTests` passa `useIvaoFixtures: true`; l'host di prova in generale è
+     del nucleo e fuori da questa fase (nella PR, per il revisore).
+  2. **E10b non tocca `Core/Ivao/`**, che «Per chi prende M4» dell'handoff metteva fra le sue: l'archivio è `Core/Atc/`.
+  3. **Il `SessionId` della vista è l'id della sessione di IVAO** (vIPI lo copia dal whazzup, `IvaoWhazzupClient`): se E14a vorrà
+     scrivere quale sessione ha trovato per un turno, è lo stesso id del tracker, qualunque sia la fonte.
+- **Verificato, in locale** (30 settembre 2026, sul branch prima del commit dei documenti): `dotnet build` senza avvisi, anche
+  `--no-incremental`; unità **885/885**; **integrazione intera senza filtro 435/435** (8,7 minuti; 5 nuove), sul codice dei primi due
+  commit — il terzo cambia solo un commento —; `AtcActivitySourceTests` da sola 5/5, con le fixture nessuna chiamata a IVAO (senza,
+  cinque per host); le controprove: senza il filtro su `vid`, e senza il VID nelle presenze, cadono le due prove del VID (2 rosse su 4
+  ogni volta); la prova della correzione cade con la sorgente di prima, all'avvio dell'host; `dotnet format --verify-no-changes` sui
+  tre file C#; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **594 in 80 file**; `pnpm gen:api` senza
+  differenze; le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, due del nucleo
+  (`Core/Atc/`), la nota nuova — passa.
+- **Non verificato**: la CI (la dice la PR); la vista vera di vIPI su `itivao_atc` (il test la riscrive dalla migrazione di vIPI, e la
+  prova e la produzione non hanno ancora `atcData`); il costo di `SessionsOfAsync` sul server condiviso (l'indice c'è nel modello di
+  vIPI, non l'ho misurato sul server); `pnpm e2e` e `pnpm e2e:full`, non girati perché nessuna schermata cambia.
 
 ### E10c — Nucleo: rating e postazioni della divisione
 
@@ -725,7 +773,85 @@ nota.
 **Test**: integrazione: un segnale di un tour e uno di prova avvisano chi assegna, non chi l'ha spento, una volta.
 **Fatta quando**: un segnale nuovo arriva nella casella di chi assegna.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo senza coda, da `main` a `c107c98`; `main`
+a `c98b272`, con E10b (#208), unita prima dei documenti; `main` a `04718e6`, con E10e (#206), unita dopo la prima pubblicazione, quando
+#205 era diventata CONFLICTING — solo `HANDOFF-M4.md`, l'intestazione e la riga «Che cosa manca», risolte tenendo il paragrafo di ogni
+fase):
+
+- **La domanda prima del codice.** La forma non era ovvia: con E14b, validare i PIREP di un RFE fa da cento a trecento segnali in pochi
+  giorni. La nota è andata a Carmine come «Proposta», con la PR in bozza e le domande in un [commento][q205]; il codice che ne
+  dipendeva ha aspettato la [risposta][a205] (Carmine, in chat al master, pubblicata su sua istruzione).
+- **Fatto** (nota nuova `2026-09-30-la-mail-a-chi-assegna-gli-award`, **decisa**):
+  - **il riepilogo al giorno**: `AwardQueueMailJob` (`award-queue-mail`, `src/IvaoHub.Core/Awards/`) gira all'ora di
+    `division.json → awardDigestTime` (`HH:mm` nell'ora della divisione, 07:00 se manca). Solo se sono entrati segnali nuovi, manda a
+    chi ha `Awards.Assign` (`IPermissionHolders`) una mail con una riga per motivo e award proposto e il numero, senza VID. Il tipo del
+    nucleo è `award.toAssign`, nel profilo da solo; le parole stanno in `locales/{en,it}/mail.json` e `common.json`;
+  - **il segno** `cms_award_signals.notified_at`, con l'indice `(status, notified_at)`: la migrazione `AddAwardSignalNotifiedAt` segna
+    come dette le righe già in coda, e il job lo scrive nello stesso salvataggio delle righe della mail;
+  - **l'ora della divisione**: `DivisionOptions.AwardDigestTime` e il suo controllo in `DivisionOptionsValidator`; il trigger si
+    costruisce da lì (`AwardQueueMailJob.CronAt`, in `AddHubAwards`); `config/division.example.json` e `docs/FORKING.md` la spiegano;
+  - **i test**, con i VID `761050–761055`:
+    - `AwardQueueMailTests` (integrazione, nuovo). Un segnale dei tour (la proiezione dell'iscrizione, salvata dal contesto dei tour)
+      e uno del modulo di prova arrivano a chi assegna, in una mail, una volta. Non arrivano a chi l'ha spenta dal profilo, né a chi
+      non ha il permesso. Un segnale scartato prima del giro non si racconta. L'ora dell'host è quella della divisione, nel suo fuso;
+    - `AwardQueueMailLinesTests` e `AwardDigestTimeTests` (unità).
+- **Scostamenti**:
+  1. **Il ritmo.** Il design (§8.3) e la nota di E0 dicevano «quando entra un segnale nuovo in coda», e `10` lasciava alla nota la
+     scelta. **Carmine ha scelto il riepilogo al giorno, con l'ora configurabile**: la mail parte all'ora di `awardDigestTime` dopo il
+     segnale, non subito. Il «fatta quando» di E10d vale a quell'ora; quello di E14b cambia allo stesso modo (nota, «Da portare nel
+     piano»).
+  2. **Un'impostazione nuova della divisione**, `awardDigestTime`, che `10` non prevedeva: la chiede la risposta di Carmine.
+  3. ⚠️ **Trovato: l'MD non può avere `Awards.Assign`**. Un grant non dà mai un permesso globale, e un test di Carmine lo fissa. Il piano
+     (§9.1), la nota di T4b e il design di M4 dicevano l'MD. Carmine ha deciso che `Awards.Assign` diventi concedibile, **in una fase
+     del nucleo sua**: qui non si toccano le regole dei grant né quel test. Fino ad allora coda e mail sono di DIR, ADIR, WM, AWM e dei
+     superadmin.
+- **Scelte piccole, scritte nella nota**:
+  - il segno si scrive anche quando nessuno riceve la mail, come in `DocumentReviewJob`;
+  - la migrazione segna come dette le righe già in coda;
+  - nei test chi assegna è un superadmin senza posizioni: un grant non può dare il permesso, e senza posizioni non entra fra i
+    destinatari che `ContactsAndNotificationsTests` conta esatti;
+  - il test mette in pausa il job del suo host, come `TourTests`.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **I primi giri della classe nuova, da sola, avviavano l'host senza le fixture di IVAO**: su una fotografia vuota l'host chiede
+     un token a IVAO all'avvio (l'avviso di E10b). Ora la classe passa `useIvaoFixtures: true` (un commit a sé), e da sola non fa
+     nessuna chiamata (contate nel log: zero).
+  2. `dotnet format --verify-no-changes` su `src/IvaoHub.Web/Program.cs` segnala l'ordine degli `using` (IMPORTS). C'è già su `main`;
+     E10d aggiunge solo una riga lontana dagli `using`, e i file della fase sono in ordine.
+  3. Gli snapshot dei contesti dei moduli prendono `notified_at` al loro prossimo `migrations add`: è lo scarto innocuo di T4b.
+- **Verificato, in locale** (30 settembre 2026):
+  - **prima della risposta**, sul codice di (B) con l'ora fissa: build senza avvisi, unità 889/889, integrazione intera senza filtro
+    431/431 (8,4 minuti), `pnpm test` 594/594;
+  - **le controprove**, sul codice della fase rimesso e ritoccato dopo ogni prova. Senza il filtro «in attesa» cade l'integrazione
+    (il segnale scartato viene raccontato). Senza il segno cade (`notified_at` vuoto). Con l'ora scritta nel codice cade la prova del
+    trigger (atteso `0 30 18 * * ?`, trovato `0 0 7 * * ?`);
+  - **sul codice definitivo, con `main` unita**:
+    - `dotnet build` senza avvisi; `dotnet format --verify-no-changes` sui file C# della fase;
+    - unità **898/898**; **integrazione intera senza filtro 437/437** (7,7 minuti); `AwardQueueMailTests` da sola 2/2;
+    - `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **594 in 80 file**; `pnpm gen:api` e `i18n:sync`
+      senza differenze;
+    - `pnpm e2e --workers=2`: **162/163** al primo giro, poi **163/163**. Era caduta `training-staff.spec.ts:379` con
+      `net::ERR_ADDRESS_IN_USE` alla navigazione, con circa 900 socket in TIME_WAIT; da sola, con `--repeat-each=3`, ha dato 3/3;
+    - `pnpm e2e:full` **50/50** al primo giro (9,9 minuti), su un banco suo (`http://127.0.0.1:5116`, `ivaohub_e2e_e10d` tolto
+      prima), dietro il lock di Mailpit. ⚠️ Un primo tentativo con `--workers=2` è stato fermato a metà, per un errore mio:
+      `playwright.full.config.ts` vuole **un worker solo** («two workers would publish over each other's page»). Sul banco nuovo i
+      due worker si sono contesi il primo accesso del web master (`Duplicate entry '999001'`), e `full/awards.spec.ts:24` è caduta in
+      206 ms. `--workers=2` vale per lo smoke, non per `e2e:full`;
+    - le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, 15 del nucleo, la nota nuova —
+      passa;
+  - **dopo il merge di E10e** (#206): `dotnet build` senza avvisi, unità **906/906**, integrazione intera senza filtro **437/437** (6,8 minuti). Il
+    merge porta solo `Core/Airspace/GreatCircle.cs`, i suoi test di unità e documenti, e nessun file web, schermata o migrazione: le
+    suite web ed e2e qui sopra non sono state rifatte.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - **la mail vera in Mailpit o nel browser**. Il banco non ha nessuno con `Awards.Assign` e una casella, e il job gira solo alla sua
+    ora. La prova il test d'integrazione, che la rende con le parole vere e controlla che non resti un segnaposto;
+  - due processi che fanno girare il job nello stesso secondo: è il limite di ogni job (nota, §3 punto 3);
+  - un orario cambiato in `division.json` su un'installazione vera (vale dal riavvio, come il fuso);
+  - la migrazione su un database con segnali già in coda: il test parte da una coda vuota, e la catena intera la prova
+    `MigrationsApplyOnRealMariaDbTests`.
+
+[q205]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5915953993
+[a205]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643
 
 ### E10e — Nucleo: la distanza fra due aeroporti
 
@@ -738,7 +864,62 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
 **Test**: gli unit dei tour, verdi; unit del nucleo sulla distanza fra due aeroporti noti.
 **Fatta quando**: i tour e il nucleo hanno un calcolo solo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Fatto** (nota nuova `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, scelta tecnica, con una richiesta a Carmine):
+  - **`src/IvaoHub.Core/Airspace/GreatCircle.cs`**, namespace `IvaoHub.Core.Airspace`: `GeoPoint`, `GreatCircle.DistanceNm` e
+    `GreatCircle.DistanceNmRounded`, con gli stessi nomi, le stesse firme e lo stesso codice della copia dei tour (la costante, la
+    formula, il `Min`, l'arrotondamento al decimo). Un modulo chiede a `IAirportDirectory.FindAsync` dove sono i due aeroporti e
+    misura con `GreatCircle`. Nessuna registrazione, nessuna migrazione, nessun endpoint, niente nel browser;
+  - **`tests/IvaoHub.UnitTests/GreatCircleTests.cs`** (unità, 8): le domande di `LegTests` al nucleo, con le stesse risposte; due
+    antipodi sono mezza circonferenza (a 0°, 8°, 12°, 34°, su due meridiani) e un grado attraverso l'antimeridiano è un grado; **il
+    test gemello**, che confronta il nucleo e la copia dei tour su 189 punti ognuno con ognuno (35.721 coppie: gli aeroporti dei
+    test, i bordi, una griglia del globo) e vuole lo stesso double, bit per bit, e lo stesso decimo.
+- ⚠️ **Scostamento dalla lettera del punto 1** («accanto alle coordinate di `IAirportDirectory`», nota §3): il calcolo sta in
+  `Core/Airspace/`, accanto ai contorni dei FIR, non accanto a `AirportDirectory.cs` in `Core/Ivao/`. Non nomina IVAO (`CLAUDE.md`
+  §3), e **in `IvaoHub.Core.Ivao` gli stessi nomi fanno cadere la build dei tour**: `TrackChecks.cs`, `PirepSubmission.cs` e
+  `PirepTests.Checks.cs` (un test del maintainer) importano sia `IvaoHub.Core.Ivao` sia `IvaoHub.Modules.FlightOps.Legs` —
+  provato, `CS0104` («'GeoPoint' è un riferimento ambiguo») su `TrackChecks.cs`.
+- ⚠️ **Scostamento dal punto 1 e dalla «Fatta quando»** («i tour lo usano da lì», «un calcolo solo»): passare i tour al nucleo è una
+  modifica di `src/IvaoHub.Modules.FlightOps/`, che il collaboratore non fa (`CLAUDE.md` §0 regola 2, `core-guard`). **La copia dei
+  tour resta**, e la sostituisce una sessione di Carmine, come `memberName` dopo A12a di M3: [la richiesta sulla #206][r206], e il
+  passaggio scritto riga per riga nella nota (§5; nessuna migrazione, i numeri sono gli stessi). Fino ad allora un calcolo solo per i
+  numeri — il test gemello — e due copie nel codice.
+- **Un test in più** di quelli che questa fase chiedeva: il test gemello. Le prove sui valori sono al decimo, e non vedono un raggio
+  cambiato (nota §6, punto 3).
+- **Trovato** (nota §6): agli antipodi `h` passa 1 di un'unità nell'ultima cifra (77.455 volte su due milioni di coppie a caso;
+  misurato con uno script su .NET 10), ma `Math.Sqrt` riporta 1 più un'unità esattamente a 1, quindi l'arcoseno non dà mai NaN, **anche
+  senza `Math.Min(1, h)`**. Il `Min` resta com'è nei tour: lo stesso codice, e una guardia che non costa niente.
+- **Verificato, in locale** (30 settembre 2026, una suite alla volta): `dotnet build IvaoHub.sln` 0 avvisi; unità **893/893**
+  (gli 8 nuovi); `GreatCircleTests` con `LegTests` da sole **18/18**; **integrazione intera, senza filtro, 430/430** al primo giro
+  (7,6 minuti); **le prove al contrario**, sul file del nucleo e poi rimesso: con il raggio arrotondato a 3440,065 le sette prove sui
+  valori passano e cade solo il test gemello; arrotondando a due decimali cadono il test gemello e quello del decimo; senza
+  `Math.Min(1, h)` resta tutto verde (il perché qui sopra); con il namespace `IvaoHub.Core.Ivao` la build dei tour cade (`CS0104`);
+  `dotnet format --verify-no-changes` sui due file C# pulito; in `web/`, dove niente cambia, `pnpm lint`, `typecheck`,
+  `format:check` e `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80 file, `pnpm gen:api` senza differenze; le regole
+  di `core-guard` rifatte in PowerShell su tutto il branch contro `main` (`c107c98`): nessun file del maintainer né dei tour, un file
+  del nucleo (`GreatCircle.cs`) con la nota nuova, PASS. La CI sulla cima di allora (`2a8ef3e`): `build-test` e `core-guard` verdi.
+- **Dopo la revisione** ([osservazioni del revisore sulla #206][v206], «approvable», niente da correggere: il calcolo com'è nei tour,
+  `Core/Airspace/` giusto come `FirBoundary.cs`) e **le risposte di Carmine** (30 settembre 2026, pubblicate dal master sulla #206 su
+  sua istruzione: [risposte][a206]): i tour passano al `GreatCircle` del nucleo **in una sua sessione, dopo l'unione** di questa PR;
+  **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master. Registrate nella nota (intestazione, §5, «Da portare nel piano») e
+  nell'handoff; nessun cambio al codice.
+- **Il merge di `main`** (chiesto dal revisore nello stesso commento): unita la #208 (E10b), la PR era in conflitto con `main` su
+  `HANDOFF-M4.md`, dove tutte e due le fasi avevano scritto in cima. `origin/main` (`c98b272`) è entrato con un merge (`291cc17`), mai
+  un rebase. **Un conflitto solo**, `HANDOFF-M4.md`: l'intestazione di E10e, con E10b unita e quello che E11b ed E13a ci trovano; le
+  due voci barrate nella riga di che cosa mancava; «Che cosa ha lasciato E10e» in cima e quello di E10b sotto. Nessuna riga dei due
+  lati è andata persa (controllato riga per riga); `10` si è unito da solo, con tutte e due le «Com'è andata». Poi di nuovo, una suite
+  alla volta, tutte al primo giro: `dotnet build` 0 avvisi; unità **893/893**; **integrazione intera, senza filtro, 435/435** (i 430 e
+  i 5 di E10b, 8 minuti); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (783 chiavi) verdi, `pnpm test` **594/594** in 80
+  file; `core-guard` contro `main` (`c98b272`): la PR mostra solo i cinque file della fase, nessun file del maintainer né dei tour, un
+  file del nucleo con la nota nuova, PASS.
+- **Non verificato**: la CI (la dice la PR); `pnpm e2e` e `pnpm e2e:full` (nessuna schermata cambia); i numeri su Linux — il test
+  gemello confronta due calcoli nello stesso processo e vale anche lì, ma che `h` passi 1 a 8°, 12° e 34° è misurato su Windows (il
+  test afferma solo la mezza circonferenza); il passaggio dei tour al nucleo, che è di Carmine.
+
+[r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
+[v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
+[a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
 
 ### E11a — Postazioni e disponibilità
 
