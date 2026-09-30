@@ -209,6 +209,17 @@ interface SeedStrings {
     readonly pages: Readonly<
       Record<string, { readonly title: string; readonly intro?: { readonly heading: string } }>
     >;
+    /**
+     * The words of the calendar the seed gives every installation (M4, E1: the four of the events).
+     * Spelled out for the reason the captions of `networkStats` are: a word read from a record is
+     * `string | undefined`, and a spec asserting on `undefined` asserts on nothing.
+     */
+    readonly calendarKinds: {
+      readonly rfe: string;
+      readonly rfo: string;
+      readonly mse: string;
+      readonly onlineDay: string;
+    };
   };
 }
 

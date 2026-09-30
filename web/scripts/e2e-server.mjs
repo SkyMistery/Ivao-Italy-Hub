@@ -128,6 +128,15 @@ const server = spawn(executable, [], {
     E2E__Assistant__LastName: 'Assistant',
     E2E__Assistant__Positions__0: 'IT-FOAC',
 
+    // And a coordinator of the events department, with `/e2e/signin?as=events` (M4, E1): the web master above reaches every
+    // department and holds every permission of every module, so a round of the events signed in as them would pass whatever
+    // the division gives the events department. This one holds only that, through the grants of its position. No mailbox,
+    // until a mail of the events' staff needs one.
+    E2E__Events__Vid: '999005',
+    E2E__Events__FirstName: 'Bench',
+    E2E__Events__LastName: 'Events',
+    E2E__Events__Positions__0: 'IT-EC',
+
     // Mailpit, from `docker-compose.yml` here and a service of the CI there: the queue of the
     // notifications is sent every minute, and a spec reads what arrived through Mailpit's API.
     Smtp__Host: process.env.E2E_SMTP_HOST ?? '127.0.0.1',
