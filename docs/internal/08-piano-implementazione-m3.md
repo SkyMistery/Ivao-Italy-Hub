@@ -4184,12 +4184,14 @@ nessun file del nucleo, nessuna migrazione.** La nota `2026-09-30-lo-storico-di-
     appena ricreato (127.0.0.1:**5110**, `ivaohub_e2e_a13b`). Il giro completo del modulo ha letto le sei righe dello storico sulla
     pagina vera;
   - le regole di `core-guard` in PowerShell, sul diff della fase dal merge-base con `main`: nessun file del maintainer, nessuno del
-    nucleo, la nota aggiunta, **PASS**.
+    nucleo, la nota aggiunta, **PASS**;
+  - **sul banco di A13b, nel browser dell'app**, riacceso dopo il giro completo con la stessa pubblicazione e senza posta (l'SMTP su una
+    porta morta, perché Mailpit è condiviso): la sezione in italiano, entrati come il coordinatore del banco. Sulla pagina del #6 ci
+    sono le sei righe del giro completo, sulla pagina del #7 anche la sessione rischedulata e la data fissata di nuovo. Gli orari sono
+    in UTC, con sotto l'ora di Roma.
 - **Non verificato**:
   - **la CI** della PR, che la dice la PR;
-  - **sul banco di anteprima** (5090/5091): la sezione non è stata guardata lì, perché il banco è della sessione che coordina. La pagina
-    vera l'ha letta il giro completo sul banco di A13b;
-  - **l'italiano sullo schermo**: le frasi le leggono in inglese il Vitest e le spec; l'italiano lo tiene `i18n:check`, con le stesse
-    chiavi.
+  - **sul banco di anteprima** (5090/5091): la sezione non è stata guardata lì, perché il banco è della sessione che coordina. L'ha
+    guardata il banco di A13b.
 
 [a13b-197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5910098296
