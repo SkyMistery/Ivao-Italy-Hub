@@ -22,8 +22,12 @@
 
 set -euo pipefail
 
-# The contributor's own module. A file named after it is new work even under tests/ or web/e2e/.
-OWN='[Tt]raining'
+# The contributor's own modules: Training (M3) and Events (M4, note decisions/2026-09-30-m4-al-collaboratore.md). A file
+# named after one is new work even under tests/ or web/e2e/. Their folders (src/IvaoHub.Modules.<Name>/,
+# web/src/modules/<key>/, locales/<lang>/<key>.json) are not core anyway. Events counts only at the start of a file or
+# folder name, so the core's shared test module (tests/IvaoHub.IntegrationTests/SampleEvents.cs, its AddSampleEvents
+# migrations) stays core.
+OWN='[Tt]raining|/[Ee]vents'
 
 # Generated files a module changes just by existing, and the explicit lists a module is registered in.
 is_allowed() {
