@@ -58,6 +58,7 @@ export function TrainingSettingsPage() {
             defaults={settingsToFormValues(
               settings,
               kinds.map((kind) => kind.value),
+              bootstrap.division.locales,
             )}
             locales={bootstrap.division.locales}
             labels="training:settings"

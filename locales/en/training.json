@@ -633,14 +633,16 @@
       "reminderLeadHours": "Hours before a session the reminder is sent",
       "hiddenPositions": "Positions not used for training",
       "hiddenPositions.callsign": "Position",
-      "theoryExamUrl": "Address of the theory exam"
+      "theoryExamUrl": "Address of the theory exam",
+      "theoryExamHint": "How to book the theory exam"
     },
     "hints": {
       "minimumHours": "Connection hours as a controller for an ATC rating, as a pilot for a pilot rating. A member with fewer cannot ask for that rating. No row: no threshold.",
       "maxResponseDays": "Empty: a training never closes by itself, and the staff closes it by hand.",
       "conflictKinds": "A proposed date that falls on an entry of one of these kinds is handled as the setting above says.",
       "hiddenPositions": "The trainees are offered every position of the division a rating is trained on, the military ones included, except these.",
-      "theoryExamUrl": "Shown with the question on the theory exam, and to whoever approves a request."
+      "theoryExamUrl": "Shown with the question on the theory exam, to whoever answers that they have not passed it yet, and to whoever approves a request.",
+      "theoryExamHint": "Shown under the link to the theory exam to whoever asks for a training: what to do on that site to book the exam. In every language of the division; empty, no instructions."
     },
     "options": {
       "conflictPolicy": {

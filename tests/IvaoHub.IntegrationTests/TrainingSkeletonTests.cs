@@ -124,6 +124,7 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             Assert.Equal(JsonValueKind.Null, defaults.GetProperty("maxResponseDays").ValueKind);
             Assert.Equal(["event"], defaults.GetProperty("conflictKinds").EnumerateArray().Select(kind => kind.GetString()));
             Assert.Empty(defaults.GetProperty("minimumHours").EnumerateArray());
+            Assert.Empty(defaults.GetProperty("theoryExamHint").EnumerateObject());
 
             // What the settings are chosen from: a rating the division trains, one it does not, a position it trains on.
             var (trained, untrained, position) = await ChoicesAsync(token);
@@ -136,6 +137,7 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             changed["minimumHours"] = JsonSerializer.SerializeToElement(new[] { new { kind = trained.Kind.ToString(), rating = trained.Number, hours = 50 } });
             changed["hiddenPositions"] = JsonSerializer.SerializeToElement(new[] { position });
             changed["theoryExamUrl"] = JsonSerializer.SerializeToElement("https://exam.example.org/theory");
+            changed["theoryExamHint"] = JsonSerializer.SerializeToElement(new { it = "Lì clicca «Prenota».", en = "Click «Book» there." });
 
             using (var saved = await manager.PutAsJsonAsync(SettingsUri, changed, token))
             {
@@ -150,6 +152,8 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             Assert.Equal(trained.Number, reread.GetProperty("minimumHours")[0].GetProperty("rating").GetInt32());
             Assert.Equal([position], reread.GetProperty("hiddenPositions").EnumerateArray().Select(callsign => callsign.GetString()));
             Assert.Equal("https://exam.example.org/theory", reread.GetProperty("theoryExamUrl").GetString());
+            Assert.Equal("Lì clicca «Prenota».", reread.GetProperty("theoryExamHint").GetProperty("it").GetString());
+            Assert.Equal("Click «Book» there.", reread.GetProperty("theoryExamHint").GetProperty("en").GetString());
 
             // The coordinator holds the same permission by the position, and reads the same.
             Assert.Equal(7, (await coordinator.GetFromJsonAsync<JsonElement>(SettingsUri, token)).GetProperty("cooldownDays").GetInt32());
@@ -162,6 +166,8 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             invalid["conflictKinds"] = JsonSerializer.SerializeToElement(new[] { "trn-test-no-such-kind" });
             invalid["hiddenPositions"] = JsonSerializer.SerializeToElement(new[] { "TRN_TEST_NOWHERE" });
             invalid["theoryExamUrl"] = JsonSerializer.SerializeToElement("javascript:alert(1)");
+            // Written in one language of the division only (A13): the trainee reading the other would find nothing under the link.
+            invalid["theoryExamHint"] = JsonSerializer.SerializeToElement(new { it = "Solo in italiano." });
 
             using (var refused = await manager.PutAsJsonAsync(SettingsUri, invalid, token))
             {
@@ -176,11 +182,26 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
                         ["conflictKinds"] = "training:errors.calendarKindUnknown",
                         ["hiddenPositions[0].callsign"] = "training:errors.positionUnknown",
                         ["theoryExamUrl"] = "errors.url.absolute",
+                        ["theoryExamHint"] = "errors.localized.missing",
                     },
                     errors.EnumerateObject().ToDictionary(field => field.Name, field => field.Value[0].GetString()!));
             }
 
             Assert.Equal(7, (await manager.GetFromJsonAsync<JsonElement>(SettingsUri, token)).GetProperty("cooldownDays").GetInt32());
+
+            // Words under the link written in no language are none (A13): saved as the form sends them, empty, and as null.
+            foreach (var none in new[] { JsonSerializer.SerializeToElement(new { }), JsonSerializer.SerializeToElement<object?>(null) })
+            {
+                var cleared = Settings(reread);
+                cleared["theoryExamHint"] = none;
+
+                using (var saved = await manager.PutAsJsonAsync(SettingsUri, cleared, token))
+                {
+                    Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+                }
+
+                Assert.Empty((await manager.GetFromJsonAsync<JsonElement>(SettingsUri, token)).GetProperty("theoryExamHint").EnumerateObject());
+            }
 
             // Viewing the trainings is not managing them.
             using (var read = await viewer.GetAsync(SettingsUri, token))

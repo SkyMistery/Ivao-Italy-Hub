@@ -37,6 +37,8 @@ export interface TrainingSettings {
   readonly reminderLeadHours: number;
   readonly hiddenPositions: readonly string[];
   readonly theoryExamUrl: string | null;
+  /** Empty, never null, until the division writes it: the core reads a translated field that is missing so. */
+  readonly theoryExamHint: Readonly<Record<string, string>>;
 }
 
 /** What the fields of the settings choose from, already in the language on screen. */
@@ -70,6 +72,8 @@ export function settingsSchema(choices: SettingsChoices) {
     ),
     // Empty: no site of an exam (§12 n.12).
     theoryExamUrl: z.string(),
+    // Empty in every language: no words under its link (A13). Written in one only is the server's to refuse.
+    theoryExamHint: localized().meta({ localized: true, multiline: true }),
   });
 }
 
@@ -91,13 +95,23 @@ export function fromRatingChoice(choice: string): { kind: RatingKind; rating: nu
 
 /**
  * The form's values. A kind of the calendar the division no longer has is left out, because the form draws no box to take
- * it off with; a position is kept, so that the server can say it is gone and somebody takes it out.
+ * it off with; a position is kept, so that the server can say it is gone and somebody takes it out. The words under the link
+ * to the site of the exam have a box in every language of the division, empty where nothing is written.
  */
 export function settingsToFormValues(
   settings: TrainingSettings,
   knownKinds: readonly string[],
+  locales: readonly string[],
 ): SettingsFormValues {
-  const { minimumHours, maxResponseDays, conflictKinds, hiddenPositions, theoryExamUrl, ...rest } = settings;
+  const {
+    minimumHours,
+    maxResponseDays,
+    conflictKinds,
+    hiddenPositions,
+    theoryExamUrl,
+    theoryExamHint,
+    ...rest
+  } = settings;
 
   return {
     ...rest,
@@ -109,11 +123,13 @@ export function settingsToFormValues(
     conflictKinds: conflictKinds.filter((kind) => knownKinds.includes(kind)),
     hiddenPositions: hiddenPositions.map((callsign) => ({ callsign })),
     theoryExamUrl: theoryExamUrl ?? '',
+    theoryExamHint: Object.fromEntries(locales.map((locale) => [locale, theoryExamHint[locale] ?? ''])),
   };
 }
 
 export function settingsFromFormValues(values: SettingsFormValues): TrainingSettings {
   const address = values.theoryExamUrl.trim();
+  const hint = Object.entries(values.theoryExamHint).map(([locale, text]) => [locale, text.trim()] as const);
 
   return {
     ...values,
@@ -121,6 +137,8 @@ export function settingsFromFormValues(values: SettingsFormValues): TrainingSett
     maxResponseDays: values.maxResponseDays ?? null,
     hiddenPositions: values.hiddenPositions.map(({ callsign }) => callsign),
     theoryExamUrl: address === '' ? null : address,
+    // Nothing written in any language is no words at all; written in some only goes as it is, for the server to refuse.
+    theoryExamHint: hint.every(([, text]) => text === '') ? {} : Object.fromEntries(hint),
   };
 }
 

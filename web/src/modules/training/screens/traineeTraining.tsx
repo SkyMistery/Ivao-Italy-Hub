@@ -66,6 +66,8 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
   const { bootstrap } = useRouteContext({ from: '/_member' });
+  // The site of the theory exam, beside a refusal for it (A13): the trainee's page of the trainings says where it is.
+  const mine = useQuery(mineQuery());
   // The dates still to come are the ones offered when the page was drawn; a choice reads the page again.
   const [drawnAt] = useState(() => Date.now());
   const slots = choosableSlots(training, drawnAt);
@@ -128,7 +130,7 @@ function TrainingScreen({ training }: { training: TraineeTrainingDto }) {
         </section>
       ) : null}
 
-      <OutcomeText training={training} />
+      <OutcomeText training={training} exam={mine.data ?? null} />
 
       {/* What comes next, as the trainee is told it: a state that goes on has one, and so has one its session ended (A9); a
           training refused or closed has said it above. */}

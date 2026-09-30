@@ -87,8 +87,8 @@ public sealed class TrainingXxDivisionTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Contains(await context.Database.GetAppliedMigrationsAsync(token), migration => migration.EndsWith("_Initial", StringComparison.Ordinal));
         Assert.Empty(await context.Database.GetPendingMigrationsAsync(token));
 
-        // Its settings as the fork starts: no threshold, no time limit, no position, no site of an exam — nothing of this
-        // division, which only its own training department will write.
+        // Its settings as the fork starts: no threshold, no time limit, no position, no site of an exam nor words of what to do
+        // there (A13) — nothing of this division, which only its own training department will write.
         var settings = await scope.ServiceProvider.GetRequiredService<ModuleSettingsStore>()
             .GetAsync<TrainingSettings>(TrainingModule.ModuleKey, token);
 
@@ -96,6 +96,7 @@ public sealed class TrainingXxDivisionTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Null(settings.MaxResponseDays);
         Assert.Empty(settings.HiddenPositions);
         Assert.Null(settings.TheoryExamUrl);
+        Assert.Empty(settings.TheoryExamHint);
 
         var written = JsonSerializer.Serialize(settings);
         foreach (var forbidden in Forbidden)

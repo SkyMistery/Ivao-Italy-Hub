@@ -3,6 +3,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Bans;
@@ -55,6 +56,8 @@ public sealed class TrainingRequests(
             trainee.Name,
             theory.AsksTheTrainee,
             settings.TheoryExamUrl,
+            // Blank in every language, written through the API rather than the form, is no words at all.
+            TrainingSettings.IsWritten(settings.TheoryExamHint) ? settings.TheoryExamHint : Localized<string>.Empty,
             await PathsAsync(trainee, history, bans, settings, cancellationToken),
             await DtosAsync([.. history.OrderByDescending(training => training.CreatedAt).ThenByDescending(training => training.Id)], cancellationToken));
     }

@@ -1,6 +1,7 @@
 using FluentValidation.Results;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Training;
 using IvaoHub.Modules.Training.Settings;
 using Xunit;
@@ -41,6 +42,7 @@ public sealed class TrainingSettingsTests
         Assert.Equal(24, defaults.ReminderLeadHours);
         Assert.Empty(defaults.HiddenPositions);
         Assert.Null(defaults.TheoryExamUrl);
+        Assert.Empty(defaults.TheoryExamHint);
 
         Assert.True(Validator.Validate(defaults).IsValid);
     }
@@ -105,6 +107,18 @@ public sealed class TrainingSettingsTests
 
         var tooLong = "https://exam.example.org/" + new string('x', 1024);
         Assert.Contains(("theoryExamUrl", "errors.text.tooLong"), Failures(Validator.Validate(new TrainingSettings { TheoryExamUrl = tooLong })));
+    }
+
+    [Fact]
+    public void TheWordsUnderTheLinkToTheExamAreASentenceOrTwoInEachLanguage()
+    {
+        var bound = new string('x', TrainingSettingsValidator.MaxHintLength);
+        Assert.True(Validator.Validate(new TrainingSettings { TheoryExamHint = bound.L(bound) }).IsValid);
+
+        // One language too long is enough; that each language of the division is written is the save's rule, which knows them.
+        Assert.Equal(
+            [("theoryExamHint", "errors.text.tooLong")],
+            Failures(Validator.Validate(new TrainingSettings { TheoryExamHint = "ok".L(bound + "x") })));
     }
 
     [Fact]

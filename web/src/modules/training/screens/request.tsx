@@ -356,7 +356,9 @@ function RequestForm({
             onConfirm={sendWithAnswer}
           >
             <TheoryAnswer value={answer} onChange={setAnswer} />
-            {mine.theoryExamUrl === null ? null : <TheoryExamLink url={mine.theoryExamUrl} />}
+            {mine.theoryExamUrl === null ? null : (
+              <TheoryExamLink url={mine.theoryExamUrl} hint={mine.theoryExamHint} />
+            )}
           </ConfirmDialog>
           {cancel}
         </div>
@@ -412,7 +414,9 @@ function Declined({
         description={
           <span className="flex flex-col gap-2">
             <span>{t('training:request.declined.description')}</span>
-            {mine.theoryExamUrl === null ? null : <TheoryExamLink url={mine.theoryExamUrl} />}
+            {mine.theoryExamUrl === null ? null : (
+              <TheoryExamLink url={mine.theoryExamUrl} hint={mine.theoryExamHint} />
+            )}
           </span>
         }
       />

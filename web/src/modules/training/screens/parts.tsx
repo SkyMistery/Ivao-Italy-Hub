@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
+import type { LocalizedString } from '../../../shared/api/bootstrap';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, RatingBadge, personName, useNotice } from '../../../shared/ui';
 import {
   useCancelTraining,
+  type MyTrainingDto,
   type MyTrainingPathDto,
   type SessionOutcome,
   type ShownState,
@@ -141,14 +143,29 @@ export function ReadyForExamLine({
   ) : null;
 }
 
-/** Where the theory exam is taken, as the division wrote it in the settings (§12 n.12): it opens beside the hub. */
-export function TheoryExamLink({ url }: { url: string }) {
+/**
+ * Where the theory exam is taken, as the division wrote it in the settings (§12 n.12): it opens beside the hub. Under it, for a
+ * trainee, what to do there to book the exam, in the language on screen, when the division wrote it (A13); the staff's reminder
+ * has the link alone.
+ */
+export function TheoryExamLink({ url, hint = null }: { url: string; hint?: LocalizedString | null }) {
   const { t } = useTranslation();
+  const read = useLocalized();
+  const words = read(hint).trim();
 
-  return (
+  const link = (
     <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
       {t('training:theoryExam')}
     </a>
+  );
+
+  return words === '' ? (
+    link
+  ) : (
+    <span className="flex flex-col gap-1">
+      {link}
+      <span className="whitespace-pre-line">{words}</span>
+    </span>
   );
 }
 
@@ -195,22 +212,36 @@ export function WhenText({
 
 /**
  * How a training of the trainee's ended without a report, as they read it: refused — by the hub, because they said the theory is
- * not passed, or by the staff with its reason —, or closed — by the staff with its reason, or by the hub, because they chose no
- * date in time (§2.5). Nothing for a training that goes on or ended otherwise.
+ * not passed, with the site of the exam and what to do there when the division wrote them (A13), or by the staff with its reason
+ * —, or closed — by the staff with its reason, or by the hub, because they chose no date in time (§2.5). Nothing for a training
+ * that goes on or ended otherwise.
  */
-export function OutcomeText({ training }: { training: TraineeTrainingDto }) {
+export function OutcomeText({
+  training,
+  exam = null,
+}: {
+  training: TraineeTrainingDto;
+  exam?: Pick<MyTrainingDto, 'theoryExamUrl' | 'theoryExamHint'> | null;
+}) {
   const { t } = useTranslation();
   const closing = closingOf(training);
 
   if (training.state === 'Rejected') {
+    const theory = isTheoryRefusal(training);
+
     return (
-      <p className="text-sm">
-        {isTheoryRefusal(training)
-          ? t('training:mine.theoryRefusal')
-          : training.rejectionReason === null
-            ? t('training:mine.staffRefusal')
-            : t('training:mine.staffRefusalReason', { reason: training.rejectionReason })}
-      </p>
+      <div className="flex flex-col gap-1 text-sm">
+        <p>
+          {theory
+            ? t('training:mine.theoryRefusal')
+            : training.rejectionReason === null
+              ? t('training:mine.staffRefusal')
+              : t('training:mine.staffRefusalReason', { reason: training.rejectionReason })}
+        </p>
+        {theory && exam?.theoryExamUrl ? (
+          <TheoryExamLink url={exam.theoryExamUrl} hint={exam.theoryExamHint} />
+        ) : null}
+      </div>
     );
   }
 

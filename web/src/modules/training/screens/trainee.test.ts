@@ -78,7 +78,15 @@ function training(
 }
 
 function mine(paths: MyTrainingPathDto[]): MyTrainingDto {
-  return { vid: 790099, name: 'Test Trainee', asksTheory: true, theoryExamUrl: null, paths, trainings: [] };
+  return {
+    vid: 790099,
+    name: 'Test Trainee',
+    asksTheory: true,
+    theoryExamUrl: null,
+    theoryExamHint: {},
+    paths,
+    trainings: [],
+  };
 }
 
 const waiting = path({ refusal: REFUSALS.waiting, waitUntil: '2026-10-01T12:00:00Z' });

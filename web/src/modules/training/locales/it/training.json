@@ -632,14 +632,16 @@
       "reminderLeadHours": "Ore di anticipo del promemoria di una sessione",
       "hiddenPositions": "Postazioni non usate per il training",
       "hiddenPositions.callsign": "Postazione",
-      "theoryExamUrl": "Indirizzo dell'esame teorico"
+      "theoryExamUrl": "Indirizzo dell'esame teorico",
+      "theoryExamHint": "Come richiedere l'esame teorico"
     },
     "hints": {
       "minimumHours": "Ore di connessione da controllore per un rating ATC, da pilota per un rating pilota. Chi ne ha meno non può chiedere quel rating. Nessuna riga: nessuna soglia.",
       "maxResponseDays": "Vuoto: un training non si chiude mai da solo, e lo chiude lo staff a mano.",
       "conflictKinds": "Una data proposta che cade su una voce di uno di questi tipi è trattata come dice l'impostazione qui sopra.",
       "hiddenPositions": "Ai trainee si offrono tutte le postazioni della divisione su cui si allena un rating, militari comprese, tranne queste.",
-      "theoryExamUrl": "Mostrato con la domanda sull'esame teorico, e a chi approva una richiesta."
+      "theoryExamUrl": "Mostrato con la domanda sull'esame teorico, a chi risponde di non averlo ancora superato e a chi approva una richiesta.",
+      "theoryExamHint": "Mostrato sotto il link all'esame teorico, a chi chiede un training: che cosa fare su quel sito per richiedere l'esame. In ogni lingua della divisione; vuoto, nessuna istruzione."
     },
     "options": {
       "conflictPolicy": {
