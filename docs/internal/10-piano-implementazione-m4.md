@@ -720,7 +720,7 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
 - **Verificato, in locale**: il 30 settembre, sulla prima metà (vocabolario con i quattro tipi decisi e directory): `dotnet build` senza
   avvisi, unità 911/911, **integrazione intera senza filtro 433/433** (505 s), `pnpm lint`, `typecheck`, `format:check`, `i18n:check`,
   `pnpm test` 594 in 80 file, `pnpm gen:api` senza differenze. Il 1° ottobre, dopo il merge di E10d ed E10e e con tutto E10c: `dotnet
-  build` senza avvisi; unità **984/984**; **integrazione intera senza filtro INTEGRAZIONE**; `AtcPositionTests` da sola 13/13; `pnpm
+  build` senza avvisi; unità **984/984**; **integrazione intera senza filtro 444/444** (492 s); `AtcPositionTests` da sola 13/13; `pnpm
   lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 594 in 80 file; `pnpm gen:api` senza differenze; `dotnet format
   --verify-no-changes` sui file C# toccati; le regole di `core-guard` rifatte in PowerShell sul diff dalla base del merge.
 - **Non verificato**: la CI (la dice la PR); **il fuso degli orari degli FRA** (letti UTC, come ogni orario di IVAO: nessuna fonte lo
