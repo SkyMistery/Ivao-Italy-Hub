@@ -11,30 +11,27 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A12b** (modulo: la cancellazione dei dati di un trainee, «persona cancellata» nelle
-pagine del training, la conservazione), sul branch `m3/a12b-training-erasure`, **PR #189** verso `main`, in bozza **in coda dopo #187** (A12a,
-in bozza in coda dopo #182, A11b, **in cima alla coda**, pronta a CI verde: **#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b,
-sono unite** il 29 settembre). La nota nuova `decisions/2026-09-29-il-training-affidato-a-chi-si-cancella.md` — un training aperto di un
-altro membro, affidato a un trainer che si cancella — è nata «Proposta» con [la domanda sulla
-#189](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5898971168), e **Carmine l'ha decisa** il 30 settembre, la (a)
-come raccomandato ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5900464516)); la fase intera è scritta
-e provata. Il branch è nato dalla cima della coda (`m3/a12a-deleted-person-core` a ba557bb, preparato dalla sessione di A12a), e **la coda
-l'ha raggiunto**: il passo di #182 dopo #181, con `main` a 17941c0, è salito per A11b (99421c2) e A12a (62eee6f) ed è entrato qui con un
-merge (2fdc3a5), solo documenti. **L'intervallo `m3/a12a-deleted-person-core...m3/a12b-training-erasure` mostra solo la fase**, e il branch
-**si unisce senza conflitti con il `main` di oggi** (6704aad, con #190): la PR ha la CI. **Sono in `main`**:
-A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148),
-A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del maintainer. **In coda sopra A12b**:
-**A12d** (il giro completo e la chiusura di M3), la cui sessione è partita dal branch `m3/a12d-full-round`. **A11b** (#182) il revisore l'ha
-trovata approvabile ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)); per la sua consegna
-serve il `config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che
-cosa deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
-cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è
-accettata, gli esami prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
-`CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda
-(`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente.
-**A10 è divisa in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182); **A12 in
-quattro**, A12a (#187), A12b (questa), A12c (solo con i codici di PATS: resta condizionata) e A12d. In C# una chiave di un modulo si chiede con
-il namespace (`training:…`, #138).
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A12d** (il giro completo di M3 sul banco, il modulo del training in `docs/FORKING.md`,
+il rapporto di chiusura `decisions/2026-09-30-m3-review.md`), sul branch `m3/a12d-full-round`, **PR #191** verso `main`, in bozza **in coda
+dopo #189** (A12b, in bozza in coda dopo #187, A12a, in coda dopo #182, A11b, **in cima alla coda**). **È l'ultima fase di M3 in `08`**:
+A12c resta condizionata, perché il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
+#187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Nessuna domanda a Carmine, nessun file del nucleo.
+Il branch è nato dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e **la coda l'ha raggiunto
+prima della PR**: il passo di #182 dopo #181, con `main` a 17941c0, è salito per A11b (99421c2), A12a (62eee6f) e A12b (4d91517), solo
+documenti, ed è entrato qui con un merge (3e5065f). **L'intervallo `m3/a12b-training-erasure...m3/a12d-full-round` mostra solo la fase**, e
+il branch **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190): la PR ha la CI. **Sono in `main`**: A3 (#131), A3b
+(#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b
+(#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del maintainer. **A11b** (#182) il revisore l'ha trovata
+approvabile ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)); per la sua consegna serve il
+`config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve
+sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione cominciata si
+registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami
+prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0)
+unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`,
+«Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. **A10 è divisa in tre**
+(`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182); **A12 in quattro**, A12a (#187), A12b
+(#189), A12c (solo con i codici di PATS: resta condizionata) e A12d (questa). In C# una chiave di un modulo si chiede con il namespace
+(`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -105,6 +102,37 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A12d (30 settembre 2026, branch `m3/a12d-full-round`, PR #191)
+
+- **Che cosa c'è** (una spec del modulo, un documento pubblico e la nota del rapporto; nessun file del nucleo, nessuna migrazione, nessuna
+  domanda a Carmine):
+  - **il giro completo**, `web/e2e/full/training-the-full-round.spec.ts`: un training ATC del trainee del banco dalla richiesta al report,
+    per le pagine vere e ogni passo sulla pagina di chi lo fa, nessuno per l'API — la richiesta con la domanda sul teorico,
+    l'accettazione e l'assegnazione dello staff, due date proposte dal trainer, la prima scelta dal trainee fra i riquadri e trovata nel
+    calendario pubblico senza nomi, il report a sessione cominciata, letto dal trainee senza le note dello staff, il training nello storico
+    dello staff —, e **la mail di ogni passo, una volta sola, a chi è per**;
+  - **`docs/FORKING.md`**, la sezione «The training module»: che cosa fa; chi lo gestisce, con le posizioni del TD e i `positionGrants`
+    dell'esempio, il team di un FIR compreso; le impostazioni con i predefiniti e `theoryExamUrl`; rating, postazioni e ore; pagine,
+    blocchi, mail e job; che cosa tiene; che cosa non fa. E lo stato in cima;
+  - **il rapporto di chiusura di M3**, `decisions/2026-09-30-m3-review.md`, come quelli di M1 e M2: il conto contro il design (sette
+    tabelle su sette, nove permessi su nove, quattro blocchi su quattro), **i 26 endpoint scritti a mano per famiglia**, ognuno con la
+    decisione che l'ha voluto (0 CRUD a mano, 0 eccezioni dichiarate, 0 endpoint del nucleo), **l'eccezione della nota delle note riservate
+    contata**, le estensioni del nucleo, gli scostamenti, il volume, che cosa resta aperto e che cosa portare nel piano;
+  - in `08`, l'intestazione `### A9 — Dopo la sessione`, persa in un commit di documenti del 29 settembre.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Il giro completo lascia un training ATC `Completed`** sulla seconda postazione della divisione, **senza attesa e senza mock
+    exam**: il percorso ATC resta libero per i giri dopo, e per lui stesso su un banco sopravvissuto (provato: un secondo giro sullo stesso
+    banco passa). Un giro fermato a metà lascia un training aperto sul percorso ATC, e il giro dopo lo riprende: una sessione già
+    cominciata la rischedula e poi la chiude, che non fa aspettare nessuno (un no-show farebbe aspettare 14 giorni).
+  - ⚠️ **Dura circa quattro minuti**: aspetta che cominci la sessione, fissata un minuto o due avanti — nessuna data nel passato.
+  - ⚠️ **Le mail di un giro si riconoscono dall'oggetto**, che nomina il training (percorso, rating, postazione): due giri sulla stessa
+    postazione non distinguono le loro mail da quelle dell'altro ancora in viaggio. Il giro completo usa la seconda postazione per questo;
+    un giro nuovo che guarda le mail ne scelga una che nessuno usa, o legga il testo.
+  - **M3 non ha una fase dopo in `08`.** A12c resta condizionata ai codici di PATS; che cosa resta aperto lo dice il rapporto, e i
+    passi del piano li porta il master dopo l'unione.
+  - Il banco di A12d: 127.0.0.1:**5108**, `ivaohub_e2e_a12d`. VID: nessuno nuovo (i personaggi del banco).
+- **La fase dopo**: nessuna in `08`. Se arriveranno i codici di PATS, **A12c**.
 
 ### Che cosa ha lasciato A12b (29–30 settembre 2026, branch `m3/a12b-training-erasure`, PR #189)
 
