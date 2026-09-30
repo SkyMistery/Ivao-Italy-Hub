@@ -84,7 +84,7 @@ Per non ripeterle trenta volte:
 | E0 | Note di decisione e questo piano — **questa PR** | design deciso (#180) | dieci note sulle decisioni di §17; le fasi qui sotto; `HANDOFF-M4.md` |
 | E1 | Nucleo: i tipi del calendario e l'ED sul banco | E0 | `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) nel seme dei tipi; il personaggio `?as=events` (`IT-EC`) sul banco e2e |
 | E2 | Modulo: lo scheletro | E0 | progetto, contesto, `Initial` (`evt_events` intera, `evt_event_airports`), catalogo, `positionGrants`, impostazioni, menu, segmento |
-| E3a | L'evento nello staff | E1, E2; i grant di chi collabora (nota di E2, «Proposta») | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare |
+| E3a | L'evento nello staff | E1, E2, E2b (i grant di chi collabora: nota di E2, decisa sulla #209) | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare |
 | E3b | La vita dell'evento | E3a | pubblicare, l'uscita programmata, la fine; calendario, ricerca, usi dei file; `events-release` |
 | E4 | Il pubblico e le rotte | E3b | `/events`, `/events/{slug}`, `events.eventList`; `evt_routes` del FOD |
 | E5 | Gli slot pubblici e l'esportazione | E4 | `evt_slots`, incolla e carica con le catene, liste; l'esportazione con il token `events.bookings` |
@@ -413,16 +413,17 @@ coda):
      e risponde le disponibilità dell'evento che coprono la finestra della postazione, lette dal modulo e non dalla lista generata. Lo
      staff di un FIR vede i candidati delle sue postazioni; la lista intera resta a chi tiene `EventAtc.View` sull'ED.
 - ⚠️ **Scostamenti**:
-  1. **I nove grant di AOD, FOD e MD non sono nei file** (punto 3), e aspettano la risposta di Carmine alla nota nuova
-     `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` («Proposta», con la domanda sulla PR). Un grant sull'ED fa entrare chi lo tiene
-     nell'ED per tutto quello che vede (`HubClaims.BuildIdentity`, la regola del 6 settembre, scritta per un grant a una persona), e i
-     nove sarebbero i primi grant a una posizione fra due dipartimenti: **misurato**, con i 22 grant del design la suite d'integrazione
-     intera dà 430 test e **tre rossi del maintainer** (`SeveralDepartmentsTests` righe 81 e 120, `SearchEndpointTests` riga 82). La nota
-     raccomanda la (b), una fase del nucleo **E2b** prima di E3a in cui un grant a una posizione di un altro dipartimento dà il permesso e
-     non il dipartimento, come per il team di un FIR. **E3a aspetta la risposta**: prova «FOD e AOD non modificano il testo» e «chi
-     collabora non elimina».
+  1. **I nove grant di AOD, FOD e MD non sono nei file** (punto 3). Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello
+     che vede (`HubClaims.BuildIdentity`, la regola del 6 settembre, scritta per un grant a una persona), e i nove sarebbero i primi grant
+     a una posizione fra due dipartimenti: **misurato**, con i 22 grant del design la suite d'integrazione intera dà 430 test e **tre
+     rossi del maintainer** (`SeveralDepartmentsTests` righe 81 e 120, `SearchEndpointTests` riga 82). Nota nuova
+     `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`, con la domanda sulla PR; **Carmine ha deciso la (b)** (30 settembre, in chat al
+     master, pubblicata su sua istruzione [sulla #209][a209]): un grant a una posizione su un dipartimento che non è il suo dà il
+     permesso, non il dipartimento, in una fase del nucleo a sé, **E2b**, prima di E3a, che la sessione che coordina prepara; i nove si
+     seminano dopo di lei, non in E2. **E3a aspetta E2b**: prova «FOD e AOD non modificano il testo» e «chi collabora non elimina».
   2. **L'ordine dei moduli**: gli eventi **per primi** in `Modules.cs` e in `web/src/modules/index.ts` (eventi, tour, training), l'ordine
      delle sezioni del back office della nota `2026-09-13-moduli-non-subordinati-ai-dipartimenti` §3.1; tour e training restano nel loro.
+     **Confermato da Carmine** [sulla #209][a209] («Yes, the Events section first»).
   3. **`evt_event_airports` nasce con le colonne del nucleo** che il punto 1 non elenca — maschera, audit, `row_version` —, perché E3a
      non ha migrazione e le righe degli scali copiano maschera e scope dell'evento (punto 3 di E3a).
   4. **Le forme delle colonne**, che il design non dice: `starts_at_utc` ed `ends_at_utc` obbligatorie (lo stato si legge dalle date, e
@@ -451,10 +452,32 @@ coda):
   minuti, la spec nuova compresa) su un banco suo (`http://127.0.0.1:5112`, `ivaohub_e2e_e2` tolto prima, dietro il lock di Mailpit). Una prima corsa è stata fermata durante il
   publish, prima di ogni spec: lanciata per sbaglio con `--workers=2`, che la configurazione di `e2e:full` non vuole (un worker, per
   non pubblicare una sull'altra). Le regole di `core-guard` rifatte in PowerShell dalla base di merge: nessun file del maintainer, uno
-  del nucleo (`ErasureTests.cs`), due note nuove.
-- **Non verificato**: la CI (la dice la PR); la risposta di Carmine, e quindi i nove grant; le due verifiche del §6.3 sono scritte, non
-  provate da un codice (E11a); la migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB 11.4.10 vera);
-  `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree (le spec la tollerano, come in CI).
+  del nucleo (`ErasureTests.cs`), due note nuove. La CI della prima spinta (`b3b4849`) verde: `build-test` in 21,4 minuti, `core-guard`.
+- **Dopo la revisione** ([osservazioni del revisore sulla #209][r209], «approvable on the merits», niente di bloccante; [risposte di
+  Carmine][a209]) — 1 ottobre 2026:
+  - **la nota** registra la decisione (la (b), E2b), con i link alla domanda e alla risposta; `EventsArchitectureTests` dice che i nove
+    aspettano E2b;
+  - **i due nit**: `EventsSkeletonTests` si riprende alla fine di ogni test i grant e le posizioni che dà ai suoi VID (i membri restano:
+    l'hub non cancella un membro a mano); `events-skeleton.spec.ts` toglie all'inizio un preset `rfe` che una corsa interrotta avesse
+    lasciato — il suo sarebbe il secondo, rifiutato con `kindTwice` — e rimette alla fine il banco senza;
+  - **`main` unito** (merge, non rebase) dopo E10b (#208), E10e (#206), i tour sulla distanza del nucleo (#211) ed E10d (#205): un solo
+    conflitto, in `HANDOFF-M4.md`, con i paragrafi di tutte le fasi tenuti; `config/division.example.json` (l'`awardDigestTime` di E10d)
+    e questo file uniti da soli;
+  - **i due test d'integrazione degli eventi avviano l'host con `useIvaoFixtures: true`**: l'avviso di E10b in `HANDOFF-M4.md` (senza,
+    un host chiede un token a IVAO mentre i dati di riferimento sono vuoti).
+- **Verificato di nuovo, dopo il merge** (1 ottobre 2026, sul branch prima del commit di questi documenti): `dotnet build` senza avvisi,
+  e `dotnet format --verify-no-changes` sui file C# ritoccati; unità **937/937**; **integrazione intera senza filtro 441/441** (8,4
+  minuti), le due classi degli eventi da sole 4/4, senza nessuna richiesta a IVAO nel log; `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; `pnpm test` 599 in 81 file; `pnpm gen:api` e `i18n:sync` senza differenze; `pnpm e2e --workers=2` **163/163** al
+  primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (11,2 minuti, con il suo worker solo) sul banco
+  `http://127.0.0.1:5112`, `ivaohub_e2e_e2` tolto prima, dietro il lock di Mailpit; le regole di `core-guard` dalla nuova base di
+  merge (`db9268f`): PASS, un file del nucleo (`ErasureTests.cs`) e due note nuove.
+- **Non verificato**: la CI dopo il merge (la dice la PR); i nove grant, che si seminano dopo E2b; le due verifiche del §6.3 sono
+  scritte, non provate da un codice (E11a); la migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB
+  11.4.10 vera); `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree (le spec la tollerano, come in CI).
+
+[a209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
+[r209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917043727
 
 ### E3a — L'evento nello staff
 
