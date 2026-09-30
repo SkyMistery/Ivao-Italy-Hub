@@ -672,11 +672,9 @@ test('the history says every step of the training, who took it and when, a delet
     lines.first().getByText(filled(words.time.utc, { when: 'Sep 20, 2026, 10:00' }), { exact: true }),
   ).toBeVisible();
   await expect(
-    lines
-      .first()
-      .getByText(filled(words.time.local, { when: 'Sep 20, 2026, 12:00', zone: 'Europe/Rome' }), {
-        exact: true,
-      }),
+    lines.first().getByText(filled(words.time.local, { when: 'Sep 20, 2026, 12:00', zone: 'Europe/Rome' }), {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     lines.last().getByText(filled(words.staff.decision.reason, { reason: 'No answer from the trainee.' }), {
