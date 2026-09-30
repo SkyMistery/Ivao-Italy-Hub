@@ -44,15 +44,41 @@ public sealed record StaffTrainingRowDto(
 public sealed record StaffTrainingActionsDto(bool CanDecide, bool CanAssign, bool CanConduct, bool CanClose, bool CanRecordOutcome);
 
 /// <summary>
+/// A line of the history of a training (A13b; note <c>2026-09-30-lo-storico-di-un-training</c>): when, who — none for the hub itself —,
+/// and what happened, with the trainers, the dates and the reason it names; the people named as the page names them, a person whose
+/// data was erased by their pseudonym. Read from the core's audit log by <see cref="TrainingHistory"/>, never written.
+/// </summary>
+/// <param name="At">When it was written.</param>
+/// <param name="By">Who wrote it; none when the hub did, as when it closes a training nobody dated in time.</param>
+/// <param name="Event">What happened.</param>
+/// <param name="Trainer">The trainer assigned, the first or the one after a change.</param>
+/// <param name="PreviousTrainer">The trainer before a change.</param>
+/// <param name="Date">
+/// The date chosen, set or moved to; for a session rescheduled or not attended, the date of that session.
+/// </param>
+/// <param name="PreviousDate">The date before it was moved.</param>
+/// <param name="Reason">Why the staff refused or closed it.</param>
+public sealed record TrainingHistoryEntryDto(
+    DateTime At,
+    TrainingMemberDto? By,
+    TrainingHistoryEvent Event,
+    TrainingMemberDto? Trainer,
+    TrainingMemberDto? PreviousTrainer,
+    DateTime? Date,
+    DateTime? PreviousDate,
+    string? Reason);
+
+/// <summary>
 /// A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
 /// rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
 /// the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
-/// choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, and what the reader
-/// may do. Never an address. <c>Sheet</c> is the copy a completed training's report keeps; while the training is dated, the active
-/// items of its ladder and rating as a report would mark them now, with nothing marked; none otherwise. Read with
-/// <c>Training.View</c>, which the core never denies, so the trainee of the row reads it too: the one rule of <c>ReservedFields</c>
-/// leaves out what is reserved when they do — <c>StaffComment</c>, the <c>StaffNote</c> of every item of the sheet, the
-/// <c>InternalNotes</c> of every session — and says so in <c>ReservedLeftOut</c> (note <c>le-note-riservate-e-il-trainee</c>).
+/// choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
+/// changes (A13b), and what the reader may do. Never an address. <c>Sheet</c> is the copy a completed training's report keeps; while
+/// the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
+/// otherwise. Read with <c>Training.View</c>, which the core never denies, so the trainee of the row reads it too: the one rule of
+/// <c>ReservedFields</c> leaves out what is reserved when they do — <c>StaffComment</c>, the <c>StaffNote</c> of every item of the
+/// sheet, the <c>InternalNotes</c> of every session, the <c>History</c> — and says so in <c>ReservedLeftOut</c> (note
+/// <c>le-note-riservate-e-il-trainee</c>; the history, Carmine's answer on #197: not by the trainee).
 /// </summary>
 public sealed record StaffTrainingDto(
     long Id,
@@ -95,6 +121,7 @@ public sealed record StaffTrainingDto(
     string? StaffComment,
     IReadOnlyList<StaffEvaluationDto> Sheet,
     IReadOnlyList<StaffSessionDto> Sessions,
+    IReadOnlyList<TrainingHistoryEntryDto> History,
     bool ReservedLeftOut,
     StaffTrainingActionsDto Actions,
     DateTime RowVersion);
