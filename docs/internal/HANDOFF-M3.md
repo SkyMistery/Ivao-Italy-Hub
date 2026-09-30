@@ -140,10 +140,12 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     timbro casuale del giro contiene «new» — `getByText('New')` non è esatto, e trova anche l'oggetto del messaggio —, e `round.spec.ts:204`,
     scaduta sotto carico. Rifatto, 49/49. Sono file del nucleo: il primo è detto al revisore sulla #191. Si rifà il giro e si scrivono tutti
     e due, come per `template.spec.ts` (A12b).
-  - **M3 non ha una fase dopo in `08`.** A12c resta condizionata ai codici di PATS; che cosa resta aperto lo dice il rapporto, e i
-    passi del piano li porta il master dopo l'unione.
+  - **M3 non ha una fase dopo in `08`.** A12c resta fuori finché non si conosce il significato dei codici di PATS: che cosa resta aperto lo
+    dice il rapporto, e i passi del piano li porta il master dopo l'unione.
   - Il banco di A12d: 127.0.0.1:**5108**, `ivaohub_e2e_a12d`. VID: nessuno nuovo (i personaggi del banco).
-- **La fase dopo**: nessuna in `08`. Se arriveranno i codici di PATS, **A12c**.
+- **La fase dopo**: nessuna in `08`. **Tocca a `dalberone` decidere** se tentare la strada che il master apre sulla #189 per A12c
+  ([il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250)): ricavare i codici dai dati di PATS, in una
+  nota «Proposta» con una tabella codice → significato, quanto se ne è sicuri e nessun dato personale; il maintainer decide lì se A12c si fa.
 
 ### Che cosa ha lasciato A12b (29–30 settembre 2026, branch `m3/a12b-training-erasure`, PR #189)
 

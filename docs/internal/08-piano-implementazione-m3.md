@@ -3882,7 +3882,7 @@ parte**:
 [m189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770
 [r189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901909851
 
-**Com'è andata (A12d)** (30 settembre 2026, branch `m3/a12d-full-round`, PR #191 verso `main`, in bozza in coda dopo #189) — **il giro
+**Com'è andata (A12d)** (30 settembre 2026, branch `m3/a12d-full-round`, PR #191 verso `main`, in coda dopo #189 fino alla sua unione) — **il giro
 completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a Carmine, nessun file del nucleo**:
 
 - **Il branch**: preparato dalla sessione di A12b con `--no-track` dalla cima della coda, `m3/a12b-training-erasure` a 71e04df (la fase
@@ -3893,7 +3893,14 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
   #187 e #190 del maintainer (l'accesso dalla pagina d'errore, 0.4.2) — e il nit 1 della revisione di #187, dalla cima di A12b 4b5a6a9, con
   un merge (91af2e5): un conflitto solo, l'intestazione dell'handoff (quella di A12d in cima, riscritta), e nessuna riga persa. Il codice
   cambia per #190 (`IvaoAuthenticationExtensions.cs`, `AuthenticationTests.cs`, `Directory.Build.props`) e per un commento di `columns.ts`:
-  le suite di nuovo, qui sotto. Il branch si unisce senza conflitti con il `main` di oggi (4e21fbc): la PR ha la CI.
+  le suite di nuovo, qui sotto. **Infine #189 è unita** (il 30 alle 07:27 UTC), e il passo della coda di #191 ha portato `main` (a617767)
+  con un merge (028507d): un conflitto solo, l'intestazione dell'handoff, e nessuna riga persa; il codice cambia solo per due frasi italiane
+  del modulo (A12b, dd40214). La PR non è più in coda: l'intervallo `main...m3/a12d-full-round` mostra solo la fase (5 file).
+- **A12c, e il commento del master sulla #189** ([il commento][close189]): il master ha scritto che la coda di M3 è vuota e ha descritto A12d
+  come ancora da scrivere; A12d è la #191, e il passo della coda glielo dice sulla PR. Su A12c apre una strada — ricavare i codici dai dati
+  di PATS e scriverli in una nota «Proposta», una tabella codice → significato con quanto se ne è sicuri e nessun dato personale, su cui il
+  maintainer decide se A12c si fa —: **è una scelta di `dalberone`, non ancora presa**. A12d non apre A12c, e il rapporto dice che resta
+  fuori finché `dalberone` non decide.
 - **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(a)** — una spec del modulo in `web/e2e/full/`, un documento pubblico, una
   nota che conta —; nessun meccanismo nuovo, nessuna scelta da chiedere. Il giro non ha trovato difetti del modulo da correggere.
 - **Fatto** (commit `1644f6c` la spec, `1e5f8bf` `FORKING.md`, `815905b` il rapporto, e quello di questi documenti):
@@ -3925,7 +3932,7 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
      quelle degli altri ancora in viaggio (l'oggetto nomina la postazione), e perché il percorso ATC resti libero per i giri dopo e per
      questo stesso su un banco sopravvissuto;
   4. **`FORKING.md` dice anche lo stato in cima**: «the only tag is still `v0.1.0-m0`» non era più vero;
-  5. **il rapporto misura sul codice di questo branch**, che porta ogni fase, non su `main`, dove A12b non è ancora.
+  5. **il rapporto misura sul codice di questo branch**, cioè `main` con questa fase.
 - **Verificato** (30 settembre 2026, in locale, una suite alla volta, sul codice dei due commit, che il merge 3e5065f — solo documenti —
   non cambia):
   - il giro completo da solo, sul banco ricreato (127.0.0.1:5108, `ivaohub_e2e_a12d`) e sotto il lucchetto di Mailpit: **1/1** al primo
@@ -3947,13 +3954,20 @@ completo, il modulo in `FORKING.md` e il rapporto di chiusura; nessuna domanda a
     **`pnpm e2e` 157/157**; **`pnpm e2e:full`** al primo giro **47/49**, con il giro completo e quello del report verdi e due spec del
     nucleo cadute — `contacts.spec.ts:115`, perché il timbro casuale del giro conteneva «new» («munewaq2») e `getByText('New')`, che non è
     esatto, trovava anche l'oggetto del messaggio; `round.spec.ts:204`, scaduta a 30 secondi aspettando un titolo dell'anteprima —; rifatto
-    sul banco ricreato, **49/49**. `core-guard` sulla fase: PASS.
+    sul banco ricreato, **49/49**. `core-guard` sulla fase: PASS;
+  - la CI della PR su b3fae45: `core-guard` e **`build-test` verdi**, con lo smoke 157 e **`e2e:full` 49**, il giro completo compreso;
+  - **dopo il passo della coda di #189** (028507d, `main` a a617767), di nuovo una suite alla volta: `dotnet build` 0 avvisi; unità
+    **870/870**; **integrazione intera, senza filtro, 424/424** al primo giro; lint, typecheck e format puliti, `i18n:check` 783,
+    `pnpm test` **582/582**, `gen:api` e `i18n:sync` senza differenze, le chiavi `training:` 387; **`pnpm e2e` 157/157**; **`pnpm e2e:full`
+    49/49** al primo giro (10,0 minuti), sul banco ricreato. `core-guard` sulla fase: PASS.
 - **Non verificato**:
-  - **la CI dopo il passo della coda di #187**: su 252919c era verde, con il giro completo; su questa testa la dice la PR;
+  - **la CI dopo il passo della coda di #189**: su 252919c e su b3fae45 era verde, con il giro completo; su questa testa la dice la PR;
   - **una cancellazione sul banco**: la prova del registro contato uguale è di A12b, in integrazione
     (`TrainingTraineeTests.AnErasedTraineeLeavesTheRegisterCountedTheSameWithoutTheirTextsAndABanInForce`); cancellare un personaggio del
     banco romperebbe gli altri giri;
   - **il promemoria nel giro**: il job gira ogni quarto d'ora, cinque minuti dopo, e il banco non lo fa partire a comando (A8a, «Trovato»
     n.4).
 
-A12c, se arriveranno i codici di PATS, scriverà qui il suo «Com'è andata».
+[close189]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5906334250
+
+A12c, se si farà, scriverà qui il suo «Com'è andata».
