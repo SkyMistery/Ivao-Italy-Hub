@@ -1,15 +1,13 @@
 using IvaoHub.Core.Airspace;
 using Xunit;
-using ToursCircle = IvaoHub.Modules.FlightOps.Legs.GreatCircle;
-using ToursPoint = IvaoHub.Modules.FlightOps.Legs.GeoPoint;
 
 namespace IvaoHub.UnitTests;
 
 /// <summary>
 /// The distance between two airports in the core (E10e, note 2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo): the
-/// questions of the tours' tests (<see cref="LegTests"/>) asked of the core, with the same answers; and the core and the
-/// tours' own copy asked the same questions, answer for answer, so that moving the tours onto the core changes no
-/// distance a leg or a report already has.
+/// questions the tours' tests asked of their own copy, asked of the core with the same answers. The tours measure here
+/// since their copy went away (note 2026-09-30-i-tour-sulla-distanza-del-nucleo), and this is the one place the
+/// distance is tested.
 /// </summary>
 public sealed class GreatCircleTests
 {
@@ -75,37 +73,4 @@ public sealed class GreatCircleTests
             GreatCircle.DistanceNm(new GeoPoint(0, 179.5), new GeoPoint(0, -179.5)),
             6);
     }
-
-    /// <summary>
-    /// The pairs the tours' tests measure, the edges above and a grid of the whole globe, every point against every
-    /// other: the core and the tours' copy give the same double and the same tenth, to the last bit. When a session of
-    /// the maintainer moves the tours onto the core, this test goes away with their copy.
-    /// </summary>
-    [Fact]
-    public void TheCoreAndTheToursGiveTheSameAnswers()
-    {
-        GeoPoint[] airports = [Lirf, Liml, Egll, Lime, Lflj, Kjfk, Lira];
-        GeoPoint[] edges =
-        [
-            new(90, 0), new(-90, 0), new(0, 0), new(0, 1), new(0, 180), new(8, 0), new(-8, 180), new(12, 12), new(-12, -168),
-            new(34, 0), new(-34, 180), new(0, 179.5), new(0, -179.5),
-        ];
-        var grid =
-            from latitude in Enumerable.Range(-6, 13)
-            from longitude in Enumerable.Range(-6, 13)
-            select new GeoPoint(latitude * 15, longitude * 30);
-        GeoPoint[] points = [.. airports, .. edges, .. grid];
-
-        var different = (
-            from departure in points
-            from arrival in points
-            where ToursCircle.DistanceNm(Tours(departure), Tours(arrival)) != GreatCircle.DistanceNm(departure, arrival)
-                || ToursCircle.DistanceNmRounded(Tours(departure), Tours(arrival)) != GreatCircle.DistanceNmRounded(departure, arrival)
-            select $"{departure} to {arrival}").ToList();
-
-        Assert.Equal(7 + 13 + (13 * 13), points.Length);
-        Assert.Empty(different);
-    }
-
-    private static ToursPoint Tours(GeoPoint point) => new(point.Latitude, point.Longitude);
 }
