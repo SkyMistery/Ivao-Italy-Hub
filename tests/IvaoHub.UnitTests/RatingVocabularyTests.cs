@@ -8,10 +8,11 @@ using Xunit;
 namespace IvaoHub.UnitTests;
 
 /// <summary>
-/// IVAO's ratings as the core knows them (M3, A1, decision note of 25 September 2026), and the three questions the training
-/// asks instead of writing numbers of its own. These tests are about the real vocabulary; the module's are about one of its
-/// own (design M3 §10). Where it can, the vocabulary is held against what IVAO sent on 25 September 2026: the ratings of a
-/// real profile and the positions IVAO publishes.
+/// IVAO's ratings as the core knows them (M3, A1, decision note of 25 September 2026), the three questions the training
+/// asks instead of writing numbers of its own, and the one the events' roster asks — who comes first on a kind of position
+/// (M4, E10c, decision note of 30 September 2026). These tests are about the real vocabulary; the modules' are about one of
+/// their own (design M3 §10). Where it can, the vocabulary is held against what IVAO sent on 25 September 2026: the ratings
+/// of a real profile and the positions IVAO publishes.
 /// </summary>
 public sealed class RatingVocabularyTests
 {
@@ -178,6 +179,99 @@ public sealed class RatingVocabularyTests
         Assert.True(other.IsAtLeast(RatingKind.Atc, 10, 20));
         Assert.False(other.IsAtLeast(RatingKind.Atc, 30, 20));
         Assert.Empty(other.Ladder(RatingKind.Pilot));
+    }
+
+    [Theory]
+    [InlineData("TWR", "ADC")] // the events department's rule (design M4 §R.3): TWR and GND ADC+, APP APC+, ACC ACC+
+    [InlineData("GND", "ADC")]
+    [InlineData("APP", "APC")]
+    [InlineData("CTR", "ACC")]
+    [InlineData("twr", "ADC")] // the kind as IVAO spells it, in any case
+    [InlineData(" APP ", "APC")]
+    [InlineData("XYZ", null)] // a kind this vocabulary does not know: nobody comes first for the rating
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void OnAKindOfPositionTheRatingNamedAfterItsServiceComesFirst(string? positionType, string? expected)
+    {
+        Assert.Equal(expected, Ivao.PreferredFor(positionType)?.ShortName);
+    }
+
+    [Theory]
+    [InlineData("TWR", 4, false)] // an AS3, the rating just below
+    [InlineData("TWR", 5, true)]
+    [InlineData("TWR", 6, true)]
+    [InlineData("TWR", 8, true)] // a SEC comes first wherever an ADC does: it follows from the order
+    [InlineData("GND", 4, false)]
+    [InlineData("GND", 5, true)]
+    [InlineData("APP", 5, false)]
+    [InlineData("APP", 6, true)]
+    [InlineData("CTR", 6, false)]
+    [InlineData("CTR", 7, true)]
+    [InlineData("CTR", 10, true)] // the top of the ladder
+    [InlineData("CTR", null, false)] // a member IVAO said nothing about
+    [InlineData("CTR", 11, false)] // a number IVAO does not use
+    public void AControllerComesFirstFromThePreferredRatingUp(string positionType, int? rating, bool expected)
+    {
+        var preferred = Ivao.PreferredFor(positionType);
+
+        Assert.NotNull(preferred);
+        Assert.Equal(expected, Ivao.IsAtLeast(RatingKind.Atc, rating, preferred.Number));
+    }
+
+    [Fact]
+    public void OnlyTheTrainedAtcRatingsArePreferredOnAKindOfPosition()
+    {
+        // Where a rating comes first and where it is trained are two answers: the ADC is trained on the tower alone (A1 of
+        // M3) and comes first on the ground as well.
+        Assert.Equal(
+            ["ADC: GND TWR", "APC: APP", "ACC: CTR"],
+            Ivao.Ladder(RatingKind.Atc)
+                .Where(rating => rating.PreferredOn.Count > 0)
+                .Select(rating => $"{rating.ShortName}: {string.Join(' ', rating.PreferredOn)}"));
+        Assert.All(Ivao.Ladder(RatingKind.Pilot), rating => Assert.Empty(rating.PreferredOn));
+    }
+
+    [Fact]
+    public void TheKindsARatingIsPreferredOnAreOnesIvaoPublishes()
+    {
+        // The positions and the sectors the bench's fixtures hold of the world, recorded on 25 September 2026: a kind
+        // written here that IVAO never uses would put nobody first anywhere.
+        var published = IvaoFixtures.Read("atc-positions-world.json").EnumerateArray()
+            .Concat(IvaoFixtures.Read("subcenters-world.json").EnumerateArray())
+            .Select(position => position.GetProperty("position").GetString())
+            .ToHashSet();
+
+        Assert.All(Ivao.Ladder(RatingKind.Atc).SelectMany(rating => rating.PreferredOn), kind => Assert.Contains(kind, published));
+    }
+
+    [Fact]
+    public void AKindOfPositionIsPreferredOnOneRating()
+    {
+        // Preferred on two ratings, "who comes first there?" would have two answers: the vocabulary refuses to exist.
+        Assert.Throws<ArgumentException>(() => new RatingVocabulary(
+        [
+            new(RatingKind.Atc, 5, "ADC", true, "TWR") { PreferredOn = ["TWR"] },
+            new(RatingKind.Atc, 6, "APC", true, "APP") { PreferredOn = ["APP", "twr"] },
+        ]));
+    }
+
+    [Fact]
+    public void AVocabularyOfAnotherNetworkSaysWhoComesFirstOnItsOwnKinds()
+    {
+        // The events' own tests will do what the training's do (design M3 §10): the same class, ratings and kinds of
+        // position that are not IVAO's. The order is the list's, as for every other question.
+        var other = new RatingVocabulary(
+        [
+            new(RatingKind.Atc, 30, "S1", false, null),
+            new(RatingKind.Atc, 20, "S2", true, "GND") { PreferredOn = ["GND", "RMP"] },
+            new(RatingKind.Atc, 10, "C1", false, null) { PreferredOn = ["RDR"] },
+        ]);
+
+        Assert.Equal("S2", other.PreferredFor("rmp")?.ShortName);
+        Assert.Equal("C1", other.PreferredFor("RDR")?.ShortName);
+        Assert.Null(other.PreferredFor("TWR"));
+        Assert.True(other.IsAtLeast(RatingKind.Atc, 10, other.PreferredFor("GND")!.Number));
+        Assert.False(other.IsAtLeast(RatingKind.Atc, 30, other.PreferredFor("GND")!.Number));
     }
 
     [Fact]
