@@ -434,7 +434,9 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
   postazione (estensione n.4). Il modulo non scrive numeri di rating.
 - **Postazioni, aeroporti, aerei, distanze**: `IAtcPositionDirectory`, `IAirportDirectory` (con le coordinate),
   `IAircraftTypeDirectory`.
-- **Il nome di una persona**: dal nucleo, mai copiato; «persona cancellata» con l'helper del nucleo.
+- **Il nome di una persona**: dal nucleo, mai copiato; «persona cancellata» con l'helper del nucleo (A12a, #187, unita il 29
+  settembre: `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della
+  lista generata).
 
 ---
 
@@ -1006,7 +1008,8 @@ fa quello che è **sulla** persona:
 - **il registro di affidabilità diventa di nessuno**: i turni restano con lo pseudonimo, e le statistiche non cambiano;
 - quello che ha fatto **come staff** resta con lo pseudonimo.
 
-⚠️ `ErasureTests` non vede da solo i contesti dei moduli: va allargato nella fase che crea le tabelle.
+`ErasureTests` legge da solo i contesti di ogni modulo abilitato (A12a, #187, l'opzione (c)), quindi vede anche quello degli
+eventi: la fase che crea una tabella con una colonna di persona scrive le sue righe nella lista del test.
 
 ---
 
@@ -1040,7 +1043,8 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 
 Il resto c'è: `IProjectable` con più voci, usi dei file e award; i grant `firTeam` (A11a, unita il 29 settembre); lo scope
 di un grant indipendente dal dipartimento della posizione; `TokenAudiences`; `Preferences`; `ModuleSettings`;
-`DeletePolicy`; `BeforeAuthorize`; `Refusals`; «persona cancellata» (A12a di M3, da aspettare se non è ancora unita).
+`DeletePolicy`; `BeforeAuthorize`; `Refusals`; «persona cancellata» (A12a di M3, #187, unita il 29 settembre: l'helper
+`personName` e il test delle colonne di persona che legge ogni modulo).
 
 ---
 

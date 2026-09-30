@@ -1263,6 +1263,11 @@ segnalazioni sulle leg si cancellano; una **contestazione ancora aperta si chiud
 `2026-09-25-la-contestazione-aperta-di-chi-si-cancella`); un **ban in vigore resta con il VID** e uno scaduto si anonimizza; nelle sue pagine un VID negativo
 si legge «persona cancellata».
 
+**Da A12a di M3** (#187, 29 settembre, nota `2026-09-29-la-persona-cancellata-nel-nucleo`) «persona cancellata» è del nucleo:
+`personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della lista generata.
+La copia dei tour (`memberName`, con la parola `flightops:people.erased`) **resta finché una sessione di Carmine non la sostituisce**
+con quella del nucleo; oggi non è ancora sostituita, e `flightops:people.erased` se ne andrà con lei.
+
 ### 10.1 Il problema: il registro disciplinare punta al tour
 
 **Perché la domanda** (Carmine ha chiesto di argomentarla): il registro disciplinare **non si cancella mai**, ma ogni sua riga è
