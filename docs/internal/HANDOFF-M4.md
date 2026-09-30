@@ -6,11 +6,13 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10b** (nucleo: le sessioni condivise per VID), sul branch
-`m4/e10b-shared-sessions-by-vid`, **PR #208** verso `main`, del nucleo, senza coda.
-**Il prossimo passo**: **E2** (lo scheletro), che può andare avanti accanto a E1; **E3a** aspetta tutte e due unite. Le fasi del nucleo
-di M4b (**E10a–E10e**) possono partire già durante M4a, ognuna in una sessione sua; **E11b** ed **E13a** trovano in E10b la storia di
-un controllore e la presenza in un turno.
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10e** (nucleo: la distanza fra due aeroporti), sul branch
+`m4/e10e-great-circle-core`, **PR #206** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua sessione,
+**E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E10d**, **E15a**); sono unite E1 (#200) ed E10b (#208).
+**Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
+presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo. Il passaggio dei tour al calcolo del nucleo lo fa
+una sessione di Carmine **dopo l'unione di E10e** (sua risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`,
+§5).
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -99,7 +101,8 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
 senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
 controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
-divisione per nominativo (E10c); la mail a chi assegna (E10d); la distanza nel nucleo (E10e); le prenotazioni ATC della rete (E15a);
+divisione per nominativo (E10c); la mail a chi assegna (E10d); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in
+`Core/Airspace/`: sotto, «Che cosa ha lasciato E10e»); le prenotazioni ATC della rete (E15a);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -112,6 +115,31 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10e (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo.md`, scelta tecnica, con una richiesta a
+  Carmine):
+  - **La distanza fra due aeroporti nel nucleo**: `GreatCircle.DistanceNm(GeoPoint, GeoPoint)`, in miglia nautiche, e
+    `GreatCircle.DistanceNmRounded`, al decimo (una metà va al decimo pari), con `GeoPoint(Latitude, Longitude)` in gradi — in
+    `src/IvaoHub.Core/Airspace/GreatCircle.cs`, namespace **`IvaoHub.Core.Airspace`**. È il codice dei tour con i loro numeri: la
+    distanza fra i due aeroporti, non le miglia volate.
+  - **Come la usa un modulo**: chiede a `IAirportDirectory.FindAsync` dove sono gli aeroporti (un `FindAsync` solo per tutte le voci),
+    prende le coordinate con un pattern (`is { Latitude: { } …, Longitude: { } … }`: un aeroporto senza coordinate non ha distanza) e
+    misura con `GreatCircle`. Nessuna registrazione, nessuna migrazione, nessun endpoint.
+  - **I test**: `tests/IvaoHub.UnitTests/GreatCircleTests.cs` (unità, 8): le domande di `LegTests` al nucleo con le stesse risposte,
+    gli antipodi e l'antimeridiano, e **il test gemello**, che confronta il nucleo e la copia dei tour bit per bit su 35.721 coppie.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Il namespace è `IvaoHub.Core.Airspace`, non `IvaoHub.Core.Ivao`** (accanto ai contorni dei FIR, geometria che non è di IVAO):
+    in `Ivao` gli stessi nomi fanno cadere la build dei tour (`CS0104` su `TrackChecks.cs`, provato; nota §2 punto 3).
+  - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine
+    **dopo l'unione di E10e** ([sua risposta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685),
+    alla [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005); nota §5). Fino ad allora il test
+    gemello tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la distanza fra
+    due aeroporti è `GreatCircle` del nucleo, mai una copia), che aggiunge il master.
+  - **E14a ed E14b** la trovano qui: la distanza di una voce di un PIREP con `DistanceNmRounded` se la colonna è al decimo, come
+    `fo_legs.distance_nm`, e `MinLegDistance` confrontata con quel numero.
+  - Agli antipodi `h` può passare 1 di un'unità nell'ultima cifra, ma la radice lo riporta a 1: nessun NaN, misurato (nota §6).
 
 ### Che cosa ha lasciato E10b (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo, senza coda)
 
