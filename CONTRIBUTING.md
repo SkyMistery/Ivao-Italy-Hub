@@ -35,14 +35,17 @@ them in order on the maintainer's go.
 - **The pull request always targets `main`**, never another branch: that way CI and `core-guard` run on it, and
   nothing has to be retargeted before the merge. Until the phase below is merged its diff also shows the commits
   below; that is expected.
-- **Open it as a draft**, with `(after #N)` at the end of the title and `Queued after #N.` as the first line of the
-  body, where #N is the pull request of the phase below. A draft cannot be merged, so the order cannot go wrong.
-  In "For the reviewer", name the range that is this phase's own: `git diff m3/<previous>...m3/<next>` (or
-  `m4/…`).
+- **Open it ready, not as a draft**, with `(after #N)` at the end of the title and `Queued after #N.` as the first
+  line of the body, where #N is the pull request of the phase below. The master keeps the order: it never proposes a
+  pull request for merging while its #N is open. In "For the reviewer", name the range that is this phase's own:
+  `git diff m3/<previous>...m3/<next>` (or `m4/…`).
 - **A fix asked on a phase below** goes on that phase's branch, and then you merge that branch into every branch
   above it, in order. Merge, never rebase.
-- **When #N is merged**: merge `main` into the next branch, build and run the tests again, remove `(after #N)`, and
-  mark the pull request ready. The master checks that its diff is now only its own phase.
+- **When #N is merged**: nothing to do unless the master asks. The master checks that the next pull request now shows
+  only its own phase against `main`, has no conflict and a green CI, and proposes it to the maintainer; it removes
+  `(after #N)` itself when it says so. It asks you to merge `main` into the branch (then build and test again) only
+  when there is a conflict, or when `main` changed something the phase relies on (note
+  `docs/internal/decisions/2026-09-30-la-coda-senza-bozze.md`).
 - **A phase that needs an answer from the maintainer** (a case (c) note, a core change still under review) does not
   queue on top of the question: the parts that depend on it wait for the answer.
 
