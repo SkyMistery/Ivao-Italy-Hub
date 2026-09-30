@@ -894,7 +894,8 @@ public sealed class HubSaveChangesInterceptor(
     /// <summary>
     /// The permission area of an entity of a context, the one this guard asks <c>{Area}.Edit</c> of: what
     /// <see cref="PermissionAreaAttribute"/> says, or the name of the set the entity is exposed as. The hub also asks it
-    /// when it starts, for the areas whose rows say their FIR (M3, A11a).
+    /// when it starts, for the areas whose rows say their FIR (M3, A11a) and for the <c>Edit</c> a marked alternative must
+    /// fall back on (<c>PermissionCatalog.VerifyAlternatives</c>).
     /// </summary>
     public static string PermissionAreaOf(Type contextType, Type entityType) =>
         PermissionAreas.GetOrAdd((contextType, entityType), key =>
