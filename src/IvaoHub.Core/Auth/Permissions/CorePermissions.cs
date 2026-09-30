@@ -20,11 +20,19 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// <para>Declared on the permission, like <paramref name="DeniedToStakeholder"/>, because on a row that has an assignee
 /// other permissions still count for everybody. Never on the area's <c>View</c> permission: the catalogue refuses it.</para>
 /// </param>
+/// <param name="GrantableAlthoughGlobal">
+/// True when a grant may confer this permission although it is global: a function the division gives to whom it chooses,
+/// which decides no perimeter of the staff — who assigns the awards (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant,
+/// decided by Carmine on #205). Every other global permission is held through the staff positions IVAO publishes, and a
+/// grant never confers it (plan section 6.3). It means nothing on a permission of a department, which a grant confers anyway;
+/// and never on <c>Permissions.Manage</c>, which the catalogue refuses: the right to hand out permissions never comes by one.
+/// </param>
 public sealed record PermissionDescriptor(
     string Name,
     bool IsGlobal,
     bool DeniedToStakeholder = false,
-    bool OnlyForAssignee = false);
+    bool OnlyForAssignee = false,
+    bool GrantableAlthoughGlobal = false);
 
 /// <summary>
 /// The permissions of the core. Modules add their own through <c>IModule.Permissions</c>; nobody
@@ -110,7 +118,14 @@ public static class CorePermissions
     public const string PermissionsManage = "Permissions.Manage";
     public const string ModulesManage = "Modules.Manage";
     public const string AuditView = "Audit.View";
+
+    /// <summary>
+    /// Assigning an award, from the queue and the register: global, because the queue is the whole division's. The one global
+    /// permission a grant may confer (M4, E10f): who assigns varies from division to division, so it is configuration and not
+    /// code (plan section 9.1), and a division gives it with a grant to a position in <c>division.json → positionGrants</c>.
+    /// </summary>
     public const string AwardsAssign = "Awards.Assign";
+
     public const string AdminAccess = "Admin.Access";
 
     /// <summary>
@@ -142,7 +157,7 @@ public static class CorePermissions
         new(PermissionsManage, IsGlobal: true),
         new(ModulesManage, IsGlobal: true),
         new(AuditView, IsGlobal: true),
-        new(AwardsAssign, IsGlobal: true),
+        new(AwardsAssign, IsGlobal: true, GrantableAlthoughGlobal: true),
         new(AdminAccess, IsGlobal: true),
     ];
 }
