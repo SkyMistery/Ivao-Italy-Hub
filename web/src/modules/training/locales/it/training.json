@@ -422,7 +422,7 @@
       },
       "setByHand": {
         "title": "Fissa la data a mano",
-        "lead": "Anche fuori dalle date proposte, e anche nel passato, per una sessione tenuta prima del previsto. Le date proposte vanno via, e il trainee e il trainer ricevono una mail. Si scrive in UTC; sotto il campo, l'ora di {{zone}}.",
+        "lead": "Una data ancora da venire, anche fuori dalle date proposte. Le date proposte vanno via, e il trainee e il trainer ricevono una mail. Si scrive in UTC; sotto il campo, l'ora di {{zone}}.",
         "submit": "Fissa la data",
         "confirm": "Fissa lo stesso",
         "done": "Data fissata: {{when}} UTC.",
