@@ -656,6 +656,7 @@
     "ratingTwice": "This rating has more than one row.",
     "positionUnknown": "The division no longer trains on this position: take it out of the list.",
     "calendarKindUnknown": "One of these is not a kind of the calendar.",
+    "theoryExamHintWithoutUrl": "These words are read under the link to the site of the exam: write its address too.",
     "sheetItemUsed": "A report has already used this item: switch it off instead of deleting it.",
     "requestBanned": "You have a ban from the training: while it holds you cannot ask for a training.",
     "requestOpen": "You already have a training open.",
