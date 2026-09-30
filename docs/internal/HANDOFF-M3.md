@@ -12,18 +12,18 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12a** (nucleo: la persona cancellata e le colonne del training in
-`ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, in bozza **in coda dopo #182** (A11b, **in cima alla
-coda**, pronta a CI verde: #181, A7b, è unita il 29 settembre alle 23:04 UTC). La nota (`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`)
-è nata «Proposta» con due domande, e **Carmine l'ha decisa** lo stesso giorno, come raccomandato; poi il codice, con la CI verde su e3b84d7.
-Il branch è nato dalla cima della coda (0b62481, preparato dalla sessione di A11b), e la coda l'ha raggiunto due volte, sempre attraverso
-A11b e con un merge: la catena dopo #147 con le risposte di Carmine alle revisioni di #149, #150 e #178 (a24268b, il 29 settembre), e il
-passo di #182 dopo #181, con `main` a 17941c0 (99421c2, il 30 settembre, solo documenti). **L'intervallo `m3/a11b-fir-heads...m3/a12a-deleted-person-core`
-mostra solo la fase**. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7
-(#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e
-#152 del maintainer. **In coda sopra A12a**, in bozza: **A12b** (#189), che usa l'helper di questa fase. **A11b** (#182) il revisore l'ha
-trovata approvabile ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)); per la sua consegna
-serve il `config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che
-cosa deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
+`ErasureTests`), sul branch `m3/a12a-deleted-person-core`, **PR #187** verso `main`, **in cima alla coda**: **#182, A11b, è unita** il 30
+settembre alle 00:03 UTC, e `main` (a004c20, con #182 e con #190 del maintainer, la versione 0.4.2) è entrato nel branch con un merge senza
+conflitti; la PR diventa pronta dopo aver letto una volta la CI verde e i commenti del revisore. La nota
+(`decisions/2026-09-29-la-persona-cancellata-nel-nucleo.md`) è nata «Proposta» con due domande, e **Carmine l'ha decisa** lo stesso giorno,
+come raccomandato; poi il codice, con la CI verde su e3b84d7. Il branch è nato dalla cima della coda (0b62481, preparato dalla sessione di
+A11b), e la coda l'ha raggiunto due volte attraverso A11b, sempre con un merge: la catena dopo #147 con le risposte di Carmine alle revisioni
+di #149, #150 e #178 (a24268b, il 29 settembre), e il passo di #182 dopo #181, con `main` a 17941c0 (99421c2, il 30 settembre, solo
+documenti). **La PR mostra verso `main` solo la fase** (14 file). **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5
+(#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153),
+A10c (#178), la fase del nucleo A11a (#159), **A11b (#182)** e #152 del maintainer. **In coda sopra A12a**, in bozza: **A12b** (#189), che usa
+l'helper di questa fase, e sopra A12d. Per la consegna di A11b serve il `config/division.json` del tag, e **un'installazione che ha già
+girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione
 cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è
 accettata, gli esami prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`,
 `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda
@@ -133,6 +133,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     condiviso, quindi il significato dei codici oggi non si conosce.
   - Il banco di A12a: 127.0.0.1:**5102**, `ivaohub_e2e_a12a`. Il banco di A12b: **5105** (5103 e 5104 sono della sessione che coordina).
   - VID: A12a non ne usa (il test delle colonne non semina nessuno). Il range del training è tutto assegnato.
+- **La revisione** ([il commento del master sulla #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982)):
+  approvabile, niente di bloccante. Dei due nit, il primo è fatto (una colonna `person` è `sortable` solo se il server la dichiara, e allora
+  per nome); il secondo no, per la lettera della risposta di Carmine: `ErasureTests` vede i moduli **abilitati**, come la cancellazione, e ⚠️
+  un modulo spento resta fuori da tutte e due (le sue righe restano con il VID) — punto del nucleo, detto al revisore.
 - **La fase dopo**: **A12b** (modulo: `TrainingPersonalData`, «persona cancellata» nelle pagine del training, la conservazione), **#189**,
   in coda dopo #187.
 

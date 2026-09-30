@@ -3674,6 +3674,22 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
   puliti; `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file; `pnpm gen:api` senza differenze; le chiavi `training:` 381, nessuna
   mancante; **`pnpm e2e` 153/153**; **`pnpm e2e:full` 48/48** sul banco ricreato, sotto il lucchetto di Mailpit; `core-guard` sulla fase:
   PASS.
+- **Il passo della coda di #187** (30 settembre, 00:03 UTC: **#182 è unita**): `main` (a004c20, con #182, che il branch aveva già dalla coda,
+  e con #190 del maintainer, la versione 0.4.2 e la sua nota) è entrato con un merge **senza conflitti** (`2a35868`): la PR mostra verso
+  `main` solo i 14 file della fase, e `core-guard` verso `main` passa (nessun file del maintainer, i 10 del nucleo con la nota). Via
+  `(after #182)` dal titolo e `Queued after #182.` dal corpo. Tutte le suite di nuovo, una alla volta, tutte al primo giro: `dotnet build`
+  0 avvisi; unità **869/869**; integrazione intera **420/420** (i 413 e i 7 di #190); `pnpm lint`, `typecheck`, `format:check` puliti;
+  `i18n:check` 783 chiavi; `pnpm test` **581/581** in 78 file; `pnpm gen:api` senza differenze; le chiavi `training:` 381, nessuna mancante;
+  **`pnpm e2e` 153/153**; **`pnpm e2e:full` 48/48** sul banco ricreato, sotto il lucchetto di Mailpit (preso quando A12d l'ha lasciato).
+- **La revisione del master** ([il suo commento sulla #187][r187], 30 settembre): **approvabile**, niente di bloccante; «should know» la
+  chiave `people.deleted` (nota §7: il master scrive nel piano quella vera). **Due nit**, a scelta del collaboratore:
+  1. **su che cosa ordina il server una colonna `person`**: ora lo dicono il commento di `col.person` e `UI-GUIDELINES.md` — `sortable`
+     solo quando il server la dichiara in `CrudOptions.Sortable`, come ogni colonna, e allora per nome, che è quello che la cella mostra.
+     Solo commenti e linee guida: rifatti `pnpm lint`, `format:check`, `typecheck` (puliti) e i Vitest della lista e delle persone (8/8);
+  2. **`ErasureTests` vede i moduli abilitati nell'host di prova**, come la cancellazione (`PersonalDataErasure.cs:104`): **non cambia**, è
+     la lettera della risposta di Carmine («every enabled module, the way the erasure goes through them»). Oggi nell'host di prova i moduli
+     sono tutti accesi. Il punto più largo — un'installazione che spegne un modulo lo toglie anche dalla cancellazione, e le sue righe
+     restano con il VID — è del meccanismo del nucleo, non di questa fase: detto al revisore, per Carmine se lo vuole.
 - **Non verificato**:
   - **le pagine**: il nucleo dà il pezzo, ma nessuna pagina lo usa ancora (A12b per il training, una sessione di Carmine per i tour);
     la colonna `person` è provata in Vitest, non su una schermata vera né nella galleria, che non la mostra;
@@ -3682,5 +3698,6 @@ nucleo in M6 (nota `che-cosa-resta-fuori-da-m3`).
 
 [q187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5890079195
 [a187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551
+[r187]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982
 
 Le altre tre PR (A12b, A12c, A12d) scrivono qui il loro «Com'è andata» a fase chiusa.
