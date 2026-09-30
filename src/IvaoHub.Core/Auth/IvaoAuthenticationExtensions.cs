@@ -26,6 +26,15 @@ public static class IvaoAuthenticationExtensions
     /// <summary>Where a login that could not be completed sends the browser. A translated SPA route.</summary>
     public const string LoginErrorPath = "/login-error";
 
+    /// <summary>Where a guard of the SPA sends somebody who may not see what they asked for.</summary>
+    public const string ForbiddenPath = "/forbidden";
+
+    /// <summary>
+    /// Pages that only explain a refusal. A sign-in started from one of them comes back home: coming
+    /// back to the page would show the refusal to somebody who has just been let in.
+    /// </summary>
+    private static readonly string[] RefusalPaths = [LoginErrorPath, ForbiddenPath];
+
     /// <summary>Carries the tokens from the token exchange to the sign in, without touching the cookie.</summary>
     private const string TokensItemKey = "ivao.tokens";
 
@@ -380,6 +389,9 @@ public static class IvaoAuthenticationExtensions
     /// backslash into a slash <b>before</b> resolving the URL, so <c>/\evil.com</c> becomes
     /// <c>//evil.com</c> and leads outside. A hop like that makes an excellent phishing tool
     /// precisely because the first step, the login, is genuine.</para>
+    /// <para>Nor does it go back to a page that only explains a refusal (<see cref="RefusalPaths"/>):
+    /// the sign-in button of the bar sends the page it sits on, and on <c>/login-error</c> that
+    /// showed the error again to somebody who had just signed in (test installation, 29 Sep 2026).</para>
     /// </summary>
     public static string SafeReturnUrl(string? returnUrl)
     {
@@ -397,6 +409,19 @@ public static class IvaoAuthenticationExtensions
 
         // A carriage return in a Location header is response splitting, and no legitimate path
         // contains one.
-        return returnUrl.Any(character => char.IsControl(character)) ? fallback : returnUrl;
+        if (returnUrl.Any(character => char.IsControl(character)))
+        {
+            return fallback;
+        }
+
+        return IsRefusalPage(returnUrl) ? fallback : returnUrl;
+    }
+
+    private static bool IsRefusalPage(string returnUrl)
+    {
+        var end = returnUrl.IndexOfAny(['?', '#']);
+        var path = (end < 0 ? returnUrl : returnUrl[..end]).TrimEnd('/');
+
+        return RefusalPaths.Any(refusal => string.Equals(path, refusal, StringComparison.OrdinalIgnoreCase));
     }
 }

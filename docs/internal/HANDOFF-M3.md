@@ -13,25 +13,27 @@
 
 **Ultimo aggiornamento:** 30 settembre 2026 — **fase A12d** (il giro completo di M3 sul banco, il modulo del training in `docs/FORKING.md`,
 il rapporto di chiusura `decisions/2026-09-30-m3-review.md`), sul branch `m3/a12d-full-round`, **PR #191** verso `main`, in bozza **in coda
-dopo #189** (A12b, in bozza in coda dopo #187, A12a, in coda dopo #182, A11b, **in cima alla coda**). **È l'ultima fase di M3 in `08`**:
+dopo #189** (A12b, **in cima alla coda**: diventa pronta dopo aver letto una volta la CI verde e i rilievi del master, che li scrive sulla
+#189, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/189#issuecomment-5901860770)). **È l'ultima fase di M3 in `08`**:
 A12c resta condizionata, perché il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
 #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Nessuna domanda a Carmine, nessun file del nucleo.
-Il branch è nato dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e **la coda l'ha raggiunto
-prima della PR**: il passo di #182 dopo #181, con `main` a 17941c0, è salito per A11b (99421c2), A12a (62eee6f) e A12b (4d91517), solo
-documenti, ed è entrato qui con un merge (3e5065f). **L'intervallo `m3/a12b-training-erasure...m3/a12d-full-round` mostra solo la fase**, e
-il branch **si unisce senza conflitti con il `main` di oggi** (6704aad, con #190): la PR ha la CI. **Sono in `main`**: A3 (#131), A3b
-(#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b
-(#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del maintainer. **A11b** (#182) il revisore l'ha trovata
-approvabile ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)); per la sua consegna serve il
-`config/division.json` del tag, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve
-sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione cominciata si
-registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami
-prendono ogni rating del percorso, l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0)
-unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`,
-«Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. **A10 è divisa in tre**
-(`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182); **A12 in quattro**, A12a (#187), A12b
-(#189), A12c (solo con i codici di PATS: resta condizionata) e A12d (questa). In C# una chiave di un modulo si chiede con il namespace
-(`training:…`, #138).
+**#150, A9b, #151, A10a, #153, A10b, #178, A10c, e #181, A7b, sono unite** il 29 settembre; **#182, A11b,** il 30 alle 00:03 UTC e **#187,
+A12a,** alle 00:48. Il branch è nato dalla cima della coda (`m3/a12b-training-erasure` a 71e04df, preparato dalla sessione di A12b), e **la
+coda l'ha raggiunto due volte attraverso A12b**, sempre con un merge: il passo di #182 dopo #181, con `main` a 17941c0 (3e5065f, solo
+documenti), e il passo di #187 dopo #182 — `main` con #182, #187 e #190 del maintainer (l'accesso dalla pagina d'errore, la versione 0.4.2),
+e il nit 1 della revisione di #187 (che cosa ordina una colonna `person`) —, dalla cima di A12b 4b5a6a9. **L'intervallo
+`m3/a12b-training-erasure...m3/a12d-full-round` mostra solo la fase**, e il branch **si unisce senza conflitti con il `main` di oggi**
+(4e21fbc): la PR ha la CI. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145),
+A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159),
+A11b (#182), **la fase del nucleo A12a (#187)** e #152 del maintainer. Per la consegna di A11b serve il `config/division.json` del tag, e
+**un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve sapere la fase dopo»). **Carmine
+ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto): una sessione cominciata si registra e non si data più a mano
+né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso,
+l'8 compreso. La **sessione master** di Carmine (nota `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla
+volta; quando una PR sotto è unita, la PR sopra fa il suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va
+rimesso in pari con `main` il master lo chiede sulla PR senza spingerci niente. **A10 è divisa in tre** (`08`, A10): A10a (#151), A10b (#153)
+e A10c (#178), unite; **A11 in due**, A11a (#159) e A11b (#182), unite; **A12 in quattro**, A12a (#187, unita), A12b (#189), A12c (solo con i
+codici di PATS: resta condizionata) e A12d (questa). In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
 
@@ -174,6 +176,9 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
   - ⚠️ **Un test che cancella una persona** la semina e la cancella tutta sua, e a fine test toglie ciò che resta con il suo pseudonimo
     (`CleanErasedAsync`): la pulizia di una classe trova le righe per VID, non per pseudonimo. `TrainingTraineeTests` cancella 790052,
     790053 e 790054, che ogni test semina di nuovo.
+  - ⚠️ **`e2e/full/template.spec.ts:139`, del nucleo, può cadere una volta nel giro completo**: alla riga 185 legge senza aspettare
+    quante colonne ha la sezione nell'anteprima larga. Dopo il passo di #187 ha letto 1 invece di 2 (47/48); da solo 5/5, e il giro
+    dopo 48/48. Si rifà e si riporta ogni giro; il file è del nucleo, e il revisore lo sa (`08`, A12b).
   - **A12c resta condizionata** (i codici di PATS non si conoscono: Carmine sulla #187).
   - Il banco di A12b: 127.0.0.1:**5105**, `ivaohub_e2e_a12b`. VID: nessuno nuovo (A12b riusa le persone di A10a).
 - **La fase dopo**: **A12d** (il giro completo e la chiusura di M3), in coda dopo #189.
@@ -209,6 +214,10 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     condiviso, quindi il significato dei codici oggi non si conosce.
   - Il banco di A12a: 127.0.0.1:**5102**, `ivaohub_e2e_a12a`. Il banco di A12b: **5105** (5103 e 5104 sono della sessione che coordina).
   - VID: A12a non ne usa (il test delle colonne non semina nessuno). Il range del training è tutto assegnato.
+- **La revisione** ([il commento del master sulla #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5901449982)):
+  approvabile, niente di bloccante. Dei due nit, il primo è fatto (una colonna `person` è `sortable` solo se il server la dichiara, e allora
+  per nome); il secondo no, per la lettera della risposta di Carmine: `ErasureTests` vede i moduli **abilitati**, come la cancellazione, e ⚠️
+  un modulo spento resta fuori da tutte e due (le sue righe restano con il VID) — punto del nucleo, detto al revisore.
 - **La fase dopo**: **A12b** (modulo: `TrainingPersonalData`, «persona cancellata» nelle pagine del training, la conservazione), **#189**,
   in coda dopo #187.
 
