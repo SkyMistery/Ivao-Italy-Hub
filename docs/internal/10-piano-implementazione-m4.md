@@ -653,6 +653,11 @@ nota.
   in una sera (13) in 12,0 s, le partenze di EDDF in una settimana (**305**, oltre 200) in 12,6 s, con `Limit` 250 in 1,75 s, e una
   ricerca per VID come quelle dei tour in 118 ms. Le regole di `core-guard` rifatte in PowerShell sul diff dalla base: nessun file
   del maintainer, sette del nucleo, la nota nuova.
+- **Dopo il merge di `main`** (E10b, #208, unita mentre questa PR partiva; la PR era nata in conflitto, e la sessione di coordinamento
+  ha chiesto il merge perché la CI girasse): il conflitto era solo in `HANDOFF-M4.md`, l'intestazione e la cima di «Lo stato»,
+  tenuti tutti e due i paragrafi con E10a sopra; `10` si è unito da sé. Rifatti: build senza avvisi, unità **902/902**,
+  **integrazione intera senza filtro 435/435** (7,5 minuti, i test di E10b compresi), le regole di `core-guard` dalla base nuova
+  (uguali: sette file del nucleo, la nota). Il web non è toccato dal merge.
 - **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
   di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
   pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata
