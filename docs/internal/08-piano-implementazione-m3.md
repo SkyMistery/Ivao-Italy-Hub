@@ -4104,3 +4104,92 @@ spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine.**
 
 [a13-149]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158
 [r196]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/196#issuecomment-5910162987
+
+**Com'è andata (A13b)** (30 settembre 2026, branch `m3/a13b-training-history`, PR #197, con `main` a 21da19d). **Codice del modulo,
+nessun file del nucleo, nessuna migrazione.** La nota `2026-09-30-lo-storico-di-un-training` è **decisa**.
+
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(c)**, una funzione nuova del modulo.
+  - La nota con la domanda è stata scritta prima del codice, sulla #197. Carmine ha scelto la (a), come raccomandato
+    ([la sua risposta][a13b-197], scritta dal master su sua istruzione).
+  - Con la risposta è accettata una condizione del revisore: la lettura delle righe d'audit sta in un posto solo del modulo, un test
+    cade se la loro forma cambia, e quando un secondo modulo vorrà uno storico la lettura passa nel nucleo, la (c) della nota.
+  - Nessun file del nucleo è cambiato.
+- **Il passo della coda all'inizio**: `main` a 21da19d è fuso nel branch senza conflitti. Porta #196 (A13a) e #198 (il nucleo, 0.5.1).
+  Durante la fase `main` è andato avanti con **#199**, la nota `2026-09-30-la-coda-senza-bozze`, che cambia solo `CLAUDE.md`,
+  `CONTRIBUTING.md` e la nota. **Non è fuso**: non c'è conflitto e la fase non usa niente di quello che cambia, come dice la nota nuova.
+- **Fatto**:
+  - **`TrainingHistory`** (`Staff/TrainingHistory.cs`), l'unico posto del modulo che conosce la forma di una riga d'audit:
+    - legge da `HubDbContext.AuditLog` le righe di `trn_trainings` di un training, nell'ordine in cui sono scritte;
+    - dice ogni riga come un passo, con chi l'ha fatto: `Vid` 0 è l'hub stesso;
+    - legge le proprietà con `nameof` di `Training`: stato, rifiuto, trainer, data, scelta del trainee e i due motivi;
+    - una riga senza parole (svuotata dalla cancellazione, un'azione che non conosce, un valore che non sa leggere) resta una riga,
+      «modificato», con chi e quando;
+  - **la pagina**: `StaffTrainingDto.History`, le persone nominate da `PageAsync` come il resto della pagina; la sezione «Lo storico» in
+    fondo alla pagina (`staff.tsx`), con le frasi di `historySays` (`screens/history.ts`);
+  - **il trainee no**: lo storico è uno dei campi che `ReservedFields` toglie. Vale anche per un trainer che legge la pagina dello staff del
+    suo training, e la frase delle note riservate lo dice. Il DTO del trainee non cambia;
+  - **le parole** `training:staff.sections.history` e `training:staff.history.*`, in italiano e in inglese, con `→` fra il prima e il dopo
+    di un trainer o di una data;
+  - **i test**:
+    - `TrainingStaffTests.History.cs` (integrazione): due test che fanno ogni passo per le sue API e l'interceptor vero;
+    - `TrainingHistoryRulesTests` (unità, 5);
+    - lo storico nella lista dei campi riservati dei due test della nota delle note riservate (`TrainingSessionsTests`,
+      `TrainingTraineeTests` per il percorso);
+    - due controlli nei test di cancellazione di A12b: il training di un trainee cancellato ha lo storico svuotato, e quello di uno
+      staff cancellato ha i suoi passi con lo pseudonimo;
+    - `history.test.ts` (Vitest, 3), che legge le frasi dal file delle parole;
+    - due casi in `training-staff.spec.ts` (e2e);
+    - sei righe lette sulla pagina vera nel giro completo (`full/training-the-full-round.spec.ts`).
+- **Trovato**:
+  1. ⚠️ **Proporre e ritirare una data scrivono la stessa riga**: `TrainingDates.Touch` segna solo `UpdatedAt` del training. Lo storico
+     dice «ha cambiato le date proposte», che è vero per tutte e due. Le date proposte di adesso la pagina le mostra già;
+  2. **una riga di modifica non ha `UpdatedBy`**, anche se l'interceptor lo timbra: il timbro arriva dopo che la riga ha letto le
+     proprietà cambiate. `UpdatedAt` c'è solo quando lo segna `Touch`. La lettura accetta il timbro da solo con o senza `UpdatedBy`;
+  3. **la riga `created` ha nel JSON un `Id` provvisorio**, negativo: la chiave vera è `EntityId`, ed è quella che la lettura usa;
+  4. **le righe del banco di anteprima**, lette senza scrivere niente, hanno la forma che la lettura si aspetta. Anche i training di prima
+     hanno il loro storico, e il cambio del #29 c'è;
+  5. **l'ordine è per `Id`**, cioè l'ordine di scrittura, e non per `At`: due istanze con gli orologi un po' diversi (il banco ne ha due)
+     non scambiano due passi;
+  6. **fuori dalla fase, non toccato**: `training:staff.dates.setByHand.lead` dice ancora che una data si fissa a mano «anche nel
+     passato». La risposta di Carmine sulla #149 lo esclude, e il server lo rifiuta. È detto a `dalberone`.
+- **Scostamenti dalla nota e dal design**:
+  1. **la postazione non si legge**. La nota la metteva nella lista chiusa, ma nessun passo la cambia dopo la richiesta, e la pagina la
+     dice già;
+  2. **«ha cambiato le date proposte»** invece di «date proposte»: la riga non distingue una proposta da un ritiro («Trovato» n.1);
+  3. **anche la pagina del percorso di un trainee porta lo storico** di ogni training, perché riusa `PageAsync`, e non lo disegna. Costa
+     una query indicizzata per training;
+  4. **la frase delle note riservate** (`training:staff.reserved`) ora nomina anche lo storico;
+  5. **il giro completo di A12d** legge sei righe dello storico sulla pagina vera.
+- **La prova che il test cade** (la condizione del revisore): ho cambiato il serializzatore dell'interceptor (`HubSaveChangesInterceptor`)
+  solo in locale, e poi l'ho rimesso com'era: `git diff` sul nucleo vuoto, la build ripetuta, i due test di nuovo verdi.
+  - Con le chiavi in camelCase, i due test d'integrazione cadono: ogni passo diventa «modificato»;
+  - con gli enum come numeri cadono tutti e due: accettata e assegnata diventano «modificato».
+- **Verificato** (30 settembre 2026, in locale, una suite alla volta):
+  - `dotnet build IvaoHub.sln`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **883/883**;
+  - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 427/427** al primo giro, in 5,5 minuti, sul codice finale. Prima: le classi
+    toccate (`TrainingStaffTests` e `TrainingSessionsTests`) **20/20**, i due test dello storico **2/2**, `TrainingTraineeTests` **8/8**
+    con i controlli aggiunti ai test di cancellazione. Un primo giro intero è stato fermato a metà, perché i test cambiavano ancora;
+  - la prova che il test cade (qui sopra): **2 test caduti su 2** con le chiavi in camelCase, e 2 su 2 con gli enum come numeri. Il
+    primo tentativo con gli enum non valeva: la build era caduta su un `using` rimasto inutile (IDE0005), e il test aveva girato sui
+    binari di prima; rifatto con il `using` ancora usato. Poi il nucleo rimesso com'era: `git diff` vuoto, build pulita, **2/2**;
+  - `pnpm lint`, `typecheck`: puliti. `format:check`: al primo giro ha segnalato `training-staff.spec.ts`, perché Prettier al secondo
+    passaggio raccoglie una catena che al primo aveva spezzato (`8b343fc`); poi pulito;
+  - `pnpm i18n:check`: **783** chiavi letterali (quelle del modulo, con il namespace, le tiene il confronto fra le lingue);
+  - `pnpm test`: **594/594** in 80 file;
+  - `pnpm gen:api`: la differenza di `StaffTrainingDto` e i due schemi nuovi, nel commit; poi `gen:api` e `i18n:sync` senza differenze;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**: le quattro spec del training toccate **30/30**; poi il giro intero **163/163** al primo
+    giro con `--workers=2` (96 socket in `TIME_WAIT`);
+  - **`pnpm e2e:full`: 49/49** al primo giro, in 10,4 minuti con la pubblicazione, sotto il lucchetto di Mailpit e sul banco di A13b
+    appena ricreato (127.0.0.1:**5110**, `ivaohub_e2e_a13b`). Il giro completo del modulo ha letto le sei righe dello storico sulla
+    pagina vera;
+  - le regole di `core-guard` in PowerShell, sul diff della fase dal merge-base con `main`: nessun file del maintainer, nessuno del
+    nucleo, la nota aggiunta, **PASS**.
+- **Non verificato**:
+  - **la CI** della PR, che la dice la PR;
+  - **sul banco di anteprima** (5090/5091): la sezione non è stata guardata lì, perché il banco è della sessione che coordina. La pagina
+    vera l'ha letta il giro completo sul banco di A13b;
+  - **l'italiano sullo schermo**: le frasi le leggono in inglese il Vitest e le spec; l'italiano lo tiene `i18n:check`, con le stesse
+    chiavi.
+
+[a13b-197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5910098296

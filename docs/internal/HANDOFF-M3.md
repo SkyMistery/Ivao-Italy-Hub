@@ -11,21 +11,21 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13a**, le correzioni della prova sul banco: tre frasi e le parole della divisione
-sul sito dell'esame teorico. Branch `m3/a13-bench-fixes`, da `main` a 6261ffd (0.5.0).
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13b**, lo storico delle modifiche di un training nella pagina dello staff, letto
+dal registro di audit del nucleo. Branch `m3/a13b-training-history`, PR #197, con `main` a 21da19d (0.5.1).
 
 **M3 è chiusa e tutta in `main`** (piano 1.26):
 
-- **#191, A12d,** è unita il 30 settembre, dopo **#189, A12b**;
+- **#191, A12d,** è unita il 30 settembre, dopo **#189, A12b**; **#196, A13a,** il 30 settembre;
 - **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b
   (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159), A11b
-  (#182), la fase del nucleo A12a (#187), A12b (#189), A12d (#191) e #152 del maintainer.
+  (#182), la fase del nucleo A12a (#187), A12b (#189), A12d (#191), A13a (#196) e #152 del maintainer.
 
 **A13 nasce dalla prova del modulo sul banco di anteprima** di `dalberone` (30 settembre):
 
-- **A13a** fa queste correzioni;
-- **A13b** fa lo storico delle modifiche di un training. Prima c'è la nota `2026-09-30-lo-storico-di-un-training` con la domanda a
-  Carmine, poi il codice (`08`, A13).
+- **A13a** (#196, unita) fa le correzioni delle parole e dell'esame teorico;
+- **A13b** (#197, questa) fa lo storico delle modifiche di un training. La nota `2026-09-30-lo-storico-di-un-training` è **decisa**
+  (Carmine sulla #197: la (a), con la condizione del revisore), e il codice è su questo branch (`08`, A13).
 
 **A12c resta fuori**: il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
 #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Il master apre una strada [sulla
@@ -50,7 +50,7 @@ se A12c si fa. **Tentarla è una scelta di `dalberone`, non ancora presa.**
   - **A10 in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite;
   - **A11 in due**: A11a (#159) e A11b (#182), unite;
   - **A12 in quattro**: A12a (#187), A12b (#189) e A12d (#191), unite, e A12c fuori;
-  - **A13 in due**: A13a (questa) e A13b.
+  - **A13 in due**: A13a (#196), unita, e A13b (#197, questa).
 - In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
@@ -122,6 +122,54 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A13b (30 settembre 2026, branch `m3/a13b-training-history`, PR #197)
+
+- **Da dove viene**: è la sesta correzione della prova sul banco, chiesta da `dalberone`: «i cambi di training vanno lasciati in log». È
+  una funzione nuova (`CLAUDE.md` §5, caso (c)). La nota `2026-09-30-lo-storico-di-un-training` è **decisa** da Carmine il 30 settembre
+  ([la sua risposta sulla #197][a13b-answer]): la (a), con la condizione del revisore accettata insieme.
+- **Che cosa c'è** (codice del modulo, nessun file del nucleo, nessuna migrazione):
+  - **`TrainingHistory`** (`src/IvaoHub.Modules.Training/Staff/TrainingHistory.cs`). Legge da `HubDbContext.AuditLog` le righe di
+    `trn_trainings` di un training e le dice come passi:
+    - la richiesta, e il rifiuto dell'hub per la teoria;
+    - accettata, oppure rifiutata con il motivo;
+    - il trainer assegnato, oppure cambiato;
+    - le date proposte cambiate;
+    - la data scelta, fissata a mano, spostata;
+    - la sessione rischedulata, oppure il no-show;
+    - il report;
+    - chiusa, dallo staff con il motivo oppure dall'hub;
+    - annullata;
+    - «modificata», per una riga senza parole, e i dati cancellati.
+
+    **È l'unico posto del modulo che conosce la forma di una riga d'audit**;
+  - **la sezione «Lo storico»** in fondo a `/staff/training/{id}` (`StaffTrainingDto.History`; `screens/history.ts`, `staff.tsx`):
+    quando, in UTC e nell'ora della divisione; chi, o «l'hub»; che cosa, con le date in UTC; il motivo su una riga sua;
+  - **il trainee non la legge**, nemmeno dalla pagina dello staff del suo training: `ReservedFields` la toglie con le note riservate, e la
+    frase delle note riservate lo dice;
+  - le parole `training:staff.sections.history` e `training:staff.history.*`, in italiano e in inglese;
+  - i test:
+    - `TrainingStaffTests.History.cs` (integrazione, 2 test): ogni passo per le sue API e l'interceptor vero;
+    - `TrainingHistoryRulesTests` (unità, 5): le righe svuotate e quelle che la lettura non sa dire;
+    - i test di cancellazione di A12b: lo storico svuotato del training di un trainee cancellato, e lo pseudonimo nei passi di uno staff
+      cancellato;
+    - i due test delle note riservate (`TrainingSessionsTests`, e `TrainingTraineeTests` per il percorso), con lo storico nella lista;
+    - `history.test.ts` (Vitest, 3), due casi in `training-staff.spec.ts` (e2e) e sei righe lette nel giro completo (`e2e:full`).
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **La forma delle righe d'audit la sa solo `TrainingHistory`**, e `TrainingStaffTests.History` cade se il nucleo la cambia. È
+    provato con due cambi solo in locale: chiavi in camelCase, enum come numeri. Un modulo che vuole uno storico (M4 potrebbe) **non copia
+    la classe**: la lettura passa nel nucleo, con una fase e una nota sue (la (c) della nota, §6).
+  - ⚠️ **Proporre e ritirare una data scrivono la stessa riga**: cambia solo il timbro del training. Lo storico dice quindi «ha cambiato
+    le date proposte». Per distinguerle bisogna scrivere qualcosa di nuovo, e questa è una decisione.
+  - ⚠️ **Un passo scritto da nessuno è dell'hub**. Le righe dell'installazione (i seed del banco, i test che spostano una sessione nel
+    passato) compaiono come «L'hub ha …».
+  - **Un passo nuovo del training** si aggiunge in tre posti: in `TrainingHistory` (l'evento, letto con `nameof`), in `historySays` e nelle
+    parole. Il test d'integrazione e quello di unità lo chiedono.
+  - La pagina del percorso di un trainee riusa `PageAsync`: porta lo storico di ogni training, e non lo disegna.
+  - Il banco di A13b: 127.0.0.1:**5110**, `ivaohub_e2e_a13b`. VID: nessuno nuovo (A13b riusa le persone di `TrainingStaffTests`).
+- **La fase dopo**: nessuna di M3 in `08`. A12c resta una scelta di `dalberone` (qui sopra).
+
+[a13b-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5910098296
 
 ### Che cosa ha lasciato A13a (30 settembre 2026, branch `m3/a13-bench-fixes`)
 
