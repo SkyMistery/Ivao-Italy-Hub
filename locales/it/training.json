@@ -209,7 +209,7 @@
       "Requested": "Il dipartimento training controllerà la richiesta, compreso l'esame teorico, e ti scriverà quando sarà accettata o rifiutata. Finché nessuno la accetta, puoi annullarla.",
       "Accepted": "Ti verrà assegnato un trainer, e riceverai una mail anche allora.",
       "Assigned": "Il tuo trainer proporrà le date della sessione: riceverai una mail, e ne sceglierai una qui.",
-      "Scheduled": "Riceverai un promemoria prima della sessione. Una data fissata la cambia solo il trainer: se non ti va più bene, scrivigli.",
+      "Scheduled": "Riceverai un promemoria prima della sessione. Una data fissata può essere cambiata solo in accordo con il trainer: se non ti va più bene, scrivigli.",
       "Held": "La sessione è passata: il trainer scriverà il report.",
       "Completed": "Il training è completato: qui sotto c'è il report del trainer.",
       "NoShow": "Il trainer ha segnato la sessione come no-show, perché non ti sei presentato: il training è chiuso senza report."
@@ -222,7 +222,7 @@
       "lead": "Il tuo trainer ha proposto queste date. Scegline una: la sessione è fissata, e ricevete una mail tutti e due. Se nessuna ti va bene, scrivi al tuo trainer.",
       "choose": "Scegli questa data",
       "confirmTitle": "Fissare la sessione il {{when}} UTC, cioè {{local}}?",
-      "confirmDescription": "Il trainer riceve una mail, e anche tu. Una data fissata la cambia solo il trainer.",
+      "confirmDescription": "Il trainer riceve una mail, e anche tu. Una data fissata può essere cambiata solo in accordo con il trainer.",
       "confirm": "Sì, fissa la sessione",
       "chosen": "Sessione fissata: {{when}} UTC.",
       "moved": "Il trainer ha cambiato le date nel frattempo: guarda quelle di adesso."

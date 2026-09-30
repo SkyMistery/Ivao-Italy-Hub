@@ -208,7 +208,7 @@
       "Requested": "The training department will check the request, the theory exam included, and write to you when it is accepted or refused. Until somebody accepts it, you can cancel it.",
       "Accepted": "A trainer will be assigned to you, and you will receive an email then too.",
       "Assigned": "Your trainer will propose the dates of the session: you will receive an email, and choose one of them here.",
-      "Scheduled": "You will receive a reminder before the session. Only your trainer changes a date once it is fixed: if it no longer suits you, write to them.",
+      "Scheduled": "You will receive a reminder before the session. A fixed date can only be changed in agreement with your trainer: if it no longer suits you, write to them.",
       "Held": "The session is over: your trainer will write the report.",
       "Completed": "The training is completed: your trainer's report is below.",
       "NoShow": "Your trainer marked the session as a no-show, because you were not there: the training is closed without a report."
@@ -221,7 +221,7 @@
       "lead": "Your trainer proposed these dates. Choose one: the session is fixed, and you both receive an email. If none of them suits you, write to your trainer.",
       "choose": "Choose this date",
       "confirmTitle": "Fix the session on {{when}} UTC, that is {{local}}?",
-      "confirmDescription": "Your trainer receives an email, and so do you. Only your trainer changes a date once it is fixed.",
+      "confirmDescription": "Your trainer receives an email, and so do you. A fixed date can only be changed in agreement with your trainer.",
       "confirm": "Yes, fix the session",
       "chosen": "Session fixed: {{when}} UTC.",
       "moved": "Your trainer changed the dates meanwhile: look at the ones there are now."
