@@ -4073,6 +4073,28 @@ spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine.**
     - le frasi nuove si leggono;
     - il link e le parole compaiono nella domanda e sotto le richieste rifiutate di AS3;
     - la casella tradotta nelle impostazioni ha il valore salvato.
+- **La revisione di #196** ([i rilievi del master][r196], 30 settembre 2026). **Approvabile**, nulla di bloccante. Il master chiede a
+  Carmine di confermare `theoryExamHint`, un'impostazione nuova e un posto nuovo del link, scritti qui come scostamenti senza una nota:
+  la risposta la porta lui sulla PR. I nit:
+  1. **Parole senza sito**: si salvavano e non si leggevano da nessuna parte. Ora il salvataggio le rifiuta sul loro campo
+     (`training:errors.theoryExamHintWithoutUrl`, una regola dei valori), e bianche in ogni lingua non chiedono niente (`8b16b19`, con
+     un test unitario e uno nello scheletro);
+  2. **La pagina di un training leggeva sempre i training del trainee.** Ora li chiede solo davanti a un rifiuto per la teoria, l'unico
+     posto dove il sito si disegna (`89c63e1`);
+  3. **«Hai già un training aperto.» ha perso «su questo percorso»**, mentre la regola vale per percorso. **Resta così**: lo ha chiesto
+     il dipartimento, e il riquadro del percorso, o il percorso scelto nella richiesta, dice già quale;
+  4. **Due punti senza test**, ora coperti (`f88dc4f`):
+     - la pagina di una richiesta rifiutata per la teoria, con il sito e le parole; la pagina di un rifiuto dello staff non ha né l'uno né
+       le altre (e2e);
+     - parole bianche in ogni lingua che arrivano vuote alla pagina del trainee, con il sito che resta (integrazione).
+
+  **Dopo la revisione**:
+  - `dotnet build` 0 avvisi;
+  - unità **878/878**. Il primo giro dopo la correzione ha dato 877/878: il nome del test caduto l'ha perso un output troncato. Poi
+    nove giri di fila puliti;
+  - le classi di integrazione toccate, `TrainingSkeletonTests`, `TrainingRequestTests` e `TrainingXxDivisionTests`: **12/12**;
+  - lint, typecheck e format puliti, `i18n:check` 783, `pnpm test` **583/583**;
+  - `training-request.spec.ts` ripetuta tre volte: **24/24**, con il test nuovo.
 - **Non verificato**:
   - **la CI** della PR, che la dice la PR;
   - **la conferma della scelta di una data**: sul banco di anteprima nessun trainee che entra ha oggi date da scegliere. La frase
@@ -4081,3 +4103,4 @@ spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine.**
     le tiene `i18n:check`.
 
 [a13-149]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/149#issuecomment-5891427158
+[r196]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/196#issuecomment-5910162987
