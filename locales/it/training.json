@@ -459,6 +459,7 @@
       "vid": "Il VID del membro: il suo percorso si apre anche senza training, per bannarlo."
     },
     "pathDescription": "Dove si trova il trainee su ogni percorso, i suoi ban, e tutti i suoi training per percorso e rating.",
+    "firOnly": "Di questo trainee leggi i training del tuo FIR: dove si trova su ogni percorso, e i suoi ban, li legge il dipartimento del training.",
     "ban": "Banna",
     "sections": {
       "ladders": "Dove si trova",
@@ -490,6 +491,7 @@
     "banGivenBy": "Dato da {{name}}",
     "banLiftedBy": "tolto da {{name}} il {{date}} UTC",
     "noTrainings": "Ancora nessun training.",
+    "noTrainingsOnFir": "Nessun suo training sul tuo FIR.",
     "requestedAt": "chiesto il {{date}}",
     "trainer": "Trainer: {{name}}",
     "openTraining": "Apri il training"

@@ -3357,7 +3357,196 @@ e le domande il 27, la nota decisa e il codice il 28**:
 [r159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5859604416
 [a159]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723
 
-**Com'è andata (A11b)**: *(a fase chiusa)*
+**Com'è andata (A11b)** (29–30 settembre 2026, branch `m3/a11b-fir-heads`, PR #182 verso `main`, in coda dopo #181 e, con #181 unita, in
+cima alla coda):
+
+- **Il branch e `main`**: il branch è nato da quello di A7b (ae28278, preparato dalla sessione di A7b) e **porta `main`** (efe057a:
+  A11a, #159, unita il 28 settembre alle 21:54 UTC, #173–#177 e #179), entrato con un merge (b5b6dee) **prima di scrivere codice**, perché
+  la fase usa sia le pagine della coda sia il meccanismo di A11a, che sta solo in `main`. È l'eccezione alla regola della coda («`main`
+  entra in ogni branch al suo passo»), approvata dalla sessione che coordina il 29 settembre. Finché la coda sotto non ha preso `main`,
+  l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostrava anche le modifiche di `main`; la PR, con `main` dentro, non era in
+  conflitto e ha fatto girare `build-test` (su 522fffa: verde). I conflitti del merge, risolti tenendo tutto: `HANDOFF-M3.md`
+  (l'intestazione di A7b in cima e quelle di `main` sotto; i blocchi di A11a e A6c subito sotto «Che cosa ha lasciato A7b»; nessuna riga
+  dei due lati manca, controllato con uno script) e `config/division.example.json` (le due aggiunte a `$comment.positionGrants`, di A7b e
+  di A11a).
+- **L'Invio in più di A6b** (8807e8a): con `main` c'è #177 (la tastiera del suggerimento), e lo smoke della richiesta di A6b cadeva su un
+  caso (`training-request.spec.ts`, «Enter in the position asks the question»): il primo Invio ora sceglie la postazione. È **la stessa
+  modifica di una riga di c3db117 di A6b**, fatta qui perché questo branch portava #177 prima che la coda portasse su A6b, come il master
+  l'ha chiesta a #144 ([il suo commento][c144-a11b]) e come l'ha chiesta a questo branch la sessione che coordina. Il pezzo è quello di
+  A6b: il merge che ha portato su c3db117 attraverso A7b è stato pulito.
+- **Il passo della coda, dopo #144** (29 settembre): #144 (A6b) è unita alle 10:52 UTC, e il master ha chiesto su #146 il passo di A7 e
+  poi di portare il merge su per la coda ([il suo commento][q146-a11b]); l'ha fatto la sessione che coordina, perché le sessioni di A7–A7b
+  non ci sono più: ogni branch da A7 ad A7b ha `main` a 47e2f70 (#144 e #183, il piano 1.24 e il design di M4) e le seconde correzioni di
+  A7 e A8a; su A7b `StaffTrainings.cs` è quello di A7b, identico ad ae28278. **La cima nuova di A7b (e7b530a) è entrata qui con un merge
+  (1baf8fa)**, con due conflitti:
+  - `config/division.example.json`: A7b ha ora la frase di A11a come questo branch; resta l'aggiunta di A11b («The last two grants…»);
+  - `HANDOFF-M3.md` (merge a incroci, due basi): il file di A7b com'è nella coda, con l'intestazione di A11b al posto di quella di A7b e
+    il blocco di A11b in cima a «Lo stato». Le intestazioni vecchie di A11a, A3b e A6a, che `main` ha tolto con #144, restano tolte; i
+    blocchi di A11a e A6c stanno dove li mettono `main` e la coda, dopo quello di A6b. Controllato con uno script: del file di A7b manca
+    solo la sua intestazione; di quello di A11b, solo ciò che `main` o la coda hanno cambiato.
+
+  **Ora l'intervallo `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra solo la fase** (23 file). Due regole nuove della sessione che
+  coordina: **un solo `e2e:full` alla volta** sulla macchina, con il lucchetto `$env:TEMP\ivaohub-e2efull-mailpit.lock` (Mailpit è
+  condiviso: due giri insieme contano le mail l'uno dell'altro); e
+  `InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark` (del nucleo, #175) ogni tanto va in deadlock
+  di MariaDB: se cade, si rilancia la classe e si scrive.
+- **La revisione della #182** (29 settembre, su 0b62481, [il commento del revisore][r182]): **approvabile**. Tre nit, nessuna correzione
+  chiesta: il menu che offre «Esami» e «Ban» a un capo FIR (del nucleo, da programmare per il maintainer, come dice la PR); il test di
+  architettura che vuole `own` anche in `division.example.json`, così una divisione che scegliesse `all` avrebbe un test rosso, come già
+  per i livelli delle voci; e il percorso di un VID qualunque, che a un capo FIR risponde 200 con la lista vuota, una perdita minima come
+  per lo staff oggi. Per la consegna, la funzione vuole il `config/division.json` del tag.
+- **Altri due passi della coda** (29 settembre), fatti dalla sessione che coordina da A8b ad A7b e portati qui con un merge ciascuno:
+  - **b2ba9b5** (merge 01c21a5, solo in locale): `main` a 2af5133 dopo #146 e #147 (con #185 e #188), e le correzioni delle revisioni del
+    master su #148, #149, #150, #151, #153, #178 e #181. Un conflitto, l'intestazione di `HANDOFF-M3.md`: quella di A11b in cima,
+    riscritta come le altre, e «Accanto alle fasi del modulo», che la coda ha tolto con A6c unita, resta tolto;
+  - **528edc6** (merge 6462912), subito dopo e senza spingere nel mezzo, come chiesto: **le risposte di Carmine** alle revisioni di #149,
+    #150 e #178 — una sessione cominciata si registra e non si data più a mano né si chiude (`training:errors.sessionStarted`), nessuno
+    data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso, l'8 compreso
+    (`ExamChoicesDto.Ratings`, `schema.d.ts` rigenerato) —. Un conflitto, di nuovo l'intestazione. I test e lo smoke di A11b non datano
+    training e non ne chiudono: niente da cambiare.
+
+  `main` resta a 2af5133: #148 (A8b), unita alle 17:23 UTC, sale al passo della coda di ogni branch, e un merge con `main` sarebbe pulito
+  (`git merge-tree`), quindi la PR resta senza conflitti e con la sua CI.
+- **In conflitto dopo #149, com'è atteso** (29 settembre, 18:22): con A9a unita, la PR è CONFLICTING con `main` sulla sola intestazione di
+  `HANDOFF-M3.md`, come #151, #153, #178 e #181; `main` sale in ogni branch al suo passo, e non si rifà il merge in su. La CI di a24268b,
+  partita prima, è verde.
+- **Il passo della coda dopo #181** (30 settembre): #181 (A7b) è unita il 29 settembre alle 23:04 UTC, e il revisore ha chiesto sulla #182
+  il passo della coda ([il suo commento][q182]). `main` (17941c0) è entrato con un merge (08cfbbb): porta solo documenti — `08` e
+  `HANDOFF-M3.md`, con il passo della coda di A7b e come un'installazione che ha girato A7 pulisce i grant del trainer —, e il codice è
+  quello di a24268b. Un conflitto, l'intestazione di `HANDOFF-M3.md`: quella di A11b in cima, ora in cima alla coda, con le notizie di
+  `main`; i blocchi di `main` sotto quello di A11b. Controllato con uno script: del file di `main` manca solo la sua intestazione. Via
+  `(after #181)` dal titolo e `Queued after #181.` dal corpo; la PR pronta dopo aver letto una volta la CI e i commenti.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): configurazione (caso a) e il meccanismo di A11a usato com'è (caso b): il team di
+  un FIR come soggetto di un grant, `firStaffScope`, l'unico handler e il guardiano con il FIR della riga, la lista generata ristretta al
+  FIR. **Il meccanismo basta**: nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna migrazione.
+- **Fatto**:
+  1. **`config/division.json`**: due voci di `positionGrants` al team di un FIR — `Training.View` e `Training.Assign`, livelli
+     `Coordinator` e `Assistant` (CH e ACH, non i CHA: design §3.2), `scope: TD`, `"firTeam": true` — e **`firStaffScope: own`** (la
+     risposta 2 di Carmine sulla #159). Il training è `IHasFir` nell'area `Training`: il seme le prende (una voce al team su un'area senza
+     FIR la salterebbe).
+  2. **`config/division.example.json`** dice lo stesso alle altre divisioni (scostamento 2), con il perché nel commento.
+  3. **I lettori del modulo, uno per uno** (l'avviso di A11a: ogni permesso dell'area implica il suo `View`, e alla domanda senza riga
+     l'handler dice sì):
+     - la lista `/api/training/queue`: `MapCrud` con `ReadPolicy = Training.View`, ristretta dal motore al FIR di chi legge — ogni vista,
+       anche «Da approvare»; nessun training pilota, nessuno di un altro FIR. Nessun codice;
+     - la pagina, i trainer proposti e l'assegnazione (`/api/training/trainings/{id}`, `…/trainers`, `…/assign`): l'unico handler sulla
+       riga (`StaffTrainings.MayAsync`), e il guardiano con `[AlsoWrittenWith(Training.Assign)]` (A3) sul FIR della riga. Accettare,
+       rifiutare e chiudere (`Approve`), le date e il report (`Conduct`) rispondono 403, e gli `actions` della pagina lo dicono: nessun
+       bottone viene da `/api/me`. Nessun codice;
+     - `training.approvalQueue`: niente da approvare (non tiene `Approve`), i training del suo FIR da assegnare; `training.trainerQueue`:
+       vuoto (non tiene `Conduct`). Nessun codice;
+     - **il percorso di un trainee** (`/api/training/trainees/{vid}`): chiedeva `Training.View` all'endpoint e l'handler solo su ogni
+       training, e dava tutti i ban e «dove si trova» sui percorsi, ricavato dai ban e da tutti i training. Ora i ban e i percorsi sono di
+       chi l'unico handler lascia leggere un ban del trainee (`TrainingBans.MayReadAsync`, chiesto come `MayBanAsync` chiede
+       `Training.Ban`): lo staff del training come prima; un capo FIR no — il server non li manda (`null`, non una lista vuota) —, e legge
+       i training del suo FIR, uno per uno come prima (scostamento 1). La pagina disegna ciò che arriva, con un avviso
+       (`trainees.firOnly`) e «nessun suo training sul tuo FIR» al posto di «ancora nessun training»;
+     - le liste degli esami e dei ban (`/api/training/exams`, `/api/training/bans`): righe che non dicono un FIR, e il capo non è di un
+       dipartimento: il motore risponde 403. Le voci della scheda e le impostazioni chiedono `ManageSheets` e `ManageSettings`. Nessun
+       codice;
+     - `/api/me` non porta il FIR (deciso in A11a): le guardie delle rotte e il menu vedono `Training.View` e `Training.Assign` sul TD
+       (sotto, «Trovato» 1).
+  4. **I commenti del modulo** che dicevano A11 al futuro, o i capi FIR: `Training.cs`, `ApprovalQueueProvider.cs`, `StaffEndpoints.cs`,
+     `TrainingModule.cs`, `approvalQueue.tsx`, `index.ts`.
+  5. **I documenti**: `07` §4.2 (che cosa legge un capo FIR sul percorso) e la sua intestazione; qui; `HANDOFF-M3.md`.
+- **Scostamenti e precisazioni**:
+  1. **Il percorso di un trainee a un capo FIR**: il design (§4.2) dice che il percorso mostra i training, «pronto per…», l'attesa e i
+     ban; a un capo FIR ora mostra i soli training del suo FIR, senza i percorsi e senza i ban. È la nota di A11a §3.2, decisa: un permesso
+     tenuto sul FIR non raggiunge una riga che il FIR non lo dice (un ban), e «dove si trova» si ricava dai ban e da tutti i training. La
+     domanda è una sola, su un ban del trainee, e decide i ban e i percorsi insieme: chi legge un ban tiene `View` sul dipartimento, e
+     legge anche ogni training. Scritto in `07` §4.2.
+  2. **L'esempio porta le voci dei capi e `own`**: l'esempio dice alle altre divisioni ciò che i moduli si aspettano per il loro
+     dipartimento (design §3.2: «scritti in `config/division.json` e in `division.example.json`»), e per i capi FIR il design dice «solo
+     il suo FIR». Con le voci e `all`, ogni CH e ACH vedrebbe e assegnerebbe ogni training del dipartimento; senza le voci, l'esempio
+     non direbbe la colonna dei capi FIR. Il commento di `firStaffScope` (A11a) resta: `all` è il predefinito.
+  3. **I VID 790074–790078** per la classe nuova: il range è tutto assegnato; dalberone li ha dati ad A11b il 29 settembre (erano della
+     correzione di A8a, che non li ha usati: su nessun branch).
+  4. **Una classe di test nuova** (`TrainingFirHeadsTests`) e non i test di `TrainingStaffTests`: serve un host con una directory di FIR
+     di prova (come `FirTeamPermissionTests` di A11a, per non scrivere nei dati di riferimento condivisi), e persone senza posizioni del TD.
+- **I test cambiati di altre fasi, e perché** (tutti del collaboratore; li cambia il design, §3.2, con la decisione di Carmine sulla #159):
+  1. `TrainingArchitectureTests.TheDivisionFilesGiveTheTrainingDepartmentWhatTheDesignSays` (A4, unità): leggeva ogni voce `Training.*`
+     come un grant al dipartimento e ne voleva nove; ora legge a parte le voci al dipartimento (nove, come prima) e quelle al team di un
+     FIR (`View` e `Assign`, `Coordinator` e `Assistant`, `scope` TD, nessun `department`), e `firStaffScope: own`.
+  2. `TrainingSkeletonTests.TheGrantsOfTheTrainingDepartmentArriveOnceAndReachItsPeople` (A4, integrazione): contava nove grant
+     `Training.*` seminati da `division.json`, ognuno una volta; ora nove al dipartimento, ognuno una volta, e i due al team.
+  3. `web/e2e/training-request.spec.ts` (A6b, smoke): l'Invio in più, sopra.
+  4. `web/e2e/training-trainee.spec.ts` (A10a, smoke): un caso nuovo, il percorso come lo legge un capo FIR.
+- **I test nuovi**: `TrainingFirHeadsTests` (integrazione, 2), su un host con due FIR di prova (`XXAA`, `XXBB`) e **i grant del file
+  della divisione** — niente dato a mano —:
+  1. **il «fatta quando»**: il CH di un FIR assegna un training del suo FIR, ed è rifiutato su quello di un altro FIR e su uno pilota —
+     l'endpoint (403), l'unico handler chiesto sulla riga e il guardiano senza endpoint (`ForbiddenDomainException` su `Training.Edit`)
+     dicono lo stesso —; l'ACH dell'altro FIR al contrario; nessuno dei due accetta, conduce o modifica; `/api/me` dà loro `Training.View`
+     e `Training.Assign` e nient'altro del training;
+  2. **che cosa legge**: la lista (ogni vista, solo il suo FIR), la pagina di una richiesta senza «accetta», il blocco (niente da
+     approvare, il suo da assegnare), il blocco del trainer vuoto, il percorso (i training del suo FIR, niente percorsi né ban, niente
+     «banna») contro quello del trainer del dipartimento (tutti i training, i percorsi, il ban); le liste degli esami e dei ban, 403.
+- **La prova sul codice di prima**: con il codice del percorso (`TrainingBans.cs`, `TraineePaths.cs`) com'era sulla base (8807e8a) cade
+  **il test della lettura** (`ladders`: atteso null, arriva un array) e regge quello dell'assegnazione, che non ne dipende; con anche i file
+  della divisione com'erano cadono **tutti e due** i test nuovi, **il test del seme** dello scheletro e **il test di unità** dei file della
+  divisione. Con `trainees.tsx` com'era cade **il caso nuovo dello smoke** (la pagina si rompe su `null`). Rimessi i file e toccati, perché
+  la build li ricompilasse: 5/5 (le due classi), 27/27 (l'unità), 6/6 (lo spec).
+- **Trovato, e scritto per chi viene dopo** (anche in `HANDOFF-M3.md`):
+  1. ⚠️ **Il menu offre a un capo FIR «Esami» e «Ban»**: le voci chiedono `HasAny(Training.View)`, che un permesso sul FIR soddisfa (A11a,
+     voluto), e le liste dietro rispondono 403, che `DataList` disegna come una lista vuota. Chiuso, non bello. Toglierle vuole il nucleo
+     (il menu dovrebbe sapere che le righe di quella lista non dicono un FIR): non toccato, detto al revisore come proposta di una fase del
+     nucleo, se Carmine la vuole.
+  2. **Un avviso di una data** sulla pagina di un training porta a un altro training (`/staff/training/{id}`): se è di un altro FIR, per un
+     capo FIR è «non trovato».
+  3. **`PermissionHolder.Has` non passa il FIR** (A11a): nessun digest né notifica «a chi può farlo» arriva a un capo FIR. Il training non
+     ne manda per `Assign`: oggi non manca niente.
+  4. **Il training è l'unica entità `IHasFir`**: `own` cambia solo i grant al team di un FIR; il personale dei dipartimenti non è mai
+     fermato dal FIR (A11a).
+- **Verificato, in locale** (29 settembre 2026), una suite alla volta:
+  - **dopo il merge di `main`, prima del codice** (b5b6dee): `dotnet build` senza avvisi; unità **869/869**; integrazione intera senza
+    filtro **407/407**; `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file;
+    `pnpm gen:api` senza differenze; le chiavi letterali `training:` 374, nessuna manca; `pnpm e2e` **151/152** (il caso di #177, sopra;
+    con 8807e8a lo spec della richiesta **7/7**); `pnpm e2e:full` **48/48** su 127.0.0.1:5101 con `ivaohub_e2e_a11b` ricreato;
+  - **sul codice finale** (24188dc; i documenti vengono dopo): `dotnet build` senza avvisi; unità **869/869** (nessun test di unità
+    nuovo, uno cambiato); **integrazione intera senza filtro 409/409** al primo giro (le 407 e le 2 nuove); `TrainingFirHeadsTests` e
+    `TrainingSkeletonTests` da sole **5/5**, `TrainingArchitectureTests` **27/27**, prima e dopo la prova sul codice di prima; `pnpm
+    lint`, `typecheck`, `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api` senza
+    differenze (le due righe di `schema.d.ts` sono nel commit del percorso); le chiavi letterali `training:` **376** (le 374 e le 2
+    nuove), nessuna manca; `pnpm i18n:sync` nel commit che porta le parole; `pnpm e2e` **153/153** al primo giro, con il lucchetto su
+    4173; `pnpm e2e:full` **48/48** al primo giro su 127.0.0.1:5101 con `ivaohub_e2e_a11b` ricreato — il banco parte con `own` e i due
+    grant al team seminati, e nessun giro ne risente —; `dotnet format --verify-no-changes` sui 9 file C# della fase: pulito; le regole di
+    `core-guard` in PowerShell: sulla fase (`b5b6dee...HEAD`) nessun file del maintainer e nessuno del nucleo; verso `main`
+    (`origin/main...HEAD`) i due file del nucleo di A10b con la sua nota, che la coda porta già: PASS. La CI della PR su 522fffa:
+    `build-test` e `core-guard` verdi;
+  - **dopo il passo della coda** (1baf8fa, con `main` a 47e2f70 e le seconde correzioni di A7 e A8a), tutto di nuovo: `dotnet build` senza
+    avvisi; unità **869/869**; **integrazione intera senza filtro 409/409** al primo giro (il test del marcatore d'inizializzazione non è
+    caduto); `pnpm lint`, `typecheck`, `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api`
+    senza differenze; `pnpm i18n:sync` senza differenze; le chiavi letterali `training:` 376, nessuna manca; `pnpm e2e` **153/153** al primo
+    giro, con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e con il lucchetto di Mailpit; `dotnet format`
+    sui 9 file C# della fase: pulito; `core-guard`: sulla fase (`origin/m3/a7b-trainer-assignee...HEAD`, 23 file) nessun file del
+    maintainer né del nucleo; verso `main` (131 file) i due di A10b con la sua nota: PASS. La CI della PR su 0b62481: `build-test` e
+    `core-guard` verdi;
+  - **dopo gli altri due passi della coda** (6462912, sopra 01c21a5), tutto di nuovo, una volta sola: `dotnet build` senza avvisi; unità
+    **869/869**; **integrazione intera senza filtro 413/413** al primo giro (le 411 di A7b e le 2 di A11b); `pnpm lint`, `typecheck`,
+    `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api` e `pnpm i18n:sync` senza
+    differenze; le chiavi letterali `training:` 381, nessuna manca; `pnpm e2e` **153/153** al primo giro (le 152 di A7b e il caso di
+    A11b), con il suo lucchetto; `pnpm e2e:full` **48/48** al primo giro, sul banco ricreato e sotto il lucchetto di Mailpit; `dotnet
+    format` sui 9 file C#: pulito; `core-guard`: sulla fase (23 file) nessun file del maintainer né del nucleo; verso `main` (116 file) i
+    due di A10b con la sua nota: PASS. La CI della PR su a24268b: `build-test` e `core-guard` verdi;
+  - **dopo il passo della coda dopo #181** (08cfbbb: `main` a 17941c0, solo documenti in più, il codice di a24268b), tutto di nuovo:
+    `dotnet build` senza avvisi; unità **869/869**; **integrazione intera senza filtro 413/413** al primo giro; `pnpm lint`, `typecheck`,
+    `format:check` puliti; `i18n:check` 782 chiavi; `pnpm test` **578/578** in 76 file; `pnpm gen:api` senza differenze; le chiavi
+    letterali `training:` 381, nessuna manca; `pnpm e2e` **153/153** al primo giro, con il suo lucchetto; **`pnpm e2e:full`: al primo giro
+    47/48**, sotto il lucchetto di Mailpit (preso alle 01:16, dopo quello di A12b): è caduto `full/tours-rules.spec.ts:81` (dei tour, del
+    maintainer), un errore pubblico di una regola che non compare in 5 secondi — il codice è quello di a24268b, dove lo stesso giro ha dato
+    48/48 tre volte —; **rifatto su un banco ricreato, 48/48**. `dotnet format` sui 9 file C#: pulito; `core-guard` verso `main` (ora 23
+    file, la sola fase): nessun file del maintainer né del nucleo, PASS.
+- **Non verificato**:
+  - **il «fatta quando» sul banco**: il banco e2e non ha un capo FIR (i personaggi di `/e2e/signin` e `e2e-server.mjs` sono nucleo);
+    aggiungerne uno sarebbe una fase del nucleo a sé, con la sua nota. Lo provano i test d'integrazione, con i grant veri del file;
+  - **le schermate a mano**, come un capo FIR le vede: per la stessa ragione nessun capo sul banco di anteprima. Lo smoke disegna la pagina
+    del percorso con l'API finta; la lista, la pagina e il blocco non cambiano;
+  - **la CI**: la dirà la PR;
+  - **un capo di due FIR**: nessun test; il calcolo gli dà un permesso per FIR (A11a, i suoi test di unità).
+
+[c144-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/144#issuecomment-5877395930
+[q146-a11b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/146#issuecomment-5886918007
+[r182]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467
+[q182]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5900753915
 
 ### A12 — Cancellazione, conservazione, archivio di PATS, giro completo
 

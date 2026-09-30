@@ -459,6 +459,7 @@
       "vid": "The member's VID: their path opens even with no training yet, to ban them."
     },
     "pathDescription": "Where the trainee stands on each path, their bans, and every training of theirs by path and rating.",
+    "firOnly": "You read the trainings of this trainee on your FIR: where they stand on each path, and their bans, are the training department's to read.",
     "ban": "Ban",
     "sections": {
       "ladders": "Where they stand",
@@ -490,6 +491,7 @@
     "banGivenBy": "Given by {{name}}",
     "banLiftedBy": "lifted by {{name}} on {{date}} UTC",
     "noTrainings": "No training yet.",
+    "noTrainingsOnFir": "No training of theirs on your FIR.",
     "requestedAt": "asked for on {{date}}",
     "trainer": "Trainer: {{name}}",
     "openTraining": "Open the training"

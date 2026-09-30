@@ -25,7 +25,9 @@ public sealed record ApprovalQueueDto(TrainingQueueDto ToApprove, TrainingQueueD
 /// the page of the training and the whole view a link to the list.
 /// <para>Always live and with no property, because it is the reader's. A training counts when the one handler says the reader may take
 /// the step on it — <c>Training.Approve</c> for a request, <c>Training.Assign</c> for an accepted training —, which is never on a
-/// training of their own (§3), and for the heads of a FIR will be on their FIR alone (A11). A visitor gets <c>signedIn: false</c>.</para>
+/// training of their own (§3), and for a head of a FIR only on one of their FIR (A11b): the chief and the assistant chief of a FIR
+/// assign the trainings of their FIR and approve none, so they see the trainings to assign of their FIR and nothing to approve. A
+/// visitor gets <c>signedIn: false</c>.</para>
 /// </summary>
 public sealed class ApprovalQueueProvider(
     TrainingDbContext database,

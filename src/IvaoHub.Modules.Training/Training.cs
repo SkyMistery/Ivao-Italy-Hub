@@ -58,14 +58,16 @@ public enum TrainingRejection
 /// the base department of the module (<see cref="IOwnedByDepartment"/>, the mask the interceptor keeps) and read by members only
 /// (<see cref="IVisible"/>); which member is the endpoints' business — the trainee reads their own through theirs, with no field
 /// of the staff's in it, the staff with <c>Training.View</c> (A7). It names the FIR of its position (<see cref="IHasFir"/>) for
-/// the heads of a FIR (A11), and it is assigned to its trainer (<see cref="IHasAssignee"/>, §3.3, A7b): <c>Training.Conduct</c>,
+/// the heads of a FIR, who see and assign the trainings of their FIR and no other (A11b; a pilot's training has no FIR, and is
+/// none of theirs), and it is assigned to its trainer (<see cref="IHasAssignee"/>, §3.3, A7b): <c>Training.Conduct</c>,
 /// which the trainers and the advisors hold by their position, reaches the trainings assigned to whoever holds it and no other,
 /// so no grant is ever written on one training.</para>
 /// <para>No participants, on purpose (§1.1): the core would give them <c>Training.View</c> on the row, and with it the notes of
 /// the staff.</para>
 /// <para>Three permissions write it besides <c>Training.Edit</c> (§3.4, A3; A7): whoever approves — the advisors —, whoever
-/// assigns, and whoever conducts it — its trainer, while it is assigned to them before the write and after it (A7b). Each is
-/// asked by the write guard as the single handler asks it, never of its trainee, never to move it; none of them at creation,
+/// assigns — a head of a FIR on a training of their FIR alone (A11b) —, and whoever conducts it — its trainer, while it is assigned
+/// to them before the write and after it (A7b). Each is asked by the write guard as the single handler asks it, with the row's FIR
+/// (A11a), never of its trainee, never to move it; none of them at creation,
 /// because the trainee creates it, and none of them deletes it: no member takes a training out of the register (§6).</para>
 /// <para>Its session is in the division's one calendar (§5.1, A8; note <c>il-training-in-pubblico</c>): the training projects
 /// the session in hand (<see cref="IProjectable"/>), public, with its rating and position and nobody's name or VID, and the

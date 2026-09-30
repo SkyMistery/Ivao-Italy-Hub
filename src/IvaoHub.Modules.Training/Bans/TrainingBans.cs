@@ -108,8 +108,14 @@ public sealed class TrainingBans(
     /// Whether the reader may ban this member now, as the one handler answers on the ban they would write: <c>Training.Ban</c> on the
     /// base department of the module, and never on themselves.
     /// </summary>
-    public Task<bool> MayBanAsync(int vid) =>
-        MayAsync(new TraineeBan { Vid = vid, OwnerDepartment = modules.BaseDepartmentOf(typeof(TrainingDbContext)) ?? default }, TrainingPermissions.Ban);
+    public Task<bool> MayBanAsync(int vid) => MayAsync(BanOf(vid), TrainingPermissions.Ban);
+
+    /// <summary>
+    /// Whether the reader may read the bans of this member, as the one handler answers on a ban of theirs: <c>Training.View</c> on the
+    /// base department of the module. A ban says no FIR (design M3 §1.5-bis), so the <c>Training.View</c> a head of a FIR holds on
+    /// the trainings of their FIR alone reaches none (A11b; note 2026-09-27-i-capi-fir-sul-loro-fir §3.2).
+    /// </summary>
+    public Task<bool> MayReadAsync(int vid) => MayAsync(BanOf(vid), TrainingPermissions.View);
 
     /// <summary>
     /// What a new ban may not be, looking at the other bans of the member: one holds already. A member has few bans, and whether one
@@ -207,6 +213,9 @@ public sealed class TrainingBans(
             ban.Holds(now),
             ban.RowVersion);
     }
+
+    /// <summary>A ban of this member as the base department of the module would hold it, not saved: what the handler is asked about.</summary>
+    private TraineeBan BanOf(int vid) => new() { Vid = vid, OwnerDepartment = modules.BaseDepartmentOf(typeof(TrainingDbContext)) ?? default };
 
     /// <summary>Whether the reader holds <paramref name="permission"/> on this ban, as the one handler answers on the row.</summary>
     private async Task<bool> MayAsync(TraineeBan ban, string permission) =>

@@ -11,7 +11,7 @@ namespace IvaoHub.UnitTests;
 /// What design M3 §10 asks of the training and of no other module, so it lives here and not among the architecture tests of
 /// the whole hub (note 2026-09-25-rating-e-postazioni-dal-nucleo §4): the module does not name the network — its ratings and
 /// its positions are the core's to answer (§1.7) —, it writes no rating of its own, and it calls nobody outside the hub. And
-/// the division file gives the training department what the design says (§3.2).
+/// the division file gives the training department, and the heads of a FIR, what the design says (§3.2).
 /// <para>They read the sources, as the architecture tests do, so they are patterns and not proofs: they catch the way these
 /// rules get broken by habit — a number next to a rating, the network's word in a string — and the review still reads the
 /// rest. The theories at the bottom show what each pattern catches and what it lets through.</para>
@@ -82,6 +82,16 @@ public sealed partial class TrainingArchitectureTests
 
         Assert.Equal(TrainingPermissions.All.Select(permission => permission.Name).Order(StringComparer.Ordinal), design.Keys.Order(StringComparer.Ordinal));
 
+        // The column of the heads of a FIR (§3.2, A11b): the chief and the assistant chief of a FIR view and assign the trainings of
+        // their own FIR — a grant to the team of a FIR, which names no FIR, held on the training department, and firStaffScope own,
+        // which keeps it to the FIR of the position (note 2026-09-27-i-capi-fir-sul-loro-fir, Carmine's answer 2 on #159).
+        StaffLevel[] chiefs = [StaffLevel.Coordinator, StaffLevel.Assistant];
+        var firTeam = new Dictionary<string, StaffLevel[]>(StringComparer.Ordinal)
+        {
+            [TrainingPermissions.View] = chiefs,
+            [TrainingPermissions.Assign] = chiefs,
+        };
+
         foreach (var file in new[] { "division.json", "division.example.json" })
         {
             using var division = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryRoot(), "config", file)));
@@ -94,11 +104,13 @@ public sealed partial class TrainingArchitectureTests
             var grants = root.GetProperty("positionGrants").EnumerateArray()
                 .Where(grant => grant.GetProperty("permission").GetString()!.StartsWith($"{TrainingPermissions.Area}.", StringComparison.Ordinal))
                 .ToList();
+            var toTheDepartment = grants.Where(grant => !IsToTheTeamOfAFir(grant)).ToList();
+            var toTheTeam = grants.Where(IsToTheTeamOfAFir).ToList();
 
             // Once each, to the training department, held on it.
-            Assert.Equal(design.Count, grants.Count);
+            Assert.Equal(design.Count, toTheDepartment.Count);
 
-            foreach (var grant in grants)
+            foreach (var grant in toTheDepartment)
             {
                 var permission = grant.GetProperty("permission").GetString()!;
                 Assert.Equal(nameof(Department.TD), grant.GetProperty("department").GetString());
@@ -107,8 +119,29 @@ public sealed partial class TrainingArchitectureTests
                     design[permission].Order(),
                     grant.GetProperty("levels").EnumerateArray().Select(level => Enum.Parse<StaffLevel>(level.GetString()!)).Order());
             }
+
+            // And once each to the team of a FIR, with no department, held on the training department and kept to the FIR.
+            Assert.Equal(
+                firTeam.Keys.Order(StringComparer.Ordinal),
+                toTheTeam.Select(grant => grant.GetProperty("permission").GetString()!).Order(StringComparer.Ordinal));
+
+            foreach (var grant in toTheTeam)
+            {
+                var permission = grant.GetProperty("permission").GetString()!;
+                Assert.False(grant.TryGetProperty("department", out _), $"{file}: {permission} to the team of a FIR names a department");
+                Assert.Equal(nameof(Department.TD), grant.GetProperty("scope").GetString());
+                Assert.Equal(
+                    firTeam[permission].Order(),
+                    grant.GetProperty("levels").EnumerateArray().Select(level => Enum.Parse<StaffLevel>(level.GetString()!)).Order());
+            }
+
+            Assert.Equal("own", root.GetProperty("firStaffScope").GetString());
         }
     }
+
+    /// <summary>A grant of <c>positionGrants</c> to the team of a FIR (<c>"firTeam": true</c>) rather than to a department.</summary>
+    private static bool IsToTheTeamOfAFir(JsonElement grant) =>
+        grant.TryGetProperty("firTeam", out var team) && team.ValueKind == JsonValueKind.True;
 
     [Theory]
     [InlineData("using IvaoHub.Core.Ivao;", false)]

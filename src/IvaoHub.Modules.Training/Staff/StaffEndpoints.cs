@@ -24,6 +24,10 @@ namespace IvaoHub.Modules.Training.Staff;
 /// <c>Training.View</c> reads every training, open and closed (R.1, d2), through the one function that leaves out what is reserved
 /// for its trainee; what they may do on one is the handler's answer on the row, and every refusal is a <c>ProblemDetails</c> field by
 /// field.
+/// <para>A head of a FIR — its chief or assistant chief — holds <c>Training.View</c> and <c>Training.Assign</c> on the trainings of
+/// their FIR alone (A11b; design M3 §3.2, §4.2): the list holds those, as the CRUD engine narrows it, and the page, the trainers and
+/// the assignment answer them on those, as the one handler does on the row; a pilot's training has no FIR, and is none of theirs.
+/// Nothing here names a FIR: the permission carries it.</para>
 /// </summary>
 public static class StaffEndpoints
 {

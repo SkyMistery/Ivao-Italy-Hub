@@ -54,6 +54,9 @@ import { staffTrainingHref } from './trainings';
  *
  * Every training is the staff's page of it (`StaffTrainings.PageAsync`), so a trainer reading their own path reads nothing reserved
  * (note le-note-riservate-e-il-trainee), and the page says so as the page of a training does.
+ *
+ * What the reader reads of the path is the server's answer: a head of a FIR reads the trainings of their FIR, and neither the
+ * ladders nor the bans, which the training department reads (A11b) — the server sends none, and the page says so.
  */
 
 /** «Trainees»: a VID, and the trainee's path. */
@@ -107,6 +110,8 @@ function TraineePathScreen({ path }: { path: TraineePathDto }) {
   const vid = path.trainee.vid;
   // A trainer reading their own path: what is reserved is on none of its trainings (note le-note-riservate-e-il-trainee).
   const reserved = path.trainings.some((training) => training.reservedLeftOut);
+  // A head of a FIR (A11b): the trainings of their FIR, and not what the training department reads of the trainee.
+  const firOnly = path.ladders === null || path.bans === null;
 
   return (
     <PageShell
@@ -128,25 +133,34 @@ function TraineePathScreen({ path }: { path: TraineePathDto }) {
       <div className="flex flex-col gap-8">
         {reserved ? <Notice tone="info" title={t('training:staff.reserved')} /> : null}
 
-        <Section title={t('training:trainees.sections.ladders')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {path.ladders.map((ladder) => (
-              <LadderCard key={ladder.kind} ladder={ladder} trainings={path.trainings} />
-            ))}
-          </div>
-        </Section>
+        {firOnly ? <Notice tone="info" title={t('training:trainees.firOnly')} /> : null}
 
-        <Section title={t('training:trainees.sections.bans')}>
-          <BanLines bans={path.bans} canLift={path.canBan} />
-          <p className="text-sm">
-            <RouterAnchor href={`${BANS}?vid=${String(vid)}`} className="underline">
-              {t('training:trainees.allBans')}
-            </RouterAnchor>
-          </p>
-        </Section>
+        {path.ladders === null ? null : (
+          <Section title={t('training:trainees.sections.ladders')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {path.ladders.map((ladder) => (
+                <LadderCard key={ladder.kind} ladder={ladder} trainings={path.trainings} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {path.bans === null ? null : (
+          <Section title={t('training:trainees.sections.bans')}>
+            <BanLines bans={path.bans} canLift={path.canBan} />
+            <p className="text-sm">
+              <RouterAnchor href={`${BANS}?vid=${String(vid)}`} className="underline">
+                {t('training:trainees.allBans')}
+              </RouterAnchor>
+            </p>
+          </Section>
+        )}
 
         <Section title={t('training:trainees.sections.trainings')}>
-          <TrainingsByLadder trainings={path.trainings} />
+          <TrainingsByLadder
+            trainings={path.trainings}
+            empty={firOnly ? t('training:trainees.noTrainingsOnFir') : t('training:trainees.noTrainings')}
+          />
         </Section>
       </div>
     </PageShell>
@@ -334,13 +348,16 @@ function BanLines({ bans, canLift }: { bans: readonly TraineeBanDto[]; canLift: 
   );
 }
 
-/** Every training of the trainee by ladder and rating (§4.2), each a line that opens on what the staff reads of it. */
-function TrainingsByLadder({ trainings }: { trainings: readonly StaffTrainingDto[] }) {
+/**
+ * Every training of the trainee the reader reads, by ladder and rating (§4.2), each a line that opens on what the staff reads of it;
+ * `empty` when there is none — none at all, or none on the FIR of a head of a FIR.
+ */
+function TrainingsByLadder({ trainings, empty }: { trainings: readonly StaffTrainingDto[]; empty: string }) {
   const { t } = useTranslation();
   const ladders = trainingsByLadder(trainings);
 
   if (ladders.length === 0) {
-    return <p className="text-muted-foreground text-sm">{t('training:trainees.noTrainings')}</p>;
+    return <p className="text-muted-foreground text-sm">{empty}</p>;
   }
 
   return (

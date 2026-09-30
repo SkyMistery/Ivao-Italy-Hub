@@ -11,16 +11,19 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A7b** (il trainer sulla regola delle righe affidate), sul branch
-`m3/a7b-trainer-assignee`, **PR #181** verso `main`, **in cima alla coda**: #178 (A10c) è unita il 29 settembre, `main` è nel branch, e la
-PR è pronta a CI verde. **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7
-(#146), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del
-maintainer. **In coda sopra A7b**, in bozza: A11b (#182), la fase del nucleo A12a (#187) e A12b (#189). **A7b** porta il trainer sulla
-regola delle righe affidate, com'è decisa da Carmine sulla #146: nessun grant, nessun job che lo toglie; **va unita prima di qualunque
-installazione con trainer veri**, e **un'installazione che ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa
-deve sapere la fase dopo»). **Carmine ha risposto** alle revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto, le ultime voci): una
-sessione cominciata si registra e non si data più a mano né si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo
-è accettata, gli esami prendono ogni rating del percorso — l'8 compreso —. La **sessione master** di Carmine (nota
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A11b** (i capi FIR nel modulo), sul branch `m3/a11b-fir-heads`, **PR #182** verso
+`main`, **in cima alla coda**: #181 (A7b) è unita il 29 settembre alle 23:04 UTC, `main` è nel branch, e la PR è pronta a CI verde, come il
+revisore ha chiesto ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5900753915)). **Sono in `main`**: A3
+(#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b (#181), A8a (#147), A8b (#148), A9a
+(#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159) e #152 del maintainer. **In coda sopra A11b**, in
+bozza: la fase del nucleo A12a (#187) e A12b (#189). **A11b** dà ai capi FIR, CH e ACH, la vista e l'assegnazione dei training del loro FIR, e
+il percorso di un trainee senza ciò che non è del loro FIR; **il revisore l'ha trovata approvabile**
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)), con tre nit che non chiedono correzioni;
+**per la consegna serve il `config/division.json` del tag** (i due grant al team di un FIR e `firStaffScope: own`). **Un'installazione che
+ha già girato A7 pulisce a mano i grant del trainer** (A7b qui sotto, «Che cosa deve sapere la fase dopo»). **Carmine ha risposto** alle
+revisioni di #149, #150 e #178 (A9a, A9b e A10c qui sotto, le ultime voci): una sessione cominciata si registra e non si data più a mano né
+si chiude, nessuno data un training nel passato, la scheda disegnata nel modulo è accettata, gli esami prendono ogni rating del percorso — l'8
+compreso —. La **sessione master** di Carmine (nota
 `2026-09-26-la-sessione-master`, `CLAUDE.md` §0) unisce sul via di Carmine, una PR alla volta; quando una PR sotto è unita, la PR sopra fa il
 suo passo della coda (`CONTRIBUTING.md`, «Phases in a queue»), e se un branch va rimesso in pari con `main` il master lo chiede sulla PR
 senza spingerci niente. In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
@@ -94,6 +97,52 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A11b (29 settembre 2026, branch `m3/a11b-fir-heads`, PR #182)
+
+- **Che cosa c'è** (configurazione e codice del modulo; nessun file del nucleo, nessuna nota nuova, nessuna domanda a Carmine, nessuna
+  migrazione): **i capi FIR nel modulo**, sul nucleo di A11a (#159) e come dice la sua nota (`2026-09-27-i-capi-fir-sul-loro-fir` §3.8),
+  decisa da Carmine ([il suo commento sulla #159](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/159#issuecomment-5864855723)):
+  - in `config/division.json` due voci di `positionGrants` al **team di un FIR** — `Training.View` e `Training.Assign`, livelli
+    `Coordinator` e `Assistant` (CH e ACH, non i CHA), `scope: TD`, `"firTeam": true` — e **`firStaffScope: own`** (risposta 2 di
+    Carmine). `division.example.json` dice lo stesso alle altre divisioni, con il perché nel commento;
+  - la pagina di un training, i trainer proposti, l'assegnazione e `training.approvalQueue` chiedevano già l'unico handler sulla riga, e
+    la lista `/api/training/queue` passa dal motore: **seguono il FIR senza una riga del modulo che lo nomini**;
+  - **il percorso di un trainee** (`TraineePaths`) dà i ban, e «dove si trova» sui percorsi che se ne ricava, solo a chi l'unico handler
+    lascia leggere un ban del trainee (`TrainingBans.MayReadAsync`, come `MayBanAsync`): allo staff del training come prima, a un capo FIR
+    **no** (`null`, non una lista vuota); i training, uno per uno come prima. La pagina lo dice (`trainees.firOnly`,
+    `trainees.noTrainingsOnFir`). `07` §4.2 lo precisa;
+  - i test: `TrainingFirHeadsTests` (integrazione, 2, VID **790074–790078**), i due test di A4 che imparano le voci del team, un caso
+    nuovo nello smoke del percorso.
+- **Che cosa deve sapere la fase dopo**:
+  - **Un capo FIR** (CH o ACH) vede e assegna i training del suo FIR, e nient'altro del training: non accetta, non conduce, non modifica;
+    un training pilota non ha FIR e non è suo. Esami, ban, voci della scheda e impostazioni non dicono un FIR e gli restano chiusi.
+  - ⚠️ **Il menu gli offre «Esami» e «Ban»** (le voci chiedono `HasAny(Training.View)`, che un permesso sul FIR soddisfa), e le liste
+    dietro rispondono 403, che `DataList` disegna come una lista vuota. Toglierle vuole il nucleo: detto al revisore come proposta.
+  - ⚠️ **Un avviso di una data** sulla pagina di un training può portare a un training di un altro FIR: per un capo FIR è «non trovato».
+  - ⚠️ **`firStaffScope` di IT è `own`** da questa fase: il solo effetto è sui grant al team di un FIR (il training è l'unica entità
+    `IHasFir`); il personale dei dipartimenti non è mai fermato dal FIR. Un grant al team nuovo, su un'altra area, dovrà avere righe con
+    il FIR (il seme lo salta, la schermata lo rifiuta).
+  - ⚠️ **Il banco e2e non ha un capo FIR** (i personaggi sono nucleo): il «fatta quando» lo provano i test d'integrazione. Un CH sul banco
+    sarebbe una fase del nucleo a sé.
+  - **Questo branch ha preso `main` prima della coda** (efe057a: A11a, #173–#177 e #179), e con esso **l'Invio in più di A6b** come
+    commit suo (8807e8a, lo stesso pezzo di c3db117). Poi la coda l'ha raggiunto: con A7b (e7b530a, merge 1baf8fa) è entrato `main` a
+    47e2f70, l'Invio di A6b si è unito senza conflitti, e `m3/a7b-trainer-assignee...m3/a11b-fir-heads` mostra di nuovo solo la fase.
+    Due passi dopo, sempre dalla sessione che coordina: b2ba9b5 (`main` a 2af5133 dopo #147, e le correzioni delle revisioni fino a #181;
+    merge 01c21a5) e 528edc6 (le risposte di Carmine su #149, #150 e #178; merge 6462912). **Una fase che parte da qui** (A12a, #187) ha
+    `main` a 2af5133; #148 (A8b), unita alle 17:23 UTC, sale al passo della coda di ogni branch.
+  - **La revisione** (su 0b62481, [il commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/182#issuecomment-5891401467)):
+    **approvabile**, con tre nit che non chiedono correzioni — il menu del capo FIR (sotto), il test di architettura che vuole `own` anche
+    nell'esempio (una divisione che scegliesse `all` avrebbe un test rosso, come già per i livelli), e il percorso di un VID qualunque che
+    a un capo FIR risponde 200 con la lista vuota (come allo staff oggi). Per la consegna serve il `config/division.json` del tag.
+  - ⚠️ **Un solo `e2e:full` alla volta** sulla macchina (la sessione che coordina, 29 settembre): Mailpit è condiviso, e due giri insieme
+    contano le mail l'uno dell'altro. Si prende `$env:TEMP\ivaohub-e2efull-mailpit.lock` come il lucchetto dello smoke.
+  - ⚠️ **`InitialisationMarkerTests.TwoProcessesStartingTogetherBothInitialiseAndBothWriteTheMark`** (del nucleo, #175) ogni tanto va in
+    deadlock di MariaDB, anche da solo: se cade, si rilancia la classe con `-class` e si scrive.
+  - VID: **790074–790078** sono di A11b (dalberone, 29 settembre; erano della correzione di A8a, che non li ha usati). Il range del
+    training è tutto assegnato.
+- **La fase dopo**: **A12a** (nucleo: l'helper «persona cancellata» e `ErasureTests` con le colonne del training, con la sua nota nuova),
+  dalla cima della coda.
 
 ### Che cosa ha lasciato A7b (28 settembre 2026, branch `m3/a7b-trainer-assignee`, PR #181)
 

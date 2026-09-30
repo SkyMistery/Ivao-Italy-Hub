@@ -17,18 +17,24 @@ namespace IvaoHub.Modules.Training.Staff;
 /// ban them.
 /// </summary>
 /// <param name="Trainee">The member, by VID and by the name the hub has.</param>
-/// <param name="Ladders">Where they stand on each ladder, in the order of the core's ladders.</param>
-/// <param name="Trainings">
-/// Their trainings, each as the staff's page of it (<c>StaffTrainings.PageAsync</c>): so a trainer who reads their own path reads it
-/// without what is reserved, as on the page of each training (note <c>le-note-riservate-e-il-trainee</c>).
+/// <param name="Ladders">
+/// Where they stand on each ladder, in the order of the core's ladders; none to a reader who may not read their bans — a head of a
+/// FIR (A11b) —, because it is worked out from the bans and from every training of theirs.
 /// </param>
-/// <param name="Bans">Their bans, the newest first: the ones that hold, the ones over and the ones lifted.</param>
+/// <param name="Trainings">
+/// Their trainings the reader may read, each as the staff's page of it (<c>StaffTrainings.PageAsync</c>): so a trainer who reads their
+/// own path reads it without what is reserved, as on the page of each training (note <c>le-note-riservate-e-il-trainee</c>), and a
+/// head of a FIR reads the ones of their FIR (A11b).
+/// </param>
+/// <param name="Bans">
+/// Their bans, the newest first: the ones that hold, the ones over and the ones lifted; none to a reader who may not read them.
+/// </param>
 /// <param name="CanBan">Whether the reader may ban them now: <c>Training.Ban</c>, never on themselves.</param>
 public sealed record TraineePathDto(
     TrainingMemberDto Trainee,
-    IReadOnlyList<MyTrainingPathDto> Ladders,
+    IReadOnlyList<MyTrainingPathDto>? Ladders,
     IReadOnlyList<StaffTrainingDto> Trainings,
-    IReadOnlyList<TraineeBanDto> Bans,
+    IReadOnlyList<TraineeBanDto>? Bans,
     bool CanBan);
 
 /// <summary>
@@ -36,7 +42,11 @@ public sealed record TraineePathDto(
 /// every training (R.1, d2) —, like the page of the pilot of the tours (design M2 §8.7). It builds nothing of its own: the ladders are
 /// the trainee's own answer (<see cref="TrainingRequests.PathsOfAsync"/>), each training the staff's page of it
 /// (<see cref="StaffTrainings.PageAsync"/>, which leaves out what is reserved when the reader is its trainee), the bans their rows
-/// (<see cref="TrainingBans"/>). A training the one handler does not let the reader read is left out.
+/// (<see cref="TrainingBans"/>).
+/// <para>What the reader reads of it is the one handler's answer on the rows. A training it does not let them read is left out. The
+/// bans, and the ladders worked out from them and from every training, are the reader's when the handler lets them read a ban of the
+/// trainee: the staff of the training reads them all, and a head of a FIR, whose <c>Training.View</c> reaches the trainings of their
+/// FIR alone and no row that says no FIR, reads neither (A11b; design M3 §3.2, §4.2).</para>
 /// </summary>
 public sealed class TraineePaths(
     TrainingDbContext database,
@@ -70,11 +80,13 @@ public sealed class TraineePaths(
             }
         }
 
+        var standing = await bans.MayReadAsync(vid);
+
         return new TraineePathDto(
             TrainingPeople.Member(vid, names)!,
-            await requests.PathsOfAsync(vid, history, given, cancellationToken),
+            standing ? await requests.PathsOfAsync(vid, history, given, cancellationToken) : null,
             pages,
-            await bans.RowsAsync(given, cancellationToken),
+            standing ? await bans.RowsAsync(given, cancellationToken) : null,
             await bans.MayBanAsync(vid));
     }
 }

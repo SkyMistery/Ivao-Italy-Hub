@@ -68,7 +68,9 @@
     "conducts the trainings assigned to them, and Training.Edit every training.",
     "A grant may go to the team of a FIR instead: \"firTeam\": true with its levels (Coordinator is the chief of",
     "a FIR, Assistant the assistant chief, Advisor a FIR advisor) and no department. It names no FIR, and it is",
-    "only taken for a permission of an area whose rows say their FIR, such as the trainings."
+    "only taken for a permission of an area whose rows say their FIR, such as the trainings. The last two grants",
+    "below are the ones the training module expects for the chief and the assistant chief of a FIR: they see and",
+    "assign the trainings of their own FIR, and only those, because firStaffScope is own below."
   ],
   "positionGrants": [
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
@@ -91,11 +93,13 @@
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSheets", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Training.ManageExams", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Ban", "scope": "TD" },
-    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" }
+    { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" },
+    { "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.View", "scope": "TD" },
+    { "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" }
   ],
 
   "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like any grant. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
-  "firStaffScope": "all",
+  "firStaffScope": "own",
 
   "$comment.atcData": [
     "Optional. Where the ATC sessions of the network are read from, so that the controllers a pilot contacted",

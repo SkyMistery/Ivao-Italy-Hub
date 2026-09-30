@@ -39,7 +39,8 @@ namespace IvaoHub.Modules.Training;
 /// shows them, with the people only to a signed in reader, and the four blocks of the pages and the dashboards; A10c the exams in
 /// the calendar, which whoever examines enters, changes and takes off it, on the rows assigned to them; A7b the trainer on the
 /// same rule, with no grant of their own: the training says who its trainer is, and they conduct it with the permission of their
-/// position.
+/// position; A11b the heads of a FIR, the chief and the assistant chief, who see and assign the trainings of their own FIR and no
+/// other, through the grants to the team of a FIR and the division's <c>firStaffScope</c>, with no line of the module naming a FIR.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): its rows have a base
 /// department, <c>division.json → modules.training.baseDepartment</c>, and who does what is the grants of
 /// <c>positionGrants</c>, never a rule written here. Nor does it know the network's rules: the ratings, what comes after one,

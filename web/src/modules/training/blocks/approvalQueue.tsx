@@ -11,8 +11,8 @@ import { queueHref } from './reading';
 /**
  * `training.approvalQueue` (design M3 §4.3): the requests the reader may accept or refuse and the trainings they may assign, the
  * oldest request first — how many, a link to the list of each, and the oldest of them, each a link to its page. What waits for whom
- * is the one handler's answer on each row, the server's (never a training of the reader's own; for a head of a FIR, one of their FIR
- * with A11). Always live and with no property; its other half is `ApprovalQueueProvider`.
+ * is the one handler's answer on each row, the server's (never a training of the reader's own; for a head of a FIR, only the ones of
+ * their FIR to assign, A11b). Always live and with no property; its other half is `ApprovalQueueProvider`.
  */
 
 /** One queue: how many wait for the reader, and the oldest of them. */
