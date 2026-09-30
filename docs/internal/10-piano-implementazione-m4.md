@@ -82,7 +82,7 @@ Per non ripeterle trenta volte:
 | Fase | Titolo | Dipende da | In una riga |
 |---|---|---|---|
 | E0 | Note di decisione e questo piano — **questa PR** | design deciso (#180) | dieci note sulle decisioni di §17; le fasi qui sotto; `HANDOFF-M4.md` |
-| E1 | Nucleo: i tipi del calendario e l'ED sul banco | E0 | `rfe`, `rfo`, `mse`, `onlineDay` nel seme dei tipi; il personaggio `?as=events` (`IT-EC`) sul banco e2e |
+| E1 | Nucleo: i tipi del calendario e l'ED sul banco | E0 | `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) nel seme dei tipi; il personaggio `?as=events` (`IT-EC`) sul banco e2e |
 | E2 | Modulo: lo scheletro | E0 | progetto, contesto, `Initial` (`evt_events` intera, `evt_event_airports`), catalogo, `positionGrants`, impostazioni, menu, segmento |
 | E3a | L'evento nello staff | E1, E2 | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare |
 | E3b | La vita dell'evento | E3a | pubblicare, l'uscita programmata, la fine; calendario, ricerca, usi dei file; `events-release` |
@@ -189,7 +189,7 @@ una fase dà per esistente esista o abbia la sua fase.
      scrive `dalberone` e `core-guard.sh` riconosce anche gli eventi.*
   2. **Il seme dei tipi del calendario** (`seed/calendar-kinds/kinds.json`: `event`, `training`, `exam`, `tour`, `meeting`,
      `deadline`) si ricorda chiave per chiave e lascia com'è una chiave scritta a mano (`ContentSeeder.SeedCalendarKindsAsync`):
-     `rfe`, `rfo`, `mse`, `onlineDay` sono un seme e basta (E1). Training li aspetta: `TrainingSettings.ConflictKinds` è `["event"]`
+     `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) sono un seme e basta (E1). Training li aspetta: `TrainingSettings.ConflictKinds` è `["event"]`
      e il suo commento dice che l'Online Day arriva con M4.
   3. ⚠️ **Il banco e2e non ha staff degli eventi** (`web/scripts/e2e-server.mjs`: il coordinator del web, il pilota, l'assistant del
      FOD, il trainer): E1 aggiunge `?as=events` (`IT-EC`). L'assistant del FOD (`IT-FOAC`) basta per le rotte (E4).
@@ -252,7 +252,7 @@ una fase dà per esistente esista o abbia la sua fase.
 Design §1.2, §8.1, §13 n.1; nota `i-tipi-di-evento`. Branch `m4/e1-calendar-kinds`. **PR del nucleo**, con una nota breve (caso b: un
 personaggio del banco, come A1 di M3).
 
-1. **I quattro tipi** in `seed/calendar-kinds/kinds.json` — `rfe`, `rfo`, `mse`, `onlineDay` —, con le etichette in
+1. **I quattro tipi** in `seed/calendar-kinds/kinds.json` — `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) —, con le etichette in
    `locales/*/seed.json` come i tipi che ci sono, un colore e un ordine vicino a `event`.
 2. **Il personaggio dell'ED** sul banco e2e: `?as=events`, un VID libero del banco (dopo `999004`), posizione `IT-EC`, senza casella
    di Mailpit finché nessuna mail dello staff degli eventi lo chiede. Fino a E2 non ha permessi degli eventi: li porta il seme dei

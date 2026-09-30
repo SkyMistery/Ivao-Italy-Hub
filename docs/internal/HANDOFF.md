@@ -29,8 +29,21 @@
 > - push su `main`, `--force` e tag restano rifiutati ovunque.
 >
 > Sul branch del collaboratore il master non spinge: glielo chiede sulla PR.
+>
+> **Dal 30 set 2026** (nota `2026-09-30-la-coda-senza-bozze`, piano 1.27, decisa da Carmine in chat): **il giro del master parte da
+> solo**, a intervalli, e avvisa Carmine solo per una sua decisione o una PR pronta da unire; **le fasi in coda si aprono pronte**, con
+> `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
+> `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori). Piano **1.26**: **la
+**Ultimo aggiornamento:** 30 settembre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
+dalla prova sul banco). **M4: E1 è unita**, il prossimo passo è E2 di `dalberone`. Piano **1.27**: **le correzioni del banco del
+training** (A13a, #196: le frasi del trainee e `theoryExamHint`, le parole del sito dell'esame teorico, confermata da Carmine; A13b,
+#197: lo storico di un training letto dal registro di audit del nucleo, in un posto solo, `TrainingHistory.cs`, con la condizione che
+al secondo modulo la lettura passi nel nucleo; A13c, #201: la data fissata a mano è una data ancora da venire); **E1 di M4** (#200: i
+quattro tipi degli eventi nel seme, con la chiave **`online-day`**, e l'ED sul banco, `?as=events`); **la pagina che si ricarica dopo
+una consegna** (#198, 0.5.1); **la coda senza bozze e il giro del master che parte da solo** (#199, decisa da Carmine in chat: le fasi
+in coda si aprono pronte, il passo della coda lo fa il master, che controlla le PR a intervalli e avvisa Carmine solo per una sua
+decisione o una PR pronta da unire; il merge resta di Carmine, per numero). Piano 1.26: **la
 chiusura di M3** (A12d, #191: il giro completo del training, `docs/FORKING.md` sul training, il rapporto
 `decisions/2026-09-30-m3-review.md`) e **il controllo all'avvio rinforzato** (#193, 0.4.3, la voce 1 della coda del codice). Piano
 1.25: **tutta la coda di M3** (A7, A8a–A8b,
@@ -40,15 +53,18 @@ cancella (A12b); **la fase E0 di M4** (#184, dieci note e `10-piano-implementazi
 l'avvio (#185, 0.3.1) e l'accesso dalla pagina d'errore che torna alla home (#190, 0.4.2); la 0.4.0 (#186) e i link legali del piè di
 pagina verso la wiki di IVAO (#188, 0.4.1). La 1.24 ha portato i capi FIR sul loro FIR (A11a, #159), il campo suggerito (#145, #177),
 le pagine della richiesta di training (#144) e il design di M4 (#180); la 1.23 l'avvio misurato sul server (#171–#175, 0.2.3–0.2.7).
-**L'hub è online su `test.it.ivao.aero` con la 0.4.1** (tag `v0.4.1` su `3b7f02f`), consegnata il 29 set 2026 alle 22:54 UTC (zip
-`delivery-only-104-files-0.4.1.zip`, sha256 `06e4c639d796beb076db8602f66a25e7084475435ba95ae2ddc96b33bcd0fbd2`) e caricata da Carmine
-via FTP in `webapp/` dello staging lasciato da Ivao.It, database `itivao_test`; porta anche la 0.3.0 (A11a e la tastiera, con
-`AddGrantFirTeam`, la prima migrazione del nucleo dalla 0.2.0). La `v0.4.0` (`2f5822d`) è stata costruita e **saltata**. ⚠️ **La
-0.4.1 ha A7 senza A7b**: sulla prova **non si assegnano training** fino alla consegna dopo (A7 scriverebbe i grant con scope che A7b
-lascia inerti). **`main` è alla 0.4.3 (#193); la prossima consegna è la `0.5.0`** (A7b, A11b e le altre fasi di M3, con migrazioni
-del modulo; la 0.4.3 ci entra senza cambiare niente): il master alza la versione prima del tag. Nella consegna della 0.5.0: il `config/division.json` del tag (A7b e A11b cambiano
-`positionGrants` e portano IT a `firStaffScope: own`), e se la prova ha grant con motivo `training: trainer` si tolgono dopo
-(`HANDOFF-M3.md`, A7b). La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+**L'hub è online su `test.it.ivao.aero` con la 0.5.0** (tag `v0.5.0` su `6261ffd`), consegnata il 30 set 2026 verso le 10:43 UTC
+(zip `delivery-only-106-files-0.5.0.zip`, sha256 `57c2775b759cd292c772a49825af207ea2dde40e40d61cf00a25dd0ecca9c8a0`, con il
+`config/division.json` del tag) e caricata da Carmine via FTP in `webapp/` dello staging lasciato da Ivao.It, database
+`itivao_test`: le fasi di M3 fino ad A12d, **A7b compresa, quindi sulla prova si assegnano training**; all'avvio le **tre migrazioni
+del training** e **tre grant di posizione** seminati (A7b e A11b cambiano `positionGrants` e portano IT a `firStaffScope: own`). Se
+la prova ha grant con motivo `training: trainer` scritti da A7, si tolgono a mano (`HANDOFF-M3.md`, A7b). Prima girava la 0.4.1 (29
+set, 22:54 UTC), che portava la 0.3.0 (A11a e la tastiera, con `AddGrantFirTeam`, la prima migrazione del nucleo dalla 0.2.0); la
+`v0.4.0` (`2f5822d`) è stata costruita e **saltata**. **`main` è alla 0.5.1** (#198: le schede aperte si ricaricano alla
+navigazione quando cambia il timbro del server). ⚠️ La 0.5.0 non ce l'ha: dopo il caricamento una scheda aperta prima ha mostrato il
+menu nuovo con il bundle vecchio, e una ricarica forzata l'ha rimessa a posto; anche alla prossima consegna le schede aperte con la
+0.5.0 si ricaricano a mano. **La prossima consegna** porta A13a–A13c, E1 e la 0.5.1: funzioni nuove senza migrazioni, quindi una
+MINOR che il master alza prima del tag. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
 Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
 `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md` (`webapp/`, `itivao_test`, carica Carmine); un foglio con la versione
@@ -86,14 +102,23 @@ il database (Carmine sulla #187); ricavare i codici dai dati in una nota «Propo
 rapporto, «Che cosa resta aperto, detto prima di chiudere». Il debito n.6 di §10 (le posizioni FIR) è chiuso da A11a e A11b.
 ⚠️ Da A11b il menu offre a un capo FIR «Esami» e «Ban», che gli rispondono 403 (una lista vuota): toglierli vuole il nucleo, proposta
 detta al revisore sulla #182. ⚠️ `e2e/full/template.spec.ts:139`, del nucleo, può cadere una volta nel giro completo (A12b).
+**Dopo la chiusura, dalla prova sul banco del TD** (30 set 2026, piano 1.27): A13a (#196), A13b (#197) e A13c (#201). ⚠️ **Lo storico
+di un training legge la forma delle righe d'audit del nucleo** (`Staff/TrainingHistory.cs`, il solo posto; `TrainingStaffTests.History.cs`
+cade se la forma cambia): un cambio al serializzatore di `HubSaveChangesInterceptor` va provato contro quel test, e **al secondo modulo
+che vuole uno storico la lettura passa nel nucleo** (piano §9.7). ⚠️ Il design M3 §4.2 non ha ancora la sezione «Storico» (`07` è di
+`dalberone`): vale la nota `2026-09-30-lo-storico-di-un-training`.
 **M4** (Events): **il design è unito** (`09-design-m4.md`, #180) e **la fase E0 anche** (#184, 29 set 2026): dieci note sulle
 decisioni di §17, `10-piano-implementazione-m4.md` con le fasi (M4a E1–E9, M4b E10a–E15b, M4c E16–E17; le fasi del nucleo E1,
 E10a–E10e, E15a accanto al modulo) e `HANDOFF-M4.md`. **La cancellazione nasce con M4a** (E8b, decisa da Carmine in chat sulla
 #184). ⚠️ **E8a è tolta** (piano 1.25): con la (c) di A12a `ErasureTests` legge già i contesti di ogni modulo abilitato, quindi
 `EventsDbContext` appena il modulo è registrato; ne segue che **da E2** (la prima tabella `evt_`, con `cancelled_by`) ogni fase che crea
 una colonna di persona scrive la sua riga nella lista del test, o il test cade. `09-…`, `10-…` e `HANDOFF-M4.md` sono corretti nella
-PR del piano 1.25; le note di E0 non si toccano. **Il prossimo passo è E1**, di `dalberone` (nucleo: i tipi `rfe`, `rfo`, `mse`, `onlineDay` nel
-seme e il personaggio dell'ED sul banco e2e, con una nota breve). **M4 la scrive `dalberone`, tutta**, fasi del nucleo comprese (E1,
+PR del piano 1.25; le note di E0 non si toccano. ✅ **E1 è unita** (#200, 30 set 2026, piano 1.27, nota
+`2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco`): i tipi `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ **`online-day`** nel seme, blu dopo
+`event`, e il personaggio dell'ED sul banco e2e (`?as=events`, VID 999005, `IT-EC`, senza casella). ⚠️ **La chiave è `online-day`**
+(la chiave di un tipo è uno slug; confermata da Carmine sulla #200), la chiave della traduzione resta `seed.calendarKinds.onlineDay`;
+il design e le note di E0 scrivono ancora `onlineDay` e non si toccano. **Il prossimo passo è E2**, lo scheletro del modulo, di
+`dalberone`: porta il seme dei `positionGrants` dell'ED, da cui `?as=events` riceve i permessi degli eventi. **M4 la scrive `dalberone`, tutta**, fasi del nucleo comprese (E1,
 E10a–E10e, E15a, ognuna una PR a sé con la sua nota): decisa da Carmine in chat il 30 set 2026, nota `2026-09-30-m4-al-collaboratore`;
 scartata l'alternativa del nucleo alle sue sessioni di lavoro. `core-guard` giudica ora anche i file degli eventi come suoi, e
 `HANDOFF-M4.md` ha la sezione «Per chi prende M4» con quello che le sessioni del maintainer sanno.

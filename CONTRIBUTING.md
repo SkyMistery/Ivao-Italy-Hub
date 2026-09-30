@@ -78,8 +78,18 @@ chat, a commit, an issue or a pull request.
   a `finally` and removes its own leftovers at the start. When an unrelated spec suddenly fails, count the leftovers
   before suspecting your change; `DROP DATABASE ivaohub_e2e; CREATE DATABASE ivaohub_e2e;` and the migrations rebuild
   it. Never run a throwaway cleanup spec in parallel with the real one.
-- The bench signs in as other people with `/e2e/signin?as=pilot` and `?as=assistant`; mail is read from Mailpit on
-  `http://127.0.0.1:8025`.
+- The bench signs in as five people (`web/scripts/e2e-server.mjs`, `src/IvaoHub.Web/E2E/E2ESignIn.cs`):
+  - by default the **web coordinator** (VID 999001, `IT-WM`), who reaches every department and holds every permission
+    of every module;
+  - `/e2e/signin?as=pilot` (999002), a member with a Mailpit mailbox, ratings and hours: the pilot of the tours and the
+    trainee of the training;
+  - `?as=assistant` (999003, `IT-FOAC`), the assistant coordinator of the tours' department, no mailbox;
+  - `?as=trainer` (999004, `IT-T01`), a trainer of the training department with a mailbox and the highest ratings;
+  - `?as=events` (999005, `IT-EC`), the coordinator of the events department, no mailbox: the events' permissions come
+    only from the division's position grants.
+
+  A spec that proves what a department may do signs in as that department's person, never as the web coordinator, who
+  would pass with any grant. Mail is read from Mailpit on `http://127.0.0.1:8025`.
 - **No call to IVAO or any external service in a test**: record fixtures (`tools/record-ivao-fixtures.mjs`) with a
   real token in development, and test against them.
 - `dotnet test` sometimes reports "zero tests ran". Run the test executables directly instead:
