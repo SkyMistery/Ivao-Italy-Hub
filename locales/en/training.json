@@ -423,7 +423,7 @@
       },
       "setByHand": {
         "title": "Set the date by hand",
-        "lead": "Also outside the dates proposed, and in the past too, for a session held earlier than planned. The dates proposed go, and the trainee and the trainer receive an email. It is written in UTC; under the field, the time in {{zone}}.",
+        "lead": "A date still to come, also outside the dates proposed. The dates proposed go, and the trainee and the trainer receive an email. It is written in UTC; under the field, the time in {{zone}}.",
         "submit": "Set the date",
         "confirm": "Set it all the same",
         "done": "Date set: {{when}} UTC.",
