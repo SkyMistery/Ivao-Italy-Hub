@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Ivao;
-using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Rules;
 using IvaoHub.Modules.FlightOps.Shape;

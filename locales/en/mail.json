@@ -33,6 +33,12 @@
         "subject": "[{{department}}] Sent back: {{title}}",
         "body": "The page \"{{title}}\" you marked ready has been sent back, and it is a draft again.\n\nWhat was said: {{note}}\n\nChange it and mark it ready again: {{url}}\n\n---\nYou can turn these off on your profile page."
       }
+    },
+    "award": {
+      "toAssign": {
+        "subject": "New in the award queue: {{count}}",
+        "body": "New signals have entered the award queue since the last mail: {{count}}. Waiting in all: {{waiting}}.\n\n{{signals}}\n\nNobody receives an award until somebody assigns it. Open the queue to assign them, or to dismiss a signal: {{url}}\n\n---\nYou are receiving this at most once a day, because you may assign the awards of the division. You can turn these off on your profile page."
+      }
     }
   }
 }

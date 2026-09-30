@@ -1,10 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Weather;
 using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
-using IvaoHub.Modules.FlightOps.Legs;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;

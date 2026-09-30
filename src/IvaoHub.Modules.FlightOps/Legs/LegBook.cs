@@ -1,3 +1,4 @@
+using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.FlightOps.Aircraft;

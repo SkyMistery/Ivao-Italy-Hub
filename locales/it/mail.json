@@ -33,6 +33,12 @@
         "subject": "[{{department}}] Rimandata indietro: {{title}}",
         "body": "La pagina \"{{title}}\" che hai segnato pronta è stata rimandata indietro ed è di nuovo una bozza.\n\nChe cosa è stato detto: {{note}}\n\nCorreggila e segnala di nuovo pronta: {{url}}\n\n---\nPuoi disattivarle dalla pagina del tuo profilo."
       }
+    },
+    "award": {
+      "toAssign": {
+        "subject": "Novità nella coda degli award: {{count}}",
+        "body": "Dall'ultima mail sono entrate nella coda degli award nuove segnalazioni: {{count}}. In attesa, in tutto: {{waiting}}.\n\n{{signals}}\n\nNessuno riceve un award finché qualcuno non lo assegna. Apri la coda per assegnarli, o per scartare una segnalazione: {{url}}\n\n---\nRicevi questa mail al più una volta al giorno, perché puoi assegnare gli award della divisione. Puoi disattivarle dalla pagina del tuo profilo."
+      }
     }
   }
 }

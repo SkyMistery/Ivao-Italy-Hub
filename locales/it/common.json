@@ -1766,6 +1766,10 @@
       "content.sentBack": {
         "title": "Le mie pagine rimandate indietro",
         "description": "Una mail, con la nota, quando una pagina che hai segnato pronta viene rimandata indietro."
+      },
+      "award.toAssign": {
+        "title": "Award da assegnare",
+        "description": "Al più una mail al giorno, quando nella coda degli award entrano nuove segnalazioni, se puoi assegnare gli award della divisione."
       }
     }
   },

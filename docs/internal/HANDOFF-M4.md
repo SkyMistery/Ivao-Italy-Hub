@@ -6,11 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10a** (nucleo: le sessioni del tracker senza VID), sul branch
-`m4/e10a-tracker-without-vid`, **PR #210** verso `main`, del nucleo, senza coda, con `main` unito dopo **E10b** (#208).
-**Il prossimo passo**: le fasi partite insieme a E10a vanno avanti ognuna per sé — **E2** (lo scheletro, poi **E3a** con E1 già unita)
-e le altre del nucleo di M4b (**E10c–E10e**, **E15a**). E10a serve a **E13a**, che aspetta anche E12; **E11b** ed **E13a** trovano in
-E10b, già unita, la storia di un controllore e la presenza in un turno.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E10a** (nucleo: le sessioni del tracker senza VID), sul branch
+`m4/e10a-tracker-without-vid`, **PR #210** verso `main`, del nucleo, senza coda: le due correzioni della revisione, e `main` unito dopo
+E10e (#206), il passaggio dei tour al calcolo del nucleo (#211) ed E10d (#205). Sono unite E1 (#200), E10b (#208), E10e ed E10d;
+corrono ancora, ognuna nella sua sessione, **E2** (lo scheletro), **E10c** ed **E15a** (#207, che tocca gli stessi file di E10a).
+**Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). E10a serve a **E13a**, che aspetta anche E12; **E11b** ed **E13a**
+trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo;
+**E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. **La fase del nucleo che rende `Awards.Assign`
+concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -99,7 +102,9 @@ Verificato nel codice il 29 settembre 2026 (`10`, E0, «Trovato leggendo il codi
 **portati da E1** (la chiave è `online-day`: sotto, «Che cosa ha lasciato E1»); le sessioni
 senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise (E10b)~~ **portato da E10b** (e la storia di un
 controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
-divisione per nominativo (E10c); la mail a chi assegna (E10d); la distanza nel nucleo (E10e); le prenotazioni ATC della rete (E15a);
+divisione per nominativo (E10c); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
+lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
+lasciato E10e»); le prenotazioni ATC della rete (E15a);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -113,18 +118,22 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10a (30 settembre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
+### Che cosa ha lasciato E10a (30 settembre – 1° ottobre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica, nessuna domanda nuova; le misure del 30
-  settembre sono lì, §2):
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica; le misure del 30 settembre sono lì, §2, e
+  la revisione in §6):
   - **La domanda senza VID**: `IvaoSessionQuery(int? Vid, from, to, departure, arrival, IvaoConnectionType? ConnectionType)` con
-    `Limit` (`init`, predefinito 200); `SearchSessionsAsync` è la stessa di prima, dalla più recente, senza doppioni, al più `Limit`,
-    `null` quando IVAO non si è potuto chiedere; `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker
-    stanno nel lettore (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
-  - **Il client di IVAO aspetta 20 s per tentativo** (il totale resta 30): con i 10 standard nessun aeroporto si leggeva.
+    `Limit` (`init`, predefinito 200, **al più `MaxLimit` = 1000**, un tetto che tiene il nucleo); `SearchSessionsAsync` è la stessa
+    di prima, dalla più recente, senza doppioni, al più `Limit`, `null` quando IVAO non si è potuto chiedere;
+    `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker stanno nel lettore
+    (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
+  - **Il client di IVAO aspetta 20 s per tentativo** (l'interruttore campiona su 40, il totale resta 30): con i 10 standard nessun
+    aeroporto si leggeva. **Confermato da Carmine** con il `null` per la ricerca dei tour
+    ([risposta sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792)).
   - **Le fixture**: `tools/record-ivao-fixtures.mjs --sessions-at`; `tests/fixtures/ivao/tracker-airport-LIRF.json` (una sera di
-    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO). Senza VID,
-    `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto.
+    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO), **spostate sul 1°
+    gennaio 2001** (lo stesso giorno delle prenotazioni di E15a) e **senza `rating`, `serverId`, `software*`** (revisione, #210).
+    Senza VID, `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto.
   - **I test**: `IvaoTrackerWithoutVidTests` e `IvaoApiTimeoutTests` (unità).
 - **Che cosa deve sapere la fase dopo** (E13a, e chiunque legga il tracker senza VID):
   - ⚠️ **Una domanda per aeroporto che trova qualcosa costa ~10,5 s** (la pagina con l'ultima riga, sempre), e **due insieme
@@ -135,11 +144,66 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il DTO dice gli aeroporti della prima revisione**: trovata per la partenza da LIRF, una sessione può dire LIPZ.
   - **Il limite si dichiara**: con esattamente `Limit` sessioni la risposta può essere tagliata, e il resto sta prima della più
     vecchia.
-  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte); 761029 non è usata.
+  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte), e **la sera sta sul 1° gennaio
+    2001**, 16:00–17:59:59 UTC: un test che la legge chiede quel giorno. 761029 non è usata.
   - Il punto «La richiesta al tracker oggi» di «Per chi prende M4», qui sopra (`PageSize = 50`, `MaxSessions = 200`), è superato:
-    le pagine sono da 100 e il tetto è il `Limit` di chi chiama.
+    le pagine sono da 100 e il tetto è il `Limit` di chi chiama, al più 1000.
 - ⚠️ **Per i tour cambiano due cose, nessuna nei loro test**: le pagine sono da 100, e se IVAO non risponde affatto la ricerca dà
   `null` («tracker non disponibile») invece di lanciare.
+
+### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-mail-a-chi-assegna-gli-award.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643)):
+  - **Il riepilogo a chi assegna gli award**: `AwardQueueMailJob` (`award-queue-mail`, `src/IvaoHub.Core/Awards/`) gira una volta al
+    giorno all'ora di **`division.json → awardDigestTime`** (`HH:mm` nell'ora della divisione, **07:00** se manca; IT non la scrive).
+    Legge la coda del nucleo e, **solo se** sono entrati segnali nuovi, manda a chi ha `Awards.Assign` (`IPermissionHolders`,
+    superadmin compresi) **una mail**: quanti segnali nuovi, quanti in attesa, una riga per motivo e award proposto con il numero,
+    **senza VID**, il link a `/staff/awards/queue`. Tipo del nucleo **`award.toAssign`**: nel profilo da solo, spegnibile.
+  - **Il segno** `cms_award_signals.notified_at` (migrazione del nucleo `AddAwardSignalNotifiedAt`; le righe già in coda sono segnate
+    come dette): un segnale si racconta una volta sola, nello stesso salvataggio delle righe della mail, e uno gestito o scartato prima
+    del giro non si racconta.
+  - **Per ogni modulo**: il job non guarda `source_module`, e il modulo dei tour non è cambiato.
+  - **I test**: `AwardQueueMailTests` (integrazione: un segnale dei tour e uno di prova; chi l'ha spento e chi non ha il permesso; una
+    volta sola; l'ora dell'host), `AwardQueueMailLinesTests` e `AwardDigestTimeTests` (unità).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14b** proietta i segnali e basta, senza chiamare niente; la mail parte all'ora di `awardDigestTime` dopo il segnale. Il suo
+    «fatta quando» sul banco è il segnale in coda: il banco non ha nessuno con `Awards.Assign` e una casella (il web master non ne
+    ha), e il job gira solo alla sua ora. La mail la prova `AwardQueueMailTests`.
+  - ⚠️ **Oggi l'MD non ha `Awards.Assign`**: è un permesso globale, e un grant non dà mai un permesso globale (nota §5). Coda e mail
+    sono di DIR, ADIR, WM, AWM e dei superadmin. **Carmine ha deciso** che diventi concedibile, **in una fase del nucleo sua** (la
+    prepara la sessione che coordina, non E10d): quando ci sarà, la mail arriverà all'MD da sola.
+  - ⚠️ **Gli snapshot dei contesti dei moduli** vedono `notified_at` solo al loro prossimo `migrations add` (lo scarto innocuo di
+    T4b). Una fase che fa nascere o migra un contesto dopo E10d se la trova nello snapshot come tabella esclusa: è giusto così.
+  - ⚠️ **In un test d'integrazione un job del nucleo gira da solo nell'host**: un test che lo fa girare lo mette prima in pausa
+    (`ISchedulerFactory`, come `TourTests`) e passa `useIvaoFixtures: true` (l'avviso di E10b qui sotto).
+  - ⚠️ **E10d migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione
+    sopra `main`.
+
+### Che cosa ha lasciato E10e (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo.md`, scelta tecnica, con una richiesta a
+  Carmine):
+  - **La distanza fra due aeroporti nel nucleo**: `GreatCircle.DistanceNm(GeoPoint, GeoPoint)`, in miglia nautiche, e
+    `GreatCircle.DistanceNmRounded`, al decimo (una metà va al decimo pari), con `GeoPoint(Latitude, Longitude)` in gradi — in
+    `src/IvaoHub.Core/Airspace/GreatCircle.cs`, namespace **`IvaoHub.Core.Airspace`**. È il codice dei tour con i loro numeri: la
+    distanza fra i due aeroporti, non le miglia volate.
+  - **Come la usa un modulo**: chiede a `IAirportDirectory.FindAsync` dove sono gli aeroporti (un `FindAsync` solo per tutte le voci),
+    prende le coordinate con un pattern (`is { Latitude: { } …, Longitude: { } … }`: un aeroporto senza coordinate non ha distanza) e
+    misura con `GreatCircle`. Nessuna registrazione, nessuna migrazione, nessun endpoint.
+  - **I test**: `tests/IvaoHub.UnitTests/GreatCircleTests.cs` (unità, 8): le domande di `LegTests` al nucleo con le stesse risposte,
+    gli antipodi e l'antimeridiano, e **il test gemello**, che confronta il nucleo e la copia dei tour bit per bit su 35.721 coppie.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Il namespace è `IvaoHub.Core.Airspace`, non `IvaoHub.Core.Ivao`** (accanto ai contorni dei FIR, geometria che non è di IVAO):
+    in `Ivao` gli stessi nomi fanno cadere la build dei tour (`CS0104` su `TrackChecks.cs`, provato; nota §2 punto 3).
+  - ⚠️ **La copia dei tour c'è ancora** (`src/IvaoHub.Modules.FlightOps/Legs/GreatCircle.cs`): la toglie una sessione di Carmine
+    **dopo l'unione di E10e** ([sua risposta sulla #206](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685),
+    alla [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005); nota §5). Fino ad allora il test
+    gemello tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la distanza fra
+    due aeroporti è `GreatCircle` del nucleo, mai una copia), che aggiunge il master.
+  - **E14a ed E14b** la trovano qui: la distanza di una voce di un PIREP con `DistanceNmRounded` se la colonna è al decimo, come
+    `fo_legs.distance_nm`, e `MinLegDistance` confrontata con quel numero.
+  - Agli antipodi `h` può passare 1 di un'unità nell'ultima cifra, ma la radice lo riporta a 1: nessun NaN, misurato (nota §6).
 
 ### Che cosa ha lasciato E10b (30 settembre 2026, branch `m4/e10b-shared-sessions-by-vid`, PR #208, del nucleo, senza coda)
 

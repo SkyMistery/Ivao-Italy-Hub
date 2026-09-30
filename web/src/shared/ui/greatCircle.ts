@@ -6,7 +6,7 @@
  * false about every flight longer than a few hundred miles. Twenty lines of spherical interpolation say it right, and
  * that is the reason the map carries no geometry library (note 2026-09-15-la-mappa).
  *
- * The distances themselves are the server's (`GreatCircle` in the module): this is only how a line is drawn.
+ * The distances themselves are the server's (`GreatCircle` in the core): this is only how a line is drawn.
  */
 
 /** A point of the world as the hub holds one: degrees, latitude first, as every airport row has it. */
