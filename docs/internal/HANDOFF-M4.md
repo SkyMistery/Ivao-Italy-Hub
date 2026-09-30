@@ -6,15 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E10d** (nucleo: la mail a chi assegna gli award), sul branch
-`m4/e10d-award-assigner-mail`, **PR #205** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua
-sessione, **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**, **E15a**); sono unite E1 (#200), E10b (#208) ed
-E10e (#206).
-**Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
-presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli
-award, e non chiama niente. Il passaggio dei tour al calcolo del nucleo lo fa una sessione di Carmine **dopo l'unione di E10e** (sua
-risposta sulla #206; nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, §5). **La fase del nucleo che rende `Awards.Assign`
-concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2b** (nucleo: un grant a una posizione su un altro dipartimento dà il permesso, non
+il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda; la decisione è di
+Carmine, sulla #209. Corrono, ognuna nella sua sessione, **E2** (#209), **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f**;
+sono unite E1 (#200), E10b (#208), E10d (#205) ed E10e (#206).
+**Il prossimo passo**: **E2** ed **E2b** unite, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora**
+(`10`, E3a punto 5). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b**
+trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei
+tour al calcolo del nucleo è unito (#211). **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine
+sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -118,6 +118,43 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E2b (1 ottobre 2026, branch `m4/e2b-grant-without-department`, PR #212, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-01-il-permesso-non-il-dipartimento.md`, **decisa da Carmine** il 30 settembre, in chat al
+  master e pubblicata su sua istruzione [sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)):
+  - **Un grant a una posizione su un dipartimento che non è il suo** — su un altro, o su tutti — e **un grant al team di un FIR** con
+    `firStaffScope: all` danno **il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, scritto dal calcolo
+    (`UserGrant.GivesThePermissionNotTheDepartment`) e portato nel claim da un `!` in testa al pezzo dello scope (`Events.View:ED@!`), che un
+    lettore che non lo conosce legge chiuso.
+  - **Chi lo tiene** non ha il claim `dept` di quel dipartimento (`HubClaims.BuildIdentity`): nessuna riga `Visibility.Department`, nessun
+    gruppo nella barra dello staff, nessun'altra lista di quel dipartimento. **La lista generata** che legge con quel permesso ne tiene le
+    righe (`TryNarrowToDepartments`, accanto a `onTheirFir`); **l'unico handler e il guardiano** lo tengono sulle righe del dipartimento come
+    ogni permesso, e non sono cambiati.
+  - **Un grant a una persona** fa ancora entrare nel dipartimento (6 settembre); **lo stesso permesso da fuori e per nome** resta quello
+    per nome.
+  - **I test**: `PermissionFromOutsideRulesTests` (unità, 7) e `PermissionFromOutsideTests` (integrazione, 2, VID 761091–761092; 761090 è
+    un'identità delle unità). **Le parole**: l'aiuto del form dei permessi (`grants.formHint`), `docs/FORKING.md` e i commenti di
+    `config/division.example.json`. Nessuna migrazione, nessun endpoint.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **I nove grant di chi collabora non ci sono** (#209 non era unita): li porta **E3a** (`10`, E3a punto 5) in `config/division.json`
+    e in `config/division.example.json`, e cambia `EventsArchitectureTests` di E2, che li rifiuta finché la nota non ha risposta — ora ce
+    l'ha. **Misurato** sopra E2b con E2 e i nove grant: integrazione intera 443/443, i tre test del maintainer verdi senza toccarli;
+    fra le unità l'unico rosso è quel test di E2.
+  - **Che cosa vedranno AOD, FOD e MD** (nota §3.7): gli eventi e le liste della loro area, con le righe dell'ED, ogni riga con l'unico
+    handler, la sezione «Eventi»; non le righe che l'ED tiene per sé, non il gruppo dell'ED nella barra, non i suoi contatti né i suoi
+    contenuti.
+  - ⚠️ **`writableDepartments`** nel browser non offre il dipartimento di un permesso da fuori: una schermata che fa creare una riga a chi
+    collabora (una rotta del FOD) la crea sotto l'evento, con maschera e scope dell'evento, e chiede al server le `actions`.
+  - ⚠️ **Un test che prova che cosa può chi collabora** entra come una posizione di quel dipartimento, senza indirizzo, e mai come il web
+    master del banco, che raggiunge ogni dipartimento; dopo aver scritto un grant rifà l'ingresso.
+  - ⚠️ **E10f** (in corso) dà `Awards.Assign` all'MD con un grant a una posizione senza `scope`: senza E2b farebbe entrare coordinator e
+    assistant dell'MD in ogni dipartimento; con E2b restano nel solo MD per ciò che vedono (nota §3.8). Detto alla sessione di E10f, che
+    lo chiude anche da sé con lo stesso campo `FromOutside` e la stessa forma: **chi arriva seconda a `main`** tiene una dichiarazione
+    sola e somma le due condizioni del calcolo (`GivesThePermissionNotTheDepartment` o un permesso globale).
+  - **Il team di un FIR con `own`** (IT) non cambia: il suo permesso porta il FIR, e il suo claim è quello di prima. ⚠️ Un cookie scritto
+    prima di E2b tiene i suoi claim `dept` fino al prossimo ingresso; su IT nessuno ne ha uno da un grant a una posizione su un altro
+    dipartimento.
 
 ### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
 

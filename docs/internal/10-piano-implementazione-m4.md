@@ -84,7 +84,8 @@ Per non ripeterle trenta volte:
 | E0 | Note di decisione e questo piano — **questa PR** | design deciso (#180) | dieci note sulle decisioni di §17; le fasi qui sotto; `HANDOFF-M4.md` |
 | E1 | Nucleo: i tipi del calendario e l'ED sul banco | E0 | `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) nel seme dei tipi; il personaggio `?as=events` (`IT-EC`) sul banco e2e |
 | E2 | Modulo: lo scheletro | E0 | progetto, contesto, `Initial` (`evt_events` intera, `evt_event_airports`), catalogo, `positionGrants`, impostazioni, menu, segmento |
-| E3a | L'evento nello staff | E1, E2 | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare |
+| E2b | Nucleo: il permesso, non il dipartimento | E2 (la domanda della sua nota, decisa sulla #209) | un grant a una posizione su un altro dipartimento dà il permesso e non il dipartimento: nessun claim `dept`, le righe nella lista di quel permesso |
+| E3a | L'evento nello staff | E1, E2, E2b | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare; i nove grant di chi collabora |
 | E3b | La vita dell'evento | E3a | pubblicare, l'uscita programmata, la fine; calendario, ricerca, usi dei file; `events-release` |
 | E4 | Il pubblico e le rotte | E3b | `/events`, `/events/{slug}`, `events.eventList`; `evt_routes` del FOD |
 | E5 | Gli slot pubblici e l'esportazione | E4 | `evt_slots`, incolla e carica con le catene, liste; l'esportazione con il token `events.bookings` |
@@ -367,6 +368,84 @@ regole. E2e: `?as=events` vede la sezione, salva un'impostazione e la rilegge.
 
 **Com'è andata**: *(a fase chiusa)*
 
+### E2b — Nucleo: il permesso, non il dipartimento
+
+**Da dove viene**: da E2 (PR #209). Scrivendo i grant del design §6.2, la nota di E2 `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`
+ha misurato che i nove grant di chi collabora (AOD, FOD e MD con `scope: ED`) farebbero entrare tre dipartimenti nell'ED per tutto
+quello che vedono — la «portata» della nota del 6 settembre, scritta per un grant a una persona — e tre test del maintainer andrebbero
+rossi. **Carmine ha deciso la (b)** il 30 settembre 2026 ([la risposta sulla #209][ok209]): un grant a una posizione su un dipartimento
+che non è il suo dà il permesso, non il dipartimento, in una fase del nucleo a sé **prima di E3a**. Nota nuova
+`2026-10-01-il-permesso-non-il-dipartimento`. Branch `m4/e2b-grant-without-department`. **PR del nucleo**, senza coda.
+
+1. Il permesso effettivo sa di venire da un grant a una posizione su un dipartimento non suo (come sa il suo FIR), e il claim lo porta.
+2. `HubClaims.BuildIdentity` lascia quel dipartimento fuori dai claim `dept`, come per un permesso tenuto su un FIR.
+3. La lista generata aggiunge le righe dei dipartimenti su cui chi legge tiene per quella via il permesso di lettura della lista — la
+   forma di `onTheirFir`.
+4. L'unico handler, il guardiano e il filtro globale non cambiano; un grant a una persona resta come il 6 settembre; i test del
+   maintainer (`SeveralDepartmentsTests`, `SearchEndpointTests.SearchRespectsVisibility`) restano come sono. Il team di un FIR con
+   `firStaffScope: all` è della stessa specie (nota di E2): si verifica.
+5. I nove grant di chi collabora, se E2 è unita prima della fine di E2b; altrimenti li porta E3a (sopra, E3a punto 5).
+
+**Test**: unità: quali grant danno il permesso da fuori, il claim, nessun `dept`, l'handler. Integrazione: una posizione con un permesso
+di lettura su un altro dipartimento ne legge le righe nella lista di quel permesso e nient'altro del dipartimento — nessun `dept`,
+nessun'altra lista, nessuna riga nella ricerca, nessun gruppo nella barra —; un grant a una persona allarga ancora come il 6 settembre.
+**Fatta quando**: i test del maintainer restano verdi senza essere toccati, e i nove grant, quando arrivano, non fanno entrare nessuno
+nell'ED.
+
+**Com'è andata** (1 ottobre 2026, branch `m4/e2b-grant-without-department`, PR #212, del nucleo senza coda, da `main` a `db9268f`):
+
+- **Fatto** (nota §3):
+  1. **`EffectivePermission.FromOutside`**: il calcolo lo scrive su ogni permesso di un grant
+     `UserGrant.GivesThePermissionNotTheDepartment` — a una posizione su un dipartimento non suo, o al team di un FIR — quando il permesso
+     non porta un FIR; il `View` implicato lo porta con sé; lo stesso permesso raggiunto anche per nome, o da un ruolo, resta quello che
+     dà il dipartimento.
+  2. **Nel claim** un `!` in testa al pezzo dello scope (`Events.View:ED@!`): `FormatPermission` lo scrive, `ReadPermission` lo legge, e
+     chi non lo conosce (`ParsePermission`, un pacchetto di prima) legge uno scope che nessuna riga dichiara, cioè chiuso.
+  3. **`BuildIdentity`** non scrive il claim `dept` di un permesso da fuori; **`TryNarrowToDepartments`** aggiunge i dipartimenti su cui
+     chi legge tiene da fuori il permesso di lettura della lista (tutta la lista se lo tiene su tutti; niente se lo tiene su una riga
+     sola).
+  4. **Le parole**: l'aiuto del form dei permessi dice le due portate (`grants.formHint`); `docs/FORKING.md` e i commenti di
+     `config/division.example.json` dicono che cosa dà un grant a una posizione su un altro dipartimento, e che cosa cambia con `all`.
+  5. **I test**: `PermissionFromOutsideRulesTests` (unità, 7) e `PermissionFromOutsideTests` (integrazione, 2, VID 761091–761092; 761090 è
+     un'identità dei test di unità).
+- **Precisazioni, scritte nella nota** (nessuna è una domanda nuova):
+  1. **Anche un grant a una posizione senza dipartimento** (su tutti) è da fuori: vale anche sui dipartimenti che non sono della
+     posizione, e altrimenti farebbe entrare i suoi titolari in ogni dipartimento. Oggi il seme di IT non ne ha.
+  2. **Il team di un FIR con `all`**: verificato che entrava nel dipartimento del grant (e `FORKING.md` lo diceva); ora è da fuori. Con
+     `own` il permesso porta il FIR e il suo claim non cambia.
+  3. **Lo stesso permesso da fuori e per nome**: vince quello per nome, che dà il dipartimento; senza, l'ordine delle sorgenti
+     (`grant:10` prima di `grant:9`) poteva togliere il dipartimento a chi un grant per nome aveva fatto entrare.
+  4. **Un permesso da fuori tenuto su una riga sola** non allarga la lista: il lato che chiude, per un caso che oggi nessuno scrive.
+  5. **L'aiuto della schermata dei permessi** non era chiesto: la nota del 6 settembre lo prometteva e non c'era. Una frase, in una
+     commit a sé.
+- ⚠️ **I nove grant di chi collabora non sono qui**: nominano permessi degli eventi, che esistono solo con E2 (#209), non unita il 1
+  ottobre. **Li porta E3a** (punto 5), con `EventsArchitectureTests` che li accetta. **Misurato** in un worktree di prova mai spinto
+  (E2b, più E2 a `b3b4849`, più i nove grant, cioè i 22 del design): **integrazione intera 443/443**, i tre test del maintainer che la
+  nota di E2 aveva visto rossi compresi, senza toccarli; unità 944 con **un solo rosso, voluto**: `EventsArchitectureTests` di E2, che
+  rifiuta i nove grant finché la nota non ha risposta.
+- **Trovato, per chi viene dopo**:
+  1. ⚠️ nel browser **`writableDepartments`** non offre il dipartimento di un permesso da fuori (non è fra quelli raggiunti): una
+     schermata del modulo che fa creare una riga a chi collabora la crea sotto l'evento, con maschera e scope dell'evento, e chiede al
+     server le `actions`, non `writableDepartments` (nota §3.7);
+  2. ⚠️ **E10f** (in corso) dà `Awards.Assign` all'MD con un grant a una posizione **senza `scope`**: su `main` farebbe entrare
+     coordinator e assistant dell'MD in **ogni** dipartimento (`BuildIdentity` scrive tutti i claim `dept` per un permesso da un grant
+     senza dipartimento); con E2b no, il grant è da fuori (nota §3.8). Detto alla sessione di E10f, che lo chiude anche da sé con lo
+     stesso campo e la stessa forma: chi arriva seconda a `main` somma le due condizioni del calcolo.
+- **Verificato, in locale** (1 ottobre 2026, sul branch prima del commit dei documenti): `dotnet build` della soluzione senza avvisi, e
+  `dotnet format --verify-no-changes` sui sette file C#; unità **910/910** (le 7 nuove comprese); **integrazione intera senza filtro
+  439/439** (6,3 minuti), la classe nuova da sola 2/2. **Al contrario**: con il codice del nucleo di `main` il primo test d'integrazione
+  cade sul primo `Assert` (`/api/me` dice `["AOD", "SOD"]`) e il secondo resta verde; con E2b senza il pezzo della lista cade sulla
+  lista (riga 92); senza l'ordine delle voci uguali cade il test di unità della persona. `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; `pnpm test` 594 in 80 file; `pnpm gen:api` senza differenze; `pnpm e2e` **163/163** al primo giro, dietro il lock
+  dello smoke; **`pnpm e2e:full` 50/50 al primo giro** (10,2 minuti) su un banco suo (`http://127.0.0.1:5120`, `ivaohub_e2e_e2b` tolto
+  prima, dietro il lock di Mailpit). Le regole di `core-guard` rifatte in PowerShell dalla base di merge `db9268f`: nessun file del
+  maintainer, sette del nucleo, la nota nuova.
+- **Non verificato**: la CI (la dice la PR); il comportamento su un'installazione vera con cookie di prima (chi ha già un claim `dept` da
+  un grant a una posizione su un altro dipartimento lo tiene fino al prossimo ingresso; su IT oggi nessuno); il team di un FIR con `all`
+  sul database (lo provano le unità: IT è su `own`).
+
+[ok209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
+
 ### E3a — L'evento nello staff
 
 Design §1.1–§1.3, §2.3, §6.1, §7.2; note `i-tipi-di-evento`, `la-vita-di-un-evento`, `chi-lavora-sugli-eventi`. Branch
@@ -383,6 +462,11 @@ Design §1.1–§1.3, §2.3, §6.1, §7.2; note `i-tipi-di-evento`, `la-vita-di-
 4. **Annulla** (`Events.Edit`): `cancelled_at`, `cancelled_by`, la nota tradotta; il tipo di notifica `eventCancelled` dichiarato (i
    destinatari arrivano con le righe dei membri: E6a, E12, E16). **Elimina** (`Events.Delete`, `DeletePolicy`): solo senza righe dei
    membri — la regola cresce con ogni tabella dei membri.
+5. **I nove grant di chi collabora** (aggiunto da E2b): AOD `Events.View` ed `EventAtc.*`, FOD `Events.View` ed `EventRoutes.*`, MD
+   `Events.View` ed `EventReports.*`, a tutti i livelli e con `scope: ED`, in `config/division.json` e in `config/division.example.json`,
+   se E2b non li ha già portati (li porta solo se E2 è unita prima della sua fine: sotto, E2b); `EventsArchitectureTests` di E2, che li
+   rifiuta finché la nota non ha risposta, li accetta. Da E2b danno il permesso e non l'ED: i test che raggiungono la loro parte e non
+   l'ED, come la riga «Test» qui sotto.
 
 **Test**: integrazione: l'ED crea e modifica; FOD e AOD non modificano il testo; chi collabora non elimina; EC elimina una bozza
 vuota; un ICAO sconosciuto rifiutato sulla sua riga; `kindPresets` applicati. Unit: lo stato dalle date, ai bordi. E2e: il personaggio
