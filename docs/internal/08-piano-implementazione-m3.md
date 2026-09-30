@@ -4000,6 +4000,9 @@ Ne sono uscite **sei correzioni**, in **due PR**:
   si leggono nella pagina dello staff. Alcuni esempi sono il trainer, la data e lo stato. È una **funzione nuova** (`CLAUDE.md` §5,
   caso (c)): prima la nota `2026-09-30-lo-storico-di-un-training` con la domanda a Carmine, poi il codice. Il suo «Com'è andata» va
   qui sotto quando arriva.
+- **A13c — la frase della data fissata a mano** (branch `m3/a13c-set-by-hand-lead`): una **settima correzione**, che non viene dal
+  banco. L'ha trovata A13b fuori dalla sua fase («Trovato» n.6 di A13b): la frase sopra il form «Fissa la data a mano» diceva ancora
+  che una data si fissa «anche nel passato», e dalla risposta di Carmine sulla #149 non è più vero. È caso **(a)**, un valore i18n.
 
 **Com'è andata (A13a)** (30 settembre 2026, branch `m3/a13-bench-fixes`, da `main` a 6261ffd). **Quattro commit di codice e uno di una
 spec, nessun file del nucleo, nessuna migrazione, nessuna domanda a Carmine.**
@@ -4195,3 +4198,62 @@ nessun file del nucleo, nessuna migrazione.** La nota `2026-09-30-lo-storico-di-
     guardata il banco di A13b.
 
 [a13b-197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5910098296
+
+**Com'è andata (A13c)** (30 settembre 2026, branch `m3/a13c-set-by-hand-lead`, PR #201, **in coda dopo #197**: il branch nasce da
+quello di A13b, a 2e97474). **Due valori i18n e due commenti; nessun file del nucleo, nessuna migrazione, nessun test nuovo, nessuna
+domanda a Carmine.**
+
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): caso **(a)**, un valore i18n. I due commenti del codice dicevano la stessa cosa, e
+  li corregge un commit a parte: lo ha scelto `dalberone`.
+- **La coda**: #197 (A13b) è ancora aperta, e tutte e due le fasi scrivono in cima a `HANDOFF-M3.md` e qui sotto A13. Il branch nasce
+  quindi da `m3/a13b-training-history` (`CONTRIBUTING.md`, «Phases in a queue»), e la PR si apre pronta, con `(after #197)`. Il nome e
+  la coda li ha scelti `dalberone`.
+- **Fatto** (commit `6875f6e`, `ef7ab9e` e quello di questi documenti):
+  - **`training:staff.dates.setByHand.lead`**, in italiano e in inglese:
+    - «Una data ancora da venire, anche fuori dalle date proposte. Le date proposte vanno via, e il trainee e il trainer ricevono una
+      mail. Si scrive in UTC; sotto il campo, l'ora di {{zone}}.»;
+    - «A date still to come, also outside the dates proposed. The dates proposed go, and the trainee and the trainer receive an email.
+      It is written in UTC; under the field, the time in {{zone}}.».
+
+    Il resto della frase non cambia. Il limite si dice come la frase di «Proponi le date» dice i suoi, così chi scrive una data passata
+    sa già perché il server la rifiuta. `dalberone` ha scelto questa frase fra due: l'altra toglieva solo l'inciso sul passato;
+  - le copie in `locales/` vengono da `pnpm i18n:sync`;
+  - **i commenti** di `dateSchema` (`web/src/modules/training/schemas.ts`) e di `SetDate` (`screens/staff.tsx`) dicevano «gone by too,
+    for a session held earlier than planned». Ora dicono «still to come», con il perché (#149), come il commento di `SetAsync` sul
+    server.
+- **Trovato**:
+  1. **Nessun test legge la frase.** Di `setByHand` la spec delle date (`web/e2e/training-dates.spec.ts`) legge il bottone, l'avviso e
+     il campo, e nessun test Vitest, snapshot o test .NET nomina il `lead`. Cercato in `web/e2e`, `web/src`, `tests/` e `src/`;
+  2. **perché era rimasta**: dopo la risposta di Carmine sulla #149, A9a ha cambiato il server, i test e i documenti (qui lo scostamento
+     2 di A8a e «Le risposte di Carmine su #149» n.3), ma non la frase della pagina né i due commenti. ⚠️ Una regola che cambia su un
+     passo della pagina si cerca anche nelle parole del suo form (`lead`, `hints`) e nei commenti, non solo nei test;
+  3. nel resto del modulo nient'altro dice che una data si fissa nel passato. Cercati «in the past», «gone by», «earlier than», «nel
+     passato» e «prima del previsto»;
+  4. **fuori dalla fase, non toccato**: una pagina letta in italiano dice `lang="en"`. `web/index.html` ha `<html lang="en">`, e niente
+     in `web/src` lo cambia con la lingua: sul banco `document.documentElement.lang` era `en` con la pagina in italiano. È del nucleo, e
+     né il piano né una nota ne parlano. È detto a `dalberone` e nella PR, per il maintainer.
+- **Scostamenti dal design**: nessuno. La pagina torna a dire quello che il server fa dalla risposta sulla #149.
+- **Verificato** (30 settembre 2026, in locale, una suite alla volta):
+  - `dotnet build IvaoHub.sln`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **883/883**;
+  - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 427/427** al primo giro, in 6,7 minuti;
+  - `pnpm lint`, `typecheck`, `format:check`: puliti;
+  - `pnpm i18n:check`: **783** chiavi;
+  - `pnpm test`: **594/594** in 80 file;
+  - `pnpm i18n:sync` e `pnpm gen:api` dopo i commit: nessuna differenza;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**: **163/163** al primo giro, con i 16 worker di default (150 socket in `TIME_WAIT`);
+  - **`pnpm e2e:full`**, sotto il lucchetto di Mailpit, sul banco nuovo di A13c (127.0.0.1:**5112**, `ivaohub_e2e_a13c`): **49/49** al
+    primo giro, in 9,9 minuti con la pubblicazione;
+  - **sul banco di A13c, nel browser dell'app**: riacceso dopo il giro completo, con la stessa pubblicazione e senza posta (l'SMTP su una
+    porta morta, perché Mailpit è condiviso). Un training ATC del trainee del banco è stato chiesto, accettato e assegnato al trainer
+    del banco per le API, come fa `full/training-the-dates.spec.ts`: è il training 9 del banco. Letta come il web master, la sua pagina
+    dello staff ha la frase nuova sopra «Fissa la data a mano», in italiano e poi in inglese, con «Europe/Rome» al posto di `{{zone}}`.
+    La frase vecchia non c'è più. Poi il training è stato chiuso con un motivo `trn-test:` e il banco spento;
+  - le regole di `core-guard` in PowerShell, sul range della fase (da `m3/a13b-training-history`) e su quello intero della PR (dal
+    merge-base con `main`): nessun file del maintainer, nessuno del nucleo, **PASS**.
+- **Non verificato**:
+  - **la CI** della PR, che la dice la PR;
+  - **una data passata scritta a mano nel browser**: non è stata provata. Il rifiuto (`slotPassed`) lo prova l'integrazione
+    (`TrainingSessionsTests`, dalla risposta sulla #149), e questa fase non cambia il server;
+  - **sul banco di anteprima** (5090/5091): la frase non è stata guardata lì, perché il banco è della sessione che coordina. L'ha
+    guardata il banco di A13c.

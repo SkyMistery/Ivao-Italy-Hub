@@ -11,8 +11,8 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13b**, lo storico delle modifiche di un training nella pagina dello staff, letto
-dal registro di audit del nucleo. Branch `m3/a13b-training-history`, PR #197, con `main` a 21da19d (0.5.1).
+**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13c**, la frase sopra il form «Fissa la data a mano» senza il passato. Branch
+`m3/a13c-set-by-hand-lead`, PR #201, **in coda dopo #197** (A13b): il branch nasce da quello di A13b, a 2e97474.
 
 **M3 è chiusa e tutta in `main`** (piano 1.26):
 
@@ -24,8 +24,10 @@ dal registro di audit del nucleo. Branch `m3/a13b-training-history`, PR #197, co
 **A13 nasce dalla prova del modulo sul banco di anteprima** di `dalberone` (30 settembre):
 
 - **A13a** (#196, unita) fa le correzioni delle parole e dell'esame teorico;
-- **A13b** (#197, questa) fa lo storico delle modifiche di un training. La nota `2026-09-30-lo-storico-di-un-training` è **decisa**
-  (Carmine sulla #197: la (a), con la condizione del revisore), e il codice è su questo branch (`08`, A13).
+- **A13b** (#197, aperta) fa lo storico delle modifiche di un training. La nota `2026-09-30-lo-storico-di-un-training` è **decisa**
+  (Carmine sulla #197: la (a), con la condizione del revisore), e il codice è sul suo branch (`08`, A13);
+- **A13c** (#201, questa, in coda dopo #197) corregge la frase della data fissata a mano, che diceva ancora «anche nel passato».
+  L'ha trovata A13b fuori dalla sua fase.
 
 **A12c resta fuori**: il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
 #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Il master apre una strada [sulla
@@ -50,7 +52,7 @@ se A12c si fa. **Tentarla è una scelta di `dalberone`, non ancora presa.**
   - **A10 in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite;
   - **A11 in due**: A11a (#159) e A11b (#182), unite;
   - **A12 in quattro**: A12a (#187), A12b (#189) e A12d (#191), unite, e A12c fuori;
-  - **A13 in due**: A13a (#196), unita, e A13b (#197, questa).
+  - **A13 in tre**: A13a (#196), unita, A13b (#197) e A13c (#201, questa, in coda dopo #197).
 - In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
@@ -122,6 +124,26 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A13c (30 settembre 2026, branch `m3/a13c-set-by-hand-lead`, PR #201)
+
+- **Da dove viene**: l'ha trovata A13b fuori dalla sua fase («Trovato» n.6 in `08`, A13). Sulla pagina dello staff di un training, la
+  frase sopra il form «Fissa la data a mano» diceva ancora che una data si fissa «anche nel passato, per una sessione tenuta prima del
+  previsto». Dalla risposta di Carmine sulla #149 nessuno data un training nel passato, e `TrainingDates.SetAsync` rifiuta un inizio che
+  non viene dopo adesso (`training:errors.slotPassed`).
+- **Che cosa c'è** (due valori i18n e due commenti; nessun file del nucleo, nessuna migrazione, nessun test nuovo, nessuna domanda a
+  Carmine):
+  - **`training:staff.dates.setByHand.lead`**, in italiano e in inglese: «Una data ancora da venire, anche fuori dalle date proposte.
+    Le date proposte vanno via, e il trainee e il trainer ricevono una mail. Si scrive in UTC; sotto il campo, l'ora di {{zone}}.». La
+    frase l'ha scelta `dalberone`;
+  - i commenti di `dateSchema` (`schemas.ts`) e di `SetDate` (`screens/staff.tsx`), che dicevano la stessa cosa della frase vecchia.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Una regola che cambia su un passo della pagina si cerca anche nelle sue parole**: il `lead` e gli `hints` del form, e i commenti
+    del codice. A9a ha cambiato il server, i test e i documenti dopo la risposta sulla #149, ma non questa frase: nessun test la legge.
+  - **Fuori dalla fase, non toccato**: una pagina letta in italiano dice `lang="en"`, perché `web/index.html` lo fissa e niente lo
+    cambia con la lingua. È del nucleo: è detto nella PR, per il maintainer (`08`, A13c, «Trovato» n.4).
+  - Il banco di A13c: 127.0.0.1:**5112**, `ivaohub_e2e_a13c`. VID: nessuno.
+- **La fase dopo**: nessuna di M3 in `08`. A12c resta una scelta di `dalberone` (qui sopra).
 
 ### Che cosa ha lasciato A13b (30 settembre 2026, branch `m3/a13b-training-history`, PR #197)
 
