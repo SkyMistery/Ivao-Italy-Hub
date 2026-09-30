@@ -1766,6 +1766,10 @@
       "content.sentBack": {
         "title": "My pages sent back",
         "description": "An email, with the note, when a page you marked ready is sent back."
+      },
+      "award.toAssign": {
+        "title": "Awards to assign",
+        "description": "At most one email a day, when new signals have entered the award queue, if you may assign the division's awards."
       }
     }
   },
