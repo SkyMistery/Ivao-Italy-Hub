@@ -111,13 +111,17 @@ public sealed class IvaoFraReaderTests
     public void APageSaysHowManyThereAre()
     {
         using var page = JsonDocument.Parse($"{{ \"totalItems\": 1, \"perPage\": 100, \"page\": 1, \"pages\": 4, \"items\": [{Row(1, "LIRF_TWR")}] }}");
-        var (rows, pages) = IvaoFraReader.ReadPage(page.RootElement);
+        var read = IvaoFraReader.ReadPage(page.RootElement);
 
-        Assert.Equal(4, pages);
-        Assert.Single(rows);
+        Assert.NotNull(read);
+        Assert.Equal(4, read.Value.Pages);
+        Assert.Single(read.Value.Rows);
 
-        using var nothing = JsonDocument.Parse("[]");
-        Assert.Equal(0, IvaoFraReader.ReadPage(nothing.RootElement).Pages);
+        // What is not a page says nothing, least of all that there is no FRA.
+        using var array = JsonDocument.Parse("[]");
+        using var empty = JsonDocument.Parse("{}");
+        Assert.Null(IvaoFraReader.ReadPage(array.RootElement));
+        Assert.Null(IvaoFraReader.ReadPage(empty.RootElement));
     }
 
     [Fact]
@@ -129,6 +133,7 @@ public sealed class IvaoFraReaderTests
 
         var fras = await Client(ivao, cache).GetFrasAsync("IT", TestContext.Current.CancellationToken);
 
+        Assert.NotNull(fras);
         Assert.Equal(94, fras.Count);
         Assert.Equal(2, ivao.Asked.Count);
         Assert.All(ivao.Asked, query =>
@@ -141,13 +146,32 @@ public sealed class IvaoFraReaderTests
     [Fact]
     public async Task APageThatFailsIsNoAnswerAtAll()
     {
-        // Half of the FRAs would prune the other half from the snapshot: the client answers none, and the night keeps what it has.
+        // Half of the FRAs would prune the other half from the snapshot: the client does not answer, and the night keeps what
+        // it has.
         var recorded = IvaoFixtures.Read("fras-IT.json").EnumerateArray().ToArray();
         var ivao = new Pages([Page(recorded[..60], 1, 2), null]);
         using var cache = new MemoryCache(new MemoryCacheOptions());
 
-        Assert.Empty(await Client(ivao, cache).GetFrasAsync("IT", TestContext.Current.CancellationToken));
+        Assert.Null(await Client(ivao, cache).GetFrasAsync("IT", TestContext.Current.CancellationToken));
         Assert.Equal(2, ivao.Asked.Count);
+    }
+
+    [Fact]
+    public async Task ADivisionWithNoFraIsAnsweredNoneAndNotNothing()
+    {
+        // The reviewer's point 2 on #204: a division can lift all of its FRAs, and IVAO's empty page says so — an empty list,
+        // which clears the snapshot, where a failure is null and keeps it. So does an answer that is not a page at all.
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var none = new Pages(["{ \"totalItems\": 0, \"perPage\": 100, \"page\": 1, \"pages\": 0, \"items\": [] }"]);
+
+        var fras = await Client(none, cache).GetFrasAsync("IT", TestContext.Current.CancellationToken);
+
+        Assert.NotNull(fras);
+        Assert.Empty(fras);
+        Assert.Single(none.Asked);
+
+        using var otherCache = new MemoryCache(new MemoryCacheOptions());
+        Assert.Null(await Client(new Pages(["[]"]), otherCache).GetFrasAsync("IT", TestContext.Current.CancellationToken));
     }
 
     // ---- helpers -----------------------------------------------------------------------------

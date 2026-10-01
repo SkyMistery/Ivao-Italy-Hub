@@ -87,14 +87,17 @@ public static class IvaoFraReader
     /// <summary>The bit of <see cref="IvaoFra.Days"/> that stands for <paramref name="day"/>.</summary>
     public static int DayBit(DayOfWeek day) => 1 << (int)day;
 
-    /// <summary>The FRAs of one page, and how many pages IVAO says there are.</summary>
-    public static (IReadOnlyList<IvaoFraDto> Rows, int Pages) ReadPage(JsonElement page)
+    /// <summary>
+    /// The FRAs of one page, and how many pages IVAO says there are; null for an answer that is not a page, which says nothing —
+    /// least of all that there is none.
+    /// </summary>
+    public static (IReadOnlyList<IvaoFraDto> Rows, int Pages)? ReadPage(JsonElement page)
     {
         if (page.ValueKind != JsonValueKind.Object
             || !page.TryGetProperty("items", out var items)
             || items.ValueKind != JsonValueKind.Array)
         {
-            return ([], 0);
+            return null;
         }
 
         var pages = page.TryGetProperty("pages", out var count) && count.ValueKind == JsonValueKind.Number

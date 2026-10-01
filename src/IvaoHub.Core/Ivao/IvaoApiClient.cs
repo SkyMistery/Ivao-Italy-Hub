@@ -271,7 +271,7 @@ public sealed class IvaoApiClient(
         return (airports, sectors);
     }
 
-    public async Task<IReadOnlyList<IvaoFraDto>> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(countryId);
 
@@ -283,7 +283,7 @@ public sealed class IvaoApiClient(
             if (page > IvaoFraReader.MaxPages)
             {
                 logger.LogWarning("IVAO has more FRAs for {Country} than {Pages} pages; none are read.", countryId, IvaoFraReader.MaxPages);
-                return [];
+                return null;
             }
 
             var payload = await ReadOrNothingAsync(
@@ -292,13 +292,14 @@ public sealed class IvaoApiClient(
                     $"/v2/fras?countryId={Uri.EscapeDataString(countryId)}&members=false&expand=true&perPage={IvaoFraReader.PageSize}&page={page}"),
                 cancellationToken);
 
-            // A page that fails after others came is no answer at all: half of the FRAs would prune the other half.
-            if (payload is not { } root)
+            // A page that fails after others came is no answer at all: half of the FRAs would prune the other half. So is one
+            // that is not a page: read as "none", it would clear them all.
+            if (payload is not { } root || IvaoFraReader.ReadPage(root) is not { } read)
             {
-                return [];
+                return null;
             }
 
-            var (rows, pages) = IvaoFraReader.ReadPage(root);
+            var (rows, pages) = read;
             fras.AddRange(rows);
 
             if (page >= pages)

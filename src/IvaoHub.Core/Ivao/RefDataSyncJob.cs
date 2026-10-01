@@ -61,7 +61,9 @@ public sealed class RefDataSyncJob(
                 CultureInfo.InvariantCulture,
                 $"{centers} centre(s) for {countryId}, {airports} airport(s) of the world, {aircraft} aircraft type(s)")
                 + string.Create(CultureInfo.InvariantCulture, $", {positions} ATC position(s) and {sectors} sector(s) of the world")
-                + string.Create(CultureInfo.InvariantCulture, $", {fras} FRA(s) for {countryId}");
+                + (fras is { } count
+                    ? string.Create(CultureInfo.InvariantCulture, $", {count} FRA(s) for {countryId}")
+                    : string.Create(CultureInfo.InvariantCulture, $", no answer on the FRAs of {countryId}"));
 
             await database.SaveChangesAsync(cancellationToken);
 
@@ -392,15 +394,16 @@ public sealed class RefDataSyncJob(
     /// <summary>
     /// The FRAs of the positions of the division's country (M4, E10c): a few hundred rows, written like the positions. An
     /// answer that did not come back leaves the table as it was; one that did drops the FRAs IVAO no longer lists — a
-    /// division that lifts a minimum must not keep the roster from a controller the next evening.
+    /// division that lifts a minimum must not keep the roster from a controller the next evening. Unlike the other snapshots,
+    /// an empty answer is a true one here: a division can lift all of its FRAs, and then it has none (the reviewer's point 2 on
+    /// #204). Null when IVAO did not answer.
     /// </summary>
-    private async Task<int> SyncFrasAsync(string countryId, CancellationToken cancellationToken)
+    private async Task<int?> SyncFrasAsync(string countryId, CancellationToken cancellationToken)
     {
-        var incoming = await ivao.GetFrasAsync(countryId, cancellationToken);
-        if (incoming.Count == 0)
+        if (await ivao.GetFrasAsync(countryId, cancellationToken) is not { } incoming)
         {
-            logger.LogWarning("IVAO returned no FRA for {Country}; that table is left alone.", countryId);
-            return 0;
+            logger.LogWarning("IVAO did not answer on the FRAs of {Country}; that table is left alone.", countryId);
+            return null;
         }
 
         var existing = await database.IvaoFras.ToDictionaryAsync(
@@ -472,7 +475,8 @@ public sealed class RefDataSyncJob(
     /// a row that is missing from a non empty answer has been decommissioned — and a FIR that no
     /// longer exists must stop making <c>LIRR-CH</c> look like a staff position. An empty answer
     /// never reaches here: the callers return early, so a bad afternoon at IVAO can never be read
-    /// as "the division has no airspace".
+    /// as "the division has no airspace". The FRAs alone tell "no answer" from "none" (M4, E10c),
+    /// and their true "none" does.
     /// </summary>
     private void Prune<TEntity>(
         DbSet<TEntity> set,

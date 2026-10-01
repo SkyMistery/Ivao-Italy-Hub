@@ -83,14 +83,16 @@ public interface IIvaoApiClient
 
     /// <summary>
     /// The FRAs of the positions of a country — the lowest rating that may connect to each, by day and hour or for a date —
-    /// and only the rows of a position, never the ones IVAO keeps for a member (M4, E10c). Empty when IVAO could not be asked,
-    /// even half way through its pages, and never an exception, like the positions: the rest of the night's snapshot must
-    /// not go down with them.
-    /// <para>⚠️ By default a client knows none, as for the positions (A2): a client written before E10c — the doubles of the
-    /// tests among them — keeps compiling, and the synchronisation keeps the FRAs it already has.</para>
+    /// and only the rows of a position, never the ones IVAO keeps for a member (M4, E10c). Never an exception, like the
+    /// positions: the rest of the night's snapshot must not go down with them.
+    /// <para><c>null</c> means IVAO could not be asked, even half way through its pages, and it is not the same answer as an
+    /// empty list: a division can lift all of its FRAs, and "it has none" must clear them where "we could not look" keeps
+    /// them.</para>
+    /// <para>⚠️ By default a client cannot be asked, as for the positions (A2): a client written before E10c — the doubles of
+    /// the tests among them — keeps compiling, and the synchronisation keeps the FRAs it already has.</para>
     /// </summary>
-    Task<IReadOnlyList<IvaoFraDto>> GetFrasAsync(string countryId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<IvaoFraDto>>([]);
+    Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<IvaoFraDto>?>(null);
 
     /// <summary>The profile behind a member's access token, as raw JSON.</summary>
     Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default);

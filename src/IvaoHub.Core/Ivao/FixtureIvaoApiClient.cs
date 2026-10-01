@@ -177,14 +177,16 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
 
     /// <summary>
     /// The FRAs of the bench's positions of a country, recorded from IVAO's answer for it
-    /// (<c>tools/record-ivao-fixtures.mjs --fras …</c>) and read through the very reader the real client uses; none for a
-    /// country the bench has no file for.
+    /// (<c>tools/record-ivao-fixtures.mjs --fras …</c>) and read through the very reader the real client uses. A country the
+    /// bench has no file for is not answered at all, which keeps whatever the snapshot holds: no file is not "no FRA".
     /// </summary>
-    public Task<IReadOnlyList<IvaoFraDto>> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(countryId);
 
-        return Task.FromResult(IvaoFraReader.Read(Read($"fras-{countryId.ToUpperInvariant()}.json")));
+        var file = $"fras-{countryId.ToUpperInvariant()}.json";
+        return Task.FromResult<IReadOnlyList<IvaoFraDto>?>(
+            File.Exists(Path.Combine(_paths.Root, Directory, file)) ? IvaoFraReader.Read(Read(file)) : null);
     }
 
     /// <summary>
