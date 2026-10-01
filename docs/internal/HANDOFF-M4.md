@@ -6,16 +6,17 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E15a** (nucleo: le prenotazioni ATC della rete), sul branch
-`m4/e15a-network-atc-bookings`, **PR #207** verso `main`, del nucleo, senza coda, con `main` unito dopo E10b (#208), E10e (#206), i tour
-sulla distanza del nucleo (#211), E10d (#205) ed E2 (#209). È unita anche E1 (#200); corrono, ognuna nella sua sessione, **E2b**,
-**E10a** ed **E10c**.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E10a** (nucleo: le sessioni del tracker senza VID), sul branch
+`m4/e10a-tracker-without-vid`, **PR #210** verso `main`, del nucleo, senza coda: le due correzioni della revisione, e `main` unito dopo
+E10e (#206), i tour sulla distanza del nucleo (#211), E10d (#205), E2 (#209) ed **E15a** (#207). Sono unite E1 (#200), E10b (#208),
+E10e, E10d, E2 ed E15a; corrono, ognuna nella sua sessione, **E2b** ed **E10c**.
 **Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
 #209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
-dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11b** ed **E13a** trovano in E10b la storia di un
-controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
-riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete. **La fase del
-nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
+dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). E10a serve a **E13a**, che aspetta anche E12; **E11b**
+ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza
+nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le
+prenotazioni della rete. **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la
+prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -120,6 +121,41 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10a (30 settembre – 1° ottobre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica; le misure del 30 settembre sono lì, §2, e
+  la revisione in §6):
+  - **La domanda senza VID**: `IvaoSessionQuery(int? Vid, from, to, departure, arrival, IvaoConnectionType? ConnectionType)` con
+    `Limit` (`init`, predefinito 200, **al più `MaxLimit` = 1000**, un tetto che tiene il nucleo); `SearchSessionsAsync` è la stessa
+    di prima, dalla più recente, senza doppioni, al più `Limit`, `null` quando IVAO non si è potuto chiedere;
+    `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker stanno nel lettore
+    (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
+  - **Il client di IVAO aspetta 20 s per tentativo** (l'interruttore campiona su 40, il totale resta 30): con i 10 standard nessun
+    aeroporto si leggeva. **Confermato da Carmine** con il `null` per la ricerca dei tour
+    ([risposta sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792)).
+  - **Le fixture**: `tools/record-ivao-fixtures.mjs --sessions-at`; `tests/fixtures/ivao/tracker-airport-LIRF.json` (una sera di
+    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO), **spostate sul 1°
+    gennaio 2001** (lo stesso giorno delle prenotazioni di E15a) e **senza `rating`, `serverId`, `software*`** (revisione, #210).
+    Senza VID, `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto. Unita dopo E15a, lo script ha le due modalità
+    (`--bookings` e `--sessions-at`) e **un giorno inventato solo**, `standIn` con `movedFrom(day)`, in cima: chi registra altre righe
+    con persone lo usa.
+  - **I test**: `IvaoTrackerWithoutVidTests` e `IvaoApiTimeoutTests` (unità).
+- **Che cosa deve sapere la fase dopo** (E13a, e chiunque legga il tracker senza VID):
+  - ⚠️ **Una domanda per aeroporto che trova qualcosa costa ~10,5 s** (la pagina con l'ultima riga, sempre), e **due insieme
+    ricevono 504** dal gateway di IVAO: una alla volta, poche per giro del job.
+  - ⚠️ **La finestra è sull'inizio della sessione**, estremi compresi: per chi era già connesso, `FromUtc` va allargato.
+  - ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione del piano. Una
+    sessione può tornare da tutte e due: si conta per `Id`.
+  - ⚠️ **Il DTO dice gli aeroporti della prima revisione**: trovata per la partenza da LIRF, una sessione può dire LIPZ.
+  - **Il limite si dichiara**: con esattamente `Limit` sessioni la risposta può essere tagliata, e il resto sta prima della più
+    vecchia.
+  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte), e **la sera sta sul 1° gennaio
+    2001**, 16:00–17:59:59 UTC: un test che la legge chiede quel giorno. 761029 non è usata.
+  - Il punto «La richiesta al tracker oggi» di «Per chi prende M4», qui sopra (`PageSize = 50`, `MaxSessions = 200`), è superato:
+    le pagine sono da 100 e il tetto è il `Limit` di chi chiama, al più 1000.
+- ⚠️ **Per i tour cambiano due cose, nessuna nei loro test**: le pagine sono da 100, e se IVAO non risponde affatto la ricerca dà
+  `null` («tracker non disponibile») invece di lanciare.
 
 ### Che cosa ha lasciato E15a (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo, senza coda)
 
