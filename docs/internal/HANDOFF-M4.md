@@ -127,8 +127,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643), risposta 2):
   - **`Awards.Assign` si dà con un grant, ed è il solo globale così**: il campo `PermissionDescriptor.GrantableAlthoughGlobal`, detto sul
     permesso come `DeniedToStakeholder`, vero solo per `Awards.Assign` in `CorePermissions`. Il catalogo risponde con
-    `IsClosedToGrants(name)`, la domanda che fanno il calcolatore, la schermata dei permessi e il seme; e non nasce se
-    `Permissions.Manage` si dichiarasse concedibile.
+    `IsClosedToGrants(name)`, la domanda che fanno il calcolatore, la schermata dei permessi e il seme; e **non nasce** se lo dicesse un
+    altro permesso (`Permissions.Manage` per primo, ma anche un altro globale, un permesso di un dipartimento, un globale di un modulo:
+    il paletto che il revisore proponeva sulla #213, preso).
   - **Solo intero**: il calcolatore lo tiene (su nessun dipartimento, come un ruolo) solo da un grant senza dipartimento, senza scope e
     non al team di un FIR; un rifiuto intero lo toglie anche a chi lo ha per ruolo (DIR, ADIR, WM, AWM). La schermata rifiuta il dipartimento
     (**`errors.grant.globalDepartment`**, chiave nuova), il team di un FIR (`firTeamArea`, com'era) e gli altri globali
@@ -140,7 +141,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La divisione**: `config/division.json` dà `Awards.Assign` al **coordinatore e all'assistente dell'MD** (primo dei `positionGrants`,
     senza `scope`); lo stesso in `config/division.example.json`, e `docs/FORKING.md` spiega l'eccezione.
   - **Il browser**: `/api/me → registries.permissions[].grantableAlthoughGlobal`; la schermata dei permessi offre `Awards.Assign`.
-  - **I test**: `GrantableGlobalPermissionTests` (unità, 11), `AwardsAssignByGrantTests` (integrazione, 4, VID 761080–761083),
+  - **I test**: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4, VID 761080–761083),
     `web/src/features/admin/grants/grantable.test.ts` (2); **tolto il caso `Awards.Assign`** da
     `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` (test di Carmine: il cambio l'ha deciso lui).
 - **Che cosa deve sapere la fase dopo**:
@@ -149,14 +150,19 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Nei test d'integrazione l'MD ha `Awards.Assign`**, perché l'host legge `config/division.json`: un coordinatore o un assistente
     dell'MD seminato da un test (i contatti seminano `IT-MC` con un indirizzo) è fra chi assegna. `AwardQueueMailTests` conta per le sue
     persone e non se ne accorge; un test nuovo che conta i destinatari del riepilogo faccia lo stesso.
-  - ⚠️ **I livelli dell'MD** (coordinatore e assistente) sono una lettura del piano 0.77, non una risposta di Carmine: se vuole gli
-    advisor, è una parola in `division.json`.
+  - **Le tre scelte della sessione sono confermate da Carmine**
+    ([sulla #213](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970)): coordinatore e assistente dell'MD; il
+    rifiuto intero che vale anche per chi lo ha per ruolo; la `Awards.View` su ogni dipartimento, perché chi assegna veda ogni award.
   - ⚠️ **`FromOutside` è lo stesso campo di E2b** (PR #212, decisa sulla #209: un grant a una posizione su un dipartimento non suo dà il permesso
     e non il dipartimento), con la stessa forma: ultimo parametro di `EffectivePermission`, la stessa preferenza nella deduplicazione, la
-    stessa riga in `BuildIdentity`. Chi arriva seconda su `main` tiene una dichiarazione sola e somma le due condizioni del calcolatore.
-    E2b porta anche il segno nel cookie e la metà «liste»: fino ad allora **chi non è dentro nessun dipartimento** (il capo di un FIR a cui
-    si desse `Awards.Assign` con un grant a un VID) apre la coda ma ha la lista degli award a 403. L'MD non ne è toccato.
-  - Un **permesso globale di un modulo** resta chiuso ai grant, a meno che dica `GrantableAlthoughGlobal`: con una nota sua.
+    stessa riga in `BuildIdentity`. **Il significato non è identico** (il revisore sulla #213): in E2b il segno scrive anche un `!` nel
+    cookie, e con tutte e due unite la `Awards.View` portata da `Awards.Assign` si scrive `Awards.View@!`. **Chi arriva seconda su `main`**
+    tiene una dichiarazione sola, somma le due condizioni del calcolatore e rifà sul codice unito `AwardsAssignByGrantTests`,
+    `GrantableGlobalPermissionTests` e le due classi di E2b; il revisore controllerà che quella `Awards.View` apra ancora ogni riga di
+    `Award`. E2b porta anche la metà «liste»: fino ad allora **chi non è dentro nessun dipartimento** (il capo di un FIR a cui si desse
+    `Awards.Assign` con un grant a un VID) apre la coda ma ha la lista degli award a 403. L'MD non ne è toccato.
+  - Un **permesso globale di un modulo** resta chiuso ai grant: dire `GrantableAlthoughGlobal` ferma l'avvio. Un secondo permesso
+    concedibile è una decisione con la sua nota, che cambia anche il paletto del catalogo.
 
 ### Che cosa ha lasciato E2 (30 settembre – 1 ottobre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
 

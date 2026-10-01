@@ -7,6 +7,12 @@ detto sul permesso, **solo per `Awards.Assign`** (mai `Permissions.Manage` né l
 `positionGrant`, come dice il piano; in una PR del nucleo sua, con la sua nota; il caso `Awards.Assign` di
 `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` cambia qui, apposta. La forma nel codice (§3) è una scelta tecnica
 dentro quella risposta.
+**Dopo la revisione** ([i rilievi del revisore][v213], «approvable»): Carmine ha detto **sì alle tre scelte** che la PR segnalava come
+della sessione ([le sue risposte][a213], in chat al master il 1° ottobre, pubblicate su sua istruzione): (1) `Awards.Assign` al
+**coordinatore e all'assistente** dell'MD con il `positionGrant` di `division.json` (§3 punto 8); (2) un **rifiuto intero** di
+`Awards.Assign` lo toglie anche a chi lo ha per ruolo, DIR, ADIR, WM e AWM (§3 punto 3); (3) il grant porta anche **`Awards.View` su ogni
+dipartimento**: chi assegna vede ogni award (§3 punto 3-bis). Il paletto facoltativo del revisore — rifiutare `GrantableAlthoughGlobal`
+su ogni permesso che non sia `Awards.Assign` — Carmine l'ha lasciato alla sessione: **preso** (§3 punto 2).
 
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende un meccanismo del nucleo che c'è già, il catalogo dei permessi, con un
 campo dichiarato sul permesso, come `DeniedToStakeholder` e `OnlyForAssignee`. Nessun handler nuovo, nessun nome di permesso scritto nel
@@ -16,6 +22,8 @@ il permesso, qualunque cosa glielo dia, e non cambia.
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5915953993
 [a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643
 [e2b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
+[v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
+[a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
 
 ## 1. Che cosa serve, e da dove viene
 
@@ -69,15 +77,19 @@ il permesso, qualunque cosa glielo dia, e non cambia.
 2. **Il catalogo** risponde con una domanda sola, **`IsClosedToGrants(name)`**: un permesso globale che non lo dice. Un nome che non
    conosce risponde falso, come `IsGlobal`, perché lo rifiuta prima `IsKnown`. Il calcolatore, il validatore e il seme chiedono questa
    al posto di `IsGlobal`: la regola sta in un posto.
-   E **non nasce** un catalogo che rende concedibile `Permissions.Manage`: il diritto di dare i permessi non arriva mai con un grant
-   (Carmine: «mai `Permissions.Manage`»). Un cambio del codice che lo facesse ferma l'avvio, invece di aprire il sistema.
+   E **non nasce** un catalogo che rende concedibile un permesso che non sia `Awards.Assign`: `Permissions.Manage` per primo — il
+   diritto di dare i permessi non arriva mai con un grant (Carmine: «mai `Permissions.Manage`») —, ma anche un altro globale del nucleo o
+   di un modulo, o un permesso di un dipartimento. Un cambio del codice che lo facesse ferma l'avvio, invece di aprire il sistema; un
+   secondo permesso globale concedibile è una decisione con la sua nota, che cambia anche questa riga. La prima stesura rifiutava solo
+   `Permissions.Manage`; il revisore ha proposto di tenere la riga «solo `Awards.Assign`» anche per il prossimo ([v213], punto 2), e
+   Carmine l'ha lasciato alla sessione ([a213]): preso.
 3. **Il calcolatore** tiene un permesso globale concedibile **solo intero**: da un grant **senza dipartimento, senza scope di una riga e
    non al team di un FIR**. Un permesso globale si chiede solo «in generale» (§2 punto 2), che leggerebbe ognuna di quelle tre cose come
    «ovunque»; un grant così non si scrive né dalla schermata né dal seme (punti 4 e 5), e se c'è una riga scritta a mano il calcolatore
    non la onora — il lato che chiude, com'era per ogni grant globale. Tenuto, è senza dipartimento, come lo tiene un ruolo.
    **Vale anche per un `Deny`**: la divisione può togliere `Awards.Assign` alle posizioni che lo hanno per ruolo (DIR, ADIR, WM, AWM) con
    un grant di rifiuto a una posizione, per esempio al web. Prima un rifiuto di un permesso globale non valeva niente, e per gli altri
-   globali resta così.
+   globali resta così. **Confermato da Carmine** ([a213], 2).
 3-bis. **Il permesso, non il dipartimento.** Un grant di un permesso globale non porta chi lo tiene dentro nessun dipartimento (§2 punto
    7). L'`EffectivePermission` prende un campo facoltativo, **`FromOutside`** (falso se non è detto: tutto quello che c'era resta com'era),
    che il calcolatore mette a vero per un grant di un permesso globale; la `View` che il permesso porta con sé (`Awards.View`) lo eredita,
@@ -90,7 +102,14 @@ il permesso, qualunque cosa glielo dia, e non cambia.
      Le due PR corrono insieme: chi arriva seconda su `main` tiene una dichiarazione sola e somma i due punti in cui il calcolatore lo
      mette a vero (E2b: una posizione su un dipartimento non suo; E10f: un permesso globale, da qualunque grant). Il grant a un VID di
      E10f non è coperto da E2b, che lascia i grant a una persona come sono (6 settembre): per questo E10f non aspetta E2b.
-   - La `Awards.View` portata resta, senza dipartimenti nel cookie. Il catalogo degli award è condiviso in lettura, e la lista lo legge
+   - ⚠️ **Il significato non è identico** ([v213], punto 1): in E2b il segno scrive anche un `!` prima dello scope nel cookie
+     (`HubClaims.FormatPermission` e `ReadPermission`), qui tiene solo il permesso fuori dai claim `dept`. Con tutte e due unite, la
+     `Awards.View` che porta un `Awards.Assign` dato con un grant si scrive `Awards.View@!`. Chi arriva seconda tiene una dichiarazione
+     sola, somma le condizioni (`fir is null && (grant.GivesThePermissionNotTheDepartment || catalogue.IsGlobal(grant.Value))`) e rifà sul
+     codice unito `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di test di E2b; il revisore controllerà che
+     quella `Awards.View` apra ancora ogni riga di `Award`.
+   - La `Awards.View` portata resta, su ogni dipartimento e senza dipartimenti nel cookie: chi assegna vede ogni award, **confermato da
+     Carmine** ([a213], 3). Il catalogo degli award è condiviso in lettura, e la lista lo legge
      intero per chi è dentro **almeno un** dipartimento (`MapCrudExtensions.TryNarrowToDepartments`): il coordinatore e l'assistente
      dell'MD, e chiunque abbia una posizione di un dipartimento. ⚠️ **Chi non è dentro nessun dipartimento** (il capo di un FIR, se un
      giorno gli si desse `Awards.Assign` con un grant a un VID) aprirebbe la coda e il registro, ma la lista degli award — quella da cui
@@ -114,8 +133,8 @@ il permesso, qualunque cosa glielo dia, e non cambia.
    un elenco senza il campo si legge come prima, con una risposta calcolata il form non le offrirebbe più niente.
 8. **La divisione** (`config/division.json`): **`{ "department": "MD", "levels": ["Coordinator", "Assistant"], "permission":
    "Awards.Assign" }`**, senza `scope`, in testa ai `positionGrants`.
-   - **I livelli sono una mia lettura**: coordinatore e assistente, quelli che il piano 0.77 dà a chi gestisce un modulo del suo
-     dipartimento; il piano dice «l'MD» e non i livelli. Se Carmine vuole anche gli advisor è una parola in più nel file.
+   - **I livelli** — coordinatore e assistente, quelli che il piano 0.77 dà a chi gestisce un modulo del suo dipartimento — erano una
+     lettura della sessione: il piano dice «l'MD» e non i livelli. **Confermati da Carmine** ([a213], 1).
    - Su un'installazione già avviata arriva al primo avvio dopo il rilascio (un seme aggiunto al file si applica una volta, T5, e il
      file cambiato fa rifare i semi all'avvio); da lì si cambia dalla schermata dei permessi.
    - `config/division.example.json` porta lo stesso grant, con il suo commento; `docs/FORKING.md` spiega l'eccezione.
@@ -140,7 +159,8 @@ posizione.
 
 - **Unità**, `GrantableGlobalPermissionTests` (nuovo):
   - il catalogo del nucleo ha un solo permesso globale concedibile, `Awards.Assign`, e `IsClosedToGrants` risponde per ognuno;
-  - un catalogo che rende concedibile `Permissions.Manage` non nasce;
+  - un catalogo che rende concedibile un permesso che non sia `Awards.Assign` non nasce: `Permissions.Manage`, gli altri globali del
+    nucleo, un permesso di un dipartimento, un globale di un modulo;
   - un grant alla posizione del coordinatore dell'MD dà `Awards.Assign` senza dipartimento, con `Awards.View`, e **nessun altro permesso
     globale**, anche accanto a un grant di `Permissions.Manage`; nessuna fonte «superadmin»; `HasAny` risponde sì;
   - lo stesso grant con un dipartimento, con uno scope o al team di un FIR non dà niente;
@@ -191,12 +211,15 @@ posizione.
 ## Da portare nel piano
 
 - **§6.3**, «Salvagente»: «Un grant non può mai conferire `Permissions.Manage` né lo stato di superadmin» → nessun permesso globale, salvo
-  quelli che il catalogo dice concedibili (`GrantableAlthoughGlobal`, oggi solo `Awards.Assign`), e solo interi (senza dipartimento, senza
-  scope, non al team di un FIR), per un grant come per un rifiuto; `Permissions.Manage` non lo diventa mai (il catalogo non nasce).
+  `Awards.Assign` (`GrantableAlthoughGlobal`; il catalogo non nasce se lo dice un altro permesso), e solo intero (senza dipartimento,
+  senza scope, non al team di un FIR), per un grant come per un rifiuto: **un rifiuto intero lo toglie anche a chi lo ha per ruolo**
+  (confermato da Carmine sulla #213).
 - **§6.3**, «Grant manuali»: un grant di un permesso globale **dà il permesso e non il dipartimento** (`EffectivePermission.FromOutside`,
-  nessun claim `dept`), come il team di un FIR (A11a) e un grant a una posizione su un dipartimento non suo (E2b).
-- **§9.1, riga Award**: in IT `Awards.Assign` all'MD (coordinatore e assistente) con un `positionGrant` di `division.json`; la direzione e
-  il web lo hanno per ruolo; il riepilogo di E10d arriva a loro.
+  nessun claim `dept`), come il team di un FIR (A11a) e un grant a una posizione su un dipartimento non suo (E2b); la `View` che porta
+  vale su ogni dipartimento (confermato da Carmine sulla #213).
+- **§9.1, riga Award**: in IT `Awards.Assign` all'MD, **coordinatore e assistente** (confermati da Carmine sulla #213), con un
+  `positionGrant` di `division.json`; la direzione e il web lo hanno per ruolo; il riepilogo di E10d arriva a loro, e chi assegna vede
+  ogni award.
 - **§4.1, `positionGrants`**: un grant di un permesso globale concedibile non ha `scope`.
 - Nel design M0 §3.7 (le righe «Scoping» e «Grant»), se il master lo ritiene: «mai un permesso globale» → salvo i concedibili, con la
   chiave `errors.grant.globalDepartment`.

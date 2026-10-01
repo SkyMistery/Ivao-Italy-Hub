@@ -969,7 +969,8 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
 - **Fatto** (nota nuova `2026-10-01-chi-assegna-gli-award-con-un-grant`, **decisa**; la forma nel codice è una scelta tecnica, §3):
   - **il campo `GrantableAlthoughGlobal`** su `PermissionDescriptor`, falso se non è detto, vero solo per `Awards.Assign`;
     **`PermissionCatalog.IsClosedToGrants`**, la domanda sola che fanno il calcolatore, `GrantWriteDtoValidator` e `PositionGrantSeeder`;
-    il catalogo **non nasce** con `Permissions.Manage` concedibile;
+    il catalogo **non nasce** con un permesso concedibile che non sia `Awards.Assign` (`Permissions.Manage` per primo; nella prima
+    stesura solo lui: il paletto largo è venuto dalla revisione, sotto);
   - **solo intero**: il calcolatore tiene un globale concedibile solo da un grant (o un rifiuto) senza dipartimento, senza scope e non
     al team di un FIR; la schermata rifiuta il dipartimento con **`errors.grant.globalDepartment`** (chiave nuova, `locales/{en,it}`);
     il seme salta uno `scope`; il team di un FIR lo rifiuta già la regola di A11a;
@@ -981,7 +982,7 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
   - **la divisione**: `{ "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" }` in testa ai
     `positionGrants` di `config/division.json` e di `config/division.example.json` (con il suo commento), e una frase in
     `docs/FORKING.md`;
-  - **i test**, con i VID `761080–761083`: `GrantableGlobalPermissionTests` (unità, 11), `AwardsAssignByGrantTests` (integrazione, 4),
+  - **i test**, con i VID `761080–761083`: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4),
     `web/src/features/admin/grants/grantable.test.ts` (2).
 - **Il test di Carmine**: in `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` è tolta la sola riga
   `[InlineData(CorePermissions.AwardsAssign)]`, con un commento che rimanda alla nota; le altre quattro restano e passano, e nessun altro
@@ -996,7 +997,8 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
      (per gli altri globali resta così).
   4. **Il testo di `errors.grant.globalPermission`** («un permesso non legato a un dipartimento non si assegna a mano») non era più vero, e
      cambia.
-  5. **I livelli dell'MD** (coordinatore e assistente) sono una mia lettura del piano 0.77: il piano dice «l'MD», non i livelli.
+  5. **I livelli dell'MD** (coordinatore e assistente) erano una mia lettura del piano 0.77: il piano dice «l'MD», non i livelli.
+     Confermati da Carmine dopo la revisione, con il rifiuto intero (3) e la `Awards.View` su ogni dipartimento (sotto).
   6. **Il commento di `AwardQueueMailTests`** (E10d) diceva «un grant non dà mai un permesso globale»: una frase corretta, nessuna
      riga di codice del test.
 - **Trovato leggendo**: le risorse di `Awards.Assign` (la coda, il registro) non sono `IOwnedByDepartment`, quindi l'handler e la SPA
@@ -1034,6 +1036,30 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
     stato fatto girare;
   - chi non è dentro nessun dipartimento e riceve `Awards.Assign` per nome: la lista degli award gli risponde 403 fino alla metà
     «liste» di E2b. Oggi nessuno ce l'ha così.
+- **La CI** sulla prima cima (`360045d`): `build-test` (23,6 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore][v213], «approvable») e **le risposte di Carmine** ([sulla #213][a213], in chat al
+  master il 1° ottobre, pubblicate su sua istruzione):
+  - **sì alle tre scelte** della sessione: coordinatore e assistente dell'MD; il rifiuto intero che toglie `Awards.Assign` anche a chi lo
+    ha per ruolo; la `Awards.View` su ogni dipartimento che il grant porta. Registrate nella nota (intestazione, §3 punti 3, 3-bis e 8,
+    «Da portare nel piano») e nell'handoff;
+  - **il paletto facoltativo, preso**: il catalogo non nasce se `GrantableAlthoughGlobal` lo dice un permesso che non sia
+    `Awards.Assign` (prima solo `Permissions.Manage`). `GrantableGlobalPermissionTests` passa da 11 a 17 test (una teoria su sei
+    permessi e il globale di un modulo); senza il paletto ne cadono 7;
+  - **l'ordine di merge con E2b** (#212), scritto nella nota (§3 punto 3-bis), nell'handoff e nel corpo della PR: in E2b il segno scrive
+    anche un `!` nel cookie, quindi chi arriva seconda tiene una dichiarazione sola, somma le condizioni e rifà sul codice unito
+    `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b;
+  - **il merge di `main`** (`c441839`, con E2, #209), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10f con
+    E2 unita e il prossimo passo di E2 (E2b, poi E3a); in «Lo stato» il paragrafo di E10f in cima e quello di E2 sotto, nessuna riga
+    persa. I due file della divisione si sono uniti da soli (il grant all'MD per primo, quelli dell'ED dopo il training).
+  - **Rifatto dopo il merge**, una suite alla volta: `dotnet build` 0 avvisi; `dotnet format --verify-no-changes` sui file C# toccati di
+    nuovo: pulito; unità **953/953**; **integrazione intera, senza filtro, 445/445** (5,4 minuti); in `web/` `pnpm lint`, `typecheck`,
+    `format:check`, `i18n:check` (784 chiavi) verdi, `pnpm test` **601/601** in 82 file, `pnpm gen:api` senza differenze; `pnpm e2e`
+    **163/163**; `pnpm e2e:full` sul banco 5119 (`ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit) **51/51** al primo giro
+    (10,9 minuti, la spec in più è quella dello scheletro degli eventi); le regole di `core-guard` dalla merge base nuova (`c441839`): 23
+    file, nessuno del maintainer, 14 del nucleo, la nota nuova — passa.
+
+[v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
+[a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
 
 ### E11a — Postazioni e disponibilità
 
