@@ -23,12 +23,19 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// grant to the team of a FIR gives when the division keeps FIR teams to their FIR (M3, A11a, note
 /// 2026-09-27-i-capi-fir-sul-loro-fir). Null is the ordinary case, held on every row whatever its FIR.
 /// </param>
+/// <param name="FromOutside">
+/// True when the permission is held but takes its holder into no department: <see cref="HubClaims.BuildIdentity"/> leaves it
+/// out of the departments the cookie says its holder is inside, for the purpose of seeing. A grant of a global permission
+/// (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant), which has no department to take anybody into, and the View
+/// it brings along. Otherwise false, and a permission from a grant reaches its department, or every one when it names none.
+/// </param>
 public readonly record struct EffectivePermission(
     string Name,
     Department? Department,
     string Source,
     string? ResourceScope = null,
-    string? Fir = null);
+    string? Fir = null,
+    bool FromOutside = false);
 
 /// <summary>
 /// Answering "does this person hold that permission?" against a set of effective permissions.
@@ -163,7 +170,13 @@ public static class EffectivePermissionsCalculator
             .Where(grant => catalogue.IsKnown(grant.Value))
             // A grant may never confer a global permission, nor the right to hand out permissions:
             // the perimeter of the staff is always decided by IVAO (plan section 6.3).
-            .Where(grant => !catalogue.IsGlobal(grant.Value))
+            .Where(grant => !catalogue.IsClosedToGrants(grant.Value))
+            // Save a global permission the catalogue says a grant may confer — who assigns the awards (M4, E10f, note
+            // 2026-10-01-chi-assegna-gli-award-con-un-grant) — and that only whole: no department, no row, no FIR team. A global
+            // permission is only ever asked "at all?", which would read any of the three as everywhere. Neither the screen nor
+            // the seed writes such a grant, and one written by hand is not honoured; a deny is taken whole the same way.
+            .Where(grant => !catalogue.IsGlobal(grant.Value)
+                || (grant.Department is null && grant.ResourceScope is null && !grant.PositionFirTeam))
             .ToArray();
 
         foreach (var grant in active.Where(grant => grant.Effect == GrantEffect.Grant))
@@ -174,6 +187,8 @@ public static class EffectivePermissionsCalculator
                 ? grant.HeldThrough(held).Select(position => position.Fir).Distinct(StringComparer.OrdinalIgnoreCase)
                 : [null];
 
+            // A global permission has no department, so a grant of it takes nobody into one (M4, E10f): the permission, and not
+            // every department, as a grant of a permission of a department given with none would. The View it brings says so too.
             foreach (var fir in firs)
             {
                 effective.Add(new EffectivePermission(
@@ -181,7 +196,8 @@ public static class EffectivePermissionsCalculator
                     grant.Department,
                     $"{GrantSourcePrefix}{grant.Id}",
                     grant.ResourceScope,
-                    fir));
+                    fir,
+                    FromOutside: catalogue.IsGlobal(grant.Value)));
             }
         }
 
@@ -207,6 +223,9 @@ public static class EffectivePermissionsCalculator
             .OrderBy(permission => permission.Name, StringComparer.Ordinal)
             .ThenBy(permission => permission.Department)
             .ThenBy(permission => Rank(permission.Source))
+            // Of two grants of the same permission, the one that takes its holder into the department is the one kept (M4, E10f):
+            // a View a global permission brought along must not hide the same View a grant gave on every department.
+            .ThenBy(permission => permission.FromOutside)
             .ThenBy(permission => permission.Source, StringComparer.Ordinal)
             .ThenBy(permission => permission.ResourceScope, StringComparer.Ordinal)
             .ThenBy(permission => permission.Fir, StringComparer.Ordinal)

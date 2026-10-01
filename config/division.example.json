@@ -66,7 +66,10 @@
     "holds the permission. scope is the department the permission is held on; leave it out for every",
     "department. Each grant is applied once, at the first start that finds it; after that the permissions",
     "screen is the truth, and a grant deleted there does not come back. A global permission is never given",
-    "this way. The grants below are the ones the tours module expects for its base department (FOD), and the",
+    "this way, save Awards.Assign: who assigns the awards is the division's to choose, and the first grant below",
+    "gives it to the coordinator and the assistant of the membership department. It has no scope, because a",
+    "global permission is held everywhere or not at all.",
+    "The grants after it are the ones the tours module expects for its base department (FOD), and the",
     "training module for its own (TD), where a trainer is a Member of the department: whoever holds Training.Conduct",
     "conducts the trainings assigned to them, and Training.Edit every training.",
     "A grant may go to the team of a FIR instead: \"firTeam\": true with its levels (Coordinator is the chief of",
@@ -80,6 +83,7 @@
     "own FIR, which a start applies only once the events have ATC positions, rows that say their FIR."
   ],
   "positionGrants": [
+    { "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.Edit", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Delete", "scope": "FOD" },

@@ -8,17 +8,19 @@
 
 **Ultimo aggiornamento:** 1° ottobre 2026 — **fase E10c** (nucleo: rating e postazioni della divisione), sul branch
 `m4/e10c-ratings-and-positions`, **PR #204** verso `main`, del nucleo, senza coda, dopo i rilievi del revisore e la seconda risposta di
-Carmine (i rating preferiti in `config/division.json`), con `main` unito dopo E2 (#209), E15a (#207) ed **E10a** (#210). Sono unite E1
-(#200), E2, E10a, E10b (#208), E10e (#206), E10d (#205), E15a e il passaggio dei tour al calcolo del nucleo (#211); corre, nella sua
-sessione, **E2b**.
+Carmine (i rating preferiti in `config/division.json`), con `main` unito dopo E2 (#209), E15a (#207), E10a (#210) ed **E10f** (#213).
+Sono unite E1 (#200), E2, E10a, E10b (#208), E10d (#205), E10e (#206), E10f, E15a e il passaggio dei tour al calcolo del nucleo (#211);
+corre, nella sua sessione, **E2b** (nucleo, #212).
 **Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
-#209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
-dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11a** ed **E11b** trovano in E10c le postazioni della
-divisione, il rating preferito e il minimo di una postazione (l'FRA di IVAO); E10a serve a **E13a**, che aspetta anche E12; **E11b**
-ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza
-nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le
-prenotazioni della rete. **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la
-prepara la sessione che coordina.
+#209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —; dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con
+E1, E2 ed E2b unite). **E11a** ed **E11b** trovano in E10c le postazioni della divisione, il rating preferito e il minimo di una
+postazione (l'FRA di IVAO); E10a serve a **E13a**, che aspetta anche E12; **E11b** ed **E13a** trovano in E10b la storia di un
+controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
+riepilogo a chi assegna gli award, e non chiama niente: con E10f il riepilogo arriva anche al coordinatore e all'assistente dell'MD;
+**E15b** (dopo E14b) trova in E15a le prenotazioni della rete.
+⚠️ **E2b ed E10f aggiungono tutte e due `EffectivePermission.FromOutside`**, e nella coda del master E10f entra prima: **la
+riconciliazione è di E2b**, dopo — una dichiarazione sola, le condizioni sommate, i test delle due rifatti (sotto, «Che cosa ha lasciato
+E10f»).
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -171,6 +173,49 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     ora le quattro modalità di riferimento (`--positions`, `--bookings`, `--fras`, `--sessions-at`) e il README tutte le sezioni. **E10c
     migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione sopra `main`
     (come ha fatto E10c dopo E10d).
+
+### Che cosa ha lasciato E10f (1 ottobre 2026, branch `m4/e10f-grantable-award-assign`, PR #213, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-01-chi-assegna-gli-award-con-un-grant.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643), risposta 2):
+  - **`Awards.Assign` si dà con un grant, ed è il solo globale così**: il campo `PermissionDescriptor.GrantableAlthoughGlobal`, detto sul
+    permesso come `DeniedToStakeholder`, vero solo per `Awards.Assign` in `CorePermissions`. Il catalogo risponde con
+    `IsClosedToGrants(name)`, la domanda che fanno il calcolatore, la schermata dei permessi e il seme; e **non nasce** se lo dicesse un
+    altro permesso (`Permissions.Manage` per primo, ma anche un altro globale, un permesso di un dipartimento, un globale di un modulo:
+    il paletto che il revisore proponeva sulla #213, preso).
+  - **Solo intero**: il calcolatore lo tiene (su nessun dipartimento, come un ruolo) solo da un grant senza dipartimento, senza scope e
+    non al team di un FIR; un rifiuto intero lo toglie anche a chi lo ha per ruolo (DIR, ADIR, WM, AWM). La schermata rifiuta il dipartimento
+    (**`errors.grant.globalDepartment`**, chiave nuova), il team di un FIR (`firTeamArea`, com'era) e gli altri globali
+    (`globalPermission`, con un testo nuovo); il seme salta uno `scope`. **`ModuleGrants` rifiuta ancora ogni globale.**
+  - **Il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, vero per un grant di un permesso globale e per la
+    `Awards.View` che porta; `HubClaims.BuildIdentity` lo lascia fuori dai claim `dept`. Senza, un grant senza dipartimento mette chi lo
+    tiene **dentro tutti i dipartimenti** (l'ha trovato la sessione di E2b; misurato: `user.departments` del coordinatore dell'MD
+    passava da `["MD"]` a tutti e nove).
+  - **La divisione**: `config/division.json` dà `Awards.Assign` al **coordinatore e all'assistente dell'MD** (primo dei `positionGrants`,
+    senza `scope`); lo stesso in `config/division.example.json`, e `docs/FORKING.md` spiega l'eccezione.
+  - **Il browser**: `/api/me → registries.permissions[].grantableAlthoughGlobal`; la schermata dei permessi offre `Awards.Assign`.
+  - **I test**: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4, VID 761080–761083),
+    `web/src/features/admin/grants/grantable.test.ts` (2); **tolto il caso `Awards.Assign`** da
+    `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` (test di Carmine: il cambio l'ha deciso lui).
+- **Che cosa deve sapere la fase dopo**:
+  - **Il riepilogo di E10d arriva all'MD da solo**, dal primo avvio dopo il rilascio: il seme nuovo si applica una volta, poi si cambia
+    dalla schermata dei permessi. **E14b** non cambia niente.
+  - ⚠️ **Nei test d'integrazione l'MD ha `Awards.Assign`**, perché l'host legge `config/division.json`: un coordinatore o un assistente
+    dell'MD seminato da un test (i contatti seminano `IT-MC` con un indirizzo) è fra chi assegna. `AwardQueueMailTests` conta per le sue
+    persone e non se ne accorge; un test nuovo che conta i destinatari del riepilogo faccia lo stesso.
+  - **Le tre scelte della sessione sono confermate da Carmine**
+    ([sulla #213](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970)): coordinatore e assistente dell'MD; il
+    rifiuto intero che vale anche per chi lo ha per ruolo; la `Awards.View` su ogni dipartimento, perché chi assegna veda ogni award.
+  - ⚠️ **`FromOutside` è lo stesso campo di E2b** (PR #212, decisa sulla #209: un grant a una posizione su un dipartimento non suo dà il permesso
+    e non il dipartimento), con la stessa forma: ultimo parametro di `EffectivePermission`, la stessa preferenza nella deduplicazione, la
+    stessa riga in `BuildIdentity`. **Il significato non è identico** (il revisore sulla #213): in E2b il segno scrive anche un `!` nel
+    cookie, e con tutte e due unite la `Awards.View` portata da `Awards.Assign` si scrive `Awards.View@!`. **Chi arriva seconda su `main`**
+    tiene una dichiarazione sola, somma le due condizioni del calcolatore e rifà sul codice unito `AwardsAssignByGrantTests`,
+    `GrantableGlobalPermissionTests` e le due classi di E2b; il revisore controllerà che quella `Awards.View` apra ancora ogni riga di
+    `Award`. E2b porta anche la metà «liste»: fino ad allora **chi non è dentro nessun dipartimento** (il capo di un FIR a cui si desse
+    `Awards.Assign` con un grant a un VID) apre la coda ma ha la lista degli award a 403. L'MD non ne è toccato.
+  - Un **permesso globale di un modulo** resta chiuso ai grant: dire `GrantableAlthoughGlobal` ferma l'avvio. Un secondo permesso
+    concedibile è una decisione con la sua nota, che cambia anche il paletto del catalogo.
 
 ### Che cosa ha lasciato E10a (30 settembre – 1° ottobre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
 

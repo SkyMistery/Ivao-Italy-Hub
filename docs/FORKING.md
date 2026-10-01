@@ -72,6 +72,9 @@ cd web && pnpm install && pnpm dev      # the single page application
    at the first start that finds it, and a grant you delete from the permissions screen does not come
    back. A grant you add to the file later — because a new module expects it — is applied at the next
    start. The example file carries the grants the tours module expects for its base department.
+   A grant never gives a **global** permission — who administers the hub is decided by the IVAO staff
+   positions — save `Awards.Assign`: who assigns the awards is your division's to choose, and the example
+   file gives it to the coordinator and the assistant of the membership department, with no `scope`.
    A grant can also go to **the team of a FIR** instead of a department: `"firTeam": true` with the
    levels (`Coordinator` is the chief of a FIR, `Assistant` the assistant chief, `Advisor` a FIR
    advisor) and no `department`. It names no FIR — every FIR's team holds it — and it is only taken
