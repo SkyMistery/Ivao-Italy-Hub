@@ -1,0 +1,34 @@
+{
+  "_source": "web/src/modules/events/locales",
+  "nav": {
+    "section": "Events",
+    "settings": "Events settings"
+  },
+  "settings": {
+    "title": "Events settings",
+    "description": "What the events department changes without a release: what each kind of event switches on, the distance between two bookings of a pilot, how long the pilots' bookings are kept, the reminder.",
+    "saved": "Settings saved.",
+    "fields": {
+      "kindPresets": "What each kind of event switches on",
+      "kindPresets.kind": "Kind of event",
+      "kindPresets.publicSlots": "Public slots",
+      "kindPresets.privateSlots": "Private slots",
+      "kindPresets.hasRoster": "ATC roster",
+      "kindPresets.wholeDivision": "The whole division",
+      "kindPresets.inPerson": "In person",
+      "bookingGapMinutes": "Minutes between two bookings of the same pilot",
+      "pilotRetentionMonths": "Months the pilots' bookings are kept after an event",
+      "reminderLeadHours": "Hours before the off block time the reminder is sent"
+    },
+    "hints": {
+      "kindPresets": "A new event of that kind starts with these switches on, and the staff can still change them on the event. The kinds are the words of the calendar. No row: a new event starts with every switch off.",
+      "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
+      "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
+      "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time."
+    }
+  },
+  "errors": {
+    "calendarKindUnknown": "This is no longer a kind of the calendar: take the row out.",
+    "kindTwice": "This kind has more than one row."
+  }
+}
