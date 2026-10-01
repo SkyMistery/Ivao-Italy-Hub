@@ -92,7 +92,10 @@ Il 1 ottobre 2026, su `main` a `db9268f`:
   lista** (`CrudOptions.EffectiveReadPolicy`, come per il FIR), e solo con quel nome: ciò che lo implica è già dentro, perché il calcolo
   scrive il `View` dell'area accanto a ogni permesso dell'area che dà. Chi ha solo quei permessi non riceve il 403 «nessun
   dipartimento».
-- **Tenuto da fuori su tutti i dipartimenti**, la lista di quel permesso è intera — e nient'altro di nessun dipartimento, altrove.
+- **Tenuto da fuori su tutti i dipartimenti**, la lista di quel permesso tiene le righe di ogni dipartimento (`RolePermissionMatrix.AllDepartments`):
+  quelle che i claim `dept` di tutti davano a un grant così prima di E2b, e non una riga di più — e nient'altro di nessun dipartimento,
+  altrove. Dopo la revisione della #212: prima la lista rispondeva senza nessun filtro, e una riga in cura a nessun dipartimento sarebbe
+  passata; per ogni riga vera la risposta è la stessa.
 - **Tenuto su una riga sola** (`ResourceScope`) non allarga la lista: apre quella riga all'handler, e basta. Oggi nessun grant a una
   posizione ha uno scope (la schermata dei permessi non lo scrive, il seme non lo conosce): è il lato che chiude, se un giorno qualcuno
   lo scrivesse.
@@ -180,20 +183,26 @@ maintainer che la nota di E2 aveva visto rossi con loro.
 
 ## 6. I test, e la misura
 
-- **Di unità** (`PermissionFromOutsideRulesTests`, 7): quali grant danno il permesso da fuori — una posizione su un altro dipartimento e
-  su tutti sì, sul suo no, una persona no, i ruoli no — e il `View` implicato; il team di un FIR con `all` da fuori e con `own` sul suo FIR;
+- **Di unità** (`PermissionFromOutsideRulesTests`, 8): quali grant danno il permesso da fuori — una posizione su un altro dipartimento e
+  su tutti sì, sul suo no, una persona no, i ruoli no — e il `View` implicato; un divieto su un dipartimento accanto a un grant su tutti,
+  che lascia da fuori ognuno degli altri otto; il team di un FIR con `all` da fuori e con `own` sul suo FIR;
   lo stesso permesso da una posizione e per nome resta della persona; il segno nel claim, che va e torna, e un lettore che non lo conosce
   e lo legge chiuso; nessun claim `dept` dal permesso da fuori, anche su tutti i dipartimenti, e il claim da un grant per nome; l'unico
   handler che lo tiene sulle righe del suo dipartimento.
-- **Sul database** (`PermissionFromOutsideTests`, 2, VID 761091–761092; 761090 è un'identità dei test di unità): gli advisor dell'AOD con
+- **Sul database** (`PermissionFromOutsideTests`, 3, VID 761091–761093; 761090 è un'identità dei test di unità): gli advisor dell'AOD con
   il permesso di lettura del modulo di prova sul SOD leggono le righe del SOD nella lista generata che legge con quel permesso, e una di
   esse con l'unico handler, e non una riga del FOD; **e nient'altro del SOD** — nessun `dept` in `/api/me`, quindi nessun gruppo del SOD
   nella barra; nessun link del SOD nella lista dei link, che leggono con un altro permesso sul loro dipartimento; nessuna riga che il filtro
   globale tiene al SOD, né del modulo né nella ricerca. Un grant **per nome** sullo stesso dipartimento fa ancora entrare: `dept` SOD, i
-  link del SOD, le righe `Visibility.Department` del SOD nella pagina del modulo e nella ricerca.
+  link del SOD, le righe `Visibility.Department` del SOD nella pagina del modulo e nella ricerca. **Dopo la revisione della #212** (VID
+  761093): gli advisor dell'AOD con `Links.View` su **tutti** i dipartimenti, da fuori, leggono nella lista dei link quelli di AOD, SOD e
+  FOD, e restano nel solo AOD (`/api/me`, la ricerca); un divieto di `Links.View` sul FOD alla stessa posizione toglie il link del FOD e
+  lascia gli altri.
 - **Provati al contrario**: con il codice di `main` il primo test d'integrazione cade sul primo `Assert` (`/api/me` dice `["AOD",
   "SOD"]`); con E2b senza il pezzo della lista cade sulla lista; senza l'ordine delle voci uguali cade il test di unità della persona. Il
-  secondo test d'integrazione è verde anche su `main`: il 6 settembre non cambia.
+  secondo test d'integrazione è verde anche su `main`: il 6 settembre non cambia. Il caso di tutti i dipartimenti: senza il suo ramo
+  della lista cade sulla lista (il link del SOD manca); con il codice del nucleo di `main` la lista passa e `/api/me` dice tutti e nove i
+  dipartimenti.
 - **La misura della nota di E2, rifatta sopra E2b** (1 ottobre 2026, in un worktree di prova mai spinto e tolto dopo: E2b più
   `origin/m4/e2-events-skeleton` a `b3b4849` più i nove grant in `config/division.json`, cioè i 22 del design): **integrazione intera
   senza filtro 443/443** (8,1 minuti). I tre test del maintainer che la nota di E2 aveva visto rossi — `SeveralDepartmentsTests` due

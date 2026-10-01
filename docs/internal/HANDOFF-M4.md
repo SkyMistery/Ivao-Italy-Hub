@@ -135,9 +135,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     ogni permesso, e non sono cambiati.
   - **Un grant a una persona** fa ancora entrare nel dipartimento (6 settembre); **lo stesso permesso da fuori e per nome** resta quello
     per nome.
-  - **I test**: `PermissionFromOutsideRulesTests` (unità, 7) e `PermissionFromOutsideTests` (integrazione, 2, VID 761091–761092; 761090 è
-    un'identità delle unità). **Le parole**: l'aiuto del form dei permessi (`grants.formHint`), `docs/FORKING.md` e i commenti di
-    `config/division.example.json`. Nessuna migrazione, nessun endpoint.
+  - **I test**: `PermissionFromOutsideRulesTests` (unità, 8) e `PermissionFromOutsideTests` (integrazione, 3, VID 761091–761093; 761090 è
+    un'identità delle unità; 761094–099 restano di E2b per le sue correzioni). **Le parole**: l'aiuto del form dei permessi
+    (`grants.formHint`), `docs/FORKING.md` e i commenti di `config/division.example.json`. Nessuna migrazione, nessun endpoint.
+  - **Tenuto da fuori su tutti i dipartimenti** (un grant a una posizione senza `scope`), un permesso di lettura dà nella sua lista le
+    righe di ogni dipartimento, come i claim `dept` di tutti prima di E2b, e niente altro di loro; un divieto su un dipartimento accanto
+    toglie quel dipartimento (dopo la revisione della #212).
 - **Che cosa deve sapere la fase dopo**:
   - ⚠️ **I nove grant di chi collabora non ci sono**, nemmeno dopo l'unione di E2 (#209) in questo branch: li porta **E3a** (`10`, E3a
     punto 5), la cui sessione nasce sopra E2b, in coda dopo la #212, in `config/division.json` e in `config/division.example.json`, e cambia
