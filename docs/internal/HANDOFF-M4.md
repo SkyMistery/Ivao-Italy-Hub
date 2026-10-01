@@ -8,15 +8,15 @@
 
 **Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2b** (nucleo: un grant a una posizione su un altro dipartimento dà il permesso, non
 il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda, con `main` unito dopo
-**E2 (#209)**; la decisione è di Carmine, sulla #209. Sono unite E1 (#200), E2 (#209), E10b (#208), E10d (#205) ed E10e (#206); corrono,
-ognuna nella sua sessione, **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f** (#213, `Awards.Assign` concedibile con un
-grant, decisa da Carmine sulla #205).
+**E2 (#209)** ed **E15a (#207)**; la decisione è di Carmine, sulla #209. Sono unite E1 (#200), E2 (#209), E10b (#208), E10d (#205), E10e
+(#206) ed E15a (#207); corrono, ognuna nella sua sessione, **E10a** (#210), **E10c** (#204) ed **E10f** (#213, `Awards.Assign` concedibile
+con un grant, decisa da Carmine sulla #205).
 **Il prossimo passo**: **E2b** unita, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora** (`10`, E3a
 punto 5): la sua sessione la prepara la sessione che coordina, in coda dopo la #212. ⚠️ **E2b ed E10f dichiarano tutte e due
 `EffectivePermission.FromOutside`**: chi arriva seconda a `main` tiene una dichiarazione sola e somma le due condizioni del calcolo (nota
 di E2b, §3.8). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in
-E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei tour al
-calcolo del nucleo è unito (#211).
+E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova
+in E15a le prenotazioni della rete. Il passaggio dei tour al calcolo del nucleo è unito (#211).
 
 ## Per chi prende M4 (`dalberone`)
 
