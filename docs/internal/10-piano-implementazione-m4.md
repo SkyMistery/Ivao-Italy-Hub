@@ -688,6 +688,10 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
      `events.eventCancelled` dopo il salvataggio di `CancelAsync`.
   5. **La spec e2e scrive un preset dell'RFO** nelle impostazioni del banco e lo rimette com'era: un'altra spec che chiede un preset fa lo
      stesso (come `events-skeleton.spec.ts` con l'RFE).
+  6. **Il tipo di un evento si sceglie fra tutte le parole del calendario**, anche quelle di altri moduli (training, esame, tour,
+     riunione, scadenza), come i preset di E2: il codice non conosce nessun tipo (nota `i-tipi-di-evento`) e niente, su un tipo del
+     calendario, dice che è di un evento (visto sul banco, 1 ottobre). Se la divisione vorrà un elenco più stretto è una domanda per
+     dopo, non di E3a: un segno sui tipi del calendario sarebbe del nucleo.
 - **Verificato, in locale** (1 ottobre 2026, sul branch prima del commit di questi documenti): `dotnet build` della soluzione senza
   avvisi, e `dotnet format --verify-no-changes` sui dodici file C# toccati; unità **951/951** prima del merge di `main` con E15a e
   **976/976** dopo (le 25 di E15a); **integrazione intera senza filtro 451/451** prima (5,2 minuti) e **451/451** dopo (5,9 minuti),

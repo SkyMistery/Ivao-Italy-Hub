@@ -160,6 +160,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Nel back office `PageShell` non disegna la `description`** (solo il tooltip del titolo): lo stato dell'evento sta nella `note`.
   - ⚠️ **`AirportEndpoints` è un nome del nucleo** (`Core/Ivao`): le classi del modulo si chiamano `Event…`.
   - La spec e2e scrive un preset dell'RFO nelle impostazioni del banco e lo rimette com'era, come `events-skeleton.spec.ts` con l'RFE.
+  - ⚠️ **Il tipo di un evento si sceglie fra tutte le parole del calendario**, anche training, esame, tour, riunione e scadenza (come i
+    preset di E2): nessun tipo del calendario dice di essere di un evento, e il codice non ne conosce nessuno. Un elenco più stretto
+    sarebbe una domanda a Carmine e un segno del nucleo, non una lista nel modulo.
 
 ### Che cosa ha lasciato E2b (1 ottobre 2026, branch `m4/e2b-grant-without-department`, PR #212, del nucleo, senza coda)
 
