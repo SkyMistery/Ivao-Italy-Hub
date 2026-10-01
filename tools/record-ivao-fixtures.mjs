@@ -58,6 +58,14 @@
  * as the hub asks them (M3, A2): without it the sectors of the world take longer than IVAO's gateway waits, and the
  * answer is a 504 or a connection closed half way.
  *
+ *   node tools/record-ivao-fixtures.mjs --fras <countryId> [ICAO...]
+ *
+ * records public reference data: the FRAs of a country (M4, E10c) — the lowest rating that may connect to a position, by
+ * day and hour or for one date — as /v2/fras answers them page by page, into fras-<countryId>.json. Only the rows of a
+ * position (members=false), each with the position it names (expand=true): the rows IVAO keeps for a member name a person,
+ * and the hub never reads them. With ICAO codes, only the FRAs of the positions of those airports and of the sectors of
+ * those FIRs.
+ *
  *   node tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>
  *
  * records what happened at one airport in one window, asked the way the hub asks without a VID (M4, E10a): the sessions
@@ -93,8 +101,9 @@ const airportsOnly = process.argv[2] === "--airports";
 const profileOnly = process.argv[2] === "--me";
 const bookingsOnly = process.argv[2] === "--bookings";
 const positionsOnly = process.argv[2] === "--positions";
+const frasOnly = process.argv[2] === "--fras";
 const sessionsAt = process.argv[2] === "--sessions-at";
-const referenceOnly = airportsOnly || positionsOnly;
+const referenceOnly = airportsOnly || positionsOnly || frasOnly;
 const vid = listed || referenceOnly || profileOnly || sessionsAt ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
 const asVid = Number(profileOnly ? process.argv[3] : process.argv[4] ?? 780001);
@@ -103,7 +112,7 @@ if (
     ? process.argv.length < 8
     : bookingsOnly
       ? !asVid || process.argv.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(process.argv[5])
-      : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
+      : referenceOnly ? process.argv.length < (frasOnly ? 4 : 5) : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
 ) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
@@ -112,6 +121,7 @@ if (
       + "or your own profile:         node tools/record-ivao-fixtures.mjs --me <asVid>\n"
       + "or the ATC bookings of a day: node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]\n"
       + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]\n"
+      + "or the FRAs of a country:    node tools/record-ivao-fixtures.mjs --fras <countryId> [ICAO...]\n"
       + "or an airport's sessions:    node tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>",
   );
   process.exit(1);
@@ -404,6 +414,26 @@ if (positionsOnly) {
   writeFileSync(join(outDir, `subcenters-${process.argv[3]}.json`), JSON.stringify(subcenters, null, 2));
   const types = (rows) => [...new Set(rows.map((row) => row.position))].join(", ");
   console.log(`recorded ${positions.length} position(s) (${types(positions)}) and ${subcenters.length} sector(s) (${types(subcenters)})`);
+  process.exit(0);
+}
+
+if (frasOnly) {
+  // A hundred to a page, the most /v2/fras gives (M4, E10c). members=false leaves out the rows of a member, and the filter
+  // below drops one that would come all the same: a fixture never names a person.
+  const country = process.argv[3].toUpperCase();
+  const codes = new Set(process.argv.slice(4).map((code) => code.toUpperCase()));
+  const fras = [];
+  for (let page = 1, pages = 1; page <= pages; page++) {
+    const body = await get(`/v2/fras?countryId=${country}&members=false&expand=true&perPage=100&page=${page}`);
+    pages = body.pages;
+    fras.push(...body.items);
+  }
+  const nobody = (row) => (row.userId ?? null) === null && (row.user_id ?? null) === null;
+  const place = (row) => row.atcPosition?.airportId ?? row.subcenter?.centerId;
+  const kept = fras.filter(nobody).filter((row) => codes.size === 0 || codes.has(place(row)));
+  writeFileSync(join(outDir, `fras-${country}.json`), JSON.stringify(kept, null, 2));
+  const callsigns = new Set(kept.map((row) => row.atcPosition?.composePosition ?? row.subcenter?.composePosition));
+  console.log(`recorded ${kept.length} of the ${fras.length} FRA(s) of ${country}, on ${callsigns.size} position(s)`);
   process.exit(0);
 }
 
