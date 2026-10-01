@@ -710,6 +710,20 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
   viste «prossimi», «in corso» e «conclusi» nel browser (senza «Pubblica», che è di E3b, il banco ha solo bozze: le prova
   l'integrazione con righe scritte sul database); `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree (le spec la
   tollerano, come in CI).
+- **La CI della prima spinta** (`c1f0a98`): verde, `build-test` in 25,3 minuti, `core-guard`.
+- **Dopo la revisione** ([i rilievi del revisore sulla #214][r214], «approvable on the merits»), 1 ottobre 2026:
+  1. **La lettura dei preset** (`GET /api/events/kind-presets`, scostamento 1) **aspetta la risposta di Carmine**: tenerla, o chiedere al
+     nucleo un permesso di lettura sulle impostazioni di un modulo (`ModuleSettingsDescriptor`, una PR del nucleo con la sua nota).
+     Nessun cambio finché non risponde.
+  2. **Annullare senza una versione** non fa il controllo del 409 (`request.RowVersion != default`): come `LegEndpoints`, e il browser la
+     manda sempre. Lasciato com'è.
+  3. **La pagina «Annulla» dice ciò che succede oggi**: tolta la frase sulla mail a chi ha prenotato, ha un turno o si è iscritto, e la
+     mail dall'aiuto della nota, perché prima di E6a, E12 ed E16 non parte nessuna mail. ⚠️ La fase che manda la prima mail di
+     `events.eventCancelled` rimette la frase (scritto nell'handoff).
+  4. **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
+     mentre un evento lo mostra. È di E3b (punto 2 della sua fase); ⚠️ E3b viene subito dopo, scritto nell'handoff.
+
+[r214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5929130403
 
 ### E3b — La vita dell'evento
 

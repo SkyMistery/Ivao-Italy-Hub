@@ -156,7 +156,13 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     con `EventChildren.AdoptAsync`; nel browser `writableDepartments` non offre l'ED a chi collabora (E2b): la riga si crea sotto
     l'evento. Chi collabora vede oggi la pagina dell'evento con il form senza «Salva» e gli scali.
   - ⚠️ **E6a** mette il primo rifiuto di «Elimina» in `EventSaving.DeleteAsync` e i destinatari di `events.eventCancelled` dopo il
-    salvataggio in `CancelAsync`.
+    salvataggio in `CancelAsync`; la fase che manda la prima di quelle mail **rimette sulla pagina «Annulla»** la frase su chi la riceve
+    (`events:cancel.description` e l'aiuto della nota), tolta dopo la revisione della #214 perché oggi non parte nessuna mail.
+  - ⚠️ **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
+    mentre un evento lo mostra (rilievo 4 del revisore sulla #214). E3b subito dopo.
+  - ⚠️ **La lettura dei preset** (`GET /api/events/kind-presets`) **aspetta la risposta di Carmine** sulla #214: tenerla, o un permesso di
+    lettura sulle impostazioni di un modulo nel nucleo (una PR sua, con la nota). Chi viene dopo non ci costruisce sopra altro finché non
+    risponde.
   - ⚠️ **Nel back office `PageShell` non disegna la `description`** (solo il tooltip del titolo): lo stato dell'evento sta nella `note`.
   - ⚠️ **`AirportEndpoints` è un nome del nucleo** (`Core/Ivao`): le classi del modulo si chiamano `Event…`.
   - La spec e2e scrive un preset dell'RFO nelle impostazioni del banco e lo rimette com'era, come `events-skeleton.spec.ts` con l'RFE.
