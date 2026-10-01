@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Quartz;
 
@@ -48,7 +49,7 @@ public static class IvaoServiceCollectionExtensions
         // The token of the application, on its own client so a slow token endpoint cannot exhaust
         // the connections of the data calls.
         services.AddHttpClient<IvaoApiTokenProvider>(ConfigureAuthority).AddStandardResilienceHandler();
-        services.AddHttpClient<IvaoApiClient>(ConfigureAuthority).AddStandardResilienceHandler();
+        services.AddHttpClient<IvaoApiClient>(ConfigureAuthority).AddStandardResilienceHandler(WaitLongerThanIvao);
         services.AddScoped<FixtureIvaoApiClient>();
 
         // Which one answers is decided when the client is built, not when it is registered.
@@ -80,5 +81,21 @@ public static class IvaoServiceCollectionExtensions
         var ivao = provider.GetRequiredService<IOptions<IvaoOAuthOptions>>().Value;
         client.BaseAddress = new Uri(ivao.Authority);
         client.Timeout = TimeSpan.FromSeconds(30);
+    }
+
+    /// <summary>
+    /// An attempt waits longer than IVAO's own gateway, which gives up at fifteen seconds: what comes back is then IVAO's
+    /// answer — the page, or its 504 — and never a cut of the hub's own. The standard ten seconds are shorter than the page
+    /// of the tracker holding the last session of an airport, which takes IVAO about ten and a half (measured on 30
+    /// September 2026, M4 E10a): every attempt was cut and retried, and the search failed at thirty seconds after making
+    /// IVAO do the same slow work three times. The total stays the standard thirty seconds, so a call that never answers
+    /// costs no more than it did.
+    /// </summary>
+    private static void WaitLongerThanIvao(HttpStandardResilienceOptions options)
+    {
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(20);
+
+        // The handler's own rule: the circuit breaker samples at least two attempts.
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(40);
     }
 }

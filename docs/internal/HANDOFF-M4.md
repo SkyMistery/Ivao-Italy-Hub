@@ -8,15 +8,17 @@
 
 **Ultimo aggiornamento:** 1° ottobre 2026 — **fase E10c** (nucleo: rating e postazioni della divisione), sul branch
 `m4/e10c-ratings-and-positions`, **PR #204** verso `main`, del nucleo, senza coda, dopo i rilievi del revisore e la seconda risposta di
-Carmine (i rating preferiti in `config/division.json`). Sono unite E1 (#200), **E2** (#209), E10b (#208), E10e (#206), E10d (#205),
-**E15a** (#207) e il passaggio dei tour al calcolo del nucleo (#211); corrono, ognuna nella sua sessione, **E2b** ed **E10a** (#210).
+Carmine (i rating preferiti in `config/division.json`), con `main` unito dopo E2 (#209), E15a (#207) ed **E10a** (#210). Sono unite E1
+(#200), E2, E10a, E10b (#208), E10e (#206), E10d (#205), E15a e il passaggio dei tour al calcolo del nucleo (#211); corre, nella sua
+sessione, **E2b**.
 **Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
 #209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
 dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11a** ed **E11b** trovano in E10c le postazioni della
-divisione, il rating preferito e il minimo di una postazione (l'FRA di IVAO); **E11b** ed **E13a** trovano in E10b la storia di un
-controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
-riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete. **La fase del
-nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
+divisione, il rating preferito e il minimo di una postazione (l'FRA di IVAO); E10a serve a **E13a**, che aspetta anche E12; **E11b**
+ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza
+nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le
+prenotazioni della rete. **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la
+prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -164,11 +166,46 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     l'hub, e l'avviso compare lo stesso.
   - ⚠️ **L'ordine dei nominativi è quello del database** (`utf8mb4_unicode_ci`: `_` prima delle cifre, `LIRR_NE_CTR` prima di
     `LIRR_NE1_CTR`): un test non lo confronti con un ordinamento `Ordinal`.
-  - ⚠️ **E10a** (#210, aperta) tocca gli stessi file del client di IVAO (`IIvaoApiClient.cs`, `IvaoApiClient.cs`,
-    `FixtureIvaoApiClient.cs`), lo strumento delle fixture e il loro README, come E15a, già entrata con un merge il 1° ottobre (tutte e
-    due le modalità dello strumento e le due sezioni del README tenute): chi arriva dopo fa il merge e tiene tutto. **E10c migra il
-    contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione sopra `main` (come ha
-    fatto E10c dopo E10d).
+  - ⚠️ **E15a ed E10a** toccavano gli stessi file del client di IVAO (`IIvaoApiClient.cs`, `IvaoApiClient.cs`,
+    `FixtureIvaoApiClient.cs`), lo strumento delle fixture e il suo README: entrate in E10c con due merge il 1° ottobre, lo strumento ha
+    ora le quattro modalità di riferimento (`--positions`, `--bookings`, `--fras`, `--sessions-at`) e il README tutte le sezioni. **E10c
+    migra il contesto del nucleo**: se un'altra fase del nucleo lo migra insieme, la seconda unita rifà la sua migrazione sopra `main`
+    (come ha fatto E10c dopo E10d).
+
+### Che cosa ha lasciato E10a (30 settembre – 1° ottobre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica; le misure del 30 settembre sono lì, §2, e
+  la revisione in §6):
+  - **La domanda senza VID**: `IvaoSessionQuery(int? Vid, from, to, departure, arrival, IvaoConnectionType? ConnectionType)` con
+    `Limit` (`init`, predefinito 200, **al più `MaxLimit` = 1000**, un tetto che tiene il nucleo); `SearchSessionsAsync` è la stessa
+    di prima, dalla più recente, senza doppioni, al più `Limit`, `null` quando IVAO non si è potuto chiedere;
+    `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker stanno nel lettore
+    (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
+  - **Il client di IVAO aspetta 20 s per tentativo** (l'interruttore campiona su 40, il totale resta 30): con i 10 standard nessun
+    aeroporto si leggeva. **Confermato da Carmine** con il `null` per la ricerca dei tour
+    ([risposta sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792)).
+  - **Le fixture**: `tools/record-ivao-fixtures.mjs --sessions-at`; `tests/fixtures/ivao/tracker-airport-LIRF.json` (una sera di
+    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO), **spostate sul 1°
+    gennaio 2001** (lo stesso giorno delle prenotazioni di E15a) e **senza `rating`, `serverId`, `software*`** (revisione, #210).
+    Senza VID, `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto. Unita dopo E15a, lo script ha le due modalità
+    (`--bookings` e `--sessions-at`) e **un giorno inventato solo**, `standIn` con `movedFrom(day)`, in cima: chi registra altre righe
+    con persone lo usa.
+  - **I test**: `IvaoTrackerWithoutVidTests` e `IvaoApiTimeoutTests` (unità).
+- **Che cosa deve sapere la fase dopo** (E13a, e chiunque legga il tracker senza VID):
+  - ⚠️ **Una domanda per aeroporto che trova qualcosa costa ~10,5 s** (la pagina con l'ultima riga, sempre), e **due insieme
+    ricevono 504** dal gateway di IVAO: una alla volta, poche per giro del job.
+  - ⚠️ **La finestra è sull'inizio della sessione**, estremi compresi: per chi era già connesso, `FromUtc` va allargato.
+  - ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione del piano. Una
+    sessione può tornare da tutte e due: si conta per `Id`.
+  - ⚠️ **Il DTO dice gli aeroporti della prima revisione**: trovata per la partenza da LIRF, una sessione può dire LIPZ.
+  - **Il limite si dichiara**: con esattamente `Limit` sessioni la risposta può essere tagliata, e il resto sta prima della più
+    vecchia.
+  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte), e **la sera sta sul 1° gennaio
+    2001**, 16:00–17:59:59 UTC: un test che la legge chiede quel giorno. 761029 non è usata.
+  - Il punto «La richiesta al tracker oggi» di «Per chi prende M4», qui sopra (`PageSize = 50`, `MaxSessions = 200`), è superato:
+    le pagine sono da 100 e il tetto è il `Limit` di chi chiama, al più 1000.
+- ⚠️ **Per i tour cambiano due cose, nessuna nei loro test**: le pagine sono da 100, e se IVAO non risponde affatto la ricerca dà
+  `null` («tracker non disponibile») invece di lanciare.
 
 ### Che cosa ha lasciato E15a (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo, senza coda)
 

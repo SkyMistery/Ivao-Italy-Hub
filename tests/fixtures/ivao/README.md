@@ -81,6 +81,32 @@ and the answer of the world takes longer than the fifteen seconds its gateway wa
 way — what A1 saw twice out of three was that, four times out of four on 25 September. With one outline it comes in about
 five seconds, and the outline is dropped all the same.
 
+## An airport's evening, without a VID (M4, E10a)
+
+`tracker-airport-LIRF.json` is what the fixture client answers when the tracker is asked without a VID: every session that
+left Rome Fiumicino or reached it, and the one on its tower, that started in an evening between 16:00 and 17:59:59 UTC —
+recorded with `node tools/record-ivao-fixtures.mjs --sessions-at LIRF <from> <to> 761020 761029`, newest first as IVAO lists
+them, and **moved onto 1 January 2001**, a day the tracker has no session of. `tracker-pages-LIRF.json` holds the departures
+of the same window as IVAO paged them two at a time, with the page it answers past the last one and its answer for a window
+with nothing in it (`pages: 0`): the tests of the reading are fed those.
+
+These are strangers rather than a member's own flights, so more of the person goes than for the files above: the member
+object, as there; each of the nine members becomes one VID of 761020–761028 (the range of the events' tests), in the order
+they first appear; a pilot's callsign becomes `TST` and the member's number; the identifiers of the sessions and of their
+flight plans are renumbered from 1000001 and 2000001, because a session's identifier is what IVAO answers a name to; the
+rating, the server and the software of each connection are dropped; and every moment is moved by one same offset onto the
+stand-in day, so the times of day and the relations between the sessions stay while the real date — which, with the
+airport, would find the real sessions again — goes (review of E10a, #210). The tool writes nothing that still holds a real
+VID, a name, one of the dropped fields or a real day. The tower keeps `LIRF_TWR`: it names a position, not a person. The
+window was picked for having no more members than VIDs, and for what is in it: a pilot who connected twice, a flight of
+thirty-eight seconds, and one whose plan went from LIPZ to Rome in its first revision and from Rome to LICR in its second.
+
+What the recording taught, measured the same day with the application's token (note
+`docs/internal/decisions/2026-09-30-il-tracker-senza-vid.md`): an airport asked alone matches any revision of a flight
+plan, two airports asked together one same revision; the window holds the sessions that started in it, both ends included;
+a page carries at most a hundred rows; and **the page holding the last row of an airport's answer takes IVAO about ten
+seconds**, however small it is.
+
 ## The ATC bookings of a day (M4, E15a)
 
 `atc-bookings-day.json` is what the fixture client answers for the network's ATC bookings, recorded on 30 September 2026 with

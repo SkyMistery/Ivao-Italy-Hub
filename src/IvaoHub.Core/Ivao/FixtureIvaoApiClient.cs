@@ -193,6 +193,9 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     /// The recorded sessions of a member, filtered the way the API filters them, so that a test and
     /// production disagree about nothing except where the bytes came from. The files are written by
     /// <c>tools/record-ivao-fixtures.mjs</c> from real flights.
+    /// <para>Without a VID, the sessions at an airport (M4, E10a): <c>tracker-airport-{icao}.json</c>, what happened at
+    /// one airport in one evening (<c>--sessions-at</c>), for the departure and the arrival asked. The tracker's own rule
+    /// picks the rows (<see cref="IvaoTrackerReader.Answers"/>), newest first as IVAO lists them, up to the limit.</para>
     /// </summary>
     public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
         IvaoSessionQuery query,
@@ -200,13 +203,22 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var sessions = Read($"tracker-sessions-{query.Vid}.json")
+        string[] files = query.Vid is { } vid
+            ? [$"tracker-sessions-{vid}.json"]
+            : [.. new[] { query.DepartureIcao, query.ArrivalIcao }
+                .Where(airport => !string.IsNullOrWhiteSpace(airport))
+                .Select(airport => $"tracker-airport-{airport!.Trim().ToUpperInvariant()}.json")
+                .Distinct(StringComparer.Ordinal)];
+
+        var sessions = files
+            .SelectMany(Read)
+            .Where(row => IvaoTrackerReader.Answers(row, query))
             .Select(IvaoTrackerReader.ReadSession)
             .OfType<IvaoTrackerSessionDto>()
-            .Where(session => session.StartedAt >= query.FromUtc && session.StartedAt <= query.ToUtc)
-            .Where(session => Matches(session.DepartureIcao, query.DepartureIcao))
-            .Where(session => Matches(session.ArrivalIcao, query.ArrivalIcao))
-            .Take(IvaoSessionQuery.MaxSessions)
+            .DistinctBy(session => session.Id)
+            .OrderByDescending(session => session.StartedAt)
+            .ThenByDescending(session => session.Id)
+            .Take(query.Limit)
             .ToArray();
 
         return Task.FromResult<IReadOnlyList<IvaoTrackerSessionDto>?>(sessions);
@@ -266,10 +278,6 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
 
         return Task.FromResult<IvaoMetarDto?>(null);
     }
-
-    private static bool Matches(string? value, string? wanted) =>
-        string.IsNullOrWhiteSpace(wanted)
-        || string.Equals(value, wanted, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The connections of an evening that always looks the same, read through the very same rule
