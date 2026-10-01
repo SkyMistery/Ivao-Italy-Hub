@@ -1098,7 +1098,7 @@ Design §9.1, §13 n.6, §17.2 n.3; nota `il-roster-atc`. Branch `m4/e15a-networ
 **Fatta quando**: le prenotazioni di un giorno per una postazione si leggono dal nucleo.
 
 **Com'è andata** (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo senza coda, da `main` a `c107c98`,
-accanto a E2 ed E10a–E10e partite lo stesso giorno; dopo la revisione, fusa con `main` a `c98b272`):
+accanto a E2 ed E10a–E10e partite lo stesso giorno; dopo la revisione, fusa con `main` a `c98b272`, poi a `db9268f` e a `c441839`):
 
 - **Fatto** (nota nuova `2026-09-30-le-prenotazioni-atc-della-rete`, scelta tecnica, nessuna domanda nuova):
   - **misurato con il token vero, prima del codice** (nota §2), con uno script usa e getta che non stampava né nomi né VID: il token
@@ -1165,7 +1165,14 @@ accanto a E2 ed E10a–E10e partite lo stesso giorno; dopo la revisione, fusa co
     sono di E10b); il test nuovo della fixture provato al contrario sulla prima registrazione (cade, con i due che leggono il giorno),
     poi 25/25; la fixture nuova confrontata campo per campo con la prima (le stesse dieci prenotazioni, spostate); in `web/` le stesse
     verifiche verdi, 594 test in 80 file, `pnpm gen:api` senza differenze; le regole di `core-guard` rifatte su `git diff
-    --name-status origin/main...HEAD`: nessun file del maintainer, i file del nucleo con la nota.
+    --name-status origin/main...HEAD`: nessun file del maintainer, i file del nucleo con la nota;
+  - **`main` fuso altre due volte su richiesta del master**, sempre con un merge e con i conflitti solo in `HANDOFF-M4.md` (risolti
+    tenendo il paragrafo di ogni fase): il 30 settembre dopo E10e (#206), i tour sulla distanza del nucleo (#211) ed E10d (#205) — build
+    senza avvisi, unità 928/928; l'integrazione non rifatta in locale lì, `build-test` e `core-guard` verdi su quell'head (`9b35418`)
+    —, e il 1° ottobre dopo E2 (#209), con lo strumento
+    dell'app che fonde la base: build senza avvisi, unità **962/962**, integrazione intera **441/441** (5,6 minuti, al primo giro), in `web/` lint, typecheck,
+    format:check e i18n:check verdi, 599 test in 81 file, `pnpm gen:api` senza differenze. Docker Desktop era spento: avviato prima del
+    giro.
 - **Non verificato**: la CI (la dice la PR); il client dentro l'hub avviato (nessun endpoint: la schermata è di E15b; il codice sì,
   contro IVAO vero, qui sopra); IVAO giù sul serio (provato con un IVAO finto: stati, corpo che non è JSON, rete che non risponde,
   token rifiutato), e quanto aspetta una pagina prima di «non disponibile» con la resilienza vera (fino a 30 secondi per chiamata); i
