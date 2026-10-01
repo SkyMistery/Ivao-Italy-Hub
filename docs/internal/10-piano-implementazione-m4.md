@@ -1057,6 +1057,12 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
     **163/163**; `pnpm e2e:full` sul banco 5119 (`ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit) **51/51** al primo giro
     (10,9 minuti, la spec in più è quella dello scheletro degli eventi); le regole di `core-guard` dalla merge base nuova (`c441839`): 23
     file, nessuno del maintainer, 14 del nucleo, la nota nuova — passa.
+  - **E15a (#207) è entrata in `main` mentre giravano i controlli** della nuova cima, e la PR è tornata CONFLICTING: `main` (`99ab043`)
+    unito sopra, mai un rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E15a unita e il passo di E15b; in «Lo stato»
+    E10f, poi E15a, poi E2). E15a porta codice del nucleo in `Core/Ivao/`, test di unità, una fixture e lo strumento: nessun file web,
+    nessuna schermata, nessuna migrazione. Rifatti: `dotnet build` 0 avvisi; unità **978/978**; **integrazione intera, senza filtro,
+    445/445** (5,3 minuti); `pnpm gen:api` senza differenze; `core-guard` dalla merge base `99ab043`: passa. Le suite web ed e2e qui
+    sopra non sono state rifatte: il merge non tocca nessun file sotto `web/`.
 
 [v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
 [a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
