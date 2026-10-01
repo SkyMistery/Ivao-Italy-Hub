@@ -57,6 +57,26 @@
  * of what the two answers weigh for the world. They are asked with mapType=regionMapPolygon, one outline instead of two,
  * as the hub asks them (M3, A2): without it the sectors of the world take longer than IVAO's gateway waits, and the
  * answer is a 504 or a connection closed half way.
+ *
+ *   node tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>
+ *
+ * records what happened at one airport in one window, asked the way the hub asks without a VID (M4, E10a): the sessions
+ * that left it and the ones that reached it (/v2/tracker/sessions with departureId, then with arrivalId: IVAO matches any
+ * revision of a flight plan) and the sessions on its ATC positions (connectionType=ATC, a callsign starting with <ICAO>_),
+ * into tracker-airport-<ICAO>.json, newest first as IVAO lists them. <from> and <to> are ISO instants: the window holds the
+ * sessions that started in it, both ends included. The departures are asked once more, two to a page, and written as IVAO
+ * paged them — with the page past the last one, and the answer for a window with nothing in it — into
+ * tracker-pages-<ICAO>.json, for the tests of the reading.
+ * These are strangers, not a member's own flights, so more of the person goes: the member object is dropped; each member
+ * becomes one VID of <firstVid>..<lastVid>, in the order they first appear (with more members than VIDs nothing is
+ * written: pick a shorter window); a pilot's callsign becomes TST and the member's number; the identifiers of the
+ * sessions and of their flight plans are renumbered, because a session's identifier is what IVAO answers a name to; the
+ * rating, the server and the software of each connection are dropped; and the whole evening is moved onto 1 January 2001,
+ * a day the tracker has no session of, every moment by the same offset — the times of day and the relations between the
+ * sessions stay, and no date leads back to the real ones. A controller's callsign stays: it names a position, not a
+ * person. The last look writes nothing that still holds a real VID, a name, one of the dropped fields or a real day. The
+ * page holding the last row of an airport's answer takes IVAO about ten seconds (measured on 30 September 2026), so this
+ * takes a minute or two.
  */
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -73,14 +93,17 @@ const airportsOnly = process.argv[2] === "--airports";
 const profileOnly = process.argv[2] === "--me";
 const bookingsOnly = process.argv[2] === "--bookings";
 const positionsOnly = process.argv[2] === "--positions";
+const sessionsAt = process.argv[2] === "--sessions-at";
 const referenceOnly = airportsOnly || positionsOnly;
-const vid = listed || referenceOnly || profileOnly ? 0 : Number(process.argv[2]);
+const vid = listed || referenceOnly || profileOnly || sessionsAt ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
 const asVid = Number(profileOnly ? process.argv[3] : process.argv[4] ?? 780001);
 if (
-  bookingsOnly
-    ? !asVid || process.argv.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(process.argv[5])
-    : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
+  sessionsAt
+    ? process.argv.length < 8
+    : bookingsOnly
+      ? !asVid || process.argv.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(process.argv[5])
+      : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
 ) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
@@ -88,7 +111,8 @@ if (
       + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]\n"
       + "or your own profile:         node tools/record-ivao-fixtures.mjs --me <asVid>\n"
       + "or the ATC bookings of a day: node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]\n"
-      + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]",
+      + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]\n"
+      + "or an airport's sessions:    node tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>",
   );
   process.exit(1);
 }
@@ -242,6 +266,33 @@ const get = async (path) => {
   return response.json();
 };
 
+/**
+ * A GET tried three times, for the answers that come close to the fifteen seconds IVAO's gateway waits: the positions of
+ * the world, ten and twelve megabytes with one outline, and the last page of an airport's sessions, about ten seconds.
+ */
+const getPatiently = async (path) => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await get(path);
+    } catch (error) {
+      if (attempt === 3) throw error;
+      console.warn(`${path}: ${error.cause?.code ?? error.message}, again`);
+    }
+  }
+};
+
+/**
+ * The day the recordings that hold people are moved onto (M4: the ATC bookings of E15a, the evening at an airport of E10a).
+ * IVAO lists no booking before 2023 and no session in 2001 (measured on 30 September and 1 October 2026). Every moment of
+ * the recorded day moves by one same offset and keeps its time of day, and the real day — which, with a callsign or an
+ * airport, finds the rows and their members again through IVAO's own API — is not in the file.
+ */
+const standIn = "2001-01-01";
+const movedFrom = (day) => {
+  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`);
+  return (moment) => new Date(Date.parse(moment) + shift).toISOString();
+};
+
 /** The VID, and everything IVAO knows about the person behind it, out of the recorded row. */
 const anonymise = (value) => {
   if (Array.isArray(value)) return value.map(anonymise);
@@ -312,11 +363,8 @@ if (bookingsOnly) {
   const starts = prefixes.map((prefix) => prefix.toUpperCase());
   const callsignOf = (booking) => (booking.atcPosition ?? booking.subcenter ?? "").toUpperCase();
   const dayOf = (moment) => new Date(moment).toISOString().slice(0, 10);
-  // IVAO lists no booking before 2023 (measured on 30 September 2026). Moved onto this day, the bookings keep their times of
-  // day, and the real day — which, with a callsign, finds the booking and its member through IVAO's own API — is not in the file.
-  const standIn = "2001-01-01";
-  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`);
-  const moved = (moment) => new Date(Date.parse(moment) + shift).toISOString();
+  // Moved onto the stand-in day (above), the bookings keep their times of day and lose the real one.
+  const moved = movedFrom(date);
   const people = new Map();
   const bookings = (await get(`/v2/atc/bookings/daily?date=${date}`))
     .filter((booking) => dayOf(booking.startDate) === date)
@@ -344,29 +392,127 @@ if (bookingsOnly) {
 }
 
 if (positionsOnly) {
-  // Ten and twelve megabytes with one outline; still big enough that a second attempt is worth having.
-  const getWorld = async (path) => {
-    for (let attempt = 1; ; attempt++) {
-      try {
-        return await get(path);
-      } catch (error) {
-        if (attempt === 3) throw error;
-        console.warn(`${path}: ${error.cause?.code ?? error.message}, again`);
-      }
-    }
-  };
   const codes = new Set(process.argv.slice(4).map((code) => code.toUpperCase()));
   const withoutOutline = ({ regionMap, regionMapPolygon, ...position }) => position;
-  const positions = (await getWorld("/v2/ATCPositions/all?mapType=regionMapPolygon"))
+  const positions = (await getPatiently("/v2/ATCPositions/all?mapType=regionMapPolygon"))
     .filter((row) => codes.has(row.airportId))
     .map(withoutOutline);
-  const subcenters = (await getWorld("/v2/subcenters/all?mapType=regionMapPolygon"))
+  const subcenters = (await getPatiently("/v2/subcenters/all?mapType=regionMapPolygon"))
     .filter((row) => codes.has(row.centerId))
     .map(withoutOutline);
   writeFileSync(join(outDir, `atc-positions-${process.argv[3]}.json`), JSON.stringify(positions, null, 2));
   writeFileSync(join(outDir, `subcenters-${process.argv[3]}.json`), JSON.stringify(subcenters, null, 2));
   const types = (rows) => [...new Set(rows.map((row) => row.position))].join(", ");
   console.log(`recorded ${positions.length} position(s) (${types(positions)}) and ${subcenters.length} sector(s) (${types(subcenters)})`);
+  process.exit(0);
+}
+
+if (sessionsAt) {
+  const icao = process.argv[3].toUpperCase();
+  const [from, to] = [new Date(process.argv[4]), new Date(process.argv[5])];
+  const [firstVid, lastVid] = [Number(process.argv[6]), Number(process.argv[7])];
+  const iso = (moment) => encodeURIComponent(moment.toISOString());
+  const window = `from=${iso(from)}&to=${iso(to)}`;
+
+  /** Every page of one question, in IVAO's order. */
+  const pagesOf = async (query, perPage) => {
+    const pages = [];
+    for (let page = 1; ; page++) {
+      pages.push(await getPatiently(`/v2/tracker/sessions?${query}&page=${page}&perPage=${perPage}`));
+      if (page >= pages.at(-1).pages) return pages;
+    }
+  };
+  const rowsOf = async (query) => (await pagesOf(query, 100)).flatMap((page) => page.items);
+
+  const departures = await rowsOf(`departureId=${icao}&${window}`);
+  const arrivals = await rowsOf(`arrivalId=${icao}&${window}`);
+  const controllers = (await rowsOf(`callsign=${icao}_&connectionType=ATC&${window}`))
+    .filter((row) => row.callsign?.startsWith(`${icao}_`));
+  const rows = [...new Map([...departures, ...arrivals, ...controllers].map((row) => [row.id, row])).values()]
+    .sort((a, b) => b.id - a.id);
+
+  // Everything is numbered in the order it first appears, newest first: the newest session keeps the highest identifier.
+  const members = new Map();
+  for (const row of rows) {
+    if (!members.has(row.userId)) members.set(row.userId, firstVid + members.size);
+  }
+  if (firstVid + members.size - 1 > lastVid) {
+    console.error(`${members.size} members in the window and ${lastVid - firstVid + 1} VIDs to give them: nothing written, pick a shorter window.`);
+    process.exit(1);
+  }
+  const sessionIds = new Map(rows.map((row, index) => [row.id, 1_000_000 + rows.length - index]));
+  const planIds = new Map();
+  for (const row of [...rows].reverse()) {
+    for (const plan of row.flightPlans ?? []) {
+      if (!planIds.has(plan.id)) planIds.set(plan.id, 2_000_001 + planIds.size);
+    }
+  }
+  // The whole evening moves onto the stand-in day (above): the times of day and the relations between the sessions stay,
+  // the real date goes.
+  const moved = movedFrom(from.toISOString().slice(0, 10));
+  const instant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+  const movedEverywhere = (value) =>
+    Array.isArray(value) ? value.map(movedEverywhere)
+      : value && typeof value === "object"
+        ? Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, movedEverywhere(inner)]))
+        : typeof value === "string" && instant.test(value) ? moved(value) : value;
+
+  // The person, and what else a connection could be found again by besides its moment: its rating, server and software.
+  const dropped = ["user", "userStaffPositions", "rating", "serverId", "softwareTypeId", "softwareVersion", "softwareType"];
+  const withoutPeople = (row) => {
+    if (!sessionIds.has(row.id)) throw new Error("A session that was not in the window a moment ago: record again.");
+    return movedEverywhere({
+      ...Object.fromEntries(Object.entries(row).filter(([key]) => !dropped.includes(key))),
+      id: sessionIds.get(row.id),
+      userId: members.get(row.userId),
+      callsign: row.connectionType === "ATC" ? row.callsign : `TST${String(members.get(row.userId) - firstVid + 1).padStart(3, "0")}`,
+      flightPlans: (row.flightPlans ?? []).map((plan) => ({ ...plan, id: planIds.get(plan.id) })),
+    });
+  };
+
+  // The departures again, two to a page as IVAO pages them, then the page past the last one; and a window with nothing.
+  const asked = `departureId=${icao}&${window}`;
+  const pages = await pagesOf(asked, 2);
+  pages.push(await getPatiently(`/v2/tracker/sessions?${asked}&page=${pages.length + 1}&perPage=2`));
+  const later = new Date(Date.now() + 86400000);
+  const nothing = await getPatiently(
+    `/v2/tracker/sessions?departureId=${icao}&from=${iso(later)}&to=${iso(new Date(later.getTime() + 86400000))}&page=1&perPage=2`);
+
+  const airport = JSON.stringify(rows.map(withoutPeople), null, 2);
+  const paged = JSON.stringify({
+    asked: `departureId=${icao}&from=${moved(from.toISOString())}&to=${moved(to.toISOString())}&perPage=2`,
+    pages: pages.map((page) => ({ ...page, items: page.items.map(withoutPeople) })),
+    nothing,
+  }, null, 2);
+
+  // The last look before anything is written: no real VID, no name, none of the dropped fields, and no day the sessions
+  // really happened on.
+  const days = new Set([from, to].map((moment) => moment.toISOString().slice(0, 10)));
+  const collectDays = (value) => {
+    if (Array.isArray(value)) value.forEach(collectDays);
+    else if (value && typeof value === "object") Object.values(value).forEach(collectDays);
+    else if (typeof value === "string" && instant.test(value)) days.add(value.slice(0, 10));
+  };
+  collectDays(rows);
+  const found = new RegExp(`"(firstName|lastName|${dropped.join("|")})"`);
+  for (const text of [airport, paged]) {
+    if ([...members.keys()].some((real) => new RegExp(`\\b${real}\\b`).test(text))
+      || found.test(text)
+      || [...days].some((day) => text.includes(day))) {
+      console.error("A person, or what finds them again, is still in what would be written: nothing written.");
+      process.exit(1);
+    }
+  }
+  writeFileSync(join(outDir, `tracker-airport-${icao}.json`), airport);
+  writeFileSync(join(outDir, `tracker-pages-${icao}.json`), paged);
+
+  const changed = rows.filter((row) => new Set((row.flightPlans ?? []).map((plan) => `${plan.departureId}-${plan.arrivalId}`)).size > 1);
+  console.log(
+    `recorded ${icao}: ${departures.length} departure(s), ${arrivals.length} arrival(s), ${controllers.length} ATC session(s); `
+      + `${rows.length} session(s) of ${members.size} member(s), written as VIDs ${firstVid}-${firstVid + members.size - 1}, `
+      + `moved onto ${standIn}; ${changed.length} with airports that changed between revisions; `
+      + `${pages.length - 1} page(s) of two, and the one past them`,
+  );
   process.exit(0);
 }
 
