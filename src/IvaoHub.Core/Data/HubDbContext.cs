@@ -76,6 +76,7 @@ public class HubDbContext : DbContext, IVisibilityScope
     public DbSet<IvaoAircraftEquipment> IvaoAircraftEquipments => Set<IvaoAircraftEquipment>();
     public DbSet<IvaoTransponderType> IvaoTransponderTypes => Set<IvaoTransponderType>();
     public DbSet<IvaoAtcPosition> IvaoAtcPositions => Set<IvaoAtcPosition>();
+    public DbSet<IvaoFra> IvaoFras => Set<IvaoFra>();
 
     /// <summary>The outlines of the FIRs. Not an IVAO snapshot, but the same kind of reference data.</summary>
     public DbSet<FirBoundary> Firs => Set<FirBoundary>();

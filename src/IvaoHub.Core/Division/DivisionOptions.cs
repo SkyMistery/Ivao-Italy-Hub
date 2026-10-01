@@ -150,6 +150,15 @@ public sealed record DivisionOptions
     public FirStaffScope FirStaffScope { get; init; } = FirStaffScope.All;
 
     /// <summary>
+    /// Who comes first on a kind of ATC position when an event's roster is proposed: the rating a controller holds at least,
+    /// by the kind as the network spells it — <c>{ "TWR": "ADC", "DEL": "AS3" }</c>. The division's rule, not the network's
+    /// (M4, E10c, note 2026-09-30-il-rating-preferito-e-il-minimo-di-una-postazione, decided by the maintainer on #204): the
+    /// core answers it through the vocabulary of the ratings, and a module never names a rating. A kind left out has nobody
+    /// first; the start refuses a kind or a rating the core does not know. Empty — the default — puts nobody first anywhere.
+    /// </summary>
+    public Dictionary<string, string> PreferredAtcRatings { get; init; } = [];
+
+    /// <summary>
     /// Where the ATC sessions of the network are read from, when the division has an archive of them (note
     /// 2026-09-14-dati-condivisi-con-vipi §3.4). Absent — the default, and a fork's — means none: the controllers a pilot
     /// contacted are «not available» and everything else works the same.

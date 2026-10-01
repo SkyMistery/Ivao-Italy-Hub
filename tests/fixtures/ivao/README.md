@@ -123,3 +123,15 @@ asked, and the one across midnight of the day before. So a bench with no credent
 It lists a day the way IVAO does, as measured that day: every booking that touches the day — one across midnight on both days, one
 that ends at midnight on the next day too, one that starts at midnight not on the day before — and a position is the start of a
 callsign, in any case (`LIRR` is Rome's three sectors).
+
+## The FRAs of the bench's positions (M4, E10c)
+
+`fras-IT.json` is what the fixture client answers for the FRAs of the division, recorded on 30 September 2026 with
+`node tools/record-ivao-fixtures.mjs --fras IT LIRF LIMC LIBD LIBG LIRR LIMM LIBB`: 94 of Italy's 353 FRAs of a position, the
+ones on the positions of those airports and the sectors of those FIRs (44 positions), each with the position IVAO expands with
+it — the only place an FRA carries a callsign. **No person is in it**: the tool asks for the rows of a position only
+(`members=false`) and drops one that names a member all the same. What they taught: a position has a minimum for the day and one
+for the night (`LIBD_TWR`, AS2 from 08 to 23 and ADC from 23 to 08), or for the weekdays and the weekend (`LIMC_ANE_APP`); a few
+are closed to anyone but a CAI (`LIRF_AWL_APP`); the times come as `23:00:00` and the date as `2026-09-12`, not in the shapes
+the documentation shows. A country without a file — France, for the bench — is not answered at all, which keeps whatever the
+snapshot holds: no file is not "no FRA".

@@ -176,6 +176,20 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
             IvaoAtcPositionReader.ReadSectors(Read("subcenters-world.json"))));
 
     /// <summary>
+    /// The FRAs of the bench's positions of a country, recorded from IVAO's answer for it
+    /// (<c>tools/record-ivao-fixtures.mjs --fras …</c>) and read through the very reader the real client uses. A country the
+    /// bench has no file for is not answered at all, which keeps whatever the snapshot holds: no file is not "no FRA".
+    /// </summary>
+    public Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(countryId);
+
+        var file = $"fras-{countryId.ToUpperInvariant()}.json";
+        return Task.FromResult<IReadOnlyList<IvaoFraDto>?>(
+            File.Exists(Path.Combine(_paths.Root, Directory, file)) ? IvaoFraReader.Read(Read(file)) : null);
+    }
+
+    /// <summary>
     /// The recorded sessions of a member, filtered the way the API filters them, so that a test and
     /// production disagree about nothing except where the bytes came from. The files are written by
     /// <c>tools/record-ivao-fixtures.mjs</c> from real flights.

@@ -8,14 +8,28 @@ using Xunit;
 namespace IvaoHub.UnitTests;
 
 /// <summary>
-/// IVAO's ratings as the core knows them (M3, A1, decision note of 25 September 2026), and the three questions the training
-/// asks instead of writing numbers of its own. These tests are about the real vocabulary; the module's are about one of its
-/// own (design M3 §10). Where it can, the vocabulary is held against what IVAO sent on 25 September 2026: the ratings of a
-/// real profile and the positions IVAO publishes.
+/// IVAO's ratings as the core knows them (M3, A1, decision note of 25 September 2026), the three questions the training
+/// asks instead of writing numbers of its own, and the one the events' roster asks — who comes first on a kind of position
+/// (M4, E10c, decision note of 30 September 2026). These tests are about the real vocabulary; the modules' are about one of
+/// their own (design M3 §10). Where it can, the vocabulary is held against what IVAO sent on 25 September 2026: the ratings
+/// of a real profile and the positions IVAO publishes.
 /// </summary>
 public sealed class RatingVocabularyTests
 {
     private static readonly RatingVocabulary Ivao = IvaoRatings.Vocabulary;
+
+    /// <summary>IVAO's ladders with the division's preferred ratings, as the core registers them: Italy's file.</summary>
+    private static readonly RatingVocabulary Division = IvaoRatings.WithPreferred(PreferredOfTheDivision());
+
+    /// <summary><c>config/division.json → preferredAtcRatings</c>, as the division wrote it.</summary>
+    private static Dictionary<string, string> PreferredOfTheDivision()
+    {
+        var file = Path.Combine(HubPaths.Resolve(AppContext.BaseDirectory).Root, "config", "division.json");
+        using var division = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file));
+
+        return division.RootElement.GetProperty("preferredAtcRatings").EnumerateObject()
+            .ToDictionary(kind => kind.Name, kind => kind.Value.GetString()!, StringComparer.OrdinalIgnoreCase);
+    }
 
     [Fact]
     public void TheLaddersAreIvaosFromTheLowestUp()
@@ -178,6 +192,118 @@ public sealed class RatingVocabularyTests
         Assert.True(other.IsAtLeast(RatingKind.Atc, 10, 20));
         Assert.False(other.IsAtLeast(RatingKind.Atc, 30, 20));
         Assert.Empty(other.Ladder(RatingKind.Pilot));
+    }
+
+    [Theory]
+    [InlineData("TWR", "ADC")] // the events department's rule (design M4 §R.3): TWR and GND ADC+, APP APC+, ACC ACC+
+    [InlineData("GND", "ADC")]
+    [InlineData("APP", "APC")]
+    [InlineData("CTR", "ACC")]
+    [InlineData("DEL", "AS3")] // and the maintainer's answer on #204 for the other four kinds IVAO lists
+    [InlineData("DEP", "APC")]
+    [InlineData("FSS", "ADC")]
+    [InlineData("ATIS", null)] // nobody's shift: nobody comes first
+    [InlineData("twr", "ADC")] // the kind as IVAO spells it, in any case
+    [InlineData(" APP ", "APC")]
+    [InlineData("XYZ", null)] // a kind the division does not name: nobody comes first for the rating
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void OnAKindOfPositionTheDivisionsRuleSaysWhoComesFirst(string? positionType, string? expected)
+    {
+        Assert.Equal(expected, Division.PreferredFor(positionType)?.ShortName);
+    }
+
+    [Fact]
+    public void TheRuleIsTheDivisionsAndNotIvaos()
+    {
+        // Moved out of the vocabulary into division.json on the maintainer's answer on #204: IVAO's ladders alone put nobody
+        // first, and the division file carries the values he decided.
+        Assert.All(IvaoAtcPosition.Kinds, kind => Assert.Null(Ivao.PreferredFor(kind)));
+        Assert.Equal(
+            ["APP: APC", "CTR: ACC", "DEL: AS3", "DEP: APC", "FSS: ADC", "GND: ADC", "TWR: ADC"],
+            PreferredOfTheDivision().Select(pair => $"{pair.Key}: {pair.Value}").Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("TWR", 4, false)] // an AS3, the rating just below
+    [InlineData("TWR", 5, true)]
+    [InlineData("TWR", 6, true)]
+    [InlineData("TWR", 8, true)] // a SEC comes first wherever an ADC does: it follows from the order
+    [InlineData("GND", 4, false)]
+    [InlineData("GND", 5, true)]
+    [InlineData("DEL", 3, false)] // an AS2
+    [InlineData("DEL", 4, true)]
+    [InlineData("FSS", 4, false)]
+    [InlineData("FSS", 5, true)]
+    [InlineData("APP", 5, false)]
+    [InlineData("APP", 6, true)]
+    [InlineData("DEP", 5, false)]
+    [InlineData("DEP", 6, true)]
+    [InlineData("CTR", 6, false)]
+    [InlineData("CTR", 7, true)]
+    [InlineData("CTR", 10, true)] // the top of the ladder
+    [InlineData("CTR", null, false)] // a member IVAO said nothing about
+    [InlineData("CTR", 11, false)] // a number IVAO does not use
+    public void AControllerComesFirstFromThePreferredRatingUp(string positionType, int? rating, bool expected)
+    {
+        var preferred = Division.PreferredFor(positionType);
+
+        Assert.NotNull(preferred);
+        Assert.Equal(expected, Division.IsAtLeast(RatingKind.Atc, rating, preferred.Number));
+    }
+
+    [Fact]
+    public void TheKindsOfPositionAreTheOnesIvaoPublishes()
+    {
+        // The positions and the sectors the bench's fixtures hold of the world, recorded on 25 September 2026: the kinds a
+        // division may name are exactly the ones IVAO uses, and a kind IVAO never used would put nobody first anywhere.
+        var published = IvaoFixtures.Read("atc-positions-world.json").EnumerateArray()
+            .Concat(IvaoFixtures.Read("subcenters-world.json").EnumerateArray())
+            .Select(position => position.GetProperty("position").GetString())
+            .ToHashSet();
+
+        Assert.Equal(published.Order(StringComparer.Ordinal), IvaoAtcPosition.Kinds.Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("adc", "ADC")] // in any case
+    [InlineData(" CAI ", "CAI")]
+    [InlineData("PP", null)] // a pilot's is no ATC rating
+    [InlineData("XYZ", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void AnAtcRatingIsFoundByItsShortName(string? shortName, string? expected)
+    {
+        Assert.Equal(expected, Ivao.Named(RatingKind.Atc, shortName)?.ShortName);
+    }
+
+    [Fact]
+    public void ARatingTheVocabularyDoesNotHaveIsRefused()
+    {
+        // Preferred on a rating that is not on the ladder, a kind would have nobody first and nothing would say why: the
+        // vocabulary refuses to exist, as the start refuses the division file (PreferredAtcRatingsValidatorTests).
+        Assert.Throws<ArgumentException>(() => IvaoRatings.WithPreferred(new Dictionary<string, string> { ["TWR"] = "XYZ" }));
+        Assert.Throws<ArgumentException>(() => IvaoRatings.WithPreferred(new Dictionary<string, string> { ["TWR"] = "PP" }));
+    }
+
+    [Fact]
+    public void AVocabularyOfAnotherNetworkSaysWhoComesFirstOnItsOwnKinds()
+    {
+        // The events' own tests will do what the training's do (design M3 §10): the same class, ratings and kinds of
+        // position that are not IVAO's. The order is the list's, as for every other question.
+        var other = new RatingVocabulary(
+            [
+                new(RatingKind.Atc, 30, "S1", false, null),
+                new(RatingKind.Atc, 20, "S2", true, "GND"),
+                new(RatingKind.Atc, 10, "C1", false, null),
+            ],
+            new Dictionary<string, string> { ["GND"] = "S2", ["RMP"] = "s2", ["RDR"] = "C1" });
+
+        Assert.Equal("S2", other.PreferredFor("rmp")?.ShortName);
+        Assert.Equal("C1", other.PreferredFor("RDR")?.ShortName);
+        Assert.Null(other.PreferredFor("TWR"));
+        Assert.True(other.IsAtLeast(RatingKind.Atc, 10, other.PreferredFor("GND")!.Number));
+        Assert.False(other.IsAtLeast(RatingKind.Atc, 30, other.PreferredFor("GND")!.Number));
     }
 
     [Fact]
