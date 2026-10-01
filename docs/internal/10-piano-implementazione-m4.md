@@ -567,7 +567,9 @@ nell'ED.
      con il codice del nucleo di `main` cade `/api/me` (tutti e nove i dipartimenti).
   2. **`main` unito** (`c441839`, E2 con la #209), con un merge: i conflitti erano solo in questo file e in `HANDOFF-M4.md`, e ogni
      paragrafo è rimasto (il blocco di E2b sopra quello di E2, un'intestazione sola). **I nove grant non entrano**: li porta E3a, la cui
-     sessione nasce sopra E2b, in coda dopo la #212 (detto dalla sessione che coordina).
+     sessione nasce sopra E2b, in coda dopo la #212 (detto dalla sessione che coordina). **E di nuovo** dopo E15a (#207, `99ab043`),
+     unita mentre girava la CI di questo giro e che rendeva la #212 in conflitto: un altro merge, conflitto solo in `HANDOFF-M4.md` (il
+     blocco di E2b sopra quelli di E15a e di E2). E15a tocca la metà IVAO del nucleo e nessun file di E2b.
   3. **L'ordine con E10f (#213)**: chi arriva seconda a `main` tiene una dichiarazione sola di `FromOutside`, somma le due condizioni del
      calcolo e rifà `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b sul codice unito. Il 1 ottobre,
      durante questo giro, la #213 era ancora aperta: E2b non è la seconda.
@@ -577,7 +579,11 @@ nell'ED.
      `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 599; `pnpm gen:api` senza differenze; `pnpm e2e`
      **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (9,9 minuti) sul banco
      `http://127.0.0.1:5120`, `ivaohub_e2e_e2b` ricreato, dietro il lock di Mailpit (preso alle 10:52, dopo quello di E10f); le regole di
-     `core-guard` dalla nuova base di merge (`c441839`): PASS, nessun file del maintainer, sette del nucleo, la nota nuova.
+     `core-guard` dalla nuova base di merge (`c441839`): PASS, nessun file del maintainer, sette del nucleo, la nota nuova. La CI di
+     `978d6ac` verde (`build-test` e `core-guard`). **Dopo il merge di E15a** (`main` a `99ab043`): `dotnet build` senza avvisi; unità
+     **970/970** (le 25 di E15a in più); **integrazione intera 444/444** (5,5 minuti); `pnpm gen:api` senza differenze, e nessun file
+     web portato dal merge (lint, Vitest e smoke del giro prima valgono); **`pnpm e2e:full` 51/51 al primo giro** (10,4 minuti) sul banco
+     5120 ricreato, dietro il lock di Mailpit.
 
 [ok209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
 [r212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926652025
