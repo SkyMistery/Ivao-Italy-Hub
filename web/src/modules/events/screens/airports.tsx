@@ -64,7 +64,7 @@ export function AirportsTab({ event, editable }: { event: EventDetailDto; editab
       timezone={bootstrap.division.timezone}
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
-      {...(create === null ? {} : { toolbar: create, emptyAction: create })}
+      {...(create === null ? {} : { toolbar: create })}
       actions={(row) =>
         editable ? (
           <Button asChild variant="ghost" size="sm">

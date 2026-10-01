@@ -391,7 +391,8 @@ export function EventEditor() {
   return (
     <PageShell
       title={title}
-      {...(event === null ? {} : { description: t(`events:events.options.state.${event.state}`) })}
+      // The state stays on screen: in the back office a description is only the title's tooltip.
+      {...(event === null ? {} : { note: t(`events:events.options.state.${event.state}`) })}
       breadcrumb={[
         { label: t('events:nav.section') },
         { label: t('events:events.title'), to: EVENTS },
