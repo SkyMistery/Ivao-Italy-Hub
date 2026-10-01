@@ -795,6 +795,18 @@ nota.
      ed E2 e nell'intestazione lo stato di tutte e due. Rifatti: build senza avvisi, unità **954/954**, **integrazione intera senza
      filtro 441/441** (5,6 minuti, i test di E2 compresi), in `web/` `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
      `pnpm test` 599, `pnpm gen:api` senza differenze, le regole di `core-guard` (uguali).
+  6. **`main` unito dopo E15a** (#207), che tocca gli stessi file: E10a è la seconda, e i conflitti erano suoi, come ha chiesto il
+     revisore ([commento sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5928517622)). Quattro file:
+     il commento di `ReadOrNothingAsync` in `IvaoApiClient.cs` (ora nomina le postazioni, le prenotazioni di E15a e le pagine del
+     tracker); lo script, con **tutte e due le modalità** (`--bookings` e `--sessions-at`) nel controllo degli argomenti e nell'uso; il
+     README delle fixture, con le due sezioni; l'handoff, con i paragrafi di tutte le fasi. `IIvaoApiClient.cs`,
+     `FixtureIvaoApiClient.cs` e `IvaoServiceCollectionExtensions.cs` si sono uniti da soli, con le prenotazioni accanto alla ricerca.
+     **Il giorno inventato era scritto due volte** nello script (le stesse tre righe nel blocco di E15a e nel mio): ora è uno,
+     `standIn` con `movedFrom(day)` in cima, usato da tutte e due. Rifatti: build senza avvisi, unità **979/979** (i test delle
+     prenotazioni compresi), **integrazione intera senza filtro 441/441** (5 minuti), `node --check` dello script e il rifiuto degli
+     argomenti mancanti delle due modalità, e **LIRF registrata di nuovo con lo script unito: le fixture escono identiche** byte per
+     byte (quella di E15a non si può registrare di nuovo: il suo giorno vero non è scritto da nessuna parte, e il cambio nel suo blocco è
+     la stessa formula spostata); le regole di `core-guard` (uguali). Il merge non tocca il web.
 - **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
   di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
   pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata

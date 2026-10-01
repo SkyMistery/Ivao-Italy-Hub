@@ -202,7 +202,8 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 - **Il client**: `src/IvaoHub.Core/Ivao/IvaoTracker.cs` (la domanda, il tipo di connessione, il DTO, il giro delle pagine e la regola
   nel lettore), `IvaoApiClient.cs`, `FixtureIvaoApiClient.cs`, `IIvaoApiClient.cs` (solo il commento),
   `IvaoServiceCollectionExtensions.cs` (i 20 secondi).
-- **Lo strumento**: `tools/record-ivao-fixtures.mjs` (la modalità `--sessions-at`, e `getPatiently`).
+- **Lo strumento**: `tools/record-ivao-fixtures.mjs` (la modalità `--sessions-at`, e `getPatiently`; unita dopo E15a, il giorno
+  inventato è uno per le due modalità, `standIn` con `movedFrom`).
 - **Le fixture**: `tests/fixtures/ivao/tracker-airport-LIRF.json` e `tracker-pages-LIRF.json` (nuove), e la loro sezione in
   `tests/fixtures/ivao/README.md`.
 - **I test**, nuovi: `IvaoTrackerWithoutVidTests` (unità: le pagine, la pagina vuota, l'errore a metà, il limite, oltre 200, i
