@@ -6,15 +6,16 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2** (modulo: lo scheletro), sul branch `m4/e2-events-skeleton`, **PR #209**
-verso `main`, la prima fase del modulo (nessuna coda sotto), con `main` unito dopo E10b (#208), E10e (#206), i tour sulla distanza del
-nucleo (#211) ed E10d (#205). È unita anche E1 (#200); corrono, ognuna nella sua sessione, **E2b**, **E10a**, **E10c** ed **E15a**.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E15a** (nucleo: le prenotazioni ATC della rete), sul branch
+`m4/e15a-network-atc-bookings`, **PR #207** verso `main`, del nucleo, senza coda, con `main` unito dopo E10b (#208), E10e (#206), i tour
+sulla distanza del nucleo (#211), E10d (#205) ed E2 (#209). È unita anche E1 (#200); corrono, ognuna nella sua sessione, **E2b**,
+**E10a** ed **E10c**.
 **Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
 #209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
 dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11b** ed **E13a** trovano in E10b la storia di un
 controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
-riepilogo a chi assegna gli award, e non chiama niente. **La fase del nucleo che rende `Awards.Assign` concedibile con un grant**
-(decisa da Carmine sulla #205) la prepara la sessione che coordina.
+riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete. **La fase del
+nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -105,7 +106,8 @@ senza VID, con il tipo di connessione (E10a); ~~il VID nelle sessioni condivise 
 controllore: sotto, «Che cosa ha lasciato E10b»); il rating preferito e minimo, le postazioni della
 divisione per nominativo (E10c); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
 lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
-lasciato E10e»); le prenotazioni ATC della rete (E15a);
+lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
+E15a»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -118,6 +120,49 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E15a (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-le-prenotazioni-atc-della-rete.md`, scelta tecnica; le misure con il token vero sono
+  lì, §2; **nessuna cache e al più sette giorni per richiesta confermati da Carmine** dopo la revisione, [risposta sulla
+  #207](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/207#issuecomment-5916738183)):
+  - **La domanda del modulo**: `IAtcBookingSource.BookedAsync(fromUtc, toUtc, callsign?)` in `src/IvaoHub.Core/Ivao/AtcBookingSource.cs`
+    (namespace `IvaoHub.Core.Ivao`, che il modulo importa come fa il training: nessun nome del file o del tipo nomina IVAO) → le
+    prenotazioni della rete che **si sovrappongono** alla finestra, di tutte le postazioni o di un nominativo intero, nell'ordine in cui
+    cominciano; **`null` = non disponibile**, mai «nessuno ha prenotato». `AtcBookingDto(Callsign, StartsAt, EndsAt, Vid, Kind)`, con
+    `AtcBookingKind` `Controlling`, `Training`, `Exam`. Al più **`IAtcBookingSource.MaxDays` = 7** giorni di UTC (oltre: `null` e un
+    avviso nel log). Alla richiesta, **nessuna cache**, nessun job.
+  - **Il client**: `IIvaoApiClient.GetDailyAtcBookingsAsync(DateOnly, position?)` (`/v2/atc/bookings/daily`, il giorno di IVAO com'è;
+    predefinito «non disponibile» per i doppi dei test), `IvaoApiClient` con il token dell'applicazione, `FixtureIvaoApiClient`, e **un
+    lettore solo** per tutti e due, `IvaoAtcBookingReader` (`IvaoAtcBookings.cs`).
+  - **Lo strumento**: `tools/record-ivao-fixtures.mjs --bookings <nome> <asVid> <yyyy-mm-dd> <prefisso…>`, con la persona tolta e
+    niente che ritrovi la prenotazione attraverso l'API di IVAO: né `id` né `createdAt`, e il giorno spostato sul 1° gennaio 2001.
+  - **La fixture** `tests/fixtures/ivao/atc-bookings-day.json` (VID 761070–761079; il giorno vero non è scritto da nessuna parte) e il
+    suo paragrafo nel README delle fixture.
+  - **I test**: `AtcBookingTests` (unità, 25 casi), provati al contrario (`10`, E15a, «Com'è andata»).
+- **Che cosa deve sapere la fase dopo** (E15b):
+  - **Una domanda per l'evento, non una per postazione**: `BookedAsync(inizio, fine)` senza nominativo, poi le postazioni dell'evento
+    con un filtro: una chiamata a IVAO per giorno di UTC invece di una per postazione. Il nominativo della domanda, quando c'è, è
+    **intero** (con `LIRR` non torna niente: per IVAO sarebbero tre settori).
+  - ⚠️ **IVAO lento o giù**: prima di «non disponibile» il client aspetta quello che aspetta ogni chiamata a IVAO (i tentativi e il
+    tempo massimo della resilienza, 30 secondi per chiamata), una chiamata per giorno. Carmine lo ha accettato così: la pagina aspetta e
+    poi dice che le prenotazioni non sono disponibili, **mentre il resto del roster funziona** — quindi **le prenotazioni si caricano a
+    parte dal roster** (una richiesta loro), e il roster non aspetta IVAO.
+  - **Il VID, non il nome**: un membro dell'hub con `personName`, chi non è mai entrato con il suo numero. `Exam` e `Training` dicono
+    che la postazione è occupata da un esame o da un training su IVAO: vale la pena mostrarlo.
+  - **Sul banco (fixture) ogni giorno è lo stesso giorno registrato**: `LIRF_TWR` 18–20 (761079), `LIMC_TWR`, `LFPG_APP`,
+    `LIMM_WS2_CTR`, `LFFF_CTR`, `LIRR_SU_CTR`, `LIRR_NC_CTR` 19–21, `LIRR_NE_CTR` 19–22, l'esame di `EDDF_APP` 18:30–20:30, `SBGR_TWR`
+    23–01 (UTC). I VID
+    761070–761079 non sono nessuno sul banco: la pagina mostra i numeri. Una spec che vuole vedere un controllore del roster anche fra
+    le prenotazioni ha bisogno di una fixture con il VID di un personaggio del banco (il roster prende solo chi è entrato nell'hub).
+  - ⚠️ **E10a tocca gli stessi file nello stesso giorno** (`IIvaoApiClient.cs`, `FixtureIvaoApiClient.cs`, lo script delle fixture):
+    chi viene unita per seconda fonde `main` quando il master lo chiede (mai un rebase), e tiene tutte e due le modalità dello script.
+- ⚠️ **Trappole trovate** (nota, §2): la `position` di IVAO è **il principio del nominativo** (`LI` = tutte le italiane); una
+  prenotazione a cavallo della mezzanotte è nell'elenco di **tutti e due** i giorni, una che finisce alle 00:00 anche del giorno dopo;
+  `date` con un'ora che non è 00:00 dà un elenco vuoto; `user` porta anche `rating`, che la documentazione non dice. ⚠️ **Una
+  prenotazione registrata ritrova la persona** con l'API di IVAO dal suo `id`, e anche dal suo giorno con il nominativo (rilievo del
+  revisore): chi registra altre prenotazioni lo fa con lo strumento, che toglie tutti e due. La prima registrazione, con quei dati, resta
+  nella storia del branch (`fbb11ac`): fuori da `main` la tiene solo un merge a squash, che decide il maintainer.
 
 ### Che cosa ha lasciato E2 (30 settembre – 1 ottobre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
 

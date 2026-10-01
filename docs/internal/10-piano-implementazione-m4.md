@@ -1097,7 +1097,89 @@ Design §9.1, §13 n.6, §17.2 n.3; nota `il-roster-atc`. Branch `m4/e15a-networ
 **Test**: unit sul lettore con la fixture; l'errore di IVAO risponde «non disponibile».
 **Fatta quando**: le prenotazioni di un giorno per una postazione si leggono dal nucleo.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo senza coda, da `main` a `c107c98`,
+accanto a E2 ed E10a–E10e partite lo stesso giorno; dopo la revisione, fusa con `main` a `c98b272`, poi a `db9268f` e a `c441839`):
+
+- **Fatto** (nota nuova `2026-09-30-le-prenotazioni-atc-della-rete`, scelta tecnica, nessuna domanda nuova):
+  - **misurato con il token vero, prima del codice** (nota §2), con uno script usa e getta che non stampava né nomi né VID: il token
+    dell'applicazione basta, senza scope (senza token, 401); un array nudo di 20–70 prenotazioni al giorno per tutta la rete (68 il
+    giorno più pieno degli ultimi sessanta); una prenotazione è di un aeroporto (`atcPosition`) o di un settore (`subcenter`), mai tutte
+    e due; **il giorno elenca ogni prenotazione che lo tocca**, e una a cavallo della mezzanotte sta in tutti e due i giorni; **`position`
+    è il principio del nominativo**; circa 370 chiamate in un quarto d'ora senza un 429 e senza intestazioni di limite;
+  - **l'unico client esteso**: `IIvaoApiClient.GetDailyAtcBookingsAsync` (con «non disponibile» predefinito, per i doppi dei test),
+    `IvaoApiClient` (il token dell'applicazione, `ReadOrNothingAsync`, nessuna cache), `FixtureIvaoApiClient`, e **un lettore solo**,
+    `IvaoAtcBookingReader` (`IvaoAtcBookings.cs`), che del membro tiene il VID;
+  - **la domanda del modulo**, `IAtcBookingSource.BookedAsync(fromUtc, toUtc, callsign?)` (`AtcBookingSource.cs`, in `Core/Ivao/`, con
+    un nome che non nomina IVAO), con `AtcBookingDto` e `AtcBookingKind`: le prenotazioni che si sovrappongono alla finestra, una volta
+    sola, di tutte le postazioni o di un nominativo intero; `null` = non disponibile; al più sette giorni;
+  - **lo strumento** (`tools/record-ivao-fixtures.mjs --bookings`, con la persona tolta) e **la fixture** `atc-bookings-day.json`: le dieci
+    prenotazioni di un giorno vero sulle stazioni del banco, più l'esame di `EDDF_APP` e `SBGR_TWR` a cavallo della mezzanotte, VID
+    761070–761079; il suo paragrafo nel README delle fixture;
+  - **i test**: `AtcBookingTests` (unità, 25 casi): il lettore sul giorno registrato e sulle righe strane, il client vero contro un IVAO
+    finto (sei risposte sbagliate, IVAO irraggiungibile e il token rifiutato rispondono «non disponibile»), il client delle fixture su un
+    giorno qualunque, la sorgente dalla DI del nucleo (la finestra, la mezzanotte una volta, il nominativo intero, un giorno che non
+    risponde, la settimana, la finestra vuota).
+- ⚠️ **Scostamenti dalla lettera della fase**, ognuno con la sua ragione (nota §3.2, §4):
+  1. **La domanda del modulo è una finestra, non un giorno.** «Le prenotazioni di un giorno per una postazione» sono la finestra di
+     quel giorno con quel nominativo; una domanda per giorno avrebbe messo nel modulo che IVAO elenca per giorno di UTC e ripete le
+     prenotazioni a cavallo della mezzanotte. Il giorno di IVAO com'è resta nel client (`GetDailyAtcBookingsAsync`).
+  2. **Una postazione chiesta è il nominativo intero**, non il principio come per IVAO: con «LIRR» IVAO dà tre settori.
+  3. **Il client delle fixture ripete il giorno registrato su ogni data**, come `whazzup.json`, invece di rispondere solo a quel giorno:
+     il banco senza credenziali ha delle prenotazioni accanto a un evento di qualunque data (E15b).
+  4. **Oltre sette giorni di UTC la sorgente risponde «non disponibile»** con un avviso nel log, invece di chiedere o di lanciare: una
+     data sbagliata di un evento non deve far cadere la pagina.
+- **Dopo la revisione** ([rilievi del revisore sulla #207][r207], «approvable»; [risposta di Carmine][ok207]):
+  1. **Carmine conferma nessuna cache e al più sette giorni per richiesta**, così com'è (in chat al master, che l'ha pubblicata sulla
+     PR su sua istruzione): la pagina del roster legge le prenotazioni fresche a ogni apertura e, con IVAO lento, aspetta e poi dice che
+     non sono disponibili, mentre il resto del roster funziona. Scritto nella nota (lo stato, §3.1, §3.2, «Da portare nel piano») e
+     nell'handoff.
+  2. **Da correggere, la fixture**: teneva l'`id` della prenotazione, il `createdAt` e il giorno vero, che con l'API pubblica di IVAO
+     ritrovano la persona. Lo strumento ora toglie `id` e `createdAt` e **sposta il giorno sul 1° gennaio 2001** (IVAO non ha
+     prenotazioni prima del 2023, misurato), con gli orari del giorno: il rilievo chiedeva i primi due, ma anche il giorno con il
+     nominativo ritrova la prenotazione con `/daily` (nota §3.3, §4). Registrata di nuovo: le stesse dieci prenotazioni, confrontate
+     campo per campo con la prima, e il giorno vero non è più scritto nei documenti. ⚠️ **La prima registrazione resta nella storia del
+     branch** (`fbb11ac`; il giorno anche nei testi di `fbb11ac` e `43528ea`): fuori da `main` la tiene solo un merge a squash, e la
+     PR lo dice al maintainer.
+  3. **I due nit**: lo strumento non cade più su un `user` che manca; il lettore legge solo l'array nudo del giorno, e la forma a
+     pagine di `/v2/atc/bookings` (`{ items, … }`) è «non disponibile».
+  4. **`main` fuso** (E10b, #208; mai un rebase): i conflitti solo in `HANDOFF-M4.md`, risolti tenendo il paragrafo di ogni fase; `10`
+     si è fuso da sé.
+- **Verificato, in locale** (30 settembre 2026):
+  - `dotnet build` della soluzione senza avvisi; `dotnet format --verify-no-changes` sui sette file C# toccati;
+  - unità **910/910**; la classe nuova 25/25 al primo giro; **integrazione intera senza filtro 430/430** (8,3 minuti, Docker acceso,
+    la macchina carica di sette sessioni), al primo giro;
+  - **il codice vero contro IVAO vero**, una volta, con un programma usa e getta fuori dal repository che usa `IvaoApiClient` e prende
+    `IAtcBookingSource` dalla DI del nucleo (stampava nominativi, orari e conteggi, mai un VID): il giorno registrato ha 34 prenotazioni
+    e **le dieci della fixture ci sono tutte** (nominativo, orari, tipo); `position=lirr` dà i tre settori di Roma; la finestra dalle
+    22 alle 2 dà `SBGR_TWR` **una volta sola**, e un'altra che comincia alle 00:00 del giorno dopo; `LIRR` come nominativo, niente; le
+    prossime 24 ore, 27 prenotazioni in ordine d'inizio; otto giorni, «non disponibile» senza chiedere;
+  - **provato al contrario**: sei mutazioni, ognuna presa dal test che deve — senza `Distinct`, e con la sovrapposizione inclusiva, cade
+    la mezzanotte; con il nominativo per principio, il nominativo intero; il fallimento come lista vuota nel client fa cadere otto casi,
+    nel lettore due; il client delle fixture senza il giorno prima, uno —; poi i file rimessi, ricompilati, 25/25;
+  - in `web/` (nessun file toccato): `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594 in 80 file, `pnpm
+    gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell su `git diff --name-status c107c98...HEAD`: nessun file del maintainer, i file del
+    nucleo con la nota nuova;
+  - **dopo la revisione e il merge di `main`** (E10b), sull'ultimo commit: `dotnet build` senza avvisi, `dotnet format` pulito sui due
+    file C# cambiati; unità **910/910**, la classe 25/25; **integrazione intera 435/435** (7,9 minuti, al primo giro; i cinque in più
+    sono di E10b); il test nuovo della fixture provato al contrario sulla prima registrazione (cade, con i due che leggono il giorno),
+    poi 25/25; la fixture nuova confrontata campo per campo con la prima (le stesse dieci prenotazioni, spostate); in `web/` le stesse
+    verifiche verdi, 594 test in 80 file, `pnpm gen:api` senza differenze; le regole di `core-guard` rifatte su `git diff
+    --name-status origin/main...HEAD`: nessun file del maintainer, i file del nucleo con la nota;
+  - **`main` fuso altre due volte su richiesta del master**, sempre con un merge e con i conflitti solo in `HANDOFF-M4.md` (risolti
+    tenendo il paragrafo di ogni fase): il 30 settembre dopo E10e (#206), i tour sulla distanza del nucleo (#211) ed E10d (#205) — build
+    senza avvisi, unità 928/928; l'integrazione non rifatta in locale lì, `build-test` e `core-guard` verdi su quell'head (`9b35418`)
+    —, e il 1° ottobre dopo E2 (#209), con lo strumento
+    dell'app che fonde la base: build senza avvisi, unità **962/962**, integrazione intera **441/441** (5,6 minuti, al primo giro), in `web/` lint, typecheck,
+    format:check e i18n:check verdi, 599 test in 81 file, `pnpm gen:api` senza differenze. Docker Desktop era spento: avviato prima del
+    giro.
+- **Non verificato**: la CI (la dice la PR); il client dentro l'hub avviato (nessun endpoint: la schermata è di E15b; il codice sì,
+  contro IVAO vero, qui sopra); IVAO giù sul serio (provato con un IVAO finto: stati, corpo che non è JSON, rete che non risponde,
+  token rifiutato), e quanto aspetta una pagina prima di «non disponibile» con la resilienza vera (fino a 30 secondi per chiamata); i
+  limiti di chiamate oltre le ~370 della misura; `pnpm e2e` ed `e2e:full`, perché nessuna schermata cambia.
+
+[r207]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/207#issuecomment-5916573282
+[ok207]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/207#issuecomment-5916738183
 
 ### E15b — Conservazione, «Duplica» per l'ATC, il giro completo di M4b
 

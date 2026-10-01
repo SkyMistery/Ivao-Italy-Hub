@@ -34,6 +34,9 @@ public static class IvaoServiceCollectionExtensions
         // The positions of the division a rating is trained on, which a module asks for a rating (M3, A2).
         services.AddScoped<IAtcPositionDirectory, AtcPositionDirectory>();
 
+        // Who has booked a position of the network in a window, which a module asks without knowing how IVAO lists them (M4, E15a).
+        services.AddScoped<IAtcBookingSource, AtcBookingSource>();
+
         // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1). Data, so one instance serves all.
         services.AddSingleton(IvaoRatings.Vocabulary);
         services.AddScoped<RefDataSyncJob>();
