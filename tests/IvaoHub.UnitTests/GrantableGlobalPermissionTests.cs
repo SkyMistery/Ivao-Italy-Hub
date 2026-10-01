@@ -66,17 +66,33 @@ public sealed class GrantableGlobalPermissionTests
         Assert.False(catalogue.IsClosedToGrants("Invented.Assign"));
     }
 
-    [Fact]
-    public void ACatalogueThatMakesPermissionsManageGrantableDoesNotStart()
+    [Theory]
+    [InlineData(CorePermissions.PermissionsManage)]
+    [InlineData(CorePermissions.ModulesManage)]
+    [InlineData(CorePermissions.AuditView)]
+    [InlineData(CorePermissions.AdminAccess)]
+    [InlineData(CorePermissions.CalendarManageKinds)]
+    [InlineData(CorePermissions.LinksEdit)]
+    public void ACatalogueThatMakesAnotherPermissionGrantableDoesNotStart(string name)
     {
-        // Whoever held the right to hand out permissions by a grant could hand it on by another (Carmine on #205: never
-        // Permissions.Manage). A change of the code that declared it so stops the start instead of opening the hub.
-        var descriptors = CorePermissions.All.Select(permission => permission.Name == CorePermissions.PermissionsManage
+        // Awards.Assign and no other (Carmine on #205, answer 2): whoever held Permissions.Manage by a grant could hand it on by
+        // another, and every other global permission comes with the staff positions. A change of the code that declared one so
+        // stops the start instead of opening the hub (the reviewer's point on #213); a second one is a decision with its note.
+        var descriptors = CorePermissions.All.Select(permission => permission.Name == name
             ? permission with { GrantableAlthoughGlobal = true }
             : permission);
 
         var refused = Assert.Throws<InvalidOperationException>(() => new PermissionCatalog(descriptors));
-        Assert.Contains(CorePermissions.PermissionsManage, refused.Message, StringComparison.Ordinal);
+        Assert.Contains(name, refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AModuleCannotMakeAGlobalPermissionOfItsOwnGrantable()
+    {
+        var refused = Assert.Throws<InvalidOperationException>(() => new PermissionCatalog(
+            [.. CorePermissions.All, new PermissionDescriptor("Sample.Read", IsGlobal: true, GrantableAlthoughGlobal: true)]));
+
+        Assert.Contains("Sample.Read", refused.Message, StringComparison.Ordinal);
     }
 
     [Theory]
