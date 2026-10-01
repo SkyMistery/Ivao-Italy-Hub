@@ -271,6 +271,50 @@ public sealed class IvaoApiClient(
         return (airports, sectors);
     }
 
+    public async Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(countryId);
+
+        // A hundred to a page, the most it gives: four pages and about a second for Italy on 30 September 2026. Only the rows
+        // of a position (members=false), each with the position it names (expand=true), which is how it gets a callsign.
+        var fras = new List<IvaoFraDto>();
+        for (var page = 1; ; page++)
+        {
+            if (page > IvaoFraReader.MaxPages)
+            {
+                logger.LogWarning("IVAO has more FRAs for {Country} than {Pages} pages; none are read.", countryId, IvaoFraReader.MaxPages);
+                return null;
+            }
+
+            var payload = await ReadOrNothingAsync(
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"/v2/fras?countryId={Uri.EscapeDataString(countryId)}&members=false&expand=true&perPage={IvaoFraReader.PageSize}&page={page}"),
+                cancellationToken);
+
+            // A page that fails after others came is no answer at all: half of the FRAs would prune the other half. So is one
+            // that is not a page: read as "none", it would clear them all.
+            if (payload is not { } root || IvaoFraReader.ReadPage(root) is not { } read)
+            {
+                return null;
+            }
+
+            var (rows, pages) = read;
+            fras.AddRange(rows);
+
+            if (page >= pages)
+            {
+                break;
+            }
+        }
+
+        // A row that moved to the next page while the pages were read comes twice; it is one FRA.
+        IReadOnlyList<IvaoFraDto> distinct = [.. fras.DistinctBy(fra => fra.Id)];
+
+        logger.LogInformation("Read {Count} FRA(s) for {Country} from IVAO.", distinct.Count, countryId);
+        return distinct;
+    }
+
     public async Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
         IvaoSessionQuery query,
         CancellationToken cancellationToken = default)

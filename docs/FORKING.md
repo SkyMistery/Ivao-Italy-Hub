@@ -170,6 +170,19 @@ positions of the airports and the sectors of the FIRs, about 13 000 rows. Which 
 division's is read the same way: the positions of the airports of your `countryId`, and the sectors
 of your FIRs.
 
+Since the events module it holds your division's **FRAs** too — the lowest rating IVAO lets connect
+to each of your positions, by day and hour or for one date — asked for your `countryId`, and only
+the rows of a position: the exceptions your staff give one member stay on IVAO. The roster of an
+event proposes nobody below them. A night IVAO does not answer keeps the ones the hub has; a night it
+answers with none — your division has lifted them all — clears them, and the message of the run says
+which of the two it was.
+
+Who comes **first** on a kind of position when an event's roster is proposed is your division's own
+rule, not IVAO's: `preferredAtcRatings` in `division.json`, a map from the kind of position (`DEL`,
+`GND`, `TWR`, `APP`, `DEP`, `ATIS`, `CTR`, `FSS`) to the short name of an ATC rating (`AS1` … `CAI`). A
+kind you leave out has nobody first, and the hub does not start on a kind or a rating it does not
+know. The example file explains it and carries a map to start from.
+
 Two more things are fetched from outside IVAO, both optional and both named in one folder of the
 core each:
 

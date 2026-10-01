@@ -1544,6 +1544,9 @@
       "CFI": "Chief Flight Instructor"
     }
   },
+  "atcPositions": {
+    "belowMinimum": "Sotto il minimo della postazione su IVAO (il suo FRA): togli l'FRA a questo controllore su IVAO."
+  },
   "news": {
     "title": "News",
     "description": "Quello che questo dipartimento annuncia sul sito della divisione.",

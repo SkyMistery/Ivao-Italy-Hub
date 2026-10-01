@@ -118,6 +118,23 @@ internal sealed class IvaoAtcPositionConfiguration : IEntityTypeConfiguration<Iv
 }
 
 /// <summary>
+/// The FRAs of the positions of the division (M4, E10c): IVAO's key, and the callsign the directory reads them by. The times
+/// are times of day and the date a day, with no zone: IVAO's, in UTC.
+/// </summary>
+internal sealed class IvaoFraConfiguration : IEntityTypeConfiguration<IvaoFra>
+{
+    public void Configure(EntityTypeBuilder<IvaoFra> builder)
+    {
+        builder.ToTable("ref_ivao_fras");
+        builder.HasKey(fra => fra.Id);
+        builder.Property(fra => fra.Id).ValueGeneratedNever();
+        builder.Property(fra => fra.Callsign).HasMaxLength(IvaoAtcPosition.MaxCallsignLength).IsRequired();
+        builder.Property(fra => fra.RawJson).HasColumnType("json").IsRequired();
+        builder.HasIndex(fra => fra.Callsign);
+    }
+}
+
+/// <summary>
 /// The outlines of the flight information regions. In <c>ref_</c> like the IVAO snapshots because it
 /// is the same kind of thing — reference data fetched from outside, never edited here — even though
 /// it does not come from IVAO (decision note of 16 September 2026).
