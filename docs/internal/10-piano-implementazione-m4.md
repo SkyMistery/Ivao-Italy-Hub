@@ -105,6 +105,7 @@ Per non ripeterle trenta volte:
 | E10c | Nucleo: rating e postazioni della divisione | E0 | il rating preferito per tipo di postazione e il minimo di una postazione; le postazioni della divisione per nominativo, con tipo e FIR |
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
+| E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -819,7 +820,119 @@ nota.
 **Test**: unit sul lettore con le fixture (pagine, pagina vuota, errore a metà); integrazione: i tour, che usano il VID, invariati.
 **Fatta quando**: le sessioni di un aeroporto in una finestra si leggono a pagine, e le misure sono nella nota.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo senza coda, da `main` a `c107c98`):
+
+- **Misurato prima del codice** (nota nuova `2026-09-30-il-tracker-senza-vid`, §2), con il token dell'applicazione e script fuori dal
+  repository che stampano solo forme, conteggi e tempi: **il token dell'applicazione basta** per ogni lettura (senza VID, per VID con
+  `connectionType`, piani e tracce di una sessione trovata senza VID); `perPage` fino a **100** (101 → 400); la finestra filtra
+  **l'inizio** della sessione, estremi compresi; un aeroporto da solo si trova in **una revisione qualunque** del piano, due insieme
+  nella **stessa**; i tipi di connessione sono `PILOT`, `ATC`, `OBS`, `FOLME`; ogni riga porta l'oggetto `user` con **nome e
+  cognome**; nessun rate limit dichiarato, il gateway rinuncia a 15 s; e **la pagina con l'ultima riga di una domanda per aeroporto
+  costa a IVAO ~10–11,5 s**, piena o no (le altre 0,2–0,6 s, per VID 65–118 ms), e dieci insieme ricevono 504. Sul codice di `main`
+  la pipeline dell'hub tagliava ogni tentativo a 10 s: una ricerca per aeroporto finiva sempre in una `TimeoutRejectedException`
+  lanciata dopo 30 s.
+- **Fatto** (scelta tecnica, nessuna domanda nuova):
+  - `IvaoSessionQuery` con il **VID facoltativo**, `ConnectionType` (`IvaoConnectionType`: `Pilot`, `Atc`, `Observer`,
+    `FollowMe`) e il **`Limit` di chi chiama** (`init`, almeno 1, predefinito 200, il tetto di prima); `PageSize` 100 e `PerPage`
+    (`min(100, Limit)`); `IvaoTrackerSessionDto.ConnectionType`, una proprietà `init`;
+  - nel lettore unico, **il giro delle pagine** (`IvaoTrackerReader.ReadPagesAsync`: dalla più recente, senza doppioni, fino
+    all'ultima pagina, a una pagina vuota o al limite; `null` se una pagina manca) e **la regola del tracker** (`Answers`); il client
+    vero chiede le pagine con `ReadOrNothingAsync`, quello delle fixture risponde senza VID da `tracker-airport-<ICAO>.json` con la
+    regola e l'ordine di IVAO;
+  - **il gestore del client dei dati aspetta 20 s per tentativo** (più dei 15 del gateway di IVAO), campiona l'interruttore su 40 s
+    (la sua regola: almeno due tentativi), e il totale resta 30 s;
+  - `tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>`, con le persone tolte (l'oggetto `user`,
+    una VID per membro, i callsign dei piloti, gli identificativi rinumerati) e un ultimo controllo che non scrive se resta una VID
+    vera o un nome; il tentativo ripetuto delle postazioni diventa di tutte e due le modalità (`getPatiently`);
+  - **le fixture** `tracker-airport-LIRF.json` e `tracker-pages-LIRF.json`: LIRF, una sera fra le 16:00 e le 17:59:59 UTC (dopo la
+    revisione spostata sul 1° gennaio 2001: qui sotto), 10 sessioni
+    di 9 membri come VID 761020–761028 (uno collegato due volte, un volo di 38 s, la torre, e un piano passato da LIPZ→LIRF a
+    LIRF→LICR); la loro sezione in `tests/fixtures/ivao/README.md`;
+  - **i test**, di unità: `IvaoTrackerWithoutVidTests` (16: le pagine registrate, la finestra vuota, la pagina vuota, l'errore a
+    metà, il limite, oltre 200, i doppioni, la regola misurata, le parole del tracker, il client delle fixture, e il client vero con
+    un IVAO recitato dal test — la domanda senza `userId` a pagine da 100, e una pagina che non arriva che dà `null`) e
+    `IvaoApiTimeoutTests` (1: il tempo per tentativo e la regola del gestore).
+- **Scostamenti** dal piano e dal design, ognuno nella nota:
+  1. ⚠️ **Il tempo per tentativo del client di IVAO passa da 10 a 20 s per tutte le chiamate** (nota §3.4): il piano non lo
+     chiedeva, ma senza nessun aeroporto si legge. Il totale resta 30 s, quindi una chiamata che non risponde costa quanto prima.
+  2. ⚠️ **Una ricerca del tracker a cui IVAO non risponde affatto ora dà `null` invece di lanciare** (nota §3.2): per i tour,
+     «tracker non disponibile» invece di un 500 — quello che il commento dell'interfaccia prometteva già.
+  3. **Le pagine da 100 anche per i tour**, e il client delle fixture ordina dalla più recente con la regola delle revisioni: per le
+     fixture dei tour il risultato non cambia (nessuna loro sessione ha aeroporti diversi fra una revisione e l'altra: controllato).
+  4. **Le fixture tolgono più della persona** di quelle dei tour — i callsign dei piloti e gli identificativi —, perché sono
+     sconosciuti (nota §3.5).
+  5. **Nessun test d'integrazione nuovo**: «i tour invariati» sono i loro test, che ci sono, verdi e non toccati; la domanda senza VID
+     del client delle fixture — lo stesso oggetto che serve il banco — è provata in unità.
+- **Trovato, e scritto per chi viene dopo** (E13a):
+  1. ⚠️ **Ogni domanda per aeroporto che trova qualcosa costa ~10,5 s, e due lente insieme ricevono 504**: il job chiede una domanda
+     alla volta, poche per giro.
+  2. ⚠️ **La finestra è sull'inizio della sessione**: per chi era già connesso all'inizio dell'evento, `FromUtc` va allargato.
+  3. ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione; una sessione che
+     torna da tutte e due si conta una volta (`Id`).
+  4. ⚠️ **Il DTO porta gli aeroporti della prima revisione**: la sessione trovata per la partenza da LIRF può dire LIPZ.
+  5. **`callsign` filtra per l'inizio del nominativo** (misurato, non usato): se un giorno servirà chi ha aperto una postazione senza
+     conoscerne il VID.
+- **Verificato, in locale** (30 settembre 2026, sul branch, prima del commit dei documenti): `dotnet build` senza avvisi; unità
+  **902/902** (17 nuove); **integrazione intera senza filtro 430/430** (6,9 minuti); `dotnet format --verify-no-changes` sui sette
+  file C#; in `web/` `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594 in 80 file, `pnpm gen:api` senza
+  differenze. Due prove al contrario: con il campionamento dell'interruttore a 30 s la lettura delle opzioni lancia
+  (`IvaoApiTimeoutTests` rosso), e con `ReadAsync` al posto di `ReadOrNothingAsync` il test della pagina che non arriva cade con
+  l'eccezione. **Contro IVAO vero**, con un programma fuori dal repository costruito su `AddIvaoIntegration()` (non un test): sul
+  codice di `main` la ricerca per aeroporto finisce in una `TimeoutRejectedException` dopo 30 s; sul codice nuovo gli arrivi di LIRF
+  in una sera (13) in 12,0 s, le partenze di EDDF in una settimana (**305**, oltre 200) in 12,6 s, con `Limit` 250 in 1,75 s, e una
+  ricerca per VID come quelle dei tour in 118 ms. Le regole di `core-guard` rifatte in PowerShell sul diff dalla base: nessun file
+  del maintainer, sette del nucleo, la nota nuova.
+- **Dopo il merge di `main`** (E10b, #208, unita mentre questa PR partiva; la PR era nata in conflitto, e la sessione di coordinamento
+  ha chiesto il merge perché la CI girasse): il conflitto era solo in `HANDOFF-M4.md`, l'intestazione e la cima di «Lo stato»,
+  tenuti tutti e due i paragrafi con E10a sopra; `10` si è unito da sé. Rifatti: build senza avvisi, unità **902/902**,
+  **integrazione intera senza filtro 435/435** (7,5 minuti, i test di E10b compresi), le regole di `core-guard` dalla base nuova
+  (uguali: sette file del nucleo, la nota). Il web non è toccato dal merge.
+- **Dopo la revisione** ([osservazioni del revisore sulla #210][r210], «approvabile dopo due correzioni»; fatte il 1° ottobre 2026):
+  1. **Le fixture su un giorno inventato**: la data vera, al secondo, con l'aeroporto, ritrovava su IVAO le sessioni vere, e con
+     loro VID e nome. Lo script sposta tutta la sera sul **1° gennaio 2001** (il tracker non ha sessioni nel 2001: misurato, 0 in
+     tutto l'anno; lo stesso giorno delle prenotazioni di E15a), ogni istante con lo stesso scarto, e toglie `rating`, `serverId` e
+     `software*`; il suo controllo finale rifiuta i campi tolti e i giorni veri. Registrata di nuovo dalla stessa finestra: stesse
+     sessioni, stesse VID, stessi identificativi. I test leggono il giorno nuovo, e uno controlla la data e i campi nel file. La data
+     vera è tolta anche da questi documenti. ⚠️ **La prima registrazione resta nella storia del branch** (il commit `92c7a84`, il suo
+     messaggio e il primo «Com'è andata» hanno la data vera, e le fixture di allora `rating`, `serverId` e il software): la storia
+     spinta non si riscrive, e come unire la #210 è una scelta del master; scritto sulla PR.
+  2. **Un tetto sul `Limit`**: `MaxLimit` = 1000, tenuto dal nucleo nell'`init`, con il suo test.
+  3. **Carmine ha detto sì** alle due domande del revisore — i 20 s per tentativo (campionamento 40, totale 30) e `null` per la
+     ricerca dei tour quando IVAO non risponde ([risposta sulla #210][ok210]) —, registrato nella nota (§6).
+  4. **`main` unito di nuovo** (E10e #206, il passaggio dei tour al calcolo del nucleo #211, E10d #205): il conflitto era solo in
+     `HANDOFF-M4.md`; l'intestazione di E10a tiene anche lo stato di `main`, e restano i paragrafi di tutte le fasi. Rifatti: build
+     senza avvisi, unità **920/920**, **integrazione intera senza filtro 437/437** (7,8 minuti), in `web/` `pnpm lint`,
+     `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594, `pnpm gen:api` senza differenze, `dotnet format` sui file
+     toccati, le regole di `core-guard` (sette file del nucleo, la nota). E15a (#207) è ancora aperta: se entra prima, si unisce di
+     nuovo.
+  5. **`main` unito ancora, dopo E2** (#209), come ha chiesto il revisore
+     ([commento sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5926812818)), con lo strumento
+     dell'app che porta il branch al passo con la base: il conflitto era di nuovo solo in `HANDOFF-M4.md`, tenuti i paragrafi di E10a
+     ed E2 e nell'intestazione lo stato di tutte e due. Rifatti: build senza avvisi, unità **954/954**, **integrazione intera senza
+     filtro 441/441** (5,6 minuti, i test di E2 compresi), in `web/` `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+     `pnpm test` 599, `pnpm gen:api` senza differenze, le regole di `core-guard` (uguali).
+  6. **`main` unito dopo E15a** (#207), che tocca gli stessi file: E10a è la seconda, e i conflitti erano suoi, come ha chiesto il
+     revisore ([commento sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5928517622)). Quattro file:
+     il commento di `ReadOrNothingAsync` in `IvaoApiClient.cs` (ora nomina le postazioni, le prenotazioni di E15a e le pagine del
+     tracker); lo script, con **tutte e due le modalità** (`--bookings` e `--sessions-at`) nel controllo degli argomenti e nell'uso; il
+     README delle fixture, con le due sezioni; l'handoff, con i paragrafi di tutte le fasi. `IIvaoApiClient.cs`,
+     `FixtureIvaoApiClient.cs` e `IvaoServiceCollectionExtensions.cs` si sono uniti da soli, con le prenotazioni accanto alla ricerca.
+     **Il giorno inventato era scritto due volte** nello script (le stesse tre righe nel blocco di E15a e nel mio): ora è uno,
+     `standIn` con `movedFrom(day)` in cima, usato da tutte e due. Rifatti: build senza avvisi, unità **979/979** (i test delle
+     prenotazioni compresi), **integrazione intera senza filtro 441/441** (5 minuti), `node --check` dello script e il rifiuto degli
+     argomenti mancanti delle due modalità, e **LIRF registrata di nuovo con lo script unito: le fixture escono identiche** byte per
+     byte (quella di E15a non si può registrare di nuovo: il suo giorno vero non è scritto da nessuna parte, e il cambio nel suo blocco è
+     la stessa formula spostata); le regole di `core-guard` (uguali). Il merge non tocca il web.
+- **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
+  di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
+  pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata
+  a cui IVAO vero non risponde affatto, con i 20 s per tentativo (in unità sì, con la pagina che non arriva); la pagina del pilota
+  dei tour quando IVAO non risponde (ora «tracker non disponibile»: provato sul client, non sulla pagina); `pnpm e2e` ed `e2e:full`,
+  perché nessuna schermata cambia — il client delle fixture, che il banco usa anche per i tour, è provato in unità con la fixture dei
+  tour (780001), non sul banco.
+
+[r210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917019730
+[ok210]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792
 
 ### E10b — Nucleo: le sessioni condivise per VID
 
@@ -1058,6 +1171,137 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
 [r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
 [v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
 [a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
+
+### E10f — Nucleo: `Awards.Assign` con un grant
+
+**Da dove viene**: non c'era in E0. L'ha trovata E10d (nota `2026-09-30-la-mail-a-chi-assegna-gli-award` §5): il piano (§9.1, riga
+Award), la nota di T4b e il design di M4 dicono che assegna l'MD, e il codice non lo permetteva, perché un grant non dava mai un permesso
+globale. **Carmine ha deciso** ([risposta 2 sulla #205][a205], alla [domanda][q205] §2) che `Awards.Assign` diventi un permesso globale
+che un grant può dare, detto sul permesso e solo per lui (mai `Permissions.Manage` né lo stato di superadmin), che la divisione lo dia
+all'MD con un `positionGrant`, e che lo faccia una PR del nucleo sua. Branch `m4/e10f-grantable-award-assign`. **PR del nucleo**, con la
+sua nota; nessuna migrazione; nessuna fase del modulo la aspetta.
+
+1. **Il campo sul permesso** (`PermissionDescriptor`) e una domanda del catalogo, che il calcolatore, la schermata dei permessi e il
+   seme dei `positionGrants` fanno al posto di «è globale?».
+2. **`Permissions.Manage` e lo stato di superadmin** restano fuori da ogni grant.
+3. **Il `positionGrant` dell'MD** in `config/division.json`, e nell'esempio.
+4. **Il caso `Awards.Assign`** di `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` cambia, apposta e con la nota.
+
+**Test**: unità: un grant a una posizione dà `Awards.Assign` e nessun altro permesso globale; `Permissions.Manage` resta rifiutato dal
+calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `division.json` apre la coda ed è fra i destinatari del riepilogo.
+**Fatta quando**: l'MD ha `Awards.Assign` dal seme della divisione, e nient'altro di globale.
+
+**Com'è andata** (1 ottobre 2026, branch `m4/e10f-grantable-award-assign`, PR #213, del nucleo senza coda, da `main` a `db9268f`):
+
+- **Fatto** (nota nuova `2026-10-01-chi-assegna-gli-award-con-un-grant`, **decisa**; la forma nel codice è una scelta tecnica, §3):
+  - **il campo `GrantableAlthoughGlobal`** su `PermissionDescriptor`, falso se non è detto, vero solo per `Awards.Assign`;
+    **`PermissionCatalog.IsClosedToGrants`**, la domanda sola che fanno il calcolatore, `GrantWriteDtoValidator` e `PositionGrantSeeder`;
+    il catalogo **non nasce** con un permesso concedibile che non sia `Awards.Assign` (`Permissions.Manage` per primo; nella prima
+    stesura solo lui: il paletto largo è venuto dalla revisione, sotto);
+  - **solo intero**: il calcolatore tiene un globale concedibile solo da un grant (o un rifiuto) senza dipartimento, senza scope e non
+    al team di un FIR; la schermata rifiuta il dipartimento con **`errors.grant.globalDepartment`** (chiave nuova, `locales/{en,it}`);
+    il seme salta uno `scope`; il team di un FIR lo rifiuta già la regola di A11a;
+  - **il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, vero per un grant di un permesso globale e per la `View`
+    che porta; `HubClaims.BuildIdentity` lo lascia fuori dai claim `dept`, e la deduplicazione preferisce la voce che porta dentro. È la
+    stessa forma di E2b (#212, decisa sulla #209), che corre insieme;
+  - **il bootstrap** porta `grantableAlthoughGlobal` accanto a `isGlobal`, e la schermata dei permessi offre `Awards.Assign`
+    (`schema.ts`); `pnpm gen:api` ha riscritto `schema.d.ts`;
+  - **la divisione**: `{ "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" }` in testa ai
+    `positionGrants` di `config/division.json` e di `config/division.example.json` (con il suo commento), e una frase in
+    `docs/FORKING.md`;
+  - **i test**, con i VID `761080–761083`: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4),
+    `web/src/features/admin/grants/grantable.test.ts` (2).
+- **Il test di Carmine**: in `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` è tolta la sola riga
+  `[InlineData(CorePermissions.AwardsAssign)]`, con un commento che rimanda alla nota; le altre quattro restano e passano, e nessun altro
+  suo test cambia. L'ha deciso lui, nella risposta 2.
+- **Scostamenti e scelte, scritti nella nota**:
+  1. **`ModuleGrants` non cambia comportamento** (il compito lo elencava fra i posti della regola): rifiuta ogni globale, anche
+     `Awards.Assign`, perché un suo grant è su un dipartimento e può essere su una riga, e un globale chiesto «in generale» varrebbe
+     ovunque. Solo un commento.
+  2. **Il dipartimento di un grant globale si rifiuta** invece di leggerlo come «ovunque»: una chiave d'errore nuova, che la risposta di
+     Carmine non nominava.
+  3. **Un rifiuto intero di `Awards.Assign` ora vale**, anche per chi lo ha per ruolo: prima un rifiuto di un globale non valeva niente
+     (per gli altri globali resta così).
+  4. **Il testo di `errors.grant.globalPermission`** («un permesso non legato a un dipartimento non si assegna a mano») non era più vero, e
+     cambia.
+  5. **I livelli dell'MD** (coordinatore e assistente) erano una mia lettura del piano 0.77: il piano dice «l'MD», non i livelli.
+     Confermati da Carmine dopo la revisione, con il rifiuto intero (3) e la `Awards.View` su ogni dipartimento (sotto).
+  6. **Il commento di `AwardQueueMailTests`** (E10d) diceva «un grant non dà mai un permesso globale»: una frase corretta, nessuna
+     riga di codice del test.
+- **Trovato leggendo**: le risorse di `Awards.Assign` (la coda, il registro) non sono `IOwnedByDepartment`, quindi l'handler e la SPA
+  chiedono solo il nome (`HasAny`, `holdsPermissionAnywhere`): un grant con un dipartimento, uno scope o un FIR si leggerebbe «ovunque».
+  È il perché del «solo intero». E `Awards.Assign` porta `Awards.View` dove è tenuto lui (la regola «un permesso dell'area porta la sua
+  `View`»): chi assegna legge ogni award, come voleva la T4b.
+- ⚠️ **Trovato da un'altra sessione, dopo la prima stesura**: la sessione di E2b mi ha scritto il 1° ottobre che un grant senza
+  dipartimento mette chi lo tiene dentro **ogni** dipartimento (`HubClaims.BuildIdentity`, i claim `dept`), quindi il coordinatore e
+  l'assistente dell'MD avrebbero visto le righe `Department` di tutti. Misurato con il test d'integrazione: `user.departments` era tutti
+  e nove. Corretto con `FromOutside` (sopra), nella forma che E2b stava scrivendo, concordata con quella sessione per non scrivere due
+  volte lo stesso campo. La prima stesura della nota non ne parlava; ora ha il suo punto (§2 punto 7, §3 punto 3-bis).
+- **Verificato, in locale** (1 ottobre 2026, una suite alla volta, sul codice definitivo, `main` a `db9268f`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui 12 file C# toccati: pulito;
+  - unità **913/913**; **integrazione intera, senza filtro, 441/441** (7,4 minuti); `AwardsAssignByGrantTests` da sola 4/4, nessuna
+    chiamata a `ivao.aero` nel suo log. La prima stesura, senza `FromOutside`, aveva dato 912/912 e 441/441;
+  - in `web/`: `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (783 chiavi) verdi; `pnpm test` **596/596** in 81 file;
+    `pnpm gen:api` senza differenze dopo la sua riscrittura;
+  - `pnpm e2e` (smoke, dietro il suo lock): **163/163** al primo giro, compresa `permissions-fir-team.spec.ts` del maintainer, che
+    costruisce l'elenco dei permessi senza il campo nuovo;
+  - `pnpm e2e:full` sul banco suo (`http://127.0.0.1:5119`, `ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit, un worker):
+    **50/50** al primo giro (10,6 minuti). Il banco ha applicato 24 grant da `division.json`, `Awards.Assign` all'MD compreso, senza
+    avvisi (letto nel log e nella tabella);
+  - le prove al contrario, sul codice della fase, rimesso e toccato dopo ognuna: senza il filtro «solo intero» cade
+    `OnlyAWholeGrantConfersIt`; senza il campo su `Awards.Assign` cadono sei test nuovi di unità, e i 27 di `EffectivePermissionsTests`
+    restano verdi; senza il rifiuto nel catalogo cade il suo test; **senza `FromOutside` in `BuildIdentity`** cadono il test di unità
+    sui claim e due d'integrazione (`user.departments` = `["MD","HQ","SOD","FOD","AOD",…]` invece di `["MD"]`);
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, 14 del nucleo, la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - **la mail vera all'MD**: servirebbe uno staff dell'MD con un indirizzo, che i test dei contatti non vogliono. Che il riepilogo vada a
+    chi ha il permesso lo prova `AwardQueueMailTests` (E10d); che l'MD lo abbia, `AwardsAssignByGrantTests`;
+  - la schermata dei permessi che offre `Awards.Assign` in un browser vero: nessuna spec la guida (le scelte le prova
+    `grantable.test.ts`, il server `AwardsAssignByGrantTests`);
+  - il seme su un'installazione già avviata (la prova): si applica al primo avvio dopo il rilascio, per la regola di T5, e qui non è
+    stato fatto girare;
+  - chi non è dentro nessun dipartimento e riceve `Awards.Assign` per nome: la lista degli award gli risponde 403 fino alla metà
+    «liste» di E2b. Oggi nessuno ce l'ha così.
+- **La CI** sulla prima cima (`360045d`): `build-test` (23,6 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore][v213], «approvable») e **le risposte di Carmine** ([sulla #213][a213], in chat al
+  master il 1° ottobre, pubblicate su sua istruzione):
+  - **sì alle tre scelte** della sessione: coordinatore e assistente dell'MD; il rifiuto intero che toglie `Awards.Assign` anche a chi lo
+    ha per ruolo; la `Awards.View` su ogni dipartimento che il grant porta. Registrate nella nota (intestazione, §3 punti 3, 3-bis e 8,
+    «Da portare nel piano») e nell'handoff;
+  - **il paletto facoltativo, preso**: il catalogo non nasce se `GrantableAlthoughGlobal` lo dice un permesso che non sia
+    `Awards.Assign` (prima solo `Permissions.Manage`). `GrantableGlobalPermissionTests` passa da 11 a 17 test (una teoria su sei
+    permessi e il globale di un modulo); senza il paletto ne cadono 7;
+  - **l'ordine di merge con E2b** (#212), scritto nella nota (§3 punto 3-bis), nell'handoff e nel corpo della PR: in E2b il segno scrive
+    anche un `!` nel cookie, quindi chi arriva seconda tiene una dichiarazione sola, somma le condizioni e rifà sul codice unito
+    `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b;
+  - **il merge di `main`** (`c441839`, con E2, #209), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10f con
+    E2 unita e il prossimo passo di E2 (E2b, poi E3a); in «Lo stato» il paragrafo di E10f in cima e quello di E2 sotto, nessuna riga
+    persa. I due file della divisione si sono uniti da soli (il grant all'MD per primo, quelli dell'ED dopo il training).
+  - **Rifatto dopo il merge**, una suite alla volta: `dotnet build` 0 avvisi; `dotnet format --verify-no-changes` sui file C# toccati di
+    nuovo: pulito; unità **953/953**; **integrazione intera, senza filtro, 445/445** (5,4 minuti); in `web/` `pnpm lint`, `typecheck`,
+    `format:check`, `i18n:check` (784 chiavi) verdi, `pnpm test` **601/601** in 82 file, `pnpm gen:api` senza differenze; `pnpm e2e`
+    **163/163**; `pnpm e2e:full` sul banco 5119 (`ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit) **51/51** al primo giro
+    (10,9 minuti, la spec in più è quella dello scheletro degli eventi); le regole di `core-guard` dalla merge base nuova (`c441839`): 23
+    file, nessuno del maintainer, 14 del nucleo, la nota nuova — passa.
+  - **E15a (#207) è entrata in `main` mentre giravano i controlli** della nuova cima, e la PR è tornata CONFLICTING: `main` (`99ab043`)
+    unito sopra, mai un rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E15a unita e il passo di E15b; in «Lo stato»
+    E10f, poi E15a, poi E2). E15a porta codice del nucleo in `Core/Ivao/`, test di unità, una fixture e lo strumento: nessun file web,
+    nessuna schermata, nessuna migrazione. Rifatti: `dotnet build` 0 avvisi; unità **978/978**; **integrazione intera, senza filtro,
+    445/445** (5,3 minuti); `pnpm gen:api` senza differenze; `core-guard` dalla merge base `99ab043`: passa. Le suite web ed e2e qui
+    sopra non sono state rifatte: il merge non tocca nessun file sotto `web/`. CI sulla cima `39d1f89`: `build-test` (24,5 minuti) e
+    `core-guard` verdi.
+  - **E10a (#210) unita, e il revisore ha chiesto di fondere `main`** ([commento sulla #213][m213]): `main` (`b88460a`) unito, mai un
+    rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E10a unita, la sua riga su E13a e la coda del master: **E10f entra
+    prima di E2b, e la riconciliazione di `FromOutside` è di E2b**; in «Lo stato» E10f, poi E10a, poi gli altri). E10a porta codice del
+    nucleo in `Core/Ivao/`, test di unità, fixture e lo strumento: nessun file web, nessuna schermata, nessuna migrazione. Rifatti:
+    `dotnet build` 0 avvisi; unità **995/995**; **integrazione intera, senza filtro, 445/445** (5,5 minuti); `pnpm gen:api` senza
+    differenze; `core-guard` dalla merge base `b88460a`: passa. Le suite web ed e2e non rifatte, per la stessa ragione.
+
+[m213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5929486224
+
+[v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
+[a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
 
 ### E11a — Postazioni e disponibilità
 

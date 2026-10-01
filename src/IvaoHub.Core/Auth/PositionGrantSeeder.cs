@@ -21,7 +21,8 @@ namespace IvaoHub.Core.Auth;
 /// had already started once.</para>
 /// <para>A seed that names a permission this installation does not know, or a global one, is skipped
 /// with a warning — the screen would refuse it too — and is not remembered, so it applies on the start
-/// that finally knows it.</para>
+/// that finally knows it. The exception is a global permission a grant may confer — who assigns the
+/// awards, which a division gives to a position here (M4, E10f) — and only with no <c>scope</c>.</para>
 /// </summary>
 public sealed class PositionGrantSeeder(
     HubDbContext database,
@@ -49,10 +50,22 @@ public sealed class PositionGrantSeeder(
                 continue;
             }
 
-            if (!catalogue.IsKnown(seed.Permission) || catalogue.IsGlobal(seed.Permission))
+            if (!catalogue.IsKnown(seed.Permission) || catalogue.IsClosedToGrants(seed.Permission))
             {
                 logger.LogWarning(
                     "division.json: the grant of {Permission} to {Department} {Levels} is not applied: the permission is unknown or global.",
+                    seed.Permission,
+                    Subject(seed),
+                    string.Join(", ", seed.Levels));
+                continue;
+            }
+
+            // A global permission a grant may confer is held everywhere or not at all (M4, E10f): a scope would look like a
+            // limit nothing applies. The screen refuses it too, and it is not remembered either, so the file can be put right.
+            if (catalogue.IsGlobal(seed.Permission) && seed.Scope is not null)
+            {
+                logger.LogWarning(
+                    "division.json: the grant of {Permission} to {Department} {Levels} is not applied: a global permission has no scope.",
                     seed.Permission,
                     Subject(seed),
                     string.Join(", ", seed.Levels));
