@@ -126,8 +126,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - **Che cosa c'è** (nota `decisions/2026-09-30-il-rating-preferito-e-il-minimo-di-una-postazione.md`, **decisa da Carmine**, in chat
   al master e pubblicata su sua istruzione [sulla #204](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164)),
   tutto in `src/IvaoHub.Core/Ivao/`:
-  - **il rating preferito** per un tipo di postazione: `RatingVocabulary.PreferredFor(tipo)` e `Rating.PreferredOn`. I dati sono di
-    Carmine: **AS3** su `DEL`; **ADC** su `FSS`, `GND`, `TWR`; **APC** su `APP`, `DEP`; **ACC** su `CTR`; **nessuno** su `ATIS`.
+  - **il rating preferito** per un tipo di postazione: **la regola è della divisione**, `config/division.json → preferredAtcRatings`
+    (tipo di postazione → sigla del rating ATC; [seconda risposta di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926811688)),
+    controllata all'avvio (`PreferredAtcRatingsValidator`: un tipo o un rating sconosciuti fermano l'hub con un messaggio); il
+    nucleo risponde `RatingVocabulary.PreferredFor(tipo)` dal vocabolario che registra (`IvaoRatings.WithPreferred`). I valori di IT
+    sono di Carmine: **AS3** su `DEL`; **ADC** su `FSS`, `GND`, `TWR`; **APC** su `APP`, `DEP`; **ACC** su `CTR`; **nessuno** su `ATIS`.
     «Ha il preferito» è `IsAtLeast(Atc, rating, PreferredFor(tipo).Number)`; `null` = nessuno è preferito su quel tipo;
   - **le postazioni della divisione**: `IAtcPositionDirectory.OfDivisionAsync()` (tutte, militari e ATIS compresi) e
     `FindAsync(nominativi)` (a lotti, per nominativo in qualunque maiuscola, come `IAirportDirectory.FindAsync`); **`AtcPositionDto`
@@ -136,12 +139,14 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `Over(da, a)` dà il **numero di IVAO** del rating più alto fra gli FRA attivi che valgono in qualche momento del turno (giorno e
     notte, feriali e fine settimana, una data, oltre la mezzanotte); `null` = nessun minimo. Gli FRA stanno in **`ref_ivao_fras`**
     (migrazione del nucleo `AddIvaoFras`, dopo quella di E10d), rinfrescati **ogni notte** con i dati di riferimento, solo le righe per
-    postazione (**nessuna persona**), potati solo su una risposta piena; il conteggio è nel messaggio del giro, non nel suo esito;
+    postazione (**nessuna persona**); **senza risposta di IVAO restano, con una risposta vuota se ne vanno** (la divisione li ha tolti
+    tutti: il rilievo 2 del revisore); il conteggio, o «nessuna risposta», è nel messaggio del giro, non nel suo esito;
   - **le parole dell'avviso** sotto il minimo — togli l'FRA su IVAO per quel controllore —: la chiave del nucleo
     `atcPositions.belowMinimum` (`AtcPositionMinimum.BelowMinimumKey`), perché nominano IVAO;
   - **le misure**: `tools/record-ivao-fixtures.mjs --fras <paese> [ICAO…]`, e la fixture `tests/fixtures/ivao/fras-IT.json` (94 FRA
     delle postazioni del banco, 30 settembre 2026);
-  - **i test**: `RatingVocabularyTests`, `IvaoFraReaderTests` e `AtcPositionMinimumTests` (unità), `AtcPositionTests` (integrazione).
+  - **i test**: `RatingVocabularyTests`, `IvaoFraReaderTests`, `AtcPositionMinimumTests` e `PreferredAtcRatingsValidatorTests`
+    (unità), `AtcPositionTests` (integrazione).
 - **Che cosa deve sapere la fase dopo**:
   - **E11a**: la scelta delle postazioni con `OfDivisionAsync()`, il controllo del nominativo e la copia del FIR con `FindAsync`; il
     tipo non va salvato sulla riga (lo sa la directory).
@@ -150,6 +155,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     = `PreferredFor(position.Type)`. **La correzione a mano può andare sotto l'FRA**: è un **avviso**, mai un rifiuto, con le parole di
     `atcPositions.belowMinimum` (decisione di Carmine sulla #204); lo stesso per la cessione di un turno (E12).
   - ⚠️ **Il minimo è un numero di IVAO** (`int?`), non un `Rating`: confrontalo con `IsAtLeast`, mai con `>=`.
+  - ⚠️ **`IvaoRatings.Vocabulary` (statico) è la scala di IVAO da sola**, senza la regola della divisione: `PreferredFor` vi risponde
+    sempre `null`. Il modulo prende il `RatingVocabulary` dal contenitore, che la porta; i suoi test costruiscono un vocabolario di
+    prova con la loro mappa (`new RatingVocabulary(ratings, preferred)`).
   - ⚠️ **Gli orari degli FRA si leggono UTC**, come ogni orario di IVAO: non verificato (nessuna fonte lo dice).
   - ⚠️ **Le eccezioni per membro restano su IVAO**: un controllore che lo staff ha già sbloccato su IVAO resta «sotto il minimo» per
     l'hub, e l'avviso compare lo stesso.

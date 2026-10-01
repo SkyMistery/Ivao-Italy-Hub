@@ -839,9 +839,38 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
   dice); come IVAO combina due FRA che valgono insieme (il più alto, deciso da Carmine); il giro notturno delle 03:15 con IVAO vero
   (provati il client delle fixture, la lettura a pagine con un IVAO finto e la sincronizzazione chiamata dai test); una divisione con
   più di 5000 FRA; `pnpm e2e` ed `e2e:full`, perché nessuna schermata cambia.
+- **Dopo la revisione** (1° ottobre 2026; [rilievi del revisore][r204], «approvabile tranne il punto 1, che va al maintainer»):
+  1. **I rating preferiti sono la regola di una divisione, scritta nel vocabolario di IVAO del nucleo** (il rilievo 1). **Deciso da
+     Carmine**, in chat al master che l'ha pubblicato su sua istruzione ([seconda risposta][ok204b]): **vanno in `config/division.json`**.
+     Fatto: la chiave `preferredAtcRatings` (tipo di postazione → sigla del rating ATC, `DivisionOptions.PreferredAtcRatings`), con i
+     valori di Carmine nel file di IT e la spiegazione per chi forka nel file d'esempio; **`PreferredAtcRatingsValidator`** in
+     `Core/Ivao/` ferma l'avvio su un tipo che IVAO non usa (`IvaoAtcPosition.Kinds`, i suoi otto tipi) o su un rating che non è della
+     scala ATC, con il file, la chiave e i valori possibili; il vocabolario registrato è la scala di IVAO con la mappa
+     (`IvaoRatings.WithPreferred`), e risponde `PreferredFor` come prima; `Rating.PreferredOn` non c'è più. `division.xx.json` non
+     cambia: il fork «XX» non mette nessuno per primo.
+  2. **«IVAO non ha risposto» e «la divisione non ha FRA» erano la stessa lista vuota** (il rilievo 2, basso): una divisione che
+     toglie tutti i suoi FRA li avrebbe tenuti per sempre. **Corretto**: `GetFrasAsync` risponde `null` quando IVAO non risponde (una
+     pagina fallita, una risposta che non è una pagina, oltre 50 pagine; anche il corpo predefinito dell'interfaccia e il client delle
+     fixture senza il file di un paese), e una lista vuota quando la divisione non ne ha; la sincronizzazione lascia la tabella su
+     `null` e la svuota sulla lista vuota, e il messaggio del giro dice quale dei due. `docs/FORKING.md` lo dice a chi forka.
+  3. **`main` è entrato di nuovo con un merge** (E2, #209): il conflitto su `HANDOFF-M4.md` risolto tenendo i paragrafi di tutte e due le
+     fasi, E10c sopra.
+  - **I test**: `PreferredAtcRatingsValidatorTests` (unità, nuovo: i tre file della divisione passano; un tipo o un rating sconosciuti
+    fermano l'avvio, tutti gli errori insieme); `RatingVocabularyTests` legge la regola dal file di IT e prova che la scala di IVAO da
+    sola non mette nessuno per primo, e che i tipi del nucleo sono quelli delle fixture del mondo; `IvaoFraReaderTests` con la
+    risposta vuota vera e la risposta che non è una pagina; `AtcPositionTests` con la divisione che toglie tutti i suoi FRA, il
+    vocabolario dell'hub che dice la regola di IT e un host con una mappa sbagliata che non parte.
+  - **Verificato, in locale, sul merge con E2**: `dotnet build` senza avvisi; unità **1035/1035**; **integrazione intera senza filtro
+    451/451** (314 s); `AtcPositionTests` da sola 16/16; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (784 chiavi) verdi; `pnpm
+    test` 599 in 81 file; `pnpm gen:api` senza differenze; `dotnet format --verify-no-changes` sui file C# toccati; le regole di
+    `core-guard` in PowerShell dalla base del merge.
+  - **Non verificato**, in più: un avvio vero di un'installazione con una mappa sbagliata (provato con un host dei test che riceve la
+    mappa per la stessa via del file).
 
 [q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
 [ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
+[r204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926667625
+[ok204b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926811688
 
 ### E10d — Nucleo: la mail a chi assegna gli award
 
