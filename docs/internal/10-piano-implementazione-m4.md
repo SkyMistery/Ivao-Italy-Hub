@@ -605,13 +605,24 @@ nell'ED.
      `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` **601 in 82 file**, `pnpm gen:api` senza differenze; `pnpm
      e2e` **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (10,5 minuti) sul banco 5120
      ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge `ee43ec2`:
-     PASS, nessun file del maintainer, sette del nucleo, la nota nuova.
+     PASS, nessun file del maintainer, sette del nucleo, la nota nuova. La CI di `909fe36` verde, e il revisore ha controllato la
+     riconciliazione ([«approvable»][a212]).
+  6. **`main` unito ancora dopo E10c** (#204, `ca80563`; [la richiesta][e212]: la #212 è la prossima nella coda, poi la #214): un merge
+     (`1b9f9f1`), conflitto solo in `HANDOFF-M4.md` (il blocco di E2b sopra quello di E10c). `config/division.example.json`,
+     `docs/FORKING.md` e le lingue del nucleo si sono uniti da soli: i rating preferiti e gli FRA di E10c stanno accanto alle righe di E2b,
+     senza toccarle; `config/division.json` E2b non lo tocca. **Verificato sul codice unito**: `dotnet build` senza avvisi; unità
+     **1101/1101**; **integrazione intera senza filtro 459/459** (7 minuti); `pnpm i18n:check` verde e `pnpm gen:api` senza differenze,
+     nessun file web portato dal merge; `pnpm e2e` **163/163** al primo giro; **`pnpm e2e:full` 51/51 al primo giro** (10,8 minuti)
+     sul banco 5120 ricreato; le regole di `core-guard` dalla base di
+     merge `ca80563`: PASS, nessun file del maintainer, sette del nucleo, la nota nuova.
 
 [ok209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
 [r212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926652025
 [m212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926813269
 [w212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5929486987
 [c212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5930060422
+[a212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5931873565
+[e212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5932263068
 
 ### E3a — L'evento nello staff
 
