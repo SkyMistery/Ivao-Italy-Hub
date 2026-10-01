@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -26,6 +27,8 @@ namespace IvaoHub.IntegrationTests;
 /// row of it in another list, no row of it the global query filter keeps to the department, and none in the search;</item>
 /// <item>granted a read permission on every department, they read the rows of each in the list that reads with it, and still
 /// nothing else of the others; a deny of it on one department, next to that grant, takes that department's rows away;</item>
+/// <item>the View a grant of <c>Awards.Assign</c> brings (E10f) — <c>Awards.View@!</c> in the cookie — opens every award of every
+/// department to a position inside no department;</item>
 /// <item>a grant to a person on the same department still lets them in, as decided on 6 September (note
 /// 2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento).</item>
 /// </list>
@@ -39,8 +42,9 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
     private const int CollaboratorVid = 761091;
     private const int GrantedByNameVid = 761092;
     private const int EverywhereVid = 761093;
+    private const int HeadquartersVid = 761094;
 
-    private static readonly int[] SeededVids = [CollaboratorVid, GrantedByNameVid, EverywhereVid];
+    private static readonly int[] SeededVids = [CollaboratorVid, GrantedByNameVid, EverywhereVid, HeadquartersVid];
 
     /// <summary>
     /// What every row and grant written here says, so that one left behind by an interrupted run is found and taken away. A
@@ -48,6 +52,7 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
     /// </summary>
     private const string Stem = "evt-test-e2b";
 
+    private readonly List<long> _awards = [];
     private HubWebApplicationFactory _factory = null!;
 
     public async ValueTask InitializeAsync()
@@ -161,6 +166,42 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
     }
 
     [Fact]
+    public async Task TheViewAGrantOfAwardsAssignBringsOpensEveryAwardToWhoeverIsInNoDepartment()
+    {
+        // E10f's grant of Awards.Assign brings Awards.View, both from outside and on no department: Awards.Assign@! and
+        // Awards.View@! in the cookie, since E2b writes the mark (the reviewer's question on #212). Whoever holds them inside no
+        // department — a position of IVAO's headquarters, which owns none — reads every row of the catalogue all the same: the
+        // list adds every department for a read permission held from outside on all of them, and the catalogue is shared for
+        // reading, which the single handler answers with "held at all".
+        var token = TestContext.Current.CancellationToken;
+        var stem = $"{Stem} award {Guid.NewGuid():N}"[..36];
+
+        var special = await SeedAwardAsync(Department.SOD, $"{stem} special", token);
+        var flight = await SeedAwardAsync(Department.FOD, $"{stem} flight", token);
+
+        await SeedMemberAsync(HeadquartersVid, "HQ-EC", token);
+        await GrantToMemberAsync(HeadquartersVid, CorePermissions.AwardsAssign, department: null, token);
+
+        using var headquarters = await SignedInAsync(HeadquartersVid, token);
+
+        // Inside no department, with both permissions held on every one.
+        var me = await headquarters.GetFromJsonAsync<JsonElement>("/api/me", token);
+        Assert.Empty(Strings(me.GetProperty("user").GetProperty("departments")));
+        Assert.Contains(
+            me.GetProperty("permissions").EnumerateArray(),
+            held => held.GetProperty("name").GetString() == CorePermissions.AwardsView
+                && held.GetProperty("department").ValueKind == JsonValueKind.Null);
+
+        // Every award of every department in the list — on main before E2b a 403, as E10f's note says — and one of them row by row.
+        var listed = await AwardsAsync(headquarters, stem, token);
+        Assert.Contains(special, listed);
+        Assert.Contains(flight, listed);
+
+        using var read = await headquarters.GetAsync(new Uri($"{AwardEndpoints.AwardsPattern}/{flight}", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+    }
+
+    [Fact]
     public async Task AGrantToAPersonOnTheSameDepartmentStillLetsThemIn()
     {
         var token = TestContext.Current.CancellationToken;
@@ -229,6 +270,19 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
         return link.Id;
     }
 
+    /// <summary>An award of the catalogue, written by <paramref name="department"/>, as the installation writes it.</summary>
+    private async Task<long> SeedAwardAsync(Department department, string name, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var award = new Award { OwnerDepartment = department, Name = name.L(name), IsActive = true };
+        database.Awards.Add(award);
+        await database.SaveChangesAsync(cancellationToken);
+        _awards.Add(award.Id);
+        return award.Id;
+    }
+
     // ---- people and grants --------------------------------------------------------------------------
 
     /// <summary>A member of hub_users with one position of this division, as a sign in would have left them. No address.</summary>
@@ -287,7 +341,7 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
             },
             cancellationToken);
 
-    private Task GrantToMemberAsync(int vid, string permission, Department department, CancellationToken cancellationToken) =>
+    private Task GrantToMemberAsync(int vid, string permission, Department? department, CancellationToken cancellationToken) =>
         WriteGrantAsync(
             new UserGrant
             {
@@ -332,6 +386,15 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
         return [.. page.GetProperty("items").EnumerateArray().Select(link => link.GetProperty("id").GetInt64())];
     }
 
+    /// <summary>The identifiers of the award catalogue's generated list, the ones whose name says the stem.</summary>
+    private static async Task<long[]> AwardsAsync(HttpClient client, string stem, CancellationToken cancellationToken)
+    {
+        var page = await client.GetFromJsonAsync<JsonElement>(
+            $"{AwardEndpoints.AwardsPattern}?q={Uri.EscapeDataString(stem)}&pageSize=100",
+            cancellationToken);
+        return [.. page.GetProperty("items").EnumerateArray().Select(award => award.GetProperty("id").GetInt64())];
+    }
+
     /// <summary>The test module's rows through the global query filter, as a page of the module reads them.</summary>
     private static async Task<long[]> VisibleAsync(HttpClient client, CancellationToken cancellationToken) =>
         await client.GetFromJsonAsync<long[]>(SampleModule.VisiblePattern, cancellationToken) ?? [];
@@ -367,6 +430,11 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
 
         await sample.Items.IgnoreQueryFilters()
             .Where(item => item.Title.StartsWith(Stem))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        // Nobody received them, so they go whole; the suite's container is new at every run, so an interrupted run leaves none.
+        await hub.Awards.IgnoreQueryFilters()
+            .Where(award => _awards.Contains(award.Id))
             .ExecuteDeleteAsync(cancellationToken);
     }
 }
