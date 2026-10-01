@@ -6,14 +6,16 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase E15a** (nucleo: le prenotazioni ATC della rete), sul branch
-`m4/e15a-network-atc-bookings`, **PR #207** verso `main`, del nucleo, senza coda. Nello stesso giorno corrono, ognuna nella sua
-sessione, **E2** (lo scheletro) e le altre fasi del nucleo di M4b (**E10a**, **E10c**); sono unite E1 (#200), E10b (#208), E10e (#206),
-E10d (#205) e il passaggio dei tour al calcolo del nucleo (#211).
-**Il prossimo passo**: **E2**, poi **E3a** (con E1 ed E2 unite). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la
-presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli
-award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete. **La fase del nucleo che rende
-`Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E15a** (nucleo: le prenotazioni ATC della rete), sul branch
+`m4/e15a-network-atc-bookings`, **PR #207** verso `main`, del nucleo, senza coda, con `main` unito dopo E10b (#208), E10e (#206), i tour
+sulla distanza del nucleo (#211), E10d (#205) ed E2 (#209). È unita anche E1 (#200); corrono, ognuna nella sua sessione, **E2b**,
+**E10a** ed **E10c**.
+**Il prossimo passo**: **E2b** (nucleo: chi collabora sugli eventi riceve il permesso, non il dipartimento), decisa da Carmine sulla
+#209 — la (b) della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi` —, la cui sessione la prepara la sessione che coordina;
+dopo di lei i nove grant di AOD, FOD e MD, e **E3a** (con E1, E2 ed E2b unite). **E11b** ed **E13a** trovano in E10b la storia di un
+controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il
+riepilogo a chi assegna gli award, e non chiama niente; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete. **La fase del
+nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine sulla #205) la prepara la sessione che coordina.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -161,6 +163,53 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   prenotazione registrata ritrova la persona** con l'API di IVAO dal suo `id`, e anche dal suo giorno con il nominativo (rilievo del
   revisore): chi registra altre prenotazioni lo fa con lo strumento, che toglie tutti e due. La prima registrazione, con quei dati, resta
   nella storia del branch (`fbb11ac`): fuori da `main` la tiene solo un merge a squash, che decide il maintainer.
+
+### Che cosa ha lasciato E2 (30 settembre – 1 ottobre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
+
+- **Che cosa c'è** (il dettaglio in `10`, E2, «Com'è andata»):
+  - **Il modulo** `src/IvaoHub.Modules.Events/` (referenzia solo il nucleo), registrato **per primo** in `IvaoHub.Web/Modules.cs` e in
+    `web/src/modules/index.ts` (eventi, tour, training: la sezione Eventi per prima nel back office, **confermata da Carmine**
+    [sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)); `EventsDbContext` con
+    `__EFMigrationsHistory_events` e la migrazione
+    **`Initial`** (`20260930170049_Initial`), che **non si tocca più**: `evt_events` **intera** e `evt_event_airports`.
+  - **Le entità** alla radice del progetto: `Event` (maschera, `IVisible`, `IPublishable`, audit, `[Audited]`, scope
+    `events:event:{id}` con `Event.ScopeOf`) ed `EventAirport` (maschera, audit, lo scope del suo evento). Nessun endpoint, nessuna
+    proiezione, nessun validatore del CRUD ancora.
+  - **Il catalogo** `EventsPermissions` (12 permessi, 5 aree, `DeniedToStakeholder` su `EventAtc.Edit` ed `EventReports.Edit`) e **i
+    grant** dell'ED (11) e del team di un FIR (2, su `EventAtc.*`) nei due file della divisione.
+  - **Le impostazioni** `EventsSettings` (`Settings/EventsSettings.cs`: `kindPresets`, `bookingGapMinutes`, `pilotRetentionMonths`,
+    `reminderLeadHours`) con i validatori, e la schermata generata `/staff/events/settings` (`web/src/modules/events/`), l'unica voce
+    della sezione «Eventi» del back office.
+  - **Il segmento riservato** `events`; le parole `events` in `web/src/modules/events/locales/` (e le copie in `locales/`).
+  - **I test**: `EventsArchitectureTests` ed `EventsSettingsTests` (unità), `EventsSkeletonTests` ed `EventsXxDivisionTests`
+    (integrazione, VID 761001–761005), `web/src/modules/events/schemas.test.ts`, `web/e2e/full/events-skeleton.spec.ts` (il personaggio
+    dell'ED, `?as=events`); le cinque righe `evt_` in `ErasureTests`, con la nota breve
+    `2026-09-30-le-colonne-degli-eventi-in-erasuretests`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **I grant di AOD, FOD e MD non ci sono, e aspettano E2b.** Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello che
+    vede (`HubClaims.BuildIdentity`), e i nove del design sarebbero i primi grant a una posizione fra due dipartimenti: con loro la suite
+    d'integrazione intera ha tre rossi del maintainer (`SeveralDepartmentsTests` ×2, `SearchEndpointTests`). **Carmine ha deciso la (b)**
+    della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`
+    ([sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)): un grant a una posizione su un
+    dipartimento che non è il suo dà il permesso, non il dipartimento, in una fase del nucleo a sé, **E2b**, prima di E3a; i nove si
+    seminano dopo di lei. `EventsArchitectureTests` li tiene fuori dai due file finché la tabella del design non li riprende: **un grant
+    del seme applicato non si toglie più togliendolo dal file**. E3a, che prova FOD e AOD sull'evento, aspetta E2b.
+  - ⚠️ **I test d'integrazione degli eventi avviano l'host con `useIvaoFixtures: true`** (l'avviso di E10b qui sotto): senza, un host
+    chiede un token a IVAO quando `ref_ivao_centers` è vuota. `EventsSkeletonTests` si riprende alla fine di ogni test i grant e le
+    posizioni che dà ai suoi VID; i membri restano, come in ogni classe.
+  - **Le colonne di `evt_events`**: `starts_at_utc` ed `ends_at_utc` obbligatorie, `visible_from_utc` e `booking_opens_at_utc`
+    facoltative, `shift_minutes` e i tre limiti vuoti = l'impostazione, `visibility` è una colonna (E3a la chiude a `Public` e `Members`
+    nel validatore), `kind` lunga come una chiave del calendario (32). Le regole di «Pubblica» sono di E3b.
+  - **E3a** scrive l'interfaccia delle righe figlie dell'evento (come `ITourChild`) con `CrudOptions.BeforeAuthorize`, e aggiunge
+    `AddValidatorsFromAssemblyContaining` con la prima risorsa del CRUD (come A5 per il training): E2 non li ha.
+  - **Le due verifiche del design §6.3** non chiedono il nucleo: l'intestazione per lo staff dei FIR da un endpoint dell'area ATC con
+    `EventAtc.View` senza risorsa, le disponibilità per postazione con l'unico handler chiesto sulla postazione (`10`, E2, «Le due
+    verifiche»). Le scrive in codice E11a.
+  - ⚠️ **Fino a E11a ogni avvio scrive due avvisi** sui grant del team di un FIR («not applied: no row of its area says its FIR»): è
+    voluto; il primo avvio con una riga `IHasFir` dell'area `EventAtc` li applica.
+  - **La schermata delle impostazioni** offre, accanto ai tipi del calendario, un tipo che un preset nomina e il calendario non ha più
+    (con la sua chiave come parola), perché la riga si veda e si tolga: il salvataggio la rifiuta sulla riga.
+- ⚠️ **Nessuna mappa di base per `pnpm e2e:full`** in nessun worktree (30 settembre): le spec la tollerano, come in CI.
 
 ### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
 
