@@ -1174,7 +1174,16 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
     E10f, poi E15a, poi E2). E15a porta codice del nucleo in `Core/Ivao/`, test di unità, una fixture e lo strumento: nessun file web,
     nessuna schermata, nessuna migrazione. Rifatti: `dotnet build` 0 avvisi; unità **978/978**; **integrazione intera, senza filtro,
     445/445** (5,3 minuti); `pnpm gen:api` senza differenze; `core-guard` dalla merge base `99ab043`: passa. Le suite web ed e2e qui
-    sopra non sono state rifatte: il merge non tocca nessun file sotto `web/`.
+    sopra non sono state rifatte: il merge non tocca nessun file sotto `web/`. CI sulla cima `39d1f89`: `build-test` (24,5 minuti) e
+    `core-guard` verdi.
+  - **E10a (#210) unita, e il revisore ha chiesto di fondere `main`** ([commento sulla #213][m213]): `main` (`b88460a`) unito, mai un
+    rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E10a unita, la sua riga su E13a e la coda del master: **E10f entra
+    prima di E2b, e la riconciliazione di `FromOutside` è di E2b**; in «Lo stato» E10f, poi E10a, poi gli altri). E10a porta codice del
+    nucleo in `Core/Ivao/`, test di unità, fixture e lo strumento: nessun file web, nessuna schermata, nessuna migrazione. Rifatti:
+    `dotnet build` 0 avvisi; unità **995/995**; **integrazione intera, senza filtro, 445/445** (5,5 minuti); `pnpm gen:api` senza
+    differenze; `core-guard` dalla merge base `b88460a`: passa. Le suite web ed e2e non rifatte, per la stessa ragione.
+
+[m213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5929486224
 
 [v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
 [a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
