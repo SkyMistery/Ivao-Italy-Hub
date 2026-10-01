@@ -22,24 +22,17 @@ public sealed record Rating(RatingKind Kind, int Number, string ShortName, bool 
 {
     /// <summary>The key of its name in the language files of the core: <c>ratings.Atc.ADC</c>.</summary>
     public string NameKey => $"ratings.{Kind}.{ShortName}";
-
-    /// <summary>
-    /// The kinds of ATC position, as IVAO spells them in <c>position</c>, on which a controller holding at least this rating
-    /// comes first when a roster is proposed (M4, E10c; design M4 §1.13, §4.3): an ADC on a tower, an AS3 on a delivery.
-    /// Another question than <see cref="PositionType"/>, the one kind a rating is trained on. Empty for a rating preferred on
-    /// none, and for every pilot's.
-    /// </summary>
-    public IReadOnlyList<string> PreferredOn { get; init; } = [];
 }
 
 /// <summary>
 /// The ratings and the rules that go with them, as questions a module asks instead of writing numbers of its own: which
 /// rating comes next and whether it is trained, whether one rating is at least another, and — through
 /// <see cref="Rating.PositionType"/> — on which positions a rating is trained (design M3 §1.7, §8 n.4); and which rating
-/// comes first on a kind of position (<see cref="PreferredFor"/>, design M4 §1.13).
-/// <para>Built from data: the core registers IVAO's (<see cref="IvaoRatings"/>), and a module's tests build one of their
-/// own with the same class, so the module is proved on ratings that are not IVAO's (design M3 §10). The order of a ladder
-/// is the order of the list it is given, lowest first — never the numbers, which merely happen to agree today.</para>
+/// comes first on a kind of position (<see cref="PreferredFor"/>, design M4 §1.13), which is the division's rule.
+/// <para>Built from data: the core registers IVAO's (<see cref="IvaoRatings"/>) with the division's preferred ratings, and a
+/// module's tests build one of their own with the same class, so the module is proved on ratings that are not IVAO's (design
+/// M3 §10). The order of a ladder is the order of the list it is given, lowest first — never the numbers, which merely
+/// happen to agree today.</para>
 /// </summary>
 public sealed class RatingVocabulary
 {
@@ -47,7 +40,13 @@ public sealed class RatingVocabulary
 
     private readonly Dictionary<string, Rating> _preferred = new(StringComparer.OrdinalIgnoreCase);
 
-    public RatingVocabulary(IEnumerable<Rating> ratings)
+    /// <param name="ratings">The ladders, each lowest first.</param>
+    /// <param name="preferred">
+    /// Who comes first on a kind of position: the short name of the ATC rating a controller holds at least, by the kind as the
+    /// network spells it — the division's rule, <c>division.json → preferredAtcRatings</c> (M4, E10c). A kind left out has
+    /// nobody first; a rating this vocabulary does not have is refused.
+    /// </param>
+    public RatingVocabulary(IEnumerable<Rating> ratings, IReadOnlyDictionary<string, string>? preferred = null)
     {
         ArgumentNullException.ThrowIfNull(ratings);
 
@@ -65,16 +64,16 @@ public sealed class RatingVocabulary
             }
         }
 
-        // The same for a kind of position: preferred on two ratings, "who comes first there?" would have two answers.
-        foreach (var rating in Ladder(RatingKind.Atc))
+        // A rating that is not on the ladder would put nobody first on its kind, silently: it is refused, as the start refuses
+        // it in division.json with a message for the person who wrote it (PreferredAtcRatingsValidator).
+        foreach (var (positionType, shortName) in preferred ?? new Dictionary<string, string>())
         {
-            foreach (var positionType in rating.PreferredOn)
-            {
-                if (!_preferred.TryAdd(positionType, rating))
-                {
-                    throw new ArgumentException($"The kind of position {positionType} is preferred on two ratings.", nameof(ratings));
-                }
-            }
+            var rating = Named(RatingKind.Atc, shortName)
+                ?? throw new ArgumentException(
+                    $"The preferred rating of the kind of position {positionType} ({shortName}) is no ATC rating of this vocabulary.",
+                    nameof(preferred));
+
+            _preferred[positionType.Trim()] = rating;
         }
     }
 
@@ -84,6 +83,12 @@ public sealed class RatingVocabulary
     /// <summary>The rating a number stands for; null for no number, and for one this vocabulary does not know.</summary>
     public Rating? Find(RatingKind kind, int? number) =>
         number is null ? null : Ladder(kind).FirstOrDefault(rating => rating.Number == number);
+
+    /// <summary>The rating a short name stands for, in any case; null for none, and for one this vocabulary does not know.</summary>
+    public Rating? Named(RatingKind kind, string? shortName) =>
+        string.IsNullOrWhiteSpace(shortName)
+            ? null
+            : Ladder(kind).FirstOrDefault(rating => string.Equals(rating.ShortName, shortName.Trim(), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// The rating a member with <paramref name="current"/> is trained for next: the one just above it, if it has a practical
@@ -118,9 +123,9 @@ public sealed class RatingVocabulary
 
     /// <summary>
     /// The ATC rating a controller holds at least to come first on a position of <paramref name="positionType"/> when a
-    /// roster is proposed (design M4 §4.3): an ADC on a tower, and so a SEC too (<see cref="IsAtLeast"/>). Null for a kind no
-    /// rating is preferred on, and for one this vocabulary does not know: there nobody comes first for the rating, and the
-    /// roster's other rules decide. The kind as IVAO spells it, in any case.
+    /// roster is proposed (design M4 §4.3), as the division says it: an ADC on a tower, and so a SEC too
+    /// (<see cref="IsAtLeast"/>). Null for a kind the division names no rating for, and for one it does not know: there nobody
+    /// comes first for the rating, and the roster's other rules decide. The kind as IVAO spells it, in any case.
     /// </summary>
     public Rating? PreferredFor(string? positionType) =>
         positionType is null ? null : _preferred.GetValueOrDefault(positionType.Trim());
@@ -145,24 +150,33 @@ public sealed class RatingVocabulary
 /// endpoint that lists them. The ratings a division trains in practice — ADC, APC, ACC; PP, SPP, CP — and the positions it
 /// trains them on are how IVAO's training works today, confirmed by the staff of a training department; no position IVAO
 /// publishes carries a rating (<c>/v2/ATCPositions/all</c> and <c>/v2/subcenters/all</c>, the same day).
-/// <para>The kinds each rating is preferred on (M4, E10c, note of 30 September 2026) are no rule IVAO publishes: they are
-/// the rule of the events department, as the maintainer decided it — AS3 on the deliveries; ADC on the grounds, the towers
-/// and the flight service stations; APC on the approaches and the departures; ACC on the sectors; nobody on an ATIS. The
-/// minimum of a position is not here: it is IVAO's FRA of that position, which changes with the hour and which
+/// <para>Who comes first on a kind of position is not here: it is no rule IVAO publishes but the division's
+/// (<c>division.json → preferredAtcRatings</c>, M4, E10c, note of 30 September 2026, decided by the maintainer on #204), and the
+/// core joins it to these ladders when it registers the vocabulary (<see cref="WithPreferred"/>). Nor is the minimum of a
+/// position: it is IVAO's FRA of that position, which changes with the hour and which
 /// <see cref="IAtcPositionDirectory.MinimaAsync"/> answers.</para>
 /// <para>This is IVAO knowledge, so it lives in the IVAO perimeter of the core (plan §4.2) and a module never repeats it:
 /// the names are keys of the core's language files (<see cref="Rating.NameKey"/>), IVAO's own English names.</para>
 /// </summary>
 public static class IvaoRatings
 {
-    public static RatingVocabulary Vocabulary { get; } = new(
+    /// <summary>IVAO's ladders, nothing of any division: what a test of the network's knowledge reads.</summary>
+    public static RatingVocabulary Vocabulary { get; } = new(Ratings());
+
+    /// <summary>
+    /// IVAO's ladders with a division's preferred ratings (<c>division.json → preferredAtcRatings</c>): the vocabulary the core
+    /// registers, so <see cref="RatingVocabulary.PreferredFor"/> says the division's rule and the module names no rating.
+    /// </summary>
+    public static RatingVocabulary WithPreferred(IReadOnlyDictionary<string, string> preferred) => new(Ratings(), preferred);
+
+    private static Rating[] Ratings() =>
     [
         new(RatingKind.Atc, 2, "AS1", false, null),
         new(RatingKind.Atc, 3, "AS2", false, null),
-        new(RatingKind.Atc, 4, "AS3", false, null) { PreferredOn = ["DEL"] },
-        new(RatingKind.Atc, 5, "ADC", true, "TWR") { PreferredOn = ["FSS", "GND", "TWR"] },
-        new(RatingKind.Atc, 6, "APC", true, "APP") { PreferredOn = ["APP", "DEP"] },
-        new(RatingKind.Atc, 7, "ACC", true, "CTR") { PreferredOn = ["CTR"] },
+        new(RatingKind.Atc, 4, "AS3", false, null),
+        new(RatingKind.Atc, 5, "ADC", true, "TWR"),
+        new(RatingKind.Atc, 6, "APC", true, "APP"),
+        new(RatingKind.Atc, 7, "ACC", true, "CTR"),
         new(RatingKind.Atc, 8, "SEC", false, null),
         new(RatingKind.Atc, 9, "SAI", false, null),
         new(RatingKind.Atc, 10, "CAI", false, null),
@@ -176,5 +190,5 @@ public static class IvaoRatings
         new(RatingKind.Pilot, 8, "ATP", false, null),
         new(RatingKind.Pilot, 9, "SFI", false, null),
         new(RatingKind.Pilot, 10, "CFI", false, null),
-    ]);
+    ];
 }

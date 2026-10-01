@@ -30,6 +30,14 @@ public sealed class IvaoAtcPosition
     public const int MaxNameLength = 256;
 
     /// <summary>
+    /// The kinds of position IVAO's two lists use, as they spell them in <c>position</c>: six at an airport and two in a FIR,
+    /// measured on 25 September 2026 (M3, A1 and A2) and nothing else since. What a division may name in
+    /// <c>division.json → preferredAtcRatings</c> (M4, E10c): a kind written there that IVAO does not use is a typo, and the start
+    /// says so.
+    /// </summary>
+    public static IReadOnlyList<string> Kinds { get; } = ["DEL", "GND", "TWR", "APP", "DEP", "ATIS", "CTR", "FSS"];
+
+    /// <summary>
     /// What a controller connects as — IVAO's <c>composePosition</c>, upper case — and the key: it is what a training
     /// writes down (design M3 §1.2), where IVAO's own identifiers are two sequences whose numbers overlap.
     /// </summary>

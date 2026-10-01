@@ -121,6 +121,15 @@
   "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like any grant. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
   "firStaffScope": "own",
 
+  "$comment.preferredAtcRatings": [
+    "Optional. Who comes first on a kind of ATC position when the roster of an event is proposed: the rating a",
+    "controller holds at least, by the kind as IVAO spells it (DEL, GND, TWR, APP, DEP, ATIS, CTR, FSS) and the short",
+    "name of an ATC rating (AS1 ... CAI); anybody above it comes first too. It is your division's rule, not IVAO's. A kind",
+    "you leave out has nobody first, and the other rules of the roster decide; the start stops on a kind or a rating it does",
+    "not know. Who may open a position at all is not here: it is the position's FRA on IVAO, which the hub reads every night."
+  ],
+  "preferredAtcRatings": { "DEL": "AS3", "GND": "ADC", "TWR": "ADC", "FSS": "ADC", "APP": "APC", "DEP": "APC", "CTR": "ACC" },
+
   "$comment.atcData": [
     "Optional. Where the ATC sessions of the network are read from, so that the controllers a pilot contacted",
     "can be proposed on a tour report. none (the default) = no archive: the list is 'not available' and the",

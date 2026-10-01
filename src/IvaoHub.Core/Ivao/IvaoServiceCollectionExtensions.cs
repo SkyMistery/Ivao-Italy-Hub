@@ -34,8 +34,12 @@ public static class IvaoServiceCollectionExtensions
         // The positions of the division a rating is trained on, which a module asks for a rating (M3, A2).
         services.AddScoped<IAtcPositionDirectory, AtcPositionDirectory>();
 
-        // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1). Data, so one instance serves all.
-        services.AddSingleton(IvaoRatings.Vocabulary);
+        // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1), with the division's preferred ratings
+        // (M4, E10c). Data, so one instance serves all, built once division.json has been read — and checked: the start refuses
+        // a kind of position or a rating the core does not know, with a message that names the file and the key.
+        services.AddSingleton(provider => IvaoRatings.WithPreferred(
+            provider.GetRequiredService<IOptions<DivisionOptions>>().Value.PreferredAtcRatings));
+        services.AddSingleton<IValidateOptions<DivisionOptions>, PreferredAtcRatingsValidator>();
         services.AddScoped<RefDataSyncJob>();
 
         // The token of the application, on its own client so a slow token endpoint cannot exhaust

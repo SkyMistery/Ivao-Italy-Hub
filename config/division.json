@@ -55,5 +55,6 @@
   ],
   "superAdmins": [704798],
   "firStaffScope": "own",
+  "preferredAtcRatings": { "DEL": "AS3", "GND": "ADC", "TWR": "ADC", "FSS": "ADC", "APP": "APC", "DEP": "APC", "CTR": "ACC" },
   "contentApproval": ["Page"]
 }
