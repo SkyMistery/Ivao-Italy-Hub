@@ -514,12 +514,12 @@ nell'ED.
   2. **Nel claim** un `!` in testa al pezzo dello scope (`Events.View:ED@!`): `FormatPermission` lo scrive, `ReadPermission` lo legge, e
      chi non lo conosce (`ParsePermission`, un pacchetto di prima) legge uno scope che nessuna riga dichiara, cioè chiuso.
   3. **`BuildIdentity`** non scrive il claim `dept` di un permesso da fuori; **`TryNarrowToDepartments`** aggiunge i dipartimenti su cui
-     chi legge tiene da fuori il permesso di lettura della lista (tutta la lista se lo tiene su tutti; niente se lo tiene su una riga
+     chi legge tiene da fuori il permesso di lettura della lista (ogni dipartimento se lo tiene su tutti; niente se lo tiene su una riga
      sola).
   4. **Le parole**: l'aiuto del form dei permessi dice le due portate (`grants.formHint`); `docs/FORKING.md` e i commenti di
      `config/division.example.json` dicono che cosa dà un grant a una posizione su un altro dipartimento, e che cosa cambia con `all`.
-  5. **I test**: `PermissionFromOutsideRulesTests` (unità, 7) e `PermissionFromOutsideTests` (integrazione, 2, VID 761091–761092; 761090 è
-     un'identità dei test di unità).
+  5. **I test**: `PermissionFromOutsideRulesTests` (unità, 8 dopo la revisione) e `PermissionFromOutsideTests` (integrazione, 3 dopo la
+     revisione, VID 761091–761093; 761090 è un'identità dei test di unità).
 - **Precisazioni, scritte nella nota** (nessuna è una domanda nuova):
   1. **Anche un grant a una posizione senza dipartimento** (su tutti) è da fuori: vale anche sui dipartimenti che non sono della
      posizione, e altrimenti farebbe entrare i suoi titolari in ogni dipartimento. Oggi il seme di IT non ne ha.
@@ -555,8 +555,33 @@ nell'ED.
 - **Non verificato**: la CI (la dice la PR); il comportamento su un'installazione vera con cookie di prima (chi ha già un claim `dept` da
   un grant a una posizione su un altro dipartimento lo tiene fino al prossimo ingresso; su IT oggi nessuno); il team di un FIR con `all`
   sul database (lo provano le unità: IT è su `own`).
+- **Dopo la revisione** ([i rilievi del revisore sulla #212][r212], «approvable», CI verde su `6613aac`; [la richiesta di unire
+  `main`][m212]):
+  1. **Il ramo «tutti i dipartimenti» della lista non era provato** (il rilievo da correggere): un permesso di lettura tenuto da fuori
+     senza dipartimento. Ora lo prova `PermissionFromOutsideTests` (il terzo caso, VID 761093): gli advisor dell'AOD con `Links.View` su
+     tutti i dipartimenti leggono i link di AOD, SOD e FOD e restano nel solo AOD (`/api/me`, la ricerca), e **un divieto** di
+     `Links.View` sul FOD alla stessa posizione toglie il link del FOD; nelle unità, il divieto espande «tutti» negli altri otto
+     dipartimenti, ognuno ancora da fuori. **E il ramo dà ora le righe di ogni dipartimento** (`RolePermissionMatrix.AllDepartments`)
+     invece della lista senza filtro: il revisore notava che una riga in cura a nessun dipartimento sarebbe passata, che i claim `dept`
+     di prima non lasciavano passare. Per ogni riga vera la risposta è la stessa. Provati al contrario: senza il ramo cade la lista,
+     con il codice del nucleo di `main` cade `/api/me` (tutti e nove i dipartimenti).
+  2. **`main` unito** (`c441839`, E2 con la #209), con un merge: i conflitti erano solo in questo file e in `HANDOFF-M4.md`, e ogni
+     paragrafo è rimasto (il blocco di E2b sopra quello di E2, un'intestazione sola). **I nove grant non entrano**: li porta E3a, la cui
+     sessione nasce sopra E2b, in coda dopo la #212 (detto dalla sessione che coordina).
+  3. **L'ordine con E10f (#213)**: chi arriva seconda a `main` tiene una dichiarazione sola di `FromOutside`, somma le due condizioni del
+     calcolo e rifà `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b sul codice unito. Il 1 ottobre,
+     durante questo giro, la #213 era ancora aperta: E2b non è la seconda.
+  4. **Verificato di nuovo, dopo il merge e i test nuovi** (1 ottobre 2026, sul branch prima del commit di questi documenti, `main` a
+     `c441839`): `dotnet build` della soluzione senza avvisi, e `dotnet format --verify-no-changes` sui tre file C# ritoccati; unità
+     **945/945** (le 937 di `main` e le 8 di E2b); **integrazione intera senza filtro 444/444** (5,6 minuti), la classe nuova da sola 3/3;
+     `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 599; `pnpm gen:api` senza differenze; `pnpm e2e`
+     **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (9,9 minuti) sul banco
+     `http://127.0.0.1:5120`, `ivaohub_e2e_e2b` ricreato, dietro il lock di Mailpit (preso alle 10:52, dopo quello di E10f); le regole di
+     `core-guard` dalla nuova base di merge (`c441839`): PASS, nessun file del maintainer, sette del nucleo, la nota nuova.
 
 [ok209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
+[r212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926652025
+[m212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926813269
 
 ### E3a — L'evento nello staff
 

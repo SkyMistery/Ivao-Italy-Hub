@@ -17,7 +17,8 @@ namespace IvaoHub.UnitTests;
 /// every one — and what a grant to the team of a FIR gives when the division does not keep the team to its FIR; never what a grant
 /// to a position gives on its own department, nor a grant to a person;</item>
 /// <item>the <c>View</c> it implies is held from outside as well, and the same permission reached by a grant to the person too is
-/// the person's, which lets them in;</item>
+/// the person's, which lets them in; a deny on one department, next to a grant on every one, leaves every other one from
+/// outside;</item>
 /// <item>it travels in the scope's part of the claim and reads back, and a reader that does not know it reads it closed;</item>
 /// <item>it does not let its holder into the department, where a grant to a person on the same department does;</item>
 /// <item>the single handler holds it on the rows of its department, as any other permission.</item>
@@ -69,6 +70,26 @@ public sealed class PermissionFromOutsideRulesTests
 
         // And the roles are what they were: an events coordinator holds the core's permissions on their own department.
         Assert.All(Calculate([Events()], []), held => Assert.False(held.FromOutside));
+    }
+
+    [Fact]
+    public void ADenyOnOneDepartmentNextToAGrantOnEveryDepartmentLeavesEveryOtherFromOutside()
+    {
+        // The reviewer's point on #212: a position's grant on every department, and a deny of it on one department to the same
+        // position. The deny expands "every department" into the departments that survive, and each of them stays from outside.
+        var permissions = Calculate(
+            [Atc()],
+            [ToPosition(1, View, Department.AOD, scope: null), ToPosition(2, View, Department.AOD, Department.FOD, GrantEffect.Deny)]);
+
+        var views = permissions.Where(held => held.Name == View).ToArray();
+        Assert.DoesNotContain(views, held => held.Department is null or Department.FOD);
+        Assert.Equal(
+            Enum.GetValues<Department>().Where(department => department != Department.FOD).Order(),
+            views.Select(held => held.Department!.Value).Order());
+        Assert.All(views, held => Assert.True(held.FromOutside));
+
+        // So the position's own department is still the only one they are in.
+        Assert.Equal([nameof(Department.AOD)], Departments(BuildIdentity([Atc()], [.. permissions])));
     }
 
     [Fact]
@@ -202,16 +223,21 @@ public sealed class PermissionFromOutsideRulesTests
         EffectivePermissionsCalculator.Calculate(positions, grants, false, DateTime.UtcNow, Catalogue, firStaffScope);
 
     /// <summary>A grant to the coordinators of <paramref name="position"/>, held on <paramref name="scope"/>; null is every department.</summary>
-    private static UserGrant ToPosition(long id, string permission, Department position, Department? scope) => new()
-    {
-        Id = id,
-        PositionDepartment = position,
-        PositionLevels = [StaffLevel.Coordinator],
-        Kind = GrantKind.Permission,
-        Value = permission,
-        Department = scope,
-        Effect = GrantEffect.Grant,
-    };
+    private static UserGrant ToPosition(
+        long id,
+        string permission,
+        Department position,
+        Department? scope,
+        GrantEffect effect = GrantEffect.Grant) => new()
+        {
+            Id = id,
+            PositionDepartment = position,
+            PositionLevels = [StaffLevel.Coordinator],
+            Kind = GrantKind.Permission,
+            Value = permission,
+            Department = scope,
+            Effect = effect,
+        };
 
     private static UserGrant ToPerson(long id, string permission, Department department) => new()
     {

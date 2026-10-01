@@ -7,14 +7,16 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2b** (nucleo: un grant a una posizione su un altro dipartimento dà il permesso, non
-il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda; la decisione è di
-Carmine, sulla #209. Corrono, ognuna nella sua sessione, **E2** (#209), **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f**;
-sono unite E1 (#200), E10b (#208), E10d (#205) ed E10e (#206).
-**Il prossimo passo**: **E2** ed **E2b** unite, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora**
-(`10`, E3a punto 5). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b**
-trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei
-tour al calcolo del nucleo è unito (#211). **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine
-sulla #205) la prepara la sessione che coordina.
+il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda, con `main` unito dopo
+**E2 (#209)**; la decisione è di Carmine, sulla #209. Sono unite E1 (#200), E2 (#209), E10b (#208), E10d (#205) ed E10e (#206); corrono,
+ognuna nella sua sessione, **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f** (#213, `Awards.Assign` concedibile con un
+grant, decisa da Carmine sulla #205).
+**Il prossimo passo**: **E2b** unita, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora** (`10`, E3a
+punto 5): la sua sessione la prepara la sessione che coordina, in coda dopo la #212. ⚠️ **E2b ed E10f dichiarano tutte e due
+`EffectivePermission.FromOutside`**: chi arriva seconda a `main` tiene una dichiarazione sola e somma le due condizioni del calcolo (nota
+di E2b, §3.8). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in
+E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei tour al
+calcolo del nucleo è unito (#211).
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -133,14 +135,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     ogni permesso, e non sono cambiati.
   - **Un grant a una persona** fa ancora entrare nel dipartimento (6 settembre); **lo stesso permesso da fuori e per nome** resta quello
     per nome.
-  - **I test**: `PermissionFromOutsideRulesTests` (unità, 7) e `PermissionFromOutsideTests` (integrazione, 2, VID 761091–761092; 761090 è
-    un'identità delle unità). **Le parole**: l'aiuto del form dei permessi (`grants.formHint`), `docs/FORKING.md` e i commenti di
-    `config/division.example.json`. Nessuna migrazione, nessun endpoint.
+  - **I test**: `PermissionFromOutsideRulesTests` (unità, 8) e `PermissionFromOutsideTests` (integrazione, 3, VID 761091–761093; 761090 è
+    un'identità delle unità; 761094–099 restano di E2b per le sue correzioni). **Le parole**: l'aiuto del form dei permessi
+    (`grants.formHint`), `docs/FORKING.md` e i commenti di `config/division.example.json`. Nessuna migrazione, nessun endpoint.
+  - **Tenuto da fuori su tutti i dipartimenti** (un grant a una posizione senza `scope`), un permesso di lettura dà nella sua lista le
+    righe di ogni dipartimento, come i claim `dept` di tutti prima di E2b, e niente altro di loro; un divieto su un dipartimento accanto
+    toglie quel dipartimento (dopo la revisione della #212).
 - **Che cosa deve sapere la fase dopo**:
-  - ⚠️ **I nove grant di chi collabora non ci sono** (#209 non era unita): li porta **E3a** (`10`, E3a punto 5) in `config/division.json`
-    e in `config/division.example.json`, e cambia `EventsArchitectureTests` di E2, che li rifiuta finché la nota non ha risposta — ora ce
-    l'ha. **Misurato** sopra E2b con E2 e i nove grant: integrazione intera 443/443, i tre test del maintainer verdi senza toccarli;
-    fra le unità l'unico rosso è quel test di E2.
+  - ⚠️ **I nove grant di chi collabora non ci sono**, nemmeno dopo l'unione di E2 (#209) in questo branch: li porta **E3a** (`10`, E3a
+    punto 5), la cui sessione nasce sopra E2b, in coda dopo la #212, in `config/division.json` e in `config/division.example.json`, e cambia
+    `EventsArchitectureTests` di E2, che li rifiuta finché la nota non ha risposta — ora ce l'ha. **Misurato** sopra E2b con E2 e i nove
+    grant: integrazione intera 443/443, i tre test del maintainer verdi senza toccarli; fra le unità l'unico rosso è quel test di E2.
   - **Che cosa vedranno AOD, FOD e MD** (nota §3.7): gli eventi e le liste della loro area, con le righe dell'ED, ogni riga con l'unico
     handler, la sezione «Eventi»; non le righe che l'ED tiene per sé, non il gruppo dell'ED nella barra, non i suoi contatti né i suoi
     contenuti.
