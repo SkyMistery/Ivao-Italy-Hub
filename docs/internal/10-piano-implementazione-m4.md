@@ -766,6 +766,14 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
      **`pnpm e2e:full` 52/52 al primo giro** (11,1 minuti) sul banco `http://127.0.0.1:5121` ricreato, dietro il lock di Mailpit; le
      regole di `core-guard` dalla nuova base di merge (`ee43ec2`): PASS, nessun file del maintainer, i sette del nucleo di E2b con la sua
      nota, nessuno di E3a.
+  6. **E2b dopo il suo merge di E10c unita** (`af0d7df`, che porta `main` dopo E10c (#204), di nuovo la fine del conflitto della PR),
+     con un merge, su richiesta della sessione che coordina: un solo conflitto, l'intestazione di `HANDOFF-M4.md`, con il paragrafo di
+     E10c tenuto fra quelli di E2b ed E10f; i due file della divisione uniti da soli, con i `preferredAtcRatings` di E10c accanto ai grant.
+     **Verificato di nuovo** (1 ottobre 2026, sul codice unito): `dotnet build` senza avvisi e `pnpm gen:api` senza differenze; unità
+     **1107/1107**, `EventsArchitectureTests` 30/30; **integrazione intera senza filtro 466/466** (7,6 minuti); `pnpm lint`, `typecheck`,
+     `format:check`, `i18n:check` verdi; `pnpm test` **605 in 83 file**; `pnpm e2e` **163/163** al primo giro; **`pnpm e2e:full` 52/52 al
+     primo giro** (10,9 minuti) sul banco `http://127.0.0.1:5121` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla
+     nuova base di merge (`ca80563`): PASS, come sopra.
 
 [r214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5929130403
 
