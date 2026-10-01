@@ -277,6 +277,47 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
         return Task.FromResult(IvaoWhazzup.Read(document.RootElement, airspace));
     }
 
+    /// <summary>
+    /// The bookings of a day that always looks the same: <c>atc-bookings-day.json</c> holds the bookings of the bench's positions
+    /// that started on one real day (<c>tools/record-ivao-fixtures.mjs --bookings day …</c>), read through the very reader the
+    /// real client uses and moved onto whichever day is asked — so a bench with no credentials shows bookings beside an event
+    /// of any date. The day is listed the way IVAO lists it: every booking that starts before the day ends and ends when it
+    /// has begun or later, the one across midnight of the day before among them, and a position is the start of a callsign.
+    /// </summary>
+    public Task<IReadOnlyList<AtcBookingDto>?> GetDailyAtcBookingsAsync(
+        DateOnly date,
+        string? position = null,
+        CancellationToken cancellationToken = default)
+    {
+        var recorded = Read("atc-bookings-day.json")
+            .Select(IvaoAtcBookingReader.ReadBooking)
+            .OfType<AtcBookingDto>()
+            .ToArray();
+
+        if (recorded.Length == 0)
+        {
+            return Task.FromResult<IReadOnlyList<AtcBookingDto>?>([]);
+        }
+
+        // Every recorded booking started on the recorded day, and none lasts a day: the day asked lists its own, moved onto
+        // it, and those of the day before that were still open when it began.
+        var recordedDay = DateOnly.FromDateTime(recorded.Min(booking => booking.StartsAt));
+        var opens = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var closes = opens.AddDays(1);
+        var prefix = position?.Trim() ?? string.Empty;
+
+        AtcBookingDto[] listed = [.. new[] { date.AddDays(-1), date }
+            .SelectMany(day => recorded.Select(booking => booking with
+            {
+                StartsAt = booking.StartsAt.AddDays(day.DayNumber - recordedDay.DayNumber),
+                EndsAt = booking.EndsAt.AddDays(day.DayNumber - recordedDay.DayNumber),
+            }))
+            .Where(booking => booking.StartsAt < closes && booking.EndsAt >= opens)
+            .Where(booking => booking.Callsign.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))];
+
+        return Task.FromResult<IReadOnlyList<AtcBookingDto>?>(listed);
+    }
+
     private JsonElement[] Read(string fileName)
     {
         var path = Path.Combine(_paths.Root, Directory, fileName);
