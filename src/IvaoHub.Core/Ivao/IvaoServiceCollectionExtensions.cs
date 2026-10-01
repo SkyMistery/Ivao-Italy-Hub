@@ -34,6 +34,9 @@ public static class IvaoServiceCollectionExtensions
         // The positions of the division a rating is trained on, which a module asks for a rating (M3, A2).
         services.AddScoped<IAtcPositionDirectory, AtcPositionDirectory>();
 
+        // Who has booked a position of the network in a window, which a module asks without knowing how IVAO lists them (M4, E15a).
+        services.AddScoped<IAtcBookingSource, AtcBookingSource>();
+
         // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1), with the division's preferred ratings
         // (M4, E10c). Data, so one instance serves all, built once division.json has been read — and checked: the start refuses
         // a kind of position or a rating the core does not know, with a message that names the file and the key.

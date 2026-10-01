@@ -418,6 +418,34 @@ public sealed class IvaoApiClient(
         return status;
     }
 
+    public async Task<IReadOnlyList<AtcBookingDto>?> GetDailyAtcBookingsAsync(
+        DateOnly date,
+        string? position = null,
+        CancellationToken cancellationToken = default)
+    {
+        var path = string.Create(CultureInfo.InvariantCulture, $"/v2/atc/bookings/daily?date={date:yyyy-MM-dd}");
+        if (!string.IsNullOrWhiteSpace(position))
+        {
+            path += $"&position={Uri.EscapeDataString(position.Trim().ToUpperInvariant())}";
+        }
+
+        // Asked while somebody waits on a page, never by a job: whatever goes wrong — a status, a network that does not
+        // answer, a body that is not JSON — is "not available", never an error page. No cache: the staff reading a roster
+        // are a handful, and a minute old answer would hide the booking somebody has just made.
+        if (await ReadOrNothingAsync(path, cancellationToken) is not { } root)
+        {
+            return null;
+        }
+
+        var bookings = IvaoAtcBookingReader.ReadBookings(root);
+        if (bookings is null)
+        {
+            logger.LogWarning("IVAO answered {Path} with something that is not a list of bookings.", path);
+        }
+
+        return bookings;
+    }
+
     /// <summary>A GET with the application's token, or null when anything at all goes wrong.</summary>
     private async Task<JsonElement?> ReadAsync(string path, CancellationToken cancellationToken)
     {
@@ -447,8 +475,8 @@ public sealed class IvaoApiClient(
 
     /// <summary>
     /// <see cref="ReadAsync"/>, with a call that fails read as no answer: for the answers whose failure must stay their own
-    /// (the ATC positions). Every other reference call still fails the run, as it always has. Not the caller's
-    /// cancellation: that one is theirs.
+    /// (the ATC positions, the bookings a page waits on). Every other reference call still fails the run, as it always has.
+    /// Not the caller's cancellation: that one is theirs.
     /// </summary>
     private async Task<JsonElement?> ReadOrNothingAsync(string path, CancellationToken cancellationToken)
     {
