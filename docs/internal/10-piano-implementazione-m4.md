@@ -746,6 +746,15 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
      `events.eventCancelled` rimette la frase (scritto nell'handoff).
   4. **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
      mentre un evento lo mostra. È di E3b (punto 2 della sua fase); ⚠️ E3b viene subito dopo, scritto nell'handoff.
+  5. **E2b riconciliata con E10f unita** (`909fe36`, che porta `main` dopo E10a (#210) ed E10f (#213) e metteva fine al conflitto della
+     PR), con un merge, su richiesta della sessione che coordina: un solo conflitto, l'intestazione di `HANDOFF-M4.md`; i due file della
+     divisione uniti da soli, con il grant `Awards.Assign` dell'MD di E10f accanto ai nove di chi collabora. **Verificato di nuovo** (1
+     ottobre 2026, sul codice unito): `dotnet build` senza avvisi, e `pnpm gen:api` senza differenze (il contratto unito da solo è quello
+     rigenerato); unità **1009/1009**, `EventsArchitectureTests` 30/30; **integrazione intera senza filtro 456/456** (5 minuti); `pnpm
+     lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **605 in 83 file**; `pnpm e2e` **163/163** al primo giro;
+     **`pnpm e2e:full` 52/52 al primo giro** (11,1 minuti) sul banco `http://127.0.0.1:5121` ricreato, dietro il lock di Mailpit; le
+     regole di `core-guard` dalla nuova base di merge (`ee43ec2`): PASS, nessun file del maintainer, i sette del nucleo di E2b con la sua
+     nota, nessuno di E3a.
 
 [r214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5929130403
 
