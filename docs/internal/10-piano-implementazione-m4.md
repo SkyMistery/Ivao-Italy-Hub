@@ -104,6 +104,7 @@ Per non ripeterle trenta volte:
 | E10c | Nucleo: rating e postazioni della divisione | E0 | il rating preferito per tipo di postazione e il minimo di una postazione; le postazioni della divisione per nominativo, con tipo e FIR |
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
+| E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1055,6 +1056,137 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
 [r206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916051005
 [v206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916572883
 [a206]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/206#issuecomment-5916695685
+
+### E10f — Nucleo: `Awards.Assign` con un grant
+
+**Da dove viene**: non c'era in E0. L'ha trovata E10d (nota `2026-09-30-la-mail-a-chi-assegna-gli-award` §5): il piano (§9.1, riga
+Award), la nota di T4b e il design di M4 dicono che assegna l'MD, e il codice non lo permetteva, perché un grant non dava mai un permesso
+globale. **Carmine ha deciso** ([risposta 2 sulla #205][a205], alla [domanda][q205] §2) che `Awards.Assign` diventi un permesso globale
+che un grant può dare, detto sul permesso e solo per lui (mai `Permissions.Manage` né lo stato di superadmin), che la divisione lo dia
+all'MD con un `positionGrant`, e che lo faccia una PR del nucleo sua. Branch `m4/e10f-grantable-award-assign`. **PR del nucleo**, con la
+sua nota; nessuna migrazione; nessuna fase del modulo la aspetta.
+
+1. **Il campo sul permesso** (`PermissionDescriptor`) e una domanda del catalogo, che il calcolatore, la schermata dei permessi e il
+   seme dei `positionGrants` fanno al posto di «è globale?».
+2. **`Permissions.Manage` e lo stato di superadmin** restano fuori da ogni grant.
+3. **Il `positionGrant` dell'MD** in `config/division.json`, e nell'esempio.
+4. **Il caso `Awards.Assign`** di `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` cambia, apposta e con la nota.
+
+**Test**: unità: un grant a una posizione dà `Awards.Assign` e nessun altro permesso globale; `Permissions.Manage` resta rifiutato dal
+calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `division.json` apre la coda ed è fra i destinatari del riepilogo.
+**Fatta quando**: l'MD ha `Awards.Assign` dal seme della divisione, e nient'altro di globale.
+
+**Com'è andata** (1 ottobre 2026, branch `m4/e10f-grantable-award-assign`, PR #213, del nucleo senza coda, da `main` a `db9268f`):
+
+- **Fatto** (nota nuova `2026-10-01-chi-assegna-gli-award-con-un-grant`, **decisa**; la forma nel codice è una scelta tecnica, §3):
+  - **il campo `GrantableAlthoughGlobal`** su `PermissionDescriptor`, falso se non è detto, vero solo per `Awards.Assign`;
+    **`PermissionCatalog.IsClosedToGrants`**, la domanda sola che fanno il calcolatore, `GrantWriteDtoValidator` e `PositionGrantSeeder`;
+    il catalogo **non nasce** con un permesso concedibile che non sia `Awards.Assign` (`Permissions.Manage` per primo; nella prima
+    stesura solo lui: il paletto largo è venuto dalla revisione, sotto);
+  - **solo intero**: il calcolatore tiene un globale concedibile solo da un grant (o un rifiuto) senza dipartimento, senza scope e non
+    al team di un FIR; la schermata rifiuta il dipartimento con **`errors.grant.globalDepartment`** (chiave nuova, `locales/{en,it}`);
+    il seme salta uno `scope`; il team di un FIR lo rifiuta già la regola di A11a;
+  - **il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, vero per un grant di un permesso globale e per la `View`
+    che porta; `HubClaims.BuildIdentity` lo lascia fuori dai claim `dept`, e la deduplicazione preferisce la voce che porta dentro. È la
+    stessa forma di E2b (#212, decisa sulla #209), che corre insieme;
+  - **il bootstrap** porta `grantableAlthoughGlobal` accanto a `isGlobal`, e la schermata dei permessi offre `Awards.Assign`
+    (`schema.ts`); `pnpm gen:api` ha riscritto `schema.d.ts`;
+  - **la divisione**: `{ "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" }` in testa ai
+    `positionGrants` di `config/division.json` e di `config/division.example.json` (con il suo commento), e una frase in
+    `docs/FORKING.md`;
+  - **i test**, con i VID `761080–761083`: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4),
+    `web/src/features/admin/grants/grantable.test.ts` (2).
+- **Il test di Carmine**: in `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` è tolta la sola riga
+  `[InlineData(CorePermissions.AwardsAssign)]`, con un commento che rimanda alla nota; le altre quattro restano e passano, e nessun altro
+  suo test cambia. L'ha deciso lui, nella risposta 2.
+- **Scostamenti e scelte, scritti nella nota**:
+  1. **`ModuleGrants` non cambia comportamento** (il compito lo elencava fra i posti della regola): rifiuta ogni globale, anche
+     `Awards.Assign`, perché un suo grant è su un dipartimento e può essere su una riga, e un globale chiesto «in generale» varrebbe
+     ovunque. Solo un commento.
+  2. **Il dipartimento di un grant globale si rifiuta** invece di leggerlo come «ovunque»: una chiave d'errore nuova, che la risposta di
+     Carmine non nominava.
+  3. **Un rifiuto intero di `Awards.Assign` ora vale**, anche per chi lo ha per ruolo: prima un rifiuto di un globale non valeva niente
+     (per gli altri globali resta così).
+  4. **Il testo di `errors.grant.globalPermission`** («un permesso non legato a un dipartimento non si assegna a mano») non era più vero, e
+     cambia.
+  5. **I livelli dell'MD** (coordinatore e assistente) erano una mia lettura del piano 0.77: il piano dice «l'MD», non i livelli.
+     Confermati da Carmine dopo la revisione, con il rifiuto intero (3) e la `Awards.View` su ogni dipartimento (sotto).
+  6. **Il commento di `AwardQueueMailTests`** (E10d) diceva «un grant non dà mai un permesso globale»: una frase corretta, nessuna
+     riga di codice del test.
+- **Trovato leggendo**: le risorse di `Awards.Assign` (la coda, il registro) non sono `IOwnedByDepartment`, quindi l'handler e la SPA
+  chiedono solo il nome (`HasAny`, `holdsPermissionAnywhere`): un grant con un dipartimento, uno scope o un FIR si leggerebbe «ovunque».
+  È il perché del «solo intero». E `Awards.Assign` porta `Awards.View` dove è tenuto lui (la regola «un permesso dell'area porta la sua
+  `View`»): chi assegna legge ogni award, come voleva la T4b.
+- ⚠️ **Trovato da un'altra sessione, dopo la prima stesura**: la sessione di E2b mi ha scritto il 1° ottobre che un grant senza
+  dipartimento mette chi lo tiene dentro **ogni** dipartimento (`HubClaims.BuildIdentity`, i claim `dept`), quindi il coordinatore e
+  l'assistente dell'MD avrebbero visto le righe `Department` di tutti. Misurato con il test d'integrazione: `user.departments` era tutti
+  e nove. Corretto con `FromOutside` (sopra), nella forma che E2b stava scrivendo, concordata con quella sessione per non scrivere due
+  volte lo stesso campo. La prima stesura della nota non ne parlava; ora ha il suo punto (§2 punto 7, §3 punto 3-bis).
+- **Verificato, in locale** (1 ottobre 2026, una suite alla volta, sul codice definitivo, `main` a `db9268f`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui 12 file C# toccati: pulito;
+  - unità **913/913**; **integrazione intera, senza filtro, 441/441** (7,4 minuti); `AwardsAssignByGrantTests` da sola 4/4, nessuna
+    chiamata a `ivao.aero` nel suo log. La prima stesura, senza `FromOutside`, aveva dato 912/912 e 441/441;
+  - in `web/`: `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (783 chiavi) verdi; `pnpm test` **596/596** in 81 file;
+    `pnpm gen:api` senza differenze dopo la sua riscrittura;
+  - `pnpm e2e` (smoke, dietro il suo lock): **163/163** al primo giro, compresa `permissions-fir-team.spec.ts` del maintainer, che
+    costruisce l'elenco dei permessi senza il campo nuovo;
+  - `pnpm e2e:full` sul banco suo (`http://127.0.0.1:5119`, `ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit, un worker):
+    **50/50** al primo giro (10,6 minuti). Il banco ha applicato 24 grant da `division.json`, `Awards.Assign` all'MD compreso, senza
+    avvisi (letto nel log e nella tabella);
+  - le prove al contrario, sul codice della fase, rimesso e toccato dopo ognuna: senza il filtro «solo intero» cade
+    `OnlyAWholeGrantConfersIt`; senza il campo su `Awards.Assign` cadono sei test nuovi di unità, e i 27 di `EffectivePermissionsTests`
+    restano verdi; senza il rifiuto nel catalogo cade il suo test; **senza `FromOutside` in `BuildIdentity`** cadono il test di unità
+    sui claim e due d'integrazione (`user.departments` = `["MD","HQ","SOD","FOD","AOD",…]` invece di `["MD"]`);
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base: nessun file del maintainer, 14 del nucleo, la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - **la mail vera all'MD**: servirebbe uno staff dell'MD con un indirizzo, che i test dei contatti non vogliono. Che il riepilogo vada a
+    chi ha il permesso lo prova `AwardQueueMailTests` (E10d); che l'MD lo abbia, `AwardsAssignByGrantTests`;
+  - la schermata dei permessi che offre `Awards.Assign` in un browser vero: nessuna spec la guida (le scelte le prova
+    `grantable.test.ts`, il server `AwardsAssignByGrantTests`);
+  - il seme su un'installazione già avviata (la prova): si applica al primo avvio dopo il rilascio, per la regola di T5, e qui non è
+    stato fatto girare;
+  - chi non è dentro nessun dipartimento e riceve `Awards.Assign` per nome: la lista degli award gli risponde 403 fino alla metà
+    «liste» di E2b. Oggi nessuno ce l'ha così.
+- **La CI** sulla prima cima (`360045d`): `build-test` (23,6 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore][v213], «approvable») e **le risposte di Carmine** ([sulla #213][a213], in chat al
+  master il 1° ottobre, pubblicate su sua istruzione):
+  - **sì alle tre scelte** della sessione: coordinatore e assistente dell'MD; il rifiuto intero che toglie `Awards.Assign` anche a chi lo
+    ha per ruolo; la `Awards.View` su ogni dipartimento che il grant porta. Registrate nella nota (intestazione, §3 punti 3, 3-bis e 8,
+    «Da portare nel piano») e nell'handoff;
+  - **il paletto facoltativo, preso**: il catalogo non nasce se `GrantableAlthoughGlobal` lo dice un permesso che non sia
+    `Awards.Assign` (prima solo `Permissions.Manage`). `GrantableGlobalPermissionTests` passa da 11 a 17 test (una teoria su sei
+    permessi e il globale di un modulo); senza il paletto ne cadono 7;
+  - **l'ordine di merge con E2b** (#212), scritto nella nota (§3 punto 3-bis), nell'handoff e nel corpo della PR: in E2b il segno scrive
+    anche un `!` nel cookie, quindi chi arriva seconda tiene una dichiarazione sola, somma le condizioni e rifà sul codice unito
+    `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b;
+  - **il merge di `main`** (`c441839`, con E2, #209), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10f con
+    E2 unita e il prossimo passo di E2 (E2b, poi E3a); in «Lo stato» il paragrafo di E10f in cima e quello di E2 sotto, nessuna riga
+    persa. I due file della divisione si sono uniti da soli (il grant all'MD per primo, quelli dell'ED dopo il training).
+  - **Rifatto dopo il merge**, una suite alla volta: `dotnet build` 0 avvisi; `dotnet format --verify-no-changes` sui file C# toccati di
+    nuovo: pulito; unità **953/953**; **integrazione intera, senza filtro, 445/445** (5,4 minuti); in `web/` `pnpm lint`, `typecheck`,
+    `format:check`, `i18n:check` (784 chiavi) verdi, `pnpm test` **601/601** in 82 file, `pnpm gen:api` senza differenze; `pnpm e2e`
+    **163/163**; `pnpm e2e:full` sul banco 5119 (`ivaohub_e2e_e10f` tolto prima, dietro il lock di Mailpit) **51/51** al primo giro
+    (10,9 minuti, la spec in più è quella dello scheletro degli eventi); le regole di `core-guard` dalla merge base nuova (`c441839`): 23
+    file, nessuno del maintainer, 14 del nucleo, la nota nuova — passa.
+  - **E15a (#207) è entrata in `main` mentre giravano i controlli** della nuova cima, e la PR è tornata CONFLICTING: `main` (`99ab043`)
+    unito sopra, mai un rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E15a unita e il passo di E15b; in «Lo stato»
+    E10f, poi E15a, poi E2). E15a porta codice del nucleo in `Core/Ivao/`, test di unità, una fixture e lo strumento: nessun file web,
+    nessuna schermata, nessuna migrazione. Rifatti: `dotnet build` 0 avvisi; unità **978/978**; **integrazione intera, senza filtro,
+    445/445** (5,3 minuti); `pnpm gen:api` senza differenze; `core-guard` dalla merge base `99ab043`: passa. Le suite web ed e2e qui
+    sopra non sono state rifatte: il merge non tocca nessun file sotto `web/`. CI sulla cima `39d1f89`: `build-test` (24,5 minuti) e
+    `core-guard` verdi.
+  - **E10a (#210) unita, e il revisore ha chiesto di fondere `main`** ([commento sulla #213][m213]): `main` (`b88460a`) unito, mai un
+    rebase, un conflitto solo in `HANDOFF-M4.md` (l'intestazione con E10a unita, la sua riga su E13a e la coda del master: **E10f entra
+    prima di E2b, e la riconciliazione di `FromOutside` è di E2b**; in «Lo stato» E10f, poi E10a, poi gli altri). E10a porta codice del
+    nucleo in `Core/Ivao/`, test di unità, fixture e lo strumento: nessun file web, nessuna schermata, nessuna migrazione. Rifatti:
+    `dotnet build` 0 avvisi; unità **995/995**; **integrazione intera, senza filtro, 445/445** (5,5 minuti); `pnpm gen:api` senza
+    differenze; `core-guard` dalla merge base `b88460a`: passa. Le suite web ed e2e non rifatte, per la stessa ragione.
+
+[m213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5929486224
+
+[v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
+[a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
 
 ### E11a — Postazioni e disponibilità
 

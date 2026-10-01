@@ -38,6 +38,20 @@ public sealed class PermissionCatalog
             }
         }
 
+        foreach (var descriptor in _byName.Values.Where(descriptor => descriptor.GrantableAlthoughGlobal))
+        {
+            if (!string.Equals(descriptor.Name, CorePermissions.AwardsAssign, StringComparison.Ordinal))
+            {
+                // Awards.Assign and no other (Carmine on #205, answer 2; the reviewer's point on #213): every other global permission
+                // comes with the staff positions IVAO publishes (plan section 6.3) — Permissions.Manage first, since whoever held it by
+                // a grant could hand it on by another. A start that finds another stops rather than opening the hub; a second one is
+                // a decision with its own note, which changes this line too.
+                throw new InvalidOperationException(
+                    $"'{descriptor.Name}' is declared GrantableAlthoughGlobal, and only '{CorePermissions.AwardsAssign}' may be: "
+                    + "a grant never confers another global permission.");
+            }
+        }
+
         foreach (var descriptor in _byName.Values.Where(descriptor => descriptor.OnlyForAssignee))
         {
             if (string.Equals(ViewOf(descriptor.Name), descriptor.Name, StringComparison.Ordinal))
@@ -75,7 +89,10 @@ public sealed class PermissionCatalog
     /// <summary>The ones scoped to a department, the ones a coordinator holds on their own.</summary>
     public IReadOnlyList<string> Departmental { get; }
 
-    /// <summary>The ones with no department, and that a grant may therefore never confer.</summary>
+    /// <summary>
+    /// The ones with no department, held through the positions that reach every department. A grant never confers one, save
+    /// one the catalogue declares <c>GrantableAlthoughGlobal</c> (<see cref="IsClosedToGrants"/>).
+    /// </summary>
     public IReadOnlyList<string> Global { get; }
 
     public bool IsKnown(string? name) => name is not null && _byName.ContainsKey(name);
@@ -88,6 +105,16 @@ public sealed class PermissionCatalog
         _byName.TryGetValue(name, out var found) && found.DeniedToStakeholder;
 
     public bool IsGlobal(string name) => _byName.TryGetValue(name, out var found) && found.IsGlobal;
+
+    /// <summary>
+    /// Whether a grant may never confer this permission: a global one that is not declared <c>GrantableAlthoughGlobal</c>. The
+    /// perimeter of the staff is decided by IVAO (plan section 6.3), and only a function the division hands out as it likes —
+    /// who assigns the awards (M4, E10f) — is left to a grant. The calculator, the permissions screen and the seed of
+    /// <c>division.json</c> ask this one question. Unknown names answer false, as for <see cref="IsGlobal"/>: a permission the
+    /// catalogue does not know is refused earlier, by <see cref="IsKnown"/>.
+    /// </summary>
+    public bool IsClosedToGrants(string name) =>
+        _byName.TryGetValue(name, out var found) && found.IsGlobal && !found.GrantableAlthoughGlobal;
 
     /// <summary>
     /// Whether this permission reaches a row only for the member the row is assigned to (M3, A3b). Unknown names answer

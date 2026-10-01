@@ -250,11 +250,15 @@ public static class HubClaims
         // ⚠️ Except a permission held on one FIR (M3, A11a): the team of a FIR is not part of the department, and sees the rows
         // of its FIR through the permission itself — in the single handler, and in the lists that read with it
         // (note 2026-09-27-i-capi-fir-sul-loro-fir §3.5).
+        //
+        // ⚠️ And except a permission that says it came from outside (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant):
+        // a grant of a global permission, which has no department to take anybody into, with the View it brings. It names no
+        // department, and read as the grants above it would have taken whoever assigns the awards into all of them.
         var granted = materialisedPermissions
             .Where(permission => permission.Source.StartsWith(
                 EffectivePermissionsCalculator.GrantSourcePrefix,
                 StringComparison.Ordinal))
-            .Where(permission => permission.Fir is null)
+            .Where(permission => permission.Fir is null && !permission.FromOutside)
             .ToArray();
 
         var reached = materialised

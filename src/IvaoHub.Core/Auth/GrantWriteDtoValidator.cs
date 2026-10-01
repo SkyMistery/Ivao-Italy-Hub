@@ -15,7 +15,9 @@ namespace IvaoHub.Core.Auth;
 /// typo is a refusal and not a row that silently does nothing;</item>
 /// <item>a grant may never confer a <b>global</b> permission. Who administers the hub, who reads
 /// the audit log and who hands out permissions is decided by the staff positions IVAO publishes,
-/// and a grant is not a way around that;</item>
+/// and a grant is not a way around that. The exception is a global permission the catalogue says a
+/// grant may confer, a function the division hands out as it likes — who assigns the awards (M4,
+/// E10f) — and then only whole, with no department;</item>
 /// <item>and it may only be given to somebody this division counts as staff. The roster of the hub
 /// is exactly the people who have logged in at least once, so the VID has to be one of them.</item>
 /// </list>
@@ -39,8 +41,14 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
             .NotEmpty().WithMessage("errors.required")
             .MaximumLength(MaxValueLength).WithMessage("errors.text.tooLong")
             .Must(catalogue.IsKnown).WithMessage("errors.grant.unknownPermission")
-            .Must(value => !catalogue.IsGlobal(value)).WithMessage("errors.grant.globalPermission")
+            .Must(value => !catalogue.IsClosedToGrants(value)).WithMessage("errors.grant.globalPermission")
             .When(grant => !string.IsNullOrWhiteSpace(grant.Value));
+
+        // A global permission a grant may confer is held everywhere or not at all: a department here would look like a limit
+        // that nothing applies, because it is only ever asked "at all?" (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant).
+        RuleFor(grant => grant.Department)
+            .Null().WithMessage("errors.grant.globalDepartment")
+            .When(grant => catalogue.IsKnown(grant.Value) && catalogue.IsGlobal(grant.Value) && !catalogue.IsClosedToGrants(grant.Value));
 
         // A member, a department's position or the team of a FIR, and exactly one of them (M2, note
         // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2; M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir).

@@ -26,9 +26,9 @@ namespace IvaoHub.IntegrationTests;
 /// the real host: a signal of the tours — projected by the tours' own enrolment, as a completed tour projects it — and one of the
 /// test module reach whoever holds <c>Awards.Assign</c>, once, and neither whoever switched the mail off from the profile nor a
 /// member without the permission. A signal dismissed before the run is not told.
-/// <para>Whoever assigns is a super administrator with no position: a grant never gives a global permission (note §5), and a
-/// person with no position is staff of no department, so nobody here joins the recipients <c>ContactsAndNotificationsTests</c>
-/// counts exactly.</para>
+/// <para>Whoever assigns is a super administrator with no position: a holder of <c>Awards.Assign</c> that is staff of no
+/// department. Since E10f the membership department holds it by a grant, but its people are among those
+/// <c>ContactsAndNotificationsTests</c> counts exactly, and nobody here may join them.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class AwardQueueMailTests(MariaDbFixture mariaDb) : IAsyncLifetime

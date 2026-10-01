@@ -105,7 +105,10 @@ internal static class MeEndpoints
                         block.Kind,
                         block.AlwaysLive))],
                     [.. catalogue.All.Select(permission =>
-                        new BootstrapPermissionName(permission.Name, permission.IsGlobal))]),
+                        new BootstrapPermissionName(
+                            permission.Name,
+                            permission.IsGlobal,
+                            permission.IsGlobal && permission.GrantableAlthoughGlobal))]),
                 // The one vocabulary the division decides centrally, and the only one so far. It
                 // travels with the bootstrap because a chip on a public calendar needs the word and
                 // the colour, and a visitor may not read `/api/calendar-kinds` — which is behind
@@ -313,7 +316,13 @@ internal sealed record BootstrapRegistries(
 /// <para>Not sensitive: the catalogue is in the source of every fork. What is sensitive is who
 /// holds what, and that is <c>Permissions</c> above, which only ever describes the caller.</para>
 /// </summary>
-internal sealed record BootstrapPermissionName(string Name, bool IsGlobal);
+/// <param name="Name">The permission, as the catalogue names it.</param>
+/// <param name="IsGlobal">True when it has no department to be scoped to.</param>
+/// <param name="GrantableAlthoughGlobal">
+/// True for a global permission a grant may still confer — who assigns the awards (M4, E10f). The screen offers a permission
+/// of a department, or a global one that says this; a permission of a department says false, because a grant confers it anyway.
+/// </param>
+internal sealed record BootstrapPermissionName(string Name, bool IsGlobal, bool GrantableAlthoughGlobal);
 
 /// <summary>
 /// One block, as the server declares it. What it looks like and what its properties mean live in
