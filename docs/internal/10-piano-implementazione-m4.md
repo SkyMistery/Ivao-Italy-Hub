@@ -685,11 +685,14 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
      dei `positionGrants`); `EventsArchitectureTests` li sposta dall'elenco «in attesa» alla tabella del design.
   7. **I test**: `EventsStateTests` (unità, 6); `EventsStaffTests` (integrazione, 7, VID 761006–761010, slug `evt-test-e3a-…`, aeroporti
      `XEA1` e `XEA2` seminati e tolti); `web/src/modules/events/eventForm.test.ts` (vitest, 4); `web/e2e/full/events-staff.spec.ts`.
-- **Scostamenti e scelte piccole** (nessuna è una domanda nuova):
+- **Scostamenti e scelte piccole** (nessuna è una domanda nuova, tranne la prima, che il revisore ha portato a Carmine):
   1. **Una lettura scritta a mano accanto al CRUD**, `GET /api/events/kind-presets` (`Events.Edit`): il design §7.2 conta fra gli
      endpoint a mano solo i verbi. I preset servono al form di chi scrive eventi, e le impostazioni le legge solo chi le gestisce
      (`ModuleSettingsEndpoints`, `Events.ManageSettings`), che un advisor dell'ED non ha. È il modulo che legge le sue impostazioni dal
      server, come fanno tour e training; il nucleo non cambia. Endpoint a mano di E3a: un verbo (annulla), una lettura (i preset).
+     **Scostamento accettato da Carmine** il 1 ottobre 2026 ([la sua risposta][ok214], pubblicata dal master su sua istruzione): la
+     lettura resta com'è e `ModuleSettingsDescriptor` non prende un permesso di lettura; nota
+     `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`, con il suo «Da portare nel piano».
   2. **Il preset si applica nel browser, al cambio del tipo**, e il server salva gli interruttori come arrivano («preimpostati, mai
      imposti», nota `i-tipi-di-evento` §2.2). «`kindPresets` applicati» è quindi provato in tre posti: l'integrazione (i preset arrivano
      a chi scrive eventi e a nessun altro; un evento tiene gli interruttori con cui lo si salva), `eventForm.test.ts` (il preset di un
@@ -747,9 +750,11 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
   tollerano, come in CI).
 - **La CI della prima spinta** (`c1f0a98`): verde, `build-test` in 25,3 minuti, `core-guard`.
 - **Dopo la revisione** ([i rilievi del revisore sulla #214][r214], «approvable on the merits»), 1 ottobre 2026:
-  1. **La lettura dei preset** (`GET /api/events/kind-presets`, scostamento 1) **aspetta la risposta di Carmine**: tenerla, o chiedere al
-     nucleo un permesso di lettura sulle impostazioni di un modulo (`ModuleSettingsDescriptor`, una PR del nucleo con la sua nota).
-     Nessun cambio finché non risponde.
+  1. **La lettura dei preset** (`GET /api/events/kind-presets`, scostamento 1): il revisore chiedeva a Carmine di tenerla, o di chiedere
+     al nucleo un permesso di lettura sulle impostazioni di un modulo (`ModuleSettingsDescriptor`, una PR del nucleo con la sua nota).
+     **Carmine l'ha tenuta** ([la sua risposta][ok214], 1 ottobre 2026, autore `SkyMistery`): uno scostamento accettato dal design §7.2,
+     scritto nella nota nuova `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md` (E3a non ne aveva una), che porta nel piano §16.6
+     la lettura fra gli endpoint a mano di M4. Nessun cambio al codice.
   2. **Annullare senza una versione** non fa il controllo del 409 (`request.RowVersion != default`): come `LegEndpoints`, e il browser la
      manda sempre. Lasciato com'è.
   3. **La pagina «Annulla» dice ciò che succede oggi**: tolta la frase sulla mail a chi ha prenotato, ha un turno o si è iscritto, e la
@@ -776,6 +781,7 @@ di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
      nuova base di merge (`ca80563`): PASS, come sopra.
 
 [r214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5929130403
+[ok214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5934118725
 
 ### E3b — La vita dell'evento
 

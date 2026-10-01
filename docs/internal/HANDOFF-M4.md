@@ -12,8 +12,9 @@ suo merge di E10c, che porta `main` dopo E10a (#210), E10f (#213) ed E10c (#204)
 (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), e il passaggio dei tour al calcolo del nucleo (#211); aperta,
 nella sua sessione, **E2b** (#212), la prossima nella coda del master.
 **Il prossimo passo**: **E2b** unita, poi **E3a**; dopo di lei **E3b** (la vita dell'evento: «Pubblica», l'uscita programmata, la fine,
-calendario, ricerca e usi dei file, `events-release`), che la sessione che coordina prepara sopra E3a. ⚠️ **La lettura dei preset**
-(`GET /api/events/kind-presets`) aspetta la risposta di Carmine sulla #214 («Che cosa ha lasciato E3a», sotto). ⚠️
+calendario, ricerca e usi dei file, `events-release`), che la sessione che coordina prepara sopra E3a. **La lettura dei preset**
+(`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
+`2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
 team di un FIR (E2b), un permesso globale da un grant (E10f) — e una condizione sola nel calcolo (nota di E2b, §3.8; «Che cosa ha
 lasciato E2b», sotto). **E11a** ed **E11b** trovano in E10c le postazioni della divisione, il rating preferito e il minimo di una
@@ -128,7 +129,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E3a (1 ottobre 2026, branch `m4/e3a-event-staff`, PR #214, in coda dopo la #212)
 
-- **Che cosa c'è** (il dettaglio in `10`, E3a, «Com'è andata»; nessuna migrazione, nessuna nota nuova):
+- **Che cosa c'è** (il dettaglio in `10`, E3a, «Com'è andata»; nessuna migrazione; una nota, dopo la revisione:
+  `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`, decisa da Carmine):
   - **Lo stato dalle date** in una funzione sola, `EventState.Of` (`src/IvaoHub.Modules.Events/EventState.cs`), e le cinque viste della
     lista (`EventViews`, `filter[view]`: bozze, prossimi, in corso, conclusi, annullati), scritte anche in SQL e tenute alla stessa
     risposta da `EventsStateTests`. Ogni istante è il primo momento di ciò che apre; annullato vince su tutto, bozza su ogni data.
@@ -164,9 +166,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (`events:cancel.description` e l'aiuto della nota), tolta dopo la revisione della #214 perché oggi non parte nessuna mail.
   - ⚠️ **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
     mentre un evento lo mostra (rilievo 4 del revisore sulla #214). E3b subito dopo.
-  - ⚠️ **La lettura dei preset** (`GET /api/events/kind-presets`) **aspetta la risposta di Carmine** sulla #214: tenerla, o un permesso di
-    lettura sulle impostazioni di un modulo nel nucleo (una PR sua, con la nota). Chi viene dopo non ci costruisce sopra altro finché non
-    risponde.
+  - **La lettura dei preset** (`GET /api/events/kind-presets`) **resta com'è**: Carmine l'ha accettata il 1 ottobre 2026
+    ([la sua risposta sulla #214](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5934118725)), uno scostamento dal
+    design §7.2 («gli endpoint a mano sono verbi») scritto nella nota `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`; nessun
+    permesso di lettura in `ModuleSettingsDescriptor`. ⚠️ Una fase che vuole un'altra impostazione del modulo nel form di chi non le
+    gestisce non la aggiunge qui da sola: è un endpoint a mano nuovo, con la sua decisione (piano §16.6).
   - ⚠️ **Nel back office `PageShell` non disegna la `description`** (solo il tooltip del titolo): lo stato dell'evento sta nella `note`.
   - ⚠️ **`AirportEndpoints` è un nome del nucleo** (`Core/Ivao`): le classi del modulo si chiamano `Event…`.
   - La spec e2e scrive un preset dell'RFO nelle impostazioni del banco e lo rimette com'era, come `events-skeleton.spec.ts` con l'RFE.
