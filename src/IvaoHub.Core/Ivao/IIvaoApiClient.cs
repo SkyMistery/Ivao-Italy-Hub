@@ -125,4 +125,20 @@ public interface IIvaoApiClient
     Task<IvaoNetworkStatus> GetNetworkStatusAsync(
         IvaoAirspace airspace,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The bookings of ATC positions IVAO lists for one day of UTC, <c>/v2/atc/bookings/daily</c> (M4, E15a). As measured on
+    /// 30 September 2026: every booking that touches the day — one across midnight is on both days, one that ends at midnight
+    /// on the next day too, one that starts at midnight not on the day before —, and with <paramref name="position"/> only
+    /// those whose callsign starts with it, in any case. A module asks <see cref="IAtcBookingSource"/>, which knows all that.
+    /// <para><see langword="null"/> when IVAO could not be asked, whatever went wrong: it is asked while somebody waits on a
+    /// page, and «not available» must never read as «nobody booked».</para>
+    /// <para>⚠️ By default a client knows none: a client written before E15a — the doubles of the tests among them — keeps
+    /// compiling and answers «not available».</para>
+    /// </summary>
+    Task<IReadOnlyList<AtcBookingDto>?> GetDailyAtcBookingsAsync(
+        DateOnly date,
+        string? position = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AtcBookingDto>?>(null);
 }

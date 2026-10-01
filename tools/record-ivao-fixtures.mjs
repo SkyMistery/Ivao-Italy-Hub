@@ -38,6 +38,17 @@
  * placeholders, the staff positions an empty list, and the connection times keep their shape and lose their values.
  * What IVAO sent for the ratings and the times is printed, so that the unit can be compared with the member's page.
  *
+ *   node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]
+ *
+ * records the ATC bookings of one day (M4, E15a) as /v2/atc/bookings/daily answers them for that UTC day, into
+ * atc-bookings-<name>.json: the bookings that start on the day — IVAO lists one across midnight on both days, and the one
+ * that began the day before belongs to that day — of the positions whose callsign starts with one of the prefixes, the way
+ * IVAO matches its own position parameter (the start of a callsign, in any case). The person is taken out: the members become
+ * <asVid>, <asVid> + 1… in the order they first appear, and the user object IVAO embeds — names, division, rating — keeps
+ * only that number. The VIDs it used are printed: keep them inside the range your tests own. What would find a booking, and its
+ * member, again through IVAO's own API is taken out too: its id and its createdAt are left out, and the bookings are moved onto
+ * 1 January 2001, a day IVAO has none of, with their times of day.
+ *
  *   node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]
  *
  * records public reference data: the ATC positions of the airports named, as /v2/ATCPositions/all answers them, into
@@ -62,9 +73,10 @@
  * sessions and of their flight plans are renumbered, because a session's identifier is what IVAO answers a name to; the
  * rating, the server and the software of each connection are dropped; and the whole evening is moved onto 1 January 2001,
  * a day the tracker has no session of, every moment by the same offset — the times of day and the relations between the
- * sessions stay, and no date leads back to the real ones. A controller's callsign stays: it names a position, not a person. The last look writes nothing that still holds a real VID, a name,
- * one of the dropped fields or a real day. The page holding the last row of an airport's answer takes IVAO about ten
- * seconds (measured on 30 September 2026), so this takes a minute or two.
+ * sessions stay, and no date leads back to the real ones. A controller's callsign stays: it names a position, not a
+ * person. The last look writes nothing that still holds a real VID, a name, one of the dropped fields or a real day. The
+ * page holding the last row of an airport's answer takes IVAO about ten seconds (measured on 30 September 2026), so this
+ * takes a minute or two.
  */
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -79,18 +91,26 @@ const outDir = join(root, "tests/fixtures/ivao");
 const listed = process.argv[2] === "--list";
 const airportsOnly = process.argv[2] === "--airports";
 const profileOnly = process.argv[2] === "--me";
+const bookingsOnly = process.argv[2] === "--bookings";
 const positionsOnly = process.argv[2] === "--positions";
 const sessionsAt = process.argv[2] === "--sessions-at";
 const referenceOnly = airportsOnly || positionsOnly;
 const vid = listed || referenceOnly || profileOnly || sessionsAt ? 0 : Number(process.argv[2]);
 const wanted = listed ? 0 : Number(process.argv[3] ?? 3);
 const asVid = Number(profileOnly ? process.argv[3] : process.argv[4] ?? 780001);
-if (sessionsAt ? process.argv.length < 8 : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid) {
+if (
+  sessionsAt
+    ? process.argv.length < 8
+    : bookingsOnly
+      ? !asVid || process.argv.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(process.argv[5])
+      : referenceOnly ? process.argv.length < 5 : profileOnly ? !asVid : listed ? !process.argv[3] || !asVid : !vid
+) {
   console.error(
     "Give the VID to record from: node tools/record-ivao-fixtures.mjs <vid> [flights] [asVid]\n"
       + "or a list of flights:        node tools/record-ivao-fixtures.mjs --list <file.json> <asVid>\n"
       + "or airports and runways:     node tools/record-ivao-fixtures.mjs --airports <name> <ICAO> [ICAO...]\n"
       + "or your own profile:         node tools/record-ivao-fixtures.mjs --me <asVid>\n"
+      + "or the ATC bookings of a day: node tools/record-ivao-fixtures.mjs --bookings <name> <asVid> <yyyy-mm-dd> <prefix> [prefix...]\n"
       + "or ATC positions and sectors: node tools/record-ivao-fixtures.mjs --positions <name> <ICAO> [ICAO...]\n"
       + "or an airport's sessions:    node tools/record-ivao-fixtures.mjs --sessions-at <ICAO> <from> <to> <firstVid> <lastVid>",
   );
@@ -261,6 +281,18 @@ const getPatiently = async (path) => {
   }
 };
 
+/**
+ * The day the recordings that hold people are moved onto (M4: the ATC bookings of E15a, the evening at an airport of E10a).
+ * IVAO lists no booking before 2023 and no session in 2001 (measured on 30 September and 1 October 2026). Every moment of
+ * the recorded day moves by one same offset and keeps its time of day, and the real day — which, with a callsign or an
+ * airport, finds the rows and their members again through IVAO's own API — is not in the file.
+ */
+const standIn = "2001-01-01";
+const movedFrom = (day) => {
+  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`);
+  return (moment) => new Date(Date.parse(moment) + shift).toISOString();
+};
+
 /** The VID, and everything IVAO knows about the person behind it, out of the recorded row. */
 const anonymise = (value) => {
   if (Array.isArray(value)) return value.map(anonymise);
@@ -326,6 +358,39 @@ if (airportsOnly) {
   process.exit(0);
 }
 
+if (bookingsOnly) {
+  const [date, ...prefixes] = process.argv.slice(5);
+  const starts = prefixes.map((prefix) => prefix.toUpperCase());
+  const callsignOf = (booking) => (booking.atcPosition ?? booking.subcenter ?? "").toUpperCase();
+  const dayOf = (moment) => new Date(moment).toISOString().slice(0, 10);
+  // Moved onto the stand-in day (above), the bookings keep their times of day and lose the real one.
+  const moved = movedFrom(date);
+  const people = new Map();
+  const bookings = (await get(`/v2/atc/bookings/daily?date=${date}`))
+    .filter((booking) => dayOf(booking.startDate) === date)
+    .filter((booking) => starts.some((start) => callsignOf(booking).startsWith(start)))
+    // The booking's own number and the moment it was made find it again through IVAO's API: they are left out.
+    .map(({ id, createdAt, ...booking }) => {
+      const member = booking.user?.id;
+      if (member !== undefined && !people.has(member)) people.set(member, asVid + people.size);
+      // Every other field where IVAO put it; of the person, only the number that stands for them.
+      return Object.fromEntries(Object.entries(booking).map(([key, value]) => [
+        key,
+        key === "user" ? value && { id: people.get(value.id) } : key === "startDate" || key === "endDate" ? moved(value) : value,
+      ]));
+    });
+  writeFileSync(join(outDir, `atc-bookings-${process.argv[3]}.json`), JSON.stringify(bookings, null, 2));
+  const count = (test) => bookings.filter(test).length;
+  console.log(
+    `recorded ${bookings.length} booking(s) on ${new Set(bookings.map(callsignOf)).size} position(s), moved onto ${standIn}: `
+      + `${count((booking) => booking.subcenter)} on a sector, ${count((booking) => booking.training === "training")} training, `
+      + `${count((booking) => booking.training === "exam")} exam, `
+      + `${count((booking) => dayOf(booking.endDate) !== standIn)} across midnight`,
+  );
+  console.log(people.size ? `people: ${people.size}, as VID ${asVid} to ${asVid + people.size - 1}` : "nobody booked them");
+  process.exit(0);
+}
+
 if (positionsOnly) {
   const codes = new Set(process.argv.slice(4).map((code) => code.toUpperCase()));
   const withoutOutline = ({ regionMap, regionMapPolygon, ...position }) => position;
@@ -382,11 +447,9 @@ if (sessionsAt) {
       if (!planIds.has(plan.id)) planIds.set(plan.id, 2_000_001 + planIds.size);
     }
   }
-  // The whole evening moves onto a day the tracker has no session of (none in 2001, measured on 1 October 2026), every
-  // moment by the same offset: the times of day and the relations between the sessions stay, the real date goes.
-  const standIn = "2001-01-01";
-  const shift = Date.parse(`${standIn}T00:00:00Z`) - Date.parse(`${from.toISOString().slice(0, 10)}T00:00:00Z`);
-  const moved = (moment) => new Date(Date.parse(moment) + shift).toISOString();
+  // The whole evening moves onto the stand-in day (above): the times of day and the relations between the sessions stay,
+  // the real date goes.
+  const moved = movedFrom(from.toISOString().slice(0, 10));
   const instant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
   const movedEverywhere = (value) =>
     Array.isArray(value) ? value.map(movedEverywhere)

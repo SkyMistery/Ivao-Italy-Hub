@@ -1,0 +1,202 @@
+[
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIMM_WS2_CTR",
+    "user": {
+      "id": 761070
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1984,
+      "centerId": "LIMM",
+      "atcCallsign": "Milano Radar",
+      "military": false,
+      "frequency": 135.455,
+      "composePosition": "LIMM_WS2_CTR"
+    }
+  },
+  {
+    "startDate": "2001-01-01T18:30:00.000Z",
+    "endDate": "2001-01-01T20:30:00.000Z",
+    "voice": true,
+    "training": "exam",
+    "atcPosition": "EDDF_APP",
+    "subcenter": null,
+    "user": {
+      "id": 761071
+    },
+    "atcPositionRef": {
+      "id": 2498,
+      "airportId": "EDDF",
+      "atcCallsign": "Langen Radar",
+      "military": false,
+      "frequency": 120.805,
+      "composePosition": "EDDF_APP"
+    },
+    "subcenterRef": null
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LFFF_CTR",
+    "user": {
+      "id": 761072
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 3876,
+      "centerId": "LFFF",
+      "atcCallsign": "Paris Control",
+      "military": false,
+      "frequency": 120.955,
+      "composePosition": "LFFF_CTR"
+    }
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_SU_CTR",
+    "user": {
+      "id": 761073
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1172,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 128.8,
+      "composePosition": "LIRR_SU_CTR"
+    }
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LFPG_APP",
+    "subcenter": null,
+    "user": {
+      "id": 761074
+    },
+    "atcPositionRef": {
+      "id": 3988,
+      "airportId": "LFPG",
+      "atcCallsign": "De Gaulle Approach",
+      "military": false,
+      "frequency": 125.83,
+      "composePosition": "LFPG_APP"
+    },
+    "subcenterRef": null
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T22:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_NE_CTR",
+    "user": {
+      "id": 761075
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 1174,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 124.2,
+      "composePosition": "LIRR_NE_CTR"
+    }
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": null,
+    "subcenter": "LIRR_NC_CTR",
+    "user": {
+      "id": 761076
+    },
+    "atcPositionRef": null,
+    "subcenterRef": {
+      "id": 3584,
+      "centerId": "LIRR",
+      "atcCallsign": "Roma Radar",
+      "military": false,
+      "frequency": 131.2,
+      "composePosition": "LIRR_NC_CTR"
+    }
+  },
+  {
+    "startDate": "2001-01-01T23:00:00.000Z",
+    "endDate": "2001-01-02T01:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "SBGR_TWR",
+    "subcenter": null,
+    "user": {
+      "id": 761077
+    },
+    "atcPositionRef": {
+      "id": 3751,
+      "airportId": "SBGR",
+      "atcCallsign": "Guarulhos Tower",
+      "military": false,
+      "frequency": 135.2,
+      "composePosition": "SBGR_TWR"
+    },
+    "subcenterRef": null
+  },
+  {
+    "startDate": "2001-01-01T19:00:00.000Z",
+    "endDate": "2001-01-01T21:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LIMC_TWR",
+    "subcenter": null,
+    "user": {
+      "id": 761078
+    },
+    "atcPositionRef": {
+      "id": 3901,
+      "airportId": "LIMC",
+      "atcCallsign": "Malpensa Tower",
+      "military": false,
+      "frequency": 128.35,
+      "composePosition": "LIMC_TWR"
+    },
+    "subcenterRef": null
+  },
+  {
+    "startDate": "2001-01-01T18:00:00.000Z",
+    "endDate": "2001-01-01T20:00:00.000Z",
+    "voice": true,
+    "training": null,
+    "atcPosition": "LIRF_TWR",
+    "subcenter": null,
+    "user": {
+      "id": 761079
+    },
+    "atcPositionRef": {
+      "id": 3957,
+      "airportId": "LIRF",
+      "atcCallsign": "Fiume Tower",
+      "military": false,
+      "frequency": 118.7,
+      "composePosition": "LIRF_TWR"
+    },
+    "subcenterRef": null
+  }
+]
