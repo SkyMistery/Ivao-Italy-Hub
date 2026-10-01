@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using FluentValidation;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
@@ -466,19 +467,14 @@ public static class MapCrudExtensions
             : [];
 
         // "Or of a department they read this list on from outside it." Held across the department, not on one row of it: one
-        // held on a single row opens that row to the handler and no list.
+        // held on a single row opens that row to the handler and no list. Held on every department, the rows of every
+        // department — what the department claims of every one gave such a grant before E2b, and not a row more — and still
+        // nothing of any department anywhere else.
         var fromOutside = reading
             .Where(held => held is { FromOutside: true, Fir: null, ResourceScope: null })
-            .Select(held => held.Department)
-            .ToArray();
+            .SelectMany(held => held.Department is { } one ? [one] : RolePermissionMatrix.AllDepartments);
 
-        // On every department from outside, the whole of this list — and still nothing of any department anywhere else.
-        if (fromOutside.Any(department => department is null))
-        {
-            return true;
-        }
-
-        var departments = currentUser.Departments.Concat(fromOutside.OfType<Department>()).Distinct().ToList();
+        var departments = currentUser.Departments.Concat(fromOutside).Distinct().ToList();
 
         if (departments.Count == 0 && onTheirFir.Length == 0)
         {
