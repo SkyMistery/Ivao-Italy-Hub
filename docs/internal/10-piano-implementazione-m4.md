@@ -985,11 +985,19 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
     migra il contesto del nucleo: `AddIvaoFras` resta com'è. Sul merge: `dotnet build` senza avvisi; unità **1060/1060**; **integrazione
     intera senza filtro 451/451** (312 s); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 599 in 81 file; `pnpm
     gen:api` senza differenze.
+  - **E poi E10a** (#210, unita il 1° ottobre; il revisore ha chiesto il merge [sulla PR][m204]): due conflitti — lo strumento delle
+    fixture, che ora ha le modalità di tutte e tre le fasi (`--bookings`, `--fras`, `--sessions-at`: l'intestazione, le variabili, il
+    controllo degli argomenti, il messaggio d'uso e i due blocchi, ognuno con il suo `process.exit`), e `HANDOFF-M4.md` (i paragrafi di
+    tutte le fasi, E10c sopra). Il client di IVAO, il README delle fixture e la registrazione dei servizi si sono uniti da soli. E10a non
+    migra il contesto del nucleo. Sul merge: `dotnet build` senza avvisi; unità **1077/1077** (con i test di E10a sul tracker e i miei sulle
+    fixture degli FRA); **integrazione intera senza filtro 451/451** (357 s); lo strumento si legge (`node --check`) e rifiuta gli argomenti
+    mancanti di `--fras` e `--sessions-at`. Il web non cambia con questo merge: valgono i giri sul merge con E15a.
 
 [q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
 [ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
 [r204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926667625
 [ok204b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926811688
+[m204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5929486656
 
 ### E10d — Nucleo: la mail a chi assegna gli award
 
