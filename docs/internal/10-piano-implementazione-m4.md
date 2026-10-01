@@ -866,6 +866,13 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
     `core-guard` in PowerShell dalla base del merge.
   - **Non verificato**, in più: un avvio vero di un'installazione con una mappa sbagliata (provato con un host dei test che riceve la
     mappa per la stessa via del file).
+  - **`main` ancora, con E15a** (#207, unita mentre la PR era in revisione): un merge con quattro conflitti — la registrazione dei
+    servizi di IVAO (le prenotazioni di E15a accanto al vocabolario con la mappa e al suo validatore), lo strumento delle fixture (le
+    modalità `--bookings` e `--fras` tutte e due), il README delle fixture (le due sezioni) e `HANDOFF-M4.md` (i paragrafi di tutte le
+    fasi, E10c sopra); `IIvaoApiClient`, `IvaoApiClient` e `FixtureIvaoApiClient` si sono uniti da soli, con i due membri nuovi. E15a non
+    migra il contesto del nucleo: `AddIvaoFras` resta com'è. Sul merge: `dotnet build` senza avvisi; unità **1060/1060**; **integrazione
+    intera senza filtro 451/451** (312 s); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 599 in 81 file; `pnpm
+    gen:api` senza differenze.
 
 [q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
 [ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
