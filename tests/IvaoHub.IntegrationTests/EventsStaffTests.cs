@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -42,6 +43,12 @@ public sealed class EventsStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const string Second = "XEA2";
 
     private const string SlugStem = "evt-test-e3a";
+
+    /// <summary>A description of one section with one block of text, in both languages.</summary>
+    private const string Description = """
+        {"schemaVersion":1,"sections":[{"id":"s","blocks":[{"id":"b","type":"text",
+         "props":{"markdown":{"it":"Testo italiano","en":"English text"}}}]}]}
+        """;
 
     private static readonly string[] Locales = ["it", "en"];
 
@@ -121,6 +128,23 @@ public sealed class EventsStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using (var stale = await advisor.PutAsJsonAsync($"{EventEndpoints.Pattern}/{id}", changed, token))
         {
             Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        // The description is a document of blocks, kept as it is sent; its envelope is checked, on its field.
+        var described = await OkAsync(await advisor.PutAsJsonAsync(
+            $"{EventEndpoints.Pattern}/{id}",
+            changed with { Body = JsonNode.Parse(Description), RowVersion = updated.GetProperty("rowVersion").GetDateTime() },
+            token), token);
+        Assert.Equal(
+            "text",
+            described.GetProperty("body").GetProperty("sections")[0].GetProperty("blocks")[0].GetProperty("type").GetString());
+
+        using (var notADocument = await advisor.PutAsJsonAsync(
+            $"{EventEndpoints.Pattern}/{id}",
+            changed with { Body = JsonNode.Parse("[]"), RowVersion = described.GetProperty("rowVersion").GetDateTime() },
+            token))
+        {
+            Assert.Contains("errors.body.notAnObject", (await RefusalsAsync(notADocument, token))["body"]);
         }
 
         // The list shows it with the division's word for its kind.
