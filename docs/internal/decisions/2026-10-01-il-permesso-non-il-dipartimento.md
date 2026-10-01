@@ -143,8 +143,22 @@ a una posizione **senza `scope`**. Su `main` un permesso da un grant senza dipar
 `user.departments` con tutti e nove. Con E2b quel grant è da fuori (§3.1: una posizione su tutti i dipartimenti) e l'MD resta nel solo
 MD per ciò che vede. Detto alla sessione di E10f il 1 ottobre, che lo chiude anche da sé **con lo stesso campo e la stessa forma**
 (`FromOutside` ultimo parametro, lo stesso ordine delle voci uguali, la stessa riga in `BuildIdentity`) per ogni permesso globale da
-un grant, anche per nome, senza il `View` implicato. Chi delle due arriva seconda a `main` tiene una dichiarazione sola e somma le due
+un grant, anche per nome, con il `View` che porta. Chi delle due arriva seconda a `main` tiene una dichiarazione sola e somma le due
 condizioni del calcolo: `fir is null && (grant.GivesThePermissionNotTheDepartment || catalogue.IsGlobal(grant.Value))`.
+
+**E10f è arrivata prima** (#213, unita il 1 ottobre alle 11:05 UTC), e **la riconciliazione è in questo branch**, con un merge di `main`
+(la richiesta del revisore sulla #212): un `FromOutside` solo, con le due vie nel suo `<param>`; la condizione sommata qui sopra; un
+`.ThenBy(FromOutside)` solo, con le due ragioni; la riga di `BuildIdentity` con i due commenti; le due aggiunte in `docs/FORKING.md` e in
+`config/division.example.json`. E10f non scriveva il segno nel cookie, E2b sì: chi assegna gli award per grant ha ora **`Awards.Assign@!`
+e `Awards.View@!`**. **Ogni riga di `Award` resta aperta**, per due strade: il catalogo è condiviso in lettura (`Award` è
+`ISharedForReading`, e la sua lista dice `SharedForReading = award => true`), e l'unico handler risponde alla lettura di una riga
+condivisa con `HasAny(Awards.View)`, che non guarda né il dipartimento né il segno; e `Awards.View@!` si rilegge senza dipartimento, cioè
+tenuto su tutti da fuori, così la lista generata ci aggiunge ogni dipartimento (§3.4) e chi non sta in nessun dipartimento non riceve il
+403 «nessun dipartimento». Lo prova `PermissionFromOutsideTests` (il quarto caso, VID 761094): una posizione di HQ, che non ha
+dipartimento, con `Awards.Assign` per nome legge gli award di SOD e FOD nella lista e uno riga per riga; senza il ramo di tutti i
+dipartimenti la lista risponde 403, quello che `main` dava a un lettore così prima di E2b (la nota di E10f lo diceva). Un lettore che
+non conosce il segno legge lo scope `!`: per `Awards.Assign`, globale, conta solo `HasAny`, che dice sì; per `Awards.View` la riga resta
+aperta dalla lettura condivisa.
 
 ### 3.9 I nove grant di chi collabora
 
@@ -189,7 +203,7 @@ maintainer che la nota di E2 aveva visto rossi con loro.
   lo stesso permesso da una posizione e per nome resta della persona; il segno nel claim, che va e torna, e un lettore che non lo conosce
   e lo legge chiuso; nessun claim `dept` dal permesso da fuori, anche su tutti i dipartimenti, e il claim da un grant per nome; l'unico
   handler che lo tiene sulle righe del suo dipartimento.
-- **Sul database** (`PermissionFromOutsideTests`, 3, VID 761091–761093; 761090 è un'identità dei test di unità): gli advisor dell'AOD con
+- **Sul database** (`PermissionFromOutsideTests`, 4, VID 761091–761094; 761090 è un'identità dei test di unità): gli advisor dell'AOD con
   il permesso di lettura del modulo di prova sul SOD leggono le righe del SOD nella lista generata che legge con quel permesso, e una di
   esse con l'unico handler, e non una riga del FOD; **e nient'altro del SOD** — nessun `dept` in `/api/me`, quindi nessun gruppo del SOD
   nella barra; nessun link del SOD nella lista dei link, che leggono con un altro permesso sul loro dipartimento; nessuna riga che il filtro
@@ -197,7 +211,8 @@ maintainer che la nota di E2 aveva visto rossi con loro.
   link del SOD, le righe `Visibility.Department` del SOD nella pagina del modulo e nella ricerca. **Dopo la revisione della #212** (VID
   761093): gli advisor dell'AOD con `Links.View` su **tutti** i dipartimenti, da fuori, leggono nella lista dei link quelli di AOD, SOD e
   FOD, e restano nel solo AOD (`/api/me`, la ricerca); un divieto di `Links.View` sul FOD alla stessa posizione toglie il link del FOD e
-  lascia gli altri.
+  lascia gli altri. **Dopo la riconciliazione con E10f** (VID 761094): una posizione di HQ, in nessun dipartimento, con `Awards.Assign`
+  per nome legge ogni award di ogni dipartimento (§3.8).
 - **Provati al contrario**: con il codice di `main` il primo test d'integrazione cade sul primo `Assert` (`/api/me` dice `["AOD",
   "SOD"]`); con E2b senza il pezzo della lista cade sulla lista; senza l'ordine delle voci uguali cade il test di unità della persona. Il
   secondo test d'integrazione è verde anche su `main`: il 6 settembre non cambia. Il caso di tutti i dipartimenti: senza il suo ramo

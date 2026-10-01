@@ -572,8 +572,8 @@ nell'ED.
      unita mentre girava la CI di questo giro e che rendeva la #212 in conflitto: un altro merge, conflitto solo in `HANDOFF-M4.md` (il
      blocco di E2b sopra quelli di E15a e di E2). E15a tocca la metà IVAO del nucleo e nessun file di E2b.
   3. **L'ordine con E10f (#213)**: chi arriva seconda a `main` tiene una dichiarazione sola di `FromOutside`, somma le due condizioni del
-     calcolo e rifà `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b sul codice unito. Il 1 ottobre,
-     durante questo giro, la #213 era ancora aperta: E2b non è la seconda.
+     calcolo e rifà `AwardsAssignByGrantTests`, `GrantableGlobalPermissionTests` e le due classi di E2b sul codice unito. Durante questo
+     giro la #213 era ancora aperta; poi è entrata prima, e **la seconda è E2b** (punto 5).
   4. **Verificato di nuovo, dopo il merge e i test nuovi** (1 ottobre 2026, sul branch prima del commit di questi documenti, `main` a
      `c441839`): `dotnet build` della soluzione senza avvisi, e `dotnet format --verify-no-changes` sui tre file C# ritoccati; unità
      **945/945** (le 937 di `main` e le 8 di E2b); **integrazione intera senza filtro 444/444** (5,6 minuti), la classe nuova da sola 3/3;
@@ -585,10 +585,33 @@ nell'ED.
      **970/970** (le 25 di E15a in più); **integrazione intera 444/444** (5,5 minuti); `pnpm gen:api` senza differenze, e nessun file
      web portato dal merge (lint, Vitest e smoke del giro prima valgono); **`pnpm e2e:full` 51/51 al primo giro** (10,4 minuti) sul banco
      5120 ricreato, dietro il lock di Mailpit.
+  5. **La riconciliazione con E10f** ([la richiesta del revisore][c212], dopo l'unione della #213 alle 11:05 UTC; il master aveva
+     consigliato di aspettarla per unire `main` una volta sola, [qui][w212]): `main` unito a `ee43ec2` (`a33965b`, con E10a #210 ed E10f
+     #213), conflitti in `HubClaims.cs`, `EffectivePermissionsCalculator.cs`, `docs/FORKING.md` e `HANDOFF-M4.md`. **Un solo
+     `FromOutside`**, con le due vie nel suo `<param>`; **una condizione** nel calcolo, `fir is null &&
+     (grant.GivesThePermissionNotTheDepartment || catalogue.IsGlobal(grant.Value))`; **un solo `.ThenBy(FromOutside)`**, con le due ragioni;
+     **una riga in `BuildIdentity`**, con i due commenti; le due aggiunte tenute in `docs/FORKING.md` e in `config/division.example.json`.
+     ⚠️ **Il segno ora viaggia anche per i globali**: chi assegna gli award per grant ha `Awards.Assign@!` e `Awards.View@!` nel cookie.
+     **Come `Awards.View@!` apre ancora ogni riga di `Award`** (la domanda del revisore): il catalogo è condiviso in lettura (`Award` è
+     `ISharedForReading`, e la sua lista dice `SharedForReading = award => true`), e l'unico handler risponde alla lettura di una riga
+     condivisa con `HasAny(Awards.View)`, che non guarda né il dipartimento né il segno; e `Awards.View@!` si rilegge senza dipartimento,
+     cioè tenuto da fuori su tutti, così la lista ci aggiunge ogni dipartimento e chi non è in nessuno non riceve il 403 «nessun
+     dipartimento». Lo prova il quarto caso di `PermissionFromOutsideTests` (VID 761094): una posizione di HQ, in nessun dipartimento,
+     con `Awards.Assign` per nome legge gli award di SOD e FOD e uno riga per riga; senza il ramo di tutti i dipartimenti la lista dà 403,
+     quello che `main` dava prima di E2b (la nota di E10f lo diceva). **Verificato sul codice unito** (1 ottobre 2026, prima del commit
+     di questi documenti, `main` a `ee43ec2`): `dotnet build` senza avvisi, e `dotnet format --verify-no-changes` sui file C# toccati;
+     le classi chieste — `GrantableGlobalPermissionTests` e `PermissionFromOutsideRulesTests` **25/25**, `AwardsAssignByGrantTests` e
+     `PermissionFromOutsideTests` **8/8** —; unità intere **1003/1003**; **integrazione intera senza filtro 449/449** (4,9 minuti);
+     `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` **601 in 82 file**, `pnpm gen:api` senza differenze; `pnpm
+     e2e` **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (10,5 minuti) sul banco 5120
+     ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge `ee43ec2`:
+     PASS, nessun file del maintainer, sette del nucleo, la nota nuova.
 
 [ok209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
 [r212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926652025
 [m212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5926813269
+[w212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5929486987
+[c212]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/212#issuecomment-5930060422
 
 ### E3a — L'evento nello staff
 
