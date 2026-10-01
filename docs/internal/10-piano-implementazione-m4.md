@@ -993,12 +993,19 @@ Design §1.13, §4.1, §4.3, §13 n.4; nota `il-roster-atc`. Branch `m4/e10c-rat
     migra il contesto del nucleo. Sul merge: `dotnet build` senza avvisi; unità **1077/1077** (con i test di E10a sul tracker e i miei sulle
     fixture degli FRA); **integrazione intera senza filtro 451/451** (357 s); lo strumento si legge (`node --check`) e rifiuta gli argomenti
     mancanti di `--fras` e `--sessions-at`. Il web non cambia con questo merge: valgono i giri sul merge con E15a.
+  - **E infine E10f** (#213, `Awards.Assign` dato con un grant; il revisore ha chiesto il merge [sulla PR][m204b]): un conflitto solo,
+    `HANDOFF-M4.md` (i paragrafi di tutte le fasi, E10c sopra). `config/division.json` e `division.example.json` si sono uniti da soli
+    e portano tutte e due le cose — il grant di `Awards.Assign` all'MD di E10f e i rating preferiti di E10c —, come `docs/FORKING.md`.
+    E10f non migra il contesto del nucleo. Sul merge: `dotnet build` senza avvisi; unità **1093/1093** (i test dei file della divisione
+    compresi: il validatore dei preferiti e i grant degli eventi); **integrazione intera senza filtro 455/455** (298 s); `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 601 in 82 file; `pnpm gen:api` senza differenze.
 
 [q204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5915876615
 [ok204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5916282164
 [r204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926667625
 [ok204b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5926811688
 [m204]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5929486656
+[m204b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/204#issuecomment-5930060106
 
 ### E10d — Nucleo: la mail a chi assegna gli award
 
