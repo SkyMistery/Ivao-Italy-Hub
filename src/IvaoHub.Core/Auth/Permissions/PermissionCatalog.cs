@@ -38,13 +38,18 @@ public sealed class PermissionCatalog
             }
         }
 
-        if (_byName.TryGetValue(CorePermissions.PermissionsManage, out var manage) && manage.GrantableAlthoughGlobal)
+        foreach (var descriptor in _byName.Values.Where(descriptor => descriptor.GrantableAlthoughGlobal))
         {
-            // Whoever held it by a grant could hand it on by another, and the perimeter of the staff would stop being IVAO's
-            // (plan section 6.3; Carmine on #205: never Permissions.Manage). A start that finds it so stops, rather than opening.
-            throw new InvalidOperationException(
-                $"'{CorePermissions.PermissionsManage}' is declared GrantableAlthoughGlobal, and the right to hand out "
-                + "permissions never comes by a grant.");
+            if (!string.Equals(descriptor.Name, CorePermissions.AwardsAssign, StringComparison.Ordinal))
+            {
+                // Awards.Assign and no other (Carmine on #205, answer 2; the reviewer's point on #213): every other global permission
+                // comes with the staff positions IVAO publishes (plan section 6.3) — Permissions.Manage first, since whoever held it by
+                // a grant could hand it on by another. A start that finds another stops rather than opening the hub; a second one is
+                // a decision with its own note, which changes this line too.
+                throw new InvalidOperationException(
+                    $"'{descriptor.Name}' is declared GrantableAlthoughGlobal, and only '{CorePermissions.AwardsAssign}' may be: "
+                    + "a grant never confers another global permission.");
+            }
         }
 
         foreach (var descriptor in _byName.Values.Where(descriptor => descriptor.OnlyForAssignee))

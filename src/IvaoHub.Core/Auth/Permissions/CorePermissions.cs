@@ -24,8 +24,9 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// True when a grant may confer this permission although it is global: a function the division gives to whom it chooses,
 /// which decides no perimeter of the staff — who assigns the awards (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant,
 /// decided by Carmine on #205). Every other global permission is held through the staff positions IVAO publishes, and a
-/// grant never confers it (plan section 6.3). It means nothing on a permission of a department, which a grant confers anyway;
-/// and never on <c>Permissions.Manage</c>, which the catalogue refuses: the right to hand out permissions never comes by one.
+/// grant never confers it (plan section 6.3). Only <c>Awards.Assign</c> says it, and the catalogue refuses it on any other
+/// permission — <c>Permissions.Manage</c> first, since the right to hand out permissions never comes by a grant; a second one
+/// would be a decision with its own note.
 /// </param>
 public sealed record PermissionDescriptor(
     string Name,
