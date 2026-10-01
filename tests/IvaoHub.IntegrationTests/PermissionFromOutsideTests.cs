@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -23,6 +24,8 @@ namespace IvaoHub.IntegrationTests;
 /// another department;</item>
 /// <item>and nothing else of special operations: no <c>dept</c> claim — so no group of that department in the back office —, no
 /// row of it in another list, no row of it the global query filter keeps to the department, and none in the search;</item>
+/// <item>granted a read permission on every department, they read the rows of each in the list that reads with it, and still
+/// nothing else of the others; a deny of it on one department, next to that grant, takes that department's rows away;</item>
 /// <item>a grant to a person on the same department still lets them in, as decided on 6 September (note
 /// 2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento).</item>
 /// </list>
@@ -35,8 +38,9 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
     // The range of the events module (CONTRIBUTING.md), 761090–761099 handed to E2b; 761090 is an identity of the unit tests.
     private const int CollaboratorVid = 761091;
     private const int GrantedByNameVid = 761092;
+    private const int EverywhereVid = 761093;
 
-    private static readonly int[] SeededVids = [CollaboratorVid, GrantedByNameVid];
+    private static readonly int[] SeededVids = [CollaboratorVid, GrantedByNameVid, EverywhereVid];
 
     /// <summary>
     /// What every row and grant written here says, so that one left behind by an interrupted run is found and taken away. A
@@ -114,6 +118,46 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
         var found = await SearchAsync(collaborator, needle, token);
         Assert.Contains($"{needle} atc", found);
         Assert.DoesNotContain($"{needle} special", found);
+    }
+
+    [Fact]
+    public async Task APositionGrantedAReadPermissionOnEveryDepartmentReadsTheRowsOfEachAndADenyOnOneTakesItsRowsAway()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var needle = $"menaggio{Guid.NewGuid():N}"[..20];
+
+        var theirs = await SeedLinkAsync(Department.AOD, $"{needle} atc", token);
+        var special = await SeedLinkAsync(Department.SOD, $"{needle} special", token);
+        var flight = await SeedLinkAsync(Department.FOD, $"{needle} flight", token);
+
+        // Whoever advises the ATC operations reads the links of every department: a position's grant with no department, which
+        // is on departments not the position's own too (the reviewer's point on #212: the list's branch of "every department").
+        await SeedMemberAsync(EverywhereVid, "IT-AOA8", token);
+        await GrantToPositionAsync(Department.AOD, StaffLevel.Advisor, CorePermissions.LinksView, scope: null, token);
+
+        using (var everywhere = await SignedInAsync(EverywhereVid, token))
+        {
+            // The list that reads with it holds the rows of each department...
+            var links = await LinksAsync(everywhere, needle, token);
+            Assert.Contains(theirs, links);
+            Assert.Contains(special, links);
+            Assert.Contains(flight, links);
+
+            // ...and nothing else of them: no department of the nine in the bootstrap but their own, which a grant by name on
+            // every department would have given them all, and none of the rows the others keep to themselves in the search.
+            var me = await everywhere.GetFromJsonAsync<JsonElement>("/api/me", token);
+            Assert.Equal([nameof(Department.AOD)], Strings(me.GetProperty("user").GetProperty("departments")));
+            Assert.Equal([$"{needle} atc"], await SearchAsync(everywhere, needle, token));
+        }
+
+        // A deny of the same permission on one department, to the same position: the rows of that department go, the others stay.
+        await GrantToPositionAsync(Department.AOD, StaffLevel.Advisor, CorePermissions.LinksView, Department.FOD, token, GrantEffect.Deny);
+
+        using var denied = await SignedInAsync(EverywhereVid, token);
+        var left = await LinksAsync(denied, needle, token);
+        Assert.Contains(theirs, left);
+        Assert.Contains(special, left);
+        Assert.DoesNotContain(flight, left);
     }
 
     [Fact]
@@ -219,13 +263,17 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>A grant to whoever holds a position of <paramref name="position"/> at <paramref name="level"/>, held on <paramref name="scope"/>.</summary>
+    /// <summary>
+    /// A grant to whoever holds a position of <paramref name="position"/> at <paramref name="level"/>, held on <paramref name="scope"/>
+    /// — every department when it is null —, or the deny of it.
+    /// </summary>
     private Task GrantToPositionAsync(
         Department position,
         StaffLevel level,
         string permission,
-        Department scope,
-        CancellationToken cancellationToken) =>
+        Department? scope,
+        CancellationToken cancellationToken,
+        GrantEffect effect = GrantEffect.Grant) =>
         WriteGrantAsync(
             new UserGrant
             {
@@ -234,7 +282,7 @@ public sealed class PermissionFromOutsideTests(MariaDbFixture mariaDb) : IAsyncL
                 Kind = GrantKind.Permission,
                 Value = permission,
                 Department = scope,
-                Effect = GrantEffect.Grant,
+                Effect = effect,
                 Reason = Stem,
             },
             cancellationToken);
