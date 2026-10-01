@@ -393,10 +393,10 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AnAnswerWithNoFraLeavesThemAsTheyWere()
+    public async Task ANightIvaoDoesNotAnswerLeavesThemAsTheyWere()
     {
-        // A client written before E10c answers none through the interface, as one would when IVAO cannot be asked: a bad
-        // night must never read as "the division has lifted every minimum".
+        // A client written before E10c cannot be asked through the interface, as when IVAO does not answer: a bad night must
+        // never read as "the division has lifted every minimum".
         var token = TestContext.Current.CancellationToken;
         await SyncAsync(token);
 
@@ -409,13 +409,81 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
             var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
             Assert.Equal(OwnFras.Length, await database.IvaoFras.CountAsync(fra => OwnFras.Contains(fra.Id), token));
             Assert.Equal(94, await database.IvaoFras.CountAsync(fra => fra.Id < OwnFras[0], token));
-            Assert.Contains("0 FRA(s) for IT", (await LastRunAsync(database, token)).Message, StringComparison.Ordinal);
+            Assert.Contains("no answer on the FRAs of IT", (await LastRunAsync(database, token)).Message, StringComparison.Ordinal);
         }
         finally
         {
             await RemoveOwnFrasAsync(token);
         }
     }
+
+    [Fact]
+    public async Task ADivisionThatLiftsEveryFraHasNone()
+    {
+        // The reviewer's point 2 on #204: IVAO answers, and with none — the division lifted all of its FRAs. The snapshot keeps
+        // none either, or the old ones would go on keeping controllers off positions that are open to them.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        try
+        {
+            await AddOwnFrasAsync(token);
+            Assert.Equal("succeeded", await RunWithAsync(fixtures => new NoFra(fixtures), token));
+
+            await using var scope = _factory.Services.CreateAsyncScope();
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            Assert.False(await database.IvaoFras.AnyAsync(token));
+            Assert.Contains("0 FRA(s) for IT", (await LastRunAsync(database, token)).Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            // The FRAs of the fixtures come back for the classes and the tests after this one.
+            await RemoveOwnFrasAsync(token);
+            await SyncAsync(token);
+        }
+    }
+
+    [Fact]
+    public async Task TheHubsVocabularySaysTheDivisionsPreferredRatings()
+    {
+        // Moved into division.json on the maintainer's answer on #204: the vocabulary the core registers carries Italy's rule,
+        // and a module asks it without naming a rating.
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var ratings = scope.ServiceProvider.GetRequiredService<RatingVocabulary>();
+
+        Assert.Equal(
+            ["APP APC", "ATIS -", "CTR ACC", "DEL AS3", "DEP APC", "FSS ADC", "GND ADC", "TWR ADC"],
+            IvaoAtcPosition.Kinds.Select(kind => $"{kind} {ratings.PreferredFor(kind)?.ShortName ?? "-"}").Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task AKindOrARatingTheCoreDoesNotKnowStopsTheStart()
+    {
+        // Italy's file with a kind IVAO does not list and a rating it does not have, written into the options the way the
+        // file is read: the host does not come up, and says which key and why.
+        await using var broken = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.PostConfigure<DivisionOptions>(division =>
+            {
+                division.PreferredAtcRatings["TOWER"] = "ADC";
+                division.PreferredAtcRatings["GND"] = "XYZ";
+            })));
+
+        var refused = Assert.ThrowsAny<Exception>(() => broken.Services.GetRequiredService<IOptions<DivisionOptions>>().Value);
+        var failures = ValidationFailures(refused);
+
+        Assert.Contains(failures, failure => failure.Contains("'preferredAtcRatings' has an entry for 'TOWER'", StringComparison.Ordinal));
+        Assert.Contains(failures, failure => failure.Contains("'preferredAtcRatings.GND' (XYZ) is not an ATC rating", StringComparison.Ordinal));
+    }
+
+    /// <summary>The failures of the validation the start ran into, however deep the host wrapped them.</summary>
+    private static List<string> ValidationFailures(Exception exception) =>
+        exception switch
+        {
+            OptionsValidationException validation => [.. validation.Failures],
+            AggregateException aggregate => [.. aggregate.InnerExceptions.SelectMany(ValidationFailures)],
+            { InnerException: { } inner } => ValidationFailures(inner),
+            _ => [],
+        };
 
     [Fact]
     public async Task TheDirectoryAnswersTheMinimumOfAPositionForAShift()
@@ -613,6 +681,17 @@ public sealed class AtcPositionTests(MariaDbFixture mariaDb) : IAsyncLifetime
             IvaoAirspace airspace,
             CancellationToken cancellationToken = default) =>
             fixtures.GetNetworkStatusAsync(airspace, cancellationToken);
+    }
+
+    /// <summary>The fixtures, with an answer on the FRAs that says the division has none left.</summary>
+    private sealed class NoFra(FixtureIvaoApiClient fixtures) : FixturesBeforeA2(fixtures), IIvaoApiClient
+    {
+        public Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)>
+            GetAtcPositionsAsync(CancellationToken cancellationToken = default) =>
+            Fixtures.GetAtcPositionsAsync(cancellationToken);
+
+        public Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<IvaoFraDto>?>([]);
     }
 
     /// <summary>The fixtures, with one of the two lists of positions not coming back, as when IVAO's gateway gives up.</summary>
