@@ -789,6 +789,12 @@ nota.
      `typecheck`, `format:check`, `i18n:check` verdi, `pnpm test` 594, `pnpm gen:api` senza differenze, `dotnet format` sui file
      toccati, le regole di `core-guard` (sette file del nucleo, la nota). E15a (#207) è ancora aperta: se entra prima, si unisce di
      nuovo.
+  5. **`main` unito ancora, dopo E2** (#209), come ha chiesto il revisore
+     ([commento sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5926812818)), con lo strumento
+     dell'app che porta il branch al passo con la base: il conflitto era di nuovo solo in `HANDOFF-M4.md`, tenuti i paragrafi di E10a
+     ed E2 e nell'intestazione lo stato di tutte e due. Rifatti: build senza avvisi, unità **954/954**, **integrazione intera senza
+     filtro 441/441** (5,6 minuti, i test di E2 compresi), in `web/` `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+     `pnpm test` 599, `pnpm gen:api` senza differenze, le regole di `core-guard` (uguali).
 - **Non verificato**: la CI (la dice la PR); un chiamante vero della domanda senza VID, perché il job di E13a non c'è ancora; una sera
   di RFE vera (la più grande misurata: EDDF in una settimana, 305 sessioni); IVAO sotto il carico della sera di un evento — se la
   pagina lenta passasse i 15 s, il gateway risponderebbe 504 e la ricerca `null`, e il giro dopo del job riproverebbe —; una chiamata
