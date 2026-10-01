@@ -80,3 +80,20 @@ The tool now asks with `mapType=regionMapPolygon`, as the hub does. Without it I
 and the answer of the world takes longer than the fifteen seconds its gateway waits: a `504`, or the connection closed half
 way — what A1 saw twice out of three was that, four times out of four on 25 September. With one outline it comes in about
 five seconds, and the outline is dropped all the same.
+
+## The ATC bookings of a day (M4, E15a)
+
+`atc-bookings-day.json` is what the fixture client answers for the network's ATC bookings, recorded on 30 September 2026 with
+`node tools/record-ivao-fixtures.mjs --bookings day 761070 <day> LIRF LIMC LIBD LIBG LFPG LIRR LIMM LIBB LFFF SBGR_TWR EDDF_APP`:
+the bookings `/v2/atc/bookings/daily` listed for one real day that started that day on the stations of the bench's positions, plus
+an exam (`EDDF_APP`) and one across midnight (`SBGR_TWR`, 23:00 to 01:00). Ten bookings, five of them on a sector. The people are
+taken out: each member became one of the VIDs 761070–761079, the range of phase E15a, and the user object IVAO embeds — names,
+division, rating — keeps only that number. What would find a booking, and its member, again through IVAO's own API is taken out
+too: the booking's `id` and `createdAt` are left out, and the day is moved onto 1 January 2001, when IVAO has no bookings, with its
+times of day. Which day it was is written nowhere.
+
+The fixture client answers **any day** with it, like `whazzup.json` answers any evening: the recorded bookings moved onto the day
+asked, and the one across midnight of the day before. So a bench with no credentials has bookings beside an event of any date.
+It lists a day the way IVAO does, as measured that day: every booking that touches the day — one across midnight on both days, one
+that ends at midnight on the next day too, one that starts at midnight not on the day before — and a position is the start of a
+callsign, in any case (`LIRR` is Rome's three sectors).
