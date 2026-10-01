@@ -4,6 +4,19 @@ using System.Text.Json;
 namespace IvaoHub.Core.Ivao;
 
 /// <summary>
+/// How a session was connected to the network. The tracker takes and gives four words, in capitals, and refuses any other
+/// with a 400 that lists them (measured on 30 September 2026, M4 E10a): <c>PILOT</c>, <c>ATC</c>, <c>OBS</c>, and
+/// <c>FOLME</c>, the follow-me car.
+/// </summary>
+public enum IvaoConnectionType
+{
+    Pilot,
+    Atc,
+    Observer,
+    FollowMe,
+}
+
+/// <summary>
 /// One connection of a member to the network, as the tracker of IVAO lists it. Measured against the
 /// real API on 16 September 2026: the list answers
 /// <c>{ items, totalItems, perPage, page, pages }</c>, and a row carries the flight plans it had in
@@ -11,6 +24,9 @@ namespace IvaoHub.Core.Ivao;
 /// tell a pilot session from an ATC one without a second call.
 /// <para>The raw payload travels with it: a field nobody reads today should not have to be guessed
 /// at tomorrow, which is the same choice the centres and the airports made.</para>
+/// <para>⚠️ The airports here are the first revision's. A search for an airport finds a session whose plan had it in any
+/// revision (measured on 30 September 2026, M4 E10a), so a session found for its departure from one airport can say another
+/// one here: the revisions are in <see cref="RawJson"/>.</para>
 /// </summary>
 public sealed record IvaoTrackerSessionDto(
     long Id,
@@ -26,6 +42,12 @@ public sealed record IvaoTrackerSessionDto(
 {
     /// <summary>When the connection ended, as far as its declared length says.</summary>
     public DateTime EndedAt => StartedAt + Duration;
+
+    /// <summary>
+    /// A pilot, a controller, an observer or a follow-me car (M4, E10a). Null when the row does not say, as for a session
+    /// a test builds by hand.
+    /// </summary>
+    public IvaoConnectionType? ConnectionType { get; init; }
 }
 
 /// <summary>
@@ -76,32 +98,69 @@ public sealed record IvaoTrackPointDto(
     string? Transponder);
 
 /// <summary>
-/// What the hub asks the tracker for: the sessions of one member in a window, optionally between
-/// two airports. The window is the report window of the tour (design M2 section 3.2), never a
-/// fishing trip across the network.
+/// What the hub asks the tracker for: the sessions that started in a window — of one member, for a pilot reporting a leg
+/// in the report window of the tour (design M2 section 3.2), or, without a VID, at an airport, for the events that count
+/// who flew (design M4 section 5.1, E10a) — optionally between two airports, and of one kind of connection.
+/// <para>What each part means is IVAO's, measured on 30 September 2026 (E10a): the window holds the sessions that
+/// <i>started</i> in it, both ends included, so a caller who wants who was connected widens it backwards; an airport asked
+/// alone is found in any revision of a flight plan, and two airports asked together in one same revision.</para>
 /// </summary>
 public sealed record IvaoSessionQuery(
-    int Vid,
+    int? Vid,
     DateTime FromUtc,
     DateTime ToUtc,
     string? DepartureIcao = null,
-    string? ArrivalIcao = null)
+    string? ArrivalIcao = null,
+    IvaoConnectionType? ConnectionType = null)
 {
-    /// <summary>How many rows a page carries; 50 is what the API was measured to accept.</summary>
-    public const int PageSize = 50;
+    /// <summary>
+    /// How many rows a page carries: the most the tracker gives, since a hundred and one are refused ("Should be lower than
+    /// 100"). Measured on 30 September 2026 (E10a); until then it was 50, which T2 had measured the API to accept.
+    /// </summary>
+    public const int PageSize = 100;
 
     /// <summary>
-    /// At most this many sessions come back. A pilot reporting one leg picks from a short list, and
-    /// a window wide enough to need more than two hundred rows is a mistake upstream, not a page to
-    /// keep fetching.
+    /// How many sessions a search reads when its caller does not say: two hundred, plenty for a pilot picking the one
+    /// flight they are reporting.
     /// </summary>
-    public const int MaxSessions = 200;
+    public const int DefaultLimit = 200;
+
+    /// <summary>
+    /// The most a caller may declare: ten pages, about fifteen seconds of IVAO's time. The largest window the events read —
+    /// the departures or the arrivals of one airport over an event — holds a few hundred: a whole week at Frankfurt was 305
+    /// departures (measured on 30 September 2026), and the design's evening at Rome 441 bookings in all. The core keeps the
+    /// ceiling itself, so that no caller can make it read the network page after page by mistake.
+    /// </summary>
+    public const int MaxLimit = 1000;
+
+    private readonly int _limit = DefaultLimit;
+
+    /// <summary>
+    /// The most sessions the caller will read, newest first: the pages stop there. It is the caller's to declare, up to
+    /// <see cref="MaxLimit"/>, because an airport on the evening of an event holds more than a pilot's list, and a job reads
+    /// what one run can carry. An answer with fewer sessions than the limit is all there is; one with exactly as many may have
+    /// been cut, and what is left is in the part of the window before the oldest of them.
+    /// </summary>
+    public int Limit
+    {
+        get => _limit;
+        init => _limit = value is >= 1 and <= MaxLimit
+            ? value
+            : throw new ArgumentOutOfRangeException(
+                nameof(Limit),
+                value,
+                string.Create(CultureInfo.InvariantCulture, $"A search reads from one to {MaxLimit} sessions."));
+    }
+
+    /// <summary>The rows a page is asked for: a full page, or the limit when that is smaller.</summary>
+    public int PerPage => Math.Min(PageSize, Limit);
 
     public string ToQueryString()
     {
-        var query = string.Create(
-            CultureInfo.InvariantCulture,
-            $"userId={Vid}&from={Iso(FromUtc)}&to={Iso(ToUtc)}");
+        var window = $"from={Iso(FromUtc)}&to={Iso(ToUtc)}";
+        var query = Vid is { } vid
+            ? string.Create(CultureInfo.InvariantCulture, $"userId={vid}&{window}")
+            : window;
 
         if (!string.IsNullOrWhiteSpace(DepartureIcao))
         {
@@ -111,6 +170,11 @@ public sealed record IvaoSessionQuery(
         if (!string.IsNullOrWhiteSpace(ArrivalIcao))
         {
             query += $"&arrivalId={Uri.EscapeDataString(ArrivalIcao.ToUpperInvariant())}";
+        }
+
+        if (ConnectionType is { } type)
+        {
+            query += $"&connectionType={IvaoTrackerReader.Word(type)}";
         }
 
         return query;
@@ -127,6 +191,91 @@ public sealed record IvaoSessionQuery(
 /// </summary>
 public static class IvaoTrackerReader
 {
+    /// <summary>The words of the tracker for the kinds of connection (<see cref="IvaoConnectionType"/>).</summary>
+    private static readonly (IvaoConnectionType Type, string Word)[] ConnectionWords =
+    [
+        (IvaoConnectionType.Pilot, "PILOT"),
+        (IvaoConnectionType.Atc, "ATC"),
+        (IvaoConnectionType.Observer, "OBS"),
+        (IvaoConnectionType.FollowMe, "FOLME"),
+    ];
+
+    /// <summary>
+    /// Every session a search asks for, page after page as the tracker hands them out: newest first, until the last page,
+    /// a page with nothing on it, or the limit of the search (M4, E10a). <paramref name="page"/> gives the payload of one
+    /// page, counted from one — the real client asks IVAO for it, a test hands out recorded ones — or null when it could
+    /// not be had, and then the whole answer is null: half a list would read as "not there". The same session on two pages
+    /// is counted once, which is what happens when a new one arrives while the pages are read and pushes the rest down.
+    /// <para>Besides the sessions, how many the tracker says there are in all: more than were read when the limit cut
+    /// the answer.</para>
+    /// </summary>
+    public static async Task<(IReadOnlyList<IvaoTrackerSessionDto> Sessions, int Total)?> ReadPagesAsync(
+        IvaoSessionQuery query,
+        Func<int, CancellationToken, Task<JsonElement?>> page,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(page);
+
+        var sessions = new List<IvaoTrackerSessionDto>();
+        var seen = new HashSet<long>();
+        int? total = null;
+        for (var number = 1; ; number++)
+        {
+            if (await page(number, cancellationToken) is not { } root)
+            {
+                return null;
+            }
+
+            var (rows, pages) = ReadSessions(root);
+            sessions.AddRange(rows.Where(row => seen.Add(row.Id)));
+            total = Number(root, "totalItems") is { } items ? (int)items : total;
+
+            if (number >= pages || rows.Count == 0 || sessions.Count >= query.Limit)
+            {
+                break;
+            }
+        }
+
+        return (sessions.Count > query.Limit ? sessions[..query.Limit] : sessions, Math.Max(total ?? 0, sessions.Count));
+    }
+
+    /// <summary>
+    /// Whether the tracker lists this row for this search: its rule, as measured on 30 September 2026 (M4, E10a). The
+    /// member, when one is asked; a start inside the window, both ends included; the kind of connection; and the airports
+    /// in a revision of the flight plan — any revision for one airport, one same revision for two. It is for the fixture
+    /// client, which answers from recorded rows what IVAO would have answered.
+    /// </summary>
+    public static bool Answers(JsonElement row, IvaoSessionQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (ReadSession(row) is not { } session
+            || (query.Vid is { } vid && session.Vid != vid)
+            || session.StartedAt < query.FromUtc
+            || session.StartedAt > query.ToUtc
+            || (query.ConnectionType is { } type && session.ConnectionType != type))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(query.DepartureIcao) && string.IsNullOrWhiteSpace(query.ArrivalIcao))
+        {
+            return true;
+        }
+
+        return row.TryGetProperty("flightPlans", out var plans)
+            && plans.ValueKind == JsonValueKind.Array
+            && plans.EnumerateArray().Any(plan =>
+                Same(Text(plan, "departureId"), query.DepartureIcao) && Same(Text(plan, "arrivalId"), query.ArrivalIcao));
+
+        static bool Same(string? airport, string? asked) =>
+            string.IsNullOrWhiteSpace(asked) || string.Equals(airport, asked.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The tracker's word for a kind of connection, as a search asks for it.</summary>
+    internal static string Word(IvaoConnectionType type) => ConnectionWords.First(entry => entry.Type == type).Word;
+
     /// <summary>The rows of a page, and how many pages there are in total.</summary>
     public static (IReadOnlyList<IvaoTrackerSessionDto> Sessions, int Pages) ReadSessions(JsonElement root)
     {
@@ -174,7 +323,23 @@ public static class IvaoTrackerReader
             hasPlan ? Text(plan, "departureId")?.ToUpperInvariant() : null,
             hasPlan ? Text(plan, "arrivalId")?.ToUpperInvariant() : null,
             hasPlan ? Text(plan, "aircraftId")?.ToUpperInvariant() : null,
-            item.GetRawText());
+            item.GetRawText())
+        {
+            ConnectionType = ConnectionTypeOf(Text(item, "connectionType")),
+        };
+    }
+
+    private static IvaoConnectionType? ConnectionTypeOf(string? word)
+    {
+        foreach (var (type, known) in ConnectionWords)
+        {
+            if (string.Equals(known, word, StringComparison.OrdinalIgnoreCase))
+            {
+                return type;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Every revision IVAO kept, oldest first, so "the one at take off" is a choice made later.</summary>

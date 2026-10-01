@@ -77,6 +77,10 @@ cd web && pnpm install && pnpm dev      # the single page application
    lists that read with it, and row by row — and sees nothing else the department keeps to itself. A
    grant to a single member, written on the permissions screen, also lets them into the department, to
    see what it keeps to itself.
+   A grant never gives a **global** permission — who administers the hub is decided by the IVAO staff
+   positions — save `Awards.Assign`: who assigns the awards is your division's to choose, and the example
+   file gives it to the coordinator and the assistant of the membership department, with no `scope`.
+   Like a grant on another department, it takes them into no department.
    A grant can also go to **the team of a FIR** instead of a department: `"firTeam": true` with the
    levels (`Coordinator` is the chief of a FIR, `Assistant` the assistant chief, `Advisor` a FIR
    advisor) and no `department`. It names no FIR — every FIR's team holds it — and it is only taken

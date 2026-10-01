@@ -3399,8 +3399,15 @@ export interface components {
          *     holds what, and that is Permissions above, which only ever describes the caller.
          */
         BootstrapPermissionName: {
+            /** @description The permission, as the catalogue names it. */
             name: string;
+            /** @description True when it has no department to be scoped to. */
             isGlobal: boolean;
+            /**
+             * @description True for a global permission a grant may still confer — who assigns the awards (M4, E10f). The screen offers a permission
+             *     of a department, or a global one that says this; a permission of a department says false, because a grant confers it anyway.
+             */
+            grantableAlthoughGlobal: boolean;
         };
         BootstrapRegistries: {
             blocks: components["schemas"]["BootstrapBlock"][];

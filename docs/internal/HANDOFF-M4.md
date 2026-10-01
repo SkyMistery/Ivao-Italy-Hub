@@ -7,16 +7,19 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 1 ottobre 2026 — **fase E3a** (modulo: l'evento nello staff), sul branch `m4/e3a-event-staff`, **PR #214**
-verso `main`, **in coda dopo la #212** (E2b, del nucleo, da cui è nata), con `main` unito dopo E2 (#209) e dopo E15a (#207), e la testa
-di E2b dopo la sua revisione e dopo il suo merge di E15a. Sono unite E1 (#200), E2 (#209), E10b (#208), E10d (#205), E10e (#206) ed E15a (#207); aperte, ognuna
-nella sua sessione, **E2b** (#212), **E10a** (#210), **E10c** (#204) ed **E10f** (#213, `Awards.Assign` concedibile con un grant, decisa
-da Carmine sulla #205).
+verso `main`, **in coda dopo la #212** (E2b, del nucleo, da cui è nata), con la testa di E2b presa a ogni suo passo — l'ultima dopo la
+sua riconciliazione con E10f, che porta `main` dopo E10a (#210) ed E10f (#213). Sono unite E1 (#200), E2 (#209), E10a (#210), E10b (#208),
+E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), e il passaggio dei tour al calcolo del nucleo (#211); aperte, ognuna nella sua
+sessione, **E2b** (#212) ed **E10c** (#204).
 **Il prossimo passo**: **E2b** unita, poi **E3a**; dopo di lei **E3b** (la vita dell'evento: «Pubblica», l'uscita programmata, la fine,
-calendario, ricerca e usi dei file, `events-release`), che la sessione che coordina prepara sopra E3a. ⚠️ **E2b ed E10f dichiarano
-tutte e due `EffectivePermission.FromOutside`**: chi arriva seconda a `main` tiene una dichiarazione sola e somma le due condizioni del
-calcolo (nota di E2b, §3.8). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed
-**E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente;
-**E15b** (dopo E14b) trova in E15a le prenotazioni della rete. Il passaggio dei tour al calcolo del nucleo è unito (#211).
+calendario, ricerca e usi dei file, `events-release`), che la sessione che coordina prepara sopra E3a. ⚠️ **La lettura dei preset**
+(`GET /api/events/kind-presets`) aspetta la risposta di Carmine sulla #214 («Che cosa ha lasciato E3a», sotto). ⚠️
+**`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
+team di un FIR (E2b), un permesso globale da un grant (E10f) — e una condizione sola nel calcolo (nota di E2b, §3.8; «Che cosa ha
+lasciato E2b», sotto). E10a serve a **E13a**, che aspetta anche E12; **E11b** ed **E13a** trovano in E10b la storia di un controllore e
+la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna
+gli award, e non chiama niente: con E10f il riepilogo arriva anche al coordinatore e all'assistente dell'MD; **E15b** (dopo E14b) trova
+in E15a le prenotazioni della rete.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -184,8 +187,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     ogni permesso, e non sono cambiati.
   - **Un grant a una persona** fa ancora entrare nel dipartimento (6 settembre); **lo stesso permesso da fuori e per nome** resta quello
     per nome.
-  - **I test**: `PermissionFromOutsideRulesTests` (unità, 8) e `PermissionFromOutsideTests` (integrazione, 3, VID 761091–761093; 761090 è
-    un'identità delle unità; 761094–099 restano di E2b per le sue correzioni). **Le parole**: l'aiuto del form dei permessi
+  - **I test**: `PermissionFromOutsideRulesTests` (unità, 8) e `PermissionFromOutsideTests` (integrazione, 4, VID 761091–761094; 761090 è
+    un'identità delle unità; 761095–099 restano di E2b per le sue correzioni). **Le parole**: l'aiuto del form dei permessi
     (`grants.formHint`), `docs/FORKING.md` e i commenti di `config/division.example.json`. Nessuna migrazione, nessun endpoint.
   - **Tenuto da fuori su tutti i dipartimenti** (un grant a una posizione senza `scope`), un permesso di lettura dà nella sua lista le
     righe di ogni dipartimento, come i claim `dept` di tutti prima di E2b, e niente altro di loro; un divieto su un dipartimento accanto
@@ -202,13 +205,95 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     collabora (una rotta del FOD) la crea sotto l'evento, con maschera e scope dell'evento, e chiede al server le `actions`.
   - ⚠️ **Un test che prova che cosa può chi collabora** entra come una posizione di quel dipartimento, senza indirizzo, e mai come il web
     master del banco, che raggiunge ogni dipartimento; dopo aver scritto un grant rifà l'ingresso.
-  - ⚠️ **E10f** (in corso) dà `Awards.Assign` all'MD con un grant a una posizione senza `scope`: senza E2b farebbe entrare coordinator e
-    assistant dell'MD in ogni dipartimento; con E2b restano nel solo MD per ciò che vedono (nota §3.8). Detto alla sessione di E10f, che
-    lo chiude anche da sé con lo stesso campo `FromOutside` e la stessa forma: **chi arriva seconda a `main`** tiene una dichiarazione
-    sola e somma le due condizioni del calcolo (`GivesThePermissionNotTheDepartment` o un permesso globale).
+  - **E10f (#213) e E2b sono riconciliate in questo branch** (E10f è entrata prima): **un solo `EffectivePermission.FromOutside`** con le
+    due vie nel suo `<param>`, una condizione sola nel calcolo — `fir is null && (grant.GivesThePermissionNotTheDepartment ||
+    catalogue.IsGlobal(grant.Value))` —, un solo `.ThenBy(FromOutside)`, una sola riga in `BuildIdentity` con i due commenti, e le due
+    aggiunte in `docs/FORKING.md` e in `config/division.example.json`. ⚠️ **Il segno ora viaggia anche per i globali**: chi assegna gli
+    award per grant ha nel cookie `Awards.Assign@!` e `Awards.View@!`. Ogni riga di `Award` resta aperta: il catalogo è condiviso in
+    lettura (`Award` è `ISharedForReading`, la sua lista dice `SharedForReading = award => true`) e l'unico handler risponde a una lettura
+    con `HasAny(Awards.View)`, che non guarda né il dipartimento né il segno; e `Awards.View@!` si rilegge senza dipartimento, cioè su
+    tutti (`10`, E2b, «Com'è andata»).
   - **Il team di un FIR con `own`** (IT) non cambia: il suo permesso porta il FIR, e il suo claim è quello di prima. ⚠️ Un cookie scritto
     prima di E2b tiene i suoi claim `dept` fino al prossimo ingresso; su IT nessuno ne ha uno da un grant a una posizione su un altro
     dipartimento.
+
+### Che cosa ha lasciato E10f (1 ottobre 2026, branch `m4/e10f-grantable-award-assign`, PR #213, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-01-chi-assegna-gli-award-con-un-grant.md`, **decisa da Carmine**, in chat al master e
+  pubblicata su sua istruzione [sulla #205](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/205#issuecomment-5916282643), risposta 2):
+  - **`Awards.Assign` si dà con un grant, ed è il solo globale così**: il campo `PermissionDescriptor.GrantableAlthoughGlobal`, detto sul
+    permesso come `DeniedToStakeholder`, vero solo per `Awards.Assign` in `CorePermissions`. Il catalogo risponde con
+    `IsClosedToGrants(name)`, la domanda che fanno il calcolatore, la schermata dei permessi e il seme; e **non nasce** se lo dicesse un
+    altro permesso (`Permissions.Manage` per primo, ma anche un altro globale, un permesso di un dipartimento, un globale di un modulo:
+    il paletto che il revisore proponeva sulla #213, preso).
+  - **Solo intero**: il calcolatore lo tiene (su nessun dipartimento, come un ruolo) solo da un grant senza dipartimento, senza scope e
+    non al team di un FIR; un rifiuto intero lo toglie anche a chi lo ha per ruolo (DIR, ADIR, WM, AWM). La schermata rifiuta il dipartimento
+    (**`errors.grant.globalDepartment`**, chiave nuova), il team di un FIR (`firTeamArea`, com'era) e gli altri globali
+    (`globalPermission`, con un testo nuovo); il seme salta uno `scope`. **`ModuleGrants` rifiuta ancora ogni globale.**
+  - **Il permesso, non il dipartimento**: `EffectivePermission.FromOutside`, vero per un grant di un permesso globale e per la
+    `Awards.View` che porta; `HubClaims.BuildIdentity` lo lascia fuori dai claim `dept`. Senza, un grant senza dipartimento mette chi lo
+    tiene **dentro tutti i dipartimenti** (l'ha trovato la sessione di E2b; misurato: `user.departments` del coordinatore dell'MD
+    passava da `["MD"]` a tutti e nove).
+  - **La divisione**: `config/division.json` dà `Awards.Assign` al **coordinatore e all'assistente dell'MD** (primo dei `positionGrants`,
+    senza `scope`); lo stesso in `config/division.example.json`, e `docs/FORKING.md` spiega l'eccezione.
+  - **Il browser**: `/api/me → registries.permissions[].grantableAlthoughGlobal`; la schermata dei permessi offre `Awards.Assign`.
+  - **I test**: `GrantableGlobalPermissionTests` (unità, 17), `AwardsAssignByGrantTests` (integrazione, 4, VID 761080–761083),
+    `web/src/features/admin/grants/grantable.test.ts` (2); **tolto il caso `Awards.Assign`** da
+    `EffectivePermissionsTests.AGrantCanNeverConferAGlobalPermission` (test di Carmine: il cambio l'ha deciso lui).
+- **Che cosa deve sapere la fase dopo**:
+  - **Il riepilogo di E10d arriva all'MD da solo**, dal primo avvio dopo il rilascio: il seme nuovo si applica una volta, poi si cambia
+    dalla schermata dei permessi. **E14b** non cambia niente.
+  - ⚠️ **Nei test d'integrazione l'MD ha `Awards.Assign`**, perché l'host legge `config/division.json`: un coordinatore o un assistente
+    dell'MD seminato da un test (i contatti seminano `IT-MC` con un indirizzo) è fra chi assegna. `AwardQueueMailTests` conta per le sue
+    persone e non se ne accorge; un test nuovo che conta i destinatari del riepilogo faccia lo stesso.
+  - **Le tre scelte della sessione sono confermate da Carmine**
+    ([sulla #213](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970)): coordinatore e assistente dell'MD; il
+    rifiuto intero che vale anche per chi lo ha per ruolo; la `Awards.View` su ogni dipartimento, perché chi assegna veda ogni award.
+  - ⚠️ **`FromOutside` è lo stesso campo di E2b** (PR #212, decisa sulla #209: un grant a una posizione su un dipartimento non suo dà il permesso
+    e non il dipartimento), con la stessa forma: ultimo parametro di `EffectivePermission`, la stessa preferenza nella deduplicazione, la
+    stessa riga in `BuildIdentity`. **Il significato non è identico** (il revisore sulla #213): in E2b il segno scrive anche un `!` nel
+    cookie, e con tutte e due unite la `Awards.View` portata da `Awards.Assign` si scrive `Awards.View@!`. **Chi arriva seconda su `main`**
+    tiene una dichiarazione sola, somma le due condizioni del calcolatore e rifà sul codice unito `AwardsAssignByGrantTests`,
+    `GrantableGlobalPermissionTests` e le due classi di E2b; il revisore controllerà che quella `Awards.View` apra ancora ogni riga di
+    `Award`. E2b porta anche la metà «liste»: fino ad allora **chi non è dentro nessun dipartimento** (il capo di un FIR a cui si desse
+    `Awards.Assign` con un grant a un VID) apre la coda ma ha la lista degli award a 403. L'MD non ne è toccato.
+  - Un **permesso globale di un modulo** resta chiuso ai grant: dire `GrantableAlthoughGlobal` ferma l'avvio. Un secondo permesso
+    concedibile è una decisione con la sua nota, che cambia anche il paletto del catalogo.
+
+### Che cosa ha lasciato E10a (30 settembre – 1° ottobre 2026, branch `m4/e10a-tracker-without-vid`, PR #210, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-09-30-il-tracker-senza-vid.md`, scelta tecnica; le misure del 30 settembre sono lì, §2, e
+  la revisione in §6):
+  - **La domanda senza VID**: `IvaoSessionQuery(int? Vid, from, to, departure, arrival, IvaoConnectionType? ConnectionType)` con
+    `Limit` (`init`, predefinito 200, **al più `MaxLimit` = 1000**, un tetto che tiene il nucleo); `SearchSessionsAsync` è la stessa
+    di prima, dalla più recente, senza doppioni, al più `Limit`, `null` quando IVAO non si è potuto chiedere;
+    `IvaoTrackerSessionDto.ConnectionType`. Il giro delle pagine e la regola del tracker stanno nel lettore
+    (`IvaoTrackerReader.ReadPagesAsync`, `Answers`), per il client vero e per quello delle fixture.
+  - **Il client di IVAO aspetta 20 s per tentativo** (l'interruttore campiona su 40, il totale resta 30): con i 10 standard nessun
+    aeroporto si leggeva. **Confermato da Carmine** con il `null` per la ricerca dei tour
+    ([risposta sulla #210](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/210#issuecomment-5917033792)).
+  - **Le fixture**: `tools/record-ivao-fixtures.mjs --sessions-at`; `tests/fixtures/ivao/tracker-airport-LIRF.json` (una sera di
+    LIRF: 10 sessioni di 9 membri, la torre) e `tracker-pages-LIRF.json` (le stesse partenze come le pagina IVAO), **spostate sul 1°
+    gennaio 2001** (lo stesso giorno delle prenotazioni di E15a) e **senza `rating`, `serverId`, `software*`** (revisione, #210).
+    Senza VID, `FixtureIvaoApiClient` risponde dal file dell'aeroporto chiesto. Unita dopo E15a, lo script ha le due modalità
+    (`--bookings` e `--sessions-at`) e **un giorno inventato solo**, `standIn` con `movedFrom(day)`, in cima: chi registra altre righe
+    con persone lo usa.
+  - **I test**: `IvaoTrackerWithoutVidTests` e `IvaoApiTimeoutTests` (unità).
+- **Che cosa deve sapere la fase dopo** (E13a, e chiunque legga il tracker senza VID):
+  - ⚠️ **Una domanda per aeroporto che trova qualcosa costa ~10,5 s** (la pagina con l'ultima riga, sempre), e **due insieme
+    ricevono 504** dal gateway di IVAO: una alla volta, poche per giro del job.
+  - ⚠️ **La finestra è sull'inizio della sessione**, estremi compresi: per chi era già connesso, `FromUtc` va allargato.
+  - ⚠️ **«Partenza o arrivo» sono due domande**: chiesti insieme, i due aeroporti vogliono la stessa revisione del piano. Una
+    sessione può tornare da tutte e due: si conta per `Id`.
+  - ⚠️ **Il DTO dice gli aeroporti della prima revisione**: trovata per la partenza da LIRF, una sessione può dire LIPZ.
+  - **Il limite si dichiara**: con esattamente `Limit` sessioni la risposta può essere tagliata, e il resto sta prima della più
+    vecchia.
+  - **Le VID 761020–761028 sono le persone della sera di LIRF** nella fixture (761025 due volte), e **la sera sta sul 1° gennaio
+    2001**, 16:00–17:59:59 UTC: un test che la legge chiede quel giorno. 761029 non è usata.
+  - Il punto «La richiesta al tracker oggi» di «Per chi prende M4», qui sopra (`PageSize = 50`, `MaxSessions = 200`), è superato:
+    le pagine sono da 100 e il tetto è il `Limit` di chi chiama, al più 1000.
+- ⚠️ **Per i tour cambiano due cose, nessuna nei loro test**: le pagine sono da 100, e se IVAO non risponde affatto la ricerca dà
+  `null` («tracker non disponibile») invece di lanciare.
 
 ### Che cosa ha lasciato E15a (30 settembre 2026, branch `m4/e15a-network-atc-bookings`, PR #207, del nucleo, senza coda)
 

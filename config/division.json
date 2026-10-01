@@ -16,6 +16,7 @@
     "training": { "baseDepartment": "TD" }
   },
   "positionGrants": [
+    { "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.View", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Tours.Edit", "scope": "FOD" },
     { "department": "FOD", "levels": ["Coordinator", "Assistant"], "permission": "Tours.Delete", "scope": "FOD" },

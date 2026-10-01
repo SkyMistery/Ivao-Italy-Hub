@@ -43,6 +43,8 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
             return "errors.grant.unknownPermission";
         }
 
+        // Every global permission, a grantable one too (M4, E10f): a grant written here is on a department and may be on one row,
+        // which a global permission has not got. Only ever asked "at all?", Awards.Assign given on one tour would hold everywhere.
         if (catalogue.IsGlobal(permission))
         {
             return "errors.grant.globalPermission";

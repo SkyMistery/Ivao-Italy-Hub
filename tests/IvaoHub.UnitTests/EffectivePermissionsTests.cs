@@ -191,7 +191,8 @@ public sealed class EffectivePermissionsTests
     [InlineData(CorePermissions.PermissionsManage)]
     [InlineData(CorePermissions.ModulesManage)]
     [InlineData(CorePermissions.AuditView)]
-    [InlineData(CorePermissions.AwardsAssign)]
+    // Awards.Assign is no longer here: since E10f a grant may confer it, whole (Carmine on #205, note
+    // 2026-10-01-chi-assegna-gli-award-con-un-grant); GrantableGlobalPermissionTests proves what it confers and nothing more.
     [InlineData(CorePermissions.AdminAccess)]
     public void AGrantCanNeverConferAGlobalPermission(string name)
     {

@@ -279,6 +279,11 @@ public static class HubClaims
         // decided by Carmine on 30 September 2026. The rule above was written for a person helping a department; a grant to a
         // position reaches every holder of it, and would let three departments into a fourth for all they see. Such a permission
         // reaches the department's rows the way a FIR's does: in the single handler, and in the lists that read with it.
+        //
+        // ⚠️ The same mark says the other way a grant comes from outside (M4, E10f, note
+        // 2026-10-01-chi-assegna-gli-award-con-un-grant): a grant of a global permission, which has no department to take anybody
+        // into, with the View it brings. It names no department, and read as the grants above it would have taken whoever assigns
+        // the awards into all of them.
         var granted = materialisedPermissions
             .Where(permission => permission.Source.StartsWith(
                 EffectivePermissionsCalculator.GrantSourcePrefix,
