@@ -54,6 +54,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IvaoHub.Core\IvaoHub.Core.csproj" />
+    <ProjectReference Include="..\IvaoHub.Modules.Events\IvaoHub.Modules.Events.csproj" />
     <ProjectReference Include="..\IvaoHub.Modules.FlightOps\IvaoHub.Modules.FlightOps.csproj" />
     <ProjectReference Include="..\IvaoHub.Modules.Training\IvaoHub.Modules.Training.csproj" />
   </ItemGroup>

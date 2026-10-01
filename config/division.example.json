@@ -74,9 +74,13 @@
     "conducts the trainings assigned to them, and Training.Edit every training.",
     "A grant may go to the team of a FIR instead: \"firTeam\": true with its levels (Coordinator is the chief of",
     "a FIR, Assistant the assistant chief, Advisor a FIR advisor) and no department. It names no FIR, and it is",
-    "only taken for a permission of an area whose rows say their FIR, such as the trainings. The last two grants",
-    "below are the ones the training module expects for the chief and the assistant chief of a FIR: they see and",
-    "assign the trainings of their own FIR, and only those, because firStaffScope is own below."
+    "only taken for a permission of an area whose rows say their FIR, such as the trainings. The two grants of the",
+    "training to the team of a FIR are the ones the training module expects for the chief and the assistant chief",
+    "of a FIR: they see and assign the trainings of their own FIR, and only those, because firStaffScope is own below.",
+    "Then the events module for its own base department (ED): the coordinator and the assistant everything but",
+    "validating a report of support, which is another department's task; its advisors neither delete an event nor",
+    "manage the settings. And the staff of a FIR (chief, assistant chief, advisor) on the ATC of the events of its",
+    "own FIR, which a start applies only once the events have ATC positions, rows that say their FIR."
   ],
   "positionGrants": [
     { "department": "MD", "levels": ["Coordinator", "Assistant"], "permission": "Awards.Assign" },
@@ -102,7 +106,20 @@
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.Ban", "scope": "TD" },
     { "department": "TD", "levels": ["Coordinator", "Assistant"], "permission": "Training.ManageSettings", "scope": "TD" },
     { "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.View", "scope": "TD" },
-    { "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" }
+    { "firTeam": true, "levels": ["Coordinator", "Assistant"], "permission": "Training.Assign", "scope": "TD" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Events.View", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Events.Edit", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant"], "permission": "Events.Delete", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant"], "permission": "Events.ManageSettings", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventRoutes.View", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventRoutes.Edit", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventBookings.View", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventBookings.Edit", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.View", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" },
+    { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventReports.View", "scope": "ED" },
+    { "firTeam": true, "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.View", "scope": "ED" },
+    { "firTeam": true, "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" }
   ],
 
   "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like any grant. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
