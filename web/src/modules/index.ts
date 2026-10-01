@@ -1,5 +1,6 @@
 import type { ModuleManifest } from '../shared/modules';
 
+import { eventsManifest } from './events';
 import { flightOpsManifest } from './flightops';
 import { trainingManifest } from './training';
 
@@ -10,9 +11,14 @@ import { trainingManifest } from './training';
  *
  * Empty from 13 September 2026, when the ATC module left together with vIPI (note
  * `2026-09-13-staccarsi-da-vipi`), until the tours opened M2 (T5, 16 September 2026); the training
- * followed with M3 (A4, 25 September 2026).
+ * followed with M3 (A4, 25 September 2026), and the events with M4 (E2, 30 September 2026), in the
+ * order of `Modules.cs`.
  *
  * Only `app/registry.ts` reads this file — that is the rule ESLint enforces, and the reason the
  * list sits at the boundary rather than inside a module folder.
  */
-export const moduleManifests: readonly ModuleManifest[] = [flightOpsManifest, trainingManifest];
+export const moduleManifests: readonly ModuleManifest[] = [
+  eventsManifest,
+  flightOpsManifest,
+  trainingManifest,
+];

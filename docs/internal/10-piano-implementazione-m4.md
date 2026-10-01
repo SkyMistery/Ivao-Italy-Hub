@@ -85,7 +85,7 @@ Per non ripeterle trenta volte:
 | E1 | Nucleo: i tipi del calendario e l'ED sul banco | E0 | `rfe`, `rfo`, `mse`, ~~`onlineDay`~~ `online-day` (piano 1.27) nel seme dei tipi; il personaggio `?as=events` (`IT-EC`) sul banco e2e |
 | E2 | Modulo: lo scheletro | E0 | progetto, contesto, `Initial` (`evt_events` intera, `evt_event_airports`), catalogo, `positionGrants`, impostazioni, menu, segmento |
 | E2b | Nucleo: il permesso, non il dipartimento | E2 (la domanda della sua nota, decisa sulla #209) | un grant a una posizione su un altro dipartimento dà il permesso e non il dipartimento: nessun claim `dept`, le righe nella lista di quel permesso |
-| E3a | L'evento nello staff | E1, E2, E2b | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare; i nove grant di chi collabora |
+| E3a | L'evento nello staff | E1, E2, E2b (i grant di chi collabora: nota di E2, decisa sulla #209) | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare; i nove grant di chi collabora |
 | E3b | La vita dell'evento | E3a | pubblicare, l'uscita programmata, la fine; calendario, ricerca, usi dei file; `events-release` |
 | E4 | Il pubblico e le rotte | E3b | `/events`, `/events/{slug}`, `events.eventList`; `evt_routes` del FOD |
 | E5 | Gli slot pubblici e l'esportazione | E4 | `evt_slots`, incolla e carica con le catene, liste; l'esportazione con il token `events.bookings` |
@@ -366,7 +366,119 @@ esiste rifiutato in `kindPresets`; il fork «XX» parte con il modulo e i predef
 regole. E2e: `?as=events` vede la sezione, salva un'impostazione e la rilegge.
 **Fatta quando**: il personaggio dell'ED vede la sezione Events, cambia un'impostazione e la rilegge.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (30 settembre 2026, branch `m4/e2-events-skeleton`, PR #209, da `main` a `c107c98`; prima fase del modulo, nessuna
+coda):
+
+- **Fatto**:
+  1. **Il modulo** `IvaoHub.Modules.Events` (referenzia solo il nucleo), in `IvaoHub.Web/Modules.cs`, nel `.sln`, nell'host e nei test
+     di unità; `EventsDbContext : ModuleDbContext` con `__EFMigrationsHistory_events` e la migrazione **`Initial`**
+     (`20260930170049_Initial`): **`evt_events` intera** — tutte le colonne del punto 1, con i tre limiti dello scostamento 6 di E0 — e
+     **`evt_event_airports`**, con la chiave verso l'evento (a cascata) e l'indice univoco `(event_id, icao)`. Nessuna tabella del
+     nucleo nella migrazione (le proiezioni e l'audit restano fuori, come per gli altri moduli).
+  2. **Le entità**: `Event` (`IOwnedByDepartment` con la maschera, `IVisible`, `IPublishable`, `IAuditable`, `[Audited]`,
+     `IHasResourceScope` `events:event:{id}`, area `Events`) ed `EventAirport` (maschera, audit, lo scope del suo evento, area
+     `Events`). La proiezione arriva in E3b, gli endpoint in E3a.
+  3. **Il catalogo** `EventsPermissions`: 12 permessi in 5 aree, `DeniedToStakeholder` su `EventAtc.Edit` ed `EventReports.Edit`.
+     **I grant**: gli 11 dell'ED (EC ed EAC tutto tranne `EventReports.Edit`, EA1–9 senza `Events.Delete` né `Events.ManageSettings`) e
+     i 2 del team di un FIR su `EventAtc.*` (coordinator, assistant, advisor: CH, ACH, CHA), in `config/division.json` e in
+     `config/division.example.json`, con `scope: ED`. ⚠️ **Non quelli di AOD, FOD e MD**: scostamento 1, qui sotto.
+  4. **`EventsSettings`** (`kindPresets`, `bookingGapMinutes` 10, `pilotRetentionMonths` 24, `reminderLeadHours` 24) dietro
+     `Events.ManageSettings`, e la schermata generata `/staff/events/settings`, unica voce della sezione «Eventi» del back office. Un
+     preset si sceglie fra i tipi del calendario del bootstrap; il salvataggio rifiuta sulla riga un tipo che il calendario non ha
+     (`events:errors.calendarKindUnknown`) e un tipo ripetuto (`events:errors.kindTwice`).
+  5. **Il segmento riservato** `events` (`IModule.ReservedSegments`).
+  6. **`EventsArchitectureTests`**: il modulo non nomina la rete, non scrive rating, ICAO né tipi di evento, non ha un client suo; i due
+     file della divisione danno all'ED e al team di un FIR quello che dice il design, e nessun grant degli eventi a chi collabora finché
+     la nota non ha risposta (scostamento 1).
+  7. **Le due verifiche del design §6.3**: nessuna chiede il nucleo (qui sotto, «Le due verifiche»).
+  8. **I moduli `events` finti dei test del nucleo**: nessuno si scontra con quello vero. `ModuleCompositionTests` e `ContactThreadTests`
+     compongono a mano un registro con un modulo inventato, `staffDestinations.test.tsx` un bootstrap scritto a mano, e il modulo di
+     prova dell'integrazione è `sample` (`smp_`); `manifest.test.ts` legge le chiavi dai sorgenti, e ora trova `events` sulle due metà.
+     Nessuna PR del nucleo.
+- **Le due verifiche del design §6.3**, lette nel codice (la forma si scrive qui, il codice è di E11a):
+  1. **L'intestazione dell'evento per chi non ha `Events.View`** (lo staff dei FIR). L'unico handler, chiesto **sulla riga dell'evento**
+     con `EventAtc.View`, risponde no allo staff di un FIR con `firStaffScope: own`: il suo permesso porta il FIR
+     (`EffectivePermission.Fir`) e l'evento non ne dice nessuno (`PermissionSet.ReachesFir`: mai una riga senza FIR). **La forma, senza il
+     nucleo**: le schermate dell'area leggono l'intestazione (titolo, tipo, date, stato, scali) da un endpoint **dell'area**, con
+     `RequireAuthorization(EventAtc.View)` senza risorsa — l'unico handler risponde «lo tiene da qualche parte»
+     (`HubAuthorization.cs:163–166`) — e l'evento letto con `CrudSource.BackOffice`; le postazioni con la lista generata, che per lo staff di
+     un FIR aggiunge le righe del suo FIR (`IHasFir`, `onTheirFir`). Lo stesso varrà per `EventRoutes` ed `EventReports`, se qualcuno ne
+     terrà i permessi senza `Events.View` (FOD e MD lo hanno, design §6.2). **Che cosa comporta, detto**: chi tiene `EventAtc.View` da
+     qualche parte legge l'intestazione di **ogni** evento — lo staff di un FIR deve poterlo, per aprire la prima postazione del suo FIR —,
+     e un grant a un VID su un evento solo leggerebbe anche le intestazioni degli altri (niente dei membri). Se è troppo, E11a restringe
+     l'endpoint (per esempio agli eventi con `has_roster`), non il nucleo.
+  2. **Le disponibilità per le postazioni del FIR.** La disponibilità non ha un FIR, e la lista generata la chiude allo staff di un FIR (non
+     è `IHasFir`, e lo staff di un FIR non appartiene a un dipartimento: `TryNarrowToDepartments` risponde 403). **La forma, senza il
+     nucleo**: la schermata del roster legge le disponibilità **per postazione**, da un endpoint dell'area che carica la postazione, chiede
+     all'unico handler `EventAtc.View` **sulla postazione** (con il suo FIR: passa solo lo staff di quel FIR, o chi non è tenuto a un FIR)
+     e risponde le disponibilità dell'evento che coprono la finestra della postazione, lette dal modulo e non dalla lista generata. Lo
+     staff di un FIR vede i candidati delle sue postazioni; la lista intera resta a chi tiene `EventAtc.View` sull'ED.
+- ⚠️ **Scostamenti**:
+  1. **I nove grant di AOD, FOD e MD non sono nei file** (punto 3). Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello
+     che vede (`HubClaims.BuildIdentity`, la regola del 6 settembre, scritta per un grant a una persona), e i nove sarebbero i primi grant
+     a una posizione fra due dipartimenti: **misurato**, con i 22 grant del design la suite d'integrazione intera dà 430 test e **tre
+     rossi del maintainer** (`SeveralDepartmentsTests` righe 81 e 120, `SearchEndpointTests` riga 82). Nota nuova
+     `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`, con la domanda sulla PR; **Carmine ha deciso la (b)** (30 settembre, in chat al
+     master, pubblicata su sua istruzione [sulla #209][a209]): un grant a una posizione su un dipartimento che non è il suo dà il
+     permesso, non il dipartimento, in una fase del nucleo a sé, **E2b**, prima di E3a, che la sessione che coordina prepara; i nove si
+     seminano dopo di lei, non in E2. **E3a aspetta E2b**: prova «FOD e AOD non modificano il testo» e «chi collabora non elimina».
+  2. **L'ordine dei moduli**: gli eventi **per primi** in `Modules.cs` e in `web/src/modules/index.ts` (eventi, tour, training), l'ordine
+     delle sezioni del back office della nota `2026-09-13-moduli-non-subordinati-ai-dipartimenti` §3.1; tour e training restano nel loro.
+     **Confermato da Carmine** [sulla #209][a209] («Yes, the Events section first»).
+  3. **`evt_event_airports` nasce con le colonne del nucleo** che il punto 1 non elenca — maschera, audit, `row_version` —, perché E3a
+     non ha migrazione e le righe degli scali copiano maschera e scope dell'evento (punto 3 di E3a).
+  4. **Le forme delle colonne**, che il design non dice: `starts_at_utc` ed `ends_at_utc` obbligatorie (lo stato si legge dalle date, e
+     un evento non ha modelli); `visible_from_utc` facoltativa (vuota = alla pubblicazione, design §1.2) e **`booking_opens_at_utc`
+     facoltativa** (un evento senza slot non apre prenotazioni: che cosa chiede «Pubblica» lo dice E3b); `shift_minutes` e i tre limiti
+     vuoti = l'impostazione; `venue` e `cancellation_note` tradotti e facoltativi; `slug` 100 (come i tour), `kind` 32 (la chiave di un
+     tipo del calendario), `external_url` 1024 (un link della libreria). Indici: `slug` univoco e `(status, starts_at_utc)`.
+  5. **I limiti delle impostazioni**, che il design non dice: `bookingGapMinutes` 0–1440, `pilotRetentionMonths` 1–120,
+     `reminderLeadHours` 1–168 (come il promemoria del training). Un tipo scritto con le maiuscole diverse (`RFE`) è rifiutato: il
+     database lo troverebbe, il browser no (la nota di E1, §3).
+  6. **`EventsArchitectureTests` controlla anche i tipi**: nessuna chiave del seme del calendario scritta nel codice del modulo (nota
+     `i-tipi-di-evento`: «il codice non conosce nessun tipo»). vIPI no: lo chiede già a ogni modulo
+     `ArchitectureTests.NoModuleNamesTheAtcArchiveOrTheBoundaryDataset`, e non si scrive due volte.
+  7. **Un test condiviso toccato**: le cinque righe `evt_` in `ErasureTests` (`evt_event_airports.created_by`, `.updated_by`,
+     `evt_events.cancelled_by`, `.created_by`, `.updated_by`), con la nota breve `2026-09-30-le-colonne-degli-eventi-in-erasuretests`
+     perché `core-guard` conta il file come nucleo — il caso che le «Regole di tutte le fasi» prevedono.
+- **Trovato, e scritto per chi viene dopo**: i due grant del team di un FIR fanno scrivere al seme, **a ogni avvio** fino a E11a,
+  «the grant of EventAtc.View to the team of a FIR … is not applied: no row of its area says its FIR» (e lo stesso per `Edit`): è il
+  comportamento voluto (`PositionGrantSeeder.cs`), e il primo avvio con una riga `IHasFir` dell'area li applica.
+- **Verificato, in locale** (30 settembre 2026, sul branch prima del commit dei documenti): `dotnet build` senza avvisi, e `dotnet
+  format --verify-no-changes` sui dodici file C# toccati; unità **919/919**; **integrazione intera senza filtro 434/434** (8,9
+  minuti), le classi toccate da sole 18/18 e `EventsSkeletonTests` da sola 3/3; **la misura della nota**: la stessa suite con i 22
+  grant del design dà 430 test e 4 rossi — i tre del maintainer, e `ErasureTests` senza ancora le righe `evt_`; `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` 599 in 81 file; `pnpm gen:api` e `i18n:sync` senza differenze dopo la
+  copia; `pnpm e2e --workers=2` **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (10,4
+  minuti, la spec nuova compresa) su un banco suo (`http://127.0.0.1:5112`, `ivaohub_e2e_e2` tolto prima, dietro il lock di Mailpit). Una prima corsa è stata fermata durante il
+  publish, prima di ogni spec: lanciata per sbaglio con `--workers=2`, che la configurazione di `e2e:full` non vuole (un worker, per
+  non pubblicare una sull'altra). Le regole di `core-guard` rifatte in PowerShell dalla base di merge: nessun file del maintainer, uno
+  del nucleo (`ErasureTests.cs`), due note nuove. La CI della prima spinta (`b3b4849`) verde: `build-test` in 21,4 minuti, `core-guard`.
+- **Dopo la revisione** ([osservazioni del revisore sulla #209][r209], «approvable on the merits», niente di bloccante; [risposte di
+  Carmine][a209]) — 1 ottobre 2026:
+  - **la nota** registra la decisione (la (b), E2b), con i link alla domanda e alla risposta; `EventsArchitectureTests` dice che i nove
+    aspettano E2b;
+  - **i due nit**: `EventsSkeletonTests` si riprende alla fine di ogni test i grant e le posizioni che dà ai suoi VID (i membri restano:
+    l'hub non cancella un membro a mano); `events-skeleton.spec.ts` toglie all'inizio un preset `rfe` che una corsa interrotta avesse
+    lasciato — il suo sarebbe il secondo, rifiutato con `kindTwice` — e rimette alla fine il banco senza;
+  - **`main` unito** (merge, non rebase) dopo E10b (#208), E10e (#206), i tour sulla distanza del nucleo (#211) ed E10d (#205): un solo
+    conflitto, in `HANDOFF-M4.md`, con i paragrafi di tutte le fasi tenuti; `config/division.example.json` (l'`awardDigestTime` di E10d)
+    e questo file uniti da soli;
+  - **i due test d'integrazione degli eventi avviano l'host con `useIvaoFixtures: true`**: l'avviso di E10b in `HANDOFF-M4.md` (senza,
+    un host chiede un token a IVAO mentre i dati di riferimento sono vuoti).
+- **Verificato di nuovo, dopo il merge** (1 ottobre 2026, sul branch prima del commit di questi documenti): `dotnet build` senza avvisi,
+  e `dotnet format --verify-no-changes` sui file C# ritoccati; unità **937/937**; **integrazione intera senza filtro 441/441** (8,4
+  minuti), le due classi degli eventi da sole 4/4, senza nessuna richiesta a IVAO nel log; `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; `pnpm test` 599 in 81 file; `pnpm gen:api` e `i18n:sync` senza differenze; `pnpm e2e --workers=2` **163/163** al
+  primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 51/51 al primo giro** (11,2 minuti, con il suo worker solo) sul banco
+  `http://127.0.0.1:5112`, `ivaohub_e2e_e2` tolto prima, dietro il lock di Mailpit; le regole di `core-guard` dalla nuova base di
+  merge (`db9268f`): PASS, un file del nucleo (`ErasureTests.cs`) e due note nuove.
+- **Non verificato**: la CI dopo il merge (la dice la PR); i nove grant, che si seminano dopo E2b; le due verifiche del §6.3 sono
+  scritte, non provate da un codice (E11a); la migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB
+  11.4.10 vera); `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree (le spec la tollerano, come in CI).
+
+[a209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144
+[r209]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917043727
 
 ### E2b — Nucleo: il permesso, non il dipartimento
 

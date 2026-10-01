@@ -1,4 +1,5 @@
 using IvaoHub.Core.Modules;
+using IvaoHub.Modules.Events;
 using IvaoHub.Modules.FlightOps;
 using IvaoHub.Modules.Training;
 
@@ -15,10 +16,11 @@ namespace IvaoHub.Web;
 /// than by opening a file.</para>
 /// <para>Empty from 13 September 2026, when the ATC module left together with vIPI (note
 /// 2026-09-13-staccarsi-da-vipi), until the tours opened M2 (T5, 16 September 2026); the training followed with M3 (A4,
-/// 25 September 2026).</para>
-/// <para>The order is the order menu entries come out in.</para>
+/// 25 September 2026), and the events with M4 (E2, 30 September 2026).</para>
+/// <para>The order is the order menu entries come out in: events, tours, training, as the back office has named its sections
+/// since the note 2026-09-13-moduli-non-subordinati-ai-dipartimenti (§3.1).</para>
 /// </summary>
 internal static class Modules
 {
-    public static readonly IReadOnlyList<IModule> All = [new FlightOpsModule(), new TrainingModule()];
+    public static readonly IReadOnlyList<IModule> All = [new EventsModule(), new FlightOpsModule(), new TrainingModule()];
 }
