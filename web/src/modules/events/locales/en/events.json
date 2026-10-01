@@ -94,13 +94,13 @@
   },
   "cancel": {
     "title": "Cancel the event",
-    "description": "The event stays on its page until its end, marked as cancelled, with the note below. Whoever booked, has a shift or registered is told by mail.",
+    "description": "The event stays on its page until its end, marked as cancelled, with the note below.",
     "submit": "Cancel the event",
     "fields": {
       "note": "Why it is cancelled"
     },
     "hints": {
-      "note": "Shown on the page of the event and in the mail, in every language of the division."
+      "note": "Shown on the page of the event, in every language of the division."
     }
   },
   "airports": {

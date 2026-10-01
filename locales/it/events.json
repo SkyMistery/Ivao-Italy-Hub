@@ -95,13 +95,13 @@
   },
   "cancel": {
     "title": "Annulla l'evento",
-    "description": "L'evento resta sulla sua pagina fino alla fine, segnato come annullato, con la nota qui sotto. Chi ha prenotato, ha un turno o si è iscritto riceve una mail.",
+    "description": "L'evento resta sulla sua pagina fino alla fine, segnato come annullato, con la nota qui sotto.",
     "submit": "Annulla l'evento",
     "fields": {
       "note": "Perché è annullato"
     },
     "hints": {
-      "note": "Si legge sulla pagina dell'evento e nella mail, in tutte le lingue della divisione."
+      "note": "Si legge sulla pagina dell'evento, in tutte le lingue della divisione."
     }
   },
   "airports": {
