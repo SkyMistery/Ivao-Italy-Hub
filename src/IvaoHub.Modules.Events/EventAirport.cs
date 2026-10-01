@@ -6,14 +6,20 @@ namespace IvaoHub.Modules.Events;
 /// One airport of an event, with its capacity (design M4 §1.3), <c>evt_event_airports</c>: once per event, in the order
 /// <see cref="Ordinal"/> gives. The capacity is either in movements an hour, or in arrivals and departures an hour; the private
 /// slots are generated from it (§3.2). An event about the whole division has none.
-/// <para>A row of the staff that belongs to its event: in the care of the event's departments and answering with the event's
-/// scope, copied at every write as the legs of a tour copy their tour's (§1.1; the copy arrives with the form, E3a). Its ICAO is
-/// a plain column, checked against the airports the core knows, with no key towards the core.</para>
+/// <para>A row of the staff that belongs to its event (<see cref="IEventChild"/>): in the care of the event's departments and
+/// answering with the event's scope, copied at every write as the legs of a tour copy their tour's (§1.1). Its ICAO is a plain
+/// column, checked against the airports the core knows, with no key towards the core.</para>
 /// </summary>
 [Audited]
 [PermissionArea(EventsPermissions.Area)]
-public sealed class EventAirport : IOwnedByDepartment, IAuditable, IHasResourceScope
+public sealed class EventAirport : IEventChild, IAuditable, IHasResourceScope
 {
+    /// <summary>The most a capacity says in an hour: more than any airport moves, so a bigger number is a typo.</summary>
+    public const int MaxPerHour = 999;
+
+    /// <summary>The place of an airport in the order of its event.</summary>
+    public const int MaxOrdinal = 999;
+
     public long Id { get; set; }
 
     public long EventId { get; set; }
