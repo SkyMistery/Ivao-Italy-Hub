@@ -1,0 +1,33 @@
+{
+  "nav": {
+    "section": "Eventi",
+    "settings": "Impostazioni degli eventi"
+  },
+  "settings": {
+    "title": "Impostazioni degli eventi",
+    "description": "Quello che il dipartimento eventi cambia senza un rilascio: che cosa accende ogni tipo di evento, la distanza fra due prenotazioni di un pilota, per quanto si tengono le prenotazioni dei piloti, il promemoria.",
+    "saved": "Impostazioni salvate.",
+    "fields": {
+      "kindPresets": "Che cosa accende ogni tipo di evento",
+      "kindPresets.kind": "Tipo di evento",
+      "kindPresets.publicSlots": "Slot pubblici",
+      "kindPresets.privateSlots": "Slot privati",
+      "kindPresets.hasRoster": "Roster ATC",
+      "kindPresets.wholeDivision": "Tutta la divisione",
+      "kindPresets.inPerson": "In presenza",
+      "bookingGapMinutes": "Minuti fra due prenotazioni dello stesso pilota",
+      "pilotRetentionMonths": "Mesi per cui si tengono le prenotazioni dei piloti dopo un evento",
+      "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria"
+    },
+    "hints": {
+      "kindPresets": "Un evento nuovo di quel tipo nasce con questi interruttori accesi, e lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento nuovo nasce con tutto spento.",
+      "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
+      "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
+      "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block."
+    }
+  },
+  "errors": {
+    "calendarKindUnknown": "Questo non è più un tipo del calendario: togli la riga.",
+    "kindTwice": "Questo tipo ha più di una riga."
+  }
+}

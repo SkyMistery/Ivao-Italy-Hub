@@ -7,14 +7,16 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2b** (nucleo: un grant a una posizione su un altro dipartimento dà il permesso, non
-il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda; la decisione è di
-Carmine, sulla #209. Corrono, ognuna nella sua sessione, **E2** (#209), **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f**;
-sono unite E1 (#200), E10b (#208), E10d (#205) ed E10e (#206).
-**Il prossimo passo**: **E2** ed **E2b** unite, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora**
-(`10`, E3a punto 5). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b**
-trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei
-tour al calcolo del nucleo è unito (#211). **La fase del nucleo che rende `Awards.Assign` concedibile con un grant** (decisa da Carmine
-sulla #205) la prepara la sessione che coordina.
+il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda, con `main` unito dopo
+**E2 (#209)**; la decisione è di Carmine, sulla #209. Sono unite E1 (#200), E2 (#209), E10b (#208), E10d (#205) ed E10e (#206); corrono,
+ognuna nella sua sessione, **E10a** (#210), **E10c** (#204), **E15a** (#207) ed **E10f** (#213, `Awards.Assign` concedibile con un
+grant, decisa da Carmine sulla #205).
+**Il prossimo passo**: **E2b** unita, poi **E3a** (con E1, E2 ed E2b), che porta anche **i nove grant di chi collabora** (`10`, E3a
+punto 5): la sua sessione la prepara la sessione che coordina, in coda dopo la #212. ⚠️ **E2b ed E10f dichiarano tutte e due
+`EffectivePermission.FromOutside`**: chi arriva seconda a `main` tiene una dichiarazione sola e somma le due condizioni del calcolo (nota
+di E2b, §3.8). **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed **E14b** trovano in
+E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente. Il passaggio dei tour al
+calcolo del nucleo è unito (#211).
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -137,10 +139,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     un'identità delle unità). **Le parole**: l'aiuto del form dei permessi (`grants.formHint`), `docs/FORKING.md` e i commenti di
     `config/division.example.json`. Nessuna migrazione, nessun endpoint.
 - **Che cosa deve sapere la fase dopo**:
-  - ⚠️ **I nove grant di chi collabora non ci sono** (#209 non era unita): li porta **E3a** (`10`, E3a punto 5) in `config/division.json`
-    e in `config/division.example.json`, e cambia `EventsArchitectureTests` di E2, che li rifiuta finché la nota non ha risposta — ora ce
-    l'ha. **Misurato** sopra E2b con E2 e i nove grant: integrazione intera 443/443, i tre test del maintainer verdi senza toccarli;
-    fra le unità l'unico rosso è quel test di E2.
+  - ⚠️ **I nove grant di chi collabora non ci sono**, nemmeno dopo l'unione di E2 (#209) in questo branch: li porta **E3a** (`10`, E3a
+    punto 5), la cui sessione nasce sopra E2b, in coda dopo la #212, in `config/division.json` e in `config/division.example.json`, e cambia
+    `EventsArchitectureTests` di E2, che li rifiuta finché la nota non ha risposta — ora ce l'ha. **Misurato** sopra E2b con E2 e i nove
+    grant: integrazione intera 443/443, i tre test del maintainer verdi senza toccarli; fra le unità l'unico rosso è quel test di E2.
   - **Che cosa vedranno AOD, FOD e MD** (nota §3.7): gli eventi e le liste della loro area, con le righe dell'ED, ogni riga con l'unico
     handler, la sezione «Eventi»; non le righe che l'ED tiene per sé, non il gruppo dell'ED nella barra, non i suoi contatti né i suoi
     contenuti.
@@ -155,6 +157,53 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Il team di un FIR con `own`** (IT) non cambia: il suo permesso porta il FIR, e il suo claim è quello di prima. ⚠️ Un cookie scritto
     prima di E2b tiene i suoi claim `dept` fino al prossimo ingresso; su IT nessuno ne ha uno da un grant a una posizione su un altro
     dipartimento.
+
+### Che cosa ha lasciato E2 (30 settembre – 1 ottobre 2026, branch `m4/e2-events-skeleton`, PR #209, la prima fase del modulo)
+
+- **Che cosa c'è** (il dettaglio in `10`, E2, «Com'è andata»):
+  - **Il modulo** `src/IvaoHub.Modules.Events/` (referenzia solo il nucleo), registrato **per primo** in `IvaoHub.Web/Modules.cs` e in
+    `web/src/modules/index.ts` (eventi, tour, training: la sezione Eventi per prima nel back office, **confermata da Carmine**
+    [sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)); `EventsDbContext` con
+    `__EFMigrationsHistory_events` e la migrazione
+    **`Initial`** (`20260930170049_Initial`), che **non si tocca più**: `evt_events` **intera** e `evt_event_airports`.
+  - **Le entità** alla radice del progetto: `Event` (maschera, `IVisible`, `IPublishable`, audit, `[Audited]`, scope
+    `events:event:{id}` con `Event.ScopeOf`) ed `EventAirport` (maschera, audit, lo scope del suo evento). Nessun endpoint, nessuna
+    proiezione, nessun validatore del CRUD ancora.
+  - **Il catalogo** `EventsPermissions` (12 permessi, 5 aree, `DeniedToStakeholder` su `EventAtc.Edit` ed `EventReports.Edit`) e **i
+    grant** dell'ED (11) e del team di un FIR (2, su `EventAtc.*`) nei due file della divisione.
+  - **Le impostazioni** `EventsSettings` (`Settings/EventsSettings.cs`: `kindPresets`, `bookingGapMinutes`, `pilotRetentionMonths`,
+    `reminderLeadHours`) con i validatori, e la schermata generata `/staff/events/settings` (`web/src/modules/events/`), l'unica voce
+    della sezione «Eventi» del back office.
+  - **Il segmento riservato** `events`; le parole `events` in `web/src/modules/events/locales/` (e le copie in `locales/`).
+  - **I test**: `EventsArchitectureTests` ed `EventsSettingsTests` (unità), `EventsSkeletonTests` ed `EventsXxDivisionTests`
+    (integrazione, VID 761001–761005), `web/src/modules/events/schemas.test.ts`, `web/e2e/full/events-skeleton.spec.ts` (il personaggio
+    dell'ED, `?as=events`); le cinque righe `evt_` in `ErasureTests`, con la nota breve
+    `2026-09-30-le-colonne-degli-eventi-in-erasuretests`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **I grant di AOD, FOD e MD non ci sono, e aspettano E2b.** Un grant sull'ED fa entrare chi lo tiene nell'ED per tutto quello che
+    vede (`HubClaims.BuildIdentity`), e i nove del design sarebbero i primi grant a una posizione fra due dipartimenti: con loro la suite
+    d'integrazione intera ha tre rossi del maintainer (`SeveralDepartmentsTests` ×2, `SearchEndpointTests`). **Carmine ha deciso la (b)**
+    della nota `2026-09-30-i-grant-di-chi-collabora-sugli-eventi`
+    ([sulla #209](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/209#issuecomment-5917066144)): un grant a una posizione su un
+    dipartimento che non è il suo dà il permesso, non il dipartimento, in una fase del nucleo a sé, **E2b**, prima di E3a; i nove si
+    seminano dopo di lei. `EventsArchitectureTests` li tiene fuori dai due file finché la tabella del design non li riprende: **un grant
+    del seme applicato non si toglie più togliendolo dal file**. E3a, che prova FOD e AOD sull'evento, aspetta E2b.
+  - ⚠️ **I test d'integrazione degli eventi avviano l'host con `useIvaoFixtures: true`** (l'avviso di E10b qui sotto): senza, un host
+    chiede un token a IVAO quando `ref_ivao_centers` è vuota. `EventsSkeletonTests` si riprende alla fine di ogni test i grant e le
+    posizioni che dà ai suoi VID; i membri restano, come in ogni classe.
+  - **Le colonne di `evt_events`**: `starts_at_utc` ed `ends_at_utc` obbligatorie, `visible_from_utc` e `booking_opens_at_utc`
+    facoltative, `shift_minutes` e i tre limiti vuoti = l'impostazione, `visibility` è una colonna (E3a la chiude a `Public` e `Members`
+    nel validatore), `kind` lunga come una chiave del calendario (32). Le regole di «Pubblica» sono di E3b.
+  - **E3a** scrive l'interfaccia delle righe figlie dell'evento (come `ITourChild`) con `CrudOptions.BeforeAuthorize`, e aggiunge
+    `AddValidatorsFromAssemblyContaining` con la prima risorsa del CRUD (come A5 per il training): E2 non li ha.
+  - **Le due verifiche del design §6.3** non chiedono il nucleo: l'intestazione per lo staff dei FIR da un endpoint dell'area ATC con
+    `EventAtc.View` senza risorsa, le disponibilità per postazione con l'unico handler chiesto sulla postazione (`10`, E2, «Le due
+    verifiche»). Le scrive in codice E11a.
+  - ⚠️ **Fino a E11a ogni avvio scrive due avvisi** sui grant del team di un FIR («not applied: no row of its area says its FIR»): è
+    voluto; il primo avvio con una riga `IHasFir` dell'area `EventAtc` li applica.
+  - **La schermata delle impostazioni** offre, accanto ai tipi del calendario, un tipo che un preset nomina e il calendario non ha più
+    (con la sua chiave come parola), perché la riga si veda e si tolga: il salvataggio la rifiuta sulla riga.
+- ⚠️ **Nessuna mappa di base per `pnpm e2e:full`** in nessun worktree (30 settembre): le spec la tollerano, come in CI.
 
 ### Che cosa ha lasciato E10d (30 settembre 2026, branch `m4/e10d-award-assigner-mail`, PR #205, del nucleo, senza coda)
 
