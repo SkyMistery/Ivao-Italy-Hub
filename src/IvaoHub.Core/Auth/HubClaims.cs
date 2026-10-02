@@ -69,6 +69,15 @@ public static class HubClaims
     /// </summary>
     private const char FirSeparator = '#';
 
+    /// <summary>
+    /// Opens the scope's part of a permission held from outside its department (M4, E2b, note
+    /// 2026-10-01-il-permesso-non-il-dipartimento): <c>Events.View:ED@!</c>, <c>Events.View:ED@!events:event:5</c>.
+    /// <para>There for the reason the FIR is (A11a): a reader that does not know it — a package from before a rollback, or
+    /// <see cref="ParsePermission"/> — reads a scope no row declares, and the permission reaches no row. Closed, never the
+    /// department. A scope never begins with it.</para>
+    /// </summary>
+    private const char OutsideMark = '!';
+
     /// <summary>Writes a permission as a single claim value; no department means every department.</summary>
     public static string FormatPermission(EffectivePermission permission)
     {
@@ -80,6 +89,11 @@ public static class HubClaims
             ? $"{permission.ResourceScope}{FirSeparator}{fir}"
             : permission.ResourceScope;
 
+        if (permission.FromOutside)
+        {
+            where = $"{OutsideMark}{where}";
+        }
+
         return where is { Length: > 0 }
             ? $"{value}{ScopeSeparator}{where}"
             : value;
@@ -87,7 +101,8 @@ public static class HubClaims
 
     /// <summary>
     /// Reads back a permission claim value the way every reader before M3 read it: the scope is whatever follows <c>@</c>, a
-    /// FIR included, which no row declares — so a permission held on a FIR reaches no row through this reading.
+    /// FIR included, which no row declares — so a permission held on a FIR reaches no row through this reading. Nor does one
+    /// held from outside its department, whose mark is read as a piece of the scope too (M4, E2b).
     /// <para>A department it cannot read is refused (<see cref="FormatException"/>) rather than read as "every department",
     /// which is what a missing department means (M3, A11a). The cookie reader asks <see cref="ReadPermission"/>.</para>
     /// </summary>
@@ -101,9 +116,10 @@ public static class HubClaims
     }
 
     /// <summary>
-    /// Reads a permission claim value into what the cookie holds: the scope and the FIR apart (M3, A11a). Null for a claim
-    /// that names a department this hub does not know, or a FIR with no name: such a claim is worth nothing, where a missing
-    /// department would have been worth every department (note 2026-09-27-i-capi-fir-sul-loro-fir §3.2).
+    /// Reads a permission claim value into what the cookie holds: the scope and the FIR apart (M3, A11a), and whether it is
+    /// held from outside its department (M4, E2b). Null for a claim that names a department this hub does not know, or a FIR
+    /// with no name: such a claim is worth nothing, where a missing department would have been worth every department (note
+    /// 2026-09-27-i-capi-fir-sul-loro-fir §3.2).
     /// </summary>
     public static EffectivePermission? ReadPermission(string value, string source)
     {
@@ -111,6 +127,13 @@ public static class HubClaims
         if (!readable)
         {
             return null;
+        }
+
+        var fromOutside = false;
+        if (where is { Length: > 0 } && where[0] == OutsideMark)
+        {
+            fromOutside = true;
+            where = where[1..];
         }
 
         var scope = where;
@@ -125,7 +148,7 @@ public static class HubClaims
             }
         }
 
-        return new EffectivePermission(name, department, source, scope is { Length: > 0 } ? scope : null, fir);
+        return new EffectivePermission(name, department, source, scope is { Length: > 0 } ? scope : null, fir, fromOutside);
     }
 
     /// <summary>The name, the department and what follows <c>@</c>; not readable when the department is not one of ours.</summary>
@@ -251,9 +274,16 @@ public static class HubClaims
         // of its FIR through the permission itself — in the single handler, and in the lists that read with it
         // (note 2026-09-27-i-capi-fir-sul-loro-fir §3.5).
         //
-        // ⚠️ And except a permission that says it came from outside (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant):
-        // a grant of a global permission, which has no department to take anybody into, with the View it brings. It names no
-        // department, and read as the grants above it would have taken whoever assigns the awards into all of them.
+        // ⚠️ And except a permission held from outside its department (M4, E2b, note 2026-10-01-il-permesso-non-il-dipartimento):
+        // what a grant to a position of another department gives — or to the team of a FIR, when it is not kept to its FIR —,
+        // decided by Carmine on 30 September 2026. The rule above was written for a person helping a department; a grant to a
+        // position reaches every holder of it, and would let three departments into a fourth for all they see. Such a permission
+        // reaches the department's rows the way a FIR's does: in the single handler, and in the lists that read with it.
+        //
+        // ⚠️ The same mark says the other way a grant comes from outside (M4, E10f, note
+        // 2026-10-01-chi-assegna-gli-award-con-un-grant): a grant of a global permission, which has no department to take anybody
+        // into, with the View it brings. It names no department, and read as the grants above it would have taken whoever assigns
+        // the awards into all of them.
         var granted = materialisedPermissions
             .Where(permission => permission.Source.StartsWith(
                 EffectivePermissionsCalculator.GrantSourcePrefix,

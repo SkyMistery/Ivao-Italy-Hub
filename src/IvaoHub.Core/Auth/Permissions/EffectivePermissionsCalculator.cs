@@ -24,10 +24,15 @@ namespace IvaoHub.Core.Auth.Permissions;
 /// 2026-09-27-i-capi-fir-sul-loro-fir). Null is the ordinary case, held on every row whatever its FIR.
 /// </param>
 /// <param name="FromOutside">
-/// True when the permission is held but takes its holder into no department: <see cref="HubClaims.BuildIdentity"/> leaves it
-/// out of the departments the cookie says its holder is inside, for the purpose of seeing. A grant of a global permission
-/// (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant), which has no department to take anybody into, and the View
-/// it brings along. Otherwise false, and a permission from a grant reaches its department, or every one when it names none.
+/// True when the permission is held <b>from outside</b> its department, and so takes its holder into no department:
+/// <see cref="HubClaims.BuildIdentity"/> leaves it out of the departments the cookie says its holder is inside, for the purpose
+/// of seeing. Two ways give it: a grant to a position of another department — or of every one —, or to the team of a FIR, which
+/// has none (M4, E2b, note 2026-10-01-il-permesso-non-il-dipartimento); and a grant of a global permission, which has no
+/// department to take anybody into, with the View it brings along (M4, E10f, note 2026-10-01-chi-assegna-gli-award-con-un-grant).
+/// It is held all the same — the single handler and the guard do not look at it —: its holder reaches the rows through the
+/// permission itself, and in the lists that read with it. False is the ordinary case: a position on its own department, a grant
+/// to a person of a permission of a department (note 2026-09-06-autorizzare-su-un-pezzo-di-un-altro-dipartimento), a super
+/// administrator.
 /// </param>
 public readonly record struct EffectivePermission(
     string Name,
@@ -187,17 +192,20 @@ public static class EffectivePermissionsCalculator
                 ? grant.HeldThrough(held).Select(position => position.Fir).Distinct(StringComparer.OrdinalIgnoreCase)
                 : [null];
 
-            // A global permission has no department, so a grant of it takes nobody into one (M4, E10f): the permission, and not
-            // every department, as a grant of a permission of a department given with none would. The View it brings says so too.
             foreach (var fir in firs)
             {
+                // From outside the department it is held on, two ways. A grant to a position of another department, or to the
+                // team of a FIR, gives the permission and not the department (M4, E2b); one held on a FIR says so already, by its
+                // FIR. And a global permission has no department, so a grant of it takes nobody into one (M4, E10f): the
+                // permission, and not every department, as a grant of a permission of a department given with none would. The
+                // View either of them brings says so too.
                 effective.Add(new EffectivePermission(
                     grant.Value,
                     grant.Department,
                     $"{GrantSourcePrefix}{grant.Id}",
                     grant.ResourceScope,
                     fir,
-                    FromOutside: catalogue.IsGlobal(grant.Value)));
+                    FromOutside: fir is null && (grant.GivesThePermissionNotTheDepartment || catalogue.IsGlobal(grant.Value))));
             }
         }
 
@@ -219,12 +227,15 @@ public static class EffectivePermissionsCalculator
         // by a grant, and the cookie would then carry the identical claim twice. The role wins,
         // because "they hold it anyway" is the more useful thing to show an administrator who is
         // about to delete the grant.
+        //
+        // And between two grants, the one that also gives the department (M4, E2b, E10f): the same permission reached from
+        // outside the department and by a grant to the person is the person's, which lets them in — dropping it would take the
+        // department away from somebody a grant by name had let in; and a View a global permission brought along must not hide
+        // the same View a grant gave on every department.
         return [.. effective
             .OrderBy(permission => permission.Name, StringComparer.Ordinal)
             .ThenBy(permission => permission.Department)
             .ThenBy(permission => Rank(permission.Source))
-            // Of two grants of the same permission, the one that takes its holder into the department is the one kept (M4, E10f):
-            // a View a global permission brought along must not hide the same View a grant gave on every department.
             .ThenBy(permission => permission.FromOutside)
             .ThenBy(permission => permission.Source, StringComparer.Ordinal)
             .ThenBy(permission => permission.ResourceScope, StringComparer.Ordinal)

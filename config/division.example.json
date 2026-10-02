@@ -64,7 +64,9 @@
     "Optional. Permissions your division gives to a position rather than to a person: a department",
     "at one or more levels (Coordinator, Assistant, Advisor, Member). Whoever holds that position",
     "holds the permission. scope is the department the permission is held on; leave it out for every",
-    "department. Each grant is applied once, at the first start that finds it; after that the permissions",
+    "department. On a department that is not the position's own, a grant gives the permission and not the",
+    "department: whoever holds the position reaches that department's rows with it, and nothing else of it.",
+    "Each grant is applied once, at the first start that finds it; after that the permissions",
     "screen is the truth, and a grant deleted there does not come back. A global permission is never given",
     "this way, save Awards.Assign: who assigns the awards is the division's to choose, and the first grant below",
     "gives it to the coordinator and the assistant of the membership department. It has no scope, because a",
@@ -122,7 +124,7 @@
     { "firTeam": true, "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" }
   ],
 
-  "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like any grant. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
+  "$comment.firStaffScope": "How far a grant to the team of a FIR reaches. all (default) = on the whole department, like a grant to a position of another department: the permission, not the department. own = each chief on the rows of their own FIR only. The department staff is never held to a FIR. A change reaches each chief at their next sign in.",
   "firStaffScope": "own",
 
   "$comment.preferredAtcRatings": [

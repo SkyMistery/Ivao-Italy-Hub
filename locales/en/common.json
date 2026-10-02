@@ -1391,7 +1391,7 @@
     "description": "Permissions given to a member by name, or to a position — a department at some of its levels — on top of what the staff positions already give.",
     "create": "New permission",
     "edit": "Edit permission",
-    "formHint": "Fill in a VID for one member, a department and its levels for whoever holds that position, or tick the team of a FIR and choose its levels: only one of the three. A permission scoped to no department is held on every one of them. A deny always wins over a grant.",
+    "formHint": "Fill in a VID for one member, a department and its levels for whoever holds that position, or tick the team of a FIR and choose its levels: only one of the three. A permission scoped to no department is held on every one of them. Given to a member, a permission on a department also lets them see what that department keeps to itself; given to a position on another department, or to the team of a FIR, it gives the permission there and nothing else of the department. A deny always wins over a grant.",
     "delete": {
       "title": "Delete this permission?",
       "description": "The member loses it on their very next request, and this cannot be undone."

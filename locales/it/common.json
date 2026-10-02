@@ -1391,7 +1391,7 @@
     "description": "Permessi dati a un membro per nome, o a una posizione — un dipartimento a certi livelli — oltre a quelli che danno già le posizioni dello staff.",
     "create": "Nuovo permesso",
     "edit": "Modifica permesso",
-    "formHint": "Scrivi un VID per un membro, un dipartimento e i suoi livelli per chi ha quella posizione, oppure spunta il team di un FIR e scegli i livelli: uno solo dei tre. Un permesso senza dipartimento vale su tutti. Un divieto vince sempre su un permesso.",
+    "formHint": "Scrivi un VID per un membro, un dipartimento e i suoi livelli per chi ha quella posizione, oppure spunta il team di un FIR e scegli i livelli: uno solo dei tre. Un permesso senza dipartimento vale su tutti. Dato a un membro, un permesso su un dipartimento gli fa vedere anche ciò che quel dipartimento tiene per sé; dato a una posizione di un altro dipartimento, o al team di un FIR, dà il permesso lì e nient'altro del dipartimento. Un divieto vince sempre su un permesso.",
     "delete": {
       "title": "Eliminare questo permesso?",
       "description": "Il membro lo perde alla richiesta successiva, e non si può annullare."

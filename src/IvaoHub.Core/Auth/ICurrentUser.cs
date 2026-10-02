@@ -32,6 +32,9 @@ public interface ICurrentUser
     /// The departments this person is inside, for the purpose of what they may see: the ones their
     /// recognised staff positions name, and the ones an active grant reached them on. It is what
     /// the global query filter and the department filter of every list compare a row against.
+    /// <para>Not the department of a permission held on one FIR (M3, A11a), nor of one held from outside its department —
+    /// a grant to a position of another department (M4, E2b): those reach its rows through the permission itself, and a list
+    /// adds them only when it reads with that permission.</para>
     /// </summary>
     IReadOnlySet<Department> Departments { get; }
 
