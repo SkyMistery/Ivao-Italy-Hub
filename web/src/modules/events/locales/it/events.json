@@ -1,7 +1,127 @@
 {
   "nav": {
     "section": "Eventi",
+    "events": "Eventi",
     "settings": "Impostazioni degli eventi"
+  },
+  "events": {
+    "title": "Eventi",
+    "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e annullarli o eliminarli.",
+    "create": "Nuovo evento",
+    "edit": "Evento",
+    "open": "Apri",
+    "saved": "Evento salvato.",
+    "readOnly": "Puoi leggere questo evento: cambiarlo spetta a chi scrive gli eventi.",
+    "cancelled": "Annullato il {{date}}.",
+    "filters": {
+      "view": "Mostra",
+      "anyView": "Tutti gli eventi"
+    },
+    "views": {
+      "drafts": "Bozze",
+      "upcoming": "Prossimi",
+      "inProgress": "In corso",
+      "ended": "Conclusi",
+      "cancelled": "Annullati"
+    },
+    "tabs": {
+      "settings": "Impostazioni",
+      "description": "Descrizione",
+      "airports": "Scali"
+    },
+    "actions": {
+      "cancel": "Annulla l'evento"
+    },
+    "delete": {
+      "title": "Eliminare questo evento?",
+      "description": "L'evento e i suoi scali si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
+    },
+    "body": {
+      "save": "Salva la descrizione",
+      "saved": "Descrizione salvata.",
+      "unsaved": "La descrizione ha modifiche non salvate."
+    },
+    "fields": {
+      "kind": "Tipo di evento",
+      "kindLabel": "Tipo",
+      "publicSlots": "Slot pubblici",
+      "privateSlots": "Slot privati",
+      "wholeDivision": "Tutta la divisione",
+      "organizer": "Organizzato da",
+      "externalUrl": "Pagina di chi organizza",
+      "title": "Titolo",
+      "slug": "Indirizzo",
+      "summary": "Riassunto",
+      "startsAtUtc": "Inizio",
+      "endsAtUtc": "Fine",
+      "visibleFromUtc": "Visibile dal",
+      "bookingOpensAtUtc": "Apertura delle prenotazioni",
+      "visibility": "Visibile a",
+      "bannerMediaId": "Banner",
+      "state": "Stato",
+      "updatedAt": "Ultima modifica"
+    },
+    "hints": {
+      "kind": "Un tipo del calendario della divisione. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni degli eventi per quel tipo; cambiali come serve a questo evento.",
+      "publicSlots": "Slot preparati dallo staff, ognuno con il suo volo, che un pilota prenota.",
+      "privateSlots": "Slot generati dalla capacità di ogni scalo, per il volo che il pilota sceglie.",
+      "wholeDivision": "L'evento riguarda tutti gli aeroporti e le postazioni della divisione, come un online day: non ha scali suoi.",
+      "externalUrl": "Per un evento della rete o di un'altra divisione: la loro pagina dell'evento.",
+      "slug": "L'indirizzo della sua pagina, /events/…",
+      "visibleFromUtc": "Lascialo vuoto per mostrare l'evento appena è pubblicato.",
+      "bookingOpensAtUtc": "Da quando i piloti prenotano; ogni slot si chiude al suo orario di off block. Lascialo vuoto per un evento senza slot."
+    },
+    "options": {
+      "state": {
+        "Draft": "Bozza",
+        "Scheduled": "Pubblicato, non ancora visibile",
+        "Announced": "Annunciato",
+        "BookingOpen": "Prenotazioni aperte",
+        "InProgress": "In corso",
+        "Ended": "Concluso",
+        "Cancelled": "Annullato"
+      },
+      "organizer": {
+        "Division": "La divisione",
+        "Network": "La rete, con la divisione",
+        "OtherDivision": "Un'altra divisione"
+      },
+      "visibility": {
+        "Public": "Tutti",
+        "Members": "I membri"
+      }
+    }
+  },
+  "cancel": {
+    "title": "Annulla l'evento",
+    "description": "L'evento resta sulla sua pagina fino alla fine, segnato come annullato, con la nota qui sotto.",
+    "submit": "Annulla l'evento",
+    "fields": {
+      "note": "Perché è annullato"
+    },
+    "hints": {
+      "note": "Si legge sulla pagina dell'evento, in tutte le lingue della divisione."
+    }
+  },
+  "airports": {
+    "title": "Scali",
+    "create": "Nuovo scalo",
+    "edit": "Scalo",
+    "fields": {
+      "icao": "Codice ICAO",
+      "ordinal": "Ordine",
+      "maxMovementsPerHour": "Movimenti all'ora",
+      "maxArrivalsPerHour": "Arrivi all'ora",
+      "maxDeparturesPerHour": "Partenze all'ora"
+    },
+    "hints": {
+      "maxMovementsPerHour": "La capacità dello scalo, come arrivi e partenze insieme. Lasciala vuota per dare arrivi e partenze separati.",
+      "maxArrivalsPerHour": "Con le partenze, al posto dei movimenti."
+    },
+    "delete": {
+      "title": "Eliminare questo scalo?",
+      "description": "Lo scalo esce dall'evento."
+    }
   },
   "settings": {
     "title": "Impostazioni degli eventi",
@@ -26,8 +146,33 @@
       "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block."
     }
   },
+  "notifications": {
+    "eventCancelled": {
+      "title": "Eventi annullati",
+      "description": "Una mail quando un evento in cui hai prenotato uno slot, hai un turno o ti sei iscritto viene annullato, con il motivo."
+    }
+  },
+  "mail": {
+    "events": {
+      "eventCancelled": {
+        "subject": "[Eventi] Annullato: {{event}}",
+        "body": "{{event}} è stato annullato.\n\nIl motivo: {{note}}\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      }
+    }
+  },
   "errors": {
     "calendarKindUnknown": "Questo non è più un tipo del calendario: togli la riga.",
-    "kindTwice": "Questo tipo ha più di una riga."
+    "kindTwice": "Questo tipo ha più di una riga.",
+    "endsBeforeItStarts": "L'evento finisce prima di cominciare.",
+    "visibilityChoice": "Un evento lo vedono tutti, o i membri.",
+    "slugTaken": "Un altro evento ha questo indirizzo.",
+    "wholeDivisionHasAirports": "Questo evento ha scali suoi: toglili prima di farlo valere su tutta la divisione.",
+    "eventUnknown": "Questo evento non esiste.",
+    "wholeDivisionHasNoAirports": "Un evento su tutta la divisione non ha scali suoi.",
+    "airportUnknown": "L'hub non conosce questo aeroporto.",
+    "airportTwice": "Questo scalo è già nell'evento.",
+    "capacityEitherOr": "Indica i movimenti, oppure gli arrivi e le partenze: non tutti e due.",
+    "alreadyCancelled": "Questo evento è già annullato.",
+    "eventOver": "Questo evento è concluso: non si annulla più."
   }
 }

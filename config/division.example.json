@@ -81,7 +81,10 @@
     "of a FIR: they see and assign the trainings of their own FIR, and only those, because firStaffScope is own below.",
     "Then the events module for its own base department (ED): the coordinator and the assistant everything but",
     "validating a report of support, which is another department's task; its advisors neither delete an event nor",
-    "manage the settings. And the staff of a FIR (chief, assistant chief, advisor) on the ATC of the events of its",
+    "manage the settings. Whoever collaborates on the events, at every level and on the events department: the ATC",
+    "operations read the events and write their ATC, the flight operations their routes, the membership their reports",
+    "of support; theirs is the permission and not the events department, so they never delete an event nor read the",
+    "rest of that department. And the staff of a FIR (chief, assistant chief, advisor) on the ATC of the events of its",
     "own FIR, which a start applies only once the events have ATC positions, rows that say their FIR."
   ],
   "positionGrants": [
@@ -120,6 +123,15 @@
     { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.View", "scope": "ED" },
     { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" },
     { "department": "ED", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventReports.View", "scope": "ED" },
+    { "department": "AOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Events.View", "scope": "ED" },
+    { "department": "AOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.View", "scope": "ED" },
+    { "department": "AOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Events.View", "scope": "ED" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventRoutes.View", "scope": "ED" },
+    { "department": "FOD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventRoutes.Edit", "scope": "ED" },
+    { "department": "MD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "Events.View", "scope": "ED" },
+    { "department": "MD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventReports.View", "scope": "ED" },
+    { "department": "MD", "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventReports.Edit", "scope": "ED" },
     { "firTeam": true, "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.View", "scope": "ED" },
     { "firTeam": true, "levels": ["Coordinator", "Assistant", "Advisor"], "permission": "EventAtc.Edit", "scope": "ED" }
   ],

@@ -2,7 +2,127 @@
   "_source": "web/src/modules/events/locales",
   "nav": {
     "section": "Events",
+    "events": "Events",
     "settings": "Events settings"
+  },
+  "events": {
+    "title": "Events",
+    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and cancelling or deleting it.",
+    "create": "New event",
+    "edit": "Event",
+    "open": "Open",
+    "saved": "Event saved.",
+    "readOnly": "You can read this event: changing it is for whoever writes the events.",
+    "cancelled": "Cancelled on {{date}}.",
+    "filters": {
+      "view": "Show",
+      "anyView": "Every event"
+    },
+    "views": {
+      "drafts": "Drafts",
+      "upcoming": "Upcoming",
+      "inProgress": "In progress",
+      "ended": "Ended",
+      "cancelled": "Cancelled"
+    },
+    "tabs": {
+      "settings": "Settings",
+      "description": "Description",
+      "airports": "Airports"
+    },
+    "actions": {
+      "cancel": "Cancel the event"
+    },
+    "delete": {
+      "title": "Delete this event?",
+      "description": "The event and its airports are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
+    },
+    "body": {
+      "save": "Save the description",
+      "saved": "Description saved.",
+      "unsaved": "The description has changes that are not saved."
+    },
+    "fields": {
+      "kind": "Kind of event",
+      "kindLabel": "Kind",
+      "publicSlots": "Public slots",
+      "privateSlots": "Private slots",
+      "wholeDivision": "The whole division",
+      "organizer": "Organised by",
+      "externalUrl": "Page of the organiser",
+      "title": "Title",
+      "slug": "Address",
+      "summary": "Summary",
+      "startsAtUtc": "Starts",
+      "endsAtUtc": "Ends",
+      "visibleFromUtc": "Seen from",
+      "bookingOpensAtUtc": "Bookings open",
+      "visibility": "Seen by",
+      "bannerMediaId": "Banner",
+      "state": "State",
+      "updatedAt": "Last changed"
+    },
+    "hints": {
+      "kind": "A kind of the division's calendar. Choosing it sets the switches below to what the settings of the events say of that kind; change them as this event needs.",
+      "publicSlots": "Slots the staff prepares, each with its flight, which a pilot books.",
+      "privateSlots": "Slots generated from the capacity of each airport, for the flight a pilot chooses.",
+      "wholeDivision": "The event is about every airport and position of the division, as an online day is: it has no airports of its own.",
+      "externalUrl": "For an event of the network or of another division: their page about it.",
+      "slug": "The address of its page, /events/…",
+      "visibleFromUtc": "Leave it empty to show the event as soon as it is published.",
+      "bookingOpensAtUtc": "From when pilots book; each slot closes at its own off block time. Leave it empty for an event without slots."
+    },
+    "options": {
+      "state": {
+        "Draft": "Draft",
+        "Scheduled": "Published, not seen yet",
+        "Announced": "Announced",
+        "BookingOpen": "Bookings open",
+        "InProgress": "In progress",
+        "Ended": "Ended",
+        "Cancelled": "Cancelled"
+      },
+      "organizer": {
+        "Division": "The division",
+        "Network": "The network, with the division",
+        "OtherDivision": "Another division"
+      },
+      "visibility": {
+        "Public": "Everybody",
+        "Members": "The members"
+      }
+    }
+  },
+  "cancel": {
+    "title": "Cancel the event",
+    "description": "The event stays on its page until its end, marked as cancelled, with the note below.",
+    "submit": "Cancel the event",
+    "fields": {
+      "note": "Why it is cancelled"
+    },
+    "hints": {
+      "note": "Shown on the page of the event, in every language of the division."
+    }
+  },
+  "airports": {
+    "title": "Airports",
+    "create": "New airport",
+    "edit": "Airport",
+    "fields": {
+      "icao": "ICAO code",
+      "ordinal": "Order",
+      "maxMovementsPerHour": "Movements an hour",
+      "maxArrivalsPerHour": "Arrivals an hour",
+      "maxDeparturesPerHour": "Departures an hour"
+    },
+    "hints": {
+      "maxMovementsPerHour": "The capacity of the airport, as arrivals and departures together. Leave it empty to give arrivals and departures apart.",
+      "maxArrivalsPerHour": "With the departures, instead of the movements."
+    },
+    "delete": {
+      "title": "Delete this airport?",
+      "description": "The airport is taken out of the event."
+    }
   },
   "settings": {
     "title": "Events settings",
@@ -27,8 +147,33 @@
       "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time."
     }
   },
+  "notifications": {
+    "eventCancelled": {
+      "title": "Cancelled events",
+      "description": "An email when an event you booked a slot of, have a shift in or registered for is cancelled, with the reason."
+    }
+  },
+  "mail": {
+    "events": {
+      "eventCancelled": {
+        "subject": "[Events] Cancelled: {{event}}",
+        "body": "{{event}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      }
+    }
+  },
   "errors": {
     "calendarKindUnknown": "This is no longer a kind of the calendar: take the row out.",
-    "kindTwice": "This kind has more than one row."
+    "kindTwice": "This kind has more than one row.",
+    "endsBeforeItStarts": "The event ends before it starts.",
+    "visibilityChoice": "An event is seen by everybody or by the members.",
+    "slugTaken": "Another event has this address.",
+    "wholeDivisionHasAirports": "This event has airports of its own: take them out before making it about the whole division.",
+    "eventUnknown": "This event does not exist.",
+    "wholeDivisionHasNoAirports": "An event about the whole division has no airports of its own.",
+    "airportUnknown": "The hub does not know this airport.",
+    "airportTwice": "This airport is already in the event.",
+    "capacityEitherOr": "Give the movements, or the arrivals and the departures: not both.",
+    "alreadyCancelled": "This event is already cancelled.",
+    "eventOver": "This event is over: it cannot be cancelled any more."
   }
 }

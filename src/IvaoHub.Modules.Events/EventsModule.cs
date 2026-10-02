@@ -1,8 +1,11 @@
+using FluentValidation;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Settings;
+using IvaoHub.Modules.Events.Staff;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +14,9 @@ namespace IvaoHub.Modules.Events;
 /// <summary>
 /// The events of the division (M4): the section "Events" of the site and of the back office, which takes over from the booking
 /// system of today and is designed in <c>docs/internal/09-design-m4.md</c>. E2 is its skeleton: the context with the event whole
-/// and its airports, the catalogue of the five areas, the settings of M4a and the section of the back office that holds them.
+/// and its airports, the catalogue of the five areas, the settings of M4a and the section of the back office that holds them;
+/// E3a the event in the staff's back office: its list with the views of its state, its page — the generated form with the
+/// switches its kind presets, the description, the banner — its airports with their capacity, and cancelling and deleting it.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -25,9 +30,10 @@ public sealed class EventsModule : ModuleBase
 
     public override IReadOnlyList<PermissionDescriptor> Permissions => EventsPermissions.All;
 
-    /// <summary>The staff's side: for now the settings (E2); the list of the events and the page of one arrive with E3a.</summary>
+    /// <summary>The staff's side: the events (E3a), and the settings (E2).</summary>
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
+        new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
     ];
 
@@ -36,6 +42,9 @@ public sealed class EventsModule : ModuleBase
     /// </summary>
     public override IReadOnlyList<string> ReservedSegments => ["events"];
 
+    /// <summary>The mails of the events (design M4 §8.3): each declared by the phase of the change it tells, cancelling first (E3a).</summary>
+    public override IReadOnlyList<string> NotificationTypes => EventsNotifications.All;
+
     public override ModuleSettingsDescriptor Settings { get; } =
         ModuleSettingsDescriptor.Create<EventsSettings, EventsSettingsSaveValidator>(
             EventsPermissions.ManageSettings,
@@ -43,6 +52,21 @@ public sealed class EventsModule : ModuleBase
 
     public override IEnumerable<Type> DbContextTypes => [typeof(EventsDbContext)];
 
-    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+    public override void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddModuleDbContext<EventsDbContext>(ModuleKey);
+
+        // The rules of its payloads, found by the CRUD engine in the container like the core's (E3a, the first resource).
+        services.AddValidatorsFromAssemblyContaining<EventsModule>(includeInternalTypes: true);
+
+        // The event in the staff's back office (E3a): what a save of it asks of other rows, and the rows of its staff.
+        services.AddScoped<EventSaving>();
+        services.AddScoped<EventChildren>();
+    }
+
+    public override void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapEventEndpoints();
+        endpoints.MapEventAirportEndpoints();
+    }
 }

@@ -651,7 +651,137 @@ vuota; un ICAO sconosciuto rifiutato sulla sua riga; `kindPresets` applicati. Un
 dell'ED crea un RFO con due scali, lo riapre, lo annulla.
 **Fatta quando**: sul banco un RFO con due scali e la capacità si crea, si riapre, si annulla; una bozza vuota si elimina.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (1 ottobre 2026, branch `m4/e3a-event-staff`, PR #214, in coda dopo la #212 di E2b, nato da
+`m4/e2b-grant-without-department` a `6613aac`; uniti poi, con dei merge, `main` dopo E2 (#209), la nuova testa di E2b (`978d6ac`) dopo
+la sua revisione, `main` dopo E15a (#207), che avrebbe messo la PR in conflitto in `HANDOFF-M4.md`, e la testa di E2b dopo il suo merge
+di E15a (`d9e8f90`, solo documenti); nessuna migrazione):
+
+- **Fatto**:
+  1. **Lo stato dalle date** (`EventState.Of`, `src/IvaoHub.Modules.Events/EventState.cs`), come `TourState`: bozza, programmato,
+     annunciato, prenotazioni aperte, in corso, concluso, annullato — dallo stato, dalle quattro date e dall'annullamento. Ogni istante è
+     il primo momento di ciò che apre (un evento che finisce alle 22 alle 22 è concluso); l'annullamento vince su tutto, la bozza su ogni
+     data. **Le cinque viste** della lista (`EventViews`, `filter[view]`): bozze, prossimi (programmati, annunciati, con le prenotazioni
+     aperte), in corso, conclusi, annullati; ogni vista è scritta una seconda volta in ciò che SQL chiede, accanto alla funzione, e
+     `EventsStateTests` tiene le due alla stessa risposta su una griglia di eventi e di istanti.
+  2. **`MapCrud` dell'evento** (`/api/events/events`, `Staff/EventEndpoints.cs`): letto con `Events.View`, scritto con `Events.Edit`,
+     eliminato anche con `Events.Delete` (`DeletePolicy`); ricerca su titolo e indirizzo, ordine per inizio, e nella lista la parola del
+     calendario per il tipo (`ToListPage`, una query per pagina). **`EventSaving`**: un indirizzo che nessun altro evento ha, un tipo
+     del calendario e attivo quando lo si sceglie (creazione o cambio, come una voce del calendario), nessuno scalo su un evento di
+     tutta la divisione. **Eliminare** porta via gli scali nello stesso salvataggio, ognuno con la sua riga di audit; la regola «solo
+     senza righe dei membri» non ha ancora tabelle da guardare: la prima è di E6a, in `EventSaving.DeleteAsync`.
+  3. **Gli scali con la capacità** (`/api/events/airports`, `Staff/EventAirportEndpoints.cs`): righe figlie `IEventChild` (come
+     `ITourChild`), che prendono dipartimento e maschera dall'evento prima che il permesso sia chiesto (`CrudOptions.BeforeAuthorize`,
+     `EventChildren.AdoptAsync`) e rispondono con il suo scope; un aeroporto che il nucleo conosce (`IAirportDirectory.FindAsync`), una
+     volta per evento, la capacità in movimenti oppure in arrivi e partenze. Lista e form generati nella scheda «Scali» della pagina.
+  4. **Le schermate** (`web/src/modules/events/`): `/staff/events`, la lista generata con il filtro delle viste; `/staff/events/{id}`,
+     la pagina con le schede impostazioni (il form generato), descrizione (l'editor dei blocchi, salvata con il `PUT` dell'evento come
+     il briefing del tour) e scali; la barra «Annulla l'evento» ed «Elimina», offerte solo a chi il server lo lascia fare;
+     `/staff/events/{id}/cancel`, la nota. **Gli interruttori preimpostati al cambio del tipo**: il form segue quello che si scrive e,
+     quando il tipo cambia, si ridisegna con gli stessi valori e gli interruttori che il preset dà a quel tipo (`presetSwitches`).
+  5. **Annulla** (`POST /api/events/events/{id}/cancel`, `Events.Edit` sulla riga): quando, chi (`cancelled_by`) e la nota in ogni
+     lingua della divisione; una volta; mai su un evento concluso; mai sopra una versione più nuova (409). Il tipo di notifica
+     **`events.eventCancelled`** è dichiarato, con la mail e la parola del profilo; nessun destinatario ancora (E6a, E12, E16).
+  6. **I nove grant di chi collabora** (punto 5) in `config/division.json` e `config/division.example.json` (con una frase nel commento
+     dei `positionGrants`); `EventsArchitectureTests` li sposta dall'elenco «in attesa» alla tabella del design.
+  7. **I test**: `EventsStateTests` (unità, 6); `EventsStaffTests` (integrazione, 7, VID 761006–761010, slug `evt-test-e3a-…`, aeroporti
+     `XEA1` e `XEA2` seminati e tolti); `web/src/modules/events/eventForm.test.ts` (vitest, 4); `web/e2e/full/events-staff.spec.ts`.
+- **Scostamenti e scelte piccole** (nessuna è una domanda nuova, tranne la prima, che il revisore ha portato a Carmine):
+  1. **Una lettura scritta a mano accanto al CRUD**, `GET /api/events/kind-presets` (`Events.Edit`): il design §7.2 conta fra gli
+     endpoint a mano solo i verbi. I preset servono al form di chi scrive eventi, e le impostazioni le legge solo chi le gestisce
+     (`ModuleSettingsEndpoints`, `Events.ManageSettings`), che un advisor dell'ED non ha. È il modulo che legge le sue impostazioni dal
+     server, come fanno tour e training; il nucleo non cambia. Endpoint a mano di E3a: un verbo (annulla), una lettura (i preset).
+     **Scostamento accettato da Carmine** il 1 ottobre 2026 ([la sua risposta][ok214], pubblicata dal master su sua istruzione): la
+     lettura resta com'è e `ModuleSettingsDescriptor` non prende un permesso di lettura; nota
+     `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`, con il suo «Da portare nel piano».
+  2. **Il preset si applica nel browser, al cambio del tipo**, e il server salva gli interruttori come arrivano («preimpostati, mai
+     imposti», nota `i-tipi-di-evento` §2.2). «`kindPresets` applicati» è quindi provato in tre posti: l'integrazione (i preset arrivano
+     a chi scrive eventi e a nessun altro; un evento tiene gli interruttori con cui lo si salva), `eventForm.test.ts` (il preset di un
+     tipo, e un form appena aperto che passa il suo schema: è ciò che gli fa seguire il tipo dalla prima scelta) e la spec e2e (scelto
+     l'RFO, pubblici e privati accesi).
+  3. **`has_roster` e `in_person` non sono nel form** (punto 2): il preset li porta, ma il form di M4a ne applica tre (slot pubblici,
+     slot privati, tutta la divisione). Il dettaglio dell'evento li legge già tutti e cinque.
+  4. **Annullare**: la nota in ogni lingua della divisione (la pagina pubblica la mostra: la regola di ogni testo pubblicato); un evento
+     annullato resta annullato (nessun «riapri»: il design non lo prevede); un evento concluso non si annulla
+     (`events:errors.eventOver`: è successo). Chi ha annullato sta in `cancelled_by` e nell'audit, non sulla pagina.
+  5. **I limiti degli scali**, che il design non dice: capacità da 1 a 999 all'ora, ordine da 0 a 999, tutto facoltativo (la capacità
+     serve agli slot privati, E7); movimenti oppure arrivi e partenze, mai insieme (`events:errors.capacityEitherOr`).
+  6. **Tutta la divisione**: un evento con scali non diventa di tutta la divisione (`wholeDivisionHasAirports`, sul campo), uno di tutta
+     la divisione non prende scali (`wholeDivisionHasNoAirports`) e non mostra la scheda.
+  7. **Chi collabora** (AOD, FOD, MD) apre la pagina di un evento e ne legge gli scali: il form senza «Salva», con una frase che lo
+     dice, e senza la scheda della descrizione (la legge la pagina pubblica, E4).
+  8. **Lo stato sulla pagina è la `note` del `PageShell`**, non la `description`, che nel back office è solo il tooltip del titolo
+     (trovato dalla spec e2e: lo stato non si vedeva).
+  9. **Il nome della classe degli scali** è `EventAirportEndpoints`: `AirportEndpoints` esiste nel nucleo (`Core/Ivao`, gli aeroporti
+     di riferimento), e i test che usano i due namespace non compilavano.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **`SchemaForm` disegna i suoi default una volta**: un campo che ne cambia altri si fa ridisegnando il form con una chiave nuova
+     e gli stessi valori, come gli interruttori al cambio del tipo; ⚠️ l'indirizzo proposto dal titolo smette di seguirlo dopo un
+     ridisegno, se il titolo c'era già (il tipo è il primo campo apposta).
+  2. ⚠️ **E11a ed E16**, quando portano `has_roster` e `in_person` nel form, li aggiungono anche a `presetSwitches`, a `EventWriteDto` e
+     a `EventMapper.Apply`.
+  3. ⚠️ **Le righe figlie che vengono** (rotte E4, slot E5, postazioni E11a, regole di award E14b) implementano `IEventChild` e
+     adottano l'evento con `EventChildren.AdoptAsync` in `BeforeAuthorize`; ⚠️ nel browser `writableDepartments` non offre l'ED a chi
+     collabora (E2b): una schermata che fa creare una riga al FOD la crea sotto l'evento, con il suo dipartimento.
+  4. ⚠️ **La prima tabella dei membri** (E6a) mette il suo rifiuto in `EventSaving.DeleteAsync` e i destinatari di
+     `events.eventCancelled` dopo il salvataggio di `CancelAsync`.
+  5. **La spec e2e scrive un preset dell'RFO** nelle impostazioni del banco e lo rimette com'era: un'altra spec che chiede un preset fa lo
+     stesso (come `events-skeleton.spec.ts` con l'RFE).
+  6. **Il tipo di un evento si sceglie fra tutte le parole del calendario**, anche quelle di altri moduli (training, esame, tour,
+     riunione, scadenza), come i preset di E2: il codice non conosce nessun tipo (nota `i-tipi-di-evento`) e niente, su un tipo del
+     calendario, dice che è di un evento (visto sul banco, 1 ottobre). Se la divisione vorrà un elenco più stretto è una domanda per
+     dopo, non di E3a: un segno sui tipi del calendario sarebbe del nucleo.
+- **Verificato, in locale** (1 ottobre 2026, sul branch prima del commit di questi documenti): `dotnet build` della soluzione senza
+  avvisi, e `dotnet format --verify-no-changes` sui dodici file C# toccati; unità **951/951** prima del merge di `main` con E15a e
+  **976/976** dopo (le 25 di E15a); **integrazione intera senza filtro 451/451** prima (5,2 minuti) e **451/451** dopo (5,9 minuti),
+  `EventsStaffTests` da sola 7/7 e con `EventsSkeletonTests` 10/10, **nessuna richiesta a IVAO** nel log delle due classi degli eventi
+  (quelle del giro intero vengono da classi avviate senza le fixture: l'avviso di E10b). **Al contrario**: senza i nove grant in
+  `config/division.json` il test di chi collabora cade sul suo primo `Assert.Contains` (`Events.View`), e con loro torna verde (il file
+  rimesso com'era). `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **603 in 82 file**; `pnpm gen:api` e
+  `i18n:sync` senza differenze; `pnpm e2e` **163/163** al primo giro, prima e dopo il merge, dietro il lock dello smoke; la spec nuova da
+  sola sul banco `http://127.0.0.1:5121` (`ivaohub_e2e_e3a` tolto prima): rossa al primo giro (lo stato non si vedeva: scelta 8 qui
+  sopra), verde dopo la correzione (1/1, 17 secondi); **`pnpm e2e:full` 52/52 al primo giro** (10,6 minuti, con il suo worker solo)
+  sullo stesso banco ricreato, dietro il lock di Mailpit (preso alle 11:42, dopo quello di E2b), sul codice unito con `main` dopo E15a (la
+  testa di E2b unita dopo porta solo documenti); le regole di `core-guard` rifatte in PowerShell dalla base di merge con `main`
+  (`99ab043`): PASS, nessun file del maintainer, i sette file del nucleo di E2b con la sua nota, nessuno di E3a.
+- **Non verificato**: la CI (la dice la PR); la descrizione con un blocco disegnato nel browser oltre il salvataggio (il server la prova
+  in `EventsStaffTests`; la spec e2e non apre la scheda); il banner scelto nel `MediaPicker` (il banco non ha file degli eventi); le
+  viste «prossimi», «in corso» e «conclusi» nel browser (senza «Pubblica», che è di E3b, il banco ha solo bozze: le prova
+  l'integrazione con righe scritte sul database); `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree (le spec la
+  tollerano, come in CI).
+- **La CI della prima spinta** (`c1f0a98`): verde, `build-test` in 25,3 minuti, `core-guard`.
+- **Dopo la revisione** ([i rilievi del revisore sulla #214][r214], «approvable on the merits»), 1 ottobre 2026:
+  1. **La lettura dei preset** (`GET /api/events/kind-presets`, scostamento 1): il revisore chiedeva a Carmine di tenerla, o di chiedere
+     al nucleo un permesso di lettura sulle impostazioni di un modulo (`ModuleSettingsDescriptor`, una PR del nucleo con la sua nota).
+     **Carmine l'ha tenuta** ([la sua risposta][ok214], 1 ottobre 2026, autore `SkyMistery`): uno scostamento accettato dal design §7.2,
+     scritto nella nota nuova `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md` (E3a non ne aveva una), che porta nel piano §16.6
+     la lettura fra gli endpoint a mano di M4. Nessun cambio al codice.
+  2. **Annullare senza una versione** non fa il controllo del 409 (`request.RowVersion != default`): come `LegEndpoints`, e il browser la
+     manda sempre. Lasciato com'è.
+  3. **La pagina «Annulla» dice ciò che succede oggi**: tolta la frase sulla mail a chi ha prenotato, ha un turno o si è iscritto, e la
+     mail dall'aiuto della nota, perché prima di E6a, E12 ed E16 non parte nessuna mail. ⚠️ La fase che manda la prima mail di
+     `events.eventCancelled` rimette la frase (scritto nell'handoff).
+  4. **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
+     mentre un evento lo mostra. È di E3b (punto 2 della sua fase); ⚠️ E3b viene subito dopo, scritto nell'handoff.
+  5. **E2b riconciliata con E10f unita** (`909fe36`, che porta `main` dopo E10a (#210) ed E10f (#213) e metteva fine al conflitto della
+     PR), con un merge, su richiesta della sessione che coordina: un solo conflitto, l'intestazione di `HANDOFF-M4.md`; i due file della
+     divisione uniti da soli, con il grant `Awards.Assign` dell'MD di E10f accanto ai nove di chi collabora. **Verificato di nuovo** (1
+     ottobre 2026, sul codice unito): `dotnet build` senza avvisi, e `pnpm gen:api` senza differenze (il contratto unito da solo è quello
+     rigenerato); unità **1009/1009**, `EventsArchitectureTests` 30/30; **integrazione intera senza filtro 456/456** (5 minuti); `pnpm
+     lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **605 in 83 file**; `pnpm e2e` **163/163** al primo giro;
+     **`pnpm e2e:full` 52/52 al primo giro** (11,1 minuti) sul banco `http://127.0.0.1:5121` ricreato, dietro il lock di Mailpit; le
+     regole di `core-guard` dalla nuova base di merge (`ee43ec2`): PASS, nessun file del maintainer, i sette del nucleo di E2b con la sua
+     nota, nessuno di E3a.
+  6. **E2b dopo il suo merge di E10c unita** (`af0d7df`, che porta `main` dopo E10c (#204), di nuovo la fine del conflitto della PR),
+     con un merge, su richiesta della sessione che coordina: un solo conflitto, l'intestazione di `HANDOFF-M4.md`, con il paragrafo di
+     E10c tenuto fra quelli di E2b ed E10f; i due file della divisione uniti da soli, con i `preferredAtcRatings` di E10c accanto ai grant.
+     **Verificato di nuovo** (1 ottobre 2026, sul codice unito): `dotnet build` senza avvisi e `pnpm gen:api` senza differenze; unità
+     **1107/1107**, `EventsArchitectureTests` 30/30; **integrazione intera senza filtro 466/466** (7,6 minuti); `pnpm lint`, `typecheck`,
+     `format:check`, `i18n:check` verdi; `pnpm test` **605 in 83 file**; `pnpm e2e` **163/163** al primo giro; **`pnpm e2e:full` 52/52 al
+     primo giro** (10,9 minuti) sul banco `http://127.0.0.1:5121` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla
+     nuova base di merge (`ca80563`): PASS, come sopra.
+
+[r214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5929130403
+[ok214]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5934118725
 
 ### E3b — La vita dell'evento
 

@@ -183,6 +183,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/kind-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsKindPresets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -1257,6 +1273,86 @@ export interface paths {
         put: operations["ModuleSetMaintenance"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsList"];
+        put?: never;
+        post: operations["EventsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsGet"];
+        put: operations["EventsUpdate"];
+        post?: never;
+        delete: operations["EventsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/airports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAirportsList"];
+        put?: never;
+        post: operations["EventAirportsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/airports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAirportsGet"];
+        put: operations["EventAirportsUpdate"];
+        post?: never;
+        delete: operations["EventAirportsDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4140,6 +4236,158 @@ export interface components {
          * @enum {unknown}
          */
         ErrorCategory: "Info" | "Warning" | "Dangerous";
+        /** @description An airport of an event as its list and its form show it (design M4 §1.3). */
+        EventAirportDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            icao: string;
+            /** Format: int32 */
+            ordinal: number;
+            /** Format: int32 */
+            maxMovementsPerHour: null | number;
+            /** Format: int32 */
+            maxArrivalsPerHour: null | number;
+            /** Format: int32 */
+            maxDeparturesPerHour: null | number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on an airport of an event. The event is chosen when it is created and never changes; the care is the
+         *     event's, taken before the permission is asked. The capacity is either movements an hour, or arrivals and departures an hour,
+         *     and it may wait: the private slots read it (E7).
+         */
+        EventAirportWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            icao: string;
+            /** Format: int32 */
+            ordinal: number;
+            /** Format: int32 */
+            maxMovementsPerHour: null | number;
+            /** Format: int32 */
+            maxArrivalsPerHour: null | number;
+            /** Format: int32 */
+            maxDeparturesPerHour: null | number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description "Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read. */
+        EventCancelRequest: {
+            note: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description An event as its page loads it (§1.2, §7.2). `State` is what the dates say now. The switches of the ATC roster and of
+         *     an event in person, the length of a shift and the limits of whoever books and does not fly are read here and written by
+         *     their own phases (M4b, M4c); who cancelled an event is the audit's to say.
+         */
+        EventDetailDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            slug: string;
+            kind: string;
+            publicSlots: boolean;
+            privateSlots: boolean;
+            hasRoster: boolean;
+            wholeDivision: boolean;
+            inPerson: boolean;
+            organizer: components["schemas"]["EventOrganizer"];
+            externalUrl: null | string;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            body: components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            /** Format: date-time */
+            visibleFromUtc: null | string;
+            /** Format: date-time */
+            bookingOpensAtUtc: null | string;
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            status: components["schemas"]["PublishStatus"];
+            /** Format: date-time */
+            publishedAt: null | string;
+            visibility: components["schemas"]["Visibility"];
+            state: components["schemas"]["EventStateKind"];
+            /** Format: date-time */
+            cancelledAt: null | string;
+            cancellationNote: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description An event as the staff's list shows it (design M4 §7.2): its state is read off its dates, never stored (§2.1), and its kind
+         *     is shown with the division's word for it, which the calendar keeps — null when the calendar no longer has that kind.
+         */
+        EventListDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            slug: string;
+            kind: string;
+            kindLabel: null | components["schemas"]["LocalizedOfstring"];
+            title: components["schemas"]["LocalizedOfstring"];
+            state: components["schemas"]["EventStateKind"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description Who organises an event (design M4 §1.2): the division itself, the network with the division, or another division.
+         * @enum {unknown}
+         */
+        EventOrganizer: "Division" | "Network" | "OtherDivision";
+        /**
+         * @description The state of an event as it is seen (design M4 §2.1). Never stored: read off its dates, its status and its cancellation.
+         * @enum {unknown}
+         */
+        EventStateKind: "Draft" | "Scheduled" | "Announced" | "BookingOpen" | "InProgress" | "Ended" | "Cancelled";
+        /**
+         * @description What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
+         *     own (E3b), cancelling another (EventCancelRequest). Its department is the module's base department, which the
+         *     payload does not carry. Of the five switches, the three of M4a: the roster and the event in person enter with their phases.
+         *     A null `Body` keeps the description as it is.
+         */
+        EventWriteDto: {
+            kind: string;
+            publicSlots: boolean;
+            privateSlots: boolean;
+            wholeDivision: boolean;
+            organizer: components["schemas"]["EventOrganizer"];
+            externalUrl: null | string;
+            title: components["schemas"]["LocalizedOfstring"];
+            slug: string;
+            summary: components["schemas"]["LocalizedOfstring"];
+            body: null | components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            /** Format: date-time */
+            visibleFromUtc: null | string;
+            /** Format: date-time */
+            bookingOpensAtUtc: null | string;
+            /** Format: date-time */
+            startsAtUtc: null | string;
+            /** Format: date-time */
+            endsAtUtc: null | string;
+            visibility: components["schemas"]["Visibility"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description One line of what a check saw. The server writes an i18n key with its values, which the page words in the reader's
          *     language; the agent writes text (note 2026-09-15-token-personali-e-agente-del-validatore §3).
@@ -4429,6 +4677,25 @@ export interface components {
         JsonElement: unknown;
         JsonNode: unknown;
         JsonObject: Record<string, never>;
+        /**
+         * @description What a kind of event switches on when the staff chooses it (design M4 §1.12, note 2026-09-29-i-tipi-di-evento): the five
+         *     switches of the event, preset and never imposed — the staff changes them on the event. The kind is a key of the calendar's
+         *     vocabulary, which the division writes; the code knows no kind.
+         */
+        KindPreset: {
+            /** @description A key of the kinds of the calendar (`cms_calendar_kinds`). */
+            kind: string;
+            /** @description Public slots, prepared by the staff: an RFE, an RFO. */
+            publicSlots: boolean;
+            /** @description Private slots, generated from the capacity: an RFO, an MSE. */
+            privateSlots: boolean;
+            /** @description An ATC roster. */
+            hasRoster: boolean;
+            /** @description Every airport and position of the division, as an online day. */
+            wholeDivision: boolean;
+            /** @description An event people come to. */
+            inPerson: boolean;
+        };
         /**
          * @description One row of the leg editor (design M2 §8.4): the leg as stored, plus what is computed at the read — the IATA codes
          *     a pilot recognises, the estimated time when the tour names a reference aircraft (§1.5), and whether a report points
@@ -5294,6 +5561,52 @@ export interface components {
         PagedResultOfContentListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ContentListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventAirportDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventAirportDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventListDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventListDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -8246,6 +8559,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestDiagnosticsResponse"];
+                };
+            };
+        };
+    };
+    EventsKindPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindPreset"][];
                 };
             };
         };
@@ -11287,6 +11620,376 @@ export interface operations {
                 "application/json": components["schemas"]["ModuleMaintenanceRequest"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventListDto"];
+                };
+            };
+        };
+    };
+    EventsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsCancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAirportsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventAirportDto"];
+                };
+            };
+        };
+    };
+    EventAirportsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAirportWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAirportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventAirportsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAirportDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAirportsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAirportWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAirportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAirportsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {

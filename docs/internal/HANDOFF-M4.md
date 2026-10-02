@@ -6,19 +6,22 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E2b** (nucleo: un grant a una posizione su un altro dipartimento dà il permesso, non
-il dipartimento), sul branch `m4/e2b-grant-without-department`, **PR #212** verso `main`, del nucleo, senza coda, con `main` unito dopo
-**E2 (#209)**, **E15a (#207)**, **E10f (#213)**, riconciliato, ed **E10c (#204)**; la decisione è di Carmine, sulla #209. Sono unite E1
-(#200), E2 (#209), E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), e il passaggio dei tour al
-calcolo del nucleo (#211).
-**Il prossimo passo**: **E2b** unita — è la prossima nella coda del master —, poi **E3a** (#214, con E1, E2 ed E2b), che porta anche **i
-nove grant di chi collabora** (`10`, E3a punto 5): nasce sopra E2b e prende la sua testa nuova. ⚠️ **`EffectivePermission.FromOutside` è
-uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al team di un FIR (E2b), un permesso
-globale da un grant (E10f) — e una condizione sola nel calcolo (nota di E2b, §3.8; «Che cosa ha lasciato E2b», sotto). **E11a** ed
-**E11b** trovano in E10c le postazioni della divisione, il rating preferito e il minimo di una postazione (l'FRA di IVAO); E10a serve a
-**E13a**, che aspetta anche E12; **E11b** ed **E13a** trovano in E10b la storia di un controllore e la presenza in un turno; **E14a** ed
-**E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo a chi assegna gli award, e non chiama niente: con
-E10f il riepilogo arriva anche al coordinatore e all'assistente dell'MD; **E15b** (dopo E14b) trova in E15a le prenotazioni della rete.
+**Ultimo aggiornamento:** 1 ottobre 2026 — **fase E3a** (modulo: l'evento nello staff), sul branch `m4/e3a-event-staff`, **PR #214**
+verso `main`, **in coda dopo la #212** (E2b, del nucleo, da cui è nata), con la testa di E2b presa a ogni suo passo — l'ultima dopo il
+suo merge di E10c, che porta `main` dopo E10a (#210), E10f (#213) ed E10c (#204). Sono unite E1 (#200), E2 (#209), E10a (#210), E10b
+(#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), e il passaggio dei tour al calcolo del nucleo (#211); aperta,
+nella sua sessione, **E2b** (#212), la prossima nella coda del master.
+**Il prossimo passo**: **E2b** unita, poi **E3a**; dopo di lei **E3b** (la vita dell'evento: «Pubblica», l'uscita programmata, la fine,
+calendario, ricerca e usi dei file, `events-release`), che la sessione che coordina prepara sopra E3a. **La lettura dei preset**
+(`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
+`2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
+**`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
+team di un FIR (E2b), un permesso globale da un grant (E10f) — e una condizione sola nel calcolo (nota di E2b, §3.8; «Che cosa ha
+lasciato E2b», sotto). **E11a** ed **E11b** trovano in E10c le postazioni della divisione, il rating preferito e il minimo di una
+postazione (l'FRA di IVAO); E10a serve a **E13a**, che aspetta anche E12; **E11b** ed **E13a** trovano in E10b la storia di un
+controllore e la presenza in un turno; **E14a** ed **E14b** trovano in E10e la distanza nel nucleo; **E14b** trova in E10d il riepilogo
+a chi assegna gli award, e non chiama niente: con E10f il riepilogo arriva anche al coordinatore e all'assistente dell'MD; **E15b** (dopo
+E14b) trova in E15a le prenotazioni della rete.
 
 ## Per chi prende M4 (`dalberone`)
 
@@ -123,6 +126,57 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E3a (1 ottobre 2026, branch `m4/e3a-event-staff`, PR #214, in coda dopo la #212)
+
+- **Che cosa c'è** (il dettaglio in `10`, E3a, «Com'è andata»; nessuna migrazione; una nota, dopo la revisione:
+  `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`, decisa da Carmine):
+  - **Lo stato dalle date** in una funzione sola, `EventState.Of` (`src/IvaoHub.Modules.Events/EventState.cs`), e le cinque viste della
+    lista (`EventViews`, `filter[view]`: bozze, prossimi, in corso, conclusi, annullati), scritte anche in SQL e tenute alla stessa
+    risposta da `EventsStateTests`. Ogni istante è il primo momento di ciò che apre; annullato vince su tutto, bozza su ogni data.
+  - **L'evento nel CRUD** (`/api/events/events`, `src/IvaoHub.Modules.Events/Staff/`): `Events.View`/`Edit`, `DeletePolicy`
+    `Events.Delete`; `EventSaving` (indirizzo libero, tipo del calendario e attivo quando lo si sceglie, niente scali su un evento di
+    tutta la divisione; eliminare porta via gli scali); **gli scali** (`/api/events/airports`, `EventAirportEndpoints`): righe
+    `IEventChild` che adottano dipartimento e maschera dell'evento in `BeforeAuthorize` (`EventChildren.AdoptAsync`), un aeroporto del
+    nucleo una volta, la capacità in movimenti oppure in arrivi e partenze.
+  - **Due endpoint a mano**: **annulla** (`POST /{id}/cancel`, `Events.Edit` sulla riga: quando, chi, la nota in ogni lingua; una volta;
+    mai su un evento concluso; 409 su una versione vecchia) e **i preset dei tipi** (`GET /api/events/kind-presets`, `Events.Edit`):
+    il form li legge per preimpostare gli interruttori al cambio del tipo, perché le impostazioni le legge solo chi le gestisce.
+  - **Le schermate**: `/staff/events` (lista con il filtro delle viste), `/staff/events/{id}` (impostazioni, descrizione con l'editor
+    dei blocchi, scali; «Annulla l'evento» ed «Elimina» a chi il server lo permette), `/staff/events/{id}/cancel`,
+    `/staff/events/{id}/airports/{airportId}`. Il tipo di notifica **`events.eventCancelled`** è dichiarato, senza destinatari.
+  - **I nove grant di chi collabora** (AOD, FOD, MD) nei due file della divisione, e `EventsArchitectureTests` che li vuole.
+  - **I test**: `EventsStateTests` (unità, 6), `EventsStaffTests` (integrazione, 7, VID 761006–761010, aeroporti `XEA1`/`XEA2`),
+    `eventForm.test.ts` (vitest, 4), `web/e2e/full/events-staff.spec.ts` (il personaggio dell'ED: un RFO con due scali creato,
+    riaperto, annullato; una bozza vuota eliminata).
+- **Che cosa deve sapere la fase dopo**:
+  - **E3b** trova pronti gli stati che «Pubblica» accende (`Scheduled`, `Announced`, `BookingOpen` vengono da `Status == Published` e
+    dalle date) e le viste; «Pubblica» è un verbo accanto ad «Annulla» in `EventEndpoints`, con i `Refusals` del design §2.2.
+    ⚠️ Sul banco oggi ci sono solo bozze: le viste «prossimi», «in corso», «conclusi» le prova l'integrazione con righe scritte sul
+    database.
+  - ⚠️ **`SchemaForm` disegna i default una volta**: il form dell'evento si ridisegna (chiave nuova, stessi valori) quando cambia il
+    tipo; l'indirizzo proposto dal titolo smette di seguirlo dopo il ridisegno se il titolo c'era già.
+  - ⚠️ **E11a ed E16** portano `has_roster` e `in_person` nel form e anche in `presetSwitches`, `EventWriteDto` ed `EventMapper.Apply`:
+    oggi il form ne applica tre.
+  - ⚠️ **Ogni riga figlia nuova** (rotte E4, slot E5, postazioni E11a, regole di award E14b) implementa `IEventChild` e adotta l'evento
+    con `EventChildren.AdoptAsync`; nel browser `writableDepartments` non offre l'ED a chi collabora (E2b): la riga si crea sotto
+    l'evento. Chi collabora vede oggi la pagina dell'evento con il form senza «Salva» e gli scali.
+  - ⚠️ **E6a** mette il primo rifiuto di «Elimina» in `EventSaving.DeleteAsync` e i destinatari di `events.eventCancelled` dopo il
+    salvataggio in `CancelAsync`; la fase che manda la prima di quelle mail **rimette sulla pagina «Annulla»** la frase su chi la riceve
+    (`events:cancel.description` e l'aiuto della nota), tolta dopo la revisione della #214 perché oggi non parte nessuna mail.
+  - ⚠️ **Il banner non è ancora un uso di un file** (`Event` non è `IProjectable`): fino a E3b un banner si può eliminare dalla libreria
+    mentre un evento lo mostra (rilievo 4 del revisore sulla #214). E3b subito dopo.
+  - **La lettura dei preset** (`GET /api/events/kind-presets`) **resta com'è**: Carmine l'ha accettata il 1 ottobre 2026
+    ([la sua risposta sulla #214](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/214#issuecomment-5934118725)), uno scostamento dal
+    design §7.2 («gli endpoint a mano sono verbi») scritto nella nota `decisions/2026-10-01-la-lettura-dei-preset-dei-tipi.md`; nessun
+    permesso di lettura in `ModuleSettingsDescriptor`. ⚠️ Una fase che vuole un'altra impostazione del modulo nel form di chi non le
+    gestisce non la aggiunge qui da sola: è un endpoint a mano nuovo, con la sua decisione (piano §16.6).
+  - ⚠️ **Nel back office `PageShell` non disegna la `description`** (solo il tooltip del titolo): lo stato dell'evento sta nella `note`.
+  - ⚠️ **`AirportEndpoints` è un nome del nucleo** (`Core/Ivao`): le classi del modulo si chiamano `Event…`.
+  - La spec e2e scrive un preset dell'RFO nelle impostazioni del banco e lo rimette com'era, come `events-skeleton.spec.ts` con l'RFE.
+  - ⚠️ **Il tipo di un evento si sceglie fra tutte le parole del calendario**, anche training, esame, tour, riunione e scadenza (come i
+    preset di E2): nessun tipo del calendario dice di essere di un evento, e il codice non ne conosce nessuno. Un elenco più stretto
+    sarebbe una domanda a Carmine e un segno del nucleo, non una lista nel modulo.
 
 ### Che cosa ha lasciato E2b (1 ottobre 2026, branch `m4/e2b-grant-without-department`, PR #212, del nucleo, senza coda)
 
