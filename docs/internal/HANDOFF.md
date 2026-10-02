@@ -35,8 +35,16 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
-dalla prova sul banco). **M4: E1 è unita**, il prossimo passo è E2 di `dalberone`. Piano **1.27**: **le correzioni del banco del
+**Ultimo aggiornamento:** 2 ottobre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
+dalla prova sul banco). **M4: 12 fasi su 29 unite** (E0, E1, E2, E2b, E3a e tutte le fasi del nucleo di M4b, E10a–E10f ed E15a);
+il prossimo passo è **E3b** di `dalberone`, e le 17 fasi che restano sono del modulo e vanno in fila (`HANDOFF-M4.md`). Piano
+**1.28**: **le fasi del nucleo di M4** — il tracker senza VID a pagine (E10a, #210; un tentativo del client IVAO aspetta 20 s, per tutto
+l'hub), le sessioni condivise per VID (E10b, #208), il rating preferito in `division.json → preferredAtcRatings` e il minimo di una
+postazione dal suo FRA, con `ref_ivao_fras` (E10c, #204), il riepilogo giornaliero a chi assegna gli award all'ora `awardDigestTime`
+(E10d, #205), la distanza sul cerchio massimo nel nucleo (E10e, #206) e i tour che la usano (#211, una sessione di Carmine; una riga
+nuova in `CLAUDE.md` §2), `Awards.Assign` con un grant, all'MD (E10f, #213), le prenotazioni ATC della rete (E15a, #207) —; **lo
+scheletro degli eventi** (E2, #209), **il permesso e non il dipartimento** per i grant da fuori (E2b, #212) e **l'evento nello staff**
+(E3a, #214), con la lettura dei preset dei tipi accettata da Carmine. Piano **1.27**: **le correzioni del banco del
 training** (A13a, #196: le frasi del trainee e `theoryExamHint`, le parole del sito dell'esame teorico, confermata da Carmine; A13b,
 #197: lo storico di un training letto dal registro di audit del nucleo, in un posto solo, `TrainingHistory.cs`, con la condizione che
 al secondo modulo la lettura passi nel nucleo; A13c, #201: la data fissata a mano è una data ancora da venire); **E1 di M4** (#200: i
@@ -63,8 +71,9 @@ set, 22:54 UTC), che portava la 0.3.0 (A11a e la tastiera, con `AddGrantFirTeam`
 `v0.4.0` (`2f5822d`) è stata costruita e **saltata**. **`main` è alla 0.5.1** (#198: le schede aperte si ricaricano alla
 navigazione quando cambia il timbro del server). ⚠️ La 0.5.0 non ce l'ha: dopo il caricamento una scheda aperta prima ha mostrato il
 menu nuovo con il bundle vecchio, e una ricarica forzata l'ha rimessa a posto; anche alla prossima consegna le schede aperte con la
-0.5.0 si ricaricano a mano. **La prossima consegna** porta A13a–A13c, E1 e la 0.5.1: funzioni nuove senza migrazioni, quindi una
-MINOR che il master alza prima del tag. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+0.5.0 si ricaricano a mano. **La prossima consegna** porta A13a–A13c, E1, la 0.5.1 e le fasi di M4 del piano 1.28, con **due migrazioni additive del nucleo**
+(`AddAwardSignalNotifiedAt`, `AddIvaoFras`) e l'`Initial` del modulo degli eventi: una MINOR, la **0.6.0**, che il master alza
+prima del tag. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
 Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
 `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md` (`webapp/`, `itivao_test`, carica Carmine); un foglio con la versione

@@ -827,7 +827,8 @@ T7a: **le righe figlie di un tour copiano la sua maschera dei dipartimenti** a o
 - **Il modello**: `fo_legs` com'è nel design §1.4 (migrazione `AddLegs`, solo additiva, con la chiave verso `fo_tours` in cascata: un
   tour eliminato si porta via le leg); `kind`, `rotation_id` e `seq_in_rotation` nascono ora e li scrive T7b. Le coordinate sono
   **congelate** alla scrittura da `IAirportDirectory` (nel nucleo, come `IAircraftTypeDirectory`) e la distanza è `GreatCircle` di
-  Toursystem, arrotondata al decimo come la colonna. ⚠️ **L'indice `(tour_id, number)` non è unico**: MariaDB controlla un indice unico
+  Toursystem, arrotondata al decimo come la colonna (**dal 30 set 2026** il calcolo vive nel nucleo, `Core/Airspace/`, da E10e di M4, e
+  i tour lo usano dalla #211; i suoi test sono in `GreatCircleTests`, piano 1.28). ⚠️ **L'indice `(tour_id, number)` non è unico**: MariaDB controlla un indice unico
   riga per riga e spostare i numeri collide a metà; il numero lo tiene unico il server, che rinumera tutto il tour.
 - **Sei verbi scritti a mano** (l'eccezione di §16.6 vale anche lato server, contati nella nota): la griglia, aggiungi (`?after=`),
   modifica, «che cosa farebbe togliere», togli, ripristina. Ogni scrittura risponde con la griglia intera. La risorsa è il tour:

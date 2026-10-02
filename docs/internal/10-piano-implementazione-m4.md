@@ -1387,7 +1387,8 @@ sua nota (caso b: un pezzo usato in due posti si scrive una volta).
    `IAirportDirectory`; i tour lo usano da lì, e i loro test non cambiano.
 
 **Test**: gli unit dei tour, verdi; unit del nucleo sulla distanza fra due aeroporti noti.
-**Fatta quando**: i tour e il nucleo hanno un calcolo solo.
+**Fatta quando**: i tour e il nucleo hanno un calcolo solo. (Vera anche nel codice dalla #211, 30 set 2026: i tour usano `GreatCircle`
+del nucleo e la copia non c'è più — nota `2026-09-30-i-tour-sulla-distanza-del-nucleo`, piano 1.28.)
 
 **Com'è andata** (30 settembre 2026, branch `m4/e10e-great-circle-core`, PR #206, del nucleo senza coda, da `main` a `c107c98`):
 
