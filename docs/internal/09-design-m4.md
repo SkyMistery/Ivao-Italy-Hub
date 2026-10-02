@@ -385,7 +385,7 @@ registro di chi ha fatto che cosa è l'audit del nucleo (`[Audited]`).
 | `MinFlights` | N | almeno N tratte volate nell'evento |
 | `Route` | partenza, arrivo | ha volato LIRF-LIRN |
 | `RouteTimes` | partenza, arrivo, N | ha volato quella rotta almeno N volte |
-| `MinLegDistance` | miglia | una tratta più lunga di x (dagli aeroporti del nucleo) |
+| `MinLegDistance` | miglia | una tratta più lunga di x (dagli aeroporti del nucleo, con `GreatCircle` del nucleo — E10e, piano 1.28) |
 | `MinAtcMinutes` | minuti, tipo di postazione facoltativo | almeno N minuti di controllo |
 
 Righe figlie dell'evento, area `Events`. Un criterio nuovo è una riga dell'elenco nel codice, non un'espressione libera.
@@ -433,7 +433,8 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
   n.4), che deve rispondere a due domande — il rating **preferito** per un tipo di postazione e il **minimo** di una
   postazione (estensione n.4). Il modulo non scrive numeri di rating.
 - **Postazioni, aeroporti, aerei, distanze**: `IAtcPositionDirectory`, `IAirportDirectory` (con le coordinate),
-  `IAircraftTypeDirectory`.
+  `IAircraftTypeDirectory`; la distanza è `GreatCircle` del nucleo (`Core/Airspace/`, E10e, nota
+  `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, piano 1.28).
 - **Il nome di una persona**: dal nucleo, mai copiato; «persona cancellata» con l'helper del nucleo (A12a, #187, unita il 29
   settembre: `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della
   lista generata).
@@ -838,7 +839,9 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
 `StatusBadge`, `RatingBadge`, `ConfirmDialog`. L'`EventTimeline` del piano §8.3 non serve (il roster si legge in lista).
 **Nessuna eccezione dichiarata** al motore CRUD; gli endpoint a mano sono verbi — prenotare, ritirare, incollare, generare,
 esportare, dare la disponibilità, correggere il roster, confermare un no-show, mandare e decidere un PIREP, il «chi è
-online» — e il rapporto di chiusura li conta per famiglia (§16.6 del piano).
+online» — e il rapporto di chiusura li conta per famiglia (§16.6 del piano). **Uno scostamento accettato** (E3a, #214, piano 1.28): la
+lettura `GET /api/events/kind-presets` (`Events.Edit`), perché le impostazioni del nucleo aprono solo a chi le gestisce e chi scrive
+eventi deve vedere che cosa preimposta ogni tipo (nota `2026-10-01-la-lettura-dei-preset-dei-tipi`, decisa da Carmine).
 
 ### 7.3 Blocchi Data
 

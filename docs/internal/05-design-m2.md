@@ -92,7 +92,7 @@ Toursystem (`D:\Programmazione\IVAO_Test\Ivao Italy Toursystem`) è stato letto 
 | Segnalazione di un problema su una leg | ADR-037 | §3.11 |
 | Deviazione in più tratti, motivata | ADR-042 | §3.4 |
 | Import che non cancella da solo | ADR-051 | §8.4 |
-| Distanza GCD (`GreatCircle.cs`, con i test) | codice F1 | §1.4 |
+| Distanza GCD (`GreatCircle.cs`, con i test) — **dal 30 set 2026** `GreatCircle` del nucleo (`Core/Airspace/`, M4 E10e, #206), e i tour lo usano (#211): la copia del modulo non c'è più (piano 1.28) | codice F1 | §1.4 |
 | Controlli per la pubblicazione | `TourPublicationChecker` | §1.2 |
 | Il catalogo dei controlli di livello A | ARCHITETTURA App. A | §6.4 |
 | **Catena del meteo**: NOAA per METAR e TAF, ripiego del METAR su IVAO (`/v2/airports/{icao}/metar`, **minuscolo**) poi VATSIM; il TAF non ha ripiego | vIPI `NoaaWeatherClient`, `IvaoMetarClient`, `VatsimMetarClient` (misurati l'8 set 2026) | §1.13 |
