@@ -102,6 +102,32 @@ public sealed class EventsStateTests
     [Fact]
     public void AViewThatDoesNotExistIsNoView() => Assert.Null(EventViews.Where("past", Starts));
 
+    [Fact]
+    public void AnEventIsSeenFromItsReleaseToItsEndCancelledOrNotAndNeverAsADraft()
+    {
+        var row = Published();
+
+        Assert.False(EventState.IsSeen(row, Visible - Tick));
+        Assert.True(EventState.IsSeen(row, Visible));
+        Assert.True(EventState.IsSeen(row, Ends - Tick));
+        Assert.False(EventState.IsSeen(row, Ends));
+
+        // Without a release, from its publication.
+        row.VisibleFromUtc = null;
+        Assert.True(EventState.IsSeen(row, Visible - TimeSpan.FromDays(30)));
+
+        // A cancelled event stays, with its note, until its end (E3b, §2.3); a draft is never seen.
+        var cancelled = Published();
+        cancelled.CancelledAt = Opens;
+        Assert.False(EventState.IsSeen(cancelled, Visible - Tick));
+        Assert.True(EventState.IsSeen(cancelled, Starts));
+        Assert.False(EventState.IsSeen(cancelled, Ends));
+
+        var draft = Published();
+        draft.Status = PublishStatus.Draft;
+        Assert.False(EventState.IsSeen(draft, Starts));
+    }
+
     /// <summary>An event published with all four dates, in the order «Publish» will ask for (E3b).</summary>
     private static Event Published() => new()
     {

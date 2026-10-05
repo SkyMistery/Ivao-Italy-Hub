@@ -18,7 +18,8 @@ import {
  * The "done when" of E3a (M4), through the real screens, as the bench's coordinator of the events (`?as=events`, E1), who
  * holds only what the division gives the events department: an RFO is created — its switches preset by its kind as the
  * settings say —, gets two airports with their capacity in the generated forms of its tab, is reopened with everything it
- * was given, and is cancelled with its note in both languages; and an empty draft is deleted.
+ * was given, and is cancelled with its note in both languages; and an empty draft is deleted. And E3b's: «Publish» lists what an
+ * event with slots still needs — an airport, the opening of its bookings —, and an event without them is published and announced.
  *
  * The bench survives between runs: the preset this spec writes is put back in a `finally`, its events are taken back, and an
  * interrupted run's leftovers — a preset of the RFO, events of its stem — are taken out at the start.
@@ -214,6 +215,77 @@ test('the coordinator of the events creates an RFO with two airports, reopens it
   }
 });
 
+test('the coordinator of the events reads what an event still needs, and publishes it', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ baseURL: benchUrl });
+  await readInEnglish(context);
+
+  const signedIn = await context.request.post('/e2e/signin?as=events');
+  expect(signedIn.status(), await signedIn.text()).toBe(200);
+  await removeOurEvents(context.request);
+
+  const page = await context.newPage();
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  const announced = {
+    title: { en: `Bench announced ${stamp}`, it: `Annunciato del banco ${stamp}` },
+    summary: { en: `An event of the bench ${stamp}`, it: `Un evento del banco ${stamp}` },
+    slug: `${stem}-announced-${stamp}`,
+  };
+
+  try {
+    // A draft with public slots and nothing else: no airport, no opening of the bookings.
+    await newEvent(page, englishSeed.seed.calendarKinds.rfe, announced);
+    const eventUrl = page.url();
+    await page.locator('[id="publicSlots"]').setChecked(true);
+    await page.locator('[id="privateSlots"]').setChecked(false);
+    await whileWaitingFor(page, 'PUT', '/api/events/events/', async () => {
+      await page.getByRole('button', { name: englishCommon.common.save }).click();
+    });
+
+    // «Publish» answers with what it still needs, field by field, and publishes nothing.
+    const refused = page.waitForResponse(
+      (response) => response.request().method() === 'POST' && response.url().endsWith('/publish'),
+    );
+    await page.getByRole('button', { name: events.events.actions.publish }).click();
+    expect((await refused).status()).toBe(400);
+    await expect(page.getByText(events.events.publish.problems)).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: events.events.fields.airports })).toContainText(
+      events.errors.slotsNeedAirports,
+    );
+    await expect(
+      page.getByRole('listitem').filter({ hasText: events.events.fields.bookingOpensAtUtc }),
+    ).toContainText(events.errors.bookingOpensRequired);
+    await expect(page.getByText(events.events.options.state.Draft, { exact: true })).toBeVisible();
+
+    // Without slots it needs neither: published, and seen at once — its «Seen from» is empty.
+    await page.locator('[id="publicSlots"]').setChecked(false);
+    await whileWaitingFor(page, 'PUT', '/api/events/events/', async () => {
+      await page.getByRole('button', { name: englishCommon.common.save }).click();
+    });
+    await expect(page.getByText(events.events.publish.problems)).toHaveCount(0);
+    await whileWaitingFor(page, 'POST', '/publish', async () => {
+      await page.getByRole('button', { name: events.events.actions.publish }).click();
+    });
+
+    await expect(page.getByText(events.events.options.state.Announced, { exact: true })).toBeVisible();
+    // Published once: not offered again.
+    await expect(page.getByRole('button', { name: events.events.actions.publish })).toHaveCount(0);
+
+    // Reopened, still announced; and listed among the upcoming ones.
+    await page.goto(eventUrl);
+    await expect(page.getByText(events.events.options.state.Announced, { exact: true })).toBeVisible();
+    await page.goto(`/staff/events?view=upcoming&q=${announced.slug}`);
+    await expect(page.getByRole('row').filter({ hasText: announced.title.en })).toBeVisible();
+  } finally {
+    await removeOurEvents(context.request);
+    await context.close();
+  }
+});
+
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
 function englishEvents() {
   return JSON.parse(
@@ -222,11 +294,13 @@ function englishEvents() {
     events: {
       create: string;
       tabs: { airports: string };
-      actions: { cancel: string };
-      fields: { kind: string; title: string; summary: string };
-      options: { state: { Draft: string; Cancelled: string } };
+      actions: { cancel: string; publish: string };
+      publish: { problems: string };
+      fields: { kind: string; title: string; summary: string; airports: string; bookingOpensAtUtc: string };
+      options: { state: { Draft: string; Announced: string; Cancelled: string } };
     };
     cancel: { title: string; submit: string; fields: { note: string } };
     airports: { create: string };
+    errors: { slotsNeedAirports: string; bookingOpensRequired: string };
   };
 }
