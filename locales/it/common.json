@@ -23,8 +23,7 @@
     "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."
   },
   "liveStatus": {
-    "title": "In rete adesso",
-    "updatedAt": "contati alle {{at}}"
+    "title": "In rete adesso"
   },
   "search": {
     "title": "Cerca",
@@ -1200,7 +1199,6 @@
     "networkStats": {
       "label": "In diretta sulla rete",
       "unavailable": "La rete non è raggiungibile in questo momento.",
-      "updatedAt": "Rilevato alle {{at}}",
       "fields": {
         "figures": "Numeri",
         "figures.figure": "Numero",
@@ -1208,17 +1206,17 @@
       },
       "options": {
         "figures.figure": {
-          "divisionAtc": "Controllori qui",
-          "divisionPilots": "Piloti qui",
+          "divisionAtc": "Controllori",
+          "divisionPilots": "Piloti",
           "networkAtc": "Controllori su tutta la rete",
           "networkPilots": "Piloti su tutta la rete"
         }
       },
       "captions": {
-        "divisionAtc": "controllori qui",
-        "divisionPilots": "piloti qui",
-        "networkAtc": "controllori online",
-        "networkPilots": "piloti online"
+        "divisionAtc": "controllori",
+        "divisionPilots": "piloti",
+        "networkAtc": "controllori in rete",
+        "networkPilots": "piloti in rete"
       }
     },
     "calendar": {

@@ -23,8 +23,7 @@
     "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."
   },
   "liveStatus": {
-    "title": "On the network now",
-    "updatedAt": "counted at {{at}}"
+    "title": "On the network now"
   },
   "search": {
     "title": "Search",
@@ -1200,7 +1199,6 @@
     "networkStats": {
       "label": "Live on the network",
       "unavailable": "The network cannot be reached right now.",
-      "updatedAt": "Counted at {{at}}",
       "fields": {
         "figures": "Figures",
         "figures.figure": "Figure",
@@ -1208,17 +1206,17 @@
       },
       "options": {
         "figures.figure": {
-          "divisionAtc": "Controllers here",
-          "divisionPilots": "Pilots here",
+          "divisionAtc": "Controllers",
+          "divisionPilots": "Pilots",
           "networkAtc": "Controllers on the whole network",
           "networkPilots": "Pilots on the whole network"
         }
       },
       "captions": {
-        "divisionAtc": "controllers here",
-        "divisionPilots": "pilots here",
-        "networkAtc": "controllers online",
-        "networkPilots": "pilots online"
+        "divisionAtc": "controllers",
+        "divisionPilots": "pilots",
+        "networkAtc": "controllers on the network",
+        "networkPilots": "pilots on the network"
       }
     },
     "calendar": {

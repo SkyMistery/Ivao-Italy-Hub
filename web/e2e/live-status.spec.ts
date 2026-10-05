@@ -53,18 +53,23 @@ test('the strip is a band above the page, and it does not sit on top of it', asy
   expect(band!.height).toBeLessThan(80);
 });
 
-test('the strip says the numbers it was given, and when they were counted', async ({ page }) => {
+test('the strip says the numbers it was given, and not when they were counted', async ({ page }) => {
   await stubTheBlockData(page, 'networkStats', answered);
   await page.goto('/');
 
   await expect(page.getByText('4', { exact: true })).toBeVisible();
   await expect(page.getByText(englishCommon.blocks.networkStats.captions.divisionAtc)).toBeVisible();
   await expect(page.getByText('37', { exact: true })).toBeVisible();
+  await expect(page.getByText(englishCommon.blocks.networkStats.captions.divisionPilots)).toBeVisible();
+
+  // The hour of the count is not drawn any more: the band asks again every minute.
+  const strip = page.getByText(englishCommon.liveStatus.title).locator('..').locator('..');
+  await expect(strip).not.toContainText(/\d{1,2}:\d{2}/);
 });
 
 test('a network that could not be asked leaves no band at all', async ({ page }) => {
   // The server says so with `updatedAt: null`, and the honest answer is nothing: a band reading
-  // "0 controllers here" would be the site saying nobody is flying when it means it could not ask.
+  // "0 controllers" would be the site saying nobody is flying when it means it could not ask.
   await stubTheBlockData(page, 'networkStats', { updatedAt: null, figures: [] });
   await page.goto('/');
 
