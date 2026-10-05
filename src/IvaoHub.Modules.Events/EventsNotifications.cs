@@ -14,5 +14,11 @@ public static class EventsNotifications
     /// </summary>
     public const string EventCancelled = "events.eventCancelled";
 
-    public static readonly IReadOnlyList<string> All = [EventCancelled];
+    /// <summary>
+    /// The times of an event changed (§8.3; E3b): the same audience as a cancellation, who arrives with the same rows — until then
+    /// nobody is told.
+    /// </summary>
+    public const string EventChanged = "events.eventChanged";
+
+    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged];
 }

@@ -86,6 +86,9 @@ public sealed record EventWriteDto(
 /// <summary>"Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read.</summary>
 public sealed record EventCancelRequest(Localized<string> Note, DateTime RowVersion);
 
+/// <summary>"Publish" (§2.2, E3b): the version read; what the event needs to be published is <see cref="EventPublishing"/>'s.</summary>
+public sealed record EventPublishRequest(DateTime RowVersion);
+
 /// <summary>Events to and from their payloads: by hand, because the state is read off the clock and the description is a document.</summary>
 internal static class EventMapper
 {
@@ -163,8 +166,9 @@ internal static class EventMapper
 
 /// <summary>
 /// The rules one payload can answer by itself (§1.2). Messages are i18n keys. A draft may be incomplete — what an event needs
-/// to be published is E3b's —, but it has to be findable in a list, with an address, and its window has to be one; what needs
-/// other rows — a free address, a kind of the calendar, a whole division without airports — is <see cref="EventSaving"/>.
+/// to be published is <see cref="EventPublishing"/>'s —, but it has to be findable in a list, with an address, and its window
+/// has to be one; what needs other rows — a free address, a kind of the calendar, a whole division without airports — is
+/// <see cref="EventSaving"/>.
 /// </summary>
 public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWriteDto>
 {

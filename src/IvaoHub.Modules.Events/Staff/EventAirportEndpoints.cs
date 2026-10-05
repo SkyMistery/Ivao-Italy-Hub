@@ -2,6 +2,7 @@ using FluentValidation;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -98,7 +99,8 @@ internal static class AirportMapper
 /// <summary>
 /// The airports of an event and their capacity (design M4 §1.3, §7.2, E3a): a resource of the CRUD engine filtered by
 /// <c>filter[eventId]</c>, read with <c>Events.View</c> and written with <c>Events.Edit</c> on the event's care — the tab of the
-/// event's page is a generated list, and each airport a generated form. No hand written verb.
+/// event's page is a generated list, and each airport a generated form. No hand written verb; the last airport of a published
+/// event with slots is not deleted (E3b).
 /// </summary>
 public static class EventAirportEndpoints
 {
@@ -126,9 +128,25 @@ public static class EventAirportEndpoints
             options.BeforeAuthorize = async (airport, saving) =>
                 (await saving.Services.GetRequiredService<EventChildren>().AdoptAsync(airport, saving.CancellationToken)).Refusal;
             options.BeforeSave = SaveAsync;
+            options.Delete = DeleteAsync;
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// The last airport of a published event with slots stays (E3b): its slots are at its airports, and a published event stays one
+    /// that could be published (<see cref="EventPublishing"/>).
+    /// </summary>
+    private static async Task DeleteAsync(EventAirport airport, IServiceProvider services, CancellationToken cancellationToken)
+    {
+        if (await services.GetRequiredService<EventChildren>().EventAsync(airport.EventId, cancellationToken) is { Status: PublishStatus.Published } parent
+            && await services.GetRequiredService<EventPublishing>().LacksAirportsAsync(parent, leaving: airport.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", EventPublishing.SlotsNeedAirportsKey);
+        }
+
+        services.GetRequiredService<EventsDbContext>().Airports.Remove(airport);
     }
 
     /// <summary>
