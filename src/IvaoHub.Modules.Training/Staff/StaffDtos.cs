@@ -73,7 +73,7 @@ public sealed record TrainingHistoryEntryDto(
 /// rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
 /// the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
 /// choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
-/// changes (A13b), and what the reader may do. Never an address. <c>Sheet</c> is the copy a completed training's report keeps; while
+/// changes (A13b; empty on a trainee's path, which does not draw it, A13d), and what the reader may do. Never an address. <c>Sheet</c> is the copy a completed training's report keeps; while
 /// the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
 /// otherwise. Read with <c>Training.View</c>, which the core never denies, so the trainee of the row reads it too: the one rule of
 /// <c>ReservedFields</c> leaves out what is reserved when they do — <c>StaffComment</c>, the <c>StaffNote</c> of every item of the

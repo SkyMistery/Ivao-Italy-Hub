@@ -77,8 +77,11 @@ public sealed class StaffTrainings(
     /// over, the sheet and the report, the closing, the history of its changes, and what the reader may do on it now. The one place
     /// the staff's answer on a training is built: every endpoint of the staff answers with it, and it leaves out what is reserved
     /// when the reader is the training's trainee (<see cref="ReservedFields"/>; note <c>le-note-riservate-e-il-trainee</c>).
+    /// <para>The history is read only <paramref name="withHistory"/>: the page of the training draws it; a trainee's path, which lists
+    /// every training of theirs as this page and draws no history, leaves it empty and spares a query on the audit log for each
+    /// training (A13d).</para>
     /// </summary>
-    public async Task<StaffTrainingDto> PageAsync(Training training, CancellationToken cancellationToken)
+    public async Task<StaffTrainingDto> PageAsync(Training training, bool withHistory, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(training);
 
@@ -92,7 +95,7 @@ public sealed class StaffTrainings(
             .OrderBy(session => session.StartsAtUtc)
             .ThenBy(session => session.Id)
             .ToListAsync(cancellationToken);
-        var lines = await history.ReadAsync(training.Id, cancellationToken);
+        var lines = withHistory ? await history.ReadAsync(training.Id, cancellationToken) : [];
         var names = await people.NamesAsync(
             [
                 training.TraineeVid, training.DecidedBy, training.TrainerVid, training.AssignedBy, training.ClosedBy,

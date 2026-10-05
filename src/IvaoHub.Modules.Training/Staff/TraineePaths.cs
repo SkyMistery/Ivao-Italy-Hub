@@ -24,7 +24,8 @@ namespace IvaoHub.Modules.Training.Staff;
 /// <param name="Trainings">
 /// Their trainings the reader may read, each as the staff's page of it (<c>StaffTrainings.PageAsync</c>): so a trainer who reads their
 /// own path reads it without what is reserved, as on the page of each training (note <c>le-note-riservate-e-il-trainee</c>), and a
-/// head of a FIR reads the ones of their FIR (A11b).
+/// head of a FIR reads the ones of their FIR (A11b). Each without the history of its changes, which the path does not draw: the page
+/// of the training has it (A13d).
 /// </param>
 /// <param name="Bans">
 /// Their bans, the newest first: the ones that hold, the ones over and the ones lifted; none to a reader who may not read them.
@@ -41,8 +42,8 @@ public sealed record TraineePathDto(
 /// The one answer to «where is this trainee», for the staff (§4.2), read with <c>Training.View</c> — the staff of the training reads
 /// every training (R.1, d2) —, like the page of the pilot of the tours (design M2 §8.7). It builds nothing of its own: the ladders are
 /// the trainee's own answer (<see cref="TrainingRequests.PathsOfAsync"/>), each training the staff's page of it
-/// (<see cref="StaffTrainings.PageAsync"/>, which leaves out what is reserved when the reader is its trainee), the bans their rows
-/// (<see cref="TrainingBans"/>).
+/// (<see cref="StaffTrainings.PageAsync"/>, which leaves out what is reserved when the reader is its trainee; asked without the
+/// history, A13d), the bans their rows (<see cref="TrainingBans"/>).
 /// <para>What the reader reads of it is the one handler's answer on the rows. A training it does not let them read is left out. The
 /// bans, and the ladders worked out from them and from every training, are the reader's when the handler lets them read a ban of the
 /// trainee: the staff of the training reads them all, and a head of a FIR, whose <c>Training.View</c> reaches the trainings of their
@@ -76,7 +77,7 @@ public sealed class TraineePaths(
         {
             if (await staff.MayAsync(training, TrainingPermissions.View))
             {
-                pages.Add(await staff.PageAsync(training, cancellationToken));
+                pages.Add(await staff.PageAsync(training, withHistory: false, cancellationToken));
             }
         }
 
