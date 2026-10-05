@@ -4257,3 +4257,76 @@ domanda a Carmine.**
     (`TrainingSessionsTests`, dalla risposta sulla #149), e questa fase non cambia il server;
   - **sul banco di anteprima** (5090/5091): la frase non è stata guardata lì, perché il banco è della sessione che coordina. L'ha
     guardata il banco di A13c.
+
+### A13d — I piccoli resti del training
+
+Tre osservazioni «per dopo» di due revisioni, che nessuna fase aveva ancora preso. Una PR sola, con il codice del modulo, i suoi test e
+i suoi documenti:
+
+1. **La pagina del percorso legge lo storico di ogni training, e non lo disegna** ([revisione di A13b sulla #197][a13d-r197]: una query
+   indicizzata per training e una risposta più lunga, e basterebbe un flag per saltarlo). La pagina dello staff del percorso di un
+   trainee non chiede lo storico; la pagina del training lo tiene.
+2. **Nessun test dello storico dal lato del capo di una FIR** (la stessa revisione). Un capo FIR legge lo storico di un training della
+   sua FIR. Di un training di un'altra FIR non legge lo storico, perché non ne legge la pagina (la regola della pagina, A11b). È un test
+   d'integrazione in `TrainingFirHeadsTests`, con le persone di quella classe.
+3. **L'online day nei conflitti delle date** ([revisione di E1 sulla #200][a13d-r200]: il commento di `TrainingSettings.cs:57` ne
+   parlava come di una cosa futura). L'ha deciso il design (`07`, la tabella delle impostazioni: «`conflictKinds` … `["event"]` | d1;
+   l'online day si aggiunge qui quando M4 ne crea il tipo»). E1 (#200) ha creato il tipo, con la chiave `online-day` confermata da
+   Carmine sulla #200. Il predefinito diventa `["event", "online-day"]`.
+
+[a13d-r197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5913320300
+[a13d-r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
+
+**Com'è andata (A13d)** (5 ottobre 2026, branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526). **Codice del modulo, i suoi test e
+una riga di `docs/FORKING.md`; nessun file del nucleo, nessuna migrazione, nessuna nota, nessuna domanda a Carmine.**
+
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): 1 e 2 sono osservazioni della revisione dentro il modulo. 3 è caso **(a)**: il
+  predefinito di un'impostazione del modulo, già deciso dal design.
+- **Fatto**:
+  - **`StaffTrainings.PageAsync(training, withHistory, …)`**: lo storico si legge solo se chi chiama lo chiede, come `FindAsync` prende
+    `tracked`. Le due chiamate della pagina del training passano `true`: la lettura e la risposta di ogni passo. Il percorso
+    (`TraineePaths`) passa `false`, e ogni suo training ha lo storico vuoto: una query sul registro di audit in meno per ogni training
+    del trainee. Il DTO non cambia forma, e `History` resta una lista, vuota sul percorso. Lo dicono i commenti di `StaffTrainingDto` e
+    di `TraineePathDto`, e quindi `schema.d.ts`, rigenerato;
+  - **il test delle note riservate sul percorso** (`TrainingTraineeTests`, di A10a, esteso da A13b) affermava lo storico sul percorso.
+    Ora afferma che sul percorso non c'è, per nessun training (`Assert.All`), e che la pagina dello stesso training ha gli stessi cinque
+    passi di prima. Vale per il percorso di un altro trainee e per quello letto dal coordinator;
+  - **`TrainingFirHeadsTests.TheChiefOfAFirReadsTheHistoryOfATrainingOfTheirFirAndNoneOfAnotherFir`**: il capo della FIR assegna un
+    training della sua FIR, e l'assistant chief dell'altra FIR uno della sua. Il capo legge lo storico del suo training: la richiesta
+    scritta dall'installazione, di nessuno, e la sua assegnazione con il trainer. Sul training dell'altra FIR la pagina gli è rifiutata
+    (403) e la risposta non ha niente dello storico. L'assistant chief lo legge sulla pagina del suo;
+  - **`TrainingSettings.ConflictKinds`** ha come predefinito `["event", "online-day"]`, e il commento lo dice come cosa fatta. I test
+    che affermano i predefiniti dicono la lista nuova: `TrainingSettingsTests` (unità) e `TrainingSkeletonTests` (integrazione).
+    `docs/FORKING.md` ha la lista nuova nella tabella delle impostazioni del training, con l'installazione che le ha già salvate.
+- **Trovato**:
+  1. ⚠️ **Un'installazione che ha già salvato le impostazioni del training tiene la sua lista.** Il nucleo mette un predefinito solo
+     dove niente è stato salvato, proprietà per proprietà (`ModuleSettingsStore.ReadAsync`), e il form salva sempre la lista intera.
+     Lì l'online day lo aggiunge il dipartimento del training, in «Impostazioni del training». Un'installazione che non le ha mai
+     salvate lo ha da sola. Il form offre solo i tipi che il calendario ha (`settingsToFormValues`), quindi un fork che toglie
+     `online-day` dal vocabolario salva lo stesso.
+  2. **Due documenti di M4 dicono ancora il contrario**: `10-piano-implementazione-m4.md` (E1, «Trovato» n.2) e `HANDOFF-M4.md` (E1)
+     scrivono che il predefinito resta `["event"]` e che la divisione aggiunge l'online day dalle impostazioni del training. Era il
+     perimetro di E1, una PR del nucleo che non toccava il training. La nota `i-tipi-di-evento` (§2 n.1, decisa sulla #180) dice che
+     Training «può aggiungere» l'online day ai suoi `conflictKinds`, e il design M3 che «si aggiunge qui». Sono documenti di M4: questa
+     fase non li tocca, e lo dice la PR.
+  3. Il percorso non disegna lo storico (`screens/path.tsx` non lo legge): nessuno schermo cambia, e il giro completo non serve.
+- **Scostamenti dal design**: nessuno. Il punto 3 è la riga del design.
+- **Verificato** (5 ottobre 2026, in locale, una suite alla volta):
+  - `dotnet build`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **1107/1107**;
+  - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 467/467** al primo giro, in 7,8 minuti;
+  - `pnpm lint`, `typecheck`, `format:check`: puliti; `pnpm i18n:check`: **795** chiavi; `pnpm test`: **605/605** in 83 file;
+  - `pnpm gen:api`: cambiano solo i commenti di `StaffTrainingDto` e di `TraineePathDto`;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**, con i worker di default (103 socket in `TIME_WAIT`):
+    - primo giro **162/163**. È caduta `closed-suggestion.spec.ts:121`, la barra della lista trascinata: `scrollTop` 0 dopo il
+      trascinamento. È una spec del nucleo, su una pagina che A13d non tocca;
+    - quella spec da sola, `--repeat-each=5`: **25/25**;
+    - secondo giro intero: **163/163**;
+  - le regole di `core-guard` in PowerShell, dal merge-base con `main` (78df526): nessun file del maintainer, nessuno del nucleo
+    (`schema.d.ts` è fra i generati ammessi), **PASS**.
+- **Non verificato**:
+  - **la CI** della PR, che la dice la PR;
+  - **`pnpm e2e:full`**: nessuno schermo cambia (Trovato n.3);
+  - **i test nuovi sul codice di `main`**: non sono stati fatti girare sul codice di prima. Con il codice di prima il test del percorso
+    cadrebbe: sul percorso c'erano i cinque passi dove ora afferma che non c'è niente. Il test del capo FIR prova invece una regola
+    che c'era già (A11b), e passerebbe anche lì.

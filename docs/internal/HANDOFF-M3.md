@@ -11,23 +11,24 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 30 settembre 2026 — **fase A13c**, la frase sopra il form «Fissa la data a mano» senza il passato. Branch
-`m3/a13c-set-by-hand-lead`, PR #201, **in coda dopo #197** (A13b): il branch nasce da quello di A13b, a 2e97474.
+**Ultimo aggiornamento:** 5 ottobre 2026 — **fase A13d**, i piccoli resti del training: il percorso senza lo storico, lo storico dal
+lato del capo di una FIR, l'online day nei conflitti delle date. Branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526.
 
 **M3 è chiusa e tutta in `main`** (piano 1.26):
 
-- **#191, A12d,** è unita il 30 settembre, dopo **#189, A12b**; **#196, A13a,** il 30 settembre;
+- **#191, A12d,** è unita il 30 settembre, dopo **#189, A12b**; **#196, A13a,** **#197, A13b,** e **#201, A13c,** il 30 settembre;
 - **Sono in `main`**: A3 (#131), A3b (#135), A4a (#133), A4 (#139), A5 (#140), A6a (#143), A6b (#144), A6c (#145), A7 (#146), A7b
   (#181), A8a (#147), A8b (#148), A9a (#149), A9b (#150), A10a (#151), A10b (#153), A10c (#178), la fase del nucleo A11a (#159), A11b
-  (#182), la fase del nucleo A12a (#187), A12b (#189), A12d (#191), A13a (#196) e #152 del maintainer.
+  (#182), la fase del nucleo A12a (#187), A12b (#189), A12d (#191), A13a (#196), A13b (#197), A13c (#201) e #152 del maintainer.
 
 **A13 nasce dalla prova del modulo sul banco di anteprima** di `dalberone` (30 settembre):
 
 - **A13a** (#196, unita) fa le correzioni delle parole e dell'esame teorico;
-- **A13b** (#197, aperta) fa lo storico delle modifiche di un training. La nota `2026-09-30-lo-storico-di-un-training` è **decisa**
-  (Carmine sulla #197: la (a), con la condizione del revisore), e il codice è sul suo branch (`08`, A13);
-- **A13c** (#201, questa, in coda dopo #197) corregge la frase della data fissata a mano, che diceva ancora «anche nel passato».
-  L'ha trovata A13b fuori dalla sua fase.
+- **A13b** (#197, unita) fa lo storico delle modifiche di un training. La nota `2026-09-30-lo-storico-di-un-training` è **decisa**
+  (Carmine sulla #197: la (a), con la condizione del revisore);
+- **A13c** (#201, unita) corregge la frase della data fissata a mano, che diceva ancora «anche nel passato». L'ha trovata A13b fuori
+  dalla sua fase;
+- **A13d** (#220, questa) non viene dal banco: fa tre osservazioni «per dopo» delle revisioni di A13b (#197) e di E1 (#200).
 
 **A12c resta fuori**: il codice sorgente di PATS non esiste e il significato dei codici non si conosce ([Carmine sulla
 #187](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/187#issuecomment-5891244551)). Il master apre una strada [sulla
@@ -52,7 +53,7 @@ se A12c si fa. **Tentarla è una scelta di `dalberone`, non ancora presa.**
   - **A10 in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite;
   - **A11 in due**: A11a (#159) e A11b (#182), unite;
   - **A12 in quattro**: A12a (#187), A12b (#189) e A12d (#191), unite, e A12c fuori;
-  - **A13 in tre**: A13a (#196), unita, A13b (#197) e A13c (#201, questa, in coda dopo #197).
+  - **A13 in quattro**: A13a (#196), A13b (#197) e A13c (#201), unite, e A13d (#220, questa).
 - In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
@@ -124,6 +125,35 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A13d (5 ottobre 2026, branch `m3/a13d-cleanup`, PR #220)
+
+- **Da dove viene**: tre osservazioni «per dopo» di due revisioni, la [revisione di A13b sulla #197][a13d-r197] e la [revisione di E1
+  sulla #200][a13d-r200]. Codice del modulo, i suoi test e una riga di `docs/FORKING.md`. Nessun file del nucleo, nessuna migrazione,
+  nessuna nota, nessuna domanda a Carmine (`08`, A13d).
+- **Che cosa c'è**:
+  - **il percorso di un trainee non legge più lo storico** dei suoi training: `StaffTrainings.PageAsync` prende `withHistory`. La
+    pagina del training passa `true`, `TraineePaths` passa `false`. Sul percorso `history` è una lista vuota, e la forma del DTO non
+    cambia;
+  - **lo storico dal lato del capo di una FIR**: `TrainingFirHeadsTests` (un test nuovo). Lo storico di un training della sua FIR lo
+    legge; di un training di un'altra FIR non legge niente, perché la pagina gli è rifiutata;
+  - **l'online day nei conflitti delle date**: il predefinito di `TrainingSettings.ConflictKinds` è `["event", "online-day"]`, come
+    voleva il design ora che E1 ha creato il tipo. Lo dicono i test dei predefiniti e la tabella di `docs/FORKING.md`.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Un'installazione che ha già salvato le impostazioni del training tiene la sua lista**, senza l'online day: il nucleo mette un
+    predefinito solo dove niente è stato salvato. Lì **l'online day lo aggiunge il dipartimento del training**, in «Impostazioni del
+    training». È il caso del banco di anteprima, dove la sessione di A13a ha salvato le impostazioni. Un'installazione che non le ha mai
+    salvate lo ha da sola.
+  - ⚠️ **`10-piano-implementazione-m4.md` (E1, «Trovato» n.2) e `HANDOFF-M4.md` (E1) dicono ancora che il predefinito resta
+    `["event"]`.** Erano il perimetro di E1, e sono documenti di M4: A13d non li tocca, e lo dice la PR.
+  - **Chi vuole lo storico di un training lo chiede**: una chiamata nuova di `PageAsync` sceglie `withHistory`. Lo storico costa una
+    query sul registro di audit per ogni training: una lista di training non lo legge.
+  - Banco: nessuno, perché nessuno schermo cambia. VID: nessuno nuovo (A13d riusa le persone di `TrainingFirHeadsTests` e di
+    `TrainingTraineeTests`).
+- **La fase dopo**: nessuna di M3 in `08`. A12c resta una scelta di `dalberone` (qui sopra).
+
+[a13d-r197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5913320300
+[a13d-r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
 
 ### Che cosa ha lasciato A13c (30 settembre 2026, branch `m3/a13c-set-by-hand-lead`, PR #201)
 
