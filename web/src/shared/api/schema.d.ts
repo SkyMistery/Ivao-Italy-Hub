@@ -1310,6 +1310,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/events/{id}/cancel": {
         parameters: {
             query?: never;
@@ -4352,6 +4368,11 @@ export interface components {
          * @enum {unknown}
          */
         EventOrganizer: "Division" | "Network" | "OtherDivision";
+        /** @description "Publish" (§2.2, E3b): the version read; what the event needs to be published is EventPublishing's. */
+        EventPublishRequest: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description The state of an event as it is seen (design M4 §2.1). Never stored: read off its dates, its status and its cancellation.
          * @enum {unknown}
@@ -11787,6 +11808,62 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
