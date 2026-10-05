@@ -35,7 +35,7 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 2 ottobre 2026 — **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
+**Ultimo aggiornamento:** 2 ottobre 2026, pomeriggio — **la `0.6.0` è sulla prova** (piano 1.29, qui sotto). **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
 dalla prova sul banco). **M4: 12 fasi su 29 unite** (E0, E1, E2, E2b, E3a e tutte le fasi del nucleo di M4b, E10a–E10f ed E15a);
 il prossimo passo è **E3b** di `dalberone`, e le 17 fasi che restano sono del modulo e vanno in fila (`HANDOFF-M4.md`). Piano
 **1.28**: **le fasi del nucleo di M4** — il tracker senza VID a pagine (E10a, #210; un tentativo del client IVAO aspetta 20 s, per tutto
@@ -61,19 +61,22 @@ cancella (A12b); **la fase E0 di M4** (#184, dieci note e `10-piano-implementazi
 l'avvio (#185, 0.3.1) e l'accesso dalla pagina d'errore che torna alla home (#190, 0.4.2); la 0.4.0 (#186) e i link legali del piè di
 pagina verso la wiki di IVAO (#188, 0.4.1). La 1.24 ha portato i capi FIR sul loro FIR (A11a, #159), il campo suggerito (#145, #177),
 le pagine della richiesta di training (#144) e il design di M4 (#180); la 1.23 l'avvio misurato sul server (#171–#175, 0.2.3–0.2.7).
-**L'hub è online su `test.it.ivao.aero` con la 0.5.0** (tag `v0.5.0` su `6261ffd`), consegnata il 30 set 2026 verso le 10:43 UTC
+**L'hub è online su `test.it.ivao.aero` con la 0.6.0** (tag `v0.6.0` su `4aa7e29`), consegnata il 2 ott 2026 verso le 13:50 UTC
+(zip `delivery-only-128-files-0.6.0.zip`, sha256 `0c0585ebf86e7824ba68fb0e75c79a71f46505679a4ba8c3ea8b666a4a46ef10`, con il
+`config/division.json` del tag): all'avvio le due migrazioni del nucleo (`AddAwardSignalNotifiedAt`, `AddIvaoFras`) e l'`Initial`
+degli eventi, **21 grant di posizione** (ED, i collaboratori AOD/FOD/MD, `Awards.Assign` all'MD), i quattro tipi degli eventi; i due
+grant al team di un FIR su `EventAtc.*` aspettano le postazioni di E11a, e `ref_ivao_fras` si riempie con il primo giro notturno.
+`main` è alla **0.6.0**. Prima girava la 0.5.0 (tag `v0.5.0` su `6261ffd`), consegnata il 30 set 2026 verso le 10:43 UTC
 (zip `delivery-only-106-files-0.5.0.zip`, sha256 `57c2775b759cd292c772a49825af207ea2dde40e40d61cf00a25dd0ecca9c8a0`, con il
 `config/division.json` del tag) e caricata da Carmine via FTP in `webapp/` dello staging lasciato da Ivao.It, database
 `itivao_test`: le fasi di M3 fino ad A12d, **A7b compresa, quindi sulla prova si assegnano training**; all'avvio le **tre migrazioni
 del training** e **tre grant di posizione** seminati (A7b e A11b cambiano `positionGrants` e portano IT a `firStaffScope: own`). Se
 la prova ha grant con motivo `training: trainer` scritti da A7, si tolgono a mano (`HANDOFF-M3.md`, A7b). Prima girava la 0.4.1 (29
 set, 22:54 UTC), che portava la 0.3.0 (A11a e la tastiera, con `AddGrantFirTeam`, la prima migrazione del nucleo dalla 0.2.0); la
-`v0.4.0` (`2f5822d`) è stata costruita e **saltata**. **`main` è alla 0.5.1** (#198: le schede aperte si ricaricano alla
+`v0.4.0` (`2f5822d`) è stata costruita e **saltata**. ~~**`main` è alla 0.5.1**~~ (dal 2 ott alla 0.6.0) (#198: le schede aperte si ricaricano alla
 navigazione quando cambia il timbro del server). ⚠️ La 0.5.0 non ce l'ha: dopo il caricamento una scheda aperta prima ha mostrato il
 menu nuovo con il bundle vecchio, e una ricarica forzata l'ha rimessa a posto; anche alla prossima consegna le schede aperte con la
-0.5.0 si ricaricano a mano. **La prossima consegna** porta A13a–A13c, E1, la 0.5.1 e le fasi di M4 del piano 1.28, con **due migrazioni additive del nucleo**
-(`AddAwardSignalNotifiedAt`, `AddIvaoFras`) e l'`Initial` del modulo degli eventi: una MINOR, la **0.6.0**, che il master alza
-prima del tag. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
+0.5.0 si ricaricano a mano. ~~La prossima consegna porta A13a–A13c, E1, la 0.5.1 e le fasi di M4 del piano 1.28 … la **0.6.0**~~: consegnata, vedi sopra. La prima a partire è stata la 0.2.1 (tag `v0.2.1` su `fa089de`: la
 causa del primo 500 era l'utente del database d'esempio nel file dei segreti, letta in `diagnostics/startup-error.txt`).
 Consegna preparata con `tools/prepare-delivery.ps1` (`docs/DELIVERING.md`), foglio generale
 `docs/internal/deploy/LEGGIMI-INSTALLAZIONE-DI-PROVA.md` (`webapp/`, `itivao_test`, carica Carmine); un foglio con la versione
