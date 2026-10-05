@@ -166,7 +166,8 @@ internal static class HubPipeline
     /// Every step is timed into <paramref name="timings"/>, which <c>diagnostics/starts.txt</c> writes when the host is
     /// ready: the server's own numbers for the cold start a visitor pays (note 2026-09-28-l-avvio-a-freddo).
     /// <para>The steps in <see cref="SkippableSteps"/> run only when the initialisation marker does not match this start
-    /// (note 2026-09-28-il-marcatore-d-inizializzazione); the others run at every start.</para>
+    /// (note 2026-09-28-il-marcatore-d-inizializzazione), one process at a time (note
+    /// 2026-10-05-l-inizializzazione-sotto-blocco); the others run at every start.</para>
     /// </remarks>
     public static async Task InitializeAsync(this WebApplication app, HubPaths paths, StartupTimings timings)
     {
@@ -217,8 +218,17 @@ internal static class HubPipeline
             app.Environment.EnvironmentName,
             paths.Seed);
 
+        // At every start, the mark or not: it reads division.json only when the database holds no super administrator at
+        // all, and leaves an audit row whenever the effective set has moved (plan section 6.3) -- the set can be changed
+        // in the database by hand, by anybody who reaches it, and this is where that becomes visible.
+        async Task SuperadminsAsync(CancellationToken cancellationToken)
+        {
+            await scope.ServiceProvider.GetRequiredService<SuperadminService>().BootstrapAsync(cancellationToken);
+            timings.Step("superadmins");
+        }
+
         List<string> applied = [];
-        var outcome = await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
+        var outcome =await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
             key,
             async cancellationToken =>
             {
@@ -246,18 +256,22 @@ internal static class HubPipeline
                 // (design M0 section 5.6, design M1 section 8.2).
                 await scope.ServiceProvider.GetRequiredService<ContentSeeder>().SeedAsync(cancellationToken);
                 timings.Step("content");
+
+                // The first start of an installation writes the super administrators of division.json, and two processes
+                // doing it together would write them twice: so a start that initialises does it here, inside the
+                // initialisation lock and before the mark (note 2026-10-05-l-inizializzazione-sotto-blocco).
+                await SuperadminsAsync(cancellationToken);
             },
             timings,
             app.Lifetime.ApplicationStopping);
 
         timings.Initialisation = outcome.Describe(SkippableSteps);
 
-        // At every start, the mark or not: it reads division.json only when the database holds no super administrator at
-        // all, and leaves an audit row whenever the effective set has moved (plan section 6.3) -- the set can be changed
-        // in the database by hand, by anybody who reaches it, and this is where that becomes visible.
-        await scope.ServiceProvider.GetRequiredService<SuperadminService>()
-            .BootstrapAsync(app.Lifetime.ApplicationStopping);
-        timings.Step("superadmins");
+        // A start that skipped the initialisation has not looked at them yet.
+        if (outcome.Skipped)
+        {
+            await SuperadminsAsync(app.Lifetime.ApplicationStopping);
+        }
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
