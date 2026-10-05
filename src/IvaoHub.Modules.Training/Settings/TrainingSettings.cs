@@ -54,8 +54,11 @@ public sealed record TrainingSettings
 
     public ConflictPolicy ConflictPolicy { get; init; } = ConflictPolicy.Warn;
 
-    /// <summary>The kinds of the calendar whose entries a date is checked against; the online day joins when M4 makes its kind.</summary>
-    public IReadOnlyList<string> ConflictKinds { get; init; } = ["event"];
+    /// <summary>
+    /// The kinds of the calendar whose entries a date is checked against: the events and the online day, whose kind M4 made (E1,
+    /// <c>online-day</c>; A13d). A default, as every setting here: an installation that saved its settings keeps its own list.
+    /// </summary>
+    public IReadOnlyList<string> ConflictKinds { get; init; } = ["event", "online-day"];
 
     /// <summary>Hours before a session the reminder leaves.</summary>
     public int ReminderLeadHours { get; init; } = 24;

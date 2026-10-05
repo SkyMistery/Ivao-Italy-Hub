@@ -38,7 +38,8 @@ public sealed class TrainingSettingsTests
         Assert.Null(defaults.MaxResponseDays);
         Assert.Equal(3, defaults.ResponseReminderDays);
         Assert.Equal(ConflictPolicy.Warn, defaults.ConflictPolicy);
-        Assert.Equal(["event"], defaults.ConflictKinds);
+        // The online day since M4 made its kind (design M3, the table of the settings; E1; A13d).
+        Assert.Equal(["event", "online-day"], defaults.ConflictKinds);
         Assert.Equal(24, defaults.ReminderLeadHours);
         Assert.Empty(defaults.HiddenPositions);
         Assert.Null(defaults.TheoryExamUrl);

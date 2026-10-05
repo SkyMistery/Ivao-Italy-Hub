@@ -429,7 +429,7 @@ your division:
 | `maxResponseDays` | none | days a trainee has to choose a date before the training closes by itself; none means never |
 | `responseReminderDays` | 3 | days without a choice before the trainer's queue shows the training as waiting |
 | `conflictPolicy` | `Warn` | a proposed date that conflicts with another calendar entry: warned and confirmed, refused (`Block`), or not checked (`None`) |
-| `conflictKinds` | `event` | the kinds of calendar entry a date is checked against |
+| `conflictKinds` | `event`, `online-day` | the kinds of calendar entry a date is checked against; an installation that saved its settings keeps its own list |
 | `reminderLeadHours` | 24 | how long before a session its reminder leaves |
 | `hiddenPositions` | none | the positions of the division your department does not train on |
 | `theoryExamUrl` | none | where the theory exam is taken |
