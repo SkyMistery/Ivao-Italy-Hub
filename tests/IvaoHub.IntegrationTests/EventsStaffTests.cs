@@ -23,7 +23,8 @@ namespace IvaoHub.IntegrationTests;
 /// department creates and changes an event and its airports, cancels one with its note and deletes one nobody took part in;
 /// whoever collaborates — the ATC operations, the flight operations, the membership, with the nine grants of the design on the
 /// events department — reads the events and neither writes nor deletes them, and holds the permission and not the department
-/// (E2b); the list has the views of the state; the presets of the kinds reach whoever writes events.
+/// (E2b); the list has the views of the state; the presets of the kinds reach whoever writes events, and their rows are the
+/// kinds an event chooses from (E4).
 /// <para>⚠️ Everybody here is seeded **without an address**, as in <see cref="EventsSkeletonTests"/>: the tests of the contacts
 /// assert who of the events, the ATC operations, the flight operations and the membership receives a message. What each holds
 /// comes from the grants of their position, which the division file gives.</para>
@@ -469,6 +470,76 @@ public sealed class EventsStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
             var created = await CreatedAsync(advisor, EventEndpoints.Pattern, Payload("preset") with { PublicSlots = true, PrivateSlots = false }, token);
             Assert.True(created.GetProperty("publicSlots").GetBoolean());
             Assert.False(created.GetProperty("privateSlots").GetBoolean());
+        }
+        finally
+        {
+            await ForgetSettingsAsync(token);
+        }
+    }
+
+    [Fact]
+    public async Task AnEventChoosesAKindOfTheEventsAndAnyKindWhileTheSettingsListNone()
+    {
+        // The kinds of the events are the ones with a row in the presets, and every kind of the calendar while there is none (E4,
+        // note 2026-10-06-i-tipi-che-un-evento-sceglie, decided by the maintainer on #223).
+        var token = TestContext.Current.CancellationToken;
+        await ForgetSettingsAsync(token);
+
+        try
+        {
+            using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+            // No row at all, as on a new installation: a kind of the calendar that is no event's is still taken.
+            var meeting = await CreatedAsync(coordinator, EventEndpoints.Pattern, Payload("kinds-meeting") with { Kind = "meeting" }, token);
+
+            var settings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                (await coordinator.GetFromJsonAsync<JsonElement>(SettingsUri, token)).GetRawText())!;
+            settings["kindPresets"] = JsonSerializer.SerializeToElement(new[]
+            {
+                new { kind = "rfo", publicSlots = false, privateSlots = false, hasRoster = false, wholeDivision = false, inPerson = false },
+            });
+
+            using (var saved = await coordinator.PutAsJsonAsync(SettingsUri, settings, token))
+            {
+                Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+            }
+
+            // Listed: a new event of a kind without a row is refused on its field, one with a row — every switch off — is taken.
+            using (var refused = await coordinator.PostAsJsonAsync(EventEndpoints.Pattern, Payload("kinds-exam") with { Kind = "exam" }, token))
+            {
+                Assert.Equal(["events:errors.kindNotOfEvents"], (await RefusalsAsync(refused, token))["kind"]);
+            }
+
+            await CreatedAsync(coordinator, EventEndpoints.Pattern, Payload("kinds-listed"), token);
+
+            // The event written before keeps its kind when it is saved again, and does not change to another kind without a row.
+            var kept = await OkAsync(await coordinator.PutAsJsonAsync(
+                $"{EventEndpoints.Pattern}/{Id(meeting)}",
+                Payload("kinds-meeting") with
+                {
+                    Kind = "meeting",
+                    Title = Text("evt-test-e4 kept"),
+                    RowVersion = meeting.GetProperty("rowVersion").GetDateTime(),
+                },
+                token), token);
+            Assert.Equal("meeting", kept.GetProperty("kind").GetString());
+
+            using (var changed = await coordinator.PutAsJsonAsync(
+                $"{EventEndpoints.Pattern}/{Id(meeting)}",
+                Payload("kinds-meeting") with { Kind = "exam", RowVersion = kept.GetProperty("rowVersion").GetDateTime() },
+                token))
+            {
+                Assert.Equal(["events:errors.kindNotOfEvents"], (await RefusalsAsync(changed, token))["kind"]);
+            }
+
+            // A kind the calendar does not have is still refused as one.
+            using (var unknown = await coordinator.PostAsJsonAsync(
+                EventEndpoints.Pattern,
+                Payload("kinds-unknown") with { Kind = "evt-test-no-such-kind" },
+                token))
+            {
+                Assert.Equal(["errors.calendar.kindUnknown"], (await RefusalsAsync(unknown, token))["kind"]);
+            }
         }
         finally
         {
