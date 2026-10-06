@@ -1,19 +1,27 @@
 import type { ModuleManifest } from '../../shared/modules';
 
 import { eventListBlock } from './blocks';
-import { EVENTS_EDIT, EVENTS_MANAGE_SETTINGS, EVENTS_VIEW, EVENT_ROUTES_EDIT } from './permissions';
+import {
+  EVENTS_EDIT,
+  EVENTS_MANAGE_SETTINGS,
+  EVENTS_VIEW,
+  EVENT_BOOKINGS_EDIT,
+  EVENT_ROUTES_EDIT,
+} from './permissions';
 import { eventEditorSearchSchema, eventsPublicSearchSchema, eventsSearchSchema } from './schemas';
 import { AirportForm } from './screens/airports';
 import { EventCancelPage, EventEditor, EventsPage } from './screens/events';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
+import { SlotForm, SlotLoadPage } from './screens/slots';
 
 /**
  * The events (M4), as the front end knows them: `IvaoHub.Modules.Events` on the other side. E2 is the skeleton — the
  * section of the back office, with the settings in it; E3a the events in it: their list, the page of one with its settings,
  * its description and its airports, and the page that cancels one; E4 the public side — `/events`, the page of an event, the
- * block of the list — and the routes of an event, in a tab of its page.
+ * block of the list — and the routes of an event, in a tab of its page; E5 its slots, in a tab too, with the page that loads
+ * them from a table, and listed on its page.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -71,6 +79,20 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/routes/$routeId',
       permission: EVENT_ROUTES_EDIT,
       component: RouteForm,
+    },
+    // The slots of an event (E5): loaded from a table, all or nothing, and each one corrected in its form — by whoever writes the
+    // bookings of the event.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/slots/load',
+      permission: EVENT_BOOKINGS_EDIT,
+      component: SlotLoadPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/$id/slots/$slotId',
+      permission: EVENT_BOOKINGS_EDIT,
+      component: SlotForm,
     },
   ],
   i18nNamespaces: ['events'],

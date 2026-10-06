@@ -34,7 +34,8 @@
       "settings": "Settings",
       "description": "Description",
       "airports": "Airports",
-      "routes": "Routes"
+      "routes": "Routes",
+      "slots": "Slots"
     },
     "actions": {
       "publish": "Publish",
@@ -46,7 +47,7 @@
     },
     "delete": {
       "title": "Delete this event?",
-      "description": "The event, its airports and its routes are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
+      "description": "The event, its airports, its routes and its slots are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
     },
     "body": {
       "save": "Save the description",
@@ -157,6 +158,70 @@
       "description": "The route is taken out of the event and off its page."
     }
   },
+  "slots": {
+    "title": "Slots",
+    "create": "New slot",
+    "edit": "Slot",
+    "fields": {
+      "callsign": "Callsign",
+      "flightNumber": "Flight number",
+      "aircraftTypes": "Aircraft types",
+      "departureIcao": "From",
+      "offBlockUtc": "Off block",
+      "arrivalIcao": "To",
+      "onBlockUtc": "On block",
+      "stand": "Stand",
+      "rotationCode": "Rotation",
+      "rotationLeg": "Leg"
+    },
+    "hints": {
+      "callsign": "Letters and digits: the callsign the pilot connects with.",
+      "aircraftTypes": "One or more aircraft types the hub knows, by their ICAO codes, separated by /: A320/A20N.",
+      "departureIcao": "The ICAO code of an airport the hub knows. A slot leaves from an airport of the event, or arrives at one.",
+      "arrivalIcao": "The ICAO code of an airport the hub knows.",
+      "offBlockUtc": "The estimated off block time, in UTC.",
+      "onBlockUtc": "The estimated in block time, in UTC.",
+      "stand": "Leave it empty while the stand is not decided.",
+      "rotationCode": "Any code: the legs of one rotation share it. Leave it empty for a slot alone.",
+      "rotationLeg": "The place of the leg in its rotation, from 1. Left empty, the first leg of a new rotation is the first."
+    },
+    "delete": {
+      "title": "Delete this slot?",
+      "description": "The slot is taken out of the event and off its page."
+    },
+    "deleteFree": {
+      "trigger": "Delete the free ones",
+      "title": "Delete every free slot?",
+      "description": "Every slot of this event that nobody booked is deleted, public and private. A booked one stays.",
+      "confirm": "Delete them",
+      "done": "Free slots deleted: {{count}}."
+    },
+    "load": {
+      "open": "Paste or load",
+      "title": "Paste or load the slots",
+      "description": "The public slots of the event from a table copied from a spreadsheet, or from a CSV file: all of it, or nothing.",
+      "help": "The first row is the header, with these names, in any order; rotation and leg can be left out, and a column the hub does not know is left alone:",
+      "formats": "Times are in UTC, written 2026-10-17 14:30. Aircraft types are separated by /, as A320/A20N. The legs of a rotation share its code; without their places (leg), they take them from their times.",
+      "file": "Or a CSV file",
+      "submit": "Load",
+      "refused": "Nothing was loaded. Correct these and load the table again:",
+      "cell": "Row {{row}}, {{column}}: {{said}}",
+      "fields": {
+        "text": "The table",
+        "mode": "The public slots already there"
+      },
+      "hints": {
+        "text": "The rows copied from the spreadsheet, the header first, or the text of the CSV file chosen above.",
+        "mode": "A booked slot is never replaced."
+      },
+      "options": {
+        "mode": {
+          "Add": "Keep them, and add these",
+          "ReplaceFree": "Replace the free ones with these"
+        }
+      }
+    }
+  },
   "public": {
     "title": "Events",
     "description": "The events of the division still to come and the ones in progress, in UTC and in the division's own time.",
@@ -181,7 +246,19 @@
     "wholeDivision": "Every airport of the division",
     "organizerPage": "Their page",
     "cancelled": "This event is cancelled.",
-    "routes": "Routes"
+    "routes": "Routes",
+    "slots": "Slots",
+    "slotsOn": "On {{day}}, the times in UTC.",
+    "offBlock": "Off block (UTC)",
+    "onBlock": "On block (UTC)",
+    "slotState": "Slot",
+    "free": "Free",
+    "taken": "Taken",
+    "rotation": "Rotation {{rotation}}",
+    "leg": "leg {{leg}}"
+  },
+  "tokenAudiences": {
+    "bookings": "Reading the bookings of the events (a gate manager)"
   },
   "blocks": {
     "eventList": {
@@ -265,6 +342,31 @@
     "bookingAfterItStarts": "The bookings would open after the event starts.",
     "bookingOpensRequired": "An event with slots needs the moment its bookings open.",
     "slotsNeedAirports": "An event with slots needs at least one airport of its own.",
-    "externalUrlRequired": "An event organised by others needs the link to their page."
+    "externalUrlRequired": "An event organised by others needs the link to their page.",
+    "hasPublicSlots": "This event has public slots: delete them before switching the public slots off.",
+    "airportHasSlots": "Some slots are at this airport: delete them first.",
+    "noPublicSlots": "This event has no public slots: switch them on in its settings first.",
+    "sheetColumnMissing": "The header has no such column.",
+    "sheetColumnTwice": "The header has this column twice.",
+    "sheetEmpty": "The table has its header and no rows.",
+    "sheetTooLong": "The table has more rows than one load takes: at most a thousand.",
+    "callsignFormat": "A callsign is letters and digits, with no spaces.",
+    "aircraftTooMany": "At most ten aircraft types.",
+    "aircraftFormat": "Aircraft types are ICAO codes of two to four letters or digits, separated by /.",
+    "aircraftUnknown": "The hub does not know one of these aircraft types.",
+    "slotToItself": "A flight goes from one airport to another: this is the one it leaves.",
+    "instantFormat": "A time is written in UTC, as 2026-10-17 14:30.",
+    "onBlockBeforeOffBlock": "The on block is not after the off block.",
+    "legRange": "The place of a leg is a whole number from 1 to 99.",
+    "legWithoutRotation": "A leg needs the code of its rotation.",
+    "legMissing": "Other legs of this rotation have their place: write this one's too.",
+    "legTwice": "Another leg of this rotation has this place.",
+    "chainBroken": "This leg does not leave from where the one before it in the rotation arrives.",
+    "chainOrder": "This leg leaves before the one before it in the rotation.",
+    "chainTooClose": "This leg leaves too soon after the one before it arrives: less than the minutes between two bookings of a pilot.",
+    "slotAwayFromEvent": "Neither airport of this flight is one of the event: a slot leaves from one, or arrives at one.",
+    "slotTwice": "The event already has a slot with this callsign at this off block time.",
+    "slotNotPublic": "A private slot is not corrected as a flight.",
+    "exportDraft": "This event is a draft: it is exported once it is published."
   }
 }

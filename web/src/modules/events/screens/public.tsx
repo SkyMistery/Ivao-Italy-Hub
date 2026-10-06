@@ -1,7 +1,8 @@
-import { Badge, Button, H1, H2, Label, Lead, Select } from '@ivao/atmosphere-react';
+import { Badge, Button, H1, H2, Label, Lead, Select, Subtle } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { ExternalLink } from 'lucide-react';
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -12,6 +13,7 @@ import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { describeProblem } from '../../../shared/forms';
 import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
+import { useMoment } from '../../../shared/i18n/useMoment';
 import { ListFilter } from '../../../shared/list';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
 import {
@@ -23,7 +25,7 @@ import {
   calendarKindColour,
   type CalendarViewMode,
 } from '../../../shared/ui';
-import { publicEventQuery, type PublicEventDto } from '../api';
+import { publicEventQuery, type PublicEventDto, type PublicEventSlotDto } from '../api';
 import { EVENTS_VIEW } from '../permissions';
 import { eventsPublicSearchSchema, type EventsPublicSearch } from '../schemas';
 
@@ -38,6 +40,7 @@ import {
   type EventListData,
 } from './cards';
 import { AirportName, EventCards, EventWhen } from './EventCards';
+import { oneDay, slotGroups } from './slotList';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -196,7 +199,8 @@ export function EventPublicPage() {
 
 /**
  * One event (§7.1): the banner; the state, the kind, the title and the summary; when, in UTC and in the division's time; who
- * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; the description. To the
+ * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; its public slots (E5); the
+ * description. To the
  * staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
@@ -311,8 +315,106 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
       {event.routes.length === 0 ? null : <EventRoutes event={event} />}
 
+      {event.slots.length === 0 ? null : <EventSlots event={event} />}
+
       <ContentRenderer body={readBody(event.body)} />
     </article>
+  );
+}
+
+/**
+ * The public slots (§7.1, E5): each flight the staff published, by its off block, the legs of a rotation together by their places,
+ * free or taken — never who took it (plan §9.7). The times are UTC, the network's; when they all fall on one day, the day is said
+ * once above them. «Book» and the filters come with the bookings (E6b).
+ */
+function EventSlots({ event }: { event: PublicEventDto }) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+  const sameDay = oneDay(event.slots);
+  const time = (value: string) => moment(value, sameDay ? { date: false } : {});
+  const first = event.slots[0];
+
+  return (
+    <section className="flex flex-col gap-4" aria-label={t('events:public.slots')}>
+      <div className="flex flex-col gap-1">
+        <H2>{t('events:public.slots')}</H2>
+        {sameDay && first !== undefined ? (
+          <Subtle className="text-sm">
+            {t('events:public.slotsOn', { day: moment(first.offBlockUtc, { time: false }) })}
+          </Subtle>
+        ) : null}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-muted-foreground border-b text-left">
+              <th className="py-2 pr-3 font-medium">{t('events:slots.fields.callsign')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:slots.fields.aircraftTypes')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:slots.fields.departureIcao')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:public.offBlock')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:slots.fields.arrivalIcao')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:public.onBlock')}</th>
+              <th className="py-2 pr-3 font-medium">{t('events:slots.fields.stand')}</th>
+              <th className="py-2 font-medium">{t('events:public.slotState')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slotGroups(event.slots).map((group) =>
+              group.rotation === null ? (
+                group.slots.map((slot) => <SlotRow key={slot.id} slot={slot} time={time} />)
+              ) : (
+                <Fragment key={`rotation-${group.rotation}`}>
+                  <tr className="border-b">
+                    <th colSpan={8} scope="rowgroup" className="pt-4 pb-1 text-left font-semibold">
+                      {t('events:public.rotation', { rotation: group.rotation, count: group.slots.length })}
+                    </th>
+                  </tr>
+                  {group.slots.map((slot) => (
+                    <SlotRow key={slot.id} slot={slot} time={time} />
+                  ))}
+                </Fragment>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+/** One public slot: its flight, its times, its stand, free or taken. */
+function SlotRow({ slot, time }: { slot: PublicEventSlotDto; time: (value: string) => string }) {
+  const { t } = useTranslation();
+
+  return (
+    <tr className="border-b align-top last:border-0">
+      <td className="py-2 pr-3">
+        <span className="font-mono">{slot.callsign}</span>
+        {slot.flightNumber === null ? null : (
+          <span className="text-muted-foreground"> · {slot.flightNumber}</span>
+        )}
+        {slot.leg === null ? null : (
+          <Subtle className="text-xs">{t('events:public.leg', { leg: slot.leg })}</Subtle>
+        )}
+      </td>
+      <td className="py-2 pr-3 font-mono">{slot.aircraftTypes.join(' / ')}</td>
+      <td className="py-2 pr-3">
+        <AirportName airport={slot.departure} />
+      </td>
+      <td className="py-2 pr-3 tabular-nums">{time(slot.offBlockUtc)}</td>
+      <td className="py-2 pr-3">
+        <AirportName airport={slot.arrival} />
+      </td>
+      <td className="py-2 pr-3 tabular-nums">{time(slot.onBlockUtc)}</td>
+      <td className="py-2 pr-3">{slot.stand ?? '—'}</td>
+      <td className="py-2">
+        <Badge
+          variant="flat"
+          color={slot.taken ? 'gray' : 'green'}
+          text={t(slot.taken ? 'events:public.taken' : 'events:public.free')}
+        />
+      </td>
+    </tr>
   );
 }
 

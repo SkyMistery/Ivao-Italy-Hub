@@ -34,7 +34,8 @@
       "settings": "Impostazioni",
       "description": "Descrizione",
       "airports": "Scali",
-      "routes": "Rotte"
+      "routes": "Rotte",
+      "slots": "Slot"
     },
     "actions": {
       "publish": "Pubblica",
@@ -46,7 +47,7 @@
     },
     "delete": {
       "title": "Eliminare questo evento?",
-      "description": "L'evento, i suoi scali e le sue rotte si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
+      "description": "L'evento, i suoi scali, le sue rotte e i suoi slot si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
     },
     "body": {
       "save": "Salva la descrizione",
@@ -157,6 +158,70 @@
       "description": "La rotta esce dall'evento e dalla sua pagina."
     }
   },
+  "slots": {
+    "title": "Slot",
+    "create": "Nuovo slot",
+    "edit": "Slot",
+    "fields": {
+      "callsign": "Nominativo",
+      "flightNumber": "Numero di volo",
+      "aircraftTypes": "Tipi di aereo",
+      "departureIcao": "Da",
+      "offBlockUtc": "Off block",
+      "arrivalIcao": "A",
+      "onBlockUtc": "On block",
+      "stand": "Stand",
+      "rotationCode": "Rotazione",
+      "rotationLeg": "Tratta"
+    },
+    "hints": {
+      "callsign": "Lettere e cifre: il nominativo con cui si collega il pilota.",
+      "aircraftTypes": "Uno o più tipi di aereo che l'hub conosce, con i loro codici ICAO, separati da /: A320/A20N.",
+      "departureIcao": "Il codice ICAO di un aeroporto che l'hub conosce. Uno slot parte da uno scalo dell'evento, o arriva a uno.",
+      "arrivalIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "offBlockUtc": "L'orario stimato di off block, in UTC.",
+      "onBlockUtc": "L'orario stimato di on block, in UTC.",
+      "stand": "Lascialo vuoto finché lo stand non è deciso.",
+      "rotationCode": "Un codice qualunque: le tratte di una stessa rotazione lo condividono. Lascialo vuoto per uno slot da solo.",
+      "rotationLeg": "Il posto della tratta nella sua rotazione, da 1. Lasciato vuoto, la prima tratta di una rotazione nuova è la prima."
+    },
+    "delete": {
+      "title": "Eliminare questo slot?",
+      "description": "Lo slot esce dall'evento e dalla sua pagina."
+    },
+    "deleteFree": {
+      "trigger": "Elimina i liberi",
+      "title": "Eliminare tutti gli slot liberi?",
+      "description": "Si eliminano tutti gli slot di questo evento che nessuno ha prenotato, pubblici e privati. Uno prenotato resta.",
+      "confirm": "Eliminali",
+      "done": "Slot liberi eliminati: {{count}}."
+    },
+    "load": {
+      "open": "Incolla o carica",
+      "title": "Incolla o carica gli slot",
+      "description": "Gli slot pubblici dell'evento da una tabella copiata da un foglio di calcolo, o da un file CSV: tutto, o niente.",
+      "help": "La prima riga è l'intestazione, con questi nomi, in qualunque ordine; rotation e leg si possono lasciare fuori, e una colonna che l'hub non conosce resta com'è:",
+      "formats": "Gli orari sono in UTC, scritti 2026-10-17 14:30. I tipi di aereo si separano con /, come A320/A20N. Le tratte di una rotazione condividono il suo codice; senza il loro posto (leg), lo prendono dai loro orari.",
+      "file": "Oppure un file CSV",
+      "submit": "Carica",
+      "refused": "Non è stato caricato niente. Correggi questi punti e carica di nuovo la tabella:",
+      "cell": "Riga {{row}}, {{column}}: {{said}}",
+      "fields": {
+        "text": "La tabella",
+        "mode": "Gli slot pubblici che ci sono già"
+      },
+      "hints": {
+        "text": "Le righe copiate dal foglio di calcolo, prima l'intestazione, o il testo del file CSV scelto sopra.",
+        "mode": "Uno slot prenotato non si sostituisce mai."
+      },
+      "options": {
+        "mode": {
+          "Add": "Tienili e aggiungi questi",
+          "ReplaceFree": "Sostituisci i liberi con questi"
+        }
+      }
+    }
+  },
   "public": {
     "title": "Eventi",
     "description": "Gli eventi della divisione ancora da venire e quelli in corso, in UTC e nell'ora della divisione.",
@@ -181,7 +246,19 @@
     "wholeDivision": "Tutti gli aeroporti della divisione",
     "organizerPage": "La loro pagina",
     "cancelled": "Questo evento è annullato.",
-    "routes": "Rotte"
+    "routes": "Rotte",
+    "slots": "Slot",
+    "slotsOn": "Il {{day}}, gli orari in UTC.",
+    "offBlock": "Off block (UTC)",
+    "onBlock": "On block (UTC)",
+    "slotState": "Slot",
+    "free": "Libero",
+    "taken": "Preso",
+    "rotation": "Rotazione {{rotation}}",
+    "leg": "tratta {{leg}}"
+  },
+  "tokenAudiences": {
+    "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
   },
   "blocks": {
     "eventList": {
@@ -265,6 +342,31 @@
     "bookingAfterItStarts": "Le prenotazioni aprirebbero dopo l'inizio dell'evento.",
     "bookingOpensRequired": "Un evento con slot ha bisogno del momento in cui aprono le prenotazioni.",
     "slotsNeedAirports": "Un evento con slot ha bisogno di almeno uno scalo suo.",
-    "externalUrlRequired": "Un evento organizzato da altri ha bisogno del link alla loro pagina."
+    "externalUrlRequired": "Un evento organizzato da altri ha bisogno del link alla loro pagina.",
+    "hasPublicSlots": "Questo evento ha slot pubblici: eliminali prima di spegnere gli slot pubblici.",
+    "airportHasSlots": "Ci sono slot su questo scalo: eliminali prima.",
+    "noPublicSlots": "Questo evento non ha slot pubblici: prima accendili nelle sue impostazioni.",
+    "sheetColumnMissing": "L'intestazione non ha questa colonna.",
+    "sheetColumnTwice": "L'intestazione ha questa colonna due volte.",
+    "sheetEmpty": "La tabella ha l'intestazione e nessuna riga.",
+    "sheetTooLong": "La tabella ha più righe di quante ne prende un caricamento: al massimo mille.",
+    "callsignFormat": "Un nominativo è fatto di lettere e cifre, senza spazi.",
+    "aircraftTooMany": "Al massimo dieci tipi di aereo.",
+    "aircraftFormat": "I tipi di aereo sono codici ICAO da due a quattro lettere o cifre, separati da /.",
+    "aircraftUnknown": "L'hub non conosce uno di questi tipi di aereo.",
+    "slotToItself": "Un volo va da un aeroporto a un altro: questo è quello da cui parte.",
+    "instantFormat": "Un orario si scrive in UTC, come 2026-10-17 14:30.",
+    "onBlockBeforeOffBlock": "L'on block non viene dopo l'off block.",
+    "legRange": "Il posto di una tratta è un numero intero da 1 a 99.",
+    "legWithoutRotation": "Una tratta ha bisogno del codice della sua rotazione.",
+    "legMissing": "Altre tratte di questa rotazione hanno il loro posto: scrivi anche quello di questa.",
+    "legTwice": "Un'altra tratta di questa rotazione ha questo posto.",
+    "chainBroken": "Questa tratta non parte da dove arriva quella prima di lei nella rotazione.",
+    "chainOrder": "Questa tratta parte prima di quella prima di lei nella rotazione.",
+    "chainTooClose": "Questa tratta parte troppo presto dopo l'arrivo di quella prima: meno dei minuti fra due prenotazioni di un pilota.",
+    "slotAwayFromEvent": "Nessuno dei due aeroporti di questo volo è uno scalo dell'evento: uno slot parte da uno, o arriva a uno.",
+    "slotTwice": "L'evento ha già uno slot con questo nominativo a questo orario di off block.",
+    "slotNotPublic": "Uno slot privato non si corregge come un volo.",
+    "exportDraft": "Questo evento è una bozza: si esporta quando è pubblicato."
   }
 }

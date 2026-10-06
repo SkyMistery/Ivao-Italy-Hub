@@ -14,13 +14,16 @@ import type {
   KindPreset,
   RouteFormValues,
   SettingsFormValues,
+  SlotFormValues,
+  SlotLoadFormValues,
 } from './schemas';
 
 /**
  * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events, their
- * airports and their routes through the CRUD engine, and the three endpoints written by hand beside it — cancelling and the
- * presets of the kinds (E3a), publishing (E3b); and the page of an event, the one read of the site (E4). The list of `/events`
- * is the block `events.eventList`, read through the endpoint every block is read through.
+ * airports, their routes and their slots through the CRUD engine, and the endpoints written by hand beside it — cancelling and the
+ * presets of the kinds (E3a), publishing (E3b), loading the slots of an event from a table and deleting its free ones (E5); and the
+ * page of an event, the one read of the site (E4), which lists its public slots (E5). The list of `/events` is the block
+ * `events.eventList`, read through the endpoint every block is read through.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -30,6 +33,7 @@ const settingsKey = ['events', 'settings'] as const;
 const eventsKey = ['events', 'events'] as const;
 const airportsKey = ['events', 'airports'] as const;
 const routesKey = ['events', 'routes'] as const;
+const slotsKey = ['events', 'slots'] as const;
 const publicKey = ['events', 'public'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
@@ -39,6 +43,9 @@ export type EventRouteDto = components['schemas']['EventRouteDto'];
 export type PublicEventDto = components['schemas']['PublicEventDto'];
 export type PublicEventRouteDto = components['schemas']['PublicEventRouteDto'];
 export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto'];
+export type PublicEventSlotDto = components['schemas']['PublicEventSlotDto'];
+export type EventSlotDto = components['schemas']['EventSlotDto'];
+export type SlotLoadResultDto = components['schemas']['SlotLoadResultDto'];
 type EventWriteDto = components['schemas']['EventWriteDto'];
 
 export function settingsQuery() {
@@ -381,6 +388,135 @@ export function useDeleteRoute() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: routesKey });
       void queryClient.invalidateQueries({ queryKey: publicKey });
+    },
+  });
+}
+
+// ---- the slots of an event (E5) --------------------------------------------------------------------
+
+/** The slots of an event, a page of them, by their time at the event's airport unless a column is sorted. */
+export function slotsQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...slotsKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/slots', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+export function slotQuery(id: number) {
+  return queryOptions({
+    queryKey: [...slotsKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventSlotDto> =>
+      unwrap(await api.GET('/api/events/slots/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/** A slot in its form: the aircraft types written as the table writes them, `A320/A20N`. */
+export function slotToFormValues(slot: EventSlotDto): SlotFormValues {
+  return {
+    eventId: slot.eventId,
+    callsign: slot.callsign ?? '',
+    flightNumber: slot.flightNumber ?? '',
+    aircraftTypes: slot.aircraftTypes.join('/'),
+    departureIcao: slot.departureIcao ?? '',
+    ...(slot.offBlockUtc === null ? {} : { offBlockUtc: slot.offBlockUtc }),
+    arrivalIcao: slot.arrivalIcao ?? '',
+    ...(slot.onBlockUtc === null ? {} : { onBlockUtc: slot.onBlockUtc }),
+    stand: slot.stand ?? '',
+    rotationCode: slot.rotationCode ?? '',
+    ...(slot.rotationLeg === null ? {} : { rotationLeg: slot.rotationLeg }),
+    rowVersion: slot.rowVersion,
+  };
+}
+
+/** What the slots change shows: their tab, and the page of their event. */
+async function slotsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await queryClient.invalidateQueries({ queryKey: slotsKey });
+  await queryClient.invalidateQueries({ queryKey: publicKey });
+}
+
+/** Saves one slot, the correction of a load or one more; the server reads its airport and its direction off its airports. */
+export function useSaveSlot(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: SlotFormValues): Promise<EventSlotDto> => {
+      const text = (value: string | undefined) =>
+        value === undefined || value.trim() === '' ? null : value.trim();
+      const body = {
+        eventId: values.eventId,
+        callsign: values.callsign.trim().toUpperCase(),
+        flightNumber: text(values.flightNumber),
+        aircraftTypes: values.aircraftTypes,
+        departureIcao: values.departureIcao.trim().toUpperCase(),
+        offBlockUtc: text(values.offBlockUtc),
+        arrivalIcao: values.arrivalIcao.trim().toUpperCase(),
+        onBlockUtc: text(values.onBlockUtc),
+        stand: text(values.stand),
+        rotationCode: text(values.rotationCode),
+        rotationLeg: values.rotationLeg ?? null,
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/slots', { body }))
+        : unwrap(await api.PUT('/api/events/slots/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: async () => {
+      await slotsChanged(queryClient);
+    },
+  });
+}
+
+export function useDeleteSlot() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/slots/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void slotsChanged(queryClient);
+    },
+  });
+}
+
+/**
+ * Loads the public slots of an event from a table (§3.1): all or nothing. A refusal comes back row by row, under
+ * `rows[12].aircraft_types` — the row as the table numbers it, the column as its header names it —, and the page lists it.
+ */
+export function useLoadSlots(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: SlotLoadFormValues): Promise<SlotLoadResultDto> =>
+      unwrap(
+        await api.POST('/api/events/events/{id}/slots/load', {
+          params: { path: { id: eventId } },
+          body: { text: values.text, mode: values.mode },
+        }),
+      ),
+    onSuccess: async () => {
+      await slotsChanged(queryClient);
+    },
+  });
+}
+
+/** «Delete the free ones» (§7.2): every slot of the event nobody booked. */
+export function useDeleteFreeSlots(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<number> =>
+      unwrap(
+        await api.POST('/api/events/events/{id}/slots/delete-free', { params: { path: { id: eventId } } }),
+      ).removed,
+    onSuccess: async () => {
+      await slotsChanged(queryClient);
     },
   });
 }
