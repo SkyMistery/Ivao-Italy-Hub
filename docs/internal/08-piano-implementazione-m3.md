@@ -4257,3 +4257,94 @@ domanda a Carmine.**
     (`TrainingSessionsTests`, dalla risposta sulla #149), e questa fase non cambia il server;
   - **sul banco di anteprima** (5090/5091): la frase non è stata guardata lì, perché il banco è della sessione che coordina. L'ha
     guardata il banco di A13c.
+
+### A13d — I piccoli resti del training
+
+Tre osservazioni «per dopo» di due revisioni, che nessuna fase aveva ancora preso. Una PR sola, con il codice del modulo, i suoi test e
+i suoi documenti:
+
+1. **La pagina del percorso legge lo storico di ogni training, e non lo disegna** ([revisione di A13b sulla #197][a13d-r197]: una query
+   indicizzata per training e una risposta più lunga, e basterebbe un flag per saltarlo). La pagina dello staff del percorso di un
+   trainee non chiede lo storico; la pagina del training lo tiene.
+2. **Nessun test dello storico dal lato del capo di una FIR** (la stessa revisione). Un capo FIR legge lo storico di un training della
+   sua FIR. Di un training di un'altra FIR non legge lo storico, perché non ne legge la pagina (la regola della pagina, A11b). È un test
+   d'integrazione in `TrainingFirHeadsTests`, con le persone di quella classe.
+3. **L'online day nei conflitti delle date** ([revisione di E1 sulla #200][a13d-r200]: il commento di `TrainingSettings.cs:57` ne
+   parlava come di una cosa futura). E1 (#200) ha creato il tipo, con la chiave `online-day` confermata da Carmine sulla #200. Il
+   commento dice ora che il tipo c'è e che una divisione lo aggiunge nelle impostazioni del training. **Il predefinito resta
+   `["event"]`**: è la risposta di Carmine sulla #220 (qui sotto, «Com'è andata»).
+
+[a13d-r197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5913320300
+[a13d-r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
+[a13d-r220]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/220#issuecomment-6012216833
+[a13d-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/220#issuecomment-6012244202
+
+**Com'è andata (A13d)** (5–6 ottobre 2026, branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526). **Codice del modulo e i suoi test;
+nessun file del nucleo, nessuna migrazione, nessuna nota. Una domanda a Carmine, portata dal revisore: il predefinito di
+`conflictKinds`.**
+
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): 1 e 2 sono osservazioni della revisione dentro il modulo. Il primo giro aveva
+  preso il 3 come caso **(a)**, cioè il predefinito di un'impostazione già deciso dal design, e aveva scritto `["event", "online-day"]`.
+- **La risposta di Carmine sulla #220** (6 ottobre 2026, data in chat alla sessione master e pubblicata dal master su sua istruzione:
+  [la risposta][a13d-answer]). La riga del design si legge in due modi, e tre documenti già uniti la leggevano nell'altro: `10` (E1),
+  `HANDOFF-M4.md` e la nota `2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco`. Il revisore ha portato la domanda a Carmine
+  ([osservazioni][a13d-r220], «For the maintainer» n.1). Carmine ha risposto che **l'online day che avvisa è una configurazione della
+  divisione**: il predefinito di `conflictKinds` resta `["event"]`, e una divisione che vuole l'online day fra i tipi che avvisano un
+  trainer lo aggiunge nelle impostazioni del training, come dicono la nota di E1 e `10`. **Nessuna nota nuova**, perché vale la
+  decisione di prima. Il predefinito è tornato `["event"]`. I due test dei predefiniti e la riga di `docs/FORKING.md` sono tornati come
+  su `main`, quindi la PR non li tocca più. Resta il commento nuovo.
+- **Fatto**:
+  - **`StaffTrainings.PageAsync(training, withHistory, …)`**: lo storico si legge solo se chi chiama lo chiede, come `FindAsync` prende
+    `tracked`. Le due chiamate della pagina del training passano `true`: la lettura e la risposta di ogni passo. Il percorso
+    (`TraineePaths`) passa `false`, e ogni suo training ha lo storico vuoto: una query sul registro di audit in meno per ogni training
+    del trainee. Il DTO non cambia forma, e `History` resta una lista, vuota sul percorso. Lo dicono i commenti di `StaffTrainingDto` e
+    di `TraineePathDto`, e quindi `schema.d.ts`, rigenerato;
+  - **il test delle note riservate sul percorso** (`TrainingTraineeTests`, di A10a, esteso da A13b) affermava lo storico sul percorso.
+    Ora afferma che sul percorso non c'è, per nessun training (`Assert.All`), e che la pagina dello stesso training ha gli stessi cinque
+    passi di prima. Vale per il percorso di un altro trainee e per quello letto dal coordinator;
+  - **`TrainingFirHeadsTests.TheChiefOfAFirReadsTheHistoryOfATrainingOfTheirFirAndNoneOfAnotherFir`**: il capo della FIR assegna un
+    training della sua FIR, e l'assistant chief dell'altra FIR uno della sua. Il capo legge lo storico del suo training: la richiesta
+    scritta dall'installazione, di nessuno, e la sua assegnazione con il trainer. Sul training dell'altra FIR la pagina gli è rifiutata
+    (403) e la risposta non ha niente dello storico. L'assistant chief lo legge sulla pagina del suo;
+  - **il commento di `TrainingSettings.ConflictKinds`** dice che il tipo dell'online day c'è (`online-day`, E1), e che una divisione
+    che lo vuole fra i tipi che avvisano un trainer lo aggiunge nelle impostazioni del training: è una configurazione della divisione,
+    non un predefinito. Il predefinito resta `["event"]` (la risposta qui sopra).
+- **Trovato**:
+  1. ⚠️ **Una riga del design che si legge in due modi è una domanda per Carmine**, anche quando sembra un caso (a). È peggio se
+     documenti già uniti la leggono nell'altro modo: qui `10`, `HANDOFF-M4.md` e la nota di E1. Il primo giro di A13d li aveva visti e
+     li aveva presi per il perimetro di E1, invece di chiedere. Si chiede prima di scrivere.
+  2. **Come una divisione aggiunge l'online day**: in «Impostazioni del training», fra i tipi del calendario controllati. Il form offre
+     solo i tipi che il calendario ha (`settingsToFormValues`), e il server rifiuta una chiave che non c'è
+     (`training:errors.calendarKindUnknown`).
+  3. Il percorso non disegna lo storico (`screens/path.tsx` non lo legge): nessuno schermo cambia, e il giro completo non serve.
+- **Scostamenti dal design**: nessuno.
+- **Verificato, al primo giro** (5 ottobre 2026, in locale, una suite alla volta, con il predefinito che poi è tornato indietro; la CI
+  della PR verde su `f57a3b8`, `build-test` e `core-guard`):
+  - `dotnet build`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **1107/1107**;
+  - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 467/467** al primo giro, in 7,8 minuti;
+  - `pnpm lint`, `typecheck`, `format:check`: puliti; `pnpm i18n:check`: **795** chiavi; `pnpm test`: **605/605** in 83 file;
+  - `pnpm gen:api`: cambiano solo i commenti di `StaffTrainingDto` e di `TraineePathDto`;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**, con i worker di default (103 socket in `TIME_WAIT`):
+    - primo giro **162/163**. È caduta `closed-suggestion.spec.ts:121`, la barra della lista trascinata: `scrollTop` 0 dopo il
+      trascinamento. È una spec del nucleo, su una pagina che A13d non tocca;
+    - quella spec da sola, `--repeat-each=5`: **25/25**;
+    - secondo giro intero: **163/163**;
+  - le regole di `core-guard` in PowerShell, dal merge-base con `main` (78df526): nessun file del maintainer, nessuno del nucleo
+    (`schema.d.ts` è fra i generati ammessi), **PASS**.
+- **Verificato, dopo la risposta** (6 ottobre 2026, in locale):
+  - `dotnet build`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **1107/1107**;
+  - **le classi d'integrazione del training** (`-class 'IvaoHub.IntegrationTests.Training*'`): **75/75** in 1,9 minuti. Un primo
+    tentativo era caduto 75/75 in 10 secondi, ma per Docker spento; dopo aver riacceso Docker Desktop è passato tutto;
+  - `pnpm gen:api`: nessuna differenza. Nessun file del web cambia in questo giro;
+  - le regole di `core-guard` in PowerShell, dal merge-base (78df526): **PASS**. La PR tocca ora dieci file: `docs/FORKING.md` e i
+    due test dei predefiniti non ci sono più.
+- **Non verificato**:
+  - **la CI** della PR sulla testa nuova, che la dice la PR;
+  - **la suite d'integrazione intera e lo smoke dopo la risposta**: il giro rimette un predefinito com'è su `main` e cambia un
+    commento. Le classi del training e le unità sono state rifatte; la suite intera e lo smoke sono quelli del primo giro;
+  - **`pnpm e2e:full`**: nessuno schermo cambia (Trovato n.3);
+  - **i test nuovi sul codice di `main`**: non sono stati fatti girare sul codice di prima. Con il codice di prima il test del percorso
+    cadrebbe: sul percorso c'erano i cinque passi dove ora afferma che non c'è niente. Il test del capo FIR prova invece una regola
+    che c'era già (A11b), e passerebbe anche lì.

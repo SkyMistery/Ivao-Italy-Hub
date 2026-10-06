@@ -1,10 +1,14 @@
 # Chi è online sugli scali di un evento: una fase del nucleo, non E4
 
 **Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
-**Stato:** **Proposta**. La domanda va a Carmine con un commento sulla PR; la risposta, con il suo link, si scrive qui sotto.
+**Stato:** **decisa** (Carmine, 6 ottobre 2026, in chat al master e pubblicata sulla #223 su sua istruzione: [la risposta][ok223], autore
+`SkyMistery`): **(b), una fase del nucleo piccola, E4b**, in una PR sua con la sua nota, e la striscia la monta la prima fase del modulo
+dopo di lei; **non è urgente, e può venire dopo E5**. Non è di E4: la sessione che coordina prepara la sessione di E4b a parte, da `main`.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)** — il meccanismo c'è (il blocco `networkStats` e la `LiveStatusStrip`), ma non copre il
 caso: si estende, in una PR del nucleo a sé (§0 regola 6), mai dentro una fase del modulo. Design `09-design-m4.md` §7.1, §9.1;
 `10-piano-implementazione-m4.md` E0 («Trovato», punto 17) ed E4 punto 2.
+
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
 ## 1. Che cosa serve
 
@@ -64,5 +68,6 @@ prima fase del modulo dopo il suo merge.
 
 ## Da portare nel piano
 
-Dopo la risposta: §9.1 (riga «Live status») e §9.3 (i blocchi Data: `networkStats` con gli scali che una schermata chiede) se si fa la
-(b); `10-piano-implementazione-m4.md` (una riga E4b, e la fase del modulo che monta la striscia); il design M4 §7.1 resta com'è.
+Con la risposta (b): §9.1 (riga «Live status») e §9.3 (i blocchi Data: `networkStats` con gli scali che una schermata chiede), quando
+E4b è unita con la sua nota; `10-piano-implementazione-m4.md` (una riga E4b, e la fase del modulo che monta la striscia); il design M4
+§7.1 resta com'è.

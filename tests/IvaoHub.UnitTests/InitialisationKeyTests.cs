@@ -135,6 +135,42 @@ public sealed class InitialisationKeyTests : IDisposable
             new InitialisationOutcome(false, key.ChangesSince(null), null).Describe(["migrations"]));
     }
 
+    [Fact]
+    public void TheOutcomeSaysWhatTheLockDid()
+    {
+        // Note 2026-10-05-l-inizializzazione-sotto-blocco: held and initialised says nothing more (the wait is a step);
+        // skipped behind another start says how long it waited; initialised without the lock says so, and why.
+        var key = Key();
+        var held = new InitialisationLockReport(Held: true, TimeSpan.FromMilliseconds(1234.4), Refusal: null);
+        var refused = new InitialisationLockReport(Held: false, TimeSpan.FromSeconds(30), "not free after 30000 ms");
+
+        Assert.Equal(
+            "initialisation full: no marker",
+            new InitialisationOutcome(false, key.ChangesSince(null), null) { Lock = held }.Describe(["migrations"]));
+        Assert.Equal(
+            "initialisation skipped (marker of 0.2.5+0123456, 2026-09-28 21:14:07Z): migrations, content; waited 1234 ms for the initialisation lock",
+            new InitialisationOutcome(true, [], Stored(key)) { Lock = held }.Describe(["migrations", "content"]));
+        Assert.Equal(
+            "initialisation full: no marker; without the initialisation lock (not free after 30000 ms)",
+            new InitialisationOutcome(false, key.ChangesSince(null), null) { Lock = refused }.Describe(["migrations"]));
+    }
+
+    [Fact]
+    public void TheLockIsNamedAfterTheDatabaseAndNeverLongerThanTheDatabaseTakes()
+    {
+        // The server is shared and a lock's name is the server's: two installations must not wait for each other.
+        Assert.Equal("hub-init:hub_one", InitialisationLock.NameFor("hub_one"));
+        Assert.NotEqual(InitialisationLock.NameFor("hub_one"), InitialisationLock.NameFor("hub_two"));
+
+        // A database's name may be as long as a lock's: then a hash of it, still its own.
+        var longest = new string('a', 64);
+        var other = new string('a', 63) + "b";
+        Assert.Equal(InitialisationLock.LongestName, InitialisationLock.NameFor(longest).Length);
+        Assert.StartsWith(InitialisationLock.NamePrefix, InitialisationLock.NameFor(longest), StringComparison.Ordinal);
+        Assert.NotEqual(InitialisationLock.NameFor(longest), InitialisationLock.NameFor(other));
+        Assert.Equal(InitialisationLock.LongestName, InitialisationLock.NameFor(new string('a', 55)).Length);
+    }
+
     private InitialisationKey Key(
         BuildInfo? build = null,
         System.Reflection.Assembly[]? code = null,

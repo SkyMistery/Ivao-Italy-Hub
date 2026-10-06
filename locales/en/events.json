@@ -5,6 +5,11 @@
     "events": "Events",
     "settings": "Events settings"
   },
+  "search": {
+    "kinds": {
+      "events": "Event"
+    }
+  },
   "events": {
     "title": "Events",
     "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
@@ -71,7 +76,7 @@
       "updatedAt": "Last changed"
     },
     "hints": {
-      "kind": "A kind of the division's calendar. Choosing it sets the switches below to what the settings of the events say of that kind; change them as this event needs.",
+      "kind": "A kind of the events, as their settings list them: every kind of the calendar while they list none. Choosing it sets the switches below to what the settings say of that kind; change them as this event needs.",
       "publicSlots": "Slots the staff prepares, each with its flight, which a pilot books.",
       "privateSlots": "Slots generated from the capacity of each airport, for the flight a pilot chooses.",
       "wholeDivision": "The event is about every airport and position of the division, as an online day is: it has no airports of its own.",
@@ -211,7 +216,7 @@
       "reminderLeadHours": "Hours before the off block time the reminder is sent"
     },
     "hints": {
-      "kindPresets": "A new event of that kind starts with these switches on, and the staff can still change them on the event. The kinds are the words of the calendar. No row: a new event starts with every switch off.",
+      "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
       "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
       "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
       "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time."
@@ -242,6 +247,7 @@
   "errors": {
     "calendarKindUnknown": "This is no longer a kind of the calendar: take the row out.",
     "kindTwice": "This kind has more than one row.",
+    "kindNotOfEvents": "This is not a kind of the events: their settings list the kinds an event chooses from.",
     "endsBeforeItStarts": "The event ends before it starts.",
     "visibilityChoice": "An event is seen by everybody or by the members.",
     "slugTaken": "Another event has this address.",

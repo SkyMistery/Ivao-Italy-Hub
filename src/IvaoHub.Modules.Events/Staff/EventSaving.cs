@@ -1,19 +1,22 @@
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Staff;
 
 /// <summary>
 /// What a write of an event may refuse only by looking at other rows (design M4 §1.2), run by the CRUD engine before every
-/// save: an address no other event has, a kind the calendar has and still offers — asked when it is chosen, as a calendar
-/// entry's is, so an event whose kind the division retired since stays saveable —, and an event about the whole division with
-/// no airports of its own (§1.3). A published event stays one that could be published (E3b): a change that it could not be
-/// published with is refused, with the refusals of «Publish».
+/// save: an address no other event has, a kind the calendar has and still offers and that is a kind of the events — one with a
+/// row in the settings' presets, or any kind while they have none (note 2026-10-06-i-tipi-che-un-evento-sceglie) —, asked when
+/// it is chosen, as a calendar entry's is, so an event whose kind the division retired or took off its presets since stays
+/// saveable; and an event about the whole division with no airports of its own (§1.3). A published event stays one that could
+/// be published (E3b): a change that it could not be published with is refused, with the refusals of «Publish».
 /// </summary>
-public sealed class EventSaving(EventsDbContext database, HubDbContext hub, EventPublishing publishing)
+public sealed class EventSaving(EventsDbContext database, HubDbContext hub, EventPublishing publishing, ModuleSettingsStore settings)
 {
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(Event row, bool isNew, CancellationToken cancellationToken)
     {
@@ -37,6 +40,12 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
             if (!known.Contains(row.Kind, StringComparer.Ordinal))
             {
                 problems.Add("kind", "errors.calendar.kindUnknown");
+            }
+            else if ((await settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken)).KindPresets is { Count: > 0 } presets
+                && !presets.Any(preset => string.Equals(preset.Kind, row.Kind, StringComparison.Ordinal)))
+            {
+                // A kind of the calendar that is not one of the events': the training's, an exam, a deadline.
+                problems.Add("kind", "events:errors.kindNotOfEvents");
             }
         }
 

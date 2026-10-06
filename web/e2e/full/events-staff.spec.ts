@@ -20,13 +20,15 @@ import {
  * settings say —, gets two airports with their capacity in the generated forms of its tab, is reopened with everything it
  * was given, and is cancelled with its note in both languages; and an empty draft is deleted. And E3b's: «Publish» lists what an
  * event with slots still needs — an airport, the opening of its bookings —, and an event without them is published and announced.
- * And E4's: «Publish» waits while the settings hold changes nobody saved, which it would otherwise lose.
+ * And E4's: «Publish» waits while the settings hold changes nobody saved, which it would otherwise lose; and the form offers the
+ * kinds the settings list, once they list one.
  *
  * The bench survives between runs: the preset this spec writes is put back in a `finally`, its events are taken back, and an
  * interrupted run's leftovers — a preset of the RFO, events of its stem — are taken out at the start.
  */
 
 const events = englishEvents();
+const examWord = englishExam();
 const settingsUrl = '/api/modules/events/settings';
 const asTheClientDoes = { 'X-Requested-With': 'hub' };
 const stem = 'evt-test-e2e';
@@ -145,6 +147,17 @@ test('the coordinator of the events creates an RFO with two airports, reopens it
     });
     expect(written.status(), await written.text()).toBe(200);
 
+    // ---------------------------------------------------------------- the kinds of the events (E4)
+    // With a row written, the form offers the kinds that have one, and never the exam of the training, which has none.
+    await page.goto('/staff/events');
+    await page.getByRole('link', { name: events.events.create }).first().click();
+    await page.locator('[id="kind"]').click();
+    await expect(
+      page.getByRole('option', { name: englishSeed.seed.calendarKinds.rfo, exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('option', { name: examWord, exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
     // ---------------------------------------------------------------- the RFO, preset by its kind
     await newEvent(page, englishSeed.seed.calendarKinds.rfo, rfo);
     const eventUrl = page.url();
@@ -198,7 +211,8 @@ test('the coordinator of the events creates an RFO with two airports, reopens it
     await expect(page.getByRole('row').filter({ hasText: rfo.title.en })).toBeVisible();
 
     // ---------------------------------------------------------------- an empty draft, deleted
-    await newEvent(page, englishSeed.seed.calendarKinds.rfe, draft);
+    // Of the one kind the settings list now: an RFE has no row here, so it is not on offer.
+    await newEvent(page, englishSeed.seed.calendarKinds.rfo, draft);
     const draftId = Number(new URL(page.url()).pathname.split('/').pop());
     await page.getByRole('button', { name: englishCommon.common.delete }).first().click();
     await whileWaitingFor(page, 'DELETE', `/api/events/events/${draftId}`, async () => {
@@ -333,6 +347,15 @@ test('«Publish» waits while the settings hold changes nobody saved', async ({ 
     await context.close();
   }
 });
+
+/** The word of the training's exam in the seed: a kind of the calendar that is no event's. */
+function englishExam(): string {
+  return (
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../../locales/en/seed.json', import.meta.url)), 'utf8'),
+    ) as { seed: { calendarKinds: { exam: string } } }
+  ).seed.calendarKinds.exam;
+}
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
 function englishEvents() {

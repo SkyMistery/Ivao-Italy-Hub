@@ -35,7 +35,8 @@ namespace IvaoHub.IntegrationTests;
 /// the other way round; neither accepts a request, nor conducts;</item>
 /// <item>they read the trainings of their FIR alone: in the list, which the CRUD engine narrows, on the page of each, in the block of
 /// the requests and the trainings to assign, and on a trainee's path, which gives them neither the ladders nor the bans; the lists
-/// of the exams and of the bans, whose rows say no FIR, stay closed to them.</item>
+/// of the exams and of the bans, whose rows say no FIR, stay closed to them;</item>
+/// <item>the history of a training's changes, which travels with its page: read on one of their FIR, none of another FIR (A13d).</item>
 /// </list>
 /// The FIRs are two of the test's own, known through a directory of FIRs that knows only them, as in <c>FirTeamPermissionTests</c>:
 /// nothing is written into the shared reference data. Who writes a training without an endpoint is the identity a sign in puts in the
@@ -257,6 +258,40 @@ public sealed class TrainingFirHeadsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Equal(HttpStatusCode.Forbidden, await StatusAsync(chief, new Uri($"{BanEndpoints.Pattern}?pageSize=100", UriKind.Relative), token));
     }
 
+    /// <summary>
+    /// The history of a training's changes (A13b) from the side of a head of a FIR (A13d; the review of A13b on #197): it travels with
+    /// the page of the training, so they read it on a training of their FIR — the request the installation wrote, by nobody, and their
+    /// own assignment — and get none of a training of another FIR, whose page is not theirs (A11b); the assistant chief of that FIR
+    /// reads it there.
+    /// </summary>
+    [Fact]
+    public async Task TheChiefOfAFirReadsTheHistoryOfATrainingOfTheirFirAndNoneOfAnotherFir()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        var ours = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Accepted, Fir, token);
+        var theirs = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Accepted, OtherFir, token);
+
+        using var chief = await SignedInAsync(ChiefVid, token);
+        using var assistant = await SignedInAsync(AssistantChiefVid, token);
+        await AssignAsync(chief, ours, TrainerVid, token);
+        await AssignAsync(assistant, theirs, TrainerVid, token);
+
+        // Their FIR's: every step, with who took it, and the trainer they gave it.
+        var page = await PageAsync(chief, ours, token);
+        Assert.Equal([("Requested", (int?)null), ("Assigned", ChiefVid)], Events(page));
+        Assert.Equal(TrainerVid, page.GetProperty("history")[1].GetProperty("trainer").GetProperty("vid").GetInt32());
+
+        // Another FIR's: the page is refused, and the history with it — nothing of it in the answer.
+        using (var refused = await chief.GetAsync(Page(theirs), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+            Assert.DoesNotContain("history", await refused.Content.ReadAsStringAsync(token), StringComparison.Ordinal);
+        }
+
+        Assert.Equal([("Requested", (int?)null), ("Assigned", AssistantChiefVid)], Events(await PageAsync(assistant, theirs, token)));
+    }
+
     // ---- the API -----------------------------------------------------------------------------------------------------------
 
     private static Uri Page(long id) => new($"{StaffEndpoints.Pattern}/{id}", UriKind.Relative);
@@ -268,6 +303,14 @@ public sealed class TrainingFirHeadsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
     private static async Task<JsonElement> PageAsync(HttpClient client, long id, CancellationToken cancellationToken) =>
         await client.GetFromJsonAsync<JsonElement>(Page(id), cancellationToken);
+
+    /// <summary>What the history of a page says, step by step: what happened, and who did it — none for the hub.</summary>
+    private static List<(string?, int?)> Events(JsonElement page) =>
+    [
+        .. page.GetProperty("history").EnumerateArray().Select(entry => (
+            entry.GetProperty("event").GetString(),
+            entry.GetProperty("by").ValueKind == JsonValueKind.Null ? (int?)null : entry.GetProperty("by").GetProperty("vid").GetInt32())),
+    ];
 
     private static async Task<HttpStatusCode> StatusAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
     {

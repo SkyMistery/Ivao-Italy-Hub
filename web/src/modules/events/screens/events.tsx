@@ -39,6 +39,7 @@ import {
   cancelSchema,
   emptyEvent,
   eventEditorSearchSchema,
+  eventKinds,
   eventSchema,
   eventsSearchSchema,
   kindChoices,
@@ -142,7 +143,8 @@ export function EventsPage() {
 }
 
 /**
- * The settings of an event as a generated form. Choosing a kind presets the switches (§1.12): the form follows what is written
+ * The settings of an event as a generated form. The kinds offered are the events' — the ones with a preset, every kind of the
+ * calendar while there is none (`eventKinds`) —, and choosing one presets the switches (§1.12): the form follows what is written
  * as it is written, and when the kind changes it is drawn again with the same values and the switches the kind presets — the
  * generator is handed defaults, and draws them once. `onEdited` tells the page the moment somebody writes in it (E4): until it
  * is saved, «Publish» would publish the row as it was.
@@ -183,7 +185,9 @@ function EventForm({
   return (
     <SchemaForm
       key={drawn.key}
-      schema={eventSchema({ kinds: kindChoices(calendar, event === null ? [] : [event]) })}
+      schema={eventSchema({
+        kinds: kindChoices(eventKinds(calendar, presets, event?.kind), event === null ? [] : [event]),
+      })}
       defaults={drawn.values}
       locales={locales}
       labels="events:events"

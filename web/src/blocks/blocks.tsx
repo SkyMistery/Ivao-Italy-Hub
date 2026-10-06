@@ -1253,7 +1253,6 @@ interface NetworkStatsData {
 
 export function NetworkStatsBlock({ data }: BlockComponentProps) {
   const { t } = useTranslation();
-  const moment = useMoment();
   const answer = data as NetworkStatsData | null | undefined;
 
   if (answer === undefined || answer === null) {
@@ -1294,10 +1293,6 @@ export function NetworkStatsBlock({ data }: BlockComponentProps) {
           ))}
         </ul>
       )}
-
-      <p className="text-muted-foreground text-xs">
-        {t('blocks.networkStats.updatedAt', { at: moment(answer.updatedAt) })}
-      </p>
     </div>
   );
 }

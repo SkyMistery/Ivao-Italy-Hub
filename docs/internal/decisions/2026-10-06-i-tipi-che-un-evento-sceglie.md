@@ -1,13 +1,18 @@
 # I tipi che il form di un evento offre (E4)
 
 **Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
-**Stato:** **Proposta**. La domanda va a Carmine con un commento sulla PR — la terza, accanto alle due di
-`2026-10-06-il-pubblico-degli-eventi` e `2026-10-06-chi-e-online-sugli-scali-di-un-evento` —, e la risposta, con il suo link, si
-scrive qui sotto. **Il codice non cambia finché non risponde.**
+**Stato:** **decisa** (Carmine, 6 ottobre 2026, in chat al master e pubblicata sulla #223 su sua istruzione: [la risposta][ok223], autore
+`SkyMistery`): **come raccomandato, la strada A** — il form offre i tipi che hanno una riga in `kindPresets`, e tutti quando non ce n'è
+nessuna. La domanda era andata a lui sulla #223 ([la terza domanda][q223]), accanto a quelle di `2026-10-06-il-pubblico-degli-eventi` e
+`2026-10-06-chi-e-online-sugli-scali-di-un-evento`. Carmine lasciava scegliere dove farla, «on this pull request or in the next phase»:
+**è fatta sulla #223**, così E5 parte pulita (§5).
 **Regola applicata:** `CLAUDE.md` §5. Le note già unite leggono la riga del design nell'altro modo — il form sceglie fra **tutti** i
 tipi del calendario —, quindi restringere la scelta è una domanda al maintainer, non un caso (a); e nessun dato, così com'è, dice quali
 tipi sono degli eventi (§2). Design `09-design-m4.md` §1.2, §1.12, §12; note `2026-09-29-i-tipi-di-evento`,
 `2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco`, `2026-10-01-la-lettura-dei-preset-dei-tipi`.
+
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
+[q223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6015510834
 
 ## 1. Che cosa si è visto
 
@@ -39,9 +44,6 @@ tipi sono degli eventi (§2). Design `09-design-m4.md` §1.2, §1.12, §12; note
 | C | Un segno sui tipi del calendario (di quale modulo è un tipo), nel nucleo | una colonna di `cms_calendar_kinds` e il suo campo nel back office | un posto solo, anche per gli altri moduli (Training potrebbe offrire solo i suoi) | una fase del nucleo con la sua nota, per un form |
 | D | Lasciare com'è | niente | quello che dicono le note unite | lo staff vede Esame e Scadenza fra i tipi di un evento |
 
-⚠️ Con A, **sul banco e sulla prova la scelta resta com'è** finché le impostazioni degli eventi non hanno righe: le scrive la divisione
-(o una spec), non il codice — nessun tipo nel codice, test «XX».
-
 ## 4. La domanda a Carmine
 
 > Il form di un evento offre ogni tipo del calendario, anche Training, Esame, Tour, Riunione e Scadenza, come dicono le note di E1 ed
@@ -50,13 +52,27 @@ tipi sono degli eventi (§2). Design `09-design-m4.md` §1.2, §1.12, §12; note
 > cambia, e tiene quello di un evento già scritto; la divisione aggiunge una riga per l'evento libero, con tutto spento. Alternative:
 > un'impostazione nuova (B), un segno sui tipi del calendario nel nucleo (C), lasciare com'è (D). Confermi A?
 
-## 5. Che cosa si tocca, se è A
+## 5. Che cosa si è toccato (la strada A, sulla #223)
 
-Solo il modulo, su questo branch: il controllo del tipo al salvataggio dell'evento (`Staff/EventSaving.cs`, con una chiave sua), la scelta
-del tipo nel form (`schemas.ts`, `kindChoices` con i preset; `screens/events.tsx`, che i preset li legge già), l'aiuto di `kindPresets`
-nelle due lingue, i test (integrazione, vitest, la spec del form). Nessun file del nucleo, nessuna migrazione, nessuna impostazione nuova.
+Solo il modulo, nessun file del nucleo, nessuna migrazione, nessuna impostazione nuova:
+
+- **Il server** (`Staff/EventSaving.cs`): un tipo del calendario che non ha una riga, mentre le righe ci sono, è rifiutato sul campo con
+  `events:errors.kindNotOfEvents` — su un evento nuovo o quando il tipo cambia, come il controllo del calendario che c'era già, quindi un
+  evento già scritto tiene il suo tipo anche se la divisione toglie la riga.
+- **Il form** (`schemas.ts`, `eventKinds`; `screens/events.tsx`): i tipi del calendario con una riga, nell'ordine del calendario; tutti
+  quando le righe non ci sono; e il tipo dell'evento stesso, con la sua parola, se non ha più la riga.
+- **Le parole**: l'aiuto di `kindPresets` («i tipi fra cui un evento sceglie»; senza nessuna riga, tutti; un tipo con tutto spento ha
+  comunque bisogno della sua riga) e quello del campo «Tipo di evento», nelle due lingue; la chiave nuova del rifiuto.
+- **I test**: `EventsStaffTests.AnEventChoosesAKindOfTheEventsAndAnyKindWhileTheSettingsListNone` (integrazione: senza righe un tipo
+  qualsiasi del calendario; con una riga, il tipo senza riga rifiutato su un evento nuovo e sul cambio, quello con la riga preso, l'evento
+  già scritto salvato di nuovo con il suo tipo; un tipo che il calendario non ha, rifiutato come prima); `eventForm.test.ts` (vitest,
+  `eventKinds`); la spec `web/e2e/full/events-staff.spec.ts`, dove il form offre RFO, che ha la riga, e non l'Esame del training, e la
+  bozza da eliminare è un RFO, perché l'RFE non ha la riga in quel test.
+
+⚠️ **Sul banco e sulla prova la scelta resta com'è** finché le impostazioni degli eventi non hanno righe: le scrive la divisione — per IT
+cinque, RFE, RFO, MSE, Online Day e l'evento libero con tutto spento —, non il codice.
 
 ## Da portare nel piano
 
-Dopo la risposta: il design M4 §1.2 e §1.12 (che cosa dice una riga di `kindPresets`), letti con la nota `2026-09-29-i-tipi-di-evento`
-§2.
+Con la risposta: il design M4 §1.2 e §1.12 (una riga di `kindPresets` è un tipo degli eventi, con i suoi interruttori; senza nessuna riga
+un evento sceglie fra tutti i tipi del calendario), letti con la nota `2026-09-29-i-tipi-di-evento` §2.

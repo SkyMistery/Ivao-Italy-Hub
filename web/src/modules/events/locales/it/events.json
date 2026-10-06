@@ -4,6 +4,11 @@
     "events": "Eventi",
     "settings": "Impostazioni degli eventi"
   },
+  "search": {
+    "kinds": {
+      "events": "Evento"
+    }
+  },
   "events": {
     "title": "Eventi",
     "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e pubblicarli, annullarli o eliminarli.",
@@ -70,7 +75,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "kind": "Un tipo del calendario della divisione. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni degli eventi per quel tipo; cambiali come serve a questo evento.",
+      "kind": "Un tipo degli eventi, come li elencano le loro impostazioni: tutti i tipi del calendario finché non ne elencano nessuno. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni per quel tipo; cambiali come serve a questo evento.",
       "publicSlots": "Slot preparati dallo staff, ognuno con il suo volo, che un pilota prenota.",
       "privateSlots": "Slot generati dalla capacità di ogni scalo, per il volo che il pilota sceglie.",
       "wholeDivision": "L'evento riguarda tutti gli aeroporti e le postazioni della divisione, come un online day: non ha scali suoi.",
@@ -210,7 +215,7 @@
       "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria"
     },
     "hints": {
-      "kindPresets": "Un evento nuovo di quel tipo nasce con questi interruttori accesi, e lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento nuovo nasce con tutto spento.",
+      "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
       "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
       "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
       "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block."
@@ -241,6 +246,7 @@
   "errors": {
     "calendarKindUnknown": "Questo non è più un tipo del calendario: togli la riga.",
     "kindTwice": "Questo tipo ha più di una riga.",
+    "kindNotOfEvents": "Questo non è un tipo degli eventi: le loro impostazioni elencano i tipi fra cui un evento sceglie.",
     "endsBeforeItStarts": "L'evento finisce prima di cominciare.",
     "visibilityChoice": "Un evento lo vedono tutti, o i membri.",
     "slugTaken": "Un altro evento ha questo indirizzo.",

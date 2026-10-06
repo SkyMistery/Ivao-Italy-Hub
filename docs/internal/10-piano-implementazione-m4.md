@@ -997,8 +997,8 @@ rotta, il visitatore la vede.
      un capo sia uno scalo dell'evento; ordine per partenza e arrivo (poi l'ordine di scrittura: «Dopo la revisione», punto 8).
   5. **Eliminare un evento elimina le sue rotte**, con l'audit: il guardiano chiede `EventRoutes.Edit` a chi elimina (EC ed EAC ce l'hanno).
   6. **`/events` legge il blocco** invece di un endpoint suo (punto 4): i tour e il training hanno un endpoint della lista accanto al loro
-     blocco; qui il precedente è `/calendar`. Endpoint a mano di E4: **una lettura composta**, la pagina dell'evento (pubblica); le rotte
-     sono `MapCrud`.
+     blocco; qui il precedente è `/calendar`. Endpoint a mano di E4: **una lettura composta**, la pagina dell'evento (pubblica) —
+     accettata da Carmine come scostamento dichiarato dal design §7.2 («Le risposte di Carmine», sotto) —; le rotte sono `MapCrud`.
   7. **Le schede non hanno l'apertura delle prenotazioni** né la pagina gli slot: arrivano con E5 ed E6b. La pagina non ha la mappa delle
      rotte (`RouteMap` c'è nel nucleo, il design non la chiede).
   8. **Il punto 5 di «Fatto»** non era nel perimetro di E4: lo chiedeva l'⚠️ di E3b, piccolo e nel modulo; è una commit a sé.
@@ -1079,8 +1079,37 @@ rotta, il visitatore la vede.
     primo giro — le sei prove degli eventi soltanto, non il giro intero — sul banco `http://127.0.0.1:5124` ricreato (`ivaohub_e2e_e4`
     tolto prima), dietro il lock di Mailpit. Una commit per punto (4, 5, 6, 7, 8); quelle dei punti 6, 7 e 8 toccano gli stessi file,
     divise per blocchi del diff, e **non sono state compilate una per una**: l'ultima è il codice provato.
+- **La CI della seconda spinta** (`94ca28b`): verde, `build-test` (25 minuti e 42 secondi) e `core-guard`.
+- **Le risposte di Carmine** ([sulla #223][ok223], 6 ottobre 2026, autore `SkyMistery`, pubblicata dal master su sua istruzione): **sì a
+  tutte e quattro** — le cinque letture del pubblico come sono scritte; «chi è online sugli scali» è la fase del nucleo **E4b**, in una PR
+  sua con la sua nota, non urgente, che può venire dopo E5 e che la prima fase del modulo dopo di lei monta (non è di E4: la sessione che
+  coordina la prepara da `main`); la seconda lettura scritta a mano **accettata**, uno scostamento dichiarato dal design §7.2, contato per
+  il piano §16.6; i tipi di un evento come raccomandato. Le tre note sono «decise», con il link. Carmine lasciava scegliere dove fare i
+  tipi, su questa PR o nella fase dopo: **qui**, perché E5 parta pulita, e la #223 lo dice.
+- **Dopo le risposte**, 6 ottobre 2026:
+  1. **`main` unito** (`90c0937`): la #222 (la parola degli eventi nella ricerca, `search.kinds.events`, tenuta nelle due lingue del
+     modulo e nelle copie alla radice), la #218 e la #220; nessun conflitto.
+  2. **I tipi degli eventi** (nota `i-tipi-che-un-evento-sceglie`, §5): il form offre i tipi del calendario con una riga di
+     `kindPresets`, tutti finché non ce n'è nessuna, e il tipo dell'evento stesso se ha perso la riga (`eventKinds` in `schemas.ts`); il
+     server rifiuta gli altri su un evento nuovo o al cambio di tipo, con `events:errors.kindNotOfEvents` (`EventSaving.PrepareAsync`,
+     accanto al controllo del calendario e come lui solo quando il tipo si sceglie); gli aiuti di `kindPresets` e del campo «Tipo di
+     evento» dicono la regola. Test: `EventsStaffTests.AnEventChoosesAKindOfTheEventsAndAnyKindWhileTheSettingsListNone` (integrazione),
+     `eventForm.test.ts` (+1), e nella spec `events-staff` il form che offre RFO, che ha la riga, e non l'Esame; la bozza da eliminare di
+     quella spec ora è un RFO, perché in quel test l'RFE non ha la riga e il form non lo offrirebbe più.
+  3. **Al contrario**: con la regola spenta (`Count: > 99` invece di `> 0`), il test dei tipi cade — l'evento `exam` è creato invece di
+     essere rifiutato —; rimessa e ricompilato.
+  4. ⚠️ **Docker Desktop si era fermato**: al primo giro le tre classi degli eventi sono cadute tutte in 10 secondi
+     (`DockerUnavailableException`, nessun test eseguito davvero); riavviato Docker Desktop, 15/15. Nessun test cambiato per questo.
+  5. **Verificato di nuovo** (sul codice con `main` e i tipi): `dotnet build` della soluzione senza avvisi e `dotnet format
+     --verify-no-changes` sui due file C# toccati; unità **1112/1112**; **integrazione intera senza filtro 481/481** (5,7 minuti), le tre
+     classi degli eventi da sole 15/15; `pnpm i18n:sync` rifatto e `pnpm gen:api` senza differenze; `pnpm lint`, `typecheck`,
+     `format:check`, `i18n:check` verdi; `pnpm test` **624 in 85 file**; `pnpm e2e` **171/171** al primo giro (`--workers=2`, dietro il
+     lock dello smoke); **`pnpm e2e:full` 55/55 al primo giro** (11,2 minuti, il giro intero) sul banco `http://127.0.0.1:5124` ricreato
+     (`ivaohub_e2e_e4` tolto prima), dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `584eb72`:
+     **PASS** (nessun file del maintainer; del nucleo i tre test condivisi; quattro note nuove).
 
 [r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
 ### E5 — Gli slot pubblici e l'esportazione
 
