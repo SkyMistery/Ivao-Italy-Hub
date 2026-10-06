@@ -184,7 +184,8 @@ public sealed class StatsProvider(HubDbContext database, IClock clock) : IDataBl
 /// event would go stale with it. The schema is what may be <i>saved</i>; this is what may be
 /// <i>asked</i>. A list is the airports asked even when nothing in it is one — no airport, nobody
 /// counted —, never the division; and no more than <see cref="DataBlockScope.MaxItems"/> of them,
-/// because a block is not an export.</para>
+/// because a block is not an export, counted after the cleaning so that entries that are no airport
+/// never push a real one out (<see cref="IvaoAirspace.OfAirports"/>).</para>
 /// </summary>
 public sealed class NetworkStatsProvider(IIvaoApiClient network, IFirDirectory airspace) : IDataBlockProvider
 {
@@ -211,7 +212,7 @@ public sealed class NetworkStatsProvider(IIvaoApiClient network, IFirDirectory a
         CancellationToken cancellationToken)
     {
         var area = BlockProps.ReadTexts(props, "airports") is { } airports
-            ? IvaoAirspace.OfAirports(airports.Take(DataBlockScope.MaxItems))
+            ? IvaoAirspace.OfAirports(airports, DataBlockScope.MaxItems)
             : await airspace.GetAirspaceAsync(cancellationToken);
         var status = await network.GetNetworkStatusAsync(area, cancellationToken);
 

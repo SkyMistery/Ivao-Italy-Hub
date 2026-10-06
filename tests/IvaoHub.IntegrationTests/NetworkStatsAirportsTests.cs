@@ -91,6 +91,21 @@ public sealed class NetworkStatsAirportsTests(MariaDbFixture mariaDb) : IAsyncLi
     }
 
     [Fact]
+    public async Task EntriesThatAreNoAirportDoNotPushOneThatIsPastTheCeiling()
+    {
+        // The block counts at most fifty airports, counted after the cleaning (review of E4b, #226,
+        // point 3): fifty entries that are no airport in front of Frankfurt leave Frankfurt counted.
+        var token = TestContext.Current.CancellationToken;
+        using var anonymous = _factory.CreateApiClient();
+
+        var answer = await AskAsync(anonymous, [.. Enumerable.Repeat("NOT-AN-AIRPORT", DataBlockScope.MaxItems), "EDDF"], token);
+
+        Assert.Equal(1, Figure(answer, NetworkStatsProvider.DivisionAtc));
+        Assert.Equal(2, Figure(answer, NetworkStatsProvider.DivisionPilots));
+        Assert.Equal(["EDDF_TWR"], Positions(answer));
+    }
+
+    [Fact]
     public async Task WithoutAirportsTheAnswerIsTheDivisionsAsItWas()
     {
         // The strip on top of every public page asks without airports, and must read what it read

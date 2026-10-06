@@ -31,20 +31,31 @@ public sealed class IvaoAirspace
     /// <summary>
     /// The airports a screen asks about and nothing else (E4b): no centre, so a controller counts only
     /// on one of them, and a sector above them does not. Written as the snapshot writes them — trimmed,
-    /// upper case, once each —, and only codes as wide as an airport the snapshot can hold: a longer one
-    /// names no airport anybody flies to, and would only lengthen the key.
+    /// upper case, once each —, and only what can be an airport of the snapshot: one to four letters or
+    /// digits. Anything else names no airport anybody flies to, would only lengthen the key, and could
+    /// carry the comma the key is joined with — <c>A,B</c> and <c>C</c> would read as <c>A</c> and
+    /// <c>B,C</c>.
+    /// <para>At most <paramref name="limit"/> of them, counted <b>after</b> the cleaning, in the order
+    /// asked: entries that are no airport, or one airport asked twice, never push a real one out.</para>
     /// </summary>
-    public static IvaoAirspace OfAirports(IEnumerable<string> airports)
+    public static IvaoAirspace OfAirports(IEnumerable<string> airports, int limit)
     {
         ArgumentNullException.ThrowIfNull(airports);
+        ArgumentOutOfRangeException.ThrowIfNegative(limit);
 
         var codes = airports
             .Select(airport => airport.Trim().ToUpperInvariant())
-            .Where(airport => airport.Length is > 0 and <= IvaoAtcPosition.MaxAirportLength)
+            .Where(IsAirportCode)
+            .Distinct(StringComparer.Ordinal)
+            .Take(limit)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         return new IvaoAirspace(new HashSet<string>(StringComparer.OrdinalIgnoreCase), codes);
     }
+
+    /// <summary>As wide as <c>ref_ivao_airports.icao</c>, and letters and digits only.</summary>
+    private static bool IsAirportCode(string code) =>
+        code.Length is > 0 and <= IvaoAtcPosition.MaxAirportLength && code.All(char.IsAsciiLetterOrDigit);
 
     /// <summary>ICAO of the FIRs, upper case.</summary>
     public IReadOnlySet<string> Centers { get; }

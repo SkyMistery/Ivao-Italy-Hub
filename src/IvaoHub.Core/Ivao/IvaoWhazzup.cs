@@ -157,12 +157,22 @@ public static class IvaoWhazzup
 /// keeps for a minute, <b>one for every airspace that asks</b> (E4b): since a screen names the
 /// airports it wants counted, the airspaces are as many as anybody cares to invent, and a reading
 /// for each would turn every one of them into a download of the whole payload.
-/// <para>Each airspace is counted from it once (<see cref="For"/>), by its
-/// <see cref="IvaoAirspace.CacheKey"/>, and its answer goes when the reading goes: no answer is
-/// ever older than the reading it came from.</para>
+/// <para>Each airspace is counted from it (<see cref="For"/>) by its
+/// <see cref="IvaoAirspace.CacheKey"/>, and the answers of the first <see cref="MaxKeptAnswers"/>
+/// are kept with it and go when the reading goes: no answer is ever older than the reading it came
+/// from, and no set of airports anybody invents makes a reading hold more.</para>
 /// </summary>
 public sealed class IvaoNetworkPicture
 {
+    /// <summary>
+    /// How many airspaces a reading keeps the answer of: the division's and those of the events of a
+    /// day, with room to spare. Past it an airspace is counted every time it asks — a twentieth of a
+    /// millisecond, measured —, because the airports are a parameter of an anonymous request, and
+    /// whoever invents sets of them must not grow what a reading holds for its minute (review of E4b,
+    /// #226).
+    /// </summary>
+    public const int MaxKeptAnswers = 16;
+
     private readonly ConcurrentDictionary<string, IvaoNetworkStatus> _answers = new(StringComparer.Ordinal);
 
     internal IvaoNetworkPicture(
@@ -197,7 +207,10 @@ public sealed class IvaoNetworkPicture
     /// <summary>Where every flight plan starts and ends, and nothing else of the pilot.</summary>
     internal IReadOnlyList<IvaoFlightEnds> Flights { get; }
 
-    /// <summary>Who of this reading is in the airspace, counted the first time an airspace asks.</summary>
+    /// <summary>
+    /// Who of this reading is in the airspace: the answer kept for it, or counted now — and kept while
+    /// fewer than <see cref="MaxKeptAnswers"/> are.
+    /// </summary>
     public IvaoNetworkStatus For(IvaoAirspace airspace)
     {
         ArgumentNullException.ThrowIfNull(airspace);
@@ -209,7 +222,17 @@ public sealed class IvaoNetworkPicture
             return IvaoNetworkStatus.Unknown;
         }
 
-        return _answers.GetOrAdd(airspace.CacheKey, _ => IvaoWhazzup.Count(this, airspace));
+        if (_answers.TryGetValue(airspace.CacheKey, out var kept))
+        {
+            return kept;
+        }
+
+        var counted = IvaoWhazzup.Count(this, airspace);
+
+        // The first answer kept is the one every later reader gets. The ceiling is checked before the
+        // answer is added, so requests arriving in the same instant may pass it by as many as they are,
+        // never more.
+        return _answers.Count < MaxKeptAnswers ? _answers.GetOrAdd(airspace.CacheKey, counted) : counted;
     }
 }
 

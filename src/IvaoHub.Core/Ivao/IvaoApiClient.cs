@@ -402,7 +402,7 @@ public sealed class IvaoApiClient(
         // One reading a minute for every airspace that asks, never one per airspace (E4b): a screen
         // names the airports it wants counted, so the airspaces are as many as anybody cares to
         // invent, and each one of them must not cost a download of the whole picture. The reading
-        // counts each airspace once, and its answers go with it.
+        // counts each airspace, keeps the answers of a few, and they go with it.
         if (!cache.TryGetValue(NetworkPictureKey, out IvaoNetworkPicture? picture) || picture is null)
         {
             // No token: the picture of who is connected is the public one, and an installation that

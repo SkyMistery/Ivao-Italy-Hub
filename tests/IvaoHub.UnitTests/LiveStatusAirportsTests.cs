@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Ivao;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,6 +19,9 @@ namespace IvaoHub.UnitTests;
 /// </summary>
 public sealed class LiveStatusAirportsTests
 {
+    /// <summary>The most airports the block counts for a screen, as `networkStats` asks them.</summary>
+    private const int Limit = DataBlockScope.MaxItems;
+
     /// <summary>
     /// A network of an evening, written to tell the airspaces apart: a centre and two airports of one
     /// FIR, an airport elsewhere, and flights between them.
@@ -87,14 +91,28 @@ public sealed class LiveStatusAirportsTests
         // Before E4b the key named only the centres and the two counts, so any two sets of two airports
         // without a centre were "0/2/": the second event to ask would have read the first one's answer
         // for a minute.
-        var rome = IvaoAirspace.OfAirports(["LIRF", "LIRA"]);
-        var milan = IvaoAirspace.OfAirports(["LIMC", "LIML"]);
+        var rome = IvaoAirspace.OfAirports(["LIRF", "LIRA"], Limit);
+        var milan = IvaoAirspace.OfAirports(["LIMC", "LIML"], Limit);
 
         Assert.NotEqual(rome.CacheKey, milan.CacheKey);
         Assert.Equal("0/2/LIRA,LIRF", rome.CacheKey);
 
         // The same airports are the same airspace however a screen writes them.
-        Assert.Equal(rome.CacheKey, IvaoAirspace.OfAirports([" lira", "LIRF", "lirf "]).CacheKey);
+        Assert.Equal(rome.CacheKey, IvaoAirspace.OfAirports([" lira", "LIRF", "lirf "], Limit).CacheKey);
+    }
+
+    [Fact]
+    public void ACommaNeverMakesTwoSetsOneKey()
+    {
+        // The key joins the airports with a comma, so a code carrying one would make two sets read the
+        // same: "A,B" with "C", and "A" with "B,C", are both "A,B,C" (review of E4b, #226, point 4). A
+        // code is letters and digits only, so neither comma survives.
+        var first = IvaoAirspace.OfAirports(["A,B", "C"], Limit);
+        var second = IvaoAirspace.OfAirports(["A", "B,C"], Limit);
+
+        Assert.NotEqual(first.CacheKey, second.CacheKey);
+        Assert.Equal(["C"], first.Airports.Order(StringComparer.Ordinal));
+        Assert.Equal(["A"], second.Airports.Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -115,12 +133,35 @@ public sealed class LiveStatusAirportsTests
     [Fact]
     public void OnlyCodesAnAirportCanHaveAreKept()
     {
-        // As the snapshot writes an airport: trimmed, upper case, once, and no wider than
-        // `ref_ivao_airports.icao`. A longer code names no airport anybody flies to.
-        var airspace = IvaoAirspace.OfAirports(["lirf", " LIRF ", "", "   ", "LIRF_TWR", "NOT-AN-AIRPORT", "K1G4"]);
+        // As the snapshot writes an airport: trimmed, upper case, once, no wider than
+        // `ref_ivao_airports.icao`, and letters and digits only. Anything else names no airport anybody
+        // flies to: a longer code, a callsign, a code with a sign or a letter from outside the alphabet.
+        var airspace = IvaoAirspace.OfAirports(
+            ["lirf", " LIRF ", "", "   ", "LIRF_TWR", "NOT-AN-AIRPORT", "LI-F", "LI F", "LIRÉ", "K1G4"],
+            Limit);
 
         Assert.Equal(["K1G4", "LIRF"], airspace.Airports.Order(StringComparer.Ordinal));
         Assert.Empty(airspace.Centers);
+    }
+
+    [Fact]
+    public void TheCeilingOfTheAirportsIsCountedAfterTheCleaning()
+    {
+        // Fifty entries that are no airport, and one airport asked over and over, never push a real one
+        // out: the ceiling counts what is left after the cleaning, in the order asked (review of E4b,
+        // #226, point 3).
+        var junkFirst = IvaoAirspace.OfAirports([.. Enumerable.Repeat("NOT-AN-AIRPORT", Limit), "EDDF"], Limit);
+        Assert.Equal(["EDDF"], junkFirst.Airports.Order(StringComparer.Ordinal));
+
+        var askedTwice = IvaoAirspace.OfAirports([.. Enumerable.Repeat("lirf", Limit), "EDDF"], 2);
+        Assert.Equal(["EDDF", "LIRF"], askedTwice.Airports.Order(StringComparer.Ordinal));
+
+        // And past the ceiling, the first ones asked are the ones kept.
+        var many = IvaoAirspace.OfAirports([.. Enumerable.Range(0, Limit + 10).Select(index => $"Q{index:000}")], Limit);
+        Assert.Equal(Limit, many.Airports.Count);
+        Assert.Contains("Q000", many.Airports);
+        Assert.Contains($"Q{Limit - 1:000}", many.Airports);
+        Assert.DoesNotContain($"Q{Limit:000}", many.Airports);
     }
 
     [Fact]
@@ -132,7 +173,7 @@ public sealed class LiveStatusAirportsTests
         using var document = JsonDocument.Parse(Whazzup);
         var picture = IvaoWhazzup.Read(document.RootElement);
 
-        var rome = picture.For(IvaoAirspace.OfAirports(["LIRF"]));
+        var rome = picture.For(IvaoAirspace.OfAirports(["LIRF"], Limit));
 
         Assert.Equal(["LIRF_APP", "LIRF_TWR"], rome.Positions.Select(position => position.Callsign));
         Assert.Equal(2, rome.AreaAtc);
@@ -144,15 +185,52 @@ public sealed class LiveStatusAirportsTests
         Assert.Equal(new DateTime(2026, 10, 6, 16, 0, 0, DateTimeKind.Utc), rome.UpdatedAt);
 
         // Frankfurt is nobody's division here, and counts all the same when a screen asks for it.
-        var frankfurt = picture.For(IvaoAirspace.OfAirports(["EDDF"]));
+        var frankfurt = picture.For(IvaoAirspace.OfAirports(["EDDF"], Limit));
         Assert.Equal(["EDDF_TWR"], frankfurt.Positions.Select(position => position.Callsign));
         Assert.Equal(2, frankfurt.AreaPilots);
 
         // A list with no airport in it counts nobody.
-        var nowhere = picture.For(IvaoAirspace.OfAirports([]));
+        var nowhere = picture.For(IvaoAirspace.OfAirports([], Limit));
         Assert.Equal(0, nowhere.AreaAtc);
         Assert.Equal(0, nowhere.AreaPilots);
         Assert.Equal(4, nowhere.NetworkAtc);
+    }
+
+    [Fact]
+    public void AReadingKeepsTheAnswersOfAFewAirspacesAndCountsTheRestEveryTime()
+    {
+        // The block is anonymous and a screen names the airports, so a caller can invent a set of them
+        // per request: a reading keeps the answers of the first few airspaces and counts every other one
+        // each time it asks, so nothing anybody invents grows what it holds (review of E4b, #226, point 2).
+        using var document = JsonDocument.Parse(Whazzup);
+        var picture = IvaoWhazzup.Read(document.RootElement);
+
+        var kept = picture.For(Division());
+
+        // Ten times as many sets as a reading keeps, each a code of its own (Q000, Q001…).
+        var inventedSets = IvaoNetworkPicture.MaxKeptAnswers * 10;
+        for (var invented = 0; invented < inventedSets; invented++)
+        {
+            picture.For(IvaoAirspace.OfAirports([$"Q{invented:000}"], Limit));
+        }
+
+        // The first airspaces asked keep their answer: the same one, counted once.
+        Assert.Same(kept, picture.For(Division()));
+        var firstInvented = IvaoAirspace.OfAirports(["Q000"], Limit);
+        Assert.Same(picture.For(firstInvented), picture.For(firstInvented));
+
+        // Past the ceiling an airspace is counted every time it asks — right, and never kept.
+        var rome = IvaoAirspace.OfAirports(["LIRF"], Limit);
+        var once = picture.For(rome);
+        var again = picture.For(rome);
+
+        Assert.NotSame(once, again);
+        Assert.Equal(["LIRF_APP", "LIRF_TWR"], again.Positions.Select(position => position.Callsign));
+        Assert.Equal(2, again.AreaPilots);
+
+        // Nor does the last one invented find an answer kept for it.
+        var lastInvented = IvaoAirspace.OfAirports([$"Q{inventedSets - 1:000}"], Limit);
+        Assert.NotSame(picture.For(lastInvented), picture.For(lastInvented));
     }
 
     [Fact]
@@ -168,12 +246,12 @@ public sealed class LiveStatusAirportsTests
         var client = Create(handler, cache);
 
         var division = await client.GetNetworkStatusAsync(Division(), token);
-        var rome = await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["LIRF"]), token);
-        var milan = await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["LIMC"]), token);
+        var rome = await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["LIRF"], Limit), token);
+        var milan = await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["LIMC"], Limit), token);
 
         for (var invented = 0; invented < 20; invented++)
         {
-            await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports([$"X{invented:000}"]), token);
+            await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports([$"X{invented:000}"], Limit), token);
         }
 
         Assert.Equal(1, handler.Calls);
@@ -190,8 +268,9 @@ public sealed class LiveStatusAirportsTests
         Assert.Equal(0, milan.AreaAtc);
         Assert.Equal(2, milan.AreaPilots);
 
-        // And the same airspace asked again is the same answer, counted once.
-        Assert.Same(rome, await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["lirf"]), token));
+        // And the same airspace asked again is the same answer, counted once: the three were among the
+        // first airspaces the reading kept an answer for.
+        Assert.Same(rome, await client.GetNetworkStatusAsync(IvaoAirspace.OfAirports(["lirf"], Limit), token));
         Assert.Same(division, await client.GetNetworkStatusAsync(Division(), token));
     }
 }
