@@ -102,9 +102,11 @@ public static class BookingsExport
             return Problem(StatusCodes.Status409Conflict, "events:errors.exportDraft", DraftCode, catalog, currentUser);
         }
 
+        // By the time at the airport of the event, the one the gate manager plans its gates by: the off block of a departure, the
+        // on block of an arrival.
         var slots = await database.Slots.AsNoTracking()
             .Where(slot => slot.EventId == row.Id)
-            .OrderBy(slot => slot.OffBlockUtc ?? slot.OnBlockUtc)
+            .OrderBy(slot => slot.IsArrival ? slot.OnBlockUtc : slot.OffBlockUtc)
             .ThenBy(slot => slot.Id)
             .ToListAsync(http.RequestAborted);
 

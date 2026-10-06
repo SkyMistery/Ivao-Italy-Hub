@@ -424,7 +424,7 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 Table(
                     Line("XEA502", "XA502", TypeA, Away, day.AddHours(18).AddMinutes(40), First, day.AddHours(19).AddMinutes(40), rotation: "R1", leg: "2"),
                     Line("XEA501", "XA501", $"{TypeA}/{TypeB}", First, day.AddHours(17), Away, day.AddHours(18).AddMinutes(10), "B12", rotation: "R1", leg: "1"),
-                    Line("XEA503", string.Empty, TypeB, Further, day.AddHours(16), Second, day.AddHours(17))),
+                    Line("XEA503", string.Empty, TypeB, Further, day.AddHours(16), Second, day.AddHours(17).AddMinutes(30))),
                 SlotLoadMode.Add,
                 token),
             token);
@@ -450,11 +450,12 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             token);
         await OkAsync(await coordinator.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/publish", new EventPublishRequest(default), token), token);
 
-        // Published: every slot, by its time at the airport of the event, with the gate manager's names and the times in UTC.
+        // Published: every slot, by its time at the airport of the event — the arrival XEA503 by its on block at 17:30, after the
+        // departure XEA501 at 17:00, though it took off at 16:00 —, with the gate manager's names and the times in UTC.
         var flights = await ExportedAsync(gateManager, uri, token);
-        Assert.Equal(["XEA503", "XEA501", "XEA502", null], flights.Select(flight => flight.GetProperty("callsign").GetString()));
+        Assert.Equal(["XEA501", "XEA503", "XEA502", null], flights.Select(flight => flight.GetProperty("callsign").GetString()));
 
-        var leg = flights[1];
+        var leg = flights[0];
         Assert.Equal(
             ["slot_id", "callsign", "flight_number", "booked_by", "aircraft_icao", "gate", "eobt", "eat", "origin_icao", "destination_icao", "rotation", "leg", "paired_slot_id"],
             leg.EnumerateObject().Select(property => property.Name));
