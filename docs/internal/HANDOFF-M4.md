@@ -6,18 +6,20 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4** (modulo: il pubblico e le rotte), sul branch `m4/e4-public-and-routes`, **PR
-#223** verso `main`, nata in coda dopo la #221 di E3b (dal suo branch a `93f1db7`, e unita di nuovo alla sua testa `f1c8c02` dopo la
-revisione); **la #221 è unita** (6 ottobre 2026, `168fa25`), e la #223 mostra solo E4; poi **`main` unito sul branch** con la #222 (le
-parole `search.kinds.events`, tenute). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E10a (#210), E10b (#208), E10c
-(#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il
-piano 1.29 (#217) e la parola degli eventi nella ricerca (#222).
-**Il prossimo passo**: E4 (la #223), poi **E5** (gli slot pubblici e l'esportazione), **in coda sul branch di E4**: la sessione che
-coordina la prepara dalla sua testa `94ca28b`, e unisce l'ultima spinta di E4. **E4b** («chi è online sugli scali», una fase del nucleo
-piccola, decisa da Carmine sulla #223) la prepara a parte, da `main`: non è urgente, può venire dopo E5, e la striscia la monta la prima
-fase del modulo dopo di lei. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e
-tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e
-il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
+**Ultimo aggiornamento:** 6 ottobre 2026 — **fase E5** (modulo: gli slot pubblici e l'esportazione), sul branch `m4/e5-public-slots`,
+**PR #228** verso `main`, nata **in coda dopo la #223** di E4 — dalla sua testa `94ca28b`, e unita di nuovo alla sua ultima spinta `3224a9f`
+(le risposte di Carmine, `main` con la #222, i tipi degli eventi) —; **la #223 è unita** (6 ottobre 2026, `77a2031`) prima che la #228 si
+aprisse, quindi la #228 mostra solo E5. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), E10a (#210), E10b
+(#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0`
+(#216), il piano 1.29 (#217) e la parola degli eventi nella ricerca (#222). **E4b** («chi è online sugli scali», la fase del nucleo decisa da
+Carmine sulla #223) è la **#226**, aperta, da `main`: la striscia sulla pagina dell'evento la monta la prima fase del modulo dopo che E4b è
+unita.
+**Il prossimo passo**: **E5** (la #228), poi **E6a** (prenotare: il server), in coda sul branch di E5. Da E3b un evento si **pubblica**,
+entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
+`/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
+sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
+con un token personale («Che cosa ha lasciato E5», sotto). ⚠️ Sulla #228 aspetta **una domanda a Carmine** (la nota
+`2026-10-06-il-foglio-degli-slot-e-l-esportazione`, «Proposta»). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
 sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
 pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
 **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
@@ -135,6 +137,62 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E5 (6 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nata in coda dopo la #223, unita prima che si aprisse)
+
+- **Che cosa c'è** (il dettaglio in `10`, E5, «Com'è andata»; una migrazione additiva, `AddEventSlots`; del nucleo solo le due righe di
+  `ErasureTests`; due note nuove: `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, **«Proposta»** con la domanda a Carmine sulla #228,
+  e `2026-10-06-le-colonne-degli-slot-in-erasuretests`, nessuna decisione nuova):
+  - **`evt_slots` intera** (`EventSlot`, design §1.5), per i pubblici di E5 e i privati di E7: `kind`, `event_airport_icao`, `is_arrival`,
+    `callsign`, `flight_number`, `aircraft_types` (JSON), `departure_icao`, `arrival_icao`, `off_block_utc`, `on_block_utc`, `stand`,
+    `rotation_code`, `rotation_leg`, `generated`, `row_version`; univoco `(event_id, callsign, off_block_utc)` (un privato non ha callsign, e
+    l'indice ne lascia passare quanti vuole). Riga `IEventChild` nell'area **`EventBookings`**, `[Audited]`, lo scope dell'evento.
+  - **Incolla o carica** (`POST /api/events/events/{id}/slots/load`, `EventBookings.Edit` sull'evento; `Staff/SlotLoading.cs`): il testo —
+    incollato da un foglio di calcolo, o il file CSV letto dal browser nella stessa casella — e il modo (`Add`, `ReplaceFree`). **Lo legge il
+    server** (`Staff/SlotSheet.cs`): l'intestazione del design in qualunque ordine, tabulazioni, punto e virgola o virgole, le virgolette; le
+    righe contate come le conta la tabella (`rows[12].aircraft_types`); al più mille. Ogni riga uno slot pubblico (`SlotDraft.Read`): orari
+    solo `2026-10-17 14:30` in UTC, tipi separati da `/`; tipi e scali chiesti al nucleo una volta per tutta la tabella; **il verso dagli
+    ICAO** (`SlotDirection`: partenza da uno scalo dell'evento, anche fra due scali dell'evento, altrimenti arrivo, altrimenti rifiutato);
+    callsign e off block una volta nell'evento; **le rotazioni** (`SlotChains`, con gli slot salvati che restano): i posti, o gli orari
+    quando nessun posto è scritto, lo scalo che coincide, l'ordine, `bookingGapMinutes`. **Tutto o niente**, una transazione.
+  - **La lista e il form generati** (`/api/events/slots`, `MapCrud`, `EventBookings.View`/`.Edit`): la scheda **«Slot»** della pagina
+    dell'evento, su un evento con slot e scali suoi; il form di uno slot (`/staff/events/{id}/slots/{slotId}`, anche «Nuovo slot») tiene le
+    regole del caricamento (`SlotSaving`), i tipi scritti come nel foglio (`A320/A20N`); **«Elimina i liberi»**
+    (`POST …/slots/delete-free`): ogni slot libero dell'evento, pubblici e privati. La pagina del caricamento
+    (`/staff/events/{id}/slots/load`): l'intestazione da copiare, il file CSV, i rifiuti elencati per riga e colonna.
+  - **Le regole che crescono**: niente caricamento su un evento senza slot pubblici o senza scali; l'interruttore degli slot pubblici non si
+    spegne sotto gli slot (`events:errors.hasPublicSlots`); uno scalo con slot non si elimina né cambia codice (`airportHasSlots`); eliminare
+    un evento porta via i suoi slot con l'audit (`EventSaving.DeleteAsync`).
+  - **La pagina dell'evento** elenca gli slot pubblici (`PublicEventDto.Slots`, nella lettura che c'è già): il volo, gli orari in UTC, lo
+    stand, le rotazioni raggruppate (`screens/slotList.ts`), **libero o preso — mai chi**. «Prenota» è di E6b.
+  - **L'esportazione** per il Gate Manager (`GET /api/events/{slug}/bookings/export`, `Export/BookingsExport.cs`): con un token personale
+    dell'`audience` **`events.bookings`** (`EventsModule.TokenAudiences`, permesso `EventBookings.View`, la parola
+    `events:tokenAudiences.bookings`), chiesto anche all'unico handler sulla riga; un array con i nomi del Gate Manager (`slot_id`,
+    `callsign`, `flight_number`, `booked_by`, `aircraft_icao`, `gate`, `eobt`, `eat`, `origin_icao`, `destination_icao`, `rotation`, `leg`,
+    `paired_slot_id`), orari UTC con la `Z`. **Una bozza mai**: 409 `code: "draft"`.
+  - **I test**: `EventsSlotsTests` (unità, 29: il lettore, una riga, gli istanti, il verso, le catene), `EventsSlotsTests` (integrazione, 4,
+    VID 761012–761014, scali `XED1`–`XED4`, tipi `XE5A`/`XE5B`, slug `evt-test-e5-…`), `screens/slotList.test.ts` (vitest, 4), un test nuovo
+    nella smoke `web/e2e/events-public.spec.ts` (9), il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando»). `EventsTestRows` toglie
+    anche gli slot; `ErasureTests` ha le due righe di `evt_slots`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **La nota `2026-10-06-il-foglio-degli-slot-e-l-esportazione` è «Proposta»**: otto letture del design (il foglio letto dal server, le
+    righe e gli orari, il verso fra due scali dell'evento, le rotazioni, «sostituisci» ed «elimina i liberi», le regole che crescono, la forma
+    dell'esportazione e il 409 di una bozza, la lista nella lettura della pagina). Una risposta diversa dalla raccomandazione è una
+    correzione su questo branch.
+  - **E6a**: **«libero» si dice in un posto solo**, `SlotRows.Free` (`Staff/SlotLoading.cs`): oggi ogni slot, perché non c'è ancora una
+    prenotazione; E6a lo restringe agli slot che nessuna prenotazione nomina, e «sostituisci» ed «elimina i liberi» seguono. Poi:
+    `PublicEventSlotDto.Taken` (oggi `false`), `booked_by` e `aircraft_icao` dell'esportazione (oggi vuoti; `aircraft_icao` è **il tipo scelto
+    dal pilota**), «uno slot prenotato non si elimina» (il `Delete` del CRUD degli slot e il primo rifiuto di `EventSaving.DeleteAsync`), e le
+    righe delle colonne di persona di `evt_bookings` in `ErasureTests`.
+  - **E7**: un privato è `Kind = Private`, `Generated`, lo scalo e il verso, e l'orario allo scalo in `OffBlockUtc` (partenza) o
+    `OnBlockUtc` (arrivo); l'esportazione li porta già così (gate vuoto, `paired_slot_id` vuoto finché E7 non lo legge dalla prenotazione);
+    il form di uno slot li rifiuta (`events:errors.slotNotPublic`) e la scheda non dà loro «Modifica»; «elimina i liberi» li toglie.
+  - **E8b** («Duplica») copia, a scelta, gli slot pubblici con le rotazioni: le colonne sono quelle di `SlotDraft`, e i posti ci sono già.
+  - ⚠️ **Le catene usano `bookingGapMinutes` di quando si caricano**: cambiare l'impostazione dopo non ricontrolla le rotazioni salvate.
+  - ⚠️ **FluentValidation: un `.When` alla fine di una catena di regole vale per tutta la catena** (`ApplyConditionTo.AllValidators`):
+    scritta così, la regola del formato del callsign avrebbe spento anche «obbligatorio», e un callsign vuoto sarebbe passato. Trovato
+    rileggendo, prima dei test: ora il formato sta in un `RuleFor` suo, e il test d'integrazione manda un callsign vuoto.
+  - ⚠️ **Il test d'integrazione scrive un privato sul database** (nessuno lo genera ancora): E7 lo sostituisce con il generatore.
 
 ### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
 

@@ -1134,7 +1134,82 @@ niente con i rifiuti per riga; l'esportazione con il token `events.bookings`, se
 esportata. E2e: il personaggio dell'ED incolla una tabella con una rotazione e la vede sulla pagina.
 **Fatta quando**: una tabella incollata crea gli slot con le rotazioni, e l'esportazione li legge con un token personale.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (6 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nato **in coda dopo la #223** di E4: dal suo branch a `94ca28b`, e
+unito alla sua ultima spinta `3224a9f` — le risposte di Carmine, `main` con la #222, i tipi degli eventi — prima di scrivere il resto del
+codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazione additiva, `AddEventSlots`):
+
+- **Fatto**:
+  1. **`evt_slots` intera** (punto 1; design §1.5): `EventSlot` (`src/IvaoHub.Modules.Events/EventSlot.cs`), per i pubblici e i privati, con
+     tutte le colonne del piano e quelle del nucleo (maschera, audit, `row_version`); `aircraft_types` è una colonna `json` con il nome
+     del design (come `body_json` dell'evento lo porta nel nome, questa no); univoco `(event_id, callsign, off_block_utc)`; la chiave verso
+     l'evento a cascata. Riga `IEventChild` nell'area **`EventBookings`** (`[PermissionArea]`, `[Audited]`, lo scope dell'evento).
+  2. **Incolla e carica** (punto 2; §3.1): un endpoint, `POST /api/events/events/{id}/slots/load` (`EventBookings.Edit` sulla riga
+     dell'evento, all'unico handler), con il testo e il modo. Il lettore (`Staff/SlotSheet.cs`) separa per tabulazioni, punto e virgola o
+     virgole secondo l'intestazione, tiene le virgolette, conta le righe come la tabella, salta quelle vuote; una riga diventa uno slot
+     (`SlotDraft.Read`) o un rifiuto per cella; poi, per tutta la tabella insieme, gli aeroporti (`IAirportDirectory.FindAsync`) e i tipi
+     (`IAircraftTypeDirectory.UnknownAsync`) del nucleo, il verso (`SlotDirection`), callsign e off block una volta nell'evento, le
+     rotazioni (`SlotChains`, con `bookingGapMinutes` delle impostazioni e gli slot salvati che restano). Tutto o niente, con
+     `Refusals` sotto `rows[N].colonna`; una transazione: via i pubblici liberi se si sostituisce, dentro quelli della tabella.
+  3. **Lista e form generati** (punto 3): `/api/events/slots` (`MapCrud`, `EventBookings.View`/`.Edit`, `filter[eventId]`, l'evento
+     adottato in `BeforeAuthorize`), e `SlotSaving` nel `BeforeSave`: il form di uno slot tiene le regole del caricamento. **«Elimina i
+     liberi»**: `POST /api/events/events/{id}/slots/delete-free`. Nella pagina dell'evento del back office la scheda **«Slot»**
+     (`screens/slots.tsx`) con «Incolla o carica», «Nuovo slot», «Elimina i liberi» e «Modifica»; la pagina del caricamento con
+     l'intestazione da copiare, il file CSV letto nella casella e i rifiuti elencati per riga e colonna (`screens/slotList.ts`,
+     `sheetProblems`). **La pagina pubblica** (`/events/{slug}`) elenca gli slot pubblici, in sola lettura, nella lettura che c'è già
+     (`PublicEventDto.Slots`): libero o preso, mai chi, le rotazioni raggruppate, gli orari in UTC con il giorno detto una volta.
+  4. **L'esportazione** (punto 4; §7.4): `GET /api/events/{slug}/bookings/export` (`Export/BookingsExport.cs`), con l'`audience`
+     **`events.bookings`** dichiarata dal modulo (`EventsModule.TokenAudiences`, `EventBookings.View`) e il permesso chiesto anche sulla riga
+     dell'evento; un array con i nomi del Gate Manager e gli orari UTC; una bozza no (409 `draft`).
+  5. **Le regole che crescono** con gli slot: in `EventSaving` l'interruttore degli slot pubblici non si spegne sotto gli slot, e
+     eliminare un evento porta via i suoi slot; in `EventAirportEndpoints` uno scalo con slot non si elimina né cambia codice.
+  6. **I test**: `EventsSlotsTests` (unità, 29), `EventsSlotsTests` (integrazione, 4, VID 761012–761014, scali `XED1`–`XED4`, tipi
+     `XE5A`/`XE5B`, slug `evt-test-e5-…`), `screens/slotList.test.ts` (vitest, 4), un test nuovo nella smoke `web/e2e/events-public.spec.ts`,
+     il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando»: il personaggio dell'ED incolla una tabella con una rotazione, legge il
+     rifiuto di una riga, la carica corretta, e un visitatore la vede sulla pagina). `EventsTestRows` toglie anche gli slot; `ErasureTests`
+     ha le due righe di `evt_slots` (nota `2026-10-06-le-colonne-degli-slot-in-erasuretests`).
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova **«Proposta»**
+  `decisions/2026-10-06-il-foglio-degli-slot-e-l-esportazione.md`, con la domanda a Carmine sulla #228; il dettaglio è lì):
+  1. **Il foglio lo legge il server**, non il browser come le leg dei tour: il design dice che arriva come testo e scrive i rifiuti con il
+     nome della colonna.
+  2. **La tabella**: i nomi del design in qualunque ordine; il punto e virgola accanto alle tabulazioni e alle virgole; le righe contate
+     come la tabella; al più mille; **gli orari solo `2026-10-17 14:30` in UTC**.
+  3. **Il verso fra due scali dell'evento** è la partenza; **uno slot sempre su uno scalo dell'evento**, e così «ogni due tratte uno scalo»
+     viene da sé.
+  4. **Le rotazioni**: i posti dagli orari quando nessuno è scritto; il rifiuto sempre sulla tratta che si scrive; il form di uno slot con le
+     stesse regole, **anche per uno slot nuovo** («Nuovo slot»: il design dice il form «per le correzioni»).
+  5. **«Sostituisci»** toglie i pubblici liberi; **«Elimina i liberi»** ogni slot libero, privati compresi.
+  6. **Le regole che crescono**, sopra (punto 5 di «Fatto»); **nessun controllo** che uno slot cada nella finestra dell'evento.
+  7. **L'esportazione**: un array, i nomi del Gate Manager, una bozza 409 con `code: "draft"` invece di 404, un evento pubblicato in ogni
+     stato; un privato con il suo scalo e il suo orario.
+  8. **La lista pubblica nella lettura della pagina**, senza un endpoint suo.
+  9. **La scheda «Slot»** c'è su un evento con slot (pubblici o privati) e scali suoi, a chi legge le prenotazioni; un privato non ha
+     «Modifica» (`events:errors.slotNotPublic` sul server).
+  10. **Gli endpoint scritti a mano di E5** sono tre verbi che il design nomina (§7.2): caricare, eliminare i liberi, esportare; gli slot uno
+      per uno sono `MapCrud`. Nessuna lettura nuova.
+- **Trovato, e scritto per chi viene dopo**: ⚠️ in FluentValidation un `.When` alla fine di una catena vale per tutta la catena: la regola
+  del formato del callsign avrebbe spento «obbligatorio» (trovato rileggendo, prima dei test; ora sta in un `RuleFor` suo, e il test manda
+  un callsign vuoto). ⚠️ `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` cade finché una chiave `events:…` che il server
+  scrive non è nella copia delle parole alla radice: le parole prima, poi `pnpm i18n:sync`. ⚠️ E4 si è mosso a metà fase: la modifica
+  non ancora committata di `EventSaving.cs`, che E4 toccava anche lui, è stata messa da parte come patch e rimessa dopo il merge (un
+  conflitto nel solo commento in testa).
+- **Al contrario** (6 ottobre 2026): senza il rifiuto di una bozza, il test dell'esportazione cade (`Expected: Conflict`, `Actual: OK`);
+  senza i rifiuti delle catene, quello del caricamento (`rows[7].departure_icao` non c'è). Il codice rimesso com'era — con la `using` di
+  `IvaoHub.Core.Division`, che senza il primo controllo IDE0005 rifiuta — e ricompilato: la classe di nuovo 4/4.
+- **Verificato, in locale** (6 ottobre 2026, sul branch con E4 dentro, `3224a9f`): `dotnet build` della soluzione senza avvisi, e `dotnet
+  format --verify-no-changes` sui quindici file C# toccati; unità **1141/1141**; **integrazione intera senza filtro 485/485** (6,9 minuti),
+  `EventsSlotsTests` da sola 4/4 al primo giro, e le classi degli eventi con `ErasureTests` e `PersonalTokenTests` 31/31; `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **628 in 86 file**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze;
+  `pnpm e2e` **172/172** al primo giro (`--workers=2`, dietro il lock dello smoke; la spec della pagina pubblica da sola 9/9 prima);
+  **`pnpm e2e:full` 56/56 al primo giro** (10,9 minuti, il suo worker solo) sul banco `http://127.0.0.1:5126` (`ivaohub_e2e_e5` ricreato
+  prima), dietro il lock di Mailpit, e la spec nuova da sola 1/1 prima. Le regole di `core-guard` rifatte in PowerShell dalla base di merge
+  (`3224a9f`): **PASS** — nessun file del maintainer; un file del nucleo, `ErasureTests.cs`; due note nuove.
+- **Non verificato**: la CI (la dice la PR), che prova il merge con `main` dopo la #225 (`git merge-tree`: nessun conflitto); la
+  migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB 11.4.10 vera); il Gate Manager vero che legge
+  l'esportazione (E9, fuori dal repository); una tabella incollata davvero dagli appunti di un foglio di calcolo (la spec scrive il testo
+  nella casella, come lo darebbe un incolla; le tabulazioni le provano i test di unità) e un file CSV scelto dal disco (nessuna spec carica
+  un file: lo legge `File.text()` del browser); un CSV in una codifica che non è UTF-8 (`File.text()` legge UTF-8: uno stand con lettere
+  accentate salvato in Windows-1252 arriverebbe storpiato); la pagina con centinaia di slot nel browser (la lista è una query sola, ma
+  nessuna prova ne disegna 441).
 
 ### E6a — Prenotare: il server
 
