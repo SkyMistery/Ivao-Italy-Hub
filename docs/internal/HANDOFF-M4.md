@@ -188,10 +188,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     punto 7). **La versione del contratto** (punto 9 di Carmine): l'intestazione **`Hub-Bookings-Contract: 1`**; senza, o con una versione
     che l'hub non parla, 400 `code: "bookingsContract"` con `current` e `accepted`; la controlla il `ContractVersion` del nucleo (E10g),
     dopo il token e prima dell'evento. Il contratto per chi scrive il programma è **`docs/events-bookings-export.md`** (inglese).
-  - **I test**: `EventsSlotsTests` (unità, 29: il lettore, una riga, gli istanti, il verso, le catene), `EventsSlotsTests` (integrazione, 4,
-    VID 761012–761014, scali `XED1`–`XED4`, tipi `XE5A`/`XE5B`, slug `evt-test-e5-…`), `screens/slotList.test.ts` (vitest, 4), un test nuovo
-    nella smoke `web/e2e/events-public.spec.ts` (9), il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando»). `EventsTestRows` toglie
-    anche gli slot; `ErasureTests` ha le due righe di `evt_slots`.
+  - **I test**: `EventsSlotsTests` (unità, 36: il lettore, una riga, gli istanti, il verso, le catene, la finestra), `EventsSlotsTests`
+    (integrazione, 5 — la finestra, il volo ricaricato, l'ordine e la versione dell'esportazione dalla revisione —, VID 761012–761014,
+    scali `XED1`–`XED4`, tipi `XE5A`/`XE5B`, slug `evt-test-e5-…`), `screens/slotList.test.ts` (vitest, 4), un test nuovo nella smoke
+    `web/e2e/events-public.spec.ts` (9), il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando», con `afterwards(…)`).
+    `EventsTestRows` toglie anche gli slot; `ErasureTests` ha le due righe di `evt_slots`. VID 761015–761016 e 761062–761067 restano
+    liberi.
 - **Che cosa deve sapere la fase dopo**:
   - **L'esportazione è la versione 1 di un contratto** (`docs/events-bookings-export.md`): dentro una versione l'hub solo aggiunge. E6a
     riempie `booked_by` e `aircraft_icao`, che ci sono già: nessuna versione nuova. Un campo tolto o rinominato, o un significato cambiato,

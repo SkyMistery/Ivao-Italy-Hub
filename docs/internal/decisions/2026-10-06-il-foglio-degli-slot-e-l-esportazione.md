@@ -9,11 +9,13 @@ n.2): **9**, l'esportazione porta la versione del suo contratto; **10**, uno slo
 guardiano dell'interceptor, i token personali con la loro `audience`, `IAirportDirectory`, `IAircraftTypeDirectory`, le impostazioni del
 modulo —; sono letture del design M4 §1.5, §3.1, §7.1, §7.2, §7.4 e della nota `2026-09-29-gli-slot-e-le-prenotazioni` §2.2–§2.3. Per il
 punto 9 il controllo della versione è un pezzo dei tour che serve a un secondo modulo: caso (b), passa nel nucleo con la fase **E10g**
-(nota `2026-10-06-la-versione-di-un-contratto-nel-nucleo`), prima del codice degli eventi che lo usa (`CLAUDE.md` §0 regola 6).
+(la #230, nota `2026-10-06-la-versione-di-un-contratto-nel-nucleo`), prima del codice degli eventi che lo usa (`CLAUDE.md` §0 regola 6):
+la #228 è in coda dopo la #230.
 
 [a223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
+[q230]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474
 
 ## 1. Le letture (i punti 1–8)
 
@@ -86,10 +88,10 @@ punto 9 il controllo della versione è un pezzo dei tour che serve a un secondo 
      l'evento (404, 403 sulla riga, 409 per una bozza).
    - **Il controllo non è una copia.** Quello dei tour (`AgentContract.RequireVersionAsync`) sta nel loro modulo, che gli eventi non
      referenziano, e una copia negli eventi sarebbe lo stesso pezzo scritto due volte (`CLAUDE.md` §2), l'alternativa che la nota della
-     distanza (`2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo` §7) ha già scartato. Passa nel nucleo con la fase E10g
+     distanza (`2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo` §7) ha già scartato. Passa nel nucleo con la fase E10g, la #230
      (`ContractVersion`, nota `2026-10-06-la-versione-di-un-contratto-nel-nucleo`), e l'esportazione lo usa con i suoi valori: la strada
      scelta da dalberone il 6 ottobre, sulla classificazione chiesta dal master prima di scrivere. I tour ci passano in una sessione di
-     Carmine (la richiesta è nella nota di E10g).
+     Carmine ([la richiesta sulla #230][q230], nella nota di E10g §5): niente di questa PR ne dipende.
    - **Il documento pubblico** è `docs/events-bookings-export.md` (in inglese), come `docs/agent-contract.md`: il token, l'intestazione,
      l'indirizzo, i campi, le risposte che non sono 200, una `curl`.
 10. **Uno slot cade nella finestra del suo evento.** L'orario di uno slot allo scalo dell'evento — l'off block di una partenza, l'on block

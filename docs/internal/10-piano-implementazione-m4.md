@@ -1231,8 +1231,9 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
      che coordina: il controllo dei tour (`AgentContract.RequireVersionAsync`) sta nel loro modulo, che gli eventi non referenziano e
      che E5 non tocca, e una copia negli eventi sarebbe lo stesso pezzo scritto due volte (`CLAUDE.md` §2). Tre strade a dalberone — la
      copia con un'eccezione di Carmine, il pezzo nel nucleo prima, la domanda a Carmine —: **ha scelto il nucleo**. È la fase **E10g**
-     (branch `m4/e10g-contract-version`, da `main` a `e9702b27`, in una sessione sua, con la sua PR e la sua nota), e la #228 sta in coda
-     dopo di lei. Qui l'esportazione usa il `ContractVersion` del nucleo con i suoi valori — l'intestazione `Hub-Bookings-Contract`, la
+     (la **#230**, branch `m4/e10g-contract-version`, da `main` a `e9702b27`, in una sessione sua, con la sua nota), e la #228 sta in
+     coda dopo di lei: il branch di E10g è unito a questo a `cc1b46c`. Qui l'esportazione usa il `ContractVersion` del nucleo con i
+     suoi valori — l'intestazione `Hub-Bookings-Contract`, la
      versione 1, `code: "bookingsContract"`, il titolo `events:errors.bookingsContract` — dopo il token e prima dell'evento, e il contratto
      per chi scrive il programma è `docs/events-bookings-export.md` (inglese), come `docs/agent-contract.md` dei tour.
   3. **Lo stesso volo ricaricato con «sostituisci»** (revisione, punto 3): il test del caricamento ricarica in `ReplaceFree` il foglio
@@ -1263,9 +1264,21 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
       (nell'HANDOFF).
   - **Al contrario** (6 ottobre 2026): con il margine della finestra a dieci anni, il test della finestra cade (la tabella con le due righe
     fuori è caricata: `OK: {"added":2,"removed":0}`); con l'ordine di prima (`OffBlockUtc ?? OnBlockUtc`), cade quello dell'esportazione
-    (`Expected: "XEA501"`, `Actual: "XEA503"`). Il codice rimesso com'era e ricompilato: tutti e due di nuovo verdi. Il test del volo
+    (`Expected: "XEA501"`, `Actual: "XEA503"`); senza il filtro della versione sull'esportazione, la richiesta senza intestazione riceve
+    il 409 della bozza invece del 400 (`Expected: BadRequest`, `Actual: Conflict`). Il codice rimesso com'era e ricompilato: tutti e tre
+    di nuovo verdi. Il test del volo
     ricaricato prova un comportamento che c'era già, e il 409 ristretto non ha un errore del database diverso da provocare in un test:
     nessuna prova al contrario per i punti 3 e 4.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit, con E10g e `main` dentro): `dotnet build` della soluzione senza avvisi e
+    `dotnet format --verify-no-changes` sui file C# del giro; unità **1169/1169** (`EventsSlotsTests` 36, `ContractVersionTests` 21);
+    **integrazione intera senza filtro 486/486** (8,6 minuti), `EventsSlotsTests` 5/5; `pnpm gen:api` (il 400 dell'esportazione) e `pnpm
+    i18n:sync` (la parola nuova) rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **629 in 86 file**;
+    `pnpm e2e --workers=2` dietro il lock dello smoke: **171/172** al primo giro — è caduto `closed-suggestion.spec.ts:121`, del nucleo, la
+    barra trascinata con `scrollTop` 0, lo stesso di A13d —, poi quello spec da solo `--repeat-each=5` 5/5 e lo smoke intero di nuovo
+    **172/172**; **`pnpm e2e:full` 57/57 al primo giro** (11,9 minuti, il suo worker solo) sul banco `http://127.0.0.1:5126`
+    (`ivaohub_e2e_e5` ricreato prima), dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`:
+    **PASS** (nessun file del maintainer;
+    del nucleo `ContractVersion.cs`, della #230, ed `ErasureTests.cs`; tre note nuove).
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
