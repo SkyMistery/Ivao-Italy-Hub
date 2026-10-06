@@ -143,14 +143,16 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     schema zod** come `from` e `to` del calendario (un editor non li salva). Con l'elenco lo spazio è quello degli scali — controllori
     la cui stazione è uno di loro (la torre e l'avvicinamento di `LIRF`, non il centro `LIRR` sopra), piloti il cui piano di volo parte
     da uno di loro o ci arriva — e le due cifre `divisionAtc`, `divisionPilots` lo contano; senza, la divisione come prima. **Un elenco
-    senza nessuno scalo non conta nessuno**, mai la divisione; al più 50 scali, di al più 4 caratteri.
+    senza nessuno scalo non conta nessuno**, mai la divisione; uno scalo è da una a quattro lettere o cifre, e se ne contano al più 50,
+    **dopo la pulizia** (`IvaoAirspace.OfAirports(scali, limite)`).
   - **Un whazzup al minuto per tutti** (`IvaoNetworkPicture`, in `src/IvaoHub.Core/Ivao/IvaoWhazzup.cs`): la lettura comune per un
-    minuto, contata una volta per ogni spazio con la sua `CacheKey`, che ora **nomina gli scali** quando non ci sono centri. Lo
-    scostamento dalla nota di E4 e la misura (6 ottobre 2026: 0,8 MB, dalla cache di Cloudflare; mille insiemi inventati in 24 ms
-    invece di mille scaricamenti) sono nella nota, §2 e §4.
+    minuto, contata per ogni spazio con la sua `CacheKey`, che ora **nomina gli scali** quando non ci sono centri; la lettura **tiene le
+    risposte di al più 16 spazi** (`MaxKeptAnswers`) e conta ogni volta gli altri. Lo scostamento dalla nota di E4 e la misura (6 ottobre
+    2026: 0,8 MB, dalla cache di Cloudflare; mille insiemi inventati in 24 ms invece di mille scaricamenti) sono nella nota, §2 e §4; lo
+    scostamento e le parole del titolo li porta a Carmine il revisore (rilievi sulla #226, punto 5).
   - **`<LiveStatusStrip airports={…} />`** (`web/src/shared/ui/LiveStatusStrip.tsx`): la domanda con gli scali e il titolo
     `liveStatus.airportsTitle` («Su questi scali adesso», «At these airports now»); senza `airports`, la striscia di sempre.
-  - **I test**: `LiveStatusAirportsTests` (unità, 5), `NetworkStatsAirportsTests` (integrazione, 4, sulla fixture `whazzup.json`),
+  - **I test**: `LiveStatusAirportsTests` (unità, 8), `NetworkStatsAirportsTests` (integrazione, 5, sulla fixture `whazzup.json`),
     `LiveStatusStrip.airports.test.tsx` (vitest, 4). Nessun VID, nessuno slug.
 - **Che cosa deve sapere la fase dopo** — ⚠️ **la prima fase del modulo dopo il merge di E4b** (Carmine sulla #223, punto 2; «per esempio
   E6b» diceva la nota di E4) **monta la striscia sulla pagina dell'evento**:

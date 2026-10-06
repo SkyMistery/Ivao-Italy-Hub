@@ -5,12 +5,17 @@
 `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (fase E4, #223, unita su `main` lo stesso giorno con lo stato «decisa»), che
 **Carmine ha scelto** il 6 ottobre 2026 ([risposte sulla
 #223, punto 2][a223], pubblicate dal master su sua istruzione): «(b), a small core phase E4b, in its own pull request with its note,
-and mounted by the first module phase after it». Nessuna domanda nuova. **Uno scostamento** dalla lettera di quella nota (§3, punto
-2), deciso dalla misura che la nota stessa chiedeva (§2 qui sotto): **un whazzup al minuto per tutti**, non uno per insieme di scali.
+and mounted by the first module phase after it». **Uno scostamento** dalla lettera di quella nota (§3, punto 2), deciso dalla misura
+che la nota stessa chiedeva (§2 qui sotto): **un whazzup al minuto per tutti**, non uno per insieme di scali. Nessuna domanda da questa
+fase; **due cose le porta a Carmine il revisore** ([rilievi sulla #226][r226], punto 5, «nothing to change»): questo scostamento —
+una lettura al minuto per tutti, tenuta in memoria (`IvaoNetworkPicture`), che il revisore trova il disegno migliore — e **le parole del
+titolo** della striscia con gli scali («Su questi scali adesso», «At these airports now»), che sono sue da confermare. I punti 2–4 dei
+rilievi sono corretti nel codice (§3).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il meccanismo c'è — il blocco `networkStats` e la `LiveStatusStrip` — e si
 estende, nel nucleo, in una PR a sé prima della fase del modulo che lo usa (§0 regola 6).
 
 [a223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
+[r226]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/226#issuecomment-6021367518
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -44,8 +49,10 @@ toglierebbe la striscia agli eventi che chiedono dopo chi li ha inventati. **Com
 
 **Con la forma del §3**, misurata sulla stessa lettura (54 controllori, 539 piloti): la lettura tenuta per un minuto pesa **circa 75
 KiB** e si fa in circa 9 ms; contare uno spazio la prima volta costa **0,05 ms** (tre scali) — 1,5 ms la divisione alla prima chiamata,
-con la compilazione —, poi la risposta tenuta si legge in un microsecondo o due; **mille insiemi inventati in un minuto: 24 ms in tutto
-e circa 246 KiB tenuti finché la lettura non scade**, invece di mille scaricamenti (circa 770 MB).
+con la compilazione —, poi la risposta tenuta si legge in un microsecondo o due; **mille insiemi inventati in un minuto: 24 ms in tutto**,
+invece di mille scaricamenti (circa 770 MB). Senza tetto la lettura teneva anche le loro mille risposte, circa 246 KiB fino alla sua
+scadenza; **dopo la revisione** (rilievi sulla #226, punto 2) una lettura tiene le risposte di al più sedici spazi, e conta ogni volta
+tutti gli altri (§3, punto 3).
 
 ## 3. La forma nel codice
 
@@ -54,19 +61,25 @@ e circa 246 KiB tenuti finché la lettura non scade**, invece di mille scaricame
    del calendario: **non è nello schema zod** del blocco, che è ciò che un editor salva, e una pagina pubblicata con gli scali di un
    evento invecchierebbe con lui. Con l'elenco, lo spazio è `IvaoAirspace.OfAirports`; senza, quello della divisione
    (`IFirDirectory.GetAirspaceAsync`), come prima. **Un elenco senza nessuno scalo non conta nessuno, mai la divisione** (come
-   `TryDepartment`: una domanda sbagliata restringe, non allarga), e al più `DataBlockScope.MaxItems` (50) scali: un blocco non è
-   un'esportazione. Le due cifre `divisionAtc` e `divisionPilots` contano lo spazio chiesto: nessuna cifra nuova, le stesse parole.
-2. **`IvaoAirspace`** (`Core/Ivao/IvaoNetworkStatus.cs`): `OfAirports` fa lo spazio dei soli scali — ripuliti, in maiuscolo, una volta
-   ciascuno, e solo codici larghi quanto `ref_ivao_airports.icao` (`IvaoAtcPosition.MaxAirportLength`, 4): uno più lungo non è uno
-   scalo e allungherebbe soltanto la chiave —, senza centri: un controllore conta solo su uno di loro, non il settore sopra di loro.
+   `TryDepartment`: una domanda sbagliata restringe, non allarga), e al più `DataBlockScope.MaxItems` (50) scali, **contati dopo la
+   pulizia** (rilievi sulla #226, punto 3): un blocco non è un'esportazione, e cinquanta voci che non sono scali non ne spingono fuori
+   uno vero. Le due cifre `divisionAtc` e `divisionPilots` contano lo spazio chiesto: nessuna cifra nuova, le stesse parole.
+2. **`IvaoAirspace`** (`Core/Ivao/IvaoNetworkStatus.cs`): `OfAirports(scali, limite)` fa lo spazio dei soli scali — ripuliti, in
+   maiuscolo, una volta ciascuno, e solo quello che può essere uno scalo della fotografia, **da una a quattro lettere o cifre**
+   (larghi quanto `ref_ivao_airports.icao`, `IvaoAtcPosition.MaxAirportLength`; rilievi sulla #226, punto 4): altro non è uno scalo,
+   allungherebbe soltanto la chiave e potrebbe portarci la virgola che la separa (`A,B` e `C` si leggerebbero come `A` e `B,C`); poi
+   **al più il limite**, nell'ordine chiesto —, senza centri: un controllore conta solo su uno di loro, non il settore sopra di loro.
    **La `CacheKey` nomina gli scali quando non ci sono centri** (`0/2/LIRA,LIRF`); con i centri è quella di prima
    (`{centri}/{scali}/{elenco dei centri}`): la divisione tiene la sua chiave.
 3. **Un whazzup al minuto per tutti** (`IvaoApiClient.GetNetworkStatusAsync`, `Core/Ivao/IvaoWhazzup.cs`): il whazzup si legge in un
    **`IvaoNetworkPicture`** — i due totali della rete, ogni controllore con nominativo, stazione e frequenza, le due estremità di ogni
    piano di volo; nessun VID, nessun nome, nessuna traccia — che il client tiene **per un minuto sotto una chiave sola**
-   (`ivao-api:network-picture`), il fallimento compreso, come prima. Ogni spazio si conta dalla lettura **una volta**, con la sua
-   `CacheKey`, e la sua risposta se ne va con la lettura: nessuna risposta è più vecchia della lettura da cui viene. La regola «in
-   area» resta di `IvaoWhazzup` (`Count`), per il client vero e per quello delle fixture (`IvaoWhazzup.Read(root).For(spazio)`).
+   (`ivao-api:network-picture`), il fallimento compreso, come prima. Ogni spazio si conta dalla lettura con la sua `CacheKey`; **la
+   lettura tiene le risposte dei primi `IvaoNetworkPicture.MaxKeptAnswers` (16) spazi** — la divisione e gli eventi di un giorno, con
+   margine — e conta ogni volta tutti gli altri, un ventesimo di millisecondo: gli scali sono un parametro di una richiesta anonima, e chi
+   inventa insiemi non deve far crescere quello che una lettura tiene (rilievi sulla #226, punto 2). Le risposte tenute se ne vanno con la
+   lettura: nessuna è più vecchia della lettura da cui viene. La regola «in area» resta di `IvaoWhazzup` (`Count`), per il client vero e
+   per quello delle fixture (`IvaoWhazzup.Read(root).For(spazio)`).
    **`IIvaoApiClient` non cambia**: i doppi dei test del maintainer lo implementano com'è.
 4. **`LiveStatusStrip`** (`web/src/shared/ui/LiveStatusStrip.tsx`): `airports?: readonly string[]`. Con gli scali la domanda li porta e
    il titolo è `liveStatus.airportsTitle` («Su questi scali adesso», «At these airports now»); senza, la domanda e il titolo sono
@@ -80,9 +93,9 @@ e circa 246 KiB tenuti finché la lettura non scade**, invece di mille scaricame
   insieme**, perché la misura (§2) dice che uno per insieme non regge quando l'insieme lo sceglie un chiamante anonimo. Le risposte
   sono le stesse; le chiamate a IVAO, in ogni caso, non più di oggi.
 - **Che cosa si tiene per un minuto**: prima la risposta della divisione (poche centinaia di byte), ora la lettura di tutti (circa 75
-  KiB un martedì pomeriggio; qualche centinaio in una sera di punta, in proporzione). Il principio del design M1 §6.2 — del payload si
-  tiene solo quello che se ne ricava, mai il payload — resta: la lettura non ha VID, nomi né tracce, e gli 0,8 MB se ne vanno come
-  prima.
+  KiB un martedì pomeriggio; qualche centinaio in una sera di punta, in proporzione) con al più sedici risposte. Il principio del design
+  M1 §6.2 — del payload si tiene solo quello che se ne ricava, mai il payload — resta: la lettura non ha VID, nomi né tracce, e gli
+  0,8 MB se ne vanno come prima.
 
 ## 5. Le alternative
 

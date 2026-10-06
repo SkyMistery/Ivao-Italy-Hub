@@ -1182,6 +1182,29 @@ invariata; la striscia con e senza scali (vitest). Nessuna migrazione.
   contro la nuova base (`77a2031`): gli stessi dodici file del nucleo e la nota, PASS. **Non rifatti dopo il merge**: l'integrazione
   intera, lo smoke ed `e2e:full` — il merge ha portato il codice di E4 e della #225 e nessun file di questa fase è cambiato; l'integrazione
   intera la rifà la CI.
+- **Dopo la revisione** ([rilievi del revisore sulla #226][r226], «the design is sound»; il punto 1, il merge di `main`, è sopra):
+  - **punto 2, le risposte tenute senza tetto**: `IvaoNetworkPicture` tiene le risposte di al più `MaxKeptAnswers` (16) spazi — la
+    divisione e gli eventi di un giorno, con margine — e conta ogni volta tutti gli altri (un ventesimo di millisecondo), così chi
+    inventa insiemi di scali sull'endpoint anonimo non fa crescere quello che una lettura tiene; il tetto si controlla prima di
+    aggiungere, e richieste nello stesso istante possono superarlo al più di quante sono. Test di unità
+    `AReadingKeepsTheAnswersOfAFewAirspacesAndCountsTheRestEveryTime`: dieci volte più insiemi del tetto, i primi tenuti (la stessa
+    risposta), gli altri contati ogni volta (una risposta nuova, giusta);
+  - **punto 3, il limite degli scali prima della pulizia**: `IvaoAirspace.OfAirports(scali, limite)` ripulisce, toglie i doppi e poi
+    prende al più il limite, nell'ordine chiesto; il provider gli passa `DataBlockScope.MaxItems`. Test: di unità
+    `TheCeilingOfTheAirportsIsCountedAfterTheCleaning` (cinquanta voci non valide o lo stesso scalo ripetuto non spingono fuori uno vero;
+    oltre il limite restano i primi chiesti) e d'integrazione `EntriesThatAreNoAirportDoNotPushOneThatIsPastTheCeiling` (anonimo, come il
+    browser: cinquanta voci non valide davanti a `EDDF`, e `EDDF` è contato);
+  - **punto 4, solo la lunghezza**: uno scalo è da una a quattro **lettere o cifre** (`char.IsAsciiLetterOrDigit`), così la virgola che
+    separa la chiave non può farne due insiemi uguali. Test di unità `ACommaNeverMakesTwoSetsOneKey` (`{"A,B","C"}` e `{"A","B,C"}`) e
+    `OnlyCodesAnAirportCanHaveAreKept` con un trattino, uno spazio e una lettera accentata;
+  - **punto 5, per Carmine**: la nota non diceva più «nessuna domanda» senza nominarle: ora dice le due cose che il revisore gli porta,
+    lo scostamento (una lettura al minuto per tutti, tenuta in memoria) e le parole del titolo.
+  - **Le prove al contrario**, con il comportamento di prima rimesso per un momento (il limite prima della pulizia, solo la lunghezza,
+    nessun tetto) e poi tolto: cadono i 4 test di unità dei punti 2–4 e il test d'integrazione nuovo, passano gli altri 4 e 4.
+  - **Verificato, in locale** (6 ottobre 2026, al primo giro): `dotnet build` 0 avvisi; unità **1120/1120** (le 3 nuove);
+    **integrazione intera, senza filtro, 486/486** (5,6 minuti: le 480 di prima, le 5 di E4 e la nuova); `dotnet format
+    --verify-no-changes` sui sei file C# pulito; in `web/` (nessun file cambiato) `pnpm lint`,
+    `typecheck`, `format:check` verdi, `i18n:check` (807 chiavi), `pnpm test` **629/629** in 86 file.
 - **Non verificato**: la CI (la dice la PR); il whazzup di una sera di punta (circa 4 MB in proporzione, non misurato: un martedì
   pomeriggio); i limiti di chiamate di IVAO (il design §9.1 li lascia a una misura, e questa fase non fa più chiamate di prima); la
   striscia con gli scali su una pagina vera, nel browser: non la monta ancora niente, la monta la fase del modulo (nota §6);
@@ -1189,6 +1212,7 @@ invariata; la striscia con e senza scali (vitest). Nessuna migrazione.
   l'ha.
 
 [a223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
+[r226]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/226#issuecomment-6021367518
 
 ### E5 — Gli slot pubblici e l'esportazione
 
