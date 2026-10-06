@@ -1,11 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type BrowserContext, type Page } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, choose, readInEnglish, signIn, whileWaitingFor, writeInBothLanguages } from './bench';
+import {
+  benchUrl,
+  choose,
+  readInEnglish,
+  signIn,
+  whileWaitingFor,
+  writeInBothLanguages,
+  test,
+} from './bench';
 
 /**
  * The "done when" of A5 (M3), through the real screens registered from the module manifest: the evaluation sheet of an ATC
@@ -13,8 +21,8 @@ import { benchUrl, choose, readInEnglish, signIn, whileWaitingFor, writeInBothLa
  * narrowed to that rating with the two filters of the list, and read back in its order after a reload, and in Italian too.
  * Then one item moves to the top of the sheet, and the new order is what reads back.
  *
- * The rating is the first the server offers for the ATC ladder: the spec writes no rating of its own. The items go back in a
- * `finally`, and a run that stopped half way is cleaned up at the start: the bench survives between runs.
+ * The rating is the first the server offers for the ATC ladder: the spec writes no rating of its own. The items go back after the
+ * test (`afterwards`), and a run that stopped half way is cleaned up at the start: the bench survives between runs.
  */
 
 const training = englishTraining();
@@ -53,6 +61,7 @@ interface TrainingRating {
 test('the sheet of an ATC rating is composed in both languages, and read back in its order', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(120_000);
   await readInEnglish(context);
@@ -69,58 +78,58 @@ test('the sheet of an ATC rating is composed in both languages, and read back in
   const option = ratingOption(rating!);
 
   await removeLeftovers(context);
-  try {
-    // ---------------------------------------------------------------- the list, narrowed to the sheet of the rating
-    await page.goto('/staff/training/sheets');
-    await expect(page.getByRole('heading', { name: words.title })).toBeVisible();
-    await pick(page, 'sheet-items-kind', training.kinds.Atc);
-    await pick(page, 'sheet-items-rating', option);
-    await expect(page).toHaveURL(new RegExp(`kind=Atc.*rating=${String(rating!.number)}`));
+  afterwards(async () => {
+    await removeLeftovers(context);
+  });
 
-    // ---------------------------------------------------------------- three items, each from the list it goes back to
-    for (const item of items) {
-      await page.getByRole('link', { name: words.create }).first().click();
-      await expect(page.getByRole('heading', { name: words.create })).toBeVisible();
+  // ---------------------------------------------------------------- the list, narrowed to the sheet of the rating
+  await page.goto('/staff/training/sheets');
+  await expect(page.getByRole('heading', { name: words.title })).toBeVisible();
+  await pick(page, 'sheet-items-kind', training.kinds.Atc);
+  await pick(page, 'sheet-items-rating', option);
+  await expect(page).toHaveURL(new RegExp(`kind=Atc.*rating=${String(rating!.number)}`));
 
-      // A new item starts on the sheet the list was narrowed to.
-      await expect(page.getByRole('combobox', { name: words.fields.rating })).toHaveText(option);
-      await choose(page, words.fields.section, words.options.section[item.section]);
-      await writeInBothLanguages(page.locator('form'), words.fields.title, 'title', {
-        en: item.en,
-        it: item.it,
-      });
-      await whileWaitingFor(page, 'POST', '/api/training/sheet-items', async () => {
-        await page.getByRole('button', { name: englishCommon.common.save }).click();
-      });
-      await expect(page).toHaveURL(/\/staff\/training\/sheets\?/);
-    }
+  // ---------------------------------------------------------------- three items, each from the list it goes back to
+  for (const item of items) {
+    await page.getByRole('link', { name: words.create }).first().click();
+    await expect(page.getByRole('heading', { name: words.create })).toBeVisible();
 
-    // ---------------------------------------------------------------- the order they were written in, after a reload
-    await expectOrder(page, [items[0].en, items[1].en, items[2].en]);
-    await page.reload();
-    await expectOrder(page, [items[0].en, items[1].en, items[2].en]);
-
-    // And in the other language of the bench, the same sheet in the same order.
-    await context.addCookies([{ name: 'hub.lang', value: 'it', url: benchUrl }]);
-    await page.reload();
-    await expectOrder(page, [items[0].it, items[1].it, items[2].it]);
-    await readInEnglish(context);
-    await page.reload();
-
-    // ---------------------------------------------------------------- the theory item goes to the top of the sheet
-    await rowOf(page, items[2].en).getByRole('link', { name: englishCommon.common.edit }).click();
-    await expect(page.getByRole('heading', { name: words.edit })).toBeVisible();
-    await page.locator('[id="sort"]').fill('0');
-    await whileWaitingFor(page, 'PUT', '/api/training/sheet-items/', async () => {
+    // A new item starts on the sheet the list was narrowed to.
+    await expect(page.getByRole('combobox', { name: words.fields.rating })).toHaveText(option);
+    await choose(page, words.fields.section, words.options.section[item.section]);
+    await writeInBothLanguages(page.locator('form'), words.fields.title, 'title', {
+      en: item.en,
+      it: item.it,
+    });
+    await whileWaitingFor(page, 'POST', '/api/training/sheet-items', async () => {
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
     await expect(page).toHaveURL(/\/staff\/training\/sheets\?/);
-
-    await page.reload();
-    await expectOrder(page, [items[2].en, items[0].en, items[1].en]);
-  } finally {
-    await removeLeftovers(context);
   }
+
+  // ---------------------------------------------------------------- the order they were written in, after a reload
+  await expectOrder(page, [items[0].en, items[1].en, items[2].en]);
+  await page.reload();
+  await expectOrder(page, [items[0].en, items[1].en, items[2].en]);
+
+  // And in the other language of the bench, the same sheet in the same order.
+  await context.addCookies([{ name: 'hub.lang', value: 'it', url: benchUrl }]);
+  await page.reload();
+  await expectOrder(page, [items[0].it, items[1].it, items[2].it]);
+  await readInEnglish(context);
+  await page.reload();
+
+  // ---------------------------------------------------------------- the theory item goes to the top of the sheet
+  await rowOf(page, items[2].en).getByRole('link', { name: englishCommon.common.edit }).click();
+  await expect(page.getByRole('heading', { name: words.edit })).toBeVisible();
+  await page.locator('[id="sort"]').fill('0');
+  await whileWaitingFor(page, 'PUT', '/api/training/sheet-items/', async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+  await expect(page).toHaveURL(/\/staff\/training\/sheets\?/);
+
+  await page.reload();
+  await expectOrder(page, [items[2].en, items[0].en, items[1].en]);
 });
 
 /** Picks a value in one of the filters of a list, by the id `ListFilter` gives its select. */

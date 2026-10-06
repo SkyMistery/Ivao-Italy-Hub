@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import {
+  test as base,
   expect,
   type APIRequestContext,
   type APIResponse,
@@ -17,6 +18,46 @@ import { englishCommon } from '../locales';
  * — signing in, choosing in a select, writing a translated field — and nothing here asserts what
  * the product should do: that belongs in the spec, where it can be read.
  */
+
+/**
+ * `test`, with a way of saying what has to be put back when the test is over: `afterwards(…)`.
+ *
+ * ⚠️ In place of a `finally`, which hid what was wrong twice on 6 October 2026
+ * (`decisions/2026-10-06-l-anteprima-vuota-dell-editor.md`). When a step of the test waits until the
+ * time runs out, a `finally` runs in a test that is already over: its first call is refused, its
+ * error **replaces** the one of the step that had stopped, and nothing is put back. What is handed
+ * here runs as the teardown of a fixture: it has its own time, it runs after a timeout too, and what
+ * it throws is added to the report, under the error of the test.
+ *
+ * Said where the `try` used to open — before the rows are made, so that they are taken back however
+ * far the test got. The last thing said runs first, and one that fails does not stop the others.
+ * The fixture asks for `page`, which is how it is torn down before the page and its context are.
+ */
+export const test = base.extend<{ afterwards: (putBack: () => Promise<void> | void) => void }>({
+  afterwards: async ({ page }, run) => {
+    void page;
+    const said: (() => Promise<void> | void)[] = [];
+    await run((putBack) => {
+      said.push(putBack);
+    });
+
+    const failures: unknown[] = [];
+    for (const putBack of said.reverse()) {
+      try {
+        await putBack();
+      } catch (failure) {
+        failures.push(failure);
+      }
+    }
+
+    if (failures.length === 1) {
+      throw failures[0];
+    }
+    if (failures.length > 1) {
+      throw new AggregateError(failures, 'More than one thing could not be put back after the test');
+    }
+  },
+});
 
 export const benchUrl = process.env.E2E_URL ?? 'http://127.0.0.1:5080';
 

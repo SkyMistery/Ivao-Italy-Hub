@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, request as playwrightRequest, test, type APIRequestContext } from '@playwright/test';
+import { expect, request as playwrightRequest, type APIRequestContext } from '@playwright/test';
 
 import {
   benchAirports,
@@ -12,6 +12,7 @@ import {
   removeBenchTours,
   signIn,
   whileWaitingFor,
+  test,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -53,6 +54,7 @@ test('an agent with a token from the member’s page reads a report and its resu
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(180_000);
   await readInEnglish(context);
@@ -73,9 +75,7 @@ test('an agent with a token from the member’s page reads a report and its resu
   } = { rules: [], errors: [], tokens: [], programs: [] };
 
   await removeBenchTours(context, 'bench-agent-', pilotContext);
-  try {
-    await run();
-  } finally {
+  afterwards(async () => {
     for (const program of made.programs) {
       await program.dispose();
     }
@@ -91,7 +91,9 @@ test('an agent with a token from the member’s page reads a report and its resu
     }
     await removeBenchTours(context, 'bench-agent-', pilotContext);
     await pilotContext.close();
-  }
+  });
+
+  await run();
 
   async function run() {
     // ---------------------------------------------------------------- a tour whose rule asks for the agent's check

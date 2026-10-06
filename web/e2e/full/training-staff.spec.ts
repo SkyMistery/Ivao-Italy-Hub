@@ -1,15 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type APIResponse,
-  type BrowserContext,
-} from '@playwright/test';
+import { expect, type APIRequestContext, type APIResponse, type BrowserContext } from '@playwright/test';
 
-import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, mailpit, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The "done when" of A7 and A7b (M3), through the real screens against the real server: the bench's trainee asks for an ATC
@@ -62,6 +56,7 @@ test('a request is accepted and assigned, and the trainer conducts it in the ses
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   await readInEnglish(context);
@@ -70,131 +65,7 @@ test('a request is accepted and assigned, and the trainer conducts it in the ses
   const trainer = await browser.newContext({ baseURL: benchUrl });
   let requested: number | null = null;
 
-  try {
-    // ---------------------------------------------------------------- the trainee asks, as A6 has them ask
-    await signIn(trainee, 'pilot');
-    await signIn(context, null);
-    // In the roster before anybody assigns them a training, and never signed in again after.
-    await signIn(trainer, 'trainer');
-    // What an earlier run left going is taken back first: a request still waiting, by the trainee; an ATC training accepted,
-    // assigned or dated, by the staff.
-    await cancelWaiting(trainee.request);
-    await closeGoing(context.request, trainee.request, (row) => row.kind === 'Atc');
-    const before = await mine(trainee.request);
-    const atc = before.paths.find((path) => path.kind === 'Atc')!;
-    expect(
-      atc.refusal,
-      'the trainee may ask for an ATC training: what an earlier run left going on the ladder was taken back above',
-    ).toBeNull();
-    const position = atc.positions[0]!.callsign;
-
-    const asked = await trainee.request.post('/api/training/mine', {
-      headers: asTheClientDoes,
-      data: {
-        kind: 'Atc',
-        rating: atc.next!.number,
-        position,
-        availabilityText: 'Weekday evenings, from 18 UTC.',
-        notesText: null,
-        theoryPassed: true,
-      },
-    });
-    expect(asked.status(), await asked.text()).toBe(201);
-    requested = ((await asked.json()) as { id: number }).id;
-    const training = `${words.kinds.Atc} · ${atc.next!.shortName} · ${position}`;
-
-    // ---------------------------------------------------------------- the staff finds it among the requests to approve
-    const complaints: string[] = [];
-    page.on('console', (message) => {
-      if (message.type() === 'error' && !message.text().includes('favicon')) {
-        complaints.push(message.text());
-      }
-    });
-    page.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    await page.goto('/staff/training?queue=toApprove');
-    await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
-    const row = page.getByRole('row').filter({ hasText: '(999002)' }).filter({ hasText: position });
-    await expect(row).toHaveCount(1);
-    await row.getByRole('link', { name: words.staff.open }).click();
-    await expect(page).toHaveURL(new RegExp(`/staff/training/${String(requested)}$`));
-
-    // The reminder of whoever approves: the trainee's word on the theory is checked (§2.3).
-    await expect(
-      page.getByText(
-        filled(words.staff.theoryReminder.title, {
-          trainee: 'Bench Pilot (999002)',
-          rating: atc.next!.shortName,
-        }),
-        { exact: true },
-      ),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- accepted
-    await page.getByRole('button', { name: words.staff.accept.button, exact: true }).click();
-    await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(requested)}/accept`, async () => {
-      await page
-        .getByRole('alertdialog')
-        .getByRole('button', { name: words.staff.accept.button, exact: true })
-        .click();
-    });
-    await expect(page.getByText(words.staff.accept.done, { exact: true })).toBeVisible();
-    await expect(page.getByText(words.states.Accepted, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainer, before: the training is not theirs
-    // Training.Conduct by their position, on the department and on no training of its own (A7b); on a training not assigned to
-    // them it is worth Training.Edit, which they do not hold.
-    const conductBefore = await conductHeld(trainer.request);
-    expect(conductBefore).toContainEqual({ name: 'Training.Conduct', department: 'TD', resourceScope: null });
-    expect((await conflicts(trainer.request, requested)).status(), 'not theirs before the assignment').toBe(
-      403,
-    );
-
-    // ---------------------------------------------------------------- assigned to the bench's trainer, the one with the rating
-    const known = await mailsTo(trainee.request, TRAINER_ADDRESS);
-    const field = page.getByText(words.staff.assign.fields.trainerVid, { exact: true }).locator('..');
-    await field.getByRole('combobox').click();
-    await page.getByRole('option', { name: new RegExp(`\\(${String(BENCH_TRAINER)}\\)`) }).click();
-    await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(requested)}/assign`, async () => {
-      await page.getByRole('button', { name: words.staff.assign.submit, exact: true }).click();
-    });
-    await expect(page.getByText(words.states.Assigned, { exact: true })).toBeVisible();
-    await expect(page.getByText(/\(999004\), /)).toBeVisible();
-
-    // The bench has one trainer with the rating, and now they are the one: there is nobody else to change them for.
-    await expect(
-      page.getByText(filled(words.staff.trainer.noOtherCandidates, { rating: atc.next!.shortName }), {
-        exact: true,
-      }),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainer, in the same session: theirs now
-    // Nothing of theirs changed — no grant was written, so nothing signs them out —, and the training they could not touch a
-    // moment ago is theirs to conduct.
-    expect(await conductHeld(trainer.request)).toEqual(conductBefore);
-    expect((await conflicts(trainer.request, requested)).status(), 'theirs after the assignment').toBe(200);
-    const theirs = await trainer.request.get(`/api/training/trainings/${String(requested)}`);
-    expect(theirs.status(), await theirs.text()).toBe(200);
-    expect(((await theirs.json()) as { actions: { canConduct: boolean } }).actions.canConduct).toBe(true);
-
-    // And the mail that told them, with the training in its subject: one of this run's.
-    await expect
-      .poll(
-        async () =>
-          (await mailsTo(trainer.request, TRAINER_ADDRESS)).filter(
-            (mail) => !known.some((seen) => seen.ID === mail.ID) && mail.Subject.includes(training),
-          ).length,
-        {
-          timeout: 150_000,
-          intervals: [5_000],
-        },
-      )
-      .toBe(1);
-
-    expect(complaints).toEqual([]);
-  } finally {
+  afterwards(async () => {
     // A request this run left waiting — it stopped before the acceptance — is taken back, as A6b's round takes back its own.
     if (requested !== null) {
       const left = (await mine(trainee.request)).trainings.find(
@@ -214,7 +85,131 @@ test('a request is accepted and assigned, and the trainer conducts it in the ses
 
     await trainee.close();
     await trainer.close();
-  }
+  });
+
+  // ---------------------------------------------------------------- the trainee asks, as A6 has them ask
+  await signIn(trainee, 'pilot');
+  await signIn(context, null);
+  // In the roster before anybody assigns them a training, and never signed in again after.
+  await signIn(trainer, 'trainer');
+  // What an earlier run left going is taken back first: a request still waiting, by the trainee; an ATC training accepted,
+  // assigned or dated, by the staff.
+  await cancelWaiting(trainee.request);
+  await closeGoing(context.request, trainee.request, (row) => row.kind === 'Atc');
+  const before = await mine(trainee.request);
+  const atc = before.paths.find((path) => path.kind === 'Atc')!;
+  expect(
+    atc.refusal,
+    'the trainee may ask for an ATC training: what an earlier run left going on the ladder was taken back above',
+  ).toBeNull();
+  const position = atc.positions[0]!.callsign;
+
+  const asked = await trainee.request.post('/api/training/mine', {
+    headers: asTheClientDoes,
+    data: {
+      kind: 'Atc',
+      rating: atc.next!.number,
+      position,
+      availabilityText: 'Weekday evenings, from 18 UTC.',
+      notesText: null,
+      theoryPassed: true,
+    },
+  });
+  expect(asked.status(), await asked.text()).toBe(201);
+  requested = ((await asked.json()) as { id: number }).id;
+  const training = `${words.kinds.Atc} · ${atc.next!.shortName} · ${position}`;
+
+  // ---------------------------------------------------------------- the staff finds it among the requests to approve
+  const complaints: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !message.text().includes('favicon')) {
+      complaints.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await page.goto('/staff/training?queue=toApprove');
+  await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
+  const row = page.getByRole('row').filter({ hasText: '(999002)' }).filter({ hasText: position });
+  await expect(row).toHaveCount(1);
+  await row.getByRole('link', { name: words.staff.open }).click();
+  await expect(page).toHaveURL(new RegExp(`/staff/training/${String(requested)}$`));
+
+  // The reminder of whoever approves: the trainee's word on the theory is checked (§2.3).
+  await expect(
+    page.getByText(
+      filled(words.staff.theoryReminder.title, {
+        trainee: 'Bench Pilot (999002)',
+        rating: atc.next!.shortName,
+      }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- accepted
+  await page.getByRole('button', { name: words.staff.accept.button, exact: true }).click();
+  await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(requested)}/accept`, async () => {
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.staff.accept.button, exact: true })
+      .click();
+  });
+  await expect(page.getByText(words.staff.accept.done, { exact: true })).toBeVisible();
+  await expect(page.getByText(words.states.Accepted, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainer, before: the training is not theirs
+  // Training.Conduct by their position, on the department and on no training of its own (A7b); on a training not assigned to
+  // them it is worth Training.Edit, which they do not hold.
+  const conductBefore = await conductHeld(trainer.request);
+  expect(conductBefore).toContainEqual({ name: 'Training.Conduct', department: 'TD', resourceScope: null });
+  expect((await conflicts(trainer.request, requested)).status(), 'not theirs before the assignment').toBe(
+    403,
+  );
+
+  // ---------------------------------------------------------------- assigned to the bench's trainer, the one with the rating
+  const known = await mailsTo(trainee.request, TRAINER_ADDRESS);
+  const field = page.getByText(words.staff.assign.fields.trainerVid, { exact: true }).locator('..');
+  await field.getByRole('combobox').click();
+  await page.getByRole('option', { name: new RegExp(`\\(${String(BENCH_TRAINER)}\\)`) }).click();
+  await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(requested)}/assign`, async () => {
+    await page.getByRole('button', { name: words.staff.assign.submit, exact: true }).click();
+  });
+  await expect(page.getByText(words.states.Assigned, { exact: true })).toBeVisible();
+  await expect(page.getByText(/\(999004\), /)).toBeVisible();
+
+  // The bench has one trainer with the rating, and now they are the one: there is nobody else to change them for.
+  await expect(
+    page.getByText(filled(words.staff.trainer.noOtherCandidates, { rating: atc.next!.shortName }), {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainer, in the same session: theirs now
+  // Nothing of theirs changed — no grant was written, so nothing signs them out —, and the training they could not touch a
+  // moment ago is theirs to conduct.
+  expect(await conductHeld(trainer.request)).toEqual(conductBefore);
+  expect((await conflicts(trainer.request, requested)).status(), 'theirs after the assignment').toBe(200);
+  const theirs = await trainer.request.get(`/api/training/trainings/${String(requested)}`);
+  expect(theirs.status(), await theirs.text()).toBe(200);
+  expect(((await theirs.json()) as { actions: { canConduct: boolean } }).actions.canConduct).toBe(true);
+
+  // And the mail that told them, with the training in its subject: one of this run's.
+  await expect
+    .poll(
+      async () =>
+        (await mailsTo(trainer.request, TRAINER_ADDRESS)).filter(
+          (mail) => !known.some((seen) => seen.ID === mail.ID) && mail.Subject.includes(training),
+        ).length,
+      {
+        timeout: 150_000,
+        intervals: [5_000],
+      },
+    )
+    .toBe(1);
+
+  expect(complaints).toEqual([]);
 });
 
 async function signIn(context: BrowserContext, as: 'pilot' | 'trainer' | null): Promise<void> {

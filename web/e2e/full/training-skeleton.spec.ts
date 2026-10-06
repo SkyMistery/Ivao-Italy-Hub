@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, readInEnglish, signIn, whileWaitingFor } from './bench';
+import { benchUrl, readInEnglish, signIn, whileWaitingFor, test } from './bench';
 
 /**
  * The skeleton of the training (M3, A4), through the real screens registered from the module manifest: the section is
@@ -15,7 +15,7 @@ import { benchUrl, readInEnglish, signIn, whileWaitingFor } from './bench';
  * —, and the settings are not part of it. A grant on one training alone, which the assignments of A7 wrote before A7b, is not
  * a power over the department, and a bench that survived from then may still have one: it is left out.
  *
- * The settings are put back as they were in a `finally`: the bench survives between runs.
+ * The settings are put back as they were after the test (`afterwards`): the bench survives between runs.
  */
 
 const training = englishTraining();
@@ -25,6 +25,7 @@ const asTheClientDoes = { 'X-Requested-With': 'hub' };
 test('the training section is offered, and its settings are saved and read back', async ({
   page,
   context,
+  afterwards,
 }) => {
   await readInEnglish(context);
   await signIn(context);
@@ -37,31 +38,31 @@ test('the training section is offered, and its settings are saved and read back'
   expect(before.status(), await before.text()).toBe(200);
   const saved: unknown = await before.json();
 
-  try {
-    // Offered where every back office screen is offered: the palette reads the destinations the sidebar draws.
-    await page.goto('/staff/links');
-    await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
-    await page.keyboard.press('Control+k');
-
-    const palette = page.getByRole('dialog');
-    await palette.getByText(`${training.nav.section} — ${training.nav.settings}`).click();
-    await expect(page.getByRole('heading', { name: training.settings.title })).toBeVisible();
-
-    const cooldown = page.locator('[id="cooldownDays"]');
-    const next = (Number(await cooldown.inputValue()) % 30) + 1;
-    await cooldown.fill(String(next));
-
-    await whileWaitingFor(page, 'PUT', settingsUrl, async () => {
-      await page.getByRole('button', { name: englishCommon.common.save }).click();
-    });
-    await expect(page.getByText(training.settings.saved)).toBeVisible();
-
-    await page.reload();
-    await expect(page.locator('[id="cooldownDays"]')).toHaveValue(String(next));
-  } finally {
+  afterwards(async () => {
     const putBack = await context.request.put(settingsUrl, { headers: asTheClientDoes, data: saved });
     expect(putBack.status(), await putBack.text()).toBe(200);
-  }
+  });
+
+  // Offered where every back office screen is offered: the palette reads the destinations the sidebar draws.
+  await page.goto('/staff/links');
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+  await page.keyboard.press('Control+k');
+
+  const palette = page.getByRole('dialog');
+  await palette.getByText(`${training.nav.section} — ${training.nav.settings}`).click();
+  await expect(page.getByRole('heading', { name: training.settings.title })).toBeVisible();
+
+  const cooldown = page.locator('[id="cooldownDays"]');
+  const next = (Number(await cooldown.inputValue()) % 30) + 1;
+  await cooldown.fill(String(next));
+
+  await whileWaitingFor(page, 'PUT', settingsUrl, async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+  await expect(page.getByText(training.settings.saved)).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator('[id="cooldownDays"]')).toHaveValue(String(next));
 });
 
 test('the trainer of the bench views and conducts the trainings, and neither holds exams nor manages the settings', async ({

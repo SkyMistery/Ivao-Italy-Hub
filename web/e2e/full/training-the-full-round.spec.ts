@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, mailpit, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The full round of M3 (A12d; design M3 §0.1, §10): one ATC training of the bench's trainee, from the request to the report, through
@@ -133,6 +133,7 @@ test('the full round: asked for, accepted, assigned, dates proposed and one chos
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(600_000);
   await readInEnglish(context);
@@ -147,361 +148,7 @@ test('the full round: asked for, accepted, assigned, dates proposed and one chos
   // The training of this run, once asked for: the end takes it back if it did not reach its report.
   let id: number | null = null;
 
-  try {
-    await signIn(context, null);
-    // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
-    await signIn(trainer, 'trainer');
-    await signIn(trainee, 'pilot');
-    await takeBackLeftovers(context.request, trainee.request);
-    await retireItems(context.request);
-
-    // ---------------------------------------------------------------- the ATC ladder, free, and the sheet of its rating
-    const standing = await mine(trainee.request);
-    const atc = standing.paths.find((path) => path.kind === 'Atc')!;
-    expect(
-      atc.refusal,
-      'the trainee may ask for an ATC training: what an earlier run left going on the ladder was taken back above',
-    ).toBeNull();
-    expect(atc.isMockExam, 'the next ATC training is no mock exam: no round marks one on this ladder').toBe(
-      false,
-    );
-    expect(
-      atc.positions.length,
-      'the division offers a second position for the ATC training',
-    ).toBeGreaterThan(1);
-    const rating = atc.next!;
-    const position = atc.positions[1]!;
-    // What the mails say the training is: its ladder, rating and position, alike in both languages of the bench.
-    const training = `${words.kinds.Atc} · ${rating.shortName} · ${position.callsign}`;
-
-    for (const [index, item] of items.entries()) {
-      const written = await context.request.post('/api/training/sheet-items', {
-        headers: asTheClientDoes,
-        data: {
-          kind: 'Atc',
-          rating: rating.number,
-          section: item.section,
-          title: { en: item.en, it: item.it },
-          // After whatever the bench's sheet holds, in this order: the places go up to 999.
-          sort: 990 + index,
-          isActive: true,
-          rowVersion: '0001-01-01T00:00:00',
-        },
-      });
-      expect(written.status(), await written.text()).toBeLessThan(300);
-    }
-
-    // Mails already there, so that the ones of this run are told apart.
-    const known = (await messages(context.request)).map((message) => message.ID);
-
-    const complaints = [watch(page)];
-
-    // ---------------------------------------------------------------- the trainee asks, from the page of the request
-    const traineePage = await trainee.newPage();
-    complaints.push(watch(traineePage));
-
-    await traineePage.goto('/training/request?kind=Atc');
-    await expect(traineePage.getByRole('heading', { level: 1, name: words.request.title })).toBeVisible();
-    await traineePage.getByLabel(words.request.fields.position, { exact: true }).click();
-    await traineePage
-      .getByRole('option', {
-        name: filled(words.positionChoice, { callsign: position.callsign, name: position.name }),
-      })
-      .click();
-    await traineePage.getByLabel(words.request.fields.availabilityText, { exact: true }).fill(AVAILABILITY);
-    await traineePage.getByLabel(words.request.fields.notesText, { exact: true }).fill(NOTES);
-
-    await traineePage.getByRole('button', { name: words.request.send, exact: true }).click();
-    const question = traineePage.getByRole('alertdialog');
-    await expect(
-      question.getByText(filled(words.request.theory.question, { rating: rating.shortName })),
-    ).toBeVisible();
-    await question.getByRole('radio', { name: words.request.theory.yes }).check();
-    await whileWaitingFor(traineePage, 'POST', '/api/training/mine', async () => {
-      await question.getByRole('button', { name: words.request.theory.confirm }).click();
-    });
-
-    await expect(traineePage).toHaveURL(/\/training\/mine$/);
-    await expect(
-      traineePage
-        .getByRole('listitem')
-        .filter({ hasText: position.callsign })
-        .filter({ hasText: words.states.Requested }),
-    ).toHaveCount(1);
-
-    const asked = (await mine(trainee.request)).trainings.filter(
-      (row) => row.kind === 'Atc' && row.state === 'Requested' && row.position === position.callsign,
-    );
-    expect(asked, 'one request, on the position chosen').toHaveLength(1);
-    const trainingId = asked[0]!.id;
-    id = trainingId;
-
-    // ---------------------------------------------------------------- the staff accepts it, with the reminder of the theory in sight
-    await page.goto('/staff/training?queue=toApprove');
-    await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
-    const waiting = page
-      .getByRole('row')
-      .filter({ hasText: `(${String(TRAINEE)})` })
-      .filter({ hasText: position.callsign });
-    await expect(waiting).toHaveCount(1);
-    await waiting.getByRole('link', { name: words.staff.open }).click();
-    await expect(page).toHaveURL(new RegExp(`/staff/training/${String(trainingId)}$`));
-
-    await expect(
-      page.getByText(
-        filled(words.staff.theoryReminder.title, {
-          trainee: `Bench Pilot (${String(TRAINEE)})`,
-          rating: rating.shortName,
-        }),
-        { exact: true },
-      ),
-    ).toBeVisible();
-    // What the trainee wrote, as they wrote it.
-    await expect(page.getByText(AVAILABILITY, { exact: true })).toBeVisible();
-    await expect(page.getByText(NOTES, { exact: true })).toBeVisible();
-
-    await page.getByRole('button', { name: words.staff.accept.button, exact: true }).click();
-    await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(trainingId)}/accept`, async () => {
-      await page
-        .getByRole('alertdialog')
-        .getByRole('button', { name: words.staff.accept.button, exact: true })
-        .click();
-    });
-    await expect(page.getByText(words.staff.accept.done, { exact: true })).toBeVisible();
-    await expect(page.getByText(words.states.Accepted, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- and assigns it to the bench's trainer, who has the rating
-    const trainerField = page.getByText(words.staff.assign.fields.trainerVid, { exact: true }).locator('..');
-    await trainerField.getByRole('combobox').click();
-    await page.getByRole('option', { name: new RegExp(`\\(${String(BENCH_TRAINER)}\\)`) }).click();
-    await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(trainingId)}/assign`, async () => {
-      await page.getByRole('button', { name: words.staff.assign.submit, exact: true }).click();
-    });
-    await expect(page.getByText(words.states.Assigned, { exact: true })).toBeVisible();
-    await expect(page.getByText(new RegExp(`\\(${String(BENCH_TRAINER)}\\), `))).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainer proposes two dates, from the page of the training
-    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
-    const trainerPage = await trainer.newPage();
-    complaints.push(watch(trainerPage));
-
-    await trainerPage.goto(`/staff/training/${String(trainingId)}`);
-    await expect(
-      trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.dates }),
-    ).toBeVisible();
-
-    // The first a minute or two ahead, on a whole minute as the field writes it: the trainee chooses it before it comes, and the
-    // run waits for it. The second two days on.
-    const soon = new Date(Math.ceil((Date.now() + 90_000) / 60_000) * 60_000);
-    const later = new Date(`${daysAhead(2)}T17:00:00Z`);
-    const fields = words.staff.dates.propose.fields;
-    const starts = trainerPage.getByLabel(fields['slots.startsAtUtc'], { exact: true });
-    const ends = trainerPage.getByLabel(fields['slots.endsAtUtc'], { exact: true });
-    await starts.first().fill(wallClock(soon));
-    await ends.first().fill(wallClock(new Date(soon.getTime() + 3_600_000)));
-    await trainerPage.getByRole('button', { name: englishCommon.form.addEntry, exact: true }).click();
-    await starts.nth(1).fill(wallClock(later));
-    await ends.nth(1).fill(wallClock(new Date(later.getTime() + 2 * 3_600_000)));
-    await trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }).click();
-
-    // The page asks to confirm only when the days meet something already — on a bench made anew nothing does —, and the trainer
-    // confirms: what a date meets is the round of A8b.
-    const proposed = trainerPage.getByText(filled(words.staff.dates.propose.done_other, { count: '2' }), {
-      exact: true,
-    });
-    const confirm = trainerPage.getByRole('button', { name: words.staff.dates.propose.confirm, exact: true });
-    await expect(proposed.or(confirm)).toBeVisible();
-    if (await confirm.isVisible()) {
-      await confirm.click();
-    }
-    await expect(proposed).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainee chooses the first, among the tiles of their page
-    await traineePage.goto('/training/mine');
-    await traineePage
-      .getByRole('listitem')
-      .filter({ hasText: position.callsign })
-      .getByRole('link', { name: words.mine.chooseDate, exact: true })
-      .click();
-    await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(trainingId)}$`));
-
-    const choose = traineePage.getByRole('button', { name: words.detail.dates.choose, exact: true });
-    await expect(choose).toHaveCount(2);
-    await choose.first().click();
-    await whileWaitingFor(
-      traineePage,
-      'POST',
-      `/api/training/mine/${String(trainingId)}/choose`,
-      async () => {
-        await traineePage
-          .getByRole('alertdialog')
-          .getByRole('button', { name: words.detail.dates.confirm, exact: true })
-          .click();
-      },
-    );
-    await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.session })).toBeVisible();
-    await expect(traineePage.getByText(words.states.Scheduled, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- in the public calendar, with nobody's name
-    // The calendar's weeks are made of days in UTC: the one of the session holds it.
-    const visitorPage = await visitor.newPage();
-    visitorPage.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-    await visitorPage.goto(`/calendar?view=weekList&on=${soon.toISOString().slice(0, 10)}`);
-    await expect(visitorPage.locator(`a[href="/training/sessions/${String(trainingId)}"]`)).toHaveText(
-      `${rating.shortName} · ${position.callsign}`,
-    );
-    const shown = await visitorPage.locator('body').innerText();
-    for (const somebody of PEOPLE) {
-      expect(shown, `the calendar of a visitor names nobody: ${somebody}`).not.toContain(somebody);
-    }
-
-    // ---------------------------------------------------------------- the session starts
-    await expect
-      .poll(async () => (await staffTraining(trainer.request, trainingId)).actions.canRecordOutcome, {
-        message: 'the session has started',
-        timeout: 240_000,
-        intervals: [5_000],
-      })
-      .toBe(true);
-
-    // ---------------------------------------------------------------- the trainer marks the sheet and publishes the report
-    await trainerPage.reload();
-    await expect(
-      trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.report }),
-    ).toBeVisible();
-
-    const [practice, theory] = items.map((item) => rowOf(trainerPage, item.en));
-    await practice!.getByRole('radio', { name: '4', exact: true }).click();
-    await practice!.getByLabel(words.staff.report.traineeComment, { exact: true }).fill(TRAINEE_COMMENT);
-    await practice!.getByLabel(words.staff.report.staffNote, { exact: true }).fill(STAFF_NOTE);
-    await theory!.getByRole('radio', { name: words.marks.Done, exact: true }).click();
-
-    const report = words.staff.report.fields;
-    await trainerPage.getByLabel(report.generalComment, { exact: true }).fill(GENERAL_COMMENT);
-    await trainerPage.getByLabel(report.staffComment, { exact: true }).fill(STAFF_COMMENT);
-    // No waiting after it, and nothing for the mock exam: the ATC ladder stays free for the rounds after this one.
-    await trainerPage.getByRole('switch', { name: report.cooldownWaived, exact: true }).click();
-
-    await trainerPage.getByRole('button', { name: words.staff.report.publish, exact: true }).click();
-    await whileWaitingFor(
-      trainerPage,
-      'POST',
-      `/api/training/trainings/${String(trainingId)}/report`,
-      async () => {
-        await trainerPage
-          .getByRole('alertdialog')
-          .getByRole('button', { name: words.staff.report.publish, exact: true })
-          .click();
-      },
-    );
-    await expect(trainerPage.getByText(words.staff.report.done, { exact: true })).toBeVisible();
-    await expect(trainerPage.getByText(words.states.Completed, { exact: true })).toBeVisible();
-    // The staff reads its own note on the report published.
-    await expect(rowOf(trainerPage, items[0].en)).toContainText(
-      filled(words.report.forStaff, { note: STAFF_NOTE }),
-    );
-
-    // ---------------------------------------------------------------- the trainee reads it, and nothing of the staff's
-    await traineePage.goto('/training/mine');
-    // Newest first: this run's training, where earlier runs of this round left theirs on the same position.
-    await traineePage
-      .getByRole('listitem')
-      .filter({ hasText: position.callsign })
-      .getByRole('link', { name: words.mine.readReport, exact: true })
-      .first()
-      .click();
-    await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(trainingId)}$`));
-
-    await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
-    await expect(rowOf(traineePage, items[0].en)).toContainText(filled(words.report.grade, { grade: '4' }));
-    await expect(rowOf(traineePage, items[0].en)).toContainText(TRAINEE_COMMENT);
-    await expect(rowOf(traineePage, items[1].en)).toContainText(words.marks.Done);
-    await expect(traineePage.getByText(GENERAL_COMMENT, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.mine.cooldownWaived, { exact: true })).toBeVisible();
-
-    const read = await traineePage.locator('body').innerText();
-    for (const reserved of [STAFF_NOTE, STAFF_COMMENT]) {
-      expect(read, `the trainee never reads what the staff wrote for itself: ${reserved}`).not.toContain(
-        reserved,
-      );
-    }
-
-    // ---------------------------------------------------------------- the staff finds it in the history
-    await page.goto('/staff/training?queue=history');
-    await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
-    // Newest first, as every view but the queues of work.
-    const over = page
-      .getByRole('row')
-      .filter({ hasText: `(${String(TRAINEE)})` })
-      .filter({ hasText: position.callsign })
-      .first();
-    await expect(over).toContainText(words.staff.options.state.Completed);
-    await expect(over).toContainText(`(${String(BENCH_TRAINER)})`);
-    await over.getByRole('link', { name: words.staff.open }).click();
-    await expect(page).toHaveURL(new RegExp(`/staff/training/${String(trainingId)}$`));
-
-    // ---------------------------------------------------------------- and its history: every step, who took it (A13b)
-    // Read by the server from the core's audit log: the request, the staff's acceptance and assignment, the dates proposed, the
-    // trainee's choice, the report — each with who took it. The staff is the bench's web master, whose name this file does not write.
-    const history = page
-      .locator('section', {
-        has: page.getByRole('heading', { level: 2, name: words.staff.sections.history, exact: true }),
-      })
-      .getByRole('listitem');
-    const pilot = `Bench Pilot (${String(TRAINEE)})`;
-    const benchTrainer = `Bench Trainer (${String(BENCH_TRAINER)})`;
-    const before = (sentence: string, value: string) => sentence.split(`{{${value}}}`)[0]!;
-    await expect(history).toHaveCount(6);
-    await expect(history.nth(0)).toContainText(filled(words.staff.history.requested, { name: pilot }));
-    await expect(history.nth(1)).toContainText(filled(words.staff.history.accepted, { name: '' }).trim());
-    await expect(history.nth(2)).toContainText(
-      filled(words.staff.history.assigned, { name: '', trainer: benchTrainer }).trim(),
-    );
-    await expect(history.nth(3)).toContainText(
-      filled(words.staff.history.datesChanged, { name: benchTrainer }),
-    );
-    await expect(history.nth(4)).toContainText(
-      filled(before(words.staff.history.dateChosen, 'date'), { name: pilot }),
-    );
-    await expect(history.nth(5)).toContainText(filled(words.staff.history.completed, { name: benchTrainer }));
-
-    // ---------------------------------------------------------------- the mail of every step, once, to whoever it is for
-    const session = `${training}, ${wallClock(soon).replace('T', ' ')} UTC`;
-    const expected: readonly (readonly [MailType, string, string])[] = [
-      ['requestReceived', TRAINEE_ADDRESS, training],
-      ['requestAccepted', TRAINEE_ADDRESS, training],
-      ['trainerAssigned', TRAINEE_ADDRESS, training],
-      ['trainerAssigned', TRAINER_ADDRESS, training],
-      ['datesProposed', TRAINEE_ADDRESS, training],
-      ['dateConfirmed', TRAINEE_ADDRESS, session],
-      ['dateConfirmed', TRAINER_ADDRESS, session],
-      ['reportPublished', TRAINEE_ADDRESS, training],
-    ];
-
-    await expect
-      .poll(
-        async () => {
-          const arrived = (await messages(context.request)).filter((message) => !known.includes(message.ID));
-          return expected
-            .filter(
-              ([type, address, about]) =>
-                arrived.filter(
-                  (message) =>
-                    message.To.some((recipient) => recipient.Address === address) &&
-                    subjectsOf(type).some((subject) => message.Subject.startsWith(subject)) &&
-                    message.Subject.includes(about),
-                ).length !== 1,
-            )
-            .map(([type, address]) => `${type} to ${address}`);
-        },
-        { message: 'the mail of every step, once each', timeout: 150_000, intervals: [5_000] },
-      )
-      .toEqual([]);
-
-    expect(complaints.flat()).toEqual([]);
-  } finally {
+  afterwards(async () => {
     if (id !== null) {
       await takeBack(context.request, trainee.request, id);
     }
@@ -510,7 +157,355 @@ test('the full round: asked for, accepted, assigned, dates proposed and one chos
     await trainee.close();
     await trainer.close();
     await visitor.close();
+  });
+
+  await signIn(context, null);
+  // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
+  await signIn(trainer, 'trainer');
+  await signIn(trainee, 'pilot');
+  await takeBackLeftovers(context.request, trainee.request);
+  await retireItems(context.request);
+
+  // ---------------------------------------------------------------- the ATC ladder, free, and the sheet of its rating
+  const standing = await mine(trainee.request);
+  const atc = standing.paths.find((path) => path.kind === 'Atc')!;
+  expect(
+    atc.refusal,
+    'the trainee may ask for an ATC training: what an earlier run left going on the ladder was taken back above',
+  ).toBeNull();
+  expect(atc.isMockExam, 'the next ATC training is no mock exam: no round marks one on this ladder').toBe(
+    false,
+  );
+  expect(atc.positions.length, 'the division offers a second position for the ATC training').toBeGreaterThan(
+    1,
+  );
+  const rating = atc.next!;
+  const position = atc.positions[1]!;
+  // What the mails say the training is: its ladder, rating and position, alike in both languages of the bench.
+  const training = `${words.kinds.Atc} · ${rating.shortName} · ${position.callsign}`;
+
+  for (const [index, item] of items.entries()) {
+    const written = await context.request.post('/api/training/sheet-items', {
+      headers: asTheClientDoes,
+      data: {
+        kind: 'Atc',
+        rating: rating.number,
+        section: item.section,
+        title: { en: item.en, it: item.it },
+        // After whatever the bench's sheet holds, in this order: the places go up to 999.
+        sort: 990 + index,
+        isActive: true,
+        rowVersion: '0001-01-01T00:00:00',
+      },
+    });
+    expect(written.status(), await written.text()).toBeLessThan(300);
   }
+
+  // Mails already there, so that the ones of this run are told apart.
+  const known = (await messages(context.request)).map((message) => message.ID);
+
+  const complaints = [watch(page)];
+
+  // ---------------------------------------------------------------- the trainee asks, from the page of the request
+  const traineePage = await trainee.newPage();
+  complaints.push(watch(traineePage));
+
+  await traineePage.goto('/training/request?kind=Atc');
+  await expect(traineePage.getByRole('heading', { level: 1, name: words.request.title })).toBeVisible();
+  await traineePage.getByLabel(words.request.fields.position, { exact: true }).click();
+  await traineePage
+    .getByRole('option', {
+      name: filled(words.positionChoice, { callsign: position.callsign, name: position.name }),
+    })
+    .click();
+  await traineePage.getByLabel(words.request.fields.availabilityText, { exact: true }).fill(AVAILABILITY);
+  await traineePage.getByLabel(words.request.fields.notesText, { exact: true }).fill(NOTES);
+
+  await traineePage.getByRole('button', { name: words.request.send, exact: true }).click();
+  const question = traineePage.getByRole('alertdialog');
+  await expect(
+    question.getByText(filled(words.request.theory.question, { rating: rating.shortName })),
+  ).toBeVisible();
+  await question.getByRole('radio', { name: words.request.theory.yes }).check();
+  await whileWaitingFor(traineePage, 'POST', '/api/training/mine', async () => {
+    await question.getByRole('button', { name: words.request.theory.confirm }).click();
+  });
+
+  await expect(traineePage).toHaveURL(/\/training\/mine$/);
+  await expect(
+    traineePage
+      .getByRole('listitem')
+      .filter({ hasText: position.callsign })
+      .filter({ hasText: words.states.Requested }),
+  ).toHaveCount(1);
+
+  const asked = (await mine(trainee.request)).trainings.filter(
+    (row) => row.kind === 'Atc' && row.state === 'Requested' && row.position === position.callsign,
+  );
+  expect(asked, 'one request, on the position chosen').toHaveLength(1);
+  const trainingId = asked[0]!.id;
+  id = trainingId;
+
+  // ---------------------------------------------------------------- the staff accepts it, with the reminder of the theory in sight
+  await page.goto('/staff/training?queue=toApprove');
+  await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
+  const waiting = page
+    .getByRole('row')
+    .filter({ hasText: `(${String(TRAINEE)})` })
+    .filter({ hasText: position.callsign });
+  await expect(waiting).toHaveCount(1);
+  await waiting.getByRole('link', { name: words.staff.open }).click();
+  await expect(page).toHaveURL(new RegExp(`/staff/training/${String(trainingId)}$`));
+
+  await expect(
+    page.getByText(
+      filled(words.staff.theoryReminder.title, {
+        trainee: `Bench Pilot (${String(TRAINEE)})`,
+        rating: rating.shortName,
+      }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+  // What the trainee wrote, as they wrote it.
+  await expect(page.getByText(AVAILABILITY, { exact: true })).toBeVisible();
+  await expect(page.getByText(NOTES, { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: words.staff.accept.button, exact: true }).click();
+  await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(trainingId)}/accept`, async () => {
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.staff.accept.button, exact: true })
+      .click();
+  });
+  await expect(page.getByText(words.staff.accept.done, { exact: true })).toBeVisible();
+  await expect(page.getByText(words.states.Accepted, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- and assigns it to the bench's trainer, who has the rating
+  const trainerField = page.getByText(words.staff.assign.fields.trainerVid, { exact: true }).locator('..');
+  await trainerField.getByRole('combobox').click();
+  await page.getByRole('option', { name: new RegExp(`\\(${String(BENCH_TRAINER)}\\)`) }).click();
+  await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(trainingId)}/assign`, async () => {
+    await page.getByRole('button', { name: words.staff.assign.submit, exact: true }).click();
+  });
+  await expect(page.getByText(words.states.Assigned, { exact: true })).toBeVisible();
+  await expect(page.getByText(new RegExp(`\\(${String(BENCH_TRAINER)}\\), `))).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainer proposes two dates, from the page of the training
+  // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
+  const trainerPage = await trainer.newPage();
+  complaints.push(watch(trainerPage));
+
+  await trainerPage.goto(`/staff/training/${String(trainingId)}`);
+  await expect(
+    trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.dates }),
+  ).toBeVisible();
+
+  // The first a minute or two ahead, on a whole minute as the field writes it: the trainee chooses it before it comes, and the
+  // run waits for it. The second two days on.
+  const soon = new Date(Math.ceil((Date.now() + 90_000) / 60_000) * 60_000);
+  const later = new Date(`${daysAhead(2)}T17:00:00Z`);
+  const fields = words.staff.dates.propose.fields;
+  const starts = trainerPage.getByLabel(fields['slots.startsAtUtc'], { exact: true });
+  const ends = trainerPage.getByLabel(fields['slots.endsAtUtc'], { exact: true });
+  await starts.first().fill(wallClock(soon));
+  await ends.first().fill(wallClock(new Date(soon.getTime() + 3_600_000)));
+  await trainerPage.getByRole('button', { name: englishCommon.form.addEntry, exact: true }).click();
+  await starts.nth(1).fill(wallClock(later));
+  await ends.nth(1).fill(wallClock(new Date(later.getTime() + 2 * 3_600_000)));
+  await trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }).click();
+
+  // The page asks to confirm only when the days meet something already — on a bench made anew nothing does —, and the trainer
+  // confirms: what a date meets is the round of A8b.
+  const proposed = trainerPage.getByText(filled(words.staff.dates.propose.done_other, { count: '2' }), {
+    exact: true,
+  });
+  const confirm = trainerPage.getByRole('button', { name: words.staff.dates.propose.confirm, exact: true });
+  await expect(proposed.or(confirm)).toBeVisible();
+  if (await confirm.isVisible()) {
+    await confirm.click();
+  }
+  await expect(proposed).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainee chooses the first, among the tiles of their page
+  await traineePage.goto('/training/mine');
+  await traineePage
+    .getByRole('listitem')
+    .filter({ hasText: position.callsign })
+    .getByRole('link', { name: words.mine.chooseDate, exact: true })
+    .click();
+  await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(trainingId)}$`));
+
+  const choose = traineePage.getByRole('button', { name: words.detail.dates.choose, exact: true });
+  await expect(choose).toHaveCount(2);
+  await choose.first().click();
+  await whileWaitingFor(traineePage, 'POST', `/api/training/mine/${String(trainingId)}/choose`, async () => {
+    await traineePage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.detail.dates.confirm, exact: true })
+      .click();
+  });
+  await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.session })).toBeVisible();
+  await expect(traineePage.getByText(words.states.Scheduled, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- in the public calendar, with nobody's name
+  // The calendar's weeks are made of days in UTC: the one of the session holds it.
+  const visitorPage = await visitor.newPage();
+  visitorPage.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+  await visitorPage.goto(`/calendar?view=weekList&on=${soon.toISOString().slice(0, 10)}`);
+  await expect(visitorPage.locator(`a[href="/training/sessions/${String(trainingId)}"]`)).toHaveText(
+    `${rating.shortName} · ${position.callsign}`,
+  );
+  const shown = await visitorPage.locator('body').innerText();
+  for (const somebody of PEOPLE) {
+    expect(shown, `the calendar of a visitor names nobody: ${somebody}`).not.toContain(somebody);
+  }
+
+  // ---------------------------------------------------------------- the session starts
+  await expect
+    .poll(async () => (await staffTraining(trainer.request, trainingId)).actions.canRecordOutcome, {
+      message: 'the session has started',
+      timeout: 240_000,
+      intervals: [5_000],
+    })
+    .toBe(true);
+
+  // ---------------------------------------------------------------- the trainer marks the sheet and publishes the report
+  await trainerPage.reload();
+  await expect(
+    trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.report }),
+  ).toBeVisible();
+
+  const [practice, theory] = items.map((item) => rowOf(trainerPage, item.en));
+  await practice!.getByRole('radio', { name: '4', exact: true }).click();
+  await practice!.getByLabel(words.staff.report.traineeComment, { exact: true }).fill(TRAINEE_COMMENT);
+  await practice!.getByLabel(words.staff.report.staffNote, { exact: true }).fill(STAFF_NOTE);
+  await theory!.getByRole('radio', { name: words.marks.Done, exact: true }).click();
+
+  const report = words.staff.report.fields;
+  await trainerPage.getByLabel(report.generalComment, { exact: true }).fill(GENERAL_COMMENT);
+  await trainerPage.getByLabel(report.staffComment, { exact: true }).fill(STAFF_COMMENT);
+  // No waiting after it, and nothing for the mock exam: the ATC ladder stays free for the rounds after this one.
+  await trainerPage.getByRole('switch', { name: report.cooldownWaived, exact: true }).click();
+
+  await trainerPage.getByRole('button', { name: words.staff.report.publish, exact: true }).click();
+  await whileWaitingFor(
+    trainerPage,
+    'POST',
+    `/api/training/trainings/${String(trainingId)}/report`,
+    async () => {
+      await trainerPage
+        .getByRole('alertdialog')
+        .getByRole('button', { name: words.staff.report.publish, exact: true })
+        .click();
+    },
+  );
+  await expect(trainerPage.getByText(words.staff.report.done, { exact: true })).toBeVisible();
+  await expect(trainerPage.getByText(words.states.Completed, { exact: true })).toBeVisible();
+  // The staff reads its own note on the report published.
+  await expect(rowOf(trainerPage, items[0].en)).toContainText(
+    filled(words.report.forStaff, { note: STAFF_NOTE }),
+  );
+
+  // ---------------------------------------------------------------- the trainee reads it, and nothing of the staff's
+  await traineePage.goto('/training/mine');
+  // Newest first: this run's training, where earlier runs of this round left theirs on the same position.
+  await traineePage
+    .getByRole('listitem')
+    .filter({ hasText: position.callsign })
+    .getByRole('link', { name: words.mine.readReport, exact: true })
+    .first()
+    .click();
+  await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(trainingId)}$`));
+
+  await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
+  await expect(rowOf(traineePage, items[0].en)).toContainText(filled(words.report.grade, { grade: '4' }));
+  await expect(rowOf(traineePage, items[0].en)).toContainText(TRAINEE_COMMENT);
+  await expect(rowOf(traineePage, items[1].en)).toContainText(words.marks.Done);
+  await expect(traineePage.getByText(GENERAL_COMMENT, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.mine.cooldownWaived, { exact: true })).toBeVisible();
+
+  const read = await traineePage.locator('body').innerText();
+  for (const reserved of [STAFF_NOTE, STAFF_COMMENT]) {
+    expect(read, `the trainee never reads what the staff wrote for itself: ${reserved}`).not.toContain(
+      reserved,
+    );
+  }
+
+  // ---------------------------------------------------------------- the staff finds it in the history
+  await page.goto('/staff/training?queue=history');
+  await expect(page.getByRole('heading', { level: 1, name: words.staff.title })).toBeVisible();
+  // Newest first, as every view but the queues of work.
+  const over = page
+    .getByRole('row')
+    .filter({ hasText: `(${String(TRAINEE)})` })
+    .filter({ hasText: position.callsign })
+    .first();
+  await expect(over).toContainText(words.staff.options.state.Completed);
+  await expect(over).toContainText(`(${String(BENCH_TRAINER)})`);
+  await over.getByRole('link', { name: words.staff.open }).click();
+  await expect(page).toHaveURL(new RegExp(`/staff/training/${String(trainingId)}$`));
+
+  // ---------------------------------------------------------------- and its history: every step, who took it (A13b)
+  // Read by the server from the core's audit log: the request, the staff's acceptance and assignment, the dates proposed, the
+  // trainee's choice, the report — each with who took it. The staff is the bench's web master, whose name this file does not write.
+  const history = page
+    .locator('section', {
+      has: page.getByRole('heading', { level: 2, name: words.staff.sections.history, exact: true }),
+    })
+    .getByRole('listitem');
+  const pilot = `Bench Pilot (${String(TRAINEE)})`;
+  const benchTrainer = `Bench Trainer (${String(BENCH_TRAINER)})`;
+  const before = (sentence: string, value: string) => sentence.split(`{{${value}}}`)[0]!;
+  await expect(history).toHaveCount(6);
+  await expect(history.nth(0)).toContainText(filled(words.staff.history.requested, { name: pilot }));
+  await expect(history.nth(1)).toContainText(filled(words.staff.history.accepted, { name: '' }).trim());
+  await expect(history.nth(2)).toContainText(
+    filled(words.staff.history.assigned, { name: '', trainer: benchTrainer }).trim(),
+  );
+  await expect(history.nth(3)).toContainText(
+    filled(words.staff.history.datesChanged, { name: benchTrainer }),
+  );
+  await expect(history.nth(4)).toContainText(
+    filled(before(words.staff.history.dateChosen, 'date'), { name: pilot }),
+  );
+  await expect(history.nth(5)).toContainText(filled(words.staff.history.completed, { name: benchTrainer }));
+
+  // ---------------------------------------------------------------- the mail of every step, once, to whoever it is for
+  const session = `${training}, ${wallClock(soon).replace('T', ' ')} UTC`;
+  const expected: readonly (readonly [MailType, string, string])[] = [
+    ['requestReceived', TRAINEE_ADDRESS, training],
+    ['requestAccepted', TRAINEE_ADDRESS, training],
+    ['trainerAssigned', TRAINEE_ADDRESS, training],
+    ['trainerAssigned', TRAINER_ADDRESS, training],
+    ['datesProposed', TRAINEE_ADDRESS, training],
+    ['dateConfirmed', TRAINEE_ADDRESS, session],
+    ['dateConfirmed', TRAINER_ADDRESS, session],
+    ['reportPublished', TRAINEE_ADDRESS, training],
+  ];
+
+  await expect
+    .poll(
+      async () => {
+        const arrived = (await messages(context.request)).filter((message) => !known.includes(message.ID));
+        return expected
+          .filter(
+            ([type, address, about]) =>
+              arrived.filter(
+                (message) =>
+                  message.To.some((recipient) => recipient.Address === address) &&
+                  subjectsOf(type).some((subject) => message.Subject.startsWith(subject)) &&
+                  message.Subject.includes(about),
+              ).length !== 1,
+          )
+          .map(([type, address]) => `${type} to ${address}`);
+      },
+      { message: 'the mail of every step, once each', timeout: 150_000, intervals: [5_000] },
+    )
+    .toEqual([]);
+
+  expect(complaints.flat()).toEqual([]);
 });
 
 /** The errors a page writes in its console, and a page that throws fails the run. */

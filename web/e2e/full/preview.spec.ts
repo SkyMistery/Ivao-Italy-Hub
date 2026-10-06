@@ -1,8 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, createContent, deleteContent, readInEnglish, signIn } from './bench';
+import { benchUrl, createContent, deleteContent, readInEnglish, signIn, test } from './bench';
 
 /**
  * The preview of the editor draws the page on a machine slower than a developer's
@@ -22,17 +22,10 @@ import { benchUrl, createContent, deleteContent, readInEnglish, signIn } from '.
 const words = englishCommon.content.editor;
 const stamp = Date.now().toString(36);
 
-const made: number[] = [];
-
-test.afterEach(async ({ context }) => {
-  for (const id of made.splice(0)) {
-    await deleteContent(context, id);
-  }
-});
-
 test('the preview of the editor draws the page however slowly the browser gets there', async ({
   browser,
   context,
+  afterwards,
 }, testInfo) => {
   test.setTimeout(120_000);
   await readInEnglish(context);
@@ -63,31 +56,29 @@ test('the preview of the editor draws the page however slowly the browser gets t
       ],
     },
   });
-  made.push(born.id);
+  afterwards(() => deleteContent(context, born.id));
 
   for (const rate of [2, 4, 8]) {
     // A browser that has never been here, each time: from the second visit on the typefaces come
     // out of the cache before the page is drawn, and the window this is about never opens.
     const fresh = await browser.newContext({ baseURL: benchUrl });
 
-    try {
-      await readInEnglish(fresh);
-      await signIn(fresh);
-
-      const page = await fresh.newPage();
-      const slowed = await fresh.newCDPSession(page);
-      await slowed.send('Emulation.setCPUThrottlingRate', { rate });
-      await page.goto(`/staff/content/${born.id}`);
-
-      // In the document is not drawn: the sections were all there, with no box.
-      await expect(
-        page
-          .getByRole('region', { name: words.preview })
-          .getByRole('heading', { name: 'Drawn all the same' }),
-        `slowed ${rate} times`,
-      ).toBeVisible({ timeout: 30_000 });
-    } finally {
+    afterwards(async () => {
       await fresh.close();
-    }
+    });
+
+    await readInEnglish(fresh);
+    await signIn(fresh);
+
+    const page = await fresh.newPage();
+    const slowed = await fresh.newCDPSession(page);
+    await slowed.send('Emulation.setCPUThrottlingRate', { rate });
+    await page.goto(`/staff/content/${born.id}`);
+
+    // In the document is not drawn: the sections were all there, with no box.
+    await expect(
+      page.getByRole('region', { name: words.preview }).getByRole('heading', { name: 'Drawn all the same' }),
+      `slowed ${rate} times`,
+    ).toBeVisible({ timeout: 30_000 });
   }
 });

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type BrowserContext } from '@playwright/test';
+import { expect, type BrowserContext } from '@playwright/test';
 
 import {
   benchAirports,
@@ -10,6 +10,7 @@ import {
   removeBenchTours,
   signIn,
   whileWaitingFor,
+  test,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -35,6 +36,7 @@ const slug = `bench-report-${stamp}`;
 test('a pilot reports a flight on a tour, sees it in the queue and withdraws it', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(120_000);
   await readInEnglish(context);
@@ -58,12 +60,12 @@ test('a pilot reports a flight on a tour, sees it in the queue and withdraws it'
   });
 
   await removeBenchTours(context, 'bench-report-', context);
-  try {
-    await reportAndWithdraw();
-  } finally {
+  afterwards(async () => {
     flight.remove();
     await removeBenchTours(context, 'bench-report-', context);
-  }
+  });
+
+  await reportAndWithdraw();
 
   async function reportAndWithdraw() {
     // ---------------------------------------------------------------- a tour released two days ago, one leg

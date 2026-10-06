@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, type APIRequestContext } from '@playwright/test';
 
 import {
   benchAirports,
@@ -12,6 +12,7 @@ import {
   removeBenchTours,
   signIn,
   whileWaitingFor,
+  test,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -71,6 +72,7 @@ test('a tour flown to the end signals its award, and the award is assigned from 
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   const stamp = Date.now().toString(36);
@@ -91,16 +93,16 @@ test('a tour flown to the end signals its award, and the award is assigned from 
   const made: { award?: number } = {};
 
   await removeBenchTours(context, 'bench-people-', pilotContext);
-  try {
-    await complete();
-  } finally {
+  afterwards(async () => {
     flight.remove();
     if (made.award !== undefined) {
       await revokeAndDelete(context.request, made.award);
     }
     await removeBenchTours(context, 'bench-people-', pilotContext);
     await pilotContext.close();
-  }
+  });
+
+  await complete();
 
   async function complete() {
     // ---------------------------------------------------------------- a tour of one leg, proposing an award
@@ -180,6 +182,7 @@ test('a tour flown to the end signals its award, and the award is assigned from 
 test('a validator is added and removed, and a pilot is found by VID, banned from a tour and let back', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(180_000);
   const stamp = Date.now().toString(36);
@@ -196,65 +199,65 @@ test('a validator is added and removed, and a pilot is found by VID, banned from
   await signIn(context);
 
   await removeBenchTours(context, 'bench-people-');
-  try {
-    await releasedTourWithOneLeg(page, context, { name: tourName, slug });
-
-    // ---------------------------------------------------------------- «add a validator»
-    await page.goto('/staff/tours/validators');
-    const form = page.locator('form');
-    await form.locator('[id="vid"]').fill(String(pilotVid));
-    await choose(page, words.validators.fields.tourId, tourName.en, form);
-    await page.getByRole('button', { name: words.validators.add, exact: true }).click();
-    await expect(page.getByText(refusals.errors.grant.notStaff)).toBeVisible();
-
-    await form.locator('[id="vid"]').fill(String(assistantVid));
-    await whileWaitingFor(page, 'POST', '/api/flightops/validators', async () => {
-      await page.getByRole('button', { name: words.validators.add, exact: true }).click();
-    });
-    const row = page.getByRole('row', { name: new RegExp(`Bench Assistant \\(${assistantVid}\\)`) });
-    await expect(row.getByText(tourName.en, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- and removed
-    await row
-      .getByRole('listitem')
-      .filter({ hasText: tourName.en })
-      .getByRole('button', { name: words.validators.remove })
-      .click();
-    await whileWaitingFor(page, 'DELETE', '/api/flightops/validators/', async () => {
-      await page.getByRole('alertdialog').getByRole('button', { name: words.validators.remove }).click();
-    });
-    // Off their row — the form above still holds the tour it was given, which is not an enablement.
-    await expect(row.getByText(tourName.en, { exact: true })).toHaveCount(0);
-
-    // ---------------------------------------------------------------- the pilot, by VID
-    await page.goto('/staff/tours/pilots');
-    await page.locator('[id="vid"]').fill(String(pilotVid));
-    await page.getByRole('button', { name: words.pilots.open, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/staff/tours/pilots/${pilotVid}(\\?|$)`));
-    await expect(page.getByRole('heading', { name: `Bench Pilot (${pilotVid})` })).toBeVisible();
-
-    // ---------------------------------------------------------------- banned from the tour of this run
-    await page.getByRole('link', { name: words.pilots.ban, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/staff/tours/bans/new\\?vid=${pilotVid}`));
-    await choose(page, words.bans.fields.tourId, tourName.en);
-    await page.locator('[id="reason"]').fill(`Bench ban ${stamp}`);
-    await whileWaitingFor(page, 'POST', '/api/flightops/bans', async () => {
-      await page.getByRole('button', { name: common.common.save }).click();
-    });
-    await expect(page).toHaveURL(new RegExp(`/staff/tours/pilots/${pilotVid}(\\?|$)`));
-    const ban = page.getByRole('listitem').filter({ hasText: `Bench ban ${stamp}` });
-    await expect(ban).toBeVisible();
-
-    // ---------------------------------------------------------------- let back: a ban is never deleted, its end is moved
-    await ban.getByRole('link', { name: tourName.en }).click();
-    const starts = await page.locator('[id="startsAt"]').inputValue();
-    await page.locator('[id="endsAt"]').fill(minuteAfter(starts));
-    await whileWaitingFor(page, 'PUT', '/api/flightops/bans/', async () => {
-      await page.getByRole('button', { name: common.common.save }).click();
-    });
-  } finally {
+  afterwards(async () => {
     await removeBenchTours(context, 'bench-people-');
-  }
+  });
+
+  await releasedTourWithOneLeg(page, context, { name: tourName, slug });
+
+  // ---------------------------------------------------------------- «add a validator»
+  await page.goto('/staff/tours/validators');
+  const form = page.locator('form');
+  await form.locator('[id="vid"]').fill(String(pilotVid));
+  await choose(page, words.validators.fields.tourId, tourName.en, form);
+  await page.getByRole('button', { name: words.validators.add, exact: true }).click();
+  await expect(page.getByText(refusals.errors.grant.notStaff)).toBeVisible();
+
+  await form.locator('[id="vid"]').fill(String(assistantVid));
+  await whileWaitingFor(page, 'POST', '/api/flightops/validators', async () => {
+    await page.getByRole('button', { name: words.validators.add, exact: true }).click();
+  });
+  const row = page.getByRole('row', { name: new RegExp(`Bench Assistant \\(${assistantVid}\\)`) });
+  await expect(row.getByText(tourName.en, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- and removed
+  await row
+    .getByRole('listitem')
+    .filter({ hasText: tourName.en })
+    .getByRole('button', { name: words.validators.remove })
+    .click();
+  await whileWaitingFor(page, 'DELETE', '/api/flightops/validators/', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: words.validators.remove }).click();
+  });
+  // Off their row — the form above still holds the tour it was given, which is not an enablement.
+  await expect(row.getByText(tourName.en, { exact: true })).toHaveCount(0);
+
+  // ---------------------------------------------------------------- the pilot, by VID
+  await page.goto('/staff/tours/pilots');
+  await page.locator('[id="vid"]').fill(String(pilotVid));
+  await page.getByRole('button', { name: words.pilots.open, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/staff/tours/pilots/${pilotVid}(\\?|$)`));
+  await expect(page.getByRole('heading', { name: `Bench Pilot (${pilotVid})` })).toBeVisible();
+
+  // ---------------------------------------------------------------- banned from the tour of this run
+  await page.getByRole('link', { name: words.pilots.ban, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/staff/tours/bans/new\\?vid=${pilotVid}`));
+  await choose(page, words.bans.fields.tourId, tourName.en);
+  await page.locator('[id="reason"]').fill(`Bench ban ${stamp}`);
+  await whileWaitingFor(page, 'POST', '/api/flightops/bans', async () => {
+    await page.getByRole('button', { name: common.common.save }).click();
+  });
+  await expect(page).toHaveURL(new RegExp(`/staff/tours/pilots/${pilotVid}(\\?|$)`));
+  const ban = page.getByRole('listitem').filter({ hasText: `Bench ban ${stamp}` });
+  await expect(ban).toBeVisible();
+
+  // ---------------------------------------------------------------- let back: a ban is never deleted, its end is moved
+  await ban.getByRole('link', { name: tourName.en }).click();
+  const starts = await page.locator('[id="startsAt"]').inputValue();
+  await page.locator('[id="endsAt"]').fill(minuteAfter(starts));
+  await whileWaitingFor(page, 'PUT', '/api/flightops/bans/', async () => {
+    await page.getByRole('button', { name: common.common.save }).click();
+  });
 });
 
 async function created(request: APIRequestContext, path: string, data: unknown): Promise<number> {
