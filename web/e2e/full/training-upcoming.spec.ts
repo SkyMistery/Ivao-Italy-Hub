@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Locator } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Locator } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, readInEnglish } from './bench';
+import { benchUrl, readInEnglish, test } from './bench';
 
 /**
  * The "done when" of A10b (M3), through the real screens against the real server: a training of the bench's trainee is dated, and a
@@ -56,6 +56,7 @@ interface Row {
 test('a visitor reads the sessions to come without names, the calendar leads to the page of one, and signed in it says who', async ({
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   await readInEnglish(context);
@@ -70,105 +71,7 @@ test('a visitor reads the sessions to come without names, the calendar leads to 
   // What this run opens, so that the end closes it whatever happens in between.
   const opened: number[] = [];
 
-  try {
-    await signIn(context, null);
-    // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
-    await signIn(trainer, 'trainer');
-    await signIn(trainee, 'pilot');
-
-    // A personal block tells a visitor nothing but that they are not signed in.
-    for (const type of ['training.myTraining', 'training.trainerQueue', 'training.approvalQueue']) {
-      expect(await block(visitor.request, type), type).toEqual({ signedIn: false });
-    }
-
-    // ---------------------------------------------------------------- asked for: in the staff's queue
-    const id = await requested(trainee.request, opened);
-    const queue = (await block(context.request, 'training.approvalQueue')) as {
-      toApprove: { count: number; oldest: Row[] };
-    };
-    expect(queue.toApprove.oldest.map((row) => row.id)).toContain(id);
-
-    // ---------------------------------------------------------------- assigned: in the trainer's queue, dates to propose
-    await step(context.request, id, 'accept', {});
-    await step(context.request, id, 'assign', { trainerVid: BENCH_TRAINER });
-    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
-    const theirs = (await block(trainer.request, 'training.trainerQueue')) as { toPropose: Row[] };
-    expect(theirs.toPropose.map((row) => row.id)).toContain(id);
-
-    // ---------------------------------------------------------------- dated by hand, three days ahead
-    const day = daysAhead(3);
-    const dated = await step(context.request, id, 'date', {
-      startsAtUtc: `${day}T17:00:00Z`,
-      confirmed: true,
-    });
-    const title = `${dated.ratingShortName!} · ${dated.position!}`;
-
-    const own = (await block(trainee.request, 'training.myTraining')) as MyTraining;
-    expect(own.paths.find((path) => path.kind === 'Atc')?.openTrainingId).toBe(id);
-
-    // ---------------------------------------------------------------- /training, to a visitor: where and when, and nobody
-    const visitorPage = await visitor.newPage();
-    visitorPage.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    await visitorPage.goto('/training');
-    await expect(visitorPage.getByRole('heading', { level: 1, name: words.public.title })).toBeVisible();
-    const link = visitorPage.getByRole('link', { name: title, exact: true });
-    await expect(link).toHaveAttribute('href', `/training/sessions/${String(id)}`);
-    await expect(visitorPage.getByRole('link', { name: words.request.send })).toHaveAttribute(
-      'href',
-      '/training/request',
-    );
-    await assertNobody(visitorPage.locator('body'));
-
-    // The block says the same, from the real server.
-    const sessions = (await block(visitor.request, 'training.upcomingSessions')) as {
-      signedIn: boolean;
-      items: { id: number; trainee: unknown; trainer: unknown }[];
-    };
-    expect(sessions.signedIn).toBe(false);
-    const item = sessions.items.find((entry) => entry.id === id);
-    expect(item, 'the session is in the block').toBeDefined();
-    expect([item?.trainee, item?.trainer]).toEqual([null, null]);
-
-    // ---------------------------------------------------------------- the entry of the calendar leads to the page of the session
-    await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
-    const entry = visitorPage.locator(`a[href="/training/sessions/${String(id)}"]`);
-    await expect(entry).toHaveText(title);
-    await entry.click();
-    await expect(visitorPage).toHaveURL(new RegExp(`/training/sessions/${String(id)}$`));
-    await expect(
-      visitorPage.getByRole('heading', { level: 1, name: filled(words.public.session.title, { title }) }),
-    ).toBeVisible();
-    await expect(visitorPage.locator('dl').getByText(dated.position!, { exact: true })).toBeVisible();
-    await expect(visitorPage.locator('dl').getByText(/UTC$/)).toBeVisible();
-    await expect(visitorPage.getByRole('link', { name: words.public.session.signIn })).toBeVisible();
-    await assertNobody(visitorPage.locator('body'));
-
-    // ---------------------------------------------------------------- signed in: who, by name and VID
-    const trainerPage = await trainer.newPage();
-    await trainerPage.goto(`/training/sessions/${String(id)}`);
-    const details = trainerPage.locator('dl');
-    await expect(details.getByText('Bench Pilot (999002)', { exact: true })).toBeVisible();
-    await expect(details.getByText('Bench Trainer (999004)', { exact: true })).toBeVisible();
-    await expect(trainerPage.getByRole('link', { name: words.public.session.signIn })).toHaveCount(0);
-
-    await trainerPage.goto('/training');
-    await expect(
-      trainerPage.getByText(
-        filled(words.public.people, { trainee: 'Bench Pilot (999002)', trainer: 'Bench Trainer (999004)' }),
-      ),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- closed: the session leaves /training, and its page
-    await step(context.request, id, 'close', { reason: REASON });
-    await visitorPage.goto('/training');
-    await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
-    await expect(visitorPage.getByRole('link', { name: title, exact: true })).toHaveCount(0);
-    await visitorPage.goto(`/training/sessions/${String(id)}`);
-    await expect(visitorPage.getByRole('heading', { name: englishCommon.notFound.title })).toBeVisible();
-  } finally {
+  afterwards(async () => {
     // Whatever this run left open is closed by the staff, or taken back by the trainee while nobody accepted it.
     for (const opening of opened) {
       await closeIfOpen(context.request, trainee.request, opening);
@@ -177,7 +80,105 @@ test('a visitor reads the sessions to come without names, the calendar leads to 
     await trainee.close();
     await trainer.close();
     await visitor.close();
+  });
+
+  await signIn(context, null);
+  // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
+  await signIn(trainer, 'trainer');
+  await signIn(trainee, 'pilot');
+
+  // A personal block tells a visitor nothing but that they are not signed in.
+  for (const type of ['training.myTraining', 'training.trainerQueue', 'training.approvalQueue']) {
+    expect(await block(visitor.request, type), type).toEqual({ signedIn: false });
   }
+
+  // ---------------------------------------------------------------- asked for: in the staff's queue
+  const id = await requested(trainee.request, opened);
+  const queue = (await block(context.request, 'training.approvalQueue')) as {
+    toApprove: { count: number; oldest: Row[] };
+  };
+  expect(queue.toApprove.oldest.map((row) => row.id)).toContain(id);
+
+  // ---------------------------------------------------------------- assigned: in the trainer's queue, dates to propose
+  await step(context.request, id, 'accept', {});
+  await step(context.request, id, 'assign', { trainerVid: BENCH_TRAINER });
+  // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
+  const theirs = (await block(trainer.request, 'training.trainerQueue')) as { toPropose: Row[] };
+  expect(theirs.toPropose.map((row) => row.id)).toContain(id);
+
+  // ---------------------------------------------------------------- dated by hand, three days ahead
+  const day = daysAhead(3);
+  const dated = await step(context.request, id, 'date', {
+    startsAtUtc: `${day}T17:00:00Z`,
+    confirmed: true,
+  });
+  const title = `${dated.ratingShortName!} · ${dated.position!}`;
+
+  const own = (await block(trainee.request, 'training.myTraining')) as MyTraining;
+  expect(own.paths.find((path) => path.kind === 'Atc')?.openTrainingId).toBe(id);
+
+  // ---------------------------------------------------------------- /training, to a visitor: where and when, and nobody
+  const visitorPage = await visitor.newPage();
+  visitorPage.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await visitorPage.goto('/training');
+  await expect(visitorPage.getByRole('heading', { level: 1, name: words.public.title })).toBeVisible();
+  const link = visitorPage.getByRole('link', { name: title, exact: true });
+  await expect(link).toHaveAttribute('href', `/training/sessions/${String(id)}`);
+  await expect(visitorPage.getByRole('link', { name: words.request.send })).toHaveAttribute(
+    'href',
+    '/training/request',
+  );
+  await assertNobody(visitorPage.locator('body'));
+
+  // The block says the same, from the real server.
+  const sessions = (await block(visitor.request, 'training.upcomingSessions')) as {
+    signedIn: boolean;
+    items: { id: number; trainee: unknown; trainer: unknown }[];
+  };
+  expect(sessions.signedIn).toBe(false);
+  const item = sessions.items.find((entry) => entry.id === id);
+  expect(item, 'the session is in the block').toBeDefined();
+  expect([item?.trainee, item?.trainer]).toEqual([null, null]);
+
+  // ---------------------------------------------------------------- the entry of the calendar leads to the page of the session
+  await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
+  const entry = visitorPage.locator(`a[href="/training/sessions/${String(id)}"]`);
+  await expect(entry).toHaveText(title);
+  await entry.click();
+  await expect(visitorPage).toHaveURL(new RegExp(`/training/sessions/${String(id)}$`));
+  await expect(
+    visitorPage.getByRole('heading', { level: 1, name: filled(words.public.session.title, { title }) }),
+  ).toBeVisible();
+  await expect(visitorPage.locator('dl').getByText(dated.position!, { exact: true })).toBeVisible();
+  await expect(visitorPage.locator('dl').getByText(/UTC$/)).toBeVisible();
+  await expect(visitorPage.getByRole('link', { name: words.public.session.signIn })).toBeVisible();
+  await assertNobody(visitorPage.locator('body'));
+
+  // ---------------------------------------------------------------- signed in: who, by name and VID
+  const trainerPage = await trainer.newPage();
+  await trainerPage.goto(`/training/sessions/${String(id)}`);
+  const details = trainerPage.locator('dl');
+  await expect(details.getByText('Bench Pilot (999002)', { exact: true })).toBeVisible();
+  await expect(details.getByText('Bench Trainer (999004)', { exact: true })).toBeVisible();
+  await expect(trainerPage.getByRole('link', { name: words.public.session.signIn })).toHaveCount(0);
+
+  await trainerPage.goto('/training');
+  await expect(
+    trainerPage.getByText(
+      filled(words.public.people, { trainee: 'Bench Pilot (999002)', trainer: 'Bench Trainer (999004)' }),
+    ),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- closed: the session leaves /training, and its page
+  await step(context.request, id, 'close', { reason: REASON });
+  await visitorPage.goto('/training');
+  await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
+  await expect(visitorPage.getByRole('link', { name: title, exact: true })).toHaveCount(0);
+  await visitorPage.goto(`/training/sessions/${String(id)}`);
+  await expect(visitorPage.getByRole('heading', { name: englishCommon.notFound.title })).toBeVisible();
 });
 
 /** What a visitor reads names neither the trainee nor the trainer, by name or by VID. */

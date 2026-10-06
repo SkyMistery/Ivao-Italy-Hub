@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, type APIRequestContext } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
@@ -15,6 +15,7 @@ import {
   removeBenchTours,
   signIn,
   whileWaitingFor,
+  test,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -69,6 +70,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(300_000);
   await readInEnglish(context);
@@ -89,9 +91,7 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
   const made: { rule?: number; error?: number } = {};
 
   await removeBenchTours(context, 'bench-dispute-', pilotContext);
-  try {
-    await dispute();
-  } finally {
+  afterwards(async () => {
     flight.remove();
     if (made.rule !== undefined) {
       await context.request.delete(`/api/flightops/rules/${made.rule}`, { headers: asTheClientDoes });
@@ -102,7 +102,9 @@ test('a pilot disputes a rejection, the department answers in the thread, and th
     await removeBenchTours(context, 'bench-dispute-', pilotContext);
     await assistantContext.close();
     await pilotContext.close();
-  }
+  });
+
+  await dispute();
 
   async function dispute() {
     // ---------------------------------------------------------------- a tour with one leg and a rule with a dangerous error

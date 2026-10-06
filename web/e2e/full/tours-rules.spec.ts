@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type BrowserContext } from '@playwright/test';
+import { expect, type BrowserContext } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
@@ -14,6 +14,7 @@ import {
   signIn,
   whileWaitingFor,
   writeInBothLanguages,
+  test,
 } from './bench';
 
 /**
@@ -82,6 +83,7 @@ test('a general rule with parameters is amended by a tour, and a page shows the 
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(90_000);
   await readInEnglish(context);
@@ -93,15 +95,15 @@ test('a general rule with parameters is amended by a tour, and a page shows the 
 
   let contentId: number | null = null;
   await removeLeftovers(context);
-  try {
-    await composeAndRead();
-  } finally {
+  afterwards(async () => {
     // ---------------------------------------------------------------- everything back, however far it got
     if (contentId !== null) {
       await deleteContent(context, contentId);
     }
     await removeLeftovers(context);
-  }
+  });
+
+  await composeAndRead();
 
   async function composeAndRead() {
     // ---------------------------------------------------------------- a public error

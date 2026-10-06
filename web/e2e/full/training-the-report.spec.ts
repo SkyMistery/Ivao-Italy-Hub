@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 
-import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, mailpit, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The "done when" of A9 (M3), through the real screens against the real server: once the session of a pilot training of the
@@ -93,6 +93,7 @@ interface SheetItemRow {
 test('the trainer reschedules, then publishes a report with an item N/A and «ready for the mock exam»; the trainee reads it without a note of the staff', async ({
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(300_000);
   await readInEnglish(context);
@@ -106,170 +107,7 @@ test('the trainer reschedules, then publishes a report with an item N/A and «re
   // What this run opens, so that the end closes whatever did not reach its report.
   const opened: number[] = [];
 
-  try {
-    await signIn(context, null);
-    // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
-    await signIn(trainer, 'trainer');
-    await signIn(trainee, 'pilot');
-    await retireLeftovers(context.request);
-
-    // ---------------------------------------------------------------- the pilot ladder, and the sheet of its rating
-    const standing = await mine(trainee.request);
-    const pilot = standing.paths.find((path) => path.kind === 'Pilot')!;
-    expect(
-      pilot.refusal,
-      'the trainee may ask for a pilot training: the bench is made anew before a run',
-    ).toBeNull();
-    expect(
-      pilot.isMockExam,
-      'the next pilot training is no mock exam yet: the bench is made anew before a run',
-    ).toBe(false);
-    const rating = pilot.next!.number;
-
-    for (const [index, item] of items.entries()) {
-      const written = await context.request.post('/api/training/sheet-items', {
-        headers: asTheClientDoes,
-        data: {
-          kind: 'Pilot',
-          rating,
-          section: item.section,
-          title: { en: item.en, it: item.it },
-          // After whatever the bench's sheet holds, in this order: the places go up to 999.
-          sort: 990 + index,
-          isActive: true,
-          rowVersion: '0001-01-01T00:00:00',
-        },
-      });
-      expect(written.status(), await written.text()).toBeLessThan(300);
-    }
-
-    // ---------------------------------------------------------------- asked, accepted, assigned, its session started
-    const id = await acceptedAndAssigned(trainee.request, context.request, standing, opened);
-    await startedInAMoment(context.request, id);
-
-    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
-    const trainerPage = await trainer.newPage();
-    const complaints = watch(trainerPage);
-
-    // ---------------------------------------------------------------- rescheduled from the page, with internal notes
-    await trainerPage.goto(`/staff/training/${String(id)}`);
-    await expect(trainerPage.getByText(words.staff.session.recordable)).toBeVisible();
-    await trainerPage.getByRole('button', { name: words.staff.reschedule.button, exact: true }).click();
-    const dialog = trainerPage.getByRole('alertdialog');
-    await dialog.getByLabel(words.staff.reschedule.fields.notes, { exact: true }).fill(INTERNAL_NOTES);
-    await whileWaitingFor(
-      trainerPage,
-      'POST',
-      `/api/training/trainings/${String(id)}/reschedule`,
-      async () => {
-        await dialog.getByRole('button', { name: words.staff.reschedule.button, exact: true }).click();
-      },
-    );
-    await expect(trainerPage.getByText(words.staff.reschedule.done, { exact: true })).toBeVisible();
-
-    // Back to its dates: the proposal again, and the session among the ones over, with its notes.
-    await expect(
-      trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }),
-    ).toBeVisible();
-    await expect(
-      trainerPage.getByText(filled(words.sessions.internalNotes, { notes: INTERNAL_NOTES }), { exact: true }),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- dated again, and the report written from the page
-    await startedInAMoment(context.request, id);
-    await trainerPage.reload();
-    await expect(
-      trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.report }),
-    ).toBeVisible();
-
-    const [phraseology, airspace, holding] = items.map((item) => rowOf(trainerPage, item.en));
-    await phraseology!.getByRole('radio', { name: '4', exact: true }).click();
-    await phraseology!.getByLabel(words.staff.report.traineeComment, { exact: true }).fill(TRAINEE_COMMENT);
-    await phraseology!.getByLabel(words.staff.report.staffNote, { exact: true }).fill(STAFF_NOTE);
-    await airspace!.getByRole('radio', { name: words.marks.Done, exact: true }).click();
-    // The third is left as it is: «N/A», the session did not touch it.
-    await expect(
-      holding!.getByRole('radio', { name: words.report.notApplicable, exact: true }),
-    ).toBeChecked();
-
-    const fields = words.staff.report.fields;
-    await trainerPage.getByLabel(fields.generalComment, { exact: true }).fill(GENERAL_COMMENT);
-    await trainerPage.getByLabel(fields.staffComment, { exact: true }).fill(STAFF_COMMENT);
-    await trainerPage.getByRole('switch', { name: fields.readyForMockExam, exact: true }).click();
-    await trainerPage.getByRole('switch', { name: fields.cooldownWaived, exact: true }).click();
-
-    // Mails already there, so that the one of this report is told apart.
-    const known = (await mailsTo(context.request, TRAINEE_ADDRESS)).map((mail) => mail.ID);
-
-    await trainerPage.getByRole('button', { name: words.staff.report.publish, exact: true }).click();
-    await whileWaitingFor(trainerPage, 'POST', `/api/training/trainings/${String(id)}/report`, async () => {
-      await trainerPage
-        .getByRole('alertdialog')
-        .getByRole('button', { name: words.staff.report.publish, exact: true })
-        .click();
-    });
-    await expect(trainerPage.getByText(words.staff.report.done, { exact: true })).toBeVisible();
-
-    // Published: the item left alone reads «N/A», and the staff reads its own note.
-    await expect(rowOf(trainerPage, items[2].en)).toContainText(words.report.notApplicable);
-    await expect(rowOf(trainerPage, items[0].en)).toContainText(
-      filled(words.report.forStaff, { note: STAFF_NOTE }),
-    );
-    await expect(trainerPage.getByText(STAFF_COMMENT, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainee reads it, and nothing of the staff's
-    const traineePage = await trainee.newPage();
-    const theirComplaints = watch(traineePage);
-
-    await traineePage.goto('/training/mine');
-    await expect(traineePage.getByText(words.mine.reportReady, { exact: true }).first()).toBeVisible();
-    // Newest first: the training of this run.
-    await traineePage.getByRole('link', { name: words.mine.readReport, exact: true }).first().click();
-    await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(id)}$`));
-
-    await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
-    await expect(rowOf(traineePage, items[0].en)).toContainText(filled(words.report.grade, { grade: '4' }));
-    await expect(rowOf(traineePage, items[0].en)).toContainText(TRAINEE_COMMENT);
-    await expect(rowOf(traineePage, items[1].en)).toContainText(words.marks.Done);
-    await expect(rowOf(traineePage, items[2].en)).toContainText(words.report.notApplicable);
-    await expect(traineePage.getByText(GENERAL_COMMENT, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.mine.readyForMockExam, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.mine.cooldownWaived, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.outcomes.Rescheduled, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.outcomes.Held, { exact: true })).toBeVisible();
-
-    const read = await traineePage.locator('body').innerText();
-    for (const reserved of [STAFF_NOTE, STAFF_COMMENT, INTERNAL_NOTES]) {
-      expect(read, `the trainee never reads what the staff wrote for itself: ${reserved}`).not.toContain(
-        reserved,
-      );
-    }
-
-    // What comes next: no waiting, and the next training on the rating is a mock exam.
-    await expect(traineePage.getByText(words.mockExam, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- the next request says so
-    await traineePage.goto('/training/request?kind=Pilot');
-    await expect(traineePage.getByText(words.mockExam, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- the mail of the report, to the trainee
-    const subjects = [words.mail.training.reportPublished.subject, italianReportSubject()].map(
-      (subject) => subject.split('{{')[0]!,
-    );
-    await expect
-      .poll(
-        async () =>
-          (await mailsTo(context.request, TRAINEE_ADDRESS)).filter(
-            (mail) =>
-              !known.includes(mail.ID) && subjects.some((subject) => mail.Subject.startsWith(subject)),
-          ).length,
-        { message: `the mail of the report to ${TRAINEE_ADDRESS}`, timeout: 150_000, intervals: [5_000] },
-      )
-      .toBe(1);
-
-    expect(complaints).toEqual([]);
-    expect(theirComplaints).toEqual([]);
-  } finally {
+  afterwards(async () => {
     for (const id of opened) {
       await closeIfOpen(context.request, trainee.request, id);
     }
@@ -277,7 +115,162 @@ test('the trainer reschedules, then publishes a report with an item N/A and «re
 
     await trainee.close();
     await trainer.close();
+  });
+
+  await signIn(context, null);
+  // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
+  await signIn(trainer, 'trainer');
+  await signIn(trainee, 'pilot');
+  await retireLeftovers(context.request);
+
+  // ---------------------------------------------------------------- the pilot ladder, and the sheet of its rating
+  const standing = await mine(trainee.request);
+  const pilot = standing.paths.find((path) => path.kind === 'Pilot')!;
+  expect(
+    pilot.refusal,
+    'the trainee may ask for a pilot training: the bench is made anew before a run',
+  ).toBeNull();
+  expect(
+    pilot.isMockExam,
+    'the next pilot training is no mock exam yet: the bench is made anew before a run',
+  ).toBe(false);
+  const rating = pilot.next!.number;
+
+  for (const [index, item] of items.entries()) {
+    const written = await context.request.post('/api/training/sheet-items', {
+      headers: asTheClientDoes,
+      data: {
+        kind: 'Pilot',
+        rating,
+        section: item.section,
+        title: { en: item.en, it: item.it },
+        // After whatever the bench's sheet holds, in this order: the places go up to 999.
+        sort: 990 + index,
+        isActive: true,
+        rowVersion: '0001-01-01T00:00:00',
+      },
+    });
+    expect(written.status(), await written.text()).toBeLessThan(300);
   }
+
+  // ---------------------------------------------------------------- asked, accepted, assigned, its session started
+  const id = await acceptedAndAssigned(trainee.request, context.request, standing, opened);
+  await startedInAMoment(context.request, id);
+
+  // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
+  const trainerPage = await trainer.newPage();
+  const complaints = watch(trainerPage);
+
+  // ---------------------------------------------------------------- rescheduled from the page, with internal notes
+  await trainerPage.goto(`/staff/training/${String(id)}`);
+  await expect(trainerPage.getByText(words.staff.session.recordable)).toBeVisible();
+  await trainerPage.getByRole('button', { name: words.staff.reschedule.button, exact: true }).click();
+  const dialog = trainerPage.getByRole('alertdialog');
+  await dialog.getByLabel(words.staff.reschedule.fields.notes, { exact: true }).fill(INTERNAL_NOTES);
+  await whileWaitingFor(trainerPage, 'POST', `/api/training/trainings/${String(id)}/reschedule`, async () => {
+    await dialog.getByRole('button', { name: words.staff.reschedule.button, exact: true }).click();
+  });
+  await expect(trainerPage.getByText(words.staff.reschedule.done, { exact: true })).toBeVisible();
+
+  // Back to its dates: the proposal again, and the session among the ones over, with its notes.
+  await expect(
+    trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }),
+  ).toBeVisible();
+  await expect(
+    trainerPage.getByText(filled(words.sessions.internalNotes, { notes: INTERNAL_NOTES }), { exact: true }),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- dated again, and the report written from the page
+  await startedInAMoment(context.request, id);
+  await trainerPage.reload();
+  await expect(
+    trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.report }),
+  ).toBeVisible();
+
+  const [phraseology, airspace, holding] = items.map((item) => rowOf(trainerPage, item.en));
+  await phraseology!.getByRole('radio', { name: '4', exact: true }).click();
+  await phraseology!.getByLabel(words.staff.report.traineeComment, { exact: true }).fill(TRAINEE_COMMENT);
+  await phraseology!.getByLabel(words.staff.report.staffNote, { exact: true }).fill(STAFF_NOTE);
+  await airspace!.getByRole('radio', { name: words.marks.Done, exact: true }).click();
+  // The third is left as it is: «N/A», the session did not touch it.
+  await expect(holding!.getByRole('radio', { name: words.report.notApplicable, exact: true })).toBeChecked();
+
+  const fields = words.staff.report.fields;
+  await trainerPage.getByLabel(fields.generalComment, { exact: true }).fill(GENERAL_COMMENT);
+  await trainerPage.getByLabel(fields.staffComment, { exact: true }).fill(STAFF_COMMENT);
+  await trainerPage.getByRole('switch', { name: fields.readyForMockExam, exact: true }).click();
+  await trainerPage.getByRole('switch', { name: fields.cooldownWaived, exact: true }).click();
+
+  // Mails already there, so that the one of this report is told apart.
+  const known = (await mailsTo(context.request, TRAINEE_ADDRESS)).map((mail) => mail.ID);
+
+  await trainerPage.getByRole('button', { name: words.staff.report.publish, exact: true }).click();
+  await whileWaitingFor(trainerPage, 'POST', `/api/training/trainings/${String(id)}/report`, async () => {
+    await trainerPage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.staff.report.publish, exact: true })
+      .click();
+  });
+  await expect(trainerPage.getByText(words.staff.report.done, { exact: true })).toBeVisible();
+
+  // Published: the item left alone reads «N/A», and the staff reads its own note.
+  await expect(rowOf(trainerPage, items[2].en)).toContainText(words.report.notApplicable);
+  await expect(rowOf(trainerPage, items[0].en)).toContainText(
+    filled(words.report.forStaff, { note: STAFF_NOTE }),
+  );
+  await expect(trainerPage.getByText(STAFF_COMMENT, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainee reads it, and nothing of the staff's
+  const traineePage = await trainee.newPage();
+  const theirComplaints = watch(traineePage);
+
+  await traineePage.goto('/training/mine');
+  await expect(traineePage.getByText(words.mine.reportReady, { exact: true }).first()).toBeVisible();
+  // Newest first: the training of this run.
+  await traineePage.getByRole('link', { name: words.mine.readReport, exact: true }).first().click();
+  await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(id)}$`));
+
+  await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
+  await expect(rowOf(traineePage, items[0].en)).toContainText(filled(words.report.grade, { grade: '4' }));
+  await expect(rowOf(traineePage, items[0].en)).toContainText(TRAINEE_COMMENT);
+  await expect(rowOf(traineePage, items[1].en)).toContainText(words.marks.Done);
+  await expect(rowOf(traineePage, items[2].en)).toContainText(words.report.notApplicable);
+  await expect(traineePage.getByText(GENERAL_COMMENT, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.mine.readyForMockExam, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.mine.cooldownWaived, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.outcomes.Rescheduled, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.outcomes.Held, { exact: true })).toBeVisible();
+
+  const read = await traineePage.locator('body').innerText();
+  for (const reserved of [STAFF_NOTE, STAFF_COMMENT, INTERNAL_NOTES]) {
+    expect(read, `the trainee never reads what the staff wrote for itself: ${reserved}`).not.toContain(
+      reserved,
+    );
+  }
+
+  // What comes next: no waiting, and the next training on the rating is a mock exam.
+  await expect(traineePage.getByText(words.mockExam, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- the next request says so
+  await traineePage.goto('/training/request?kind=Pilot');
+  await expect(traineePage.getByText(words.mockExam, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- the mail of the report, to the trainee
+  const subjects = [words.mail.training.reportPublished.subject, italianReportSubject()].map(
+    (subject) => subject.split('{{')[0]!,
+  );
+  await expect
+    .poll(
+      async () =>
+        (await mailsTo(context.request, TRAINEE_ADDRESS)).filter(
+          (mail) => !known.includes(mail.ID) && subjects.some((subject) => mail.Subject.startsWith(subject)),
+        ).length,
+      { message: `the mail of the report to ${TRAINEE_ADDRESS}`, timeout: 150_000, intervals: [5_000] },
+    )
+    .toBe(1);
+
+  expect(complaints).toEqual([]);
+  expect(theirComplaints).toEqual([]);
 });
 
 /** The errors a page writes in its console, and a page that throws fails the run. */

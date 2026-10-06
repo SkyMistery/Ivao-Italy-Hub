@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 import * as XLSX from 'xlsx';
 
 import { englishCommon } from '../locales';
@@ -15,6 +15,7 @@ import {
   signIn,
   whileWaitingFor,
   writeInBothLanguages,
+  test,
 } from './bench';
 import { replayFlight, type ReplayedFlight } from './replay';
 
@@ -141,6 +142,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(420_000);
   await readInEnglish(context);
@@ -166,9 +168,7 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
   };
 
   await removeBenchTours(context, 'bench-round-', pilotContext.context);
-  try {
-    await round();
-  } finally {
+  afterwards(async () => {
     made.flight?.remove();
     for (const rule of made.rules) {
       await context.request.delete(`/api/flightops/rules/${rule}`, { headers: asTheClientDoes });
@@ -185,7 +185,9 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     }
     await assistantContext.context.close();
     await pilotContext.context.close();
-  }
+  });
+
+  await round();
 
   async function round() {
     // ---------------------------------------------------------------- 1. a template, and a tour made from it

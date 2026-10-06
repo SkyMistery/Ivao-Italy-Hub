@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { englishCommon, englishSeed } from '../locales';
 
-import { benchUrl, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The skeleton of the events (M4, E2), through the real screens registered from the module manifest, as the bench's
@@ -13,7 +13,7 @@ import { benchUrl, readInEnglish, whileWaitingFor } from './bench';
  * are saved and read back after a reload. The coordinator holds only what `division.json` gives the events department,
  * through the grants of the position — the web master of the bench reaches every department and would pass with any.
  *
- * The settings are put back as they were in a `finally`, and a preset of this spec that an interrupted run left behind is taken
+ * The settings are put back as they were after the test (`afterwards`), and a preset of this spec that an interrupted run left behind is taken
  * out at the start: the bench survives between runs.
  */
 
@@ -28,6 +28,7 @@ interface Settings {
 
 test('the coordinator of the events finds the section, and saves a preset and a setting it reads back', async ({
   browser,
+  afterwards,
 }) => {
   const context = await browser.newContext({ baseURL: benchUrl });
   await readInEnglish(context);
@@ -39,7 +40,7 @@ test('the coordinator of the events finds the section, and saves a preset and a 
   expect(before.status(), await before.text()).toBe(200);
   const found = (await before.json()) as Settings;
 
-  // A run stopped before its `finally` leaves its preset behind: taken out first, or the one added below would be a second one,
+  // A run killed before it put things back leaves its preset behind: taken out first, or the one added below would be a second one,
   // which the server refuses. What is put back at the end is the bench without it.
   const saved = { ...found, kindPresets: found.kindPresets.filter((preset) => preset.kind !== 'rfe') };
   if (saved.kindPresets.length !== found.kindPresets.length) {
@@ -55,46 +56,46 @@ test('the coordinator of the events finds the section, and saves a preset and a 
     throw new Error(`The page threw: ${error.message}`);
   });
 
-  try {
-    // Offered where every back office screen is offered: the palette reads the destinations the sidebar draws.
-    await page.goto('/staff/links');
-    await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
-    await page.keyboard.press('Control+k');
-
-    const palette = page.getByRole('dialog');
-    await palette.getByText(`${events.nav.section} — ${events.nav.settings}`).click();
-    await expect(page.getByRole('heading', { name: events.settings.title })).toBeVisible();
-
-    // A kind of the division's calendar, chosen by its word: the form offers the calendar's kinds, never a typed key.
-    await page.getByRole('button', { name: englishCommon.form.addEntry }).click();
-    await page.locator(`[id="kindPresets.${row}.kind"]`).click();
-    await page.getByRole('option', { name: englishSeed.seed.calendarKinds.rfe, exact: true }).click();
-    await page.locator(`[id="kindPresets.${row}.publicSlots"]`).click();
-
-    const gap = page.locator('[id="bookingGapMinutes"]');
-    const next = (Number(await gap.inputValue()) % 60) + 1;
-    await gap.fill(String(next));
-
-    await whileWaitingFor(page, 'PUT', settingsUrl, async () => {
-      await page.getByRole('button', { name: englishCommon.common.save }).click();
-    });
-    await expect(page.getByText(events.settings.saved)).toBeVisible();
-
-    await page.reload();
-    await expect(page.locator('[id="bookingGapMinutes"]')).toHaveValue(String(next));
-    await expect(page.locator(`[id="kindPresets.${row}.kind"]`)).toContainText(
-      englishSeed.seed.calendarKinds.rfe,
-    );
-    await expect(page.locator(`[id="kindPresets.${row}.publicSlots"]`)).toBeChecked();
-
-    // And the server keeps the key of the kind, not its word.
-    const after = (await (await context.request.get(settingsUrl)).json()) as Settings;
-    expect(after.kindPresets[row]).toMatchObject({ kind: 'rfe', publicSlots: true });
-  } finally {
+  afterwards(async () => {
     const putBack = await context.request.put(settingsUrl, { headers: asTheClientDoes, data: saved });
     expect(putBack.status(), await putBack.text()).toBe(200);
     await context.close();
-  }
+  });
+
+  // Offered where every back office screen is offered: the palette reads the destinations the sidebar draws.
+  await page.goto('/staff/links');
+  await expect(page.getByRole('heading', { name: englishCommon.links.title })).toBeVisible();
+  await page.keyboard.press('Control+k');
+
+  const palette = page.getByRole('dialog');
+  await palette.getByText(`${events.nav.section} — ${events.nav.settings}`).click();
+  await expect(page.getByRole('heading', { name: events.settings.title })).toBeVisible();
+
+  // A kind of the division's calendar, chosen by its word: the form offers the calendar's kinds, never a typed key.
+  await page.getByRole('button', { name: englishCommon.form.addEntry }).click();
+  await page.locator(`[id="kindPresets.${row}.kind"]`).click();
+  await page.getByRole('option', { name: englishSeed.seed.calendarKinds.rfe, exact: true }).click();
+  await page.locator(`[id="kindPresets.${row}.publicSlots"]`).click();
+
+  const gap = page.locator('[id="bookingGapMinutes"]');
+  const next = (Number(await gap.inputValue()) % 60) + 1;
+  await gap.fill(String(next));
+
+  await whileWaitingFor(page, 'PUT', settingsUrl, async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+  await expect(page.getByText(events.settings.saved)).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator('[id="bookingGapMinutes"]')).toHaveValue(String(next));
+  await expect(page.locator(`[id="kindPresets.${row}.kind"]`)).toContainText(
+    englishSeed.seed.calendarKinds.rfe,
+  );
+  await expect(page.locator(`[id="kindPresets.${row}.publicSlots"]`)).toBeChecked();
+
+  // And the server keeps the key of the kind, not its word.
+  const after = (await (await context.request.get(settingsUrl)).json()) as Settings;
+  expect(after.kindPresets[row]).toMatchObject({ kind: 'rfe', publicSlots: true });
 });
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */

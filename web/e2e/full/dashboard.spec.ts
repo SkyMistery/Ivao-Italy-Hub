@@ -1,8 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { createContent, deleteContent, readContent, readInEnglish, signIn } from './bench';
+import { createContent, deleteContent, readContent, readInEnglish, signIn, test } from './bench';
 
 /**
  * A dashboard is composed as the grid of tiles it is read as (D2, note
@@ -23,26 +23,10 @@ const heading = (id: string, text: string) => ({
   props: { level: 2, text: { en: text, it: text } },
 });
 
-/**
- * The rows this file made, taken back after the test and not in a `finally` of its own.
- *
- * ⚠️ A `finally` hid what was wrong twice on 6 October 2026: the test had stopped on a click that
- * waited for a preview the browser had left empty, the minute ran out, and the `delete` in the
- * `finally` — refused, because the test was over — was the error the report showed, in place of
- * the step that had stopped. The row stayed in the bench as well. A hook has its own time, runs
- * after a timeout too, and what it throws is added to the report instead of replacing it.
- */
-const made: number[] = [];
-
-test.afterEach(async ({ context }) => {
-  for (const id of made.splice(0)) {
-    await deleteContent(context, id);
-  }
-});
-
 test('a tile of a dashboard is narrowed with its handle and widened from the panel', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(60_000);
   await readInEnglish(context);
@@ -73,7 +57,7 @@ test('a tile of a dashboard is narrowed with its handle and widened from the pan
       ],
     },
   });
-  made.push(born.id);
+  afterwards(() => deleteContent(context, born.id));
 
   await page.goto(`/staff/content/${born.id}`);
 

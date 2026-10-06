@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Locator } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Locator } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, readInEnglish } from './bench';
+import { benchUrl, readInEnglish, test } from './bench';
 
 /**
  * The "done when" of A10c (M3), through the real screens against the real server: an exam is entered from the form of the staff — its
@@ -56,6 +56,7 @@ interface ExamRow {
 test('an exam is entered by whoever examines it, a trainer may not touch it, a visitor reads it without VIDs, and it leaves', async ({
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   await readInEnglish(context);
@@ -66,127 +67,127 @@ test('an exam is entered by whoever examines it, a trainer may not touch it, a v
     await readInEnglish(reader);
   }
 
-  try {
-    await signIn(context, null);
-    await signIn(trainer, 'trainer');
-
-    // What a run that failed half way left: the exams of this candidate entered by this examiner.
-    await removeTheExams(context.request);
-
-    // ---------------------------------------------------------------- the rating and the position, as the server offers them
-    const ratings = await get<Rating[]>(context.request, '/api/training/ratings');
-    const rating = ratings.find((candidate) => candidate.kind === 'Atc')!;
-    const choices = await get<Choices>(context.request, '/api/training/exam-choices');
-    const position = choices.positions.find((candidate) => candidate.ratingShortName === rating.shortName)!;
-    expect(position, 'a position of the division for the rating').toBeDefined();
-    expect(choices.examiners.map((examiner) => examiner.vid)).toContain(EXAMINER);
-    expect(
-      choices.examiners.map((examiner) => examiner.vid),
-      'a trainer examines nobody',
-    ).not.toContain(999004);
-
-    // ---------------------------------------------------------------- entered from the form, by its examiner
-    const day = daysAhead(4);
-    const title = `${rating.shortName} · ${position.callsign}`;
-    const staffPage = await context.newPage();
-    staffPage.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    await staffPage.goto('/staff/training/exams/new');
-    await expect(staffPage.getByRole('heading', { level: 1, name: words.exams.create })).toBeVisible();
-    const ratingField = staffPage.getByText(words.exams.fields.rating, { exact: true }).locator('..');
-    await ratingField.getByRole('combobox').click();
-    await staffPage.getByRole('option', { name: new RegExp(` · ${rating.shortName} — `) }).click();
-    await staffPage.getByLabel(words.exams.fields.position, { exact: true }).click();
-    await staffPage.getByRole('option', { name: new RegExp(`^${position.callsign} — `) }).click();
-    await staffPage.getByLabel(words.exams.fields.startsAtUtc, { exact: true }).fill(`${day}T17:00`);
-    await staffPage.getByLabel(words.exams.fields.candidateVid, { exact: true }).fill(String(CANDIDATE));
-    const examinerField = staffPage.getByText(words.exams.fields.examinerVid, { exact: true }).locator('..');
-    await expect(examinerField.getByRole('combobox')).toHaveText(`Bench Coordinator (${String(EXAMINER)})`);
-
-    const saved = staffPage.waitForResponse(
-      (response) => response.request().method() === 'POST' && response.url().endsWith('/api/training/exams'),
-    );
-    await staffPage.getByRole('button', { name: englishCommon.common.save, exact: true }).click();
-    expect((await saved).status()).toBe(201);
-    await expect(staffPage).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
-
-    // The list: theirs, and a step on it.
-    const exam = (await examsOf(context.request))[0]!;
-    expect(exam).toMatchObject({ candidateVid: CANDIDATE, examinerVid: EXAMINER, mine: true, mayEdit: true });
-    const row = staffPage.getByRole('row').filter({ hasText: String(CANDIDATE) });
-    await expect(row.getByRole('link', { name: englishCommon.common.edit })).toHaveAttribute(
-      'href',
-      `/staff/training/exams/${String(exam.id)}`,
-    );
-
-    // ---------------------------------------------------------------- a trainer reads it, and may neither change it nor take it off
-    const theirs = (await examsOf(trainer.request)).find((candidate) => candidate.id === exam.id)!;
-    expect(theirs).toMatchObject({ mine: false, mayEdit: false });
-    const changed = await trainer.request.put(`/api/training/exams/${String(exam.id)}`, {
-      headers: asTheClientDoes,
-      data: {
-        kind: rating.kind,
-        rating: rating.number,
-        position: position.callsign,
-        startsAtUtc: `${day}T18:00:00Z`,
-        candidateVid: CANDIDATE,
-        examinerVid: EXAMINER,
-        rowVersion: exam.rowVersion,
-      },
-    });
-    expect(changed.status(), await changed.text()).toBe(403);
-    const removed = await trainer.request.delete(`/api/training/exams/${String(exam.id)}`, {
-      headers: asTheClientDoes,
-    });
-    expect(removed.status(), await removed.text()).toBe(403);
-
-    // ---------------------------------------------------------------- /training, to a visitor: where and when, and nobody
-    const visitorPage = await visitor.newPage();
-    visitorPage.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    await visitorPage.goto('/training');
-    await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
-    await expect(visitorPage.getByText(filled(words.public.exam, { title }), { exact: true })).toBeVisible();
-    await assertNobody(visitorPage.locator('body'));
-
-    // The calendar: a public entry, titled without anybody, pointing at /training.
-    await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
-    await expect(visitorPage.locator('a[href="/training"]').filter({ hasText: title })).toBeVisible();
-    await assertNobody(visitorPage.locator('body'));
-
-    // ---------------------------------------------------------------- signed in: the two VIDs, and nothing else of them
-    const trainerPage = await trainer.newPage();
-    await trainerPage.goto('/training');
-    await expect(
-      trainerPage.getByText(
-        filled(words.public.examPeople, { candidate: String(CANDIDATE), examiner: String(EXAMINER) }),
-        { exact: true },
-      ),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- taken off the calendar, asked first: it leaves /training
-    await staffPage.goto(`/staff/training/exams/${String(exam.id)}`);
-    await expect(staffPage.getByRole('heading', { level: 1, name: words.exams.edit })).toBeVisible();
-    await staffPage.getByRole('button', { name: englishCommon.common.delete, exact: true }).click();
-    await staffPage
-      .getByRole('alertdialog')
-      .getByRole('button', { name: englishCommon.common.delete, exact: true })
-      .click();
-    await expect(staffPage).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
-    expect(await examsOf(context.request)).toEqual([]);
-
-    await visitorPage.goto('/training');
-    await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
-    await expect(visitorPage.getByText(filled(words.public.exam, { title }), { exact: true })).toHaveCount(0);
-  } finally {
+  afterwards(async () => {
     await removeTheExams(context.request);
     await trainer.close();
     await visitor.close();
-  }
+  });
+
+  await signIn(context, null);
+  await signIn(trainer, 'trainer');
+
+  // What a run that failed half way left: the exams of this candidate entered by this examiner.
+  await removeTheExams(context.request);
+
+  // ---------------------------------------------------------------- the rating and the position, as the server offers them
+  const ratings = await get<Rating[]>(context.request, '/api/training/ratings');
+  const rating = ratings.find((candidate) => candidate.kind === 'Atc')!;
+  const choices = await get<Choices>(context.request, '/api/training/exam-choices');
+  const position = choices.positions.find((candidate) => candidate.ratingShortName === rating.shortName)!;
+  expect(position, 'a position of the division for the rating').toBeDefined();
+  expect(choices.examiners.map((examiner) => examiner.vid)).toContain(EXAMINER);
+  expect(
+    choices.examiners.map((examiner) => examiner.vid),
+    'a trainer examines nobody',
+  ).not.toContain(999004);
+
+  // ---------------------------------------------------------------- entered from the form, by its examiner
+  const day = daysAhead(4);
+  const title = `${rating.shortName} · ${position.callsign}`;
+  const staffPage = await context.newPage();
+  staffPage.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await staffPage.goto('/staff/training/exams/new');
+  await expect(staffPage.getByRole('heading', { level: 1, name: words.exams.create })).toBeVisible();
+  const ratingField = staffPage.getByText(words.exams.fields.rating, { exact: true }).locator('..');
+  await ratingField.getByRole('combobox').click();
+  await staffPage.getByRole('option', { name: new RegExp(` · ${rating.shortName} — `) }).click();
+  await staffPage.getByLabel(words.exams.fields.position, { exact: true }).click();
+  await staffPage.getByRole('option', { name: new RegExp(`^${position.callsign} — `) }).click();
+  await staffPage.getByLabel(words.exams.fields.startsAtUtc, { exact: true }).fill(`${day}T17:00`);
+  await staffPage.getByLabel(words.exams.fields.candidateVid, { exact: true }).fill(String(CANDIDATE));
+  const examinerField = staffPage.getByText(words.exams.fields.examinerVid, { exact: true }).locator('..');
+  await expect(examinerField.getByRole('combobox')).toHaveText(`Bench Coordinator (${String(EXAMINER)})`);
+
+  const saved = staffPage.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith('/api/training/exams'),
+  );
+  await staffPage.getByRole('button', { name: englishCommon.common.save, exact: true }).click();
+  expect((await saved).status()).toBe(201);
+  await expect(staffPage).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
+
+  // The list: theirs, and a step on it.
+  const exam = (await examsOf(context.request))[0]!;
+  expect(exam).toMatchObject({ candidateVid: CANDIDATE, examinerVid: EXAMINER, mine: true, mayEdit: true });
+  const row = staffPage.getByRole('row').filter({ hasText: String(CANDIDATE) });
+  await expect(row.getByRole('link', { name: englishCommon.common.edit })).toHaveAttribute(
+    'href',
+    `/staff/training/exams/${String(exam.id)}`,
+  );
+
+  // ---------------------------------------------------------------- a trainer reads it, and may neither change it nor take it off
+  const theirs = (await examsOf(trainer.request)).find((candidate) => candidate.id === exam.id)!;
+  expect(theirs).toMatchObject({ mine: false, mayEdit: false });
+  const changed = await trainer.request.put(`/api/training/exams/${String(exam.id)}`, {
+    headers: asTheClientDoes,
+    data: {
+      kind: rating.kind,
+      rating: rating.number,
+      position: position.callsign,
+      startsAtUtc: `${day}T18:00:00Z`,
+      candidateVid: CANDIDATE,
+      examinerVid: EXAMINER,
+      rowVersion: exam.rowVersion,
+    },
+  });
+  expect(changed.status(), await changed.text()).toBe(403);
+  const removed = await trainer.request.delete(`/api/training/exams/${String(exam.id)}`, {
+    headers: asTheClientDoes,
+  });
+  expect(removed.status(), await removed.text()).toBe(403);
+
+  // ---------------------------------------------------------------- /training, to a visitor: where and when, and nobody
+  const visitorPage = await visitor.newPage();
+  visitorPage.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await visitorPage.goto('/training');
+  await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
+  await expect(visitorPage.getByText(filled(words.public.exam, { title }), { exact: true })).toBeVisible();
+  await assertNobody(visitorPage.locator('body'));
+
+  // The calendar: a public entry, titled without anybody, pointing at /training.
+  await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
+  await expect(visitorPage.locator('a[href="/training"]').filter({ hasText: title })).toBeVisible();
+  await assertNobody(visitorPage.locator('body'));
+
+  // ---------------------------------------------------------------- signed in: the two VIDs, and nothing else of them
+  const trainerPage = await trainer.newPage();
+  await trainerPage.goto('/training');
+  await expect(
+    trainerPage.getByText(
+      filled(words.public.examPeople, { candidate: String(CANDIDATE), examiner: String(EXAMINER) }),
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- taken off the calendar, asked first: it leaves /training
+  await staffPage.goto(`/staff/training/exams/${String(exam.id)}`);
+  await expect(staffPage.getByRole('heading', { level: 1, name: words.exams.edit })).toBeVisible();
+  await staffPage.getByRole('button', { name: englishCommon.common.delete, exact: true }).click();
+  await staffPage
+    .getByRole('alertdialog')
+    .getByRole('button', { name: englishCommon.common.delete, exact: true })
+    .click();
+  await expect(staffPage).toHaveURL(/\/staff\/training\/exams(\?.*)?$/);
+  expect(await examsOf(context.request)).toEqual([]);
+
+  await visitorPage.goto('/training');
+  await expect(visitorPage.getByRole('heading', { level: 2, name: words.public.upcoming })).toBeVisible();
+  await expect(visitorPage.getByText(filled(words.public.exam, { title }), { exact: true })).toHaveCount(0);
 });
 
 /** What a visitor reads names neither the candidate nor the examiner, by name or by VID. */

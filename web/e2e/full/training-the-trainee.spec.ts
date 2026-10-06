@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 
-import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, mailpit, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The "done when" of A10a (M3), through the real screens against the real server: the staff asks for the bench's trainee by VID,
@@ -41,6 +41,7 @@ interface Ladder {
 test('the staff bans the trainee from their path, whose next request is refused for the ban until it is lifted', async ({
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   await readInEnglish(context);
@@ -48,101 +49,100 @@ test('the staff bans the trainee from their path, whose next request is refused 
   const trainee = await browser.newContext({ baseURL: benchUrl });
   await readInEnglish(trainee);
 
-  try {
-    await signIn(context, null);
-    await signIn(trainee, 'pilot');
-    await liftLeftovers(context.request);
-
-    // Nothing bans the trainee before this round: the bench is made anew, and a ban left by a run stopped half way is lifted above.
-    for (const ladder of await ladders(trainee.request)) {
-      expect(ladder.refusal, `the ${ladder.kind} ladder is not banned yet`).not.toBe(words.banned);
-    }
-
-    const known = (await mailsTo(context.request, TRAINEE_ADDRESS)).map((mail) => mail.ID);
-
-    // ---------------------------------------------------------------- the path, asked by VID
-    const staffPage = await context.newPage();
-    const complaints = watch(staffPage);
-
-    await staffPage.goto('/staff/training/trainees');
-    await staffPage.getByLabel(words.trainees.fields.vid, { exact: true }).fill(String(TRAINEE));
-    await staffPage.getByRole('button', { name: words.trainees.open, exact: true }).click();
-    await expect(staffPage).toHaveURL(new RegExp(`/staff/training/trainees/${String(TRAINEE)}$`));
-    await expect(
-      staffPage.getByRole('heading', { level: 2, name: words.trainees.sections.ladders }),
-    ).toBeVisible();
-    await expect(
-      staffPage.getByRole('heading', { level: 2, name: words.trainees.sections.trainings }),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- banned from the path, with a reason and no end
-    await staffPage.getByRole('link', { name: words.trainees.ban, exact: true }).click();
-    await expect(staffPage).toHaveURL(/\/staff\/training\/bans\/new\?vid=999002$/);
-    await expect(staffPage.getByLabel(words.bans.fields.vid, { exact: true })).toHaveValue(String(TRAINEE));
-    await staffPage.getByLabel(words.bans.fields.reason, { exact: true }).fill(REASON);
-    await whileWaitingFor(staffPage, 'POST', '/api/training/bans', async () => {
-      await staffPage.getByRole('button', { name: words.bans.give, exact: true }).click();
-    });
-    await expect(staffPage.getByText(words.bans.given, { exact: true })).toBeVisible();
-
-    // Back on the path: the ban in force, why, and both ladders banned until somebody lifts it.
-    await expect(staffPage).toHaveURL(new RegExp(`/staff/training/trainees/${String(TRAINEE)}$`));
-    const ban = banOf(staffPage);
-    await expect(ban.getByText(words.bans.options.status.Holds, { exact: true })).toBeVisible();
-    await expect(staffPage.getByText(words.trainees.standing.bannedForever, { exact: true })).toHaveCount(2);
-
-    // ---------------------------------------------------------------- the trainee asks for nothing, and is told
-    for (const ladder of await ladders(trainee.request)) {
-      expect(ladder.refusal, `the ${ladder.kind} ladder is banned`).toBe(words.banned);
-    }
-
-    const traineePage = await trainee.newPage();
-    const theirComplaints = watch(traineePage);
-    await traineePage.goto('/training/request?kind=Atc');
-    await expect(traineePage.getByText(words.errors.requestBanned, { exact: true })).toBeVisible();
-    await expect(traineePage.getByText(words.refusal.bannedForever, { exact: true })).toBeVisible();
-
-    const subjects = [words.mail.training.banned.subject, italianBanSubject()];
-    await expect
-      .poll(
-        async () => {
-          const mails = (await mailsTo(context.request, TRAINEE_ADDRESS)).filter(
-            (mail) =>
-              !known.includes(mail.ID) && subjects.some((subject) => mail.Subject.startsWith(subject)),
-          );
-          const texts = await Promise.all(mails.map((mail) => textOf(context.request, mail.ID)));
-          return texts.filter((text) => text.includes(REASON)).length;
-        },
-        { message: `the mail of the ban to ${TRAINEE_ADDRESS}`, timeout: 150_000, intervals: [5_000] },
-      )
-      .toBe(1);
-
-    // ---------------------------------------------------------------- lifted from the path, and the trainee asks again
-    await ban.getByRole('button', { name: words.bans.lift, exact: true }).click();
-    await whileWaitingFor(staffPage, 'POST', '/lift', async () => {
-      await staffPage
-        .getByRole('alertdialog')
-        .getByRole('button', { name: words.bans.liftConfirm, exact: true })
-        .click();
-    });
-    await expect(staffPage.getByText(words.bans.lifted, { exact: true })).toBeVisible();
-    await expect(ban.getByText(words.bans.options.status.Lifted, { exact: true })).toBeVisible();
-    await expect(ban.getByRole('button', { name: words.bans.lift, exact: true })).toHaveCount(0);
-    await expect(staffPage.getByText(words.trainees.standing.bannedForever, { exact: true })).toHaveCount(0);
-
-    for (const ladder of await ladders(trainee.request)) {
-      expect(ladder.refusal, `the ${ladder.kind} ladder is not banned any more`).not.toBe(words.banned);
-    }
-
-    await traineePage.reload();
-    await expect(traineePage.getByText(words.errors.requestBanned, { exact: true })).toHaveCount(0);
-
-    expect(complaints).toEqual([]);
-    expect(theirComplaints).toEqual([]);
-  } finally {
+  afterwards(async () => {
     await liftLeftovers(context.request);
     await trainee.close();
+  });
+
+  await signIn(context, null);
+  await signIn(trainee, 'pilot');
+  await liftLeftovers(context.request);
+
+  // Nothing bans the trainee before this round: the bench is made anew, and a ban left by a run stopped half way is lifted above.
+  for (const ladder of await ladders(trainee.request)) {
+    expect(ladder.refusal, `the ${ladder.kind} ladder is not banned yet`).not.toBe(words.banned);
   }
+
+  const known = (await mailsTo(context.request, TRAINEE_ADDRESS)).map((mail) => mail.ID);
+
+  // ---------------------------------------------------------------- the path, asked by VID
+  const staffPage = await context.newPage();
+  const complaints = watch(staffPage);
+
+  await staffPage.goto('/staff/training/trainees');
+  await staffPage.getByLabel(words.trainees.fields.vid, { exact: true }).fill(String(TRAINEE));
+  await staffPage.getByRole('button', { name: words.trainees.open, exact: true }).click();
+  await expect(staffPage).toHaveURL(new RegExp(`/staff/training/trainees/${String(TRAINEE)}$`));
+  await expect(
+    staffPage.getByRole('heading', { level: 2, name: words.trainees.sections.ladders }),
+  ).toBeVisible();
+  await expect(
+    staffPage.getByRole('heading', { level: 2, name: words.trainees.sections.trainings }),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- banned from the path, with a reason and no end
+  await staffPage.getByRole('link', { name: words.trainees.ban, exact: true }).click();
+  await expect(staffPage).toHaveURL(/\/staff\/training\/bans\/new\?vid=999002$/);
+  await expect(staffPage.getByLabel(words.bans.fields.vid, { exact: true })).toHaveValue(String(TRAINEE));
+  await staffPage.getByLabel(words.bans.fields.reason, { exact: true }).fill(REASON);
+  await whileWaitingFor(staffPage, 'POST', '/api/training/bans', async () => {
+    await staffPage.getByRole('button', { name: words.bans.give, exact: true }).click();
+  });
+  await expect(staffPage.getByText(words.bans.given, { exact: true })).toBeVisible();
+
+  // Back on the path: the ban in force, why, and both ladders banned until somebody lifts it.
+  await expect(staffPage).toHaveURL(new RegExp(`/staff/training/trainees/${String(TRAINEE)}$`));
+  const ban = banOf(staffPage);
+  await expect(ban.getByText(words.bans.options.status.Holds, { exact: true })).toBeVisible();
+  await expect(staffPage.getByText(words.trainees.standing.bannedForever, { exact: true })).toHaveCount(2);
+
+  // ---------------------------------------------------------------- the trainee asks for nothing, and is told
+  for (const ladder of await ladders(trainee.request)) {
+    expect(ladder.refusal, `the ${ladder.kind} ladder is banned`).toBe(words.banned);
+  }
+
+  const traineePage = await trainee.newPage();
+  const theirComplaints = watch(traineePage);
+  await traineePage.goto('/training/request?kind=Atc');
+  await expect(traineePage.getByText(words.errors.requestBanned, { exact: true })).toBeVisible();
+  await expect(traineePage.getByText(words.refusal.bannedForever, { exact: true })).toBeVisible();
+
+  const subjects = [words.mail.training.banned.subject, italianBanSubject()];
+  await expect
+    .poll(
+      async () => {
+        const mails = (await mailsTo(context.request, TRAINEE_ADDRESS)).filter(
+          (mail) => !known.includes(mail.ID) && subjects.some((subject) => mail.Subject.startsWith(subject)),
+        );
+        const texts = await Promise.all(mails.map((mail) => textOf(context.request, mail.ID)));
+        return texts.filter((text) => text.includes(REASON)).length;
+      },
+      { message: `the mail of the ban to ${TRAINEE_ADDRESS}`, timeout: 150_000, intervals: [5_000] },
+    )
+    .toBe(1);
+
+  // ---------------------------------------------------------------- lifted from the path, and the trainee asks again
+  await ban.getByRole('button', { name: words.bans.lift, exact: true }).click();
+  await whileWaitingFor(staffPage, 'POST', '/lift', async () => {
+    await staffPage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.bans.liftConfirm, exact: true })
+      .click();
+  });
+  await expect(staffPage.getByText(words.bans.lifted, { exact: true })).toBeVisible();
+  await expect(ban.getByText(words.bans.options.status.Lifted, { exact: true })).toBeVisible();
+  await expect(ban.getByRole('button', { name: words.bans.lift, exact: true })).toHaveCount(0);
+  await expect(staffPage.getByText(words.trainees.standing.bannedForever, { exact: true })).toHaveCount(0);
+
+  for (const ladder of await ladders(trainee.request)) {
+    expect(ladder.refusal, `the ${ladder.kind} ladder is not banned any more`).not.toBe(words.banned);
+  }
+
+  await traineePage.reload();
+  await expect(traineePage.getByText(words.errors.requestBanned, { exact: true })).toHaveCount(0);
+
+  expect(complaints).toEqual([]);
+  expect(theirComplaints).toEqual([]);
 });
 
 /** The errors a page writes in its console, and a page that throws fails the run. */
