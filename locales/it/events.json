@@ -186,7 +186,7 @@
       },
       "hints": {
         "kinds": "Le parole del calendario, come le prende il blocco del calendario. Nessuno, tutti i tipi.",
-        "limit": "Zero mostra tutti gli eventi in arrivo."
+        "limit": "Zero ne mostra quanti ne tiene una lista: i cinquanta più vicini."
       }
     }
   },

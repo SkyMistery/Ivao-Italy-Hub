@@ -185,7 +185,7 @@
       },
       "hints": {
         "kinds": "The words of the calendar, as the calendar's block takes them. None, every kind.",
-        "limit": "Zero shows every event to come."
+        "limit": "Zero shows as many as one list holds: the fifty soonest."
       }
     }
   },

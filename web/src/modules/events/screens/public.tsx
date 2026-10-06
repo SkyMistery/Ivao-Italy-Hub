@@ -50,7 +50,11 @@ import { EventCards, EventWhen } from './EventCards';
 
 const EVENTS_PAGE = '/events';
 
-/** As many cards as the server gives one list: the site has no archive, so these are every event to come. */
+/**
+ * As many cards as the server gives one list: zero asks for its bound, `PublicEvents.MaxItems` (50), the soonest first. The site
+ * has no archive, so these are the events to come, unless a division ever announces more than fifty at once: then the page shows
+ * the fifty soonest, and the filters and the calendar below work on those (the review of #223, point 5).
+ */
 const EVERY_CARD = { limit: 0 };
 
 export function EventsPublicPage() {
