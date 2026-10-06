@@ -41,7 +41,7 @@
     },
     "delete": {
       "title": "Eliminare questo evento?",
-      "description": "L'evento e i suoi scali si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
+      "description": "L'evento, i suoi scali e le sue rotte si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
     },
     "body": {
       "save": "Salva la descrizione",

@@ -41,7 +41,7 @@
     },
     "delete": {
       "title": "Delete this event?",
-      "description": "The event and its airports are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
+      "description": "The event, its airports and its routes are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
     },
     "body": {
       "save": "Save the description",
