@@ -1,5 +1,6 @@
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using IvaoHub.Modules.Events.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +10,10 @@ namespace IvaoHub.Modules.Events.Staff;
 /// What a write of an event may refuse only by looking at other rows (design M4 §1.2), run by the CRUD engine before every
 /// save: an address no other event has, a kind the calendar has and still offers — asked when it is chosen, as a calendar
 /// entry's is, so an event whose kind the division retired since stays saveable —, and an event about the whole division with
-/// no airports of its own (§1.3).
+/// no airports of its own (§1.3). A published event stays one that could be published (E3b): a change that it could not be
+/// published with is refused, with the refusals of «Publish».
 /// </summary>
-public sealed class EventSaving(EventsDbContext database, HubDbContext hub)
+public sealed class EventSaving(EventsDbContext database, HubDbContext hub, EventPublishing publishing)
 {
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(Event row, bool isNew, CancellationToken cancellationToken)
     {
@@ -41,6 +43,16 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub)
         if (row.WholeDivision && !isNew && await database.Airports.AnyAsync(airport => airport.EventId == row.Id, cancellationToken))
         {
             problems.Add("wholeDivision", "events:errors.wholeDivisionHasAirports");
+        }
+
+        // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
+        if (problems.IsEmpty && row.Status == PublishStatus.Published)
+        {
+            var published = await publishing.ProblemsAsync(row, cancellationToken);
+            if (!published.IsEmpty)
+            {
+                return published.Errors;
+            }
         }
 
         return problems.IsEmpty ? null : problems.Errors;

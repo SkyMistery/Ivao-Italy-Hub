@@ -8,6 +8,7 @@ using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 
 namespace IvaoHub.Modules.Events;
 
@@ -16,7 +17,9 @@ namespace IvaoHub.Modules.Events;
 /// system of today and is designed in <c>docs/internal/09-design-m4.md</c>. E2 is its skeleton: the context with the event whole
 /// and its airports, the catalogue of the five areas, the settings of M4a and the section of the back office that holds them;
 /// E3a the event in the staff's back office: its list with the views of its state, its page — the generated form with the
-/// switches its kind presets, the description, the banner — its airports with their capacity, and cancelling and deleting it.
+/// switches its kind presets, the description, the banner — its airports with their capacity, and cancelling and deleting it;
+/// E3b its life: publishing it, its calendar entry, its line in the search and its files, and the job that projects it again when
+/// it is seen and when it ends.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -62,6 +65,16 @@ public sealed class EventsModule : ModuleBase
         // The event in the staff's back office (E3a): what a save of it asks of other rows, and the rows of its staff.
         services.AddScoped<EventSaving>();
         services.AddScoped<EventChildren>();
+
+        // Its life (E3b): what publishing it asks, and the job that projects it again when it is seen and when it ends.
+        services.AddScoped<EventPublishing>();
+        services.AddScoped<EventReleaseJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<EventReleaseJob>(job => job.WithIdentity(EventReleaseJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(EventReleaseJob.JobName)
+                .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
+                .WithCronSchedule(EventReleaseJob.Cron)));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)

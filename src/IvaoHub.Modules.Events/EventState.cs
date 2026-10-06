@@ -67,6 +67,20 @@ public static class EventState
 
         return row.BookingOpensAtUtc is { } opens && now >= opens ? EventStateKind.BookingOpen : EventStateKind.Announced;
     }
+
+    /// <summary>
+    /// Whether whoever the event is for sees it (§2.1, §2.4, E3b): published, from <see cref="Event.VisibleFromUtc"/> — or from its
+    /// publication, when that is empty — until its end, cancelled or not: a cancelled event stays, with its note, until its end
+    /// (§2.3). What the calendar and the search say of an event is read here (§8.1).
+    /// </summary>
+    public static bool IsSeen(Event row, DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return row.Status == PublishStatus.Published
+            && (row.VisibleFromUtc is not { } visible || now >= visible)
+            && now < row.EndsAtUtc;
+    }
 }
 
 /// <summary>

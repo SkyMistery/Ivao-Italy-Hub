@@ -7,7 +7,7 @@
   },
   "events": {
     "title": "Eventi",
-    "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e annullarli o eliminarli.",
+    "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e pubblicarli, annullarli o eliminarli.",
     "create": "Nuovo evento",
     "edit": "Evento",
     "open": "Apri",
@@ -31,7 +31,11 @@
       "airports": "Scali"
     },
     "actions": {
+      "publish": "Pubblica",
       "cancel": "Annulla l'evento"
+    },
+    "publish": {
+      "problems": "Prima di pubblicarlo manca ancora:"
     },
     "delete": {
       "title": "Eliminare questo evento?",
@@ -59,6 +63,7 @@
       "bookingOpensAtUtc": "Apertura delle prenotazioni",
       "visibility": "Visibile a",
       "bannerMediaId": "Banner",
+      "airports": "Scali",
       "state": "Stato",
       "updatedAt": "Ultima modifica"
     },
@@ -151,6 +156,10 @@
     "eventCancelled": {
       "title": "Eventi annullati",
       "description": "Una mail quando un evento in cui hai prenotato uno slot, hai un turno o ti sei iscritto viene annullato, con il motivo."
+    },
+    "eventChanged": {
+      "title": "Eventi con orari cambiati",
+      "description": "Una mail quando cambiano gli orari di un evento in cui hai prenotato uno slot, hai un turno o ti sei iscritto."
     }
   },
   "mail": {
@@ -158,6 +167,10 @@
       "eventCancelled": {
         "subject": "[Eventi] Annullato: {{event}}",
         "body": "{{event}} è stato annullato.\n\nIl motivo: {{note}}\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "eventChanged": {
+        "subject": "[Eventi] Nuovi orari: {{event}}",
+        "body": "Gli orari di {{event}} sono cambiati: ora va da {{starts}} a {{ends}}.\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
       }
     }
   },
@@ -174,6 +187,13 @@
     "airportTwice": "Questo scalo è già nell'evento.",
     "capacityEitherOr": "Indica i movimenti, oppure gli arrivi e le partenze: non tutti e due.",
     "alreadyCancelled": "Questo evento è già annullato.",
-    "eventOver": "Questo evento è concluso: non si annulla più."
+    "eventOver": "Questo evento è concluso: non si annulla più.",
+    "alreadyPublished": "Questo evento è già pubblicato.",
+    "seenAfterItStarts": "L'evento si vedrebbe solo dopo l'inizio.",
+    "bookingBeforeItIsSeen": "Le prenotazioni aprirebbero prima che l'evento si veda.",
+    "bookingAfterItStarts": "Le prenotazioni aprirebbero dopo l'inizio dell'evento.",
+    "bookingOpensRequired": "Un evento con slot ha bisogno del momento in cui aprono le prenotazioni.",
+    "slotsNeedAirports": "Un evento con slot ha bisogno di almeno uno scalo suo.",
+    "externalUrlRequired": "Un evento organizzato da altri ha bisogno del link alla loro pagina."
   }
 }

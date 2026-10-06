@@ -7,7 +7,7 @@
   },
   "events": {
     "title": "Events",
-    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and cancelling or deleting it.",
+    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
     "create": "New event",
     "edit": "Event",
     "open": "Open",
@@ -31,7 +31,11 @@
       "airports": "Airports"
     },
     "actions": {
+      "publish": "Publish",
       "cancel": "Cancel the event"
+    },
+    "publish": {
+      "problems": "Before it can be published, it still needs:"
     },
     "delete": {
       "title": "Delete this event?",
@@ -59,6 +63,7 @@
       "bookingOpensAtUtc": "Bookings open",
       "visibility": "Seen by",
       "bannerMediaId": "Banner",
+      "airports": "Airports",
       "state": "State",
       "updatedAt": "Last changed"
     },
@@ -151,6 +156,10 @@
     "eventCancelled": {
       "title": "Cancelled events",
       "description": "An email when an event you booked a slot of, have a shift in or registered for is cancelled, with the reason."
+    },
+    "eventChanged": {
+      "title": "Events whose times change",
+      "description": "An email when the times of an event you booked a slot of, have a shift in or registered for change."
     }
   },
   "mail": {
@@ -158,6 +167,10 @@
       "eventCancelled": {
         "subject": "[Events] Cancelled: {{event}}",
         "body": "{{event}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "eventChanged": {
+        "subject": "[Events] New times: {{event}}",
+        "body": "The times of {{event}} have changed: it now runs from {{starts}} to {{ends}}.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       }
     }
   },
@@ -174,6 +187,13 @@
     "airportTwice": "This airport is already in the event.",
     "capacityEitherOr": "Give the movements, or the arrivals and the departures: not both.",
     "alreadyCancelled": "This event is already cancelled.",
-    "eventOver": "This event is over: it cannot be cancelled any more."
+    "eventOver": "This event is over: it cannot be cancelled any more.",
+    "alreadyPublished": "This event is already published.",
+    "seenAfterItStarts": "The event would be seen only after it starts.",
+    "bookingBeforeItIsSeen": "The bookings would open before the event is seen.",
+    "bookingAfterItStarts": "The bookings would open after the event starts.",
+    "bookingOpensRequired": "An event with slots needs the moment its bookings open.",
+    "slotsNeedAirports": "An event with slots needs at least one airport of its own.",
+    "externalUrlRequired": "An event organised by others needs the link to their page."
   }
 }
