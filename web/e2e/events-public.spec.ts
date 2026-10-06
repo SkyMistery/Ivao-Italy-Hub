@@ -16,10 +16,11 @@ import { englishCommon } from './locales';
 /**
  * The public side of the events in a browser, with the API stubbed (M4, E4): `/events` draws the events to come as cards from the
  * block's answer, narrowed by the address to a kind and an airport, with the calendar under them; the page of an event shows when —
- * in UTC and where the division lives —, who organises it, its airports and routes and its description, a cancelled one its note;
- * an event the reader may not see is not found, and the staff are told when nobody else sees it; the block draws the same cards on
- * a page of the site. What the server decides — what is public, the 404 after the end, who writes the routes — is proved by
- * `EventsPublicTests` (integration); the round against the real server is `full/events-public.spec.ts`.
+ * in UTC and where the division lives —, who organises it, its airports and routes and its description, a cancelled one its note,
+ * and its public slots (E5), free or taken, the legs of a rotation together; an event the reader may not see is not found, and the
+ * staff are told when nobody else sees it; the block draws the same cards on a page of the site. What the server decides — what is
+ * public, the 404 after the end, who writes the routes and the slots — is proved by `EventsPublicTests` and `EventsSlotsTests`
+ * (integration); the rounds against the real server are `full/events-public.spec.ts` and `full/events-slots.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -45,6 +46,10 @@ const words = JSON.parse(
     cancelled: string;
     routes: string;
     organizerPage: string;
+    slots: string;
+    free: string;
+    taken: string;
+    rotation: string;
   };
   blocks: { eventList: { all: string } };
 };
@@ -132,8 +137,38 @@ function event(overrides: Record<string, unknown> = {}) {
         remarks: { en: 'Above the clouds.', it: 'Sopra le nuvole.' },
       },
     ],
+    slots: [],
     cancelledAt: null,
     cancellationNote: null,
+    ...overrides,
+  };
+}
+
+/** A public slot of the page (E5), as the server lists it: free unless said, never who took it. */
+function slot(
+  id: number,
+  callsign: string,
+  hours: readonly [number, number],
+  from: unknown,
+  to: unknown,
+  overrides: Record<string, unknown> = {},
+) {
+  const at = (hour: number) => `2099-11-21T${String(hour).padStart(2, '0')}:00:00.000Z`;
+
+  return {
+    id,
+    callsign,
+    flightNumber: null,
+    aircraftTypes: ['XA20'],
+    departure: from,
+    arrival: to,
+    offBlockUtc: at(hours[0]),
+    onBlockUtc: at(hours[1]),
+    stand: null,
+    rotation: null,
+    leg: null,
+    isArrival: false,
+    taken: false,
     ...overrides,
   };
 }
@@ -264,6 +299,50 @@ test('the page of an event says when, who organises it, where, its routes and it
   }
   await expect(page.getByRole('link', { name: words.public.backOffice })).toHaveCount(0);
   await expect(page.getByRole('link', { name: words.public.back })).toHaveAttribute('href', '/events');
+});
+
+test('the page of an event lists its public slots, free or taken, with the legs of a rotation together', async ({
+  page,
+}) => {
+  await stubTheEvents(page, [], {
+    'evt-test-smoke-page': event({
+      // By their off block, as the server sends them: a rotation's second leg comes after a slot alone.
+      slots: [
+        slot(1, 'XSM101', [18, 19], airportA, airportC, {
+          flightNumber: 'XS101',
+          stand: 'B12',
+          rotation: 'R1',
+          leg: 1,
+          aircraftTypes: ['XA20', 'XA21'],
+        }),
+        slot(2, 'XSM300', [19, 20], airportC, airportB, { isArrival: true, taken: true }),
+        slot(3, 'XSM102', [20, 21], airportC, airportA, { rotation: 'R1', leg: 2, isArrival: true }),
+      ],
+    }),
+  });
+
+  await page.goto('/events/evt-test-smoke-page');
+
+  const slots = page.getByRole('region', { name: words.public.slots });
+  await expect(slots.getByRole('heading', { level: 2, name: words.public.slots })).toBeVisible();
+
+  // The rotation's legs together where its first one falls, then the slot alone; the header first.
+  const rows = slots.getByRole('row');
+  await expect(rows.nth(1)).toContainText(words.public.rotation.replace('{{rotation}}', 'R1'));
+  await expect(rows.nth(2)).toContainText('XSM101');
+  await expect(rows.nth(3)).toContainText('XSM102');
+  await expect(rows.nth(4)).toContainText('XSM300');
+
+  // The flight: callsign and number, the types allowed, from and to by name, the hours in UTC of the one day, the stand.
+  await expect(rows.nth(2)).toContainText('XS101');
+  await expect(rows.nth(2)).toContainText('XA20 / XA21');
+  await expect(rows.nth(2)).toContainText('Smoke Airport C');
+  await expect(rows.nth(2)).toContainText('18:00');
+  await expect(rows.nth(2)).toContainText('B12');
+
+  // Free or taken, and nothing of whoever took it.
+  await expect(rows.nth(2)).toContainText(words.public.free);
+  await expect(rows.nth(4)).toContainText(words.public.taken);
 });
 
 test('a cancelled event shows its note', async ({ page }) => {
