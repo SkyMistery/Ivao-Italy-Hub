@@ -128,6 +128,28 @@ public sealed class EventsStateTests
         Assert.False(EventState.IsSeen(draft, Starts));
     }
 
+    [Fact]
+    public void WhatSqlAsksOfASeenEventIsWhatIsSeenSays()
+    {
+        // The lists of the site (E4) ask it in SQL: on every event of the grid, at every edge, the same answer as the function.
+        var instants = new[] { Visible - Tick, Visible, Opens, Starts - Tick, Starts, Ends - Tick, Ends, Ends + Tick };
+        var rows = Variants().ToList();
+
+        foreach (var now in instants)
+        {
+            var seen = EventState.Seen(now).Compile();
+
+            foreach (var row in rows)
+            {
+                Assert.Equal(EventState.IsSeen(row, now), seen(row));
+            }
+        }
+
+        // And the grid holds both answers, so neither side is checked against nothing.
+        Assert.Contains(rows, row => EventState.IsSeen(row, Starts));
+        Assert.Contains(rows, row => !EventState.IsSeen(row, Starts));
+    }
+
     /// <summary>An event published with all four dates, in the order «Publish» will ask for (E3b).</summary>
     private static Event Published() => new()
     {
