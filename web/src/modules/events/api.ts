@@ -17,8 +17,8 @@ import type {
 
 /**
  * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events and
- * their airports through the CRUD engine, and the two endpoints written by hand beside it — cancelling, and the presets of
- * the kinds (E3a).
+ * their airports through the CRUD engine, and the three endpoints written by hand beside it — cancelling and the presets of
+ * the kinds (E3a), publishing (E3b).
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -167,6 +167,28 @@ export function useSaveEvent(id: number | null) {
               body: eventBody(values, body),
             }),
           ),
+    onSuccess: async (saved) => {
+      queryClient.setQueryData(eventQuery(saved.id).queryKey, saved);
+      await queryClient.invalidateQueries({ queryKey: [...eventsKey, 'list'] });
+    },
+  });
+}
+
+/**
+ * Publishes an event (§2.2, E3b), with the version on screen. A refusal comes back field by field — what it still needs to be
+ * published —, and the page lists it.
+ */
+export function usePublishEvent(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (rowVersion: string): Promise<EventDetailDto> =>
+      unwrap(
+        await api.POST('/api/events/events/{id}/publish', {
+          params: { path: { id } },
+          body: { rowVersion },
+        }),
+      ),
     onSuccess: async (saved) => {
       queryClient.setQueryData(eventQuery(saved.id).queryKey, saved);
       await queryClient.invalidateQueries({ queryKey: [...eventsKey, 'list'] });

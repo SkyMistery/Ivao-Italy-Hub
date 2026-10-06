@@ -67,6 +67,13 @@ delete that row too, and the next start does everything
 start: the log has a warning, the `START` line the step `marker not written`, and the next start initialises fully again
 (`docs/internal/decisions/2026-09-29-il-marcatore-che-non-si-scrive.md`).
 
+One process at a time initialises a database: a start that has to initialise takes the database's named lock
+`hub-init:<database>` first, on a connection of its own, and reads the mark again. Of two processes the host starts
+together after an upload, one initialises and the other waits and then skips: its `START` line ends with
+`waited N ms for the initialisation lock`. The wait is the step `initialisation lock`. A start that cannot take the lock
+within 30 seconds, or cannot ask for it, initialises without it and says `without the initialisation lock`, with a
+warning in the log: it never stops the start (`docs/internal/decisions/2026-10-05-l-inizializzazione-sotto-blocco.md`).
+
 ## What the server needs
 
 - **Linux x64** with glibc, **ICU** (`libicu`) and OpenSSL — the native pieces every .NET application on Linux uses.

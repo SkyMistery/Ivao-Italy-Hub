@@ -15,7 +15,8 @@ import {
   writableDepartments,
   type Department,
 } from '../../../shared/api/bootstrap';
-import { SchemaForm, describeProblem } from '../../../shared/forms';
+import { ApiError } from '../../../shared/api/problem';
+import { SchemaForm, describeProblem, languageNames } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
@@ -27,6 +28,7 @@ import {
   kindPresetsQuery,
   useCancelEvent,
   useDeleteEvent,
+  usePublishEvent,
   useSaveEvent,
   type EventDetailDto,
   type EventListDto,
@@ -54,7 +56,7 @@ import { AirportsTab } from './airports';
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
  * with the editor of the content as a tour's briefing is, and its airports with their capacity; and what happens to it without
- * its form — cancelling it with a note, deleting one nobody took part in.
+ * its form — publishing it (E3b), cancelling it with a note, deleting one nobody took part in.
  *
  * The switches of an event are preset by its kind (§1.12): choosing a kind in the form sets them to what the division's
  * settings say of that kind, and the staff changes them before saving or afterwards. Everything else is the server's answer:
@@ -295,29 +297,88 @@ function EventDescription({ event }: { event: EventDetailDto }) {
   );
 }
 
-/** The bar of an event that exists: what happens to it without its form — cancelled with a note, or deleted. */
+/** The refusals of «Publish» field by field, or null for any other answer: what the event still needs to be published. */
+function publishProblems(error: unknown): [string, string[]][] | null {
+  if (!(error instanceof ApiError) || error.status !== 400) {
+    return null;
+  }
+
+  const entries = Object.entries(error.problem?.errors ?? {});
+  return entries.length === 0 ? null : entries;
+}
+
+/**
+ * What stands between a draft and «Publish» (§2.2), as the server answered the press: one line per field, the missing
+ * languages named. The airports are rows of their own, named after their tab.
+ */
+function PublishProblems({ error }: { error: unknown }) {
+  const { t, i18n } = useTranslation();
+  const entries = publishProblems(error);
+
+  if (entries === null || !(error instanceof ApiError)) {
+    return null;
+  }
+
+  return (
+    <Notice
+      tone="warning"
+      title={t('events:events.publish.problems')}
+      description={
+        <ul className="list-disc pl-5">
+          {entries.map(([field, keys]) => {
+            const missing = error.problem?.localized?.[field] ?? [];
+            const sentence =
+              missing.length > 0
+                ? t('errors.localized.missingIn', { locales: languageNames([...missing], i18n.language) })
+                : keys.map((key) => t(key)).join(' ');
+
+            // A refusal of the event as a whole — published already, cancelled — has no field to name.
+            return (
+              <li key={field}>
+                {field === 'id' ? sentence : `${t(`events:events.fields.${field}`)}: ${sentence}`}
+              </li>
+            );
+          })}
+        </ul>
+      }
+    />
+  );
+}
+
+/** The bar of an event that exists: what happens to it without its form — published, cancelled with a note, or deleted. */
 function EventActions({ event }: { event: EventDetailDto }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const navigate = useNavigate();
+  const publish = usePublishEvent(event.id);
   const remove = useDeleteEvent();
 
+  const writer = holdsPermission(bootstrap, EVENTS_EDIT, event.ownerDepartment);
+  // A draft is published once; a cancelled one never — its state is Cancelled, not Draft (§2.1).
+  const publishable = writer && event.state === 'Draft';
   // An event cancelled stays cancelled, and one that is over happened: the server refuses both, so neither is offered.
-  const cancellable =
-    holdsPermission(bootstrap, EVENTS_EDIT, event.ownerDepartment) &&
-    event.state !== 'Cancelled' &&
-    event.state !== 'Ended';
+  const cancellable = writer && event.state !== 'Cancelled' && event.state !== 'Ended';
   // Deleting asks for Events.Delete on the event, which only the base department's heads hold (§6.3).
   const deletable = holdsPermission(bootstrap, EVENTS_DELETE, event.ownerDepartment);
-  const refusal = describeProblem(remove.error, t, i18n.language);
+  // What «Publish» still needs is listed below the bar; any other answer is one sentence.
+  const refusal = describeProblem(
+    remove.error ?? (publishProblems(publish.error) === null ? publish.error : null),
+    t,
+    i18n.language,
+  );
 
-  if (!cancellable && !deletable) {
+  if (!publishable && !cancellable && !deletable) {
     return null;
   }
 
   return (
     <div className="flex flex-col items-end gap-2">
       <div className="flex flex-wrap justify-end gap-2">
+        {publishable ? (
+          <Button disabled={publish.isPending} onClick={() => publish.mutate(event.rowVersion)}>
+            {t('events:events.actions.publish')}
+          </Button>
+        ) : null}
         {cancellable ? (
           <Button asChild variant="outline">
             <RouterAnchor href={`${EVENTS}/${event.id}/cancel`}>
@@ -337,6 +398,7 @@ function EventActions({ event }: { event: EventDetailDto }) {
         ) : null}
       </div>
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
+      <PublishProblems error={publish.error} />
     </div>
   );
 }
@@ -398,7 +460,8 @@ export function EventEditor() {
         { label: t('events:events.title'), to: EVENTS },
         { label: title },
       ]}
-      actions={event === null ? undefined : <EventActions event={event} />}
+      // Drawn again when the row changes, so what a press answered goes with the version it was about.
+      actions={event === null ? undefined : <EventActions key={event.rowVersion} event={event} />}
     >
       <div className="flex flex-col gap-6">
         {event === null || event.cancelledAt === null ? null : (

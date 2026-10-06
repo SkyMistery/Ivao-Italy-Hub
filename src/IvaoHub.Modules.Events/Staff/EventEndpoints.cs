@@ -2,6 +2,7 @@ using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
@@ -20,10 +21,10 @@ namespace IvaoHub.Modules.Events.Staff;
 /// The events in the back office (design M4 §7.2, E3a): a resource of the CRUD engine, read with <c>Events.View</c>, written
 /// with <c>Events.Edit</c>, deleted with <c>Events.Delete</c> too — which only the coordinator and the assistant of the base
 /// department hold, so whoever collaborates never deletes (§6.3). Its list has the views of <see cref="EventViews"/>.
-/// <para>⚠️ Two hand written endpoints hang off it: <b>cancel</b>, a verb (§2.3) that writes the cancellation and its note and is
-/// not a field of the form; and the <b>presets of the kinds</b>, a read: the form presets the switches from them when the kind
-/// changes (§1.12), and whoever writes events reads them there — the settings themselves are read only by whoever manages them,
-/// which an advisor of the department who creates events does not.</para>
+/// <para>⚠️ Three hand written endpoints hang off it: <b>publish</b> (§2.2, E3b) and <b>cancel</b> (§2.3), two verbs that are not
+/// fields of the form; and the <b>presets of the kinds</b>, a read: the form presets the switches from them when the kind changes
+/// (§1.12), and whoever writes events reads them there — the settings themselves are read only by whoever manages them, which an
+/// advisor of the department who creates events does not.</para>
 /// </summary>
 public static class EventEndpoints
 {
@@ -68,6 +69,15 @@ public static class EventEndpoints
                 services.GetRequiredService<EventSaving>().DeleteAsync(row, cancellationToken);
         });
 
+        group.MapPost("/{id:long}/publish", PublishAsync)
+            .WithName("EventsPublish")
+            .Produces<EventDetailDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .RequireAuthorization(EventsPermissions.Edit);
+
         group.MapPost("/{id:long}/cancel", CancelAsync)
             .WithName("EventsCancel")
             .Produces<EventDetailDto>()
@@ -84,6 +94,59 @@ public static class EventEndpoints
             .RequireAuthorization(EventsPermissions.Edit);
 
         return app;
+    }
+
+    /// <summary>
+    /// Publishes an event (§2.2): what <see cref="EventPublishing"/> asks, field by field. Published, the event is seen from its
+    /// «seen from», or at once when that is empty, and its calendar entry and its line in the search follow — at once, or with
+    /// <see cref="EventReleaseJob"/> at the release (E3b). Once: a published event stays published, and a cancelled one is not
+    /// published.
+    /// </summary>
+    private static async Task<IResult> PublishAsync(
+        long id,
+        EventPublishRequest request,
+        EventsDbContext database,
+        EventPublishing publishing,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        IClock clock,
+        HttpContext http)
+    {
+        var row = await CrudSource.BackOffice<Event>(database).FirstOrDefaultAsync(candidate => candidate.Id == id, http.RequestAborted);
+        if (row is null)
+        {
+            return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, row, EventsPermissions.Edit)).Succeeded)
+        {
+            return Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser);
+        }
+
+        var refusals = row.CancelledAt is not null
+            ? new Refusals().Add("id", "events:errors.alreadyCancelled")
+            : row.Status == PublishStatus.Published
+                ? new Refusals().Add("id", "events:errors.alreadyPublished")
+                : await publishing.ProblemsAsync(row, http.RequestAborted);
+
+        if (!refusals.IsEmpty)
+        {
+            return CrudProblems.Validation(refusals, catalog, currentUser.Locale);
+        }
+
+        // The version the reader read, as for a cancellation: an event changed since is not published as it no longer is.
+        if (request.RowVersion != default)
+        {
+            database.Entry(row).Property(candidate => candidate.RowVersion).OriginalValue = request.RowVersion;
+        }
+
+        var now = clock.UtcNow;
+        row.Status = PublishStatus.Published;
+        row.PublishedAt = now;
+        await database.SaveChangesAsync(http.RequestAborted);
+
+        return Results.Ok(EventMapper.ToDetail(row, now));
     }
 
     /// <summary>

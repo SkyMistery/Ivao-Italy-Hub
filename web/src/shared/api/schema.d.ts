@@ -1310,6 +1310,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsPublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/events/{id}/cancel": {
         parameters: {
             query?: never;
@@ -4352,6 +4368,11 @@ export interface components {
          * @enum {unknown}
          */
         EventOrganizer: "Division" | "Network" | "OtherDivision";
+        /** @description "Publish" (§2.2, E3b): the version read; what the event needs to be published is EventPublishing's. */
+        EventPublishRequest: {
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description The state of an event as it is seen (design M4 §2.1). Never stored: read off its dates, its status and its cancellation.
          * @enum {unknown}
@@ -7227,7 +7248,7 @@ export interface components {
          *     rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
          *     the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
          *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
-         *     changes (A13b), and what the reader may do. Never an address. `Sheet` is the copy a completed training's report keeps; while
+         *     changes (A13b; empty on a trainee's path, which does not draw it, A13d), and what the reader may do. Never an address. `Sheet` is the copy a completed training's report keeps; while
          *     the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
          *     otherwise. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of
          *     `ReservedFields` leaves out what is reserved when they do — `StaffComment`, the `StaffNote` of every item of the
@@ -7804,7 +7825,8 @@ export interface components {
             /**
              * @description Their trainings the reader may read, each as the staff's page of it (`StaffTrainings.PageAsync`): so a trainer who reads their
              *     own path reads it without what is reserved, as on the page of each training (note `le-note-riservate-e-il-trainee`), and a
-             *     head of a FIR reads the ones of their FIR (A11b).
+             *     head of a FIR reads the ones of their FIR (A11b). Each without the history of its changes, which the path does not draw: the page
+             *     of the training has it (A13d).
              */
             trainings: components["schemas"]["StaffTrainingDto"][];
             /** @description Their bans, the newest first: the ones that hold, the ones over and the ones lifted; none to a reader who may not read them. */
@@ -11787,6 +11809,62 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsPublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 
@@ -27,13 +29,24 @@ public enum EventOrganizer
 /// <para>In the care of the base department of the module, always, and of whoever organises it with that department
 /// (<see cref="OwnerDepartmentMask"/>); the departments that collaborate on a part of it hold their permissions on the base
 /// department instead (§1.1). A permission can be granted on one event alone, <c>events:event:{id}</c>.</para>
+/// <para>It projects itself (E3b, §8.1): a calendar entry and a line of the search while it is seen, and its files — for good while
+/// it is a draft, until a week after its end once it is published.</para>
 /// </summary>
 [Audited]
 [PermissionArea(EventsPermissions.Area)]
-public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IHasResourceScope
+public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IHasResourceScope, IProjectable
 {
     /// <summary>The longest address of an event, <c>/events/{slug}</c>: the same as a tour's.</summary>
     public const int MaxSlugLength = 100;
+
+    /// <summary>What a banner and the pictures of the description stay in the library for, after the end (§2.4, c2).</summary>
+    public static readonly TimeSpan MediaKeptAfterEnd = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// The kind of an event's line in the search: the module's key — «event» is a word of the calendar, and the kinds of the
+    /// calendar are the division's, never the code's (note 2026-09-29-i-tipi-di-evento).
+    /// </summary>
+    public const string SearchKind = EventsModule.ModuleKey;
 
     /// <summary>The body an event starts with: no sections.</summary>
     public const string EmptyBody = """{"schemaVersion":1,"sections":[]}""";
@@ -143,4 +156,65 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
 
     /// <summary>The scope of an event: the row's own, and the one its rows of staff answer with.</summary>
     public static string ScopeOf(long eventId) => $"{EventsModule.ModuleKey}:event:{eventId}";
+
+    public string SourceModule => EventsModule.ModuleKey;
+
+    public string SourceId => $"event:{Id}";
+
+    /// <summary>
+    /// One calendar entry, a line of the search and the files it shows (design M4 §8.1, §2.4). The entry — of the event's kind, for
+    /// whoever the event is for — and the line — only for an event everybody reads — exist while the event is seen
+    /// (<see cref="EventState.IsSeen"/>): never for a draft, nor for one published and not seen yet, nor for one ended. A cancelled
+    /// event has no entry, and keeps its line until its end: its page stays, with the note (§2.3).
+    /// <para>The files of a published event are declared until a week after its end: the core's job deletes them then, if nothing
+    /// else shows them. A draft keeps its files for as long as it is a draft, whatever its dates say (the interceptor keeps them for
+    /// a row not published): one written with a window already past, by mistake or to be moved later, does not lose its banner
+    /// before anybody publishes it (review of #221, point 5). The time decides the rest, and nobody writes the event when it is seen
+    /// or when it ends: <see cref="EventReleaseJob"/> projects it again at both.</para>
+    /// </summary>
+    public ProjectionSnapshot? Project(ProjectionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var media = MediaUses(context);
+
+        if (!EventState.IsSeen(this, context.Clock.UtcNow))
+        {
+            return media.Count == 0 ? null : new ProjectionSnapshot(null, [], [], media);
+        }
+
+        var url = $"/events/{Slug}";
+        var text = new Localized<string>(context.Locales.ToDictionary(
+            locale => locale,
+            locale => string.Join(
+                ' ',
+                new[] { Summary.Get(locale), context.Blocks.ExtractText(JsonNode.Parse(BodyJson), locale) }
+                    .Where(part => !string.IsNullOrWhiteSpace(part)))));
+
+        var search = Visibility == Visibility.Public
+            ? new SearchProjection(SearchKind, url, OwnerDepartment, Visibility.Public, Title, text)
+            : null;
+        IReadOnlyList<CalendarProjection> calendar = CancelledAt is null
+            ? [new CalendarProjection(Kind, StartsAtUtc, EndsAtUtc, AllDay: false, OwnerDepartment, Visibility, url, Title, Summary)]
+            : [];
+
+        return search is null && calendar.Count == 0 && media.Count == 0
+            ? null
+            : new ProjectionSnapshot(search, calendar, [], media);
+    }
+
+    /// <summary>The banner and the pictures of the description: until a week after the end once published, for good while a draft.</summary>
+    private List<MediaUseProjection> MediaUses(ProjectionContext context)
+    {
+        DateTime? until = Status == PublishStatus.Published ? EndsAtUtc + MediaKeptAfterEnd : null;
+
+        return
+        [
+            .. new[] { BannerMediaId }
+                .OfType<long>()
+                .Concat(context.Blocks.MediaReferences(JsonNode.Parse(BodyJson)).Select(reference => reference.Id))
+                .Distinct()
+                .Select(id => new MediaUseProjection(id, until)),
+        ];
+    }
 }

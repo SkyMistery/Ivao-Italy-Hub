@@ -643,19 +643,12 @@ public sealed class EventsStaffTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>The events of this class, with their airports, whatever a run stopped halfway left behind.</summary>
-    private async Task ForgetEventsAsync(CancellationToken cancellationToken)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
-        var ids = await database.Events.IgnoreQueryFilters()
-            .Where(row => row.Slug.StartsWith(SlugStem))
-            .Select(row => row.Id)
-            .ToListAsync(cancellationToken);
-
-        await database.Airports.IgnoreQueryFilters().Where(airport => ids.Contains(airport.EventId)).ExecuteDeleteAsync(cancellationToken);
-        await database.Events.IgnoreQueryFilters().Where(row => ids.Contains(row.Id)).ExecuteDeleteAsync(cancellationToken);
-    }
+    /// <summary>
+    /// The events of this class, with their airports and — since E3b, the published ones of <see cref="TheListHasAViewForEachStateOfAnEvent"/>
+    /// project themselves — their calendar entries and lines in the search, whatever a run stopped halfway left behind.
+    /// </summary>
+    private Task ForgetEventsAsync(CancellationToken cancellationToken) =>
+        EventsTestRows.ForgetAsync(_factory.Services, SlugStem, cancellationToken);
 
     private async Task ForgetSettingsAsync(CancellationToken cancellationToken)
     {

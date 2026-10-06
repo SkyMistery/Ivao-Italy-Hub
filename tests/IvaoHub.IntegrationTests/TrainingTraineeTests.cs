@@ -356,11 +356,14 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
     /// <summary>
     /// The test of note <c>le-note-riservate-e-il-trainee</c> extended to the path (§4; design M3 §10, §12 n.13; <c>08</c>, A10 point 3):
     /// a trainer — <c>Training.View</c> by their position — who is also a trainee reads their own path with every training of theirs
-    /// without what is reserved, and another trainee's path with it; the fields are the ones <see cref="ReservedOnThePage"/> lists.
+    /// without what is reserved, and another trainee's path with it; the fields are the ones <see cref="ReservedOnThePage"/> lists. The
+    /// history of a training's changes is on its page, and on no path, which does not draw it (A13d; the review of A13b on #197).
     /// </summary>
     [Fact]
     public async Task ATrainerWhoIsATraineeReadsTheirOwnPathWithoutWhatIsReservedAndAnothersWithIt()
     {
+        const string Steps = "Requested Rescheduled DateSet DateMoved Completed";
+
         var token = TestContext.Current.CancellationToken;
         var (atc, _) = Trained();
         await WriteSettingsAsync(new { conflictPolicy = "None" }, token);
@@ -373,15 +376,14 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
 
         using var trainerTrainee = await SignedInAsync(TrainerTraineeVid, token);
 
-        // Another trainee's path: every reserved field, as written, and the history of the steps above — the installation's by nobody.
+        // Another trainee's path: every reserved field, as written, and no history; the page of the training has it, the steps above —
+        // the installation's by nobody.
         var theirs = OnThePath(await PathAsync(trainerTrainee, OtherTraineeVid, token), another);
         Assert.False(theirs.GetProperty("reservedLeftOut").GetBoolean());
         Assert.Equal(
-            [
-                "trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session",
-                "Requested Rescheduled DateSet DateMoved Completed",
-            ],
+            ["trn-test-reserved: another, staff", "trn-test-reserved: another, item", "trn-test-reserved: another, session", null],
             ReservedValues(theirs, item));
+        Assert.Equal(Steps, ReservedValues(await PageAsync(trainerTrainee, another, token), item)[^1]);
 
         // Their own: readable, with every reserved field left out — nowhere in the answer.
         var text = await trainerTrainee.GetStringAsync(new Uri($"{TraineePathEndpoints.Pattern}/{TrainerTraineeVid}", UriKind.Relative), token);
@@ -396,14 +398,15 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
         Assert.Equal((3, "trn-test: own, item"), (graded.GetProperty("grade").GetInt32(), graded.GetProperty("traineeComment").GetString()));
         Assert.Equal(2, mine.GetProperty("sessions").GetArrayLength());
 
-        // The coordinator reads the trainer-trainee's path whole: the rule is about who reads, not about whose path it is.
+        // The coordinator reads the trainer-trainee's path whole: the rule is about who reads, not about whose path it is. No training on
+        // the path carries its history; the page of each one does.
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var whole = await PathAsync(coordinator, TrainerTraineeVid, token);
         Assert.Equal(
-            [
-                "trn-test-reserved: own, staff", "trn-test-reserved: own, item", "trn-test-reserved: own, session",
-                "Requested Rescheduled DateSet DateMoved Completed",
-            ],
-            ReservedValues(OnThePath(await PathAsync(coordinator, TrainerTraineeVid, token), own), item));
+            ["trn-test-reserved: own, staff", "trn-test-reserved: own, item", "trn-test-reserved: own, session", null],
+            ReservedValues(OnThePath(whole, own), item));
+        Assert.All(whole.GetProperty("trainings").EnumerateArray(), training => Assert.Empty(training.GetProperty("history").EnumerateArray()));
+        Assert.Equal(Steps, ReservedValues(await PageAsync(coordinator, own, token), item)[^1]);
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------------

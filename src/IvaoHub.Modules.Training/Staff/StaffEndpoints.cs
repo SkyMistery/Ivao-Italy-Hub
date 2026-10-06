@@ -181,7 +181,7 @@ public static class StaffEndpoints
         }
 
         return await staff.MayAsync(training, TrainingPermissions.View)
-            ? Results.Ok(await staff.PageAsync(training, http.RequestAborted))
+            ? Results.Ok(await staff.PageAsync(training, withHistory: true, http.RequestAborted))
             : Results.StatusCode(StatusCodes.Status403Forbidden);
     }
 
@@ -221,7 +221,7 @@ public static class StaffEndpoints
             {
                 StaffResult.Forbidden => Results.StatusCode(StatusCodes.Status403Forbidden),
                 StaffResult.Refused => CrudProblems.Validation(problems!, new Dictionary<string, string[]>(), catalog, currentUser.Locale),
-                _ => Results.Ok(await staff.PageAsync(training, http.RequestAborted)),
+                _ => Results.Ok(await staff.PageAsync(training, withHistory: true, http.RequestAborted)),
             };
         }
         catch (DbUpdateConcurrencyException)
