@@ -99,6 +99,82 @@ describe('the two halves of every module', () => {
   });
 });
 
+/**
+ * The kinds a module projects into the search, read from its C# the way its blocks are.
+ *
+ * `new SearchProjection(Kind: "tour", …)`, or a constant of the module in place of the literal
+ * (`Event.SearchKind`, itself `EventsModule.ModuleKey`): a name is followed, by its last segment,
+ * through the `const string` declarations of the same module until a literal is found. A kind
+ * written any other way fails the test rather than passing unread.
+ */
+const SEARCH_PROJECTION = /new SearchProjection\(\s*(?:Kind:\s*)?([^,)]+?)\s*[,)]/g;
+
+function readSources(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.cs'))
+    .map((entry) => `${entry.parentPath.split('\\').join('/')}/${entry.name}`)
+    .filter((file) => !/\/(Migrations|bin|obj)\//.test(file))
+    .map((file) => readFileSync(file, 'utf8'));
+}
+
+function readSearchKinds(project: string): string[] {
+  const source = readSources(`${modulesRoot}/${project}`).join('\n');
+
+  const literal = (expression: string, hops = 0): string | undefined => {
+    const quoted = /^"([^"]+)"$/.exec(expression);
+    if (quoted) return quoted[1];
+    if (hops > 3 || !/^[\w.]+$/.test(expression)) return undefined;
+
+    const name = expression.split('.').at(-1)!;
+    const declared = new RegExp(`const string ${name}\\s*=\\s*([^;]+?)\\s*;`).exec(source)?.[1];
+    return declared === undefined ? undefined : literal(declared, hops + 1);
+  };
+
+  return [
+    ...new Set(
+      [...source.matchAll(SEARCH_PROJECTION)].map((match) => {
+        const kind = literal(match[1]!);
+        expect(
+          kind,
+          `${project} projects into the search with the kind \`${match[1]}\`, which this test cannot read: ` +
+            'write it as a literal, or as a `const string` of the module',
+        ).toBeDefined();
+        return kind!;
+      }),
+    ),
+  ];
+}
+
+describe('the words of what a module puts in the search', () => {
+  test('the tours project a kind, so the pattern still reads the C#', () => {
+    // Without this, a renamed `SearchProjection` would make every module "project nothing" and the
+    // test below would pass by reading nothing.
+    expect(readSearchKinds('IvaoHub.Modules.FlightOps')).toEqual(['tour']);
+  });
+
+  test.each(serverModules)('$key names every kind it projects, in every language', (module) => {
+    const locales = readdirSync(`${repositoryRoot}/locales`, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+
+    for (const kind of readSearchKinds(module.project)) {
+      for (const locale of locales) {
+        // The result of a search asks `<module>:search.kinds.<kind>` (`features/search/kindLabel.ts`):
+        // a kind with no word there is a badge showing its own key.
+        const file = `locales/${locale}/${module.key}.json`;
+        const words = JSON.parse(readFileSync(`${repositoryRoot}/${file}`, 'utf8')) as {
+          search?: { kinds?: Record<string, unknown> };
+        };
+
+        expect(
+          words.search?.kinds?.[kind],
+          `${file} has no "search.kinds.${kind}": add it under web/src/modules/${module.key}/locales/ and run pnpm i18n:sync`,
+        ).toEqual(expect.stringMatching(/\S/));
+      }
+    }
+  });
+});
+
 describe('the third side, the gallery', () => {
   test('a registry that agrees with the server shows nothing to fix', () => {
     // What the server would answer for this build: every block and tile the composed registry

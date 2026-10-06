@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { RouterAnchor } from '../../app/layouts/RouterAnchor';
 import { highlight } from '../../shared/search/highlight';
 
+import { kindLabel } from './kindLabel';
 import type { SearchHit, SearchResponse } from './queries';
 
 /**
@@ -88,12 +89,10 @@ function Hit({ hit, query }: { hit: SearchHit; query: string }) {
         <RouterAnchor href={hit.url} className="text-primary font-medium underline-offset-2 hover:underline">
           <Marked text={hit.title} query={query} />
         </RouterAnchor>
-        {/* What kind of row it is. `defaultValue` is the kind itself, so a module that projects a
-            kind this hub has no word for shows the key rather than nothing — the same choice the
-            category of a news item makes. */}
+        {/* What kind of row it is, in the words of whoever projected it. */}
         {/* `Badge` takes its words as `text` and not as children — measured, like every other
             contract of Atmosphere this repository has had to read before using (handoff §13). */}
-        <Badge variant="flat" text={t(`search.kinds.${hit.kind}`, { defaultValue: hit.kind })} />
+        <Badge variant="flat" text={kindLabel(t, hit)} />
       </div>
 
       {hit.snippet === '' ? null : (

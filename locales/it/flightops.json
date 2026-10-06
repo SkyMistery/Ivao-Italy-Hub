@@ -18,6 +18,11 @@
     "pilots": "Piloti",
     "bans": "Ban"
   },
+  "search": {
+    "kinds": {
+      "tour": "Tour"
+    }
+  },
   "tours": {
     "title": "Tour",
     "description": "Tutti i tour, passati, in corso e futuri. Lo stato si legge dalle date.",
