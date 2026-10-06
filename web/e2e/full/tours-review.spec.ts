@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, type APIRequestContext } from '@playwright/test';
 
 import {
   benchAirports,
@@ -13,6 +13,7 @@ import {
   removeBenchTours,
   signIn,
   whileWaitingFor,
+  test,
 } from './bench';
 import { replayFlight } from './replay';
 
@@ -68,6 +69,7 @@ test('a validator takes a pilot’s report, rejects it with an error, and the pi
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(240_000);
   await readInEnglish(context);
@@ -83,9 +85,7 @@ test('a validator takes a pilot’s report, rejects it with an error, and the pi
   const made: { rules: number[]; errors: number[] } = { rules: [], errors: [] };
 
   await removeBenchTours(context, 'bench-review-', pilotContext);
-  try {
-    await validate();
-  } finally {
+  afterwards(async () => {
     flight.remove();
     for (const rule of made.rules) {
       await context.request.delete(`/api/flightops/rules/${rule}`, { headers: asTheClientDoes });
@@ -95,7 +95,9 @@ test('a validator takes a pilot’s report, rejects it with an error, and the pi
     }
     await removeBenchTours(context, 'bench-review-', pilotContext);
     await pilotContext.close();
-  }
+  });
+
+  await validate();
 
   async function validate() {
     // ---------------------------------------------------------------- a tour with one leg and a rule with a dangerous error

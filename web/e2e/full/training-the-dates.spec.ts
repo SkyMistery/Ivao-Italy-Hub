@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type BrowserContext } from '@playwright/test';
+import { expect, type APIRequestContext, type BrowserContext } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchUrl, mailpit, readInEnglish, whileWaitingFor } from './bench';
+import { benchUrl, mailpit, readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The "done when" of A8 (M3), through the real screens against the real server: the trainer proposes two dates for the bench's
@@ -61,6 +61,7 @@ test('the trainer proposes two dates, the trainee chooses the one warned of anot
   page,
   context,
   browser,
+  afterwards,
 }) => {
   test.setTimeout(300_000);
   await readInEnglish(context);
@@ -75,149 +76,7 @@ test('the trainer proposes two dates, the trainee chooses the one warned of anot
   // What this run opens, so that the end closes it whatever happens in between.
   const opened: number[] = [];
 
-  try {
-    await signIn(context, null);
-    // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
-    await signIn(trainer, 'trainer');
-    await signIn(trainee, 'pilot');
-
-    const settings = await context.request.get('/api/modules/training/settings');
-    expect(settings.status()).toBe(200);
-    expect(
-      ((await settings.json()) as { conflictPolicy: string }).conflictPolicy,
-      'the division warns of what a date meets, as it does by default',
-    ).toBe('Warn');
-
-    // ---------------------------------------------------------------- the ATC training, assigned to the bench's trainer
-    const atc = await assignedAtc(trainee.request, context.request, opened);
-
-    // ---------------------------------------------------------------- another session on the day of the first date
-    const day = daysAhead(4);
-    const nextDay = daysAhead(5);
-    const pilot = await acceptedAndAssigned(trainee.request, context.request, 'Pilot', opened);
-    await step(context.request, pilot, 'date', { startsAtUtc: `${day}T10:00:00Z`, confirmed: true });
-
-    // Mails already there, so that the ones of this run are told apart.
-    const known = [
-      ...(await mailsTo(context.request, TRAINEE_ADDRESS)),
-      ...(await mailsTo(context.request, TRAINER_ADDRESS)),
-    ].map((mail) => mail.ID);
-
-    // ---------------------------------------------------------------- the trainer proposes two dates, and confirms the warning
-    // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
-    const trainerPage = await trainer.newPage();
-    const complaints: string[] = [];
-    for (const watched of [page, trainerPage]) {
-      watched.on('console', (message) => {
-        if (message.type() === 'error' && !message.text().includes('favicon')) {
-          complaints.push(message.text());
-        }
-      });
-      watched.on('pageerror', (error) => {
-        throw new Error(`The page threw: ${error.message}`);
-      });
-    }
-
-    await trainerPage.goto(`/staff/training/${String(atc.id)}`);
-    await expect(
-      trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.dates }),
-    ).toBeVisible();
-
-    const fields = words.staff.dates.propose.fields;
-    const starts = trainerPage.getByLabel(fields['slots.startsAtUtc'], { exact: true });
-    const ends = trainerPage.getByLabel(fields['slots.endsAtUtc'], { exact: true });
-    await starts.first().fill(`${day}T16:00`);
-    await ends.first().fill(`${day}T18:00`);
-    await trainerPage.getByRole('button', { name: englishCommon.form.addEntry, exact: true }).click();
-    await starts.nth(1).fill(`${nextDay}T16:00`);
-    await ends.nth(1).fill(`${nextDay}T18:00`);
-    await trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }).click();
-
-    // Warned of the other session that day, by what the public calendar shows of it and with its page; nothing written yet.
-    await expect(trainerPage.getByText(words.staff.dates.met.confirmTitle)).toBeVisible();
-    await expect(trainerPage.locator(`a[href="/staff/training/${String(pilot)}"]`).first()).toBeVisible();
-
-    await whileWaitingFor(
-      trainerPage,
-      'POST',
-      `/api/training/trainings/${String(atc.id)}/slots`,
-      async () => {
-        await trainerPage
-          .getByRole('button', { name: words.staff.dates.propose.confirm, exact: true })
-          .click();
-      },
-    );
-    await expect(
-      trainerPage.getByText(filled(words.staff.dates.propose.done_other, { count: '2' }), { exact: true }),
-    ).toBeVisible();
-
-    // ---------------------------------------------------------------- the trainee chooses the first, the one warned
-    const traineePage = await trainee.newPage();
-    traineePage.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    await traineePage.goto('/training/mine');
-    await traineePage.getByRole('link', { name: words.mine.chooseDate, exact: true }).click();
-    await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(atc.id)}$`));
-
-    const choose = traineePage.getByRole('button', { name: words.detail.dates.choose, exact: true });
-    await expect(choose).toHaveCount(2);
-    await choose.first().click();
-    await whileWaitingFor(traineePage, 'POST', `/api/training/mine/${String(atc.id)}/choose`, async () => {
-      await traineePage
-        .getByRole('alertdialog')
-        .getByRole('button', { name: words.detail.dates.confirm, exact: true })
-        .click();
-    });
-    await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.session })).toBeVisible();
-    await expect(traineePage.getByText(words.states.Scheduled, { exact: true })).toBeVisible();
-
-    // ---------------------------------------------------------------- in the public calendar, with nobody's name
-    const visitorPage = await visitor.newPage();
-    await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
-    const entry = visitorPage.locator(`a[href="/training/sessions/${String(atc.id)}"]`);
-    await expect(entry).toHaveText(`${atc.ratingShortName} · ${atc.position}`);
-
-    const shown = await visitorPage.locator('body').innerText();
-    for (const somebody of ['Bench Pilot', 'Bench Trainer', '999002', '999004']) {
-      expect(shown, `the calendar of a visitor names nobody: ${somebody}`).not.toContain(somebody);
-    }
-
-    // ---------------------------------------------------------------- the mails of the date fixed, to both
-    const session = `${day} 16:00`;
-    for (const address of [TRAINEE_ADDRESS, TRAINER_ADDRESS]) {
-      await expect
-        .poll(
-          async () =>
-            (await mailsTo(context.request, address)).filter(
-              (mail) => !known.includes(mail.ID) && mail.Subject.includes(session),
-            ).length,
-          { message: `the mail of the date fixed to ${address}`, timeout: 150_000, intervals: [5_000] },
-        )
-        .toBe(1);
-    }
-
-    // ---------------------------------------------------------------- closed by the staff, with a reason
-    await page.goto(`/staff/training/${String(atc.id)}`);
-    await page.getByRole('button', { name: words.staff.close.button, exact: true }).click();
-    const dialog = page.getByRole('alertdialog');
-    await dialog.getByLabel(words.staff.close.fields.reason, { exact: true }).fill(REASON);
-    await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(atc.id)}/close`, async () => {
-      await dialog.getByRole('button', { name: words.staff.close.button, exact: true }).click();
-    });
-    await expect(page.getByText(words.staff.close.done, { exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: words.staff.sections.closing })).toBeVisible();
-
-    // Its session leaves the calendar, and the trainee reads why.
-    await visitorPage.reload();
-    await expect(visitorPage.locator(`a[href="/training/sessions/${String(pilot)}"]`)).toHaveCount(1);
-    await expect(entry).toHaveCount(0);
-    await traineePage.reload();
-    await expect(traineePage.getByText(filled(words.mine.closedByStaff, { reason: REASON }))).toBeVisible();
-
-    expect(complaints).toEqual([]);
-  } finally {
+  afterwards(async () => {
     // Whatever this run left open is closed by the staff, or taken back by the trainee while nobody accepted it.
     for (const id of opened) {
       await closeIfOpen(context.request, trainee.request, id);
@@ -226,7 +85,142 @@ test('the trainer proposes two dates, the trainee chooses the one warned of anot
     await trainee.close();
     await trainer.close();
     await visitor.close();
+  });
+
+  await signIn(context, null);
+  // In the roster before anybody assigns them a training: the staff of the training is whoever signed in once.
+  await signIn(trainer, 'trainer');
+  await signIn(trainee, 'pilot');
+
+  const settings = await context.request.get('/api/modules/training/settings');
+  expect(settings.status()).toBe(200);
+  expect(
+    ((await settings.json()) as { conflictPolicy: string }).conflictPolicy,
+    'the division warns of what a date meets, as it does by default',
+  ).toBe('Warn');
+
+  // ---------------------------------------------------------------- the ATC training, assigned to the bench's trainer
+  const atc = await assignedAtc(trainee.request, context.request, opened);
+
+  // ---------------------------------------------------------------- another session on the day of the first date
+  const day = daysAhead(4);
+  const nextDay = daysAhead(5);
+  const pilot = await acceptedAndAssigned(trainee.request, context.request, 'Pilot', opened);
+  await step(context.request, pilot, 'date', { startsAtUtc: `${day}T10:00:00Z`, confirmed: true });
+
+  // Mails already there, so that the ones of this run are told apart.
+  const known = [
+    ...(await mailsTo(context.request, TRAINEE_ADDRESS)),
+    ...(await mailsTo(context.request, TRAINER_ADDRESS)),
+  ].map((mail) => mail.ID);
+
+  // ---------------------------------------------------------------- the trainer proposes two dates, and confirms the warning
+  // In the session they signed in with at the start: an assignment changes nothing of theirs (A7b).
+  const trainerPage = await trainer.newPage();
+  const complaints: string[] = [];
+  for (const watched of [page, trainerPage]) {
+    watched.on('console', (message) => {
+      if (message.type() === 'error' && !message.text().includes('favicon')) {
+        complaints.push(message.text());
+      }
+    });
+    watched.on('pageerror', (error) => {
+      throw new Error(`The page threw: ${error.message}`);
+    });
   }
+
+  await trainerPage.goto(`/staff/training/${String(atc.id)}`);
+  await expect(
+    trainerPage.getByRole('heading', { level: 2, name: words.staff.sections.dates }),
+  ).toBeVisible();
+
+  const fields = words.staff.dates.propose.fields;
+  const starts = trainerPage.getByLabel(fields['slots.startsAtUtc'], { exact: true });
+  const ends = trainerPage.getByLabel(fields['slots.endsAtUtc'], { exact: true });
+  await starts.first().fill(`${day}T16:00`);
+  await ends.first().fill(`${day}T18:00`);
+  await trainerPage.getByRole('button', { name: englishCommon.form.addEntry, exact: true }).click();
+  await starts.nth(1).fill(`${nextDay}T16:00`);
+  await ends.nth(1).fill(`${nextDay}T18:00`);
+  await trainerPage.getByRole('button', { name: words.staff.dates.propose.submit, exact: true }).click();
+
+  // Warned of the other session that day, by what the public calendar shows of it and with its page; nothing written yet.
+  await expect(trainerPage.getByText(words.staff.dates.met.confirmTitle)).toBeVisible();
+  await expect(trainerPage.locator(`a[href="/staff/training/${String(pilot)}"]`).first()).toBeVisible();
+
+  await whileWaitingFor(trainerPage, 'POST', `/api/training/trainings/${String(atc.id)}/slots`, async () => {
+    await trainerPage.getByRole('button', { name: words.staff.dates.propose.confirm, exact: true }).click();
+  });
+  await expect(
+    trainerPage.getByText(filled(words.staff.dates.propose.done_other, { count: '2' }), { exact: true }),
+  ).toBeVisible();
+
+  // ---------------------------------------------------------------- the trainee chooses the first, the one warned
+  const traineePage = await trainee.newPage();
+  traineePage.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  await traineePage.goto('/training/mine');
+  await traineePage.getByRole('link', { name: words.mine.chooseDate, exact: true }).click();
+  await expect(traineePage).toHaveURL(new RegExp(`/training/mine/${String(atc.id)}$`));
+
+  const choose = traineePage.getByRole('button', { name: words.detail.dates.choose, exact: true });
+  await expect(choose).toHaveCount(2);
+  await choose.first().click();
+  await whileWaitingFor(traineePage, 'POST', `/api/training/mine/${String(atc.id)}/choose`, async () => {
+    await traineePage
+      .getByRole('alertdialog')
+      .getByRole('button', { name: words.detail.dates.confirm, exact: true })
+      .click();
+  });
+  await expect(traineePage.getByRole('heading', { level: 2, name: words.detail.session })).toBeVisible();
+  await expect(traineePage.getByText(words.states.Scheduled, { exact: true })).toBeVisible();
+
+  // ---------------------------------------------------------------- in the public calendar, with nobody's name
+  const visitorPage = await visitor.newPage();
+  await visitorPage.goto(`/calendar?view=weekList&on=${day}`);
+  const entry = visitorPage.locator(`a[href="/training/sessions/${String(atc.id)}"]`);
+  await expect(entry).toHaveText(`${atc.ratingShortName} · ${atc.position}`);
+
+  const shown = await visitorPage.locator('body').innerText();
+  for (const somebody of ['Bench Pilot', 'Bench Trainer', '999002', '999004']) {
+    expect(shown, `the calendar of a visitor names nobody: ${somebody}`).not.toContain(somebody);
+  }
+
+  // ---------------------------------------------------------------- the mails of the date fixed, to both
+  const session = `${day} 16:00`;
+  for (const address of [TRAINEE_ADDRESS, TRAINER_ADDRESS]) {
+    await expect
+      .poll(
+        async () =>
+          (await mailsTo(context.request, address)).filter(
+            (mail) => !known.includes(mail.ID) && mail.Subject.includes(session),
+          ).length,
+        { message: `the mail of the date fixed to ${address}`, timeout: 150_000, intervals: [5_000] },
+      )
+      .toBe(1);
+  }
+
+  // ---------------------------------------------------------------- closed by the staff, with a reason
+  await page.goto(`/staff/training/${String(atc.id)}`);
+  await page.getByRole('button', { name: words.staff.close.button, exact: true }).click();
+  const dialog = page.getByRole('alertdialog');
+  await dialog.getByLabel(words.staff.close.fields.reason, { exact: true }).fill(REASON);
+  await whileWaitingFor(page, 'POST', `/api/training/trainings/${String(atc.id)}/close`, async () => {
+    await dialog.getByRole('button', { name: words.staff.close.button, exact: true }).click();
+  });
+  await expect(page.getByText(words.staff.close.done, { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: words.staff.sections.closing })).toBeVisible();
+
+  // Its session leaves the calendar, and the trainee reads why.
+  await visitorPage.reload();
+  await expect(visitorPage.locator(`a[href="/training/sessions/${String(pilot)}"]`)).toHaveCount(1);
+  await expect(entry).toHaveCount(0);
+  await traineePage.reload();
+  await expect(traineePage.getByText(filled(words.mine.closedByStaff, { reason: REASON }))).toBeVisible();
+
+  expect(complaints).toEqual([]);
 });
 
 async function signIn(context: BrowserContext, as: 'pilot' | 'trainer' | null): Promise<void> {

@@ -1,8 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { createContent, deleteContent, readContent, readInEnglish, signIn } from './bench';
+import { createContent, deleteContent, readContent, readInEnglish, signIn, test } from './bench';
 
 /**
  * A dashboard is composed as the grid of tiles it is read as (D2, note
@@ -26,6 +26,7 @@ const heading = (id: string, text: string) => ({
 test('a tile of a dashboard is narrowed with its handle and widened from the panel', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(60_000);
   await readInEnglish(context);
@@ -56,45 +57,46 @@ test('a tile of a dashboard is narrowed with its handle and widened from the pan
       ],
     },
   });
+  afterwards(() => deleteContent(context, born.id));
 
-  try {
-    await page.goto(`/staff/content/${born.id}`);
+  await page.goto(`/staff/content/${born.id}`);
 
-    const frame = page.getByRole('region', { name: words.preview });
-    const first = frame.locator('[data-tile="b_first"]');
-    await expect(first).toHaveAttribute('data-span', '12');
+  const frame = page.getByRole('region', { name: words.preview });
+  const first = frame.locator('[data-tile="b_first"]');
+  await expect(first).toHaveAttribute('data-span', '12');
 
-    await frame.getByRole('heading', { name: 'First tile' }).click();
-    const handle = first.locator('[data-span-handle]');
-    await expect(handle).toBeVisible();
+  // Seen before it is clicked: a click waits for as long as the test has, an expectation says at
+  // once that the preview drew nothing.
+  const title = frame.getByRole('heading', { name: 'First tile' });
+  await expect(title, 'the preview draws the tiles of the dashboard').toBeVisible();
+  await title.click();
+  const handle = first.locator('[data-span-handle]');
+  await expect(handle).toBeVisible();
 
-    // From the right edge to about a quarter of the row: the tile snaps to a quarter.
-    const box = (await first.boundingBox())!;
-    const grip = (await handle.boundingBox())!;
-    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 4, grip.y + grip.height / 2, { steps: 10 });
-    await page.mouse.up();
+  // From the right edge to about a quarter of the row: the tile snaps to a quarter.
+  const box = (await first.boundingBox())!;
+  const grip = (await handle.boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 4, grip.y + grip.height / 2, { steps: 10 });
+  await page.mouse.up();
 
-    await expect(first).toHaveAttribute('data-span', '3');
+  await expect(first).toHaveAttribute('data-span', '3');
 
-    // And from the panel, to half.
-    await page.getByLabel(words.tileWidth.label, { exact: true }).click();
-    await page.getByRole('option', { name: words.tileWidth.options['6'], exact: true }).click();
-    await expect(first).toHaveAttribute('data-span', '6');
+  // And from the panel, to half.
+  await page.getByLabel(words.tileWidth.label, { exact: true }).click();
+  await page.getByRole('option', { name: words.tileWidth.options['6'], exact: true }).click();
+  await expect(first).toHaveAttribute('data-span', '6');
 
-    // Stored by the autosave after the pause (G15): the row says half.
-    await expect
-      .poll(
-        async () => {
-          const stored = await readContent(context, born.id);
-          const tiles = (stored.body.sections[0] as { blocks: { id: string; span: number | null }[] }).blocks;
-          return tiles.find((block) => block.id === 'b_first')?.span;
-        },
-        { timeout: 15_000 },
-      )
-      .toBe(6);
-  } finally {
-    await deleteContent(context, born.id);
-  }
+  // Stored by the autosave after the pause (G15): the row says half.
+  await expect
+    .poll(
+      async () => {
+        const stored = await readContent(context, born.id);
+        const tiles = (stored.body.sections[0] as { blocks: { id: string; span: number | null }[] }).blocks;
+        return tiles.find((block) => block.id === 'b_first')?.span;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(6);
 });

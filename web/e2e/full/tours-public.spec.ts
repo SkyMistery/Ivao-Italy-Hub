@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type BrowserContext } from '@playwright/test';
+import { expect, type BrowserContext } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
@@ -14,6 +14,7 @@ import {
   signIn,
   whileWaitingFor,
   writeInBothLanguages,
+  test,
 } from './bench';
 
 /**
@@ -58,7 +59,11 @@ async function removeLeftovers(context: BrowserContext): Promise<void> {
   }
 }
 
-test('a released tour is read by a visitor, with its legs on the map', async ({ page, context }) => {
+test('a released tour is read by a visitor, with its legs on the map', async ({
+  page,
+  context,
+  afterwards,
+}) => {
   test.setTimeout(120_000);
   await readInEnglish(context);
   await signIn(context);
@@ -75,11 +80,11 @@ test('a released tour is read by a visitor, with its legs on the map', async ({ 
   });
 
   await removeLeftovers(context);
-  try {
-    await composeAndRead();
-  } finally {
+  afterwards(async () => {
     await removeLeftovers(context);
-  }
+  });
+
+  await composeAndRead();
 
   async function composeAndRead() {
     // ---------------------------------------------------------------- a tour, released yesterday
@@ -134,53 +139,53 @@ test('a released tour is read by a visitor, with its legs on the map', async ({ 
       throw new Error(`The public page threw: ${error.message}`);
     });
 
-    try {
-      // A wide window: these two screens are looked at on a desktop, and the cards go to three columns there.
-      await reader.setViewportSize({ width: 1500, height: 1200 });
-
-      await reader.goto('/tours');
-      const card = reader.getByRole('article').filter({ hasText: tourName.en });
-      await expect(card).toBeVisible();
-      await expect(card.getByText('3 legs · 925 NM', { exact: false })).toBeVisible();
-      await card.getByRole('link').first().click();
-
-      await expect(reader).toHaveURL(new RegExp(`/tours/${slug}$`));
-      await expect(reader.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
-
-      // The legs, in order, with their distances and a flight plan for each.
-      const legs = reader.getByRole('row');
-      await expect(legs.filter({ hasText: benchAirports.rome }).first()).toBeVisible();
-      await expect(reader.getByRole('link', { name: flightops.public.simbrief }).first()).toHaveAttribute(
-        'href',
-        new RegExp(
-          `dispatch\\.simbrief\\.com/options/custom\\?orig=${benchAirports.rome}&dest=${benchAirports.milan}`,
-        ),
-      );
-
-      // The map: a canvas that MapLibre actually drew — not an element that merely exists — and the attribution the
-      // licence of the data asks for.
-      const map = reader.getByTestId('route-map');
-      await expect(map).toBeVisible();
-      await expect(map.locator('canvas.maplibregl-canvas')).toBeVisible();
-      await expect(map.locator('canvas.maplibregl-canvas')).not.toHaveJSProperty('width', 0);
-      await expect(map.getByText(benchAirports.milan, { exact: true })).toBeVisible();
-      await expect(map.getByRole('link', { name: 'OpenStreetMap' })).toBeVisible();
-
-      // ⚠️ The whole reason the round runs the published package: this page is drawn under the real policy, and a map
-      // refused a worker or a `blob:` texture says so in the console and nowhere else.
-      expect(visitorComplaints.filter((text) => !text.includes('favicon'))).toEqual([]);
-
-      // Hidden again: gone from both addresses, for everybody.
-      await page.goto(`/staff/tours/${tourId}`);
-      await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
-        await page.getByRole('button', { name: tours.actions.hide }).click();
-      });
-
-      const hidden = await context.request.get(`/api/flightops/tours/public/${slug}`);
-      expect(hidden.status()).toBe(404);
-    } finally {
+    afterwards(async () => {
       await visitor.close();
-    }
+    });
+
+    // A wide window: these two screens are looked at on a desktop, and the cards go to three columns there.
+    await reader.setViewportSize({ width: 1500, height: 1200 });
+
+    await reader.goto('/tours');
+    const card = reader.getByRole('article').filter({ hasText: tourName.en });
+    await expect(card).toBeVisible();
+    await expect(card.getByText('3 legs · 925 NM', { exact: false })).toBeVisible();
+    await card.getByRole('link').first().click();
+
+    await expect(reader).toHaveURL(new RegExp(`/tours/${slug}$`));
+    await expect(reader.getByRole('heading', { level: 1, name: tourName.en })).toBeVisible();
+
+    // The legs, in order, with their distances and a flight plan for each.
+    const legs = reader.getByRole('row');
+    await expect(legs.filter({ hasText: benchAirports.rome }).first()).toBeVisible();
+    await expect(reader.getByRole('link', { name: flightops.public.simbrief }).first()).toHaveAttribute(
+      'href',
+      new RegExp(
+        `dispatch\\.simbrief\\.com/options/custom\\?orig=${benchAirports.rome}&dest=${benchAirports.milan}`,
+      ),
+    );
+
+    // The map: a canvas that MapLibre actually drew — not an element that merely exists — and the attribution the
+    // licence of the data asks for.
+    const map = reader.getByTestId('route-map');
+    await expect(map).toBeVisible();
+    await expect(map.locator('canvas.maplibregl-canvas')).toBeVisible();
+    await expect(map.locator('canvas.maplibregl-canvas')).not.toHaveJSProperty('width', 0);
+    await expect(map.getByText(benchAirports.milan, { exact: true })).toBeVisible();
+    await expect(map.getByRole('link', { name: 'OpenStreetMap' })).toBeVisible();
+
+    // ⚠️ The whole reason the round runs the published package: this page is drawn under the real policy, and a map
+    // refused a worker or a `blob:` texture says so in the console and nowhere else.
+    expect(visitorComplaints.filter((text) => !text.includes('favicon'))).toEqual([]);
+
+    // Hidden again: gone from both addresses, for everybody.
+    await page.goto(`/staff/tours/${tourId}`);
+    await whileWaitingFor(page, 'POST', `/api/flightops/tours/${tourId}/status`, async () => {
+      await page.getByRole('button', { name: tours.actions.hide }).click();
+    });
+
+    const hidden = await context.request.get(`/api/flightops/tours/public/${slug}`);
+    expect(hidden.status()).toBe(404);
 
     expect(complaints.filter((text) => !text.includes('favicon'))).toEqual([]);
   }

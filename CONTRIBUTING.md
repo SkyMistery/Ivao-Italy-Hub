@@ -123,6 +123,15 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
   needs both halves (TypeScript and C#) in the same pull request.
 - **A module with a public page reserves its first URL segment** (`IModule.ReservedSegments`), or a page with that
   name becomes unreachable.
+- **A module that projects into the search names its kind in its own language file**: `search.kinds.<kind>` in
+  `web/src/modules/<key>/locales/{lang}/<key>.json` (then `pnpm i18n:sync`). The badge of a search result asks the module
+  that projected the row, never the core's `common.json`; `web/src/modules/manifest.test.ts` fails when the word is missing.
+- **Nothing but sections inside the `@container` of `ContentRenderer`.** An extra element there (the "add a section"
+  invitation was one) can leave the editor's preview empty on a slow machine: Chromium gives the sections no box when the
+  typefaces finish loading just after the first draw (0.6.5, `e2e/full/preview.spec.ts`).
+- **An e2e spec says what it puts back with `afterwards(…)`, never in a `finally`.** A `finally` that deletes runs after
+  the test's time is over, and the report shows the delete timing out instead of the step that stopped. The fixture of
+  `web/e2e/full/bench.ts` (#227) runs as a teardown, with its own time; an `afterEach` does too.
 - **A grant written signs its holder out** (the security stamp changes): tests and specs sign in again.
 - **Module routes**: name a module route parameter `$id`; `useParams({ strict: false })` only types parameters the
   generated tree knows.

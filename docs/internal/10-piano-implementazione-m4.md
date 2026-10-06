@@ -106,6 +106,7 @@ Per non ripeterle trenta volte:
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
+| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; il filtro dei tour passa nel nucleo |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1996,6 +1997,74 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
 
 [v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
 [a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
+
+### E10g — Nucleo: la versione di un contratto
+
+**Da dove viene**: non c'era in E0. L'ha portata la revisione di E5 (#228): il revisore ha girato a Carmine la domanda della versione
+dell'esportazione per il Gate Manager, e **Carmine ha deciso** ([risposta 9 sulla #228][a228g]) che l'esportazione porta la versione
+del suo contratto in un'intestazione sua — senza, o con una versione che l'hub non parla, 400 con le versioni accettate — e che il
+contratto si scrive in un documento pubblico, come quello dell'agente dei tour. Il controllo c'era solo nei tour
+(`AgentContract.RequireVersionAsync`), che gli eventi non referenziano: sulla classificazione chiesta dalla sessione che coordina prima
+del codice, dalberone ha scelto il 6 ottobre di portarlo nel nucleo (caso b, come E10e). Branch `m4/e10g-contract-version`. **PR del
+nucleo**, con la sua nota; nessuna migrazione; **E5 la aspetta**: la #228 è in coda dopo di lei.
+
+1. **`ContractVersion`** in `Core/Auth/`, accanto ai token personali: l'intestazione del contratto, la versione corrente, le accettate,
+   la chiave del titolo (del modulo) e il `code`; il filtro `RequireAsync`, che risponde esattamente come quello dei tour.
+2. **Il costruttore** rifiuta quello che non può essere un contratto.
+3. **La copia dei tour resta** in questa PR: la sostituisce una sessione di Carmine, come `GreatCircle` dopo E10e. La richiesta, e la
+   domanda di una riga in `CLAUDE.md` §2, vanno a Carmine sulla PR.
+
+**Test**: unità: i rifiuti e le accettate, la versione parlata, il titolo nella lingua di chi chiede, il costruttore; il test gemello con
+il filtro dei tour.
+**Fatta quando**: il nucleo ha la versione di un contratto e risponde come il filtro dei tour (il test gemello), così E5 la usa con i
+suoi valori invece di scriverne una sua. La copia dei tour se ne va con la sessione di Carmine.
+
+**Com'è andata** (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo senza coda, da `main` a `e9702b2`):
+
+- **Fatto** (nota nuova `2026-10-06-la-versione-di-un-contratto-nel-nucleo`, scelta tecnica, con una richiesta e una domanda a Carmine):
+  - **`src/IvaoHub.Core/Auth/ContractVersion.cs`**, namespace `IvaoHub.Core.Auth`: la forma che E5 aspettava, senza cambi —
+    `ContractVersion(header, current, accepted, titleKey, code)`, le cinque proprietà e `RequireAsync(context, next)`, il codice dei tour
+    riga per riga con i valori del contratto. Nessuna registrazione, nessuna migrazione, nessun endpoint, nessuna chiave, niente nel
+    browser;
+  - **`tests/IvaoHub.UnitTests/ContractVersionTests.cs`** (unità, 21): una richiesta passa nel filtro come la fa passare un endpoint, e il
+    rifiuto si scrive come lo scrive il server; i rifiuti, le accettate, la versione parlata di un contratto alla versione 2, il titolo
+    in inglese, in italiano, nella lingua della divisione e senza catalogo, i rifiuti del costruttore, le versioni copiate; **il test
+    gemello**, che confronta il nucleo con i valori dei tour e `AgentContract.RequireVersionAsync` su 120 coppie (venti richieste, con e
+    senza catalogo, in due lingue e senza utente) e vuole la stessa risposta byte per byte, e che dice quali richieste i tour accettano:
+    `1`, `1` fra due spazi, `\t1`, `01`.
+- **Scelte, scritte nella nota** (§3):
+  1. **due rifiuti in più** del costruttore, oltre a quelli della fase: un'intestazione che non è un token di HTTP, e una versione
+     ripetuta. I valori dei tour e quelli di E5 li passano;
+  2. **niente `Announce`** per l'endpoint aperto: il passaggio dei tour non ne ha bisogno (`AgentContract` tiene `Header` e `Current`, e
+     la riga 32 di `AgentEndpoints` resta com'è), ed E5 non ha un endpoint aperto;
+  3. **il nome della nota è del 6 ottobre**: la fase è nata quel giorno sulla #228, e la nota di E5 la cita già così; è scritta nella
+     notte sul 7.
+- **Trovato** (nota §6): **il test gemello non vede la versione della risposta** — con la corrente al posto della parlata i suoi 120
+  confronti passano tutti, perché i tour accettano solo la 1 —, e la vede solo il test del contratto alla versione 2.
+- **La copia dei tour resta** (`CLAUDE.md` §0 regola 2, `core-guard`): due copie dello stesso filtro, tenute uguali dal test gemello,
+  finché una sessione di Carmine non passa i tour al nucleo; la nota (§5) scrive quel passaggio riga per riga.
+- **Letta la fase del nucleo che corre, E4b** (#226): niente in `Core/Auth/`; scrive l'intestazione di `HANDOFF-M4.md` e altri punti di
+  `10` — un conflitto di documenti per chi arriva seconda, nessuna sovrapposizione di codice. Nessun messaggio alla sua sessione.
+- **Verificato, in locale** (6–7 ottobre 2026, una suite alla volta, `main` a `e9702b2`):
+  - `dotnet build IvaoHub.sln --no-incremental` 0 avvisi; `dotnet format --verify-no-changes` sui due file C#: pulito;
+  - unità **1133/1133** (i 21 nuovi, i test di architettura compresi); `ContractVersionTests` da sola **21/21**;
+  - **integrazione intera, senza filtro, 481/481** al primo giro (7,2 minuti), la prova della divisione «XX» compresa;
+  - **le prove al contrario**, sul file del nucleo e poi rimesso (nota §6): con `NumberStyles.Integer` cadono il gemello e il rifiuto di
+    `+1`; senza `Trim` il gemello e l'accettata con gli spazi; con la corrente al posto della parlata nell'intestazione solo il test del
+    contratto alla versione 2;
+  - in `web/`, dove niente cambia (i `node_modules` installati dal lockfile, senza cambiarlo): `pnpm lint` e `pnpm typecheck` verdi,
+    `pnpm test` **625/625** in 85 file, `pnpm gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`e9702b2`): cinque file, nessuno del maintainer né dei tour, un file
+    del nucleo (`ContractVersion.cs`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `pnpm e2e` e `pnpm e2e:full`: nessuna schermata cambia;
+  - `ContractVersion` su un endpoint vero, nella catena dell'hub (la policy del token prima, il servizio dei problemi di
+    `AddProblemDetails`): i test di questa fase chiamano il filtro con un `DefaultHttpContext` e scrivono il problema senza quel servizio.
+    Lo provano i test d'integrazione dell'esportazione di E5, e per i tour `PirepTests.Agent` dopo il passaggio;
+  - il passaggio dei tour al nucleo, che è di Carmine.
+
+[a228g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 
 ### E11a — Postazioni e disponibilità
 

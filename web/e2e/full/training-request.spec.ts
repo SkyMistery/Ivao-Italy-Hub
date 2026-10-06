@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type BrowserContext, type Page } from '@playwright/test';
 
-import { readInEnglish, whileWaitingFor } from './bench';
+import { readInEnglish, whileWaitingFor, test } from './bench';
 
 /**
  * The "done when" of A6 (M3), through the real screens against the real server: the bench's trainee asks for the training
@@ -15,7 +15,7 @@ import { readInEnglish, whileWaitingFor } from './bench';
  * The trainee is the pilot of the tours (`/e2e/signin?as=pilot`, AS3 and FS3, hours above any threshold); the bench has no
  * threshold of hours and no site of the exam.
  *
- * ⚠️ A training is never deleted: the requests of this run are cancelled in a `finally`, and the ones a run that stopped half
+ * ⚠️ A training is never deleted: the requests of this run are cancelled after the test (`afterwards`), and the ones a run that stopped half
  * way left waiting are cancelled at the start. A cancellation makes nobody wait, so the next run asks again.
  */
 
@@ -44,6 +44,7 @@ interface MyTraining {
 test('the trainee asks for the next ATC training on a position and finds it; a second ATC one is refused, a pilot one passes', async ({
   page,
   context,
+  afterwards,
 }) => {
   test.setTimeout(120_000);
   await readInEnglish(context);
@@ -61,85 +62,85 @@ test('the trainee asks for the next ATC training on a position and finds it; a s
   });
 
   await cancelWaitingRequests(context);
-  try {
-    const before = await mine(context);
-    const atc = before.paths.find((path) => path.kind === 'Atc')!;
-    const pilot = before.paths.find((path) => path.kind === 'Pilot')!;
-    expect(atc.refusal, 'the trainee may ask for an ATC training').toBeNull();
-    expect(pilot.refusal, 'the trainee may ask for a pilot training').toBeNull();
-    const position = atc.positions[0];
-    expect(position, 'the division offers a position for the ATC training').toBeDefined();
-
-    // ---------------------------------------------------------------- the ATC request, on a position
-    await page.goto('/training/request');
-    await expect(page.getByRole('heading', { level: 1, name: words.request.title })).toBeVisible();
-    const article = page.getByRole('article');
-    await expect(article.getByText(atc.ratingShortName!, { exact: true })).toBeVisible();
-
-    // ⚠️ Chosen from the list: the closed suggestion of the core loses a choice clicked after typing (found in A6b).
-    await page.getByLabel(words.request.fields.position, { exact: true }).click();
-    await page
-      .getByRole('option', {
-        name: words.positionChoice
-          .replace('{{callsign}}', position!.callsign)
-          .replace('{{name}}', position!.name),
-      })
-      .click();
-    await page
-      .getByLabel(words.request.fields.availabilityText, { exact: true })
-      .fill(`Evenings after 18 UTC, run ${stamp}.`);
-    await askAnswering(page, atc.next!.shortName, words.request.theory.yes);
-
-    await expect(page).toHaveURL(/\/training\/mine$/);
-    await expect(page.getByRole('heading', { level: 1, name: words.mine.title })).toBeVisible();
-    const waiting = page.getByRole('listitem').filter({ hasText: words.states.Requested });
-    await expect(waiting.filter({ hasText: position!.callsign })).toHaveCount(1);
-
-    // ---------------------------------------------------------------- a second ATC request is refused
-    await page.goto('/training/request?kind=Atc');
-    await expect(page.getByText(words.errors.requestOpen)).toBeVisible();
-    await expect(page.getByRole('button', { name: words.request.send, exact: true })).toHaveCount(0);
-
-    // And the server refuses one sent past the page, on the ladder, with the key the page says.
-    const second = await context.request.post('/api/training/mine', {
-      headers: asTheClientDoes,
-      data: {
-        kind: 'Atc',
-        rating: atc.next!.number,
-        position: position!.callsign,
-        availabilityText: null,
-        notesText: null,
-        theoryPassed: true,
-      },
-    });
-    expect(second.status()).toBe(400);
-    expect(((await second.json()) as { errors: Record<string, string[]> }).errors.kind).toEqual([
-      'training:errors.requestOpen',
-    ]);
-
-    // ---------------------------------------------------------------- a pilot's passes: the other ladder, no position
-    await page.getByRole('radio', { name: new RegExp(words.kinds.Pilot) }).check();
-    await expect(page).toHaveURL(/\/training\/request\?kind=Pilot$/);
-    await expect(article.getByText(pilot.ratingShortName!, { exact: true })).toBeVisible();
-    await expect(page.getByLabel(words.request.fields.position, { exact: true })).toHaveCount(0);
-    await askAnswering(page, pilot.next!.shortName, words.request.theory.yes);
-
-    await expect(page).toHaveURL(/\/training\/mine$/);
-    await expect(waiting).toHaveCount(2);
-
-    // Read back from the server: one request per ladder, the ATC one on the position chosen, with what the trainee wrote.
-    const after = (await mine(context)).trainings.filter((training) => training.state === 'Requested');
-    expect(after.map((training) => training.kind).sort()).toEqual(['Atc', 'Pilot']);
-    expect(after.find((training) => training.kind === 'Atc')).toMatchObject({
-      position: position!.callsign,
-      availabilityText: `Evenings after 18 UTC, run ${stamp}.`,
-    });
-    expect(after.find((training) => training.kind === 'Pilot')?.position).toBeNull();
-
-    expect(complaints).toEqual([]);
-  } finally {
+  afterwards(async () => {
     await cancelWaitingRequests(context);
-  }
+  });
+
+  const before = await mine(context);
+  const atc = before.paths.find((path) => path.kind === 'Atc')!;
+  const pilot = before.paths.find((path) => path.kind === 'Pilot')!;
+  expect(atc.refusal, 'the trainee may ask for an ATC training').toBeNull();
+  expect(pilot.refusal, 'the trainee may ask for a pilot training').toBeNull();
+  const position = atc.positions[0];
+  expect(position, 'the division offers a position for the ATC training').toBeDefined();
+
+  // ---------------------------------------------------------------- the ATC request, on a position
+  await page.goto('/training/request');
+  await expect(page.getByRole('heading', { level: 1, name: words.request.title })).toBeVisible();
+  const article = page.getByRole('article');
+  await expect(article.getByText(atc.ratingShortName!, { exact: true })).toBeVisible();
+
+  // ⚠️ Chosen from the list: the closed suggestion of the core loses a choice clicked after typing (found in A6b).
+  await page.getByLabel(words.request.fields.position, { exact: true }).click();
+  await page
+    .getByRole('option', {
+      name: words.positionChoice
+        .replace('{{callsign}}', position!.callsign)
+        .replace('{{name}}', position!.name),
+    })
+    .click();
+  await page
+    .getByLabel(words.request.fields.availabilityText, { exact: true })
+    .fill(`Evenings after 18 UTC, run ${stamp}.`);
+  await askAnswering(page, atc.next!.shortName, words.request.theory.yes);
+
+  await expect(page).toHaveURL(/\/training\/mine$/);
+  await expect(page.getByRole('heading', { level: 1, name: words.mine.title })).toBeVisible();
+  const waiting = page.getByRole('listitem').filter({ hasText: words.states.Requested });
+  await expect(waiting.filter({ hasText: position!.callsign })).toHaveCount(1);
+
+  // ---------------------------------------------------------------- a second ATC request is refused
+  await page.goto('/training/request?kind=Atc');
+  await expect(page.getByText(words.errors.requestOpen)).toBeVisible();
+  await expect(page.getByRole('button', { name: words.request.send, exact: true })).toHaveCount(0);
+
+  // And the server refuses one sent past the page, on the ladder, with the key the page says.
+  const second = await context.request.post('/api/training/mine', {
+    headers: asTheClientDoes,
+    data: {
+      kind: 'Atc',
+      rating: atc.next!.number,
+      position: position!.callsign,
+      availabilityText: null,
+      notesText: null,
+      theoryPassed: true,
+    },
+  });
+  expect(second.status()).toBe(400);
+  expect(((await second.json()) as { errors: Record<string, string[]> }).errors.kind).toEqual([
+    'training:errors.requestOpen',
+  ]);
+
+  // ---------------------------------------------------------------- a pilot's passes: the other ladder, no position
+  await page.getByRole('radio', { name: new RegExp(words.kinds.Pilot) }).check();
+  await expect(page).toHaveURL(/\/training\/request\?kind=Pilot$/);
+  await expect(article.getByText(pilot.ratingShortName!, { exact: true })).toBeVisible();
+  await expect(page.getByLabel(words.request.fields.position, { exact: true })).toHaveCount(0);
+  await askAnswering(page, pilot.next!.shortName, words.request.theory.yes);
+
+  await expect(page).toHaveURL(/\/training\/mine$/);
+  await expect(waiting).toHaveCount(2);
+
+  // Read back from the server: one request per ladder, the ATC one on the position chosen, with what the trainee wrote.
+  const after = (await mine(context)).trainings.filter((training) => training.state === 'Requested');
+  expect(after.map((training) => training.kind).sort()).toEqual(['Atc', 'Pilot']);
+  expect(after.find((training) => training.kind === 'Atc')).toMatchObject({
+    position: position!.callsign,
+    availabilityText: `Evenings after 18 UTC, run ${stamp}.`,
+  });
+  expect(after.find((training) => training.kind === 'Pilot')?.position).toBeNull();
+
+  expect(complaints).toEqual([]);
 });
 
 /** «Request training», the question on the theory for that rating, the answer, and the request it sends. */
