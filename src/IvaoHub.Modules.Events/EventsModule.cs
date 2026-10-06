@@ -1,8 +1,10 @@
 using FluentValidation;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Public;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
@@ -19,7 +21,8 @@ namespace IvaoHub.Modules.Events;
 /// E3a the event in the staff's back office: its list with the views of its state, its page — the generated form with the
 /// switches its kind presets, the description, the banner — its airports with their capacity, and cancelling and deleting it;
 /// E3b its life: publishing it, its calendar entry, its line in the search and its files, and the job that projects it again when
-/// it is seen and when it ends.
+/// it is seen and when it ends; E4 its public side — the page of an event, the list of <c>/events</c> as the block
+/// <c>events.eventList</c> — and the routes the flight operations write.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -38,6 +41,15 @@ public sealed class EventsModule : ModuleBase
     [
         new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
+    ];
+
+    /// <summary>
+    /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page. Its other half is in
+    /// <c>web/src/modules/events/</c>; the manifest test reads this literal.
+    /// </summary>
+    public override IReadOnlyList<BlockDescriptor> Blocks =>
+    [
+        new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -75,6 +87,10 @@ public sealed class EventsModule : ModuleBase
                 .ForJob(EventReleaseJob.JobName)
                 .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
                 .WithCronSchedule(EventReleaseJob.Cron)));
+
+        // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.
+        services.AddScoped<PublicEvents>();
+        services.AddScoped<IDataBlockProvider, EventListProvider>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -82,5 +98,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventEndpoints();
         endpoints.MapEventAirportEndpoints();
         endpoints.MapEventRouteEndpoints();
+        endpoints.MapPublicEventEndpoints();
     }
 }

@@ -81,6 +81,15 @@ public static class EventState
             && (row.VisibleFromUtc is not { } visible || now >= visible)
             && now < row.EndsAtUtc;
     }
+
+    /// <summary>
+    /// <see cref="IsSeen"/> written once more in what SQL can ask, for the lists of the site (E4): <c>/events</c> and the block
+    /// <c>events.eventList</c>. A test holds the two to the same answer, as it holds the views of the staff's list.
+    /// </summary>
+    public static Expression<Func<Event, bool>> Seen(DateTime now) => row =>
+        row.Status == PublishStatus.Published
+        && (row.VisibleFromUtc == null || row.VisibleFromUtc <= now)
+        && now < row.EndsAtUtc;
 }
 
 /// <summary>
