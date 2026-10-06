@@ -260,6 +260,22 @@ test('a section is offered at the end of the page while composing, and to nobody
   expect(added).toHaveBeenCalledTimes(1);
 });
 
+test('the invitation to add a section stands after the container the sections measure, not inside it', () => {
+  // Inside it, a browser could leave the whole preview without a box (`ContentRenderer`): what jsdom
+  // can keep is where the invitation stands.
+  renderWithProviders(
+    <PickingContext.Provider value={editing({ onAddSection: vi.fn() })}>
+      <ContentRenderer body={body} />
+    </PickingContext.Provider>,
+  );
+
+  const invitation = screen.getByRole('button', { name: 'Add a section' });
+  const container = document.querySelector('[data-pickable="section"]')?.parentElement;
+
+  expect(container).toHaveClass('@container');
+  expect(container).not.toContainElement(invitation);
+});
+
 test('a picked section is drawn through what makes it draggable, with a grip on its bar', () => {
   // What the editor hands over, faked: a group that marks its list, and an item that hands back a
   // node ref, a style and a handle — the renderer attaches all three and asks nothing about drag.

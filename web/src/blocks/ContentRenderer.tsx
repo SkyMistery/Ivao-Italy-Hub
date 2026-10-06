@@ -171,9 +171,17 @@ export function ContentRenderer({
     <DashboardContext.Provider value={dashboard}>
       <div className="@container flex flex-col">
         <Siblings sections={body.sections} staff={staff} />
-
-        <AddSectionInvitation />
       </div>
+
+      {/* ⚠️ After the container and not inside it (6 October 2026). Inside, the editor's preview
+          could stay empty for good: when the typefaces finished loading a moment after the first
+          draw, Chromium left every section of the container without a box — in the document, and
+          0 pixels tall — until something else redrew them. Measured on Chromium 151 and on Edge
+          154 with the processor slowed four times: 8 loads out of 8 empty with the invitation
+          inside, none out of 38 with it here; a visitor's page, which has no invitation, was never
+          empty. The invitation measures nothing, so it loses nothing by standing outside
+          (`decisions/2026-10-06-l-anteprima-vuota-dell-editor.md`; `e2e/full/preview.spec.ts`). */}
+      <AddSectionInvitation />
     </DashboardContext.Provider>
   );
 
