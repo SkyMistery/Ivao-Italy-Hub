@@ -1,14 +1,16 @@
 # Il pubblico degli eventi e le rotte: cinque letture del design (E4)
 
 **Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
-**Stato:** **Proposta**. Cinque comportamenti che il design non dice e che E4 ha scritto come qui si raccomanda: la domanda va a Carmine con
-un commento sulla PR — come le tre regole di E3b, che il revisore ha portato a lui sulla #221 e che lui ha voluto in una nota
-([le sue risposte][a221]) —, e la risposta, con il suo link, si scrive qui sotto.
+**Stato:** **decisa** (Carmine, 6 ottobre 2026, in chat al master e pubblicata sulla #223 su sua istruzione: [la risposta][ok223], autore
+`SkyMistery`): **sì** alle cinque letture come sono scritte qui sotto, «mai da uno scalo a sé stesso» compreso, e **sì alla seconda lettura
+scritta a mano** (§4). La domanda era andata a lui con un commento sulla PR, come le tre regole di E3b, che il revisore gli aveva portato
+sulla #221 e che lui aveva voluto in una nota ([le sue risposte][a221]).
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo — il filtro globale, l'unico handler, `MapCrud`, il
 blocco Data, `Localized<T>` —; sono letture del design M4 §1.4, §2.3, §2.4, §7.1, §7.3.
 
 [a221]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/221#issuecomment-6012333670
 [r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
 ## 1. Le letture
 
@@ -53,8 +55,19 @@ Solo il modulo: `EventRoute.cs`, `EventState.cs` (`Unseen`), `Staff/EventRouteEn
 > resta nelle schede fino alla fine, ma non nel calendario; (3) il filtro per scalo non mostra gli eventi di tutta la divisione; (4) le
 > note delle rotte tradotte, e più rotte fra gli stessi due scali; (5) eliminare un evento elimina le sue rotte con l'audit. Confermi?
 
+## 4. La seconda lettura scritta a mano
+
+**`GET /api/events/public/{slug}`** (`Public/PublicEvents.cs`, `PublicEventEndpoints`): la pagina di un evento, anonima, composta in una
+lettura sola, come la lettura pubblica dei tour. Il design §7.2 dice che gli endpoint scritti a mano sono verbi; E4 l'aveva scritta fra
+gli scostamenti di «Com'è andata» (scelta 6), e il revisore l'ha portata a Carmine ([i rilievi sulla #223][r223], punto 2). Carmine l'ha
+**accettata** come la lettura dei preset (nota `2026-10-01-la-lettura-dei-preset-dei-tipi`): uno **scostamento dichiarato** dal design
+§7.2, contato per il piano §16.6 ([la risposta][ok223], punto 3). Gli endpoint a mano di E4 sono quindi uno, questa lettura; le rotte sono
+`MapCrud`, e la lista di `/events` è il blocco `events.eventList`, letto come ogni blocco.
+
 ## Da portare nel piano
 
-Dopo la risposta: il design M4 §2.4 e §7.1 (la pagina allo staff in ogni stato; l'annullato nelle schede e non nel calendario; il filtro per
-scalo), §1.4 (le colonne delle rotte, con le note tradotte) e §2.3 (eliminare porta via le rotte); il piano §9.2, riga Events, se Carmine lo
-ritiene.
+Con la risposta: il design M4 §2.4 e §7.1 (la pagina allo staff in ogni stato, con il motivo; l'annullato nelle schede e non nel
+calendario; il filtro per scalo), §1.4 (le colonne delle rotte, con le note tradotte, mai da uno scalo a sé stesso, nell'ordine in cui
+sono scritte) e §2.3 (eliminare porta via le rotte); il piano §9.2, riga Events, se Carmine lo ritiene. E, come per la lettura dei
+preset: il piano **§16.6** (fra gli endpoint a mano di M4, la lettura della pagina di un evento, `GET /api/events/public/{slug}`,
+anonima) e il design **§7.2** (accanto a «gli endpoint a mano sono verbi», questa lettura con il link a questa nota).
