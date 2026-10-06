@@ -8,19 +8,20 @@
 
 **Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4** (modulo: il pubblico e le rotte), sul branch `m4/e4-public-and-routes`, **PR
 #223** verso `main`, nata in coda dopo la #221 di E3b (dal suo branch a `93f1db7`, e unita di nuovo alla sua testa `f1c8c02` dopo la
-revisione); **la #221 è unita** (6 ottobre 2026, `168fa25`), e la #223 mostra solo E4. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
-(#214), E3b (#221), E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour
-al calcolo del nucleo (#211), la `0.6.0` (#216) e il piano 1.29 (#217).
-**Il prossimo passo**: E4 (la #223), poi **E5** (gli slot pubblici e l'esportazione), che la sessione che coordina prepara sopra E4. Da
-E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file;
-da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, e il FOD ne scrive le rotte («Che cosa ha
-lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026,
-[sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta
-solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). ⚠️ Sulla #223 aspettano **tre domande a Carmine** (le note
-`2026-10-06-il-pubblico-degli-eventi`, `2026-10-06-chi-e-online-sugli-scali-di-un-evento` e `2026-10-06-i-tipi-che-un-evento-sceglie`,
-tutte e tre «Proposta»), e la seconda lettura scritta a mano che il revisore gli porta (`GET /api/events/public/{slug}`); e la #222 del
-nucleo, con le parole
-`search.kinds.events` da tenere nel merge di `main` («Che cosa ha lasciato E4», sotto). **La
+revisione); **la #221 è unita** (6 ottobre 2026, `168fa25`), e la #223 mostra solo E4; poi **`main` unito sul branch** con la #222 (le
+parole `search.kinds.events`, tenute). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E10a (#210), E10b (#208), E10c
+(#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il
+piano 1.29 (#217) e la parola degli eventi nella ricerca (#222).
+**Il prossimo passo**: E4 (la #223), poi **E5** (gli slot pubblici e l'esportazione), **in coda sul branch di E4**: la sessione che
+coordina la prepara dalla sua testa `94ca28b`, e unisce l'ultima spinta di E4. **E4b** («chi è online sugli scali», una fase del nucleo
+piccola, decisa da Carmine sulla #223) la prepara a parte, da `main`: non è urgente, può venire dopo E5, e la striscia la monta la prima
+fase del modulo dopo di lei. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e
+tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e
+il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
+sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
+pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
+**Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
+nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti su questa PR. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -138,7 +139,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4, «Com'è andata»; una migrazione additiva, `AddEventRoutes`; nessun file del nucleo oltre ai
-  tre test condivisi che la fase deve toccare; quattro note nuove, tre «Proposta» con la domanda a Carmine sulla #223):
+  tre test condivisi che la fase deve toccare; quattro note nuove, tre decise da Carmine sulla #223 — [la risposta][ok223]):
   - **Le rotte** (`evt_routes`, `EventRoute`, design §1.4): da uno scalo a un altro — mai a sé stesso, `events:errors.routeToItself`
     (la revisione della #223) —, la rotta da inserire (obbligatoria, 1024 caratteri, non tradotta) e le note (`remarks_i18n`, tradotte:
     scritte in una lingua, in tutte quelle della divisione; 500 per lingua). Riga `IEventChild` nell'area **`EventRoutes`**
@@ -169,28 +170,30 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     legge l'area, con «Nuova rotta» a chi la scrive; e il link «La sua pagina sul sito».
   - **«Pubblica» aspetta le impostazioni salvate** (l'⚠️ che E3b lasciava a E4): spento, con una riga che dice perché, finché il form ha
     modifiche non salvate.
+  - **I tipi di un evento sono quelli degli eventi** (nota `2026-10-06-i-tipi-che-un-evento-sceglie`, decisa da Carmine): quelli con una
+    riga in `kindPresets`, e tutti i tipi del calendario finché non ce n'è nessuna. Il form li offre (`eventKinds` in `schemas.ts`), il
+    server rifiuta gli altri su un evento nuovo o al cambio di tipo (`events:errors.kindNotOfEvents`, in `EventSaving.PrepareAsync`), e un
+    evento già scritto tiene il suo tipo anche se la riga va via. ⚠️ Sul banco e sulla prova la scelta resta com'è finché le impostazioni
+    degli eventi non hanno righe: per IT le scrive la divisione (RFE, RFO, MSE, Online Day e l'evento libero, con tutto spento).
   - **I test**: `EventsPublicTests` (integrazione, 4, VID 761033–761036, scali `XEC1`/`XEC2`, slug `evt-test-e4-…`), `EventsStateTests`
-    (+2), `screens/cards.test.ts` e `schemas.test.ts` (vitest), la smoke `web/e2e/events-public.spec.ts` (8), il giro
-    `web/e2e/full/events-public.spec.ts` (1) e un terzo test in `web/e2e/full/events-staff.spec.ts`. `EventsTestRows` toglie anche le
-    rotte.
+    (+2), un test dei tipi in `EventsStaffTests`, `screens/cards.test.ts`, `schemas.test.ts` ed `eventForm.test.ts` (vitest), la smoke
+    `web/e2e/events-public.spec.ts` (8), il giro `web/e2e/full/events-public.spec.ts` (1), un terzo test in
+    `web/e2e/full/events-staff.spec.ts` e, nel primo, i tipi che il form offre. `EventsTestRows` toglie anche le rotte.
 - **Che cosa deve sapere la fase dopo**:
   - ⚠️ **Con E4 unita dopo la #221 cade l'⚠️ di E3b** («nessuna consegna e nessun «Pubblica» sulla prova fra E3b ed E4»): la voce di
     calendario e la riga di ricerca trovano la loro pagina. Quando consegnare resta di Carmine.
-  - ⚠️ **Tre note «Proposta» aspettano Carmine** sulla #223: `2026-10-06-il-pubblico-degli-eventi` (cinque letture: la pagina allo staff
-    in ogni stato, l'annullato nelle schede e non nel calendario, il filtro per scalo senza gli eventi di tutta la divisione, le note delle
-    rotte tradotte e più rotte per coppia, eliminare porta via le rotte), `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (la
-    `LiveStatusStrip` sugli scali dell'evento, design §7.1, **non fatta**: chiede il nucleo, una fase **E4b** se Carmine la vuole) e
-    `2026-10-06-i-tipi-che-un-evento-sceglie` (il form dell'evento offre ogni tipo del calendario, anche Esame e Scadenza, come dicono le
-    note di E1 ed E3a: la proposta è che i tipi degli eventi siano quelli con una riga di `kindPresets`, tutti quando non ce n'è nessuna;
-    **il codice non cambia** finché Carmine non risponde, e sul banco la scelta resta com'è finché la divisione non scrive le righe). Una
-    risposta diversa dalla raccomandazione è una correzione su questo branch. Con loro il revisore porta a Carmine **la seconda lettura
-    scritta a mano**, `GET /api/events/public/{slug}` (il design §7.2 vuole verbi, e finora era accettata solo quella dei preset): con la
-    sua risposta, la lettura entra nella nota `il-pubblico-degli-eventi`, con il link ([i rilievi sulla #223][r223], punto 2).
-  - ⚠️ **`search.kinds.events`** (la parola del tipo `events` nella ricerca) **manca nelle parole del modulo**: la porta la #222 del nucleo,
-    con `manifest.test.ts` che la chiede. Quando la #222 è unita, il merge di `main` su questo branch **tiene le sue due righe**: il
-    conflitto atteso è nei due `events.json` del modulo e nelle loro copie alla radice ([i rilievi sulla #223][r223], punto 3).
-  - **E5** (gli slot pubblici): la lista pubblica degli slot va sulla pagina — `PublicEvents.ReadAsync` e `PublicEventDto`, oppure una
-    lettura sua accanto —; la scheda «Slot» accanto a «Rotte»; `EventSlot` è `IEventChild` come le rotte. E5 non aggiunge blocchi.
+  - **Le tre note di E4 sono decise** da Carmine ([la risposta sulla #223][ok223], 6 ottobre 2026, autore `SkyMistery`, pubblicata dal
+    master su sua istruzione): `2026-10-06-il-pubblico-degli-eventi` (sì alle cinque letture, e **la seconda lettura scritta a mano**,
+    `GET /api/events/public/{slug}`, accettata come quella dei preset: uno scostamento dichiarato dal design §7.2, contato per il piano
+    §16.6 — nella nota, §4), `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (la `LiveStatusStrip` sugli scali dell'evento, design §7.1,
+    **non è di E4**: è la fase del nucleo **E4b**, in una PR sua con la sua nota; non è urgente, può venire dopo E5, e la monta la prima
+    fase del modulo dopo di lei) e `2026-10-06-i-tipi-che-un-evento-sceglie` (come raccomandato, fatta su questa PR: sopra).
+  - **`search.kinds.events`** (la parola del tipo `events` nella ricerca) è arrivata con la #222 del nucleo, e il merge di `main` su questo
+    branch l'ha tenuta, senza conflitti ([i rilievi sulla #223][r223], punto 3).
+  - **E5** (gli slot pubblici) è **in coda sul branch di E4**: la sessione che coordina la prepara dalla testa `94ca28b` di E4, e unisce
+    l'ultima spinta di E4 — con il merge di `main`, i tipi degli eventi e le risposte di Carmine. La lista pubblica degli slot va sulla
+    pagina — `PublicEvents.ReadAsync` e `PublicEventDto`, oppure una lettura sua accanto —; la scheda «Slot» accanto a «Rotte»;
+    `EventSlot` è `IEventChild` come le rotte. E5 non aggiunge blocchi.
   - ⚠️ **`EventSaving.DeleteAsync` elimina le righe figlie di ogni area** (scali, rotte): una fase che aggiunge una tabella figlia (slot E5,
     postazioni E11a, regole di award E14b) la aggiunge lì, e il guardiano chiederà a chi elimina l'`Edit` di quell'area — EC ed EAC tengono
     tutte le aree tranne `EventReports.Edit` (§6.2), che non ha righe figlie dell'evento.
@@ -206,6 +209,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     passo. La prossima migrazione degli eventi non la ritrova.
 
 [r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
 ### Che cosa ha lasciato E3b (5 ottobre 2026, branch `m4/e3b-event-life`, PR #221, senza coda)
 
