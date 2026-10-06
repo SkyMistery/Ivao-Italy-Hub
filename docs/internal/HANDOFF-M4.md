@@ -7,15 +7,15 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4** (modulo: il pubblico e le rotte), sul branch `m4/e4-public-and-routes`, **PR
-#222** verso `main`, **in coda dopo la #221** di E3b (nata dal suo branch a `93f1db7`, e unita di nuovo alla sua testa `f1c8c02` dopo la
+#223** verso `main`, **in coda dopo la #221** di E3b (nata dal suo branch a `93f1db7`, e unita di nuovo alla sua testa `f1c8c02` dopo la
 revisione). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206),
 E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216) e il piano 1.29 (#217).
-**Il prossimo passo**: E3b unita, poi E4 (la #222), poi **E5** (gli slot pubblici e l'esportazione), che la sessione che coordina prepara
+**Il prossimo passo**: E3b unita, poi E4 (la #223), poi **E5** (gli slot pubblici e l'esportazione), che la sessione che coordina prepara
 sopra E4. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file;
 da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, e il FOD ne scrive le rotte («Che cosa ha
 lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026,
 [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta
-solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). ⚠️ Sulla #222 aspettano **due domande a Carmine** (le note
+solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). ⚠️ Sulla #223 aspettano **due domande a Carmine** (le note
 `2026-10-06-il-pubblico-degli-eventi` e `2026-10-06-chi-e-online-sugli-scali-di-un-evento`, tutte e due «Proposta»). **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
@@ -131,10 +131,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #222, in coda dopo la #221)
+### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4, «Com'è andata»; una migrazione additiva, `AddEventRoutes`; nessun file del nucleo oltre ai
-  tre test condivisi che la fase deve toccare; tre note nuove, due «Proposta» con la domanda a Carmine sulla #222):
+  tre test condivisi che la fase deve toccare; tre note nuove, due «Proposta» con la domanda a Carmine sulla #223):
   - **Le rotte** (`evt_routes`, `EventRoute`, design §1.4): da uno scalo a un altro, la rotta da inserire (obbligatoria, 1024 caratteri,
     non tradotta) e le note (`remarks_i18n`, tradotte: scritte in una lingua, in tutte quelle della divisione; 500 per lingua). Riga
     `IEventChild` nell'area **`EventRoutes`** (`[PermissionArea]`, `[Audited]`, lo scope dell'evento); CRUD `/api/events/routes`
@@ -162,7 +162,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - **Che cosa deve sapere la fase dopo**:
   - ⚠️ **Con E4 unita dopo la #221 cade l'⚠️ di E3b** («nessuna consegna e nessun «Pubblica» sulla prova fra E3b ed E4»): la voce di
     calendario e la riga di ricerca trovano la loro pagina. Quando consegnare resta di Carmine.
-  - ⚠️ **Due note «Proposta» aspettano Carmine** sulla #222: `2026-10-06-il-pubblico-degli-eventi` (cinque letture: la pagina allo staff
+  - ⚠️ **Due note «Proposta» aspettano Carmine** sulla #223: `2026-10-06-il-pubblico-degli-eventi` (cinque letture: la pagina allo staff
     in ogni stato, l'annullato nelle schede e non nel calendario, il filtro per scalo senza gli eventi di tutta la divisione, le note delle
     rotte tradotte e più rotte per coppia, eliminare porta via le rotte) e `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (la
     `LiveStatusStrip` sugli scali dell'evento, design §7.1, **non fatta**: chiede il nucleo, una fase **E4b** se Carmine la vuole). Una

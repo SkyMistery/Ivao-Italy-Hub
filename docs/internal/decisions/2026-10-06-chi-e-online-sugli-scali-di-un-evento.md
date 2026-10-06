@@ -1,6 +1,6 @@
 # Chi è online sugli scali di un evento: una fase del nucleo, non E4
 
-**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #222
+**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
 **Stato:** **Proposta**. La domanda va a Carmine con un commento sulla PR; la risposta, con il suo link, si scrive qui sotto.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)** — il meccanismo c'è (il blocco `networkStats` e la `LiveStatusStrip`), ma non copre il
 caso: si estende, in una PR del nucleo a sé (§0 regola 6), mai dentro una fase del modulo. Design `09-design-m4.md` §7.1, §9.1;

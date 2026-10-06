@@ -1,6 +1,6 @@
 # Il pubblico degli eventi e le rotte: cinque letture del design (E4)
 
-**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #222
+**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
 **Stato:** **Proposta**. Cinque comportamenti che il design non dice e che E4 ha scritto come qui si raccomanda: la domanda va a Carmine con
 un commento sulla PR — come le tre regole di E3b, che il revisore ha portato a lui sulla #221 e che lui ha voluto in una nota
 ([le sue risposte][a221]) —, e la risposta, con il suo link, si scrive qui sotto.

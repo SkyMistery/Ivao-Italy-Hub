@@ -1,6 +1,6 @@
 # I conteggi dei blocchi e le colonne delle rotte (E4)
 
-**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #222
+**Data:** 6 ottobre 2026 — fase E4 di M4 (il pubblico e le rotte), PR #223
 **Stato:** **nessuna decisione nuova**: questa nota dice dove si applicano due decisioni già prese — i conteggi dei blocchi (Carmine,
 [commento sulla #125][c125], come per il training in `2026-09-27-i-conteggi-dei-blocchi-del-training`) e le colonne di persona in
 `ErasureTests` (la risposta 2 di Carmine sulla #187, nota `2026-09-29-la-persona-cancellata-nel-nucleo`, come per lo scheletro in

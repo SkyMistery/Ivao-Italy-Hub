@@ -938,7 +938,7 @@ scrive le rotte e non l'evento; il blocco per un visitatore. Smoke: `/events` e 
 rotta, il visitatore la vede.
 **Fatta quando**: un visitatore vede l'evento pubblicato in `/events` e sulla sua pagina con la rotta del FOD; dopo la fine, 404.
 
-**Com'è andata** (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #222, **in coda dopo la #221** di E3b: nato dal suo branch a
+**Com'è andata** (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, **in coda dopo la #221** di E3b: nato dal suo branch a
 `93f1db7` e unito di nuovo alla sua testa `f1c8c02`, dopo la revisione, con un merge; una migrazione additiva, `AddEventRoutes`):
 
 - **Fatto**:
@@ -981,11 +981,11 @@ rotta, il visitatore la vede.
   solo l'area della divisione e le sue proprietà non dicono scali; la chiave della cache di `IvaoAirspace` non distingue due insiemi di
   soli aeroporti con lo stesso numero; il modulo non può chiamare `IIvaoApiClient` (`EventsArchitectureTests`); la `LiveStatusStrip` fa una
   domanda fissa. Ogni strada passa dal nucleo, quindi **resta fuori da E4**. Nota nuova **«Proposta»**
-  `decisions/2026-10-06-chi-e-online-sugli-scali-di-un-evento.md`, con la domanda a Carmine sulla #222: una fase del nucleo **E4b**
+  `decisions/2026-10-06-chi-e-online-sugli-scali-di-un-evento.md`, con la domanda a Carmine sulla #223: una fase del nucleo **E4b**
   (`networkStats` con gli scali chiesti da una schermata, come `from`/`to` del calendario; la chiave della cache che li nomina; la striscia
   con gli scali facoltativi), e la pagina che la monta nella prima fase del modulo dopo — oppure fuori da M4.
 - **Scelte e scostamenti** (le prime cinque sono comportamento che il design non dice: nota nuova **«Proposta»**
-  `decisions/2026-10-06-il-pubblico-degli-eventi.md`, con la domanda a Carmine sulla #222, come le regole di E3b che Carmine ha voluto in
+  `decisions/2026-10-06-il-pubblico-degli-eventi.md`, con la domanda a Carmine sulla #223, come le regole di E3b che Carmine ha voluto in
   una nota):
   1. **La pagina allo staff degli eventi in ogni stato**, bozze comprese, e non solo dopo la fine come dice §2.4: una condizione sola; lo
      staff vede la pagina prima di pubblicare («Pubblica» non ha un contrario); chi collabora ci legge la descrizione (E3a, scelta 7).
