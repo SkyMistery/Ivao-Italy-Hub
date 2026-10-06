@@ -32,8 +32,7 @@ Che il cartellino di una riga proiettata da un modulo abbia una parola in ogni l
    `<modulo>:search.kinds.<kind>`, nel file di lingua del modulo. È la convenzione di `<modulo>:nav.section`, con un'altra chiave. I
    namespace dei moduli sono già caricati tutti all'avvio (`createI18n(registry.i18nNamespaces)`), anche nelle pagine pubbliche.
 3. **Ogni modulo scrive la sua**: i tour `search.kinds.tour` in `web/src/modules/flightops/locales/{it,en}/flightops.json`, in questa
-   PR. Gli eventi `search.kinds.events` in `web/src/modules/events/locales/{it,en}/events.json`: la riga è del collaboratore, sulla
-   #221 (o nella fase dopo, se la #221 entra prima di questa).
+   PR. Gli eventi `search.kinds.events` in `web/src/modules/events/locales/{it,en}/events.json`: anche questa in questa PR (§5, in fondo).
 4. **Un test che non lascia dimenticare il prossimo**: `web/src/modules/manifest.test.ts` legge già i sorgenti C# dei moduli; cerca
    ogni `new SearchProjection(` di un modulo, ne legge il tipo (un letterale, o una costante del modulo seguita fino al letterale) e
    chiede che `search.kinds.<tipo>` esista nel file di lingua del modulo, in ogni lingua della divisione. Un tipo che il test non sa
@@ -57,13 +56,15 @@ questa PR aggiunge due righe a `common.json` e gli eventi non devono fare niente
 
 **Risposta di Carmine, 6 ottobre 2026** (in chat): **nel modulo**, come al §3.
 
-⚠️ **Che cosa lascia alla #221**: il test del §3 punto 4 legge anche il modulo degli eventi. Su `main` oggi non proietta nella ricerca
-e il test non gli chiede niente; con la #221 (`Event.SearchKind`, cioè `events`) il test cade finché `events.json` non ha
-`search.kinds.events`. È voluto: è la riga del collaboratore.
+**La riga degli eventi è in questa PR** (6 ottobre 2026). La #221 è entrata in `main` prima di questa, senza la parola: il test del §3
+punto 4, messo in pari con `main`, è caduto sugli eventi come doveva (`Event.SearchKind`, cioè `events`). Carmine, in chat, ha detto
+alla sessione di aggiungere lei `search.kinds.events` («Event», «Evento») nei file di lingua del modulo degli eventi: è la sola riga
+di questa PR in un modulo del collaboratore, e il master lo avvisa sulla #223, che tocca gli stessi file.
 
 ## 6. Che cosa si tocca
 
 - `web/src/features/search/SearchResults.tsx` (nucleo) e il suo test;
+- `web/src/modules/events/locales/{it,en}/events.json` (modulo del collaboratore: una chiave, su indicazione di Carmine);
 - `web/src/modules/flightops/locales/{it,en}/flightops.json` e le copie in `locales/` (`pnpm i18n:sync`);
 - `web/src/modules/manifest.test.ts` (nucleo): il test del §3 punto 4;
 - `Directory.Build.props`: 0.6.4.
@@ -74,5 +75,3 @@ e il test non gli chiede niente; con la #221 (`Event.SearchKind`, cioè `events`
   righe del nucleo e `<modulo>:search.kinds.<tipo>` per quelle di un modulo, con `sourceModule` della riga a dire quale.
 - **`CONTRIBUTING.md`**, dove si elenca che cosa porta un modulo: un modulo che proietta nella ricerca dichiara
   `search.kinds.<tipo>` nel suo file di lingua; `manifest.test.ts` cade se manca.
-- **Per il collaboratore, sulla #221**: `"search": { "kinds": { "events": "Event" } }` («Evento» in `it`) in
-  `web/src/modules/events/locales/*/events.json`, poi `pnpm i18n:sync`.
