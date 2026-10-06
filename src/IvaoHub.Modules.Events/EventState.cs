@@ -29,6 +29,22 @@ public enum EventStateKind
 }
 
 /// <summary>
+/// Why whoever an event is for does not see it now (§2.1, §2.4, E4): what its page tells the staff of the events, who read it all the
+/// same. The state cannot say it alone: a cancelled event is cancelled whatever its dates, seen or not.
+/// </summary>
+public enum EventUnseen
+{
+    /// <summary>Not published.</summary>
+    Draft,
+
+    /// <summary>Published, and before its «seen from».</summary>
+    NotSeenYet,
+
+    /// <summary>Its end has passed: the site keeps no archive (§2.4).</summary>
+    Over,
+}
+
+/// <summary>
 /// The one place the state of an event is read off its dates (design M4 §2.1, note 2026-09-29-la-vita-di-un-evento), as
 /// <c>TourState</c> is for a tour: the list, the page, the verbs and the projections all ask here, and no job changes a state.
 /// <para>Every instant is the first moment of what it opens: an event seen from 18:00 is seen at 18:00, one that ends at 22:00
@@ -81,6 +97,36 @@ public static class EventState
             && (row.VisibleFromUtc is not { } visible || now >= visible)
             && now < row.EndsAtUtc;
     }
+
+    /// <summary>
+    /// Why whoever the event is for does not see it — not published, then over, then not seen yet —, or null when
+    /// <see cref="IsSeen"/> says they do. A test holds the two to the same answer.
+    /// </summary>
+    public static EventUnseen? Unseen(Event row, DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (row.Status != PublishStatus.Published)
+        {
+            return EventUnseen.Draft;
+        }
+
+        if (now >= row.EndsAtUtc)
+        {
+            return EventUnseen.Over;
+        }
+
+        return row.VisibleFromUtc is { } visible && now < visible ? EventUnseen.NotSeenYet : null;
+    }
+
+    /// <summary>
+    /// <see cref="IsSeen"/> written once more in what SQL can ask, for the lists of the site (E4): <c>/events</c> and the block
+    /// <c>events.eventList</c>. A test holds the two to the same answer, as it holds the views of the staff's list.
+    /// </summary>
+    public static Expression<Func<Event, bool>> Seen(DateTime now) => row =>
+        row.Status == PublishStatus.Published
+        && (row.VisibleFromUtc == null || row.VisibleFromUtc <= now)
+        && now < row.EndsAtUtc;
 }
 
 /// <summary>

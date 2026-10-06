@@ -19,6 +19,7 @@
     "saved": "Evento salvato.",
     "readOnly": "Puoi leggere questo evento: cambiarlo spetta a chi scrive gli eventi.",
     "cancelled": "Annullato il {{date}}.",
+    "publicPage": "La sua pagina sul sito",
     "filters": {
       "view": "Mostra",
       "anyView": "Tutti gli eventi"
@@ -33,18 +34,20 @@
     "tabs": {
       "settings": "Impostazioni",
       "description": "Descrizione",
-      "airports": "Scali"
+      "airports": "Scali",
+      "routes": "Rotte"
     },
     "actions": {
       "publish": "Pubblica",
       "cancel": "Annulla l'evento"
     },
     "publish": {
-      "problems": "Prima di pubblicarlo manca ancora:"
+      "problems": "Prima di pubblicarlo manca ancora:",
+      "saveFirst": "Prima salva le impostazioni: «Pubblica» pubblica l'evento com'è salvato."
     },
     "delete": {
       "title": "Eliminare questo evento?",
-      "description": "L'evento e i suoi scali si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
+      "description": "L'evento, i suoi scali e le sue rotte si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
     },
     "body": {
       "save": "Salva la descrizione",
@@ -73,7 +76,7 @@
       "updatedAt": "Ultima modifica"
     },
     "hints": {
-      "kind": "Un tipo del calendario della divisione. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni degli eventi per quel tipo; cambiali come serve a questo evento.",
+      "kind": "Un tipo degli eventi, come li elencano le loro impostazioni: tutti i tipi del calendario finché non ne elencano nessuno. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni per quel tipo; cambiali come serve a questo evento.",
       "publicSlots": "Slot preparati dallo staff, ognuno con il suo volo, che un pilota prenota.",
       "privateSlots": "Slot generati dalla capacità di ogni scalo, per il volo che il pilota sceglie.",
       "wholeDivision": "L'evento riguarda tutti gli aeroporti e le postazioni della divisione, come un online day: non ha scali suoi.",
@@ -134,6 +137,68 @@
       "description": "Lo scalo esce dall'evento."
     }
   },
+  "routes": {
+    "title": "Rotte",
+    "create": "Nuova rotta",
+    "edit": "Rotta",
+    "fields": {
+      "departureIcao": "Da",
+      "arrivalIcao": "A",
+      "route": "Rotta",
+      "remarks": "Note"
+    },
+    "hints": {
+      "departureIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "arrivalIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "route": "La rotta da inserire, come la scrive un pilota nel piano di volo.",
+      "remarks": "Quello che un pilota deve sapere. La pagina dell'evento lo mostra a tutti: scritto in una lingua, si scrive in tutte le lingue della divisione. Lascialo vuoto se non serve."
+    },
+    "delete": {
+      "title": "Eliminare questa rotta?",
+      "description": "La rotta esce dall'evento e dalla sua pagina."
+    }
+  },
+  "public": {
+    "title": "Eventi",
+    "description": "Gli eventi della divisione ancora da venire e quelli in corso, in UTC e nell'ora della divisione.",
+    "none": "Per ora nessun evento in arrivo.",
+    "noneHere": "Nessun evento di questo tipo su questo scalo.",
+    "filters": {
+      "kind": "Tipo",
+      "anyKind": "Tutti i tipi",
+      "airport": "Scalo",
+      "anyAirport": "Tutti gli scali"
+    },
+    "calendar": "Nel calendario",
+    "calendarEmpty": "Nessun evento in questo tratto del calendario.",
+    "back": "Tutti gli eventi",
+    "backOffice": "Aprilo nel back office",
+    "staffOnly": {
+      "Draft": "Questa pagina la vede solo lo staff degli eventi: l'evento è una bozza, e nessun altro lo vede finché non è pubblicato.",
+      "NotSeenYet": "Per ora questa pagina la vede solo lo staff degli eventi: l'evento è pubblicato, e gli altri lo vedono dal momento scritto in «Visibile dal».",
+      "Over": "Questa pagina la vede solo lo staff degli eventi: l'evento è concluso, e il sito non tiene un archivio."
+    },
+    "when": "Quando",
+    "wholeDivision": "Tutti gli aeroporti della divisione",
+    "organizerPage": "La loro pagina",
+    "cancelled": "Questo evento è annullato.",
+    "routes": "Rotte"
+  },
+  "blocks": {
+    "eventList": {
+      "label": "Eventi",
+      "all": "Tutti gli eventi",
+      "fields": {
+        "kinds": "Tipi",
+        "kinds.kind": "Tipo",
+        "limit": "Quanti al massimo"
+      },
+      "hints": {
+        "kinds": "Le parole del calendario, come le prende il blocco del calendario. Nessuno, tutti i tipi.",
+        "limit": "Zero ne mostra quanti ne tiene una lista: i cinquanta più vicini."
+      }
+    }
+  },
   "settings": {
     "title": "Impostazioni degli eventi",
     "description": "Quello che il dipartimento eventi cambia senza un rilascio: che cosa accende ogni tipo di evento, la distanza fra due prenotazioni di un pilota, per quanto si tengono le prenotazioni dei piloti, il promemoria.",
@@ -151,7 +216,7 @@
       "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria"
     },
     "hints": {
-      "kindPresets": "Un evento nuovo di quel tipo nasce con questi interruttori accesi, e lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento nuovo nasce con tutto spento.",
+      "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
       "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
       "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
       "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block."
@@ -182,6 +247,7 @@
   "errors": {
     "calendarKindUnknown": "Questo non è più un tipo del calendario: togli la riga.",
     "kindTwice": "Questo tipo ha più di una riga.",
+    "kindNotOfEvents": "Questo non è un tipo degli eventi: le loro impostazioni elencano i tipi fra cui un evento sceglie.",
     "endsBeforeItStarts": "L'evento finisce prima di cominciare.",
     "visibilityChoice": "Un evento lo vedono tutti, o i membri.",
     "slugTaken": "Un altro evento ha questo indirizzo.",
@@ -190,6 +256,7 @@
     "wholeDivisionHasNoAirports": "Un evento su tutta la divisione non ha scali suoi.",
     "airportUnknown": "L'hub non conosce questo aeroporto.",
     "airportTwice": "Questo scalo è già nell'evento.",
+    "routeToItself": "Una rotta va da uno scalo a un altro: questo è quello da cui parte.",
     "capacityEitherOr": "Indica i movimenti, oppure gli arrivi e le partenze: non tutti e due.",
     "alreadyCancelled": "Questo evento è già annullato.",
     "eventOver": "Questo evento è concluso: non si annulla più.",

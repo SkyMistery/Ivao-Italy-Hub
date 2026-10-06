@@ -33,12 +33,13 @@ import {
   type EventDetailDto,
   type EventListDto,
 } from '../api';
-import { EVENTS_DELETE, EVENTS_EDIT } from '../permissions';
+import { EVENTS_DELETE, EVENTS_EDIT, EVENT_ROUTES_EDIT, EVENT_ROUTES_VIEW } from '../permissions';
 import {
   EVENT_VIEWS,
   cancelSchema,
   emptyEvent,
   eventEditorSearchSchema,
+  eventKinds,
   eventSchema,
   eventsSearchSchema,
   kindChoices,
@@ -51,12 +52,15 @@ import {
 } from '../schemas';
 
 import { AirportsTab } from './airports';
+import { eventHref } from './cards';
+import { RoutesTab } from './routes';
 
 /**
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
- * with the editor of the content as a tour's briefing is, and its airports with their capacity; and what happens to it without
- * its form — publishing it (E3b), cancelling it with a note, deleting one nobody took part in.
+ * with the editor of the content as a tour's briefing is, its airports with their capacity and its routes (E4), and the way to
+ * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, deleting one
+ * nobody took part in.
  *
  * The switches of an event are preset by its kind (§1.12): choosing a kind in the form sets them to what the division's
  * settings say of that kind, and the staff changes them before saving or afterwards. Everything else is the server's answer:
@@ -139,21 +143,25 @@ export function EventsPage() {
 }
 
 /**
- * The settings of an event as a generated form. Choosing a kind presets the switches (§1.12): the form follows what is written
+ * The settings of an event as a generated form. The kinds offered are the events' — the ones with a preset, every kind of the
+ * calendar while there is none (`eventKinds`) —, and choosing one presets the switches (§1.12): the form follows what is written
  * as it is written, and when the kind changes it is drawn again with the same values and the switches the kind presets — the
- * generator is handed defaults, and draws them once.
+ * generator is handed defaults, and draws them once. `onEdited` tells the page the moment somebody writes in it (E4): until it
+ * is saved, «Publish» would publish the row as it was.
  */
 function EventForm({
   event,
   presets,
   department,
   editable,
+  onEdited,
   onSaved,
 }: {
   event: EventDetailDto | null;
   presets: readonly KindPreset[];
   department: Department;
   editable: boolean;
+  onEdited: () => void;
   onSaved: (saved: EventDetailDto) => void;
 }) {
   const { t } = useTranslation();
@@ -177,7 +185,9 @@ function EventForm({
   return (
     <SchemaForm
       key={drawn.key}
-      schema={eventSchema({ kinds: kindChoices(calendar, event === null ? [] : [event]) })}
+      schema={eventSchema({
+        kinds: kindChoices(eventKinds(calendar, presets, event?.kind), event === null ? [] : [event]),
+      })}
       defaults={drawn.values}
       locales={locales}
       labels="events:events"
@@ -187,6 +197,7 @@ function EventForm({
       {...(editable
         ? {
             onChange: (values: EventFormValues) => {
+              onEdited();
               const before = written.current.kind;
               written.current = values;
 
@@ -345,8 +356,12 @@ function PublishProblems({ error }: { error: unknown }) {
   );
 }
 
-/** The bar of an event that exists: what happens to it without its form — published, cancelled with a note, or deleted. */
-function EventActions({ event }: { event: EventDetailDto }) {
+/**
+ * The bar of an event that exists: what happens to it without its form — published, cancelled with a note, or deleted.
+ * «Publish» publishes the event as it is saved, so it waits while the settings hold changes nobody saved (`edited`, E4): pressed
+ * then, the form would be drawn again on the published row and the changes lost without a word (E3b's ⚠️).
+ */
+function EventActions({ event, edited }: { event: EventDetailDto; edited: boolean }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const navigate = useNavigate();
@@ -375,7 +390,7 @@ function EventActions({ event }: { event: EventDetailDto }) {
     <div className="flex flex-col items-end gap-2">
       <div className="flex flex-wrap justify-end gap-2">
         {publishable ? (
-          <Button disabled={publish.isPending} onClick={() => publish.mutate(event.rowVersion)}>
+          <Button disabled={publish.isPending || edited} onClick={() => publish.mutate(event.rowVersion)}>
             {t('events:events.actions.publish')}
           </Button>
         ) : null}
@@ -397,6 +412,11 @@ function EventActions({ event }: { event: EventDetailDto }) {
           />
         ) : null}
       </div>
+      {publishable && edited ? (
+        <p role="status" className="text-muted-foreground text-sm">
+          {t('events:events.publish.saveFirst')}
+        </p>
+      ) : null}
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       <PublishProblems error={publish.error} />
     </div>
@@ -413,6 +433,8 @@ export function EventEditor() {
   const isNew = id === 'new';
   const tab: EventEditorTab = eventEditorSearchSchema.parse(useSearch({ strict: false })).tab ?? 'settings';
   const [saved, setSaved] = useState(false);
+  // Somebody wrote in the settings since they were drawn or saved: «Publish» waits for the save (E4).
+  const [edited, setEdited] = useState(false);
 
   const event = useQuery({ ...eventQuery(Number(id)), enabled: !isNew }).data ?? null;
   // The presets are read by whoever writes events, the only ones whose form follows a change of kind.
@@ -439,7 +461,9 @@ export function EventEditor() {
         presets={presets ?? []}
         department={department}
         editable={editable}
+        onEdited={() => setEdited(true)}
         onSaved={(row) => {
+          setEdited(false);
           if (event === null) {
             void navigate({ href: `${EVENTS}/${row.id}` });
           } else {
@@ -461,7 +485,9 @@ export function EventEditor() {
         { label: title },
       ]}
       // Drawn again when the row changes, so what a press answered goes with the version it was about.
-      actions={event === null ? undefined : <EventActions key={event.rowVersion} event={event} />}
+      actions={
+        event === null ? undefined : <EventActions key={event.rowVersion} event={event} edited={edited} />
+      }
     >
       <div className="flex flex-col gap-6">
         {event === null || event.cancelledAt === null ? null : (
@@ -470,6 +496,12 @@ export function EventEditor() {
             title={t('events:events.cancelled', { date: moment(event.cancelledAt, { time: false }) })}
             description={read(event.cancellationNote ?? {})}
           />
+        )}
+        {event === null ? null : (
+          // The page the site shows (E4): the staff of the events read it in every state, a draft included.
+          <RouterAnchor href={eventHref(event.slug)} className="text-sm underline">
+            {t('events:events.publicPage')}
+          </RouterAnchor>
         )}
         {event === null ? (
           settings
@@ -481,6 +513,8 @@ export function EventEditor() {
             value={tab}
             onValueChange={(next) => {
               setSaved(false);
+              // Only the open tab is mounted: the settings left behind are drawn again from the row.
+              setEdited(false);
               void navigate({
                 search: ((previous: Record<string, unknown>) => ({ ...previous, tab: next })) as never,
                 to: '.',
@@ -517,6 +551,23 @@ export function EventEditor() {
                       ),
                     },
                   }),
+              // The routes are an area of their own (§1.4, E4): whoever reads them — the flight operations, from a grant on the
+              // events department — has the tab, and whoever writes them its button, whether or not they write the event.
+              ...(holdsPermission(bootstrap, EVENT_ROUTES_VIEW, event.ownerDepartment)
+                ? {
+                    routes: {
+                      trigger: t('events:events.tabs.routes'),
+                      content: (
+                        <div className="pt-4">
+                          <RoutesTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_ROUTES_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
             }}
           />
         )}

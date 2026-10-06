@@ -3,12 +3,12 @@ import { expect, test } from 'vitest';
 import type { components } from '../../shared/api/schema';
 import { readFields } from '../../shared/forms';
 
-import { emptyEvent, eventSchema, kindChoices, presetSwitches, type KindPreset } from './schemas';
+import { emptyEvent, eventKinds, eventSchema, kindChoices, presetSwitches, type KindPreset } from './schemas';
 
 /**
  * The form of an event (M4, E3a) mirrors `EventWriteDto`, and follows a change of kind: the switches a kind presets are set when
  * the kind is chosen (design M4 §1.12). It can follow only what passes its schema, so a form just opened — nothing written yet —
- * has to pass it: every rule is the server's.
+ * has to pass it: every rule is the server's. The kinds it offers are the events' (E4): the ones the presets list.
  */
 
 const presets: readonly KindPreset[] = [
@@ -90,6 +90,21 @@ test('a kind presets the switches of the form, and a kind without a preset switc
     privateSlots: false,
     wholeDivision: false,
   });
+});
+
+test('an event chooses among the kinds with a preset, in the calendar order, and among every kind while there is none', () => {
+  const calendar = [
+    { value: 'second', label: 'Second' },
+    { value: 'other', label: 'Other' },
+    { value: 'first', label: 'First' },
+  ];
+
+  // The kinds of the events, as the division lists them: a kind of the calendar without a row is not one of them.
+  expect(eventKinds(calendar, presets)).toEqual([calendar[0], calendar[2]]);
+  // A division that lists none — a new one — chooses among every kind of the calendar: the form is never empty.
+  expect(eventKinds(calendar, [])).toEqual(calendar);
+  // An event keeps the kind it has, with its word, when the division takes that kind off its list.
+  expect(eventKinds(calendar, presets, 'other')).toEqual(calendar);
 });
 
 test('the kind of an event the calendar no longer offers stays on offer, so the event is drawn with it', () => {
