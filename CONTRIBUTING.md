@@ -129,8 +129,9 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
 - **Nothing but sections inside the `@container` of `ContentRenderer`.** An extra element there (the "add a section"
   invitation was one) can leave the editor's preview empty on a slow machine: Chromium gives the sections no box when the
   typefaces finish loading just after the first draw (0.6.5, `e2e/full/preview.spec.ts`).
-- **An e2e spec cleans up in an `afterEach`, not in a `finally`.** A `finally` that deletes runs after the test's time
-  is over, and the report shows the delete timing out instead of the step that stopped.
+- **An e2e spec says what it puts back with `afterwards(…)`, never in a `finally`.** A `finally` that deletes runs after
+  the test's time is over, and the report shows the delete timing out instead of the step that stopped. The fixture of
+  `web/e2e/full/bench.ts` (#227) runs as a teardown, with its own time; an `afterEach` does too.
 - **A grant written signs its holder out** (the security stamp changes): tests and specs sign in again.
 - **Module routes**: name a module route parameter `$id`; `useParams({ strict: false })` only types parameters the
   generated tree knows.

@@ -44,9 +44,9 @@ senza «qui» (#219, 0.6.2); **l'inizializzazione sotto un blocco del database**
 insieme ne inizializza uno; un blocco non ottenuto non ferma l'avvio); il cartellino della ricerca con la parola del modulo (#222,
 0.6.4); l'anteprima dell'editor che non resta più vuota su una macchina lenta (#225, 0.6.5); A13d del training (#220: il percorso
 senza lo storico; l'Online Day fra i tipi che avvisano resta una configurazione della divisione). ⚠️ **Due trappole nuove**
-(`CONTRIBUTING.md`): niente che non sia una sezione dentro il `@container` di `ContentRenderer`; la pulizia di uno spec e2e va in un
-`afterEach`, perché un `finally` che cancella maschera il timeout del corpo (gli altri `finally { deleteContent }` della suite sono
-da sistemare, lavoro a parte). **Sulla prova gira ancora la `0.6.0`**: la prossima consegna porta tutto questo con una migrazione
+(`CONTRIBUTING.md`): niente che non sia una sezione dentro il `@container` di `ContentRenderer`; la pulizia di uno spec e2e si dice con
+`afterwards(…)` del banco (`web/e2e/full/bench.ts`), mai in un `finally`, che maschera il timeout del corpo (la #227, aperta, converte
+gli altri spec del giro completo; resta `events-staff.spec.ts`). **Sulla prova gira ancora la `0.6.0`**: la prossima consegna porta tutto questo con una migrazione
 additiva del modulo degli eventi, quindi è una MINOR, la **0.7.0**, che il master alza prima del tag. Prima: **la `0.6.0` è sulla
 prova** (piano 1.29, qui sotto). **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
 dalla prova sul banco). **M4: 12 fasi su 29 unite** (E0, E1, E2, E2b, E3a e tutte le fasi del nucleo di M4b, E10a–E10f ed E15a);

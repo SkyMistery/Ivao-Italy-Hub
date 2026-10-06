@@ -41,7 +41,7 @@ nucleo di sessioni di lavoro di Carmine. Una migrazione, additiva, del modulo de
   restare vuota: quando i caratteri finivano di caricarsi subito dopo il primo disegno, Chromium lasciava senza scatola le sezioni
   del `@container` di `ContentRenderer` che conteneva anche l'invito «aggiungi una sezione». L'invito esce dal contenitore; misurato,
   8 caricamenti vuoti su 8 prima e nessuno su 86 dopo; ⚠️ **il perché dentro il browser non è spiegato**, e la nota lo dice. Due
-  trappole in `CONTRIBUTING.md`: niente che non sia una sezione dentro quel contenitore; la pulizia di uno spec in un `afterEach`.
+  trappole in `CONTRIBUTING.md`: niente che non sia una sezione dentro quel contenitore; la pulizia di uno spec con `afterwards(…)` del banco, mai in un `finally` (la #227, aperta, converte gli altri spec).
 - **Il pubblico degli eventi e le rotte** (`2026-10-06-il-pubblico-degli-eventi`, [#223][d130l], **E4**: `/events`,
   `/events/{slug}`, il blocco `events.eventList`, `evt_routes` del FOD con la migrazione additiva `AddEventRoutes`; il FOD scrive le
   rotte da fuori, senza `Events.Edit`). **Carmine** ([risposte][d130m]): **sì alle cinque letture** — lo staff degli eventi legge la
