@@ -81,5 +81,6 @@ public sealed class EventsModule : ModuleBase
     {
         endpoints.MapEventEndpoints();
         endpoints.MapEventAirportEndpoints();
+        endpoints.MapEventRouteEndpoints();
     }
 }

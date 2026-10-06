@@ -61,14 +61,16 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
     /// <summary>
     /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. E3a has no such rows yet; the
     /// first table of them (the bookings, E6a) refuses here, and every later one adds its own check, so whoever took part is
-    /// never deleted with the event: it is cancelled instead. Its airports go with it, through the same unit of work, so each
-    /// leaves its row in the audit.
+    /// never deleted with the event: it is cancelled instead. Its airports and its routes (E4) go with it, through the same unit
+    /// of work, so each leaves its row in the audit — and each is a write of its own area, which whoever deletes an event holds
+    /// (§6.2: the coordinator and the assistant of the base department hold every area of the events).
     /// </summary>
     public async Task DeleteAsync(Event row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
 
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
+        database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }
