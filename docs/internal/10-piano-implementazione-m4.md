@@ -820,8 +820,9 @@ piano 1.29 —, senza coda; nessuna migrazione, nessun file del nucleo):
      dalla pubblicazione) alla fine, annullato o no — una voce di calendario con il tipo dell'evento, la sua visibilità (pubblico o
      membri), inizio e fine, verso `/events/{slug}`, se non è annullato; una riga della ricerca (titolo; riassunto e testo della
      descrizione) per lingua, se l'evento è per tutti. **Gli usi dei file**: il banner e le immagini della descrizione fino alla fine + 7
-     giorni (`Event.MediaKeptAfterEnd`), anche per una bozza (il nucleo li tiene a una riga non pubblicata): chiude il rilievo 4 della
-     #214, il banner che si poteva eliminare dalla libreria.
+     giorni (`Event.MediaKeptAfterEnd`) per un evento pubblicato, e senza fine per una bozza finché è una bozza (dopo la revisione,
+     punto 3 sotto; il nucleo tiene i file a una riga non pubblicata): chiude il rilievo 4 della #214, il banner che si poteva eliminare
+     dalla libreria.
   4. **`events-release`** (`EventReleaseJob`, ogni 15 minuti, registrato in `EventsModule` come i job dei tour): riproietta con
      `ProjectionRefresh` gli eventi pubblicati il cui `visible_from` o la cui fine cadono fra l'inizio dell'ultimo giro riuscito e
      adesso. Decide dai suoi dati e non dall'ora (nota `i-job-quando-passenger-spegne-l-hub` §8): un giro perso o fallito lo recupera il
@@ -836,7 +837,8 @@ piano 1.29 —, senza coda; nessuna migrazione, nessun file del nucleo):
      la factory condivisa) e il job messo in pausa nello scheduler, come `TourTests`; `EventsStateTests` (unità, +1: `IsSeen` ai
      bordi); `web/e2e/full/events-staff.spec.ts` (+1 test: «Pubblica» elenca scali e apertura delle prenotazioni che mancano a un evento
      con slot; senza slot l'evento è pubblicato e annunciato, e sta fra i prossimi).
-- **Scostamenti e scelte piccole** (nessuna è una domanda nuova: sono letture del design, scritte qui per il revisore):
+- **Scostamenti e scelte piccole** (letture del design, scritte qui per il revisore; la 1 e la 4, con il punto 2 di «Fatto», le ha poi
+  decise Carmine: «Dopo la revisione», punto 1):
   1. **Un evento con slot chiede l'apertura delle prenotazioni** per essere pubblicato: il design dice «date coerenti» e la catena
      `visible_from ≤ booking_opens ≤ starts`; senza `booking_opens` un evento a slot non apre mai le prenotazioni (§3.3: «da
      `booking_opens_at_utc`»), e il suggerimento del campo lo dice già da E3a («vuoto per un evento senza slot»).
@@ -887,6 +889,34 @@ piano 1.29 —, senza coda; nessuna migrazione, nessun file del nucleo):
   (la provano le righe proiettate e la ricerca di un visitatore, nell'integrazione; la spec e2e prova lo stato e la lista); un evento
   `Members` letto da un membro (la visibilità della voce sì, la lettura no); la sessione di un membro con l'orologio spostato;
   `eventChanged` mandata (nessun destinatario); `pnpm e2e:full` con la mappa di base, che non c'è in nessun worktree.
+- **La CI della prima spinta** (`93f1db7`): verde, `build-test` e `core-guard` (dai rilievi del revisore).
+- **Dopo la revisione** ([i rilievi del revisore sulla #221][r221], «approvable on the merits»), 6 ottobre 2026:
+  1. **Le tre regole** — un evento pubblicato si salva solo se passerebbe ancora «Pubblica», e il suo ultimo scalo con slot non si
+     elimina (punto 2 di «Fatto»); un evento con slot, anche solo privati, esce solo con `bookingOpensAtUtc` (scelta 1); il tipo
+     `events` nella ricerca (scelta 4) — **le ha decise Carmine** il 6 ottobre 2026 ([la sua risposta][ok221], autore `SkyMistery`,
+     pubblicata dal master su sua istruzione): nota nuova `decisions/2026-10-06-le-regole-di-pubblica.md`, con il suo «Da portare nel
+     piano» (design §2.2 e §8.1).
+  2. **La sequenza**, stessa risposta: **nessuna consegna e nessun «Pubblica» sull'installazione di prova fra E3b ed E4**, perché la
+     voce di calendario e la riga di ricerca puntano a `/events/{slug}`, che porta E4. Scritto come ⚠️ in `HANDOFF-M4.md`.
+  3. **I file di una bozza** (punto 5, lasciato da Carmine alla sessione): una bozza li tiene **finché è una bozza** (uso senza fine),
+     un evento pubblicato fino alla fine + 7 giorni, e il conto segue la fine. Con la regola di prima una bozza scritta con una finestra
+     già passata, per sbaglio o per spostarla dopo, perdeva il banner al primo giro di `media-expiry`. Nella nota, §3; il test
+     `ADraftKeepsItsFilesAndAPublishedEventUntilAWeekAfterItsEnd` prende il posto di quello sugli usi.
+  4. Il distintivo della ricerca senza parola (punto 3): lo sistema il nucleo, una sessione del maintainer; niente qui. «Pubblica»
+     senza versione salta il 409 (punto 4), come «Annulla»: lasciato com'è. Nessun «torna in bozza» e gli eventi di prima di E3b senza
+     usi fino al prossimo salvataggio (punto 6): già scritti sopra.
+  5. **Ciò che il revisore non ha verificato** — il bottone sullo schermo, e le modifiche del form non salvate quando «Pubblica»
+     sostituisce la riga in cache —: dalla lettura del codice, non provato nel browser, «Pubblica» pubblica la riga **salvata**, e il
+     form si ridisegna sulla riga pubblicata (la sua chiave è la versione della riga), quindi una modifica non salvata si perde senza
+     un avviso. Scritto come ⚠️ in `HANDOFF-M4.md` per la fase che tocca di nuovo la pagina (E4, con la scheda delle rotte).
+  6. **Verificato di nuovo** (6 ottobre 2026, dopo il punto 3, sul codice cambiato): `dotnet build` senza avvisi e `dotnet format
+     --verify-no-changes` sui due file C# toccati; unità **1108/1108**; **integrazione intera senza filtro 472/472** (6,4 minuti);
+     `pnpm gen:api` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **605 in 83 file**;
+     `pnpm e2e` **163/163** al primo giro, dietro il lock dello smoke; **`pnpm e2e:full` 53/53 al primo giro** (10,9 minuti) sul banco
+     `http://127.0.0.1:5123` ricreato, dietro il lock di Mailpit.
+
+[r221]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/221#issuecomment-6012258987
+[ok221]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/221#issuecomment-6012333670
 
 ### E4 — Il pubblico e le rotte
 

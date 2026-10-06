@@ -11,8 +11,10 @@ verso `main`, senza coda, nata da `main` a `78df526`. Sono unite E1 (#200), E2 (
 (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la
 `0.6.0` (#216) e il piano 1.29 (#217).
 **Il prossimo passo**: E3b unita, poi **E4** (il pubblico e le rotte: `/events`, la pagina dell'evento con il 404 dopo la fine, il blocco
-`events.eventList`, `evt_routes`), che la sessione che coordina prepara. Da E3b un evento si **pubblica**, entra nel calendario e nella
-ricerca quando si vede e ne esce alla fine, e tiene i suoi file fino a una settimana dopo («Che cosa ha lasciato E3b», sotto). **La
+`events.eventList`, `evt_routes`), che la sessione che coordina prepara sopra E3b. Da E3b un evento si **pubblica**, entra nel calendario
+e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file («Che cosa ha lasciato E3b», sotto). ⚠️ **Fra E3b ed E4 nessuna
+consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la
+riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -129,7 +131,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E3b (5 ottobre 2026, branch `m4/e3b-event-life`, PR #221, senza coda)
 
-- **Che cosa c'è** (il dettaglio in `10`, E3b, «Com'è andata»; nessuna migrazione, nessun file del nucleo, nessuna nota nuova):
+- **Che cosa c'è** (il dettaglio in `10`, E3b, «Com'è andata»; nessuna migrazione, nessun file del nucleo; dopo la revisione una nota,
+  `decisions/2026-10-06-le-regole-di-pubblica.md`, decisa da Carmine: le tre regole qui sotto — pubblicabile dopo «Pubblica»,
+  `bookingOpensAtUtc` per un evento con slot, il tipo `events` nella ricerca — e la scelta sui file di una bozza):
   - **«Pubblica»** (`POST /api/events/events/{id}/publish`, `Events.Edit` sulla riga): i controlli in una classe sola, `EventPublishing`
     (`src/IvaoHub.Modules.Events/Staff/EventPublishing.cs`), con i `Refusals` campo per campo — titolo e riassunto in ogni lingua, le date
     in ordine (visibile ≤ prenotazioni ≤ inizio < fine), per un evento con slot l'apertura delle prenotazioni e uno scalo (campo
@@ -139,7 +143,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La proiezione** (`Event.Project`, `IProjectable`): quando l'evento si vede (`EventState.IsSeen`: pubblicato, da `visible_from` o
     dalla pubblicazione alla fine, annullato compreso) una voce di calendario — tipo e visibilità dell'evento, `/events/{slug}` — se non
     è annullato, e una riga di ricerca per lingua (tipo `events`) se è per tutti; il banner e le immagini della descrizione come usi dei
-    file fino alla fine + 7 giorni, anche in bozza.
+    file: senza fine finché l'evento è una bozza, fino alla fine + 7 giorni quando è pubblicato.
   - **`events-release`** (`EventReleaseJob`, ogni 15 minuti): riproietta gli eventi pubblicati diventati visibili o conclusi
     dall'inizio dell'ultimo giro riuscito, come `TourReleaseJob`.
   - **`events.eventChanged`** dichiarato (mail e parola del profilo), senza destinatari.
@@ -148,6 +152,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (+1), un secondo test in `web/e2e/full/events-staff.spec.ts`; `EventsTestRows.ForgetAsync` toglie gli eventi di una classe con scali
     e proiezioni (lo usa anche `EventsStaffTests`).
 - **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Nessuna consegna e nessun «Pubblica» sull'installazione di prova fra E3b ed E4** (Carmine, 6 ottobre 2026, [sulla #221][seq221]):
+    la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, che porta solo E4.
+  - ⚠️ **«Pubblica» pubblica la riga salvata**: il form delle impostazioni si ridisegna sulla riga pubblicata (la sua chiave è la
+    versione della riga), e una modifica non salvata si perde senza un avviso (dalla lettura del codice, non provato nel browser; il
+    revisore l'ha lasciato fra i non verificati). La fase che tocca di nuovo la pagina (E4, con la scheda delle rotte) può spegnere
+    «Pubblica» finché il form ha modifiche.
   - **E4** trova in `EventState.IsSeen` la regola di chi vede un evento (il pubblico: pubblicato, visibile e non concluso; annullato
     compreso, con la nota) e l'indirizzo `/events/{slug}` che calendario e ricerca usano già: la pagina pubblica deve rispondere lì.
     ⚠️ Un evento `Members` è nel calendario dei membri e mai nella ricerca (§8.1).
@@ -164,6 +174,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Un test che sposta l'orologio** usa un host derivato (`WithWebHostBuilder` + `ConfigureTestServices` con un `IClock` suo, come
     `EventsLifeTests`), mette in pausa il job nello scheduler, toglie le righe di `hub_jobs_log` del job all'inizio e non fa richieste
     firmate mentre l'orologio è spostato.
+
+[seq221]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/221#issuecomment-6012333670
 
 ### Che cosa ha lasciato E3a (1 ottobre 2026, branch `m4/e3a-event-staff`, PR #214, in coda dopo la #212)
 
