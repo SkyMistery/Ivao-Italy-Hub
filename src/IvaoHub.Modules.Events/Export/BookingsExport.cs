@@ -40,8 +40,12 @@ public sealed record BookingExportDto(
 /// <see cref="Audience"/> — never the cookie, never a key shared by everybody (CLAUDE.md §2) —, whose member holds
 /// <c>EventBookings.View</c> on the event, asked of the one handler on its row; the permissions are rebuilt on every request.
 /// <para>Every slot of the event, by its time at the airport of the event. <b>A draft is never exported</b> (§17.3 n.6): the gate
-/// manager reads what was published. An error is a status of error: 401 without a token or with one of another audience, 403 for
-/// an event whose slots the member does not read, 404 for an address no event has, 409 for a draft.</para>
+/// manager reads what was published. An error is a status of error: 401 without a token or with the cookie of the back office, 403
+/// with a token of another audience or for an event whose slots the member does not read, 404 for an address no event has, 409 for
+/// a draft.</para>
+/// <para>404 comes before 403, as in the verbs of the back office, and that is meant: a token is made only by whoever holds
+/// <c>EventBookings.View</c> somewhere, so whoever learns from a 403 that an address exists is staff of the bookings, and the address
+/// of a published event is on the site anyway (the review of #228, point 7).</para>
 /// <para>A contract with a program outside the hub, as the agent of the validators is (M2): its names are the gate manager's, and
 /// they stay. It is counted with the endpoints written by hand (plan §16.6), among the verbs the design names (§7.2: «esportare»).</para>
 /// </summary>
