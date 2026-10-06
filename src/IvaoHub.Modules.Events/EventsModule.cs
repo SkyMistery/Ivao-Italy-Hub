@@ -1,9 +1,11 @@
 using FluentValidation;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
@@ -23,7 +25,8 @@ namespace IvaoHub.Modules.Events;
 /// E3b its life: publishing it, its calendar entry, its line in the search and its files, and the job that projects it again when
 /// it is seen and when it ends; E4 its public side — the page of an event, the list of <c>/events</c> as the block
 /// <c>events.eventList</c> — and the routes the flight operations write; E5 its public slots — loaded from a table, with their
-/// rotations, listed and corrected in the back office and listed on its page.
+/// rotations, listed and corrected in the back office and listed on its page — and the export the gate manager reads with a
+/// personal token.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -60,6 +63,13 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>The mails of the events (design M4 §8.3): each declared by the phase of the change it tells, cancelling first (E3a).</summary>
     public override IReadOnlyList<string> NotificationTypes => EventsNotifications.All;
+
+    /// <summary>
+    /// The gate manager of the division (design M4 §7.4, E5): its personal tokens open the export of the bookings of an event and
+    /// nothing else, and only for whoever reads the bookings. The word for it is <c>events:tokenAudiences.bookings</c>.
+    /// </summary>
+    public override IReadOnlyList<TokenAudienceDescriptor> TokenAudiences =>
+        [new TokenAudienceDescriptor(BookingsExport.Audience, EventsPermissions.BookingsView)];
 
     public override ModuleSettingsDescriptor Settings { get; } =
         ModuleSettingsDescriptor.Create<EventsSettings, EventsSettingsSaveValidator>(
@@ -105,5 +115,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventRouteEndpoints();
         endpoints.MapEventSlotEndpoints();
         endpoints.MapPublicEventEndpoints();
+        endpoints.MapBookingsExport();
     }
 }
