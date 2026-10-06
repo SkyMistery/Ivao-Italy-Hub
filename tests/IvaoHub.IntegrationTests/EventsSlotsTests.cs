@@ -192,6 +192,44 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ASlotFallsInsideTheWindowOfItsEventWithSixHoursEachWay()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        // An event from 17:00 to 22:00: a slot's time at its airport falls from 11:00 to 04:00 the next day (point 10 on #228).
+        var id = await EventWithAirportsAsync(coordinator, "window", token);
+        var day = Day(days: 30);
+
+        // A departure three days later, and an arrival seven hours after the end: each refused on its time at the event.
+        var refused = await RefusedAsync(
+            await LoadAsync(
+                coordinator,
+                id,
+                Table(
+                    Line("XEA601", string.Empty, TypeA, First, day.AddDays(3).AddHours(17), Away, day.AddDays(3).AddHours(18)),
+                    Line("XEA602", string.Empty, TypeA, Away, day.AddHours(26), First, day.AddHours(29))),
+                SlotLoadMode.Add,
+                token),
+            token);
+        Assert.Equal([SlotWindow.OutsideKey], refused["rows[2].off_block_utc"]);
+        Assert.Equal([SlotWindow.OutsideKey], refused["rows[3].on_block_utc"]);
+        Assert.Equal(2, refused.Count);
+
+        // An arrival landing five hours after the end, after a flight of eleven: in — only the time at the event counts.
+        var loaded = await OkAsync(
+            await LoadAsync(coordinator, id, Table(Line("XEA603", string.Empty, TypeA, Away, day.AddHours(16), First, day.AddHours(27))), SlotLoadMode.Add, token),
+            token);
+        Assert.Equal(1, loaded.GetProperty("added").GetInt32());
+
+        // The form the same way: a departure the day before, refused on its off block.
+        var form = await RefusedAsync(
+            await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA604", First, day.AddHours(-7), Away, day.AddHours(-6)), token),
+            token);
+        Assert.Equal([SlotWindow.OutsideKey], form["offBlockUtc"]);
+    }
+
+    [Fact]
     public async Task ATableIsRefusedAsAWholeWhenItCannotBeReadOrTheEventHasNoPublicSlots()
     {
         var token = TestContext.Current.CancellationToken;

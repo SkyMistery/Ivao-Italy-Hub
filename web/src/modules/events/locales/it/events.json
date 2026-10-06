@@ -201,7 +201,7 @@
       "title": "Incolla o carica gli slot",
       "description": "Gli slot pubblici dell'evento da una tabella copiata da un foglio di calcolo, o da un file CSV: tutto, o niente.",
       "help": "La prima riga è l'intestazione, con questi nomi, in qualunque ordine; rotation e leg si possono lasciare fuori, e una colonna che l'hub non conosce resta com'è:",
-      "formats": "Gli orari sono in UTC, scritti 2026-10-17 14:30. I tipi di aereo si separano con /, come A320/A20N. Le tratte di una rotazione condividono il suo codice; senza il loro posto (leg), lo prendono dai loro orari.",
+      "formats": "Gli orari sono in UTC, scritti 2026-10-17 14:30; l'orario di uno slot allo scalo dell'evento sta entro sei ore dall'evento. I tipi di aereo si separano con /, come A320/A20N. Le tratte di una rotazione condividono il suo codice; senza il loro posto (leg), lo prendono dai loro orari.",
       "file": "Oppure un file CSV",
       "submit": "Carica",
       "refused": "Non è stato caricato niente. Correggi questi punti e carica di nuovo la tabella:",
@@ -365,6 +365,7 @@
     "chainOrder": "Questa tratta parte prima di quella prima di lei nella rotazione.",
     "chainTooClose": "Questa tratta parte troppo presto dopo l'arrivo di quella prima: meno dei minuti fra due prenotazioni di un pilota.",
     "slotAwayFromEvent": "Nessuno dei due aeroporti di questo volo è uno scalo dell'evento: uno slot parte da uno, o arriva a uno.",
+    "slotOutsideWindow": "Questo slot cade fuori dal suo evento: il suo orario allo scalo dell'evento è più di sei ore prima dell'inizio o dopo la fine.",
     "slotTwice": "L'evento ha già uno slot con questo nominativo a questo orario di off block.",
     "slotNotPublic": "Uno slot privato non si corregge come un volo.",
     "exportDraft": "Questo evento è una bozza: si esporta quando è pubblicato."

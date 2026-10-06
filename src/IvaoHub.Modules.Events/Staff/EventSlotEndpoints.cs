@@ -317,8 +317,8 @@ public static class EventSlotEndpoints
 /// <summary>
 /// What a save of one slot may refuse only by looking at other rows (design M4 §1.5, §3.1), run by the CRUD engine before every
 /// save of the form: the same as a row of a load — its airports and its types the core's, one of its airports the event's, which
-/// gives it its airport and its direction; its callsign and off block once in the event; its place in its rotation — so that a
-/// correction cannot make what a load would refuse.
+/// gives it its airport and its direction; its time there inside the event's window with a margin; its callsign and off block once
+/// in the event; its place in its rotation — so that a correction cannot make what a load would refuse.
 /// </summary>
 public sealed class SlotSaving(
     EventsDbContext database,
@@ -388,6 +388,12 @@ public sealed class SlotSaving(
         {
             slot.EventAirportIcao = direction.EventAirportIcao;
             slot.IsArrival = direction.IsArrival;
+
+            // Days away from the event is a typing mistake (point 10 on #228), as in a load.
+            if (!SlotWindow.Holds(SlotWindow.AtTheEvent(direction, slot.OffBlockUtc!.Value, slot.OnBlockUtc!.Value), parent.StartsAtUtc, parent.EndsAtUtc))
+            {
+                refusals.Add(Fields[direction.IsArrival ? SlotColumns.OnBlockUtc : SlotColumns.OffBlockUtc], SlotWindow.OutsideKey);
+            }
         }
         else
         {

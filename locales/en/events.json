@@ -202,7 +202,7 @@
       "title": "Paste or load the slots",
       "description": "The public slots of the event from a table copied from a spreadsheet, or from a CSV file: all of it, or nothing.",
       "help": "The first row is the header, with these names, in any order; rotation and leg can be left out, and a column the hub does not know is left alone:",
-      "formats": "Times are in UTC, written 2026-10-17 14:30. Aircraft types are separated by /, as A320/A20N. The legs of a rotation share its code; without their places (leg), they take them from their times.",
+      "formats": "Times are in UTC, written 2026-10-17 14:30; a slot's time at the airport of the event is within six hours of the event. Aircraft types are separated by /, as A320/A20N. The legs of a rotation share its code; without their places (leg), they take them from their times.",
       "file": "Or a CSV file",
       "submit": "Load",
       "refused": "Nothing was loaded. Correct these and load the table again:",
@@ -366,6 +366,7 @@
     "chainOrder": "This leg leaves before the one before it in the rotation.",
     "chainTooClose": "This leg leaves too soon after the one before it arrives: less than the minutes between two bookings of a pilot.",
     "slotAwayFromEvent": "Neither airport of this flight is one of the event: a slot leaves from one, or arrives at one.",
+    "slotOutsideWindow": "This slot falls outside its event: its time at the airport of the event is more than six hours before the event starts or after it ends.",
     "slotTwice": "The event already has a slot with this callsign at this off block time.",
     "slotNotPublic": "A private slot is not corrected as a flight.",
     "exportDraft": "This event is a draft: it is exported once it is published."

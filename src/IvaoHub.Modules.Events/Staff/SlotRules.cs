@@ -89,6 +89,34 @@ public sealed record SlotDirection(string EventAirportIcao, bool IsArrival)
 }
 
 /// <summary>
+/// The window a public slot falls in (Carmine on #228, point 10): its time at the airport of the event — the off block of a
+/// departure, the on block of an arrival — is inside the event's window widened by <see cref="Margin"/> on each side. A slot
+/// days away from its event is a typing mistake, while an arrival may land after the event ends and a departure leave before it
+/// starts; the time at the other airport is free, so a long flight in or out of the event is never refused for its length.
+/// </summary>
+public static class SlotWindow
+{
+    /// <summary>
+    /// Six hours each way: room for the first arrivals and the last departures around the window the staff gave the event, and
+    /// still far short of the day a date typed one day off moves a slot by.
+    /// </summary>
+    public static readonly TimeSpan Margin = TimeSpan.FromHours(6);
+
+    public const string OutsideKey = "events:errors.slotOutsideWindow";
+
+    /// <summary>The time of the slot at the airport of the event: the off block of a departure, the on block of an arrival.</summary>
+    public static DateTime AtTheEvent(SlotDirection direction, DateTime offBlockUtc, DateTime onBlockUtc)
+    {
+        ArgumentNullException.ThrowIfNull(direction);
+        return direction.IsArrival ? onBlockUtc : offBlockUtc;
+    }
+
+    /// <summary>Whether that time is inside the event's window, widened by the margin.</summary>
+    public static bool Holds(DateTime atTheEvent, DateTime startsAtUtc, DateTime endsAtUtc) =>
+        atTheEvent >= startsAtUtc - Margin && atTheEvent <= endsAtUtc + Margin;
+}
+
+/// <summary>
 /// One leg of a rotation as the chains read it: <paramref name="Key"/> is the caller's — the row of the sheet, the slot of the
 /// form, a slot already stored —, <paramref name="IsNew"/> whether it is being written now, and so whether a refusal can land on it.
 /// </summary>

@@ -57,7 +57,8 @@ internal static class SlotRows
 /// all or nothing, every refusal on the row and the column it is about (<c>rows[12].aircraft_types</c>), in one transaction.
 /// <para>Every row is a public slot: its callsign, its flight number if any, its aircraft types — each one the core knows —, its
 /// two airports — ones the core knows, one of them of the event, which gives the slot its airport and its direction
-/// (<see cref="SlotDirection"/>) —, its off block and on block times in UTC, its stand if any, and its rotation and place if any.
+/// (<see cref="SlotDirection"/>) —, its off block and on block times in UTC, its time at the airport of the event inside the event's
+/// window with a margin (<see cref="SlotWindow"/>), its stand if any, and its rotation and place if any.
 /// The callsign and the off block are one slot of the event once, among the table's and the slots that stay. Then the rotations
 /// (<see cref="SlotChains"/>), with the minutes the settings put between two bookings of a pilot.</para>
 /// <para>It adds the table's slots to those there, or replaces the free public ones with them (<see cref="SlotLoadMode"/>). The event
@@ -160,6 +161,12 @@ public sealed class SlotLoading(
             if (SlotDirection.Of(draft.DepartureIcao, draft.ArrivalIcao, eventAirports) is { } direction)
             {
                 directions[draft.Row] = direction;
+
+                // Days away from the event is a typing mistake: refused on the time at its airport (point 10 on #228).
+                if (!SlotWindow.Holds(SlotWindow.AtTheEvent(direction, draft.OffBlockUtc, draft.OnBlockUtc), row.StartsAtUtc, row.EndsAtUtc))
+                {
+                    problems.Add(field(direction.IsArrival ? SlotColumns.OnBlockUtc : SlotColumns.OffBlockUtc), SlotWindow.OutsideKey);
+                }
             }
             else
             {

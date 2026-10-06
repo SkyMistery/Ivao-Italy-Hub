@@ -182,6 +182,31 @@ public sealed class EventsSlotsTests
         Assert.Null(SlotDirection.Of("XED3", "XED4", EventAirports));
     }
 
+    // ---- the window -------------------------------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(11, 0, true)]
+    [InlineData(10, 59, false)]
+    [InlineData(28, 0, true)]
+    [InlineData(28, 1, false)]
+    [InlineData(17, 0, true)]
+    [InlineData(-7, 0, false)]
+    public void ASlotsTimeAtTheEventIsInsideItsWindowWithSixHoursEachWay(int hour, int minute, bool inside)
+    {
+        // An event from 17:00 to 22:00: from 11:00 to 04:00 the next day.
+        Assert.Equal(inside, SlotWindow.Holds(At(hour, minute), At(17, 0), At(22, 0)));
+    }
+
+    [Fact]
+    public void TheTimeAtTheEventIsTheOffBlockOfADepartureAndTheOnBlockOfAnArrival()
+    {
+        Assert.Equal(At(17, 0), SlotWindow.AtTheEvent(new SlotDirection("XED1", IsArrival: false), At(17, 0), At(30, 0)));
+        Assert.Equal(At(18, 0), SlotWindow.AtTheEvent(new SlotDirection("XED1", IsArrival: true), At(4, 0), At(18, 0)));
+
+        // A long flight in or out of the event is never refused for its length: only the time at the event counts.
+        Assert.True(SlotWindow.Holds(SlotWindow.AtTheEvent(new SlotDirection("XED1", IsArrival: true), At(0, 0), At(17, 30)), At(17, 0), At(22, 0)));
+    }
+
     // ---- the rotations ------------------------------------------------------------------------------------------------------
 
     [Fact]
