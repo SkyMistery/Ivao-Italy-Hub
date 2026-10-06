@@ -7,16 +7,20 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4b** (nucleo: chi è online sugli scali di un evento), sul branch
-`m4/e4b-online-at-airports`, **PR #226** verso `main`, del nucleo e senza coda, nata da `main` a `584eb72`. Sono unite E1 (#200), E2
-(#209), E2b (#212), E3a (#214), **E3b (#221)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a
-(#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216) e il piano 1.29 (#217); **E4** è aperta (#223).
+`m4/e4b-online-at-airports`, **PR #226** verso `main`, del nucleo e senza coda, nata da `main` a `584eb72` e **unita di nuovo a `main`**
+a `77a2031`, dopo la #223. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), **E4 (#223)**, E10a (#210), E10b (#208),
+E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216),
+il piano 1.29 (#217), la parola degli eventi nella ricerca (#222) e l'anteprima dell'editor su una macchina lenta (#225, la `0.6.5`).
 **E4b** non migra niente e va accanto alle fasi del modulo; dopo il suo merge **la prima fase del modulo monta la striscia** con gli scali
 dell'evento, il giorno dell'evento («Che cosa ha lasciato E4b», sotto).
-**Il prossimo passo**: E3b unita, poi **E4** (il pubblico e le rotte: `/events`, la pagina dell'evento con il 404 dopo la fine, il blocco
-`events.eventList`, `evt_routes`), che la sessione che coordina prepara sopra E3b. Da E3b un evento si **pubblica**, entra nel calendario
-e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file («Che cosa ha lasciato E3b», sotto). ⚠️ **Fra E3b ed E4 nessuna
-consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la
-riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4. **La
+**Il prossimo passo**: E4 è unita; **E5** (gli slot pubblici e l'esportazione), in coda dopo la #223, è in corso. Da E3b un evento si
+**pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina
+`/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi
+(«Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6
+ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una
+pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). **Le tre domande di E4 hanno la risposta di
+Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del nucleo, la seconda lettura scritta a mano
+accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -162,6 +166,81 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `LIRF_TWR`, `EDDF_TWR` e i voli LIRF→LIMC, EDDF→LIMC, EDDF→EGLL: un evento a `LIRF` mostra un controllore e un pilota, uno a `LIMC`
     un controllore e due piloti.
   - Il modulo **non nomina la rete**: chiede `networkStats` attraverso la striscia del nucleo, e `EventsArchitectureTests` resta com'è.
+
+### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4, «Com'è andata»; una migrazione additiva, `AddEventRoutes`; nessun file del nucleo oltre ai
+  tre test condivisi che la fase deve toccare; quattro note nuove, tre decise da Carmine sulla #223 — [la risposta][ok223]):
+  - **Le rotte** (`evt_routes`, `EventRoute`, design §1.4): da uno scalo a un altro — mai a sé stesso, `events:errors.routeToItself`
+    (la revisione della #223) —, la rotta da inserire (obbligatoria, 1024 caratteri, non tradotta) e le note (`remarks_i18n`, tradotte:
+    scritte in una lingua, in tutte quelle della divisione; 500 per lingua). Riga `IEventChild` nell'area **`EventRoutes`**
+    (`[PermissionArea]`, `[Audited]`, lo scope dell'evento); CRUD `/api/events/routes` (`EventRoutes.View`/`.Edit`, `filter[eventId]`,
+    l'evento adottato in `BeforeAuthorize`, i due scali conosciuti dal nucleo; più rotte fra gli stessi due scali ammesse). Il FOD, che
+    tiene l'area sull'ED per il grant della sua posizione, scrive le rotte di ogni evento e non l'evento. **Le rotte stanno nell'ordine in
+    cui il FOD le scrive** (l'`Id`), sulla pagina e nella scheda del back office, dove si riordinano per scalo a mano: l'ordine per
+    partenza metteva il ritorno prima dell'andata (dal banco). **Eliminare un evento** porta via le sue rotte nello stesso salvataggio,
+    con l'audit, come gli scali.
+  - **La pagina** `/events/{slug}` (`GET /api/events/public/{slug}`, anonima, `Public/PublicEvents.cs`): banner, stato e tipo, quando in
+    UTC e nell'ora della divisione, chi organizza (con la sua pagina), gli scali e le rotte con il nome che il nucleo conosce, la nota di
+    un annullato, la descrizione. La legge chi è il pubblico dell'evento **mentre si vede** (`EventState.IsSeen` sul filtro globale: un
+    evento `Members` solo a chi è entrato); **lo staff degli eventi** (`Events.View` sulla riga, chiesto all'unico handler) **in ogni
+    stato**, con una riga che dice che nessun altro la vede e perché — `unseen` del DTO, da `EventState.Unseen`: bozza, non ancora
+    visibile, concluso; lo stato da solo non distingue un annullato non ancora visibile da uno concluso —, più il link al back office;
+    tutti gli altri **404**.
+  - **Il blocco `events.eventList`** (sempre vivo, le due metà; `EventListProvider`, proprietà `kinds` e `limit`): gli eventi che si
+    vedono, in arrivo e in corso, annullati compresi fino alla fine, dal più vicino. **`/events` lo legge** come `/calendar` legge il blocco
+    del calendario, quindi la lista non ha un endpoint suo: schede (`screens/EventCards.tsx`, le stesse del blocco, con gli scali per
+    codice e nome come la pagina: `AirportName`), filtri per tipo e per scalo nell'indirizzo (le scelte sono quelle che le schede hanno;
+    lo scalo si sceglie per codice e nome, e l'indirizzo tiene il codice), il `CalendarView` sugli stessi eventi meno gli annullati. ⚠️ **Al
+    più 50**: `/events` chiede al blocco `limit: 0`, e il server dà a una lista al più `PublicEvents.MaxItems` (50, il limite di una lista
+    dei blocchi del nucleo, `DataBlockScope.MaxItems`), i più vicini. Una divisione che annunciasse più di cinquanta eventi insieme
+    vedrebbe i cinquanta più vicini, con i filtri e il calendario su quelli; gli altri entrano man mano che i primi finiscono, e
+    nessuna riga dice che ce ne sono altri. Oggi è lontano; se servisse, la pagina avrebbe una lettura sua, a pagine.
+  - **`EventState.Seen(now)`**: `IsSeen` scritto in quello che SQL chiede, tenuto alla stessa risposta da `EventsStateTests`.
+  - **La scheda «Rotte»** della pagina dell'evento nel back office (lista e form generati, `/staff/events/{id}/routes/{routeId}`), a chi
+    legge l'area, con «Nuova rotta» a chi la scrive; e il link «La sua pagina sul sito».
+  - **«Pubblica» aspetta le impostazioni salvate** (l'⚠️ che E3b lasciava a E4): spento, con una riga che dice perché, finché il form ha
+    modifiche non salvate.
+  - **I tipi di un evento sono quelli degli eventi** (nota `2026-10-06-i-tipi-che-un-evento-sceglie`, decisa da Carmine): quelli con una
+    riga in `kindPresets`, e tutti i tipi del calendario finché non ce n'è nessuna. Il form li offre (`eventKinds` in `schemas.ts`), il
+    server rifiuta gli altri su un evento nuovo o al cambio di tipo (`events:errors.kindNotOfEvents`, in `EventSaving.PrepareAsync`), e un
+    evento già scritto tiene il suo tipo anche se la riga va via. ⚠️ Sul banco e sulla prova la scelta resta com'è finché le impostazioni
+    degli eventi non hanno righe: per IT le scrive la divisione (RFE, RFO, MSE, Online Day e l'evento libero, con tutto spento).
+  - **I test**: `EventsPublicTests` (integrazione, 4, VID 761033–761036, scali `XEC1`/`XEC2`, slug `evt-test-e4-…`), `EventsStateTests`
+    (+2), un test dei tipi in `EventsStaffTests`, `screens/cards.test.ts`, `schemas.test.ts` ed `eventForm.test.ts` (vitest), la smoke
+    `web/e2e/events-public.spec.ts` (8), il giro `web/e2e/full/events-public.spec.ts` (1), un terzo test in
+    `web/e2e/full/events-staff.spec.ts` e, nel primo, i tipi che il form offre. `EventsTestRows` toglie anche le rotte.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Con E4 unita dopo la #221 cade l'⚠️ di E3b** («nessuna consegna e nessun «Pubblica» sulla prova fra E3b ed E4»): la voce di
+    calendario e la riga di ricerca trovano la loro pagina. Quando consegnare resta di Carmine.
+  - **Le tre note di E4 sono decise** da Carmine ([la risposta sulla #223][ok223], 6 ottobre 2026, autore `SkyMistery`, pubblicata dal
+    master su sua istruzione): `2026-10-06-il-pubblico-degli-eventi` (sì alle cinque letture, e **la seconda lettura scritta a mano**,
+    `GET /api/events/public/{slug}`, accettata come quella dei preset: uno scostamento dichiarato dal design §7.2, contato per il piano
+    §16.6 — nella nota, §4), `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (la `LiveStatusStrip` sugli scali dell'evento, design §7.1,
+    **non è di E4**: è la fase del nucleo **E4b**, in una PR sua con la sua nota; non è urgente, può venire dopo E5, e la monta la prima
+    fase del modulo dopo di lei) e `2026-10-06-i-tipi-che-un-evento-sceglie` (come raccomandato, fatta su questa PR: sopra).
+  - **`search.kinds.events`** (la parola del tipo `events` nella ricerca) è arrivata con la #222 del nucleo, e il merge di `main` su questo
+    branch l'ha tenuta, senza conflitti ([i rilievi sulla #223][r223], punto 3).
+  - **E5** (gli slot pubblici) è **in coda sul branch di E4**: la sessione che coordina la prepara dalla testa `94ca28b` di E4, e unisce
+    l'ultima spinta di E4 — con il merge di `main`, i tipi degli eventi e le risposte di Carmine. La lista pubblica degli slot va sulla
+    pagina — `PublicEvents.ReadAsync` e `PublicEventDto`, oppure una lettura sua accanto —; la scheda «Slot» accanto a «Rotte»;
+    `EventSlot` è `IEventChild` come le rotte. E5 non aggiunge blocchi.
+  - ⚠️ **`EventSaving.DeleteAsync` elimina le righe figlie di ogni area** (scali, rotte): una fase che aggiunge una tabella figlia (slot E5,
+    postazioni E11a, regole di award E14b) la aggiunge lì, e il guardiano chiederà a chi elimina l'`Edit` di quell'area — EC ed EAC tengono
+    tutte le aree tranne `EventReports.Edit` (§6.2), che non ha righe figlie dell'evento.
+  - **E6b** (il promemoria con la rotta del FOD) e **E8b** («Duplica» copia le rotte) trovano le rotte per evento; fra gli stessi due scali
+    ce ne può essere più d'una, e le note dicono quale. L'ordine è quello di scrittura (l'`Id`): «Duplica» le copia in quell'ordine, o
+    la copia le mostra in un altro.
+  - ⚠️ **`EventsArchitectureTests` vieta fra apici una chiave seminata del calendario anche fuori da un tipo** — una chiave di query
+    `'event'` è caduta al primo giro (ora `'page'`) — **e un ICAO di quattro maiuscole**: gli esempi della galleria usano `XX01`, `XX02` e il
+    tipo `gallery`.
+  - **`/events` non è nel menu pubblico**: si aggiunge dall'editor del menu, come `/tours` e `/training` (un dato, non codice).
+  - ⚠️ Lo snapshot del modello degli eventi (`EventsDbContextModelSnapshot`) ha preso con `AddEventRoutes` anche la colonna `notified_at`
+    di `cms_award_signals` (E10d), una tabella del nucleo mappata ed esclusa dalle migrazioni del modulo: nessun SQL, solo il modello al
+    passo. La prossima migrazione degli eventi non la ritrova.
+
+[r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
+[ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
 ### Che cosa ha lasciato E3b (5 ottobre 2026, branch `m4/e3b-event-life`, PR #221, senza coda)
 

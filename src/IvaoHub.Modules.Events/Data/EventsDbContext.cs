@@ -20,6 +20,9 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
     public DbSet<EventAirport> Airports => Set<EventAirport>();
 
+    /// <summary>The routes of the events, which the flight operations write (E4).</summary>
+    public DbSet<EventRoute> Routes => Set<EventRoute>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -61,6 +64,20 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // An airport is in an event once; the server says so before the index does.
             airport.HasIndex(row => new { row.EventId, row.Icao }).IsUnique();
+        });
+
+        modelBuilder.Entity<EventRoute>(route =>
+        {
+            route.ToTable("evt_routes");
+            route.HasKey(row => row.Id);
+            route.Ignore(row => row.ResourceScope);
+            route.Property(row => row.DepartureIcao).HasMaxLength(4).IsRequired();
+            route.Property(row => row.ArrivalIcao).HasMaxLength(4).IsRequired();
+            route.Property(row => row.Route).HasMaxLength(EventRoute.MaxRouteLength).IsRequired();
+            route.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its routes with it, as it takes its airports. The key is also the index the page reads by.
+            route.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

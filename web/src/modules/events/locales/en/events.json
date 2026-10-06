@@ -18,6 +18,7 @@
     "saved": "Event saved.",
     "readOnly": "You can read this event: changing it is for whoever writes the events.",
     "cancelled": "Cancelled on {{date}}.",
+    "publicPage": "Its page on the site",
     "filters": {
       "view": "Show",
       "anyView": "Every event"
@@ -32,18 +33,20 @@
     "tabs": {
       "settings": "Settings",
       "description": "Description",
-      "airports": "Airports"
+      "airports": "Airports",
+      "routes": "Routes"
     },
     "actions": {
       "publish": "Publish",
       "cancel": "Cancel the event"
     },
     "publish": {
-      "problems": "Before it can be published, it still needs:"
+      "problems": "Before it can be published, it still needs:",
+      "saveFirst": "Save the settings first: «Publish» publishes the event as it is saved."
     },
     "delete": {
       "title": "Delete this event?",
-      "description": "The event and its airports are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
+      "description": "The event, its airports and its routes are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
     },
     "body": {
       "save": "Save the description",
@@ -72,7 +75,7 @@
       "updatedAt": "Last changed"
     },
     "hints": {
-      "kind": "A kind of the division's calendar. Choosing it sets the switches below to what the settings of the events say of that kind; change them as this event needs.",
+      "kind": "A kind of the events, as their settings list them: every kind of the calendar while they list none. Choosing it sets the switches below to what the settings say of that kind; change them as this event needs.",
       "publicSlots": "Slots the staff prepares, each with its flight, which a pilot books.",
       "privateSlots": "Slots generated from the capacity of each airport, for the flight a pilot chooses.",
       "wholeDivision": "The event is about every airport and position of the division, as an online day is: it has no airports of its own.",
@@ -133,6 +136,68 @@
       "description": "The airport is taken out of the event."
     }
   },
+  "routes": {
+    "title": "Routes",
+    "create": "New route",
+    "edit": "Route",
+    "fields": {
+      "departureIcao": "From",
+      "arrivalIcao": "To",
+      "route": "Route",
+      "remarks": "Remarks"
+    },
+    "hints": {
+      "departureIcao": "The ICAO code of an airport the hub knows.",
+      "arrivalIcao": "The ICAO code of an airport the hub knows.",
+      "route": "The route to file, as a pilot writes it in the flight plan.",
+      "remarks": "What a pilot should know about it. The page of the event shows it to everybody: written in one language, it is written in every language of the division. Leave it empty for none."
+    },
+    "delete": {
+      "title": "Delete this route?",
+      "description": "The route is taken out of the event and off its page."
+    }
+  },
+  "public": {
+    "title": "Events",
+    "description": "The events of the division still to come and the ones in progress, in UTC and in the division's own time.",
+    "none": "No event to come for now.",
+    "noneHere": "No event of this kind at this airport.",
+    "filters": {
+      "kind": "Kind",
+      "anyKind": "Every kind",
+      "airport": "Airport",
+      "anyAirport": "Every airport"
+    },
+    "calendar": "In the calendar",
+    "calendarEmpty": "No event in this stretch of the calendar.",
+    "back": "All the events",
+    "backOffice": "Open it in the back office",
+    "staffOnly": {
+      "Draft": "Only the staff of the events sees this page: the event is a draft, and nobody else sees it until it is published.",
+      "NotSeenYet": "For now only the staff of the events sees this page: the event is published, and the others see it from the moment written in «Seen from».",
+      "Over": "Only the staff of the events sees this page: the event is over, and the site keeps no archive."
+    },
+    "when": "When",
+    "wholeDivision": "Every airport of the division",
+    "organizerPage": "Their page",
+    "cancelled": "This event is cancelled.",
+    "routes": "Routes"
+  },
+  "blocks": {
+    "eventList": {
+      "label": "Events",
+      "all": "All the events",
+      "fields": {
+        "kinds": "Kinds",
+        "kinds.kind": "Kind",
+        "limit": "How many at most"
+      },
+      "hints": {
+        "kinds": "The words of the calendar, as the calendar's block takes them. None, every kind.",
+        "limit": "Zero shows as many as one list holds: the fifty soonest."
+      }
+    }
+  },
   "settings": {
     "title": "Events settings",
     "description": "What the events department changes without a release: what each kind of event switches on, the distance between two bookings of a pilot, how long the pilots' bookings are kept, the reminder.",
@@ -150,7 +215,7 @@
       "reminderLeadHours": "Hours before the off block time the reminder is sent"
     },
     "hints": {
-      "kindPresets": "A new event of that kind starts with these switches on, and the staff can still change them on the event. The kinds are the words of the calendar. No row: a new event starts with every switch off.",
+      "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
       "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
       "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
       "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time."
@@ -181,6 +246,7 @@
   "errors": {
     "calendarKindUnknown": "This is no longer a kind of the calendar: take the row out.",
     "kindTwice": "This kind has more than one row.",
+    "kindNotOfEvents": "This is not a kind of the events: their settings list the kinds an event chooses from.",
     "endsBeforeItStarts": "The event ends before it starts.",
     "visibilityChoice": "An event is seen by everybody or by the members.",
     "slugTaken": "Another event has this address.",
@@ -189,6 +255,7 @@
     "wholeDivisionHasNoAirports": "An event about the whole division has no airports of its own.",
     "airportUnknown": "The hub does not know this airport.",
     "airportTwice": "This airport is already in the event.",
+    "routeToItself": "A route goes from one airport to another: this is the one it leaves.",
     "capacityEitherOr": "Give the movements, or the arrivals and the departures: not both.",
     "alreadyCancelled": "This event is already cancelled.",
     "eventOver": "This event is over: it cannot be cancelled any more.",
