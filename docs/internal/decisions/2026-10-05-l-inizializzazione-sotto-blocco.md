@@ -1,8 +1,8 @@
 # L'inizializzazione sotto blocco
 
 **Data:** 5 ottobre 2026
-**Stato:** **codice di una decisione già presa da Carmine**, versione **0.6.1**, con **una domanda nuova (§1), «Proposta»,
-in attesa della risposta di Carmine**.
+**Stato:** **decisa**: codice di una decisione già presa da Carmine, versione **0.6.1**; la domanda nuova (§1) ha **la risposta di
+Carmine** (6 ottobre 2026, in chat al master, che l'ha pubblicata sulla #218 su sua istruzione: [risposta][ok218]): **va avanti**.
 - La decisione: issue [#203](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/203) di `dalberone`; Carmine, 5 ottobre
   2026: **l'inizializzazione si serializza con un blocco del database** attorno a `InitialisationMarker.RunAsync`
   (<https://github.com/SkyMistery/Ivao-Italy-Hub/issues/203#issuecomment-5996021026>). Scartata la strada «ogni seeder
@@ -26,6 +26,10 @@ nuovo, nessuna tabella. Cambio del nucleo, nella sua PR.
 - **L'alternativa: fermarsi** con un errore che lo dice. Toglie del tutto la gara, ma un processo rimasto appeso con il
   blocco in mano (o un database che non risponde a `GET_LOCK`) terrebbe giù il sito finché qualcuno non lo spegne: un
   guasto raro diventa un sito fermo. Non la raccomando.
+- **La risposta** (Carmine, 6 ottobre 2026, [sulla #218][ok218]): **va avanti**, come raccomandato; l'attesa resta di 30 secondi. Una
+  protezione non è mai la cosa che ferma il sito, come per il marcatore.
+
+[ok218]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/218#issuecomment-6012204871
 - **Il tempo d'attesa: 30 secondi** (§4). Se la risposta è «fermarsi», o un altro tempo, è una costante e tre righe.
 
 ## 2. Il problema
