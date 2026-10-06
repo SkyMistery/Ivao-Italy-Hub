@@ -178,11 +178,10 @@ public sealed class PublicEvents(
             .Select(airport => airport.Icao)
             .ToListAsync(cancellationToken);
 
+        // In the order the flight operations wrote them: a way back written after its way out comes after it.
         var routes = await database.Routes.AsNoTracking()
             .Where(route => route.EventId == row.Id)
-            .OrderBy(route => route.DepartureIcao)
-            .ThenBy(route => route.ArrivalIcao)
-            .ThenBy(route => route.Id)
+            .OrderBy(route => route.Id)
             .ToListAsync(cancellationToken);
 
         var named = await NamesAsync(

@@ -38,7 +38,10 @@ const columns: readonly ColumnSpec<EventRouteDto>[] = [
   col.localized('remarks'),
 ];
 
-/** The routes of an event, by their airports: the page and the search are the tab's, the address is the event's. */
+/**
+ * The routes of an event, in the order they were written — the order of its page —, or by an airport when a column is sorted: the
+ * page and the search are the tab's, the address is the event's.
+ */
 export function RoutesTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });

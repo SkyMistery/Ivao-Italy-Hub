@@ -198,10 +198,12 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         using var visitor = _factory.CreateApiClient();
 
-        // Published with an airport and a route: the page shows them, with the names the core knows.
+        // Published with an airport and two routes: the page shows them, with the names the core knows — the routes in the order
+        // they were written, here the way out from the second airport first, where an order of the codes would put it second.
         var page = Id(await CreatedAsync(coordinator, EventEndpoints.Pattern, Payload("page", Starts(days: 10)), token));
         await CreatedAsync(coordinator, EventAirportEndpoints.Pattern, Airport(page, First, 1), token);
-        await CreatedAsync(coordinator, EventRouteEndpoints.Pattern, Route(page, First, Second, "DCT POINT DCT", Text("evt-test-e4 remark")), token);
+        var wayOut = await CreatedAsync(coordinator, EventRouteEndpoints.Pattern, Route(page, Second, First, "DCT OUT DCT", remarks: null), token);
+        var wayBack = await CreatedAsync(coordinator, EventRouteEndpoints.Pattern, Route(page, First, Second, "DCT POINT DCT", Text("evt-test-e4 remark")), token);
         await PublishAsync(coordinator, page, token);
 
         var read = await OkAsync(await visitor.GetAsync(PageUri("page"), token), token);
@@ -210,10 +212,15 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("rfo", read.GetProperty("kind").GetString());
         var airport = Assert.Single(read.GetProperty("airports").EnumerateArray());
         Assert.Equal((First, $"evt-test {First}"), (airport.GetProperty("icao").GetString(), airport.GetProperty("name").GetString()));
-        var route = Assert.Single(read.GetProperty("routes").EnumerateArray());
-        Assert.Equal(Second, route.GetProperty("arrival").GetProperty("icao").GetString());
-        Assert.Equal($"evt-test {Second}", route.GetProperty("arrival").GetProperty("name").GetString());
-        Assert.Equal("evt-test-e4 remark", route.GetProperty("remarks").GetProperty("it").GetString());
+        var routes = read.GetProperty("routes").EnumerateArray().ToList();
+        Assert.Equal([Id(wayOut), Id(wayBack)], routes.Select(Id));
+        Assert.Equal(Second, routes[1].GetProperty("arrival").GetProperty("icao").GetString());
+        Assert.Equal($"evt-test {Second}", routes[1].GetProperty("arrival").GetProperty("name").GetString());
+        Assert.Equal("evt-test-e4 remark", routes[1].GetProperty("remarks").GetProperty("it").GetString());
+
+        // The tab of the event in the back office lists them in the same order.
+        var listed = await OkAsync(await coordinator.GetAsync($"{EventRouteEndpoints.Pattern}?filter[eventId]={page}", token), token);
+        Assert.Equal([Id(wayOut), Id(wayBack)], listed.GetProperty("items").EnumerateArray().Select(Id));
 
         // After its end: not found by a visitor, read by the staff of the events — the events department, and whoever collaborates
         // with Events.View on it —, who are told nobody else sees it, and why.

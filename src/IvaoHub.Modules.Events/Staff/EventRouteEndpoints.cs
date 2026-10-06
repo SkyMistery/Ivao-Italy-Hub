@@ -119,7 +119,8 @@ public static class EventRouteEndpoints
             options.WritePolicy = EventsPermissions.RoutesEdit;
             options.ContextType = typeof(Data.EventsDbContext);
 
-            options.DefaultOrder = route => route.DepartureIcao;
+            // In the order they were written, as the page of the event shows them; the two airports sort by hand.
+            options.DefaultOrder = route => route.Id;
             options.Sortable.Add(nameof(EventRoute.DepartureIcao));
             options.Sortable.Add(nameof(EventRoute.ArrivalIcao));
             options.Filterable.Add(nameof(EventRoute.EventId));

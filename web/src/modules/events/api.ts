@@ -313,7 +313,7 @@ export function useDeleteAirport() {
 
 // ---- the routes of an event (E4) -------------------------------------------------------------------
 
-/** The routes of an event, by their airports: an event has a handful, never pages of them. */
+/** The routes of an event, in the order they were written: an event has a handful, never pages of them. */
 export function routesQuery(eventId: number, search: ListSearch = allOfAnEvent) {
   return queryOptions({
     queryKey: [...routesKey, 'list', eventId, search] as const,
