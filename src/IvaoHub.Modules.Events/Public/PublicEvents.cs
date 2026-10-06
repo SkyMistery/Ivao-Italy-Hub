@@ -14,7 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Public;
 
-/// <summary>An airport as the page of an event names it: its ICAO, and the name the core knows — none for one it no longer knows.</summary>
+/// <summary>
+/// An airport as a card and the page of an event name it: its ICAO, and the name the core knows — none for one it no longer knows.
+/// </summary>
 public sealed record PublicEventAirportDto(string Icao, string? Name);
 
 /// <summary>A route of an event as its page shows it (design M4 §1.4): the two airports, the route to file, the remarks.</summary>
@@ -27,7 +29,8 @@ public sealed record PublicEventRouteDto(
 
 /// <summary>
 /// An event as a card of <c>/events</c> and of the block <c>events.eventList</c> shows it (design M4 §7.1, §7.3): what fits on a
-/// tile, the same for whoever is looking. <c>Airports</c> are its own, in their order; an event of the whole division has none.
+/// tile, the same for whoever is looking. <c>Airports</c> are its own, in their order and with their names; an event of the whole
+/// division has none.
 /// </summary>
 public sealed record PublicEventCardDto(
     long Id,
@@ -40,7 +43,7 @@ public sealed record PublicEventCardDto(
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     bool WholeDivision,
-    IReadOnlyList<string> Airports);
+    IReadOnlyList<PublicEventAirportDto> Airports);
 
 /// <summary>
 /// An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
@@ -113,7 +116,7 @@ public sealed class PublicEvents(
             .Take(Math.Clamp(limit, 1, MaxItems))
             .ToListAsync(cancellationToken);
 
-        // The airports of the page of cards in one query, not one per card.
+        // The airports of the page of cards in one query, not one per card, and their names in one question to the core.
         var ids = rows.Select(row => row.Id).ToList();
         var byEvent = (await database.Airports.AsNoTracking()
                 .Where(airport => ids.Contains(airport.EventId))
@@ -121,6 +124,7 @@ public sealed class PublicEvents(
                 .ThenBy(airport => airport.Id)
                 .ToListAsync(cancellationToken))
             .ToLookup(airport => airport.EventId, airport => airport.Icao);
+        var named = await NamesAsync(byEvent.SelectMany(own => own), cancellationToken);
 
         return
         [
@@ -135,7 +139,7 @@ public sealed class PublicEvents(
                 row.StartsAtUtc,
                 row.EndsAtUtc,
                 row.WholeDivision,
-                [.. byEvent[row.Id]])),
+                [.. byEvent[row.Id].Select(named)])),
         ];
     }
 
@@ -181,11 +185,9 @@ public sealed class PublicEvents(
             .ThenBy(route => route.Id)
             .ToListAsync(cancellationToken);
 
-        // Every airport the page names, in one question to the core.
-        var known = await airports.FindAsync(
-            [.. own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao })).Distinct(StringComparer.Ordinal)],
+        var named = await NamesAsync(
+            own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao })),
             cancellationToken);
-        PublicEventAirportDto Named(string icao) => new(icao, known.GetValueOrDefault(icao)?.Name);
 
         return new PublicEventDto(
             row.Id,
@@ -202,17 +204,25 @@ public sealed class PublicEvents(
             EventState.Of(row, now),
             seen ? null : EventState.Unseen(row, now),
             row.WholeDivision,
-            [.. own.Select(Named)],
+            [.. own.Select(named)],
             [
                 .. routes.Select(route => new PublicEventRouteDto(
                     route.Id,
-                    Named(route.DepartureIcao),
-                    Named(route.ArrivalIcao),
+                    named(route.DepartureIcao),
+                    named(route.ArrivalIcao),
                     route.Route,
                     route.Remarks)),
             ],
             row.CancelledAt,
             row.CancellationNote);
+    }
+
+    /// <summary>Every airport named, with the name the core knows, in one question to the core.</summary>
+    private async Task<Func<string, PublicEventAirportDto>> NamesAsync(IEnumerable<string> icaos, CancellationToken cancellationToken)
+    {
+        var known = await airports.FindAsync([.. icaos.Distinct(StringComparer.Ordinal)], cancellationToken);
+
+        return icao => new PublicEventAirportDto(icao, known.GetValueOrDefault(icao)?.Name);
     }
 }
 

@@ -6528,7 +6528,7 @@ export interface components {
             /** Format: int32 */
             yearlyMax: null | number;
         };
-        /** @description An airport as the page of an event names it: its ICAO, and the name the core knows — none for one it no longer knows. */
+        /** @description An airport as a card and the page of an event name it: its ICAO, and the name the core knows — none for one it no longer knows. */
         PublicEventAirportDto: {
             icao: string;
             name: null | string;

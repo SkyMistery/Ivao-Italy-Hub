@@ -51,7 +51,10 @@ public sealed class EventListProvider(PublicEvents events) : IDataBlockProvider
                 ["startsAtUtc"] = BlockProps.Instant(card.StartsAtUtc),
                 ["endsAtUtc"] = BlockProps.Instant(card.EndsAtUtc),
                 ["wholeDivision"] = card.WholeDivision,
-                ["airports"] = new JsonArray([.. card.Airports.Select(icao => (JsonNode?)JsonValue.Create(icao))]),
+                ["airports"] = new JsonArray(
+                [
+                    .. card.Airports.Select(airport => (JsonNode?)new JsonObject { ["icao"] = airport.Icao, ["name"] = airport.Name }),
+                ]),
             });
         }
 

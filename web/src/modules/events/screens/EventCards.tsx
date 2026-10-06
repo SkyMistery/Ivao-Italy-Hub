@@ -9,12 +9,13 @@ import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { calendarKindColour } from '../../../shared/ui';
 
-import { STATE_COLOURS, eventHref, spanText, type EventCard } from './cards';
+import { STATE_COLOURS, eventHref, spanText, type EventAirport, type EventCard } from './cards';
 
 /**
  * The cards of the events (design M4 §7.1, §7.3, E4): the banner, the state and the kind, the title, the summary, when, and the
- * airports. Written once and drawn twice — by `/events` and by the block `events.eventList` — because they are the same cards, and
- * a second copy is a second thing to keep in step. A card is the same for whoever is looking.
+ * airports by code and name. Written once and drawn twice — by `/events` and by the block `events.eventList` — because they are the
+ * same cards, and a second copy is a second thing to keep in step. A card is the same for whoever is looking. The page of an event
+ * draws its times and its airports with the same two pieces, `EventWhen` and `AirportName`.
  */
 
 export function EventCards({ cards }: { cards: readonly EventCard[] }) {
@@ -60,9 +61,17 @@ export function EventCards({ cards }: { cards: readonly EventCard[] }) {
                     endsAtUtc={card.endsAtUtc}
                     timezone={bootstrap?.division.timezone}
                   />
-                  <Subtle className="text-sm">
-                    {card.wholeDivision ? t('events:public.wholeDivision') : card.airports.join(' · ')}
-                  </Subtle>
+                  {card.wholeDivision ? (
+                    <Subtle className="text-sm">{t('events:public.wholeDivision')}</Subtle>
+                  ) : card.airports.length === 0 ? null : (
+                    <ul className="flex flex-col text-sm">
+                      {card.airports.map((airport) => (
+                        <li key={airport.icao}>
+                          <AirportName airport={airport} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </CardRoot>
             </RouterAnchor>
@@ -70,6 +79,18 @@ export function EventCards({ cards }: { cards: readonly EventCard[] }) {
         );
       })}
     </div>
+  );
+}
+
+/** An airport by its code and, when the hub knows it, by its name. */
+export function AirportName({ airport }: { airport: EventAirport }) {
+  return (
+    <span>
+      <span className="font-mono">{airport.icao}</span>
+      {airport.name === null || airport.name === '' ? null : (
+        <span className="text-muted-foreground"> · {airport.name}</span>
+      )}
+    </span>
   );
 }
 

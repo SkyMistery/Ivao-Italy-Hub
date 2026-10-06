@@ -344,7 +344,11 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(
             [nameof(EventStateKind.InProgress), nameof(EventStateKind.Announced), nameof(EventStateKind.Cancelled), nameof(EventStateKind.Announced)],
             items.Select(item => item.GetProperty("state").GetString()));
-        Assert.Equal([Second, First], items[3].GetProperty("airports").EnumerateArray().Select(icao => icao.GetString()));
+        // Its airports in their order, each with the name the core knows.
+        Assert.Equal(
+            [(Second, $"evt-test {Second}"), (First, $"evt-test {First}")],
+            items[3].GetProperty("airports").EnumerateArray()
+                .Select(airport => (airport.GetProperty("icao").GetString(), airport.GetProperty("name").GetString())));
         Assert.Equal(Id(inProgress), Id(items[0]));
 
         // Of the kinds the block names, and of no other.

@@ -56,7 +56,10 @@ export const eventListBlock: BlockRegistration = {
         startsAtUtc: inDays(5),
         endsAtUtc: inDays(5.2),
         wholeDivision: false,
-        airports: ['XX01', 'XX02'],
+        airports: [
+          { icao: 'XX01', name: 'North Field' },
+          { icao: 'XX02', name: 'South Field' },
+        ],
       },
       {
         id: 2,

@@ -15,6 +15,17 @@ export function eventHref(slug: string): string {
   return `/events/${slug}`;
 }
 
+/** An airport of an event: its ICAO, and the name the hub knows — none for one it no longer knows. */
+export interface EventAirport {
+  readonly icao: string;
+  readonly name: string | null;
+}
+
+/** An airport in one line, as a choice of a filter names it: its code and, when the hub knows it, its name. */
+export function airportLabel(airport: EventAirport): string {
+  return airport.name === null || airport.name === '' ? airport.icao : `${airport.icao} · ${airport.name}`;
+}
+
 /** One event as the block answers it: what fits on a card, the same for whoever is looking. */
 export interface EventCard {
   readonly id: number;
@@ -30,8 +41,8 @@ export interface EventCard {
   readonly endsAtUtc: string;
   /** About every airport of the division, as an online day is: it names none of its own. */
   readonly wholeDivision: boolean;
-  /** Its own airports, in their order. */
-  readonly airports: readonly string[];
+  /** Its own airports, in their order, with their names. */
+  readonly airports: readonly EventAirport[];
 }
 
 /** What `EventListProvider` answers with; undefined while it is on its way. */
@@ -64,7 +75,7 @@ export function narrowCards(cards: readonly EventCard[], filters: CardFilters): 
   return cards.filter(
     (card) =>
       (filters.kind === undefined || card.kind === filters.kind) &&
-      (filters.airport === undefined || card.airports.includes(filters.airport)),
+      (filters.airport === undefined || card.airports.some((airport) => airport.icao === filters.airport)),
   );
 }
 
@@ -73,9 +84,19 @@ export function cardKinds(cards: readonly EventCard[]): string[] {
   return [...new Set(cards.map((card) => card.kind))];
 }
 
-/** The airports the cards name, once each, in alphabetical order: the choices of the filter of the airports. */
-export function cardAirports(cards: readonly EventCard[]): string[] {
-  return [...new Set(cards.flatMap((card) => card.airports))].sort();
+/** The airports the cards name, once each, in the order of their codes: the choices of the filter of the airports. */
+export function cardAirports(cards: readonly EventCard[]): EventAirport[] {
+  const byCode = new Map<string, EventAirport>();
+
+  for (const airport of cards.flatMap((card) => card.airports)) {
+    if (!byCode.has(airport.icao)) {
+      byCode.set(airport.icao, airport);
+    }
+  }
+
+  return [...byCode.values()].sort((one, other) =>
+    one.icao < other.icao ? -1 : one.icao > other.icao ? 1 : 0,
+  );
 }
 
 /**

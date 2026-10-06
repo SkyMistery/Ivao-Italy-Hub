@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  airportLabel,
   calendarItems,
   cardAirports,
   cardKinds,
@@ -12,9 +13,13 @@ import {
 
 /**
  * What `/events` asks of the cards the block answers (E4): narrowed to a kind and an airport — an event of the whole division names
- * none —, the choices of the two filters out of what the cards hold, the same events as entries of the calendar without the
- * cancelled ones, and when an event runs as one line.
+ * none —, the choices of the two filters out of what the cards hold, named as the page names an airport, the same events as entries
+ * of the calendar without the cancelled ones, and when an event runs as one line.
  */
+
+const first = { icao: 'XEA1', name: 'First Field' };
+const second = { icao: 'XEA2', name: 'Second Field' };
+const unknown = { icao: 'XEA3', name: null };
 
 function card(id: number, overrides: Partial<EventCard> = {}): EventCard {
   return {
@@ -28,15 +33,15 @@ function card(id: number, overrides: Partial<EventCard> = {}): EventCard {
     startsAtUtc: '2026-11-21T17:00:00.000Z',
     endsAtUtc: '2026-11-21T22:00:00.000Z',
     wholeDivision: false,
-    airports: ['XEA1'],
+    airports: [first],
     ...overrides,
   };
 }
 
-const rome = card(1, { airports: ['XEA1', 'XEA2'] });
-const milan = card(2, { kind: 'rfe', airports: ['XEA3'] });
+const rome = card(1, { airports: [second, first] });
+const milan = card(2, { kind: 'rfe', airports: [unknown] });
 const everywhere = card(3, { kind: 'online-day', wholeDivision: true, airports: [] });
-const cancelled = card(4, { state: 'Cancelled', airports: ['XEA2'] });
+const cancelled = card(4, { state: 'Cancelled', airports: [second] });
 
 describe('the cards of /events', () => {
   test('narrowed to a kind, to an airport, to both, and to nothing chosen', () => {
@@ -53,11 +58,17 @@ describe('the cards of /events', () => {
     expect(narrowCards([everywhere], { kind: 'online-day' })).toEqual([everywhere]);
   });
 
-  test('the filters offer what the cards hold: the kinds in their order, the airports once each and sorted', () => {
+  test('the filters offer what the cards hold: the kinds in their order, the airports once each by their codes', () => {
     const cards = [milan, rome, everywhere, cancelled];
 
     expect(cardKinds(cards)).toEqual(['rfe', 'rfo', 'online-day']);
-    expect(cardAirports(cards)).toEqual(['XEA1', 'XEA2', 'XEA3']);
+    expect(cardAirports(cards)).toEqual([first, second, unknown]);
+  });
+
+  test('an airport is named by its code and, when the hub knows it, by its name', () => {
+    expect(airportLabel(first)).toBe('XEA1 · First Field');
+    expect(airportLabel(unknown)).toBe('XEA3');
+    expect(airportLabel({ icao: 'XEA4', name: '' })).toBe('XEA4');
   });
 
   test('in the calendar the same events lead to their pages, and a cancelled one is left out', () => {

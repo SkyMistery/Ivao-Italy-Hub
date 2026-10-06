@@ -23,20 +23,21 @@ import {
   calendarKindColour,
   type CalendarViewMode,
 } from '../../../shared/ui';
-import { publicEventQuery, type PublicEventAirportDto, type PublicEventDto } from '../api';
+import { publicEventQuery, type PublicEventDto } from '../api';
 import { EVENTS_VIEW } from '../permissions';
 import { eventsPublicSearchSchema, type EventsPublicSearch } from '../schemas';
 
 import {
   EVENT_LIST_BLOCK,
   STATE_COLOURS,
+  airportLabel,
   calendarItems,
   cardAirports,
   cardKinds,
   narrowCards,
   type EventListData,
 } from './cards';
-import { EventCards, EventWhen } from './EventCards';
+import { AirportName, EventCards, EventWhen } from './EventCards';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -113,7 +114,10 @@ export function EventsPublicPage() {
               none={t('events:public.filters.anyAirport')}
               value={search.airport}
               onChange={(airport) => onFilter({ airport })}
-              items={cardAirports(cards).map((icao) => ({ value: icao, label: icao }))}
+              items={cardAirports(cards).map((airport) => ({
+                value: airport.icao,
+                label: airportLabel(airport),
+              }))}
             />
           </div>
 
@@ -312,19 +316,10 @@ function EventScreen({ event }: { event: PublicEventDto }) {
   );
 }
 
-/** An airport by its code and, when the core knows it, by its name. */
-function AirportName({ airport }: { airport: PublicEventAirportDto }) {
-  return (
-    <span>
-      <span className="font-mono">{airport.icao}</span>
-      {airport.name === null || airport.name === '' ? null : (
-        <span className="text-muted-foreground"> · {airport.name}</span>
-      )}
-    </span>
-  );
-}
-
-/** The routes the flight operations wrote (§1.4): from, to, the route to file, and what to know about it. */
+/**
+ * The routes the flight operations wrote (§1.4), in the order they wrote them: from, to, the route to file, and what to know about
+ * it.
+ */
 function EventRoutes({ event }: { event: PublicEventDto }) {
   const { t } = useTranslation();
   const read = useLocalized();

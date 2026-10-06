@@ -61,6 +61,11 @@ const rfo = { key: 'rfo', label: { en: 'Real Flight Ops', it: 'Real Flight Ops' 
 /** A visitor of a division whose calendar has a word for the kind of these events. */
 const visitorBootstrap = { ...anonymousBootstrap, calendarKinds: [...anonymousBootstrap.calendarKinds, rfo] };
 
+/** Airports as the server names them: by the name the hub knows, and one it no longer knows by its code alone. */
+const airportA = { icao: 'XXAA', name: 'Smoke Airport A' };
+const airportB = { icao: 'XXBB', name: null };
+const airportC = { icao: 'XXCC', name: 'Smoke Airport C' };
+
 function card(id: number, overrides: Record<string, unknown> = {}) {
   return {
     id,
@@ -73,13 +78,13 @@ function card(id: number, overrides: Record<string, unknown> = {}) {
     startsAtUtc: `2099-11-${String(10 + id).padStart(2, '0')}T18:00:00.000Z`,
     endsAtUtc: `2099-11-${String(10 + id).padStart(2, '0')}T22:00:00.000Z`,
     wholeDivision: false,
-    airports: ['XXAA'],
+    airports: [airportA],
     ...overrides,
   };
 }
 
-const evening = card(1, { airports: ['XXAA', 'XXBB'], state: 'BookingOpen' });
-const another = card(2, { kind: 'meeting', airports: ['XXCC'] });
+const evening = card(1, { airports: [airportA, airportB], state: 'BookingOpen' });
+const another = card(2, { kind: 'meeting', airports: [airportC] });
 const everywhere = card(3, { wholeDivision: true, airports: [] });
 
 /** The page of an event, as `/api/events/public/{slug}` answers it. */
@@ -117,15 +122,12 @@ function event(overrides: Record<string, unknown> = {}) {
     state: 'Announced',
     unseen: null,
     wholeDivision: false,
-    airports: [
-      { icao: 'XXAA', name: 'Smoke Airport A' },
-      { icao: 'XXBB', name: null },
-    ],
+    airports: [airportA, airportB],
     routes: [
       {
         id: 7,
-        departure: { icao: 'XXAA', name: 'Smoke Airport A' },
-        arrival: { icao: 'XXBB', name: null },
+        departure: airportA,
+        arrival: airportB,
         route: 'DCT SMOKE UL1 DCT',
         remarks: { en: 'Above the clouds.', it: 'Sopra le nuvole.' },
       },
@@ -176,7 +178,9 @@ test('a visitor reads the events to come as cards, each leading to its page, and
   await expect(first).toHaveAttribute('href', '/events/evt-test-smoke-1');
   await expect(first).toContainText(words.events.options.state.BookingOpen);
   await expect(first).toContainText('Real Flight Ops');
-  await expect(first).toContainText('XXAA · XXBB');
+  // Its airports by code and, when the hub knows it, by name — as the page of the event names them.
+  await expect(first).toContainText('XXAA · Smoke Airport A');
+  await expect(first).toContainText('XXBB');
   await expect(cards.getByRole('link', { name: /Smoke event 3/ })).toContainText(words.public.wholeDivision);
 
   // When: in UTC, and where the division lives.
@@ -210,9 +214,10 @@ test('the address narrows the cards to an airport and a kind, and says when noth
   await expect(cards.getByRole('link', { name: /Smoke event 2/ })).toBeVisible();
   await expect(cards.getByRole('link', { name: /Smoke event 1/ })).toHaveCount(0);
 
-  // Of a kind at an airport none of them has: nothing, said.
+  // Of a kind at an airport none of them has: nothing, said. The filter names the airport as the cards do.
   await page.goto('/events?kind=meeting&airport=XXAA');
   await expect(page.getByText(words.public.noneHere)).toBeVisible();
+  await expect(page.locator('#events-airport')).toContainText('XXAA · Smoke Airport A');
 });
 
 test('with nothing to come, /events says so', async ({ page }) => {
