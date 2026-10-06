@@ -938,7 +938,97 @@ scrive le rotte e non l'evento; il blocco per un visitatore. Smoke: `/events` e 
 rotta, il visitatore la vede.
 **Fatta quando**: un visitatore vede l'evento pubblicato in `/events` e sulla sua pagina con la rotta del FOD; dopo la fine, 404.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #222, **in coda dopo la #221** di E3b: nato dal suo branch a
+`93f1db7` e unito di nuovo alla sua testa `f1c8c02`, dopo la revisione, con un merge; una migrazione additiva, `AddEventRoutes`):
+
+- **Fatto**:
+  1. **`evt_routes`** (punto 4; design §1.4): `EventRoute` (`src/IvaoHub.Modules.Events/EventRoute.cs`), riga `IEventChild` nell'area
+     **`EventRoutes`** — `[PermissionArea]`, `[Audited]`, lo scope dell'evento —, con `departure_icao`, `arrival_icao`, `route` e le note,
+     e le colonne del nucleo (maschera, audit, `row_version`); la chiave verso l'evento a cascata. Il CRUD `/api/events/routes`
+     (`Staff/EventRouteEndpoints.cs`): letto con `EventRoutes.View`, scritto con `EventRoutes.Edit`, `filter[eventId]`, l'evento adottato
+     in `BeforeAuthorize` come per gli scali, i due scali chiesti a `IAirportDirectory.FindAsync`. Nella pagina dell'evento del back office
+     la scheda **«Rotte»** (lista e form generati, `/staff/events/{id}/routes/{routeId}`), a chi tiene `EventRoutes.View` sull'evento, con
+     «Nuova rotta» a chi tiene `.Edit`. **Il FOD scrive le rotte e non l'evento**: il suo grant sull'ED (E3a, da fuori con E2b) gli dà
+     l'area e nient'altro. **Eliminare un evento** porta via anche le sue rotte nello stesso salvataggio, ognuna con la sua riga di audit,
+     come gli scali (`EventSaving.DeleteAsync`).
+  2. **La pagina** `/events/{slug}` (punto 2): `GET /api/events/public/{slug}`, anonima, composta in `Public/PublicEvents.cs` — banner,
+     stato e tipo (la parola e il colore del calendario), quando **in UTC e nell'ora della divisione**, chi organizza con la sua pagina, gli
+     scali e le rotte con il nome che il nucleo conosce, la nota di un annullato, la descrizione con il renderer dei blocchi. **Il 404**:
+     chi è il pubblico dell'evento la legge mentre l'evento si vede (`EventState.IsSeen`, sul filtro globale: un evento `Members` solo a
+     chi è entrato); dopo la fine, per una bozza e per uno non ancora visibile risponde 404 a tutti, **tranne a chi tiene `Events.View`
+     sulla riga** (l'unico handler), che la legge in ogni stato con `seen: false`: la pagina gli dice che nessun altro la vede e lo porta
+     al back office (scelta 1 qui sotto).
+  3. **Il blocco `events.eventList`** (punto 3; design §7.3), le due metà nella stessa PR: `EventListProvider` (sempre vivo; `kinds` come
+     il blocco del calendario, `limit` come quello delle sessioni: dieci se non scritto, zero tutti fino a 50) e la registrazione in
+     `web/src/modules/events/blocks/`, con le schede di `screens/EventCards.tsx`, le stesse di `/events`, e il link a tutti gli eventi. I
+     conteggi: **`uiKit.test.ts` da 42 a 43, `DataBlockEndToEndTests` da 17 a 18**.
+  4. **`/events`** (punto 1): le schede degli eventi che si vedono — in arrivo e in corso, gli annullati fino alla fine con il loro
+     stato —, dal più vicino; i **filtri per tipo e per scalo** nell'indirizzo (`validateSearch`, con `catch` come `/calendar`), le scelte
+     prese da quello che le schede hanno; sotto, **il `CalendarView` del nucleo sugli stessi eventi** (le quattro viste dello schermo del
+     calendario), senza gli annullati, come il calendario della divisione. **Nessun archivio.** La pagina **legge il blocco**
+     (`/api/blocks/data/events.eventList`), come `/calendar` legge il blocco del calendario: la lista non ha un endpoint suo, e chi decide
+     quali eventi vede il pubblico è un posto solo (`PublicEvents.CardsAsync`). `EventState.Seen(now)` scrive `IsSeen` in quello che SQL
+     chiede, e `EventsStateTests` tiene le due alla stessa risposta sulla griglia degli eventi.
+  5. **«Pubblica» aspetta le impostazioni salvate** — l'⚠️ che E3b lasciava alla fase che tocca di nuovo la pagina (E3b, «Dopo la
+     revisione», punto 5): il form delle impostazioni dice alla pagina quando qualcuno ci scrive, e finché non salva «Pubblica» è spento,
+     con una riga che dice perché; il salvataggio, o il cambio di scheda, che ridisegna le impostazioni dalla riga, lo riaccende.
+  6. **I test**: `EventsPublicTests` (integrazione, 4, VID 761033–761036, scali `XEC1`/`XEC2`, slug `evt-test-e4-…`); `EventsStateTests`
+     (+1); `screens/cards.test.ts` (vitest, 6) e `schemas.test.ts` (+3); la smoke `web/e2e/events-public.spec.ts` (8: le schede, i filtri
+     dall'indirizzo, la pagina con orari, scali, rotte e descrizione, l'annullato, il 404, lo staff, il blocco in una pagina); il giro
+     `web/e2e/full/events-public.spec.ts` (il «fatta quando») e un terzo test in `events-staff.spec.ts` («Pubblica» che aspetta).
+     `EventsTestRows` toglie anche le rotte.
+- **⚠️ «Chi è online sugli scali» non c'è** (punto 2): **classificato prima di scrivere** (`CLAUDE.md` §5) — il blocco `networkStats` conta
+  solo l'area della divisione e le sue proprietà non dicono scali; la chiave della cache di `IvaoAirspace` non distingue due insiemi di
+  soli aeroporti con lo stesso numero; il modulo non può chiamare `IIvaoApiClient` (`EventsArchitectureTests`); la `LiveStatusStrip` fa una
+  domanda fissa. Ogni strada passa dal nucleo, quindi **resta fuori da E4**. Nota nuova **«Proposta»**
+  `decisions/2026-10-06-chi-e-online-sugli-scali-di-un-evento.md`, con la domanda a Carmine sulla #222: una fase del nucleo **E4b**
+  (`networkStats` con gli scali chiesti da una schermata, come `from`/`to` del calendario; la chiave della cache che li nomina; la striscia
+  con gli scali facoltativi), e la pagina che la monta nella prima fase del modulo dopo — oppure fuori da M4.
+- **Scelte e scostamenti** (le prime cinque sono comportamento che il design non dice: nota nuova **«Proposta»**
+  `decisions/2026-10-06-il-pubblico-degli-eventi.md`, con la domanda a Carmine sulla #222, come le regole di E3b che Carmine ha voluto in
+  una nota):
+  1. **La pagina allo staff degli eventi in ogni stato**, bozze comprese, e non solo dopo la fine come dice §2.4: una condizione sola; lo
+     staff vede la pagina prima di pubblicare («Pubblica» non ha un contrario); chi collabora ci legge la descrizione (E3a, scelta 7).
+  2. **Un annullato** nelle schede e nel blocco fino alla fine, con il suo stato; **non** nel calendario sotto le schede (E3b, §8.1).
+  3. **Il filtro per scalo** tiene gli eventi che nominano lo scalo; un evento di tutta la divisione non ne nomina nessuno e compare solo
+     senza filtro.
+  4. **Le rotte**: le note **tradotte** (`remarks_i18n`, in tutte le lingue quando scritte, 500 per lingua; il design dice `remarks`); la
+     rotta obbligatoria e non tradotta, 1024 caratteri; **più rotte fra gli stessi due scali** (nessun indice univoco); nessun vincolo che
+     un capo sia uno scalo dell'evento; ordine per partenza e arrivo.
+  5. **Eliminare un evento elimina le sue rotte**, con l'audit: il guardiano chiede `EventRoutes.Edit` a chi elimina (EC ed EAC ce l'hanno).
+  6. **`/events` legge il blocco** invece di un endpoint suo (punto 4): i tour e il training hanno un endpoint della lista accanto al loro
+     blocco; qui il precedente è `/calendar`. Endpoint a mano di E4: **una lettura composta**, la pagina dell'evento (pubblica); le rotte
+     sono `MapCrud`.
+  7. **Le schede non hanno l'apertura delle prenotazioni** né la pagina gli slot: arrivano con E5 ed E6b. La pagina non ha la mappa delle
+     rotte (`RouteMap` c'è nel nucleo, il design non la chiede).
+  8. **Il punto 5 di «Fatto»** non era nel perimetro di E4: lo chiedeva l'⚠️ di E3b, piccolo e nel modulo; è una commit a sé.
+  9. **Lo snapshot del modello** ha preso con `AddEventRoutes` anche `notified_at` di `cms_award_signals` (E10d), una tabella del nucleo
+     mappata ed esclusa dalle migrazioni del modulo: nella migrazione nessun SQL per lei, solo il modello al passo.
+- **Trovato, e scritto per chi viene dopo**: ⚠️ `EventsArchitectureTests` ha trovato al primo giro la parola `'event'` in una chiave di
+  query (`[...publicKey, 'event', slug]`, ora `'page'`): fra apici il modulo non scrive nessuna chiave seminata del calendario, nemmeno
+  dove non è un tipo — come la riga di ricerca di E3b. ⚠️ Gli esempi della galleria non scrivono un ICAO di quattro maiuscole né un tipo
+  seminato (`XX01`, `gallery`). ⚠️ `EventSaving.DeleteAsync` è il posto delle righe figlie di ogni area (in `HANDOFF-M4.md`). ⚠️ La copia
+  delle parole alla radice va rifatta (`pnpm i18n:sync`) dopo ogni cambio delle parole del modulo, anche dopo l'ultima commit: una era
+  rimasta indietro (commit a sé).
+- **Al contrario** (6 ottobre 2026): con la pagina che legge l'evento senza `EventState.Seen`, il test della pagina cade sul visitatore
+  (`/api/events/public/evt-test-e4-over: OK` invece di 404); il codice rimesso com'era, verde.
+- **Verificato, in locale** (6 ottobre 2026, sul branch): `dotnet build` della soluzione senza avvisi, e `dotnet format
+  --verify-no-changes` sui tredici file C# toccati; unità **1109/1109** (la prima volta 1108/1109: la chiave `'event'` qui sopra);
+  **integrazione intera senza filtro 476/476** prima del merge di E3b (4,9 minuti) e **476/476** dopo (7,8 minuti), `EventsPublicTests` da
+  sola 4/4 e **nessuna menzione di `ivao.aero`** nel suo log; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi (il typecheck
+  ha trovato al primo giro quattro indici della spec smoke, tipizzati); `pnpm test` **614 in 84 file**; `pnpm gen:api` e `pnpm i18n:sync`
+  senza differenze; `pnpm e2e` **171/171** al primo giro (`--workers=2`, dietro il lock dello smoke; la spec nuova da sola 8/8 prima);
+  **`pnpm e2e:full` 55/55 al primo giro** (11,4 minuti, il suo worker solo) sul banco `http://127.0.0.1:5124` (`ivaohub_e2e_e4` tolto
+  prima), dietro il lock di Mailpit: le due spec nuove e quelle di E2, E3a ed E3b comprese. Un primo lancio non è partito: lo script con
+  `$ErrorActionPreference = 'Stop'` ha preso l'avviso di pnpm su stderr per un errore (PowerShell 5.1) e si è fermato prima del publish,
+  senza nessuna spec. Le regole di `core-guard` rifatte in PowerShell dalla base di merge (`78df526`): **PASS** — nessun file del
+  maintainer; tre del nucleo, i tre test condivisi (`uiKit.test.ts`, `DataBlockEndToEndTests.cs`, `ErasureTests.cs`); quattro note nuove
+  (le tre di E4 e quella di E3b).
+- **Non verificato**: la CI (la dice la PR); la migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB
+  11.4.10 vera); una pagina con il banner e le immagini della descrizione nel browser (il banco non ha file degli eventi); il blocco
+  `events.eventList` messo dall'editor su una pagina del banco (lo provano la smoke, con una pagina finta, e l'integrazione); il calendario
+  di `/events` nel browser vero (lo prova la smoke con le risposte finte); `pnpm e2e:full` con la mappa di base, che non c'è in nessun
+  worktree.
 
 ### E5 — Gli slot pubblici e l'esportazione
 
