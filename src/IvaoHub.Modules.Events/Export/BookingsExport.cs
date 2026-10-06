@@ -41,8 +41,9 @@ public sealed record BookingExportDto(
 /// <c>EventBookings.View</c> on the event, asked of the one handler on its row; the permissions are rebuilt on every request.
 /// <para>Every slot of the event, by its time at the airport of the event. <b>A draft is never exported</b> (§17.3 n.6): the gate
 /// manager reads what was published. An error is a status of error: 401 without a token or with the cookie of the back office, 403
-/// with a token of another audience or for an event whose slots the member does not read, 404 for an address no event has, 409 for
-/// a draft.</para>
+/// with a token of another audience or for an event whose slots the member does not read, 400 without an accepted version of the
+/// <see cref="Contract"/>, 404 for an address no event has, 409 for a draft. The token is answered first — its policy is a
+/// middleware —, then the version, in a filter of the endpoint, then the event.</para>
 /// <para>404 comes before 403, as in the verbs of the back office, and that is meant: a token is made only by whoever holds
 /// <c>EventBookings.View</c> somewhere, so whoever learns from a 403 that an address exists is staff of the bookings, and the address
 /// of a published event is on the site anyway (the review of #228, point 7).</para>
@@ -59,6 +60,20 @@ public static class BookingsExport
     /// <summary>What a program reads in the problem of a draft, besides its status.</summary>
     public const string DraftCode = "draft";
 
+    /// <summary>
+    /// The version of the contract (Carmine's point 9 on #228): in a header of its own, because the gate manager is a program
+    /// released on its own, and breaking it in silence is what the version prevents. Checked by the core's
+    /// <see cref="ContractVersion"/> (E10g), as the tours' agent is. Within a version the hub only adds; a change that would break
+    /// the program is version 2, accepted beside 1 for at least one release. <c>docs/events-bookings-export.md</c> is what a writer
+    /// of the program reads.
+    /// </summary>
+    public static readonly ContractVersion Contract = new(
+        "Hub-Bookings-Contract",
+        current: 1,
+        accepted: [1],
+        titleKey: "events:errors.bookingsContract",
+        code: "bookingsContract");
+
     public static IEndpointRouteBuilder MapBookingsExport(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -67,11 +82,13 @@ public static class BookingsExport
             .WithName("EventsBookingsExport")
             .WithTags("EventsExport")
             .Produces<IReadOnlyList<BookingExportDto>>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .RequireAuthorization(PersonalTokenPolicy.For(Audience));
+            .RequireAuthorization(PersonalTokenPolicy.For(Audience))
+            .AddEndpointFilter(Contract.RequireAsync);
 
         return app;
     }

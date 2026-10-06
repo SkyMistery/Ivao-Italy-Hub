@@ -369,6 +369,7 @@
     "slotOutsideWindow": "This slot falls outside its event: its time at the airport of the event is more than six hours before the event starts or after it ends.",
     "slotTwice": "The event already has a slot with this callsign at this off block time.",
     "slotNotPublic": "A private slot is not corrected as a flight.",
-    "exportDraft": "This event is a draft: it is exported once it is published."
+    "exportDraft": "This event is a draft: it is exported once it is published.",
+    "bookingsContract": "Say which version of the contract the program speaks, in the Hub-Bookings-Contract header."
   }
 }

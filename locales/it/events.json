@@ -369,6 +369,7 @@
     "slotOutsideWindow": "Questo slot cade fuori dal suo evento: il suo orario allo scalo dell'evento è più di sei ore prima dell'inizio o dopo la fine.",
     "slotTwice": "L'evento ha già uno slot con questo nominativo a questo orario di off block.",
     "slotNotPublic": "Uno slot privato non si corregge come un volo.",
-    "exportDraft": "Questo evento è una bozza: si esporta quando è pubblicato."
+    "exportDraft": "Questo evento è una bozza: si esporta quando è pubblicato.",
+    "bookingsContract": "Indica quale versione del contratto parla il programma, nell'intestazione Hub-Bookings-Contract."
   }
 }

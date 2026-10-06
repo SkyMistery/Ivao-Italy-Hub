@@ -435,11 +435,33 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var gateManager = await ProgramAsync(await TokenAsync(coordinator, BookingsExport.Audience, token));
         var uri = ExportUri("export");
 
-        // A draft is never exported: 409, with a word the program can act on.
+        // No version of the contract, or one the hub does not speak: 400 with the accepted ones (point 9 on #228), before the event
+        // is read at all.
+        foreach (var version in new[] { null, "2", "one" })
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (version is not null)
+            {
+                request.Headers.Add(BookingsExport.Contract.Header, version);
+            }
+
+            using var refused = await gateManager.SendAsync(request, token);
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            var problem = await refused.Content.ReadFromJsonAsync<JsonElement>(token);
+            Assert.Equal(BookingsExport.Contract.Code, problem.GetProperty("code").GetString());
+            Assert.Equal(1, problem.GetProperty("current").GetInt32());
+            Assert.Equal([1], problem.GetProperty("accepted").EnumerateArray().Select(entry => entry.GetInt32()));
+            Assert.NotEqual(BookingsExport.Contract.TitleKey, problem.GetProperty("title").GetString());
+        }
+
+        gateManager.DefaultRequestHeaders.Add(BookingsExport.Contract.Header, "1");
+
+        // A draft is never exported: 409, with a word the program can act on; the answer says the version the hub spoke.
         using (var draft = await gateManager.GetAsync(uri, token))
         {
             Assert.Equal(HttpStatusCode.Conflict, draft.StatusCode);
             Assert.Equal(BookingsExport.DraftCode, (await draft.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("code").GetString());
+            Assert.Equal(["1"], draft.Headers.GetValues(BookingsExport.Contract.Header));
         }
 
         await OkAsync(
@@ -484,7 +506,8 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             privateOne.GetProperty("destination_icao").ValueKind,
             privateOne.GetProperty("gate").ValueKind));
 
-        // Without a token, or with the cookie of the back office: 401. With a token of another audience: 403.
+        // Without a token, or with the cookie of the back office: 401. With a token of another audience: 403. The token is answered
+        // before the version, which none of these says.
         using (var anonymous = _factory.CreateApiClient())
         using (var nobody = await anonymous.GetAsync(uri, token))
         {
