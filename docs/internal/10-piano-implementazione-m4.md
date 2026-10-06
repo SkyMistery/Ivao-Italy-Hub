@@ -1171,6 +1171,17 @@ invariata; la striscia con e senza scali (vitest). Nessuna migrazione.
   `http://127.0.0.1:5125` con `ivaohub_e2e_e4b` nuovo, dietro il lock di Mailpit: la striscia della divisione su ogni pagina pubblica
   del banco ha chiesto `networkStats` 47 volte, tutte 200, dalla fixture; le regole di `core-guard` rifatte in PowerShell sul branch
   contro la sua base con `main` (`584eb72`): nessun file del maintainer, dodici file del nucleo con la nota nuova, PASS.
+- **Il merge di `main`** (chiesto dalla sessione che coordina, 6 ottobre 2026): unita la #223 (E4) alle 17:03 UTC, dopo l'apertura di
+  questa PR, la PR era in conflitto con `main` su `HANDOFF-M4.md`, dove tutte e due le fasi avevano scritto in cima, e la sua CI non
+  poteva finire. `origin/main` (`77a2031`, con E4 e la #225, la `0.6.5`) è entrato con un merge (`b6fcd7c`), mai un rebase. **Un
+  conflitto solo**, `HANDOFF-M4.md`: l'intestazione di E4b con E4, la #222 e la #225 fra le unite e il prossimo passo di E4 aggiornato;
+  «Che cosa ha lasciato E4b» in cima e quello di E4 sotto, intero. `10` si è unito da solo (la «Com'è andata» di E4, poi E4b, poi E5).
+  La nota dice ora che quella di E4 è su `main`, «decisa». Poi di nuovo: `dotnet build` 0 avvisi; unità **1117/1117** (le 2 di E4 in
+  più); `NetworkStatsAirportsTests` con `DataBlockEndToEndTests` **10/10** (il conteggio dei blocchi è quello di E4); `pnpm lint`,
+  `typecheck` e `format:check` verdi, `i18n:check` (807 chiavi), `pnpm test` **629/629**, `pnpm gen:api` senza differenze; `core-guard`
+  contro la nuova base (`77a2031`): gli stessi dodici file del nucleo e la nota, PASS. **Non rifatti dopo il merge**: l'integrazione
+  intera, lo smoke ed `e2e:full` — il merge ha portato il codice di E4 e della #225 e nessun file di questa fase è cambiato; l'integrazione
+  intera la rifà la CI.
 - **Non verificato**: la CI (la dice la PR); il whazzup di una sera di punta (circa 4 MB in proporzione, non misurato: un martedì
   pomeriggio); i limiti di chiamate di IVAO (il design §9.1 li lascia a una misura, e questa fase non fa più chiamate di prima); la
   striscia con gli scali su una pagina vera, nel browser: non la monta ancora niente, la monta la fase del modulo (nota §6);

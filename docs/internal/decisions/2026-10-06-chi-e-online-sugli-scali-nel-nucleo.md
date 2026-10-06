@@ -2,7 +2,8 @@
 
 **Data:** 6 ottobre 2026 — fase E4b di M4, PR del nucleo #226
 **Stato:** **scelta tecnica**, per dare forma nel codice a una decisione già presa: E4b è la (b) della nota
-`2026-10-06-chi-e-online-sugli-scali-di-un-evento` (fase E4, #223), che **Carmine ha scelto** il 6 ottobre 2026 ([risposte sulla
+`2026-10-06-chi-e-online-sugli-scali-di-un-evento` (fase E4, #223, unita su `main` lo stesso giorno con lo stato «decisa»), che
+**Carmine ha scelto** il 6 ottobre 2026 ([risposte sulla
 #223, punto 2][a223], pubblicate dal master su sua istruzione): «(b), a small core phase E4b, in its own pull request with its note,
 and mounted by the first module phase after it». Nessuna domanda nuova. **Uno scostamento** dalla lettera di quella nota (§3, punto
 2), deciso dalla misura che la nota stessa chiedeva (§2 qui sotto): **un whazzup al minuto per tutti**, non uno per insieme di scali.
