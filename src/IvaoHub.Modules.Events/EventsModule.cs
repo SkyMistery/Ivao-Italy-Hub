@@ -22,7 +22,8 @@ namespace IvaoHub.Modules.Events;
 /// switches its kind presets, the description, the banner — its airports with their capacity, and cancelling and deleting it;
 /// E3b its life: publishing it, its calendar entry, its line in the search and its files, and the job that projects it again when
 /// it is seen and when it ends; E4 its public side — the page of an event, the list of <c>/events</c> as the block
-/// <c>events.eventList</c> — and the routes the flight operations write.
+/// <c>events.eventList</c> — and the routes the flight operations write; E5 its public slots — loaded from a table, with their
+/// rotations, listed and corrected in the back office and listed on its page.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -91,6 +92,10 @@ public sealed class EventsModule : ModuleBase
         // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.
         services.AddScoped<PublicEvents>();
         services.AddScoped<IDataBlockProvider, EventListProvider>();
+
+        // Its public slots (E5): a table loaded all or nothing, and what a correction of one slot asks of the others.
+        services.AddScoped<SlotLoading>();
+        services.AddScoped<SlotSaving>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -98,6 +103,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventEndpoints();
         endpoints.MapEventAirportEndpoints();
         endpoints.MapEventRouteEndpoints();
+        endpoints.MapEventSlotEndpoints();
         endpoints.MapPublicEventEndpoints();
     }
 }

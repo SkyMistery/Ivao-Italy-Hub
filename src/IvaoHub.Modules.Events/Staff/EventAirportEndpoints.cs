@@ -100,11 +100,13 @@ internal static class AirportMapper
 /// The airports of an event and their capacity (design M4 §1.3, §7.2, E3a): a resource of the CRUD engine filtered by
 /// <c>filter[eventId]</c>, read with <c>Events.View</c> and written with <c>Events.Edit</c> on the event's care — the tab of the
 /// event's page is a generated list, and each airport a generated form. No hand written verb; the last airport of a published
-/// event with slots is not deleted (E3b).
+/// event with slots is not deleted (E3b), nor one some slots are at, whose code does not change either (E5).
 /// </summary>
 public static class EventAirportEndpoints
 {
     public const string Pattern = "/api/events/airports";
+
+    private const string AirportHasSlotsKey = "events:errors.airportHasSlots";
 
     public static IEndpointRouteBuilder MapEventAirportEndpoints(this IEndpointRouteBuilder app)
     {
@@ -136,22 +138,30 @@ public static class EventAirportEndpoints
 
     /// <summary>
     /// The last airport of a published event with slots stays (E3b): its slots are at its airports, and a published event stays one
-    /// that could be published (<see cref="EventPublishing"/>).
+    /// that could be published (<see cref="EventPublishing"/>). An airport some slots are at stays too (E5): they go first.
     /// </summary>
     private static async Task DeleteAsync(EventAirport airport, IServiceProvider services, CancellationToken cancellationToken)
     {
+        var database = services.GetRequiredService<EventsDbContext>();
+
+        if (await HasSlotsAsync(database, airport.EventId, airport.Icao, cancellationToken))
+        {
+            throw new DomainRefusalException("id", AirportHasSlotsKey);
+        }
+
         if (await services.GetRequiredService<EventChildren>().EventAsync(airport.EventId, cancellationToken) is { Status: PublishStatus.Published } parent
             && await services.GetRequiredService<EventPublishing>().LacksAirportsAsync(parent, leaving: airport.Id, cancellationToken))
         {
             throw new DomainRefusalException("id", EventPublishing.SlotsNeedAirportsKey);
         }
 
-        services.GetRequiredService<EventsDbContext>().Airports.Remove(airport);
+        database.Airports.Remove(airport);
     }
 
     /// <summary>
     /// An airport belongs to an event about its own airports — one about the whole division has none (§1.2) —, is one the core
-    /// knows, and is in its event once.
+    /// knows, and is in its event once. One some slots are at keeps its code (E5): the slots would be at an airport the event no
+    /// longer has.
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> SaveAsync(EventAirport airport, CrudSaving saving)
     {
@@ -161,6 +171,14 @@ public static class EventAirportEndpoints
         if (await children.EventAsync(airport.EventId, saving.CancellationToken) is not { } parent)
         {
             return EventChildren.Refusal("eventId", "events:errors.eventUnknown");
+        }
+
+        if (!saving.IsNew
+            && (string?)database.Entry(airport).Property(nameof(EventAirport.Icao)).OriginalValue is { } before
+            && !string.Equals(before, airport.Icao, StringComparison.Ordinal)
+            && await HasSlotsAsync(database, airport.EventId, before, saving.CancellationToken))
+        {
+            return EventChildren.Refusal("icao", AirportHasSlotsKey);
         }
 
         if (parent.WholeDivision)
@@ -183,4 +201,8 @@ public static class EventAirportEndpoints
 
         return null;
     }
+
+    /// <summary>Whether some slot of the event is at this airport.</summary>
+    private static Task<bool> HasSlotsAsync(EventsDbContext database, long eventId, string icao, CancellationToken cancellationToken) =>
+        database.Slots.AnyAsync(slot => slot.EventId == eventId && slot.EventAirportIcao == icao, cancellationToken);
 }
