@@ -18,6 +18,9 @@ public sealed class IvaoApiClient(
     IMemoryCache cache,
     ILogger<IvaoApiClient> logger) : IIvaoApiClient
 {
+    /// <summary>The one reading of who is connected the client keeps, whatever the airspace asking.</summary>
+    private const string NetworkPictureKey = "ivao-api:network-picture";
+
     public async Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
         string countryId,
         CancellationToken cancellationToken = default)
@@ -396,21 +399,23 @@ public sealed class IvaoApiClient(
     {
         ArgumentNullException.ThrowIfNull(airspace);
 
-        var key = $"ivao-api:network-status:{airspace.CacheKey}";
-        if (cache.TryGetValue(key, out IvaoNetworkStatus? cached) && cached is not null)
+        // One reading a minute for every airspace that asks, never one per airspace (E4b): a screen
+        // names the airports it wants counted, so the airspaces are as many as anybody cares to
+        // invent, and each one of them must not cost a download of the whole picture. The reading
+        // counts each airspace once, and its answers go with it.
+        if (!cache.TryGetValue(NetworkPictureKey, out IvaoNetworkPicture? picture) || picture is null)
         {
-            return cached;
+            // No token: the picture of who is connected is the public one, and an installation that
+            // has not been given client credentials must still be able to draw it.
+            var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
+            picture = payload is { } root ? IvaoWhazzup.Read(root) : IvaoNetworkPicture.Unknown;
+
+            // A failure is cached too, and for the same minute. Without that, a network that is down
+            // turns every reader of the page into another call to a network that is down.
+            cache.Set(NetworkPictureKey, picture, IvaoWhazzup.Freshness);
         }
 
-        // No token: the picture of who is connected is the public one, and an installation that
-        // has not been given client credentials must still be able to draw it.
-        var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
-        var status = payload is { } root ? IvaoWhazzup.Read(root, airspace) : IvaoNetworkStatus.Unknown;
-
-        // A failure is cached too, and for the same minute. Without that, a network that is down
-        // turns every reader of the page into another call to a network that is down.
-        cache.Set(key, status, IvaoWhazzup.Freshness);
-        return status;
+        return picture.For(airspace);
     }
 
     public async Task<IReadOnlyList<AtcBookingDto>?> GetDailyAtcBookingsAsync(

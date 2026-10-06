@@ -2,11 +2,13 @@ namespace IvaoHub.Core.Ivao;
 
 /// <summary>
 /// The airspace of the division, as the snapshot of the reference data describes it: the centres
-/// and the airports that make a connection "one of ours".
+/// and the airports that make a connection "one of ours" — or, since M4 (E4b), the airports a
+/// screen asks about, an event's on its day (<see cref="OfAirports"/>).
 /// <para>It exists as one value rather than as two loose sets because the client caches an answer
 /// against it, and a key recomputed by joining a few hundred identifiers on every page view would
 /// cost more than the call it is saving. <see cref="CacheKey"/> is built once, when the directory
-/// builds the airspace, and lives exactly as long as the sets do.</para>
+/// builds the airspace, and lives exactly as long as the sets do; the airports a screen asks about
+/// are a handful, and their key is built with them.</para>
 /// </summary>
 public sealed class IvaoAirspace
 {
@@ -19,8 +21,29 @@ public sealed class IvaoAirspace
         Airports = airports;
 
         // The centres alone, with the two counts: a division has a handful of them, and an airport
-        // never appears without the snapshot that brought its centre.
-        CacheKey = $"{centers.Count}/{airports.Count}/{string.Join(',', centers.Order(StringComparer.Ordinal))}";
+        // never appears without the snapshot that brought its centre. Without a centre — the airports
+        // a screen asks about — the airports themselves: two events with as many airports and no
+        // centre are two airspaces, and the key is what keeps their answers apart (E4b).
+        var named = centers.Count > 0 ? centers : airports;
+        CacheKey = $"{centers.Count}/{airports.Count}/{string.Join(',', named.Order(StringComparer.Ordinal))}";
+    }
+
+    /// <summary>
+    /// The airports a screen asks about and nothing else (E4b): no centre, so a controller counts only
+    /// on one of them, and a sector above them does not. Written as the snapshot writes them — trimmed,
+    /// upper case, once each —, and only codes as wide as an airport the snapshot can hold: a longer one
+    /// names no airport anybody flies to, and would only lengthen the key.
+    /// </summary>
+    public static IvaoAirspace OfAirports(IEnumerable<string> airports)
+    {
+        ArgumentNullException.ThrowIfNull(airports);
+
+        var codes = airports
+            .Select(airport => airport.Trim().ToUpperInvariant())
+            .Where(airport => airport.Length is > 0 and <= IvaoAtcPosition.MaxAirportLength)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return new IvaoAirspace(new HashSet<string>(StringComparer.OrdinalIgnoreCase), codes);
     }
 
     /// <summary>ICAO of the FIRs, upper case.</summary>
