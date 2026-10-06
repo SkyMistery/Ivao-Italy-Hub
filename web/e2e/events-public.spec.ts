@@ -26,7 +26,12 @@ import { englishCommon } from './locales';
 const words = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/events.json', import.meta.url)), 'utf8'),
 ) as {
-  events: { options: { state: Record<string, string>; organizer: Record<string, string> }; fields: { airports: string } };
+  events: {
+    options: {
+      state: { BookingOpen: string; Cancelled: string; Ended: string };
+      organizer: { OtherDivision: string };
+    };
+  };
   routes: { fields: { route: string } };
   public: {
     title: string;
@@ -98,7 +103,9 @@ function event(overrides: Record<string, unknown> = {}) {
               id: 'b_text',
               type: 'text',
               version: 1,
-              props: { markdown: { en: 'Bring your best landing.', it: 'Porta il tuo atterraggio migliore.' } },
+              props: {
+                markdown: { en: 'Bring your best landing.', it: 'Porta il tuo atterraggio migliore.' },
+              },
             },
           ],
         },
@@ -130,7 +137,11 @@ function event(overrides: Record<string, unknown> = {}) {
 }
 
 /** The anonymous shell, with the division's word for the kind and the events' two reads answered on top of it. */
-async function stubTheEvents(page: Page, cards: unknown[], pages: Record<string, unknown> = {}): Promise<void> {
+async function stubTheEvents(
+  page: Page,
+  cards: unknown[],
+  pages: Record<string, unknown> = {},
+): Promise<void> {
   await stubTheApi(page);
   await page.route('**/api/me', (route) => route.fulfill(json(visitorBootstrap)));
   await stubTheBlockData(page, 'events.eventList', { items: cards });
@@ -181,7 +192,9 @@ test('a visitor reads the events to come as cards, each leading to its page, and
   );
 });
 
-test('the address narrows the cards to an airport and a kind, and says when nothing is left', async ({ page }) => {
+test('the address narrows the cards to an airport and a kind, and says when nothing is left', async ({
+  page,
+}) => {
   await stubTheEvents(page, [evening, another, everywhere]);
 
   const cards = page.locator('article');
@@ -210,7 +223,9 @@ test('with nothing to come, /events says so', async ({ page }) => {
   await expect(page.getByText(words.public.none)).toBeVisible();
 });
 
-test('the page of an event says when, who organises it, where, its routes and its description', async ({ page }) => {
+test('the page of an event says when, who organises it, where, its routes and its description', async ({
+  page,
+}) => {
   await stubTheEvents(page, [], { 'evt-test-smoke-page': event() });
 
   await page.goto('/events/evt-test-smoke-page');
@@ -306,5 +321,8 @@ test('on a page of the site the block draws the same cards, and the way to all o
     'href',
     '/events/evt-test-smoke-1',
   );
-  await expect(page.getByRole('link', { name: words.blocks.eventList.all })).toHaveAttribute('href', '/events');
+  await expect(page.getByRole('link', { name: words.blocks.eventList.all })).toHaveAttribute(
+    'href',
+    '/events',
+  );
 });

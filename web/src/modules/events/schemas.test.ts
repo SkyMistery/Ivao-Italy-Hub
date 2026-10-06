@@ -115,7 +115,9 @@ test('a route comes back into its form in every language of the division, the re
 });
 
 test('the address of /events keeps the kind, the airport and the calendar, and drops a view that does not exist', () => {
-  expect(eventsPublicSearchSchema.parse({ kind: 'rfo', airport: 'XEA1', view: 'week', on: '2026-11-01' })).toEqual({
+  expect(
+    eventsPublicSearchSchema.parse({ kind: 'rfo', airport: 'XEA1', view: 'week', on: '2026-11-01' }),
+  ).toEqual({
     kind: 'rfo',
     airport: 'XEA1',
     view: 'week',
