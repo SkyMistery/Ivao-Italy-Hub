@@ -3,10 +3,12 @@ import { z } from 'zod';
 import { NEW_ROW_VERSION } from '../../shared/api/rowVersion';
 import { localized, type ChoiceOption } from '../../shared/forms';
 import { listSearchSchema } from '../../shared/list';
+import { CALENDAR_SCREEN_VIEWS } from '../../shared/ui';
 
 /**
- * The forms of the events (M4: the settings of E2, the event of E3a), as zod schemas: types and what is required. The rules —
- * a kind the calendar has, the ranges, an airport the hub knows — are the server's (design M0 §7.5).
+ * The forms of the events (M4: the settings of E2, the event of E3a, its routes and the filters of `/events` of E4), as zod
+ * schemas: types and what is required. The rules — a kind the calendar has, the ranges, an airport the hub knows — are the
+ * server's (design M0 §7.5).
  *
  * A kind of event is chosen, never typed: it is a word of the division's calendar, which the bootstrap carries, so this
  * module writes no kind of its own (note 2026-09-29-i-tipi-di-evento).
@@ -94,9 +96,9 @@ export const eventsSearchSchema = listSearchSchema.extend({
 
 export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
-/** The tabs of an event's page: its settings, its description, its airports (design M4 §7.2). */
+/** The tabs of an event's page: its settings, its description, its airports, its routes (design M4 §7.2). */
 export const eventEditorSearchSchema = z.object({
-  tab: z.enum(['settings', 'description', 'airports']).optional(),
+  tab: z.enum(['settings', 'description', 'airports', 'routes']).optional(),
 });
 
 export type EventEditorTab = NonNullable<z.infer<typeof eventEditorSearchSchema>['tab']>;
@@ -201,3 +203,47 @@ export const cancelSchema = z.object({
 });
 
 export type CancelFormValues = z.output<typeof cancelSchema>;
+
+// ---- the routes of an event (E4) ---------------------------------------------------------------------
+
+/**
+ * A route of an event (§1.4), which the flight operations write: the two airports, the route to file, and the remarks — empty in
+ * every language is none; written in one only is the server's to refuse, because the page shows them to everybody.
+ */
+export const routeSchema = z.object({
+  eventId: z.number().int().meta({ hidden: true }),
+  departureIcao: z.string(),
+  arrivalIcao: z.string(),
+  route: z.string().meta({ multiline: true }),
+  remarks: localized().meta({ localized: true, multiline: true }),
+  rowVersion: z.string().meta({ hidden: true }),
+});
+
+export type RouteFormValues = z.output<typeof routeSchema>;
+
+export function emptyRoute(eventId: number, locales: readonly string[]): RouteFormValues {
+  return {
+    eventId,
+    departureIcao: '',
+    arrivalIcao: '',
+    route: '',
+    remarks: Object.fromEntries(locales.map((locale) => [locale, ''])),
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+// ---- the public side (E4) ----------------------------------------------------------------------------
+
+/**
+ * The address of `/events` (design M4 §7.1): the kind and the airport the cards are narrowed to, and how the calendar under
+ * them is drawn — the view and the day it is drawn around, as the public calendar keeps them. Left out, every event of every
+ * kind, the month of today. `catch` on each, as `/calendar` does: an address edited by hand shows the events, not an error.
+ */
+export const eventsPublicSearchSchema = z.object({
+  kind: z.string().optional().catch(undefined),
+  airport: z.string().optional().catch(undefined),
+  view: z.enum(CALENDAR_SCREEN_VIEWS).optional().catch(undefined),
+  on: z.string().optional().catch(undefined),
+});
+
+export type EventsPublicSearch = z.output<typeof eventsPublicSearchSchema>;

@@ -13,6 +13,7 @@
     "saved": "Evento salvato.",
     "readOnly": "Puoi leggere questo evento: cambiarlo spetta a chi scrive gli eventi.",
     "cancelled": "Annullato il {{date}}.",
+    "publicPage": "La sua pagina sul sito",
     "filters": {
       "view": "Mostra",
       "anyView": "Tutti gli eventi"
@@ -27,7 +28,8 @@
     "tabs": {
       "settings": "Impostazioni",
       "description": "Descrizione",
-      "airports": "Scali"
+      "airports": "Scali",
+      "routes": "Rotte"
     },
     "actions": {
       "publish": "Pubblica",
@@ -38,7 +40,7 @@
     },
     "delete": {
       "title": "Eliminare questo evento?",
-      "description": "L'evento e i suoi scali si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
+      "description": "L'evento, i suoi scali e le sue rotte si eliminano per sempre. Un evento a cui qualcuno ha partecipato non si elimina: si annulla."
     },
     "body": {
       "save": "Salva la descrizione",
@@ -126,6 +128,64 @@
     "delete": {
       "title": "Eliminare questo scalo?",
       "description": "Lo scalo esce dall'evento."
+    }
+  },
+  "routes": {
+    "title": "Rotte",
+    "create": "Nuova rotta",
+    "edit": "Rotta",
+    "fields": {
+      "departureIcao": "Da",
+      "arrivalIcao": "A",
+      "route": "Rotta",
+      "remarks": "Note"
+    },
+    "hints": {
+      "departureIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "arrivalIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "route": "La rotta da inserire, come la scrive un pilota nel piano di volo.",
+      "remarks": "Quello che un pilota deve sapere. La pagina dell'evento lo mostra a tutti: scritto in una lingua, si scrive in tutte le lingue della divisione. Lascialo vuoto se non serve."
+    },
+    "delete": {
+      "title": "Eliminare questa rotta?",
+      "description": "La rotta esce dall'evento e dalla sua pagina."
+    }
+  },
+  "public": {
+    "title": "Eventi",
+    "description": "Gli eventi della divisione ancora da venire e quelli in corso, in UTC e nell'ora della divisione.",
+    "none": "Per ora nessun evento in arrivo.",
+    "noneHere": "Nessun evento di questo tipo su questo scalo.",
+    "filters": {
+      "kind": "Tipo",
+      "anyKind": "Tutti i tipi",
+      "airport": "Scalo",
+      "anyAirport": "Tutti gli scali"
+    },
+    "calendar": "Nel calendario",
+    "calendarEmpty": "Nessun evento in questo tratto del calendario.",
+    "back": "Tutti gli eventi",
+    "backOffice": "Aprilo nel back office",
+    "staffOnly": "Questa pagina la vede solo lo staff degli eventi: ora non la vede nessun altro, perché l'evento non è ancora pubblicato, non è ancora visibile o è concluso.",
+    "when": "Quando",
+    "wholeDivision": "Tutti gli aeroporti della divisione",
+    "organizerPage": "La loro pagina",
+    "cancelled": "Questo evento è annullato.",
+    "routes": "Rotte"
+  },
+  "blocks": {
+    "eventList": {
+      "label": "Eventi",
+      "all": "Tutti gli eventi",
+      "fields": {
+        "kinds": "Tipi",
+        "kinds.kind": "Tipo",
+        "limit": "Quanti al massimo"
+      },
+      "hints": {
+        "kinds": "Le parole del calendario, come le prende il blocco del calendario. Nessuno, tutti i tipi.",
+        "limit": "Zero mostra tutti gli eventi in arrivo."
+      }
     }
   },
   "settings": {

@@ -13,6 +13,7 @@
     "saved": "Event saved.",
     "readOnly": "You can read this event: changing it is for whoever writes the events.",
     "cancelled": "Cancelled on {{date}}.",
+    "publicPage": "Its page on the site",
     "filters": {
       "view": "Show",
       "anyView": "Every event"
@@ -27,7 +28,8 @@
     "tabs": {
       "settings": "Settings",
       "description": "Description",
-      "airports": "Airports"
+      "airports": "Airports",
+      "routes": "Routes"
     },
     "actions": {
       "publish": "Publish",
@@ -38,7 +40,7 @@
     },
     "delete": {
       "title": "Delete this event?",
-      "description": "The event and its airports are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
+      "description": "The event, its airports and its routes are deleted for good. An event somebody took part in cannot be deleted: cancel it instead."
     },
     "body": {
       "save": "Save the description",
@@ -126,6 +128,64 @@
     "delete": {
       "title": "Delete this airport?",
       "description": "The airport is taken out of the event."
+    }
+  },
+  "routes": {
+    "title": "Routes",
+    "create": "New route",
+    "edit": "Route",
+    "fields": {
+      "departureIcao": "From",
+      "arrivalIcao": "To",
+      "route": "Route",
+      "remarks": "Remarks"
+    },
+    "hints": {
+      "departureIcao": "The ICAO code of an airport the hub knows.",
+      "arrivalIcao": "The ICAO code of an airport the hub knows.",
+      "route": "The route to file, as a pilot writes it in the flight plan.",
+      "remarks": "What a pilot should know about it. The page of the event shows it to everybody: written in one language, it is written in every language of the division. Leave it empty for none."
+    },
+    "delete": {
+      "title": "Delete this route?",
+      "description": "The route is taken out of the event and off its page."
+    }
+  },
+  "public": {
+    "title": "Events",
+    "description": "The events of the division still to come and the ones in progress, in UTC and in the division's own time.",
+    "none": "No event to come for now.",
+    "noneHere": "No event of this kind at this airport.",
+    "filters": {
+      "kind": "Kind",
+      "anyKind": "Every kind",
+      "airport": "Airport",
+      "anyAirport": "Every airport"
+    },
+    "calendar": "In the calendar",
+    "calendarEmpty": "No event in this stretch of the calendar.",
+    "back": "All the events",
+    "backOffice": "Open it in the back office",
+    "staffOnly": "Only the staff of the events sees this page: nobody else does now, because the event is not published yet, not seen yet or over.",
+    "when": "When",
+    "wholeDivision": "Every airport of the division",
+    "organizerPage": "Their page",
+    "cancelled": "This event is cancelled.",
+    "routes": "Routes"
+  },
+  "blocks": {
+    "eventList": {
+      "label": "Events",
+      "all": "All the events",
+      "fields": {
+        "kinds": "Kinds",
+        "kinds.kind": "Kind",
+        "limit": "How many at most"
+      },
+      "hints": {
+        "kinds": "The words of the calendar, as the calendar's block takes them. None, every kind.",
+        "limit": "Zero shows every event to come."
+      }
     }
   },
   "settings": {

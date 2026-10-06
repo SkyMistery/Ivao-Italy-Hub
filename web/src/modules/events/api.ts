@@ -12,13 +12,15 @@ import type {
   EventsSearch,
   EventsSettings,
   KindPreset,
+  RouteFormValues,
   SettingsFormValues,
 } from './schemas';
 
 /**
- * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events and
- * their airports through the CRUD engine, and the three endpoints written by hand beside it — cancelling and the presets of
- * the kinds (E3a), publishing (E3b).
+ * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events, their
+ * airports and their routes through the CRUD engine, and the three endpoints written by hand beside it — cancelling and the
+ * presets of the kinds (E3a), publishing (E3b); and the page of an event, the one read of the site (E4). The list of `/events`
+ * is the block `events.eventList`, read through the endpoint every block is read through.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -27,10 +29,16 @@ export const MODULE_KEY = 'events';
 const settingsKey = ['events', 'settings'] as const;
 const eventsKey = ['events', 'events'] as const;
 const airportsKey = ['events', 'airports'] as const;
+const routesKey = ['events', 'routes'] as const;
+const publicKey = ['events', 'public'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
 export type EventDetailDto = components['schemas']['EventDetailDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
+export type EventRouteDto = components['schemas']['EventRouteDto'];
+export type PublicEventDto = components['schemas']['PublicEventDto'];
+export type PublicEventRouteDto = components['schemas']['PublicEventRouteDto'];
+export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto'];
 type EventWriteDto = components['schemas']['EventWriteDto'];
 
 export function settingsQuery() {
@@ -299,6 +307,97 @@ export function useDeleteAirport() {
       unwrapEmpty(await api.DELETE('/api/events/airports/{id}', { params: { path: { id: String(id) } } })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: airportsKey });
+    },
+  });
+}
+
+// ---- the routes of an event (E4) -------------------------------------------------------------------
+
+/** The routes of an event, by their airports: an event has a handful, never pages of them. */
+export function routesQuery(eventId: number, search: ListSearch = allOfAnEvent) {
+  return queryOptions({
+    queryKey: [...routesKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/routes', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+export function routeQuery(id: number) {
+  return queryOptions({
+    queryKey: [...routesKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventRouteDto> =>
+      unwrap(await api.GET('/api/events/routes/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function routeToFormValues(route: EventRouteDto, locales: readonly string[]): RouteFormValues {
+  return {
+    eventId: route.eventId,
+    departureIcao: route.departureIcao,
+    arrivalIcao: route.arrivalIcao,
+    route: route.route,
+    remarks: Object.fromEntries(locales.map((locale) => [locale, route.remarks?.[locale] ?? ''])),
+    rowVersion: route.rowVersion,
+  };
+}
+
+/** Saves a route; remarks written in no language travel as none. The page of the event shows the routes, so it is read again. */
+export function useSaveRoute(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: RouteFormValues): Promise<EventRouteDto> => {
+      const body = {
+        eventId: values.eventId,
+        departureIcao: values.departureIcao.trim().toUpperCase(),
+        arrivalIcao: values.arrivalIcao.trim().toUpperCase(),
+        route: values.route.trim(),
+        remarks: Object.values(values.remarks).some((text) => text.trim() !== '') ? values.remarks : null,
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/routes', { body }))
+        : unwrap(await api.PUT('/api/events/routes/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: routesKey });
+      await queryClient.invalidateQueries({ queryKey: publicKey });
+    },
+  });
+}
+
+export function useDeleteRoute() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/routes/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: routesKey });
+      void queryClient.invalidateQueries({ queryKey: publicKey });
+    },
+  });
+}
+
+// ---- the public side (E4) --------------------------------------------------------------------------
+
+/**
+ * The page of an event (§7.1): what whoever is reading may see of it, or null — not seen, or for the members and read by a
+ * visitor. The staff of the events read it in every state, and `seen` tells them nobody else does.
+ */
+export function publicEventQuery(slug: string) {
+  return queryOptions({
+    queryKey: [...publicKey, 'page', slug] as const,
+    queryFn: async (): Promise<PublicEventDto | null> => {
+      const answer = await api.GET('/api/events/public/{slug}', { params: { path: { slug } } });
+
+      return answer.response.status === 404 ? null : unwrap(answer);
     },
   });
 }

@@ -199,6 +199,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/public/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsPublicEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -1369,6 +1385,38 @@ export interface paths {
         put: operations["EventAirportsUpdate"];
         post?: never;
         delete: operations["EventAirportsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventRoutesList"];
+        put?: never;
+        post: operations["EventRoutesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/routes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventRoutesGet"];
+        put: operations["EventRoutesUpdate"];
+        post?: never;
+        delete: operations["EventRoutesDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4373,6 +4421,36 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description A route of an event as its list and its form show it (design M4 §1.4). */
+        EventRouteDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            departureIcao: string;
+            arrivalIcao: string;
+            route: string;
+            remarks: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on a route of an event. The event is chosen when it is created and never changes; the care is the
+         *     event's, taken before the permission is asked. No remarks is none.
+         */
+        EventRouteWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            departureIcao: string;
+            arrivalIcao: string;
+            route: string;
+            remarks: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /**
          * @description The state of an event as it is seen (design M4 §2.1). Never stored: read off its dates, its status and its cancellation.
          * @enum {unknown}
@@ -5648,6 +5726,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfEventRouteDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventRouteDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfExamRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ExamRowDto"][];
@@ -6424,6 +6525,51 @@ export interface components {
             category: components["schemas"]["ErrorCategory"];
             /** Format: int32 */
             yearlyMax: null | number;
+        };
+        /** @description An airport as the page of an event names it: its ICAO, and the name the core knows — none for one it no longer knows. */
+        PublicEventAirportDto: {
+            icao: string;
+            name: null | string;
+        };
+        /**
+         * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
+         *     kind, who organises it, the airports, the routes and the description; a cancelled one with its note.
+         *     Seen is false only to the staff of the events, who read the page of an event in every state — a draft, one not seen
+         *     yet, one that ended —, and the page tells them that nobody else does.
+         */
+        PublicEventDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            kind: string;
+            organizer: components["schemas"]["EventOrganizer"];
+            externalUrl: null | string;
+            title: components["schemas"]["LocalizedOfstring"];
+            summary: components["schemas"]["LocalizedOfstring"];
+            body: components["schemas"]["JsonNode"];
+            /** Format: int64 */
+            bannerMediaId: null | number;
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            state: components["schemas"]["EventStateKind"];
+            seen: boolean;
+            wholeDivision: boolean;
+            airports: components["schemas"]["PublicEventAirportDto"][];
+            routes: components["schemas"]["PublicEventRouteDto"][];
+            /** Format: date-time */
+            cancelledAt: null | string;
+            cancellationNote: null | components["schemas"]["LocalizedOfstring"];
+        };
+        /** @description A route of an event as its page shows it (design M4 §1.4): the two airports, the route to file, the remarks. */
+        PublicEventRouteDto: {
+            /** Format: int64 */
+            id: number;
+            departure: components["schemas"]["PublicEventAirportDto"];
+            arrival: components["schemas"]["PublicEventAirportDto"];
+            route: string;
+            remarks: null | components["schemas"]["LocalizedOfstring"];
         };
         /**
          * @description An exam as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when, as its
@@ -8601,6 +8747,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["KindPreset"][];
                 };
+            };
+        };
+    };
+    EventsPublicEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEventDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12058,6 +12233,163 @@ export interface operations {
         };
     };
     EventAirportsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventRoutesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventRouteDto"];
+                };
+            };
+        };
+    };
+    EventRoutesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventRouteWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventRouteDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventRoutesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventRouteDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventRoutesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventRouteWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventRouteDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventRoutesDelete: {
         parameters: {
             query?: never;
             header?: never;

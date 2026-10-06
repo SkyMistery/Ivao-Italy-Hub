@@ -33,7 +33,7 @@ import {
   type EventDetailDto,
   type EventListDto,
 } from '../api';
-import { EVENTS_DELETE, EVENTS_EDIT } from '../permissions';
+import { EVENTS_DELETE, EVENTS_EDIT, EVENT_ROUTES_EDIT, EVENT_ROUTES_VIEW } from '../permissions';
 import {
   EVENT_VIEWS,
   cancelSchema,
@@ -51,12 +51,15 @@ import {
 } from '../schemas';
 
 import { AirportsTab } from './airports';
+import { eventHref } from './cards';
+import { RoutesTab } from './routes';
 
 /**
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
- * with the editor of the content as a tour's briefing is, and its airports with their capacity; and what happens to it without
- * its form — publishing it (E3b), cancelling it with a note, deleting one nobody took part in.
+ * with the editor of the content as a tour's briefing is, its airports with their capacity and its routes (E4), and the way to
+ * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, deleting one
+ * nobody took part in.
  *
  * The switches of an event are preset by its kind (§1.12): choosing a kind in the form sets them to what the division's
  * settings say of that kind, and the staff changes them before saving or afterwards. Everything else is the server's answer:
@@ -471,6 +474,12 @@ export function EventEditor() {
             description={read(event.cancellationNote ?? {})}
           />
         )}
+        {event === null ? null : (
+          // The page the site shows (E4): the staff of the events read it in every state, a draft included.
+          <RouterAnchor href={eventHref(event.slug)} className="text-sm underline">
+            {t('events:events.publicPage')}
+          </RouterAnchor>
+        )}
         {event === null ? (
           settings
         ) : (
@@ -517,6 +526,23 @@ export function EventEditor() {
                       ),
                     },
                   }),
+              // The routes are an area of their own (§1.4, E4): whoever reads them — the flight operations, from a grant on the
+              // events department — has the tab, and whoever writes them its button, whether or not they write the event.
+              ...(holdsPermission(bootstrap, EVENT_ROUTES_VIEW, event.ownerDepartment)
+                ? {
+                    routes: {
+                      trigger: t('events:events.tabs.routes'),
+                      content: (
+                        <div className="pt-4">
+                          <RoutesTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_ROUTES_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
             }}
           />
         )}

@@ -46,9 +46,9 @@ test('the gallery shows the whole set of blocks the milestone declares', () => {
   // interactive block of 12 September is the thirtieth; D3 added the three of the personal
   // dashboards; the tours brought the first block of a module, the public errors (M2, T9), and the
   // cards of the tours with it (T10), the queue of the validators (T13b) and what else waits for
-  // their staff (T14b), and the pilot's own tours (T15b); the training brought four (M3, A10b) — losing
-  // one has to be something CI says out loud.
-  expect(registry.blocks).toHaveLength(42);
+  // their staff (T14b), and the pilot's own tours (T15b); the training brought four (M3, A10b), the
+  // events the list of them (M4, E4) — losing one has to be something CI says out loud.
+  expect(registry.blocks).toHaveLength(43);
 });
 
 test('a block registers example props that its own schema accepts', () => {
