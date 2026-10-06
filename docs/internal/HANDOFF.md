@@ -35,7 +35,20 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 2 ottobre 2026, pomeriggio — **la `0.6.0` è sulla prova** (piano 1.29, qui sotto). **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
+**Ultimo aggiornamento:** 6 ottobre 2026 — piano **1.30**: **gli eventi sono pubblici** — E3b (#221: pubblicare, calendario,
+ricerca, file, `events-release`) ed E4 (#223: `/events`, `/events/{slug}`, il blocco `events.eventList`, le rotte del FOD, migrazione
+additiva `AddEventRoutes`), con le regole di «Pubblica», le cinque letture del pubblico, i tipi che un evento sceglie e due letture
+scritte a mano accettate da Carmine; **M4 è a 14 fasi su 29**, più **E4b** (nucleo, nuova: chi è online sugli scali, #226 aperta); il
+prossimo passo del modulo è E5. **Cinque correzioni del nucleo**, `main` alla **0.6.5**: la striscia «In rete adesso» senza l'ora e
+senza «qui» (#219, 0.6.2); **l'inizializzazione sotto un blocco del database** (#218, 0.6.3, issue #203: di due processi partiti
+insieme ne inizializza uno; un blocco non ottenuto non ferma l'avvio); il cartellino della ricerca con la parola del modulo (#222,
+0.6.4); l'anteprima dell'editor che non resta più vuota su una macchina lenta (#225, 0.6.5); A13d del training (#220: il percorso
+senza lo storico; l'Online Day fra i tipi che avvisano resta una configurazione della divisione). ⚠️ **Due trappole nuove**
+(`CONTRIBUTING.md`): niente che non sia una sezione dentro il `@container` di `ContentRenderer`; la pulizia di uno spec e2e va in un
+`afterEach`, perché un `finally` che cancella maschera il timeout del corpo (gli altri `finally { deleteContent }` della suite sono
+da sistemare, lavoro a parte). **Sulla prova gira ancora la `0.6.0`**: la prossima consegna porta tutto questo con una migrazione
+additiva del modulo degli eventi, quindi è una MINOR, la **0.7.0**, che il master alza prima del tag. Prima: **la `0.6.0` è sulla
+prova** (piano 1.29, qui sotto). **M2 è chiusa** (T0–T20c), **e M3 anche** (A0–A12d; A12c fuori; dopo, A13a–A13c
 dalla prova sul banco). **M4: 12 fasi su 29 unite** (E0, E1, E2, E2b, E3a e tutte le fasi del nucleo di M4b, E10a–E10f ed E15a);
 il prossimo passo è **E3b** di `dalberone`, e le 17 fasi che restano sono del modulo e vanno in fila (`HANDOFF-M4.md`). Piano
 **1.28**: **le fasi del nucleo di M4** — il tracker senza VID a pagine (E10a, #210; un tentativo del client IVAO aspetta 20 s, per tutto

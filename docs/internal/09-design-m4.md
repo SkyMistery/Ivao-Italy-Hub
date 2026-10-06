@@ -318,7 +318,10 @@ Lo stato si calcola dalle date (§2.1), come per i tour.
 ### 1.4 Le rotte — `evt_routes`
 
 `event_id`, `departure_icao`, `arrival_icao`, `route` (testo), `remarks`. Area **`EventRoutes`**: le scrive il FOD (c1). È
-l'esempio della nota `autorizzare-su-un-pezzo…`, qui come entità sua.
+l'esempio della nota `autorizzare-su-un-pezzo…`, qui come entità sua. **Deciso con E4** (#223, nota
+`2026-10-06-il-pubblico-degli-eventi`, piano 1.30): le note (`remarks`) sono tradotte, la rotta no; più rotte fra gli stessi due
+aeroporti sono ammesse; nessun estremo deve essere uno scalo dell'evento; **mai da un aeroporto a sé stesso**; si mostrano
+nell'ordine in cui sono scritte.
 
 ### 1.5 Gli slot — `evt_slots`
 
@@ -409,7 +412,7 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
 
 | Impostazione | Predefinito | Fonte |
 |---|---|---|
-| `kindPresets` — per tipo di evento, gli interruttori `public_slots`, `private_slots`, `has_roster`, `whole_division`, `in_person` | vuoto; IT: `rfe`, `rfo`, `mse`, `onlineDay` | c1, c2 |
+| `kindPresets` — per tipo di evento, gli interruttori `public_slots`, `private_slots`, `has_roster`, `whole_division`, `in_person`. **Una riga è un tipo degli eventi** (E4, nota `2026-10-06-i-tipi-che-un-evento-sceglie`, piano 1.30): il form di un evento offre i tipi del calendario che hanno una riga qui, e tutti finché non ce n'è nessuna; il server rifiuta gli altri quando il tipo si sceglie | vuoto; IT: `rfe`, `rfo`, `mse`, `onlineDay` | c1, c2 |
 | `bookingGapMinutes` — distanza minima fra due prenotazioni dello stesso pilota | **10** | c1; §17.2 n.6 |
 | `shiftMinutes` — durata del turno se l'evento non la dice | 60 | c1 |
 | `minimumAtcRating` — il rating minimo per candidarsi, dal vocabolario | nessuno; IT: AS3 | c1 |
@@ -462,7 +465,9 @@ Per l'ATC: **candidature aperte** fino a inizio − `applicationsCloseDays`; **r
 
 - **Pubblica** (`Events.Edit`) controlla: titolo e riassunto in tutte le lingue della divisione, date coerenti
   (`visible_from ≤ booking_opens ≤ starts < ends`), gli scali per un evento a slot, il link per un evento di altri. I
-  rifiuti con `Refusals`.
+  rifiuti con `Refusals`. **Deciso con E3b** (#221, nota `2026-10-06-le-regole-di-pubblica`, piano 1.30): gli stessi controlli
+  si chiedono **a ogni modifica di un evento pubblicato**, e l'ultimo scalo di un evento pubblicato con slot non si elimina; un
+  evento con slot, anche solo privati, esce solo con `booking_opens_at_utc`.
 - **L'uscita programmata** ha la forma dei tour: la riga è pubblicata e la **data** dice da quando si vede. Alle tre
   domande della nota `il-documento-dice-di-se`: esce la riga com'è (è già passata dai controlli); il rifiuto non può
   capitare all'ora X; il contrario (sparire a una data) è la fine dell'evento (§2.4). La proiezione segue con il job
@@ -472,7 +477,8 @@ Per l'ATC: **candidature aperte** fino a inizio − `applicationsCloseDays`; **r
 
 - **Annulla** (`Events.Edit`): `cancelled_at` e una nota tradotta; mail a chi ha prenotato o ha un turno.
 - **Elimina** (`Events.Delete`, `DeletePolicy`): solo senza prenotazioni, disponibilità, turni o PIREP; altrimenti si
-  annulla. Chi collabora non elimina (§6.3).
+  annulla. Chi collabora non elimina (§6.3). **Deciso con E4** (piano 1.30): eliminare porta via le rotte nello stesso
+  salvataggio, quindi chi elimina deve avere anche `EventRoutes.Edit`.
 
 ### 2.3-bis Duplicare un evento
 
@@ -815,7 +821,14 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   - **ATC**: le postazioni e «dai la tua disponibilità» fino alla chiusura; il roster, pubblicato, in
     **`/events/{slug}/roster`**;
   - **in presenza**: luogo, «iscriviti» con le domande, le attività con i turni e i posti liberi (§4-bis);
-  - **il giorno dell'evento**: la `LiveStatusStrip` con chi è online sugli scali dell'evento (§9.1).
+  - **il giorno dell'evento**: la `LiveStatusStrip` con chi è online sugli scali dell'evento (§9.1) — **non in E4**: una
+    fase del nucleo a sé, **E4b**, e la striscia la monta la prima fase del modulo dopo di lei (nota
+    `2026-10-06-chi-e-online-sugli-scali-di-un-evento`, decisa da Carmine sulla #223).
+  **Deciso con E4** (#223, nota `2026-10-06-il-pubblico-degli-eventi`, piano 1.30): lo staff degli eventi legge la pagina di un
+  evento **in ogni stato**, con una riga che dice perché nessun altro la vede (bozza, non ancora visibile, concluso); tutti gli
+  altri solo mentre l'evento si vede, e 404 altrimenti. Un evento annullato resta nelle schede di `/events` e nel blocco fino
+  alla sua fine, non nel calendario sotto le schede. Il filtro per scalo lascia fuori un evento di tutta la divisione. `/events`
+  mostra i cinquanta più vicini.
 - **`/events/mine`** (membri): le mie prenotazioni (anche passate), le mie disponibilità e i miei turni, il mio **registro
   ATC**, i miei PIREP di supporto con «manda il PIREP», e la preferenza del §1.11.
 
@@ -841,7 +854,9 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
 esportare, dare la disponibilità, correggere il roster, confermare un no-show, mandare e decidere un PIREP, il «chi è
 online» — e il rapporto di chiusura li conta per famiglia (§16.6 del piano). **Uno scostamento accettato** (E3a, #214, piano 1.28): la
 lettura `GET /api/events/kind-presets` (`Events.Edit`), perché le impostazioni del nucleo aprono solo a chi le gestisce e chi scrive
-eventi deve vedere che cosa preimposta ogni tipo (nota `2026-10-01-la-lettura-dei-preset-dei-tipi`, decisa da Carmine).
+eventi deve vedere che cosa preimposta ogni tipo (nota `2026-10-01-la-lettura-dei-preset-dei-tipi`, decisa da Carmine). **Un secondo**
+(E4, #223, piano 1.30): la lettura della pagina pubblica di un evento, `GET /api/events/public/{slug}`, anonima, come quella dei tour
+(nota `2026-10-06-il-pubblico-degli-eventi` §4, decisa da Carmine).
 
 ### 7.3 Blocchi Data
 
@@ -880,8 +895,10 @@ Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-po
   con la nota, fino alla fine.
 - **Il tipo nel vocabolario**: il seme dei tipi riceve `rfe`, `rfo`, `mse`, `onlineDay` (estensione n.1); Training può
   allora aggiungere `onlineDay` ai suoi `conflictKinds`.
-- **Ricerca**: gli eventi pubblici visibili e non conclusi.
-- **Usi dei file**: banner e immagini fino alla fine + 7 giorni (c2).
+- **Ricerca**: gli eventi pubblici visibili e non conclusi. La riga ha il tipo **`events`**, la chiave del modulo (E3b, nota
+  `2026-10-06-le-regole-di-pubblica`), e la sua etichetta sta nel file di lingua del modulo (`events:search.kinds.events`, piano
+  §16 punto 8).
+- **Usi dei file**: banner e immagini fino alla fine + 7 giorni (c2); **i file di una bozza restano finché è una bozza** (E3b).
 
 ### 8.2 Award
 
