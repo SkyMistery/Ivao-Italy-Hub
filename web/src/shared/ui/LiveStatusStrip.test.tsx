@@ -16,7 +16,7 @@ import { LiveStatusStrip } from './LiveStatusStrip';
  */
 
 test('draws what the network answered, in the words the block already uses', () => {
-  renderWithProviders(
+  const { container } = renderWithProviders(
     <LiveStatusStrip
       status={{
         updatedAt: '2026-09-07T09:00:00Z',
@@ -39,6 +39,9 @@ test('draws what the network answered, in the words the block already uses', () 
   // number — and the reason this is not `toString()`.
   expect(screen.getByText('1,234')).toBeInTheDocument();
   expect(screen.getByText(englishCommon.blocks.networkStats.captions.divisionPilots)).toBeInTheDocument();
+
+  // And not the hour they were counted at: the strip asks again every minute.
+  expect(container).not.toHaveTextContent(/\d{1,2}:\d{2}/);
 });
 
 test('LiveStatusDegradesWhenIvaoIsDown: draws nothing at all rather than four zeroes', () => {

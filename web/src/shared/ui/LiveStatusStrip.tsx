@@ -4,7 +4,6 @@ import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { blockDataQuery } from '../../blocks/data';
-import { useMoment } from '../i18n/useMoment';
 
 /**
  * Who is on the network right now, in one line across the top of the public site (design M1 §6.2).
@@ -48,7 +47,6 @@ export interface LiveNetworkStatus {
  */
 export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus } = {}) {
   const { t, i18n } = useTranslation();
-  const moment = useMoment();
 
   const { data } = useQuery({
     ...blockDataQuery('networkStats', QUESTION),
@@ -107,11 +105,8 @@ export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus
           caption={t('blocks.networkStats.captions.divisionPilots')}
         />
 
-        {/* When the network counted, and never when the hub asked: a reader who sees a number wants
-            to know how old it is, and the two are not the same minute. */}
-        <span className="text-muted-foreground ml-auto text-xs">
-          {t('liveStatus.updatedAt', { at: moment(status.updatedAt) })}
-        </span>
+        {/* ⚠️ The hour of the count is not drawn (the maintainer, 5 October 2026, after the test
+            installation). `updatedAt` is still read above, as the server's "I could not ask". */}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 # L'inizializzazione sotto blocco
 
 **Data:** 5 ottobre 2026
-**Stato:** **decisa**: codice di una decisione già presa da Carmine, versione **0.6.1**; la domanda nuova (§1) ha **la risposta di
+**Stato:** **decisa**: codice di una decisione già presa da Carmine, versione **0.6.3** (nata 0.6.1: la 0.6.2 è entrata prima, con la #219); la domanda nuova (§1) ha **la risposta di
 Carmine** (6 ottobre 2026, in chat al master, che l'ha pubblicata sulla #218 su sua istruzione: [risposta][ok218]): **va avanti**.
 - La decisione: issue [#203](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/203) di `dalberone`; Carmine, 5 ottobre
   2026: **l'inizializzazione si serializza con un blocco del database** attorno a `InitialisationMarker.RunAsync`
@@ -9,7 +9,7 @@ Carmine** (6 ottobre 2026, in chat al master, che l'ha pubblicata sulla #218 su 
   legge la chiave duplicata come già seminato». La stessa risposta lascia a questa nota i dettagli: il nome del blocco, il
   tempo d'attesa, che cosa fa un avvio che non lo ottiene, la connessione che lo tiene.
 
-Versione **0.6.1**, PATCH: una correzione, nessuna migrazione, nessuna pagina.
+Versione **0.6.3**, PATCH: una correzione, nessuna migrazione, nessuna pagina.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende il marcatore d'inizializzazione
 (`2026-09-28-il-marcatore-d-inizializzazione.md`, `2026-09-29-il-marcatore-che-non-si-scrive.md`). Nessun meccanismo
 nuovo, nessuna tabella. Cambio del nucleo, nella sua PR.
@@ -127,7 +127,7 @@ insieme li scriverebbero due volte, la stessa gara della issue su un'altra chiav
 
 ```
 … initialisation full: another build (the marker is of 0.6.0+78df526)  …  steps ms: …, marker 280, initialisation lock 20, marker read again 3, migrations 26, …, superadmins 20, marker written 83, …
-… initialisation skipped (marker of 0.6.1+abc1234, 2026-10-05 16:40:02Z): migrations, module migrations, position grants, content; waited 1840 ms for the initialisation lock  …  steps ms: …, marker 280, initialisation lock 1840, marker read again 3, superadmins 60, …
+… initialisation skipped (marker of 0.6.3+abc1234, 2026-10-05 16:40:02Z): migrations, module migrations, position grants, content; waited 1840 ms for the initialisation lock  …  steps ms: …, marker 280, initialisation lock 1840, marker read again 3, superadmins 60, …
 … initialisation full: another build (the marker is of 0.6.0+78df526); without the initialisation lock (not free after 30000 ms)  …
 ```
 
