@@ -118,12 +118,11 @@ public sealed class TrainingSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifeti
             using var viewer = await SignedInAsync(ViewerVid, token);
             using var coordinator = await SignedInAsync(CoordinatorVid, token);
 
-            // An installation that never saved reads the design's defaults, the online day among the calendar kinds (A13d); one that
-            // saved reads its own list, without it (reread, below).
+            // An installation that never saved reads the design's defaults.
             var defaults = await manager.GetFromJsonAsync<JsonElement>(SettingsUri, token);
             Assert.Equal(5, defaults.GetProperty("cooldownDays").GetInt32());
             Assert.Equal(JsonValueKind.Null, defaults.GetProperty("maxResponseDays").ValueKind);
-            Assert.Equal(["event", "online-day"], defaults.GetProperty("conflictKinds").EnumerateArray().Select(kind => kind.GetString()));
+            Assert.Equal(["event"], defaults.GetProperty("conflictKinds").EnumerateArray().Select(kind => kind.GetString()));
             Assert.Empty(defaults.GetProperty("minimumHours").EnumerateArray());
             Assert.Empty(defaults.GetProperty("theoryExamHint").EnumerateObject());
 
