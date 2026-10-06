@@ -6,10 +6,12 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 5 ottobre 2026 — **fase E3b** (modulo: la vita dell'evento), sul branch `m4/e3b-event-life`, **PR #221**
-verso `main`, senza coda, nata da `main` a `78df526`. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E10a (#210), E10b
-(#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la
-`0.6.0` (#216) e il piano 1.29 (#217).
+**Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4b** (nucleo: chi è online sugli scali di un evento), sul branch
+`m4/e4b-online-at-airports`, **PR #226** verso `main`, del nucleo e senza coda, nata da `main` a `584eb72`. Sono unite E1 (#200), E2
+(#209), E2b (#212), E3a (#214), **E3b (#221)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a
+(#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216) e il piano 1.29 (#217); **E4** è aperta (#223).
+**E4b** non migra niente e va accanto alle fasi del modulo; dopo il suo merge **la prima fase del modulo monta la striscia** con gli scali
+dell'evento, il giorno dell'evento («Che cosa ha lasciato E4b», sotto).
 **Il prossimo passo**: E3b unita, poi **E4** (il pubblico e le rotte: `/events`, la pagina dell'evento con il 404 dopo la fine, il blocco
 `events.eventList`, `evt_routes`), che la sessione che coordina prepara sopra E3b. Da E3b un evento si **pubblica**, entra nel calendario
 e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file («Che cosa ha lasciato E3b», sotto). ⚠️ **Fra E3b ed E4 nessuna
@@ -128,6 +130,38 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-06-chi-e-online-sugli-scali-nel-nucleo.md`, scelta tecnica sulla (b) che Carmine ha scelto
+  sulla #223, punto 2; il dettaglio in `10`, E4b, «Com'è andata»; nessuna migrazione, nessun endpoint, nessun blocco nuovo):
+  - **`networkStats` con gli scali che una schermata chiede**: `airports`, un elenco di ICAO nelle `props` della domanda, **fuori dallo
+    schema zod** come `from` e `to` del calendario (un editor non li salva). Con l'elenco lo spazio è quello degli scali — controllori
+    la cui stazione è uno di loro (la torre e l'avvicinamento di `LIRF`, non il centro `LIRR` sopra), piloti il cui piano di volo parte
+    da uno di loro o ci arriva — e le due cifre `divisionAtc`, `divisionPilots` lo contano; senza, la divisione come prima. **Un elenco
+    senza nessuno scalo non conta nessuno**, mai la divisione; al più 50 scali, di al più 4 caratteri.
+  - **Un whazzup al minuto per tutti** (`IvaoNetworkPicture`, in `src/IvaoHub.Core/Ivao/IvaoWhazzup.cs`): la lettura comune per un
+    minuto, contata una volta per ogni spazio con la sua `CacheKey`, che ora **nomina gli scali** quando non ci sono centri. Lo
+    scostamento dalla nota di E4 e la misura (6 ottobre 2026: 0,8 MB, dalla cache di Cloudflare; mille insiemi inventati in 24 ms
+    invece di mille scaricamenti) sono nella nota, §2 e §4.
+  - **`<LiveStatusStrip airports={…} />`** (`web/src/shared/ui/LiveStatusStrip.tsx`): la domanda con gli scali e il titolo
+    `liveStatus.airportsTitle` («Su questi scali adesso», «At these airports now»); senza `airports`, la striscia di sempre.
+  - **I test**: `LiveStatusAirportsTests` (unità, 5), `NetworkStatsAirportsTests` (integrazione, 4, sulla fixture `whazzup.json`),
+    `LiveStatusStrip.airports.test.tsx` (vitest, 4). Nessun VID, nessuno slug.
+- **Che cosa deve sapere la fase dopo** — ⚠️ **la prima fase del modulo dopo il merge di E4b** (Carmine sulla #223, punto 2; «per esempio
+  E6b» diceva la nota di E4) **monta la striscia sulla pagina dell'evento**:
+  - `<LiveStatusStrip airports={gli ICAO degli scali dell'evento} />` sulla pagina di E4 (`web/src/modules/events/screens/public.tsx`),
+    **il giorno dell'evento** (design §7.1): la fase scrive come legge «il giorno» (nell'ora della divisione da mezzanotte a mezzanotte, o
+    dall'inizio alla fine) e lo dice in «Com'è andata». **Un evento di tutta la divisione** non ha scali e non monta niente: la striscia
+    della divisione è già in cima al sito.
+  - ⚠️ **Dove**: `docs/UI-GUIDELINES.md` vuole la striscia «in the banner slot of `Shell`», con una misura in `web/e2e/live-status.spec.ts`,
+    e il banner del layout `_public` ha già la striscia della divisione. Dentro la pagina è una scelta della fase, da scrivere; nel banner
+    al posto di quella della divisione vuole che il layout sappia gli scali della rotta: un'altra modifica del nucleo, con la sua nota.
+  - **I test della fase**: una spec che ferma `networkStats` con `stubTheBlockData` e cerca `liveStatus.airportsTitle`, leggendo nella
+    richiesta gli scali chiesti (`props` in base64url); sul banco la fixture `tests/fixtures/ivao/whazzup.json` ha `LIRR_CTR`, `LIMC_APP`,
+    `LIRF_TWR`, `EDDF_TWR` e i voli LIRF→LIMC, EDDF→LIMC, EDDF→EGLL: un evento a `LIRF` mostra un controllore e un pilota, uno a `LIMC`
+    un controllore e due piloti.
+  - Il modulo **non nomina la rete**: chiede `networkStats` attraverso la striscia del nucleo, e `EventsArchitectureTests` resta com'è.
 
 ### Che cosa ha lasciato E3b (5 ottobre 2026, branch `m4/e3b-event-life`, PR #221, senza coda)
 
