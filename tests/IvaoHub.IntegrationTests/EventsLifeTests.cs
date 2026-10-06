@@ -27,7 +27,7 @@ namespace IvaoHub.IntegrationTests;
 /// «Publish» refuses what an event still needs, field by field, and a published event stays one that could be published; a
 /// published event is in the calendar and in the search from when it is seen to its end, with <see cref="EventReleaseJob"/>
 /// projecting it again at both moments — the same run twice, or after one lost, does the same —; a cancelled event has no entry,
-/// and one for the members no line in the search; its files are in use until a week after its end.
+/// and one for the members no line in the search; a draft keeps its files, a published event until a week after its end.
 /// <para>⚠️ The coordinator is seeded **without an address**, as in <see cref="EventsStaffTests"/>. ⚠️ No signed-in request is made
 /// while the clock is moved, out of caution: how a member's session reads a clock moved by days is not what these tests prove.</para>
 /// </summary>
@@ -358,14 +358,15 @@ public sealed class EventsLifeTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TheFilesOfAnEventAreInUseUntilAWeekAfterItsEnd()
+    public async Task ADraftKeepsItsFilesAndAPublishedEventUntilAWeekAfterItsEnd()
     {
         var token = TestContext.Current.CancellationToken;
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         var starts = Starts(days: 30);
         var ends = starts.AddHours(5);
 
-        // A draft's files are in use too: an event being prepared needs its banner as much as a published one.
+        // A draft's files are in use too, and for as long as it is a draft: an event being prepared needs its banner as much as a
+        // published one, whatever its dates say.
         var draft = await CreatedAsync(
             coordinator,
             EventEndpoints.Pattern,
@@ -373,18 +374,27 @@ public sealed class EventsLifeTests(MariaDbFixture mariaDb) : IAsyncLifetime
             token);
         var uses = await MediaUsesAsync(Id(draft), token);
         Assert.Equal([BannerId, PictureId], uses.Keys.Order());
-        Assert.All(uses.Values, until => Assert.Equal(ends + Event.MediaKeptAfterEnd, until));
+        Assert.All(uses.Values, until => Assert.Null(until));
 
-        // The end moves, and the uses with it; a banner changed is no longer in use; published, the same.
+        // A banner changed is no longer in use.
         var moved = await PutAsync(
             coordinator,
             draft,
             Payload("files", starts) with { EndsAtUtc = ends.AddDays(1), BannerMediaId = OtherBannerId },
             token);
-        await OkAsync(await PublishAsync(coordinator, moved, token), token);
+        uses = await MediaUsesAsync(Id(draft), token);
+        Assert.Equal([PictureId, OtherBannerId], uses.Keys.Order());
+        Assert.All(uses.Values, until => Assert.Null(until));
+
+        // Published, its files are in use until a week after its end, and follow the end when it moves.
+        var published = await OkAsync(await PublishAsync(coordinator, moved, token), token);
         uses = await MediaUsesAsync(Id(draft), token);
         Assert.Equal([PictureId, OtherBannerId], uses.Keys.Order());
         Assert.All(uses.Values, until => Assert.Equal(ends.AddDays(1) + Event.MediaKeptAfterEnd, until));
+
+        await PutAsync(coordinator, published, Payload("files", starts) with { EndsAtUtc = ends.AddDays(2), BannerMediaId = OtherBannerId }, token);
+        uses = await MediaUsesAsync(Id(draft), token);
+        Assert.All(uses.Values, until => Assert.Equal(ends.AddDays(2) + Event.MediaKeptAfterEnd, until));
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------------

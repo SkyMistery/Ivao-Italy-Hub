@@ -29,8 +29,8 @@ public enum EventOrganizer
 /// <para>In the care of the base department of the module, always, and of whoever organises it with that department
 /// (<see cref="OwnerDepartmentMask"/>); the departments that collaborate on a part of it hold their permissions on the base
 /// department instead (§1.1). A permission can be granted on one event alone, <c>events:event:{id}</c>.</para>
-/// <para>It projects itself (E3b, §8.1): a calendar entry and a line of the search while it is seen, and its files until a week
-/// after its end.</para>
+/// <para>It projects itself (E3b, §8.1): a calendar entry and a line of the search while it is seen, and its files — for good while
+/// it is a draft, until a week after its end once it is published.</para>
 /// </summary>
 [Audited]
 [PermissionArea(EventsPermissions.Area)]
@@ -166,9 +166,11 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
     /// whoever the event is for — and the line — only for an event everybody reads — exist while the event is seen
     /// (<see cref="EventState.IsSeen"/>): never for a draft, nor for one published and not seen yet, nor for one ended. A cancelled
     /// event has no entry, and keeps its line until its end: its page stays, with the note (§2.3).
-    /// <para>The files are declared until a week after the end, a draft's too (the interceptor keeps them for a row not
-    /// published): the core's job deletes them then, if nothing else shows them. The time decides the rest, and nobody writes the
-    /// event when it is seen or when it ends: <see cref="EventReleaseJob"/> projects it again at both.</para>
+    /// <para>The files of a published event are declared until a week after its end: the core's job deletes them then, if nothing
+    /// else shows them. A draft keeps its files for as long as it is a draft, whatever its dates say (the interceptor keeps them for
+    /// a row not published): one written with a window already past, by mistake or to be moved later, does not lose its banner
+    /// before anybody publishes it (review of #221, point 5). The time decides the rest, and nobody writes the event when it is seen
+    /// or when it ends: <see cref="EventReleaseJob"/> projects it again at both.</para>
     /// </summary>
     public ProjectionSnapshot? Project(ProjectionContext context)
     {
@@ -201,10 +203,10 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
             : new ProjectionSnapshot(search, calendar, [], media);
     }
 
-    /// <summary>The banner and the pictures of the description, until a week after the end.</summary>
+    /// <summary>The banner and the pictures of the description: until a week after the end once published, for good while a draft.</summary>
     private List<MediaUseProjection> MediaUses(ProjectionContext context)
     {
-        var until = EndsAtUtc + MediaKeptAfterEnd;
+        DateTime? until = Status == PublishStatus.Published ? EndsAtUtc + MediaKeptAfterEnd : null;
 
         return
         [
