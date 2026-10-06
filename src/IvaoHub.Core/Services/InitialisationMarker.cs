@@ -22,8 +22,13 @@ namespace IvaoHub.Core.Services;
 /// an old copy brings its own old mark, or none, and never a file's word that a schema it has not seen is ready.</para>
 /// <para>It is written <b>last</b>, after every step of the initialisation has succeeded: a start that fails half way leaves
 /// the mark it found, which names another key, and the next start does everything again. Every step is already applied
-/// once and only once, so doing it again is only time. Two processes that start together without a valid mark both
-/// initialise, as every start did before the mark, and both write it.</para>
+/// once and only once, so doing it again is only time.</para>
+/// <para>"Once and only once" holds for one process after another, not for two at the same moment: so a start that has
+/// to initialise takes <see cref="InitialisationLock"/> first, and reads the mark again with the lock in its hands. Of two
+/// processes that start together without a valid mark, one initialises and writes the mark; the other waits, finds that
+/// mark and skips everything, as any later start would (note 2026-10-05-l-inizializzazione-sotto-blocco). A start that
+/// cannot take the lock initialises without it, as every start did before: then two may still initialise together, and
+/// both write the mark.</para>
 /// <para>Anything that fails while reading it means a full initialisation, never a failed start: on the very first start
 /// the table does not exist yet. Anything that fails while writing it is a warning, never a failed start either: the
 /// initialisation has succeeded, and a mark not written only means that the next start does it again.</para>
@@ -36,9 +41,13 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
     /// <summary>How many times the mark is written before giving up, when every failure is another process writing it too.</summary>
     private const int WriteAttempts = 5;
 
+    /// <summary>How long a start waits for another one's initialisation before it goes on without the lock.</summary>
+    public TimeSpan LockWait { get; set; } = InitialisationLock.DefaultWait;
+
     /// <summary>
     /// Runs <paramref name="initialise"/> unless the mark says that a start with this very <paramref name="key"/> has
-    /// already done it, then writes the mark; says which of the two happened and why.
+    /// already done it, then writes the mark; says which of the two happened and why. One process at a time: the
+    /// initialisation runs under <see cref="InitialisationLock"/>, and a start that waited for it reads the mark again.
     /// </summary>
     public async Task<InitialisationOutcome> RunAsync(
         InitialisationKey key,
@@ -58,13 +67,48 @@ public sealed class InitialisationMarker(HubDbContext database, IClock clock, IL
             return new InitialisationOutcome(Skipped: true, changes, stored);
         }
 
+        // Only a start that has something to do pays for the lock: a plain wake has returned above. Held until the mark
+        // is written, so that whoever waits behind it finds the mark.
+        await using var held = await InitialisationLock.TakeAsync(
+            ConnectionString(), LockWait, logger, cancellationToken);
+        timings?.Step("initialisation lock");
+
+        if (held.Held)
+        {
+            // Another start may have done everything while this one waited: the mark it read before the lock is old.
+            stored = await ReadAsync(cancellationToken);
+            timings?.Step("marker read again");
+
+            changes = key.ChangesSince(stored);
+            if (changes.Count == 0)
+            {
+                logger.LogInformation(
+                    "Another start initialised the database while this one waited {Waited:0} ms for the initialisation lock.",
+                    held.Report.Waited.TotalMilliseconds);
+                return new InitialisationOutcome(Skipped: true, changes, stored) { Lock = held.Report };
+            }
+        }
+
         logger.LogInformation("A full initialisation: {Changes}.", string.Join("; ", changes));
         await initialise(cancellationToken);
 
         var written = await WriteAsync(key, cancellationToken);
         timings?.Step(written ? "marker written" : "marker not written");
 
-        return new InitialisationOutcome(Skipped: false, changes, stored);
+        return new InitialisationOutcome(Skipped: false, changes, stored) { Lock = held.Report };
+    }
+
+    /// <summary>The database the mark is in, for the lock's own connection; null when the context cannot say.</summary>
+    private string? ConnectionString()
+    {
+        try
+        {
+            return database.Database.GetConnectionString();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The mark as the database holds it; null when there is none, or it cannot be read.</summary>
@@ -260,10 +304,31 @@ public sealed record StoredInitialisation(string Build, string Configuration, st
 /// <param name="Marker">The mark the start found.</param>
 public sealed record InitialisationOutcome(bool Skipped, IReadOnlyList<string> Changes, StoredInitialisation? Marker)
 {
-    /// <summary>The words of <c>starts.txt</c>: <c>initialisation skipped (…): migrations, content</c> or <c>initialisation full: …</c>.</summary>
-    public string Describe(IEnumerable<string> skippableSteps) => Skipped
-        ? string.Create(
+    /// <summary>
+    /// What the start got when it asked for the initialisation lock; null when it did not ask, because the mark matched
+    /// at the first reading.
+    /// </summary>
+    public InitialisationLockReport? Lock { get; init; }
+
+    /// <summary>
+    /// The words of <c>starts.txt</c>: <c>initialisation skipped (…): migrations, content</c> or <c>initialisation full: …</c>.
+    /// A start that skipped because another one initialised meanwhile says how long it waited for it; one that
+    /// initialised without the lock says so, and why.
+    /// </summary>
+    public string Describe(IEnumerable<string> skippableSteps)
+    {
+        if (!Skipped)
+        {
+            var unlocked = Lock is { Held: false } ? $"; without the initialisation lock ({Lock.Refusal})" : string.Empty;
+            return $"initialisation full: {string.Join("; ", Changes)}{unlocked}";
+        }
+
+        var waited = Lock is null
+            ? string.Empty
+            : string.Create(CultureInfo.InvariantCulture, $"; waited {Lock.Waited.TotalMilliseconds:0} ms for the initialisation lock");
+
+        return string.Create(
             CultureInfo.InvariantCulture,
-            $"initialisation skipped (marker of {Marker!.Stamp}, {Marker.At:yyyy-MM-dd HH:mm:ss'Z'}): {string.Join(", ", skippableSteps)}")
-        : $"initialisation full: {string.Join("; ", Changes)}";
+            $"initialisation skipped (marker of {Marker!.Stamp}, {Marker.At:yyyy-MM-dd HH:mm:ss'Z'}): {string.Join(", ", skippableSteps)}{waited}");
+    }
 }
