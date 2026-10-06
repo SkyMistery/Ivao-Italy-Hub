@@ -21,9 +21,14 @@ import { blockDataQuery } from '../../blocks/data';
  * React Query keeps the last answer across a failed refresh, so a blip leaves the previous numbers
  * on screen; a network that is down from the first request leaves no strip rather than four zeroes,
  * which would be the page saying "nobody is flying" when it means "I could not ask".
+ *
+ * **With `airports`** (M4, E4b) it counts those airports instead of the division — an event's, on its
+ * day (design M4 §7.1) — under a title of its own. They travel with the question and never into a
+ * saved block: `networkStats` reads them as `calendar` reads `from` and `to`, what a screen asks rather
+ * than what an editor writes.
  */
 
-/** What the strip asks for: the two figures about this division, and no list of positions. */
+/** What the strip asks for: the two figures of the area, and no list of positions. */
 const QUESTION = {
   figures: [{ figure: 'divisionAtc' }, { figure: 'divisionPilots' }],
   showPositions: false,
@@ -44,12 +49,18 @@ export interface LiveNetworkStatus {
  * from the server, for the reason written there — a gallery that called the API would show whatever
  * this installation happens to hold today, or nothing at all on a fresh one. Given a status, the
  * strip draws it and asks nobody; that is the only thing the prop does.
+ *
+ * `airports` are the ICAO codes to count instead of the division. Left out, the division; given, those
+ * airports and nothing else — a list with no airport in it counts nobody rather than the division.
  */
-export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus } = {}) {
+export function LiveStatusStrip({
+  status: sample,
+  airports,
+}: { status?: LiveNetworkStatus; airports?: readonly string[] } = {}) {
   const { t, i18n } = useTranslation();
 
   const { data } = useQuery({
-    ...blockDataQuery('networkStats', QUESTION),
+    ...blockDataQuery('networkStats', airports === undefined ? QUESTION : { ...QUESTION, airports }),
     refetchInterval: EVERY_MINUTE,
     // The strip is decoration on somebody else's page: a network that is down must cost one attempt
     // a minute, not three in a row every minute.
@@ -81,7 +92,7 @@ export function LiveStatusStrip({ status: sample }: { status?: LiveNetworkStatus
             is. */}
         <span className="text-foreground flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
           <Pulse />
-          {t('liveStatus.title')}
+          {airports === undefined ? t('liveStatus.title') : t('liveStatus.airportsTitle')}
         </span>
 
         {/* ⚠️ `max-sm:hidden`, never `hidden sm:block`: Atmosphere's stylesheet is imported after
