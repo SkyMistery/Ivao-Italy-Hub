@@ -1167,8 +1167,9 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
      il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando»: il personaggio dell'ED incolla una tabella con una rotazione, legge il
      rifiuto di una riga, la carica corretta, e un visitatore la vede sulla pagina). `EventsTestRows` toglie anche gli slot; `ErasureTests`
      ha le due righe di `evt_slots` (nota `2026-10-06-le-colonne-degli-slot-in-erasuretests`).
-- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova **«Proposta»**
-  `decisions/2026-10-06-il-foglio-degli-slot-e-l-esportazione.md`, con la domanda a Carmine sulla #228; il dettaglio è lì):
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova
+  `decisions/2026-10-06-il-foglio-degli-slot-e-l-esportazione.md`, «Proposta» con la domanda a Carmine sulla #228, poi **decisa** —
+  sotto, «Le risposte di Carmine»; il dettaglio è lì):
   1. **Il foglio lo legge il server**, non il browser come le leg dei tour: il design dice che arriva come testo e scrive i rifiuti con il
      nome della colonna.
   2. **La tabella**: i nomi del design in qualunque ordine; il punto e virgola accanto alle tabulazioni e alle virgole; le righe contate
@@ -1178,9 +1179,10 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
   4. **Le rotazioni**: i posti dagli orari quando nessuno è scritto; il rifiuto sempre sulla tratta che si scrive; il form di uno slot con le
      stesse regole, **anche per uno slot nuovo** («Nuovo slot»: il design dice il form «per le correzioni»).
   5. **«Sostituisci»** toglie i pubblici liberi; **«Elimina i liberi»** ogni slot libero, privati compresi.
-  6. **Le regole che crescono**, sopra (punto 5 di «Fatto»); **nessun controllo** che uno slot cada nella finestra dell'evento.
-  7. **L'esportazione**: un array, i nomi del Gate Manager, una bozza 409 con `code: "draft"` invece di 404, un evento pubblicato in ogni
-     stato; un privato con il suo scalo e il suo orario.
+  6. **Le regole che crescono**, sopra (punto 5 di «Fatto»); la finestra dell'evento è venuta con le risposte di Carmine (sotto, «Dopo la
+     revisione e le risposte», punto 1).
+  7. **L'esportazione**: un array, i nomi del Gate Manager, nell'ordine dell'orario allo scalo dell'evento, una bozza 409 con
+     `code: "draft"` invece di 404, un evento pubblicato in ogni stato; un privato con il suo scalo e il suo orario.
   8. **La lista pubblica nella lettura della pagina**, senza un endpoint suo.
   9. **La scheda «Slot»** c'è su un evento con slot (pubblici o privati) e scali suoi, a chi legge le prenotazioni; un privato non ha
      «Modifica» (`events:errors.slotNotPublic` sul server).
@@ -1210,6 +1212,62 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
   un file: lo legge `File.text()` del browser); un CSV in una codifica che non è UTF-8 (`File.text()` legge UTF-8: uno stand con lettere
   accentate salvato in Windows-1252 arriverebbe storpiato); la pagina con centinaia di slot nel browser (la lista è una query sola, ma
   nessuna prova ne disegna 441).
+- **La CI della prima spinta** (`da6f772`): verde, `build-test` e `core-guard`.
+- **Le risposte di Carmine** ([sulla #228][a228], 6 ottobre 2026, autore `SkyMistery`, pubblicate dal master su sua istruzione), dopo [i
+  rilievi del revisore][v228] («approvable on the code», in attesa delle risposte): **sì agli otto punti** della nota, ora **decisa**, e
+  **due in più** sulle domande che il revisore gli aveva girato, codice di questa PR: **9**, l'esportazione porta la versione del suo
+  contratto; **10**, uno slot cade nella finestra del suo evento, con un margine.
+- **Dopo la revisione e le risposte**, 6 ottobre 2026:
+  1. **La finestra dell'evento** (Carmine, punto 10): `SlotWindow` in `Staff/SlotRules.cs`. L'orario allo scalo dell'evento — l'off
+     block di una partenza, l'on block di un arrivo — sta fra sei ore prima dell'inizio e sei ore dopo la fine; l'orario all'altro
+     aeroporto è libero. Fuori, `events:errors.slotOutsideWindow` sulla colonna di quell'orario, nel caricamento (`SlotLoading`) e nel
+     form (`SlotSaving`) allo stesso modo; la pagina del caricamento lo dice fra i formati. Il perché delle sei ore è nella nota (§2,
+     punto 10). Test: unità (i bordi della finestra, e quale orario conta), integrazione
+     `ASlotFallsInsideTheWindowOfItsEventWithSixHoursEachWay`: una partenza tre giorni dopo e un arrivo sette ore dopo la fine, rifiutati
+     insieme sulle loro due colonne; un arrivo cinque ore dopo la fine, dopo un volo di undici, caricato; il form che rifiuta una partenza
+     del giorno prima.
+  2. **La versione del contratto dell'esportazione** (Carmine, punto 9). **Classificata prima di scrivere**, come chiedeva la sessione
+     che coordina: il controllo dei tour (`AgentContract.RequireVersionAsync`) sta nel loro modulo, che gli eventi non referenziano e
+     che E5 non tocca, e una copia negli eventi sarebbe lo stesso pezzo scritto due volte (`CLAUDE.md` §2). Tre strade a dalberone — la
+     copia con un'eccezione di Carmine, il pezzo nel nucleo prima, la domanda a Carmine —: **ha scelto il nucleo**. È la fase **E10g**
+     (branch `m4/e10g-contract-version`, da `main` a `e9702b27`, in una sessione sua, con la sua PR e la sua nota), e la #228 sta in coda
+     dopo di lei. Qui l'esportazione usa il `ContractVersion` del nucleo con i suoi valori — l'intestazione `Hub-Bookings-Contract`, la
+     versione 1, `code: "bookingsContract"`, il titolo `events:errors.bookingsContract` — dopo il token e prima dell'evento, e il contratto
+     per chi scrive il programma è `docs/events-bookings-export.md` (inglese), come `docs/agent-contract.md` dei tour.
+  3. **Lo stesso volo ricaricato con «sostituisci»** (revisione, punto 3): il test del caricamento ricarica in `ReplaceFree` il foglio
+     corretto del volo `XEA301` — stesso callsign e stesso off block, lo stand cambiato —. Lo slot che va e quello che viene dividono la
+     chiave dell'indice univoco nello stesso `SaveChanges`, e la cancellazione arriva prima dell'inserimento: provato.
+  4. **409 solo per un'altra scrittura delle stesse righe** (revisione, punto 4): il `catch` dopo `LoadAsync` prende soltanto una chiave
+     che l'indice univoco ha già, o il deadlock di due insert della stessa chiave — `MySqlException` con `DuplicateKeyEntry` o
+     `LockDeadlock`, cercata nella catena dell'eccezione come fa `InitialisationMarker`, perché EF consegna il deadlock dentro una
+     `InvalidOperationException` —; ogni altro errore esce com'è, invece di dire «carica di nuovo» per sempre.
+  5. **Il commento dell'esportazione** (revisione, punto 5): 401 senza token o con il cookie, 403 con un token di un'altra `audience`,
+     come dicono il test e la nota.
+  6. **Due caricamenti dello stesso evento nello stesso momento** (revisione, punto 6) li tiene solo l'indice univoco: ognuno controlla
+     le catene con gli slot che legge, quindi insieme possono salvare una catena che nessuno dei due avrebbe accettato da solo. Nessun
+     codice: un caricamento alla volta per evento chiederebbe una transazione serializzabile o un blocco esplicito, per due persone sullo
+     stesso evento nello stesso secondo. Scritto nell'HANDOFF.
+  7. **Il 404 prima del 403** (revisione, punto 7): voluto, ed è detto nel commento dell'esportazione e nella nota (§1, punto 7): è
+     l'ordine dei verbi del back office, un token di questa `audience` lo fa solo chi ha `EventBookings.View` da qualche parte, e
+     l'indirizzo di un evento pubblicato è comunque sul sito.
+  8. **Il verso fissato quando lo slot si scrive** (revisione, punto 8): uno scalo aggiunto dopo lascia uno slot salvato com'era. Scritto
+     nell'HANDOFF.
+  9. **L'ordine dell'esportazione**, trovato rileggendola per il documento pubblico: la nota e il commento dicevano «per l'orario allo
+     scalo dell'evento», la query ordinava per off block, che è quell'orario solo per una partenza. Ora va per l'on block di un arrivo
+     (`IsArrival ? OnBlockUtc : OffBlockUtc`); nel test l'arrivo `XEA503` atterra alle 17:30, dopo la partenza `XEA501` delle 17:00, ma è
+     decollato alle 16:00, quindi l'ordine degli off block non lo fa passare.
+  10. **`main` è arrivato con il branch di E10g** (`e9702b27`: la #227, che vuole gli spec del giro completo con `afterwards(…)` al posto
+      del `finally`, e il piano 1.30, #229). `events-slots.spec.ts` ora dice con `afterwards(…)` che cosa rimette a posto, come chiede la
+      regola nuova di `CONTRIBUTING.md`; `events-public.spec.ts` ed `events-staff.spec.ts`, di E4 e di prima, restano col `finally`
+      (nell'HANDOFF).
+  - **Al contrario** (6 ottobre 2026): con il margine della finestra a dieci anni, il test della finestra cade (la tabella con le due righe
+    fuori è caricata: `OK: {"added":2,"removed":0}`); con l'ordine di prima (`OffBlockUtc ?? OnBlockUtc`), cade quello dell'esportazione
+    (`Expected: "XEA501"`, `Actual: "XEA503"`). Il codice rimesso com'era e ricompilato: tutti e due di nuovo verdi. Il test del volo
+    ricaricato prova un comportamento che c'era già, e il 409 ristretto non ha un errore del database diverso da provocare in un test:
+    nessuna prova al contrario per i punti 3 e 4.
+
+[a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
 
 ### E6a — Prenotare: il server
 
