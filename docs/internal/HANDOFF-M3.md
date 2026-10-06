@@ -11,8 +11,9 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 5 ottobre 2026 — **fase A13d**, i piccoli resti del training: il percorso senza lo storico, lo storico dal
-lato del capo di una FIR, l'online day nei conflitti delle date. Branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526.
+**Ultimo aggiornamento:** 6 ottobre 2026 — **fase A13d**, i piccoli resti del training: il percorso senza lo storico, lo storico dal
+lato del capo di una FIR, il commento dell'online day nei conflitti delle date (il predefinito resta `["event"]`, Carmine sulla #220).
+Branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526.
 
 **M3 è chiusa e tutta in `main`** (piano 1.26):
 
@@ -126,26 +127,25 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato A13d (5 ottobre 2026, branch `m3/a13d-cleanup`, PR #220)
+### Che cosa ha lasciato A13d (5–6 ottobre 2026, branch `m3/a13d-cleanup`, PR #220)
 
 - **Da dove viene**: tre osservazioni «per dopo» di due revisioni, la [revisione di A13b sulla #197][a13d-r197] e la [revisione di E1
-  sulla #200][a13d-r200]. Codice del modulo, i suoi test e una riga di `docs/FORKING.md`. Nessun file del nucleo, nessuna migrazione,
-  nessuna nota, nessuna domanda a Carmine (`08`, A13d).
+  sulla #200][a13d-r200]. Codice del modulo e i suoi test. Nessun file del nucleo, nessuna migrazione, nessuna nota. Una domanda a
+  Carmine, portata dal revisore sul predefinito di `conflictKinds`: [la sua risposta sulla #220][a13d-answer] (`08`, A13d).
 - **Che cosa c'è**:
   - **il percorso di un trainee non legge più lo storico** dei suoi training: `StaffTrainings.PageAsync` prende `withHistory`. La
     pagina del training passa `true`, `TraineePaths` passa `false`. Sul percorso `history` è una lista vuota, e la forma del DTO non
     cambia;
   - **lo storico dal lato del capo di una FIR**: `TrainingFirHeadsTests` (un test nuovo). Lo storico di un training della sua FIR lo
     legge; di un training di un'altra FIR non legge niente, perché la pagina gli è rifiutata;
-  - **l'online day nei conflitti delle date**: il predefinito di `TrainingSettings.ConflictKinds` è `["event", "online-day"]`, come
-    voleva il design ora che E1 ha creato il tipo. Lo dicono i test dei predefiniti e la tabella di `docs/FORKING.md`.
+  - **il commento di `TrainingSettings.ConflictKinds`**: il tipo dell'online day c'è (`online-day`, E1), e una divisione lo aggiunge
+    nelle impostazioni del training. **Il predefinito resta `["event"]`**: l'online day che avvisa è una configurazione della divisione
+    ([Carmine sulla #220][a13d-answer]). Il primo giro della fase l'aveva cambiato, e la revisione l'ha riportato.
 - **Che cosa deve sapere chi viene dopo**:
-  - ⚠️ **Un'installazione che ha già salvato le impostazioni del training tiene la sua lista**, senza l'online day: il nucleo mette un
-    predefinito solo dove niente è stato salvato. Lì **l'online day lo aggiunge il dipartimento del training**, in «Impostazioni del
-    training». È il caso del banco di anteprima, dove la sessione di A13a ha salvato le impostazioni. Un'installazione che non le ha mai
-    salvate lo ha da sola.
-  - ⚠️ **`10-piano-implementazione-m4.md` (E1, «Trovato» n.2) e `HANDOFF-M4.md` (E1) dicono ancora che il predefinito resta
-    `["event"]`.** Erano il perimetro di E1, e sono documenti di M4: A13d non li tocca, e lo dice la PR.
+  - ⚠️ **L'online day non avvisa un trainer finché la divisione non lo aggiunge**, in «Impostazioni del training», fra i tipi del
+    calendario controllati. Lo dicono anche la nota di E1 e `10`.
+  - ⚠️ **Una riga del design che si legge in due modi è una domanda per Carmine**, anche quando sembra un caso (a), e di più se
+    documenti già uniti la leggono nell'altro modo. A13d l'aveva presa come caso (a): si chiede prima di scrivere.
   - **Chi vuole lo storico di un training lo chiede**: una chiamata nuova di `PageAsync` sceglie `withHistory`. Lo storico costa una
     query sul registro di audit per ogni training: una lista di training non lo legge.
   - Banco: nessuno, perché nessuno schermo cambia. VID: nessuno nuovo (A13d riusa le persone di `TrainingFirHeadsTests` e di
@@ -154,6 +154,7 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 [a13d-r197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5913320300
 [a13d-r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
+[a13d-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/220#issuecomment-6012244202
 
 ### Che cosa ha lasciato A13c (30 settembre 2026, branch `m3/a13c-set-by-hand-lead`, PR #201)
 

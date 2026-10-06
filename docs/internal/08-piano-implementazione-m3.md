@@ -4270,18 +4270,29 @@ i suoi documenti:
    sua FIR. Di un training di un'altra FIR non legge lo storico, perché non ne legge la pagina (la regola della pagina, A11b). È un test
    d'integrazione in `TrainingFirHeadsTests`, con le persone di quella classe.
 3. **L'online day nei conflitti delle date** ([revisione di E1 sulla #200][a13d-r200]: il commento di `TrainingSettings.cs:57` ne
-   parlava come di una cosa futura). L'ha deciso il design (`07`, la tabella delle impostazioni: «`conflictKinds` … `["event"]` | d1;
-   l'online day si aggiunge qui quando M4 ne crea il tipo»). E1 (#200) ha creato il tipo, con la chiave `online-day` confermata da
-   Carmine sulla #200. Il predefinito diventa `["event", "online-day"]`.
+   parlava come di una cosa futura). E1 (#200) ha creato il tipo, con la chiave `online-day` confermata da Carmine sulla #200. Il
+   commento dice ora che il tipo c'è e che una divisione lo aggiunge nelle impostazioni del training. **Il predefinito resta
+   `["event"]`**: è la risposta di Carmine sulla #220 (qui sotto, «Com'è andata»).
 
 [a13d-r197]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/197#issuecomment-5913320300
 [a13d-r200]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/200#issuecomment-5912327906
+[a13d-r220]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/220#issuecomment-6012216833
+[a13d-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/220#issuecomment-6012244202
 
-**Com'è andata (A13d)** (5 ottobre 2026, branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526). **Codice del modulo, i suoi test e
-una riga di `docs/FORKING.md`; nessun file del nucleo, nessuna migrazione, nessuna nota, nessuna domanda a Carmine.**
+**Com'è andata (A13d)** (5–6 ottobre 2026, branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526). **Codice del modulo e i suoi test;
+nessun file del nucleo, nessuna migrazione, nessuna nota. Una domanda a Carmine, portata dal revisore: il predefinito di
+`conflictKinds`.**
 
-- **Classificata prima di scrivere** (`CLAUDE.md` §5): 1 e 2 sono osservazioni della revisione dentro il modulo. 3 è caso **(a)**: il
-  predefinito di un'impostazione del modulo, già deciso dal design.
+- **Classificata prima di scrivere** (`CLAUDE.md` §5): 1 e 2 sono osservazioni della revisione dentro il modulo. Il primo giro aveva
+  preso il 3 come caso **(a)**, cioè il predefinito di un'impostazione già deciso dal design, e aveva scritto `["event", "online-day"]`.
+- **La risposta di Carmine sulla #220** (6 ottobre 2026, data in chat alla sessione master e pubblicata dal master su sua istruzione:
+  [la risposta][a13d-answer]). La riga del design si legge in due modi, e tre documenti già uniti la leggevano nell'altro: `10` (E1),
+  `HANDOFF-M4.md` e la nota `2026-09-30-i-tipi-degli-eventi-e-l-ed-sul-banco`. Il revisore ha portato la domanda a Carmine
+  ([osservazioni][a13d-r220], «For the maintainer» n.1). Carmine ha risposto che **l'online day che avvisa è una configurazione della
+  divisione**: il predefinito di `conflictKinds` resta `["event"]`, e una divisione che vuole l'online day fra i tipi che avvisano un
+  trainer lo aggiunge nelle impostazioni del training, come dicono la nota di E1 e `10`. **Nessuna nota nuova**, perché vale la
+  decisione di prima. Il predefinito è tornato `["event"]`. I due test dei predefiniti e la riga di `docs/FORKING.md` sono tornati come
+  su `main`, quindi la PR non li tocca più. Resta il commento nuovo.
 - **Fatto**:
   - **`StaffTrainings.PageAsync(training, withHistory, …)`**: lo storico si legge solo se chi chiama lo chiede, come `FindAsync` prende
     `tracked`. Le due chiamate della pagina del training passano `true`: la lettura e la risposta di ogni passo. Il percorso
@@ -4295,23 +4306,20 @@ una riga di `docs/FORKING.md`; nessun file del nucleo, nessuna migrazione, nessu
     training della sua FIR, e l'assistant chief dell'altra FIR uno della sua. Il capo legge lo storico del suo training: la richiesta
     scritta dall'installazione, di nessuno, e la sua assegnazione con il trainer. Sul training dell'altra FIR la pagina gli è rifiutata
     (403) e la risposta non ha niente dello storico. L'assistant chief lo legge sulla pagina del suo;
-  - **`TrainingSettings.ConflictKinds`** ha come predefinito `["event", "online-day"]`, e il commento lo dice come cosa fatta. I test
-    che affermano i predefiniti dicono la lista nuova: `TrainingSettingsTests` (unità) e `TrainingSkeletonTests` (integrazione).
-    `docs/FORKING.md` ha la lista nuova nella tabella delle impostazioni del training, con l'installazione che le ha già salvate.
+  - **il commento di `TrainingSettings.ConflictKinds`** dice che il tipo dell'online day c'è (`online-day`, E1), e che una divisione
+    che lo vuole fra i tipi che avvisano un trainer lo aggiunge nelle impostazioni del training: è una configurazione della divisione,
+    non un predefinito. Il predefinito resta `["event"]` (la risposta qui sopra).
 - **Trovato**:
-  1. ⚠️ **Un'installazione che ha già salvato le impostazioni del training tiene la sua lista.** Il nucleo mette un predefinito solo
-     dove niente è stato salvato, proprietà per proprietà (`ModuleSettingsStore.ReadAsync`), e il form salva sempre la lista intera.
-     Lì l'online day lo aggiunge il dipartimento del training, in «Impostazioni del training». Un'installazione che non le ha mai
-     salvate lo ha da sola. Il form offre solo i tipi che il calendario ha (`settingsToFormValues`), quindi un fork che toglie
-     `online-day` dal vocabolario salva lo stesso.
-  2. **Due documenti di M4 dicono ancora il contrario**: `10-piano-implementazione-m4.md` (E1, «Trovato» n.2) e `HANDOFF-M4.md` (E1)
-     scrivono che il predefinito resta `["event"]` e che la divisione aggiunge l'online day dalle impostazioni del training. Era il
-     perimetro di E1, una PR del nucleo che non toccava il training. La nota `i-tipi-di-evento` (§2 n.1, decisa sulla #180) dice che
-     Training «può aggiungere» l'online day ai suoi `conflictKinds`, e il design M3 che «si aggiunge qui». Sono documenti di M4: questa
-     fase non li tocca, e lo dice la PR.
+  1. ⚠️ **Una riga del design che si legge in due modi è una domanda per Carmine**, anche quando sembra un caso (a). È peggio se
+     documenti già uniti la leggono nell'altro modo: qui `10`, `HANDOFF-M4.md` e la nota di E1. Il primo giro di A13d li aveva visti e
+     li aveva presi per il perimetro di E1, invece di chiedere. Si chiede prima di scrivere.
+  2. **Come una divisione aggiunge l'online day**: in «Impostazioni del training», fra i tipi del calendario controllati. Il form offre
+     solo i tipi che il calendario ha (`settingsToFormValues`), e il server rifiuta una chiave che non c'è
+     (`training:errors.calendarKindUnknown`).
   3. Il percorso non disegna lo storico (`screens/path.tsx` non lo legge): nessuno schermo cambia, e il giro completo non serve.
-- **Scostamenti dal design**: nessuno. Il punto 3 è la riga del design.
-- **Verificato** (5 ottobre 2026, in locale, una suite alla volta):
+- **Scostamenti dal design**: nessuno.
+- **Verificato, al primo giro** (5 ottobre 2026, in locale, una suite alla volta, con il predefinito che poi è tornato indietro; la CI
+  della PR verde su `f57a3b8`, `build-test` e `core-guard`):
   - `dotnet build`: 0 avvisi;
   - `IvaoHub.UnitTests.exe`: **1107/1107**;
   - **`IvaoHub.IntegrationTests.exe` intero, senza filtro: 467/467** al primo giro, in 7,8 minuti;
@@ -4324,8 +4332,18 @@ una riga di `docs/FORKING.md`; nessun file del nucleo, nessuna migrazione, nessu
     - secondo giro intero: **163/163**;
   - le regole di `core-guard` in PowerShell, dal merge-base con `main` (78df526): nessun file del maintainer, nessuno del nucleo
     (`schema.d.ts` è fra i generati ammessi), **PASS**.
+- **Verificato, dopo la risposta** (6 ottobre 2026, in locale):
+  - `dotnet build`: 0 avvisi;
+  - `IvaoHub.UnitTests.exe`: **1107/1107**;
+  - **le classi d'integrazione del training** (`-class 'IvaoHub.IntegrationTests.Training*'`): **75/75** in 1,9 minuti. Un primo
+    tentativo era caduto 75/75 in 10 secondi, ma per Docker spento; dopo aver riacceso Docker Desktop è passato tutto;
+  - `pnpm gen:api`: nessuna differenza. Nessun file del web cambia in questo giro;
+  - le regole di `core-guard` in PowerShell, dal merge-base (78df526): **PASS**. La PR tocca ora dieci file: `docs/FORKING.md` e i
+    due test dei predefiniti non ci sono più.
 - **Non verificato**:
-  - **la CI** della PR, che la dice la PR;
+  - **la CI** della PR sulla testa nuova, che la dice la PR;
+  - **la suite d'integrazione intera e lo smoke dopo la risposta**: il giro rimette un predefinito com'è su `main` e cambia un
+    commento. Le classi del training e le unità sono state rifatte; la suite intera e lo smoke sono quelli del primo giro;
   - **`pnpm e2e:full`**: nessuno schermo cambia (Trovato n.3);
   - **i test nuovi sul codice di `main`**: non sono stati fatti girare sul codice di prima. Con il codice di prima il test del percorso
     cadrebbe: sul percorso c'erano i cinque passi dove ora afferma che non c'è niente. Il test del capo FIR prova invece una regola
