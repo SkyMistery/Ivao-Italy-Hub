@@ -15,7 +15,8 @@ la parte resta fuori e si scrive in «Com'è andata», o diventa una fase del nu
 
 ## 2. Perché E4 non lo fa
 
-**Misurato nel codice** (6 ottobre 2026, `main` a `e3a8464` più E3b):
+**Misurato nel codice** (6 ottobre 2026, sul branch di E4: `main` a `78df526` più E3b; la #219, unita dopo su `main`, cambia solo le
+parole della striscia):
 
 - il blocco `networkStats` (`NetworkStatsProvider`, `Core/Content/CoreDataBlockProviders.cs`) conta **l'area della divisione** e
   nient'altro: il suo spazio aereo è quello di `IFirDirectory.GetAirspaceAsync`, e le sue proprietà sono un insieme chiuso — le quattro
