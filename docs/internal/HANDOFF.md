@@ -39,7 +39,7 @@
 ricerca, file, `events-release`) ed E4 (#223: `/events`, `/events/{slug}`, il blocco `events.eventList`, le rotte del FOD, migrazione
 additiva `AddEventRoutes`), con le regole di «Pubblica», le cinque letture del pubblico, i tipi che un evento sceglie e due letture
 scritte a mano accettate da Carmine; **M4 è a 14 fasi su 29**, più **E4b** (nucleo, nuova: chi è online sugli scali, #226 aperta); il
-prossimo passo del modulo è E5. **Cinque correzioni del nucleo**, `main` alla **0.6.5**: la striscia «In rete adesso» senza l'ora e
+prossimo passo del modulo è E5. **Quattro correzioni del nucleo**, `main` alla **0.6.5**: la striscia «In rete adesso» senza l'ora e
 senza «qui» (#219, 0.6.2); **l'inizializzazione sotto un blocco del database** (#218, 0.6.3, issue #203: di due processi partiti
 insieme ne inizializza uno; un blocco non ottenuto non ferma l'avvio); il cartellino della ricerca con la parola del modulo (#222,
 0.6.4); l'anteprima dell'editor che non resta più vuota su una macchina lenta (#225, 0.6.5); A13d del training (#220: il percorso
