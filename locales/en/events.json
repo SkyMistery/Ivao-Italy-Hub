@@ -5,6 +5,11 @@
     "events": "Events",
     "settings": "Events settings"
   },
+  "search": {
+    "kinds": {
+      "events": "Event"
+    }
+  },
   "events": {
     "title": "Events",
     "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",

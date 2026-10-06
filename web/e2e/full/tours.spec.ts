@@ -114,6 +114,22 @@ test('a tour is made from a template, marked ready, found in search and calendar
   const hits = ((await search.json()) as { results: { items: { url: string }[] } }).results.items;
   expect(hits.map((hit) => hit.url)).toContain(`/tours/${slug}`);
 
+  // ...where the result says what it is in the tours' own word, in the language on screen: the search asks the module
+  // that projected the row, and not the core, for it (note `2026-10-06-le-etichette-dei-tipi-nella-ricerca`). A page
+  // of its own, because the editor's address is what the deletion below goes back to.
+  const results = await context.newPage();
+  for (const [language, words] of [
+    ['en', flightops],
+    ['it', italianFlightOps()],
+  ] as const) {
+    await context.addCookies([{ name: 'hub.lang', value: language, url: benchUrl }]);
+    await results.goto(`/search?q=${encodeURIComponent(tourName[language])}`);
+    const hit = results.getByRole('listitem').filter({ has: results.locator(`a[href="/tours/${slug}"]`) });
+    await expect(hit.locator('a + *')).toHaveText(words.search.kinds.tour);
+  }
+  await results.close();
+  await readInEnglish(context);
+
   // ...and in the calendar, as the public calendar block reads it: the release, and the close as a deadline (T20c). The
   // staff list of the calendar is by department, and the bench's is not the tours' one.
   const window = {
@@ -146,9 +162,21 @@ test('a tour is made from a template, marked ready, found in search and calendar
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
 function englishFlightOps() {
+  return flightOpsWords('en');
+}
+
+function italianFlightOps() {
+  return flightOpsWords('it');
+}
+
+function flightOpsWords(language: string) {
   return JSON.parse(
-    readFileSync(fileURLToPath(new URL('../../../locales/en/flightops.json', import.meta.url)), 'utf8'),
+    readFileSync(
+      fileURLToPath(new URL(`../../../locales/${language}/flightops.json`, import.meta.url)),
+      'utf8',
+    ),
   ) as {
+    search: { kinds: { tour: string } };
     tours: {
       fromTemplate: string;
       saved: string;

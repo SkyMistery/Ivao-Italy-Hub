@@ -5,6 +5,11 @@
     "events": "Eventi",
     "settings": "Impostazioni degli eventi"
   },
+  "search": {
+    "kinds": {
+      "events": "Evento"
+    }
+  },
   "events": {
     "title": "Eventi",
     "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e pubblicarli, annullarli o eliminarli.",
