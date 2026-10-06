@@ -4456,6 +4456,8 @@ export interface components {
          * @enum {unknown}
          */
         EventStateKind: "Draft" | "Scheduled" | "Announced" | "BookingOpen" | "InProgress" | "Ended" | "Cancelled";
+        /** @enum {unknown} */
+        EventUnseen: "Draft" | "NotSeenYet" | "Over" | null;
         /**
          * @description What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
          *     own (E3b), cancelling another (EventCancelRequest). Its department is the module's base department, which the
@@ -6533,9 +6535,10 @@ export interface components {
         };
         /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
-         *     kind, who organises it, the airports, the routes and the description; a cancelled one with its note.
-         *     Seen is false only to the staff of the events, who read the page of an event in every state — a draft, one not seen
-         *     yet, one that ended —, and the page tells them that nobody else does.
+         *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
+         *     cancelled one with its note.
+         *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
+         *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
         PublicEventDto: {
             /** Format: int64 */
@@ -6554,7 +6557,7 @@ export interface components {
             /** Format: date-time */
             endsAtUtc: string;
             state: components["schemas"]["EventStateKind"];
-            seen: boolean;
+            unseen: null | components["schemas"]["EventUnseen"];
             wholeDivision: boolean;
             airports: components["schemas"]["PublicEventAirportDto"][];
             routes: components["schemas"]["PublicEventRouteDto"][];

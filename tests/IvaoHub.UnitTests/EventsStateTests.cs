@@ -150,6 +150,35 @@ public sealed class EventsStateTests
         Assert.Contains(rows, row => !EventState.IsSeen(row, Starts));
     }
 
+    [Fact]
+    public void WhyAnEventIsNotSeenIsSaidExactlyWhenItIsNot()
+    {
+        // The page tells the staff why nobody else sees an event (E4): a reason exactly when IsSeen says no, on the whole grid.
+        var instants = new[] { Visible - Tick, Visible, Opens, Starts, Ends - Tick, Ends, Ends + Tick };
+
+        foreach (var now in instants)
+        {
+            foreach (var row in Variants())
+            {
+                Assert.Equal(EventState.IsSeen(row, now), EventState.Unseen(row, now) is null);
+            }
+        }
+
+        // Each reason where it belongs: a draft whatever its dates, over after its end, not seen yet before its release — and the
+        // last two whether it is cancelled or not, which its state alone does not say.
+        var draft = Published();
+        draft.Status = PublishStatus.Draft;
+        Assert.Equal(EventUnseen.Draft, EventState.Unseen(draft, Ends + Tick));
+
+        var cancelled = Published();
+        cancelled.CancelledAt = Visible - TimeSpan.FromDays(1);
+        Assert.Equal(EventUnseen.NotSeenYet, EventState.Unseen(cancelled, Visible - Tick));
+        Assert.Null(EventState.Unseen(cancelled, Starts));
+        Assert.Equal(EventUnseen.Over, EventState.Unseen(cancelled, Ends));
+        Assert.Equal(EventStateKind.Cancelled, EventState.Of(cancelled, Visible - Tick));
+        Assert.Equal(EventStateKind.Cancelled, EventState.Of(cancelled, Ends));
+    }
+
     /// <summary>An event published with all four dates, in the order «Publish» will ask for (E3b).</summary>
     private static Event Published() => new()
     {

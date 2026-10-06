@@ -40,7 +40,7 @@ const words = JSON.parse(
     calendar: string;
     back: string;
     backOffice: string;
-    staffOnly: string;
+    staffOnly: { Draft: string; NotSeenYet: string; Over: string };
     wholeDivision: string;
     cancelled: string;
     routes: string;
@@ -115,7 +115,7 @@ function event(overrides: Record<string, unknown> = {}) {
     startsAtUtc: '2099-11-21T18:00:00.000Z',
     endsAtUtc: '2099-11-21T22:00:00.000Z',
     state: 'Announced',
-    seen: true,
+    unseen: null,
     wholeDivision: false,
     airports: [
       { icao: 'XXAA', name: 'Smoke Airport A' },
@@ -254,7 +254,9 @@ test('the page of an event says when, who organises it, where, its routes and it
   await expect(page.getByText('Bring your best landing.')).toBeVisible();
 
   // Not a page only the staff see, and no way to the back office for a visitor.
-  await expect(page.getByText(words.public.staffOnly)).toHaveCount(0);
+  for (const line of Object.values(words.public.staffOnly)) {
+    await expect(page.getByText(line)).toHaveCount(0);
+  }
   await expect(page.getByRole('link', { name: words.public.backOffice })).toHaveCount(0);
   await expect(page.getByRole('link', { name: words.public.back })).toHaveAttribute('href', '/events');
 });
@@ -283,23 +285,32 @@ test('an event the reader may not see is not found', async ({ page }) => {
   await expect(page.getByRole('heading', { name: englishCommon.notFound.title })).toBeVisible();
 });
 
-test('the staff of the events read an event nobody else sees, told so, with the way to the back office', async ({
+test('the staff of the events read an event nobody else sees, told so and why, with the way to the back office', async ({
   page,
 }) => {
   await stubTheApiAsStaff(page, {
     ...staffBootstrap,
     permissions: [...staffBootstrap.permissions, { name: 'Events.View', department: 'ED' }],
   });
-  await stubTheEventPages(page, { 'evt-test-smoke-page': event({ seen: false, state: 'Ended' }) });
+  await stubTheEventPages(page, {
+    'evt-test-smoke-page': event({ unseen: 'Over', state: 'Ended' }),
+    'evt-test-smoke-draft': event({ slug: 'evt-test-smoke-draft', unseen: 'Draft', state: 'Draft' }),
+  });
 
   await page.goto('/events/evt-test-smoke-page');
 
-  await expect(page.getByText(words.public.staffOnly)).toBeVisible();
+  // The reason the server gives, and only that one.
+  await expect(page.getByText(words.public.staffOnly.Over)).toBeVisible();
+  await expect(page.getByText(words.public.staffOnly.Draft)).toHaveCount(0);
   await expect(page.getByText(words.events.options.state.Ended, { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: words.public.backOffice })).toHaveAttribute(
     'href',
     '/staff/events/41',
   );
+
+  await page.goto('/events/evt-test-smoke-draft');
+  await expect(page.getByText(words.public.staffOnly.Draft)).toBeVisible();
+  await expect(page.getByText(words.public.staffOnly.Over)).toHaveCount(0);
 });
 
 test('on a page of the site the block draws the same cards, and the way to all of them', async ({ page }) => {

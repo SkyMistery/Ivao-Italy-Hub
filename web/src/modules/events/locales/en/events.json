@@ -167,7 +167,11 @@
     "calendarEmpty": "No event in this stretch of the calendar.",
     "back": "All the events",
     "backOffice": "Open it in the back office",
-    "staffOnly": "Only the staff of the events sees this page: nobody else does now, because the event is not published yet, not seen yet or over.",
+    "staffOnly": {
+      "Draft": "Only the staff of the events sees this page: the event is a draft, and nobody else sees it until it is published.",
+      "NotSeenYet": "For now only the staff of the events sees this page: the event is published, and the others see it from the moment written in «Seen from».",
+      "Over": "Only the staff of the events sees this page: the event is over, and the site keeps no archive."
+    },
     "when": "When",
     "wholeDivision": "Every airport of the division",
     "organizerPage": "Their page",

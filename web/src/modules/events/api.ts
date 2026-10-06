@@ -389,7 +389,7 @@ export function useDeleteRoute() {
 
 /**
  * The page of an event (§7.1): what whoever is reading may see of it, or null — not seen, or for the members and read by a
- * visitor. The staff of the events read it in every state, and `seen` tells them nobody else does.
+ * visitor. The staff of the events read it in every state, and `unseen` tells them why nobody else does.
  */
 export function publicEventQuery(slug: string) {
   return queryOptions({

@@ -44,9 +44,10 @@ public sealed record PublicEventCardDto(
 
 /// <summary>
 /// An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
-/// kind, who organises it, the airports, the routes and the description; a cancelled one with its note.
-/// <para><c>Seen</c> is false only to the staff of the events, who read the page of an event in every state — a draft, one not seen
-/// yet, one that ended —, and the page tells them that nobody else does.</para>
+/// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
+/// cancelled one with its note.
+/// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
+/// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
 public sealed record PublicEventDto(
     long Id,
@@ -61,7 +62,7 @@ public sealed record PublicEventDto(
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     EventStateKind State,
-    bool Seen,
+    EventUnseen? Unseen,
     bool WholeDivision,
     IReadOnlyList<PublicEventAirportDto> Airports,
     IReadOnlyList<PublicEventRouteDto> Routes,
@@ -199,7 +200,7 @@ public sealed class PublicEvents(
             row.StartsAtUtc,
             row.EndsAtUtc,
             EventState.Of(row, now),
-            seen,
+            seen ? null : EventState.Unseen(row, now),
             row.WholeDivision,
             [.. own.Select(Named)],
             [

@@ -12,7 +12,7 @@ import { benchAirports, benchUrl, readInEnglish, whileWaitingFor, writeInBothLan
  * the assistant coordinator of the flight operations (`?as=assistant`, `IT-FOAC`) gives a route — from the event's page in the back
  * office, in the generated form of its «Routes» tab, holding only what the division gives the flight operations on the events —,
  * and a visitor finds the event on `/events` and the route on its page. An event that ended is on no list and its page is not
- * found, to a visitor; the coordinator still reads it, told that nobody else does.
+ * found, to a visitor; the coordinator still reads it, told that nobody else does because it is over.
  *
  * The bench survives between runs: the events of this spec's stem are taken back in a `finally`, and an interrupted run's
  * leftovers at the start.
@@ -185,7 +185,7 @@ test('the assistant of the flight operations gives a published event a route, an
     const staff = await coordinator.newPage();
     await staff.goto(`/events/${over.slug}`);
     await expect(staff.getByRole('heading', { level: 1, name: over.title.en })).toBeVisible();
-    await expect(staff.getByText(events.public.staffOnly)).toBeVisible();
+    await expect(staff.getByText(events.public.staffOnly.Over)).toBeVisible();
   } finally {
     await removeOurEvents(coordinator.request);
     await Promise.all([coordinator.close(), assistant.close(), visitor.close()]);
@@ -199,6 +199,6 @@ function englishEvents() {
   ) as {
     events: { readOnly: string; tabs: { routes: string } };
     routes: { create: string; fields: { remarks: string } };
-    public: { staffOnly: string };
+    public: { staffOnly: { Over: string } };
   };
 }

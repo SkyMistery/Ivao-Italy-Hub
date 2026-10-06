@@ -45,7 +45,7 @@ import { EventCards, EventWhen } from './EventCards';
  *
  * What arrives is what the reader may see, decided by the server: an event the public does not see — a draft, one not seen yet,
  * one that ended, one of the members read by a visitor — is not on the list, and its page is not found. **No archive** (§2.4). The
- * staff of the events read the page of an event in every state, told that nobody else does.
+ * staff of the events read the page of an event in every state, told that nobody else does, and why.
  */
 
 const EVENTS_PAGE = '/events';
@@ -193,7 +193,7 @@ export function EventPublicPage() {
 /**
  * One event (§7.1): the banner; the state, the kind, the title and the summary; when, in UTC and in the division's time; who
  * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; the description. To the
- * staff, when nobody else sees it, a line that says so and the way back to the back office.
+ * staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
   const { t, i18n } = useTranslation();
@@ -226,7 +226,10 @@ function EventScreen({ event }: { event: PublicEventDto }) {
         ) : null}
       </div>
 
-      {event.seen ? null : <Notice tone="info" title={t('events:public.staffOnly')} />}
+      {/* Why nobody else sees it, as the server says: the state alone cannot tell a cancelled event not seen yet from one over. */}
+      {event.unseen === null ? null : (
+        <Notice tone="info" title={t(`events:public.staffOnly.${event.unseen}`)} />
+      )}
 
       {event.bannerMediaId === null ? null : (
         <img

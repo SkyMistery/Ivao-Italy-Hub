@@ -205,7 +205,7 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await PublishAsync(coordinator, page, token);
 
         var read = await OkAsync(await visitor.GetAsync(PageUri("page"), token), token);
-        Assert.True(read.GetProperty("seen").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, read.GetProperty("unseen").ValueKind);
         Assert.Equal(nameof(EventStateKind.Announced), read.GetProperty("state").GetString());
         Assert.Equal("rfo", read.GetProperty("kind").GetString());
         var airport = Assert.Single(read.GetProperty("airports").EnumerateArray());
@@ -216,17 +216,19 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("evt-test-e4 remark", route.GetProperty("remarks").GetProperty("it").GetString());
 
         // After its end: not found by a visitor, read by the staff of the events — the events department, and whoever collaborates
-        // with Events.View on it —, who are told nobody else sees it.
+        // with Events.View on it —, who are told nobody else sees it, and why.
         var over = Id(await CreatedAsync(coordinator, EventEndpoints.Pattern, Payload("over", Starts(days: -3)), token));
         await PublishAsync(coordinator, over, token);
         await AssertNotFoundAsync(visitor, PageUri("over"), token);
 
         var staffRead = await OkAsync(await coordinator.GetAsync(PageUri("over"), token), token);
-        Assert.False(staffRead.GetProperty("seen").GetBoolean());
+        Assert.Equal(nameof(EventUnseen.Over), staffRead.GetProperty("unseen").GetString());
         Assert.Equal(nameof(EventStateKind.Ended), staffRead.GetProperty("state").GetString());
 
         using var flightOperations = await SignedInAsync(FlightOperationsVid, token);
-        Assert.False((await OkAsync(await flightOperations.GetAsync(PageUri("over"), token), token)).GetProperty("seen").GetBoolean());
+        Assert.Equal(
+            nameof(EventUnseen.Over),
+            (await OkAsync(await flightOperations.GetAsync(PageUri("over"), token), token)).GetProperty("unseen").GetString());
 
         // A member who is not of the staff: not found either.
         using var member = await SignedInAsync(MemberVid, token);
@@ -241,13 +243,28 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
             token));
         await PublishAsync(coordinator, scheduled, token);
 
-        foreach (var (name, state) in new[] { ("draft", EventStateKind.Draft), ("scheduled", EventStateKind.Scheduled) })
+        foreach (var (name, state, unseen) in new[]
+        {
+            ("draft", EventStateKind.Draft, EventUnseen.Draft),
+            ("scheduled", EventStateKind.Scheduled, EventUnseen.NotSeenYet),
+        })
         {
             await AssertNotFoundAsync(visitor, PageUri(name), token);
             var preview = await OkAsync(await coordinator.GetAsync(PageUri(name), token), token);
-            Assert.False(preview.GetProperty("seen").GetBoolean());
+            Assert.Equal(unseen.ToString(), preview.GetProperty("unseen").GetString());
             Assert.Equal(state.ToString(), preview.GetProperty("state").GetString());
         }
+
+        // Cancelled before it is seen: its state says cancelled, and why nobody else sees it is still that it is not seen yet — what
+        // the state alone could not tell from a cancelled event that is over.
+        await OkAsync(await coordinator.PostAsJsonAsync(
+            $"{EventEndpoints.Pattern}/{scheduled}/cancel",
+            new EventCancelRequest(Text("evt-test-e4 early"), default),
+            token), token);
+        var early = await OkAsync(await coordinator.GetAsync(PageUri("scheduled"), token), token);
+        Assert.Equal(
+            (nameof(EventStateKind.Cancelled), nameof(EventUnseen.NotSeenYet)),
+            (early.GetProperty("state").GetString(), early.GetProperty("unseen").GetString()));
 
         // A cancelled event stays until its end, with its note (§2.3).
         await OkAsync(await coordinator.PostAsJsonAsync(
@@ -282,7 +299,9 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.DoesNotContain(Slug("members"), await ListedAsync(visitor, token));
 
         // A member signed in: both.
-        Assert.True((await OkAsync(await member.GetAsync(PageUri("members"), token), token)).GetProperty("seen").GetBoolean());
+        Assert.Equal(
+            JsonValueKind.Null,
+            (await OkAsync(await member.GetAsync(PageUri("members"), token), token)).GetProperty("unseen").ValueKind);
         Assert.Contains(Slug("members"), await ListedAsync(member, token));
     }
 

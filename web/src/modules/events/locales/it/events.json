@@ -167,7 +167,11 @@
     "calendarEmpty": "Nessun evento in questo tratto del calendario.",
     "back": "Tutti gli eventi",
     "backOffice": "Aprilo nel back office",
-    "staffOnly": "Questa pagina la vede solo lo staff degli eventi: ora non la vede nessun altro, perché l'evento non è ancora pubblicato, non è ancora visibile o è concluso.",
+    "staffOnly": {
+      "Draft": "Questa pagina la vede solo lo staff degli eventi: l'evento è una bozza, e nessun altro lo vede finché non è pubblicato.",
+      "NotSeenYet": "Per ora questa pagina la vede solo lo staff degli eventi: l'evento è pubblicato, e gli altri lo vedono dal momento scritto in «Visibile dal».",
+      "Over": "Questa pagina la vede solo lo staff degli eventi: l'evento è concluso, e il sito non tiene un archivio."
+    },
     "when": "Quando",
     "wholeDivision": "Tutti gli aeroporti della divisione",
     "organizerPage": "La loro pagina",
