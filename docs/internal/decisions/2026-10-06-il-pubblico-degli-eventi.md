@@ -8,13 +8,16 @@ un commento sulla PR — come le tre regole di E3b, che il revisore ha portato a
 blocco Data, `Localized<T>` —; sono letture del design M4 §1.4, §2.3, §2.4, §7.1, §7.3.
 
 [a221]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/221#issuecomment-6012333670
+[r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
 
 ## 1. Le letture
 
 1. **La pagina di un evento allo staff degli eventi, in ogni stato.** Il design §2.4 dice che dopo la fine «la pagina risponde 404 a chi
    non è staff»; non dice delle bozze, né di un evento pubblicato e non ancora visibile. E4: chi ha **`Events.View` sulla riga** —
    chiesto all'unico handler: l'ED, e chi collabora (AOD, FOD, MD) per il suo grant sull'ED — legge `/events/{slug}` in **ogni** stato,
-   bozza, programmato, concluso, con una riga che dice che nessun altro la vede; tutti gli altri solo mentre l'evento si vede
+   bozza, programmato, concluso, con una riga che dice che nessun altro la vede **e perché** — bozza, non ancora visibile, concluso:
+   il motivo lo dà il server (`EventState.Unseen`), perché lo stato da solo non distingue un annullato non ancora visibile da uno
+   concluso (dal banco, 6 ottobre 2026) —; tutti gli altri solo mentre l'evento si vede
    (`EventState.IsSeen`, per chi è l'evento), e 404 altrimenti. Perché: una condizione sola invece di due; lo staff vede la pagina prima di
    pubblicare, e «Pubblica» non ha un contrario (E3b); chi collabora legge lì la descrizione, che nel back office è una scheda di chi scrive
    l'evento (E3a, scelta 7). Alternativa: allo staff solo dopo la fine, alla lettera, e una bozza solo nel back office, come i tour.
@@ -28,7 +31,11 @@ blocco Data, `Localized<T>` —; sono letture del design M4 §1.4, §2.3, §2.4,
    divisione, perché la pagina le mostra a tutti — come la nota di un annullamento (E3a) e le parole sotto il link dell'esame teorico (A13a);
    la **rotta** è obbligatoria e non tradotta (sono parole della rete), al più 1024 caratteri, le note 500 per lingua; **più rotte fra gli
    stessi due scali** sono ammesse (niente indice univoco: le note dicono quale è quale); nessun vincolo che uno dei due capi sia uno scalo
-   dell'evento (un evento di tutta la divisione non ne ha); si ordinano per partenza e arrivo.
+   dell'evento (un evento di tutta la divisione non ne ha); **si ordinano come il FOD le scrive** — sulla pagina e nella scheda del back
+   office, dove si riordinano per scalo a mano —, perché l'ordine per partenza metteva il ritorno LIMC→LIRF prima dell'andata
+   LIRF→LIMC (dal banco, 6 ottobre 2026). **Una rotta va da uno scalo a un altro**: da
+   uno scalo a sé stesso, comunque scritto, il validatore la rifiuta sull'arrivo (`events:errors.routeToItself`), come ha chiesto il
+   revisore ([punto 4][r223]).
 5. **Eliminare un evento** porta via le sue rotte nello stesso salvataggio, ognuna con la sua riga di audit, come gli scali (E3a). Il
    guardiano chiede per ognuna `EventRoutes.Edit`, che chi elimina un evento in IT ha (EC ed EAC tengono tutte le aree, §6.2). ⚠️ Una
    divisione che desse `Events.Delete` senza `EventRoutes.Edit` si vedrebbe rifiutare (403) l'eliminazione di un evento con rotte: toglie
@@ -36,8 +43,8 @@ blocco Data, `Localized<T>` —; sono letture del design M4 §1.4, §2.3, §2.4,
 
 ## 2. Che cosa si è toccato
 
-Solo il modulo: `EventRoute.cs`, `Staff/EventRouteEndpoints.cs`, `Staff/EventSaving.cs`, `Public/PublicEvents.cs`,
-`Public/EventListProvider.cs` e le schermate di `web/src/modules/events/`.
+Solo il modulo: `EventRoute.cs`, `EventState.cs` (`Unseen`), `Staff/EventRouteEndpoints.cs`, `Staff/EventSaving.cs`,
+`Public/PublicEvents.cs`, `Public/EventListProvider.cs` e le schermate di `web/src/modules/events/`.
 
 ## 3. La domanda a Carmine
 

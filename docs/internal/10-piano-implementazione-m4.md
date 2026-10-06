@@ -994,7 +994,7 @@ rotta, il visitatore la vede.
      senza filtro.
   4. **Le rotte**: le note **tradotte** (`remarks_i18n`, in tutte le lingue quando scritte, 500 per lingua; il design dice `remarks`); la
      rotta obbligatoria e non tradotta, 1024 caratteri; **più rotte fra gli stessi due scali** (nessun indice univoco); nessun vincolo che
-     un capo sia uno scalo dell'evento; ordine per partenza e arrivo.
+     un capo sia uno scalo dell'evento; ordine per partenza e arrivo (poi l'ordine di scrittura: «Dopo la revisione», punto 8).
   5. **Eliminare un evento elimina le sue rotte**, con l'audit: il guardiano chiede `EventRoutes.Edit` a chi elimina (EC ed EAC ce l'hanno).
   6. **`/events` legge il blocco** invece di un endpoint suo (punto 4): i tour e il training hanno un endpoint della lista accanto al loro
      blocco; qui il precedente è `/calendar`. Endpoint a mano di E4: **una lettura composta**, la pagina dell'evento (pubblica); le rotte
@@ -1029,6 +1029,58 @@ rotta, il visitatore la vede.
   `events.eventList` messo dall'editor su una pagina del banco (lo provano la smoke, con una pagina finta, e l'integrazione); il calendario
   di `/events` nel browser vero (lo prova la smoke con le risposte finte); `pnpm e2e:full` con la mappa di base, che non c'è in nessun
   worktree.
+- **La CI della prima spinta** (`ff8ff9f`): verde, `build-test` (25,2 minuti) e `core-guard`.
+- **Dopo la revisione** ([i rilievi del revisore sulla #223][r223], «approvable on the code», in attesa delle risposte di Carmine; la
+  #221 unita nel frattempo, `168fa25`, e la #223 mostra solo E4), 6 ottobre 2026:
+  1. **Le due note «Proposta»** (punto 1) aspettano Carmine, e con loro **la seconda lettura scritta a mano**,
+     `GET /api/events/public/{slug}` (punto 2; scelta 6 qui sopra): il revisore chiede a Carmine di accettarla per il conto di §16.6,
+     come la lettura dei preset sulla #214. Con la sua risposta entra nella nota `il-pubblico-degli-eventi`, con il link.
+  2. **`search.kinds.events`** (punto 3): la parola del tipo `events` nella ricerca la porta la #222 del nucleo, che fa chiedere a
+     `manifest.test.ts` le due righe. Come chiede il revisore, niente qui: quando la #222 è unita, il merge di `main` su questo branch le
+     tiene (il conflitto atteso è nei due `events.json` del modulo e nelle loro copie alla radice).
+  3. **Una rotta da uno scalo a sé stesso** (punto 4) è **rifiutata**: una regola del validatore sull'arrivo, che confronta i due capi
+     senza spazi intorno e senza distinguere maiuscole e minuscole, con la chiave sua `events:errors.routeToItself` (le parole nelle due
+     lingue), e la riga nel test delle rotte (`XEC1` → `xec1`). Nella nota `il-pubblico-degli-eventi`, punto 4.
+  4. **`/events` si ferma a 50** (punto 5): il commento di `EVERY_CARD` in `screens/public.tsx` diceva «tutti gli eventi in arrivo», ma il
+     server dà a una lista al più `PublicEvents.MaxItems` (50), i più vicini, e i filtri e il calendario lavorano su quelli. Corretti il
+     commento e **l'aiuto di `limit` del blocco**, che diceva lo stesso a chi compone una pagina (ora «i cinquanta più vicini»); che cosa
+     vedrebbe una divisione con più di cinquanta eventi annunciati insieme è in `HANDOFF-M4.md`.
+
+  Nello stesso giro, **quello che dalberone ha visto sul banco di prova** (l'hub pubblicato di `ff8ff9f`, con sei eventi e le rotte del
+  FOD), portato dalla sessione che coordina:
+  5. **Il form dell'evento offre ogni tipo del calendario**, anche Training, Esame, Tour, Riunione e Scadenza. **Classificato prima di
+     scrivere** (`CLAUDE.md` §5): nessun dato distingue i tipi degli eventi — i tipi del calendario hanno chiave, etichetta, colore e ordine;
+     una riga di `kindPresets` oggi non dice «è un evento», e un tipo senza riga si sceglie lo stesso —, e le note unite (E1 §1,
+     `i-tipi-di-evento` §4) dicono che il form sceglie fra tutti i tipi del bootstrap. Quindi **nessun codice**: nota nuova **«Proposta»**
+     `decisions/2026-10-06-i-tipi-che-un-evento-sceglie.md`, con la terza domanda a Carmine sulla #223 — la raccomandazione: i tipi degli
+     eventi sono quelli con una riga di `kindPresets`, e tutti quando non ce n'è nessuna (un fork nuovo non resta con la scelta vuota).
+  6. **La riga «solo lo staff»** elencava i tre motivi insieme. Ora dice quello vero, e **lo dice il server**: `EventState.Unseen` (bozza,
+     non ancora visibile, concluso), al posto del booleano `seen` del DTO, `unseen`, nullo per chi l'evento lo vede; le parole sono tre,
+     `events:public.staffOnly.{Draft|NotSeenYet|Over}`. Dallo stato soltanto il browser non poteva dirlo: un annullato è annullato
+     qualunque siano le sue date, visibile o no. `EventsStateTests` tiene `Unseen` alla stessa risposta di `IsSeen` sulla griglia, e
+     `EventsPublicTests` legge il motivo della bozza, del programmato, del concluso e di un programmato annullato.
+  7. **I nomi degli scali** nelle schede e nel filtro di `/events`, come sulla pagina («LIRF · Roma Fiumicino»): le schede del blocco
+     portano gli scali come `{ icao, name }` (`PublicEventCardDto.Airports`, una domanda sola a `IAirportDirectory` per tutte le schede),
+     `AirportName` è passato dalla pagina a `EventCards.tsx` e serve a tutte e due, il filtro mostra codice e nome e l'indirizzo tiene il
+     codice. Senza un nome conosciuto, il codice solo.
+  8. **L'ordine delle rotte**: per partenza, il ritorno LIMC→LIRF veniva prima dell'andata LIRF→LIMC. **Scelto l'ordine in cui il FOD le
+     scrive** (l'`Id`), sulla pagina e come ordine di partenza della scheda del back office, dove le colonne degli scali si ordinano
+     ancora a mano: è l'ordine che chi scrive ha in mente, e non chiede una colonna nuova né una regola su quali scali vengono prima.
+     L'altra strada, l'ordine degli scali dell'evento, non sa dove mettere una rotta con un capo fuori dall'evento né quelle di un evento
+     di tutta la divisione. Nella nota `il-pubblico-degli-eventi`, punto 4; il test della pagina scrive l'andata dal secondo scalo, che
+     un ordine dei codici metterebbe dopo.
+  - **Al contrario** (6 ottobre 2026): con le rotte della pagina rimesse in ordine di partenza, il test della pagina cade (`[2, 1]` invece
+    di `[1, 2]`); il codice rimesso com'era, ricompilato.
+  - **Verificato di nuovo** (6 ottobre 2026, sul codice di tutti e otto i punti): `dotnet build` della soluzione senza avvisi e `dotnet
+    format --verify-no-changes` sui file C# toccati; unità **1110/1110**; **integrazione intera senza filtro 476/476** (5,7 minuti; prima
+    dei punti 5–8, con i soli 4 e 5, 476/476 in 7,2 minuti), `EventsPublicTests` da sola 4/4; `pnpm gen:api` (la forma nuova del DTO:
+    `unseen`, `EventUnseen`) e `pnpm i18n:sync` rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **615
+    in 84 file**; `pnpm e2e` **171/171** al primo giro (`--workers=2`, dietro il lock dello smoke); **`pnpm e2e:full e2e/full/events-` 6/6** al
+    primo giro — le sei prove degli eventi soltanto, non il giro intero — sul banco `http://127.0.0.1:5124` ricreato (`ivaohub_e2e_e4`
+    tolto prima), dietro il lock di Mailpit. Una commit per punto (4, 5, 6, 7, 8); quelle dei punti 6, 7 e 8 toccano gli stessi file,
+    divise per blocchi del diff, e **non sono state compilate una per una**: l'ultima è il codice provato.
+
+[r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
 
 ### E5 — Gli slot pubblici e l'esportazione
 
