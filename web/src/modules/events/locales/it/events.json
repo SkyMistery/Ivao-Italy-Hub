@@ -245,6 +245,7 @@
     "wholeDivisionHasNoAirports": "Un evento su tutta la divisione non ha scali suoi.",
     "airportUnknown": "L'hub non conosce questo aeroporto.",
     "airportTwice": "Questo scalo è già nell'evento.",
+    "routeToItself": "Una rotta va da uno scalo a un altro: questo è quello da cui parte.",
     "capacityEitherOr": "Indica i movimenti, oppure gli arrivi e le partenze: non tutti e due.",
     "alreadyCancelled": "Questo evento è già annullato.",
     "eventOver": "Questo evento è concluso: non si annulla più.",

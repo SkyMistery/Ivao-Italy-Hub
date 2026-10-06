@@ -246,6 +246,7 @@
     "wholeDivisionHasNoAirports": "An event about the whole division has no airports of its own.",
     "airportUnknown": "The hub does not know this airport.",
     "airportTwice": "This airport is already in the event.",
+    "routeToItself": "A route goes from one airport to another: this is the one it leaves.",
     "capacityEitherOr": "Give the movements, or the arrivals and the departures: not both.",
     "alreadyCancelled": "This event is already cancelled.",
     "eventOver": "This event is over: it cannot be cancelled any more.",

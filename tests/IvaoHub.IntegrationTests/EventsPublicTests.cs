@@ -136,6 +136,15 @@ public sealed class EventsPublicTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Contains("events:errors.airportUnknown", errors["arrivalIcao"]);
         }
 
+        // From an airport to itself, whatever the case it is written in: a route goes somewhere (the review of #223, point 4).
+        using (var toItself = await flightOperations.PostAsJsonAsync(
+            EventRouteEndpoints.Pattern,
+            Route(id, First, "xec1", "DCT", remarks: null),
+            token))
+        {
+            Assert.Contains("events:errors.routeToItself", (await RefusalsAsync(toItself, token))["arrivalIcao"]);
+        }
+
         // Nor the text of the event, nor its airports, nor publishing or cancelling it: none of theirs (§6.2).
         AssertForbidden(await flightOperations.PutAsJsonAsync(
             $"{EventEndpoints.Pattern}/{id}",

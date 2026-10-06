@@ -34,9 +34,9 @@ public sealed record EventRouteWriteDto(
     DateTime RowVersion);
 
 /// <summary>
-/// The rules one payload can answer by itself; whether its airports exist is the save's. The remarks are read by everybody on the
-/// page of the event, so once written in one language they are written in every language of the division, as every text the site
-/// shows. Messages are i18n keys.
+/// The rules one payload can answer by itself; whether its airports exist is the save's. A route goes from one airport to another,
+/// never back to the one it leaves. The remarks are read by everybody on the page of the event, so once written in one language
+/// they are written in every language of the division, as every text the site shows. Messages are i18n keys.
 /// </summary>
 public sealed class EventRouteWriteDtoValidator : AbstractValidator<EventRouteWriteDto>
 {
@@ -47,6 +47,10 @@ public sealed class EventRouteWriteDtoValidator : AbstractValidator<EventRouteWr
         RuleFor(route => route.EventId).GreaterThan(0).WithMessage("errors.required");
         RuleFor(route => route.DepartureIcao).NotEmpty().WithMessage("errors.required");
         RuleFor(route => route.ArrivalIcao).NotEmpty().WithMessage("errors.required");
+        RuleFor(route => route.ArrivalIcao)
+            .Must((route, arrival) => !string.Equals(arrival.Trim(), route.DepartureIcao.Trim(), StringComparison.OrdinalIgnoreCase))
+            .When(route => !string.IsNullOrWhiteSpace(route.DepartureIcao) && !string.IsNullOrWhiteSpace(route.ArrivalIcao))
+            .WithMessage("events:errors.routeToItself");
         RuleFor(route => route.Route)
             .NotEmpty().WithMessage("errors.required")
             .MaximumLength(EventRoute.MaxRouteLength).WithMessage("errors.text.tooLong");
