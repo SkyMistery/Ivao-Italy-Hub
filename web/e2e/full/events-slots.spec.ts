@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
+import { expect, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
 
-import { benchAirports, benchUrl, readInEnglish, whileWaitingFor } from './bench';
+import { benchAirports, benchUrl, readInEnglish, test, whileWaitingFor } from './bench';
 
 /**
  * The "done when" of E5 (M4), through the real screens and the real server: the coordinator of the events (`?as=events`, `IT-EC`,
@@ -12,8 +12,8 @@ import { benchAirports, benchUrl, readInEnglish, whileWaitingFor } from './bench
  * and its column, and nothing is loaded until the table is right; then the slots are in the tab, and a visitor finds them on the
  * page of the published event, the rotation's legs together, free.
  *
- * The bench survives between runs: the events of this spec's stem are taken back in a `finally`, and an interrupted run's leftovers
- * at the start. The aircraft types are the bench's (the fixtures of the network give it four).
+ * The bench survives between runs: the events of this spec's stem are taken back after the test (`afterwards`), and an interrupted
+ * run's leftovers at the start. The aircraft types are the bench's (the fixtures of the network give it four).
  */
 
 const events = englishEvents();
@@ -99,86 +99,87 @@ async function removeOurEvents(request: APIRequestContext): Promise<void> {
 
 test('the coordinator of the events pastes a table with a rotation, and a visitor finds the slots on the page', async ({
   browser,
+  afterwards,
 }) => {
   const coordinator = await contextAs(browser, 'events');
   await removeOurEvents(coordinator.request);
   const visitor = await contextAs(browser, null);
 
-  try {
-    const id = await eventWithAirport(coordinator.request);
-    const { rome, milan, bari } = benchAirports;
-
-    const page = await coordinator.newPage();
-    page.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-
-    // ---------------------------------------------------------------- the tab, and the page that loads a table
-    await page.goto(`/staff/events/${id}`);
-    await expect(page.getByRole('heading', { name: title.en })).toBeVisible();
-    await page.getByRole('tab', { name: events.events.tabs.slots }).click();
-    await expect(page).toHaveURL(/tab=slots/);
-    await page.getByRole('link', { name: events.slots.load.open }).click();
-    await expect(page.getByRole('heading', { name: events.slots.load.title })).toBeVisible();
-
-    // A rotation out of Rome and back, and an arrival from Bari — the second leg's type one the hub does not know.
-    const legOut = ['XEE501', 'XE501', 'A320/A20N', rome, at('18:00'), milan, at('19:10'), 'B12', 'R1', ''];
-    const legBack = ['XEE502', 'XE502', 'A320', milan, at('19:40'), rome, at('20:50'), '', 'R1', ''];
-    const alone = ['XEE503', '', 'E55P', bari, at('18:30'), rome, at('19:40'), '', '', ''];
-    const table = (rows: string[][]) => [header, ...rows.map((row) => row.join('\t'))].join('\n');
-
-    const text = page.locator('[id="text"]');
-    await text.fill(table([legOut, ['XEE502', 'XE502', 'XZZZ', ...legBack.slice(3)], alone]));
-    const refused = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        response.url().includes(`/api/events/events/${id}/slots/load`),
-    );
-    await page.getByRole('button', { name: events.slots.load.submit, exact: true }).click();
-    expect((await refused).status()).toBe(400);
-
-    // Refused by its row and its column, and nothing loaded.
-    await expect(page.getByText(events.slots.load.refused)).toBeVisible();
-    await expect(page.getByText(`Row 3, aircraft_types: ${events.errors.aircraftUnknown}`)).toBeVisible();
-
-    // Corrected, and loaded: back to the tab, which lists them.
-    await text.fill(table([legOut, legBack, alone]));
-    await whileWaitingFor(page, 'POST', `/api/events/events/${id}/slots/load`, async () => {
-      await page.getByRole('button', { name: events.slots.load.submit, exact: true }).click();
-    });
-    await expect(page).toHaveURL(/tab=slots/);
-    for (const callsign of ['XEE501', 'XEE502', 'XEE503']) {
-      await expect(page.getByRole('row').filter({ hasText: callsign })).toBeVisible();
-    }
-
-    // ---------------------------------------------------------------- published, a visitor reads the page
-    const publish = await coordinator.request.post(`/api/events/events/${id}/publish`, {
-      headers: asTheClientDoes,
-      data: { rowVersion: '0001-01-01T00:00:00' },
-    });
-    expect(publish.status(), await publish.text()).toBe(200);
-
-    const reader = await visitor.newPage();
-    reader.on('pageerror', (error) => {
-      throw new Error(`The page threw: ${error.message}`);
-    });
-    await reader.goto(`/events/${slug}`);
-    await expect(reader.getByRole('heading', { level: 1, name: title.en })).toBeVisible();
-
-    const slots = reader.getByRole('region', { name: events.public.slots });
-    const rows = slots.getByRole('row');
-    // The rotation's legs together, where its first one falls, then the arrival from Bari; every one free.
-    await expect(rows.nth(1)).toContainText(events.public.rotation.replace('{{rotation}}', 'R1'));
-    await expect(rows.nth(2)).toContainText('XEE501');
-    await expect(rows.nth(3)).toContainText('XEE502');
-    await expect(rows.nth(4)).toContainText('XEE503');
-    await expect(rows.nth(2)).toContainText('B12');
-    await expect(rows.nth(2)).toContainText('18:00');
-    await expect(slots.getByText(events.public.free)).toHaveCount(3);
-  } finally {
+  afterwards(async () => {
     await removeOurEvents(coordinator.request);
     await Promise.all([coordinator.close(), visitor.close()]);
+  });
+
+  const id = await eventWithAirport(coordinator.request);
+  const { rome, milan, bari } = benchAirports;
+
+  const page = await coordinator.newPage();
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  // ---------------------------------------------------------------- the tab, and the page that loads a table
+  await page.goto(`/staff/events/${id}`);
+  await expect(page.getByRole('heading', { name: title.en })).toBeVisible();
+  await page.getByRole('tab', { name: events.events.tabs.slots }).click();
+  await expect(page).toHaveURL(/tab=slots/);
+  await page.getByRole('link', { name: events.slots.load.open }).click();
+  await expect(page.getByRole('heading', { name: events.slots.load.title })).toBeVisible();
+
+  // A rotation out of Rome and back, and an arrival from Bari — the second leg's type one the hub does not know.
+  const legOut = ['XEE501', 'XE501', 'A320/A20N', rome, at('18:00'), milan, at('19:10'), 'B12', 'R1', ''];
+  const legBack = ['XEE502', 'XE502', 'A320', milan, at('19:40'), rome, at('20:50'), '', 'R1', ''];
+  const alone = ['XEE503', '', 'E55P', bari, at('18:30'), rome, at('19:40'), '', '', ''];
+  const table = (rows: string[][]) => [header, ...rows.map((row) => row.join('\t'))].join('\n');
+
+  const text = page.locator('[id="text"]');
+  await text.fill(table([legOut, ['XEE502', 'XE502', 'XZZZ', ...legBack.slice(3)], alone]));
+  const refused = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes(`/api/events/events/${id}/slots/load`),
+  );
+  await page.getByRole('button', { name: events.slots.load.submit, exact: true }).click();
+  expect((await refused).status()).toBe(400);
+
+  // Refused by its row and its column, and nothing loaded.
+  await expect(page.getByText(events.slots.load.refused)).toBeVisible();
+  await expect(page.getByText(`Row 3, aircraft_types: ${events.errors.aircraftUnknown}`)).toBeVisible();
+
+  // Corrected, and loaded: back to the tab, which lists them.
+  await text.fill(table([legOut, legBack, alone]));
+  await whileWaitingFor(page, 'POST', `/api/events/events/${id}/slots/load`, async () => {
+    await page.getByRole('button', { name: events.slots.load.submit, exact: true }).click();
+  });
+  await expect(page).toHaveURL(/tab=slots/);
+  for (const callsign of ['XEE501', 'XEE502', 'XEE503']) {
+    await expect(page.getByRole('row').filter({ hasText: callsign })).toBeVisible();
   }
+
+  // ---------------------------------------------------------------- published, a visitor reads the page
+  const publish = await coordinator.request.post(`/api/events/events/${id}/publish`, {
+    headers: asTheClientDoes,
+    data: { rowVersion: '0001-01-01T00:00:00' },
+  });
+  expect(publish.status(), await publish.text()).toBe(200);
+
+  const reader = await visitor.newPage();
+  reader.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+  await reader.goto(`/events/${slug}`);
+  await expect(reader.getByRole('heading', { level: 1, name: title.en })).toBeVisible();
+
+  const slots = reader.getByRole('region', { name: events.public.slots });
+  const rows = slots.getByRole('row');
+  // The rotation's legs together, where its first one falls, then the arrival from Bari; every one free.
+  await expect(rows.nth(1)).toContainText(events.public.rotation.replace('{{rotation}}', 'R1'));
+  await expect(rows.nth(2)).toContainText('XEE501');
+  await expect(rows.nth(3)).toContainText('XEE502');
+  await expect(rows.nth(4)).toContainText('XEE503');
+  await expect(rows.nth(2)).toContainText('B12');
+  await expect(rows.nth(2)).toContainText('18:00');
+  await expect(slots.getByText(events.public.free)).toHaveCount(3);
 });
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
