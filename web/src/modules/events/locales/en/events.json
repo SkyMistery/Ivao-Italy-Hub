@@ -36,7 +36,8 @@
       "cancel": "Cancel the event"
     },
     "publish": {
-      "problems": "Before it can be published, it still needs:"
+      "problems": "Before it can be published, it still needs:",
+      "saveFirst": "Save the settings first: «Publish» publishes the event as it is saved."
     },
     "delete": {
       "title": "Delete this event?",

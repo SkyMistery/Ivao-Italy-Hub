@@ -37,7 +37,8 @@
       "cancel": "Annulla l'evento"
     },
     "publish": {
-      "problems": "Prima di pubblicarlo manca ancora:"
+      "problems": "Prima di pubblicarlo manca ancora:",
+      "saveFirst": "Prima salva le impostazioni: «Pubblica» pubblica l'evento com'è salvato."
     },
     "delete": {
       "title": "Eliminare questo evento?",
