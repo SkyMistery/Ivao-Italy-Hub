@@ -184,11 +184,25 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal((1, 6), (replaced.GetProperty("added").GetInt32(), replaced.GetProperty("removed").GetInt32()));
         Assert.Equal(["XEA301"], (await SlotsAsync(id, token)).Select(slot => slot.Callsign));
 
+        // The corrected sheet of the same flight, loaded again in its place: the slot that goes and the one that comes have the same
+        // callsign and off block, the key of the unique index, in one save (the review of #228, point 3).
+        var again = await OkAsync(
+            await LoadAsync(
+                coordinator,
+                id,
+                Table(Line("XEA301", "XA301", TypeA, First, day.AddHours(18), Away, day.AddHours(19), "C7")),
+                SlotLoadMode.ReplaceFree,
+                token),
+            token);
+        Assert.Equal((1, 1), (again.GetProperty("added").GetInt32(), again.GetProperty("removed").GetInt32()));
+        var reloaded = Assert.Single(await SlotsAsync(id, token));
+        Assert.Equal(("XEA301", "XA301", "C7"), (reloaded.Callsign, reloaded.FlightNumber, reloaded.Stand));
+
         // Each slot written and deleted left its row in the audit, by its own area's table.
         await using var scope = _factory.Services.CreateAsyncScope();
         var audit = scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog;
-        Assert.True(await audit.CountAsync(entry => entry.Entity == "evt_slots" && entry.Action == "created" && entry.Vid == CoordinatorVid, token) >= 7);
-        Assert.True(await audit.CountAsync(entry => entry.Entity == "evt_slots" && entry.Action == "deleted" && entry.Vid == CoordinatorVid, token) >= 6);
+        Assert.True(await audit.CountAsync(entry => entry.Entity == "evt_slots" && entry.Action == "created" && entry.Vid == CoordinatorVid, token) >= 8);
+        Assert.True(await audit.CountAsync(entry => entry.Entity == "evt_slots" && entry.Action == "deleted" && entry.Vid == CoordinatorVid, token) >= 7);
     }
 
     [Fact]

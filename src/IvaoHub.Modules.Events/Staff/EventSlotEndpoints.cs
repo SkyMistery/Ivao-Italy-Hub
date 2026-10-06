@@ -259,11 +259,30 @@ public static class EventSlotEndpoints
             var (result, problems) = await loading.LoadAsync(row, request, http.RequestAborted);
             return result is null ? CrudProblems.Validation(problems, catalog, currentUser.Locale) : Results.Ok(result);
         }
-        catch (DbUpdateException)
+        catch (Exception exception) when (MetAnotherWrite(exception))
         {
             // Another load of the same event in the same moment wrote a slot this one wanted: read the slots again and load again.
+            // Any other failure is not answered with «load again», which would be said for ever: it surfaces as itself.
             return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
         }
+    }
+
+    /// <summary>
+    /// Whether a save failed on another write of the same rows: a key the unique index already holds, or the deadlock two inserts
+    /// of one key meet in when its row was just deleted (CONTRIBUTING.md) — which EF reports as an <see cref="InvalidOperationException"/>,
+    /// not a <see cref="DbUpdateException"/>, so the chain is walked whatever the outer exception.
+    /// </summary>
+    private static bool MetAnotherWrite(Exception? exception)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is MySqlConnector.MySqlException { ErrorCode: MySqlConnector.MySqlErrorCode.DuplicateKeyEntry or MySqlConnector.MySqlErrorCode.LockDeadlock })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>«Delete the free ones» (§7.2): every slot of the event nobody booked goes, public and private, each with its audit row.</summary>
