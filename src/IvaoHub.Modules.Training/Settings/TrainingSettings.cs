@@ -54,7 +54,11 @@ public sealed record TrainingSettings
 
     public ConflictPolicy ConflictPolicy { get; init; } = ConflictPolicy.Warn;
 
-    /// <summary>The kinds of the calendar whose entries a date is checked against; the online day joins when M4 makes its kind.</summary>
+    /// <summary>
+    /// The kinds of the calendar whose entries a date is checked against. The online day has its kind since E1 of M4,
+    /// <c>online-day</c>: a division that wants it to warn a trainer adds it here, in the training's settings. It is the division's
+    /// configuration, not a default (Carmine's answer on #220).
+    /// </summary>
     public IReadOnlyList<string> ConflictKinds { get; init; } = ["event"];
 
     /// <summary>Hours before a session the reminder leaves.</summary>
