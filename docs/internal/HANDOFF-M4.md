@@ -6,21 +6,24 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 6 ottobre 2026 — **fase E4b** (nucleo: chi è online sugli scali di un evento), sul branch
-`m4/e4b-online-at-airports`, **PR #226** verso `main`, del nucleo e senza coda, nata da `main` a `584eb72` e **unita di nuovo a `main`**
-a `77a2031`, dopo la #223. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), **E4 (#223)**, E10a (#210), E10b (#208),
-E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216),
-il piano 1.29 (#217), la parola degli eventi nella ricerca (#222) e l'anteprima dell'editor su una macchina lenta (#225, la `0.6.5`).
+**Ultimo aggiornamento:** 7 ottobre 2026 — **fase E10g** (nucleo: la versione di un contratto), sul branch
+`m4/e10g-contract-version`, **PR #230** verso `main`, del nucleo e senza coda, nata da `main` a `e9702b2` e **unita di nuovo a `main`**
+a `7b84a75`, dopo la #226 (E4b) e la revisione. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
+(#226)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo
+del nucleo (#211), la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo
+fino alla `0.6.5` (#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229).
 **E4b** non migra niente e va accanto alle fasi del modulo; dopo il suo merge **la prima fase del modulo monta la striscia** con gli scali
 dell'evento, il giorno dell'evento («Che cosa ha lasciato E4b», sotto).
-**Il prossimo passo**: E4 è unita; **E5** (gli slot pubblici e l'esportazione), in coda dopo la #223, è in corso. Da E3b un evento si
-**pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina
-`/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi
-(«Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6
-ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una
-pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). **Le tre domande di E4 hanno la risposta di
-Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del nucleo, la seconda lettura scritta a mano
-accettata, i tipi come raccomandato — fatti sulla #223. **La
+**Il prossimo passo**: E10g (la #230: «approvabile» per il revisore, e **Carmine ha risposto sì** alle tre domande della nota,
+[sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720)), poi **E5** (la #228, gli slot pubblici e
+l'esportazione), **in coda dopo la #230**: porta già questo branch e controlla la versione dell'esportazione con `ContractVersion` («Che
+cosa ha lasciato E10g», sotto); poi **E6a**. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne
+esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne
+scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e
+nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di
+ricerca di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade**
+(la pagina c'è). **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b
+come fase del nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -121,7 +124,8 @@ controllore: sotto, «Che cosa ha lasciato E10b»); ~~il rating preferito e mini
 divisione per nominativo (E10c)~~ **portati da E10c** (il minimo è l'FRA di IVAO: sotto, «Che cosa ha lasciato E10c»); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
 lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
-E15a»);
+E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
+l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -134,6 +138,42 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10g (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, **decisa**: Carmine sulla #230,
+  [le sue risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720) — sì al nucleo invece di una copia,
+  il passaggio dei tour in una sua sessione, la riga in `CLAUDE.md` §2 dal master):
+  - **La versione di un contratto nel nucleo**: `ContractVersion` in `src/IvaoHub.Core/Auth/ContractVersion.cs`, namespace
+    **`IvaoHub.Core.Auth`**, accanto ai token personali. Si costruisce con l'intestazione del contratto, la versione corrente, le
+    accettate, la chiave del titolo e il `code`. `RequireAsync` è un filtro di endpoint che risponde come quello dei tour
+    (`AgentContract.RequireVersionAsync`): l'intestazione senza spazi intorno, sole cifre ASCII, fra le accettate; altrimenti **400** con
+    `code`, `current` e `accepted` e il titolo nella lingua di chi chiede; se accettata, la risposta ripete nella stessa intestazione **la
+    versione parlata** (non la corrente), e l'endpoint risponde.
+  - **Il costruttore rifiuta** un'intestazione che non è un token di HTTP, nessuna versione, una versione non positiva o ripetuta, la
+    corrente fuori dalle accettate, una chiave o un `code` vuoti: quando il modulo dichiara il contratto, all'avvio.
+  - **I test**: `tests/IvaoHub.UnitTests/ContractVersionTests.cs` (unità, 21), con **il test gemello**, che confronta il nucleo con i
+    valori dei tour e il filtro dei tour su 120 coppie, byte per byte.
+  - Nessuna migrazione, nessun endpoint, nessuna chiave del nucleo, niente nel browser.
+- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa, che porta già questo branch):
+  - **Come la usa un modulo**: un campo `static readonly ContractVersion` con i valori del suo contratto — **un'intestazione sua**, non
+    quella dell'agente (Carmine, punto 9 sulla #228), la versione corrente, le accettate, **la chiave del titolo con il namespace del
+    modulo**, nel file delle parole del modulo in ogni lingua, e il suo `code` — e `.AddEndpointFilter(contratto.RequireAsync)` sugli
+    endpoint del contratto. La policy del token risponde prima del filtro (401, 403): l'autorizzazione è un middleware, il filtro gira
+    dentro l'endpoint.
+  - ⚠️ **Il titolo è del modulo**: il nucleo non aggiunge parole. Senza la chiave nel file del modulo il 400 ha per titolo la chiave
+    stessa, e `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` vuole una chiave con il namespace che il file del modulo
+    dichiari.
+  - ⚠️ **Un endpoint aperto** che dice il contratto prima che il programma parli una versione (i tour hanno `/contract`) non mette il
+    filtro e scrive da sé `Header` con `Current`: il nucleo non ha un `Announce` (nota §3). L'esportazione di E5 non ne ha uno.
+  - **Il documento pubblico** del contratto è del modulo, come `docs/agent-contract.md` dei tour: l'intestazione, il 400 con `code`,
+    `current` e `accepted`, la regola delle versioni (dentro una versione solo aggiunte; una rottura è la versione dopo, accettata
+    accanto alla vecchia per almeno un rilascio).
+  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine **dopo l'unione di
+    questa PR** ([sua risposta sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720), alla
+    [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474); nota §5). Fino ad allora il test gemello
+    tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la versione del contratto di
+    un programma esterno è `ContractVersion` del nucleo, mai un controllo del modulo), che aggiunge il master con il piano.
 
 ### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
 
