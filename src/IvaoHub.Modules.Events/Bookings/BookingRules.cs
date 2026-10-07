@@ -84,4 +84,10 @@ public static class BookingRules
 
     /// <summary>An aircraft type the slot does not allow.</summary>
     public const string AircraftKey = "events:errors.aircraftNotAllowed";
+
+    /// <summary>
+    /// A deadlock: the database rolled the booking back, nothing was booked, and the same request may go through a moment later —
+    /// the title of a 409, never «taken» (the review of #233, point 3).
+    /// </summary>
+    public const string TryAgainKey = "events:errors.bookingTryAgain";
 }

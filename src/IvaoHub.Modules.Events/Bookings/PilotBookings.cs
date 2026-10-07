@@ -45,6 +45,8 @@ public sealed class PilotBookings(
     /// <summary>
     /// Books one public slot (§3.3): an event the pilot sees, not cancelled, whose bookings are open; the slot still open, with an
     /// aircraft type it allows; nobody's yet; and compatible with the pilot's other bookings of the event, under the pilot's lock.
+    /// <para>A deadlock rolls the transaction back: it is thrown, and the caller answers «try again», as for the whole rotation —
+    /// it is not a slot taken, and the same request may well go through a moment later.</para>
     /// </summary>
     public async Task<(BookingResult Result, MyBookingDto? Booking, Refusals Problems)> BookAsync(
         BookingRequest request,
@@ -76,7 +78,7 @@ public sealed class PilotBookings(
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await LockThePilotAsync(row.Id, cancellationToken);
 
-        if (await EventNowAsync(row.Id, cancellationToken) is not { } current)
+        if (await EventNowAsync(row.Id, now, cancellationToken) is not { } current)
         {
             return (BookingResult.NotFound, null, problems);
         }
@@ -100,10 +102,9 @@ public sealed class PilotBookings(
             await database.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch (Exception exception) when (DatabaseErrors.TookTheKey(exception))
+        catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
         {
-            // Another pilot booked it an instant before: the unique index answered, or the deadlock two inserts of one key meet in
-            // when it was just withdrawn — the other insert won either way.
+            // Another pilot booked it an instant before: the unique index answered.
             database.Entry(booking).State = EntityState.Detached;
             return Refused(problems.Add(SlotField, BookingRules.TakenKey));
         }
@@ -164,7 +165,7 @@ public sealed class PilotBookings(
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await LockThePilotAsync(row.Id, cancellationToken);
 
-        if (await EventNowAsync(row.Id, cancellationToken) is not { } current)
+        if (await EventNowAsync(row.Id, now, cancellationToken) is not { } current)
         {
             return (BookingResult.NotFound, null, problems);
         }
@@ -319,12 +320,14 @@ public sealed class PilotBookings(
     }
 
     /// <summary>
-    /// The event as it is now, read again under the pilot's lock: a cancellation saved while the request waited for its lock is seen
-    /// — on the row of the event the first booking of a pilot waits for the cancellation itself —, and no booking enters an event
-    /// its pilots were just told is cancelled. None when the event was deleted meanwhile.
+    /// The event as it is now, read again under the pilot's lock and asked what the first read asked: a cancellation saved while
+    /// the request waited for its lock is seen — on the row of the event the first booking of a pilot waits for the cancellation
+    /// itself —, and no booking enters an event its pilots were just told is cancelled. None when the event stopped being seen
+    /// meanwhile — no longer published, its «seen from» moved later, its end moved earlier (the review of #233, point 7) — or was
+    /// deleted: not found, as on the first read.
     /// </summary>
-    private Task<Event?> EventNowAsync(long eventId, CancellationToken cancellationToken) =>
-        database.Events.AsNoTracking().FirstOrDefaultAsync(row => row.Id == eventId, cancellationToken);
+    private Task<Event?> EventNowAsync(long eventId, DateTime now, CancellationToken cancellationToken) =>
+        database.Events.AsNoTracking().Where(EventState.Seen(now)).FirstOrDefaultAsync(row => row.Id == eventId, cancellationToken);
 
     /// <summary>Why a slot cannot be booked now, before anything is locked: a private one, an event closed, a slot closed.</summary>
     private static string? Closed(EventSlot slot, Event row, DateTime now) =>

@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +44,8 @@ public static class BookingEndpoints
             .WithName("EventsBook")
             .Produces<MyBookingDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
 
         mine.MapPost("/rotation", BookRotationAsync)
             .WithName("EventsBookRotation")
@@ -84,14 +86,22 @@ public static class BookingEndpoints
             return CrudProblems.Validation(validation, catalog, currentUser.Locale);
         }
 
-        var (result, booking, problems) = await bookings.BookAsync(request, http.RequestAborted);
-
-        return result switch
+        try
         {
-            BookingResult.Done => Results.Created($"{MinePattern}/{booking!.Id}", booking),
-            BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
-            _ => Results.NotFound(),
-        };
+            var (result, booking, problems) = await bookings.BookAsync(request, http.RequestAborted);
+
+            // No address of its own: a booking is read in the pilot's list, and nowhere else (the review of #233, point 5).
+            return result switch
+            {
+                BookingResult.Done => Results.Created((string?)null, booking),
+                BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+                _ => Results.NotFound(),
+            };
+        }
+        catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
+        {
+            return TryAgain(catalog, currentUser);
+        }
     }
 
     private static async Task<IResult> BookRotationAsync(
@@ -121,10 +131,8 @@ public static class BookingEndpoints
         }
         catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
         {
-            // The database rolled the whole transaction back, the legs booked before it included: nothing was booked, try again.
-            return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: catalog.Resolve(currentUser.Locale, CrudProblems.ConflictTitleKey));
+            // The legs booked before it included.
+            return TryAgain(catalog, currentUser);
         }
     }
 
@@ -149,11 +157,17 @@ public static class BookingEndpoints
     /// The staff take a booking away (§3.6): any booking of an event whose bookings they write, with a reason — the slot is free
     /// again, the audit keeps who took what away, and the pilot is told why (<see cref="EventsNotifications.BookingRemoved"/>),
     /// once the booking is gone.
+    /// <para>The permission is asked on the booking in its event's care as it is now (<see cref="EventChildren.AdoptAsync"/>), not
+    /// as it was the day it was booked (the review of #233, point 1). The mail is queued after the delete is saved, on purpose: the
+    /// row is the truth and the mail follows it, as for a cancellation; queued first, it could tell a pilot of a removal that the
+    /// save then refused — withdrawn by the pilot, or taken away by somebody else, a moment before. Should the queue fail after the
+    /// save, the answer is an error and the booking is gone: the audit keeps who took it away (point 6).</para>
     /// </summary>
     private static async Task<IResult> RemoveAsync(
         long id,
         BookingRemovalRequest request,
         EventsDbContext database,
+        EventChildren children,
         EventsMail mail,
         IValidator<BookingRemovalRequest> validator,
         IAuthorizationService authorization,
@@ -161,8 +175,8 @@ public static class BookingEndpoints
         LocaleCatalog catalog,
         HttpContext http)
     {
-        var booking = await CrudSource.BackOffice<EventBooking>(database).FirstOrDefaultAsync(row => row.Id == id, http.RequestAborted);
-        if (booking is null)
+        var booking = await CrudSource.BackOffice<EventBooking>(database).FirstOrDefaultAsync(candidate => candidate.Id == id, http.RequestAborted);
+        if (booking is null || (await children.AdoptAsync(booking, http.RequestAborted)).Event is not { } row)
         {
             return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
         }
@@ -178,8 +192,7 @@ public static class BookingEndpoints
             return CrudProblems.Validation(validation, catalog, currentUser.Locale);
         }
 
-        var slot = await database.Slots.AsNoTracking().FirstAsync(row => row.Id == booking.SlotId, http.RequestAborted);
-        var row = await CrudSource.BackOffice<Event>(database).AsNoTracking().FirstAsync(candidate => candidate.Id == booking.EventId, http.RequestAborted);
+        var slot = await database.Slots.AsNoTracking().FirstAsync(candidate => candidate.Id == booking.SlotId, http.RequestAborted);
 
         database.Bookings.Remove(booking);
 
@@ -197,6 +210,13 @@ public static class BookingEndpoints
 
         return Results.NoContent();
     }
+
+    /// <summary>
+    /// A deadlock: the database rolled the whole transaction back, so nothing was booked, and the same request may go through a
+    /// moment later. Never «taken»: the slot may well be free (the review of #233, point 3).
+    /// </summary>
+    private static IResult TryAgain(LocaleCatalog catalog, ICurrentUser currentUser) =>
+        Problem(StatusCodes.Status409Conflict, BookingRules.TryAgainKey, catalog, currentUser);
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));

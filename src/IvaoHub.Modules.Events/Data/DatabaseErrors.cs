@@ -17,6 +17,13 @@ internal static class DatabaseErrors
     public static bool TookTheKey(Exception? exception) =>
         Met(exception, MySqlErrorCode.DuplicateKeyEntry, MySqlErrorCode.LockDeadlock);
 
+    /// <summary>
+    /// A key a unique index already holds, and nothing else: what a pilot's booking is told as «taken» (§1.6). A deadlock is not
+    /// one — it may meet a load of the slots or «delete the free ones» as well — and is answered «try again» (the review of #233,
+    /// point 3).
+    /// </summary>
+    public static bool Duplicated(Exception? exception) => Met(exception, MySqlErrorCode.DuplicateKeyEntry);
+
     /// <summary>A slot deleted while a booking was being written for it: the key of the booking found no slot (§1.6).</summary>
     public static bool LostTheSlot(Exception? exception) => Met(exception, MySqlErrorCode.NoReferencedRow2);
 

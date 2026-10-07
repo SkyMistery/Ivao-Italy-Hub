@@ -406,6 +406,7 @@
     "slotClosed": "Questo slot è chiuso: il suo orario di off block è passato.",
     "slotAlreadyYours": "Hai già prenotato questo slot.",
     "slotJustTaken": "Slot appena preso da un altro pilota.",
+    "bookingTryAgain": "Troppe prenotazioni nello stesso istante: non è stato prenotato niente. Riprova.",
     "bookingIncompatible": "Troppo vicino a un'altra tua prenotazione di questo evento: fra la fine di una e l'inizio dell'altra ci sono meno minuti di quelli che l'evento chiede.",
     "aircraftNotAllowed": "Questo slot non ammette questo tipo di aereo.",
     "slotGone": "Questo slot non c'è più nell'evento.",

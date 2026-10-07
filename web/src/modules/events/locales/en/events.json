@@ -405,6 +405,7 @@
     "slotClosed": "This slot is closed: its off block time has passed.",
     "slotAlreadyYours": "You booked this slot already.",
     "slotJustTaken": "Slot just taken by another pilot.",
+    "bookingTryAgain": "Too many bookings in the same instant: nothing was booked. Try again.",
     "bookingIncompatible": "Too close to another of your bookings in this event: there are fewer minutes than the event asks between the end of one and the start of the other.",
     "aircraftNotAllowed": "This slot does not allow this aircraft type.",
     "slotGone": "This slot is no longer in the event.",
