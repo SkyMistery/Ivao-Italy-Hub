@@ -1,12 +1,14 @@
 # La versione di un contratto nel nucleo (E10g)
 
 **Data:** 6 ottobre 2026 — fase E10g di M4, PR del nucleo (#230)
-**Stato:** **scelta tecnica**, per dare forma nel codice a una decisione già presa: che l'esportazione degli eventi porti la versione
-del suo contratto l'ha deciso Carmine sulla #228 ([risposte][a228], punto 9), e che il controllo passi nel nucleo invece di essere
-copiato l'ha scelto dalberone il 6 ottobre, nella sessione di E5, sulla classificazione che la sessione che coordina ha chiesto prima
-di ogni codice. Nessuna domanda su una decisione nuova; **una richiesta a Carmine** (§5): la copia dei tour resta com'è in questa PR, e
-la sostituisce una sua sessione, come `GreatCircle` dopo la #206; e **una domanda** (§5): se vuole una riga nella tabella di
-`CLAUDE.md` §2.
+**Stato:** **decisa** (Carmine, 7 ottobre 2026, pubblicate dal master sulla #230 su sua istruzione: [risposte][a230]): **sì al nucleo
+invece di una copia** nel modulo; **i tour passano a `ContractVersion` in una sua sessione, dopo l'unione di questa PR**, come scritto
+al §5; **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master con il piano. Il revisore ha trovato la PR «approvable on the code»
+([osservazioni][v230]). Era nata **scelta tecnica**, per dare forma nel codice a una decisione già presa: che l'esportazione degli eventi
+porti la versione del suo contratto l'ha deciso Carmine sulla #228 ([risposte][a228], punto 9), e che il controllo passi nel nucleo
+invece di essere copiato l'aveva scelto dalberone il 6 ottobre, nella sessione di E5, sulla classificazione che la sessione che coordina
+ha chiesto prima di ogni codice; con **una richiesta a Carmine** (§5: la copia dei tour resta com'è in questa PR, e la sostituisce una
+sua sessione, come `GreatCircle` dopo la #206) e **una domanda** (§5: una riga nella tabella di `CLAUDE.md` §2).
 **Regola applicata:** `CLAUDE.md` §2 («a piece used in two places is written once») e §5, caso **(b)**: un pezzo del modulo dei tour
 passa nel nucleo perché un secondo modulo ne ha bisogno, e un modulo non ne referenzia un altro. È una PR del nucleo, prima di E5 che
 la usa (`CLAUDE.md` §0 regola 6), come E10e per la distanza fra due aeroporti (nota `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`).
@@ -122,12 +124,16 @@ la usa (`CLAUDE.md` §0 regola 6), come E10e per la distanza fra due aeroporti (
   `System.Globalization` e `IvaoHub.Core.Localization` non servono più (l'analisi, `IDE0005`, li fa togliere). In `ContractVersionTests`
   se ne va il test gemello; restano gli altri, che leggono di `AgentContract` solo le costanti e la frase. **Nessuna risposta cambia**
   (il test gemello), nessuna migrazione, `docs/agent-contract.md` com'è.
-- **La richiesta** va a Carmine in un commento sulla #230, con la raccomandazione: il passaggio fatto da una sua sessione dopo l'unione
-  di questa PR, quando gli torna comodo. Nessun codice di questa PR né di E5 ne dipende.
+- **La richiesta** è andata a Carmine in [un commento sulla #230][r230], con la raccomandazione: il passaggio fatto da una sua sessione
+  dopo l'unione di questa PR, quando gli torna comodo. Nessun codice di questa PR né di E5 ne dipende.
 - **La domanda**: se vuole **una riga nella tabella di `CLAUDE.md` §2**, accanto a «An external program of the user that calls the hub»
   (i token personali): la versione del contratto di un programma esterno è `ContractVersion` del nucleo, con un'intestazione di quel
   contratto e un documento pubblico, mai un controllo scritto dal modulo. Il file è suo, e la riga l'aggiunge il master.
   Raccomandazione: **sì**, come per `GreatCircle`, perché è la tabella dove la prossima sessione che scrive un contratto lo cerca.
+- **Le risposte** (7 ottobre 2026, [risposte di Carmine sulla #230][a230], pubblicate dal master su sua istruzione): **sì al nucleo**
+  invece di una copia nel modulo; **il passaggio lo fa una sua sessione, dopo l'unione di questa PR**, come scritto qui sopra (il test
+  gemello se ne va con la copia dei tour; nessuna risposta cambia); **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master con il
+  piano. Fino al passaggio, due copie con le stesse risposte.
 
 ## 6. Trovato scrivendo il codice
 
@@ -171,6 +177,11 @@ la usa (`CLAUDE.md` §0 regola 6), come E10e per la distanza fra due aeroporti (
 - `09-design-m4.md` §7.4 («Il Gate Manager»): l'esportazione porta la versione del suo contratto con `ContractVersion` (la forma è della
   nota di E5, punto 9).
 - `10-piano-implementazione-m4.md`: E10g, scritta in questa PR.
-- **Una riga nella tabella di `CLAUDE.md` §2**, se Carmine la vuole (§5): la aggiunge il master.
+- **Una riga nella tabella di `CLAUDE.md` §2** — Carmine la vuole ([risposta][a230]), e la aggiunge il master con il piano: la versione
+  del contratto di un programma esterno è `ContractVersion` del nucleo, con un'intestazione di quel contratto e un documento pubblico,
+  mai un controllo scritto dal modulo.
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[r230]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474
+[v230]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039666570
+[a230]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720

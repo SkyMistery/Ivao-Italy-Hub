@@ -107,7 +107,7 @@ Per non ripeterle trenta volte:
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
-| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; il filtro dei tour passa nel nucleo |
+| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -2033,8 +2033,25 @@ suoi valori invece di scriverne una sua. La copia dei tour se ne va con la sessi
     `AddProblemDetails`): i test di questa fase chiamano il filtro con un `DefaultHttpContext` e scrivono il problema senza quel servizio.
     Lo provano i test d'integrazione dell'esportazione di E5, e per i tour `PirepTests.Agent` dopo il passaggio;
   - il passaggio dei tour al nucleo, che è di Carmine.
+- **La CI** sulla prima cima (`cc1b46c`): `build-test` (21,3 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore sulla #230][v230g], «approvable on the code») e **le risposte di Carmine** ([sulla
+  #230][a230g], in chat al master il 7 ottobre, pubblicate su sua istruzione):
+  - **sì al nucleo** invece di una copia nel modulo; **il passaggio dei tour** a `ContractVersion` lo fa una sua sessione dopo l'unione
+    di questa PR, come lo scrive la nota (§5); **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master con il piano. Registrate nella
+    nota, ora **decisa** (intestazione, §5, «Da portare nel piano»), e nell'handoff;
+  - **il rilievo basso**: la riga di E10g nella tabella delle fasi diceva «il filtro dei tour passa nel nucleo»; ora dice che la copia
+    dei tour resta e che il passaggio è di una sessione di Carmine;
+  - **il merge di `main`** (`7b84a75`, con E4b, #226), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10g
+    con E4b unita e le risposte di Carmine; in «Lo stato» il paragrafo di E10g in cima e quello di E4b sotto, nessuna riga persa
+    (controllato con il diff contro `main`: cambiano solo l'intestazione e la riga di che cosa mancava). `10` si è unito da solo, con la
+    riga e la sezione di E4b accanto a E4. E4b non tocca `Core/Auth/`;
+  - **rifatto dopo il merge**, come chiesto: `dotnet build` 0 avvisi; unità **1141/1141** (le 1133 e gli 8 di E4b). Non rifatte, perché
+    il merge porta solo il codice di E4b, già verde sulla CI di `main`, e nessun file di E10g cambia: l'integrazione intera e le suite
+    di `web/`; le corre la CI della nuova cima.
 
 [a228g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039666570
+[a230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720
 
 ### E11a — Postazioni e disponibilità
 
