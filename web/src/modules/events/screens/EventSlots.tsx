@@ -1,6 +1,6 @@
 import { Badge, Dialog, H2, H3, Subtle, Tooltip } from '@ivao/atmosphere-react';
 import { PlaneLanding, PlaneTakeoff, Repeat } from 'lucide-react';
-import { Fragment, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -22,6 +22,22 @@ export function EventSlots({ event }: { event: PublicEventDto }) {
   const { t } = useTranslation();
   const moment = useMoment();
   const [opened, setOpened] = useState<PublicEventSlotDto | null>(null);
+  // The callsign that opened the slot. The dialog has no trigger of its own, so nothing would take the focus back when it closes —
+  // a keyboard would be left at the top of a page of hundreds of rows (the review of #228, second reading, point 1).
+  const openedBy = useRef<HTMLElement | null>(null);
+  const open = (slot: PublicEventSlotDto, by: HTMLElement | null) => {
+    openedBy.current = by;
+    setOpened(slot);
+  };
+
+  useEffect(() => {
+    // Once the dialog is gone, and its focus trap with it: inside it a focus elsewhere would be taken back.
+    if (opened === null && openedBy.current !== null) {
+      openedBy.current.focus();
+      openedBy.current = null;
+    }
+  }, [opened]);
+
   const sameDay = oneDay(event.slots);
   const time = (value: string) => moment(value, sameDay ? { date: false } : {});
   const first = event.slots[0];
@@ -55,10 +71,10 @@ export function EventSlots({ event }: { event: PublicEventDto }) {
         const tables = (
           <>
             {section.departures.length === 0 ? null : (
-              <SlotTable arrivals={false} slots={section.departures} time={time} onOpen={setOpened} />
+              <SlotTable arrivals={false} slots={section.departures} time={time} onOpen={open} />
             )}
             {section.arrivals.length === 0 ? null : (
-              <SlotTable arrivals slots={section.arrivals} time={time} onOpen={setOpened} />
+              <SlotTable arrivals slots={section.arrivals} time={time} onOpen={open} />
             )}
           </>
         );
@@ -103,7 +119,7 @@ function SlotTable({
   arrivals: boolean;
   slots: readonly PublicEventSlotDto[];
   time: (value: string) => string;
-  onOpen: (slot: PublicEventSlotDto) => void;
+  onOpen: (slot: PublicEventSlotDto, by: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation();
   const Icon = arrivals ? PlaneLanding : PlaneTakeoff;
@@ -136,7 +152,18 @@ function SlotTable({
             <tr
               key={slot.id}
               className="hover:bg-muted/50 cursor-pointer border-b align-top last:border-0"
-              onClick={() => onOpen(slot)}
+              onClick={(click) => {
+                // The whole row opens the slot, as asked and decided (§6 of the note): on a phone it is the target a thumb finds.
+                // A click that ends selecting some text — a flight number to copy — opens nothing.
+                if (window.getSelection()?.isCollapsed === false) {
+                  return;
+                }
+
+                onOpen(
+                  slot,
+                  click.currentTarget.querySelector<HTMLElement>('button[aria-haspopup="dialog"]'),
+                );
+              }}
             >
               <td className="py-2 pr-3">
                 <span className="inline-flex items-center gap-1">
@@ -147,7 +174,7 @@ function SlotTable({
                     className="font-mono underline-offset-4 hover:underline focus-visible:underline"
                     onClick={(click) => {
                       click.stopPropagation();
-                      onOpen(slot);
+                      onOpen(slot, click.currentTarget);
                     }}
                   >
                     {slot.callsign}
@@ -209,11 +236,16 @@ function RotationMark() {
 /**
  * Atmosphere's tooltip, opened by a tap too (§2 of the note): a phone has no hover, and a Radix tooltip opens only for a mouse that
  * moves and on focus. The trigger is a button, so the keyboard reaches it and its words are read on focus; a press turns it over,
- * a tap included, and opens no row it sits in.
+ * a tap included, and opens no row it sits in. **A piece of this screen**, not a component of the module (Carmine, point 8 on
+ * #228): the day a second screen wants a tooltip that opens on a tap, that is a decision to bring to him, not a copy.
  *
  * ⚠️ What a press turns over is what was shown **when the press began**: between the press and its click Radix closes the tooltip
  * (a press on its trigger, a tap anywhere) and opens it again (a tap focuses the button after the finger lifts), so the state at
- * the click says nothing. A click without a press — the keyboard's — turns over what is shown.
+ * the click says nothing. A click without a press — the keyboard's, `detail` 0 — turns over what is shown, and a press that never
+ * becomes a click (a scroll begun on the button) is forgotten.
+ *
+ * With a `label` the tooltip only shows the button's own name: it is not given as its description too, or a reader would hear it
+ * twice.
  */
 function Hint({ text, label, children }: { text: string; label?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -223,16 +255,19 @@ function Hint({ text, label, children }: { text: string; label?: string; childre
     <Tooltip content={text} open={open} onOpenChange={setOpen}>
       <button
         type="button"
-        {...(label === undefined ? {} : { 'aria-label': label })}
+        {...(label === undefined ? {} : { 'aria-label': label, 'aria-describedby': undefined })}
         className="inline-flex items-center gap-1 rounded-sm"
         onPointerDown={() => {
           shownAtPress.current = open;
+        }}
+        onPointerCancel={() => {
+          shownAtPress.current = null;
         }}
         onClick={(click) => {
           // Radix closes a tooltip on a click; here the click is how a phone opens it.
           click.preventDefault();
           click.stopPropagation();
-          const shown = shownAtPress.current ?? open;
+          const shown = click.detail === 0 ? open : (shownAtPress.current ?? open);
           shownAtPress.current = null;
           setOpen(!shown);
         }}
