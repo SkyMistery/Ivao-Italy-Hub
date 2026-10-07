@@ -231,7 +231,7 @@ internal static class HubPipeline
         }
 
         List<string> applied = [];
-        var outcome =await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
+        var outcome = await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
             key,
             async cancellationToken =>
             {
