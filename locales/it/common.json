@@ -23,7 +23,8 @@
     "empty": "Su questa pagina non è ancora stato pubblicato niente. La scrive dal back office chi manda avanti il sito."
   },
   "liveStatus": {
-    "title": "In rete adesso"
+    "title": "In rete adesso",
+    "airportsTitle": "Su questi scali adesso"
   },
   "search": {
     "title": "Cerca",

@@ -369,8 +369,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E10g (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, scelta tecnica, con una richiesta e una
-  domanda a Carmine):
+- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, **decisa**: Carmine sulla #230,
+  [le sue risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720) — sì al nucleo invece di una copia,
+  il passaggio dei tour in una sua sessione, la riga in `CLAUDE.md` §2 dal master):
   - **La versione di un contratto nel nucleo**: `ContractVersion` in `src/IvaoHub.Core/Auth/ContractVersion.cs`, namespace
     **`IvaoHub.Core.Auth`**, accanto ai token personali. Si costruisce con l'intestazione del contratto, la versione corrente, le
     accettate, la chiave del titolo e il `code`. `RequireAsync` è un filtro di endpoint che risponde come quello dei tour
@@ -382,7 +383,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: `tests/IvaoHub.UnitTests/ContractVersionTests.cs` (unità, 21), con **il test gemello**, che confronta il nucleo con i
     valori dei tour e il filtro dei tour su 120 coppie, byte per byte.
   - Nessuna migrazione, nessun endpoint, nessuna chiave del nucleo, niente nel browser.
-- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa):
+- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa, che porta già questo branch):
   - **Come la usa un modulo**: un campo `static readonly ContractVersion` con i valori del suo contratto — **un'intestazione sua**, non
     quella dell'agente (Carmine, punto 9 sulla #228), la versione corrente, le accettate, **la chiave del titolo con il namespace del
     modulo**, nel file delle parole del modulo in ogni lingua, e il suo `code` — e `.AddEndpointFilter(contratto.RequireAsync)` sugli
@@ -396,8 +397,45 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Il documento pubblico** del contratto è del modulo, come `docs/agent-contract.md` dei tour: l'intestazione, il 400 con `code`,
     `current` e `accepted`, la regola delle versioni (dentro una versione solo aggiunte; una rottura è la versione dopo, accettata
     accanto alla vecchia per almeno un rilascio).
-  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine dopo l'unione di questa
-    PR (la richiesta sulla #230, nota §5). Fino ad allora il test gemello tiene le due copie uguali; con il passaggio se ne va anche lui.
+  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine **dopo l'unione di
+    questa PR** ([sua risposta sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720), alla
+    [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474); nota §5). Fino ad allora il test gemello
+    tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la versione del contratto di
+    un programma esterno è `ContractVersion` del nucleo, mai un controllo del modulo), che aggiunge il master con il piano.
+
+### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-06-chi-e-online-sugli-scali-nel-nucleo.md`, scelta tecnica sulla (b) che Carmine ha scelto
+  sulla #223, punto 2; il dettaglio in `10`, E4b, «Com'è andata»; nessuna migrazione, nessun endpoint, nessun blocco nuovo):
+  - **`networkStats` con gli scali che una schermata chiede**: `airports`, un elenco di ICAO nelle `props` della domanda, **fuori dallo
+    schema zod** come `from` e `to` del calendario (un editor non li salva). Con l'elenco lo spazio è quello degli scali — controllori
+    la cui stazione è uno di loro (la torre e l'avvicinamento di `LIRF`, non il centro `LIRR` sopra), piloti il cui piano di volo parte
+    da uno di loro o ci arriva — e le due cifre `divisionAtc`, `divisionPilots` lo contano; senza, la divisione come prima. **Un elenco
+    senza nessuno scalo non conta nessuno**, mai la divisione; uno scalo è da una a quattro lettere o cifre, e se ne contano al più 50,
+    **dopo la pulizia** (`IvaoAirspace.OfAirports(scali, limite)`).
+  - **Un whazzup al minuto per tutti** (`IvaoNetworkPicture`, in `src/IvaoHub.Core/Ivao/IvaoWhazzup.cs`): la lettura comune per un
+    minuto, contata per ogni spazio con la sua `CacheKey`, che ora **nomina gli scali** quando non ci sono centri; la lettura **tiene le
+    risposte di al più 16 spazi** (`MaxKeptAnswers`) e conta ogni volta gli altri. Lo scostamento dalla nota di E4 e la misura (6 ottobre
+    2026: 0,8 MB, dalla cache di Cloudflare; mille insiemi inventati in 24 ms invece di mille scaricamenti) sono nella nota, §2 e §4; lo
+    scostamento e le parole del titolo li porta a Carmine il revisore (rilievi sulla #226, punto 5).
+  - **`<LiveStatusStrip airports={…} />`** (`web/src/shared/ui/LiveStatusStrip.tsx`): la domanda con gli scali e il titolo
+    `liveStatus.airportsTitle` («Su questi scali adesso», «At these airports now»); senza `airports`, la striscia di sempre.
+  - **I test**: `LiveStatusAirportsTests` (unità, 8), `NetworkStatsAirportsTests` (integrazione, 5, sulla fixture `whazzup.json`),
+    `LiveStatusStrip.airports.test.tsx` (vitest, 4). Nessun VID, nessuno slug.
+- **Che cosa deve sapere la fase dopo** — ⚠️ **la prima fase del modulo dopo il merge di E4b** (Carmine sulla #223, punto 2; «per esempio
+  E6b» diceva la nota di E4) **monta la striscia sulla pagina dell'evento**:
+  - `<LiveStatusStrip airports={gli ICAO degli scali dell'evento} />` sulla pagina di E4 (`web/src/modules/events/screens/public.tsx`),
+    **il giorno dell'evento** (design §7.1): la fase scrive come legge «il giorno» (nell'ora della divisione da mezzanotte a mezzanotte, o
+    dall'inizio alla fine) e lo dice in «Com'è andata». **Un evento di tutta la divisione** non ha scali e non monta niente: la striscia
+    della divisione è già in cima al sito.
+  - ⚠️ **Dove**: `docs/UI-GUIDELINES.md` vuole la striscia «in the banner slot of `Shell`», con una misura in `web/e2e/live-status.spec.ts`,
+    e il banner del layout `_public` ha già la striscia della divisione. Dentro la pagina è una scelta della fase, da scrivere; nel banner
+    al posto di quella della divisione vuole che il layout sappia gli scali della rotta: un'altra modifica del nucleo, con la sua nota.
+  - **I test della fase**: una spec che ferma `networkStats` con `stubTheBlockData` e cerca `liveStatus.airportsTitle`, leggendo nella
+    richiesta gli scali chiesti (`props` in base64url); sul banco la fixture `tests/fixtures/ivao/whazzup.json` ha `LIRR_CTR`, `LIMC_APP`,
+    `LIRF_TWR`, `EDDF_TWR` e i voli LIRF→LIMC, EDDF→LIMC, EDDF→EGLL: un evento a `LIRF` mostra un controllore e un pilota, uno a `LIMC`
+    un controllore e due piloti.
+  - Il modulo **non nomina la rete**: chiede `networkStats` attraverso la striscia del nucleo, e `EventsArchitectureTests` resta com'è.
 
 ### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
 
