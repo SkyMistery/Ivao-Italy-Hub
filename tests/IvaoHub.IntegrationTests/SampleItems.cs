@@ -64,6 +64,10 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
 
     public DbSet<SampleRecord> Records => Set<SampleRecord>();
 
+    public DbSet<SampleSubmission> Submissions => Set<SampleSubmission>();
+
+    public DbSet<SampleReport> Reports => Set<SampleReport>();
+
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SampleItem>(item =>
@@ -97,6 +101,24 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             record.Ignore(row => row.ResourceScope);
             record.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
             record.Property(row => row.Fir).HasMaxLength(8);
+        });
+
+        modelBuilder.Entity<SampleSubmission>(submission =>
+        {
+            submission.ToTable("smp_submissions");
+            submission.HasKey(row => row.Id);
+            submission.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            submission.Ignore(row => row.StakeholderVid);
+            submission.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
+        });
+
+        modelBuilder.Entity<SampleReport>(report =>
+        {
+            report.ToTable("smp_reports");
+            report.HasKey(row => row.Id);
+            report.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            report.Ignore(row => row.StakeholderVid);
+            report.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
         });
     }
 }
