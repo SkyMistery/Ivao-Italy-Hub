@@ -16,8 +16,8 @@ namespace IvaoHub.Modules.Events.Export;
 /// One slot as the gate manager of the division reads it (design M4 §7.4): the fields it reads today from the booking system it
 /// leaves, by their names there, with every time in UTC — and the stable identity of the slot it asks for, the flight number, the
 /// rotation and the leg, and for a private slot the slot paired with it (E7), arrival and departure on the same gate.
-/// <para>Whoever booked it and the aircraft they chose come with the bookings (E6a): empty on a free slot. The gate is the stand the
-/// staff wrote, empty when there is none and on a private slot, until the stands are managed (§0.2).</para>
+/// <para>Whoever booked it — their VID — and the aircraft type they chose among those the slot allows (E6a): empty on a free slot.
+/// The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands are managed (§0.2).</para>
 /// </summary>
 public sealed record BookingExportDto(
     [property: JsonPropertyName("slot_id")] long SlotId,
@@ -127,20 +127,25 @@ public static class BookingsExport
             .ThenBy(slot => slot.Id)
             .ToListAsync(http.RequestAborted);
 
-        return Results.Ok(slots.Select(Flight).ToList());
+        // Who booked each (E6a), one query for the whole event: the program reads them as the staff of the bookings do.
+        var bookings = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
+            .Where(booking => booking.EventId == row.Id)
+            .ToDictionaryAsync(booking => booking.SlotId, http.RequestAborted);
+
+        return Results.Ok(slots.Select(slot => Flight(slot, bookings.GetValueOrDefault(slot.Id))).ToList());
     }
 
     /// <summary>
-    /// A slot as a flight: a public one is its own flight; a private one is only its airport and its time there — the departure
-    /// leaves from it, the arrival lands at it — until a pilot books it (E7).
+    /// A slot as a flight, with whoever booked it: a public one is its own flight; a private one is only its airport and its time
+    /// there — the departure leaves from it, the arrival lands at it — until E7 reads the rest of its flight from the booking.
     /// </summary>
-    private static BookingExportDto Flight(EventSlot slot) => slot.Kind == SlotKind.Public
+    private static BookingExportDto Flight(EventSlot slot, EventBooking? booking) => slot.Kind == SlotKind.Public
         ? new BookingExportDto(
             slot.Id,
             slot.Callsign,
             slot.FlightNumber,
-            BookedBy: null,
-            AircraftIcao: null,
+            booking?.BookerVid,
+            booking?.AircraftIcao,
             slot.Stand,
             slot.OffBlockUtc,
             slot.OnBlockUtc,
@@ -153,8 +158,8 @@ public static class BookingsExport
             slot.Id,
             Callsign: null,
             FlightNumber: null,
-            BookedBy: null,
-            AircraftIcao: null,
+            booking?.BookerVid,
+            booking?.AircraftIcao,
             Gate: null,
             slot.IsArrival ? null : slot.OffBlockUtc,
             slot.IsArrival ? slot.OnBlockUtc : null,
