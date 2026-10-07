@@ -5,6 +5,7 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Settings;
 using Microsoft.AspNetCore.Authorization;
@@ -204,6 +205,10 @@ public static class EventSlotEndpoints
                 (await saving.Services.GetRequiredService<EventChildren>().AdoptAsync(slot, saving.CancellationToken)).Refusal;
             options.BeforeSave = (slot, saving) =>
                 saving.Services.GetRequiredService<SlotSaving>().PrepareAsync(slot, saving.IsNew, saving.CancellationToken);
+
+            // A booked slot is not deleted (§1.5, E6a): the staff take its booking away first.
+            options.Delete = (slot, services, cancellationToken) =>
+                services.GetRequiredService<SlotSaving>().DeleteAsync(slot, cancellationToken);
         });
 
         app.MapPost($"{EventSlotsPattern}/load", LoadAsync)
@@ -222,6 +227,7 @@ public static class EventSlotEndpoints
             .Produces<SlotsDeletedDto>()
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
             .RequireAuthorization(EventsPermissions.BookingsEdit);
 
         return app;
@@ -259,33 +265,19 @@ public static class EventSlotEndpoints
             var (result, problems) = await loading.LoadAsync(row, request, http.RequestAborted);
             return result is null ? CrudProblems.Validation(problems, catalog, currentUser.Locale) : Results.Ok(result);
         }
-        catch (Exception exception) when (MetAnotherWrite(exception))
+        catch (Exception exception) when (DatabaseErrors.TookTheKey(exception) || DatabaseErrors.SlotWasBooked(exception))
         {
-            // Another load of the same event in the same moment wrote a slot this one wanted: read the slots again and load again.
-            // Any other failure is not answered with «load again», which would be said for ever: it surfaces as itself.
+            // Another write of the same rows in the same moment: a load of the same event took a slot this one wanted, or a pilot
+            // booked a free slot this one replaces (E6a). Read the slots again and load again. Any other failure is not answered
+            // with «load again», which would be said for ever: it surfaces as itself.
             return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
         }
     }
 
     /// <summary>
-    /// Whether a save failed on another write of the same rows: a key the unique index already holds, or the deadlock two inserts
-    /// of one key meet in when its row was just deleted (CONTRIBUTING.md) — which EF reports as an <see cref="InvalidOperationException"/>,
-    /// not a <see cref="DbUpdateException"/>, so the chain is walked whatever the outer exception.
+    /// «Delete the free ones» (§7.2): every slot of the event nobody booked goes, public and private, each with its audit row. A slot a
+    /// pilot books in the same moment stays — the key of the booking stops its delete —, and the staff are told to look again.
     /// </summary>
-    private static bool MetAnotherWrite(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is MySqlConnector.MySqlException { ErrorCode: MySqlConnector.MySqlErrorCode.DuplicateKeyEntry or MySqlConnector.MySqlErrorCode.LockDeadlock })
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>«Delete the free ones» (§7.2): every slot of the event nobody booked goes, public and private, each with its audit row.</summary>
     private static async Task<IResult> DeleteFreeAsync(
         long id,
         EventsDbContext database,
@@ -302,7 +294,15 @@ public static class EventSlotEndpoints
 
         var free = await SlotRows.Free(database, row.Id).ToListAsync(http.RequestAborted);
         database.Slots.RemoveRange(free);
-        await database.SaveChangesAsync(http.RequestAborted);
+
+        try
+        {
+            await database.SaveChangesAsync(http.RequestAborted);
+        }
+        catch (Exception exception) when (DatabaseErrors.SlotWasBooked(exception))
+        {
+            return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
+        }
 
         return Results.Ok(new SlotsDeletedDto(free.Count));
     }
@@ -337,7 +337,8 @@ public static class EventSlotEndpoints
 /// What a save of one slot may refuse only by looking at other rows (design M4 §1.5, §3.1), run by the CRUD engine before every
 /// save of the form: the same as a row of a load — its airports and its types the core's, one of its airports the event's, which
 /// gives it its airport and its direction; its time there inside the event's window with a margin; its callsign and off block once
-/// in the event; its place in its rotation — so that a correction cannot make what a load would refuse.
+/// in the event; its place in its rotation — so that a correction cannot make what a load would refuse. And what deleting one
+/// refuses: a slot a pilot booked (E6a).
 /// </summary>
 public sealed class SlotSaving(
     EventsDbContext database,
@@ -472,5 +473,21 @@ public sealed class SlotSaving(
         }
 
         return refusals.IsEmpty ? null : refusals.Errors;
+    }
+
+    /// <summary>
+    /// Deleting one slot (§1.5): only one nobody booked — a booked slot is not deleted, the staff take its booking away first, and the
+    /// key of the booking holds it in the database too.
+    /// </summary>
+    public async Task DeleteAsync(EventSlot slot, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+
+        if (await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.SlotId == slot.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.slotBooked");
+        }
+
+        database.Slots.Remove(slot);
     }
 }
