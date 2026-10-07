@@ -1548,7 +1548,10 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   prima, la domanda a Carmine prima, E6a senza il ritiro —: **ha scelto la fase del nucleo**, E10h (la #232, branch
   `m4/e10h-stakeholder-withdraws`, da `main` a `e9702b2`, in una sessione sua, con la sua nota
   `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`). Qui la prenotazione porta il suo attributo, e il ritiro cancella la riga attraverso
-  l'interceptor: l'audit tiene il VID del pilota.
+  l'interceptor: l'audit tiene il VID del pilota. ⚠️ **Il ritiro carica la riga prima di toglierla, e resta così**: la nota di E10h è
+  decisa da Carmine sulla #232, e la sua risposta 2 accetta che il guardiano legga l'interessato dai valori originali del tracker, quindi una
+  riga attaccata senza leggerla (uno stub) passerebbe con il VID che vi scrive chi chiama. `PilotBookings.WithdrawAsync` legge la
+  prenotazione per id **e** per pilota (`BookerVid` = chi chiede), poi la toglie: la prenotazione di un altro non si trova (404).
 - **Trovato, e scritto per chi viene dopo**: ⚠️ un `FOR UPDATE` che non trova righe, con l'isolamento predefinito, blocca il buco
   dell'indice, e due prime prenotazioni di piloti diversi si incastrano: la transazione è `READ COMMITTED`. ⚠️ Con il log binario in
   formato `STATEMENT` MariaDB rifiuta le scritture di una transazione `READ COMMITTED` (la domanda 2 a Carmine). ⚠️ Il blocco si legge con
