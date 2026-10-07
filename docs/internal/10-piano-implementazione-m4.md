@@ -88,6 +88,7 @@ Per non ripeterle trenta volte:
 | E3a | L'evento nello staff | E1, E2, E2b (i grant di chi collabora: nota di E2, decisa sulla #209) | lista e form generati, descrizione, banner, scali e capacità, annullare, eliminare; i nove grant di chi collabora |
 | E3b | La vita dell'evento | E3a | pubblicare, l'uscita programmata, la fine; calendario, ricerca, usi dei file; `events-release` |
 | E4 | Il pubblico e le rotte | E3b | `/events`, `/events/{slug}`, `events.eventList`; `evt_routes` del FOD |
+| E4b | Nucleo: chi è online sugli scali | E4 (la sua nota, la (b) decisa da Carmine sulla #223) | `networkStats` con gli scali che una schermata chiede, un whazzup al minuto per tutti, la striscia con gli scali; la pagina dell'evento la monta nella prima fase del modulo dopo |
 | E5 | Gli slot pubblici e l'esportazione | E4 | `evt_slots`, incolla e carica con le catene, liste; l'esportazione con il token `events.bookings` |
 | E6a | Prenotare: il server | E5 | `evt_bookings`, i verbi, la compatibilità sotto blocco, la rotazione intera, togliere |
 | E6b | Prenotare: le pagine | E6a | la lista degli slot con «Prenota», `/events/mine`, `events.myEvents`, il promemoria del giorno prima |
@@ -106,7 +107,7 @@ Per non ripeterle trenta volte:
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
-| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; il filtro dei tour passa nel nucleo |
+| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1112,6 +1113,108 @@ rotta, il visitatore la vede.
 [r223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6014660539
 [ok223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
 
+### E4b — Nucleo: chi è online sugli scali
+
+Design §7.1, §9.1; nota `2026-10-06-chi-e-online-sugli-scali-di-un-evento` (E4, #223), la cui (b) **Carmine ha scelto** il 6 ottobre
+2026 ([punto 2 sulla #223][a223]): una fase piccola del nucleo, nella sua PR con la sua nota, montata dalla prima fase del modulo dopo;
+«non urgente, può seguire E5». Branch `m4/e4b-online-at-airports`. **PR del nucleo**, senza coda, con la sua nota (caso b).
+
+1. **`NetworkStatsProvider`** prende gli scali che una schermata chiede (`airports`, un elenco di ICAO), fuori dallo schema zod come
+   `from` e `to` del calendario: con gli scali lo spazio è il loro — controllori la cui stazione è uno di loro, piloti il cui piano di
+   volo parte da uno di loro o ci arriva, le due regole di `IvaoWhazzup` su un altro spazio.
+2. **`IvaoAirspace`** con una `CacheKey` che nomina gli scali quando non ci sono centri; ⚠️ da misurare che un whazzup per insieme di
+   scali al minuto regga (oggi uno per la divisione), con la data nella nota.
+3. **`LiveStatusStrip`** con gli scali facoltativi e la parola del titolo per quel caso, nelle due lingue.
+4. **Non in E4b**: la pagina dell'evento che monta la striscia, che fa la prima fase del modulo dopo il merge.
+
+**Test**: il provider con gli scali sulle fixture (nessuna chiamata a IVAO); due insiemi con chiavi diverse; la risposta della divisione
+invariata; la striscia con e senza scali (vitest). Nessuna migrazione.
+**Fatta quando**: una schermata chiede gli scali e il blocco li conta; la striscia della divisione chiede e risponde come prima.
+
+**Com'è andata** (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo senza coda, da `main` a `584eb72`):
+
+- **Fatto** (nota nuova `2026-10-06-chi-e-online-sugli-scali-nel-nucleo`, scelta tecnica, nessuna domanda nuova):
+  - **`NetworkStatsProvider`** (`src/IvaoHub.Core/Content/CoreDataBlockProviders.cs`) legge `airports` con `BlockProps.ReadTexts`
+    (nuovo, `Content/DataBlocks.cs`): con l'elenco lo spazio è `IvaoAirspace.OfAirports`, senza è quello della divisione come prima;
+    **un elenco senza nessuno scalo non conta nessuno, mai la divisione**; al più `DataBlockScope.MaxItems` (50) scali. Le cifre
+    `divisionAtc` e `divisionPilots` contano lo spazio chiesto, nessuna cifra nuova;
+  - **`IvaoAirspace`** (`Core/Ivao/IvaoNetworkStatus.cs`): `OfAirports` (ripuliti, maiuscoli, una volta, al più 4 caratteri come
+    `ref_ivao_airports.icao`, nessun centro) e la `CacheKey` che **senza centri nomina gli scali** (`0/2/LIRA,LIRF`); con i centri la
+    chiave di prima, quella della divisione;
+  - **un whazzup al minuto per tutti** (`IvaoApiClient.GetNetworkStatusAsync`, `IvaoWhazzup.cs`): la lettura `IvaoNetworkPicture`
+    (totali, controllori con nominativo, stazione e frequenza, le due estremità dei piani di volo; nessun VID, nome o traccia) sotto
+    una chiave sola per un minuto, il fallimento compreso; ogni spazio si conta una volta per lettura, con la sua `CacheKey`, e la
+    risposta se ne va con lei. `IvaoWhazzup.Read(root)` dà la lettura e `Count` è la regola «in area», per il client vero e per
+    quello delle fixture. `IIvaoApiClient` non cambia;
+  - **`LiveStatusStrip`**: `airports?: readonly string[]`, la domanda con gli scali e il titolo `liveStatus.airportsTitle` («Su questi
+    scali adesso», «At these airports now»); senza, la domanda e il titolo di prima. Una riga in `docs/UI-GUIDELINES.md`;
+  - **i test**: `tests/IvaoHub.UnitTests/LiveStatusAirportsTests.cs` (unità, 5: due insiemi mai con la stessa chiave, la chiave della
+    divisione com'era, che cosa tiene `OfAirports`, uno spazio di scali conta solo loro, **una lettura sola per la divisione, due
+    insiemi e venti inventati**); `tests/IvaoHub.IntegrationTests/NetworkStatsAirportsTests.cs` (integrazione, 4, anonima come il
+    browser, sulla fixture `whazzup.json`: Francoforte contata anche se non è della divisione, `LIRF` senza il centro sopra, un
+    elenco vuoto o senza scali non conta nessuno, la divisione invariata dopo una domanda con gli scali);
+    `web/src/shared/ui/LiveStatusStrip.airports.test.tsx` (vitest, 4: il titolo, la domanda con gli scali, la domanda della divisione
+    parola per parola, l'elenco vuoto). Nessun VID, nessuno slug: nessuna persona nei test.
+- ⚠️ **Scostamento dal punto 2** (nota §2 e §4): la chiave nomina gli scali, come chiesto, ma **il whazzup è uno al minuto per tutti, non
+  uno per insieme**. Misurato il 6 ottobre 2026 alle 16:00 e alle 16:18 UTC (nota §2): 0,77–0,79 MB, 75–513 ms, dalla cache di
+  Cloudflare; per gli eventi di un giorno uno per insieme reggerebbe, ma l'insieme lo sceglie chiunque chieda all'endpoint anonimo, e
+  ogni insieme inventato sarebbe uno scaricamento intero. Con la lettura comune: circa 75 KiB tenuti per un minuto, 0,05 ms per
+  contare uno spazio, mille insiemi inventati in 24 ms e circa 246 KiB invece di circa 770 MB.
+- **Le prove al contrario**, con il codice del nucleo di `main` rimesso al posto del mio (e i miei file rimessi e toccati dopo): dei 4
+  test d'integrazione nuovi ne cadono 3 (gli scali ignorati: risponde la divisione, 3 controllori) e passa quello della divisione
+  invariata; con la striscia di `main` e le parole nuove cadono 3 dei 4 vitest nuovi e passa quello della domanda della divisione. I 5
+  test di unità chiedono `OfAirports` e `IvaoNetworkPicture`, che su `main` non ci sono: non compilano, non li ho provati là.
+- **Verificato, in locale** (6 ottobre 2026, una suite alla volta, tutte al primo giro): `dotnet build IvaoHub.sln` 0 avvisi; unità
+  **1115/1115** (5 nuovi); **integrazione intera, senza filtro, 480/480** (5,8 minuti); `dotnet format --verify-no-changes` sui nove file
+  C# pulito; in `web/` `pnpm lint`, `typecheck` e `format:check` verdi, `i18n:check` (en, it: 7 namespace, 795 chiavi), `pnpm test`
+  **617/617** in 85 file, `pnpm gen:api` senza differenze; **lo smoke** `pnpm e2e --workers=2` sulla 4173, dietro il suo lock,
+  **163/163** (1,1 minuti, i tre di `live-status.spec.ts` compresi); **`pnpm e2e:full` 53/53** (10,1 minuti) sul banco
+  `http://127.0.0.1:5125` con `ivaohub_e2e_e4b` nuovo, dietro il lock di Mailpit: la striscia della divisione su ogni pagina pubblica
+  del banco ha chiesto `networkStats` 47 volte, tutte 200, dalla fixture; le regole di `core-guard` rifatte in PowerShell sul branch
+  contro la sua base con `main` (`584eb72`): nessun file del maintainer, dodici file del nucleo con la nota nuova, PASS.
+- **Il merge di `main`** (chiesto dalla sessione che coordina, 6 ottobre 2026): unita la #223 (E4) alle 17:03 UTC, dopo l'apertura di
+  questa PR, la PR era in conflitto con `main` su `HANDOFF-M4.md`, dove tutte e due le fasi avevano scritto in cima, e la sua CI non
+  poteva finire. `origin/main` (`77a2031`, con E4 e la #225, la `0.6.5`) è entrato con un merge (`b6fcd7c`), mai un rebase. **Un
+  conflitto solo**, `HANDOFF-M4.md`: l'intestazione di E4b con E4, la #222 e la #225 fra le unite e il prossimo passo di E4 aggiornato;
+  «Che cosa ha lasciato E4b» in cima e quello di E4 sotto, intero. `10` si è unito da solo (la «Com'è andata» di E4, poi E4b, poi E5).
+  La nota dice ora che quella di E4 è su `main`, «decisa». Poi di nuovo: `dotnet build` 0 avvisi; unità **1117/1117** (le 2 di E4 in
+  più); `NetworkStatsAirportsTests` con `DataBlockEndToEndTests` **10/10** (il conteggio dei blocchi è quello di E4); `pnpm lint`,
+  `typecheck` e `format:check` verdi, `i18n:check` (807 chiavi), `pnpm test` **629/629**, `pnpm gen:api` senza differenze; `core-guard`
+  contro la nuova base (`77a2031`): gli stessi dodici file del nucleo e la nota, PASS. **Non rifatti dopo il merge**: l'integrazione
+  intera, lo smoke ed `e2e:full` — il merge ha portato il codice di E4 e della #225 e nessun file di questa fase è cambiato; l'integrazione
+  intera la rifà la CI.
+- **Dopo la revisione** ([rilievi del revisore sulla #226][r226], «the design is sound»; il punto 1, il merge di `main`, è sopra):
+  - **punto 2, le risposte tenute senza tetto**: `IvaoNetworkPicture` tiene le risposte di al più `MaxKeptAnswers` (16) spazi — la
+    divisione e gli eventi di un giorno, con margine — e conta ogni volta tutti gli altri (un ventesimo di millisecondo), così chi
+    inventa insiemi di scali sull'endpoint anonimo non fa crescere quello che una lettura tiene; il tetto si controlla prima di
+    aggiungere, e richieste nello stesso istante possono superarlo al più di quante sono. Test di unità
+    `AReadingKeepsTheAnswersOfAFewAirspacesAndCountsTheRestEveryTime`: dieci volte più insiemi del tetto, i primi tenuti (la stessa
+    risposta), gli altri contati ogni volta (una risposta nuova, giusta);
+  - **punto 3, il limite degli scali prima della pulizia**: `IvaoAirspace.OfAirports(scali, limite)` ripulisce, toglie i doppi e poi
+    prende al più il limite, nell'ordine chiesto; il provider gli passa `DataBlockScope.MaxItems`. Test: di unità
+    `TheCeilingOfTheAirportsIsCountedAfterTheCleaning` (cinquanta voci non valide o lo stesso scalo ripetuto non spingono fuori uno vero;
+    oltre il limite restano i primi chiesti) e d'integrazione `EntriesThatAreNoAirportDoNotPushOneThatIsPastTheCeiling` (anonimo, come il
+    browser: cinquanta voci non valide davanti a `EDDF`, e `EDDF` è contato);
+  - **punto 4, solo la lunghezza**: uno scalo è da una a quattro **lettere o cifre** (`char.IsAsciiLetterOrDigit`), così la virgola che
+    separa la chiave non può farne due insiemi uguali. Test di unità `ACommaNeverMakesTwoSetsOneKey` (`{"A,B","C"}` e `{"A","B,C"}`) e
+    `OnlyCodesAnAirportCanHaveAreKept` con un trattino, uno spazio e una lettera accentata;
+  - **punto 5, per Carmine**: la nota non diceva più «nessuna domanda» senza nominarle: ora dice le due cose che il revisore gli porta,
+    lo scostamento (una lettura al minuto per tutti, tenuta in memoria) e le parole del titolo.
+  - **Le prove al contrario**, con il comportamento di prima rimesso per un momento (il limite prima della pulizia, solo la lunghezza,
+    nessun tetto) e poi tolto: cadono i 4 test di unità dei punti 2–4 e il test d'integrazione nuovo, passano gli altri 4 e 4.
+  - **Verificato, in locale** (6 ottobre 2026, al primo giro): `dotnet build` 0 avvisi; unità **1120/1120** (le 3 nuove);
+    **integrazione intera, senza filtro, 486/486** (5,6 minuti: le 480 di prima, le 5 di E4 e la nuova); `dotnet format
+    --verify-no-changes` sui sei file C# pulito; in `web/` (nessun file cambiato) `pnpm lint`,
+    `typecheck`, `format:check` verdi, `i18n:check` (807 chiavi), `pnpm test` **629/629** in 86 file.
+- **Non verificato**: la CI (la dice la PR); il whazzup di una sera di punta (circa 4 MB in proporzione, non misurato: un martedì
+  pomeriggio); i limiti di chiamate di IVAO (il design §9.1 li lascia a una misura, e questa fase non fa più chiamate di prima); la
+  striscia con gli scali su una pagina vera, nel browser: non la monta ancora niente, la monta la fase del modulo (nota §6);
+  `tiles/basemap.pmtiles` non c'è su questa macchina, e il giro intero è andato senza la mappa di base, come un'installazione che non ce
+  l'ha.
+
+[a223]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/223#issuecomment-6017107039
+[r226]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/226#issuecomment-6021367518
+
 ### E5 — Gli slot pubblici e l'esportazione
 
 Design §1.5, §3.1, §7.4; note `gli-slot-e-le-prenotazioni`, `i-tre-blocchi…` (l'esportazione in M4a, mai di una bozza). Branch
@@ -2109,8 +2212,25 @@ suoi valori invece di scriverne una sua. La copia dei tour se ne va con la sessi
     `AddProblemDetails`): i test di questa fase chiamano il filtro con un `DefaultHttpContext` e scrivono il problema senza quel servizio.
     Lo provano i test d'integrazione dell'esportazione di E5, e per i tour `PirepTests.Agent` dopo il passaggio;
   - il passaggio dei tour al nucleo, che è di Carmine.
+- **La CI** sulla prima cima (`cc1b46c`): `build-test` (21,3 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore sulla #230][v230g], «approvable on the code») e **le risposte di Carmine** ([sulla
+  #230][a230g], in chat al master il 7 ottobre, pubblicate su sua istruzione):
+  - **sì al nucleo** invece di una copia nel modulo; **il passaggio dei tour** a `ContractVersion` lo fa una sua sessione dopo l'unione
+    di questa PR, come lo scrive la nota (§5); **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master con il piano. Registrate nella
+    nota, ora **decisa** (intestazione, §5, «Da portare nel piano»), e nell'handoff;
+  - **il rilievo basso**: la riga di E10g nella tabella delle fasi diceva «il filtro dei tour passa nel nucleo»; ora dice che la copia
+    dei tour resta e che il passaggio è di una sessione di Carmine;
+  - **il merge di `main`** (`7b84a75`, con E4b, #226), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10g
+    con E4b unita e le risposte di Carmine; in «Lo stato» il paragrafo di E10g in cima e quello di E4b sotto, nessuna riga persa
+    (controllato con il diff contro `main`: cambiano solo l'intestazione e la riga di che cosa mancava). `10` si è unito da solo, con la
+    riga e la sezione di E4b accanto a E4. E4b non tocca `Core/Auth/`;
+  - **rifatto dopo il merge**, come chiesto: `dotnet build` 0 avvisi; unità **1141/1141** (le 1133 e gli 8 di E4b). Non rifatte, perché
+    il merge porta solo il codice di E4b, già verde sulla CI di `main`, e nessun file di E10g cambia: l'integrazione intera e le suite
+    di `web/`; le corre la CI della nuova cima.
 
 [a228g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039666570
+[a230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720
 
 ### E11a — Postazioni e disponibilità
 

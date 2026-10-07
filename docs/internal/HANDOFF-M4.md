@@ -9,15 +9,16 @@
 **Ultimo aggiornamento:** 7 ottobre 2026 — **fase E5** (modulo: gli slot pubblici e l'esportazione), sul branch `m4/e5-public-slots`,
 **PR #228** verso `main`, nata **in coda dopo la #223** di E4 — dalla sua testa `94ca28b`, e unita di nuovo alla sua ultima spinta `3224a9f`
 (le risposte di Carmine, `main` con la #222, i tipi degli eventi) —; **la #223 è unita** (6 ottobre 2026, `77a2031`) prima che la #228 si
-aprisse. **Dalla revisione la #228 è in coda dopo la #230** di E10g (la versione di un contratto nel nucleo, da `main` a `e9702b2`): ha
-unito il suo branch a `cc1b46c`, e con lui `main`. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), E10a
-(#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211),
-la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5`
-(#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229). **E4b** («chi è online sugli
-scali», la fase del nucleo decisa da Carmine sulla #223) è la **#226**, aperta, da `main`: la striscia sulla pagina dell'evento la monta la
-prima fase del modulo dopo che E4b è unita.
-**Il prossimo passo**: **E10g** (la #230), poi **E5** (la #228, in coda dopo la #230), poi **E6a** (prenotare: il server), in coda sul
-branch di E5. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi
+aprisse. **Dalla revisione la #228 è in coda dopo la #230** di E10g (la versione di un contratto nel nucleo): ha unito il suo branch a
+`cc1b46c` e di nuovo a `477a0f8`, e con lui `main` a `7b84a75`, dopo la #226 (E4b). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
+(#214), E3b (#221), E4 (#223), **E4b (#226)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a
+(#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca
+(#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto
+(#227) e il piano 1.30 (#229). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, la
+monta una fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto).
+**Il prossimo passo**: **E10g** (la #230: «approvabile» per il revisore, e **Carmine ha risposto sì** alle tre domande della sua nota,
+[sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720)), poi **E5** (la #228, in coda dopo la
+#230), poi **E6a** (prenotare: il server), in coda sul branch di E5. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi
 file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è
 uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e
 mostrati sulla sua pagina, e il Gate Manager li legge con un token personale («Che cosa ha lasciato E5», sotto). **Carmine ha risposto
@@ -32,7 +33,7 @@ branch di E5 da `d901f43` e aspetta E10h (del nucleo): unisce la nuova testa di 
 sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
 pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
 **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
-nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti su questa PR. **La
+nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -251,8 +252,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E10g (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, scelta tecnica, con una richiesta e una
-  domanda a Carmine):
+- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, **decisa**: Carmine sulla #230,
+  [le sue risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720) — sì al nucleo invece di una copia,
+  il passaggio dei tour in una sua sessione, la riga in `CLAUDE.md` §2 dal master):
   - **La versione di un contratto nel nucleo**: `ContractVersion` in `src/IvaoHub.Core/Auth/ContractVersion.cs`, namespace
     **`IvaoHub.Core.Auth`**, accanto ai token personali. Si costruisce con l'intestazione del contratto, la versione corrente, le
     accettate, la chiave del titolo e il `code`. `RequireAsync` è un filtro di endpoint che risponde come quello dei tour
@@ -264,7 +266,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: `tests/IvaoHub.UnitTests/ContractVersionTests.cs` (unità, 21), con **il test gemello**, che confronta il nucleo con i
     valori dei tour e il filtro dei tour su 120 coppie, byte per byte.
   - Nessuna migrazione, nessun endpoint, nessuna chiave del nucleo, niente nel browser.
-- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa):
+- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa, che porta già questo branch):
   - **Come la usa un modulo**: un campo `static readonly ContractVersion` con i valori del suo contratto — **un'intestazione sua**, non
     quella dell'agente (Carmine, punto 9 sulla #228), la versione corrente, le accettate, **la chiave del titolo con il namespace del
     modulo**, nel file delle parole del modulo in ogni lingua, e il suo `code` — e `.AddEndpointFilter(contratto.RequireAsync)` sugli
@@ -278,8 +280,45 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Il documento pubblico** del contratto è del modulo, come `docs/agent-contract.md` dei tour: l'intestazione, il 400 con `code`,
     `current` e `accepted`, la regola delle versioni (dentro una versione solo aggiunte; una rottura è la versione dopo, accettata
     accanto alla vecchia per almeno un rilascio).
-  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine dopo l'unione di questa
-    PR (la richiesta sulla #230, nota §5). Fino ad allora il test gemello tiene le due copie uguali; con il passaggio se ne va anche lui.
+  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine **dopo l'unione di
+    questa PR** ([sua risposta sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720), alla
+    [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474); nota §5). Fino ad allora il test gemello
+    tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la versione del contratto di
+    un programma esterno è `ContractVersion` del nucleo, mai un controllo del modulo), che aggiunge il master con il piano.
+
+### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-06-chi-e-online-sugli-scali-nel-nucleo.md`, scelta tecnica sulla (b) che Carmine ha scelto
+  sulla #223, punto 2; il dettaglio in `10`, E4b, «Com'è andata»; nessuna migrazione, nessun endpoint, nessun blocco nuovo):
+  - **`networkStats` con gli scali che una schermata chiede**: `airports`, un elenco di ICAO nelle `props` della domanda, **fuori dallo
+    schema zod** come `from` e `to` del calendario (un editor non li salva). Con l'elenco lo spazio è quello degli scali — controllori
+    la cui stazione è uno di loro (la torre e l'avvicinamento di `LIRF`, non il centro `LIRR` sopra), piloti il cui piano di volo parte
+    da uno di loro o ci arriva — e le due cifre `divisionAtc`, `divisionPilots` lo contano; senza, la divisione come prima. **Un elenco
+    senza nessuno scalo non conta nessuno**, mai la divisione; uno scalo è da una a quattro lettere o cifre, e se ne contano al più 50,
+    **dopo la pulizia** (`IvaoAirspace.OfAirports(scali, limite)`).
+  - **Un whazzup al minuto per tutti** (`IvaoNetworkPicture`, in `src/IvaoHub.Core/Ivao/IvaoWhazzup.cs`): la lettura comune per un
+    minuto, contata per ogni spazio con la sua `CacheKey`, che ora **nomina gli scali** quando non ci sono centri; la lettura **tiene le
+    risposte di al più 16 spazi** (`MaxKeptAnswers`) e conta ogni volta gli altri. Lo scostamento dalla nota di E4 e la misura (6 ottobre
+    2026: 0,8 MB, dalla cache di Cloudflare; mille insiemi inventati in 24 ms invece di mille scaricamenti) sono nella nota, §2 e §4; lo
+    scostamento e le parole del titolo li porta a Carmine il revisore (rilievi sulla #226, punto 5).
+  - **`<LiveStatusStrip airports={…} />`** (`web/src/shared/ui/LiveStatusStrip.tsx`): la domanda con gli scali e il titolo
+    `liveStatus.airportsTitle` («Su questi scali adesso», «At these airports now»); senza `airports`, la striscia di sempre.
+  - **I test**: `LiveStatusAirportsTests` (unità, 8), `NetworkStatsAirportsTests` (integrazione, 5, sulla fixture `whazzup.json`),
+    `LiveStatusStrip.airports.test.tsx` (vitest, 4). Nessun VID, nessuno slug.
+- **Che cosa deve sapere la fase dopo** — ⚠️ **la prima fase del modulo dopo il merge di E4b** (Carmine sulla #223, punto 2; «per esempio
+  E6b» diceva la nota di E4) **monta la striscia sulla pagina dell'evento**:
+  - `<LiveStatusStrip airports={gli ICAO degli scali dell'evento} />` sulla pagina di E4 (`web/src/modules/events/screens/public.tsx`),
+    **il giorno dell'evento** (design §7.1): la fase scrive come legge «il giorno» (nell'ora della divisione da mezzanotte a mezzanotte, o
+    dall'inizio alla fine) e lo dice in «Com'è andata». **Un evento di tutta la divisione** non ha scali e non monta niente: la striscia
+    della divisione è già in cima al sito.
+  - ⚠️ **Dove**: `docs/UI-GUIDELINES.md` vuole la striscia «in the banner slot of `Shell`», con una misura in `web/e2e/live-status.spec.ts`,
+    e il banner del layout `_public` ha già la striscia della divisione. Dentro la pagina è una scelta della fase, da scrivere; nel banner
+    al posto di quella della divisione vuole che il layout sappia gli scali della rotta: un'altra modifica del nucleo, con la sua nota.
+  - **I test della fase**: una spec che ferma `networkStats` con `stubTheBlockData` e cerca `liveStatus.airportsTitle`, leggendo nella
+    richiesta gli scali chiesti (`props` in base64url); sul banco la fixture `tests/fixtures/ivao/whazzup.json` ha `LIRR_CTR`, `LIMC_APP`,
+    `LIRF_TWR`, `EDDF_TWR` e i voli LIRF→LIMC, EDDF→LIMC, EDDF→EGLL: un evento a `LIRF` mostra un controllore e un pilota, uno a `LIMC`
+    un controllore e due piloti.
+  - Il modulo **non nomina la rete**: chiede `networkStats` attraverso la striscia del nucleo, e `EventsArchitectureTests` resta com'è.
 
 ### Che cosa ha lasciato E4 (6 ottobre 2026, branch `m4/e4-public-and-routes`, PR #223, in coda dopo la #221)
 
