@@ -35,7 +35,20 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 6 ottobre 2026 — piano **1.30**: **gli eventi sono pubblici** — E3b (#221: pubblicare, calendario,
+**Ultimo aggiornamento:** 7 ottobre 2026 — piano **1.31**: **gli slot pubblici di un evento e l'esportazione per il Gate Manager** —
+E5 (#228: `evt_slots` con la migrazione additiva `AddEventSlots`, la tabella degli slot letta dal server con le rotazioni e la
+finestra dell'evento, la lista sulla pagina per scalo con partenze e arrivi, l'esportazione con un token personale dell'audience
+`events.bookings` e la versione nell'intestazione `Hub-Bookings-Contract`, `docs/events-bookings-export.md`) — e **due pezzi del
+nucleo** scritti da `dalberone`: **E4b** (#226: `networkStats` e `LiveStatusStrip` contano gli scali che una schermata chiede, con
+una lettura della rete al minuto per tutti; niente la monta ancora) ed **E10g** (#230: `ContractVersion` in `Core/Auth/`, la
+versione di un contratto con un programma esterno). **M4 è a 15 fasi su 29**, più E4b ed E10g, nate dopo quel conto; il prossimo
+passo del modulo è **E6a** (#233, aperta), con **E10h** del nucleo sotto (#232, aperta). ⚠️ **Tre cose in sospeso**: i tour tengono
+la loro copia del controllo della versione (`AgentContract`), che un test gemello tiene uguale al nucleo, finché una sessione di
+lavoro di Carmine non li porta su `ContractVersion` — poi si toccano `05-design-m2.md` §6.6 e §11 e `06-…` T19b; un grant
+`{Area}.Edit` dato su una riga sola passa l'unico handler ma non il guardiano dell'interceptor, che chiede il permesso senza lo
+scope della riga (trovato in E6a, letto su `main`, non ancora deciso né corretto); gli eventi non hanno ancora il loro
+`IPersonalDataEraser` (E8b). `main` resta alla **0.6.5**, sulla prova la `0.6.0`; la prossima consegna è la **0.7.0**, con due
+migrazioni additive degli eventi. Prima, piano **1.30** (6 ottobre 2026): **gli eventi sono pubblici** — E3b (#221: pubblicare, calendario,
 ricerca, file, `events-release`) ed E4 (#223: `/events`, `/events/{slug}`, il blocco `events.eventList`, le rotte del FOD, migrazione
 additiva `AddEventRoutes`), con le regole di «Pubblica», le cinque letture del pubblico, i tipi che un evento sceglie e due letture
 scritte a mano accettate da Carmine; **M4 è a 14 fasi su 29**, più **E4b** (nucleo, nuova: chi è online sugli scali, #226 aperta); il

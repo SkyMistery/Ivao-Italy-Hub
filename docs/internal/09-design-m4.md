@@ -339,7 +339,11 @@ nell'ordine in cui sono scritte.
 | `row_version` | |
 
 Area **`EventBookings`**. Un pubblico è univoco su `(event_id, callsign, off_block_utc)`. Uno slot prenotato non si elimina:
-lo staff prima toglie la prenotazione.
+lo staff prima toglie la prenotazione. **Deciso con E5** (#228, note `2026-10-06-il-foglio-degli-slot-e-l-esportazione` e
+`2026-10-07-gli-slot-sulla-pagina-dell-evento`, piano 1.31): uno slot sta **sempre su uno scalo dell'evento** — una partenza
+quando ne lascia uno, **anche fra due scali dell'evento**, altrimenti un arrivo; un volo fra due altri aeroporti è rifiutato —,
+e il verso si fissa quando lo slot si scrive. **Il primo di `aircraft_types` è il tipo principale**, senza migrazione; il form di
+uno slot ha due campi, «Tipo principale» e «Altri tipi».
 
 ### 1.6 Le prenotazioni — `evt_bookings`
 
@@ -520,6 +524,22 @@ tabulazioni) **o carica un CSV** (c2; niente `.xlsx`, c3), con una riga d'intest
 - una sola transazione, un solo endpoint.
 
 Poi lista e form generati per le correzioni. Nessuna griglia scritta a mano.
+
+**Deciso con E5** (#228, nota `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, piano 1.31; le risposte di Carmine sulla #228):
+
+- **la tabella la legge il server**: la richiesta porta il testo, incollato o letto dal browser da un CSV; le colonne in
+  qualunque ordine, tabulazioni, altrimenti punti e virgola, altrimenti virgole; le righe contate come le conta la tabella;
+  **al più mille**; gli orari **solo in UTC, scritti `2026-10-17 14:30`**;
+- la cella `A320/A20N` dice **il tipo principale per primo** (nota `2026-10-07-gli-slot-sulla-pagina-dell-evento`);
+- «ogni due tratte uno scalo dell'evento» non ha una regola sua: ogni slot è già su uno scalo dell'evento (§1.5); le tratte di
+  una rotazione vanno per posto, e **scritte tutte senza posto lo prendono dagli orari**; alcune con e alcune senza, o un posto
+  due volte, sono rifiutate; il form di uno slot è tenuto alle stesse regole;
+- **«sostituisci»** toglie i pubblici liberi; **«elimina i liberi»** tutti i liberi dell'evento, privati compresi;
+- nessun caricamento su un evento senza slot pubblici o senza scali; l'interruttore degli slot pubblici non si spegne finché
+  l'evento ne ha; uno scalo con degli slot non si elimina né si rinomina; eliminare un evento porta via i suoi slot;
+- **la finestra dell'evento**: l'orario di uno slot allo scalo dell'evento — l'off block di una partenza, l'on block di un
+  arrivo — cade fra **sei ore prima dell'inizio e sei ore dopo la fine**, nel caricamento e nel form; l'orario all'altro
+  aeroporto è libero. Cambiare le date di un evento non ricontrolla gli slot già scritti.
 
 ### 3.2 Gli slot privati generati
 
@@ -817,6 +837,13 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   organizzatore, scali, rotte, descrizione. Poi:
   - **slot pubblici**: la lista, con libero o preso, filtri, le rotazioni raggruppate, **«Prenota»** e **«Prenota tutta la
     rotazione»**; un visitatore vede solo libero o preso, **mai chi** (piano §9.7; la regola di M3 §12 n.4);
+    **Deciso con E5** (#228, piano 1.31): la lista viaggia nella lettura della pagina, senza un endpoint suo. Dopo la prova sul
+    banco (nota `2026-10-07-gli-slot-sulla-pagina-dell-evento`, decisa da Carmine sulla #228): **una sezione per scalo** quando
+    gli scali sono più d'uno, e in ognuna **partenze e arrivi in due tabelle**, per l'orario allo scalo dell'evento; la colonna
+    del tipo mostra il principale, gli altri al passaggio del mouse, al focus e al tocco; **le rotazioni non sono più
+    raggruppate**: ogni tratta sta nella sua tabella, segnata da un'icona; **una riga apre lo slot in sola lettura**, con tutti i
+    tipi ammessi e le tratte della sua rotazione — è lì che E6b mette «Prenota». Un volo fra due scali dell'evento sta fra le
+    partenze del primo e non fra gli arrivi del secondo;
   - **slot privati**: per scalo, verso e ora, con il form del volo;
   - **ATC**: le postazioni e «dai la tua disponibilità» fino alla chiusura; il roster, pubblicato, in
     **`/events/{slug}/roster`**;
@@ -881,6 +908,18 @@ Nell'hub il Gate Manager legge con un **token personale** (`CLAUDE.md` §2), non
   stabile che chiede), `flight_number`, `rotation`, `leg` e, per un privato, `paired_slot_id` (arrivo e partenza sullo
   stesso gate); i privati con `gate` vuoto;
 - un errore è uno stato HTTP di errore.
+
+**Deciso con E5 ed E10g** (#228, #230, piano 1.31; le risposte di Carmine sulle due PR):
+
+- l'esportazione è un elenco JSON, **nell'ordine dell'orario allo scalo dell'evento**; `booked_by` e `aircraft_icao` sono vuoti
+  finché non ci sono le prenotazioni (E6a); in più **`aircraft_types`**, i tipi ammessi con il principale per primo, vuoti su uno
+  slot privato — un'aggiunta alla versione 1;
+- **una bozza risponde 409** con `code: "draft"`; un evento pubblicato si esporta in ogni stato;
+- **la versione del contratto** sta nell'intestazione **`Hub-Bookings-Contract`**, controllata da `ContractVersion` del nucleo:
+  senza intestazione, o con una versione che l'hub non parla, 400 con le versioni accettate; dentro una versione l'hub solo
+  aggiunge. Il contratto per chi scrive il programma è **`docs/events-bookings-export.md`**;
+- l'ordine delle risposte: il token (401 senza token o con il cookie, 403 con un'altra audience), poi la versione (400), poi
+  l'evento (404, 403, 409).
 
 Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).
 
