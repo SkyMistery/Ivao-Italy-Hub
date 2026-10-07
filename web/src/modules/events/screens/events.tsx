@@ -33,7 +33,14 @@ import {
   type EventDetailDto,
   type EventListDto,
 } from '../api';
-import { EVENTS_DELETE, EVENTS_EDIT, EVENT_ROUTES_EDIT, EVENT_ROUTES_VIEW } from '../permissions';
+import {
+  EVENTS_DELETE,
+  EVENTS_EDIT,
+  EVENT_BOOKINGS_EDIT,
+  EVENT_BOOKINGS_VIEW,
+  EVENT_ROUTES_EDIT,
+  EVENT_ROUTES_VIEW,
+} from '../permissions';
 import {
   EVENT_VIEWS,
   cancelSchema,
@@ -54,11 +61,12 @@ import {
 import { AirportsTab } from './airports';
 import { eventHref } from './cards';
 import { RoutesTab } from './routes';
+import { SlotsTab } from './slots';
 
 /**
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
- * with the editor of the content as a tour's briefing is, its airports with their capacity and its routes (E4), and the way to
+ * with the editor of the content as a tour's briefing is, its airports with their capacity, its routes (E4) and its slots (E5), and the way to
  * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, deleting one
  * nobody took part in.
  *
@@ -562,6 +570,25 @@ export function EventEditor() {
                           <RoutesTab
                             event={event}
                             editable={holdsPermission(bootstrap, EVENT_ROUTES_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // The slots are the bookings' area (§1.5, E5), on an event with slots and airports of its own: whoever reads the
+              // bookings has the tab, whoever writes them its buttons.
+              ...(!event.wholeDivision &&
+              (event.publicSlots || event.privateSlots) &&
+              holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+                ? {
+                    slots: {
+                      trigger: t('events:events.tabs.slots'),
+                      content: (
+                        <div className="pt-4">
+                          <SlotsTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
                           />
                         </div>
                       ),

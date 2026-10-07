@@ -13,8 +13,9 @@ namespace IvaoHub.Modules.Events.Staff;
 /// save: an address no other event has, a kind the calendar has and still offers and that is a kind of the events — one with a
 /// row in the settings' presets, or any kind while they have none (note 2026-10-06-i-tipi-che-un-evento-sceglie) —, asked when
 /// it is chosen, as a calendar entry's is, so an event whose kind the division retired or took off its presets since stays
-/// saveable; and an event about the whole division with no airports of its own (§1.3). A published event stays one that could
-/// be published (E3b): a change that it could not be published with is refused, with the refusals of «Publish».
+/// saveable; an event about the whole division with no airports of its own (§1.3); and its public slots switched off only once
+/// it has none (E5). A published event stays one that could be published (E3b): a change that it could not be published with is
+/// refused, with the refusals of «Publish».
 /// </summary>
 public sealed class EventSaving(EventsDbContext database, HubDbContext hub, EventPublishing publishing, ModuleSettingsStore settings)
 {
@@ -54,6 +55,13 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
             problems.Add("wholeDivision", "events:errors.wholeDivisionHasAirports");
         }
 
+        // The switch says what the event has (E5): it is not turned off under public slots it still has — they go first.
+        if (!row.PublicSlots && !isNew
+            && await database.Slots.AnyAsync(slot => slot.EventId == row.Id && slot.Kind == SlotKind.Public, cancellationToken))
+        {
+            problems.Add("publicSlots", "events:errors.hasPublicSlots");
+        }
+
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
         if (problems.IsEmpty && row.Status == PublishStatus.Published)
         {
@@ -70,9 +78,9 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
     /// <summary>
     /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. E3a has no such rows yet; the
     /// first table of them (the bookings, E6a) refuses here, and every later one adds its own check, so whoever took part is
-    /// never deleted with the event: it is cancelled instead. Its airports and its routes (E4) go with it, through the same unit
-    /// of work, so each leaves its row in the audit — and each is a write of its own area, which whoever deletes an event holds
-    /// (§6.2: the coordinator and the assistant of the base department hold every area of the events).
+    /// never deleted with the event: it is cancelled instead. Its airports, its routes (E4) and its slots (E5) go with it, through
+    /// the same unit of work, so each leaves its row in the audit — and each is a write of its own area, which whoever deletes an
+    /// event holds (§6.2: the coordinator and the assistant of the base department hold every area of the events).
     /// </summary>
     public async Task DeleteAsync(Event row, CancellationToken cancellationToken)
     {
@@ -80,6 +88,7 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
 
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
+        database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }

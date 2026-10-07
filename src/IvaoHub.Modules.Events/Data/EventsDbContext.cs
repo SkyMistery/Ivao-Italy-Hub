@@ -23,12 +23,16 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The routes of the events, which the flight operations write (E4).</summary>
     public DbSet<EventRoute> Routes => Set<EventRoute>();
 
+    /// <summary>The slots of the events, public and private (E5).</summary>
+    public DbSet<EventSlot> Slots => Set<EventSlot>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
         ArgumentNullException.ThrowIfNull(configurationBuilder);
 
         configurationBuilder.Properties<EventOrganizer>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<SlotKind>().HaveConversion<string>().HaveMaxLength(8);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -78,6 +82,30 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // An event deleted takes its routes with it, as it takes its airports. The key is also the index the page reads by.
             route.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventSlot>(slot =>
+        {
+            slot.ToTable("evt_slots");
+            slot.HasKey(row => row.Id);
+            slot.Ignore(row => row.ResourceScope);
+            slot.Ignore(row => row.AircraftTypes);
+            slot.Property(row => row.EventAirportIcao).HasMaxLength(4).IsRequired();
+            slot.Property(row => row.Callsign).HasMaxLength(EventSlot.MaxCodeLength);
+            slot.Property(row => row.FlightNumber).HasMaxLength(EventSlot.MaxCodeLength);
+            slot.Property(row => row.AircraftTypesJson).HasColumnName("aircraft_types").HasColumnType("json").IsRequired();
+            slot.Property(row => row.DepartureIcao).HasMaxLength(4);
+            slot.Property(row => row.ArrivalIcao).HasMaxLength(4);
+            slot.Property(row => row.Stand).HasMaxLength(EventSlot.MaxStandLength);
+            slot.Property(row => row.RotationCode).HasMaxLength(EventSlot.MaxRotationLength);
+            slot.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its slots with it, as it takes its airports and its routes.
+            slot.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+
+            // A public slot is one flight of its event at one off block time (§1.5); a private one has no callsign, and a unique
+            // index lets any number of empty ones through. It is also the index the lists read the slots of an event by.
+            slot.HasIndex(row => new { row.EventId, row.Callsign, row.OffBlockUtc }).IsUnique();
         });
     }
 }
