@@ -187,7 +187,7 @@
     },
     "delete": {
       "title": "Eliminare questo slot?",
-      "description": "Lo slot esce dall'evento e dalla sua pagina."
+      "description": "Lo slot esce dall'evento e dalla sua pagina. Uno slot prenotato non si elimina: prima togli la sua prenotazione."
     },
     "deleteFree": {
       "trigger": "Elimina i liberi",
@@ -306,17 +306,25 @@
     "eventChanged": {
       "title": "Eventi con orari cambiati",
       "description": "Una mail quando cambiano gli orari di un evento in cui hai prenotato uno slot, hai un turno o ti sei iscritto."
+    },
+    "bookingRemoved": {
+      "title": "Prenotazioni tolte",
+      "description": "Una mail quando lo staff degli eventi toglie una tua prenotazione, con il motivo."
     }
   },
   "mail": {
     "events": {
       "eventCancelled": {
-        "subject": "[Eventi] Annullato: {{event}}",
-        "body": "{{event}} è stato annullato.\n\nIl motivo: {{note}}\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+        "subject": "[Eventi] Annullato: {{title}}",
+        "body": "{{title}} è stato annullato.\n\nIl motivo: {{note}}\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
       },
       "eventChanged": {
-        "subject": "[Eventi] Nuovi orari: {{event}}",
-        "body": "Gli orari di {{event}} sono cambiati: ora va da {{starts}} a {{ends}}.\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+        "subject": "[Eventi] Nuovi orari: {{title}}",
+        "body": "Gli orari di {{title}} sono cambiati: ora va da {{starts}} a {{ends}}, in UTC. Controlla che le tue prenotazioni ti vadano ancora bene.\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "bookingRemoved": {
+        "subject": "[Eventi] Prenotazione tolta: {{callsign}}, {{title}}",
+        "body": "Lo staff degli eventi ha tolto la tua prenotazione di {{callsign}}, da {{departure}} a {{arrival}}, off block {{offBlock}} UTC, in {{title}}.\n\nIl motivo: {{reason}}\n\nLo slot è di nuovo libero. L'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
       }
     }
   },
@@ -369,6 +377,18 @@
     "slotTwice": "L'evento ha già uno slot con questo nominativo a questo orario di off block.",
     "slotNotPublic": "Uno slot privato non si corregge come un volo.",
     "exportDraft": "Questo evento è una bozza: si esporta quando è pubblicato.",
-    "bookingsContract": "Indica quale versione del contratto parla il programma, nell'intestazione Hub-Bookings-Contract."
+    "bookingsContract": "Indica quale versione del contratto parla il programma, nell'intestazione Hub-Bookings-Contract.",
+    "bookingPrivateSlot": "Uno slot privato si prenota dal suo form, con il volo che fai.",
+    "slotNotInRotation": "Questo slot non è una tratta di una rotazione.",
+    "bookingCancelledEvent": "Questo evento è annullato: i suoi slot non si prenotano più.",
+    "bookingNotOpen": "Le prenotazioni di questo evento non sono ancora aperte.",
+    "slotClosed": "Questo slot è chiuso: il suo orario di off block è passato.",
+    "slotAlreadyYours": "Hai già prenotato questo slot.",
+    "slotJustTaken": "Slot appena preso da un altro pilota.",
+    "bookingIncompatible": "Troppo vicino a un'altra tua prenotazione di questo evento: fra la fine di una e l'inizio dell'altra ci sono meno minuti di quelli che l'evento chiede.",
+    "aircraftNotAllowed": "Questo slot non ammette questo tipo di aereo.",
+    "slotGone": "Questo slot non c'è più nell'evento.",
+    "slotBooked": "Un pilota ha prenotato questo slot: togli la prenotazione prima di eliminarlo.",
+    "eventHasBookings": "Dei piloti hanno prenotato slot di questo evento: non si elimina. Annullalo."
   }
 }
