@@ -1,48 +1,99 @@
 import { describe, expect, test } from 'vitest';
 
-import { oneDay, sheetProblems, slotGroups, type PublicSlot } from './slotList';
+import {
+  oneDay,
+  rotationLegs,
+  sheetProblems,
+  slotAirport,
+  slotSections,
+  slotTime,
+  type PublicSlot,
+} from './slotList';
 
-/** A slot of the page, by its off block hour from the start of a day; an on block an hour later — the next day past 23. */
+/** A slot of the page: from and to, its two hours from the start of a day — the next day past 23 —, a departure unless it arrives. */
 function slot(
   id: number,
-  hour: number,
-  rotation: string | null = null,
-  leg: number | null = null,
+  from: string,
+  to: string,
+  hours: readonly [number, number],
+  options: { arrives?: boolean; rotation?: string; leg?: number } = {},
 ): PublicSlot {
   const at = (h: number) => new Date(Date.UTC(2026, 10, 21) + h * 3_600_000).toISOString();
 
-  return { id, offBlockUtc: at(hour), onBlockUtc: at(hour + 1), rotation, leg };
+  return {
+    id,
+    departure: { icao: from },
+    arrival: { icao: to },
+    offBlockUtc: at(hours[0]),
+    onBlockUtc: at(hours[1]),
+    isArrival: options.arrives ?? false,
+    rotation: options.rotation ?? null,
+    leg: options.leg ?? null,
+  };
 }
 
 describe('the slots of the page of an event', () => {
-  test('a rotation is grouped where its first leg falls, its legs by their places, a slot alone where it falls', () => {
-    // As the server sends them: by off block.
-    const groups = slotGroups([
-      slot(1, 8),
-      slot(2, 9, 'R1', 1),
-      slot(3, 10),
-      slot(4, 11, 'R2', 1),
-      slot(5, 12, 'R1', 3),
-      slot(6, 12, 'R1', 2),
-      slot(7, 14, 'R2', 2),
-    ]);
+  test('a slot is at the airport of the event it leaves or lands at, and its time there is that one', () => {
+    const out = slot(1, 'XXAA', 'XXCC', [8, 9]);
+    const back = slot(2, 'XXCC', 'XXAA', [10, 11], { arrives: true });
 
-    expect(groups.map((group) => [group.rotation, group.slots.map((one) => one.id)])).toEqual([
-      [null, [1]],
-      ['R1', [2, 6, 5]],
-      [null, [3]],
-      ['R2', [4, 7]],
+    expect([slotAirport(out), slotTime(out)]).toEqual(['XXAA', out.offBlockUtc]);
+    expect([slotAirport(back), slotTime(back)]).toEqual(['XXAA', back.onBlockUtc]);
+  });
+
+  test('one section per airport in the order of the event, the departures and the arrivals apart, each by its time there', () => {
+    // As the server sends them: by off block.
+    const sections = slotSections(
+      [
+        slot(6, 'XXZZ', 'XXCC', [6, 7]),
+        slot(1, 'XXCC', 'XXBB', [7, 12], { arrives: true }),
+        slot(2, 'XXAA', 'XXCC', [8, 9], { rotation: 'R1', leg: 1 }),
+        slot(8, 'XXAA', 'XXDD', [8, 10]),
+        slot(3, 'XXDD', 'XXAA', [8, 11], { arrives: true }),
+        slot(4, 'XXBB', 'XXCC', [9, 10]),
+        slot(5, 'XXCC', 'XXAA', [9, 10], { arrives: true, rotation: 'R1', leg: 2 }),
+        // Between two airports of the event: a departure of the first, never an arrival of the second.
+        slot(7, 'XXAA', 'XXBB', [10, 11]),
+      ],
+      ['XXAA', 'XXBB'],
+    );
+
+    expect(
+      sections.map((section) => [
+        section.icao,
+        section.departures.map((one) => one.id),
+        section.arrivals.map((one) => one.id),
+      ]),
+    ).toEqual([
+      // The arrival landing at 10 before the one landing at 11, though it took off later; two departures at 8 as sent.
+      ['XXAA', [2, 8, 7], [5, 3]],
+      ['XXBB', [4], [1]],
+      // An airport the event no longer lists comes after its own.
+      ['XXZZ', [6], []],
     ]);
   });
 
-  test('no slots, no groups', () => {
-    expect(slotGroups([])).toEqual([]);
+  test('no slots, no sections', () => {
+    expect(slotSections([], ['XXAA'])).toEqual([]);
+  });
+
+  test('the legs of a rotation by their places, and only its own', () => {
+    const legs = rotationLegs(
+      [
+        slot(5, 'XXCC', 'XXAA', [9, 10], { arrives: true, rotation: 'R1', leg: 2 }),
+        slot(9, 'XXAA', 'XXCC', [8, 9], { rotation: 'R2', leg: 1 }),
+        slot(2, 'XXAA', 'XXCC', [6, 7], { rotation: 'R1', leg: 1 }),
+      ],
+      'R1',
+    );
+
+    expect(legs.map((leg) => leg.id)).toEqual([2, 5]);
   });
 
   test('the day is said once when every time falls on it', () => {
-    expect(oneDay([slot(1, 8), slot(2, 20)])).toBe(true);
+    expect(oneDay([slot(1, 'XXAA', 'XXCC', [8, 9]), slot(2, 'XXAA', 'XXCC', [20, 21])])).toBe(true);
     // An on block past midnight is another day.
-    expect(oneDay([slot(1, 8), slot(2, 23)])).toBe(false);
+    expect(oneDay([slot(1, 'XXAA', 'XXCC', [8, 9]), slot(2, 'XXAA', 'XXCC', [23, 24])])).toBe(false);
     expect(oneDay([])).toBe(true);
   });
 });

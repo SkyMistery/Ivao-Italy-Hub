@@ -116,6 +116,17 @@ public sealed class EventsSlotsTests
         Assert.Equal(("B 12", "R7", (int?)3), (draft.Stand, draft.Rotation, draft.Leg));
     }
 
+    [Theory]
+    [InlineData(" xe5a ", "xe5b / XE5C", new[] { "XE5A", "XE5B", "XE5C" })]
+    // The main type written again among the others stays the main one, once.
+    [InlineData("XE5A", "XE5B/xe5a/XE5B", new[] { "XE5A", "XE5B" })]
+    [InlineData("XE5A", null, new[] { "XE5A" })]
+    [InlineData("XE5A", " ", new[] { "XE5A" })]
+    // Without a main type, the others alone: the form refuses the missing main type, not them.
+    [InlineData("", "XE5B", new[] { "XE5B" })]
+    public void TheFormsTypesAreKeptMainFirstAsACellOfTheTableKeepsThem(string main, string? others, string[] kept) =>
+        Assert.Equal(kept, SlotValues.MainFirst(main, others));
+
     [Fact]
     public void EveryCellARowCannotSayIsRefusedOnItsCellAndTheRowIsNoSlot()
     {

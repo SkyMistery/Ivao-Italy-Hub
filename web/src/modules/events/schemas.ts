@@ -286,15 +286,17 @@ export const slotLoadSchema = z.object({
 export type SlotLoadFormValues = z.output<typeof slotLoadSchema>;
 
 /**
- * One public slot, corrected after a load or written alone (§1.5): the cells of a row of the table, the aircraft types written as
- * the table writes them (`A320/A20N`). Its airport of the event and its direction are the server's to read off its airports; every
- * rule is the server's too.
+ * One public slot, corrected after a load or written alone (§1.5): the cells of a row of the table, the aircraft types as two
+ * fields — the main one, and the others written as the table writes them (`A20N/A321`) —, which the server keeps main first, as a
+ * cell `A320/A20N` of the table says (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §1). Its airport of the event and its
+ * direction are the server's to read off its airports; every rule is the server's too.
  */
 export const slotSchema = z.object({
   eventId: z.number().int().meta({ hidden: true }),
   callsign: z.string(),
   flightNumber: z.string(),
-  aircraftTypes: z.string(),
+  mainAircraftType: z.string(),
+  otherAircraftTypes: z.string(),
   departureIcao: z.string(),
   offBlockUtc: z.string().optional().meta({ datetime: true }),
   arrivalIcao: z.string(),
@@ -312,7 +314,8 @@ export function emptySlot(eventId: number): SlotFormValues {
     eventId,
     callsign: '',
     flightNumber: '',
-    aircraftTypes: '',
+    mainAircraftType: '',
+    otherAircraftTypes: '',
     departureIcao: '',
     arrivalIcao: '',
     stand: '',

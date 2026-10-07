@@ -17,7 +17,10 @@ namespace IvaoHub.Modules.Events.Export;
 /// leaves, by their names there, with every time in UTC — and the stable identity of the slot it asks for, the flight number, the
 /// rotation and the leg, and for a private slot the slot paired with it (E7), arrival and departure on the same gate.
 /// <para>Whoever booked it — their VID — and the aircraft type they chose among those the slot allows (E6a): empty on a free slot.
-/// The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands are managed (§0.2).</para>
+/// The aircraft types the slot admits come before any booking, its main one first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento
+/// §7: an addition to version 1, so that the stands can be planned before the pilots book); none on a private slot, whose pilot
+/// declares the type (E7). The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands
+/// are managed (§0.2).</para>
 /// </summary>
 public sealed record BookingExportDto(
     [property: JsonPropertyName("slot_id")] long SlotId,
@@ -25,6 +28,7 @@ public sealed record BookingExportDto(
     [property: JsonPropertyName("flight_number")] string? FlightNumber,
     [property: JsonPropertyName("booked_by")] int? BookedBy,
     [property: JsonPropertyName("aircraft_icao")] string? AircraftIcao,
+    [property: JsonPropertyName("aircraft_types")] IReadOnlyList<string> AircraftTypes,
     [property: JsonPropertyName("gate")] string? Gate,
     [property: JsonPropertyName("eobt")] DateTime? Eobt,
     [property: JsonPropertyName("eat")] DateTime? Eat,
@@ -146,6 +150,7 @@ public static class BookingsExport
             slot.FlightNumber,
             booking?.BookerVid,
             booking?.AircraftIcao,
+            slot.AircraftTypes,
             slot.Stand,
             slot.OffBlockUtc,
             slot.OnBlockUtc,
@@ -160,6 +165,7 @@ public static class BookingsExport
             FlightNumber: null,
             booking?.BookerVid,
             booking?.AircraftIcao,
+            AircraftTypes: [],
             Gate: null,
             slot.IsArrival ? null : slot.OffBlockUtc,
             slot.IsArrival ? slot.OnBlockUtc : null,

@@ -10,7 +10,9 @@ import { benchAirports, benchUrl, readInEnglish, test, whileWaitingFor } from '.
  * holding the bookings only from the division's grants to the position) pastes a table into the «Slots» tab of an event — copied
  * from a spreadsheet, so separated by tabs — with a rotation of two legs and a slot alone; a row the hub refuses is said by its row
  * and its column, and nothing is loaded until the table is right; then the slots are in the tab, and a visitor finds them on the
- * page of the published event, the rotation's legs together, free.
+ * page of the published event, free, the departures and the arrivals of its airport apart, the legs of the rotation marked, the
+ * other types a slot admits on hover, and a slot opened read only with its rotation (note
+ * 2026-10-07-gli-slot-sulla-pagina-dell-evento).
  *
  * The bench survives between runs: the events of this spec's stem are taken back after the test (`afterwards`), and an interrupted
  * run's leftovers at the start. The aircraft types are the bench's (the fixtures of the network give it four).
@@ -170,16 +172,32 @@ test('the coordinator of the events pastes a table with a rotation, and a visito
   await reader.goto(`/events/${slug}`);
   await expect(reader.getByRole('heading', { level: 1, name: title.en })).toBeVisible();
 
+  // One airport, Rome: its departures and its arrivals apart, each by its time there — the leg out among the departures, the leg
+  // back among the arrivals, after the flight from Bari that lands before it; every one free.
   const slots = reader.getByRole('region', { name: events.public.slots });
-  const rows = slots.getByRole('row');
-  // The rotation's legs together, where its first one falls, then the arrival from Bari; every one free.
-  await expect(rows.nth(1)).toContainText(events.public.rotation.replace('{{rotation}}', 'R1'));
-  await expect(rows.nth(2)).toContainText('XEE501');
-  await expect(rows.nth(3)).toContainText('XEE502');
-  await expect(rows.nth(4)).toContainText('XEE503');
-  await expect(rows.nth(2)).toContainText('B12');
-  await expect(rows.nth(2)).toContainText('18:00');
+  const departures = slots.getByRole('table', { name: events.public.departures });
+  const arrivals = slots.getByRole('table', { name: events.public.arrivals });
+  await expect(departures.getByRole('row')).toHaveCount(2);
+  const out = departures.getByRole('row').nth(1);
+  for (const said of ['XEE501', 'B12', '18:00']) {
+    await expect(out).toContainText(said);
+  }
+  await expect(arrivals.getByRole('row').nth(1)).toContainText('XEE503');
+  await expect(arrivals.getByRole('row').nth(2)).toContainText('XEE502');
   await expect(slots.getByText(events.public.free)).toHaveCount(3);
+
+  // The leg out's main type, the other on hover; the two legs marked as legs of a rotation.
+  await out.getByRole('button', { name: /A320/ }).hover();
+  await expect(reader.getByRole('tooltip')).toHaveText(events.public.otherTypes.replace('{{types}}', 'A20N'));
+  await expect(slots.getByRole('button', { name: events.public.rotationHint })).toHaveCount(2);
+
+  // The leg back opens, read only, with the legs of its rotation and itself marked.
+  await arrivals.getByRole('button', { name: 'XEE502' }).click();
+  const detail = reader.getByRole('dialog', { name: 'XEE502 · XE502' });
+  const legs = detail.getByRole('region', { name: events.public.detail.legs.replace('{{rotation}}', 'R1') });
+  await expect(legs.getByRole('listitem')).toHaveCount(2);
+  await expect(legs.getByRole('listitem').nth(0)).toContainText('XEE501');
+  await expect(legs.getByRole('listitem').nth(1)).toHaveAttribute('aria-current', 'true');
 });
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
@@ -189,7 +207,15 @@ function englishEvents() {
   ) as {
     events: { tabs: { slots: string } };
     slots: { load: { open: string; title: string; submit: string; refused: string } };
-    public: { slots: string; free: string; rotation: string };
+    public: {
+      slots: string;
+      free: string;
+      departures: string;
+      arrivals: string;
+      otherTypes: string;
+      rotationHint: string;
+      detail: { legs: string };
+    };
     errors: { aircraftUnknown: string };
   };
 }

@@ -6,12 +6,14 @@ namespace IvaoHub.Modules.Events.Staff;
 /// <summary>
 /// What a public slot says, read the same way from a row of the sheet and from the form of one slot (design M4 §1.5, §3.1, E5):
 /// the aircraft types written <c>A320/A20N</c>, an instant written in UTC, a code of the network. Pure, and tested as such.
+/// <para><b>The first aircraft type of a slot is its main one</b>, the others are admitted too (note
+/// 2026-10-07-gli-slot-sulla-pagina-dell-evento §1): no column says it, the order of the list does.</para>
 /// </summary>
 public static partial class SlotValues
 {
     /// <summary>
     /// The aircraft types of a cell, separated by <c>/</c> as the sheet writes them: trimmed, upper case, each once, in their
-    /// order. Whether each is a type the core knows is the load's to ask.
+    /// order — the first is the main one. Whether each is a type the core knows is the load's to ask.
     /// </summary>
     public static IReadOnlyList<string> AircraftTypes(string? cell) =>
         [
@@ -21,6 +23,19 @@ public static partial class SlotValues
                 .Where(type => type.Length > 0)
                 .Distinct(StringComparer.Ordinal),
         ];
+
+    /// <summary>
+    /// The aircraft types of the form of one slot: the main one, then the others written as the sheet writes them (<c>A20N/A321</c>),
+    /// each once — the main one written again among the others stays the main one. Without a main one, the others alone, so that
+    /// the form refuses the missing main type and not the others.
+    /// </summary>
+    public static IReadOnlyList<string> MainFirst(string? main, string? others)
+    {
+        var first = (main ?? string.Empty).Trim().ToUpperInvariant();
+        var rest = AircraftTypes(others);
+
+        return first.Length == 0 ? rest : [first, .. rest.Where(type => !string.Equals(type, first, StringComparison.Ordinal))];
+    }
 
     /// <summary>
     /// An instant as the sheet writes it: <c>2026-10-17 14:30</c>, with a <c>T</c> or a space, seconds if written, and a <c>Z</c>

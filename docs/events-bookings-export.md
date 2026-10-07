@@ -69,6 +69,7 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "flight_number": "AB101",
     "booked_by": 100001,
     "aircraft_icao": "A320",
+    "aircraft_types": ["A320", "A20N"],
     "gate": "B12",
     "eobt": "2026-10-17T17:00:00Z",
     "eat": "2026-10-17T18:10:00Z",
@@ -84,6 +85,7 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "flight_number": "AB102",
     "booked_by": null,
     "aircraft_icao": null,
+    "aircraft_types": ["A320"],
     "gate": null,
     "eobt": "2026-10-17T18:40:00Z",
     "eat": "2026-10-17T19:40:00Z",
@@ -99,6 +101,7 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "flight_number": null,
     "booked_by": null,
     "aircraft_icao": null,
+    "aircraft_types": [],
     "gate": null,
     "eobt": "2026-10-17T20:00:00Z",
     "eat": null,
@@ -118,6 +121,7 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
 | `flight_number` | the flight number, when the staff wrote one |
 | `booked_by` | the member who booked the slot, by their network number; `null` while the slot is free. A **negative** number stands for a member whose data the hub erased at their request: the booking is kept, the person is not |
 | `aircraft_icao` | the aircraft type the pilot chose when booking, among those the slot allows; `null` while the slot is free |
+| `aircraft_types` | the aircraft types the slot admits, ICAO codes, **the first the main one** — what the stands are planned for before anybody books; empty on a private slot, whose pilot says the type |
 | `gate` | the stand the staff wrote for the slot; `null` when there is none, and on a private slot |
 | `eobt` | the off block time at `origin_icao`; `null` on a private arrival |
 | `eat` | the on block time at `destination_icao`; `null` on a private departure |

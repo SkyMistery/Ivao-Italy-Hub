@@ -29,9 +29,10 @@ public sealed record PublicEventRouteDto(
 
 /// <summary>
 /// A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
-/// allowed, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at the event or leaves
-/// it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once a booking names it
-/// (E6a).
+/// allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
+/// the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
+/// a booking names it (E6a). The page draws from this alone the airport of the event a slot is at, its table of departures or
+/// arrivals and its detail with the legs of its rotation (note 2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
 /// </summary>
 public sealed record PublicEventSlotDto(
     long Id,
