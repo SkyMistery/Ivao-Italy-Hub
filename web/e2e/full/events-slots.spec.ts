@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
 
+import { englishCommon } from '../locales';
+
 import { benchAirports, benchUrl, readInEnglish, test, whileWaitingFor } from './bench';
 
 /**
@@ -158,6 +160,32 @@ test('the coordinator of the events pastes a table with a rotation, and a visito
     await expect(page.getByRole('row').filter({ hasText: callsign })).toBeVisible();
   }
 
+  // ---------------------------------------------------------------- one slot in its form: the main type and the others apart
+  // The leg out was loaded as A320/A20N: the first is its main type, the other one more it admits.
+  await page
+    .getByRole('row')
+    .filter({ hasText: 'XEE501' })
+    .getByRole('link', { name: englishCommon.common.edit })
+    .click();
+  await expect(page.locator('[id="mainAircraftType"]')).toHaveValue('A320');
+  const others = page.locator('[id="otherAircraftTypes"]');
+  await expect(others).toHaveValue('A20N');
+
+  // A type the hub does not know among the others is refused under that field, and nothing under the main type's.
+  await others.fill('A20N/XZZZ');
+  const refusedSlot = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes('/api/events/slots/'),
+  );
+  await page.getByRole('button', { name: englishCommon.common.save, exact: true }).click();
+  expect((await refusedSlot).status()).toBe(400);
+  const field = (id: string) => page.locator(`xpath=//label[@for="${id}"]/parent::div`);
+  await expect(field('otherAircraftTypes').getByRole('alert')).toHaveText(events.errors.aircraftUnknown);
+  await expect(field('mainAircraftType').getByRole('alert')).toHaveCount(0);
+
+  // Left as it was: back to the tab.
+  await page.goto(`/staff/events/${id}?tab=slots`);
+  await expect(page.getByRole('row').filter({ hasText: 'XEE501' })).toBeVisible();
+
   // ---------------------------------------------------------------- published, a visitor reads the page
   const publish = await coordinator.request.post(`/api/events/events/${id}/publish`, {
     headers: asTheClientDoes,
@@ -191,13 +219,17 @@ test('the coordinator of the events pastes a table with a rotation, and a visito
   await expect(reader.getByRole('tooltip')).toHaveText(events.public.otherTypes.replace('{{types}}', 'A20N'));
   await expect(slots.getByRole('button', { name: events.public.rotationHint })).toHaveCount(2);
 
-  // The leg back opens, read only, with the legs of its rotation and itself marked.
-  await arrivals.getByRole('button', { name: 'XEE502' }).click();
+  // The leg back opens, read only, with the legs of its rotation and itself marked; closed, the focus is back on its callsign.
+  const legBackButton = arrivals.getByRole('button', { name: 'XEE502' });
+  await legBackButton.click();
   const detail = reader.getByRole('dialog', { name: 'XEE502 · XE502' });
   const legs = detail.getByRole('region', { name: events.public.detail.legs.replace('{{rotation}}', 'R1') });
   await expect(legs.getByRole('listitem')).toHaveCount(2);
   await expect(legs.getByRole('listitem').nth(0)).toContainText('XEE501');
   await expect(legs.getByRole('listitem').nth(1)).toHaveAttribute('aria-current', 'true');
+  await reader.keyboard.press('Escape');
+  await expect(detail).toHaveCount(0);
+  await expect(legBackButton).toBeFocused();
 });
 
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */

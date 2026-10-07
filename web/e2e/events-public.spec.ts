@@ -371,6 +371,11 @@ test('the page of an event lists its public slots by airport, departures and arr
   await expect(legs.getByRole('listitem')).toHaveCount(2);
   await expect(legs.getByRole('listitem').nth(0)).toHaveAttribute('aria-current', 'true');
   await expect(legs.getByRole('listitem').nth(1)).toContainText('XSM102');
+
+  // Closed, the focus is back on the callsign of the row that opened it, not at the top of the page.
+  await page.keyboard.press('Escape');
+  await expect(detail).toHaveCount(0);
+  await expect(out.getByRole('button', { name: 'XSM101' })).toBeFocused();
 });
 
 test.describe('on a phone', () => {

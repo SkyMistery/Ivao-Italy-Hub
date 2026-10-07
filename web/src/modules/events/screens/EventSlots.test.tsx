@@ -140,7 +140,24 @@ describe('the slots on the page of an event', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  test('a leg of a rotation is marked with an icon that says so', async () => {
+  test('a press that never became a click is forgotten, and the keyboard turns over what is shown', async () => {
+    draw(rotationAndAlone);
+    const types = within(screen.getAllByRole('table', { name: words.departures })[0]!).getByRole('button', {
+      name: /XA20/,
+    });
+
+    // A press begun on the button while nothing was shown, and let go elsewhere — no click —; then the focus, which shows it.
+    fireEvent.pointerDown(types);
+    fireEvent.pointerUp(document);
+    act(() => types.focus());
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Also admitted: XA21');
+
+    // Enter on the button: a click without a press (detail 0) closes what is shown, whatever the old press saw.
+    fireEvent.click(types, { detail: 0 });
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+  });
+
+  test('a leg of a rotation is marked with an icon that says so, once', async () => {
     draw(rotationAndAlone);
 
     const marks = screen.getAllByRole('button', { name: words.rotationHint });
@@ -149,7 +166,45 @@ describe('the slots on the page of an event', () => {
 
     fireEvent.click(marks[0]!);
     expect(await screen.findByRole('tooltip')).toHaveTextContent(words.rotationHint);
+    // The sentence is the button's name: the tooltip that shows it is not its description too, or a reader would hear it twice.
+    expect(marks[0]).not.toHaveAttribute('aria-describedby');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  test('closing the slot gives the focus back to the callsign that opened it', async () => {
+    const user = userEvent.setup();
+    draw(rotationAndAlone);
+
+    // Opened by its callsign, from the keyboard's side.
+    const callsign = screen.getByRole('button', { name: 'XSM300' });
+    await user.click(callsign);
+    expect(await screen.findByRole('dialog', { name: 'XSM300' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(callsign).toHaveFocus());
+
+    // Opened by a click on its row: back to the callsign of that row.
+    await user.click(screen.getByText('B12'));
+    expect(await screen.findByRole('dialog', { name: 'XSM101 · XS101' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'XSM101' })).toHaveFocus());
+  });
+
+  test('a click that ends selecting some text in a row opens nothing', () => {
+    draw(rotationAndAlone);
+    const stand = screen.getByText('B12');
+
+    // A selection takes a range only when it holds none: a click of an earlier test may have left a caret.
+    const range = document.createRange();
+    range.selectNodeContents(stand);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    fireEvent.click(stand);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    window.getSelection()?.removeAllRanges();
+    fireEvent.click(stand);
+    expect(screen.getByRole('dialog', { name: 'XSM101 · XS101' })).toBeInTheDocument();
   });
 
   test('a row opens the slot read only, with every type it admits and the legs of its rotation', async () => {
