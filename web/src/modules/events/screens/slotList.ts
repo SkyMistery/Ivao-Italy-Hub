@@ -1,55 +1,86 @@
 import { SLOT_COLUMNS } from '../schemas';
 
 /**
- * The public slots of an event as data (design M4 §3.1, §7.1, E5): the page lists them with their rotations grouped, and the page
- * that loads a table lists what the server refused, row by row. Plain TypeScript beside the components, so that a test reads it
- * without drawing anything.
+ * The public slots of an event as data (design M4 §3.1, §7.1, E5): the page lists them by the airport of the event they are at, its
+ * departures and its arrivals apart, and opens one with the legs of its rotation (note 2026-10-07-gli-slot-sulla-pagina-dell-evento);
+ * the page that loads a table lists what the server refused, row by row. Plain TypeScript beside the components, so that a test
+ * reads it without drawing anything.
  */
 
-/** A public slot as the page of its event gets it: what the grouping reads of it. */
+/** A public slot as the page of its event gets it: what the sections and the detail read of it. */
 export interface PublicSlot {
   readonly id: number;
   readonly offBlockUtc: string;
   readonly onBlockUtc: string;
   readonly rotation: string | null;
   readonly leg: number | null;
-}
-
-/** The slots of one rotation, by their places — or one slot alone, with no rotation. */
-export interface SlotGroup<TSlot extends PublicSlot> {
-  readonly rotation: string | null;
-  readonly slots: readonly TSlot[];
+  readonly isArrival: boolean;
+  readonly departure: { readonly icao: string };
+  readonly arrival: { readonly icao: string };
 }
 
 /**
- * The slots with their rotations grouped (§7.1): a rotation's legs together, by their places, where its first leg falls among the
- * slots by off block; a slot alone where its own off block falls. The server sends them by off block.
+ * The airport of the event a slot is at: where a departure leaves from, where an arrival lands. The server read it off the two
+ * airports when the slot was written — a flight between two airports of the event is a departure of the first (design M4 §1.5).
  */
-export function slotGroups<TSlot extends PublicSlot>(slots: readonly TSlot[]): SlotGroup<TSlot>[] {
-  const groups: { rotation: string | null; slots: TSlot[] }[] = [];
-  const byRotation = new Map<string, { rotation: string; slots: TSlot[] }>();
+export function slotAirport(slot: PublicSlot): string {
+  return slot.isArrival ? slot.arrival.icao : slot.departure.icao;
+}
+
+/** The time of a slot at the airport of the event: the off block of a departure, the on block of an arrival. */
+export function slotTime(slot: PublicSlot): string {
+  return slot.isArrival ? slot.onBlockUtc : slot.offBlockUtc;
+}
+
+/** The slots at one airport of the event: its departures and its arrivals, each by its time there. */
+export interface SlotSection<TSlot extends PublicSlot> {
+  readonly icao: string;
+  readonly departures: readonly TSlot[];
+  readonly arrivals: readonly TSlot[];
+}
+
+/**
+ * The slots by the airport of the event they are at, in the order of the event's airports — one it no longer lists after them, by
+ * its code —, and in each the departures and the arrivals apart, by their time there, then as the server sent them. A rotation's
+ * legs stay each in its own table: the leg out among the departures, the leg back among the arrivals.
+ */
+export function slotSections<TSlot extends PublicSlot>(
+  slots: readonly TSlot[],
+  airports: readonly string[],
+): SlotSection<TSlot>[] {
+  const byAirport = new Map<string, { departures: TSlot[]; arrivals: TSlot[] }>();
 
   for (const slot of slots) {
-    if (slot.rotation === null) {
-      groups.push({ rotation: null, slots: [slot] });
-      continue;
-    }
-
-    const known = byRotation.get(slot.rotation);
-    if (known === undefined) {
-      const group = { rotation: slot.rotation, slots: [slot] };
-      byRotation.set(slot.rotation, group);
-      groups.push(group);
-    } else {
-      known.slots.push(slot);
-    }
+    const icao = slotAirport(slot);
+    const section = byAirport.get(icao) ?? { departures: [], arrivals: [] };
+    byAirport.set(icao, section);
+    (slot.isArrival ? section.arrivals : section.departures).push(slot);
   }
 
-  for (const group of byRotation.values()) {
-    group.slots.sort((one, other) => (one.leg ?? 0) - (other.leg ?? 0));
-  }
+  const place = (icao: string) => {
+    const index = airports.indexOf(icao);
+    return index < 0 ? airports.length : index;
+  };
+  const byTime = (one: TSlot, other: TSlot) =>
+    Date.parse(slotTime(one)) - Date.parse(slotTime(other)) || one.id - other.id;
 
-  return groups;
+  return [...byAirport.entries()]
+    .sort(([one], [other]) => place(one) - place(other) || one.localeCompare(other))
+    .map(([icao, section]) => ({
+      icao,
+      departures: section.departures.sort(byTime),
+      arrivals: section.arrivals.sort(byTime),
+    }));
+}
+
+/** The legs of a rotation, by their places — what the detail of one of them lists. */
+export function rotationLegs<TSlot extends PublicSlot>(slots: readonly TSlot[], rotation: string): TSlot[] {
+  return slots
+    .filter((slot) => slot.rotation === rotation)
+    .sort(
+      (one, other) =>
+        (one.leg ?? 0) - (other.leg ?? 0) || Date.parse(one.offBlockUtc) - Date.parse(other.offBlockUtc),
+    );
 }
 
 /** Whether every time of the slots falls on one day in UTC: then the list shows the hours, and the day once above them. */
