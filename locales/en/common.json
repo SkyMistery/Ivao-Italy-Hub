@@ -23,7 +23,8 @@
     "empty": "Nothing has been published on this page yet. Whoever runs the site writes it from the back office."
   },
   "liveStatus": {
-    "title": "On the network now"
+    "title": "On the network now",
+    "airportsTitle": "At these airports now"
   },
   "search": {
     "title": "Search",
