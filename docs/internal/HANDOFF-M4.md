@@ -29,7 +29,7 @@ due volte. ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
 sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
 pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
 **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
-nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti su questa PR. **La
+nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -132,6 +132,8 @@ lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatC
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
 l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»);
+il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato da E10h** (`[WithdrawnByStakeholder]`, per il
+ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -144,6 +146,37 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga.md`, **Proposta**: la domanda a Carmine è un commento
+  sulla #232; il dettaglio in `10`, E10h, «Com'è andata»):
+  - **Il segno**: `[WithdrawnByStakeholder]` (`WithdrawnByStakeholderAttribute`, namespace **`IvaoHub.Core.Division`**, in
+    `src/IvaoHub.Core/Division/DomainContracts.cs` accanto a `ISubmittedByMembers`), sulla classe dell'entità.
+  - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`): una riga `ISubmittedByMembers` e `IHasStakeholder` la cui entità
+    ha il segno la **cancella** il membro che ne è l'interessato, **com'era salvata** (i valori originali: chi scrive il suo VID
+    nell'istanza della riga di un altro prima di toglierla non passa), e nessun altro senza `{Area}.Edit`. Senza il segno cancellarla
+    resta del dipartimento (il PIREP, il training). Lo staff con `{Area}.Edit`, il superadmin e l'anonimo come prima; l'audit scrive
+    `deleted` con il VID di chi ha cancellato.
+  - **All'avvio** `HubSaveChangesInterceptor.VerifyWithdrawals`, chiamato da `HubPipeline.InitializeAsync` accanto a
+    `VerifyAlternatives`, ferma l'hub se il segno sta su un'entità che non è insieme `IOwnedByDepartment`, `ISubmittedByMembers` e
+    `IHasStakeholder`.
+  - **Il modulo di prova**: `SampleSubmission` (`smp_submissions`, con il segno) e `SampleReport` (`smp_reports`, senza) in
+    `tests/IvaoHub.IntegrationTests/SampleSubmissions.cs`, migrazione `AddSampleSubmissions`; i test `WithdrawnByStakeholderTests`
+    (integrazione) e `VerifyWithdrawalsTests` (unità). `ErasureTests` non cambia: non legge il contesto di prova.
+  - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler e il motore CRUD non cambiano.
+- **Che cosa devono sapere le fasi dopo**:
+  - **E6a** (in coda dopo la #228 e la #232): il segno su `EventBooking` l'ha già messo la sua sessione, che ha unito questo branch; il
+    ritiro passa dal suo endpoint del flusso del pilota (`DELETE /api/events/mine/bookings/{id}`), che legge la riga del pilota e la
+    elimina, e il guardiano controlla di nuovo sotto.
+  - ⚠️ **Il segno non apre il motore CRUD**: la DELETE di `MapCrud` chiede all'handler la policy di scrittura, e un membro non la tiene.
+    Il ritiro di un membro è sempre un endpoint del suo flusso.
+  - **E11a** (la disponibilità di un controllore, che «la ritira fino alla chiusura», design §4.2) ed **E16** (l'iscrizione a un evento
+    in presenza, «si ritira fino all'inizio dell'evento», §4-bis.2): se la fase dice che ritirare vuol dire cancellare la riga, basta il
+    segno sull'entità, che dev'essere `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder` (o l'hub non parte); se il ritiro è
+    uno stato, come per il PIREP, il segno non serve: cambiare la propria riga lo permette già l'eccezione di T11.
+  - ⚠️ **Il segno si legge con `inherit: false`**: va sulla classe dell'entità, non su una sua base.
+  - ⚠️ **Finché Carmine non risponde** sulla #232 la forma è una proposta: se cambia, E6a unisce di nuovo questo branch.
 
 ### Che cosa ha lasciato E5 (6–7 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nata in coda dopo la #223, unita prima che si aprisse; dalla revisione in coda dopo la #230 di E10g)
 
