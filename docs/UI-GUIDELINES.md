@@ -134,7 +134,10 @@ table both shapes read, so a tone cannot be green in one of them and grey in the
 refreshed by **polling** and never by a socket — a strip that changes by ones once a minute does not
 justify a connection per reader, and the proxy in front of this application is not the place for one.
 It has no endpoint of its own either: it asks the `networkStats` data block, which is anonymous and
-always live and is already the answer to that question.
+always live and is already the answer to that question. Given `airports`, a list of ICAO codes, it
+counts those airports instead of the division, under a title of its own — what the page of an event
+asks on the day of the event; the codes travel with the question and are never saved into a block
+(`docs/internal/decisions/2026-10-06-chi-e-online-sugli-scali-nel-nucleo.md`).
 
 ⚠️ Two things about it are rules and not taste. It goes in the **`banner` slot of `Shell`**, between
 the header and the content, because a strip inside the reading column is not a strip — and there is a

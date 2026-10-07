@@ -296,7 +296,7 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
         }
 
         using var document = JsonDocument.Parse(File.ReadAllText(path));
-        return Task.FromResult(IvaoWhazzup.Read(document.RootElement, airspace));
+        return Task.FromResult(IvaoWhazzup.Read(document.RootElement).For(airspace));
     }
 
     /// <summary>

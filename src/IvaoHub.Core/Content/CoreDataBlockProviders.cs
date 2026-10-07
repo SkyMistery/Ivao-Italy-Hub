@@ -176,13 +176,23 @@ public sealed class StatsProvider(HubDbContext database, IClock clock) : IDataBl
 /// anybody: it is the same picture the network shows on its own site. What the hub adds is which
 /// half of it is <i>ours</i>, and that comes from the snapshot of the reference data, never from a
 /// list in the code.</para>
+/// <para><b>The airports a screen asks about</b> (M4, E4b; design M4 section 7.1): with
+/// <c>airports</c>, a list of ICAO codes, the area is theirs instead of the division's — controllers
+/// whose station is one of them, pilots whose flight plan starts or ends at one —, and the two
+/// figures of the area count it. ⚠️ Like <c>from</c> and <c>to</c> of the calendar, they are not in
+/// the block's zod schema, which is what an editor fills in: a page saved with the airports of one
+/// event would go stale with it. The schema is what may be <i>saved</i>; this is what may be
+/// <i>asked</i>. A list is the airports asked even when nothing in it is one — no airport, nobody
+/// counted —, never the division; and no more than <see cref="DataBlockScope.MaxItems"/> of them,
+/// because a block is not an export, counted after the cleaning so that entries that are no airport
+/// never push a real one out (<see cref="IvaoAirspace.OfAirports"/>).</para>
 /// </summary>
 public sealed class NetworkStatsProvider(IIvaoApiClient network, IFirDirectory airspace) : IDataBlockProvider
 {
-    /// <summary>Controllers working a station of the division.</summary>
+    /// <summary>Controllers working a station of the division — or one of the airports asked about.</summary>
     public const string DivisionAtc = "divisionAtc";
 
-    /// <summary>Pilots whose flight plan starts or ends in it.</summary>
+    /// <summary>Pilots whose flight plan starts or ends in it — or at one of the airports asked about.</summary>
     public const string DivisionPilots = "divisionPilots";
 
     /// <summary>Controllers connected anywhere on the network.</summary>
@@ -201,7 +211,9 @@ public sealed class NetworkStatsProvider(IIvaoApiClient network, IFirDirectory a
         DataBlockContext context,
         CancellationToken cancellationToken)
     {
-        var area = await airspace.GetAirspaceAsync(cancellationToken);
+        var area = BlockProps.ReadTexts(props, "airports") is { } airports
+            ? IvaoAirspace.OfAirports(airports, DataBlockScope.MaxItems)
+            : await airspace.GetAirspaceAsync(cancellationToken);
         var status = await network.GetNetworkStatusAsync(area, cancellationToken);
 
         var figures = new JsonArray();

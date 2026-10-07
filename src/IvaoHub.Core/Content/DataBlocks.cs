@@ -203,6 +203,24 @@ public static class BlockProps
 
     public static string Instant(DateTime value) =>
         DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// A list of plain strings a caller sent — the airports a screen asks about (E4b). Null when there
+    /// is no list at all, which a caller treats as "not asked for"; a list is asked for even when
+    /// nothing in it is a string, and a caller must read it as asked rather than widen it to everything.
+    /// </summary>
+    public static IReadOnlyList<string>? ReadTexts(JsonNode? props, string name)
+    {
+        if (props?[name] is not JsonArray array)
+        {
+            return null;
+        }
+
+        return [.. array
+            .Select(entry => entry is JsonValue value && value.TryGetValue<string>(out var text) ? text : null)
+            .OfType<string>()
+            .Where(text => !string.IsNullOrWhiteSpace(text))];
+    }
 }
 
 /// <summary>
