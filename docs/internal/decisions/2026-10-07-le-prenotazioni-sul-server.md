@@ -30,10 +30,14 @@ caso (b) a sé, in una PR a sé prima del codice che lo usa (`CLAUDE.md` §0 reg
    slot liberi, o «elimina i liberi», mentre un pilota ne prenota uno nello stesso istante, risponde **409** («leggi di nuovo»).
 3. **Le risposte.** Un rifiuto della prenotazione cade su `slotId`: `slotAlreadyYours` (è già del pilota); `slotJustTaken` — «slot appena
    preso da un altro pilota», la frase del design (§3.3) — sia quando la prenotazione dell'altro si vede già, sia quando lo dice l'indice
-   univoco, o il deadlock di due insert della stessa chiave, in cui l'altro vince comunque; `bookingIncompatible`; `slotClosed`;
-   `bookingNotOpen`; `bookingCancelledEvent`. Su `aircraftIcao`, `aircraftNotAllowed`. **404** per uno slot che non c'è, per uno slot di un
-   evento che il pilota non vede — bozza, non ancora visibile, concluso: come la sua pagina — e per uno slot che lo staff elimina nello
-   stesso istante. Uno slot privato è rifiutato (`bookingPrivateSlot`) finché E7 non porta il suo form.
+   univoco; `bookingIncompatible`; `slotClosed`; `bookingNotOpen`; `bookingCancelledEvent`. Su `aircraftIcao`, `aircraftNotAllowed`.
+   **Un deadlock non è «preso»** (la revisione della #233, punto 3): può incontrare anche un caricamento degli slot o «elimina i liberi», e
+   lo slot può essere libero; la risposta è **409** «riprova» (`events:errors.bookingTryAgain`), niente prenotato, come per la rotazione.
+   **404** per uno slot che non c'è, per uno slot di un evento che il pilota non vede — bozza, non ancora visibile, concluso: come la sua
+   pagina —, anche quando smette di vedersi mentre la prenotazione aspetta il blocco (la rilettura sotto il blocco chiede quello che chiede
+   la prima, `EventState.Seen`: la revisione, punto 7), e per uno slot che lo staff elimina nello stesso istante. Una prenotazione fatta è
+   **201** senza un indirizzo suo: si legge nella lista del pilota (la revisione, punto 5). Uno slot privato è rifiutato
+   (`bookingPrivateSlot`) finché E7 non porta il suo form.
 4. **Fino a quando** (§3.3, §3.6). Si prenota da `booking_opens_at_utc` finché l'off block dello slot è futuro — l'EOBT, anche per un
    arrivo, che parte da un altro aeroporto —, anche a evento in corso; l'istante dell'off block è già chiuso. Un evento annullato non prende
    prenotazioni — e l'evento si rilegge sotto il blocco del pilota, così un annullamento salvato mentre la prenotazione aspettava si vede
@@ -45,11 +49,16 @@ caso (b) a sé, in una PR a sé prima del codice che lo usa (`CLAUDE.md` §0 reg
    con le tratte prenotate e, per ognuna delle altre, il perché (`slotJustTaken`, `slotAlreadyYours`, `slotClosed`, `bookingIncompatible`,
    `aircraftNotAllowed`); la prima lista è vuota se non c'era niente da prendere. Una tratta presa da un altro pilota nello stesso istante
    fallisce da sola e le altre vanno avanti; un deadlock riporta indietro tutta la transazione, e la risposta è **409** «riprova» (niente
-   prenotato).
+   prenotato; la stessa chiave della prenotazione di uno slot solo).
 6. **Lo staff toglie** (§3.6): con `EventBookings.Edit` chiesto all'unico handler sulla prenotazione — con i dipartimenti e lo scope
-   dell'evento —, un **motivo obbligatorio** in testo semplice, al più mille caratteri (va a un pilota in una mail, non su una pagina), **in
-   qualunque momento**: il design non mette un limite. Il motivo **non si conserva**: lo porta la mail; l'audit del nucleo tiene chi ha
-   tolto quale prenotazione e quando.
+   dell'evento **com'è ora**: «togli» copia sulla prenotazione la cura dell'evento prima di chiedere, come ogni riga dell'evento
+   (`IEventChild`, `EventChildren.AdoptAsync`), così un dipartimento entrato nell'evento dopo la prenotazione la raggiunge e uno uscito no
+   (la revisione della #233, punto 1) —, un **motivo obbligatorio** in testo semplice, al più mille caratteri (va a un pilota in una mail,
+   non su una pagina), **in qualunque momento**: il design non mette un limite. Il motivo **non si conserva**: lo porta la mail; l'audit
+   del nucleo tiene chi ha tolto quale prenotazione e quando. **La mail parte dopo che la cancellazione è salvata, apposta** (la revisione,
+   punto 6): la riga è la verità e la mail la segue, come per un annullamento; messa in coda prima, potrebbe annunciare una rimozione che il
+   salvataggio poi rifiuta — ritirata dal pilota, o tolta da un altro, un attimo prima. Se la coda fallisce dopo il salvataggio, la risposta
+   è un errore e la prenotazione non c'è più: l'audit dice chi l'ha tolta.
 7. **Le mail** (§8.3): `eventCancelled` all'annullamento ed `eventChanged` quando cambia **l'inizio o la fine** di un evento pubblicato e
    non annullato — non per le altre date, né per un salvataggio che non le sposta —, a chi ha prenotato, **una volta per persona** anche
    con più prenotazioni, ognuno nella sua lingua (un intento per lingua); `bookingRemoved` al pilota, con il volo e il motivo. Mai allo
@@ -61,7 +70,11 @@ caso (b) a sé, in una PR a sé prima del codice che lo usa (`CLAUDE.md` §0 reg
 9. **La riga** (§1.6): le colonne del piano, più il dipartimento e la maschera dell'evento (§1.1: «hanno la maschera dell'evento») e la
    visibilità scritta dal getter (`Members`, come i PIREP); **lo scope dell'evento** (`IHasResourceScope`), come ogni riga dell'evento,
    così un grant su un evento solo raggiunge le sue prenotazioni come raggiunge i suoi slot; **non `IAuditable`**: `created_at` lo scrive
-   il verbo, e la storia è dell'audit (`[Audited]`).
+   il verbo, e la storia è dell'audit (`[Audited]`). ⚠️ **Raggiunge, per l'unico handler; il guardiano dell'interceptor no.** Il guardiano
+   chiede `{Area}.Edit` sui dipartimenti della riga **senza il suo scope** (`RequireAny`), quindi un grant su un evento solo passa l'handler
+   e il salvataggio lo rifiuta: non toglie una prenotazione di quell'evento, e non corregge nemmeno un suo slot. Misurato in E6a
+   (`ForbiddenDomainException: VID … does not hold EventBookings.Edit on any of ED`, dopo che l'handler aveva detto sì). È del nucleo,
+   e riguarda ogni riga di un evento: fuori da questa fase, detto a `dalberone`.
 10. **Il «preso» della pagina e l'esportazione** leggono le prenotazioni chiunque chieda (`CrudSource.BackOffice`): la pagina dice solo se
     uno slot è preso, mai da chi; l'esportazione dà `booked_by` (il VID; negativo, lo pseudonimo, dopo la cancellazione dei dati di una
     persona) e `aircraft_icao` (il tipo scelto dal pilota). Dentro la versione 1, che li aveva già, vuoti
@@ -87,9 +100,10 @@ prenotazione; E11a (la disponibilità di un controllore) ed E16 (l'iscrizione a 
 
 ## 3. Che cosa si è toccato
 
-Solo il modulo: `EventBooking.cs`, la migrazione additiva `AddEventBookings`, `Bookings/` (`BookingRules`, `PilotBookings`,
-`BookingEndpoints`, `BookingDtos`), `EventsMail.cs`, `EventsNotifications.cs` (`bookingRemoved`), `Data/DatabaseErrors.cs` (gli errori del
-database che un verbo del modulo risponde da sé: era il `MetAnotherWrite` di E5, che ora lo usa), `Staff/EventSaving.cs`,
+Solo il modulo: `EventBooking.cs` (e `EventChild.cs`, il suo commento), la migrazione additiva `AddEventBookings`, `Bookings/`
+(`BookingRules`, `PilotBookings`, `BookingEndpoints`, `BookingDtos`), `EventsMail.cs`, `EventsNotifications.cs` (`bookingRemoved`),
+`Data/DatabaseErrors.cs` (gli errori del database che un verbo del modulo risponde da sé: era il `MetAnotherWrite` di E5, che ora lo
+usa), `Staff/EventSaving.cs`,
 `Staff/EventEndpoints.cs`, `Staff/EventSlotEndpoints.cs`, `Staff/SlotLoading.cs`, `Public/PublicEvents.cs`, `Export/BookingsExport.cs`,
 `EventsModule.cs`, i file di lingua del modulo, `docs/events-bookings-export.md`. Del nucleo solo le due righe di `ErasureTests`, con la loro
 nota (`2026-10-07-le-colonne-delle-prenotazioni-in-erasuretests`); il pezzo del nucleo del §2 è della PR di E10h, non di questa.
@@ -111,13 +125,24 @@ nota (`2026-10-07-le-colonne-delle-prenotazioni-in-erasuretests`); il pezzo del 
 > 3. Uno slot prenotato lo staff lo corregge ancora, e la prenotazione resta com'è (raccomandato, il punto 11), oppure lo si rifiuta
 >    finché la prenotazione non è tolta?
 
+## 5. Dopo la revisione
+
+Il master ha letto la #233 ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626)): approvabile sul
+codice dopo quattro correzioni, che sono nella stessa PR e qui sopra nelle letture 3, 5 e 6 — la cura dell'evento com'è ora su «togli»,
+i 403 provati per chi non ha il permesso sulla riga, un deadlock che è «riprova» e non «preso», due test che provano `READ COMMITTED` (la
+lettura 1: con l'isolamento predefinito cadono tutti e due) —, e quattro punti minori: il 201 senza un indirizzo, la mail dopo la
+cancellazione (voluta, lettura 6), la rilettura che chiede `EventState.Seen`, e due 500 che restano (un'attesa di blocco scaduta in una
+prenotazione, un deadlock in «elimina i liberi»: scritti in `10`, «Com'è andata»). Nessuna decisione nuova: le domande del §4 restano
+quelle; il grant su un evento solo che il guardiano non lascia scrivere (lettura 9, ⚠️) è del nucleo.
+
 ## Da portare nel piano
 
 - Design M4 §1.6: la chiave verso lo slot e nessuna verso l'evento; lo scope dell'evento; una prenotazione non è `IAuditable`.
-- Design M4 §3.3: le risposte; la rotazione intera con un aereo solo, sempre 200 con il perché di ogni tratta, 409 su un deadlock.
+- Design M4 §3.3: le risposte; un deadlock è 409 «riprova», mai «preso»; la rotazione intera con un aereo solo, sempre 200 con il perché
+  di ogni tratta, 409 su un deadlock.
 - Design M4 §3.5 e §10.1: `READ COMMITTED` e perché; il formato del log binario (la domanda 2).
-- Design M4 §3.6: il motivo dello staff, obbligatorio e non conservato, senza un limite di tempo; uno slot prenotato si corregge (la
-  domanda 3).
+- Design M4 §3.6: il motivo dello staff, obbligatorio e non conservato, senza un limite di tempo; «togli» nella cura dell'evento com'è
+  ora; la mail dopo la cancellazione; uno slot prenotato si corregge (la domanda 3).
 - Design M4 §8.3: le mail una volta per persona; `eventChanged` per l'inizio e la fine.
 - Piano §2.5, se Carmine lo conferma: il formato del log binario della MariaDB condivisa.
 - Piano §16.6: il conto degli endpoint a mano di M4 (cinque di E6a).
