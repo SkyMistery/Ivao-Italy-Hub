@@ -76,6 +76,16 @@ public sealed class PilotBookings(
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await LockThePilotAsync(row.Id, cancellationToken);
 
+        if (await EventNowAsync(row.Id, cancellationToken) is not { } current)
+        {
+            return (BookingResult.NotFound, null, problems);
+        }
+
+        if (BookingRules.EventClosed(current, now) is { } closedNow)
+        {
+            return Refused(problems.Add(SlotField, closedNow));
+        }
+
         var mine = await MineInEventAsync(row.Id, cancellationToken);
         if (Refusal(slot, mine, await TakenAsync([slot.Id], cancellationToken), gap) is { } refused)
         {
@@ -153,6 +163,16 @@ public sealed class PilotBookings(
 
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await LockThePilotAsync(row.Id, cancellationToken);
+
+        if (await EventNowAsync(row.Id, cancellationToken) is not { } current)
+        {
+            return (BookingResult.NotFound, null, problems);
+        }
+
+        if (BookingRules.EventClosed(current, now) is { } closedNow)
+        {
+            return (BookingResult.Refused, null, problems.Add(SlotField, closedNow));
+        }
 
         var mine = await MineInEventAsync(row.Id, cancellationToken);
         var taken = await TakenAsync([.. legs.Select(leg => leg.Id)], cancellationToken);
@@ -297,6 +317,14 @@ public sealed class PilotBookings(
 
         return (slot, row);
     }
+
+    /// <summary>
+    /// The event as it is now, read again under the pilot's lock: a cancellation saved while the request waited for its lock is seen
+    /// — on the row of the event the first booking of a pilot waits for the cancellation itself —, and no booking enters an event
+    /// its pilots were just told is cancelled. None when the event was deleted meanwhile.
+    /// </summary>
+    private Task<Event?> EventNowAsync(long eventId, CancellationToken cancellationToken) =>
+        database.Events.AsNoTracking().FirstOrDefaultAsync(row => row.Id == eventId, cancellationToken);
 
     /// <summary>Why a slot cannot be booked now, before anything is locked: a private one, an event closed, a slot closed.</summary>
     private static string? Closed(EventSlot slot, Event row, DateTime now) =>
