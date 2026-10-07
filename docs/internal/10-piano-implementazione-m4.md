@@ -1279,6 +1279,39 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
     (`ivaohub_e2e_e5` ricreato prima), dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`:
     **PASS** (nessun file del maintainer;
     del nucleo `ContractVersion.cs`, della #230, ed `ErasureTests.cs`; tre note nuove).
+- **La CI della seconda spinta** (`d901f43`): verde, `build-test` (24 minuti e 32 secondi) e `core-guard`.
+- **Dopo la prova sul banco** (7 ottobre 2026). Dalberone ha guardato E5 sul banco di prova — la build di E5 sulla 5090, un evento su
+  LIRF e LIMC, quattro slot incollati con una rotazione, pubblicato — e ha riaperto la #228 per la pagina degli slot, da fare in E5 e
+  non in E6b. Il messaggio è arrivato dalla sessione che coordina. Sono comportamenti che il design non dice, scelti da lui come chi tiene
+  il modulo: nota nuova **«Proposta»** `decisions/2026-10-07-gli-slot-sulla-pagina-dell-evento.md`, con
+  [la domanda a Carmine sulla #228](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6039543785);
+  la nota decisa di E5 non si tocca, e la sua lettura 8 cambia (§5 della nota nuova). Fatti come la nota raccomanda:
+  1. **Il tipo principale**: il primo di `aircraft_types`, senza migrazione. Il form di uno slot ha due campi, «Tipo principale» e
+     «Altri tipi», salvati principale per primo (`SlotValues.MainFirst`), con ogni rifiuto sul suo campo; la pagina del caricamento dice
+     che nella cella `A320/A20N` il primo è il principale.
+  2. **La colonna del tipo** mostra il principale; gli altri compaiono nel tooltip di Atmosphere al passaggio del mouse, al focus e al
+     tocco.
+  3. **«Partenze» e «Arrivi»** in due tabelle, rispetto allo scalo dell'evento, per l'orario allo scalo.
+  4. **Una sezione per scalo** quando gli slot sono a più d'uno; il volo fra due scali dell'evento resta una partenza del primo.
+  5. **Le tratte di una rotazione** stanno ognuna nella sua tabella, segnate da un'icona `Repeat` che lo dice.
+  6. **Una riga apre lo slot** in sola lettura, in un dialog di Atmosphere: tutti i tipi, gli orari, lo stand, le tratte della
+     rotazione. È dove E6b metterà «Prenota»; nessun endpoint e nessun campo nuovo.
+  7. **`aircraft_types` nell'esportazione.** La richiesta diceva che l'esportazione «tiene la lista in ordine», ma non la portava:
+     chiesto a dalberone, ha scelto il campo nuovo, un'aggiunta alla versione 1. `docs/events-bookings-export.md` lo dice.
+  - ⚠️ **Il tocco, misurato prima di scriverlo.** Il tooltip di Radix si apre solo al passaggio del mouse e al focus. Il bottone che lo
+    porta rovescia, al click, quello che si vedeva **quando la pressione è cominciata**. **Al contrario**: con un semplice «al click si
+    rovescia» la smoke su un telefono (`hasTouch`, Chromium) cade sul secondo tocco, che lascia il tooltip aperto (`Expected: 0`,
+    `Received: 1`); rimesso, la smoke passa.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit):
+    - `dotnet build` della soluzione senza avvisi; `dotnet format --verify-no-changes` sui file C# del giro;
+    - unità **1174/1174**, con `EventsSlotsTests` 41;
+    - **integrazione intera senza filtro 486/486** (9,1 minuti), con `EventsSlotsTests` 5/5;
+    - `pnpm gen:api` (i due campi del form) e `pnpm i18n:sync` rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    - `pnpm test` **636 in 87 file**, con `slotList.test.ts` 6 ed `EventSlots.test.tsx` 5;
+    - la smoke degli eventi da sola 10/10, poi `pnpm e2e --workers=2` **173/173** al primo giro, dietro il lock dello smoke;
+    - **`pnpm e2e:full` 57/57 al primo giro** (11,7 minuti) sul banco `http://127.0.0.1:5126` (`ivaohub_e2e_e5` ricreato prima), dietro
+      il lock di Mailpit, preso dopo 80 secondi di attesa per il giro di E6a;
+    - le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS** (quattro note nuove).
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
