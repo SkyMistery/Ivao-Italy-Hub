@@ -142,15 +142,16 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga.md`, **Proposta**: la domanda a Carmine è un commento
-  sulla #232; il dettaglio in `10`, E10h, «Com'è andata»):
+- **Che cosa c'è** (nota `decisions/2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga.md`, **decisa** da Carmine sulla #232: sì alla
+  forma, e il limite dello stub scritto come per T11; resta aperto il rilievo 6, §6.3 della nota; il dettaglio in `10`, E10h, «Com'è
+  andata» e «Dopo la revisione»):
   - **Il segno**: `[WithdrawnByStakeholder]` (`WithdrawnByStakeholderAttribute`, namespace **`IvaoHub.Core.Division`**, in
     `src/IvaoHub.Core/Division/DomainContracts.cs` accanto a `ISubmittedByMembers`), sulla classe dell'entità.
   - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`): una riga `ISubmittedByMembers` e `IHasStakeholder` la cui entità
-    ha il segno la **cancella** il membro che ne è l'interessato, **com'era salvata** (i valori originali: chi scrive il suo VID
-    nell'istanza della riga di un altro prima di toglierla non passa), e nessun altro senza `{Area}.Edit`. Senza il segno cancellarla
-    resta del dipartimento (il PIREP, il training). Lo staff con `{Area}.Edit`, il superadmin e l'anonimo come prima; l'audit scrive
-    `deleted` con il VID di chi ha cancellato.
+    ha il segno la **cancella** il membro che ne è l'interessato, **com'era caricata** (i valori originali del tracker: chi legge la riga
+    di un altro, ci scrive il suo VID e poi la toglie non passa), e nessun altro senza `{Area}.Edit` (o un'alternativa segnata
+    `AlsoOnDeletion`). Senza il segno cancellarla resta del dipartimento (il PIREP, il training). Lo staff con `{Area}.Edit`, il
+    superadmin e l'anonimo come prima; l'audit scrive `deleted` con il VID di chi ha cancellato.
   - **All'avvio** `HubSaveChangesInterceptor.VerifyWithdrawals`, chiamato da `HubPipeline.InitializeAsync` accanto a
     `VerifyAlternatives`, ferma l'hub se il segno sta su un'entità che non è insieme `IOwnedByDepartment`, `ISubmittedByMembers` e
     `IHasStakeholder`.
@@ -164,12 +165,20 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     elimina, e il guardiano controlla di nuovo sotto.
   - ⚠️ **Il segno non apre il motore CRUD**: la DELETE di `MapCrud` chiede all'handler la policy di scrittura, e un membro non la tiene.
     Il ritiro di un membro è sempre un endpoint del suo flusso.
+  - ⚠️ **L'endpoint deve caricare la riga; uno stub passa** (risposta 2 di Carmine sulla #232, come per T11): il guardiano legge
+    l'interessato dai valori originali del tracker, e per una riga attaccata senza leggerla (`Remove(new X { Id = id, … })`) sono quelli
+    che ha scritto chi chiama: un membro toglierebbe la riga di un altro. L'endpoint legge la riga del membro — per id **e** per
+    interessato, come `PilotBookings.WithdrawAsync` di E6a — e poi la toglie. Lo fissa
+    `WithdrawnByStakeholderTests.AStubNeverLoadedIsBelievedAsItsCallerWroteIt`.
   - **E11a** (la disponibilità di un controllore, che «la ritira fino alla chiusura», design §4.2) ed **E16** (l'iscrizione a un evento
     in presenza, «si ritira fino all'inizio dell'evento», §4-bis.2): se la fase dice che ritirare vuol dire cancellare la riga, basta il
     segno sull'entità, che dev'essere `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder` (o l'hub non parte); se il ritiro è
     uno stato, come per il PIREP, il segno non serve: cambiare la propria riga lo permette già l'eccezione di T11.
   - ⚠️ **Il segno si legge con `inherit: false`**: va sulla classe dell'entità, non su una sua base.
-  - ⚠️ **Finché Carmine non risponde** sulla #232 la forma è una proposta: se cambia, E6a unisce di nuovo questo branch.
+  - ⚠️ **Il rilievo 6 è aperto** (nota §6.3): il segno su un'entità con un permesso `DeniedToStakeholder`, cioè su una riga su cui lo staff
+    decide qualcosa del membro (un PIREP di supporto, una cessione di un turno), dove cancellarla cancellerebbe la decisione. Finché
+    Carmine non risponde, una fase che mette il segno su un'entità di un'area con un `Edit` negato all'interessato (`EventAtc`,
+    `EventReports`) lo dice nella sua nota e lo chiede.
 
 ### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
 
