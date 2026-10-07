@@ -1427,6 +1427,41 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
   - `core-guard` dalla base nuova `7b84a75`: **PASS**.
 
   L'integrazione intera e il giro completo restano quelli dell'ultimo codice di E5, sopra.
+- **La CI della terza spinta** (`ecf88b9`): verde.
+- **La seconda lettura e le risposte di Carmine** (7 ottobre 2026). [La seconda lettura del revisore][v228b]: il giro di revisione è fatto
+  come chiesto, e i commit dopo il banco sono «approvable on the code» con due correzioni. [Le risposte di Carmine][a228b] (autore
+  `SkyMistery`, pubblicate dal master su sua istruzione): **sì ai sette punti** della nota del 7 ottobre, ora **decisa** — il punto 5
+  sostituisce, sapendolo, la lettura 8 della nota del 6 ottobre —, e **un ottavo**: `Hint` resta un pezzo di questa schermata. Il giorno
+  che una seconda schermata vorrà un tooltip che si apre al tocco, è una decisione da portargli, non una copia. Fatto, 7 ottobre 2026:
+  1. **Il focus quando il dialog si chiude** (da correggere, punto 1): `SlotDetail` monta il `Dialog` aperto e senza un bottone suo, quindi
+     Radix non aveva niente a cui rendere il focus. `EventSlots` tiene in `openedBy` il nominativo che ha aperto lo slot — il bottone,
+     oppure quello della riga cliccata — e glielo rimette quando il dialog è sparito: dentro, la trappola del focus lo riprenderebbe.
+  2. **Il form a due campi nel browser** (da correggere, punto 2): il giro completo apre lo slot caricato come `A320/A20N`, legge A320 in
+     «Main type» e A20N in «Other types», scrive un tipo che l'hub non conosce fra gli altri e vede il rifiuto sotto quel campo, e niente
+     sotto il principale. Per tornare alla scheda il giro va al suo indirizzo: le parole comuni degli spec (`web/e2e/locales.ts`, del
+     nucleo) non hanno «Cancel».
+  3. **`shownAtPress` di una pressione che non diventa un click** (basso, punto 3): un click della tastiera (`detail` 0) rovescia quello che
+     si vede, senza guardare una pressione vecchia; una pressione annullata (`pointercancel`, uno scorrimento) si dimentica.
+  4. **La frase della rotazione detta due volte** (basso, punto 4): con un nome suo, il bottone non ha più il tooltip come descrizione
+     (`aria-describedby` tolto), e chi legge lo schermo la sente una volta.
+  5. **Una selezione nella riga** (basso, punto 5): resta l'intera riga ad aprire lo slot, come chiesto e deciso (punto 6), perché su un
+     telefono è il bersaglio del pollice; ma un click che chiude una selezione di testo non apre niente.
+  - Il punto 8 della seconda lettura — un volo fra due scali dell'evento manca dagli arrivi del secondo — è la risposta 4 di Carmine:
+    niente da cambiare.
+  - **Al contrario**: tolte insieme le quattro correzioni del codice (1, 3, 4, 5), in `EventSlots.test.tsx` cadono esattamente i loro
+    quattro test, 4 su 8. Rimesse, 8 su 8. Il test della selezione è caduto anche una volta per sé: una selezione prende un intervallo
+    solo quando non ne ha, e un click di un test prima lascia un cursore. Ora la selezione si svuota prima.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit; solo il browser è cambiato):
+    - `pnpm test` **643 in 88 file**, con `EventSlots.test.tsx` 8; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    - la smoke degli eventi da sola 10/10 (il focus dopo Escape in Chromium), poi `pnpm e2e --workers=2` **173/173** al primo giro;
+    - lo spec `full/events-slots.spec.ts` da solo **1/1** sul banco `http://127.0.0.1:5126`, con il web ricostruito, dietro il lock di
+      Mailpit, preso dopo 160 secondi di attesa per E6a. Il giro completo intero no: il resto non è cambiato, e il lock era conteso;
+    - le regole di `core-guard` in PowerShell dalla base di merge `7b84a75`: **PASS**.
+
+    Server, unità e integrazione non sono toccati da questo giro: restano 1182/1182 e 486/486.
+
+[a228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040717010
+[v228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040474527
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879

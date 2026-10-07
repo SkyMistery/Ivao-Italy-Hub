@@ -1,17 +1,21 @@
 # Gli slot sulla pagina dell'evento: il tipo principale, partenze e arrivi, il dettaglio (E5)
 
 **Data:** 7 ottobre 2026 — fase E5 di M4 (gli slot pubblici e l'esportazione), PR #228, dopo la prova sul banco
-**Stato:** **Proposta**. Sei comportamenti della pagina pubblica degli slot e del tipo di aereo che il design non dice, scelti da
-dalberone come chi tiene il modulo guardando E5 sul banco di prova (la build di E5 sulla 5090: un evento su LIRF e LIMC, quattro slot
-incollati con una rotazione, pubblicato), più un campo dell'esportazione che dalberone ha scelto su una domanda di Claude (§7). Sono
-scritti in E5 come qui si raccomanda; la domanda è andata a Carmine con [un commento sulla #228][q228], come le letture di E4 e di E5,
-e la risposta, con il suo link, si scrive qui sotto. Una risposta diversa è una correzione su questo branch.
+**Stato:** **decisa** (Carmine, 7 ottobre 2026: [le sue risposte][a228b], pubblicate dal master sulla #228 su sua istruzione). **Sì ai
+sette punti** come scritti — il punto 5 sostituisce, sapendolo, la lettura 8 della nota del 6 ottobre — e **un ottavo** sulla domanda
+che il revisore gli ha girato ([la seconda lettura][v228b], «For the maintainer» n.7): `Hint` resta un pezzo di questa schermata (§12).
+I sette erano sei comportamenti della pagina pubblica degli slot e del tipo di aereo che il design non dice, scelti da dalberone come chi
+tiene il modulo guardando E5 sul banco di prova (la build di E5 sulla 5090: un evento su LIRF e LIMC, quattro slot incollati con una
+rotazione, pubblicato), più un campo dell'esportazione che dalberone ha scelto su una domanda di Claude (§7); la domanda era andata a
+Carmine con [un commento sulla #228][q228].
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)**: nessun meccanismo nuovo. Il tipo principale è il primo della colonna
 `aircraft_types` di E5, senza migrazione; la lista pubblica viaggia nella lettura della pagina che c'è (`PublicEventDto.Slots`),
 senza campi nuovi; il tooltip e il dialog sono di Atmosphere, l'icona di lucide. **Cambia la lettura 8** della nota
 `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, decisa: le rotazioni non sono più raggruppate in una tabella sola (§5).
 
 [q228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6039543785
+[a228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040717010
+[v228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040474527
 
 ## 1. Un tipo principale
 
@@ -88,8 +92,11 @@ senza campi nuovi; il tooltip e il dialog sono di Atmosphere, l'icona di lucide.
   lo stand; lo stato.
 - **Una tabella vuota non si mostra**: uno scalo con soli arrivi non ha una tabella «Partenze» vuota. Con uno scalo solo, le due tabelle
   stanno senza sezione.
-- **Si apre l'intera riga con un click**; il nominativo è il bottone che la tastiera e chi legge lo schermo raggiungono. I bottoni dei
-  tooltip non aprono la riga.
+- **Si apre l'intera riga con un click**, come chiesto e deciso (§6): su un telefono è il bersaglio che il pollice trova. Il nominativo
+  è il bottone che la tastiera e chi legge lo schermo raggiungono, e **quando il dialog si chiude il focus torna a quel nominativo**: il
+  dialog non ha un suo bottone che lo apre, e senza questo la tastiera finirebbe in cima a una pagina di centinaia di righe (la seconda
+  lettura del revisore, punto 1). I bottoni dei tooltip non aprono la riga, e nemmeno **un click che chiude una selezione di testo** —
+  un numero di volo da copiare (punto 5).
 - **I test:**
   - vitest: `slotList.test.ts` (le sezioni, l'ordine, le tratte) ed `EventSlots.test.tsx` (le sezioni e le tabelle, il tipo con il suo
     tooltip al focus e al tocco, l'icona con il suo testo, il dialog);
@@ -123,11 +130,24 @@ Posta in inglese sulla #228 ([il commento][q228]); in italiano dice:
 >
 > «Un RFO su uno scalo solo» resta un'abitudine, non una regola. Confermi?
 
+## 12. La risposta di Carmine
+
+7 ottobre 2026, [le sue risposte sulla #228][a228b] (autore `SkyMistery`, pubblicate dal master su sua istruzione):
+- **sì ai sette punti**, come scritti; il punto 5 **sostituisce, sapendolo, la lettura 8** della nota del 6 ottobre (le rotazioni
+  raggruppate in una tabella sola);
+- **un ottavo**, sulla domanda del revisore se `Hint` sia un componente del modulo da dichiarare o un pezzo di questa schermata:
+  **`Hint` resta un pezzo di questa schermata** finché niente altro ne ha bisogno. Il giorno in cui una seconda schermata vorrà un
+  tooltip che si apre al tocco, è la decisione da portargli, **non una seconda copia**.
+
+Il punto 8 della seconda lettura — un volo fra due scali dell'evento sta fra le partenze del primo e manca dagli arrivi del secondo — è
+la sua risposta 4: niente da cambiare.
+
 ## Da portare nel piano
 
-Dopo la risposta:
 - design M4 §1.5: il primo tipo di aereo di uno slot è il principale; il form di uno slot ha due campi;
 - design M4 §3.1: la cella `A320/A20N` dice il principale per primo;
 - design M4 §7.1: la lista pubblica è per scalo, con partenze e arrivi, le tratte di una rotazione segnate e il dettaglio di uno slot
   (cambia la lettura 8 della nota decisa di E5);
-- design M4 §7.4: `aircraft_types` nell'esportazione, aggiunta alla versione 1.
+- design M4 §7.4: `aircraft_types` nell'esportazione, aggiunta alla versione 1;
+- il piano, dove dice che cosa è un componente (§8.3, la lista chiusa): un tooltip che si apre al tocco è oggi un pezzo della pagina
+  degli slot (`Hint`), e una seconda schermata che lo volesse porta una decisione, non una copia.

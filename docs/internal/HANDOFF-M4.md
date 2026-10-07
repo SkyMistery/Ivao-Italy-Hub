@@ -28,7 +28,8 @@ porta la versione del suo contratto. ⚠️ **Il controllo della versione è del
 «Che cosa ha lasciato E10g», sotto), perché quello dei tour sta nel loro modulo e una copia negli eventi sarebbe lo stesso pezzo scritto
 due volte. **Dopo la prova sul banco (7 ottobre) dalberone ha riaperto la #228** per la pagina degli slot: il tipo principale, partenze e
 arrivi per scalo, le rotazioni segnate, il dettaglio di uno slot, e `aircraft_types` nell'esportazione — fatti su questa PR, con una nota
-**«Proposta»** e la domanda a Carmine (`2026-10-07-gli-slot-sulla-pagina-dell-evento`). **E6a** (prenotare: il server) è in coda sul
+**decisa** da Carmine sulla #228 ([le sue risposte][a228b]: sì ai sette punti, e un ottavo: `Hint` resta un pezzo di questa schermata)
+(`2026-10-07-gli-slot-sulla-pagina-dell-evento`). **E6a** (prenotare: il server) è in coda sul
 branch di E5 da `d901f43` e aspetta E10h (del nucleo): unisce la nuova testa di E5 quando la sessione che coordina glielo dice. ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
 sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
 pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
@@ -155,8 +156,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   `ErasureTests`; due note nuove: `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, **decisa** da Carmine sulla #228 — [le sue
   risposte][a228]: sì alle otto letture, e i punti 9 e 10 sulle domande del revisore ([osservazioni][v228]) —, e
   `2026-10-06-le-colonne-degli-slot-in-erasuretests`, nessuna decisione nuova; il controllo della versione dell'esportazione è del nucleo,
-  dalla #230 di E10g, unita a questo branch; dopo la prova sul banco, una terza nota, **«Proposta»** con la domanda a Carmine sulla #228:
-  `2026-10-07-gli-slot-sulla-pagina-dell-evento`, il tipo principale e la pagina pubblica degli slot che dalberone ha chiesto):
+  dalla #230 di E10g, unita a questo branch; dopo la prova sul banco, una terza nota, `2026-10-07-gli-slot-sulla-pagina-dell-evento`, il
+  tipo principale e la pagina pubblica degli slot che dalberone ha chiesto, **decisa** da Carmine sulla #228 — [le sue risposte][a228b]:
+  sì ai sette punti, e un ottavo sulla [seconda lettura del revisore][v228b], `Hint` resta un pezzo di questa schermata):
   - **`evt_slots` intera** (`EventSlot`, design §1.5), per i pubblici di E5 e i privati di E7: `kind`, `event_airport_icao`, `is_arrival`,
     `callsign`, `flight_number`, `aircraft_types` (JSON), `departure_icao`, `arrival_icao`, `off_block_utc`, `on_block_utc`, `stand`,
     `rotation_code`, `rotation_leg`, `generated`, `row_version`; univoco `(event_id, callsign, off_block_utc)` (un privato non ha callsign, e
@@ -189,7 +191,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     sezione ciascuno quando sono più d'uno, e in ognuno **«Partenze» e «Arrivi»** in due tabelle, per l'orario allo scalo; **il tipo
     principale**, gli altri nel tooltip di Atmosphere al passaggio del mouse, al focus e al tocco; le tratte di una rotazione ognuna nella
     sua tabella, **segnate da un'icona** (`Repeat`) che lo dice; **una riga apre lo slot** in sola lettura in un dialog di Atmosphere, con
-    tutti i tipi ammessi, gli orari, lo stand e le tratte della rotazione; **libero o preso — mai chi**. «Prenota» è di E6b, nel dialog.
+    tutti i tipi ammessi, gli orari, lo stand e le tratte della rotazione — e quando si chiude **il focus torna al nominativo** che l'ha
+    aperto; un click che chiude una selezione di testo non apre niente; **libero o preso — mai chi**. «Prenota» è di E6b, nel dialog.
   - **L'esportazione** per il Gate Manager (`GET /api/events/{slug}/bookings/export`, `Export/BookingsExport.cs`): con un token personale
     dell'`audience` **`events.bookings`** (`EventsModule.TokenAudiences`, permesso `EventBookings.View`, la parola
     `events:tokenAudiences.bookings`), chiesto anche all'unico handler sulla riga; un array con i nomi del Gate Manager (`slot_id`,
@@ -203,9 +206,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: `EventsSlotsTests` (unità, 41: il lettore, una riga, gli istanti, il verso, le catene, la finestra, i tipi del form),
     `EventsSlotsTests` (integrazione, 5 — la finestra, il volo ricaricato, l'ordine e la versione dell'esportazione dalla revisione, i tipi
     del form e `aircraft_types` dal banco —, VID 761012–761014, scali `XED1`–`XED4`, tipi `XE5A`/`XE5B`, slug `evt-test-e5-…`),
-    `screens/slotList.test.ts` (vitest, 6) ed `screens/EventSlots.test.tsx` (vitest, 5: le sezioni, il tooltip al focus e al tocco,
-    l'icona, il dialog), due test nella smoke `web/e2e/events-public.spec.ts` (10, **uno su un telefono**: `hasTouch`, il tocco vero in
-    Chromium), il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando», con `afterwards(…)`).
+    `screens/slotList.test.ts` (vitest, 6) ed `screens/EventSlots.test.tsx` (vitest, 8: le sezioni, il tooltip al focus e al tocco, una
+    pressione dimenticata, l'icona detta una volta, il dialog, il focus che torna, la selezione), due test nella smoke
+    `web/e2e/events-public.spec.ts` (10, **uno su un telefono**: `hasTouch`, il tocco vero in Chromium; e il focus dopo Escape), il giro
+    `web/e2e/full/events-slots.spec.ts` (il «fatta quando», con `afterwards(…)`; e il form di uno slot con i suoi due campi nel browser).
     `EventsTestRows` toglie anche gli slot; `ErasureTests` ha le due righe di `evt_slots`. VID 761015–761016 e 761062–761067 restano
     liberi.
 - **Che cosa deve sapere la fase dopo**:
@@ -219,12 +223,16 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     righe delle colonne di persona di `evt_bookings` in `ErasureTests`.
   - **E6b**: «Prenota» va **nel dialog dello slot** (`SlotDetail` in `screens/EventSlots.tsx`), che mostra già tutti i tipi ammessi, il
     principale per primo: fra quelli il pilota sceglie il suo, che diventa `aircraft_icao` dell'esportazione. La pagina pubblica non ha una
-    lettura sua: tutto viene da `PublicEventDto.Slots`, e un campo che servisse è un'aggiunta a quel DTO.
+    lettura sua: tutto viene da `PublicEventDto.Slots`, e un campo che servisse è un'aggiunta a quel DTO. ⚠️ Il dialog non ha un bottone
+    suo che lo apre: **il focus torna al nominativo** grazie a `openedBy` di `EventSlots`, che lo rimette quando il dialog è sparito (dentro,
+    la trappola del focus lo riprenderebbe). Un dialog che si chiude dopo «Prenota» passa da lì anche lui.
   - ⚠️ **Il tooltip che si apre al tocco** (`Hint` in `screens/EventSlots.tsx`): il tooltip di Radix si apre solo al passaggio del mouse e
     al focus, e fra la pressione e il click lo chiude e lo riapre da sé (un tocco dà il focus al bottone dopo che il dito si alza).
-    Per questo il click rovescia quello che si vedeva **quando la pressione è cominciata**. Un semplice «al click si rovescia» lascia aperto
-    il secondo tocco (provato al contrario nella smoke con `hasTouch`). Un altro tooltip che debba aprirsi al tocco riusa `Hint`, non una
-    copia; se serve fuori dal modulo, passa nel nucleo con una nota.
+    Per questo il click rovescia quello che si vedeva **quando la pressione è cominciata**; un click della tastiera (`detail` 0) rovescia
+    quello che si vede, e una pressione annullata si dimentica. Un semplice «al click si rovescia» lascia aperto il secondo tocco (provato
+    al contrario nella smoke con `hasTouch`). **`Hint` resta un pezzo di questa schermata** (Carmine, punto 8 sulla #228): il giorno che
+    una seconda schermata vuole un tooltip che si apre al tocco, è una decisione da portare a Carmine — non una copia, e non un riuso
+    fatto da sé.
   - **E7**: un privato è `Kind = Private`, `Generated`, lo scalo e il verso, e l'orario allo scalo in `OffBlockUtc` (partenza) o
     `OnBlockUtc` (arrivo); l'esportazione li porta già così (gate vuoto, `paired_slot_id` vuoto finché E7 non lo legge dalla prenotazione);
     il form di uno slot li rifiuta (`events:errors.slotNotPublic`) e la scheda non dà loro «Modifica»; «elimina i liberi» li toglie.
@@ -249,6 +257,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
+[a228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040717010
+[v228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040474527
 
 ### Che cosa ha lasciato E10g (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo, senza coda)
 
