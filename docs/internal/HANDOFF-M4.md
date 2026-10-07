@@ -9,7 +9,7 @@
 **Ultimo aggiornamento:** 7 ottobre 2026 — **fase E6a** (modulo: prenotare, il server), sul branch `m4/e6a-booking-server`, **PR #233**
 verso `main`, nata **in coda dopo la #228** di E5 — dalla sua testa `d901f43`, che porta già il branch di E10g (#230) e `main` a `e9702b2`,
 e con la testa di E5 dopo la prova sul banco, `25d23f5`, unita dopo l'apertura della PR, e poi con quella che ha preso E10g e con lui
-`main` a `7b84a75`, `ecf88b9` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una riga se la riprende), una
+`main` a `7b84a75`, `ecf88b9`, e con l'ultima, `ba53a97` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una riga se la riprende), una
 fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il guardiano dell'interceptor non lo lasciava fare — e unita al
 branch, fino alla sua testa decisa `ec9b3b4`. Prima di E6a: **fase E5** (gli slot pubblici e l'esportazione), **PR #228**, nata in coda
 dopo la #223 di E4, unita prima che si aprisse, e **dalla revisione in coda dopo la #230** di E10g (la versione di un contratto nel
@@ -173,8 +173,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   #232, unita a questo branch; dopo l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5`, unita anche lei — `d767cc0`,
   i conflitti dell'esportazione e del commento dello slot risolti tenendo i due lati —; **le correzioni della revisione del master**
   ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626)), sulla stessa PR, punto per punto in `10`;
-  poi, quando la coda si è mossa, la testa di E5 che ha preso E10g e `main` a `7b84a75` (`ecf88b9`, unita in `67c870f`) e quella decisa di
-  E10h (`ec9b3b4`, in `8ab7c69`), conflitti solo nei documenti: la PR non è più in conflitto con `main`):
+  poi, quando la coda si è mossa, la testa di E5 che ha preso E10g e `main` a `7b84a75` (`ecf88b9`, unita in `67c870f`), quella decisa di
+  E10h (`ec9b3b4`, in `8ab7c69`) e l'ultima di E5 (`ba53a97`, in `d36f4b7`), conflitti solo nei documenti: la PR non è più in conflitto
+  con `main`):
   - **`evt_bookings` intera** (`EventBooking`, design §1.6): `event_id`, `slot_id` (univoco), `booker_vid`, `aircraft_icao`, `callsign`,
     `other_icao`, `other_time_utc`, `paired_booking_id` (E7), `flown_at`, `flown_session_id`, `flown_checked_at` (E13a),
     `unflown_excused_by`, `unflown_excused_note` (E13b), `reminded_at` (E6b), `created_at`, più dipartimento, maschera e visibilità

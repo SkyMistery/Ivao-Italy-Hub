@@ -1600,7 +1600,9 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   portava più niente d'altro, ed è unita (`8ab7c69`). Conflitti solo nei documenti: in `HANDOFF-M4.md` l'intestazione di E6a in cima, i
   blocchi di E10h, E5, E10g ed E4b sotto, e l'ultimo punto di E10h il suo (il rilievo 6 aperto); in questo file la riga di E10g della
   tabella, con il suo testo dopo le risposte di Carmine. Un confronto delle righe di ogni lato con il risultato mostra solo le perdite
-  volute. La PR non è più in conflitto con `main`, e la CI torna.
+  volute. La PR non è più in conflitto con `main`, e la CI torna. E5 si è mosso ancora una volta prima della spinta, con le otto risposte
+  di Carmine sulla pagina degli slot (`ba53a97`, unita in `d36f4b7`): solo pagine, test e documenti, nessun file C#; il conflitto, una riga
+  dell'intestazione di `HANDOFF-M4.md`, prende la nota ora decisa.
 - **Dopo la revisione** (7 ottobre 2026; [i rilievi del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626),
   letti sulla prima testa, `08c81ef`: approvabile sul codice dopo quattro correzioni):
   1. **«Togli» nella cura dell'evento com'è ora** (punto 1): la prenotazione è un `IEventChild`, e `RemoveAsync` le copia la cura
@@ -1641,7 +1643,8 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   e `pnpm i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,7 minuti); `pnpm lint`,
   `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **640 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57
   al primo giro** (11,4 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima); le regole di `core-guard` in PowerShell dalla nuova base di merge
-  `7b84a75`: **PASS**.
+  `7b84a75`: **PASS**. Dopo la testa di E5 a `ba53a97`, che non tocca il C#: i controlli web verdi, `pnpm test` **643 in 88 file**, smoke
+  **173/173** al primo giro, **`pnpm e2e:full` 57/57 al primo giro** (11,5 minuti, `ivaohub_e2e_e6a` ricreato prima).
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
   le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
   log binario della MariaDB di produzione (la domanda 2); le mail lette davvero in una casella (i test leggono la coda, `hub_notifications`);
