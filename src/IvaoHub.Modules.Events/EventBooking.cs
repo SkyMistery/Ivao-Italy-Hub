@@ -11,10 +11,13 @@ namespace IvaoHub.Modules.Events;
 /// in the area of the bookings with the event's departments and scope, so that the staff of the bookings reach it and nobody else
 /// does (§1.1). Any member reads it through the global filter (<see cref="Visibility.Members"/>), never a visitor; which member is
 /// the endpoints' business — a pilot reads their own, the staff the event's — and nothing gives a member the area's
-/// <c>View</c> (no <c>IHasParticipants</c>). Withdrawing deletes it, and the audit of the core keeps who did what.</para>
+/// <c>View</c> (no <c>IHasParticipants</c>). Withdrawing deletes it (§3.6) — the pilot takes back what they sent, which the write
+/// guard of the core lets them do because the entity says so (<see cref="WithdrawnByStakeholderAttribute"/>, E10h) —, and the audit
+/// of the core keeps who did what.</para>
 /// </summary>
 [Audited]
 [PermissionArea(EventsPermissions.BookingsArea)]
+[WithdrawnByStakeholder]
 public sealed class EventBooking : IOwnedByDepartment, IVisible, ISubmittedByMembers, IHasStakeholder, IHasResourceScope
 {
     /// <summary>The longest note of the staff on a booking not flown (E13b), and the longest reason a booking is taken away with.</summary>
