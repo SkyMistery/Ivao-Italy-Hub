@@ -1,14 +1,16 @@
 # Il ritiro di chi ha mandato la riga (E10h)
 
 **Data:** 7 ottobre 2026 — fase E10h di M4, PR del nucleo (#232)
-**Stato:** **Proposta** — la domanda a Carmine è un commento sulla #232 (§6). Il codice è nella PR, e la PR non si unisce prima della
-sua risposta; E6a, che lo usa, unisce questo branch e va in coda dopo la #232.
+**Stato:** **Proposta** — la domanda a Carmine è [un commento sulla #232][q1] (§6). Il codice è nella PR, e la PR non si unisce prima
+della sua risposta; E6a, che lo usa, unisce questo branch e va in coda dopo la #232.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`), che già lascia al membro **creare** la riga che manda (`ISubmittedByMembers`, M1) e **cambiarla** finché è sua
 (M2, T11); nessun meccanismo nuovo, nessuna scrittura «come il sistema». È una PR del nucleo, prima del codice del modulo che la usa
 (`CLAUDE.md` §0 regola 6). L'ha trovata la sessione di E6a leggendo il guardiano prima di scrivere il ritiro, e dalberone il 7 ottobre
 2026 ha scelto, fra le tre strade offerte — una fase del nucleo prima (raccomandata), la domanda a Carmine prima, E6a senza il ritiro —,
 **la fase del nucleo**.
+
+[q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6038934438
 
 ## 1. Che cosa serve, e perché nessun meccanismo lo copre
 
@@ -155,7 +157,7 @@ catalogo non serve, e il nome direbbe un'altra cosa. Sta accanto a chi lo legge,
 
 ## 6. La domanda per Carmine
 
-Posta con un commento sulla #232, la PR di questa fase:
+Posta il 7 ottobre 2026 con [un commento sulla #232][q1], la PR di questa fase (lì in inglese, come ogni testo di una PR):
 
 > Confermi: una riga che l'entità dichiara ritirabile (`[WithdrawnByStakeholder]`) la cancella il membro che ne è l'interessato, e solo
 > lui; le altre come prima (un PIREP o un training restano del dipartimento da cancellare, lo staff cancella con `{Area}.Edit`, il
