@@ -436,12 +436,14 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         // Its twin for deleting, on an entity that says so (M4, E10h, note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga): a
-        // pilot withdraws their booking of an event, and the slot is free again. Theirs as the row was stored, whatever the
+        // pilot withdraws their booking of an event, and the slot is free again. Theirs as the row was loaded, whatever the
         // instance in hand says now, and nobody else's: any other row they sent — a report — is still the department's to delete.
+        // Like the change above it reads the tracker's original values, so a stub attached without being read is believed as its
+        // caller wrote it: the endpoint must load the row (a limit the maintainer accepted, answer 2 on #232).
         if (entry is { State: EntityState.Deleted, Entity: ISubmittedByMembers and IHasStakeholder }
             && entry.Metadata.ClrType.IsDefined(typeof(WithdrawnByStakeholderAttribute), inherit: false)
-            && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var stored }
-            && stored == currentUser.Vid)
+            && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var loaded }
+            && loaded == currentUser.Vid)
         {
             return;
         }
@@ -928,10 +930,10 @@ public sealed class HubSaveChangesInterceptor(
         });
 
     /// <summary>
-    /// Refuses <see cref="WithdrawnByStakeholderAttribute"/> on an entity this guard could not honour it on (M4, E10h, note
-    /// 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga): one with no department (<see cref="IOwnedByDepartment"/>), which the
-    /// guard never looks at, so that nothing would keep anybody else from deleting it; one its members do not send
-    /// (<see cref="ISubmittedByMembers"/>); one about nobody (<see cref="IHasStakeholder"/>).
+    /// Refuses <see cref="WithdrawnByStakeholderAttribute"/> on an entity that is not <see cref="IOwnedByDepartment"/>,
+    /// <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/> together, where this guard could not honour it (M4,
+    /// E10h, note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga, answer 1 on #232): one with no department, which the guard never
+    /// looks at, so that nothing would keep anybody else from deleting it; one its members do not send; one about nobody.
     /// <para>The hub calls it when it starts, on the model of every context, next to <c>PermissionCatalog.VerifyAlternatives</c>:
     /// a mark the guard would pass over stops the start, rather than leaving a row open to anybody, or closed to its member,
     /// without a word. Every mistake of every entity comes out together, in one message.</para>

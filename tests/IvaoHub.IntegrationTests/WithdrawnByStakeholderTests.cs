@@ -18,7 +18,9 @@ namespace IvaoHub.IntegrationTests;
 /// <list type="bullet">
 /// <item>the member a marked row is about deletes the row they sent, and the audit says it was them;</item>
 /// <item>nobody else does without <c>Edit</c> — another member, and not by writing their own VID into the row first: the row as
-/// it was stored decides;</item>
+/// it was loaded decides;</item>
+/// <item>but a stub never loaded is believed as its caller wrote it — the limit the maintainer accepted, as for T11 (answer 2 on
+/// #232): the endpoint must load the row;</item>
 /// <item>the staff still delete it with <c>Edit</c>;</item>
 /// <item>a row whose entity is not marked (<see cref="SampleReport"/>, what a pilot's report is) stays the department's to delete,
 /// though its member sends it and keeps changing it.</item>
@@ -97,13 +99,13 @@ public sealed class WithdrawnByStakeholderTests(MariaDbFixture mariaDb) : IAsync
     }
 
     [Fact]
-    public async Task TheRowAsItWasStoredSaysWhoseItIs()
+    public async Task TheRowAsItWasLoadedSaysWhoseItIs()
     {
         var token = TestContext.Current.CancellationToken;
-        var submission = await SendAsync(Holding(MemberVid), "evt-test-e10h stored", token);
+        var submission = await SendAsync(Holding(MemberVid), "evt-test-e10h loaded", token);
 
         // Another member who writes their own VID into the instance before removing it: the guard reads the row as it was
-        // stored, and it is still the member's.
+        // loaded, and it is still the member's.
         var other = Holding(OtherMemberVid);
         await RefusedAsync(() => AsAsync(other, async database =>
         {
@@ -114,6 +116,38 @@ public sealed class WithdrawnByStakeholderTests(MariaDbFixture mariaDb) : IAsync
         }));
 
         Assert.Equal(MemberVid, (await FindSubmissionAsync(submission, token))!.SenderVid);
+    }
+
+    /// <summary>
+    /// The limit, pinned as it is (the reviewer's point 2 on #232, accepted by the maintainer, answer 2): the guard reads the
+    /// tracker's original values, as T11's change does, and for a row attached without being read those are what the caller
+    /// wrote. So a stub that names another member's row with the writer's own VID passes, and that row is gone. The endpoint must
+    /// load the row — E6a's withdrawal reads the booking by its id and its pilot first. If the guard ever reads the database
+    /// again, this test changes with it, and says so.
+    /// </summary>
+    [Fact]
+    public async Task AStubNeverLoadedIsBelievedAsItsCallerWroteIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var submission = await SendAsync(Holding(MemberVid), "evt-test-e10h stub", token);
+
+        // Another member removes a stub of the member's row — its key, and their own VID where the member's is — never read.
+        await AsAsync(Holding(OtherMemberVid), async database =>
+        {
+            database.Submissions.Remove(new SampleSubmission
+            {
+                Id = submission,
+                SenderVid = OtherMemberVid,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            });
+
+            return await database.SaveChangesAsync(token);
+        });
+
+        // The member's row is gone, and the audit at least says who took it.
+        Assert.Null(await FindSubmissionAsync(submission, token));
+        Assert.True(await AuditedAsync("smp_submissions", submission, "deleted", OtherMemberVid, token));
     }
 
     [Fact]

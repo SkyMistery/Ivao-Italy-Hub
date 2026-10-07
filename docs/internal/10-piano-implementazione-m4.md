@@ -2428,8 +2428,8 @@ lo staff con `Edit` sì; una riga senza il segno resta del dipartimento. Unità:
      dipartimento, e il segno lì sarebbe ignorato in silenzio;
   2. **il rifiuto fuori da `VerifyAlternatives`**, accanto al guardiano che legge il segno: il segno non è un permesso, e il catalogo non
      serve;
-  3. **l'interessato com'era salvato**, non come lo dice l'istanza in mano: un test prova che chi scrive il suo VID nella riga di un altro
-     prima di toglierla non passa.
+  3. **l'interessato com'era caricato** (al primo giro scritto «salvato»: vale solo per una riga letta, sotto), non come lo dice l'istanza
+     in mano: un test prova che chi scrive il suo VID nella riga di un altro prima di toglierla non passa.
 - **Trovato**: `dotnet format` sul file toccato `src/IvaoHub.Web/HubPipeline.cs` chiedeva uno spazio alla riga 234 (`=await`, venuto con
   la #218): sistemato in un commit a parte (`style`), senza effetti.
 - **Il lato del modulo**: la sessione di E6a ha unito il branch a `55d7658` (il suo merge `96ddd21`, nessun conflitto) e ha messo il
@@ -2452,6 +2452,28 @@ lo staff con `Edit` sì; una riga senza il segno resta del dipartimento. Unità:
   - `pnpm e2e` e `pnpm e2e:full`: nessuna schermata cambia, quindi né la porta 5129 né `ivaohub_e2e_e10h` sono stati usati;
   - un endpoint vero del ritiro su questo branch: la fase prova il guardiano senza un endpoint davanti, e l'endpoint del pilota è di E6a,
     che lo prova sul suo branch (sopra).
+
+**Dopo la revisione** (7 ottobre 2026, [i rilievi][rv232] e [le risposte di Carmine][a232] sulla #232, quelle date in chat alla sessione
+master e pubblicate su sua istruzione):
+
+- **`main` unito sul branch** a `7b84a75` (la #226 di E4b): conflitto solo in `HANDOFF-M4.md`, risolto con l'intestazione di E10h
+  aggiornata e il blocco di E4b subito sotto quello di E10h; `10` si è unito da solo.
+- **La nota è decisa**: sì alla forma (risposta 1); **il limite della riga mai caricata si accetta e si scrive, come per T11** (risposta 2,
+  sul rilievo 2): il guardiano legge l'interessato dai valori originali del tracker, quindi **l'endpoint deve caricare la riga; uno stub
+  passa**. La frase sta nel riassunto dell'attributo, nel commento del guardiano, nella nota (§3.2) e nella trappola di `HANDOFF-M4.md`; il
+  test `AStubNeverLoadedIsBelievedAsItsCallerWroteIt` fissa il caso com'è. «Com'era salvata» diventa «com'era caricata» dove lo diceva
+  (il test `TheRowAsItWasLoadedSaysWhoseItIs`, la variabile `loaded` del guardiano).
+- **Il rilievo 3**: il riassunto dell'attributo dice anche l'alternativa segnata `AlsoOnDeletion`; quello di `VerifyWithdrawals` dice
+  «insieme», con le parole della risposta 1.
+- **Ancora aperto il rilievo 6** (il segno su un'entità con un permesso `DeniedToStakeholder`): nella nota (§6.3) con la raccomandazione
+  — una frase, non un ottavo rifiuto — e nessun codice finché Carmine non risponde; non ferma la PR.
+- **Verificato** dopo il merge e le correzioni: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui tre file C#
+  toccati: pulito; unità **1125/1125** (le 8 di E4b comprese); integrazione intera, senza filtro, **492/492** al primo giro (5,8 minuti);
+  `WithdrawnByStakeholderTests` da sola 6/6; le regole di `core-guard` dalla nuova merge base (`7b84a75`): tredici file, cinque del nucleo
+  con la nota nuova — passa. Il web non cambia con questa fase e non si è rifatto: lo rifà la CI.
+
+[rv232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039667157
+[a232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
 
 ### E11a — Postazioni e disponibilità
 

@@ -1,8 +1,10 @@
 # Il ritiro di chi ha mandato la riga (E10h)
 
 **Data:** 7 ottobre 2026 — fase E10h di M4, PR del nucleo (#232)
-**Stato:** **Proposta** — la domanda a Carmine è [un commento sulla #232][q1] (§6). Il codice è nella PR, e la PR non si unisce prima
-della sua risposta; E6a, che lo usa, unisce questo branch e va in coda dopo la #232.
+**Stato:** **decisa** (Carmine, 7 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione [sulla #232][a1], dopo
+[i rilievi del revisore][rv]): **sì** alla forma (risposta 1, §6.2), e **il limite della riga mai caricata si accetta e si scrive, come per
+T11** (risposta 2, §3.2). **Resta aperto il rilievo 6** del revisore (§6.3), che non ferma la PR. La domanda era [un commento sulla
+#232][q1]; E6a, che usa il segno, unisce questo branch e va in coda dopo la #232.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`), che già lascia al membro **creare** la riga che manda (`ISubmittedByMembers`, M1) e **cambiarla** finché è sua
 (M2, T11); nessun meccanismo nuovo, nessuna scrittura «come il sistema». È una PR del nucleo, prima del codice del modulo che la usa
@@ -11,6 +13,9 @@ della sua risposta; E6a, che lo usa, unisce questo branch e va in coda dopo la #
 **la fase del nucleo**.
 
 [q1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6038934438
+[rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039667157
+[a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
+[p6]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6040156289
 
 ## 1. Che cosa serve, e perché nessun meccanismo lo copre
 
@@ -72,16 +77,27 @@ con `inherit: false` come quelli: va sull'entità stessa.
 ### 3.2 Il guardiano
 
 In `EnsureWriteIsAllowed`, subito dopo l'eccezione di T11, la sua gemella per l'eliminazione: un'entrata `Deleted` di un'entità
-`ISubmittedByMembers` e `IHasStakeholder` che porta il segno passa se **l'interessato com'era salvato** è chi scrive.
+`ISubmittedByMembers` e `IHasStakeholder` che porta il segno passa se **l'interessato com'era caricato** è chi scrive.
 
-- **Com'era salvato, non com'è l'istanza in mano**: l'interessato si legge da `entry.OriginalValues.ToObject()`, come l'eccezione di T11
-  legge il «prima». Chi carica la riga di un altro, ci scrive il suo VID e poi la toglie non passa (un test lo prova). Un interessato
+- **Com'era caricato, non com'è l'istanza in mano**: l'interessato si legge da `entry.OriginalValues.ToObject()`, come l'eccezione di T11
+  legge il «prima». Chi legge la riga di un altro, ci scrive il suo VID e poi la toglie non passa (un test lo prova). Un interessato
   calcolato da una colonna — `StakeholderVid => BookerVid` della prenotazione — si legge così uguale.
+- ⚠️ **L'endpoint deve caricare la riga; uno stub passa** (il rilievo 2 del revisore; **accettato da Carmine come limite scritto, come per
+  T11**, risposta 2). I valori originali sono ciò che il tracker ha visto quando ha cominciato a seguire la riga, non una lettura del
+  database: per `Remove(new X { Id = id, SenderVid = me })`, una riga mai letta, l'interessato «originale» è quello che ha scritto chi
+  chiama, il guardiano gli crede, e il `DELETE` toglie la riga di un altro membro. L'eccezione di T11 si fida del tracker allo stesso modo;
+  questa in più dà una cancellazione a chi non tiene permessi. Oggi nessun codice cancella con uno stub, ed E6a legge la prenotazione per
+  id e per pilota prima di toglierla (`PilotBookings.WithdrawAsync`). Rileggere l'interessato dal database (`GetDatabaseValues`, una query
+  in più per ogni ritiro) è l'alternativa che Carmine non ha scelto. La frase sta nel riassunto dell'attributo, nel commento del guardiano,
+  qui e nella trappola di `HANDOFF-M4.md`, e un test fissa il caso com'è (§4).
 - **Nessun controllo dei dipartimenti**: in modifica servono perché la riga non si sposti; un'eliminazione non sposta niente, e il membro
   non tiene permessi su nessun dipartimento.
-- **Tutto il resto come prima**: una riga senza il segno la elimina solo chi ha `{Area}.Edit`; un altro membro non elimina mai quella di
-  un altro; lo staff con `{Area}.Edit`; il superadmin e l'anonimo come sempre; l'errore è lo stesso, `ForbiddenDomainException` con
-  `{Area}.Edit`.
+- **Tutto il resto come prima**: una riga senza il segno la elimina solo chi ha `{Area}.Edit`, o un'alternativa segnata `AlsoOnDeletion`
+  sulla riga affidata a lui (A3b); un altro membro non elimina mai quella di un altro; lo staff con `{Area}.Edit`; il superadmin e
+  l'anonimo come sempre; l'errore è lo stesso, `ForbiddenDomainException` con `{Area}.Edit`.
+- **Il guardiano guarda chi la riga riguarda, non chi l'ha mandata, e non sa che ore sono** (il rilievo 5 del revisore): una riga segnata
+  che lo staff avesse scritto su un membro la cancella il membro, in qualunque momento. È la gemella di T11 e va letta così; «fino
+  all'off block» lo dice l'endpoint di E6a, non il guardiano.
 - **L'audit** scrive la riga `deleted` con il VID del membro e la riga com'era: è «il registro di chi ha fatto che cosa» del design §1.6.
 - **I commenti** di `ISubmittedByMembers` e dell'eccezione di T11 ora dicono «Deleting is still the department's, unless the entity says
   its member takes it back».
@@ -131,14 +147,18 @@ catalogo non serve, e il nome direbbe un'altra cosa. Sta accanto a chi lo legge,
   che E6a ha lasciato a questa fase), nessuno seminato, quindi nessuno staff dell'ED o dell'MD con un indirizzo:
   - il membro manda la sua riga e se la riprende, e l'audit ha `created` e `deleted` con il suo VID;
   - un altro membro non la elimina, nemmeno con `Sample.View` sul dipartimento: `ForbiddenDomainException` con `Sample.Edit`;
-  - un altro membro che scrive il suo VID nell'istanza prima di toglierla non passa: decide la riga com'era salvata;
+  - un altro membro che legge la riga, ci scrive il suo VID e poi la toglie non passa: decide la riga com'era caricata
+    (`TheRowAsItWasLoadedSaysWhoseItIs`);
+  - **ma uno stub mai letto passa** (`AStubNeverLoadedIsBelievedAsItsCallerWroteIt`, dopo la revisione): un altro membro toglie uno stub
+    della riga del membro con il suo VID, la riga se ne va, e l'audit dice almeno chi l'ha tolta. Fissa il limite che Carmine ha
+    accettato (risposta 2): se un giorno il guardiano rileggerà il database, il test cambierà con lui;
   - lo staff la elimina con `Sample.Edit` sul dipartimento della riga, e non con `Sample.Edit` su un altro;
   - una riga senza il segno (`SampleReport`) il membro la manda e la cambia (T11), ma non la elimina; lo staff sì.
 - **`VerifyWithdrawalsTests`** (unità, nuova): i tre rifiuti uno per uno; tutti gli errori di tutte le entità in un messaggio, una volta
   sola anche per un'entità elencata due volte; passa ciò che il guardiano può onorare e ciò che non ha il segno.
-- **La prova al contrario**: con l'interceptor e `HubPipeline.cs` di `main` rimessi (il segno resta, perché il modulo di prova lo usa),
-  della classe nuova cade **solo** il ritiro del membro, `ForbiddenDomainException: VID 761037 does not hold Sample.Edit on any of ED`
-  (4 su 5); con i file della fase, 5 su 5. **E dal lato del modulo**, sul branch di E6a (la sua sessione, 7 ottobre 2026): il ritiro del
+- **La prova al contrario** (al primo giro, con i cinque test di allora): con l'interceptor e `HubPipeline.cs` di `main` rimessi (il segno
+  resta, perché il modulo di prova lo usa), della classe nuova cade **solo** il ritiro del membro,
+  `ForbiddenDomainException: VID 761037 does not hold Sample.Edit on any of ED` (4 su 5); con i file della fase, 5 su 5. **E dal lato del modulo**, sul branch di E6a (la sua sessione, 7 ottobre 2026): il ritiro del
   pilota cadeva con 403 prima di unire questo branch, e dopo, con il segno su `EventBooking`, risponde 204 con l'audit `deleted` a nome
   del pilota; `WithdrawnByStakeholderTests` ed `EventsBookingsTests` lì 16 su 16.
 
@@ -154,8 +174,11 @@ catalogo non serve, e il nome direbbe un'altra cosa. Sta accanto a chi lo legge,
 | Il controllo all'avvio dentro `VerifyAlternatives` | quella verifica i permessi alternativi contro il catalogo; il segno non è un permesso (§3.3) |
 | Un test di architettura invece del controllo all'avvio | `ArchitectureTests.cs` è del maintainer, e un fork che aggiunge un modulo senza i test non sarebbe fermato |
 | L'interessato letto dall'istanza in mano, non dai valori originali | chi carica la riga di un altro potrebbe scriverci il suo VID e poi toglierla |
+| L'interessato riletto dal database (`GetDatabaseValues`), così che nemmeno uno stub passi | una query in più per ogni ritiro; Carmine ha scelto il limite scritto, come per T11 (risposta 2, §3.2) |
 
-## 6. La domanda per Carmine
+## 6. Le domande per Carmine, e le risposte
+
+### 6.1 La domanda della nota
 
 Posta il 7 ottobre 2026 con [un commento sulla #232][q1], la PR di questa fase (lì in inglese, come ogni testo di una PR):
 
@@ -166,6 +189,44 @@ Posta il 7 ottobre 2026 con [un commento sulla #232][q1], la PR di questa fase (
 
 **Raccomandata: sì.** È la riga del design §1.6 detta nel nucleo, per le sole entità che la vogliono. Con un no, E6a resta senza il ritiro
 (il suo test cade con 403) finché non c'è un'altra forma, e questa PR si chiude senza essere unita.
+
+### 6.2 Le risposte di Carmine (7 ottobre 2026)
+
+Date in chat alla sessione master e pubblicate su sua istruzione [sulla #232][a1], dopo [i rilievi del revisore][rv]:
+
+1. **Sì alla domanda di §6.1**: una riga che l'entità dichiara ritirabile (`[WithdrawnByStakeholder]`) la cancella il membro che ne è
+   l'interessato, e solo lui; ogni altra come prima (un PIREP o un training restano del dipartimento da cancellare, lo staff cancella con
+   `{Area}.Edit`, il superadmin come sempre). L'hub rifiuta all'avvio il segno su un'entità che non è insieme `IOwnedByDepartment`,
+   `ISubmittedByMembers` e `IHasStakeholder`: è ciò che fa `VerifyWithdrawals` (§3.3), e il suo riassunto ora lo dice con queste parole.
+2. **La riga mai caricata** (il rilievo 2 del revisore, e la sua domanda 4): **il limite si accetta e si scrive, come per T11**; il
+   guardiano continua a leggere i valori originali del tracker e non rilegge il database. Quindi la frase — *l'endpoint deve caricare la
+   riga; uno stub passa* — nel riassunto dell'attributo, nella nota (§3.2) e nella trappola dell'handoff, e un test che fissa il caso com'è
+   (§4). Fatto dopo la revisione, con il rilievo 3 (la parola su `AlsoOnDeletion` nel riassunto dell'attributo).
+
+### 6.3 Ancora aperta: il segno su un'entità con un permesso `DeniedToStakeholder` (rilievo 6)
+
+Il revisore: il controllo all'avvio non rifiuta il segno su un'entità che ha anche un permesso `DeniedToStakeholder`; lì il membro potrebbe
+cancellare una decisione presa su di lui, e oggi lo protegge solo l'opzione. **Un ottavo rifiuto, o una frase nel riassunto
+dell'attributo?** Carmine non ha ancora risposto (non ferma le correzioni), e **finché non risponde non si scrive né l'uno né l'altra**.
+
+**Raccomandazione: la frase** (scritta a Carmine anche [in un commento sulla #232][p6]).
+
+- **Il guardiano lascia già all'interessato cambiare ogni colonna della riga che ha mandato**: l'eccezione di T11 vale su ogni entità
+  `ISubmittedByMembers` e `IHasStakeholder`, senza segno, e non guarda quali colonne cambiano. Uno stato deciso dallo staff, oggi, lo
+  protegge l'endpoint del modulo, non il guardiano. Un ottavo rifiuto sarebbe più severo per la cancellazione, che è un'opzione, che per
+  la modifica, che vale per tutte.
+- **Il catalogo conosce i permessi per area, non per entità**, e «l'area ha un permesso `DeniedToStakeholder`» non dice che la decisione
+  sta su quella riga. `EventAtc.Edit` è negato all'interessato per i turni (il no-show, la cessione), e nella stessa area sta la
+  disponibilità di un controllore, che E11a potrebbe voler ritirare cancellandola e che non porta nessuna decisione: un rifiuto per area
+  la fermerebbe. Uno solo per le alternative dell'entità (`[AlsoWrittenWith]` negato all'interessato) lascerebbe passare il PIREP di
+  supporto, che l'MD decide con l'`Edit` dell'area.
+- **La frase** direbbe: *mai su una riga su cui lo staff decide qualcosa del membro — un PIREP di supporto, la cessione di un turno —:
+  cancellarla cancellerebbe la decisione; il guardiano non sa né lo stato né l'ora, e fino a quando si ritira lo dice l'endpoint del
+  modulo*. E la nota della fase che mette il segno dice perché la sua riga non porta decisioni, così il revisore lo controlla.
+
+Se Carmine preferisce **l'ottavo rifiuto**, la forma più vicina al bisogno è quella per area: il segno su un'entità la cui area ha un
+`Edit` `DeniedToStakeholder` ferma l'avvio. La prenotazione (`EventBookings`) e l'iscrizione in presenza passano; la disponibilità di E11a
+si ritirerebbe con uno stato, come il PIREP.
 
 ## 7. Che cosa si tocca
 
@@ -180,10 +241,14 @@ Posta il 7 ottobre 2026 con [un commento sulla #232][q1], la PR di questa fase (
 
 ## Da portare nel piano
 
-- **§16 punto 2** (la rete dell'interceptor): **dal 7 ott 2026** (M4, E10h) una riga `ISubmittedByMembers` e `IHasStakeholder` la cui
-  entità lo dice (`[WithdrawnByStakeholder]`) la **cancella** anche il membro che ne è l'interessato, com'era salvata, e nessun altro
-  senza `{Area}.Edit`; senza il segno, cancellarla resta del dipartimento. **L'avvio rifiuta sette cose**: le sei della 0.4.3 e il segno
-  su un'entità che non è `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder`.
+- **§16 punto 2** (la rete dell'interceptor): **dal 7 ott 2026** (M4, E10h, decisa da Carmine sulla #232) una riga `ISubmittedByMembers`
+  e `IHasStakeholder` la cui entità lo dice (`[WithdrawnByStakeholder]`) la **cancella** anche il membro che ne è l'interessato, com'era
+  caricata, e nessun altro senza `{Area}.Edit` (o un'alternativa `AlsoOnDeletion`); senza il segno, cancellarla resta del dipartimento.
+  Come per la modifica di T11 il guardiano legge i valori originali del tracker: **l'endpoint deve caricare la riga; uno stub passa** (un
+  limite accettato e scritto, risposta 2). **L'avvio rifiuta sette cose**: le sei della 0.4.3 e il segno su un'entità che non è insieme
+  `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder`.
+- **Il rilievo 6, quando Carmine risponde** (§6.3): o un ottavo rifiuto all'avvio, o una frase nel riassunto dell'attributo; §16 punto 2
+  lo registra con la sua risposta.
 - **§9.7**: niente; non descrive le eccezioni del guardiano, e «Privacy dei membri» non cambia (una prenotazione ritirata non c'è più, la
   sua storia è nell'audit).
 - **`09-design-m4.md` §13** («Che cosa chiede al nucleo»): una riga in più, il ritiro di chi ha mandato la riga (E10h, questa nota), che
