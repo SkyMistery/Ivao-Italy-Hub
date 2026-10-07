@@ -2,8 +2,8 @@
 
 **Data:** 7 ottobre 2026 — fase E6a di M4 (prenotare: il server), PR #233
 **Stato:** **Proposta** — la domanda a Carmine è un commento sulla #233 (§4). Il ritiro del pilota, che cancella la riga, poggia sulla
-fase del nucleo **E10h** (la #232, nota `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`, §2 qui sotto): la #233 è in coda dopo la
-#228 di E5 e dopo la #232.
+fase del nucleo **E10h** (la #232, nota `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`, **decisa** da Carmine sulla #232, §2 qui
+sotto): la #233 è in coda dopo la #228 di E5 e dopo la #232.
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo nel modulo — `ISubmittedByMembers` e
 `IHasStakeholder`, il guardiano dell'interceptor, l'unico handler, `Refusals`, `CrudSource.BackOffice`, il servizio delle notifiche, le
 impostazioni del modulo —; sono letture del design M4 §1.6, §3.3, §3.5, §3.6, §7.4, §8.3, §10.1 e della nota

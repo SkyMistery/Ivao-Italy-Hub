@@ -1559,7 +1559,13 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   E5 non ne ha, e vale la verifica locale qui sopra. `main` non si unisce qui da solo — il range della fase si riempirebbe di E4b, e il
   merge andrebbe rifatto quando E5 prende `main` —: ogni branch lo prende al suo passo della coda, quando il master lo chiede. Per la stessa
   ragione la testa nuova di E10h (`ec9b3b4`, dopo la sua revisione: la forma non cambia, la nota è decisa da Carmine [sulla
-  #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)) non è unita qui: porta `main` con sé.
+  #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)) all'inizio non è unita qui: porta `main` con sé.
+- **Poi la coda si è mossa** (7 ottobre, pomeriggio): E10g ha preso `main` (`b8cb66e`) ed E5 ha preso E10g (`ce110ba`, `ecf88b9`). La
+  regola della coda ha portato qui la testa di E5 (`67c870f`), e con lei `main` a `7b84a75`; allora anche la testa decisa di E10h non
+  portava più niente d'altro, ed è unita (`8ab7c69`). Conflitti solo nei documenti: in `HANDOFF-M4.md` l'intestazione di E6a in cima, i
+  blocchi di E10h, E5, E10g ed E4b sotto, e l'ultimo punto di E10h il suo (il rilievo 6 aperto); in questo file la riga di E10g della
+  tabella, con il suo testo dopo le risposte di Carmine. Un confronto delle righe di ogni lato con il risultato mostra solo le perdite
+  volute. La PR non è più in conflitto con `main`, e la CI torna.
 - **Dopo la revisione** (7 ottobre 2026; [i rilievi del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626),
   letti sulla prima testa, `08c81ef`: approvabile sul codice dopo quattro correzioni):
   1. **«Togli» nella cura dell'evento com'è ora** (punto 1): la prenotazione è un `IEventChild`, e `RemoveAsync` le copia la cura
@@ -1596,7 +1602,12 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
     `format:check`, `i18n:check` verdi; `pnpm test` **636 in 87 file**; `pnpm e2e --workers=2` dietro il lock dello smoke **173/173** al
     primo giro; **`pnpm e2e:full` 57/57 al primo giro** (11,4 minuti) sul banco `http://127.0.0.1:5128` (`ivaohub_e2e_e6a` ricreato prima),
     dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS**.
-- **Non verificato**: la CI delle teste dopo la prima (una PR in conflitto non la riceve: arriva al passo della coda); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
+- **Verificato sull'ultima testa** (con E5 a `ecf88b9`, E10h a `ec9b3b4` e `main` a `7b84a75`): `dotnet build` senza avvisi, `pnpm gen:api`
+  e `pnpm i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,7 minuti); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **640 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57
+  al primo giro** (11,4 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima); le regole di `core-guard` in PowerShell dalla nuova base di merge
+  `7b84a75`: **PASS**.
+- **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
   le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
   log binario della MariaDB di produzione (la domanda 2); le mail lette davvero in una casella (i test leggono la coda, `hub_notifications`);
   le pagine, che sono di E6b.

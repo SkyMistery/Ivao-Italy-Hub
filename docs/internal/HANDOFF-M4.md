@@ -8,20 +8,21 @@
 
 **Ultimo aggiornamento:** 7 ottobre 2026 — **fase E6a** (modulo: prenotare, il server), sul branch `m4/e6a-booking-server`, **PR #233**
 verso `main`, nata **in coda dopo la #228** di E5 — dalla sua testa `d901f43`, che porta già il branch di E10g (#230) e `main` a `e9702b2`,
-e con la testa di E5 dopo la prova sul banco, `25d23f5`, unita dopo l'apertura della PR — e **in coda anche dopo la #232** di **E10h**
-(il nucleo: chi ha mandato una riga se la riprende), una fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il
-guardiano dell'interceptor non lo lasciava fare — e unita al branch. Prima di E6a: **fase E5**
-(gli slot pubblici e l'esportazione), **PR #228**, nata in coda dopo la #223 di E4, unita prima che si aprisse, e **dalla revisione in coda
-dopo la #230** di E10g (la versione di un contratto nel nucleo). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), E10a
-(#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211),
-la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5`
-(#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229). **E4b** («chi è online sugli
-scali», la fase del nucleo decisa da Carmine sulla #223) è la **#226**, **unita in `main` il 7 ottobre** (`7b84a75`), dopo che questo
-branch era partito: qui non c'è, e da allora le PR della coda — la #230, la #228, la #232 e la #233 — sono in conflitto con `main` in
-questo file; ogni branch prende `main` al suo passo della coda. La striscia sulla pagina dell'evento la monta la prima fase del modulo
-dopo che E4b è unita.
-**Il prossimo passo**: **E10g** (la #230), **E5** (la #228, in coda dopo la #230), **E10h** (la #232), poi **E6a** (la #233, in coda
-dopo la #228 e la #232); poi **E6b** (prenotare: le pagine), in coda sul branch di E6a. Da E3b un evento si **pubblica**, entra nel
+e con la testa di E5 dopo la prova sul banco, `25d23f5`, unita dopo l'apertura della PR, e poi con quella che ha preso E10g e con lui
+`main` a `7b84a75`, `ecf88b9` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una riga se la riprende), una
+fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il guardiano dell'interceptor non lo lasciava fare — e unita al
+branch, fino alla sua testa decisa `ec9b3b4`. Prima di E6a: **fase E5** (gli slot pubblici e l'esportazione), **PR #228**, nata in coda
+dopo la #223 di E4, unita prima che si aprisse, e **dalla revisione in coda dopo la #230** di E10g (la versione di un contratto nel
+nucleo). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, E10a (#210), E10b (#208), E10c
+(#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il
+piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225), gli
+spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229). **E4b** non migra niente; la striscia di chi è online
+sugli scali dell'evento, il giorno dell'evento, la monta la prima fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto): E6b,
+in coda su questo branch, la trova qui.
+**Il prossimo passo**: **E10g** (la #230: «approvabile» per il revisore, e Carmine ha risposto sì alle domande della sua nota, [sulla
+#230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720)), **E5** (la #228, in coda dopo la #230), **E10h**
+(la #232, decisa), poi **E6a** (la #233, in coda dopo la #228 e la #232); poi **E6b** (prenotare: le pagine), in coda sul branch di
+E6a. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -31,8 +32,8 @@ orari («Che cosa ha lasciato E6a», sotto). ⚠️ **Tre domande a Carmine sull
 «Proposta»): le undici letture del design, il formato del log binario della MariaDB di produzione — con `STATEMENT` ogni prenotazione, in
 una transazione `READ COMMITTED`, sarebbe rifiutata —, uno slot prenotato che si corregge ancora. **Il master ha letto la #233**: le
 quattro correzioni che chiedeva sono fatte sulla stessa PR («Che cosa ha lasciato E6a»). **Alla domanda della #232 Carmine ha detto sì**
-([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)): la nota di E10h è decisa sul suo branch
-(`ec9b3b4`), che porta anche `main` e qui non è unito. **Carmine ha risposto
+([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)): la nota di E10h è decisa, e la sua
+testa dopo la revisione (`ec9b3b4`) è unita qui. **Carmine ha risposto
 sulla #228** ([le sue risposte][a228]): sì alle otto letture della nota `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, ora
 **decisa**, e due punti in più, fatti sulla stessa PR — uno slot cade nella finestra del suo evento (sei ore per parte), e l'esportazione
 porta la versione del suo contratto. ⚠️ **Il controllo della versione è del nucleo**: lo porta **E10g** (`ContractVersion`, la #230:
@@ -170,7 +171,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   `2026-10-07-le-colonne-delle-prenotazioni-in-erasuretests`, nessuna decisione nuova; il ritiro poggia sulla fase del nucleo **E10h**, la
   #232, unita a questo branch; dopo l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5`, unita anche lei — `d767cc0`,
   i conflitti dell'esportazione e del commento dello slot risolti tenendo i due lati —; **le correzioni della revisione del master**
-  ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626)), sulla stessa PR, punto per punto in `10`):
+  ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626)), sulla stessa PR, punto per punto in `10`;
+  poi, quando la coda si è mossa, la testa di E5 che ha preso E10g e `main` a `7b84a75` (`ecf88b9`, unita in `67c870f`) e quella decisa di
+  E10h (`ec9b3b4`, in `8ab7c69`), conflitti solo nei documenti: la PR non è più in conflitto con `main`):
   - **`evt_bookings` intera** (`EventBooking`, design §1.6): `event_id`, `slot_id` (univoco), `booker_vid`, `aircraft_icao`, `callsign`,
     `other_icao`, `other_time_utc`, `paired_booking_id` (E7), `flown_at`, `flown_session_id`, `flown_checked_at` (E13a),
     `unflown_excused_by`, `unflown_excused_note` (E13b), `reminded_at` (E6b), `created_at`, più dipartimento, maschera e visibilità
@@ -211,9 +214,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     ha lasciato E5») — manda `POST /api/events/mine/bookings` con lo slot e il tipo scelto fra quelli ammessi, e i rifiuti arrivano su
     `slotId` e `aircraftIcao`; «Prenota tutta la rotazione» mostra le tratte di `notBooked` con il loro perché (chiavi `events:errors.*`).
     Un **409** di tutti e due è «riprova» (il titolo del problema): niente è prenotato, e la stessa richiesta può passare un attimo dopo.
-    ⚠️ **E4b è in `main` e non in questo branch**: E6b, che nasce da qui, ha la striscia «chi è online sugli scali» solo se prende `main`
-    al suo inizio (come A11b in M3) o al passo della coda. `/events/mine` legge `GET` e ritira con `DELETE`; `withdrawable` dice se si
-    può. **Il promemoria** (`events-reminders`) scrive `reminded_at`: valuti `[NotAudited]` per quella colonna, come l'ultimo uso di un
+    **E4b è in questo branch** (con `main` a `7b84a75`, dalla testa di E5): E6b, che nasce da qui, trova la striscia «chi è online sugli
+    scali» da montare («Che cosa ha lasciato E4b»). `/events/mine` legge `GET` e ritira con `DELETE`; `withdrawable` dice se si può. **Il promemoria** (`events-reminders`) scrive `reminded_at`: valuti `[NotAudited]` per quella colonna, come l'ultimo uso di un
     token (T19a), se il suo giro non deve riempire l'audit. `EventsMail` ha il posto per `bookingReminder`.
   - **E7** (i privati): `BookingRules.ClosesAt` e `BookingInterval.Of` rispondono solo per uno slot pubblico (un privato oggi è chiuso e
     senza intervallo); E7 li allarga con l'orario allo scalo e `other_time_utc`, e `PilotBookings.BookAsync` rifiuta un privato con
