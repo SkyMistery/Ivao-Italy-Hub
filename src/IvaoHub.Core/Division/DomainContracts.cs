@@ -256,12 +256,16 @@ public interface ISubmittedByMembers;
 /// <summary>
 /// A row its member takes back by deleting it — a booking of an event, which its pilot withdraws until the off block, freeing
 /// the slot (M4, E6a; note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga). The interceptor's guard lets the member a row
-/// <see cref="ISubmittedByMembers"/> is about (<see cref="IHasStakeholder"/>, as the row was stored) delete it, and nobody else
-/// who does not hold <c>{Area}.Edit</c> on it.
+/// <see cref="ISubmittedByMembers"/> is about (<see cref="IHasStakeholder"/>, as the row was loaded) delete it, and nobody else
+/// who does not hold <c>{Area}.Edit</c> on it, or an alternative marked <c>AlsoOnDeletion</c>.
+/// <para>⚠️ <b>The endpoint must load the row; a stub passes.</b> The guard reads the stakeholder from the tracker's original
+/// values, as it does for a change (M2, T11): for a row attached without being read — <c>Remove(new X { Id = id, … })</c> —
+/// those are what the caller wrote, and the guard believes them. A limit the maintainer accepted, written down rather than paid
+/// for with a second read of every withdrawal (answer 2 on #232).</para>
 /// <para>An opt-in of the entity, and the narrowest one: on a row whose entity does not say so, deleting stays the
 /// department's — a pilot's report is a record, which they withdraw by changing its state (M2, T11). Only on an entity that is
-/// <see cref="IOwnedByDepartment"/>, <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/>, the rows the guard
-/// knows as their member's: the hub refuses to start with it on any other
+/// <see cref="IOwnedByDepartment"/>, <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/> together, the rows the
+/// guard knows as their member's: the hub refuses to start with it on any other
 /// (<c>HubSaveChangesInterceptor.VerifyWithdrawals</c>).</para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
