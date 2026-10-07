@@ -34,9 +34,11 @@ namespace IvaoHub.IntegrationTests;
 /// <para><b>The same instant</b> (design §10.1): a transaction of the test holds what the first request would hold — a booking written
 /// and not committed, the lock of the pilot —, the request under test is sent and waits for it in the database (the test sees it in
 /// <c>INNODB_TRX</c>), and the test commits: the request then reads what the other saved. Without the unique index, or without the
-/// lock, the request would not wait at all.</para>
+/// lock, the request would not wait at all. Besides those, the first bookings of six pilots are sent together, for real (the review
+/// of #233, point 4).</para>
 /// <para>⚠️ The coordinator is seeded **without an address**, as in <see cref="EventsStaffTests"/>: the tests of the contacts assert who
-/// of the events receives a message. The two pilots are members, with an address each: they are told by mail.</para>
+/// of the events receives a message. So are the three members of the staff of the bookings by a grant. The two pilots are members,
+/// with an address each: they are told by mail.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -46,6 +48,11 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int PilotVid = 761044;
     private const int OtherPilotVid = 761045;
     private const int MemberVid = 761046;
+
+    // Three more, which E10f (merged, #213) left free: the staff of the bookings by a grant to a VID, never by a position.
+    private const int TrainingStaffVid = 761084;
+    private const int ToursStaffVid = 761085;
+    private const int OneEventStaffVid = 761086;
 
     /// <summary>Two airports of the events of this class, and two away from them: of no country the network has.</summary>
     private const string First = "XEF1";
@@ -65,7 +72,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     private static readonly string[] Airports = [First, Second, Away, Further];
 
-    private static readonly int[] People = [CoordinatorVid, PilotVid, OtherPilotVid, MemberVid];
+    private static readonly int[] People = [CoordinatorVid, PilotVid, OtherPilotVid, MemberVid, TrainingStaffVid, ToursStaffVid, OneEventStaffVid];
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -79,6 +86,9 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await SeedUserAsync(PilotVid, position: null, "e6a-pilot@example.org", token);
         await SeedUserAsync(OtherPilotVid, position: null, "e6a-other@example.org", token);
         await SeedUserAsync(MemberVid, position: null, email: null, token);
+        await SeedUserAsync(TrainingStaffVid, position: null, email: null, token, staff: true);
+        await SeedUserAsync(ToursStaffVid, position: null, email: null, token, staff: true);
+        await SeedUserAsync(OneEventStaffVid, position: null, email: null, token, staff: true);
         await SeedReferenceAsync(token);
         await ForgetAsync(token);
     }
@@ -660,6 +670,207 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             (await BookingsAsync(id, token)).Select(booking => (booking.SlotId, booking.BookerVid)).Order());
     }
 
+    [Fact]
+    public async Task TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(coordinator, "care", Table(Line("XEA161", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18))), token);
+        var other = await PublishedAsync(coordinator, "care-other", Table(Line("XEA162", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18))), token);
+
+        // The event is in the care of the flight operations too when the pilot books, and the booking takes that care.
+        await CareAsync(id, [Department.ED, Department.FOD], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+        using var created = await BookAsync(pilot, (await SlotIdsAsync(id, token))["XEA161"], TypeA, token);
+
+        // No address of its own: the pilot reads it in their list (the review of #233, point 5).
+        Assert.Null(created.Headers.Location);
+        var booking = Id(await CreatedAsync(created, token));
+        var elsewhere = Id(await CreatedAsync(await BookAsync(pilot, (await SlotIdsAsync(other, token))["XEA162"], TypeA, token), token));
+        Assert.Equal(DepartmentMask.Of([Department.ED, Department.FOD]), (await BookingsAsync(id, token)).Single().OwnerDepartmentMask);
+
+        // Then the training department takes the place of the flight operations on the event.
+        await CareAsync(id, [Department.ED, Department.TD], token);
+
+        await GrantAsync(TrainingStaffVid, Department.TD, scope: null, token);
+        await GrantAsync(ToursStaffVid, Department.FOD, scope: null, token);
+        await GrantAsync(OneEventStaffVid, Department.ED, Event.ScopeOf(other), token);
+        using var training = await SignedInAsync(TrainingStaffVid, token);
+        using var tours = await SignedInAsync(ToursStaffVid, token);
+        using var oneEvent = await SignedInAsync(OneEventStaffVid, token);
+
+        // A grant on another event, the department that left the event, a department the other event was never in: none of
+        // them takes a booking away (the review of #233, points 1 and 2).
+        foreach (var (client, bookingId) in new[] { (oneEvent, booking), (tours, booking), (training, elsewhere) })
+        {
+            using var refused = await RemoveAsync(client, bookingId, "evt-test-e6a not theirs", token);
+            Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        }
+
+        Assert.Equal(2, (await BookingsAsync(id, token)).Count + (await BookingsAsync(other, token)).Count);
+
+        // The department that came in does, as the event is now.
+        using (var removed = await RemoveAsync(training, booking, "evt-test-e6a the event is ours now", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, removed.StatusCode);
+        }
+
+        Assert.Empty(await BookingsAsync(id, token));
+    }
+
+    [Fact]
+    public async Task ABookingCaughtInADeadlockIsToldToTryAgainNotThatTheSlotIsTaken()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        string[] heavy = ["XEA173", "XEA174", "XEA175", "XEA176", "XEA177", "XEA178", "XEA179", "XEA180"];
+        var id = await PublishedAsync(
+            coordinator,
+            "deadlock",
+            Table(
+            [
+                Line("XEA171", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18)),
+                Line("XEA172", string.Empty, TypeA, First, day.AddHours(19), Away, day.AddHours(20)),
+                .. heavy.Select((callsign, index) => Line(callsign, string.Empty, TypeA, First, day.AddHours(20).AddMinutes(5 * index), Away, day.AddHours(21))),
+            ]),
+            token);
+        var slots = await SlotIdsAsync(id, token);
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+        var first = Id(await CreatedAsync(await BookAsync(pilot, slots["XEA171"], TypeA, token), token));
+
+        // Another transaction has written many bookings, XEA172 among them, and not committed. The pilot's booking of XEA172
+        // takes the pilot's lock — the row of their first booking —, finds the slot free, and waits on the other's key; then the
+        // other asks for the row the pilot holds. The database rolls the lighter of the two back: the pilot's, which wrote one row.
+        await using (var held = await HeldAsync(id, token))
+        {
+            foreach (var callsign in heavy)
+            {
+                await held.BookAsync(slots[callsign], OtherPilotVid, token);
+            }
+
+            await held.BookAsync(slots["XEA172"], OtherPilotVid, token);
+
+            var racing = BookAsync(pilot, slots["XEA172"], TypeA, token);
+            await WaitForALockWaitAsync(token);
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_bookings WHERE id = {first} FOR UPDATE", token);
+
+            // Not «taken»: the other transaction may still roll back, and the slot be free (the review of #233, point 3).
+            using var answer = await racing;
+            Assert.Equal(HttpStatusCode.Conflict, answer.StatusCode);
+        }
+
+        Assert.Equal([slots["XEA171"]], (await BookingsAsync(id, token)).Select(booking => booking.SlotId));
+    }
+
+    [Fact]
+    public async Task TheFirstBookingOfAPilotWaitingForAnotherPilotsFirstTakesNoGapAndGoesThrough()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(
+            coordinator,
+            "first-bookings",
+            Table(
+                Line("XEA181", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18)),
+                Line("XEA182", string.Empty, TypeA, First, day.AddHours(19), Away, day.AddHours(20))),
+            token);
+        var slots = await SlotIdsAsync(id, token);
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        // The other pilot's first booking in flight holds the row of the event, and has written nothing yet. The pilot's first
+        // booking looks for a booking of theirs to lock, finds none, and waits for the row of the event; then the other writes its
+        // booking and commits. Reading what is committed, the pilot's look took no gap of the index and the other's insert goes
+        // through; under the default isolation it would have locked the gap that insert falls into, and the two would deadlock
+        // (the note of E6a, reading 1; the review of #233, point 4).
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE", token);
+
+            var racing = BookAsync(pilot, slots["XEA182"], TypeA, token);
+            await WaitForALockWaitAsync(token);
+            await held.BookAsync(slots["XEA181"], OtherPilotVid, token);
+            await held.CommitAsync(token);
+
+            await CreatedAsync(await racing, token);
+        }
+
+        Assert.Equal(
+            [(slots["XEA181"], OtherPilotVid), (slots["XEA182"], PilotVid)],
+            (await BookingsAsync(id, token)).Select(booking => (booking.SlotId, booking.BookerVid)).Order());
+    }
+
+    [Fact]
+    public async Task TheFirstBookingsOfSixPilotsSentTogetherAreAllMade()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        int[] pilots = [PilotVid, OtherPilotVid, MemberVid, TrainingStaffVid, ToursStaffVid, OneEventStaffVid];
+        var id = await PublishedAsync(
+            coordinator,
+            "together",
+            Table([.. pilots.Select((_, index) => Line($"XEA19{index}", string.Empty, TypeA, First, day.AddHours(17).AddMinutes(10 * index), Away, day.AddHours(19)))]),
+            token);
+        var slots = await SlotIdsAsync(id, token);
+
+        // Six pilots, each their first booking of the event, in the same instant: they meet on the row of the event, one after the
+        // other, and none of them deadlocks (the review of #233, point 4).
+        var clients = new List<HttpClient>();
+        try
+        {
+            foreach (var vid in pilots)
+            {
+                clients.Add(await SignedInAsync(vid, token));
+            }
+
+            var answers = await Task.WhenAll(clients.Select((client, index) => BookAsync(client, slots[$"XEA19{index}"], TypeA, token)));
+            foreach (var answer in answers)
+            {
+                await CreatedAsync(answer, token);
+            }
+        }
+        finally
+        {
+            clients.ForEach(client => client.Dispose());
+        }
+
+        Assert.Equal(pilots.Order(), (await BookingsAsync(id, token)).Select(booking => booking.BookerVid).Order());
+    }
+
+    [Fact]
+    public async Task ABookingWaitingForTheEventWhileItStopsBeingSeenIsNotFound()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(coordinator, "unseen-meanwhile", Table(Line("XEA141", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18))), token);
+        var slot = (await SlotIdsAsync(id, token))["XEA141"];
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        // The staff move its «seen from» to tomorrow, not committed yet: the pilot's first booking reads the event seen, then waits
+        // for its row; once that is saved, the booking reads the event again under its lock, as its first read did, and does not
+        // find it (the review of #233, point 7).
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.ExecuteAsync($"UPDATE evt_events SET visible_from_utc = {DateTime.UtcNow.AddDays(1)} WHERE id = {id}", token);
+
+            var racing = BookAsync(pilot, slot, TypeA, token);
+            await WaitForALockWaitAsync(token);
+            await held.CommitAsync(token);
+
+            using var answer = await racing;
+            Assert.Equal(HttpStatusCode.NotFound, answer.StatusCode);
+        }
+
+        Assert.Empty(await BookingsAsync(id, token));
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------------
 
     private static string Slug(string name) => $"{SlugStem}-{name}";
@@ -908,8 +1119,11 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>A member with one position of the staff — or none, a member of the division and nothing else —, with an address or not.</summary>
-    private async Task SeedUserAsync(int vid, string? position, string? email, CancellationToken cancellationToken)
+    /// <summary>
+    /// A member with one position of the staff — or none, a member of the division and nothing else, or staff by a grant alone —,
+    /// with an address or not.
+    /// </summary>
+    private async Task SeedUserAsync(int vid, string? position, string? email, CancellationToken cancellationToken, bool staff = false)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -925,7 +1139,7 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         user.FirstName = "Test";
         user.LastName = "Bookings";
         user.Email = email;
-        user.IsStaff = position is not null;
+        user.IsStaff = staff || position is not null;
         user.SecurityStamp = SuperadminService.NewStamp();
         user.UpdatedAt = clock.UtcNow;
 
@@ -980,7 +1194,10 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>The events of this class with their rows and what they projected, the tokens and the mails of its people, whatever a stopped run left.</summary>
+    /// <summary>
+    /// The events of this class with their rows and what they projected, the tokens, the mails and the grants of its people, whatever
+    /// a stopped run left.
+    /// </summary>
     private async Task ForgetAsync(CancellationToken cancellationToken)
     {
         await EventsTestRows.ForgetAsync(_factory.Services, SlugStem, cancellationToken);
@@ -989,6 +1206,41 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         await hub.PersonalTokens.Where(row => People.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
         await hub.Notifications.Where(row => People.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
+        await hub.UserGrants.Where(row => row.Vid != null && People.Contains(row.Vid.Value)).ExecuteDeleteAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// <c>EventBookings.Edit</c> granted to one member on a department — or, with a scope, on one event alone —, as a screen of the
+    /// module will write it. The member signs in afterwards: the effective permissions are computed at login.
+    /// </summary>
+    private async Task GrantAsync(int vid, Department department, string? scope, CancellationToken cancellationToken)
+    {
+        await using var services = _factory.Services.CreateAsyncScope();
+        var database = services.ServiceProvider.GetRequiredService<HubDbContext>();
+        database.UserGrants.Add(new UserGrant
+        {
+            Vid = vid,
+            Kind = GrantKind.Permission,
+            Value = EventsPermissions.BookingsEdit,
+            Department = department,
+            ResourceScope = scope,
+            Effect = GrantEffect.Grant,
+            Reason = SlugStem,
+        });
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The departments an event is in the care of, changed straight in the database: no form of the module writes the set yet, and
+    /// the base department is always in it.
+    /// </summary>
+    private async Task CareAsync(long eventId, Department[] departments, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var mask = DepartmentMask.Of(departments);
+        await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters()
+            .Where(row => row.Id == eventId)
+            .ExecuteUpdateAsync(set => set.SetProperty(row => row.OwnerDepartmentMask, mask), cancellationToken);
     }
 
     /// <summary>
