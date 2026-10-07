@@ -248,6 +248,21 @@ public interface IHasAssignee
 /// resource accepts submissions.</para>
 /// <para>One exception after creation, for a row that is also <see cref="IHasStakeholder"/>: the member it is
 /// about, who sent it, may keep changing it — a pilot withdraws or corrects their own report (M2, T11) —
-/// provided it stays theirs and in the same departments. Deleting it is still the department's.</para>
+/// provided it stays theirs and in the same departments. Deleting it is still the department's, unless the entity
+/// says its member takes it back (<see cref="WithdrawnByStakeholderAttribute"/>, M4, E10h).</para>
 /// </summary>
 public interface ISubmittedByMembers;
+
+/// <summary>
+/// A row its member takes back by deleting it — a booking of an event, which its pilot withdraws until the off block, freeing
+/// the slot (M4, E6a; note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga). The interceptor's guard lets the member a row
+/// <see cref="ISubmittedByMembers"/> is about (<see cref="IHasStakeholder"/>, as the row was stored) delete it, and nobody else
+/// who does not hold <c>{Area}.Edit</c> on it.
+/// <para>An opt-in of the entity, and the narrowest one: on a row whose entity does not say so, deleting stays the
+/// department's — a pilot's report is a record, which they withdraw by changing its state (M2, T11). Only on an entity that is
+/// <see cref="IOwnedByDepartment"/>, <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/>, the rows the guard
+/// knows as their member's: the hub refuses to start with it on any other
+/// (<c>HubSaveChangesInterceptor.VerifyWithdrawals</c>).</para>
+/// </summary>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class WithdrawnByStakeholderAttribute : Attribute;
