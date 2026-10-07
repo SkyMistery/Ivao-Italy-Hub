@@ -305,14 +305,19 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             }
         }
 
-        // One slot written in its form: in the event's care, its airport and its direction read off its airports, in upper case.
+        // One slot written in its form: in the event's care, its airport and its direction read off its airports, in upper case; its
+        // main type first, and the others after it, each once — the main one written again among them stays the main one.
         var arrival = await CreatedAsync(
             coordinator,
             EventSlotEndpoints.Pattern,
-            Slot(id, "xea401", Away, day.AddHours(16), "xed2", day.AddHours(17)) with { AircraftTypes = $" {TypeA} / {TypeB} " },
+            Slot(id, "xea401", Away, day.AddHours(16), "xed2", day.AddHours(17)) with
+            {
+                MainAircraftType = $" {TypeB.ToLowerInvariant()} ",
+                OtherAircraftTypes = $" {TypeA} / {TypeB} ",
+            },
             token);
         Assert.Equal(("XEA401", Second, true), (arrival.GetProperty("callsign").GetString(), arrival.GetProperty("eventAirportIcao").GetString(), arrival.GetProperty("isArrival").GetBoolean()));
-        Assert.Equal([TypeA, TypeB], arrival.GetProperty("aircraftTypes").EnumerateArray().Select(type => type.GetString()));
+        Assert.Equal([TypeB, TypeA], arrival.GetProperty("aircraftTypes").EnumerateArray().Select(type => type.GetString()));
         Assert.Equal(nameof(Department.ED), arrival.GetProperty("ownerDepartment").GetString());
 
         // The first leg of a new rotation, written without its place, takes the first.
@@ -323,19 +328,42 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // core does not know; a second leg without its place, and one too close to the leg before it.
         var refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA402", First, day.AddHours(17), Away, day.AddHours(18)), token), token);
         Assert.Equal(["events:errors.slotTwice"], refused["callsign"]);
-        refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA403", Away, day.AddHours(17), Further, day.AddHours(18)) with { AircraftTypes = UnknownType }, token), token);
+        refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA403", Away, day.AddHours(17), Further, day.AddHours(18)) with { OtherAircraftTypes = UnknownType }, token), token);
         Assert.Equal(["events:errors.slotAwayFromEvent"], refused["departureIcao"]);
-        Assert.Equal(["events:errors.aircraftUnknown"], refused["aircraftTypes"]);
+        // A type the core does not know is refused on its own field: among the others here, as the main one below.
+        Assert.Equal(["events:errors.aircraftUnknown"], refused["otherAircraftTypes"]);
+        Assert.False(refused.ContainsKey("mainAircraftType"));
+        refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA406", First, day.AddHours(17), Away, day.AddHours(18)) with { MainAircraftType = UnknownType }, token), token);
+        Assert.Equal(["events:errors.aircraftUnknown"], refused["mainAircraftType"]);
+        Assert.False(refused.ContainsKey("otherAircraftTypes"));
         refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA404", Away, day.AddHours(18).AddMinutes(30), First, day.AddHours(19)) with { RotationCode = "R5" }, token), token);
         Assert.Equal(["events:errors.legMissing"], refused["rotationLeg"]);
         refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, "XEA404", Away, day.AddHours(18).AddMinutes(5), First, day.AddHours(19)) with { RotationCode = "R5", RotationLeg = 2 }, token), token);
         Assert.Equal(["events:errors.chainTooClose"], refused["offBlockUtc"]);
 
-        // What a payload says by itself: no callsign, an on block before the off block, a place without a rotation.
-        refused = await RefusedAsync(await coordinator.PostAsJsonAsync(EventSlotEndpoints.Pattern, Slot(id, string.Empty, First, day.AddHours(18), Away, day.AddHours(17)) with { RotationLeg = 3 }, token), token);
+        // What a payload says by itself: no callsign, no main type and another type that is no code, an on block before the off
+        // block, a place without a rotation; and more types than a slot admits.
+        refused = await RefusedAsync(
+            await coordinator.PostAsJsonAsync(
+                EventSlotEndpoints.Pattern,
+                Slot(id, string.Empty, First, day.AddHours(18), Away, day.AddHours(17)) with { RotationLeg = 3, MainAircraftType = " ", OtherAircraftTypes = $"{TypeA}/X" },
+                token),
+            token);
         Assert.Contains("errors.required", refused["callsign"]);
+        Assert.Contains("errors.required", refused["mainAircraftType"]);
+        Assert.Contains("events:errors.aircraftFormat", refused["otherAircraftTypes"]);
         Assert.Contains("events:errors.onBlockBeforeOffBlock", refused["onBlockUtc"]);
         Assert.Contains("events:errors.legWithoutRotation", refused["rotationLeg"]);
+        refused = await RefusedAsync(
+            await coordinator.PostAsJsonAsync(
+                EventSlotEndpoints.Pattern,
+                Slot(id, "XEA407", First, day.AddHours(17), Away, day.AddHours(18)) with
+                {
+                    OtherAircraftTypes = string.Join('/', Enumerable.Range(1, EventSlot.MaxAircraftTypes).Select(n => $"XB{n:00}")),
+                },
+                token),
+            token);
+        Assert.Equal(["events:errors.aircraftTooMany"], refused["otherAircraftTypes"]);
 
         // The second leg, right; then moved too close to the first by a correction: refused on its field.
         var second = await CreatedAsync(coordinator, EventSlotEndpoints.Pattern, Slot(id, "XEA404", Away, day.AddHours(18).AddMinutes(30), First, day.AddHours(19)) with { RotationCode = "R5", RotationLeg = 2 }, token);
@@ -479,8 +507,10 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var leg = flights[0];
         Assert.Equal(
-            ["slot_id", "callsign", "flight_number", "booked_by", "aircraft_icao", "gate", "eobt", "eat", "origin_icao", "destination_icao", "rotation", "leg", "paired_slot_id"],
+            ["slot_id", "callsign", "flight_number", "booked_by", "aircraft_icao", "aircraft_types", "gate", "eobt", "eat", "origin_icao", "destination_icao", "rotation", "leg", "paired_slot_id"],
             leg.EnumerateObject().Select(property => property.Name));
+        // The types the slot admits before anybody books it, its main one first, as the table wrote them.
+        Assert.Equal([TypeA, TypeB], leg.GetProperty("aircraft_types").EnumerateArray().Select(type => type.GetString()));
         Assert.Equal(("XA501", "B12", First, Away, "R1", 1), (
             leg.GetProperty("flight_number").GetString(),
             leg.GetProperty("gate").GetString(),
@@ -498,13 +528,14 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal(JsonValueKind.Null, flight.GetProperty("aircraft_icao").ValueKind);
         });
 
-        // A private slot is its airport and its time: a departure from the event, with no gate yet.
+        // A private slot is its airport and its time: a departure from the event, with no gate yet, and no type — its pilot says it.
         var privateOne = flights[3];
         Assert.Equal(generated, privateOne.GetProperty("slot_id").GetInt64());
         Assert.Equal((First, JsonValueKind.Null, JsonValueKind.Null), (
             privateOne.GetProperty("origin_icao").GetString(),
             privateOne.GetProperty("destination_icao").ValueKind,
             privateOne.GetProperty("gate").ValueKind));
+        Assert.Empty(privateOne.GetProperty("aircraft_types").EnumerateArray());
 
         // Without a token, or with the cookie of the back office: 401. With a token of another audience: 403. The token is answered
         // before the version, which none of these says.
@@ -576,7 +607,7 @@ public sealed class EventsSlotsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         new(eventId, icao, ordinal, MaxMovementsPerHour: null, MaxArrivalsPerHour: null, MaxDeparturesPerHour: null, RowVersion: default);
 
     private static EventSlotWriteDto Slot(long eventId, string callsign, string departure, DateTime offBlock, string arrival, DateTime onBlock) =>
-        new(eventId, callsign, FlightNumber: null, TypeA, departure, offBlock, arrival, onBlock, Stand: null, RotationCode: null, RotationLeg: null, RowVersion: default);
+        new(eventId, callsign, FlightNumber: null, MainAircraftType: TypeA, OtherAircraftTypes: null, departure, offBlock, arrival, onBlock, Stand: null, RotationCode: null, RotationLeg: null, RowVersion: default);
 
     private static Localized<string> Text(string text) => new(Locales.ToDictionary(locale => locale, _ => text));
 

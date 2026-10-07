@@ -3466,8 +3466,11 @@ export interface components {
          * @description One slot as the gate manager of the division reads it (design M4 §7.4): the fields it reads today from the booking system it
          *     leaves, by their names there, with every time in UTC — and the stable identity of the slot it asks for, the flight number, the
          *     rotation and the leg, and for a private slot the slot paired with it (E7), arrival and departure on the same gate.
-         *     Whoever booked it and the aircraft they chose come with the bookings (E6a): empty on a free slot. The gate is the stand the
-         *     staff wrote, empty when there is none and on a private slot, until the stands are managed (§0.2).
+         *     Whoever booked it and the aircraft they chose come with the bookings (E6a): empty on a free slot. The aircraft types the
+         *     slot admits come before any booking, its main one first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §7: an addition to
+         *     version 1, so that the stands can be planned before the pilots book); none on a private slot, whose pilot declares the type
+         *     (E7). The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands are managed
+         *     (§0.2).
          */
         BookingExportDto: {
             /** Format: int64 */
@@ -3477,6 +3480,7 @@ export interface components {
             /** Format: int32 */
             booked_by: null | number;
             aircraft_icao: null | string;
+            aircraft_types: string[];
             gate: null | string;
             /** Format: date-time */
             eobt: null | string;
@@ -4589,17 +4593,19 @@ export interface components {
             rowVersion: string;
         };
         /**
-         * @description What a client may set on a public slot, the form of one slot's corrections: the cells of a row of the table, the aircraft types
-         *     written as the table writes them (`A320/A20N`) and read by the same code. The event is chosen when it is created and never
+         * @description What a client may set on a public slot, the form of one slot's corrections: the cells of a row of the table, and the aircraft
+         *     types as two fields — the main one, and the others written as the table writes them (`A20N/A321`), read by the same code
+         *     —, kept main first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §1). The event is chosen when it is created and never
          *     changes; the care is the event's, taken before the permission is asked; the airport of the event and the direction are read off
-         *     the two airports. No flight number, stand or rotation is none.
+         *     the two airports. No flight number, other type, stand or rotation is none.
          */
         EventSlotWriteDto: {
             /** Format: int64 */
             eventId: number;
             callsign: string;
             flightNumber: null | string;
-            aircraftTypes: string;
+            mainAircraftType: string;
+            otherAircraftTypes: null | string;
             departureIcao: string;
             /** Format: date-time */
             offBlockUtc: null | string;
@@ -6762,9 +6768,11 @@ export interface components {
         };
         /**
          * @description A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
-         *     allowed, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at the event or leaves
-         *     it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once a booking names it
-         *     (E6a); until then every one is free.
+         *     allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
+         *     the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
+         *     a booking names it (E6a); until then every one is free. The page draws from this alone the airport of the event a slot is at,
+         *     its table of departures or arrivals and its detail with the legs of its rotation (note
+         *     2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
          */
         PublicEventSlotDto: {
             /** Format: int64 */

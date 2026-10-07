@@ -167,6 +167,8 @@
       "callsign": "Nominativo",
       "flightNumber": "Numero di volo",
       "aircraftTypes": "Tipi di aereo",
+      "mainAircraftType": "Tipo principale",
+      "otherAircraftTypes": "Altri tipi",
       "departureIcao": "Da",
       "offBlockUtc": "Off block",
       "arrivalIcao": "A",
@@ -177,7 +179,8 @@
     },
     "hints": {
       "callsign": "Lettere e cifre: il nominativo con cui si collega il pilota.",
-      "aircraftTypes": "Uno o più tipi di aereo che l'hub conosce, con i loro codici ICAO, separati da /: A320/A20N.",
+      "mainAircraftType": "Il tipo di aereo dello slot, uno che l'hub conosce, con il suo codice ICAO: A320.",
+      "otherAircraftTypes": "Gli altri tipi di aereo che lo slot ammette, separati da /: A20N/A321. Vuoto per il solo tipo principale.",
       "departureIcao": "Il codice ICAO di un aeroporto che l'hub conosce. Uno slot parte da uno scalo dell'evento, o arriva a uno.",
       "arrivalIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
       "offBlockUtc": "L'orario stimato di off block, in UTC.",
@@ -202,7 +205,7 @@
       "title": "Incolla o carica gli slot",
       "description": "Gli slot pubblici dell'evento da una tabella copiata da un foglio di calcolo, o da un file CSV: tutto, o niente.",
       "help": "La prima riga è l'intestazione, con questi nomi, in qualunque ordine; rotation e leg si possono lasciare fuori, e una colonna che l'hub non conosce resta com'è:",
-      "formats": "Gli orari sono in UTC, scritti 2026-10-17 14:30; l'orario di uno slot allo scalo dell'evento sta entro sei ore dall'evento. I tipi di aereo si separano con /, come A320/A20N. Le tratte di una rotazione condividono il suo codice; senza il loro posto (leg), lo prendono dai loro orari.",
+      "formats": "Gli orari sono in UTC, scritti 2026-10-17 14:30; l'orario di uno slot allo scalo dell'evento sta entro sei ore dall'evento. I tipi di aereo si separano con /, come A320/A20N: il primo è il principale, gli altri sono ammessi anche loro. Le tratte di una rotazione condividono il suo codice; senza il loro posto (leg), lo prendono dai loro orari.",
       "file": "Oppure un file CSV",
       "submit": "Carica",
       "refused": "Non è stato caricato niente. Correggi questi punti e carica di nuovo la tabella:",
@@ -255,8 +258,25 @@
     "slotState": "Slot",
     "free": "Libero",
     "taken": "Preso",
-    "rotation": "Rotazione {{rotation}}",
-    "leg": "tratta {{leg}}"
+    "leg": "tratta {{leg}}",
+    "departures": "Partenze",
+    "arrivals": "Arrivi",
+    "aircraft": "Aereo",
+    "destination": "Per",
+    "origin": "Da",
+    "otherTypes": "Ammessi anche: {{types}}",
+    "moreTypes": "+{{count}}",
+    "rotationHint": "Questo volo fa parte di una rotazione, apri per più dettagli",
+    "detail": {
+      "departureFrom": "Una partenza da {{airport}}",
+      "arrivalAt": "Un arrivo a {{airport}}",
+      "types": "Tipi di aereo ammessi",
+      "main": "principale",
+      "departure": "Partenza",
+      "arrival": "Arrivo",
+      "legs": "Le tratte della rotazione {{rotation}}",
+      "thisLeg": "questo volo"
+    }
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"

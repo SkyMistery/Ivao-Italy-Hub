@@ -39,16 +39,18 @@ public sealed record EventSlotDto(
     DateTime RowVersion);
 
 /// <summary>
-/// What a client may set on a public slot, the form of one slot's corrections: the cells of a row of the table, the aircraft types
-/// written as the table writes them (<c>A320/A20N</c>) and read by the same code. The event is chosen when it is created and never
+/// What a client may set on a public slot, the form of one slot's corrections: the cells of a row of the table, and the aircraft
+/// types as two fields — the main one, and the others written as the table writes them (<c>A20N/A321</c>), read by the same code
+/// —, kept main first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §1). The event is chosen when it is created and never
 /// changes; the care is the event's, taken before the permission is asked; the airport of the event and the direction are read off
-/// the two airports. No flight number, stand or rotation is none.
+/// the two airports. No flight number, other type, stand or rotation is none.
 /// </summary>
 public sealed record EventSlotWriteDto(
     long EventId,
     string Callsign,
     string? FlightNumber,
-    string AircraftTypes,
+    string MainAircraftType,
+    string? OtherAircraftTypes,
     string DepartureIcao,
     DateTime? OffBlockUtc,
     string ArrivalIcao,
@@ -78,10 +80,15 @@ public sealed class EventSlotWriteDtoValidator : AbstractValidator<EventSlotWrit
             .WithMessage("events:errors.callsignFormat");
         RuleFor(slot => slot.FlightNumber).MaximumLength(EventSlot.MaxCodeLength).WithMessage("errors.text.tooLong");
 
-        RuleFor(slot => slot.AircraftTypes)
-            .Must(types => SlotValues.AircraftTypes(types).Count > 0).WithMessage("errors.required")
-            .Must(types => SlotValues.AircraftTypes(types).Count <= EventSlot.MaxAircraftTypes).WithMessage("events:errors.aircraftTooMany")
-            .Must(types => SlotValues.AircraftTypes(types).All(SlotValues.IsAircraftType)).WithMessage("events:errors.aircraftFormat");
+        RuleFor(slot => slot.MainAircraftType).NotEmpty().WithMessage("errors.required");
+        RuleFor(slot => slot.MainAircraftType)
+            .Must(main => SlotValues.IsAircraftType(main.Trim().ToUpperInvariant()))
+            .When(slot => !string.IsNullOrWhiteSpace(slot.MainAircraftType))
+            .WithMessage("events:errors.aircraftFormat");
+        RuleFor(slot => slot.OtherAircraftTypes)
+            .Must(others => SlotValues.AircraftTypes(others).All(SlotValues.IsAircraftType)).WithMessage("events:errors.aircraftFormat")
+            .Must((slot, others) => SlotValues.MainFirst(slot.MainAircraftType, others).Count <= EventSlot.MaxAircraftTypes)
+            .WithMessage("events:errors.aircraftTooMany");
 
         RuleFor(slot => slot.DepartureIcao).NotEmpty().WithMessage("errors.required");
         RuleFor(slot => slot.ArrivalIcao).NotEmpty().WithMessage("errors.required");
@@ -143,7 +150,7 @@ internal static class SlotMapper
 
         slot.Callsign = payload.Callsign.Trim().ToUpperInvariant();
         slot.FlightNumber = Text(payload.FlightNumber)?.ToUpperInvariant();
-        slot.AircraftTypes = SlotValues.AircraftTypes(payload.AircraftTypes);
+        slot.AircraftTypes = SlotValues.MainFirst(payload.MainAircraftType, payload.OtherAircraftTypes);
         slot.DepartureIcao = payload.DepartureIcao.Trim().ToUpperInvariant();
         slot.ArrivalIcao = payload.ArrivalIcao.Trim().ToUpperInvariant();
         slot.OffBlockUtc = payload.OffBlockUtc;
@@ -346,12 +353,11 @@ public sealed class SlotSaving(
     IAircraftTypeDirectory aircraft,
     ModuleSettingsStore settings)
 {
-    /// <summary>The fields of the form, by the columns of the table the rules name.</summary>
+    /// <summary>The fields of the form, by the columns of the table the rules name: the aircraft types are two fields, below.</summary>
     private static readonly Dictionary<string, string> Fields = new(StringComparer.Ordinal)
     {
         [SlotColumns.Callsign] = "callsign",
         [SlotColumns.FlightNumber] = "flightNumber",
-        [SlotColumns.AircraftTypes] = "aircraftTypes",
         [SlotColumns.DepartureIcao] = "departureIcao",
         [SlotColumns.OffBlockUtc] = "offBlockUtc",
         [SlotColumns.ArrivalIcao] = "arrivalIcao",
@@ -360,6 +366,12 @@ public sealed class SlotSaving(
         [SlotColumns.Rotation] = "rotationCode",
         [SlotColumns.Leg] = "rotationLeg",
     };
+
+    /// <summary>The field of the main aircraft type, the first of the slot's types.</summary>
+    private const string MainTypeField = "mainAircraftType";
+
+    /// <summary>The field of the other aircraft types the slot admits.</summary>
+    private const string OtherTypesField = "otherAircraftTypes";
 
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(EventSlot slot, bool isNew, CancellationToken cancellationToken)
     {
@@ -398,9 +410,16 @@ public sealed class SlotSaving(
             refusals.Add(Fields[SlotColumns.ArrivalIcao], "events:errors.airportUnknown");
         }
 
-        if ((await aircraft.UnknownAsync([.. slot.AircraftTypes], cancellationToken)).Count > 0)
+        // Each refused on its own field: the main type is the first of the slot's types, the others follow it.
+        var unknownTypes = (await aircraft.UnknownAsync([.. slot.AircraftTypes], cancellationToken)).ToHashSet(StringComparer.Ordinal);
+        if (slot.AircraftTypes.Take(1).Any(unknownTypes.Contains))
         {
-            refusals.Add(Fields[SlotColumns.AircraftTypes], "events:errors.aircraftUnknown");
+            refusals.Add(MainTypeField, "events:errors.aircraftUnknown");
+        }
+
+        if (slot.AircraftTypes.Skip(1).Any(unknownTypes.Contains))
+        {
+            refusals.Add(OtherTypesField, "events:errors.aircraftUnknown");
         }
 
         if (SlotDirection.Of(slot.DepartureIcao!, slot.ArrivalIcao!, eventAirports) is { } direction)

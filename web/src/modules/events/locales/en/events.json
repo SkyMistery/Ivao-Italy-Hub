@@ -166,6 +166,8 @@
       "callsign": "Callsign",
       "flightNumber": "Flight number",
       "aircraftTypes": "Aircraft types",
+      "mainAircraftType": "Main type",
+      "otherAircraftTypes": "Other types",
       "departureIcao": "From",
       "offBlockUtc": "Off block",
       "arrivalIcao": "To",
@@ -176,7 +178,8 @@
     },
     "hints": {
       "callsign": "Letters and digits: the callsign the pilot connects with.",
-      "aircraftTypes": "One or more aircraft types the hub knows, by their ICAO codes, separated by /: A320/A20N.",
+      "mainAircraftType": "The aircraft type the slot is for, one the hub knows, by its ICAO code: A320.",
+      "otherAircraftTypes": "The other aircraft types the slot admits, separated by /: A20N/A321. Leave it empty for the main type alone.",
       "departureIcao": "The ICAO code of an airport the hub knows. A slot leaves from an airport of the event, or arrives at one.",
       "arrivalIcao": "The ICAO code of an airport the hub knows.",
       "offBlockUtc": "The estimated off block time, in UTC.",
@@ -201,7 +204,7 @@
       "title": "Paste or load the slots",
       "description": "The public slots of the event from a table copied from a spreadsheet, or from a CSV file: all of it, or nothing.",
       "help": "The first row is the header, with these names, in any order; rotation and leg can be left out, and a column the hub does not know is left alone:",
-      "formats": "Times are in UTC, written 2026-10-17 14:30; a slot's time at the airport of the event is within six hours of the event. Aircraft types are separated by /, as A320/A20N. The legs of a rotation share its code; without their places (leg), they take them from their times.",
+      "formats": "Times are in UTC, written 2026-10-17 14:30; a slot's time at the airport of the event is within six hours of the event. Aircraft types are separated by /, as A320/A20N: the first is the main one, the others are admitted too. The legs of a rotation share its code; without their places (leg), they take them from their times.",
       "file": "Or a CSV file",
       "submit": "Load",
       "refused": "Nothing was loaded. Correct these and load the table again:",
@@ -254,8 +257,25 @@
     "slotState": "Slot",
     "free": "Free",
     "taken": "Taken",
-    "rotation": "Rotation {{rotation}}",
-    "leg": "leg {{leg}}"
+    "leg": "leg {{leg}}",
+    "departures": "Departures",
+    "arrivals": "Arrivals",
+    "aircraft": "Aircraft",
+    "destination": "To",
+    "origin": "From",
+    "otherTypes": "Also admitted: {{types}}",
+    "moreTypes": "+{{count}}",
+    "rotationHint": "This flight is part of a rotation, open it for more details",
+    "detail": {
+      "departureFrom": "A departure from {{airport}}",
+      "arrivalAt": "An arrival at {{airport}}",
+      "types": "Aircraft types admitted",
+      "main": "main",
+      "departure": "Departure",
+      "arrival": "Arrival",
+      "legs": "The legs of rotation {{rotation}}",
+      "thisLeg": "this flight"
+    }
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"

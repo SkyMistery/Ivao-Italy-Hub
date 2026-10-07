@@ -416,13 +416,16 @@ export function slotQuery(id: number) {
   });
 }
 
-/** A slot in its form: the aircraft types written as the table writes them, `A320/A20N`. */
+/** A slot in its form: its first aircraft type is the main one, the others written as the table writes them, `A20N/A321`. */
 export function slotToFormValues(slot: EventSlotDto): SlotFormValues {
+  const [main = '', ...others] = slot.aircraftTypes;
+
   return {
     eventId: slot.eventId,
     callsign: slot.callsign ?? '',
     flightNumber: slot.flightNumber ?? '',
-    aircraftTypes: slot.aircraftTypes.join('/'),
+    mainAircraftType: main,
+    otherAircraftTypes: others.join('/'),
     departureIcao: slot.departureIcao ?? '',
     ...(slot.offBlockUtc === null ? {} : { offBlockUtc: slot.offBlockUtc }),
     arrivalIcao: slot.arrivalIcao ?? '',
@@ -452,7 +455,8 @@ export function useSaveSlot(id: number | null) {
         eventId: values.eventId,
         callsign: values.callsign.trim().toUpperCase(),
         flightNumber: text(values.flightNumber),
-        aircraftTypes: values.aircraftTypes,
+        mainAircraftType: values.mainAircraftType.trim().toUpperCase(),
+        otherAircraftTypes: text(values.otherAircraftTypes),
         departureIcao: values.departureIcao.trim().toUpperCase(),
         offBlockUtc: text(values.offBlockUtc),
         arrivalIcao: values.arrivalIcao.trim().toUpperCase(),
