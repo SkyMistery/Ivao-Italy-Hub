@@ -1415,6 +1415,18 @@ codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazion
     - **`pnpm e2e:full` 57/57 al primo giro** (11,7 minuti) sul banco `http://127.0.0.1:5126` (`ivaohub_e2e_e5` ricreato prima), dietro
       il lock di Mailpit, preso dopo 80 secondi di attesa per il giro di E6a;
     - le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS** (quattro note nuove).
+- **Il merge di E10g dopo E4b** (7 ottobre 2026, `ce110ba`). La #226 (E4b) è entrata in `main` mentre la CI di `25d23f5` girava, e la
+  #228 è diventata «CONFLICTING»: il branch di E10g che porta andava in conflitto con `main` su `HANDOFF-M4.md`. Come ha chiesto la
+  sessione che coordina, nessun merge di `main` da solo: la sessione di E10g ha unito `main` (`7b84a75`) e le risposte di Carmine sulla
+  #230, ed E5 ha unito la sua testa `477a0f8` in un merge solo. Il conflitto era il solo `HANDOFF-M4.md`: l'intestazione di E5, e in «Lo
+  stato» il paragrafo di E5, poi quello di E10g, poi quello di E4b. Il merge porta, oltre a `main`, solo documenti di E10g, e il codice
+  di E4b, verde su `main`; quindi, come ha chiesto la sessione che coordina, solo i controlli che quel codice tocca:
+  - `dotnet build` senza avvisi; unità **1182/1182**;
+  - `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+  - `pnpm test` **640 in 88 file**; la smoke **173/173** al primo giro;
+  - `core-guard` dalla base nuova `7b84a75`: **PASS**.
+
+  L'integrazione intera e il giro completo restano quelli dell'ultimo codice di E5, sopra.
 
 [a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
