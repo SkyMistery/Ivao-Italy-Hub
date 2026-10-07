@@ -207,6 +207,50 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task APilotWithdrawsUntilTheOffBlockAndTheSlotIsFreeAgain()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(coordinator, "withdraw", Table(Line("XEA121", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18))), token);
+        var slot = (await SlotIdsAsync(id, token))["XEA121"];
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+        using var other = await SignedInAsync(OtherPilotVid, token);
+        var bookingId = Id(await CreatedAsync(await BookAsync(pilot, slot, TypeA, token), token));
+
+        // Somebody else's booking is not theirs to withdraw: not found.
+        using (var notTheirs = await other.DeleteAsync($"{BookingEndpoints.MinePattern}/{bookingId}", token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, notTheirs.StatusCode);
+        }
+
+        // The pilot withdraws it (§3.6): the row is deleted through the write guard of the core — the member it is about takes
+        // back what they sent (E10h) —, and the audit keeps who did it.
+        using (var withdrawn = await pilot.DeleteAsync($"{BookingEndpoints.MinePattern}/{bookingId}", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, withdrawn.StatusCode);
+        }
+
+        Assert.Empty(await BookingsAsync(id, token));
+        Assert.Empty(await MineAsync(pilot, token));
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var key = bookingId.ToString(CultureInfo.InvariantCulture);
+            Assert.True(await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
+                .AnyAsync(entry => entry.Entity == "evt_bookings" && entry.EntityId == key && entry.Action == "deleted" && entry.Vid == PilotVid, token));
+        }
+
+        // The slot is free again: on the page, and for the next pilot. A booking withdrawn is withdrawn once.
+        var page = await OkAsync(await coordinator.GetAsync($"{PublicEventEndpoints.Pattern}/{Slug("withdraw")}", token), token);
+        Assert.False(page.GetProperty("slots").EnumerateArray().Single().GetProperty("taken").GetBoolean());
+        await CreatedAsync(await BookAsync(other, slot, TypeA, token), token);
+
+        using var twice = await pilot.DeleteAsync($"{BookingEndpoints.MinePattern}/{bookingId}", token);
+        Assert.Equal(HttpStatusCode.NotFound, twice.StatusCode);
+    }
+
+    [Fact]
     public async Task DuringTheEventASlotIsBookedWhileItsOffBlockIsToComeAndNotWithdrawnAfterIt()
     {
         var token = TestContext.Current.CancellationToken;
@@ -547,6 +591,34 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(
             [slots["XEA800"], slots["XEA801"]],
             (await BookingsAsync(id, token)).Select(booking => booking.SlotId).Order());
+    }
+
+    [Fact]
+    public async Task ABookingWaitingForTheEventWhileItIsCancelledIsRefused()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(coordinator, "cancelling", Table(Line("XEA131", string.Empty, TypeA, First, day.AddHours(17), Away, day.AddHours(18))), token);
+        var slot = (await SlotIdsAsync(id, token))["XEA131"];
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        // The staff's cancellation written and not committed yet: the pilot's first booking reads the event open, then waits for its
+        // row; once the cancellation is saved, the booking reads the event again under its lock and is refused — its pilot was not
+        // among those the cancellation told.
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.ExecuteAsync($"UPDATE evt_events SET cancelled_at = {DateTime.UtcNow} WHERE id = {id}", token);
+
+            var racing = BookAsync(pilot, slot, TypeA, token);
+            await WaitForALockWaitAsync(token);
+            await held.CommitAsync(token);
+
+            Assert.Equal([BookingRules.CancelledKey], (await RefusedAsync(await racing, token))["slotId"]);
+        }
+
+        Assert.Empty(await BookingsAsync(id, token));
     }
 
     [Fact]
@@ -951,6 +1023,10 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         /// <summary>A row locked in the transaction, as the lock of a pilot is taken.</summary>
         public Task LockAsync(FormattableString sql, CancellationToken cancellationToken) =>
             database.Database.SqlQuery<long>(sql).ToListAsync(cancellationToken);
+
+        /// <summary>A row written in the transaction behind every service, as another write in flight holds it.</summary>
+        public Task<int> ExecuteAsync(FormattableString sql, CancellationToken cancellationToken) =>
+            database.Database.ExecuteSqlAsync(sql, cancellationToken);
 
         public Task CommitAsync(CancellationToken cancellationToken) => transaction.CommitAsync(cancellationToken);
 
