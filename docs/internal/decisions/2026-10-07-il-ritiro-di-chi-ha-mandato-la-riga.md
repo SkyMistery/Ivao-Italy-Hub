@@ -1,10 +1,12 @@
 # Il ritiro di chi ha mandato la riga (E10h)
 
 **Data:** 7 ottobre 2026 — fase E10h di M4, PR del nucleo (#232)
-**Stato:** **decisa** (Carmine, 7 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione [sulla #232][a1], dopo
-[i rilievi del revisore][rv]): **sì** alla forma (risposta 1, §6.2), e **il limite della riga mai caricata si accetta e si scrive, come per
-T11** (risposta 2, §3.2). **Resta aperto il rilievo 6** del revisore (§6.3), che non ferma la PR. La domanda era [un commento sulla
-#232][q1]; E6a, che usa il segno, unisce questo branch e va in coda dopo la #232.
+**Stato:** **decisa** (Carmine, 7 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione sulla #232: [le risposte 1 e
+2][a1], dopo [i rilievi del revisore][rv], e [la risposta 3 corretta][a3]): **sì** alla forma (risposta 1, §6.2); **il limite della riga
+mai caricata si accetta e si scrive, come per T11** (risposta 2, §3.2); sul rilievo 6 **una frase nel riassunto del segno, non un ottavo
+rifiuto all'avvio**, e la nota di ogni fase che mette il segno dice perché la sua riga non porta decisioni (risposta 3, §6.3, che
+sostituisce [quella delle 15:41][a3old]). La domanda era [un commento sulla #232][q1]; E6a, che usa il segno, unisce questo branch e va in
+coda dopo la #232.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`), che già lascia al membro **creare** la riga che manda (`ISubmittedByMembers`, M1) e **cambiarla** finché è sua
 (M2, T11); nessun meccanismo nuovo, nessuna scrittura «come il sistema». È una PR del nucleo, prima del codice del modulo che la usa
@@ -16,6 +18,8 @@ T11** (risposta 2, §3.2). **Resta aperto il rilievo 6** del revisore (§6.3), c
 [rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039667157
 [a1]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
 [p6]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6040156289
+[a3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155
+[a3old]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041353964
 
 ## 1. Che cosa serve, e perché nessun meccanismo lo copre
 
@@ -72,7 +76,9 @@ public sealed class EventBooking : IOwnedByDepartment, IVisible, ISubmittedByMem
 
 È **un'opzione dell'entità**, la più stretta che funziona: dove non c'è — il PIREP, il training — cancellare resta del dipartimento.
 **Un attributo**, come gli altri segni che il guardiano legge sulla classe (`[Audited]`, `[AlsoWrittenWith]`, `[PermissionArea]`), letto
-con `inherit: false` come quelli: va sull'entità stessa.
+con `inherit: false` come quelli: va sull'entità stessa. Il suo riassunto dice anche dove non va (risposta 3, §6.3): **mai su una riga su
+cui lo staff decide qualcosa del membro**, perché cancellarla cancellerebbe la decisione; e la nota della fase che lo mette dice perché la
+sua riga non porta decisioni.
 
 ### 3.2 Il guardiano
 
@@ -203,13 +209,21 @@ Date in chat alla sessione master e pubblicate su sua istruzione [sulla #232][a1
    riga; uno stub passa* — nel riassunto dell'attributo, nella nota (§3.2) e nella trappola dell'handoff, e un test che fissa il caso com'è
    (§4). Fatto dopo la revisione, con il rilievo 3 (la parola su `AlsoOnDeletion` nel riassunto dell'attributo).
 
-### 6.3 Ancora aperta: il segno su un'entità con un permesso `DeniedToStakeholder` (rilievo 6)
+### 6.3 Il segno su un'entità con un permesso `DeniedToStakeholder` (rilievo 6): una frase, deciso
 
 Il revisore: il controllo all'avvio non rifiuta il segno su un'entità che ha anche un permesso `DeniedToStakeholder`; lì il membro potrebbe
 cancellare una decisione presa su di lui, e oggi lo protegge solo l'opzione. **Un ottavo rifiuto, o una frase nel riassunto
-dell'attributo?** Carmine non ha ancora risposto (non ferma le correzioni), e **finché non risponde non si scrive né l'uno né l'altra**.
+dell'attributo?**
 
-**Raccomandazione: la frase** (scritta a Carmine anche [in un commento sulla #232][p6]).
+**Decisa da Carmine** ([risposta 3, corretta][a3], 7 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione): **una
+frase nel riassunto del segno, non un ottavo rifiuto all'avvio**, come raccomandato qui sotto. Il riassunto di `[WithdrawnByStakeholder]`
+dice: *mai su una riga su cui lo staff decide qualcosa del membro — cancellarla cancellerebbe la decisione; il guardiano non sa né lo stato
+né l'ora, e fino a quando un membro si ritira lo dice l'endpoint del modulo*; e **la nota di ogni fase che mette il segno su un'entità dice
+perché la sua riga non porta decisioni**, così la revisione lo controlla. Nessun codice oltre la frase. Una prima risposta, delle 15:41
+([qui][a3old]), chiedeva l'ottavo rifiuto, con un test: era stata data prima che Carmine vedesse la raccomandazione, che la sessione
+master non gli aveva mostrato (l'errore, dice la risposta corretta, è del master), ed è sostituita da questa.
+
+**La raccomandazione: la frase** (scritta a Carmine anche [in un commento sulla #232][p6]).
 
 - **Il guardiano lascia già all'interessato cambiare ogni colonna della riga che ha mandato**: l'eccezione di T11 vale su ogni entità
   `ISubmittedByMembers` e `IHasStakeholder`, senza segno, e non guarda quali colonne cambiano. Uno stato deciso dallo staff, oggi, lo
@@ -224,9 +238,9 @@ dell'attributo?** Carmine non ha ancora risposto (non ferma le correzioni), e **
   cancellarla cancellerebbe la decisione; il guardiano non sa né lo stato né l'ora, e fino a quando si ritira lo dice l'endpoint del
   modulo*. E la nota della fase che mette il segno dice perché la sua riga non porta decisioni, così il revisore lo controlla.
 
-Se Carmine preferisce **l'ottavo rifiuto**, la forma più vicina al bisogno è quella per area: il segno su un'entità la cui area ha un
-`Edit` `DeniedToStakeholder` ferma l'avvio. La prenotazione (`EventBookings`) e l'iscrizione in presenza passano; la disponibilità di E11a
-si ritirerebbe con uno stato, come il PIREP.
+L'alternativa, non scelta: **l'ottavo rifiuto** nella forma più vicina al bisogno, quella per area — il segno su un'entità la cui area ha un
+`Edit` `DeniedToStakeholder` ferma l'avvio. La prenotazione (`EventBookings`) e l'iscrizione in presenza sarebbero passate; la disponibilità
+di E11a si sarebbe ritirata con uno stato, come il PIREP.
 
 ## 7. Che cosa si tocca
 
@@ -247,8 +261,10 @@ si ritirerebbe con uno stato, come il PIREP.
   Come per la modifica di T11 il guardiano legge i valori originali del tracker: **l'endpoint deve caricare la riga; uno stub passa** (un
   limite accettato e scritto, risposta 2). **L'avvio rifiuta sette cose**: le sei della 0.4.3 e il segno su un'entità che non è insieme
   `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder`.
-- **Il rilievo 6, quando Carmine risponde** (§6.3): o un ottavo rifiuto all'avvio, o una frase nel riassunto dell'attributo; §16 punto 2
-  lo registra con la sua risposta.
+- **E nello stesso punto** (risposta 3, §6.3): il segno **mai su una riga su cui lo staff decide qualcosa del membro** — cancellarla
+  cancellerebbe la decisione; il guardiano non sa né lo stato né l'ora, e fino a quando un membro si ritira lo dice l'endpoint del modulo —,
+  e **la nota di ogni fase che mette il segno dice perché la sua riga non porta decisioni**, così la revisione lo controlla. Una frase nel
+  riassunto del segno, non un rifiuto all'avvio: il catalogo conosce i permessi per area, non per entità.
 - **§9.7**: niente; non descrive le eccezioni del guardiano, e «Privacy dei membri» non cambia (una prenotazione ritirata non c'è più, la
   sua storia è nell'audit).
 - **`09-design-m4.md` §13** («Che cosa chiede al nucleo»): una riga in più, il ritiro di chi ha mandato la riga (E10h, questa nota), che
