@@ -98,6 +98,18 @@ rete. Caso (b): si estende il meccanismo, nel nucleo, in una PR a sé — la fas
 del nucleo prima (raccomandata), la domanda a Carmine prima, o E6a senza il ritiro. E6a unisce il suo branch e mette il suo attributo sulla
 prenotazione; E11a (la disponibilità di un controllore) ed E16 (l'iscrizione a un evento in presenza) lo troveranno.
 
+**Perché la prenotazione non porta una decisione** (la regola di Carmine sul punto 6 di E10h: la nota di ogni fase che mette il segno
+dice perché la sua riga non porta una decisione, così che la revisione lo controlli —
+[la sua risposta sulla #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155)). Finché il pilota può
+ritirare — fino all'off block del suo slot, mai dopo (`BookingRules.IsOpen`, design §3.6) — sulla riga non c'è nessuna decisione dello
+staff. L'unica che lo staff prende sul pilota in una prenotazione è togliere a mano un «prenotato e non volato» dal suo registro
+(`unflown_excused_by`, `unflown_excused_note`: E13b, design §3.7), e cade su una prenotazione che la verifica dopo l'evento (E13a, §5.1)
+ha trovato non volata: dopo il volo, quindi dopo l'off block. `flown_*` lo scrive quella verifica, non lo staff. «Togli» è una decisione
+dello staff, ma cancella la riga: non resta niente che un ritiro possa cancellare. Nessun permesso dell'area `EventBookings` è negato
+all'interessato. ⚠️ **Per E13a ed E13b**: uno slot può partire fino a sei ore dopo la fine dell'evento (`SlotWindow.Margin`) e
+`events-after` gira dopo `ends_at_utc`; la verifica e la giustificazione non toccano una prenotazione ancora ritirabile, altrimenti il
+segno va riguardato.
+
 ## 3. Che cosa si è toccato
 
 Solo il modulo: `EventBooking.cs` (e `EventChild.cs`, il suo commento), la migrazione additiva `AddEventBookings`, `Bookings/`
@@ -142,7 +154,8 @@ quelle; il grant su un evento solo che il guardiano non lascia scrivere (lettura
   di ogni tratta, 409 su un deadlock.
 - Design M4 §3.5 e §10.1: `READ COMMITTED` e perché; il formato del log binario (la domanda 2).
 - Design M4 §3.6: il motivo dello staff, obbligatorio e non conservato, senza un limite di tempo; «togli» nella cura dell'evento com'è
-  ora; la mail dopo la cancellazione; uno slot prenotato si corregge (la domanda 3).
+  ora; la mail dopo la cancellazione; uno slot prenotato si corregge (la domanda 3); perché la prenotazione, che il pilota ritira
+  cancellandola, non porta una decisione (§2, la regola di Carmine sulla #232).
 - Design M4 §8.3: le mail una volta per persona; `eventChanged` per l'inizio e la fine.
 - Piano §2.5, se Carmine lo conferma: il formato del log binario della MariaDB condivisa.
 - Piano §16.6: il conto degli endpoint a mano di M4 (cinque di E6a).

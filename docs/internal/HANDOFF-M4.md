@@ -226,6 +226,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     cancella le prenotazioni degli eventi non conclusi (il ritiro di E10h non serve: è un job del nucleo, in modalità cancellazione) e
     svuota i dati del volo privato di quelle tenute. L'esportazione dice un `booked_by` negativo, e il documento lo spiega.
   - **E13a/E13b**: le colonne `flown_*` e `unflown_excused_*` ci sono; un job che le scrive è anonimo e il guardiano lo lascia.
+    ⚠️ **La prenotazione porta `[WithdrawnByStakeholder]` perché non porta una decisione** finché il pilota può ritirarla (la regola di
+    Carmine sulla #232, punto 6: la nota di E6a, §2, dice perché). La giustificazione di E13b e la verifica di E13a cadono dopo il volo. Ma
+    uno slot può partire fino a sei ore dopo la fine dell'evento (`SlotWindow.Margin`) e `events-after` gira dopo `ends_at_utc`: non
+    toccate una prenotazione ancora ritirabile, o il segno va riguardato.
   - ⚠️ **Il log binario**: con `binlog_format=STATEMENT` MariaDB rifiuta le scritture di una transazione `READ COMMITTED`, e ogni
     prenotazione cadrebbe. Il predefinito di MariaDB 11.4 è `MIXED`; la CI ha il log spento. Chiesto a Carmine (domanda 2).
   - ⚠️ **Uno slot prenotato si corregge ancora** dal suo form, e la prenotazione resta com'è, senza ricontrollare l'aereo o la
