@@ -262,6 +262,11 @@ public interface ISubmittedByMembers;
 /// values, as it does for a change (M2, T11): for a row attached without being read — <c>Remove(new X { Id = id, … })</c> —
 /// those are what the caller wrote, and the guard believes them. A limit the maintainer accepted, written down rather than paid
 /// for with a second read of every withdrawal (answer 2 on #232).</para>
+/// <para>⚠️ <b>Never on a row the staff decide about its member</b> — a support report, the transfer of a shift —: deleting it
+/// would erase the decision. The guard knows neither the state of the row nor the time, and until when a member withdraws is for
+/// the module's endpoint to say. The note of every phase that puts the mark on an entity says why its row carries no decision, so
+/// that the review checks it: a sentence rather than a refusal at start-up, since the catalogue knows permissions by area and not
+/// by entity (answer 3 on #232).</para>
 /// <para>An opt-in of the entity, and the narrowest one: on a row whose entity does not say so, deleting stays the
 /// department's — a pilot's report is a record, which they withdraw by changing its state (M2, T11). Only on an entity that is
 /// <see cref="IOwnedByDepartment"/>, <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/> together, the rows the
