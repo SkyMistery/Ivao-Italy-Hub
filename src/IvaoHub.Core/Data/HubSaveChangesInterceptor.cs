@@ -424,12 +424,26 @@ public sealed class HubSaveChangesInterceptor(
 
         // The one exception after creation: a row somebody sent that is about them, which they keep changing — a pilot
         // withdraws or corrects their own report (M2, T11). Theirs before the write and after it, and in the same
-        // departments: they may change it, not give it to somebody else or move it. Deleting is still the department's.
+        // departments: they may change it, not give it to somebody else or move it. Deleting is still the department's,
+        // unless the entity says its member takes it back (below).
         if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasStakeholder { StakeholderVid: var after } }
             && after == currentUser.Vid
             && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var before }
             && before == currentUser.Vid
             && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments))
+        {
+            return;
+        }
+
+        // Its twin for deleting, on an entity that says so (M4, E10h, note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga): a
+        // pilot withdraws their booking of an event, and the slot is free again. Theirs as the row was loaded, whatever the
+        // instance in hand says now, and nobody else's: any other row they sent — a report — is still the department's to delete.
+        // Like the change above it reads the tracker's original values, so a stub attached without being read is believed as its
+        // caller wrote it: the endpoint must load the row (a limit the maintainer accepted, answer 2 on #232).
+        if (entry is { State: EntityState.Deleted, Entity: ISubmittedByMembers and IHasStakeholder }
+            && entry.Metadata.ClrType.IsDefined(typeof(WithdrawnByStakeholderAttribute), inherit: false)
+            && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var loaded }
+            && loaded == currentUser.Vid)
         {
             return;
         }
@@ -914,6 +928,53 @@ public sealed class HubSaveChangesInterceptor(
 
             return set?.Name ?? key.Entity.Name;
         });
+
+    /// <summary>
+    /// Refuses <see cref="WithdrawnByStakeholderAttribute"/> on an entity that is not <see cref="IOwnedByDepartment"/>,
+    /// <see cref="ISubmittedByMembers"/> and <see cref="IHasStakeholder"/> together, where this guard could not honour it (M4,
+    /// E10h, note 2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga, answer 1 on #232): one with no department, which the guard never
+    /// looks at, so that nothing would keep anybody else from deleting it; one its members do not send; one about nobody.
+    /// <para>The hub calls it when it starts, on the model of every context, next to <c>PermissionCatalog.VerifyAlternatives</c>:
+    /// a mark the guard would pass over stops the start, rather than leaving a row open to anybody, or closed to its member,
+    /// without a word. Every mistake of every entity comes out together, in one message.</para>
+    /// </summary>
+    public static void VerifyWithdrawals(IEnumerable<Type> entities)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+
+        var wrong = entities
+            .Distinct()
+            .Where(entity => entity.IsDefined(typeof(WithdrawnByStakeholderAttribute), inherit: false))
+            .SelectMany(WhatIsWrongWithTheWithdrawal)
+            .ToArray();
+
+        if (wrong.Length > 0)
+        {
+            throw new InvalidOperationException(string.Join(" ", wrong));
+        }
+    }
+
+    private static IEnumerable<string> WhatIsWrongWithTheWithdrawal(Type entity)
+    {
+        if (!typeof(IOwnedByDepartment).IsAssignableFrom(entity))
+        {
+            yield return $"{entity.Name} is taken back by the member it is about (WithdrawnByStakeholder), but it has no "
+                + "department (IOwnedByDepartment): the write guard never looks at such a row, and would keep nobody else from "
+                + "deleting it.";
+        }
+
+        if (!typeof(ISubmittedByMembers).IsAssignableFrom(entity))
+        {
+            yield return $"{entity.Name} is taken back by the member it is about (WithdrawnByStakeholder), but its members do "
+                + "not send it (ISubmittedByMembers): only a row a member sent is theirs to take back.";
+        }
+
+        if (!typeof(IHasStakeholder).IsAssignableFrom(entity))
+        {
+            yield return $"{entity.Name} is taken back by the member it is about (WithdrawnByStakeholder), but it does not say "
+                + "whom a row is about (IHasStakeholder): there is no member to take it back.";
+        }
+    }
 
     /// <summary>What an autosave is audited with: which columns moved, as a JSON array of names.</summary>
     private static string ChangedColumns(EntityEntry entry) =>

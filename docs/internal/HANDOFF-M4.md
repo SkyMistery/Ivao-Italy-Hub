@@ -6,34 +6,32 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 7 ottobre 2026 — **fase E5** (modulo: gli slot pubblici e l'esportazione), sul branch `m4/e5-public-slots`,
-**PR #228** verso `main`, nata **in coda dopo la #223** di E4 — dalla sua testa `94ca28b`, e unita di nuovo alla sua ultima spinta `3224a9f`
-(le risposte di Carmine, `main` con la #222, i tipi degli eventi) —; **la #223 è unita** (6 ottobre 2026, `77a2031`) prima che la #228 si
-aprisse. **Dalla revisione la #228 è in coda dopo la #230** di E10g (la versione di un contratto nel nucleo): ha unito il suo branch a
-`cc1b46c` e di nuovo a `477a0f8`, e con lui `main` a `7b84a75`, dopo la #226 (E4b). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
-(#214), E3b (#221), E4 (#223), **E4b (#226)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a
-(#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca
-(#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto
-(#227) e il piano 1.30 (#229). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, la
-monta una fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto).
-**Il prossimo passo**: **E10g** (la #230: «approvabile» per il revisore, e **Carmine ha risposto sì** alle tre domande della sua nota,
-[sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720)), poi **E5** (la #228, in coda dopo la
-#230), poi **E6a** (prenotare: il server), in coda sul branch di E5. Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi
-file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è
-uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e
-mostrati sulla sua pagina, e il Gate Manager li legge con un token personale («Che cosa ha lasciato E5», sotto). **Carmine ha risposto
-sulla #228** ([le sue risposte][a228]): sì alle otto letture della nota `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, ora
-**decisa**, e due punti in più, fatti sulla stessa PR — uno slot cade nella finestra del suo evento (sei ore per parte), e l'esportazione
-porta la versione del suo contratto. ⚠️ **Il controllo della versione è del nucleo**: lo porta **E10g** (`ContractVersion`, la #230:
-«Che cosa ha lasciato E10g», sotto), perché quello dei tour sta nel loro modulo e una copia negli eventi sarebbe lo stesso pezzo scritto
-due volte. **Dopo la prova sul banco (7 ottobre) dalberone ha riaperto la #228** per la pagina degli slot: il tipo principale, partenze e
-arrivi per scalo, le rotazioni segnate, il dettaglio di uno slot, e `aircraft_types` nell'esportazione — fatti su questa PR, con una nota
-**decisa** da Carmine sulla #228 ([le sue risposte][a228b]: sì ai sette punti, e un ottavo: `Hint` resta un pezzo di questa schermata)
-(`2026-10-07-gli-slot-sulla-pagina-dell-evento`). **E6a** (prenotare: il server) è in coda sul
-branch di E5 da `d901f43` e aspetta E10h (del nucleo): unisce la nuova testa di E5 quando la sessione che coordina glielo dice. ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica»
-sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento
-pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è).
-**Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
+**Ultimo aggiornamento:** 8 ottobre 2026 — **fase E10h** (nucleo: il ritiro di chi ha mandato la riga), sul branch
+`m4/e10h-stakeholder-withdraws`, **PR #232** verso `main`, nata da `main` a `e9702b2`, senza coda, e **unita di nuovo a `main`** a
+`7b84a75` dopo la revisione e a `1f2a687` dopo la risposta di Carmine sul rilievo 6. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
+(#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
+**E10g (#230)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e
+**1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli
+spec che dicono al banco che cosa rimettono a posto (#227).
+**Il prossimo passo**: **E10h** (questa, la #232, del nucleo, senza coda: **decisa da Carmine**, anche sul rilievo 6 — una frase nel
+riassunto del segno, non un ottavo rifiuto), poi **E6a** (la #233, prenotare: il server), **in coda solo dopo la #232**: la sua sessione ha
+unito questo branch e mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
+sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
+(«Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
+fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le
+rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto); da E5 ha i suoi **slot pubblici**, caricati da una
+tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge con un token personale («Che cosa ha lasciato E5»,
+sotto). **Carmine ha risposto sulla #228** ([le sue risposte][a228]): sì alle otto letture della nota
+`2026-10-06-il-foglio-degli-slot-e-l-esportazione`, ora **decisa**, e due punti in più, fatti sulla stessa PR — uno slot cade nella
+finestra del suo evento (sei ore per parte), e l'esportazione porta la versione del suo contratto. ⚠️ **Il controllo della versione è del
+nucleo**: lo porta **E10g** (`ContractVersion`, la #230: «Che cosa ha lasciato E10g», sotto), perché quello dei tour sta nel loro modulo e
+una copia negli eventi sarebbe lo stesso pezzo scritto due volte. **Dopo la prova sul banco (7 ottobre) dalberone ha riaperto la #228** per
+la pagina degli slot: il tipo principale, partenze e arrivi per scalo, le rotazioni segnate, il dettaglio di uno slot, e `aircraft_types`
+nell'esportazione — fatti sulla #228, con una nota **decisa** da Carmine sulla #228 ([le sue risposte][a228b]: sì ai sette punti, e un
+ottavo: `Hint` resta un pezzo di questa schermata) (`2026-10-07-gli-slot-sulla-pagina-dell-evento`). ⚠️ **Fra E3b ed E4 nessuna consegna e
+nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca
+di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina
+c'è). **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
 nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
@@ -136,7 +134,8 @@ divisione per nominativo (E10c)~~ **portati da E10c** (il minimo è l'FRA di IVA
 lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
-l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»);
+l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -149,6 +148,47 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga.md`, **decisa** da Carmine sulla #232: sì alla
+  forma, il limite dello stub scritto come per T11, e sul rilievo 6 una frase nel riassunto del segno, §6.3 della nota; il dettaglio in
+  `10`, E10h, «Com'è andata» e «Dopo la revisione»):
+  - **Il segno**: `[WithdrawnByStakeholder]` (`WithdrawnByStakeholderAttribute`, namespace **`IvaoHub.Core.Division`**, in
+    `src/IvaoHub.Core/Division/DomainContracts.cs` accanto a `ISubmittedByMembers`), sulla classe dell'entità.
+  - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`): una riga `ISubmittedByMembers` e `IHasStakeholder` la cui entità
+    ha il segno la **cancella** il membro che ne è l'interessato, **com'era caricata** (i valori originali del tracker: chi legge la riga
+    di un altro, ci scrive il suo VID e poi la toglie non passa), e nessun altro senza `{Area}.Edit` (o un'alternativa segnata
+    `AlsoOnDeletion`). Senza il segno cancellarla resta del dipartimento (il PIREP, il training). Lo staff con `{Area}.Edit`, il
+    superadmin e l'anonimo come prima; l'audit scrive `deleted` con il VID di chi ha cancellato.
+  - **All'avvio** `HubSaveChangesInterceptor.VerifyWithdrawals`, chiamato da `HubPipeline.InitializeAsync` accanto a
+    `VerifyAlternatives`, ferma l'hub se il segno sta su un'entità che non è insieme `IOwnedByDepartment`, `ISubmittedByMembers` e
+    `IHasStakeholder`.
+  - **Il modulo di prova**: `SampleSubmission` (`smp_submissions`, con il segno) e `SampleReport` (`smp_reports`, senza) in
+    `tests/IvaoHub.IntegrationTests/SampleSubmissions.cs`, migrazione `AddSampleSubmissions`; i test `WithdrawnByStakeholderTests`
+    (integrazione) e `VerifyWithdrawalsTests` (unità). `ErasureTests` non cambia: non legge il contesto di prova.
+  - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler e il motore CRUD non cambiano.
+- **Che cosa devono sapere le fasi dopo**:
+  - **E6a** (la #233, in coda dopo la #232): il segno su `EventBooking` l'ha già messo la sua sessione, che ha unito questo branch; il
+    ritiro passa dal suo endpoint del flusso del pilota (`DELETE /api/events/mine/bookings/{id}`), che legge la riga del pilota e la
+    elimina, e il guardiano controlla di nuovo sotto.
+  - ⚠️ **Il segno non apre il motore CRUD**: la DELETE di `MapCrud` chiede all'handler la policy di scrittura, e un membro non la tiene.
+    Il ritiro di un membro è sempre un endpoint del suo flusso.
+  - ⚠️ **L'endpoint deve caricare la riga; uno stub passa** (risposta 2 di Carmine sulla #232, come per T11): il guardiano legge
+    l'interessato dai valori originali del tracker, e per una riga attaccata senza leggerla (`Remove(new X { Id = id, … })`) sono quelli
+    che ha scritto chi chiama: un membro toglierebbe la riga di un altro. L'endpoint legge la riga del membro — per id **e** per
+    interessato, come `PilotBookings.WithdrawAsync` di E6a — e poi la toglie. Lo fissa
+    `WithdrawnByStakeholderTests.AStubNeverLoadedIsBelievedAsItsCallerWroteIt`.
+  - **E11a** (la disponibilità di un controllore, che «la ritira fino alla chiusura», design §4.2) ed **E16** (l'iscrizione a un evento
+    in presenza, «si ritira fino all'inizio dell'evento», §4-bis.2): se la fase dice che ritirare vuol dire cancellare la riga, basta il
+    segno sull'entità, che dev'essere `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder` (o l'hub non parte); se il ritiro è
+    uno stato, come per il PIREP, il segno non serve: cambiare la propria riga lo permette già l'eccezione di T11.
+  - ⚠️ **Il segno si legge con `inherit: false`**: va sulla classe dell'entità, non su una sua base.
+  - ⚠️ **Il segno mai su una riga su cui lo staff decide qualcosa del membro** (risposta 3 di Carmine sulla #232, nota §6.3: una frase
+    nel riassunto del segno, non un rifiuto all'avvio): un PIREP di supporto, la cessione di un turno — cancellarla cancellerebbe la
+    decisione. Il guardiano non sa né lo stato né l'ora: fino a quando si ritira lo dice l'endpoint. **La nota di ogni fase che mette il
+    segno dice perché la sua riga non porta decisioni**, e la revisione lo controlla (per una prenotazione: le verifiche e le scuse dello
+    staff arrivano dopo l'evento, quando il ritiro, che finisce all'off block, è chiuso).
 
 ### Che cosa ha lasciato E5 (6–7 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nata in coda dopo la #223, unita prima che si aprisse; dalla revisione in coda dopo la #230 di E10g)
 

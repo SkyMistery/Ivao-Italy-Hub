@@ -108,6 +108,7 @@ Per non ripeterle trenta volte:
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
+| E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -2278,6 +2279,110 @@ suoi valori invece di scriverne una sua. La copia dei tour se ne va con la sessi
 [a228g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
 [v230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039666570
 [a230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720
+
+### E10h — Nucleo: il ritiro di chi ha mandato la riga
+
+**Da dove viene**: non c'era in E0. L'ha trovata la sessione di E6a, il 7 ottobre 2026, leggendo il guardiano dell'interceptor prima di
+scrivere il ritiro: il design (§1.6, §3.6, deciso da Carmine sulla #180) dice «ritirare cancella la riga», e il guardiano lascia al membro
+creare e cambiare una riga `ISubmittedByMembers` e `IHasStakeholder`, non cancellarla (nota `2026-09-23-il-pirep` §5: «Cancellarla resta
+del dipartimento»). Fra le tre strade offerte — una fase del nucleo prima (raccomandata), la domanda a Carmine prima, E6a senza il
+ritiro — dalberone ha scelto la fase del nucleo. Branch `m4/e10h-stakeholder-withdraws`, da `main` a `e9702b2`. **PR del nucleo**, con
+la sua nota (caso b); nessuna migrazione del nucleo; **E6a la aspetta**: unisce questo branch e va in coda dopo la sua PR.
+
+1. **Il segno sull'entità**: `[WithdrawnByStakeholder]`, accanto a `ISubmittedByMembers`.
+2. **Il guardiano**: un'entrata `Deleted` di un'entità `ISubmittedByMembers` e `IHasStakeholder` con il segno passa se l'interessato, com'era
+   salvato, è chi scrive; tutto il resto come prima (il PIREP, un altro membro, lo staff con `Edit`, il superadmin).
+3. **All'avvio**, accanto ai sei rifiuti della nota `2026-09-30-il-controllo-all-avvio-rinforzato`: il segno su un'entità che non è
+   `ISubmittedByMembers` e `IHasStakeholder` ferma l'hub; la nota lo decide.
+
+**Test**: integrazione, sul modulo di prova e la MariaDB vera: il membro se la riprende e l'audit dice che è stato lui; un altro membro no;
+lo staff con `Edit` sì; una riga senza il segno resta del dipartimento. Unità: il rifiuto all'avvio.
+**Fatta quando**: il membro cancella la riga che ha mandato dove l'entità lo dice, e solo lì; E6a ritira una prenotazione.
+
+**Com'è andata** (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo senza coda, da `main` a `e9702b2`):
+
+- **Fatto** (nota nuova `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`, **Proposta**, con la domanda a Carmine sulla #232):
+  - **`WithdrawnByStakeholderAttribute`** in `src/IvaoHub.Core/Division/DomainContracts.cs` (namespace `IvaoHub.Core.Division`,
+    `AttributeUsage(AttributeTargets.Class)`), la forma che E6a aspettava, senza cambi di nome; il commento di `ISubmittedByMembers` dice
+    ora che cancellare resta del dipartimento «unless the entity says its member takes it back»;
+  - **il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`), subito dopo l'eccezione di T11: un'entrata `Deleted` di
+    un'entità `ISubmittedByMembers` e `IHasStakeholder` con il segno passa se l'interessato letto dai valori originali
+    (`entry.OriginalValues.ToObject()`) è chi scrive; nessun controllo dei dipartimenti, perché un'eliminazione non sposta niente;
+  - **il settimo rifiuto all'avvio**: `HubSaveChangesInterceptor.VerifyWithdrawals(entities)`, chiamato da `HubPipeline.InitializeAsync`
+    subito dopo `VerifyAlternatives`, sul modello di ogni contesto;
+  - **il modulo di prova**: `SampleSubmission` (`smp_submissions`, con il segno, come una prenotazione) e `SampleReport` (`smp_reports`,
+    senza, come un PIREP), migrazione `AddSampleSubmissions` del solo contesto di prova;
+  - **i test**, con i VID 761037, 761047 e 761048 (lasciati da E6a): `WithdrawnByStakeholderTests` (integrazione, 5) e
+    `VerifyWithdrawalsTests` (unità, 5).
+- **Scelte, scritte nella nota** (§3):
+  1. **una terza condizione del rifiuto**, `IOwnedByDepartment`, oltre alle due della fase: il guardiano non guarda affatto una riga senza
+     dipartimento, e il segno lì sarebbe ignorato in silenzio;
+  2. **il rifiuto fuori da `VerifyAlternatives`**, accanto al guardiano che legge il segno: il segno non è un permesso, e il catalogo non
+     serve;
+  3. **l'interessato com'era caricato** (al primo giro scritto «salvato»: vale solo per una riga letta, sotto), non come lo dice l'istanza
+     in mano: un test prova che chi scrive il suo VID nella riga di un altro prima di toglierla non passa.
+- **Trovato**: `dotnet format` sul file toccato `src/IvaoHub.Web/HubPipeline.cs` chiedeva uno spazio alla riga 234 (`=await`, venuto con
+  la #218): sistemato in un commit a parte (`style`), senza effetti.
+- **Il lato del modulo**: la sessione di E6a ha unito il branch a `55d7658` (il suo merge `96ddd21`, nessun conflitto) e ha messo il
+  segno su `EventBooking`; il ritiro del pilota, che prima cadeva con 403 (`Expected: NoContent`, `Actual: Forbidden`), risponde 204 con
+  l'audit a nome del pilota, e lì `WithdrawnByStakeholderTests` ed `EventsBookingsTests` danno 16 su 16.
+- **Verificato, in locale** (7 ottobre 2026, una suite alla volta, `main` a `e9702b2`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui dieci file C# toccati, migrazioni comprese: pulito;
+  - unità **1117/1117** (i 5 nuovi e i test di architettura compresi);
+  - integrazione intera, senza filtro, **486/486** al primo giro (9,7 minuti, con la suite di E6a che girava accanto, ognuna con il suo
+    container); `WithdrawnByStakeholderTests` da sola 5/5;
+  - **la prova al contrario**: con l'interceptor e `HubPipeline.cs` di `main` rimessi (il segno resta, il modulo di prova lo usa), della
+    classe nuova cade solo il ritiro del membro (4/5, `VID 761037 does not hold Sample.Edit on any of ED`); rimessi i file della fase,
+    toccati e ricompilati, 5/5;
+  - in `web/`, dove niente cambia (i `node_modules` installati dal lockfile, senza cambiarlo): `pnpm lint` e `pnpm typecheck` verdi,
+    `pnpm test` **625/625** in 85 file, `pnpm gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`e9702b2`): tredici file, nessuno del maintainer, cinque del nucleo
+    con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `pnpm e2e` e `pnpm e2e:full`: nessuna schermata cambia, quindi né la porta 5129 né `ivaohub_e2e_e10h` sono stati usati;
+  - un endpoint vero del ritiro su questo branch: la fase prova il guardiano senza un endpoint davanti, e l'endpoint del pilota è di E6a,
+    che lo prova sul suo branch (sopra).
+
+**Dopo la revisione** (7 ottobre 2026, [i rilievi][rv232] e [le risposte di Carmine][a232] sulla #232, quelle date in chat alla sessione
+master e pubblicate su sua istruzione):
+
+- **`main` unito sul branch** a `7b84a75` (la #226 di E4b): conflitto solo in `HANDOFF-M4.md`, risolto con l'intestazione di E10h
+  aggiornata e il blocco di E4b subito sotto quello di E10h; `10` si è unito da solo.
+- **La nota è decisa**: sì alla forma (risposta 1); **il limite della riga mai caricata si accetta e si scrive, come per T11** (risposta 2,
+  sul rilievo 2): il guardiano legge l'interessato dai valori originali del tracker, quindi **l'endpoint deve caricare la riga; uno stub
+  passa**. La frase sta nel riassunto dell'attributo, nel commento del guardiano, nella nota (§3.2) e nella trappola di `HANDOFF-M4.md`; il
+  test `AStubNeverLoadedIsBelievedAsItsCallerWroteIt` fissa il caso com'è. «Com'era salvata» diventa «com'era caricata» dove lo diceva
+  (il test `TheRowAsItWasLoadedSaysWhoseItIs`, la variabile `loaded` del guardiano).
+- **Il rilievo 3**: il riassunto dell'attributo dice anche l'alternativa segnata `AlsoOnDeletion`; quello di `VerifyWithdrawals` dice
+  «insieme», con le parole della risposta 1.
+- **Il rilievo 6** (il segno su un'entità con un permesso `DeniedToStakeholder`) era ancora aperto: nella nota (§6.3) con la
+  raccomandazione — una frase, non un ottavo rifiuto — e nessun codice finché Carmine non rispondeva (sotto, la risposta).
+- **Verificato** dopo il merge e le correzioni: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui tre file C#
+  toccati: pulito; unità **1125/1125** (le 8 di E4b comprese); integrazione intera, senza filtro, **492/492** al primo giro (5,8 minuti);
+  `WithdrawnByStakeholderTests` da sola 6/6; le regole di `core-guard` dalla nuova merge base (`7b84a75`): tredici file, cinque del nucleo
+  con la nota nuova — passa. Il web non cambia con questa fase e non si è rifatto: lo rifà la CI.
+
+**Dopo la risposta sul rilievo 6** (7–8 ottobre 2026, [la risposta 3 corretta][a3232] di Carmine sulla #232, data in chat alla sessione
+master e pubblicata su sua istruzione):
+
+- **Una frase nel riassunto del segno, non un ottavo rifiuto all'avvio**, come raccomandato: *mai su una riga su cui lo staff decide
+  qualcosa del membro — cancellarla cancellerebbe la decisione; il guardiano non sa né lo stato né l'ora, e fino a quando un membro si
+  ritira lo dice l'endpoint del modulo*; e **la nota di ogni fase che mette il segno dice perché la sua riga non porta decisioni**. Sta nel
+  riassunto di `[WithdrawnByStakeholder]` (`DomainContracts.cs`), nella nota (§3.1, §6.3, «Da portare nel piano») e nell'handoff; nessun
+  altro codice. La risposta delle 15:41 ([qui][a3232old]), che chiedeva l'ottavo rifiuto con un test, era data prima che Carmine vedesse la
+  raccomandazione, ed è sostituita da questa: niente di quella risposta è entrato nel codice.
+- **`main` unito di nuovo** a `1f2a687` (le #230 di E10g, #228 di E5 e #234, il piano 1.31): conflitti solo nei documenti — in `10` la
+  riga e la sezione di E10g prima di quelle di E10h; in `HANDOFF-M4.md` l'intestazione di E10h aggiornata (con il testo di E5 che resta
+  vero), il blocco di E10h in cima e poi quelli di E5, E10g ed E4b, e in «Che cosa manca» prima E10g poi E10h.
+- **Verificato**: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` su `DomainContracts.cs`: pulito; unità
+  **1187/1187**; integrazione intera, senza filtro, **497/497** al primo giro (5,5 minuti), `WithdrawnByStakeholderTests` compresa; le
+  regole di `core-guard` dalla merge base `1f2a687`: tredici file, cinque del nucleo con la nota nuova — passa.
+
+[rv232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039667157
+[a232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
+[a3232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155
+[a3232old]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041353964
 
 ### E11a — Postazioni e disponibilità
 

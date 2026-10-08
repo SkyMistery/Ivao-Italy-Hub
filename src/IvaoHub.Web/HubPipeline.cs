@@ -189,6 +189,9 @@ internal static class HubPipeline
             var entities = model.GetEntityTypes().Select(entity => entity.ClrType).ToArray();
             catalogue.VerifyAlternatives(entities, entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity));
 
+            // And a row its member takes back by deleting it (M4, E10h): marked only where the guard knows the member it is about.
+            HubSaveChangesInterceptor.VerifyWithdrawals(entities);
+
             // The areas whose rows say their FIR, the only ones a grant to the team of a FIR may name a permission of (M3,
             // A11a): the seed of positionGrants and the permissions screen ask the catalogue, from here on.
             areasWithAFir.UnionWith(entities
@@ -228,7 +231,7 @@ internal static class HubPipeline
         }
 
         List<string> applied = [];
-        var outcome =await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
+        var outcome = await scope.ServiceProvider.GetRequiredService<InitialisationMarker>().RunAsync(
             key,
             async cancellationToken =>
             {
