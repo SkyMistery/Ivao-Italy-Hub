@@ -1647,7 +1647,22 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **640 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57
   al primo giro** (11,4 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima); le regole di `core-guard` in PowerShell dalla nuova base di merge
   `7b84a75`: **PASS**. Dopo la testa di E5 a `ba53a97`, che non tocca il C#: i controlli web verdi, `pnpm test` **643 in 88 file**, smoke
-  **173/173** al primo giro, **`pnpm e2e:full` 57/57 al primo giro** (11,5 minuti, `ivaohub_e2e_e6a` ricreato prima).
+  **173/173** al primo giro, **`pnpm e2e:full` 57/57 al primo giro** (11,5 minuti, `ivaohub_e2e_e6a` ricreato prima). La CI su `707c407`
+  (la testa con la frase sullo stub): verde.
+- **L'8 ottobre: la #230 e la #228 unite, la regola di Carmine sul rilievo 6, la testa finale di E10h.** La #230 e la #228 sono entrate in
+  `main` il 7 ottobre sera, con il piano 1.31 (#234): la #233 resta in coda solo dopo la #232. Carmine ha risposto sul rilievo 6 di E10h
+  ([sulla #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155), di SkyMistery su sua istruzione): la nota
+  di ogni fase che mette `[WithdrawnByStakeholder]` dice perché la sua riga non porta una decisione. La nota di E6a lo dice nel §2
+  (`0a324a0`): il ritiro finisce all'off block, l'unica decisione dello staff sul pilota — la giustificazione di un «non volato», E13b —
+  cade dopo il volo, e «togli» cancella la riga; con un ⚠️ per E13a ed E13b, perché uno slot può partire fino a sei ore dopo la fine
+  dell'evento mentre `events-after` gira dopo `ends_at_utc`. Poi la testa finale di E10h (`eb8e8ef`, unita in `6451158`), che porta
+  `main` a `1f2a687`: nel codice cambia solo il riassunto del segno; conflitti solo nei documenti — la riga, la sezione e il blocco di E10h
+  prendono il suo testo nuovo, l'intestazione e il blocco di E6a restano —, e il confronto delle righe mostra solo le perdite volute.
+- **Verificato sull'ultima testa** (con E10h a `eb8e8ef` e `main` a `1f2a687`): `dotnet build` senza avvisi, `pnpm gen:api` e `pnpm
+  i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,6 minuti); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` **643 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57 al primo
+  giro** (11,6 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima, il lock di Mailpit preso solo per il giro); le regole di `core-guard` in
+  PowerShell dalla base di merge `1f2a687`: **PASS**.
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
   le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
   log binario della MariaDB di produzione (la domanda 2); le mail lette davvero in una casella (i test leggono la coda, `hub_notifications`);

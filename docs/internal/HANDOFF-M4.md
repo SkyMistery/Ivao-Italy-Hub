@@ -6,23 +6,21 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 7 ottobre 2026 — **fase E6a** (modulo: prenotare, il server), sul branch `m4/e6a-booking-server`, **PR #233**
+**Ultimo aggiornamento:** 8 ottobre 2026 — **fase E6a** (modulo: prenotare, il server), sul branch `m4/e6a-booking-server`, **PR #233**
 verso `main`, nata **in coda dopo la #228** di E5 — dalla sua testa `d901f43`, che porta già il branch di E10g (#230) e `main` a `e9702b2`,
 e con la testa di E5 dopo la prova sul banco, `25d23f5`, unita dopo l'apertura della PR, e poi con quella che ha preso E10g e con lui
-`main` a `7b84a75`, `ecf88b9`, e con l'ultima, `ba53a97` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una riga se la riprende), una
-fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il guardiano dell'interceptor non lo lasciava fare — e unita al
-branch, fino alla sua testa decisa `ec9b3b4`. Prima di E6a: **fase E5** (gli slot pubblici e l'esportazione), **PR #228**, nata in coda
-dopo la #223 di E4, unita prima che si aprisse, e **dalla revisione in coda dopo la #230** di E10g (la versione di un contratto nel
-nucleo). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, E10a (#210), E10b (#208), E10c
-(#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), il
-piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225), gli
-spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229). **E4b** non migra niente; la striscia di chi è online
-sugli scali dell'evento, il giorno dell'evento, la monta la prima fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto): E6b,
-in coda su questo branch, la trova qui.
-**Il prossimo passo**: **E10g** (la #230: «approvabile» per il revisore, e Carmine ha risposto sì alle domande della sua nota, [sulla
-#230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720)), **E5** (la #228, in coda dopo la #230), **E10h**
-(la #232, decisa), poi **E6a** (la #233, in coda dopo la #228 e la #232); poi **E6b** (prenotare: le pagine), in coda sul branch di
-E6a. Da E3b un evento si **pubblica**, entra nel
+`main` a `7b84a75`, `ecf88b9`, e con l'ultima, `ba53a97` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una
+riga se la riprende), una fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il guardiano dell'interceptor non lo
+lasciava fare — e unita al branch, fino alla sua testa finale `eb8e8ef`, che porta `main` a `1f2a687`. **La #230 e la #228 sono unite**
+(7 ottobre), e con loro il piano 1.31 (#234): **la #233 è in coda solo dopo la #232**. Prima di E6a: **fase E5** (gli slot pubblici e
+l'esportazione), **PR #228**, unita. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**,
+**E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)** ed E15a (#207), il
+passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli
+eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa
+rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, la monta la
+prima fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto): E6b, in coda su questo branch, la trova qui.
+**Il prossimo passo**: **E10h** (la #232, decisa da Carmine, anche sul rilievo 6), poi **E6a** (la #233, in coda dopo la #232); poi
+**E6b** (prenotare: le pagine), in coda sul branch di E6a. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -163,7 +161,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E6a (7 ottobre 2026, branch `m4/e6a-booking-server`, PR #233, in coda dopo la #228 e dopo la #232 di E10h)
+### Che cosa ha lasciato E6a (7–8 ottobre 2026, branch `m4/e6a-booking-server`, PR #233, in coda dopo la #232 di E10h; la #228 è unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E6a, «Com'è andata»; una migrazione additiva, `AddEventBookings`; del nucleo solo le due righe
   di `ErasureTests`; due note nuove: `2026-10-07-le-prenotazioni-sul-server`, **«Proposta»**, con tre domande a Carmine sulla #233 — le
@@ -174,7 +172,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626)), sulla stessa PR, punto per punto in `10`;
   poi, quando la coda si è mossa, la testa di E5 che ha preso E10g e `main` a `7b84a75` (`ecf88b9`, unita in `67c870f`), quella decisa di
   E10h (`ec9b3b4`, in `8ab7c69`) e l'ultima di E5 (`ba53a97`, in `d36f4b7`), conflitti solo nei documenti: la PR non è più in conflitto
-  con `main`):
+  con `main`; l'8 ottobre la testa finale di E10h (`eb8e8ef`, in `6451158`), con `main` a `1f2a687`, e la frase che Carmine chiede a ogni
+  fase che mette il segno — perché la prenotazione non porta una decisione, la nota §2):
   - **`evt_bookings` intera** (`EventBooking`, design §1.6): `event_id`, `slot_id` (univoco), `booker_vid`, `aircraft_icao`, `callsign`,
     `other_icao`, `other_time_utc`, `paired_booking_id` (E7), `flown_at`, `flown_session_id`, `flown_checked_at` (E13a),
     `unflown_excused_by`, `unflown_excused_note` (E13b), `reminded_at` (E6b), `created_at`, più dipartimento, maschera e visibilità
