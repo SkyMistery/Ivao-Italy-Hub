@@ -199,6 +199,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/slots/load": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsSlotsLoad"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events/{id}/slots/delete-free": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsSlotsDeleteFree"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/public/{slug}": {
         parameters: {
             query?: never;
@@ -207,6 +239,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["EventsPublicEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/{slug}/bookings/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsBookingsExport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1417,6 +1465,38 @@ export interface paths {
         put: operations["EventRoutesUpdate"];
         post?: never;
         delete: operations["EventRoutesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventSlotsList"];
+        put?: never;
+        post: operations["EventSlotsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/slots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventSlotsGet"];
+        put: operations["EventSlotsUpdate"];
+        post?: never;
+        delete: operations["EventSlotsDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3383,6 +3463,38 @@ export interface components {
          */
         BlockKind: "Content" | "Data";
         /**
+         * @description One slot as the gate manager of the division reads it (design M4 §7.4): the fields it reads today from the booking system it
+         *     leaves, by their names there, with every time in UTC — and the stable identity of the slot it asks for, the flight number, the
+         *     rotation and the leg, and for a private slot the slot paired with it (E7), arrival and departure on the same gate.
+         *     Whoever booked it and the aircraft they chose come with the bookings (E6a): empty on a free slot. The aircraft types the
+         *     slot admits come before any booking, its main one first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §7: an addition to
+         *     version 1, so that the stands can be planned before the pilots book); none on a private slot, whose pilot declares the type
+         *     (E7). The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands are managed
+         *     (§0.2).
+         */
+        BookingExportDto: {
+            /** Format: int64 */
+            slot_id: number;
+            callsign: null | string;
+            flight_number: null | string;
+            /** Format: int32 */
+            booked_by: null | number;
+            aircraft_icao: null | string;
+            aircraft_types: string[];
+            gate: null | string;
+            /** Format: date-time */
+            eobt: null | string;
+            /** Format: date-time */
+            eat: null | string;
+            origin_icao: null | string;
+            destination_icao: null | string;
+            rotation: null | string;
+            /** Format: int32 */
+            leg: null | number;
+            /** Format: int64 */
+            paired_slot_id: null | number;
+        };
+        /**
          * @description One block, as the server declares it. What it looks like and what its properties mean live in
          *     TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
          */
@@ -4448,6 +4560,62 @@ export interface components {
             arrivalIcao: string;
             route: string;
             remarks: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /** @description A slot of an event as its list and its form show it (design M4 §1.5). */
+        EventSlotDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            kind: components["schemas"]["SlotKind"];
+            eventAirportIcao: string;
+            isArrival: boolean;
+            callsign: null | string;
+            flightNumber: null | string;
+            aircraftTypes: string[];
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: date-time */
+            offBlockUtc: null | string;
+            /** Format: date-time */
+            onBlockUtc: null | string;
+            stand: null | string;
+            rotationCode: null | string;
+            /** Format: int32 */
+            rotationLeg: null | number;
+            generated: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on a public slot, the form of one slot's corrections: the cells of a row of the table, and the aircraft
+         *     types as two fields — the main one, and the others written as the table writes them (`A20N/A321`), read by the same code
+         *     —, kept main first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §1). The event is chosen when it is created and never
+         *     changes; the care is the event's, taken before the permission is asked; the airport of the event and the direction are read off
+         *     the two airports. No flight number, other type, stand or rotation is none.
+         */
+        EventSlotWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            callsign: string;
+            flightNumber: null | string;
+            mainAircraftType: string;
+            otherAircraftTypes: null | string;
+            departureIcao: string;
+            /** Format: date-time */
+            offBlockUtc: null | string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            onBlockUtc: null | string;
+            stand: null | string;
+            rotationCode: null | string;
+            /** Format: int32 */
+            rotationLeg: null | number;
             /** Format: date-time */
             rowVersion: string;
         };
@@ -5751,6 +5919,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfEventSlotDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventSlotDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfExamRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ExamRowDto"][];
@@ -6536,7 +6727,7 @@ export interface components {
         /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
          *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
-         *     cancelled one with its note.
+         *     cancelled one with its note; and its public slots (E5), by their off block, free or taken.
          *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
          *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
@@ -6561,6 +6752,7 @@ export interface components {
             wholeDivision: boolean;
             airports: components["schemas"]["PublicEventAirportDto"][];
             routes: components["schemas"]["PublicEventRouteDto"][];
+            slots: components["schemas"]["PublicEventSlotDto"][];
             /** Format: date-time */
             cancelledAt: null | string;
             cancellationNote: null | components["schemas"]["LocalizedOfstring"];
@@ -6573,6 +6765,33 @@ export interface components {
             arrival: components["schemas"]["PublicEventAirportDto"];
             route: string;
             remarks: null | components["schemas"]["LocalizedOfstring"];
+        };
+        /**
+         * @description A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
+         *     allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
+         *     the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
+         *     a booking names it (E6a); until then every one is free. The page draws from this alone the airport of the event a slot is at,
+         *     its table of departures or arrivals and its detail with the legs of its rotation (note
+         *     2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
+         */
+        PublicEventSlotDto: {
+            /** Format: int64 */
+            id: number;
+            callsign: string;
+            flightNumber: null | string;
+            aircraftTypes: string[];
+            departure: components["schemas"]["PublicEventAirportDto"];
+            arrival: components["schemas"]["PublicEventAirportDto"];
+            /** Format: date-time */
+            offBlockUtc: string;
+            /** Format: date-time */
+            onBlockUtc: string;
+            stand: null | string;
+            rotation: null | string;
+            /** Format: int32 */
+            leg: null | number;
+            isArrival: boolean;
+            taken: boolean;
         };
         /**
          * @description An exam as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when, as its
@@ -7282,6 +7501,33 @@ export interface components {
          * @enum {unknown}
          */
         SheetSection: "Practice" | "Theory";
+        /**
+         * @description A slot is prepared by the staff with its flight, or generated from the capacity of an airport (design M4 §1.5).
+         * @enum {unknown}
+         */
+        SlotKind: "Public" | "Private";
+        /**
+         * @description What a load does with the public slots already there (design M4 §3.1).
+         * @enum {unknown}
+         */
+        SlotLoadMode: "Add" | "ReplaceFree";
+        /** @description The table, as pasted or as the file the browser read, and what to do with the public slots already there. */
+        SlotLoadRequest: {
+            text: null | string;
+            mode: components["schemas"]["SlotLoadMode"];
+        };
+        /** @description How many slots the load wrote, and how many free public ones it took away first. */
+        SlotLoadResultDto: {
+            /** Format: int32 */
+            added: number;
+            /** Format: int32 */
+            removed: number;
+        };
+        /** @description How many free slots «delete the free ones» took away. */
+        SlotsDeletedDto: {
+            /** Format: int32 */
+            removed: number;
+        };
         /** @description An error as a report froze it with its rule (design M2 §5.4). */
         SnapshotErrorDto: {
             /** Format: int64 */
@@ -8754,6 +9000,98 @@ export interface operations {
             };
         };
     };
+    EventsSlotsLoad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotLoadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotLoadResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsSlotsDeleteFree: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotsDeletedDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     EventsPublicEvent: {
         parameters: {
             query?: never;
@@ -8780,6 +9118,67 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    EventsBookingsExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingExportDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
         };
     };
@@ -12394,6 +12793,163 @@ export interface operations {
         };
     };
     EventRoutesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventSlotsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventSlotDto"];
+                };
+            };
+        };
+    };
+    EventSlotsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventSlotWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSlotDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventSlotsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSlotDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventSlotsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventSlotWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSlotDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventSlotsDelete: {
         parameters: {
             query?: never;
             header?: never;

@@ -107,7 +107,8 @@ Per non ripeterle trenta volte:
 | E10d | Nucleo: la mail a chi assegna gli award | E0 | un segnale nuovo in coda avvisa chi ha `Awards.Assign`, spegnibile; vale anche per i tour |
 | E10e | Nucleo: la distanza fra due aeroporti | E0 | il calcolo sul cerchio massimo passa dal modulo dei tour al nucleo |
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
-| E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era salvata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
+| E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
+| E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1238,7 +1239,233 @@ niente con i rifiuti per riga; l'esportazione con il token `events.bookings`, se
 esportata. E2e: il personaggio dell'ED incolla una tabella con una rotazione e la vede sulla pagina.
 **Fatta quando**: una tabella incollata crea gli slot con le rotazioni, e l'esportazione li legge con un token personale.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (6 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nato **in coda dopo la #223** di E4: dal suo branch a `94ca28b`, e
+unito alla sua ultima spinta `3224a9f` — le risposte di Carmine, `main` con la #222, i tipi degli eventi — prima di scrivere il resto del
+codice; la #223 è unita, `77a2031`, prima che la #228 si aprisse; una migrazione additiva, `AddEventSlots`):
+
+- **Fatto**:
+  1. **`evt_slots` intera** (punto 1; design §1.5): `EventSlot` (`src/IvaoHub.Modules.Events/EventSlot.cs`), per i pubblici e i privati, con
+     tutte le colonne del piano e quelle del nucleo (maschera, audit, `row_version`); `aircraft_types` è una colonna `json` con il nome
+     del design (come `body_json` dell'evento lo porta nel nome, questa no); univoco `(event_id, callsign, off_block_utc)`; la chiave verso
+     l'evento a cascata. Riga `IEventChild` nell'area **`EventBookings`** (`[PermissionArea]`, `[Audited]`, lo scope dell'evento).
+  2. **Incolla e carica** (punto 2; §3.1): un endpoint, `POST /api/events/events/{id}/slots/load` (`EventBookings.Edit` sulla riga
+     dell'evento, all'unico handler), con il testo e il modo. Il lettore (`Staff/SlotSheet.cs`) separa per tabulazioni, punto e virgola o
+     virgole secondo l'intestazione, tiene le virgolette, conta le righe come la tabella, salta quelle vuote; una riga diventa uno slot
+     (`SlotDraft.Read`) o un rifiuto per cella; poi, per tutta la tabella insieme, gli aeroporti (`IAirportDirectory.FindAsync`) e i tipi
+     (`IAircraftTypeDirectory.UnknownAsync`) del nucleo, il verso (`SlotDirection`), callsign e off block una volta nell'evento, le
+     rotazioni (`SlotChains`, con `bookingGapMinutes` delle impostazioni e gli slot salvati che restano). Tutto o niente, con
+     `Refusals` sotto `rows[N].colonna`; una transazione: via i pubblici liberi se si sostituisce, dentro quelli della tabella.
+  3. **Lista e form generati** (punto 3): `/api/events/slots` (`MapCrud`, `EventBookings.View`/`.Edit`, `filter[eventId]`, l'evento
+     adottato in `BeforeAuthorize`), e `SlotSaving` nel `BeforeSave`: il form di uno slot tiene le regole del caricamento. **«Elimina i
+     liberi»**: `POST /api/events/events/{id}/slots/delete-free`. Nella pagina dell'evento del back office la scheda **«Slot»**
+     (`screens/slots.tsx`) con «Incolla o carica», «Nuovo slot», «Elimina i liberi» e «Modifica»; la pagina del caricamento con
+     l'intestazione da copiare, il file CSV letto nella casella e i rifiuti elencati per riga e colonna (`screens/slotList.ts`,
+     `sheetProblems`). **La pagina pubblica** (`/events/{slug}`) elenca gli slot pubblici, in sola lettura, nella lettura che c'è già
+     (`PublicEventDto.Slots`): libero o preso, mai chi, le rotazioni raggruppate, gli orari in UTC con il giorno detto una volta.
+  4. **L'esportazione** (punto 4; §7.4): `GET /api/events/{slug}/bookings/export` (`Export/BookingsExport.cs`), con l'`audience`
+     **`events.bookings`** dichiarata dal modulo (`EventsModule.TokenAudiences`, `EventBookings.View`) e il permesso chiesto anche sulla riga
+     dell'evento; un array con i nomi del Gate Manager e gli orari UTC; una bozza no (409 `draft`).
+  5. **Le regole che crescono** con gli slot: in `EventSaving` l'interruttore degli slot pubblici non si spegne sotto gli slot, e
+     eliminare un evento porta via i suoi slot; in `EventAirportEndpoints` uno scalo con slot non si elimina né cambia codice.
+  6. **I test**: `EventsSlotsTests` (unità, 29), `EventsSlotsTests` (integrazione, 4, VID 761012–761014, scali `XED1`–`XED4`, tipi
+     `XE5A`/`XE5B`, slug `evt-test-e5-…`), `screens/slotList.test.ts` (vitest, 4), un test nuovo nella smoke `web/e2e/events-public.spec.ts`,
+     il giro `web/e2e/full/events-slots.spec.ts` (il «fatta quando»: il personaggio dell'ED incolla una tabella con una rotazione, legge il
+     rifiuto di una riga, la carica corretta, e un visitatore la vede sulla pagina). `EventsTestRows` toglie anche gli slot; `ErasureTests`
+     ha le due righe di `evt_slots` (nota `2026-10-06-le-colonne-degli-slot-in-erasuretests`).
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova
+  `decisions/2026-10-06-il-foglio-degli-slot-e-l-esportazione.md`, «Proposta» con la domanda a Carmine sulla #228, poi **decisa** —
+  sotto, «Le risposte di Carmine»; il dettaglio è lì):
+  1. **Il foglio lo legge il server**, non il browser come le leg dei tour: il design dice che arriva come testo e scrive i rifiuti con il
+     nome della colonna.
+  2. **La tabella**: i nomi del design in qualunque ordine; il punto e virgola accanto alle tabulazioni e alle virgole; le righe contate
+     come la tabella; al più mille; **gli orari solo `2026-10-17 14:30` in UTC**.
+  3. **Il verso fra due scali dell'evento** è la partenza; **uno slot sempre su uno scalo dell'evento**, e così «ogni due tratte uno scalo»
+     viene da sé.
+  4. **Le rotazioni**: i posti dagli orari quando nessuno è scritto; il rifiuto sempre sulla tratta che si scrive; il form di uno slot con le
+     stesse regole, **anche per uno slot nuovo** («Nuovo slot»: il design dice il form «per le correzioni»).
+  5. **«Sostituisci»** toglie i pubblici liberi; **«Elimina i liberi»** ogni slot libero, privati compresi.
+  6. **Le regole che crescono**, sopra (punto 5 di «Fatto»); la finestra dell'evento è venuta con le risposte di Carmine (sotto, «Dopo la
+     revisione e le risposte», punto 1).
+  7. **L'esportazione**: un array, i nomi del Gate Manager, nell'ordine dell'orario allo scalo dell'evento, una bozza 409 con
+     `code: "draft"` invece di 404, un evento pubblicato in ogni stato; un privato con il suo scalo e il suo orario.
+  8. **La lista pubblica nella lettura della pagina**, senza un endpoint suo.
+  9. **La scheda «Slot»** c'è su un evento con slot (pubblici o privati) e scali suoi, a chi legge le prenotazioni; un privato non ha
+     «Modifica» (`events:errors.slotNotPublic` sul server).
+  10. **Gli endpoint scritti a mano di E5** sono tre verbi che il design nomina (§7.2): caricare, eliminare i liberi, esportare; gli slot uno
+      per uno sono `MapCrud`. Nessuna lettura nuova.
+- **Trovato, e scritto per chi viene dopo**: ⚠️ in FluentValidation un `.When` alla fine di una catena vale per tutta la catena: la regola
+  del formato del callsign avrebbe spento «obbligatorio» (trovato rileggendo, prima dei test; ora sta in un `RuleFor` suo, e il test manda
+  un callsign vuoto). ⚠️ `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` cade finché una chiave `events:…` che il server
+  scrive non è nella copia delle parole alla radice: le parole prima, poi `pnpm i18n:sync`. ⚠️ E4 si è mosso a metà fase: la modifica
+  non ancora committata di `EventSaving.cs`, che E4 toccava anche lui, è stata messa da parte come patch e rimessa dopo il merge (un
+  conflitto nel solo commento in testa).
+- **Al contrario** (6 ottobre 2026): senza il rifiuto di una bozza, il test dell'esportazione cade (`Expected: Conflict`, `Actual: OK`);
+  senza i rifiuti delle catene, quello del caricamento (`rows[7].departure_icao` non c'è). Il codice rimesso com'era — con la `using` di
+  `IvaoHub.Core.Division`, che senza il primo controllo IDE0005 rifiuta — e ricompilato: la classe di nuovo 4/4.
+- **Verificato, in locale** (6 ottobre 2026, sul branch con E4 dentro, `3224a9f`): `dotnet build` della soluzione senza avvisi, e `dotnet
+  format --verify-no-changes` sui quindici file C# toccati; unità **1141/1141**; **integrazione intera senza filtro 485/485** (6,9 minuti),
+  `EventsSlotsTests` da sola 4/4 al primo giro, e le classi degli eventi con `ErasureTests` e `PersonalTokenTests` 31/31; `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **628 in 86 file**; `pnpm gen:api` e `pnpm i18n:sync` senza differenze;
+  `pnpm e2e` **172/172** al primo giro (`--workers=2`, dietro il lock dello smoke; la spec della pagina pubblica da sola 9/9 prima);
+  **`pnpm e2e:full` 56/56 al primo giro** (10,9 minuti, il suo worker solo) sul banco `http://127.0.0.1:5126` (`ivaohub_e2e_e5` ricreato
+  prima), dietro il lock di Mailpit, e la spec nuova da sola 1/1 prima. Le regole di `core-guard` rifatte in PowerShell dalla base di merge
+  (`3224a9f`): **PASS** — nessun file del maintainer; un file del nucleo, `ErasureTests.cs`; due note nuove.
+- **Non verificato**: la CI (la dice la PR), che prova il merge con `main` dopo la #225 (`git merge-tree`: nessun conflitto); la
+  migrazione su un'installazione vera già avviata (la CI applica la catena su una MariaDB 11.4.10 vera); il Gate Manager vero che legge
+  l'esportazione (E9, fuori dal repository); una tabella incollata davvero dagli appunti di un foglio di calcolo (la spec scrive il testo
+  nella casella, come lo darebbe un incolla; le tabulazioni le provano i test di unità) e un file CSV scelto dal disco (nessuna spec carica
+  un file: lo legge `File.text()` del browser); un CSV in una codifica che non è UTF-8 (`File.text()` legge UTF-8: uno stand con lettere
+  accentate salvato in Windows-1252 arriverebbe storpiato); la pagina con centinaia di slot nel browser (la lista è una query sola, ma
+  nessuna prova ne disegna 441).
+- **La CI della prima spinta** (`da6f772`): verde, `build-test` e `core-guard`.
+- **Le risposte di Carmine** ([sulla #228][a228], 6 ottobre 2026, autore `SkyMistery`, pubblicate dal master su sua istruzione), dopo [i
+  rilievi del revisore][v228] («approvable on the code», in attesa delle risposte): **sì agli otto punti** della nota, ora **decisa**, e
+  **due in più** sulle domande che il revisore gli aveva girato, codice di questa PR: **9**, l'esportazione porta la versione del suo
+  contratto; **10**, uno slot cade nella finestra del suo evento, con un margine.
+- **Dopo la revisione e le risposte**, 6 ottobre 2026:
+  1. **La finestra dell'evento** (Carmine, punto 10): `SlotWindow` in `Staff/SlotRules.cs`. L'orario allo scalo dell'evento — l'off
+     block di una partenza, l'on block di un arrivo — sta fra sei ore prima dell'inizio e sei ore dopo la fine; l'orario all'altro
+     aeroporto è libero. Fuori, `events:errors.slotOutsideWindow` sulla colonna di quell'orario, nel caricamento (`SlotLoading`) e nel
+     form (`SlotSaving`) allo stesso modo; la pagina del caricamento lo dice fra i formati. Il perché delle sei ore è nella nota (§2,
+     punto 10). Test: unità (i bordi della finestra, e quale orario conta), integrazione
+     `ASlotFallsInsideTheWindowOfItsEventWithSixHoursEachWay`: una partenza tre giorni dopo e un arrivo sette ore dopo la fine, rifiutati
+     insieme sulle loro due colonne; un arrivo cinque ore dopo la fine, dopo un volo di undici, caricato; il form che rifiuta una partenza
+     del giorno prima.
+  2. **La versione del contratto dell'esportazione** (Carmine, punto 9). **Classificata prima di scrivere**, come chiedeva la sessione
+     che coordina: il controllo dei tour (`AgentContract.RequireVersionAsync`) sta nel loro modulo, che gli eventi non referenziano e
+     che E5 non tocca, e una copia negli eventi sarebbe lo stesso pezzo scritto due volte (`CLAUDE.md` §2). Tre strade a dalberone — la
+     copia con un'eccezione di Carmine, il pezzo nel nucleo prima, la domanda a Carmine —: **ha scelto il nucleo**. È la fase **E10g**
+     (la **#230**, branch `m4/e10g-contract-version`, da `main` a `e9702b27`, in una sessione sua, con la sua nota), e la #228 sta in
+     coda dopo di lei: il branch di E10g è unito a questo a `cc1b46c`. Qui l'esportazione usa il `ContractVersion` del nucleo con i
+     suoi valori — l'intestazione `Hub-Bookings-Contract`, la
+     versione 1, `code: "bookingsContract"`, il titolo `events:errors.bookingsContract` — dopo il token e prima dell'evento, e il contratto
+     per chi scrive il programma è `docs/events-bookings-export.md` (inglese), come `docs/agent-contract.md` dei tour.
+  3. **Lo stesso volo ricaricato con «sostituisci»** (revisione, punto 3): il test del caricamento ricarica in `ReplaceFree` il foglio
+     corretto del volo `XEA301` — stesso callsign e stesso off block, lo stand cambiato —. Lo slot che va e quello che viene dividono la
+     chiave dell'indice univoco nello stesso `SaveChanges`, e la cancellazione arriva prima dell'inserimento: provato.
+  4. **409 solo per un'altra scrittura delle stesse righe** (revisione, punto 4): il `catch` dopo `LoadAsync` prende soltanto una chiave
+     che l'indice univoco ha già, o il deadlock di due insert della stessa chiave — `MySqlException` con `DuplicateKeyEntry` o
+     `LockDeadlock`, cercata nella catena dell'eccezione come fa `InitialisationMarker`, perché EF consegna il deadlock dentro una
+     `InvalidOperationException` —; ogni altro errore esce com'è, invece di dire «carica di nuovo» per sempre.
+  5. **Il commento dell'esportazione** (revisione, punto 5): 401 senza token o con il cookie, 403 con un token di un'altra `audience`,
+     come dicono il test e la nota.
+  6. **Due caricamenti dello stesso evento nello stesso momento** (revisione, punto 6) li tiene solo l'indice univoco: ognuno controlla
+     le catene con gli slot che legge, quindi insieme possono salvare una catena che nessuno dei due avrebbe accettato da solo. Nessun
+     codice: un caricamento alla volta per evento chiederebbe una transazione serializzabile o un blocco esplicito, per due persone sullo
+     stesso evento nello stesso secondo. Scritto nell'HANDOFF.
+  7. **Il 404 prima del 403** (revisione, punto 7): voluto, ed è detto nel commento dell'esportazione e nella nota (§1, punto 7): è
+     l'ordine dei verbi del back office, un token di questa `audience` lo fa solo chi ha `EventBookings.View` da qualche parte, e
+     l'indirizzo di un evento pubblicato è comunque sul sito.
+  8. **Il verso fissato quando lo slot si scrive** (revisione, punto 8): uno scalo aggiunto dopo lascia uno slot salvato com'era. Scritto
+     nell'HANDOFF.
+  9. **L'ordine dell'esportazione**, trovato rileggendola per il documento pubblico: la nota e il commento dicevano «per l'orario allo
+     scalo dell'evento», la query ordinava per off block, che è quell'orario solo per una partenza. Ora va per l'on block di un arrivo
+     (`IsArrival ? OnBlockUtc : OffBlockUtc`); nel test l'arrivo `XEA503` atterra alle 17:30, dopo la partenza `XEA501` delle 17:00, ma è
+     decollato alle 16:00, quindi l'ordine degli off block non lo fa passare.
+  10. **`main` è arrivato con il branch di E10g** (`e9702b27`: la #227, che vuole gli spec del giro completo con `afterwards(…)` al posto
+      del `finally`, e il piano 1.30, #229). `events-slots.spec.ts` ora dice con `afterwards(…)` che cosa rimette a posto, come chiede la
+      regola nuova di `CONTRIBUTING.md`; `events-public.spec.ts` ed `events-staff.spec.ts`, di E4 e di prima, restano col `finally`
+      (nell'HANDOFF).
+  - **Al contrario** (6 ottobre 2026): con il margine della finestra a dieci anni, il test della finestra cade (la tabella con le due righe
+    fuori è caricata: `OK: {"added":2,"removed":0}`); con l'ordine di prima (`OffBlockUtc ?? OnBlockUtc`), cade quello dell'esportazione
+    (`Expected: "XEA501"`, `Actual: "XEA503"`); senza il filtro della versione sull'esportazione, la richiesta senza intestazione riceve
+    il 409 della bozza invece del 400 (`Expected: BadRequest`, `Actual: Conflict`). Il codice rimesso com'era e ricompilato: tutti e tre
+    di nuovo verdi. Il test del volo
+    ricaricato prova un comportamento che c'era già, e il 409 ristretto non ha un errore del database diverso da provocare in un test:
+    nessuna prova al contrario per i punti 3 e 4.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit, con E10g e `main` dentro): `dotnet build` della soluzione senza avvisi e
+    `dotnet format --verify-no-changes` sui file C# del giro; unità **1169/1169** (`EventsSlotsTests` 36, `ContractVersionTests` 21);
+    **integrazione intera senza filtro 486/486** (8,6 minuti), `EventsSlotsTests` 5/5; `pnpm gen:api` (il 400 dell'esportazione) e `pnpm
+    i18n:sync` (la parola nuova) rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **629 in 86 file**;
+    `pnpm e2e --workers=2` dietro il lock dello smoke: **171/172** al primo giro — è caduto `closed-suggestion.spec.ts:121`, del nucleo, la
+    barra trascinata con `scrollTop` 0, lo stesso di A13d —, poi quello spec da solo `--repeat-each=5` 5/5 e lo smoke intero di nuovo
+    **172/172**; **`pnpm e2e:full` 57/57 al primo giro** (11,9 minuti, il suo worker solo) sul banco `http://127.0.0.1:5126`
+    (`ivaohub_e2e_e5` ricreato prima), dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`:
+    **PASS** (nessun file del maintainer;
+    del nucleo `ContractVersion.cs`, della #230, ed `ErasureTests.cs`; tre note nuove).
+- **La CI della seconda spinta** (`d901f43`): verde, `build-test` (24 minuti e 32 secondi) e `core-guard`.
+- **Dopo la prova sul banco** (7 ottobre 2026). Dalberone ha guardato E5 sul banco di prova — la build di E5 sulla 5090, un evento su
+  LIRF e LIMC, quattro slot incollati con una rotazione, pubblicato — e ha riaperto la #228 per la pagina degli slot, da fare in E5 e
+  non in E6b. Il messaggio è arrivato dalla sessione che coordina. Sono comportamenti che il design non dice, scelti da lui come chi tiene
+  il modulo: nota nuova **«Proposta»** `decisions/2026-10-07-gli-slot-sulla-pagina-dell-evento.md`, con
+  [la domanda a Carmine sulla #228](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6039543785);
+  la nota decisa di E5 non si tocca, e la sua lettura 8 cambia (§5 della nota nuova). Fatti come la nota raccomanda:
+  1. **Il tipo principale**: il primo di `aircraft_types`, senza migrazione. Il form di uno slot ha due campi, «Tipo principale» e
+     «Altri tipi», salvati principale per primo (`SlotValues.MainFirst`), con ogni rifiuto sul suo campo; la pagina del caricamento dice
+     che nella cella `A320/A20N` il primo è il principale.
+  2. **La colonna del tipo** mostra il principale; gli altri compaiono nel tooltip di Atmosphere al passaggio del mouse, al focus e al
+     tocco.
+  3. **«Partenze» e «Arrivi»** in due tabelle, rispetto allo scalo dell'evento, per l'orario allo scalo.
+  4. **Una sezione per scalo** quando gli slot sono a più d'uno; il volo fra due scali dell'evento resta una partenza del primo.
+  5. **Le tratte di una rotazione** stanno ognuna nella sua tabella, segnate da un'icona `Repeat` che lo dice.
+  6. **Una riga apre lo slot** in sola lettura, in un dialog di Atmosphere: tutti i tipi, gli orari, lo stand, le tratte della
+     rotazione. È dove E6b metterà «Prenota»; nessun endpoint e nessun campo nuovo.
+  7. **`aircraft_types` nell'esportazione.** La richiesta diceva che l'esportazione «tiene la lista in ordine», ma non la portava:
+     chiesto a dalberone, ha scelto il campo nuovo, un'aggiunta alla versione 1. `docs/events-bookings-export.md` lo dice.
+  - ⚠️ **Il tocco, misurato prima di scriverlo.** Il tooltip di Radix si apre solo al passaggio del mouse e al focus. Il bottone che lo
+    porta rovescia, al click, quello che si vedeva **quando la pressione è cominciata**. **Al contrario**: con un semplice «al click si
+    rovescia» la smoke su un telefono (`hasTouch`, Chromium) cade sul secondo tocco, che lascia il tooltip aperto (`Expected: 0`,
+    `Received: 1`); rimesso, la smoke passa.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit):
+    - `dotnet build` della soluzione senza avvisi; `dotnet format --verify-no-changes` sui file C# del giro;
+    - unità **1174/1174**, con `EventsSlotsTests` 41;
+    - **integrazione intera senza filtro 486/486** (9,1 minuti), con `EventsSlotsTests` 5/5;
+    - `pnpm gen:api` (i due campi del form) e `pnpm i18n:sync` rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    - `pnpm test` **636 in 87 file**, con `slotList.test.ts` 6 ed `EventSlots.test.tsx` 5;
+    - la smoke degli eventi da sola 10/10, poi `pnpm e2e --workers=2` **173/173** al primo giro, dietro il lock dello smoke;
+    - **`pnpm e2e:full` 57/57 al primo giro** (11,7 minuti) sul banco `http://127.0.0.1:5126` (`ivaohub_e2e_e5` ricreato prima), dietro
+      il lock di Mailpit, preso dopo 80 secondi di attesa per il giro di E6a;
+    - le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS** (quattro note nuove).
+- **Il merge di E10g dopo E4b** (7 ottobre 2026, `ce110ba`). La #226 (E4b) è entrata in `main` mentre la CI di `25d23f5` girava, e la
+  #228 è diventata «CONFLICTING»: il branch di E10g che porta andava in conflitto con `main` su `HANDOFF-M4.md`. Come ha chiesto la
+  sessione che coordina, nessun merge di `main` da solo: la sessione di E10g ha unito `main` (`7b84a75`) e le risposte di Carmine sulla
+  #230, ed E5 ha unito la sua testa `477a0f8` in un merge solo. Il conflitto era il solo `HANDOFF-M4.md`: l'intestazione di E5, e in «Lo
+  stato» il paragrafo di E5, poi quello di E10g, poi quello di E4b. Il merge porta, oltre a `main`, solo documenti di E10g, e il codice
+  di E4b, verde su `main`; quindi, come ha chiesto la sessione che coordina, solo i controlli che quel codice tocca:
+  - `dotnet build` senza avvisi; unità **1182/1182**;
+  - `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+  - `pnpm test` **640 in 88 file**; la smoke **173/173** al primo giro;
+  - `core-guard` dalla base nuova `7b84a75`: **PASS**.
+
+  L'integrazione intera e il giro completo restano quelli dell'ultimo codice di E5, sopra.
+- **La CI della terza spinta** (`ecf88b9`): verde.
+- **La seconda lettura e le risposte di Carmine** (7 ottobre 2026). [La seconda lettura del revisore][v228b]: il giro di revisione è fatto
+  come chiesto, e i commit dopo il banco sono «approvable on the code» con due correzioni. [Le risposte di Carmine][a228b] (autore
+  `SkyMistery`, pubblicate dal master su sua istruzione): **sì ai sette punti** della nota del 7 ottobre, ora **decisa** — il punto 5
+  sostituisce, sapendolo, la lettura 8 della nota del 6 ottobre —, e **un ottavo**: `Hint` resta un pezzo di questa schermata. Il giorno
+  che una seconda schermata vorrà un tooltip che si apre al tocco, è una decisione da portargli, non una copia. Fatto, 7 ottobre 2026:
+  1. **Il focus quando il dialog si chiude** (da correggere, punto 1): `SlotDetail` monta il `Dialog` aperto e senza un bottone suo, quindi
+     Radix non aveva niente a cui rendere il focus. `EventSlots` tiene in `openedBy` il nominativo che ha aperto lo slot — il bottone,
+     oppure quello della riga cliccata — e glielo rimette quando il dialog è sparito: dentro, la trappola del focus lo riprenderebbe.
+  2. **Il form a due campi nel browser** (da correggere, punto 2): il giro completo apre lo slot caricato come `A320/A20N`, legge A320 in
+     «Main type» e A20N in «Other types», scrive un tipo che l'hub non conosce fra gli altri e vede il rifiuto sotto quel campo, e niente
+     sotto il principale. Per tornare alla scheda il giro va al suo indirizzo: le parole comuni degli spec (`web/e2e/locales.ts`, del
+     nucleo) non hanno «Cancel».
+  3. **`shownAtPress` di una pressione che non diventa un click** (basso, punto 3): un click della tastiera (`detail` 0) rovescia quello che
+     si vede, senza guardare una pressione vecchia; una pressione annullata (`pointercancel`, uno scorrimento) si dimentica.
+  4. **La frase della rotazione detta due volte** (basso, punto 4): con un nome suo, il bottone non ha più il tooltip come descrizione
+     (`aria-describedby` tolto), e chi legge lo schermo la sente una volta.
+  5. **Una selezione nella riga** (basso, punto 5): resta l'intera riga ad aprire lo slot, come chiesto e deciso (punto 6), perché su un
+     telefono è il bersaglio del pollice; ma un click che chiude una selezione di testo non apre niente.
+  - Il punto 8 della seconda lettura — un volo fra due scali dell'evento manca dagli arrivi del secondo — è la risposta 4 di Carmine:
+    niente da cambiare.
+  - **Al contrario**: tolte insieme le quattro correzioni del codice (1, 3, 4, 5), in `EventSlots.test.tsx` cadono esattamente i loro
+    quattro test, 4 su 8. Rimesse, 8 su 8. Il test della selezione è caduto anche una volta per sé: una selezione prende un intervallo
+    solo quando non ne ha, e un click di un test prima lascia un cursore. Ora la selezione si svuota prima.
+  - **Verificato di nuovo** (7 ottobre 2026, sull'ultimo commit; solo il browser è cambiato):
+    - `pnpm test` **643 in 88 file**, con `EventSlots.test.tsx` 8; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    - la smoke degli eventi da sola 10/10 (il focus dopo Escape in Chromium), poi `pnpm e2e --workers=2` **173/173** al primo giro;
+    - lo spec `full/events-slots.spec.ts` da solo **1/1** sul banco `http://127.0.0.1:5126`, con il web ricostruito, dietro il lock di
+      Mailpit, preso dopo 160 secondi di attesa per E6a. Il giro completo intero no: il resto non è cambiato, e il lock era conteso;
+    - le regole di `core-guard` in PowerShell dalla base di merge `7b84a75`: **PASS**.
+
+    Server, unità e integrazione non sono toccati da questo giro: restano 1182/1182 e 486/486.
+
+[a228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040717010
+[v228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040474527
+
+[a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
 
 ### E6a — Prenotare: il server
 
@@ -1967,6 +2194,91 @@ calcolatore, dalla schermata e dal seme. Integrazione: l'MD del seme di `divisio
 
 [v213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926660925
 [a213]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/213#issuecomment-5926811970
+
+### E10g — Nucleo: la versione di un contratto
+
+**Da dove viene**: non c'era in E0. L'ha portata la revisione di E5 (#228): il revisore ha girato a Carmine la domanda della versione
+dell'esportazione per il Gate Manager, e **Carmine ha deciso** ([risposta 9 sulla #228][a228g]) che l'esportazione porta la versione
+del suo contratto in un'intestazione sua — senza, o con una versione che l'hub non parla, 400 con le versioni accettate — e che il
+contratto si scrive in un documento pubblico, come quello dell'agente dei tour. Il controllo c'era solo nei tour
+(`AgentContract.RequireVersionAsync`), che gli eventi non referenziano: sulla classificazione chiesta dalla sessione che coordina prima
+del codice, dalberone ha scelto il 6 ottobre di portarlo nel nucleo (caso b, come E10e). Branch `m4/e10g-contract-version`. **PR del
+nucleo**, con la sua nota; nessuna migrazione; **E5 la aspetta**: la #228 è in coda dopo di lei.
+
+1. **`ContractVersion`** in `Core/Auth/`, accanto ai token personali: l'intestazione del contratto, la versione corrente, le accettate,
+   la chiave del titolo (del modulo) e il `code`; il filtro `RequireAsync`, che risponde esattamente come quello dei tour.
+2. **Il costruttore** rifiuta quello che non può essere un contratto.
+3. **La copia dei tour resta** in questa PR: la sostituisce una sessione di Carmine, come `GreatCircle` dopo E10e. La richiesta, e la
+   domanda di una riga in `CLAUDE.md` §2, vanno a Carmine sulla PR.
+
+**Test**: unità: i rifiuti e le accettate, la versione parlata, il titolo nella lingua di chi chiede, il costruttore; il test gemello con
+il filtro dei tour.
+**Fatta quando**: il nucleo ha la versione di un contratto e risponde come il filtro dei tour (il test gemello), così E5 la usa con i
+suoi valori invece di scriverne una sua. La copia dei tour se ne va con la sessione di Carmine.
+
+**Com'è andata** (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo senza coda, da `main` a `e9702b2`):
+
+- **Fatto** (nota nuova `2026-10-06-la-versione-di-un-contratto-nel-nucleo`, scelta tecnica, con una richiesta e una domanda a Carmine):
+  - **`src/IvaoHub.Core/Auth/ContractVersion.cs`**, namespace `IvaoHub.Core.Auth`: la forma che E5 aspettava, senza cambi —
+    `ContractVersion(header, current, accepted, titleKey, code)`, le cinque proprietà e `RequireAsync(context, next)`, il codice dei tour
+    riga per riga con i valori del contratto. Nessuna registrazione, nessuna migrazione, nessun endpoint, nessuna chiave, niente nel
+    browser;
+  - **`tests/IvaoHub.UnitTests/ContractVersionTests.cs`** (unità, 21): una richiesta passa nel filtro come la fa passare un endpoint, e il
+    rifiuto si scrive come lo scrive il server; i rifiuti, le accettate, la versione parlata di un contratto alla versione 2, il titolo
+    in inglese, in italiano, nella lingua della divisione e senza catalogo, i rifiuti del costruttore, le versioni copiate; **il test
+    gemello**, che confronta il nucleo con i valori dei tour e `AgentContract.RequireVersionAsync` su 120 coppie (venti richieste, con e
+    senza catalogo, in due lingue e senza utente) e vuole la stessa risposta byte per byte, e che dice quali richieste i tour accettano:
+    `1`, `1` fra due spazi, `\t1`, `01`.
+- **Scelte, scritte nella nota** (§3):
+  1. **due rifiuti in più** del costruttore, oltre a quelli della fase: un'intestazione che non è un token di HTTP, e una versione
+     ripetuta. I valori dei tour e quelli di E5 li passano;
+  2. **niente `Announce`** per l'endpoint aperto: il passaggio dei tour non ne ha bisogno (`AgentContract` tiene `Header` e `Current`, e
+     la riga 32 di `AgentEndpoints` resta com'è), ed E5 non ha un endpoint aperto;
+  3. **il nome della nota è del 6 ottobre**: la fase è nata quel giorno sulla #228, e la nota di E5 la cita già così; è scritta nella
+     notte sul 7.
+- **Trovato** (nota §6): **il test gemello non vede la versione della risposta** — con la corrente al posto della parlata i suoi 120
+  confronti passano tutti, perché i tour accettano solo la 1 —, e la vede solo il test del contratto alla versione 2.
+- **La copia dei tour resta** (`CLAUDE.md` §0 regola 2, `core-guard`): due copie dello stesso filtro, tenute uguali dal test gemello,
+  finché una sessione di Carmine non passa i tour al nucleo; la nota (§5) scrive quel passaggio riga per riga.
+- **Letta la fase del nucleo che corre, E4b** (#226): niente in `Core/Auth/`; scrive l'intestazione di `HANDOFF-M4.md` e altri punti di
+  `10` — un conflitto di documenti per chi arriva seconda, nessuna sovrapposizione di codice. Nessun messaggio alla sua sessione.
+- **Verificato, in locale** (6–7 ottobre 2026, una suite alla volta, `main` a `e9702b2`):
+  - `dotnet build IvaoHub.sln --no-incremental` 0 avvisi; `dotnet format --verify-no-changes` sui due file C#: pulito;
+  - unità **1133/1133** (i 21 nuovi, i test di architettura compresi); `ContractVersionTests` da sola **21/21**;
+  - **integrazione intera, senza filtro, 481/481** al primo giro (7,2 minuti), la prova della divisione «XX» compresa;
+  - **le prove al contrario**, sul file del nucleo e poi rimesso (nota §6): con `NumberStyles.Integer` cadono il gemello e il rifiuto di
+    `+1`; senza `Trim` il gemello e l'accettata con gli spazi; con la corrente al posto della parlata nell'intestazione solo il test del
+    contratto alla versione 2;
+  - in `web/`, dove niente cambia (i `node_modules` installati dal lockfile, senza cambiarlo): `pnpm lint` e `pnpm typecheck` verdi,
+    `pnpm test` **625/625** in 85 file, `pnpm gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`e9702b2`): cinque file, nessuno del maintainer né dei tour, un file
+    del nucleo (`ContractVersion.cs`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `pnpm e2e` e `pnpm e2e:full`: nessuna schermata cambia;
+  - `ContractVersion` su un endpoint vero, nella catena dell'hub (la policy del token prima, il servizio dei problemi di
+    `AddProblemDetails`): i test di questa fase chiamano il filtro con un `DefaultHttpContext` e scrivono il problema senza quel servizio.
+    Lo provano i test d'integrazione dell'esportazione di E5, e per i tour `PirepTests.Agent` dopo il passaggio;
+  - il passaggio dei tour al nucleo, che è di Carmine.
+- **La CI** sulla prima cima (`cc1b46c`): `build-test` (21,3 minuti) e `core-guard` verdi.
+- **Dopo la revisione** ([i rilievi del revisore sulla #230][v230g], «approvable on the code») e **le risposte di Carmine** ([sulla
+  #230][a230g], in chat al master il 7 ottobre, pubblicate su sua istruzione):
+  - **sì al nucleo** invece di una copia nel modulo; **il passaggio dei tour** a `ContractVersion` lo fa una sua sessione dopo l'unione
+    di questa PR, come lo scrive la nota (§5); **sì alla riga in `CLAUDE.md` §2**, che aggiunge il master con il piano. Registrate nella
+    nota, ora **decisa** (intestazione, §5, «Da portare nel piano»), e nell'handoff;
+  - **il rilievo basso**: la riga di E10g nella tabella delle fasi diceva «il filtro dei tour passa nel nucleo»; ora dice che la copia
+    dei tour resta e che il passaggio è di una sessione di Carmine;
+  - **il merge di `main`** (`7b84a75`, con E4b, #226), mai un rebase: **un conflitto solo**, `HANDOFF-M4.md` — l'intestazione di E10g
+    con E4b unita e le risposte di Carmine; in «Lo stato» il paragrafo di E10g in cima e quello di E4b sotto, nessuna riga persa
+    (controllato con il diff contro `main`: cambiano solo l'intestazione e la riga di che cosa mancava). `10` si è unito da solo, con la
+    riga e la sezione di E4b accanto a E4. E4b non tocca `Core/Auth/`;
+  - **rifatto dopo il merge**, come chiesto: `dotnet build` 0 avvisi; unità **1141/1141** (le 1133 e gli 8 di E4b). Non rifatte, perché
+    il merge porta solo il codice di E4b, già verde sulla CI di `main`, e nessun file di E10g cambia: l'integrazione intera e le suite
+    di `web/`; le corre la CI della nuova cima.
+
+[a228g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039666570
+[a230g]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720
 
 ### E10h — Nucleo: il ritiro di chi ha mandato la riga
 

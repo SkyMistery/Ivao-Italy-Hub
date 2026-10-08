@@ -28,6 +28,29 @@ public sealed record PublicEventRouteDto(
     Localized<string>? Remarks);
 
 /// <summary>
+/// A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
+/// allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
+/// the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
+/// a booking names it (E6a); until then every one is free. The page draws from this alone the airport of the event a slot is at,
+/// its table of departures or arrivals and its detail with the legs of its rotation (note
+/// 2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
+/// </summary>
+public sealed record PublicEventSlotDto(
+    long Id,
+    string Callsign,
+    string? FlightNumber,
+    IReadOnlyList<string> AircraftTypes,
+    PublicEventAirportDto Departure,
+    PublicEventAirportDto Arrival,
+    DateTime OffBlockUtc,
+    DateTime OnBlockUtc,
+    string? Stand,
+    string? Rotation,
+    int? Leg,
+    bool IsArrival,
+    bool Taken);
+
+/// <summary>
 /// An event as a card of <c>/events</c> and of the block <c>events.eventList</c> shows it (design M4 §7.1, §7.3): what fits on a
 /// tile, the same for whoever is looking. <c>Airports</c> are its own, in their order and with their names; an event of the whole
 /// division has none.
@@ -48,7 +71,7 @@ public sealed record PublicEventCardDto(
 /// <summary>
 /// An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
 /// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
-/// cancelled one with its note.
+/// cancelled one with its note; and its public slots (E5), by their off block, free or taken.
 /// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
 /// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
@@ -69,6 +92,7 @@ public sealed record PublicEventDto(
     bool WholeDivision,
     IReadOnlyList<PublicEventAirportDto> Airports,
     IReadOnlyList<PublicEventRouteDto> Routes,
+    IReadOnlyList<PublicEventSlotDto> Slots,
     DateTime? CancelledAt,
     Localized<string>? CancellationNote);
 
@@ -184,8 +208,17 @@ public sealed class PublicEvents(
             .OrderBy(route => route.Id)
             .ToListAsync(cancellationToken);
 
+        // The public slots, one query even for the hundreds of a big event (§10.1), by their off block; the private ones are
+        // offered by airport and hour (E7).
+        var slots = await database.Slots.AsNoTracking()
+            .Where(slot => slot.EventId == row.Id && slot.Kind == SlotKind.Public)
+            .OrderBy(slot => slot.OffBlockUtc)
+            .ThenBy(slot => slot.Id)
+            .ToListAsync(cancellationToken);
+
         var named = await NamesAsync(
-            own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao })),
+            own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao }))
+                .Concat(slots.SelectMany(slot => new[] { slot.DepartureIcao!, slot.ArrivalIcao! })),
             cancellationToken);
 
         return new PublicEventDto(
@@ -211,6 +244,22 @@ public sealed class PublicEvents(
                     named(route.ArrivalIcao),
                     route.Route,
                     route.Remarks)),
+            ],
+            [
+                .. slots.Select(slot => new PublicEventSlotDto(
+                    slot.Id,
+                    slot.Callsign!,
+                    slot.FlightNumber,
+                    slot.AircraftTypes,
+                    named(slot.DepartureIcao!),
+                    named(slot.ArrivalIcao!),
+                    slot.OffBlockUtc!.Value,
+                    slot.OnBlockUtc!.Value,
+                    slot.Stand,
+                    slot.RotationCode,
+                    slot.RotationLeg,
+                    slot.IsArrival,
+                    Taken: false)),
             ],
             row.CancelledAt,
             row.CancellationNote);

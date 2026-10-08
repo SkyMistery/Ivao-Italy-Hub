@@ -38,6 +38,7 @@ import {
   type EventListData,
 } from './cards';
 import { AirportName, EventCards, EventWhen } from './EventCards';
+import { EventSlots } from './EventSlots';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -196,7 +197,8 @@ export function EventPublicPage() {
 
 /**
  * One event (§7.1): the banner; the state, the kind, the title and the summary; when, in UTC and in the division's time; who
- * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; the description. To the
+ * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; its public slots (E5); the
+ * description. To the
  * staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
@@ -310,6 +312,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       </dl>
 
       {event.routes.length === 0 ? null : <EventRoutes event={event} />}
+
+      {event.slots.length === 0 ? null : <EventSlots event={event} />}
 
       <ContentRenderer body={readBody(event.body)} />
     </article>

@@ -16,10 +16,13 @@ import { englishCommon } from './locales';
 /**
  * The public side of the events in a browser, with the API stubbed (M4, E4): `/events` draws the events to come as cards from the
  * block's answer, narrowed by the address to a kind and an airport, with the calendar under them; the page of an event shows when —
- * in UTC and where the division lives —, who organises it, its airports and routes and its description, a cancelled one its note;
- * an event the reader may not see is not found, and the staff are told when nobody else sees it; the block draws the same cards on
- * a page of the site. What the server decides — what is public, the 404 after the end, who writes the routes — is proved by
- * `EventsPublicTests` (integration); the round against the real server is `full/events-public.spec.ts`.
+ * in UTC and where the division lives —, who organises it, its airports and routes and its description, a cancelled one its note,
+ * and its public slots (E5) by airport, departures and arrivals apart, free or taken, a leg of a rotation marked, a slot opened read
+ * only — and a tap on a phone shows what a hover shows (note 2026-10-07-gli-slot-sulla-pagina-dell-evento); an event the reader
+ * may not see is not found, and the
+ * staff are told when nobody else sees it; the block draws the same cards on a page of the site. What the server decides — what is
+ * public, the 404 after the end, who writes the routes and the slots — is proved by `EventsPublicTests` and `EventsSlotsTests`
+ * (integration); the rounds against the real server are `full/events-public.spec.ts` and `full/events-slots.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -45,6 +48,14 @@ const words = JSON.parse(
     cancelled: string;
     routes: string;
     organizerPage: string;
+    slots: string;
+    free: string;
+    taken: string;
+    departures: string;
+    arrivals: string;
+    otherTypes: string;
+    rotationHint: string;
+    detail: { main: string; legs: string };
   };
   blocks: { eventList: { all: string } };
 };
@@ -132,8 +143,38 @@ function event(overrides: Record<string, unknown> = {}) {
         remarks: { en: 'Above the clouds.', it: 'Sopra le nuvole.' },
       },
     ],
+    slots: [],
     cancelledAt: null,
     cancellationNote: null,
+    ...overrides,
+  };
+}
+
+/** A public slot of the page (E5), as the server lists it: free unless said, never who took it. */
+function slot(
+  id: number,
+  callsign: string,
+  hours: readonly [number, number],
+  from: unknown,
+  to: unknown,
+  overrides: Record<string, unknown> = {},
+) {
+  const at = (hour: number) => `2099-11-21T${String(hour).padStart(2, '0')}:00:00.000Z`;
+
+  return {
+    id,
+    callsign,
+    flightNumber: null,
+    aircraftTypes: ['XA20'],
+    departure: from,
+    arrival: to,
+    offBlockUtc: at(hours[0]),
+    onBlockUtc: at(hours[1]),
+    stand: null,
+    rotation: null,
+    leg: null,
+    isArrival: false,
+    taken: false,
     ...overrides,
   };
 }
@@ -264,6 +305,99 @@ test('the page of an event says when, who organises it, where, its routes and it
   }
   await expect(page.getByRole('link', { name: words.public.backOffice })).toHaveCount(0);
   await expect(page.getByRole('link', { name: words.public.back })).toHaveAttribute('href', '/events');
+});
+
+/**
+ * A rotation out of A and back, and a flight alone landing at B, taken (note 2026-10-07-gli-slot-sulla-pagina-dell-evento): by their
+ * off block, as the server sends them.
+ */
+const slotsOfTwoAirports = [
+  slot(1, 'XSM101', [18, 19], airportA, airportC, {
+    flightNumber: 'XS101',
+    stand: 'B12',
+    rotation: 'R1',
+    leg: 1,
+    aircraftTypes: ['XA20', 'XA21'],
+  }),
+  slot(2, 'XSM300', [19, 20], airportC, airportB, { isArrival: true, taken: true }),
+  slot(3, 'XSM102', [20, 21], airportC, airportA, { rotation: 'R1', leg: 2, isArrival: true }),
+];
+
+test('the page of an event lists its public slots by airport, departures and arrivals apart, and opens one', async ({
+  page,
+}) => {
+  await stubTheEvents(page, [], { 'evt-test-smoke-page': event({ slots: slotsOfTwoAirports }) });
+
+  await page.goto('/events/evt-test-smoke-page');
+
+  const slots = page.getByRole('region', { name: words.public.slots });
+  await expect(slots.getByRole('heading', { level: 2, name: words.public.slots })).toBeVisible();
+
+  // Two airports of the event have slots: a section each. A's leg out among its departures, the leg back among its arrivals.
+  const atA = slots.getByRole('region', { name: 'XXAA · Smoke Airport A' });
+  const departuresA = atA.getByRole('table', { name: words.public.departures });
+  const arrivalsA = atA.getByRole('table', { name: words.public.arrivals });
+  await expect(departuresA.getByRole('row')).toHaveCount(2);
+  await expect(arrivalsA.getByRole('row')).toHaveCount(2);
+
+  // The flight: callsign and number, its main type, where it goes by name, its hour at A in UTC of the one day, the stand, free.
+  const out = departuresA.getByRole('row').nth(1);
+  for (const said of ['XSM101', 'XS101', 'Smoke Airport C', '18:00', 'B12', words.public.free]) {
+    await expect(out).toContainText(said);
+  }
+  await expect(out).not.toContainText('XA21');
+  await expect(arrivalsA.getByRole('row').nth(1)).toContainText('XSM102');
+
+  // B, an airport the hub has no name for, has an arrival only, taken — and nothing of whoever took it.
+  const atB = slots.getByRole('region', { name: 'XXBB' });
+  await expect(atB.getByRole('table', { name: words.public.departures })).toHaveCount(0);
+  await expect(atB.getByRole('table', { name: words.public.arrivals })).toContainText('XSM300');
+  await expect(atB.getByRole('table', { name: words.public.arrivals })).toContainText(words.public.taken);
+
+  // The other types the slot admits on hover.
+  const types = out.getByRole('button', { name: /XA20/ });
+  await types.hover();
+  await expect(page.getByRole('tooltip')).toHaveText(words.public.otherTypes.replace('{{types}}', 'XA21'));
+
+  // The two legs of the rotation are marked, the flight alone is not.
+  await expect(slots.getByRole('button', { name: words.public.rotationHint })).toHaveCount(2);
+
+  // A row opens the slot, read only: every type, the main one said, and the legs of its rotation, this one marked.
+  await out.getByRole('cell', { name: 'B12' }).click();
+  const detail = page.getByRole('dialog', { name: 'XSM101 · XS101' });
+  await expect(detail).toContainText(`XA20 (${words.public.detail.main})`);
+  await expect(detail).toContainText('XA21');
+  const legs = detail.getByRole('region', { name: words.public.detail.legs.replace('{{rotation}}', 'R1') });
+  await expect(legs.getByRole('listitem')).toHaveCount(2);
+  await expect(legs.getByRole('listitem').nth(0)).toHaveAttribute('aria-current', 'true');
+  await expect(legs.getByRole('listitem').nth(1)).toContainText('XSM102');
+
+  // Closed, the focus is back on the callsign of the row that opened it, not at the top of the page.
+  await page.keyboard.press('Escape');
+  await expect(detail).toHaveCount(0);
+  await expect(out.getByRole('button', { name: 'XSM101' })).toBeFocused();
+});
+
+test.describe('on a phone', () => {
+  test.use({ hasTouch: true });
+
+  test('a tap opens what a hover would show, the next tap closes it, and neither opens the slot', async ({
+    page,
+  }) => {
+    await stubTheEvents(page, [], { 'evt-test-smoke-page': event({ slots: slotsOfTwoAirports }) });
+    await page.goto('/events/evt-test-smoke-page');
+
+    const mark = page.getByRole('button', { name: words.public.rotationHint }).first();
+    await mark.tap();
+    await expect(page.getByRole('tooltip')).toHaveText(words.public.rotationHint);
+    await mark.tap();
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+    const types = page.getByRole('button', { name: /XA20/ });
+    await types.tap();
+    await expect(page.getByRole('tooltip')).toHaveText(words.public.otherTypes.replace('{{types}}', 'XA21'));
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
 });
 
 test('a cancelled event shows its note', async ({ page }) => {

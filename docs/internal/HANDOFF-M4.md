@@ -6,25 +6,33 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 7 ottobre 2026 — **fase E10h** (nucleo: il ritiro di chi ha mandato la riga), sul branch
+**Ultimo aggiornamento:** 8 ottobre 2026 — **fase E10h** (nucleo: il ritiro di chi ha mandato la riga), sul branch
 `m4/e10h-stakeholder-withdraws`, **PR #232** verso `main`, nata da `main` a `e9702b2`, senza coda, e **unita di nuovo a `main`** a
-`7b84a75` dopo la revisione (la #226 di E4b). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
-(#226)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213) ed E15a (#207), il passaggio dei tour al calcolo del
-nucleo (#211), la `0.6.0` (#216), il piano 1.29 (#217), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino
-alla `0.6.5` (#218, #219, #225), gli spec che dicono al banco che cosa rimettono a posto (#227) e il piano 1.30 (#229).
-**Il prossimo passo**: le PR aperte di M4 — **E10g** (la #230, la versione di un contratto, del nucleo), **E5** (la #228, gli slot
-pubblici e l'esportazione, in coda dopo la #230), **E10h** (questa, la #232, del nucleo, senza coda: **decisa da Carmine** sulla #232; il
-punto 6 della revisione resta aperto e non la ferma) e poi **E6a** (la #233, prenotare: il server), in coda dopo la #228 e dopo la #232:
-la sua sessione unisce questo branch e mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b**
-(«chi è online sugli scali», del nucleo) è unita: **la prima fase del modulo dopo di lei monta la striscia** con gli scali dell'evento, il
-giorno dell'evento («Che cosa ha lasciato E4b», sotto). Da E3b un evento si
-**pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina
-`/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi
-(«Che cosa ha lasciato E4», sotto). ⚠️ **Fra E3b ed E4 nessuna consegna e nessun «Pubblica» sull'installazione di prova** (Carmine, 6
-ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca di un evento pubblicato puntano a `/events/{slug}`, una
-pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina c'è). **Le tre domande di E4 hanno la risposta di
-Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del nucleo, la seconda lettura scritta a mano
-accettata, i tipi come raccomandato — fatti sulla #223. **La
+`7b84a75` dopo la revisione e a `1f2a687` dopo la risposta di Carmine sul rilievo 6. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
+(#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
+**E10g (#230)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e
+**1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli
+spec che dicono al banco che cosa rimettono a posto (#227).
+**Il prossimo passo**: **E10h** (questa, la #232, del nucleo, senza coda: **decisa da Carmine**, anche sul rilievo 6 — una frase nel
+riassunto del segno, non un ottavo rifiuto), poi **E6a** (la #233, prenotare: il server), **in coda solo dopo la #232**: la sua sessione ha
+unito questo branch e mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
+sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
+(«Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
+fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le
+rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4», sotto); da E5 ha i suoi **slot pubblici**, caricati da una
+tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge con un token personale («Che cosa ha lasciato E5»,
+sotto). **Carmine ha risposto sulla #228** ([le sue risposte][a228]): sì alle otto letture della nota
+`2026-10-06-il-foglio-degli-slot-e-l-esportazione`, ora **decisa**, e due punti in più, fatti sulla stessa PR — uno slot cade nella
+finestra del suo evento (sei ore per parte), e l'esportazione porta la versione del suo contratto. ⚠️ **Il controllo della versione è del
+nucleo**: lo porta **E10g** (`ContractVersion`, la #230: «Che cosa ha lasciato E10g», sotto), perché quello dei tour sta nel loro modulo e
+una copia negli eventi sarebbe lo stesso pezzo scritto due volte. **Dopo la prova sul banco (7 ottobre) dalberone ha riaperto la #228** per
+la pagina degli slot: il tipo principale, partenze e arrivi per scalo, le rotazioni segnate, il dettaglio di uno slot, e `aircraft_types`
+nell'esportazione — fatti sulla #228, con una nota **decisa** da Carmine sulla #228 ([le sue risposte][a228b]: sì ai sette punti, e un
+ottavo: `Hint` resta un pezzo di questa schermata) (`2026-10-07-gli-slot-sulla-pagina-dell-evento`). ⚠️ **Fra E3b ed E4 nessuna consegna e
+nessun «Pubblica» sull'installazione di prova** (Carmine, 6 ottobre 2026, [sulla #221][seq221]): la voce di calendario e la riga di ricerca
+di un evento pubblicato puntano a `/events/{slug}`, una pagina che porta solo E4 — **con E4 unita dopo la #221 il vincolo cade** (la pagina
+c'è). **Le tre domande di E4 hanno la risposta di Carmine** ([sulla #223][ok223]): sì alle cinque letture del pubblico, E4b come fase del
+nucleo, la seconda lettura scritta a mano accettata, i tipi come raccomandato — fatti sulla #223. **La
 lettura dei preset** (`GET /api/events/kind-presets`) **resta**: Carmine l'ha accettata sulla #214 come scostamento dal design §7.2 (nota
 `2026-10-01-la-lettura-dei-preset-dei-tipi`; «Che cosa ha lasciato E3a», sotto). ⚠️
 **`EffectivePermission.FromOutside` è uno solo**, con le due vie che lo danno — un grant a una posizione su un altro dipartimento o al
@@ -125,8 +133,9 @@ controllore: sotto, «Che cosa ha lasciato E10b»); ~~il rating preferito e mini
 divisione per nominativo (E10c)~~ **portati da E10c** (il minimo è l'FRA di IVAO: sotto, «Che cosa ha lasciato E10c»); ~~la mail a chi assegna (E10d)~~ **portata da E10d** (un riepilogo al giorno: sotto, «Che cosa ha
 lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatCircle` in `Core/Airspace/`: sotto, «Che cosa ha
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
-E15a»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato da E10h** (`[WithdrawnByStakeholder]`, per il
-ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
+E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
+l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -179,6 +188,152 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     decide qualcosa del membro (un PIREP di supporto, una cessione di un turno), dove cancellarla cancellerebbe la decisione. Finché
     Carmine non risponde, una fase che mette il segno su un'entità di un'area con un `Edit` negato all'interessato (`EventAtc`,
     `EventReports`) lo dice nella sua nota e lo chiede.
+
+### Che cosa ha lasciato E5 (6–7 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nata in coda dopo la #223, unita prima che si aprisse; dalla revisione in coda dopo la #230 di E10g)
+
+- **Che cosa c'è** (il dettaglio in `10`, E5, «Com'è andata»; una migrazione additiva, `AddEventSlots`; del nucleo solo le due righe di
+  `ErasureTests`; due note nuove: `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, **decisa** da Carmine sulla #228 — [le sue
+  risposte][a228]: sì alle otto letture, e i punti 9 e 10 sulle domande del revisore ([osservazioni][v228]) —, e
+  `2026-10-06-le-colonne-degli-slot-in-erasuretests`, nessuna decisione nuova; il controllo della versione dell'esportazione è del nucleo,
+  dalla #230 di E10g, unita a questo branch; dopo la prova sul banco, una terza nota, `2026-10-07-gli-slot-sulla-pagina-dell-evento`, il
+  tipo principale e la pagina pubblica degli slot che dalberone ha chiesto, **decisa** da Carmine sulla #228 — [le sue risposte][a228b]:
+  sì ai sette punti, e un ottavo sulla [seconda lettura del revisore][v228b], `Hint` resta un pezzo di questa schermata):
+  - **`evt_slots` intera** (`EventSlot`, design §1.5), per i pubblici di E5 e i privati di E7: `kind`, `event_airport_icao`, `is_arrival`,
+    `callsign`, `flight_number`, `aircraft_types` (JSON), `departure_icao`, `arrival_icao`, `off_block_utc`, `on_block_utc`, `stand`,
+    `rotation_code`, `rotation_leg`, `generated`, `row_version`; univoco `(event_id, callsign, off_block_utc)` (un privato non ha callsign, e
+    l'indice ne lascia passare quanti vuole). Riga `IEventChild` nell'area **`EventBookings`**, `[Audited]`, lo scope dell'evento.
+  - **Incolla o carica** (`POST /api/events/events/{id}/slots/load`, `EventBookings.Edit` sull'evento; `Staff/SlotLoading.cs`): il testo —
+    incollato da un foglio di calcolo, o il file CSV letto dal browser nella stessa casella — e il modo (`Add`, `ReplaceFree`). **Lo legge il
+    server** (`Staff/SlotSheet.cs`): l'intestazione del design in qualunque ordine, tabulazioni, punto e virgola o virgole, le virgolette; le
+    righe contate come le conta la tabella (`rows[12].aircraft_types`); al più mille. Ogni riga uno slot pubblico (`SlotDraft.Read`): orari
+    solo `2026-10-17 14:30` in UTC, tipi separati da `/`; tipi e scali chiesti al nucleo una volta per tutta la tabella; **il verso dagli
+    ICAO** (`SlotDirection`: partenza da uno scalo dell'evento, anche fra due scali dell'evento, altrimenti arrivo, altrimenti rifiutato);
+    callsign e off block una volta nell'evento; **le rotazioni** (`SlotChains`, con gli slot salvati che restano): i posti, o gli orari
+    quando nessun posto è scritto, lo scalo che coincide, l'ordine, `bookingGapMinutes`; **la finestra dell'evento** (`SlotWindow`, il
+    punto 10 di Carmine): l'orario allo scalo dell'evento — l'off block di una partenza, l'on block di un arrivo — fra sei ore prima
+    dell'inizio e sei ore dopo la fine, `events:errors.slotOutsideWindow` sulla colonna di quell'orario; l'altro orario è libero. **Tutto
+    o niente**, una transazione; **409 «carica di nuovo» solo per un'altra scrittura delle stesse righe** (una chiave che l'indice univoco
+    ha già, o il deadlock di due insert della stessa chiave, cercati nella catena dell'eccezione come fa `InitialisationMarker`): ogni
+    altro errore esce com'è (revisione, punto 4).
+  - **La lista e il form generati** (`/api/events/slots`, `MapCrud`, `EventBookings.View`/`.Edit`): la scheda **«Slot»** della pagina
+    dell'evento, su un evento con slot e scali suoi; il form di uno slot (`/staff/events/{id}/slots/{slotId}`, anche «Nuovo slot») tiene le
+    regole del caricamento (`SlotSaving`, la finestra compresa), e i tipi in **due campi, «Tipo principale» e «Altri tipi»**
+    (`MainAircraftType`, `OtherAircraftTypes` di `EventSlotWriteDto`), salvati principale per primo (`SlotValues.MainFirst`), ogni rifiuto
+    sul suo campo; **il primo di `aircraft_types` è il principale**, anche nella cella `A320/A20N` della tabella; **«Elimina i liberi»**
+    (`POST …/slots/delete-free`): ogni slot libero dell'evento, pubblici e privati. La pagina del caricamento
+    (`/staff/events/{id}/slots/load`): l'intestazione da copiare, il file CSV, i rifiuti elencati per riga e colonna.
+  - **Le regole che crescono**: niente caricamento su un evento senza slot pubblici o senza scali; l'interruttore degli slot pubblici non si
+    spegne sotto gli slot (`events:errors.hasPublicSlots`); uno scalo con slot non si elimina né cambia codice (`airportHasSlots`); eliminare
+    un evento porta via i suoi slot con l'audit (`EventSaving.DeleteAsync`).
+  - **La pagina dell'evento** elenca gli slot pubblici (`PublicEventDto.Slots`, nella lettura che c'è già; `screens/EventSlots.tsx` e
+    `screens/slotList.ts`), come dalberone l'ha chiesta dopo il banco (nota del 7 ottobre, «Proposta»): **per scalo dell'evento**, una
+    sezione ciascuno quando sono più d'uno, e in ognuno **«Partenze» e «Arrivi»** in due tabelle, per l'orario allo scalo; **il tipo
+    principale**, gli altri nel tooltip di Atmosphere al passaggio del mouse, al focus e al tocco; le tratte di una rotazione ognuna nella
+    sua tabella, **segnate da un'icona** (`Repeat`) che lo dice; **una riga apre lo slot** in sola lettura in un dialog di Atmosphere, con
+    tutti i tipi ammessi, gli orari, lo stand e le tratte della rotazione — e quando si chiude **il focus torna al nominativo** che l'ha
+    aperto; un click che chiude una selezione di testo non apre niente; **libero o preso — mai chi**. «Prenota» è di E6b, nel dialog.
+  - **L'esportazione** per il Gate Manager (`GET /api/events/{slug}/bookings/export`, `Export/BookingsExport.cs`): con un token personale
+    dell'`audience` **`events.bookings`** (`EventsModule.TokenAudiences`, permesso `EventBookings.View`, la parola
+    `events:tokenAudiences.bookings`), chiesto anche all'unico handler sulla riga; un array con i nomi del Gate Manager (`slot_id`,
+    `callsign`, `flight_number`, `booked_by`, `aircraft_icao`, `aircraft_types`, `gate`, `eobt`, `eat`, `origin_icao`, `destination_icao`,
+    `rotation`, `leg`, `paired_slot_id` — `aircraft_types` aggiunto dopo il banco, i tipi ammessi con il principale per primo, vuoto su un
+    privato, un'aggiunta alla versione 1), orari UTC con la `Z`, **nell'ordine dell'orario allo scalo dell'evento** (l'on block di un arrivo: fino alla
+    revisione andava per off block, contro la nota). **Una bozza mai**: 409 `code: "draft"`; il 404 prima del 403 è voluto (revisione,
+    punto 7). **La versione del contratto** (punto 9 di Carmine): l'intestazione **`Hub-Bookings-Contract: 1`**; senza, o con una versione
+    che l'hub non parla, 400 `code: "bookingsContract"` con `current` e `accepted`; la controlla il `ContractVersion` del nucleo (E10g),
+    dopo il token e prima dell'evento. Il contratto per chi scrive il programma è **`docs/events-bookings-export.md`** (inglese).
+  - **I test**: `EventsSlotsTests` (unità, 41: il lettore, una riga, gli istanti, il verso, le catene, la finestra, i tipi del form),
+    `EventsSlotsTests` (integrazione, 5 — la finestra, il volo ricaricato, l'ordine e la versione dell'esportazione dalla revisione, i tipi
+    del form e `aircraft_types` dal banco —, VID 761012–761014, scali `XED1`–`XED4`, tipi `XE5A`/`XE5B`, slug `evt-test-e5-…`),
+    `screens/slotList.test.ts` (vitest, 6) ed `screens/EventSlots.test.tsx` (vitest, 8: le sezioni, il tooltip al focus e al tocco, una
+    pressione dimenticata, l'icona detta una volta, il dialog, il focus che torna, la selezione), due test nella smoke
+    `web/e2e/events-public.spec.ts` (10, **uno su un telefono**: `hasTouch`, il tocco vero in Chromium; e il focus dopo Escape), il giro
+    `web/e2e/full/events-slots.spec.ts` (il «fatta quando», con `afterwards(…)`; e il form di uno slot con i suoi due campi nel browser).
+    `EventsTestRows` toglie anche gli slot; `ErasureTests` ha le due righe di `evt_slots`. VID 761015–761016 e 761062–761067 restano
+    liberi.
+- **Che cosa deve sapere la fase dopo**:
+  - **L'esportazione è la versione 1 di un contratto** (`docs/events-bookings-export.md`): dentro una versione l'hub solo aggiunge. E6a
+    riempie `booked_by` e `aircraft_icao`, che ci sono già: nessuna versione nuova. Un campo tolto o rinominato, o un significato cambiato,
+    è la versione 2, accettata accanto alla 1 per almeno un rilascio; il documento cambia nella stessa PR del codice.
+  - **E6a**: **«libero» si dice in un posto solo**, `SlotRows.Free` (`Staff/SlotLoading.cs`): oggi ogni slot, perché non c'è ancora una
+    prenotazione; E6a lo restringe agli slot che nessuna prenotazione nomina, e «sostituisci» ed «elimina i liberi» seguono. Poi:
+    `PublicEventSlotDto.Taken` (oggi `false`), `booked_by` e `aircraft_icao` dell'esportazione (oggi vuoti; `aircraft_icao` è **il tipo scelto
+    dal pilota**), «uno slot prenotato non si elimina» (il `Delete` del CRUD degli slot e il primo rifiuto di `EventSaving.DeleteAsync`), e le
+    righe delle colonne di persona di `evt_bookings` in `ErasureTests`.
+  - **E6b**: «Prenota» va **nel dialog dello slot** (`SlotDetail` in `screens/EventSlots.tsx`), che mostra già tutti i tipi ammessi, il
+    principale per primo: fra quelli il pilota sceglie il suo, che diventa `aircraft_icao` dell'esportazione. La pagina pubblica non ha una
+    lettura sua: tutto viene da `PublicEventDto.Slots`, e un campo che servisse è un'aggiunta a quel DTO. ⚠️ Il dialog non ha un bottone
+    suo che lo apre: **il focus torna al nominativo** grazie a `openedBy` di `EventSlots`, che lo rimette quando il dialog è sparito (dentro,
+    la trappola del focus lo riprenderebbe). Un dialog che si chiude dopo «Prenota» passa da lì anche lui.
+  - ⚠️ **Il tooltip che si apre al tocco** (`Hint` in `screens/EventSlots.tsx`): il tooltip di Radix si apre solo al passaggio del mouse e
+    al focus, e fra la pressione e il click lo chiude e lo riapre da sé (un tocco dà il focus al bottone dopo che il dito si alza).
+    Per questo il click rovescia quello che si vedeva **quando la pressione è cominciata**; un click della tastiera (`detail` 0) rovescia
+    quello che si vede, e una pressione annullata si dimentica. Un semplice «al click si rovescia» lascia aperto il secondo tocco (provato
+    al contrario nella smoke con `hasTouch`). **`Hint` resta un pezzo di questa schermata** (Carmine, punto 8 sulla #228): il giorno che
+    una seconda schermata vuole un tooltip che si apre al tocco, è una decisione da portare a Carmine — non una copia, e non un riuso
+    fatto da sé.
+  - **E7**: un privato è `Kind = Private`, `Generated`, lo scalo e il verso, e l'orario allo scalo in `OffBlockUtc` (partenza) o
+    `OnBlockUtc` (arrivo); l'esportazione li porta già così (gate vuoto, `paired_slot_id` vuoto finché E7 non lo legge dalla prenotazione);
+    il form di uno slot li rifiuta (`events:errors.slotNotPublic`) e la scheda non dà loro «Modifica»; «elimina i liberi» li toglie.
+  - **E8b** («Duplica») copia, a scelta, gli slot pubblici con le rotazioni: le colonne sono quelle di `SlotDraft`, e i posti ci sono già.
+    Gli slot copiati si spostano con le date del nuovo evento, o cadono fuori dalla sua finestra (`SlotWindow`).
+  - ⚠️ **Il verso si fissa quando lo slot si scrive** (`IsArrival` ed `EventAirportIcao`; revisione, punto 8): uno scalo aggiunto all'evento
+    dopo lascia uno slot salvato com'era, finché qualcuno non lo salva di nuovo.
+  - ⚠️ **Le date dell'evento che cambiano non ricontrollano la finestra**: uno slot rimasto fuori resta finché non si salva di nuovo
+    (allora è rifiutato) o un «sostituisci» non lo toglie, se è libero.
+  - ⚠️ **Le catene usano `bookingGapMinutes` di quando si caricano**: cambiare l'impostazione dopo non ricontrolla le rotazioni salvate.
+  - ⚠️ **Due caricamenti dello stesso evento nello stesso momento li tiene solo l'indice univoco** (revisione, punto 6): ognuno controlla le
+    catene con gli slot che legge, quindi insieme possono salvare una catena che nessuno dei due avrebbe accettato da solo. Due persone
+    che caricano lo stesso evento nello stesso secondo sono un caso lontano; una catena così resta salvata, e chi corregge poi una delle sue
+    tratte se la vede rifiutare finché non la ripara.
+  - ⚠️ **FluentValidation: un `.When` alla fine di una catena di regole vale per tutta la catena** (`ApplyConditionTo.AllValidators`):
+    scritta così, la regola del formato del callsign avrebbe spento anche «obbligatorio», e un callsign vuoto sarebbe passato. Trovato
+    rileggendo, prima dei test: ora il formato sta in un `RuleFor` suo, e il test d'integrazione manda un callsign vuoto.
+  - ⚠️ **Il test d'integrazione scrive un privato sul database** (nessuno lo genera ancora): E7 lo sostituisce con il generatore.
+  - ⚠️ **Uno spec del giro completo dice che cosa rimette a posto con `afterwards(…)` del banco, mai in un `finally`** (#227,
+    `CONTRIBUTING.md`): `events-slots.spec.ts` lo fa dal merge di `main` che è arrivato con il branch di E10g; `events-public.spec.ts` ed
+    `events-staff.spec.ts` del giro completo, di E4 e di prima, hanno ancora il `finally`.
+
+[a228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6022686808
+[v228]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6021830879
+[a228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040717010
+[v228b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/228#issuecomment-6040474527
+
+### Che cosa ha lasciato E10g (6–7 ottobre 2026, branch `m4/e10g-contract-version`, PR #230, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-06-la-versione-di-un-contratto-nel-nucleo.md`, **decisa**: Carmine sulla #230,
+  [le sue risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720) — sì al nucleo invece di una copia,
+  il passaggio dei tour in una sua sessione, la riga in `CLAUDE.md` §2 dal master):
+  - **La versione di un contratto nel nucleo**: `ContractVersion` in `src/IvaoHub.Core/Auth/ContractVersion.cs`, namespace
+    **`IvaoHub.Core.Auth`**, accanto ai token personali. Si costruisce con l'intestazione del contratto, la versione corrente, le
+    accettate, la chiave del titolo e il `code`. `RequireAsync` è un filtro di endpoint che risponde come quello dei tour
+    (`AgentContract.RequireVersionAsync`): l'intestazione senza spazi intorno, sole cifre ASCII, fra le accettate; altrimenti **400** con
+    `code`, `current` e `accepted` e il titolo nella lingua di chi chiede; se accettata, la risposta ripete nella stessa intestazione **la
+    versione parlata** (non la corrente), e l'endpoint risponde.
+  - **Il costruttore rifiuta** un'intestazione che non è un token di HTTP, nessuna versione, una versione non positiva o ripetuta, la
+    corrente fuori dalle accettate, una chiave o un `code` vuoti: quando il modulo dichiara il contratto, all'avvio.
+  - **I test**: `tests/IvaoHub.UnitTests/ContractVersionTests.cs` (unità, 21), con **il test gemello**, che confronta il nucleo con i
+    valori dei tour e il filtro dei tour su 120 coppie, byte per byte.
+  - Nessuna migrazione, nessun endpoint, nessuna chiave del nucleo, niente nel browser.
+- **Che cosa deve sapere la fase dopo** (E5, la #228, in coda dopo questa, che porta già questo branch):
+  - **Come la usa un modulo**: un campo `static readonly ContractVersion` con i valori del suo contratto — **un'intestazione sua**, non
+    quella dell'agente (Carmine, punto 9 sulla #228), la versione corrente, le accettate, **la chiave del titolo con il namespace del
+    modulo**, nel file delle parole del modulo in ogni lingua, e il suo `code` — e `.AddEndpointFilter(contratto.RequireAsync)` sugli
+    endpoint del contratto. La policy del token risponde prima del filtro (401, 403): l'autorizzazione è un middleware, il filtro gira
+    dentro l'endpoint.
+  - ⚠️ **Il titolo è del modulo**: il nucleo non aggiunge parole. Senza la chiave nel file del modulo il 400 ha per titolo la chiave
+    stessa, e `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer` vuole una chiave con il namespace che il file del modulo
+    dichiari.
+  - ⚠️ **Un endpoint aperto** che dice il contratto prima che il programma parli una versione (i tour hanno `/contract`) non mette il
+    filtro e scrive da sé `Header` con `Current`: il nucleo non ha un `Announce` (nota §3). L'esportazione di E5 non ne ha uno.
+  - **Il documento pubblico** del contratto è del modulo, come `docs/agent-contract.md` dei tour: l'intestazione, il 400 con `code`,
+    `current` e `accepted`, la regola delle versioni (dentro una versione solo aggiunte; una rottura è la versione dopo, accettata
+    accanto alla vecchia per almeno un rilascio).
+  - ⚠️ **La copia dei tour c'è ancora** (`AgentContract.RequireVersionAsync`): la toglie una sessione di Carmine **dopo l'unione di
+    questa PR** ([sua risposta sulla #230](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6039777720), alla
+    [richiesta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/230#issuecomment-6026482474); nota §5). Fino ad allora il test gemello
+    tiene le due copie uguali; con il passaggio se ne va anche lui. **Sì anche alla riga in `CLAUDE.md` §2** (la versione del contratto di
+    un programma esterno è `ContractVersion` del nucleo, mai un controllo del modulo), che aggiunge il master con il piano.
 
 ### Che cosa ha lasciato E4b (6 ottobre 2026, branch `m4/e4b-online-at-airports`, PR #226, del nucleo, senza coda)
 
