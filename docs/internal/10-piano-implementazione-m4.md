@@ -2356,15 +2356,33 @@ master e pubblicate su sua istruzione):
   (il test `TheRowAsItWasLoadedSaysWhoseItIs`, la variabile `loaded` del guardiano).
 - **Il rilievo 3**: il riassunto dell'attributo dice anche l'alternativa segnata `AlsoOnDeletion`; quello di `VerifyWithdrawals` dice
   «insieme», con le parole della risposta 1.
-- **Ancora aperto il rilievo 6** (il segno su un'entità con un permesso `DeniedToStakeholder`): nella nota (§6.3) con la raccomandazione
-  — una frase, non un ottavo rifiuto — e nessun codice finché Carmine non risponde; non ferma la PR.
+- **Il rilievo 6** (il segno su un'entità con un permesso `DeniedToStakeholder`) era ancora aperto: nella nota (§6.3) con la
+  raccomandazione — una frase, non un ottavo rifiuto — e nessun codice finché Carmine non rispondeva (sotto, la risposta).
 - **Verificato** dopo il merge e le correzioni: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui tre file C#
   toccati: pulito; unità **1125/1125** (le 8 di E4b comprese); integrazione intera, senza filtro, **492/492** al primo giro (5,8 minuti);
   `WithdrawnByStakeholderTests` da sola 6/6; le regole di `core-guard` dalla nuova merge base (`7b84a75`): tredici file, cinque del nucleo
   con la nota nuova — passa. Il web non cambia con questa fase e non si è rifatto: lo rifà la CI.
 
+**Dopo la risposta sul rilievo 6** (7–8 ottobre 2026, [la risposta 3 corretta][a3232] di Carmine sulla #232, data in chat alla sessione
+master e pubblicata su sua istruzione):
+
+- **Una frase nel riassunto del segno, non un ottavo rifiuto all'avvio**, come raccomandato: *mai su una riga su cui lo staff decide
+  qualcosa del membro — cancellarla cancellerebbe la decisione; il guardiano non sa né lo stato né l'ora, e fino a quando un membro si
+  ritira lo dice l'endpoint del modulo*; e **la nota di ogni fase che mette il segno dice perché la sua riga non porta decisioni**. Sta nel
+  riassunto di `[WithdrawnByStakeholder]` (`DomainContracts.cs`), nella nota (§3.1, §6.3, «Da portare nel piano») e nell'handoff; nessun
+  altro codice. La risposta delle 15:41 ([qui][a3232old]), che chiedeva l'ottavo rifiuto con un test, era data prima che Carmine vedesse la
+  raccomandazione, ed è sostituita da questa: niente di quella risposta è entrato nel codice.
+- **`main` unito di nuovo** a `1f2a687` (le #230 di E10g, #228 di E5 e #234, il piano 1.31): conflitti solo nei documenti — in `10` la
+  riga e la sezione di E10g prima di quelle di E10h; in `HANDOFF-M4.md` l'intestazione di E10h aggiornata (con il testo di E5 che resta
+  vero), il blocco di E10h in cima e poi quelli di E5, E10g ed E4b, e in «Che cosa manca» prima E10g poi E10h.
+- **Verificato**: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` su `DomainContracts.cs`: pulito; unità
+  **1187/1187**; integrazione intera, senza filtro, **497/497** al primo giro (5,5 minuti), `WithdrawnByStakeholderTests` compresa; le
+  regole di `core-guard` dalla merge base `1f2a687`: tredici file, cinque del nucleo con la nota nuova — passa.
+
 [rv232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039667157
 [a232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
+[a3232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155
+[a3232old]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041353964
 
 ### E11a — Postazioni e disponibilità
 

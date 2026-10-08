@@ -152,8 +152,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 
 - **Che cosa c'è** (nota `decisions/2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga.md`, **decisa** da Carmine sulla #232: sì alla
-  forma, e il limite dello stub scritto come per T11; resta aperto il rilievo 6, §6.3 della nota; il dettaglio in `10`, E10h, «Com'è
-  andata» e «Dopo la revisione»):
+  forma, il limite dello stub scritto come per T11, e sul rilievo 6 una frase nel riassunto del segno, §6.3 della nota; il dettaglio in
+  `10`, E10h, «Com'è andata» e «Dopo la revisione»):
   - **Il segno**: `[WithdrawnByStakeholder]` (`WithdrawnByStakeholderAttribute`, namespace **`IvaoHub.Core.Division`**, in
     `src/IvaoHub.Core/Division/DomainContracts.cs` accanto a `ISubmittedByMembers`), sulla classe dell'entità.
   - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`): una riga `ISubmittedByMembers` e `IHasStakeholder` la cui entità
@@ -169,7 +169,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (integrazione) e `VerifyWithdrawalsTests` (unità). `ErasureTests` non cambia: non legge il contesto di prova.
   - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler e il motore CRUD non cambiano.
 - **Che cosa devono sapere le fasi dopo**:
-  - **E6a** (in coda dopo la #228 e la #232): il segno su `EventBooking` l'ha già messo la sua sessione, che ha unito questo branch; il
+  - **E6a** (la #233, in coda dopo la #232): il segno su `EventBooking` l'ha già messo la sua sessione, che ha unito questo branch; il
     ritiro passa dal suo endpoint del flusso del pilota (`DELETE /api/events/mine/bookings/{id}`), che legge la riga del pilota e la
     elimina, e il guardiano controlla di nuovo sotto.
   - ⚠️ **Il segno non apre il motore CRUD**: la DELETE di `MapCrud` chiede all'handler la policy di scrittura, e un membro non la tiene.
@@ -184,10 +184,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     segno sull'entità, che dev'essere `IOwnedByDepartment`, `ISubmittedByMembers` e `IHasStakeholder` (o l'hub non parte); se il ritiro è
     uno stato, come per il PIREP, il segno non serve: cambiare la propria riga lo permette già l'eccezione di T11.
   - ⚠️ **Il segno si legge con `inherit: false`**: va sulla classe dell'entità, non su una sua base.
-  - ⚠️ **Il rilievo 6 è aperto** (nota §6.3): il segno su un'entità con un permesso `DeniedToStakeholder`, cioè su una riga su cui lo staff
-    decide qualcosa del membro (un PIREP di supporto, una cessione di un turno), dove cancellarla cancellerebbe la decisione. Finché
-    Carmine non risponde, una fase che mette il segno su un'entità di un'area con un `Edit` negato all'interessato (`EventAtc`,
-    `EventReports`) lo dice nella sua nota e lo chiede.
+  - ⚠️ **Il segno mai su una riga su cui lo staff decide qualcosa del membro** (risposta 3 di Carmine sulla #232, nota §6.3: una frase
+    nel riassunto del segno, non un rifiuto all'avvio): un PIREP di supporto, la cessione di un turno — cancellarla cancellerebbe la
+    decisione. Il guardiano non sa né lo stato né l'ora: fino a quando si ritira lo dice l'endpoint. **La nota di ogni fase che mette il
+    segno dice perché la sua riga non porta decisioni**, e la revisione lo controlla (per una prenotazione: le verifiche e le scuse dello
+    staff arrivano dopo l'evento, quando il ritiro, che finisce all'off block, è chiuso).
 
 ### Che cosa ha lasciato E5 (6–7 ottobre 2026, branch `m4/e5-public-slots`, PR #228, nata in coda dopo la #223, unita prima che si aprisse; dalla revisione in coda dopo la #230 di E10g)
 
