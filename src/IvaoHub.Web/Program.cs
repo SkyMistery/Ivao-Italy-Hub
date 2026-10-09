@@ -191,7 +191,8 @@ builder.Services.AddHubAwards();
 // task calls (note 2026-10-09-i-job-che-recuperano).
 builder.Services.AddHubJobs();
 
-// The login is the one place an outsider can make the server do work before proving anything.
+// The login is the one place an outsider can make the server do work before proving anything; the address of the host's
+// scheduled task, which refuses a wrong token, is limited the same way, so that refusals cannot fill the log.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -387,7 +388,7 @@ app.MapModuleAdminEndpoints();
 app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
 
 // The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token.
-app.MapJobRunEndpoints();
+app.MapJobRunEndpoints().RequireRateLimiting(AuthEndpoints.RateLimitPolicy);
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
 app.MapModuleEndpoints();
