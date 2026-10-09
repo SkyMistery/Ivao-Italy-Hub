@@ -105,7 +105,10 @@ to the gallery fails until the section exists, so a component cannot quietly sto
 
 When Atmosphere nearly does what is needed, wrap it rather than replace it — `DataList` is
 Atmosphere's `DataTable` in server side mode, with the paging drawn by us because Atmosphere's own
-writes "Rows per page" in English. A component that does something genuinely new is a decision.
+writes "Rows per page" in English; and drawn from the parts of Atmosphere's `Pagination`
+(`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) rather than with it,
+because `Pagination` writes "Previous" and "Next" itself and takes no words. A component that does
+something genuinely new is a decision.
 
 `ContactForm` is on the list since G7: writing to a department is mounted from more than one place —
 the contact page, and any section of a department's own page that grows one — and what it adds to a
@@ -291,6 +294,11 @@ A list does not write a person's name inside its query instead: a page of rows i
 there is no language, so the pseudonym would stay a number. Like every column, it is `sortable` only
 when the server declares it in `CrudOptions.Sortable`, and then it sorts by the name, which is what
 the cell shows.
+
+An empty list says the core's sentence under its title, which speaks of what a department creates.
+A list whose rows are not a department's — a module's, since modules do not belong to departments —
+says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still offers
+what to do next.
 
 A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
 and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
@@ -829,8 +837,25 @@ and organising in the other. `DataList` does that for a `col.date`; anywhere els
 `Intl.DateTimeFormat` with `timeZone: 'UTC'` and with `bootstrap.division.timezone`. Never the time
 zone of the browser on its own.
 
+## A page names itself
+
+Every page says its title in the browser tab, followed by the division's name — "Calendar — IVAO
+Example" — through `PageMetadata` (`shared/seo/`): a row's page with the row's title, a page that is
+not a row (a list, the page that is not there) with its sentence of the language files, the same
+words as its heading. The division's name comes from the root of the route tree, which also makes it
+the tab of every page that names nothing: a tab never says the product's name. A module's own list
+page does the same, in one line.
+
+The default works because of where it stands: React 19 puts a `<title>` it mounts before the ones
+already in the head, and the root mounts before any page. A default drawn by a page, or below one,
+would take the tab from the pages under it.
+
 ## Accessibility, briefly
 
 Every input has a `<label>` bound to it; the generator does this for you. An icon that carries no
 meaning is `aria-hidden`; an icon-only button gets an `aria-label`. An error message is
 `role="alert"`, so it is announced when it appears rather than only seen.
+
+A generated form tells a screen reader that Enter saves only where it does: from a box of one line.
+A form whose boxes are all of several lines — where Enter starts a new line — says nothing, and one
+with both kinds says which box it means.
