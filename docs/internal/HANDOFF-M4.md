@@ -6,16 +6,18 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 8 ottobre 2026 — **fase E10h** (nucleo: il ritiro di chi ha mandato la riga), sul branch
-`m4/e10h-stakeholder-withdraws`, **PR #232** verso `main`, nata da `main` a `e9702b2`, senza coda, e **unita di nuovo a `main`** a
-`7b84a75` dopo la revisione e a `1f2a687` dopo la risposta di Carmine sul rilievo 6. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
-(#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
-**E10g (#230)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e
-**1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli
-spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10h** (questa, la #232, del nucleo, senza coda: **decisa da Carmine**, anche sul rilievo 6 — una frase nel
-riassunto del segno, non un ottavo rifiuto), poi **E6a** (la #233, prenotare: il server), **in coda solo dopo la #232**: la sua sessione ha
-unito questo branch e mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
+**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E10i** (nucleo: il grant su una riga scrive la sua riga), sul branch
+`m4/e10i-scoped-grant-writes`, **PR #237** verso `main`, nata da `main` a `0f72737`, senza coda. Sono unite E1 (#200), E2 (#209), E2b
+(#212), E3a (#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206),
+E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i
+piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
+`0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
+**Il prossimo passo**: **E10i** (questa, la #237, del nucleo, senza coda: **decisa da Carmine** sulla #235 — un grant su un evento solo
+scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo; «Che cosa ha lasciato E10i», sotto) ed **E6a** (la #233, prenotare:
+il server, in coda dopo la #232, ora unita): la sua sessione ha messo `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato
+E10h», sotto). ⚠️ **Da oggi la suite di unità cade su `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`**, su ogni ramo e su
+`main`: una data fissa del maintainer contro l'ora vera, non di una fase (`10`, E10i, «Trovato»; segnalata a Carmine dalla sessione di
+E6a con l'issue #236). **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
 («Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
 fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le
@@ -135,7 +137,9 @@ lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatC
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
 l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
-da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»); il grant su un evento
+solo che scrive davvero l'evento e le sue righe, che E0 dava per esistente, **portato da E10i** (il guardiano chiede con lo scope della
+riga: sotto, «Che cosa ha lasciato E10i»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -148,6 +152,39 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10i (9 ottobre 2026, branch `m4/e10i-scoped-grant-writes`, PR #237, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga.md`, **decisa** da Carmine sulla #235: sì alla
+  fase, e un grant su un evento solo crea un figlio di quell'evento, mai un evento nuovo; il dettaglio in `10`, E10i, «Com'è andata»):
+  - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`) chiede `{Area}.Edit` **con lo scope della riga**, come l'unico
+    handler: in modifica (la riga com'è scritta), all'eliminazione (la riga com'era) e alla creazione (lo scope con cui la riga nuova
+    risponde). Una domanda sola, `Holds`, per `Edit` e per ogni alternativa.
+  - **Un grant su un evento solo** (`events:event:{id}`) cambia e toglie l'evento e le sue righe — scali, rotte, slot, e le prenotazioni
+    quando ci saranno —, ne **crea** i figli (uno slot, una rotta, un caricamento della tabella degli slot), e **non crea un evento
+    nuovo**: lo scope proprio di un evento nuovo è `events:event:0`, la chiave che il database non ha ancora dato, che nessun grant nomina.
+  - **Lo spostamento fra scope** (`IsMoved`): una modifica che cambia dipartimenti, FIR o scope chiede `Edit` anche sulla riga di prima,
+    e nessuna alternativa la sposta.
+  - **Il modulo di prova**: `SamplePart` (`smp_parts`, `tests/IvaoHub.IntegrationTests/SampleParts.cs`), una parte che risponde con lo
+    scope del suo item (`SampleItem.ScopeOf`), migrazione `AddSampleParts`; i test `ResourceScopeWriteTests` (6, sul guardiano) ed
+    `EventsScopedGrantTests` (2, sugli endpoint veri degli eventi), VID 761097.
+  - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler, il motore CRUD e la lista generata
+    non cambiano.
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Una riga figlia risponde con lo scope della riga sopra di lei** (`ResourceScope => Event.ScopeOf(EventId)`), com'è già per
+    scali, rotte e slot: così un grant su un evento la scrive e la crea. Ogni tabella nuova delle righe dello staff di un evento (per
+    esempio le postazioni di E11a, le regole di award di E14b) fa lo stesso, come vuole la nota `2026-09-29-chi-lavora-sugli-eventi`
+    (punto 6), e il grant su un evento solo vale anche lì senza altro codice.
+  - ⚠️ **Lo scope proprio di una riga si costruisce sulla sua chiave**, mai su qualcosa che chi la scrive sceglie (l'indirizzo, un codice):
+    un grant scritto su quello creerebbe la riga. E **un grant con scope si scrive su una riga che esiste**: la schermata del modulo che
+    darà il grant «su un evento solo» lo scrive per un evento che ha trovato (`ModuleGrants.GiveAsync`), mai su un id che le arriva e
+    basta. Sono le due condizioni del riassunto di `IHasResourceScope`.
+  - **E6a** (la #233): dopo il merge di E10i, un grant di `EventBookings.Edit` su un evento solo toglie le prenotazioni di quell'evento; il
+    suo `TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow` resta com'è (il membro di un evento solo agisce su un altro evento:
+    403 dall'handler), e il caso positivo, se lo si vuole, è una riga in più del suo test.
+  - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cade dal 9 ottobre 2026 alle 06:00 UTC su ogni
+    ramo: una data fissa contro `DateTime.UtcNow` e la finestra di 30 giorni di NOAA. Non è di nessuna fase di M4 e non si tocca (`CLAUDE.md`
+    §0 regola 3): la si dice nella PR finché il maintainer non la corregge (issue #236, aperta dalla sessione di E6a).
 
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 

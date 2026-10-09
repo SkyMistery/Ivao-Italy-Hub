@@ -109,6 +109,7 @@ Per non ripeterle trenta volte:
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
+| E10i | Nucleo: il grant su una riga scrive la sua riga | E0 (la trova E6a: issue #235, decisa da Carmine) | il guardiano chiede `{Area}.Edit` con lo scope della riga, come l'handler: un grant su un evento solo cambia e toglie l'evento e le sue righe, ne crea i figli (slot, rotte), mai un evento nuovo |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -2383,6 +2384,87 @@ master e pubblicata su sua istruzione):
 [a232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
 [a3232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155
 [a3232old]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041353964
+
+### E10i — Nucleo: il grant su una riga scrive la sua riga
+
+**Da dove viene**: non c'era in E0. L'ha trovata la sessione di E6a (la #233), il 7–8 ottobre 2026, misurando il ritiro di una
+prenotazione da parte dello staff: un VID con `EventBookings.Edit` su un evento solo (design §6.2, «anche su un evento solo») passava
+l'autorizzazione dell'endpoint e cadeva al salvataggio, perché il guardiano dell'interceptor chiedeva `{Area}.Edit` **senza lo scope della
+riga** (`RequireAny`), mentre l'unico handler lo chiede con lo scope. dalberone l'ha segnalata a Carmine con [l'issue #235][i235], senza
+toccare il nucleo; **Carmine ha risposto** ([sulla #235][a235], in chat alla sessione master e pubblicata su sua istruzione): sì, come fase
+del nucleo di M4; e un grant su un evento solo **crea un figlio di quell'evento** (uno slot, una rotta), **mai un evento nuovo**. Branch
+`m4/e10i-scoped-grant-writes`, da `main` a `0f72737`. **PR del nucleo**, con la sua nota (caso b); nessuna migrazione del nucleo; da unire
+prima della fase del modulo che se ne serve.
+
+1. **Il guardiano** chiede `{Area}.Edit` con lo scope della riga, in modifica e all'eliminazione, come l'handler; anche quando la riga
+   cambia dipartimenti o FIR (la seconda domanda, sulla riga di prima).
+2. **Alla creazione**: una riga nuova figlia di una riga con lo scope (uno slot, una rotta di un evento) la crea un grant su quella riga;
+   una riga nuova che non è figlia resta com'è. Come il nucleo sappia «figlia di», lo fissa la nota con **una regola generica**, mai una
+   che nomina gli eventi.
+3. **Le alternative** chiedono già lo scope in modifica: **una domanda sola**, non due.
+
+**Test**: integrazione, nel modulo di prova sul guardiano e sugli endpoint veri degli slot: un grant su un evento cambia e toglie lo slot
+di quell'evento; 403 sulle righe di un altro evento; crea uno slot del suo evento e non un evento nuovo; un grant senza scope come oggi; lo
+spostamento fra dipartimenti chiede ancora i due lati. Ognuno cade sul codice di `main`.
+**Fatta quando**: chi ha un grant su un evento solo ne carica, corregge e toglie gli slot, e non tocca un altro evento.
+
+**Com'è andata** (9 ottobre 2026, branch `m4/e10i-scoped-grant-writes`, PR #237, del nucleo senza coda, da `main` a `0f72737`):
+
+- **Fatto** (nota nuova `2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga`, **decisa** da Carmine sulla #235: la forma nel codice è
+  della nota, e segue le due risposte):
+  - **una domanda sola** nel guardiano, `Holds(permission, departments, scope, fir)` — tenuto su uno dei dipartimenti della riga, con il
+    suo scope e il suo FIR, come chiede l'handler —, per `{Area}.Edit` (`RequireAny`) e per ogni alternativa
+    (`IsWrittenWithAnAlternative`);
+  - **lo scope della riga**, `RowScope`: della riga nuova o cambiata com'è scritta, della riga tolta com'era (`OriginalScope`, dai valori
+    originali), come il FIR;
+  - **alla creazione, lo scope con cui la riga nuova risponde**: una figlia risponde con lo scope della riga sopra di lei (uno slot con
+    quello del suo evento), e un grant su quella riga la crea; una riga che risponde con il suo scope lo costruisce sulla chiave che il
+    database non ha ancora dato (`events:event:0`), che nessun grant nomina, e un grant su un evento non crea un evento nuovo. Nessun segno
+    sull'entità; le due condizioni su cui si regge — un grant si scrive su una riga che esiste, e lo scope proprio di una riga si costruisce
+    sulla sua chiave — stanno nel riassunto di `IHasResourceScope` (nota §3.3);
+  - **lo spostamento fra scope**, `IsMoved`: una modifica che cambia dipartimenti, FIR **o scope** chiede `Edit` anche sulla riga di prima,
+    e nessuna alternativa la lascia passare;
+  - **il modulo di prova**: `SamplePart` (`smp_parts`), una parte di un item che risponde con lo scope del suo item (`SampleItem.ScopeOf`,
+    nuovo), con le due alternative di `SampleRecord`; migrazione `AddSampleParts` del solo contesto di prova;
+  - **i test**, con il VID 761097: `ResourceScopeWriteTests` (integrazione, 6, sul guardiano) ed `EventsScopedGrantTests` (integrazione,
+    2, sugli endpoint veri: il caricamento di una tabella, uno slot creato, corretto e tolto; l'evento cambiato; 403 su un altro evento e
+    su un evento nuovo).
+- **Scostamenti, scritti nella nota** (§3.3, §3.4, §6), conseguenze della forma e non righe delle risposte, dette al revisore:
+  1. **le alternative segnate `AlsoOnCreation`** chiedono la creazione con lo scope della riga nuova, come `Edit`, dove la nota di A3
+     diceva «senza scope»: una domanda sola; oggi non cambia niente, perché nessuna entità ha un'alternativa che crea e uno scope preso da
+     sopra;
+  2. **nessuna alternativa sposta una riga fra scope**: chiude per lo scope il punto 2 trovato in A3 (lo scope guardato solo dopo la
+     scrittura), che la nota di A3b lasciava al maintainer; nessuna riga di oggi cambia il suo scope con un'alternativa.
+  Se Carmine preferisce lasciarle com'erano, ognuna è una riga del guardiano e un test.
+- **Trovato**: ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cade su ogni ramo, `main`
+  compreso, **dalle 06:00 UTC del 9 ottobre 2026**: chiede la storia del meteo del 9 settembre 2026 alle 06:00, e
+  `NoaaWeatherClient.GetHistoryAsync` risponde `null` quando la finestra comincia più di 30 giorni prima di `DateTime.UtcNow`
+  (`IWeatherSource.HistoryWindow`). Una data fissa contro l'ora vera: una bomba a tempo, non di questa fase. Non toccata (`CLAUDE.md` §0
+  regola 3): detta nella PR e alle sessioni di E6a, E6b, E10j ed E10k; la sessione di E6a l'ha segnalata a Carmine con
+  [l'issue #236][i236], con le due strade (il client che legge `IClock`, o la data del test calcolata da adesso).
+- **Verificato, in locale** (9 ottobre 2026, `main` a `0f72737`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui nove file C# toccati, migrazioni comprese: pulito;
+  - unità 1186/1187: cade solo `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, la bomba a tempo qui sopra;
+  - le due classi nuove con quelle del guardiano che c'erano (`AlternativeWritePermissionTests`, `WithdrawnByStakeholderTests`,
+    `ResourceScopeTests`, `AssignedRowPermissionTests`, `FirTeamPermissionTests`): 33/33;
+  - **la prova al contrario**: con `HubSaveChangesInterceptor.cs` e `DomainContracts.cs` di `main` rimessi e ricompilati, le 8 nuove
+    cadono tutte, ognuna dove la fase cambia qualcosa (`VID 761097 does not hold Sample.Edit on any of ED`; sugli endpoint 403 per
+    `EventBookings.Edit` al caricamento e per `Events.Edit` alla modifica; e `Sample.Decide` tenuto sui due item che sposta la parte,
+    `No exception was thrown`); rimessi i file della fase, toccati e ricompilati, con lo stesso diff, 8 su 8;
+  - **la condizione 1 della nota** (§3.3), con una prova buttata, mai nel ramo: un permesso scritto su `sample:item:0` crea un item nuovo,
+    perché al guardiano la riga nuova risponde con `sample:item:0`; tolta la prova, il progetto dei test ricompilato senza;
+  - l'integrazione intera, senza filtro: **505/505** al primo giro (5,4 minuti);
+  - in `web/`, dove niente cambia (i `node_modules` installati dal lockfile, senza cambiarlo): `pnpm lint` e `pnpm typecheck` verdi,
+    `pnpm test` **643/643** in 88 file, `pnpm gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`0f72737`): dodici file, nessuno del maintainer, quattro del nucleo
+    con la nota nuova — passa.
+- **Non verificato**: la CI (la dice la PR; `build-test` cadrà sulla bomba a tempo del meteo, l'issue #236); `pnpm e2e` e
+  `pnpm e2e:full`: nessuna schermata cambia, quindi né la porta 5129 né `ivaohub_e2e_e10i` sono stati usati; le prenotazioni (la #233 non
+  è su `main`): la stessa regola le copre, e la rivede la sessione di E6a dopo il merge.
+
+[i235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235
+[a235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235#issuecomment-6070088402
+[i236]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/236
 
 ### E11a — Postazioni e disponibilità
 
