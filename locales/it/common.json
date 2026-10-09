@@ -134,6 +134,13 @@
       "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
     },
+    "pages": {
+      "label": "Pagine",
+      "previous": "Precedente",
+      "next": "Successiva",
+      "first": "Prima pagina",
+      "last": "Ultima pagina"
+    },
     "file": "Apri il file",
     "edit": {
       "refused": "Quella modifica non è stata salvata. Può darsi che qualcun altro abbia cambiato la riga nel frattempo."

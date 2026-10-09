@@ -2,13 +2,16 @@ import {
   DataTable,
   DataTableColumnHeader,
   Input,
-  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationRoot,
   Select,
   Subtle,
   type DataTableProps,
 } from '@ivao/atmosphere-react';
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { Paperclip, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis, Paperclip, Search } from 'lucide-react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,6 +32,10 @@ import type { ListSearch } from './search';
  * The pagination is drawn here rather than by `DataTable` for one reason: Atmosphere's own
  * pagination writes "Rows per page" and "Page 1 of 3" in English, and no screen of this hub carries
  * an untranslated sentence. Same for the column visibility menu, which is why it is off.
+ *
+ * ⚠️ And it is not Atmosphere's `Pagination` either, which this file drew until 9 October 2026 and
+ * which writes "Previous" and "Next" with no way to give it other words (#224): it is that component's
+ * own parts, put back together with the words of the language files (`Pages`, below).
  */
 
 /** A page of rows, in the shape every list of the hub answers with (`PagedResult<T>`). */
@@ -54,6 +61,7 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   actions,
   toolbar,
   emptyAction,
+  emptyDescription,
   onEdit,
 }: {
   columns: readonly ColumnSpec<TRow>[];
@@ -78,6 +86,12 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
   toolbar?: ReactNode;
   /** Offered when the list is empty and nothing is being searched for. */
   emptyAction?: ReactNode;
+  /**
+   * What an empty list says under its title, in the screen's own words, when nothing is being
+   * searched for. Without it the list says the core's sentence, which speaks of what a department
+   * creates — and not every list is a department's: the rows of a module are not (plan 0.72, #224).
+   */
+  emptyDescription?: string;
   /**
    * Saves one field of one row, for the columns that declare themselves editable. Without it a
    * column that says `editable` is drawn as it always was: the list can put a control in a cell,
@@ -150,7 +164,7 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
         <EmptyState
           title={search.q === undefined ? t('list.empty.title') : t('list.empty.noMatch')}
           {...(search.q === undefined
-            ? { description: t('list.empty.description'), action: emptyAction }
+            ? { description: emptyDescription ?? t('list.empty.description'), action: emptyAction }
             : {})}
         />
       ) : (
@@ -181,14 +195,97 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
       {total === 0 ? null : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Subtle>{t('list.total', { count: total })}</Subtle>
-          <Pagination
-            totalPages={pageCount}
-            activePageIdx={search.page - 1}
-            onPageChange={(index) => onSearchChange({ page: index + 1 })}
-          />
+          <Pages count={pageCount} current={search.page} onChange={(page) => onSearchChange({ page })} />
         </div>
       )}
     </div>
+  );
+}
+
+/** How many page numbers are shown around the current one: what Atmosphere's `Pagination` shows. */
+const SHOWN_PAGES = 3;
+
+/**
+ * The pages of a list, in the words of the language files (#224).
+ *
+ * The parts are Atmosphere's — the root, the content, the items and its `PaginationLink` — and so are
+ * the look and the window: «Previous» and «Next» with their chevrons, three numbers with the current
+ * one in the middle unless an end is closer, and a «…» that goes to the first or the last page when
+ * that one is out of the window. What is ours is every word, and that is all `Pagination` would not
+ * let us change: it writes "Previous", "Next" and "pagination" itself, and calls both of its «…» "Go to
+ * next page" whichever way they go.
+ *
+ * ⚠️ One difference from it, on purpose: a «…» is drawn only when the page it leads to is not
+ * already a number on the line. Atmosphere draws one on the first and the last of three pages too,
+ * where it leads to a number right beside it.
+ */
+function Pages({
+  count,
+  current,
+  onChange,
+}: {
+  count: number;
+  current: number;
+  onChange: (page: number) => void;
+}) {
+  const { t } = useTranslation();
+
+  const first = Math.max(Math.min(current - Math.floor(SHOWN_PAGES / 2), count - SHOWN_PAGES + 1), 1);
+  const numbers = Array.from({ length: Math.min(SHOWN_PAGES, count) }, (_, index) => first + index);
+  const last = numbers[numbers.length - 1] ?? first;
+
+  return (
+    <PaginationRoot aria-label={t('list.pages.label')}>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationLink
+            size="md"
+            className="gap-1 pl-2.5"
+            disabled={current <= 1}
+            onClick={() => onChange(current - 1)}
+          >
+            <ChevronLeft aria-hidden className="size-4" />
+            <span>{t('list.pages.previous')}</span>
+          </PaginationLink>
+        </PaginationItem>
+
+        {first > 1 ? (
+          <PaginationItem>
+            <PaginationLink size="icon" aria-label={t('list.pages.first')} onClick={() => onChange(1)}>
+              <Ellipsis aria-hidden className="size-4" />
+            </PaginationLink>
+          </PaginationItem>
+        ) : null}
+
+        {numbers.map((page) => (
+          <PaginationItem key={page}>
+            <PaginationLink isActive={page === current} onClick={() => onChange(page)}>
+              {page}
+            </PaginationLink>
+          </PaginationItem>
+        ))}
+
+        {last < count ? (
+          <PaginationItem>
+            <PaginationLink size="icon" aria-label={t('list.pages.last')} onClick={() => onChange(count)}>
+              <Ellipsis aria-hidden className="size-4" />
+            </PaginationLink>
+          </PaginationItem>
+        ) : null}
+
+        <PaginationItem>
+          <PaginationLink
+            size="md"
+            className="gap-1 pr-2.5"
+            disabled={current >= count}
+            onClick={() => onChange(current + 1)}
+          >
+            <span>{t('list.pages.next')}</span>
+            <ChevronRight aria-hidden className="size-4" />
+          </PaginationLink>
+        </PaginationItem>
+      </PaginationContent>
+    </PaginationRoot>
   );
 }
 

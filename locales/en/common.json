@@ -134,6 +134,13 @@
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
     },
+    "pages": {
+      "label": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "first": "First page",
+      "last": "Last page"
+    },
     "file": "Open the file",
     "edit": {
       "refused": "That change was not saved. The row may have been changed by somebody else in the meantime."
