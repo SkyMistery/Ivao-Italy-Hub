@@ -35,7 +35,8 @@
       "description": "Descrizione",
       "airports": "Scali",
       "routes": "Rotte",
-      "slots": "Slot"
+      "slots": "Slot",
+      "bookings": "Prenotazioni"
     },
     "actions": {
       "publish": "Pubblica",
@@ -43,7 +44,9 @@
     },
     "publish": {
       "problems": "Prima di pubblicarlo manca ancora:",
-      "saveFirst": "Prima salva le impostazioni: «Pubblica» pubblica l'evento com'è salvato."
+      "saveFirst": "Prima salva le impostazioni: «Pubblica» pubblica l'evento com'è salvato.",
+      "confirmTitle": "Pubblicare l'evento?",
+      "confirmDescription": "Comparirà sul sito, nel calendario e nella ricerca, e non tornerà in bozza: da quel momento si potrà solo annullare."
     },
     "delete": {
       "title": "Eliminare questo evento?",
@@ -234,7 +237,19 @@
       "kind": "Tipo",
       "anyKind": "Tutti i tipi",
       "airport": "Scalo",
-      "anyAirport": "Tutti gli scali"
+      "anyAirport": "Tutti gli scali",
+      "title": "Filtra gli slot",
+      "direction": "Partenze o arrivi",
+      "bothDirections": "Entrambi",
+      "from": "Dalle (UTC)",
+      "until": "Fino alle (UTC)",
+      "anyHour": "Qualsiasi ora",
+      "anyType": "Tutti i tipi",
+      "airline": "Compagnia",
+      "anyAirline": "Tutte le compagnie",
+      "rotation": "Rotazione",
+      "anyRotation": "Tutti gli slot",
+      "noSlots": "Nessuno slot con questi filtri."
     },
     "calendar": "Nel calendario",
     "calendarEmpty": "Nessun evento in questo tratto del calendario.",
@@ -257,6 +272,29 @@
     "slotState": "Slot",
     "free": "Libero",
     "taken": "Preso",
+    "yours": "Tuo",
+    "onlineAtTheAirports": "In rete sugli scali dell'evento",
+    "booking": {
+      "title": "Prenotazioni",
+      "panel": "Prenota questo slot",
+      "opensAt": "Aprono il",
+      "openSince": "Aperte dal",
+      "untilOffBlock": "Ogni slot si prenota fino al suo off block.",
+      "countdownDays": "Fra {{days}} g {{time}}",
+      "countdown": "Fra {{time}}",
+      "closedCancelled": "Chiuse: l'evento è annullato.",
+      "notOpen": "Le prenotazioni di questo evento non sono ancora aperte: la pagina dice quando aprono.",
+      "signIn": "Accedi per prenotare questo slot",
+      "aircraft": "L'aereo con cui voli",
+      "book": "Prenota con {{aircraft}}",
+      "bookRotation": "Prenota tutta la rotazione",
+      "yours": "Questo slot è tuo, con il tuo {{aircraft}}.",
+      "toMine": "Le tue prenotazioni",
+      "rotationResult": "Le tratte della rotazione",
+      "rotationDone": "Prenotate: {{booked}} tratte su {{of}}.",
+      "rotationNone": "Nessuna tratta prenotata.",
+      "legBooked": "prenotata"
+    },
     "leg": "tratta {{leg}}",
     "departures": "Partenze",
     "arrivals": "Arrivi",
@@ -277,6 +315,48 @@
       "thisLeg": "questo volo"
     }
   },
+  "mine": {
+    "title": "Le mie prenotazioni",
+    "lead": "Gli slot che hai prenotato negli eventi, anche passati. Una prenotazione si ritira fino all'off block del suo volo.",
+    "none": "Ancora nessuna prenotazione",
+    "noneDescription": "Prenota uno slot dalla pagina di un evento.",
+    "toEvents": "Vai agli eventi",
+    "upcoming": "Da volare",
+    "noneUpcoming": "Nessun volo in arrivo.",
+    "past": "Passate",
+    "rotation": "rotazione {{rotation}}",
+    "rotationLeg": "rotazione {{rotation}}, tratta {{leg}}",
+    "stand": "Stand {{stand}}",
+    "withdraw": "Ritira",
+    "withdrawTitle": "Ritirare la prenotazione di {{callsign}}?",
+    "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo."
+  },
+  "bookings": {
+    "fields": {
+      "pilot": "Pilota",
+      "callsign": "Nominativo",
+      "aircraftIcao": "Aereo",
+      "departureIcao": "Da",
+      "offBlockUtc": "Off block",
+      "arrivalIcao": "Per",
+      "onBlockUtc": "On block",
+      "rotation": "Rotazione",
+      "createdAt": "Prenotato il",
+      "remindedAt": "Promemoria inviato"
+    },
+    "remove": {
+      "trigger": "Togli",
+      "title": "Togliere la prenotazione di {{callsign}}?",
+      "description": "Lo slot torna libero, e il pilota riceve una mail con il motivo.",
+      "confirm": "Toglila",
+      "fields": {
+        "reason": "Il motivo"
+      },
+      "hints": {
+        "reason": "Con parole tue: il pilota lo legge nella mail, e non si conserva altrove."
+      }
+    }
+  },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
   },
@@ -293,6 +373,13 @@
         "kinds": "Le parole del calendario, come le prende il blocco del calendario. Nessuno, tutti i tipi.",
         "limit": "Zero ne mostra quanti ne tiene una lista: i cinquanta più vicini."
       }
+    },
+    "myEvents": {
+      "label": "Le mie prenotazioni",
+      "signIn": "Accedi per vedere le tue prenotazioni.",
+      "none": "Nessuna prenotazione.",
+      "toEvents": "Vai agli eventi",
+      "all": "Tutte le tue prenotazioni"
     }
   },
   "settings": {
@@ -334,6 +421,10 @@
     "bookingChanged": {
       "title": "Voli prenotati corretti",
       "description": "Una mail quando lo staff degli eventi corregge il volo di uno slot che hai prenotato: callsign, orari, aeroporti o tipi di aereo."
+    },
+    "bookingReminder": {
+      "title": "Promemoria dei tuoi voli",
+      "description": "Una mail il giorno prima dei voli che hai prenotato in un evento, con gli stand e le rotte delle flight operations."
     }
   },
   "mail": {
@@ -353,6 +444,12 @@
       "bookingChanged": {
         "subject": "[Eventi] Il volo che hai prenotato è cambiato: {{callsign}}, {{title}}",
         "body": "Lo staff degli eventi ha corretto il volo che hai prenotato in {{title}}. Ora è {{callsign}}, da {{departure}} a {{arrival}}, off block {{offBlock}} UTC, on block {{onBlock}} UTC, per {{types}}.\n\nLa tua prenotazione resta, con il tuo {{aircraft}}. Se non ti va più bene, puoi ritirarla fino al suo off block.\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "bookingReminder": {
+        "subject": "[Eventi] I tuoi voli di {{title}}",
+        "body": "I tuoi voli di {{title}} sono vicini. Gli orari sono in UTC.\n\n{{flights}}\n\nVola con il nominativo del tuo slot; se sulla rete è già occupato, collegati con un altro.\n\nL'evento: {{url}}\nLe tue prenotazioni, che puoi ritirare fino al loro off block: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
+        "stand": "stand",
+        "route": "Rotta"
       }
     }
   },
@@ -363,6 +460,7 @@
     "endsBeforeItStarts": "L'evento finisce prima di cominciare.",
     "visibilityChoice": "Un evento lo vedono tutti, o i membri.",
     "slugTaken": "Un altro evento ha questo indirizzo.",
+    "slugReserved": "Questo indirizzo è della pagina delle prenotazioni di un membro: scegline un altro.",
     "wholeDivisionHasAirports": "Questo evento ha scali suoi: toglili prima di farlo valere su tutta la divisione.",
     "eventUnknown": "Questo evento non esiste.",
     "wholeDivisionHasNoAirports": "Un evento su tutta la divisione non ha scali suoi.",

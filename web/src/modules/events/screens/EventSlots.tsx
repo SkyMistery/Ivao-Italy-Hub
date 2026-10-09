@@ -4,21 +4,52 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMoment } from '../../../shared/i18n/useMoment';
+import { ListFilter } from '../../../shared/list';
+import { EmptyState } from '../../../shared/ui';
 import type { PublicEventAirportDto, PublicEventDto, PublicEventSlotDto } from '../api';
+import { SLOT_DIRECTIONS } from '../schemas';
 
 import { airportLabel } from './cards';
 import { AirportName } from './EventCards';
-import { oneDay, rotationLegs, slotAirport, slotSections, slotTime } from './slotList';
+import { VISITOR, type SlotViewer } from './myBookings';
+import { SlotBooking } from './SlotBooking';
+import {
+  anyFilter,
+  narrowSlots,
+  oneDay,
+  rotationLegs,
+  slotAirport,
+  slotFilterChoices,
+  slotSections,
+  slotTime,
+  type SlotFilters,
+} from './slotList';
 
 /**
  * The public slots of an event (design M4 §7.1, E5; note 2026-10-07-gli-slot-sulla-pagina-dell-evento): by the airport of the event
  * they are at — one section each when the slots are at more than one —, the departures and the arrivals in two tables, each by its
  * time at the airport; a slot's main aircraft type, with the others it admits on hover, focus or tap; a leg of a rotation in its
- * own table, marked with an icon; free or taken, never who took it (plan §9.7). A row opens the slot read only, with every type it
- * admits and the legs of its rotation — where «Book» goes with E6b. The times are UTC, the network's; when they all fall on one
- * day, the day is said once above them. Everything comes in the page's one read: no read of its own.
+ * own table, marked with an icon; free or taken, never who took it (plan §9.7). A row opens the slot, with every type it admits and
+ * the legs of its rotation. The times are UTC, the network's; when they all fall on one day, the day is said once above them.
+ * Everything comes in the page's one read: no read of its own.
+ *
+ * E6b books here (design M4 §3.3): the filters over the list — arrivals or departures, the hours at the airport of the event, an
+ * aircraft type, an airline, a rotation —, which the page keeps in its address; «Book» and «Book the whole rotation» in the dialog
+ * of a slot (`SlotBooking`); and the reader's own slots said as theirs — from their own bookings, never from the page.
  */
-export function EventSlots({ event }: { event: PublicEventDto }) {
+export function EventSlots({
+  event,
+  filters = {},
+  onFilter,
+  viewer = VISITOR,
+}: {
+  event: PublicEventDto;
+  /** What the list is narrowed to: the page's address. */
+  filters?: SlotFilters;
+  /** A filter chosen or cleared. Without it the list draws no filters. */
+  onFilter?: (patch: Partial<SlotFilters>) => void;
+  viewer?: SlotViewer;
+}) {
   const { t } = useTranslation();
   const moment = useMoment();
   const [opened, setOpened] = useState<PublicEventSlotDto | null>(null);
@@ -41,9 +72,10 @@ export function EventSlots({ event }: { event: PublicEventDto }) {
   const sameDay = oneDay(event.slots);
   const time = (value: string) => moment(value, sameDay ? { date: false } : {});
   const first = event.slots[0];
+  const shown = narrowSlots(event.slots, filters);
 
   const sections = slotSections(
-    event.slots,
+    shown,
     event.airports.map((airport) => airport.icao),
   );
   // An airport by the name the page knows it by: the event's, or the one a slot carries.
@@ -67,14 +99,28 @@ export function EventSlots({ event }: { event: PublicEventDto }) {
         ) : null}
       </div>
 
+      {onFilter === undefined ? null : (
+        <SlotFiltersBar slots={event.slots} filters={filters} sameDay={sameDay} onFilter={onFilter} />
+      )}
+
+      {shown.length === 0 && anyFilter(filters) ? (
+        <EmptyState title={t('events:public.filters.noSlots')} />
+      ) : null}
+
       {sections.map((section) => {
         const tables = (
           <>
             {section.departures.length === 0 ? null : (
-              <SlotTable arrivals={false} slots={section.departures} time={time} onOpen={open} />
+              <SlotTable
+                arrivals={false}
+                slots={section.departures}
+                time={time}
+                viewer={viewer}
+                onOpen={open}
+              />
             )}
             {section.arrivals.length === 0 ? null : (
-              <SlotTable arrivals slots={section.arrivals} time={time} onOpen={open} />
+              <SlotTable arrivals slots={section.arrivals} time={time} viewer={viewer} onOpen={open} />
             )}
           </>
         );
@@ -99,13 +145,116 @@ export function EventSlots({ event }: { event: PublicEventDto }) {
       {opened === null ? null : (
         <SlotDetail
           slot={opened}
-          slots={event.slots}
+          event={event}
           airport={airportOf(slotAirport(opened))}
           time={time}
+          viewer={viewer}
           onClose={() => setOpened(null)}
         />
       )}
     </section>
+  );
+}
+
+/**
+ * The filters over the slots (design M4 §3.3, E6b): what the slots hold, each offered only when it narrows something — two
+ * directions, more than one hour, type, airline or rotation. The hours are UTC at the airport of the event, written as the list
+ * writes its times: the hour alone when every slot is on one day.
+ */
+function SlotFiltersBar({
+  slots,
+  filters,
+  sameDay,
+  onFilter,
+}: {
+  slots: readonly PublicEventSlotDto[];
+  filters: SlotFilters;
+  sameDay: boolean;
+  onFilter: (patch: Partial<SlotFilters>) => void;
+}) {
+  const { t } = useTranslation();
+  const moment = useMoment();
+  const choices = slotFilterChoices(slots);
+  const hour = (value: string) => moment(`${value}:00:00Z`, sameDay ? { date: false } : {});
+  const both = slots.some((slot) => slot.isArrival) && slots.some((slot) => !slot.isArrival);
+  const several = (values: readonly string[]) => values.length > 1;
+
+  return (
+    <div
+      className="flex flex-wrap items-end gap-4"
+      role="group"
+      aria-label={t('events:public.filters.title')}
+    >
+      {both ? (
+        <ListFilter
+          className="min-w-36"
+          id="slots-direction"
+          label={t('events:public.filters.direction')}
+          none={t('events:public.filters.bothDirections')}
+          value={filters.direction}
+          onChange={(direction) => onFilter({ direction: direction as SlotFilters['direction'] })}
+          items={SLOT_DIRECTIONS.map((direction) => ({
+            value: direction,
+            label: t(`events:public.${direction}`),
+          }))}
+        />
+      ) : null}
+      {several(choices.hours) ? (
+        <>
+          <ListFilter
+            className="min-w-36"
+            id="slots-from"
+            label={t('events:public.filters.from')}
+            none={t('events:public.filters.anyHour')}
+            value={filters.from}
+            onChange={(from) => onFilter({ from })}
+            items={choices.hours.map((value) => ({ value, label: hour(value) }))}
+          />
+          <ListFilter
+            className="min-w-36"
+            id="slots-until"
+            label={t('events:public.filters.until')}
+            none={t('events:public.filters.anyHour')}
+            value={filters.until}
+            onChange={(until) => onFilter({ until })}
+            items={choices.ends.map((value) => ({ value, label: hour(value) }))}
+          />
+        </>
+      ) : null}
+      {several(choices.types) ? (
+        <ListFilter
+          className="min-w-36"
+          id="slots-type"
+          label={t('events:public.aircraft')}
+          none={t('events:public.filters.anyType')}
+          value={filters.type}
+          onChange={(type) => onFilter({ type })}
+          items={choices.types.map((value) => ({ value, label: value }))}
+        />
+      ) : null}
+      {several(choices.airlines) ? (
+        <ListFilter
+          className="min-w-36"
+          id="slots-airline"
+          label={t('events:public.filters.airline')}
+          none={t('events:public.filters.anyAirline')}
+          value={filters.airline}
+          onChange={(airline) => onFilter({ airline })}
+          items={choices.airlines.map((value) => ({ value, label: value }))}
+        />
+      ) : null}
+      {choices.rotations.length > 0 ? (
+        <ListFilter
+          className="min-w-36"
+          id="slots-rotation"
+          label={t('events:public.filters.rotation')}
+          none={t('events:public.filters.anyRotation')}
+          value={filters.rotation}
+          onChange={(rotation) => onFilter({ rotation })}
+          items={choices.rotations.map((value) => ({ value, label: value }))}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -114,11 +263,13 @@ function SlotTable({
   arrivals,
   slots,
   time,
+  viewer,
   onOpen,
 }: {
   arrivals: boolean;
   slots: readonly PublicEventSlotDto[];
   time: (value: string) => string;
+  viewer: SlotViewer;
   onOpen: (slot: PublicEventSlotDto, by: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation();
@@ -192,7 +343,7 @@ function SlotTable({
               <td className="py-2 pr-3 tabular-nums">{time(slotTime(slot))}</td>
               <td className="py-2 pr-3">{slot.stand ?? '—'}</td>
               <td className="py-2">
-                <SlotState taken={slot.taken} />
+                <SlotState taken={slot.taken} yours={viewer.mine.has(slot.id)} />
               </td>
             </tr>
           ))}
@@ -278,11 +429,16 @@ function Hint({ text, label, children }: { text: string; label?: string; childre
   );
 }
 
-/** Free or taken, and nothing of whoever took it. */
-function SlotState({ taken }: { taken: boolean }) {
+/**
+ * Free or taken, and nothing of whoever took it — unless the reader did, which their own bookings say (E6b): a slot of theirs is
+ * «yours», so that a pilot finds what they booked without reading «taken» on it.
+ */
+function SlotState({ taken, yours = false }: { taken: boolean; yours?: boolean }) {
   const { t } = useTranslation();
 
-  return (
+  return yours ? (
+    <Badge variant="flat" color="blue" text={t('events:public.yours')} />
+  ) : (
     <Badge
       variant="flat"
       color={taken ? 'gray' : 'green'}
@@ -292,24 +448,28 @@ function SlotState({ taken }: { taken: boolean }) {
 }
 
 /**
- * One slot, read only (§6 of the note): every aircraft type it admits, the main one first; where and when it leaves and lands; its
- * stand; free or taken; and the legs of its rotation, this one marked. E6b puts «Book» here.
+ * One slot (§6 of the note): every aircraft type it admits, the main one first; where and when it leaves and lands; its stand; free
+ * or taken; the legs of its rotation, this one marked; and «Book» (E6b), with the type the pilot flies chosen among those it admits.
  */
 function SlotDetail({
   slot,
-  slots,
+  event,
   airport,
   time,
+  viewer,
   onClose,
 }: {
   slot: PublicEventSlotDto;
-  slots: readonly PublicEventSlotDto[];
+  event: PublicEventDto;
   airport: PublicEventAirportDto;
   time: (value: string) => string;
+  viewer: SlotViewer;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const legs = slot.rotation === null ? [] : rotationLegs(slots, slot.rotation);
+  const legs = slot.rotation === null ? [] : rotationLegs(event.slots, slot.rotation);
+  // The moment the dialog opened decides what it offers: a slot whose off block passes while it is open is refused by the server.
+  const [openedAt] = useState(() => Date.now());
   const title = slot.flightNumber === null ? slot.callsign : `${slot.callsign} · ${slot.flightNumber}`;
 
   return (
@@ -360,7 +520,7 @@ function SlotDetail({
 
         <dt className="text-muted-foreground">{t('events:public.slotState')}</dt>
         <dd>
-          <SlotState taken={slot.taken} />
+          <SlotState taken={slot.taken} yours={viewer.mine.has(slot.id)} />
         </dd>
       </dl>
 
@@ -396,6 +556,8 @@ function SlotDetail({
           </ol>
         </section>
       )}
+
+      <SlotBooking slot={slot} event={event} viewer={viewer} nowMs={openedAt} />
     </Dialog>
   );
 }

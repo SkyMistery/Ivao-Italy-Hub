@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { Body } from '../../blocks';
+import { blockDataKey, type Body } from '../../blocks';
 import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from '../../shared/list';
@@ -23,7 +23,8 @@ import type {
  * airports, their routes and their slots through the CRUD engine, and the endpoints written by hand beside it — cancelling and the
  * presets of the kinds (E3a), publishing (E3b), loading the slots of an event from a table and deleting its free ones (E5); and the
  * page of an event, the one read of the site (E4), which lists its public slots (E5). The list of `/events` is the block
- * `events.eventList`, read through the endpoint every block is read through.
+ * `events.eventList`, read through the endpoint every block is read through. The bookings (E6b): a pilot's own — read, made, made
+ * for a whole rotation, withdrawn — through the verbs of E6a, and the staff's list of the bookings of an event with «take away».
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -35,6 +36,8 @@ const airportsKey = ['events', 'airports'] as const;
 const routesKey = ['events', 'routes'] as const;
 const slotsKey = ['events', 'slots'] as const;
 const publicKey = ['events', 'public'] as const;
+const mineKey = ['events', 'mine'] as const;
+const bookingsKey = ['events', 'bookings'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
 export type EventDetailDto = components['schemas']['EventDetailDto'];
@@ -46,6 +49,9 @@ export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto
 export type PublicEventSlotDto = components['schemas']['PublicEventSlotDto'];
 export type EventSlotDto = components['schemas']['EventSlotDto'];
 export type SlotLoadResultDto = components['schemas']['SlotLoadResultDto'];
+export type MyBookingDto = components['schemas']['MyBookingDto'];
+export type RotationBookingDto = components['schemas']['RotationBookingDto'];
+export type EventBookingDto = components['schemas']['EventBookingDto'];
 type EventWriteDto = components['schemas']['EventWriteDto'];
 
 export function settingsQuery() {
@@ -538,6 +544,121 @@ export function publicEventQuery(slug: string) {
       const answer = await api.GET('/api/events/public/{slug}', { params: { path: { slug } } });
 
       return answer.response.status === 404 ? null : unwrap(answer);
+    },
+  });
+}
+
+// ---- the bookings (E6b) ------------------------------------------------------------------------------
+
+/** The type of the block of a pilot's bookings still to fly, as `MyEventsProvider.BlockType` spells it on the server. */
+export const MY_EVENTS_BLOCK = 'events.myEvents';
+
+/**
+ * A pilot's own bookings, past ones too (§7.1), by the off block of their flights: what `/events/mine` lists, and what the page of
+ * an event reads to say which of its slots are the reader's. A signed in member's only: a visitor has none to ask for.
+ */
+export function myBookingsQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'bookings'] as const,
+    queryFn: async (): Promise<MyBookingDto[]> => unwrap(await api.GET('/api/events/mine/bookings')),
+  });
+}
+
+/**
+ * What a booking changes on screen: the page of its event (taken), the pilot's list, the block of their bookings still to fly, and
+ * the staff's list of the event. Not awaited where the screen that changed it still shows the row.
+ */
+async function bookingsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+    queryClient.invalidateQueries({ queryKey: mineKey }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, MY_EVENTS_BLOCK] }),
+    queryClient.invalidateQueries({ queryKey: bookingsKey }),
+  ]);
+}
+
+/**
+ * Books one public slot with the aircraft chosen among those it allows (§3.3). A refusal comes back on `slotId` or `aircraftIcao`
+ * (taken a moment ago, closed, too close to another of the pilot's, not open yet); a 409 is «try again», nothing booked.
+ */
+export function useBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      slotId,
+      aircraftIcao,
+    }: {
+      slotId: number;
+      aircraftIcao: string;
+    }): Promise<MyBookingDto> =>
+      unwrap(await api.POST('/api/events/mine/bookings', { body: { slotId, aircraftIcao } })),
+    onSuccess: async () => {
+      await bookingsChanged(queryClient);
+    },
+  });
+}
+
+/**
+ * Books the whole rotation of a leg with one aircraft (§3.3): the legs booked, and the ones that were not with why — never a refusal
+ * for a leg alone. A 409 is «try again», nothing booked.
+ */
+export function useBookRotation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      slotId,
+      aircraftIcao,
+    }: {
+      slotId: number;
+      aircraftIcao: string;
+    }): Promise<RotationBookingDto> =>
+      unwrap(await api.POST('/api/events/mine/bookings/rotation', { body: { slotId, aircraftIcao } })),
+    onSuccess: async () => {
+      await bookingsChanged(queryClient);
+    },
+  });
+}
+
+/** Withdraws a booking of the pilot's (§3.6), until the off block of its slot: the slot is free again. */
+export function useWithdrawBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/mine/bookings/{id}', { params: { path: { id } } })),
+    onSuccess: () => {
+      void bookingsChanged(queryClient);
+    },
+  });
+}
+
+/** The bookings of an event as its staff read them (§7.2): a page of them, by the time of their flights unless sorted. */
+export function staffBookingsQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...bookingsKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/bookings', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+/** «Take away» (§3.6): a booking of the event, with the reason the pilot reads in the mail. */
+export function useRemoveBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/bookings/{id}/remove', { params: { path: { id } }, body: { reason } }),
+      ),
+    onSuccess: () => {
+      void bookingsChanged(queryClient);
     },
   });
 }

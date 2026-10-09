@@ -59,6 +59,7 @@ import {
 } from '../schemas';
 
 import { AirportsTab } from './airports';
+import { BookingsTab } from './bookings';
 import { eventHref } from './cards';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
@@ -367,7 +368,9 @@ function PublishProblems({ error }: { error: unknown }) {
 /**
  * The bar of an event that exists: what happens to it without its form — published, cancelled with a note, or deleted.
  * «Publish» publishes the event as it is saved, so it waits while the settings hold changes nobody saved (`edited`, E4): pressed
- * then, the form would be drawn again on the published row and the changes lost without a word (E3b's ⚠️).
+ * then, the form would be drawn again on the published row and the changes lost without a word (E3b's ⚠️). And it is asked once
+ * more (E6b, dalberone after the bench): a published event is on the site, in the calendar and in the search, and never goes back
+ * to a draft — it can only be cancelled. Blue, not red: nothing is lost.
  */
 function EventActions({ event, edited }: { event: EventDetailDto; edited: boolean }) {
   const { t, i18n } = useTranslation();
@@ -398,9 +401,16 @@ function EventActions({ event, edited }: { event: EventDetailDto; edited: boolea
     <div className="flex flex-col items-end gap-2">
       <div className="flex flex-wrap justify-end gap-2">
         {publishable ? (
-          <Button disabled={publish.isPending || edited} onClick={() => publish.mutate(event.rowVersion)}>
-            {t('events:events.actions.publish')}
-          </Button>
+          <ConfirmDialog
+            triggerText={t('events:events.actions.publish')}
+            triggerVariant="secondary"
+            title={t('events:events.publish.confirmTitle')}
+            description={t('events:events.publish.confirmDescription')}
+            confirmText={t('events:events.actions.publish')}
+            confirmVariant="primary"
+            disabled={publish.isPending || edited}
+            onConfirm={() => publish.mutate(event.rowVersion)}
+          />
         ) : null}
         {cancellable ? (
           <Button asChild variant="outline">
@@ -587,6 +597,24 @@ export function EventEditor() {
                       content: (
                         <div className="pt-4">
                           <SlotsTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // The bookings of its slots (§7.2, E6b), the same area: who booked what, and «take away» for whoever writes them.
+              ...(!event.wholeDivision &&
+              (event.publicSlots || event.privateSlots) &&
+              holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+                ? {
+                    bookings: {
+                      trigger: t('events:events.tabs.bookings'),
+                      content: (
+                        <div className="pt-4">
+                          <BookingsTab
                             event={event}
                             editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
                           />
