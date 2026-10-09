@@ -18,7 +18,7 @@ namespace IvaoHub.IntegrationTests;
 /// a part what its slot is (<see cref="SamplePart"/>):
 /// <list type="bullet">
 /// <item><c>Edit</c> granted on one item changes and deletes that item and the parts that answer with its scope, and nothing of
-/// another item;</item>
+/// another item — a part removed is judged by the item it had, not by one written into it before;</item>
 /// <item>it brings a part of its item into existence, and never a part of another item nor a new item;</item>
 /// <item>a part moved from one item to another needs it on both, and no alternative moves it;</item>
 /// <item>an alternative marked for creation and held on one item creates a part of it, as <c>Edit</c> does;</item>
@@ -105,6 +105,29 @@ public sealed class ResourceScopeWriteTests(MariaDbFixture mariaDb) : IAsyncLife
         await RefusedAsync(() => ChangePartAsync(onTheItem, notTheirs, row => row.Title = "evt-test-e10i not theirs", token));
         await RefusedAsync(() => DeletePartAsync(onTheItem, notTheirs, token));
         Assert.Equal("evt-test-e10i part of the other", (await FindPartAsync(notTheirs, token))!.Title);
+    }
+
+    /// <summary>
+    /// A deletion is asked with the scope the row had, read from the tracker's original values, never with what the instance in hand
+    /// says by then (the review of #237, point 1): the guard judges the row the database holds.
+    /// </summary>
+    [Fact]
+    public async Task ARemovedPartIsJudgedByTheItemItHadNotByTheOneWrittenIntoIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var item = await ItemAsync(who: null, "evt-test-e10i item", token);
+        var other = await ItemAsync(who: null, "evt-test-e10i other item", token);
+        var part = await PartAsync(who: null, other, "evt-test-e10i part of the other", token);
+
+        // A part of the other item, loaded, given the held item's id and removed in the same save: the item it had decides.
+        var onTheItem = Holding(Held(SampleModule.EditPermission, Department.ED, SampleItem.ScopeOf(item)));
+        await RefusedAsync(() => RemoveAsAPartOfAsync(onTheItem, part, item, token));
+        Assert.Equal(other, (await FindPartAsync(part, token))!.ItemId);
+
+        // The other way round: the grant on the item the part had removes it, whatever is written into it first.
+        var onTheOther = Holding(Held(SampleModule.EditPermission, Department.ED, SampleItem.ScopeOf(other)));
+        await RemoveAsAPartOfAsync(onTheOther, part, item, token);
+        Assert.Null(await FindPartAsync(part, token));
     }
 
     [Fact]
@@ -324,6 +347,16 @@ public sealed class ResourceScopeWriteTests(MariaDbFixture mariaDb) : IAsyncLife
         AsAsync(who, async database =>
         {
             database.Parts.Remove(await database.Parts.SingleAsync(row => row.Id == id, cancellationToken));
+            return await database.SaveChangesAsync(cancellationToken);
+        });
+
+    /// <summary>A part loaded, given another item's id in memory, and removed in the same save.</summary>
+    private Task RemoveAsAPartOfAsync(ClaimsPrincipal who, long id, long item, CancellationToken cancellationToken) =>
+        AsAsync(who, async database =>
+        {
+            var row = await database.Parts.SingleAsync(row => row.Id == id, cancellationToken);
+            row.ItemId = item;
+            database.Parts.Remove(row);
             return await database.SaveChangesAsync(cancellationToken);
         });
 
