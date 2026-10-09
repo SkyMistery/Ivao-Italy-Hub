@@ -1827,7 +1827,11 @@ tenendo i due lati, `bookingChanged` di E6a e `bookingReminder` di questa fase �
   smoke **179/179** al primo giro (1,4 minuti); **`pnpm e2e:full` 58/58 al primo giro** (12,8 minuti, il suo worker solo) sul banco
   `http://127.0.0.1:5132` (`ivaohub_e2e_e6b` ricreato prima), dietro il lock di Mailpit, preso dopo quello di E10j. La spec nuova, da
   sola, prima: due giri caduti sull'attesa della mail (i 30 secondi predefiniti, poi il titolo inglese: «Trovato»), poi 1/1 (24 secondi).
-  Dopo la parola corretta della scheda (`597d5b2`): `i18n:check`, `format:check` e `pnpm test` (668) di nuovo verdi. Le regole di
+  Dopo la parola corretta della scheda (`597d5b2`): `i18n:check`, `format:check` e `pnpm test` (668) di nuovo verdi. **Quello che la CI
+  salta finché c'è la #236** (`build-test` cade a «Test .NET» e salta tutti i passi dopo), rifatto qui sulla testa: il controllo dei test
+  di spina dorsale (`ArchitectureTests` 15 su 15 scritti, `ForkabilityXxDivisionTests` 3 su 3, lanciati da soli dagli assembly),
+  `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm build` verde e `git diff --exit-code` pulito; il pacchetto self-contained
+  no. Le regole di
   `core-guard` in PowerShell dalla base di merge `eb8e8ef`: **PASS** — nessun file del maintainer; del nucleo i due conteggi dei blocchi
   di questa fase ed `ErasureTests.cs` di E6a; tre note nuove, una di E6b.
 - **Sul banco, il «fatta quando»** (9 ottobre 2026, dalle 15:47 ora italiana, UTC+2: il registro dei job dice le 13:55 per il giro delle
