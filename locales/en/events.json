@@ -15,6 +15,7 @@
     "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
     "create": "New event",
     "edit": "Event",
+    "empty": "The events of the division will show up here, from the drafts to the ended ones.",
     "open": "Open",
     "saved": "Event saved.",
     "readOnly": "You can read this event: changing it is for whoever writes the events.",
@@ -122,6 +123,7 @@
     "title": "Airports",
     "create": "New airport",
     "edit": "Airport",
+    "empty": "The airports of the event will show up here, each with its capacity.",
     "fields": {
       "icao": "ICAO code",
       "ordinal": "Order",
