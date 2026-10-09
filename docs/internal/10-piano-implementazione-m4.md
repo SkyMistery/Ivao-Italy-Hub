@@ -2535,8 +2535,10 @@ il suo indirizzo.
   `web/` `lint`, `typecheck`, `format:check`, `i18n:check` verdi, `test` 643/643, `gen:api` con lo stato `Waiting`, nel commit. Non
   rifatti: `e2e:full`, perché nessuna schermata cambia e sul banco il recupero è spento (il guardiano non è cambiato), e il
   pacchetto.
-- **Il push aspetta** la #241 di Carmine, che corregge il test del meteo (#236): poi `main` si unisce al branch e si spinge una
-  volta, così la CI gira intera.
+- **Il push ha aspettato** la #241 di Carmine, che corregge il test del meteo (#236). Unita la #241, `main` (`aa3707a`, la `0.6.6`) si
+  è unito al branch senza conflitti, e dopo l'unione: build 0 avvisi, unità **1206/1206** (il meteo passa), integrazione intera, senza
+  filtro, **511/511** al primo giro (10,4 minuti); le regole di core-guard dalla nuova base, `aa3707a`, passano come prima. Poi un push
+  solo, così la CI gira intera.
 
 [a231j]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/231#issuecomment-6070088780
 [r239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083855377

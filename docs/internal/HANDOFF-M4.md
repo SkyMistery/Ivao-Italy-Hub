@@ -7,14 +7,16 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 9 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
-`m4/e10j-jobs-catch-up`, **PR #239** verso `main`, nata da `main` a `0f72737`, senza coda. Sono unite E1 (#200), E2 (#209), E2b (#212),
-E3a (#214), E3b (#221), E4 (#223), E4b (#226), E5 (#228), E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
-E10g (#230), **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217),
-1.30 (#229) e 1.31 (#234), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219,
-#225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
+`m4/e10j-jobs-catch-up`, **PR #239** verso `main`, nata da `main` a `0f72737`, senza coda, e con `main` unito a `aa3707a` (la `0.6.6`)
+dopo la revisione. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), E4b (#226), E5 (#228), E10a (#210),
+E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), E10g (#230), **E10h (#232)** ed E15a (#207), il passaggio dei tour al
+calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e 1.31 (#234), la parola degli eventi nella ricerca
+(#222), le altre correzioni del nucleo fino alla `0.6.6` (#218, #219, #225, #241) e gli spec che dicono al banco che cosa rimettono a
+posto (#227).
 **Il prossimo passo**: **E10j** (questa, la #239, del nucleo, senza coda: **decisa** da Carmine sulla #239 tranne la domanda 3, il
-token nell'indirizzo, ancora aperta; nota `2026-10-09-i-job-che-recuperano` §2; le correzioni della revisione aspettano la #241 di
-Carmine, il test del meteo, per una CI intera), accanto a E10i (#237) ed E10k (#238), le altre fasi del nucleo di oggi; **E6a** (la #233, prenotare: il
+token nell'indirizzo, ancora aperta; nota `2026-10-09-i-job-che-recuperano` §2; le correzioni della revisione sono sulla #239, spinte
+dopo la #241 di Carmine, il test del meteo, con `main` unito, per una CI intera), accanto a E10i (#237) ed E10k (#238), le altre fasi
+del nucleo di oggi; **E6a** (la #233, prenotare: il
 server) aveva sotto solo la #232, ora unita, ed **E6b** la segue. Da E10h il membro cancella la riga che ha mandato dove l'entità lo
 dice: E6a mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
