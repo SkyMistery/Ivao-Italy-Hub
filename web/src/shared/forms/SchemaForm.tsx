@@ -169,11 +169,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
   const enter = whereEnterSaves(fields);
-  const hint = !enter.oneLine
-    ? null
-    : enter.multiline
-      ? t('form.submitHintOneLine')
-      : t('form.submitHint');
+  const hint = !enter.oneLine ? null : enter.multiline ? t('form.submitHintOneLine') : t('form.submitHint');
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
@@ -210,7 +206,9 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
         {onSubmit === undefined ? null : actionsElsewhere ? (
           // The hint stays: it is what tells somebody reading with a screen reader that Enter saves,
           // and that is true whichever corner of the screen the button is drawn in.
-          hint === null ? null : <span className="sr-only">{hint}</span>
+          hint === null ? null : (
+            <span className="sr-only">{hint}</span>
+          )
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" isLoading={form.formState.isSubmitting}>

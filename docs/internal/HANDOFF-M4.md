@@ -189,7 +189,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) **cade dalle 06:00 UTC del 9 ottobre su ogni
     branch**, `main` compreso: chiede la storia del 9 settembre 2026, e oltre i 30 giorni di `IWeatherSource.HistoryWindow`
     `NoaaWeatherClient.GetHistoryAsync` risponde `null`. Non si tocca (regola 3): l'issue #236 lo porta a Carmine. Fino alla sua
-    correzione `build-test` è rosso su ogni PR, e la PR lo dice.
+    correzione `build-test` è rosso su ogni PR, e la PR lo dice. ⚠️ **E con «Test .NET» rosso la CI salta ogni passo dopo**: lint,
+    `format:check`, typecheck, vitest, la smoke, il giro completo. Si fanno in locale, `pnpm -C web run format:check` compreso (E10k l'ha
+    mancato al primo push), e la PR li elenca.
   - **In un test che naviga su un router fatto per il test**, `router.navigate({ to })` prende i tipi delle rotte registrate dall'app
     (`/search` vuole i suoi parametri): `router.history.push(path)` non ha tipi di rotta.
 

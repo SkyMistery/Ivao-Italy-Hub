@@ -153,6 +153,9 @@ test('a page that still passes the division’s name and a row’s title reads a
   await open('/tour');
 
   await waitFor(() => expect(document.title).toBe('A tour — IVAO Example'));
-  expect(document.head.querySelector('meta[property="og:site_name"]')).toHaveAttribute('content', 'IVAO Example');
+  expect(document.head.querySelector('meta[property="og:site_name"]')).toHaveAttribute(
+    'content',
+    'IVAO Example',
+  );
   expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute('content', 'A tour');
 });
