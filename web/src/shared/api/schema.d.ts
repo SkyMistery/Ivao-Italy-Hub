@@ -1518,6 +1518,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventBookingsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventBookingsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/mine/bookings": {
         parameters: {
             query?: never;
@@ -4530,6 +4562,41 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /**
+         * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
+         *     core names a person — `{ vid, name }`, so that the list writes a person whose data was erased with the core's word —, the flight of
+         *     its slot with the aircraft the pilot chose, when they booked, and when the reminder of the day before left. The flight is read off
+         *     the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
+         *     The flight is empty only where the engine maps one row with no page around it (GET /api/events/bookings/{id}): the
+         *     list reads the slots of a page in one query (StaffBookings.RowsAsync).
+         */
+        EventBookingDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            slotId: number;
+            pilot: components["schemas"]["EventMemberDto"];
+            callsign: null | string;
+            flightNumber: null | string;
+            aircraftIcao: string;
+            departureIcao: null | string;
+            /** Format: date-time */
+            offBlockUtc: null | string;
+            arrivalIcao: null | string;
+            /** Format: date-time */
+            onBlockUtc: null | string;
+            stand: null | string;
+            rotation: null | string;
+            /** Format: int32 */
+            leg: null | number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            remindedAt: null | string;
+        };
         /** @description "Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read. */
         EventCancelRequest: {
             note: components["schemas"]["LocalizedOfstring"];
@@ -4599,6 +4666,12 @@ export interface components {
             endsAtUtc: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @description A person as the staff's pages of the events name them: the VID that always is, and the name the hub has — none when it has none. */
+        EventMemberDto: {
+            /** Format: int32 */
+            vid: number;
+            name: null | string;
         };
         /**
          * @description Who organises an event (design M4 §1.2): the division itself, the network with the division, or another division.
@@ -5984,6 +6057,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfEventBookingDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventBookingDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfEventListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventListDto"][];
@@ -6838,7 +6934,8 @@ export interface components {
         /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
          *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
-         *     cancelled one with its note; and its public slots (E5), by their off block, free or taken.
+         *     cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
+         *     the page says and counts down to until then — none for an event without slots.
          *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
          *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
@@ -6858,6 +6955,8 @@ export interface components {
             startsAtUtc: string;
             /** Format: date-time */
             endsAtUtc: string;
+            /** Format: date-time */
+            bookingOpensAtUtc: null | string;
             state: components["schemas"]["EventStateKind"];
             unseen: null | components["schemas"]["EventUnseen"];
             wholeDivision: boolean;
@@ -13147,6 +13246,61 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventBookingsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventBookingDto"];
+                };
+            };
+        };
+    };
+    EventBookingsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventBookingDto"];
+                };
             };
             /** @description Not Found */
             404: {
