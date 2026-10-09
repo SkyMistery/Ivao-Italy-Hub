@@ -2481,7 +2481,24 @@ modulo può dire la sua frase vuota, e il lettore di schermo non promette un sal
   della smoke cominciato poco prima di un riavvio dell'app ne aveva dati 160/173, con le cadute solo nelle spec della formazione
   (`toBeVisible`); rifatta a macchina ferma, 173/173, e i quattro file della formazione con `--repeat-each=2` 62/62.
 
+**Dopo la revisione** (9 ottobre 2026, [i rilievi][r238k] e [la risposta di Carmine][a238k] sulla #238, data in chat alla sessione
+master e pubblicata su sua istruzione):
+
+- **Approvabile sul codice, niente da correggere**; da unire con `main` dopo la correzione del test del meteo (#236, la #241 di Carmine),
+  con la CI intera.
+- **Carmine: sì alla lettura più larga** del punto 2 della #224 — il nome della divisione è il titolo predefinito di ogni pagina, il back
+  office compreso, e `/news`, `/documents` e `/search` dicono il loro titolo —, e **la dipendenza da React 19 è accettata**, con
+  `-titles.test.tsx` a tenerla. Scritto nella nota (intestazione e §6), con il link.
+- **I due rilievi bassi, fatti** (nota §6): le caselle di una riga di una lista ripetibile non contano più per la frase di Invio (quelle
+  di più righe sì), e `og:title` non si scrive vuoto. Un test per ciascuno; con il codice di prima cadono quei due e nessun altro (10 su
+  12 passano).
+- **Rifatto**: `pnpm lint`, `pnpm typecheck` e `pnpm format:check` verdi; i tre file di test della fase 19/19.
+- **Il push aspetta** l'unione della #241, come chiede la sessione che coordina: poi `main` unito sul branch e un push solo, perché la CI
+  giri intera.
+
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[r238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ### E11a — Postazioni e disponibilità
 

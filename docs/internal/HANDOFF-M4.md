@@ -12,7 +12,9 @@
 E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i
 piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
 `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10k** (questa, la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224), accanto alle altre fasi
+**Il prossimo passo**: **E10k** (questa, la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224 e, dopo la revisione,
+sulla #238; approvabile, aspetta l'unione della #241 di Carmine, che corregge il test del meteo, per unire `main` e far girare la CI
+intera), accanto alle altre fasi
 del nucleo nate lo stesso giorno, **E10i** (la #237, dall'issue #235) ed **E10j** (dall'issue #231), e a **E6a** (la #233, prenotare: il
 server) con **E6b** in coda sopra di lei. ⚠️ **Dal 9 ottobre `build-test` è rosso su ogni PR** per un test di unità del maintainer che è scaduto
 (`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una data fissa più vecchia della finestra di 30 giorni della NOAA): issue
@@ -155,7 +157,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 
 - **Che cosa c'è** (nota `decisions/2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede.md`, **decisa** da Carmine sull'issue
-  #224, [la sua risposta][a224k]: sì ai quattro punti; il dettaglio in `10`, E10k, «Com'è andata»). Tutto nel browser, niente in C#:
+  #224, [la sua risposta][a224k]: sì ai quattro punti; e sulla #238, [la sua risposta][a238k]: sì alla lettura più larga — il titolo
+  predefinito su ogni pagina, il back office compreso, e i titoli di `/news`, `/documents`, `/search` — e la dipendenza da React 19
+  accettata; il dettaglio in `10`, E10k, «Com'è andata» e «Dopo la revisione»). Tutto nel browser, niente in C#:
   - **La paginazione della lista generata** (`Pages` in `web/src/shared/list/DataList.tsx`): i pezzi di `Pagination` di Atmosphere
     (`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) con le parole `list.pages.*` del nucleo — «‹ Precedente
     1 2 3 Successiva ›», i due «…» per la prima e l'ultima pagina con il loro nome. Un «…» solo dove nasconde una pagina.
@@ -168,7 +172,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `PublicEntryScreen` non passano più il nome a mano.
   - **La frase di Invio del form generato** (`whereEnterSaves` in `web/src/shared/forms/SchemaForm.tsx`): niente frase dove nessuna
     casella è di una riga, `form.submitHintOneLine` dove ci sono caselle di una riga e di più righe, `form.submitHint` com'era dove sono
-    tutte di una riga.
+    tutte di una riga. Le caselle di una riga di una **lista ripetibile non contano** (sullo schermo ci sono solo dopo «Aggiungi»), quelle
+    di più righe sì (dalla revisione della #238).
   - **Sei chiavi nuove del nucleo** in `locales/{en,it}/common.json`: `list.pages.label`, `.previous`, `.next`, `.first`, `.last`,
     `form.submitHintOneLine`. Nessun doppione nei file dei moduli.
   - **I test** (vitest, 16): `web/src/shared/list/DataList.words.test.tsx`, `web/src/shared/forms/SchemaForm.enter.test.tsx`,
@@ -196,6 +201,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (`/search` vuole i suoi parametri): `router.history.push(path)` non ha tipi di rotta.
 
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 
