@@ -117,6 +117,7 @@
     "addEntry": "Add",
     "removeEntry": "Remove",
     "submitHint": "Press Enter to save.",
+    "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "suggest": {

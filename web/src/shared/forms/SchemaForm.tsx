@@ -167,6 +167,14 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   const fields = readFields(schema);
   const env: FormEnvironment = { locales, labels, mediaLibrary, uploadMedia, division, onSuggestSearch };
 
+  // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
+  const enter = whereEnterSaves(fields);
+  const hint = !enter.oneLine
+    ? null
+    : enter.multiline
+      ? t('form.submitHintOneLine')
+      : t('form.submitHint');
+
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
 
@@ -202,19 +210,85 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
         {onSubmit === undefined ? null : actionsElsewhere ? (
           // The hint stays: it is what tells somebody reading with a screen reader that Enter saves,
           // and that is true whichever corner of the screen the button is drawn in.
-          <span className="sr-only">{t('form.submitHint')}</span>
+          hint === null ? null : <span className="sr-only">{hint}</span>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" isLoading={form.formState.isSubmitting}>
               {submitLabel}
             </Button>
             {secondaryAction}
-            <span className="sr-only">{t('form.submitHint')}</span>
+            {hint === null ? null : <span className="sr-only">{hint}</span>}
           </div>
         )}
       </form>
     </FormProvider>
   );
+}
+
+/**
+ * Where Enter saves a form, read off its fields — the nested ones too, the hidden ones not: from a box
+ * of one line — a text, a number, a day, a suggested field — and never from a box of several lines,
+ * where it starts a new one, nor from a select, a switch, a box to tick, a file or a list of pictures,
+ * where it works the control.
+ *
+ * ⚠️ It decides what a screen reader is told under the form (#224). "Press Enter to save" used to be
+ * read under every form, and the one of a slot sheet has a single box of many lines and a select:
+ * Enter there writes a new line and saves nothing. With no box of one line nothing is said; with both
+ * kinds the sentence says which box it means.
+ */
+function whereEnterSaves(fields: readonly FieldNode[]): { oneLine: boolean; multiline: boolean } {
+  const found = { oneLine: false, multiline: false };
+
+  const walk = (nodes: readonly FieldNode[]) => {
+    for (const node of nodes) {
+      if (node.meta.hidden === true) {
+        continue;
+      }
+
+      switch (node.kind) {
+        case 'text':
+        case 'localized':
+          // A text with a closed set of values is drawn as a select, and Enter opens it.
+          if (node.kind === 'text' && node.choices !== null) {
+            break;
+          }
+
+          if (node.meta.multiline === true) {
+            found.multiline = true;
+          } else {
+            found.oneLine = true;
+          }
+          break;
+
+        case 'number':
+          if (node.choices === null) {
+            found.oneLine = true;
+          }
+          break;
+
+        case 'instant':
+        case 'suggest':
+          found.oneLine = true;
+          break;
+
+        case 'object':
+        case 'list':
+        case 'localizedObject':
+          walk(node.children);
+          break;
+
+        case 'boolean':
+        case 'enum':
+        case 'multi':
+        case 'media':
+        case 'icon':
+          break;
+      }
+    }
+  };
+
+  walk(fields);
+  return found;
 }
 
 /**

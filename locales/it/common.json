@@ -117,6 +117,7 @@
     "addEntry": "Aggiungi",
     "removeEntry": "Rimuovi",
     "submitHint": "Premi Invio per salvare.",
+    "submitHintOneLine": "Premi Invio in un campo di una riga per salvare.",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
     "suggest": {
