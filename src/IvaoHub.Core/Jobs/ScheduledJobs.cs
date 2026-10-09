@@ -4,13 +4,14 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Quartz.Impl.Matchers;
 
 namespace IvaoHub.Core.Jobs;
 
-/// <summary>What became of a run the hub launched.</summary>
+/// <summary>What became of a job the hub found due.</summary>
 public enum JobRunState
 {
     /// <summary>It ran: its own row in <c>hub_jobs_log</c> says how it went.</summary>
@@ -19,11 +20,14 @@ public enum JobRunState
     /// <summary>It did not run: another process was running the job, or a run since its occurrence had already done it.</summary>
     Skipped,
 
-    /// <summary>It had not finished when the answer had to go.</summary>
+    /// <summary>It had started, and not finished when the answer had to go.</summary>
     Running,
+
+    /// <summary>It had not started yet when the answer had to go: the jobs that are due start one after the other.</summary>
+    Waiting,
 }
 
-/// <summary>One job the hub launched because it was due, and what became of it.</summary>
+/// <summary>One job the hub found due, and what became of it.</summary>
 /// <param name="Job">The job's name, the one its rows in <c>hub_jobs_log</c> carry.</param>
 /// <param name="Outcome">What became of the run.</param>
 public sealed record JobRunOutcome(string Job, JobRunState Outcome);
@@ -36,51 +40,68 @@ public sealed record JobRunOutcome(string Job, JobRunState Outcome);
 /// </summary>
 /// <remarks>
 /// <para>Two halves, and no job changes for either. <b>The guard</b> sits in front of every run Quartz starts — its own at
-/// the cron's second, the ones <see cref="RunDueAsync"/> launches, in every module — as a trigger listener: it takes the
-/// job's named lock in the database (<see cref="JobLocks"/>, <c>hub-job:&lt;database&gt;:&lt;job&gt;</c>) without
-/// waiting, and leaves the run to whoever holds it; with the lock in hand it reads the job's last run again, and skips a run
-/// whose occurrence a run has already covered (<see cref="JobSchedule"/>). The lock goes back when the run ends, or with
-/// the process. <b>The launcher</b>, <see cref="RunDueAsync"/>, finds every job that is due and starts it through
-/// <see cref="IScheduler.TriggerJob(JobKey, JobDataMap, CancellationToken)"/>: <see cref="JobCatchUp"/> a few seconds
-/// after a start and every minute, and the scheduled task's address (<see cref="JobRunEndpoints"/>), waiting for them.</para>
+/// the cron's second, the ones a pass launches, in every module — as a trigger listener: it takes the job's named lock in
+/// the database (<see cref="JobLocks"/>, <c>hub-job:&lt;database&gt;:&lt;job&gt;</c>) without waiting, and leaves the run
+/// to whoever holds it; with the lock in hand it reads the job's last run again, and skips a run whose occurrence a run has
+/// already covered (<see cref="JobSchedule"/>). The lock goes back when the run ends, or with the process. <b>The
+/// pass</b> finds every job that is due and starts them <b>one after the other</b> through
+/// <see cref="IScheduler.TriggerJob(JobKey, JobDataMap, CancellationToken)"/>, each when the one before has ended (Carmine,
+/// on #239): after a night asleep a dozen jobs are due, and they never start together against the pool of a visitor's
+/// page. One pass at a time in a process: <see cref="JobCatchUp"/>, a few seconds after a start and every minute, and the
+/// scheduled task's address (<see cref="JobRunEndpoints"/>) join the pass under way rather than start another.</para>
 /// <para>The last run of a job is the latest start of a row of its own in <c>hub_jobs_log</c> that has ended, whatever its
-/// outcome, or the latest start this process let through, whichever is later: a job that writes no row when it finds
-/// nothing to do (the tours' checks) is not launched again every minute by the process that just ran it.</para>
-/// <para>A job paused in the scheduler is left alone: nothing here launches it.</para>
+/// outcome (Carmine, on #239), or the latest start this process knows of — a run it let through, or what it last read in
+/// the log —, whichever is later: a job that writes no row when it finds nothing to do (the tours' checks) is not launched
+/// again every minute by the process that just ran it, and most minutes ask the database nothing.</para>
+/// <para>A job paused in the scheduler is left alone: no pass launches it.</para>
 /// <para>The guard never stops a job by failing: a lock that cannot be asked for, or a last run that cannot be read, lets
-/// the run go ahead as it went before the guard existed, and says so in the log.</para>
+/// the run go ahead as it went before the guard existed, and says so in the log (Carmine, on #239).</para>
 /// </remarks>
 public sealed class ScheduledJobs(
     ISchedulerFactory schedulers,
     IServiceScopeFactory scopes,
     JobLocks locks,
     IClock clock,
+    IHostApplicationLifetime lifetime,
     ILogger<ScheduledJobs> logger) : ITriggerListener
 {
+    /// <summary>
+    /// How long a pass waits for one job before it goes on to the next: many times the longest run the hub has, so that only
+    /// a run that hangs lets two jobs of a pass run together.
+    /// </summary>
+    public static readonly TimeSpan LongestRun = TimeSpan.FromMinutes(10);
+
     /// <summary>How often a wait looks again at the runs that were under way when it began.</summary>
     private static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(250);
 
     /// <summary>Where the guard leaves the lock of a run it let through, for the end of that run.</summary>
     private const string HeldKey = "hub.jobs.lock";
 
-    /// <summary>Where a launch that waits leaves its name, in the data of its trigger.</summary>
+    /// <summary>Where a pass leaves the name of a launch it waits for, in the data of its trigger.</summary>
     private const string WaiterKey = "hub.jobs.waiter";
 
-    /// <summary>The start of the last run of each job this process let through, as the guard counted it.</summary>
-    private readonly ConcurrentDictionary<string, DateTime> _started = new(StringComparer.Ordinal);
+    /// <summary>The latest start of each job this process knows of: the runs it let through, and what it read in the log.</summary>
+    private readonly ConcurrentDictionary<string, DateTime> _lastStarts = new(StringComparer.Ordinal);
 
-    /// <summary>The launches somebody waits for, by the name in their trigger's data.</summary>
+    /// <summary>The launches a pass waits for, by the name in their trigger's data.</summary>
     private readonly ConcurrentDictionary<string, TaskCompletionSource<JobRunState>> _waiting = new(StringComparer.Ordinal);
+
+    private readonly Lock _passGate = new();
+    private Pass? _pass;
 
     /// <inheritdoc />
     public string Name => "hub-scheduled-jobs";
 
+    /// <summary>The check of <see cref="JobCatchUp"/>: the pass under way in this process, or a new one, to its end.</summary>
+    public async Task CatchUpAsync(CancellationToken cancellationToken = default) =>
+        await Join().Done.WaitAsync(cancellationToken);
+
     /// <summary>
-    /// Launches every job that is due now, and with a <paramref name="wait"/> waits for them, and for the runs that were
-    /// already under way, until they end or the wait is over. Without a wait, a job already running or already launched in
-    /// this process is left to that run.
+    /// The scheduled task's call: the pass under way in this process, or a new one, waited for until it ends — with the
+    /// runs that were already under way when the call came — or the <paramref name="wait"/> is over. The pass goes on after
+    /// the answer while the process lives.
     /// </summary>
-    /// <returns>The jobs launched, and what became of each by the end of the wait.</returns>
+    /// <returns>The jobs of the pass, and what became of each by the end of the wait.</returns>
     public async Task<IReadOnlyList<JobRunOutcome>> RunDueAsync(TimeSpan wait, CancellationToken cancellationToken = default)
     {
         var scheduler = await schedulers.GetScheduler(cancellationToken);
@@ -89,73 +110,11 @@ public sealed class ScheduledJobs(
             return [];
         }
 
-        var waits = wait > TimeSpan.Zero;
         var underWay = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
-        var launched = new List<Launch>();
+        var pass = Join();
 
-        try
-        {
-            await using (var scope = scopes.CreateAsyncScope())
-            {
-                var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
-                var now = clock.UtcNow;
-
-                var keys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), cancellationToken);
-                foreach (var key in keys.OrderBy(key => key.ToString(), StringComparer.Ordinal))
-                {
-                    var triggers = await scheduler.GetTriggersOfJob(key, cancellationToken);
-
-                    // Only the schedules that are running: a job whose every trigger is paused is not the hub's to run by itself.
-                    var schedules = new List<JobCron>();
-                    foreach (var cron in triggers.OfType<ICronTrigger>())
-                    {
-                        if (await scheduler.GetTriggerState(cron.Key, cancellationToken) != TriggerState.Paused)
-                        {
-                            schedules.Add(JobCron.Of(cron));
-                        }
-                    }
-
-                    if (schedules.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    // A run under way, or launched and not started yet, is the run of this occurrence for whoever does not wait.
-                    if (!waits && (underWay.Any(run => run.JobDetail.Key.Equals(key)) || triggers.Any(trigger => trigger is not ICronTrigger)))
-                    {
-                        continue;
-                    }
-
-                    // What this process last let through answers most minutes without asking the database.
-                    if (_started.TryGetValue(key.Name, out var mine) && !JobSchedule.IsDue(schedules, mine, now))
-                    {
-                        continue;
-                    }
-
-                    if (JobSchedule.IsDue(schedules, await LastStartAsync(hub, key.Name, cancellationToken), now))
-                    {
-                        launched.Add(await LaunchAsync(scheduler, key, waits, cancellationToken));
-                    }
-                }
-            }
-
-            if (waits)
-            {
-                await WaitAsync(scheduler, launched, underWay, wait, cancellationToken);
-            }
-
-            return [.. launched.Select(launch => new JobRunOutcome(
-                launch.Job,
-                launch.Outcome is { IsCompletedSuccessfully: true } outcome ? outcome.Result : JobRunState.Running))];
-        }
-        finally
-        {
-            // A launch nobody waits for any more is forgotten: the guard finds no name, and completes nothing.
-            foreach (var launch in launched.Where(launch => launch.Waiter is not null))
-            {
-                _waiting.TryRemove(launch.Waiter!, out _);
-            }
-        }
+        await WaitAsync(scheduler, pass.Done, underWay, wait, cancellationToken);
+        return pass.Outcomes();
     }
 
     // ---- the guard ---------------------------------------------------------------------------------------------------
@@ -236,7 +195,7 @@ public sealed class ScheduledJobs(
     /// <inheritdoc />
     public Task TriggerMisfired(ITrigger trigger, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    /// <summary>After a run the guard let through: its lock goes back, and whoever waits for it hears that it ran.</summary>
+    /// <summary>After a run the guard let through: its lock goes back, and a pass waiting for it hears that it ran.</summary>
     public async Task TriggerComplete(
         ITrigger trigger,
         IJobExecutionContext context,
@@ -260,55 +219,179 @@ public sealed class ScheduledJobs(
         Complete(context, JobRunState.Ran);
     }
 
-    // ---- the pieces --------------------------------------------------------------------------------------------------
+    // ---- the pass ----------------------------------------------------------------------------------------------------
 
-    /// <summary>A launch through the scheduler, with what its waiter will say, when somebody waits for it.</summary>
-    private sealed record Launch(string Job, string? Waiter, Task<JobRunState>? Outcome);
-
-    private async Task<Launch> LaunchAsync(IScheduler scheduler, JobKey key, bool waits, CancellationToken cancellationToken)
+    /// <summary>One pass: the jobs found due when it began, started one after the other, and what became of each.</summary>
+    private sealed class Pass
     {
-        var data = new JobDataMap();
-        string? name = null;
-        TaskCompletionSource<JobRunState>? waiter = null;
+        private readonly List<string> _jobs = [];
+        private readonly ConcurrentDictionary<string, JobRunState> _states = new(StringComparer.Ordinal);
 
-        if (waits)
-        {
-            name = Guid.NewGuid().ToString("N");
-            waiter = new TaskCompletionSource<JobRunState>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _waiting[name] = waiter;
-            data[WaiterKey] = name;
-        }
+        public Task Done { get; set; } = Task.CompletedTask;
 
-        try
+        public void Plan(IEnumerable<string> jobs)
         {
-            await scheduler.TriggerJob(key, data, cancellationToken);
-        }
-        catch
-        {
-            if (name is not null)
+            lock (_jobs)
             {
-                _waiting.TryRemove(name, out _);
+                foreach (var job in jobs)
+                {
+                    _jobs.Add(job);
+                    _states[job] = JobRunState.Waiting;
+                }
+            }
+        }
+
+        public void Set(string job, JobRunState state) => _states[job] = state;
+
+        public IReadOnlyList<JobRunOutcome> Outcomes()
+        {
+            lock (_jobs)
+            {
+                return [.. _jobs.Select(job => new JobRunOutcome(job, _states[job]))];
+            }
+        }
+    }
+
+    /// <summary>The pass under way in this process, or a new one, which runs on its own until its end or the host's stop.</summary>
+    private Pass Join()
+    {
+        lock (_passGate)
+        {
+            if (_pass is { Done.IsCompleted: false } running)
+            {
+                return running;
             }
 
-            throw;
+            var pass = new Pass();
+            pass.Done = Task.Run(() => RunPassAsync(pass, lifetime.ApplicationStopping));
+            _pass = pass;
+            return pass;
         }
+    }
 
-        return new Launch(key.Name, name, waiter?.Task);
+    private async Task RunPassAsync(Pass pass, CancellationToken stopping)
+    {
+        try
+        {
+            var scheduler = await schedulers.GetScheduler(stopping);
+            if (scheduler.IsShutdown)
+            {
+                return;
+            }
+
+            var due = await DueAsync(scheduler, stopping);
+            pass.Plan(due.Select(key => key.Name));
+
+            foreach (var key in due)
+            {
+                pass.Set(key.Name, JobRunState.Running);
+                pass.Set(key.Name, await RunOneAsync(scheduler, key, stopping));
+            }
+
+            if (due.Count > 0)
+            {
+                logger.LogInformation(
+                    "Ran {Count} job(s) that were due, one after the other: {Jobs}.",
+                    due.Count,
+                    string.Join(", ", pass.Outcomes().Select(outcome => $"{outcome.Job} {outcome.Outcome}")));
+            }
+        }
+        catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+        {
+            // The host is stopping.
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "A pass over the jobs that were due stopped half way; the next check starts another.");
+        }
     }
 
     /// <summary>
-    /// Until every launch has an answer and every run that was under way when the wait began has ended, or the wait is over:
-    /// a process that answers while a run goes on may be stopped by its host as soon as the answer is out.
+    /// The jobs whose schedule has an occurrence since their last run, in the order of their names, the paused ones left out.
+    /// </summary>
+    private async Task<List<JobKey>> DueAsync(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        List<JobKey> due = [];
+
+        await using var scope = scopes.CreateAsyncScope();
+        var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var now = clock.UtcNow;
+
+        var keys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), cancellationToken);
+        foreach (var key in keys.OrderBy(key => key.ToString(), StringComparer.Ordinal))
+        {
+            // Only the schedules that are running: a job whose every trigger is paused is not the hub's to run by itself.
+            var schedules = new List<JobCron>();
+            foreach (var cron in (await scheduler.GetTriggersOfJob(key, cancellationToken)).OfType<ICronTrigger>())
+            {
+                if (await scheduler.GetTriggerState(cron.Key, cancellationToken) != TriggerState.Paused)
+                {
+                    schedules.Add(JobCron.Of(cron));
+                }
+            }
+
+            if (schedules.Count == 0)
+            {
+                continue;
+            }
+
+            // What this process last knew answers most minutes without asking the database.
+            if (_lastStarts.TryGetValue(key.Name, out var known) && !JobSchedule.IsDue(schedules, known, now))
+            {
+                continue;
+            }
+
+            if (JobSchedule.IsDue(schedules, await LastStartAsync(hub, key.Name, cancellationToken), now))
+            {
+                due.Add(key);
+            }
+        }
+
+        return due;
+    }
+
+    /// <summary>
+    /// Launches one job and waits for what the guard says of it: ran, or skipped. A run that outlasts
+    /// <see cref="LongestRun"/> is left running, and the pass goes on.
+    /// </summary>
+    private async Task<JobRunState> RunOneAsync(IScheduler scheduler, JobKey key, CancellationToken stopping)
+    {
+        var name = Guid.NewGuid().ToString("N");
+        var waiter = new TaskCompletionSource<JobRunState>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _waiting[name] = waiter;
+
+        try
+        {
+            await scheduler.TriggerJob(key, new JobDataMap { [WaiterKey] = name }, stopping);
+            return await waiter.Task.WaitAsync(LongestRun, stopping);
+        }
+        catch (TimeoutException)
+        {
+            logger.LogWarning(
+                "The job {Job} has run for more than {Minutes} minutes: the pass goes on to the next job.",
+                key.Name,
+                LongestRun.TotalMinutes);
+            return JobRunState.Running;
+        }
+        finally
+        {
+            // A launch nobody waits for any more is forgotten: the guard finds no name, and completes nothing.
+            _waiting.TryRemove(name, out _);
+        }
+    }
+
+    /// <summary>
+    /// Until the pass has ended and every run that was under way when the wait began has ended, or the wait is over: a
+    /// process that answers while a run goes on may be stopped by its host as soon as the answer is out.
     /// </summary>
     private static async Task WaitAsync(
         IScheduler scheduler,
-        IReadOnlyList<Launch> launched,
+        Task pass,
         IReadOnlyCollection<IJobExecutionContext> underWay,
         TimeSpan wait,
         CancellationToken cancellationToken)
     {
         var watch = Stopwatch.StartNew();
-        var answered = Task.WhenAll(launched.Select(launch => launch.Outcome!));
         var before = underWay.Select(run => run.FireInstanceId).ToHashSet(StringComparer.Ordinal);
 
         while (true)
@@ -320,20 +403,22 @@ public sealed class ScheduledJobs(
             }
 
             var left = wait - watch.Elapsed;
-            if ((answered.IsCompleted && before.Count == 0) || left <= TimeSpan.Zero)
+            if ((pass.IsCompleted && before.Count == 0) || left <= TimeSpan.Zero)
             {
                 return;
             }
 
             var pause = Task.Delay(left < Poll ? left : Poll, cancellationToken);
-            await (answered.IsCompleted ? pause : Task.WhenAny(answered, pause));
+            await (pass.IsCompleted ? pause : Task.WhenAny(pass, pause));
             cancellationToken.ThrowIfCancellationRequested();
         }
     }
 
+    // ---- the pieces --------------------------------------------------------------------------------------------------
+
     /// <summary>
     /// The start of the last run of a job: the latest of its rows that ended, whatever the outcome, or the latest this
-    /// process let through. Null when it never ran.
+    /// process knows of; remembered, so that the next minutes need not ask. Null when it never ran.
     /// </summary>
     private async Task<DateTime?> LastStartAsync(HubDbContext hub, string job, CancellationToken cancellationToken)
     {
@@ -344,7 +429,12 @@ public sealed class ScheduledJobs(
             .Select(run => (DateTime?)run.StartedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return _started.TryGetValue(job, out var mine) ? Later(mine, logged) : logged;
+        if (logged is { } read)
+        {
+            Remember(job, read);
+        }
+
+        return _lastStarts.TryGetValue(job, out var known) ? Later(known, logged) : logged;
     }
 
     /// <summary>A run let through: its lock waits for its end, and its start counts in this process from now.</summary>
@@ -355,8 +445,11 @@ public sealed class ScheduledJobs(
             context.Put(HeldKey, job);
         }
 
-        _started.AddOrUpdate(job, start, (_, before) => Later(before, start));
+        Remember(job, start);
     }
+
+    /// <summary>A start of a job this process now knows of; only a later one replaces what it knew.</summary>
+    private void Remember(string job, DateTime start) => _lastStarts.AddOrUpdate(job, start, (_, before) => Later(before, start));
 
     private bool Skip(IJobExecutionContext context)
     {

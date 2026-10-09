@@ -6,9 +6,9 @@ namespace IvaoHub.Core.Jobs;
 
 /// <summary>
 /// Makes up the runs the hub lost while no process was alive (note 2026-10-09-i-job-che-recuperano): a few seconds after
-/// the hub has started, and then every minute, it launches every job that is due (<see cref="ScheduledJobs.RunDueAsync"/>).
-/// A night job whose hour passed while Passenger kept the hub stopped runs a few seconds after the first visit of the
-/// morning, once, and a job whose run failed waits for its next hour, as it always did.
+/// the hub has started, and then every minute, it runs the jobs that are due, one after the other
+/// (<see cref="ScheduledJobs.CatchUpAsync"/>). A night job whose hour passed while Passenger kept the hub stopped runs a few
+/// seconds after the first visit of the morning, once, and a job whose run failed waits for its next hour, as it always did.
 /// </summary>
 /// <remarks>
 /// <para>The first check waits for the visitor who woke the hub to have their page: then the work goes on while the process
@@ -64,18 +64,12 @@ public sealed class JobCatchUp(
         }
     }
 
+    /// <summary>One check: the jobs that are due, one after the other, to the end of the pass; the pass says what it ran.</summary>
     private async Task CheckAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var launched = await jobs.RunDueAsync(TimeSpan.Zero, cancellationToken);
-            if (launched.Count > 0)
-            {
-                logger.LogInformation(
-                    "Launched {Count} job(s) that were due: {Jobs}.",
-                    launched.Count,
-                    string.Join(", ", launched.Select(run => run.Job)));
-            }
+            await jobs.CatchUpAsync(cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
