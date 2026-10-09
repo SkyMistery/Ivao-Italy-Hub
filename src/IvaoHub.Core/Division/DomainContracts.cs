@@ -194,6 +194,11 @@ public interface ISharedForReading
 /// which no grant names, so that a permission granted on one row creates no other row like it. ⚠️ Two things hold that up: a
 /// grant is written on a row that exists — the module's endpoint finds it first —, and a row's own scope is built on its key,
 /// never on something its writer chooses, such as its address: a grant written on that would create the row.</para>
+/// <para>The scope a row had — a deletion is asked with it, and a change too when the row moves — is read from the tracker's
+/// original values (<c>OriginalValues.ToObject()</c>), as the guard reads a row's FIR and the member it is about. So a scope is
+/// built from the row's own mapped columns, never from a navigation, which that copy does not load. And ⚠️ a stub attached without
+/// being read is believed as its caller wrote it, scope included: the limit accepted for a member's withdrawal (M4, E10h, answer 2
+/// on #232) holds here too, and the endpoint loads the row it writes.</para>
 /// </summary>
 public interface IHasResourceScope
 {
