@@ -55,7 +55,10 @@ async function draw({
   renderWithProviders(
     <DataList
       columns={columns}
-      query={queryOptions({ queryKey: ['test', 'words', drawn] as const, queryFn: () => Promise.resolve(page) })}
+      query={queryOptions({
+        queryKey: ['test', 'words', drawn] as const,
+        queryFn: () => Promise.resolve(page),
+      })}
       search={listSearchSchema.parse(search)}
       onSearchChange={onSearchChange}
       labels="test"
@@ -86,8 +89,12 @@ test('the pages of a list are named in the words of the language files, and none
   expect(screen.queryByText('More pages')).not.toBeInTheDocument();
 
   // Three pages fit on the line, so no «…» leads to one of them: Atmosphere drew one here, beside the 3 it led to.
-  expect(within(pages).queryByRole('button', { name: englishCommon.list.pages.last })).not.toBeInTheDocument();
-  expect(within(pages).queryByRole('button', { name: englishCommon.list.pages.first })).not.toBeInTheDocument();
+  expect(
+    within(pages).queryByRole('button', { name: englishCommon.list.pages.last }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(pages).queryByRole('button', { name: englishCommon.list.pages.first }),
+  ).not.toBeInTheDocument();
 });
 
 test('in Italian the pages say Italian words, and no English one is left', async () => {
@@ -150,7 +157,9 @@ test('on the last page «Next» is off, and the first page is a «…» away', a
   expect(within(pages).getByRole('button', { name: '10' })).toHaveAttribute('aria-current', 'page');
   expect(within(pages).getByRole('button', { name: '8' })).toBeInTheDocument();
   expect(within(pages).getByRole('button', { name: englishCommon.list.pages.first })).toBeInTheDocument();
-  expect(within(pages).queryByRole('button', { name: englishCommon.list.pages.last })).not.toBeInTheDocument();
+  expect(
+    within(pages).queryByRole('button', { name: englishCommon.list.pages.last }),
+  ).not.toBeInTheDocument();
 });
 
 test('an empty list says the core’s sentence, unless its screen gives one of its own', async () => {

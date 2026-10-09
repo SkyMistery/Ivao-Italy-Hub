@@ -68,10 +68,11 @@ function hints(language: 'en' | 'it' = 'en') {
 }
 
 test('a form of boxes of one line says that Enter saves, as it always did', async () => {
-  await draw(
-    z.object({ title: z.string(), weight: z.number(), day: z.string().meta({ date: true }) }),
-    { title: '', weight: 0, day: '' },
-  );
+  await draw(z.object({ title: z.string(), weight: z.number(), day: z.string().meta({ date: true }) }), {
+    title: '',
+    weight: 0,
+    day: '',
+  });
 
   expect(await screen.findByLabelText('Title')).toBeInTheDocument();
   expect(hints().all).toBeInTheDocument();
