@@ -1,7 +1,9 @@
 # Le prenotazioni sul server: le letture del design (E6a)
 
 **Data:** 7 ottobre 2026 — fase E6a di M4 (prenotare: il server), PR #233
-**Stato:** **Proposta** — la domanda a Carmine è un commento sulla #233 (§4). Il ritiro del pilota, che cancella la riga, poggia sulla
+**Stato:** **decisa** — Carmine ha risposto l'8 ottobre 2026 alle tre domande (§4) e al punto 10 del revisore, [sulla
+#233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670) (SkyMistery, su sua istruzione): le risposte
+nel §6. Resta **aperto** un punto che chiude il maintainer alla consegna: il formato del log binario (risposta 2). Il ritiro del pilota, che cancella la riga, poggia sulla
 fase del nucleo **E10h** (la #232, nota `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`, **decisa** da Carmine sulla #232, §2 qui
 sotto): la #233 è in coda dopo la #228 di E5 e dopo la #232.
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo nel modulo — `ISubmittedByMembers` e
@@ -81,6 +83,8 @@ caso (b) a sé, in una PR a sé prima del codice che lo usa (`CLAUDE.md` §0 reg
     (`docs/events-bookings-export.md`, aggiornato).
 11. **Uno slot prenotato si corregge ancora** (la domanda 3): il design dice solo che non si elimina. Il form dello slot lo lascia correggere
     come prima, e la prenotazione resta com'è: niente si ricontrolla — l'aereo scelto, la compatibilità — e il pilota non riceve una mail.
+    **Carmine ha deciso diversamente** (risposta 3, §6): la correzione resta permessa e la prenotazione resta, ma **il pilota riceve una
+    mail** quando la correzione cambia il volo che ha prenotato.
 
 **Gli endpoint scritti a mano di E6a** (per il conto del piano §16.6): cinque — quattro del **flusso di un membro**, sotto
 `/api/events/mine/bookings` (leggere le sue, prenotare, prenotare la rotazione, ritirare), e un **verbo d'azione** dello staff su una
@@ -113,7 +117,8 @@ segno va riguardato.
 ## 3. Che cosa si è toccato
 
 Solo il modulo: `EventBooking.cs` (e `EventChild.cs`, il suo commento), la migrazione additiva `AddEventBookings`, `Bookings/`
-(`BookingRules`, `PilotBookings`, `BookingEndpoints`, `BookingDtos`), `EventsMail.cs`, `EventsNotifications.cs` (`bookingRemoved`),
+(`BookingRules`, `PilotBookings`, `BookingEndpoints`, `BookingDtos`), `EventsMail.cs`, `EventsNotifications.cs` (`bookingRemoved`, e
+`bookingChanged` dalla risposta 3),
 `Data/DatabaseErrors.cs` (gli errori del database che un verbo del modulo risponde da sé: era il `MetAnotherWrite` di E5, che ora lo
 usa), `Staff/EventSaving.cs`,
 `Staff/EventEndpoints.cs`, `Staff/EventSlotEndpoints.cs`, `Staff/SlotLoading.cs`, `Public/PublicEvents.cs`, `Export/BookingsExport.cs`,
@@ -147,15 +152,49 @@ cancellazione (voluta, lettura 6), la rilettura che chiede `EventState.Seen`, e 
 prenotazione, un deadlock in «elimina i liberi»: scritti in `10`, «Com'è andata»). Nessuna decisione nuova: le domande del §4 restano
 quelle; il grant su un evento solo che il guardiano non lascia scrivere (lettura 9, ⚠️) è del nucleo.
 
+## 6. Le risposte di Carmine
+
+L'8 ottobre 2026, date in chat alla sessione master e pubblicate su sua istruzione
+([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670)):
+
+1. **Sì alle prime dieci letture, come scritte**; l'undicesima è la risposta 3. La lettura 10 vuol dire che
+   `docs/events-bookings-export.md` dice che `booked_by` è negativo dopo la cancellazione dei dati di una persona: il Gate Manager è il
+   programma del maintainer e lo leggerà così. Il documento lo diceva già dalla prima testa (la riga di `booked_by`).
+2. **Il log binario della MariaDB di produzione non è verificato**: il maintainer non vede le variabili del server. Si prova **con la prima
+   prenotazione sull'installazione di prova, alla prossima consegna, prima di aprire le prenotazioni di un evento vero**: con `STATEMENT`
+   quella prenotazione fallisce subito, e la lettura 1 si riapre. **Punto aperto: lo chiude il maintainer, alla consegna** (scritto anche
+   in `HANDOFF-M4.md`).
+3. **Uno slot prenotato che lo staff corregge: la correzione si fa, e il pilota è avvisato quando cambia quello che ha prenotato.** Né «niente
+   si ricontrolla e nessuna mail», come raccomandava la lettura 11, né un rifiuto: un nuovo orario di molti slot non deve costringere lo
+   staff a togliere le prenotazioni una per una. Fatto su questa PR, con il suo test:
+   - lo staff corregge ancora lo slot dal suo form, e la prenotazione resta, con l'aereo scelto;
+   - **quando cambiano gli orari, gli aeroporti o i tipi di aereo ammessi**, il pilota riceve **`events.bookingChanged`**, un intento suo nel
+     servizio delle notifiche del nucleo, come `bookingRemoved`: il volo com'è ora — callsign, aeroporti, off block e on block in UTC, i
+     tipi ammessi — e l'aereo che ha scelto, con l'invito a ritirarla fino all'off block se non gli va più bene (`EventsMail.BookingChangedAsync`,
+     `SlotSaving.AfterSaveAsync`, dopo il salvataggio);
+   - **anche il callsign** (lettura di questa fase, da controllare in revisione): la risposta nomina orari, aeroporti e tipi, e il suo titolo
+     dice «quando cambia quello che ha prenotato»; il callsign è il volo con cui il pilota si collega, quindi una sua correzione avvisa;
+   - **lo stand o il numero di volo da soli non avvisano nessuno**, e nemmeno la rotazione o il solo tipo principale: i tipi ammessi si
+     confrontano come insieme;
+   - **la correzione non si ricontrolla** con le altre prenotazioni del pilota (`bookingGapMinutes`) né con l'aereo che ha scelto: la
+     prenotazione resta com'è anche se ora è troppo vicina a un'altra sua, o se il suo aereo non è più fra quelli ammessi. La mail gli dice il
+     volo com'è ora, e decide lui: ritirarla fino all'off block, e prenotare di nuovo. La catena della rotazione dello slot si controlla come
+     prima, perché è dello slot e non del pilota.
+4. **L'eraser degli eventi lasciato a E8b (il punto 10 del revisore): accettato, con una regola.** Finché E8b non è unita **le prenotazioni
+   non si aprono su un'installazione vera**; l'installazione di prova non è vincolata. Scritto in `HANDOFF-M4.md`, dove si legge la
+   consegna.
+
 ## Da portare nel piano
 
 - Design M4 §1.6: la chiave verso lo slot e nessuna verso l'evento; lo scope dell'evento; una prenotazione non è `IAuditable`.
 - Design M4 §3.3: le risposte; un deadlock è 409 «riprova», mai «preso»; la rotazione intera con un aereo solo, sempre 200 con il perché
   di ogni tratta, 409 su un deadlock.
-- Design M4 §3.5 e §10.1: `READ COMMITTED` e perché; il formato del log binario (la domanda 2).
+- Design M4 §3.5 e §10.1: `READ COMMITTED` e perché; il formato del log binario, da provare alla prossima consegna (risposta 2).
 - Design M4 §3.6: il motivo dello staff, obbligatorio e non conservato, senza un limite di tempo; «togli» nella cura dell'evento com'è
-  ora; la mail dopo la cancellazione; uno slot prenotato si corregge (la domanda 3); perché la prenotazione, che il pilota ritira
-  cancellandola, non porta una decisione (§2, la regola di Carmine sulla #232).
-- Design M4 §8.3: le mail una volta per persona; `eventChanged` per l'inizio e la fine.
-- Piano §2.5, se Carmine lo conferma: il formato del log binario della MariaDB condivisa.
+  ora; la mail dopo la cancellazione; uno slot prenotato si corregge, la prenotazione resta e il pilota è avvisato quando cambia il volo
+  — callsign, orari, aeroporti, tipi ammessi —, senza ricontrollare la compatibilità (risposta 3); perché la prenotazione, che il pilota
+  ritira cancellandola, non porta una decisione (§2, la regola di Carmine sulla #232).
+- Design M4 §8.3: le mail una volta per persona; `eventChanged` per l'inizio e la fine; **`bookingChanged`**, nuova (risposta 3).
+- Piano §2.5: il formato del log binario della MariaDB condivisa, quando la consegna lo prova (risposta 2).
+- Piano §13 (M4a) o la consegna: nessuna prenotazione aperta su un'installazione vera finché E8b non è unita (risposta 4).
 - Piano §16.6: il conto degli endpoint a mano di M4 (cinque di E6a).

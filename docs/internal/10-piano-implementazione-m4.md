@@ -1662,11 +1662,50 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
   i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,6 minuti); `pnpm lint`, `typecheck`,
   `format:check`, `i18n:check` verdi; `pnpm test` **643 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57 al primo
   giro** (11,6 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima, il lock di Mailpit preso solo per il giro); le regole di `core-guard` in
-  PowerShell dalla base di merge `1f2a687`: **PASS**.
+  PowerShell dalla base di merge `1f2a687`: **PASS**. La CI su `008039e`: verde.
+- **Le risposte di Carmine** (8 ottobre 2026, [sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670),
+  di SkyMistery su sua istruzione; la #232 è unita la sera stessa, `main` a `0f72737`, e la #233 resta MERGEABLE senza unirlo): la nota è
+  **decisa** (§6).
+  1. **Sì alle prime dieci letture.** La lettura 10 chiede che `docs/events-bookings-export.md` dica `booked_by` negativo dopo una
+     cancellazione: lo diceva già, nella riga di `booked_by`.
+  2. **Il log binario non è verificato**: si prova con la prima prenotazione sull'installazione di prova alla prossima consegna, prima di
+     aprire le prenotazioni di un evento vero; punto aperto, lo chiude il maintainer, scritto nella nota e nell'intestazione di
+     `HANDOFF-M4.md`.
+  3. **Uno slot prenotato si corregge, e il pilota è avvisato** — codice su questa PR. `SlotSaving.PrepareAsync` confronta, prima di ogni
+     rifiuto, il volo salvato con quello corretto (`FlightChanged`: callsign, aeroporti, off block, on block, e i tipi ammessi come
+     insieme, letti dai valori originali del tracker; i tipi dalla colonna `AircraftTypesJson`, con la conversione dell'entità), e
+     `SlotSaving.AfterSaveAsync` — `CrudOptions.AfterSave` del CRUD degli slot, come `eventChanged` per l'evento — manda al pilota
+     **`events.bookingChanged`** (`EventsNotifications`, `EventsMail.BookingChangedAsync`, la parola del profilo e il modello in
+     `events.json`): il volo com'è ora, i tipi ammessi, il suo aereo, e l'invito a ritirarla fino all'off block se non gli va più bene.
+     Stand, numero di volo, rotazione o il solo tipo principale: nessuno avvisato; uno slot che nessuno ha prenotato: nessuno. **Il callsign
+     avvisa anche lui**: la risposta nomina orari, aeroporti e tipi, e il suo titolo dice «quando cambia quello che ha prenotato» — il
+     callsign è il volo con cui il pilota si collega (detto alla revisione). **Che cosa succede alla compatibilità** (la domanda di
+     Carmine): **non si ricontrolla**, né con le altre prenotazioni del pilota (`bookingGapMinutes`) né con l'aereo che ha scelto. La
+     prenotazione resta com'è anche se ora è troppo vicina a un'altra sua o il suo aereo non è più ammesso, e la mail glielo fa sapere;
+     decide il pilota. La catena della rotazione dello slot si controlla come prima. Il caricamento della tabella non tocca mai uno slot che
+     c'è (aggiunge, o sostituisce i liberi): uno slot prenotato si corregge solo dal suo form. Test:
+     `ABookedSlotCorrectedByTheStaffKeepsItsBookingAndTellsItsPilotWhenTheFlightChanges` — stand, numero di volo e ordine dei tipi non
+     avvisano; orari nuovi a cinque minuti da un'altra prenotazione del pilota (l'evento ne chiede dieci) avvisano, e la prenotazione resta;
+     tipi che lasciano fuori il suo aereo avvisano, e la prenotazione lo tiene; uno slot libero non avvisa nessuno. **Al contrario**: senza
+     avviso, `Assert.Single() Failure: The collection was empty`; con un avviso a ogni correzione, `Assert.Empty() Failure`; il codice
+     rimesso con lo stesso hash, toccato e ricompilato.
+  4. **L'eraser a E8b, accettato con una regola**: nessuna prenotazione su un'installazione vera finché E8b non è unita; l'installazione
+     di prova non è vincolata. Scritto nell'intestazione di `HANDOFF-M4.md`, dove si legge la consegna.
+  - **Verificato** (9 ottobre 2026, sull'ultima testa): `dotnet build` senza avvisi e `dotnet format --verify-no-changes` sui quattro
+    file C# toccati; `pnpm gen:api` e `pnpm i18n:sync` rifatti; unità **1198/1199** — la sola caduta è
+    `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una bomba a tempo del nucleo che non è di questa fase: chiede la storia del
+    9 settembre 2026 alle 06:00 UTC, e `NoaaWeatherClient` risponde `null` oltre `IWeatherSource.HistoryWindow` (30 giorni, letti su
+    `DateTime.UtcNow`), quindi cade su ogni branch, `main` compreso, dalle 06:00 UTC del 9 ottobre; non toccata (regola 3), detta alla
+    sessione che coordina —; **integrazione intera senza filtro 514/514** (6,9 minuti), `EventsBookingsTests` 17/17; `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **643 in 88 file**; smoke **173/173** al primo giro; `pnpm e2e:full`
+    **56/57** al primo giro (11,6 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima): la spec del nucleo `e2e/full/preview.spec.ts:25`
+    (l'anteprima dell'editor con il browser rallentato due volte) è scaduta a 30 secondi sotto il carico del giro, e da sola sullo stesso
+    banco e sullo stesso albero, `--repeat-each=3`, **3/3** (5,6–5,8 secondi ciascuna); questo giro non cambia codice web. Le regole di
+    `core-guard` in PowerShell dalla base di merge `eb8e8ef`: **PASS** — del nucleo solo `ErasureTests.cs`, due note nuove.
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
   le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
-  log binario della MariaDB di produzione (la domanda 2); le mail lette davvero in una casella (i test leggono la coda, `hub_notifications`);
-  le pagine, che sono di E6b.
+  log binario della MariaDB di produzione (risposta 2: lo prova la consegna); le mail lette davvero in una casella (i test leggono la coda,
+  `hub_notifications`); le pagine, che sono di E6b.
 
 ### E6b — Prenotare: le pagine
 

@@ -26,10 +26,16 @@ calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi fi
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
 con un token personale («Che cosa ha lasciato E5», sotto); da E6a **si prenota**, sul server: un pilota prende uno slot pubblico o tutta una
 rotazione e ritira fino all'off block, lo staff toglie una prenotazione con un motivo, e chi ha prenotato sa di un annullamento e di nuovi
-orari («Che cosa ha lasciato E6a», sotto). ⚠️ **Tre domande a Carmine sulla #233** (nota `2026-10-07-le-prenotazioni-sul-server`,
-«Proposta»): le undici letture del design, il formato del log binario della MariaDB di produzione — con `STATEMENT` ogni prenotazione, in
-una transazione `READ COMMITTED`, sarebbe rifiutata —, uno slot prenotato che si corregge ancora. **Il master ha letto la #233**: le
-quattro correzioni che chiedeva sono fatte sulla stessa PR («Che cosa ha lasciato E6a»). **Alla domanda della #232 Carmine ha detto sì**
+orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto). **Le tre domande di E6a hanno la risposta di
+Carmine** ([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670), nota
+`2026-10-07-le-prenotazioni-sul-server` ora **decisa**): sì alle prime dieci letture; uno slot prenotato si corregge ancora e il pilota è
+avvisato quando cambia il volo (`events.bookingChanged`, fatto sulla #233); l'eraser degli eventi resta a E8b, con la regola qui sotto; il
+log binario è un punto aperto. ⚠️ **Prima di aprire le prenotazioni di un evento vero** (Carmine, 8 ottobre 2026, sulla #233):
+**nessuna prenotazione su un'installazione vera finché E8b non è unita** (l'eraser degli eventi; l'installazione di prova non è
+vincolata); e **il formato del log binario della MariaDB si prova con la prima prenotazione sull'installazione di prova, alla prossima
+consegna** — con `STATEMENT` quella prenotazione fallisce subito e la lettura 1 della nota di E6a si riapre. **Punto aperto: lo chiude il
+maintainer, alla consegna.** **Il master ha letto la #233**: le quattro correzioni che chiedeva sono fatte sulla stessa PR («Che cosa ha
+lasciato E6a»). **Alla domanda della #232 Carmine ha detto sì**
 ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)): la nota di E10h è decisa, e la sua
 testa dopo la revisione (`ec9b3b4`) è unita qui. **Carmine ha risposto
 sulla #228** ([le sue risposte][a228]): sì alle otto letture della nota `2026-10-06-il-foglio-degli-slot-e-l-esportazione`, ora
@@ -161,11 +167,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E6a (7–8 ottobre 2026, branch `m4/e6a-booking-server`, PR #233, in coda dopo la #232 di E10h; la #228 è unita)
+### Che cosa ha lasciato E6a (7–9 ottobre 2026, branch `m4/e6a-booking-server`, PR #233; la #228 e la #232 sono unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E6a, «Com'è andata»; una migrazione additiva, `AddEventBookings`; del nucleo solo le due righe
-  di `ErasureTests`; due note nuove: `2026-10-07-le-prenotazioni-sul-server`, **«Proposta»**, con tre domande a Carmine sulla #233 — le
-  undici letture del design, il formato del log binario della MariaDB di produzione, uno slot prenotato che si corregge ancora —, e
+  di `ErasureTests`; due note nuove: `2026-10-07-le-prenotazioni-sul-server`, **decisa** da Carmine sulla #233 l'8 ottobre — sì alle
+  prime dieci letture, il log binario aperto fino alla consegna, uno slot prenotato corretto avvisa il pilota, l'eraser a E8b con la sua
+  regola —, e
   `2026-10-07-le-colonne-delle-prenotazioni-in-erasuretests`, nessuna decisione nuova; il ritiro poggia sulla fase del nucleo **E10h**, la
   #232, unita a questo branch; dopo l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5`, unita anche lei — `d767cc0`,
   i conflitti dell'esportazione e del commento dello slot risolti tenendo i due lati —; **le correzioni della revisione del master**
@@ -196,7 +203,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     titolo `{{title}}`, mai a uno pseudonimo).
   - **Le regole che crescono**: `SlotRows.Free` = gli slot che nessuna prenotazione nomina; uno slot prenotato non si elimina
     (`slotBooked`); un evento con prenotazioni non si elimina (`eventHasBookings`); annullare manda `eventCancelled`, spostare l'inizio o la
-    fine `eventChanged` (`EventSaving.AfterSaveAsync`), a chi ha prenotato, una volta per persona.
+    fine `eventChanged` (`EventSaving.AfterSaveAsync`), a chi ha prenotato, una volta per persona. **Uno slot prenotato si corregge
+    ancora** dal suo form e la prenotazione resta; se la correzione cambia callsign, orari, aeroporti o tipi ammessi (questi come insieme),
+    il pilota riceve **`events.bookingChanged`** con il volo com'è ora e il suo aereo (`SlotSaving.AfterSaveAsync`, risposta 3 di Carmine);
+    stand, numero di volo, rotazione o il solo tipo principale non avvisano nessuno. La compatibilità non si ricontrolla.
   - **La pagina** dice «preso» (`PublicEventSlotDto.Taken`), **l'esportazione** `booked_by` e `aircraft_icao`, accanto ad
     `aircraft_types` di E5 (i tipi ammessi, il principale per primo).
   - **I test**: `EventsBookingsTests` (unità, 12; integrazione, 16, VID 761043–761046 e, dalla revisione, 761084–761086 — tre membri
@@ -228,12 +238,18 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     Carmine sulla #232, punto 6: la nota di E6a, §2, dice perché). La giustificazione di E13b e la verifica di E13a cadono dopo il volo. Ma
     uno slot può partire fino a sei ore dopo la fine dell'evento (`SlotWindow.Margin`) e `events-after` gira dopo `ends_at_utc`: non
     toccate una prenotazione ancora ritirabile, o il segno va riguardato.
-  - ⚠️ **Il log binario**: con `binlog_format=STATEMENT` MariaDB rifiuta le scritture di una transazione `READ COMMITTED`, e ogni
-    prenotazione cadrebbe. Il predefinito di MariaDB 11.4 è `MIXED`; la CI ha il log spento. Chiesto a Carmine (domanda 2).
-  - ⚠️ **Uno slot prenotato si corregge ancora** dal suo form, e la prenotazione resta com'è, senza ricontrollare l'aereo o la
-    compatibilità né avvisare il pilota (la domanda 3 a Carmine).
+  - ⚠️ **Il log binario, punto aperto** (risposta 2 di Carmine): con `binlog_format=STATEMENT` MariaDB rifiuta le scritture di una
+    transazione `READ COMMITTED`, e ogni prenotazione cadrebbe. Il predefinito di MariaDB 11.4 è `MIXED`; la CI ha il log spento; il
+    maintainer non vede le variabili del server. Si prova con la prima prenotazione sull'installazione di prova, alla prossima consegna,
+    prima di aprire le prenotazioni di un evento vero: lo chiude il maintainer.
+  - ⚠️ **Nessuna prenotazione su un'installazione vera finché E8b non è unita** (risposta 4 di Carmine): l'eraser degli eventi arriva con
+    E8b; l'installazione di prova non è vincolata.
+  - ⚠️ **Uno slot prenotato corretto non si ricontrolla**: la prenotazione resta anche se ora è troppo vicina a un'altra del pilota, o se il
+    suo aereo non è più ammesso; la mail `bookingChanged` glielo fa sapere e decide lui (ritirarla fino all'off block). E6b mostra le
+    prenotazioni del pilota: lì si può dire che una non va più con un'altra.
   - ⚠️ **Il motivo di «togli» non si conserva**: è nella mail; l'audit dice chi ha tolto che cosa e quando.
-  - ⚠️ **Un grant su un evento solo non scrive** (trovato in E6a, del nucleo, non toccato): passa l'unico handler, ma il guardiano
+  - ⚠️ **Un grant su un evento solo non scrive** (trovato in E6a, del nucleo, non toccato qui; lo porta la fase del nucleo **E10i**, in
+    corso, che fa chiedere al guardiano `{Area}.Edit` con lo scope della riga): passa l'unico handler, ma il guardiano
     dell'interceptor chiede `{Area}.Edit` sui dipartimenti della riga senza il suo scope (`RequireAny`), e il salvataggio lo rifiuta
     (`ForbiddenDomainException`) — una prenotazione da togliere come uno slot da correggere. Il design vuole un grant a un VID «anche su un
     evento solo» (§6): finché il nucleo non lo legge, la lista dello staff di E6b lo mostra a chi ha quel grant e «togli» risponde 403.
