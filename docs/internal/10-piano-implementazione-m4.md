@@ -1886,6 +1886,16 @@ tenendo i due lati, `bookingChanged` di E6a e `bookingReminder` di questa fase �
   conferma di «Pubblica», la riga «Prenotazioni», l'indirizzo `mine`); il resto delle dieci letture come scritte. **`EventsPeople` è
   accettato per ora**: è il quarto lettore di nomi per VID, e **un lettore nel nucleo entra nella coda del nucleo prima che se ne scriva
   un quinto**.
+- **La testa di E6a con `main` a `aa3707a`** (9 ottobre 2026, sera): la #241 di Carmine (0.6.6: il client NOAA legge l'`IClock` del
+  nucleo) ha corretto il test del meteo della #236; E6a ha unito `main` (`f4c63e6`) e i suoi documenti (`92cd928`), e la sessione che
+  coordina ha dato il via. Unita qui (`1b21ccf`), mai un rebase: nessun conflitto — porta solo i file della #241 (`Directory.Build.props`,
+  la sua nota, `NoaaWeatherClient.cs`, `WeatherTests.cs`) e il paragrafo nuovo di E6a in questo file, unito da solo —, e la CI torna
+  intera. **Rifatto tutto sull'albero unito**: `dotnet build` senza avvisi né errori; unità **1203/1203**, il test del meteo compreso;
+  **integrazione intera senza filtro 520/520** (6,4 minuti); `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm lint`,
+  `format:check`, `typecheck` verdi, `pnpm test` **671 in 92 file**, `i18n:check` (821 chiavi), `pnpm build` verde e
+  `git diff --exit-code` pulito; lo smoke dietro il suo lock **179/179** al primo giro (1,1 minuti); **`pnpm e2e:full` 58/58 al primo
+  giro** (10,8 minuti, 5132, `ivaohub_e2e_e6b` ricreato prima, dietro il lock di Mailpit, preso dopo quello di E4c); le regole di
+  `core-guard` dalla nuova base di merge `aa3707a`: **PASS**, e `ArchitectureTests` da sola 15 su 15 scritti.
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera — molti piloti che prenotano e un giro del promemoria in due
   processi: la gara dei due giri è deterministica, con una transazione del test al posto del primo —; il formato del log binario della
   MariaDB di produzione (la risposta 2 di Carmine sulla #233: lo prova la consegna, e vale anche per il segno del job); il promemoria letto

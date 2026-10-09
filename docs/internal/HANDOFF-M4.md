@@ -7,7 +7,9 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 9 ottobre 2026 — **fase E6b** (modulo: prenotare, le pagine), sul branch `m4/e6b-booking-pages`, **PR #240**
-verso `main`, nata **in coda dopo la #233** di E6a, dalla sua testa con le risposte di Carmine, `3326454`. Prima di E6b: **fase E6a**
+verso `main`, nata **in coda dopo la #233** di E6a, dalla sua testa con le risposte di Carmine, `3326454`, e dopo la revisione con la
+sua testa nuova, `92cd928`, che porta `main` a `aa3707a` con la #241 (0.6.6, il test del meteo corretto): unita in `1b21ccf`, e la CI
+torna intera. Prima di E6b: **fase E6a**
 (modulo: prenotare, il server), **PR #233**, nata in coda dopo la #228 di E5 e poi anche dopo la #232 di **E10h** (il nucleo: chi ha
 mandato una riga se la riprende), una fase del nucleo nata da lei — il ritiro del pilota cancella la riga, e il guardiano
 dell'interceptor non lo lasciava fare. **La #228 e la #232 sono unite** (7 e 8 ottobre, `main` a `0f72737`): la #233 non è più in coda
@@ -18,8 +20,9 @@ ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #2
 posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b,
 dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga scrive quella riga,
 e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k** (#238: le parole delle liste e i titoli delle
-schede), con **E4c** (gli usi degli eventi) in coda dopo la #238. ⚠️ **`WeatherTests` del nucleo cade su ogni branch dal 9 ottobre**
-(#236): non si tocca, e ogni PR lo dice in cima.
+schede), con **E4c** (gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino
+del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa): un branch che porta `main` a `aa3707a` ha
+di nuovo la CI intera.
 **Il prossimo passo**: **E6a** (la #233), poi **E6b** (la #240, in coda dopo la #233); poi **E7** (gli slot privati), in coda sul
 branch di E6b. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
@@ -243,7 +246,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     due lingue.
   - ⚠️ `englishCommon` (`web/e2e/locales.ts`, del nucleo) non ha `common.cancel` né `liveStatus.airportsTitle`: le spec del modulo le
     leggono da `locales/en/common.json`.
-  - ⚠️ **`WeatherTests`** (#236) cade su ogni branch dal 9 ottobre: non si tocca.
+  - **`WeatherTests`** (#236) è corretto dalla #241 (0.6.6): la #240 porta `main` a `aa3707a` attraverso la testa di E6a, e la CI gira
+    intera.
 
 ### Che cosa ha lasciato E6a (7–9 ottobre 2026, branch `m4/e6a-booking-server`, PR #233; la #228 e la #232 sono unite)
 
