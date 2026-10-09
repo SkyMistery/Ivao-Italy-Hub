@@ -117,8 +117,8 @@ public sealed class PermissionAreaAttribute(string area) : Attribute
 /// 2026-09-25-i-permessi-alternativi-e-la-creazione).</para>
 /// <para>The guard asks each the way the handler does: held on one of the row's departments <b>with the row's scope</b>
 /// (<see cref="IHasResourceScope"/>), and never by the member the row is about (<see cref="IHasStakeholder"/>), who has
-/// their own narrower way in (<see cref="ISubmittedByMembers"/>). Moving the row between departments still asks for
-/// <c>Edit</c> on both sides, and deleting it asks for <c>Edit</c> unless the alternative is marked
+/// their own narrower way in (<see cref="ISubmittedByMembers"/>). Moving the row between departments, FIRs or scopes still asks
+/// for <c>Edit</c> on both sides, and deleting it asks for <c>Edit</c> unless the alternative is marked
 /// <see cref="AlsoOnDeletion"/>.</para>
 /// <para>A permission the catalogue marks <c>OnlyForAssignee</c> counts only on a row assigned to the writer
 /// (<see cref="IHasAssignee"/>): before the write and after it, as the new row is, as the removed row was. An examiner writes
@@ -131,8 +131,10 @@ public sealed class AlsoWrittenWithAttribute(string permission) : Attribute
 
     /// <summary>
     /// Whether this permission also brings a row into existence, not only changes one: an exam is entered in the calendar
-    /// by whoever examines, who does not hold <c>Edit</c> (M3, A3). Asked <b>without</b> a scope, since a new row has none
-    /// of its own yet, on at least one of the row's departments, as <c>Edit</c> is — and never for a row about the writer.
+    /// by whoever examines, who does not hold <c>Edit</c> (M3, A3). Asked as <c>Edit</c> is, on at least one of the row's
+    /// departments and with the scope the new row answers with (M4, E10i): held on one row, it creates the rows that answer
+    /// with that row's scope, and never another row like it, whose own scope names a key the database has not given yet
+    /// (<see cref="IHasResourceScope"/>). Never for a row about the writer.
     /// </summary>
     public bool AlsoOnCreation { get; init; }
 
@@ -185,6 +187,13 @@ public interface ISharedForReading
 /// <para>A row of a module can answer with the scope of something above it — a report answers with
 /// the scope of its tour — so that enabling somebody on a tour enables them on its reports, without
 /// a grant per report (decision note of 15 September 2026).</para>
+/// <para>The interceptor's guard asks with it as the single handler does, on a change, a deletion and a creation alike (M4,
+/// E10i, note 2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga): a permission granted on one row writes that row and the rows
+/// that answer with its scope. A new row answers with the scope of the row above it — a slot, with its event's —, and a
+/// permission granted on that row brings it into existence; or with its own, built on a key the database has not given yet,
+/// which no grant names, so that a permission granted on one row creates no other row like it. ⚠️ Two things hold that up: a
+/// grant is written on a row that exists — the module's endpoint finds it first —, and a row's own scope is built on its key,
+/// never on something its writer chooses, such as its address: a grant written on that would create the row.</para>
 /// </summary>
 public interface IHasResourceScope
 {
