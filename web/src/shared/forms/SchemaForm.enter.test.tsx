@@ -29,6 +29,10 @@ const words = {
       contact: 'Contact',
       'contact.note': 'Note',
       rowVersion: 'Version',
+      aliases: 'Aliases',
+      'aliases.name': 'Name',
+      remarks: 'Remarks',
+      'remarks.text': 'Remark',
     },
     options: { mode: { Add: 'Add', ReplaceFree: 'Replace the free ones' } },
   },
@@ -130,4 +134,37 @@ test('the rule holds when the button is drawn somewhere else, and in Italian', a
   expect(hints('it').oneLine).toBeInTheDocument();
   expect(hints('it').all).not.toBeInTheDocument();
   expect(screen.queryByText(englishCommon.form.submitHintOneLine)).not.toBeInTheDocument();
+});
+
+test('a repeatable list with no entry yet puts no box of one line on the screen, so nothing is said of one', async () => {
+  // The review of #238, low 1: the list's boxes appear only once an entry is added.
+  await draw(
+    z.object({
+      aliases: z.array(z.object({ name: z.string() })),
+      message: z.string().meta({ multiline: true }),
+    }),
+    { aliases: [], message: '' },
+  );
+
+  expect(await screen.findByLabelText('Message')).toBeInTheDocument();
+  expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+  expect(hints().all).not.toBeInTheDocument();
+  expect(hints().oneLine).not.toBeInTheDocument();
+});
+
+test('a box of many lines inside a repeatable list still makes the sentence name the box of one line', async () => {
+  await draw(
+    z.object({
+      title: z.string(),
+      remarks: z.array(z.object({ text: z.string().meta({ multiline: true }) })),
+    }),
+    {
+      title: '',
+      remarks: [{ text: '' }],
+    },
+  );
+
+  expect(await screen.findByLabelText('Remark')).toBeInTheDocument();
+  expect(hints().oneLine).toBeInTheDocument();
+  expect(hints().all).not.toBeInTheDocument();
 });

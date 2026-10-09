@@ -14,7 +14,7 @@ import { bootstrapKey } from '../features/me/queries';
 import { SearchResults } from '../features/search/SearchResults';
 import type { Bootstrap } from '../shared/api/bootstrap';
 import { PageMetadata } from '../shared/seo/PageMetadata';
-import { createTestI18n } from '../test/harness';
+import { createTestI18n, renderWithProviders } from '../test/harness';
 
 import { Route as rootRoute } from './__root';
 
@@ -158,4 +158,13 @@ test('a page that still passes the division’s name and a row’s title reads a
     'IVAO Example',
   );
   expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute('content', 'A tour');
+});
+
+test('with neither a title nor a division to name, nothing empty is written', () => {
+  // The review of #238, low 2: outside the root there is no division, and a page may have no title yet.
+  renderWithProviders(<PageMetadata title="" />);
+
+  expect(document.head.querySelector('title')).toBeNull();
+  expect(document.head.querySelector('meta[property="og:title"]')).toBeNull();
+  expect(document.head.querySelector('meta[property="og:site_name"]')).toBeNull();
 });
