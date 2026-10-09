@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Atc;
 using IvaoHub.Core.Auth;
@@ -19,11 +20,10 @@ using IvaoHub.Web;
 using IvaoHub.Web.E2E;
 using IvaoHub.Web.Endpoints;
 using IvaoHub.Web.OpenApi;
-using Scalar.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
-using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
+using Scalar.AspNetCore;
 using Serilog;
 
 // How long each step of the start takes, counted from the creation of the process: a visitor waits for all of it
