@@ -115,6 +115,12 @@ public sealed class NotificationDispatchJob(
 
                 failed++;
             }
+
+            // Each outcome is written as soon as it is known, never once for the whole batch: a process stopped half way
+            // through it — Passenger stops an idle hub — has every mail it sent written down, and the next run sends none of
+            // them again (note 2026-10-09-i-job-che-recuperano). Not through the run's token: a mail that went out is written
+            // down even while the host is stopping.
+            await database.SaveChangesAsync(CancellationToken.None);
         }
 
         entry.FinishedAt = clock.UtcNow;
