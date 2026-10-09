@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Core.Weather;
@@ -19,7 +20,7 @@ namespace IvaoHub.Core.Weather;
 /// <para>Their policy asks for at most a hundred calls a minute and for a user agent of our own, so
 /// that automated filtering does not mistake the hub for a scraper.</para>
 /// </summary>
-public sealed class NoaaWeatherClient(HttpClient http, ILogger<NoaaWeatherClient> logger)
+public sealed class NoaaWeatherClient(HttpClient http, IClock clock, ILogger<NoaaWeatherClient> logger)
 {
     /// <summary>The name of this source on a saved bulletin.</summary>
     public const string SourceName = "noaa";
@@ -70,7 +71,7 @@ public sealed class NoaaWeatherClient(HttpClient http, ILogger<NoaaWeatherClient
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(icao);
 
-        if (DateTime.UtcNow - fromUtc > IWeatherSource.HistoryWindow)
+        if (clock.UtcNow - fromUtc > IWeatherSource.HistoryWindow)
         {
             logger.LogInformation(
                 "The weather of {Icao} at {From:u} is older than NOAA keeps; answering that it is unavailable.",
