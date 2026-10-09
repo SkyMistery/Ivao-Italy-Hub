@@ -6,18 +6,20 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
-`m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda. Sono unite E1 (#200), E2 (#209), E2b
+**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
+`m4/e4c-events-titles-and-empty-lists`, **PR #242** verso `main`, **in coda dopo la #238** (E10k): nata dal branch di E10k, ne ha unito
+la testa `b36e663` prima del push. Sono unite E1 (#200), E2 (#209), E2b
 (#212), E3a (#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206),
 E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i
 piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
 `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10k** (questa, la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224), accanto alle altre fasi
-del nucleo nate lo stesso giorno, **E10i** (la #237, dall'issue #235) ed **E10j** (dall'issue #231), e a **E6a** (la #233, prenotare: il
-server) con **E6b** in coda sopra di lei. ⚠️ **Dal 9 ottobre `build-test` è rosso su ogni PR** per un test di unità del maintainer che è scaduto
-(`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una data fissa più vecchia della finestra di 30 giorni della NOAA): issue
-#236 per Carmine («Che cosa ha lasciato E10k», sotto). **Dopo E10k una fase degli eventi** usa i suoi pezzi: il titolo di `/events` e le
-frasi vuote delle schede «Slot» e «Rotte» (`CLAUDE.md` §0 regola 6). **E10h** è unita: la #233 di E6a mette `[WithdrawnByStakeholder]`
+**Il prossimo passo**: **E10k** (la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224) e, in coda sopra di lei, **E4c**
+(questa, la #242, del modulo: usa negli eventi i pezzi di E10k, in una PR a sé per `CLAUDE.md` §0 regola 6; «Che cosa ha lasciato
+E4c», sotto), accanto alle altre fasi del nucleo nate lo stesso giorno, **E10i** (la #237, dall'issue #235) ed **E10j** (la #239,
+dall'issue #231), e a **E6a** (la #233, prenotare: il server) con **E6b** in coda sopra di lei. ⚠️ **Dal 9 ottobre `build-test` è rosso
+su ogni PR** per un test di unità del maintainer che è scaduto (`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una data
+fissa più vecchia della finestra di 30 giorni della NOAA): issue #236 per Carmine («Che cosa ha lasciato E10k», sotto), e la CI salta i
+passi web. **E10h** è unita: la #233 di E6a mette `[WithdrawnByStakeholder]`
 sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
 («Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
@@ -151,6 +153,34 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E4c (9 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4c, «Com'è andata»; nessun file del nucleo, nessuna nota nuova): gli eventi usano i pezzi di
+  E10k.
+  - **`/events` dice il suo titolo nella scheda**: `PageMetadata` con `events:public.title` ed `events:public.description` in
+    `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`), «Eventi — IVAO Italia».
+  - **La pagina di un evento** (`EventScreen`, lo stesso file) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
+    e la scheda dice come prima il titolo dell'evento e «— IVAO Italia».
+  - **Le liste vuote del modulo dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede «Slot»
+    (`events:slots.empty`), «Rotte» (`events:routes.empty`) e «Scali» (`events:airports.empty`) di un evento, e `/staff/events`
+    (`events:events.empty`). Parole che descrivono e non invitano (scelta di dalberone): vere per chi scrive, che ha i bottoni sopra, e
+    per chi legge e basta, che non li ha.
+  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (8, sulla radice vera dell'app) e due `toHaveTitle` nella
+    smoke `web/e2e/events-public.spec.ts`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **Una pagina nuova degli eventi** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, senza `divisionName`; **una
+    lista nuova del modulo** dice la sua frase vuota con `emptyDescription`, una chiave `<lista>.empty` passata dalla schermata (`DataList`
+    non la legge da sé).
+  - ⚠️ **Con E6b** (in coda dopo la #233), chi delle due arriva seconda fa due righe (concordate con la sua sessione): aggiunge
+    `bookingOpensAtUtc: null` all'evento di `titlesAndEmptyLists.test.tsx` (E6b rende il campo obbligatorio in `PublicEventDto`), e fa
+    dire a `/events/mine` il suo titolo con `<PageMetadata title={t('events:mine.title')} />` (`MyBookingsPage`, `screens/mine.tsx`). La
+    scheda «Prenotazioni» di E6b dice ancora la frase del nucleo: la sua frase vuota è di E6b. I file di codice si fondono puliti
+    (`git merge-tree`); resta il conflitto solito di questo file.
+  - **E7** (gli slot privati generati nella stessa scheda) rilegge `events:slots.empty`, che oggi parla degli slot incollati o creati.
+  - ⚠️ **La CI salta i passi web finché #236 non è corretto** (la correzione del maintainer è la #241, aperta il 9 ottobre): lint,
+    `format:check`, typecheck, vitest, i18n, la smoke e il giro si fanno in locale, e la PR li elenca (`format:check` compreso: lo aveva
+    mancato E10k, corretto da lei prima del push di questa).
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 
