@@ -73,6 +73,7 @@ export function PageMetadata({
   // "Page — Division", and either alone when the other is missing: a page with no title of its own
   // is the division's, and a tree with no division to name says the page alone.
   const documentTitle = [pageTitle, division].filter((part) => part !== '').join(' — ');
+  const shareTitle = pageTitle === '' ? division : pageTitle;
 
   return (
     <>
@@ -81,7 +82,7 @@ export function PageMetadata({
 
       <meta property="og:type" content="website" />
       {division === '' ? null : <meta property="og:site_name" content={division} />}
-      <meta property="og:title" content={pageTitle === '' ? division : pageTitle} />
+      {shareTitle === '' ? null : <meta property="og:title" content={shareTitle} />}
       {summary === '' ? null : <meta property="og:description" content={summary} />}
       {picture === null ? null : <meta property="og:image" content={mediaFileUrl(picture)} />}
     </>

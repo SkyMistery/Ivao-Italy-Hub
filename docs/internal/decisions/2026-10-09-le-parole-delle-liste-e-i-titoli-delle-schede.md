@@ -5,11 +5,17 @@
 su sua istruzione): sì ai quattro punti, in una PR piccola del nucleo con una nota nuova (caso b), con le chiavi nuove del nucleo nelle
 due lingue e nessun test del maintainer cambiato. Le due scelte che la risposta lascia aperte — parole o frecce nella paginazione,
 togliere o riformulare la frase di Invio — le ha prese dalberone il 9 ottobre (§2). L'uso nei moduli è fuori da questa PR (§4).
+**Dopo la revisione**, Carmine sulla #238 ([la sua risposta][a238], data in chat alla sessione master il 9 ottobre e pubblicata su sua
+istruzione, al punto 3 dei [rilievi][r238]): **sì alla lettura più larga** del punto 2 della #224 che questa nota dichiara (§2.2) — il
+nome della divisione è il titolo predefinito di **ogni** pagina, il back office compreso, e anche `/news`, `/documents` e `/search`
+dicono il loro titolo —, e **la dipendenza da React 19 è accettata** com'è scritta, con `-titles.test.tsx` a tenerla (§6).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: tre meccanismi che ci sono — la lista generata (`DataList`), i metadati di una
 pagina (`PageMetadata`), il form generato (`SchemaForm`) — si estendono nel nucleo, in una PR a sé prima del codice dei moduli che li
 usa (§0 regola 6).
 
 [a224]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[r238]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
+[a238]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ## 1. Che cosa serve
 
@@ -71,8 +77,9 @@ Carmine sull'issue #224 (le prime due) e in un commento della stessa issue (le a
    - **solo caselle di una riga** → `form.submitHint` di oggi, che non cambia.
 
    Di una riga: un testo senza scelte e non `multiline`, un testo tradotto non `multiline`, un numero senza scelte, un giorno o un
-   istante, un campo suggerito. Di più righe: un testo o un testo tradotto `multiline`. Né l'una né l'altra: una select (un testo o un
-   numero con le scelte, un `z.enum`), un interruttore, le caselle da spuntare, un file, le icone.
+   istante, un campo suggerito — **fuori da una lista ripetibile** (§6, punto 1). Di più righe: un testo o un testo tradotto
+   `multiline`, anche dentro una lista. Né l'una né l'altra: una select (un testo o un numero con le scelte, un `z.enum`), un
+   interruttore, le caselle da spuntare, un file, le icone.
 5. **Niente in C#**: nessun endpoint, nessuna migrazione. Nessun componente nuovo nell'elenco chiuso. **Sei chiavi nuove del
    nucleo** nelle due lingue, cercate prima nei file dei moduli senza trovare doppioni (piano §16 punto 16: un doppione ferma l'avvio).
    `docs/UI-GUIDELINES.md` dice in inglese la paginazione, la frase vuota, il titolo di una pagina e la frase di Invio.
@@ -82,11 +89,12 @@ Carmine sull'issue #224 (le prime due) e in un commento della stessa issue (le a
 - `web/src/shared/list/DataList.words.test.tsx` (7): le parole in inglese e in italiano, nessuna di quelle di Atmosphere; la finestra e
   i «…» su dieci pagine, e ogni bottone chiede la sua pagina; l'ultima pagina; la frase vuota del nucleo e quella della schermata; la
   ricerca che non trova niente non dice nessuna delle due.
-- `web/src/shared/forms/SchemaForm.enter.test.tsx` (5): i tre casi; i campi annidati, tradotti e nascosti; il bottone disegnato altrove
-  e l'italiano.
-- `web/src/routes/-titles.test.tsx` (4), **sulla radice vera** (`__root.tsx`): una pagina che non dice niente ha il nome della
+- `web/src/shared/forms/SchemaForm.enter.test.tsx` (7): i tre casi; i campi annidati, tradotti e nascosti; il bottone disegnato altrove
+  e l'italiano; dopo la revisione, la lista senza voci e la casella di più righe dentro una lista (§6).
+- `web/src/routes/-titles.test.tsx` (5), **sulla radice vera** (`__root.tsx`): una pagina che non dice niente ha il nome della
   divisione; `/calendar`, `/news` e `/search` hanno il loro titolo, e uscirne ridà la scheda alla divisione; la pagina che non c'è ha
-  il suo titolo, anche dopo il cambio di lingua; una pagina che passa ancora il nome e il titolo di una riga si legge come prima.
+  il suo titolo, anche dopo il cambio di lingua; una pagina che passa ancora il nome e il titolo di una riga si legge come prima; dopo
+  la revisione, niente di vuoto senza titolo né divisione (§6).
 - **La prova al contrario**: con il codice di `main` rimesso (le parole e i test nuovi tenuti) cadono 12 test su 16. I quattro che
   passano sono quelli di ciò che non deve cambiare.
 - Nessun test del maintainer cambia, e nessuna spec e2e legge queste parole.
@@ -118,6 +126,22 @@ Carmine sull'issue #224 (le prime due) e in un commento della stessa issue (le a
 | Invio | **tre casi** (scelta) | dice il vero in ogni form | una funzione che legge i campi |
 | | toglierla dove c'è più righe | più corto | chi usa il lettore di schermo perde il «Invio salva» di una riga |
 | | riformularla dove c'è più righe | più corto | parla di una riga anche dove non c'è |
+
+## 6. Dopo la revisione
+
+I [rilievi del revisore sulla #238][r238]: approvabile sul codice, niente da correggere; da unire con `main` quando #236 (il test del
+meteo) è corretto, e con la CI intera. Fatti i due rilievi bassi:
+
+1. **una lista ripetibile senza voci** non ha caselle sullo schermo, ma `whereEnterSaves` contava le sue caselle di una riga, e un form
+   poteva dire «Premi Invio in un campo di una riga» di una casella che non c'è. Ora le caselle di una riga di una lista **non contano**;
+   quelle di più righe sì, perché la frase che nomina la casella di una riga resta vera in ogni caso. Il prezzo: un form le cui sole
+   caselle di una riga stanno in una lista non dice niente, anche quando le voci ci sono — una frase che manca, mai una falsa;
+2. **`og:title`** non si scrive più vuoto, quando non c'è né un titolo né una divisione (fuori da `DivisionTitle`, cioè in un test):
+   come `<title>` e `og:site_name`.
+
+Un test per ciascuno (`SchemaForm.enter.test.tsx`, `-titles.test.tsx`), e tutti e due cadono sul codice di prima. Gli altri punti dei
+rilievi sono per Carmine o già scritti qui: il punto 3 l'ha deciso lui (intestazione); il 4 (React 19) l'ha accettato; il 5 (i «…») è
+§2.1; il 6 (`/events`, `/tours`, le schede degli eventi) è §4; il 7 (nessun aumento di `<Version>`) come nelle altre fasi del nucleo.
 
 ## Da portare nel piano
 

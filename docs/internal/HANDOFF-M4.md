@@ -8,18 +8,19 @@
 
 **Ultimo aggiornamento:** 9 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
 `m4/e4c-events-titles-and-empty-lists`, **PR #242** verso `main`, **in coda dopo la #238** (E10k): nata dal branch di E10k, ne ha unito
-la testa `b36e663` prima del push. Sono unite E1 (#200), E2 (#209), E2b
+la testa `b36e663` prima del primo push e `fdb551d` dopo (la revisione di E10k, con `main` a `aa3707a`). Sono unite E1 (#200), E2 (#209), E2b
 (#212), E3a (#214), E3b (#221), E4 (#223), E4b (#226), **E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206),
 E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i
 piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
-`0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10k** (la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224) e, in coda sopra di lei, **E4c**
-(questa, la #242, del modulo: usa negli eventi i pezzi di E10k, in una PR a sé per `CLAUDE.md` §0 regola 6; «Che cosa ha lasciato
-E4c», sotto), accanto alle altre fasi del nucleo nate lo stesso giorno, **E10i** (la #237, dall'issue #235) ed **E10j** (la #239,
-dall'issue #231), e a **E6a** (la #233, prenotare: il server) con **E6b** in coda sopra di lei. ⚠️ **Dal 9 ottobre `build-test` è rosso
-su ogni PR** per un test di unità del maintainer che è scaduto (`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una data
-fissa più vecchia della finestra di 30 giorni della NOAA): issue #236 per Carmine («Che cosa ha lasciato E10k», sotto), e la CI salta i
-passi web. **E10h** è unita: la #233 di E6a mette `[WithdrawnByStakeholder]`
+`0.6.5` (#218, #219, #225), la **`0.6.6`** (#241, l'orologio del client NOAA) e gli spec che dicono al banco che cosa rimettono a posto
+(#227).
+**Il prossimo passo**: **E10k** (la #238, del nucleo, senza coda: **decisa da Carmine** sull'issue #224 e, dopo la revisione, sulla
+#238) e, in coda sopra di lei, **E4c** (questa, la #242, del modulo: usa negli eventi i pezzi di E10k, in una PR a sé per `CLAUDE.md` §0
+regola 6; «Che cosa ha lasciato E4c», sotto), accanto alle altre fasi del nucleo nate lo stesso giorno, **E10i** (la #237, dall'issue
+#235) ed **E10j** (la #239, dall'issue #231), e a **E6a** (la #233, prenotare: il server) con **E6b** (la #240) in coda sopra di lei.
+**Il test del meteo è di nuovo verde**: `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, rosso dal 9 ottobre su ogni PR
+(issue #236), l'ha corretto la #241 di Carmine (la `0.6.6`, l'orologio del client NOAA), e da `main` a `aa3707a` la CI gira intera.
+**E10h** è unita: la #233 di E6a mette `[WithdrawnByStakeholder]`
 sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
 («Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
@@ -178,14 +179,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     scheda «Prenotazioni» di E6b dice ancora la frase del nucleo: la sua frase vuota è di E6b. I file di codice si fondono puliti
     (`git merge-tree`); resta il conflitto solito di questo file.
   - **E7** (gli slot privati generati nella stessa scheda) rilegge `events:slots.empty`, che oggi parla degli slot incollati o creati.
-  - ⚠️ **La CI salta i passi web finché #236 non è corretto** (la correzione del maintainer è la #241, aperta il 9 ottobre): lint,
-    `format:check`, typecheck, vitest, i18n, la smoke e il giro si fanno in locale, e la PR li elenca (`format:check` compreso: lo aveva
-    mancato E10k, corretto da lei prima del push di questa).
+  - **La CI**: al primo push di questa fase «Test .NET» era rosso per #236, e la CI saltava i passi web (lint, `format:check`,
+    typecheck, vitest, i18n, la smoke, il giro), fatti in locale ed elencati nella PR (`format:check` compreso: lo aveva mancato E10k,
+    corretto da lei prima del push di questa). La #241 di Carmine l'ha corretto; con E10k unita a `fdb551d`, che porta `main` a
+    `aa3707a`, la CI della #242 gira intera.
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 
 - **Che cosa c'è** (nota `decisions/2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede.md`, **decisa** da Carmine sull'issue
-  #224, [la sua risposta][a224k]: sì ai quattro punti; il dettaglio in `10`, E10k, «Com'è andata»). Tutto nel browser, niente in C#:
+  #224, [la sua risposta][a224k]: sì ai quattro punti; e sulla #238, [la sua risposta][a238k]: sì alla lettura più larga — il titolo
+  predefinito su ogni pagina, il back office compreso, e i titoli di `/news`, `/documents`, `/search` — e la dipendenza da React 19
+  accettata; il dettaglio in `10`, E10k, «Com'è andata» e «Dopo la revisione»). Tutto nel browser, niente in C#:
   - **La paginazione della lista generata** (`Pages` in `web/src/shared/list/DataList.tsx`): i pezzi di `Pagination` di Atmosphere
     (`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) con le parole `list.pages.*` del nucleo — «‹ Precedente
     1 2 3 Successiva ›», i due «…» per la prima e l'ultima pagina con il loro nome. Un «…» solo dove nasconde una pagina.
@@ -198,7 +202,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `PublicEntryScreen` non passano più il nome a mano.
   - **La frase di Invio del form generato** (`whereEnterSaves` in `web/src/shared/forms/SchemaForm.tsx`): niente frase dove nessuna
     casella è di una riga, `form.submitHintOneLine` dove ci sono caselle di una riga e di più righe, `form.submitHint` com'era dove sono
-    tutte di una riga.
+    tutte di una riga. Le caselle di una riga di una **lista ripetibile non contano** (sullo schermo ci sono solo dopo «Aggiungi»), quelle
+    di più righe sì (dalla revisione della #238).
   - **Sei chiavi nuove del nucleo** in `locales/{en,it}/common.json`: `list.pages.label`, `.previous`, `.next`, `.first`, `.last`,
     `form.submitHintOneLine`. Nessun doppione nei file dei moduli.
   - **I test** (vitest, 16): `web/src/shared/list/DataList.words.test.tsx`, `web/src/shared/forms/SchemaForm.enter.test.tsx`,
@@ -226,6 +231,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (`/search` vuole i suoi parametri): `router.history.push(path)` non ha tipi di rotta.
 
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 

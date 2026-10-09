@@ -233,11 +233,22 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
  * read under every form, and the one of a slot sheet has a single box of many lines and a select:
  * Enter there writes a new line and saves nothing. With no box of one line nothing is said; with both
  * kinds the sentence says which box it means.
+ *
+ * The boxes of a repeatable list are on the screen only once an entry is added (the review of #238, low
+ * 1). One of one line there is not counted, because a hint about a box that is not there is worse than
+ * none; one of several lines is, because the sentence that names the box of one line stays true either
+ * way.
  */
 function whereEnterSaves(fields: readonly FieldNode[]): { oneLine: boolean; multiline: boolean } {
   const found = { oneLine: false, multiline: false };
 
-  const walk = (nodes: readonly FieldNode[]) => {
+  const walk = (nodes: readonly FieldNode[], inList: boolean) => {
+    const oneLine = () => {
+      if (!inList) {
+        found.oneLine = true;
+      }
+    };
+
     for (const node of nodes) {
       if (node.meta.hidden === true) {
         continue;
@@ -254,25 +265,28 @@ function whereEnterSaves(fields: readonly FieldNode[]): { oneLine: boolean; mult
           if (node.meta.multiline === true) {
             found.multiline = true;
           } else {
-            found.oneLine = true;
+            oneLine();
           }
           break;
 
         case 'number':
           if (node.choices === null) {
-            found.oneLine = true;
+            oneLine();
           }
           break;
 
         case 'instant':
         case 'suggest':
-          found.oneLine = true;
+          oneLine();
           break;
 
         case 'object':
-        case 'list':
         case 'localizedObject':
-          walk(node.children);
+          walk(node.children, inList);
+          break;
+
+        case 'list':
+          walk(node.children, true);
           break;
 
         case 'boolean':
@@ -285,7 +299,7 @@ function whereEnterSaves(fields: readonly FieldNode[]): { oneLine: boolean; mult
     }
   };
 
-  walk(fields);
+  walk(fields, false);
   return found;
 }
 
