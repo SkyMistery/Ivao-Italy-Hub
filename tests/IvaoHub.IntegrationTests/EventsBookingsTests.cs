@@ -871,6 +871,49 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Empty(await BookingsAsync(id, token));
     }
 
+    [Fact]
+    public async Task ABookedSlotCorrectedByTheStaffKeepsItsBookingAndTellsItsPilotWhenTheFlightChanges()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 30);
+        var id = await PublishedAsync(
+            coordinator,
+            "corrected",
+            Table(
+                Line("XEA211", "XA211", $"{TypeA}/{TypeB}", First, day.AddHours(17), Away, day.AddHours(18), "A1"),
+                Line("XEA212", string.Empty, TypeA, Away, day.AddHours(19), First, day.AddHours(20)),
+                Line("XEA213", string.Empty, TypeA, First, day.AddHours(21), Away, day.AddHours(22))),
+            token);
+        var slots = await SlotIdsAsync(id, token);
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+        var booking = Id(await CreatedAsync(await BookAsync(pilot, slots["XEA211"], TypeB, token), token));
+        await CreatedAsync(await BookAsync(pilot, slots["XEA212"], TypeA, token), token);
+
+        // The stand, the flight number, and which admitted type comes first: the staff's to plan with, and nobody is told.
+        await CorrectAsync(coordinator, slots["XEA211"], slot => slot with { Stand = "B7", FlightNumber = "XA299", MainAircraftType = TypeB, OtherAircraftTypes = TypeA }, token);
+        Assert.Empty(await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token));
+
+        // New times, five minutes from the pilot's other booking where the event asks ten (Carmine's answer 3 on #233): the
+        // correction is saved, nothing is checked again, the booking stays as it is, and its pilot is told the flight as it is now.
+        await CorrectAsync(coordinator, slots["XEA211"], slot => slot with { OffBlockUtc = day.AddHours(17).AddMinutes(30), OnBlockUtc = day.AddHours(18).AddMinutes(55) }, token);
+        var told = Assert.Single(await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token));
+        Assert.Equal(PilotVid, told.Vid);
+        Assert.Contains(Stamp(day.AddHours(18).AddMinutes(55)), told.DataJson, StringComparison.Ordinal);
+        Assert.Contains("XEA211", told.DataJson, StringComparison.Ordinal);
+
+        // Admitted types that leave the pilot's aircraft out: saved, the booking keeps it, and the pilot is told again.
+        await CorrectAsync(coordinator, slots["XEA211"], slot => slot with { MainAircraftType = TypeA, OtherAircraftTypes = null }, token);
+        Assert.Equal(2, (await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token)).Count);
+        var kept = Assert.Single(await BookingsAsync(id, token), row => row.SlotId == slots["XEA211"]);
+        Assert.Equal((booking, TypeB), (kept.Id, kept.AircraftIcao));
+
+        // A slot nobody booked: corrected, and nobody is told.
+        await CorrectAsync(coordinator, slots["XEA213"], slot => slot with { OffBlockUtc = day.AddHours(21).AddMinutes(20), OnBlockUtc = day.AddHours(22).AddMinutes(20) }, token);
+        Assert.Equal(2, (await NotificationsAsync(EventsNotifications.BookingChanged, Slug("corrected"), token)).Count);
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------------
 
     private static string Slug(string name) => $"{SlugStem}-{name}";
@@ -943,6 +986,30 @@ public sealed class EventsBookingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     private static async Task<List<JsonElement>> MineAsync(HttpClient client, CancellationToken cancellationToken) =>
         [.. (await OkAsync(await client.GetAsync(BookingEndpoints.MinePattern, cancellationToken), cancellationToken)).EnumerateArray()];
+
+    /// <summary>A slot corrected from its form, as the staff correct one: read, changed, saved.</summary>
+    private static async Task CorrectAsync(HttpClient staff, long slotId, Func<EventSlotWriteDto, EventSlotWriteDto> change, CancellationToken cancellationToken)
+    {
+        var slot = await OkAsync(await staff.GetAsync($"{EventSlotEndpoints.Pattern}/{slotId}", cancellationToken), cancellationToken);
+        string? Text(string name) => slot.GetProperty(name).ValueKind == JsonValueKind.Null ? null : slot.GetProperty(name).GetString();
+        var types = slot.GetProperty("aircraftTypes").EnumerateArray().Select(type => type.GetString()!).ToList();
+        var stored = new EventSlotWriteDto(
+            slot.GetProperty("eventId").GetInt64(),
+            Text("callsign")!,
+            Text("flightNumber"),
+            types[0],
+            types.Count > 1 ? string.Join('/', types.Skip(1)) : null,
+            Text("departureIcao")!,
+            slot.GetProperty("offBlockUtc").GetDateTime(),
+            Text("arrivalIcao")!,
+            slot.GetProperty("onBlockUtc").GetDateTime(),
+            Text("stand"),
+            Text("rotationCode"),
+            slot.GetProperty("rotationLeg").ValueKind == JsonValueKind.Null ? null : slot.GetProperty("rotationLeg").GetInt32(),
+            RowVersion(slot));
+
+        await OkAsync(await staff.PutAsJsonAsync($"{EventSlotEndpoints.Pattern}/{slotId}", change(stored), cancellationToken), cancellationToken);
+    }
 
     private static Task<HttpResponseMessage> LoadAsync(HttpClient client, long id, string text, CancellationToken cancellationToken, SlotLoadMode mode = SlotLoadMode.Add) =>
         client.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/slots/load", new SlotLoadRequest(text, mode), cancellationToken);
