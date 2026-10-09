@@ -579,7 +579,8 @@ async function bookingsChanged(queryClient: ReturnType<typeof useQueryClient>): 
 
 /**
  * Books one public slot with the aircraft chosen among those it allows (§3.3). A refusal comes back on `slotId` or `aircraftIcao`
- * (taken a moment ago, closed, too close to another of the pilot's, not open yet); a 409 is «try again», nothing booked.
+ * (taken a moment ago, closed, too close to another of the pilot's, not open yet); a 409 is «try again», nothing booked. A refusal
+ * reads the page again too: it says the page was behind the server — a slot taken a moment ago still read free.
  */
 export function useBook() {
   const queryClient = useQueryClient();
@@ -596,12 +597,15 @@ export function useBook() {
     onSuccess: async () => {
       await bookingsChanged(queryClient);
     },
+    onError: () => {
+      void bookingsChanged(queryClient);
+    },
   });
 }
 
 /**
  * Books the whole rotation of a leg with one aircraft (§3.3): the legs booked, and the ones that were not with why — never a refusal
- * for a leg alone. A 409 is «try again», nothing booked.
+ * for a leg alone. A 409 is «try again», nothing booked. A refusal reads the page again, as for one slot.
  */
 export function useBookRotation() {
   const queryClient = useQueryClient();
@@ -617,6 +621,9 @@ export function useBookRotation() {
       unwrap(await api.POST('/api/events/mine/bookings/rotation', { body: { slotId, aircraftIcao } })),
     onSuccess: async () => {
       await bookingsChanged(queryClient);
+    },
+    onError: () => {
+      void bookingsChanged(queryClient);
     },
   });
 }

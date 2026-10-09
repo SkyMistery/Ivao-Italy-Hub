@@ -593,12 +593,12 @@ test('a visitor reads «taken» and nobody’s name, and is asked to sign in to 
   await expect(taken).not.toContainText(/Test|Pilot|\d{6}/);
   await page.keyboard.press('Escape');
 
-  // A free one: the way to sign in, back to this page.
+  // A free one: the way to sign in, back to this page — its path, which is all the server takes back to.
   await page.getByRole('button', { name: 'XSM101' }).click();
   const free = page.getByRole('dialog', { name: 'XSM101 · XS101' });
   await expect(free.getByRole('link', { name: words.public.booking.signIn })).toHaveAttribute(
     'href',
-    /^\/auth\/login\?returnUrl=/,
+    `/auth/login?returnUrl=${encodeURIComponent('/events/evt-test-smoke-page')}`,
   );
   await expect(free.getByRole('button', { name: /Book/ })).toHaveCount(0);
 });

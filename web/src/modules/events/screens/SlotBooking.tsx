@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { loginHref } from '../../../shared/api/client';
+import { ApiError } from '../../../shared/api/problem';
 import { describeProblem } from '../../../shared/forms';
 import { Notice } from '../../../shared/ui';
 import {
@@ -26,7 +27,8 @@ import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
  *
  * Offered only when it can be accepted: to a signed in member, on a slot nobody took, while the bookings of the event are open and
  * the off block of the slot is to come. Otherwise it says why not — the slot is the reader's own, it is closed, the bookings open
- * later, a visitor signs in first —, and nothing on a slot another pilot took: the page never says by whom.
+ * later, a visitor signs in first and comes back to this page —, and nothing on a slot another pilot took: the page never says by
+ * whom. A refusal reads the page again (`useBook`): a slot taken a moment ago turns «taken», and the refusal stays said.
  */
 export function SlotBooking({
   slot,
@@ -45,7 +47,13 @@ export function SlotBooking({
   const book = useBook();
   const rotation = useBookRotation();
   const busy = book.isPending || rotation.isPending;
-  const refusal = describeProblem(book.error ?? rotation.error, t, i18n.language);
+  const failure = book.error ?? rotation.error;
+  // A 409 is «try again», nothing booked (E6a): the server's own words. The core's sentence for a 409 is another one — somebody
+  // changed what is being saved — and it never reads the server's title.
+  const refusal =
+    failure instanceof ApiError && failure.status === 409
+      ? t('events:errors.bookingTryAgain')
+      : describeProblem(failure, t, i18n.language);
   const mine = viewer.mine.get(slot.id);
 
   if (book.isSuccess) {
@@ -61,7 +69,8 @@ export function SlotBooking({
   }
 
   if (slot.taken || event.cancelledAt !== null) {
-    return null;
+    // Nothing to offer; but a refusal that read the page again — the slot taken a moment ago — is still said.
+    return refusal === null ? null : <Notice tone="error" title={refusal} />;
   }
 
   if (!bookingsOpen(event, nowMs)) {
@@ -73,9 +82,11 @@ export function SlotBooking({
   }
 
   if (!viewer.signedIn) {
+    // Back to this page with its filters: the path and the query, which is all the server takes back to (`SafeReturnUrl` turns an
+    // address with a host into the home page).
     return (
       <p className="text-sm">
-        <a href={loginHref(location.href)} className="underline">
+        <a href={loginHref(`${window.location.pathname}${window.location.search}`)} className="underline">
           {t('events:public.booking.signIn')}
         </a>
       </p>
@@ -181,7 +192,7 @@ function RotationBooked({ result }: { result: RotationBookingDto }) {
       <ul className="flex flex-col gap-1 text-sm">
         {result.booked.map((leg) => (
           <li key={leg.slotId} className="flex items-center gap-2">
-            <Check aria-hidden className="size-4 shrink-0 text-green-600" />
+            <Check aria-hidden className="size-4 shrink-0" />
             <span className="font-mono">{leg.callsign}</span>
             <span className="sr-only">{t('events:public.booking.legBooked')}</span>
           </li>

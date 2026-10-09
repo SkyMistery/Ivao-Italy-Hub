@@ -52,22 +52,24 @@ export function EventSlots({
 }) {
   const { t } = useTranslation();
   const moment = useMoment();
-  const [opened, setOpened] = useState<PublicEventSlotDto | null>(null);
+  const [openedId, setOpenedId] = useState<number | null>(null);
   // The callsign that opened the slot. The dialog has no trigger of its own, so nothing would take the focus back when it closes —
   // a keyboard would be left at the top of a page of hundreds of rows (the review of #228, second reading, point 1).
   const openedBy = useRef<HTMLElement | null>(null);
   const open = (slot: PublicEventSlotDto, by: HTMLElement | null) => {
     openedBy.current = by;
-    setOpened(slot);
+    setOpenedId(slot.id);
   };
+  // The slot as the page reads it now, not as it was when the dialog opened: a booking, or a refusal, reads the page again (E6b).
+  const opened = openedId === null ? null : (event.slots.find((slot) => slot.id === openedId) ?? null);
 
   useEffect(() => {
     // Once the dialog is gone, and its focus trap with it: inside it a focus elsewhere would be taken back.
-    if (opened === null && openedBy.current !== null) {
+    if (openedId === null && openedBy.current !== null) {
       openedBy.current.focus();
       openedBy.current = null;
     }
-  }, [opened]);
+  }, [openedId]);
 
   const sameDay = oneDay(event.slots);
   const time = (value: string) => moment(value, sameDay ? { date: false } : {});
@@ -149,7 +151,7 @@ export function EventSlots({
           airport={airportOf(slotAirport(opened))}
           time={time}
           viewer={viewer}
-          onClose={() => setOpened(null)}
+          onClose={() => setOpenedId(null)}
         />
       )}
     </section>

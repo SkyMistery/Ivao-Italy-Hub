@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,8 +16,8 @@ import type { SlotViewer } from './myBookings';
  * «Book» in the dialog of a slot (E6b; design M4 §3.3), against an API that answers what the test says: offered to a signed in
  * member on a free slot while the bookings are open and its off block is to come, with the aircraft chosen among the types it admits
  * — the main one first and chosen —; «Book the whole rotation» on a leg, and what it booked and why not the rest; a refusal said as
- * the server words it. Otherwise why not: the slot is the reader's, it closed, the bookings open later, a visitor signs in first;
- * and nothing on a slot another pilot took.
+ * the server words it, a 409 as «try again», and the page read again after it. Otherwise why not: the slot is the reader's, it
+ * closed, the bookings open later, a visitor signs in first and comes back to the page; and nothing on a slot another pilot took.
  */
 
 const api = vi.hoisted(() => ({ post: vi.fn() }));
@@ -84,6 +84,19 @@ async function draw(ui: ReactNode) {
 
   await waitFor(() => expect(router.state.status).toBe('idle'));
 }
+
+/** The page of the event as the screen reads it, with the slot in its dialog: what a refusal reads again. */
+function PageOfOneSlot({ read }: { read: () => Promise<PublicEventSlotDto> }) {
+  const { data } = useQuery({ queryKey: ['events', 'public', 'page', 'evt-test-smoke'], queryFn: read });
+
+  return data === undefined ? null : <SlotBooking slot={data} event={OPEN} viewer={member} nowMs={NOW} />;
+}
+
+/** The server's answer to a booking it refuses, as the client receives it. */
+const refused = (status: number, problem: Record<string, unknown>) => ({
+  error: { status, ...problem },
+  response: new Response(null, { status }),
+});
 
 beforeEach(() => {
   api.post.mockReset();
@@ -155,6 +168,41 @@ describe('booking a slot from its dialog', () => {
     expect(screen.queryByText(words.yours.replace('{{aircraft}}', 'XA20'))).not.toBeInTheDocument();
   });
 
+  test('a 409 is «try again» in the words of the events, nothing booked, and «Book» is offered again', async () => {
+    const user = userEvent.setup();
+    api.post.mockResolvedValue(refused(409, { title: 'events:errors.bookingTryAgain' }));
+    await draw(
+      <SlotBooking slot={slot({ aircraftTypes: ['XA20'] })} event={OPEN} viewer={member} nowMs={NOW} />,
+    );
+
+    const book = await screen.findByRole('button', { name: words.book.replace('{{aircraft}}', 'XA20') });
+    await user.click(book);
+
+    expect(await screen.findByText(englishEvents.errors.bookingTryAgain)).toBeInTheDocument();
+    // Not the core's sentence for a 409, which is about somebody else's change to what is being saved.
+    expect(screen.queryByText(i18n.t('errors.conflict.title'))).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: words.book.replace('{{aircraft}}', 'XA20') })).toBeEnabled();
+  });
+
+  test('a refusal reads the page again: the slot taken a moment ago is offered no more, and the refusal stays said', async () => {
+    const user = userEvent.setup();
+    api.post.mockResolvedValue(
+      refused(400, { title: 'Some fields', errors: { slotId: ['events:errors.slotJustTaken'] } }),
+    );
+    // Free when the page was read, taken by another pilot when it is read again.
+    const read = vi
+      .fn<() => Promise<PublicEventSlotDto>>()
+      .mockResolvedValueOnce(slot({ aircraftTypes: ['XA20'] }))
+      .mockResolvedValue(slot({ aircraftTypes: ['XA20'], taken: true }));
+    await draw(<PageOfOneSlot read={read} />);
+
+    await user.click(await screen.findByRole('button', { name: words.book.replace('{{aircraft}}', 'XA20') }));
+
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('button')).not.toBeInTheDocument());
+    expect(screen.getByText('Slot just taken by another pilot.')).toBeInTheDocument();
+  });
+
   test('a slot of the reader says so, with their aircraft and the way to their bookings', async () => {
     await draw(
       <SlotBooking
@@ -169,14 +217,23 @@ describe('booking a slot from its dialog', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  test('a visitor is asked to sign in, and comes back to the page', async () => {
-    await draw(
-      <SlotBooking slot={slot()} event={OPEN} viewer={{ signedIn: false, mine: new Map() }} nowMs={NOW} />,
-    );
+  test('a visitor is asked to sign in, and comes back to the page with its filters', async () => {
+    // The address of the browser, which the link reads: the path and the query, never the host the server would refuse.
+    window.history.pushState({}, '', '/events/evt-test-smoke?direction=arrivals');
+    try {
+      await draw(
+        <SlotBooking slot={slot()} event={OPEN} viewer={{ signedIn: false, mine: new Map() }} nowMs={NOW} />,
+      );
 
-    const signIn = await screen.findByRole('link', { name: words.signIn });
-    expect(signIn.getAttribute('href')).toMatch(/^\/auth\/login\?returnUrl=/);
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      const signIn = await screen.findByRole('link', { name: words.signIn });
+      expect(signIn).toHaveAttribute(
+        'href',
+        '/auth/login?returnUrl=%2Fevents%2Fevt-test-smoke%3Fdirection%3Darrivals',
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
   });
 
   test('nothing is offered on a slot another pilot took, nor on a cancelled event', async () => {

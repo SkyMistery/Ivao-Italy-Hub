@@ -1,6 +1,8 @@
 import { TooltipProvider } from '@ivao/atmosphere-react';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { I18nextProvider } from 'react-i18next';
 import { describe, expect, test } from 'vitest';
 
 import { createTestI18n, renderWithProviders } from '../../../test/harness';
@@ -281,5 +283,35 @@ describe('the slots narrowed and booked (E6b)', () => {
     const taken = screen.getByRole('button', { name: 'XSM300' }).closest('tr')!;
     expect(within(taken).getByText(words.taken)).toBeInTheDocument();
     expect(within(taken).queryByText(words.yours)).not.toBeInTheDocument();
+  });
+
+  test('an open slot says what the page reads now: taken by another pilot while it was open', async () => {
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const page = (slots: readonly PublicEventSlotDto[]) => (
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={client}>
+          <TooltipProvider>
+            <EventSlots
+              event={event([airportA, airportB], slots)}
+              viewer={{ signedIn: true, mine: new Map() }}
+            />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </I18nextProvider>
+    );
+    const { rerender } = render(page(rotationAndAlone));
+
+    await user.click(screen.getByRole('button', { name: 'XSM101' }));
+    const detail = await screen.findByRole('dialog', { name: 'XSM101 · XS101' });
+    expect(within(detail).getByText(words.free)).toBeInTheDocument();
+
+    // The page read again — after a booking, or a refusal —, the leg out now taken: the dialog follows it.
+    rerender(page(rotationAndAlone.map((one) => (one.id === 1 ? { ...one, taken: true } : one))));
+    expect(
+      within(screen.getByRole('dialog', { name: 'XSM101 · XS101' })).getByText(words.taken),
+    ).toBeInTheDocument();
   });
 });
