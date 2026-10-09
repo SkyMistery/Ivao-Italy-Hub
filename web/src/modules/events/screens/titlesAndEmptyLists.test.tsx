@@ -14,6 +14,8 @@ import type { EventDetailDto, PublicEventDto } from '../api';
 import englishEvents from '../locales/en/events.json';
 import italianEvents from '../locales/it/events.json';
 
+import { AirportsTab } from './airports';
+import { EventsPage } from './events';
 import { EventPublicPage, EventsPublicPage } from './public';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
@@ -21,9 +23,10 @@ import { SlotsTab } from './slots';
 /**
  * What the events say of themselves with the words the core now takes (#224, E4c): `/events` names itself in the browser tab, as
  * the core's list pages do; the page of an event keeps the tab it had, now that the division's name after its title comes from
- * the root and not from a name the page worked out by hand; and the «Slots» and «Routes» tabs of an event, empty, say where their
- * rows come from instead of the core's sentence about what a department creates — the same words to whoever writes them and to
- * whoever only reads them, who has none of the buttons.
+ * the root and not from a name the page worked out by hand; and the lists of the events in the back office — the «Slots»,
+ * «Routes» and «Airports» tabs of an event, and the events themselves —, empty, say what will be there instead of the core's
+ * sentence about what a department creates: the same words to whoever writes the rows and to whoever only reads them, who has none
+ * of the buttons.
  *
  * ⚠️ The root is the application's own (`__root.tsx`), as in the core's `-titles.test.tsx`: the division's name is said there,
  * once, above every page, and a root of the test's would prove a tree nobody runs.
@@ -93,8 +96,8 @@ afterEach(() => {
 });
 
 /**
- * The application's root with the pages of the events under it, at `path`: `/events`, the page of the event, and its two tabs
- * under a route `/_staff`, whose context is the root's bootstrap, as the back office's layout hands it to them.
+ * The application's root with the pages of the events under it, at `path`: `/events`, the page of the event, and under a route
+ * `/_staff`, whose context is the root's bootstrap as the back office's layout hands it on, its tabs and the list of the events.
  */
 async function open(path: string, { editable = false }: { editable?: boolean } = {}) {
   api.get.mockImplementation((route: string) =>
@@ -125,6 +128,12 @@ async function open(path: string, { editable = false }: { editable?: boolean } =
           path: '/routes',
           component: () => <RoutesTab event={detail} editable={editable} />,
         }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/airports',
+          component: () => <AirportsTab event={detail} editable={editable} />,
+        }),
+        createRoute({ getParentRoute: () => staff, path: '/staff/events', component: EventsPage }),
       ]),
     ]),
     history: createMemoryHistory({ initialEntries: [path] }),
@@ -176,7 +185,7 @@ describe('the tab of a page of the events', () => {
   });
 });
 
-describe('the empty tabs of an event', () => {
+describe('the empty lists of the events', () => {
   test('an empty «Slots» tab says where the slots come from, in both languages, and not the core’s sentence', async () => {
     const { i18n } = await open('/slots', { editable: true });
 
@@ -219,5 +228,30 @@ describe('the empty tabs of an event', () => {
 
     expect(await screen.findByText(englishEvents.routes.empty)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: englishEvents.routes.create })).not.toBeInTheDocument();
+  });
+
+  test('an empty «Airports» tab says what will be there, in both languages, and not the core’s sentence', async () => {
+    const { i18n } = await open('/airports', { editable: true });
+
+    expect(await screen.findByText(englishEvents.airports.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishCommon.list.empty.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: englishEvents.airports.create })).toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.airports.empty)).toBeInTheDocument();
+    expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+
+  test('the events of the back office, none yet, say what will be there, in both languages', async () => {
+    const { i18n } = await open('/staff/events');
+
+    expect(await screen.findByText(englishEvents.events.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishCommon.list.empty.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.events.empty)).toBeInTheDocument();
+    expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
   });
 });
