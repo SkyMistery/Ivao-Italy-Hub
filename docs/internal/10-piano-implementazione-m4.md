@@ -2468,6 +2468,19 @@ modulo può dire la sua frase vuota, e il lettore di schermo non promette un sal
   - un lettore di schermo vero sulla frase di Invio: i test leggono il testo nascosto nel DOM, e nel Chrome vero non l'ho guardata;
   - un browser diverso da Chrome; i titoli in inglese nel Chrome vero (le stesse chiavi, provate in inglese e in italiano da vitest).
 
+**Dopo il primo push** (9 ottobre 2026, la sessione che coordina, con la misura della sessione di E4c sulla testa `d307774`):
+
+- **`pnpm -C web run format:check` cadeva su quattro file della fase** (`-titles.test.tsx`, `SchemaForm.enter.test.tsx`,
+  `SchemaForm.tsx`, `DataList.words.test.tsx`: righe oltre 110 colonne, un ternario che sta su una riga, uno `<span>` fra parentesi). Non
+  l'avevo eseguito: la lista dei passi della fase non lo nominava. Corretto con `prettier --write` sui quattro file, solo formattazione
+  (26+/15-), in un commit `style` a sé.
+- ⚠️ **La CI oggi non l'avrebbe detto**: quando «Test .NET» cade per `WeatherTests` (#236), ogni passo dopo è saltato — lint, formattazione,
+  typecheck, vitest, la smoke, il giro completo e il pacchetto. Finché #236 è aperta, quei passi si fanno in locale e la PR li elenca.
+- **Rifatto sulla nuova testa**: `pnpm lint`, `pnpm format:check` («All matched files use Prettier code style!»), `pnpm typecheck`,
+  `pnpm i18n:check` (822 chiavi) verdi; `pnpm gen:api` senza differenze; `pnpm test` **659/659** in 91 file; la smoke **173/173**. Un giro
+  della smoke cominciato poco prima di un riavvio dell'app ne aveva dati 160/173, con le cadute solo nelle spec della formazione
+  (`toBeVisible`); rifatta a macchina ferma, 173/173, e i quattro file della formazione con `--repeat-each=2` 62/62.
+
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
 
 ### E11a — Postazioni e disponibilità
