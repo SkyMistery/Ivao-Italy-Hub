@@ -1702,6 +1702,16 @@ l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0
     (l'anteprima dell'editor con il browser rallentato due volte) è scaduta a 30 secondi sotto il carico del giro, e da sola sullo stesso
     banco e sullo stesso albero, `--repeat-each=3`, **3/3** (5,6–5,8 secondi ciascuna); questo giro non cambia codice web. Le regole di
     `core-guard` in PowerShell dalla base di merge `eb8e8ef`: **PASS** — del nucleo solo `ErasureTests.cs`, due note nuove.
+- **`main` unito a `aa3707a`** (9 ottobre 2026, sera; la #241, 0.6.6: il client NOAA legge l'`IClock` del nucleo, e il test del meteo che
+  cadeva su ogni branch dal mattino, la #236, passa di nuovo), come chiedono la sessione che coordina e il revisore
+  ([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6086571124)), perché `build-test` giri intero:
+  sulla testa `3326454` «Test .NET» era rosso per la #236 e la CI saltava tutti i passi dopo — il controllo dei test portanti, il web, la
+  smoke, il giro intero e il pacchetto —, rifatti a mano su quella testa (`lint`, `format:check`, `typecheck`, `i18n:check`, `gen:api`
+  senza differenze; detti nel corpo della PR). Il merge (`f4c63e6`) porta solo la #241 — `Directory.Build.props`, la sua nota,
+  `NoaaWeatherClient.cs`, `WeatherTests.cs` —, senza conflitti e senza codice web: rifatte le suite .NET, `dotnet build` senza avvisi,
+  unità **1199/1199**, **integrazione intera senza filtro 514/514** (10,7 minuti, con le suite di altre sessioni sulla stessa macchina); le
+  regole di `core-guard` dalla base di merge `aa3707a`: **PASS**. Il web, la smoke e il giro intero non si sono rifatti: il merge non li
+  tocca, e la CI li rifà interi.
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
   le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
   log binario della MariaDB di produzione (risposta 2: lo prova la consegna); le mail lette davvero in una casella (i test leggono la coda,

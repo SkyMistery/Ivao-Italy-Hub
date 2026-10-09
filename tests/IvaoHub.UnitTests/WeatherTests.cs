@@ -88,6 +88,10 @@ public sealed class WeatherTests
             Task.FromResult(IvaoNetworkStatus.Unknown);
     }
 
+    /// <summary>
+    /// The moment every test lives in. The NOAA client reads the same clock, so a window is recent or
+    /// too old by this date and never by the day the suite runs.
+    /// </summary>
     private static readonly DateTime Now = new(2026, 9, 16, 8, 0, 0, DateTimeKind.Utc);
 
     private static HttpResponseMessage Json(string body) =>
@@ -114,7 +118,7 @@ public sealed class WeatherTests
     {
         var handler = new ScriptedHandler(answer);
         var http = new HttpClient(handler) { BaseAddress = new Uri("https://aviationweather.gov") };
-        return (new NoaaWeatherClient(http, NullLogger<NoaaWeatherClient>.Instance), handler);
+        return (new NoaaWeatherClient(http, new StubClock(Now), NullLogger<NoaaWeatherClient>.Instance), handler);
     }
 
     [Fact]
@@ -180,8 +184,8 @@ public sealed class WeatherTests
 
         var reports = await client.GetHistoryAsync(
             "LIRF",
-            DateTime.UtcNow.AddDays(-40),
-            DateTime.UtcNow.AddDays(-40).AddHours(2),
+            Now.AddDays(-40),
+            Now.AddDays(-40).AddHours(2),
             TestContext.Current.CancellationToken);
 
         Assert.Null(reports); // null is "we could not look", never "there was no weather"
@@ -195,8 +199,8 @@ public sealed class WeatherTests
 
         var reports = await client.GetHistoryAsync(
             "LIRF",
-            DateTime.UtcNow.AddHours(-3),
-            DateTime.UtcNow,
+            Now.AddHours(-3),
+            Now,
             TestContext.Current.CancellationToken);
 
         Assert.Null(reports);
