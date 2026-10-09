@@ -9,6 +9,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Jobs;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
@@ -184,6 +185,11 @@ builder.Services.AddHubNotifications();
 
 // The mail to whoever assigns the awards, about the signals every module writes into the core's queue (M4, E10d).
 builder.Services.AddHubAwards();
+
+// Every scheduled job, the core's and the modules', once per occurrence whichever process is alive: one runner across
+// processes, the runs lost while the host kept the hub stopped made up after a start, and the address the host's scheduled
+// task calls (note 2026-10-09-i-job-che-recuperano).
+builder.Services.AddHubJobs();
 
 // The login is the one place an outsider can make the server do work before proving anything.
 builder.Services.AddRateLimiter(options =>
@@ -379,6 +385,9 @@ app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
 app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
+
+// The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token.
+app.MapJobRunEndpoints();
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
 app.MapModuleEndpoints();
