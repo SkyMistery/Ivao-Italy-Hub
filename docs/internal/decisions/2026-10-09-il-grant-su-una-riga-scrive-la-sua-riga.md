@@ -4,7 +4,11 @@
 **Stato:** **decisa** (Carmine, 9 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione [sulla #235][a235]): **sì** alla
 fase del nucleo di M4 (risposta 1), e un grant su un evento solo **crea un figlio di quell'evento** — uno slot, una rotta —, **mai un
 evento nuovo** (risposta 2). **La forma nel codice è di questa nota** (§3), come per ogni fase del nucleo (`10`, «Regole di tutte le
-fasi»): segue le due risposte senza aprire domande nuove; due sue conseguenze sono dette al revisore (§6).
+fasi»). Dopo [i rilievi del revisore][rv237], **decise da Carmine anche le due conseguenze della forma e il resto** ([le risposte 1–3][a237]
+e [la risposta 4][a4237] sulla #237, date in chat alla sessione master e pubblicate su sua istruzione): un'alternativa segnata per la
+creazione si chiede con lo scope della riga nuova, sapendo che sostituisce il «senza scope» di A3; nessuna alternativa sposta una riga fra
+scope; «mai un evento nuovo» per convenzione, senza un controllo sulla chiave; `EventBookings.Edit` su un evento solo e la propria
+prenotazione restano come sono (§6.2).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la rete dell'interceptor (`HubSaveChangesInterceptor`, il guardiano
 `EnsureWriteIsAllowed`), che conosce già lo scope della riga per i permessi alternativi (M2, T13; M3, A3) e non per `{Area}.Edit`; nessun
 meccanismo nuovo, nessun segno nuovo. È una PR del nucleo, prima del codice del modulo che la usa (`CLAUDE.md` §0 regola 6). L'ha trovata
@@ -13,6 +17,9 @@ la sessione di E6a (la #233) misurando il ritiro di una prenotazione da parte de
 
 [i235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235
 [a235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235#issuecomment-6070088402
+[rv237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083800096
+[a237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083875849
+[a4237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083895328
 
 ## 1. Che cosa serve, e perché nessun meccanismo lo copre
 
@@ -66,7 +73,16 @@ originali del tracker, `entry.OriginalValues.ToObject()`), come `RowFir` legge i
 - **In modifica e all'eliminazione** `Edit` si chiede con lo scope della riga: un grant su un evento cambia e toglie l'evento e le sue
   righe — scali, rotte, slot, e le prenotazioni di E6a quando ci saranno —, e nessuna riga di un altro evento.
 - **All'eliminazione, lo scope com'era**: chi cambia la colonna dello scope e poi toglie la riga nella stessa unità di lavoro è giudicato
-  sulla riga che c'era. Le alternative prima leggevano l'istanza anche qui; ora tutte e due leggono `RowScope`.
+  sulla riga che c'era. Le alternative prima leggevano l'istanza anche qui; ora tutte e due leggono `RowScope`. Lo prova un test, dopo
+  la revisione (§4).
+- **Solo colonne mappate** (il rilievo 3 del revisore): la copia dei valori originali non carica navigazioni, quindi uno scope si
+  costruisce dalle colonne della riga stessa, mai da una navigazione — `Event.ScopeOf(EventId)`, non qualcosa letto da `slot.Event`. Lo
+  dice il riassunto di `IHasResourceScope`.
+- ⚠️ **Uno stub mai letto è creduto com'è scritto, scope compreso** (il rilievo 2): i valori originali sono ciò che il tracker ha visto
+  quando ha cominciato a seguire la riga, e per una riga attaccata senza leggerla — `Remove(new SamplePart { Id = id, ItemId = mio })` —
+  sono quelli che ha scritto chi chiama: lo scope «di prima» è il suo. È il limite che Carmine ha accettato per il ritiro di E10h
+  (risposta 2 sulla #232, come per T11), e vale anche qui: l'endpoint carica la riga che scrive. Lo dice il riassunto di
+  `IHasResourceScope`; il motore CRUD carica sempre la riga (`FindAsync`) prima di cambiarla o toglierla.
 
 ### 3.3 Alla creazione: lo scope con cui la riga nuova risponde (la risposta 2)
 
@@ -91,7 +107,9 @@ legge chi scrive un modulo:
 Oggi le tengono tutte le entità con uno scope (§2 punto 3). Sono le stesse su cui l'handler si regge già alla creazione. **Misurata**, la
 condizione 1, con una prova buttata (mai nel ramo): con un permesso scritto su `sample:item:0` un item nuovo si crea, perché al guardiano
 la riga nuova risponde proprio con `sample:item:0`. È il limite della regola, detto: un grant scritto su una riga che non esiste ancora
-creerebbe righe come lei; nessun modulo ne scrive uno, e l'handler, dal motore CRUD, risponde già allo stesso modo.
+creerebbe righe come lei; nessun modulo ne scrive uno, e l'handler, dal motore CRUD, risponde già allo stesso modo. **Accettato da Carmine
+così com'è scritto** ([risposta 3 sulla #237][a237]): «mai un evento nuovo» vale per convenzione, perché i grant si scrivono solo su righe
+che esistono, e nessun controllo sulla chiave è chiesto (§5).
 
 **Perché nessun segno sull'entità** (l'alternativa più vicina, §5): un segno «il mio scope è quello della riga sopra» sulle righe figlie
 chiederebbe a ogni modulo di ricordarlo su ogni figlia — scali, rotte e slot oggi; postazioni, regole di award, domande dopo —; una figlia
@@ -102,7 +120,8 @@ le dichiarazioni contraddittorie (piano §16 punto 2, 0.4.3).
 **Anche per le alternative segnate `AlsoOnCreation`**, la stessa domanda: con lo scope della riga nuova, dove prima era «senza scope».
 Oggi non cambia niente: nessuna entità ha un'alternativa che crea e uno scope preso da sopra (`SampleRecord` risponde con il suo, il PIREP
 non crea con un'alternativa, il training non ha scope). È la regola di A3 riletta con la risposta 2: un grant su una riga ne crea i figli,
-qualunque permesso porti. Una conseguenza detta al revisore (§6).
+qualunque permesso porti. **Decisa da Carmine** ([risposta 1 sulla #237][a237]): sì, e sostituisce **sapendolo** il «senza scope» della
+nota di A3 — chi collabora su un evento ne crea i figli con un'alternativa come con `Edit`.
 
 ### 3.4 Lo spostamento fra scope
 
@@ -116,7 +135,7 @@ strada.
 **Nessuna alternativa sposta la riga fra scope**, come fra dipartimenti e FIR: `IsMoved` è lo stesso per le due. Per lo scope chiude il
 punto 2 trovato in A3 (nota `2026-09-25-i-permessi-alternativi-e-la-creazione` §5: «lo scope si guarda solo dopo la scrittura»), che la
 nota di A3b lasciava al maintainer come rafforzamento: qui lo porta la stessa domanda. Nessuna riga di oggi cambia il suo scope con
-un'alternativa (il PIREP scrive `ScopeTourId` una volta). Una conseguenza detta al revisore (§6).
+un'alternativa (il PIREP scrive `ScopeTourId` una volta). **Decisa da Carmine** ([risposta 2 sulla #237][a237]): sì.
 
 ### 3.5 Che cosa non cambia
 
@@ -136,17 +155,22 @@ un'alternativa (il PIREP scrive `ScopeTourId` una volta). Una conseguenza detta 
   volte): uno slot di un evento, senza niente di uno slot. `[Audited]`, area `Sample`, e le due alternative di `SampleRecord`
   (`Sample.Decide` che cambia, `Sample.Record` che crea). La migrazione `AddSampleParts` è del **solo contesto di prova**, e lo snapshot
   cambia solo per `smp_parts`. `ErasureTests` non cambia: non legge il contesto di prova, e `smp_parts` non ha colonne di persona.
-- **`ResourceScopeWriteTests`** (integrazione, nuova, 6), sul guardiano senza un endpoint davanti, come `AlternativeWritePermissionTests`,
-  con l'identità che un login mette nel cookie, sulla MariaDB vera; un VID solo, **761097** (l'ultimo libero del modulo, nessuno
-  seminato: i claim sono la persona):
+- **`ResourceScopeWriteTests`** (integrazione, nuova, 7 dopo la revisione), sul guardiano senza un endpoint davanti, come
+  `AlternativeWritePermissionTests`, con l'identità che un login mette nel cookie, sulla MariaDB vera; un VID solo, **761097** (l'ultimo
+  libero del modulo, nessuno seminato: i claim sono la persona):
   1. `Sample.Edit` su un item cambia e toglie quell'item, e non un altro; l'audit dice 761097;
   2. raggiunge le parti con il suo scope, e non quelle di un altro item;
-  3. crea una parte del suo item, e non di un altro, e nessun item nuovo;
-  4. una parte spostata da un item all'altro chiede il permesso sui due: tenuto su quello di partenza no, su quello d'arrivo no, sui due
+  3. **una parte tolta è giudicata dall'item che aveva** (dopo la revisione, il rilievo 1): caricata una parte dell'altro item, scrittovi
+     l'id dell'item tenuto e tolta nello stesso salvataggio, il grant sull'item tenuto è rifiutato e la parte resta; il grant sull'item che
+     aveva la toglie, qualunque cosa ci sia scritta prima. **Provato che cade** se il guardiano legge lo scope dell'istanza
+     all'eliminazione (una modifica locale, mai nel ramo: `No exception was thrown` alla prima eliminazione); rimesso il file della fase,
+     toccato e ricompilato, con lo stesso diff, la classe 7 su 7;
+  4. crea una parte del suo item, e non di un altro, e nessun item nuovo;
+  5. una parte spostata da un item all'altro chiede il permesso sui due: tenuto su quello di partenza no, su quello d'arrivo no, sui due
      sì; e nessuna alternativa la sposta, nemmeno tenuta sui due;
-  5. un'alternativa segnata per la creazione, tenuta su un item, crea una parte di quell'item e non di un altro; `Sample.Decide` la cambia
+  6. un'alternativa segnata per la creazione, tenuta su un item, crea una parte di quell'item e non di un altro; `Sample.Decide` la cambia
      e non ne crea;
-  6. tenuto sul dipartimento senza scope fa ciò che faceva (crea, cambia, sposta fra item, toglie), e lo spostamento fra dipartimenti
+  7. tenuto sul dipartimento senza scope fa ciò che faceva (crea, cambia, sposta fra item, toglie), e lo spostamento fra dipartimenti
      chiede ancora i due lati — anche tenuto sulla riga: sul solo SOD no, su SOD ed ED sì.
 - **`EventsScopedGrantTests`** (integrazione, nuova, 2), **sugli endpoint veri degli eventi**, il caso dell'issue: 761097 seminato senza
   indirizzo né posizione, gli eventi e i loro scali scritti dall'installazione, i grant scritti nella tabella come li scriverà una
@@ -168,9 +192,9 @@ un'alternativa (il PIREP scrive `ScopeTourId` una volta). Una conseguenza detta 
 |---|---|
 | La creazione sempre senza scope, come proponeva l'issue | contro la risposta 2: chi collabora su un evento non ne caricherebbe gli slot |
 | Un segno sulle righe figlie («il mio scope è quello della riga sopra»): un attributo, un'interfaccia, un membro di `IHasResourceScope` | ogni figlia di ogni modulo dovrebbe ricordarlo; una dimenticata dà 403 con l'handler che dice sì; e questa PR aspetterebbe una fase del modulo (§3.3) |
-| Riconoscere lo scope proprio perturbando la chiave sul tracker (`CurrentValues.Clone()` con un'altra chiave, e lo scope confrontato) | chiuderebbe anche un grant scritto su una riga che non esiste, con un pezzo furbo sul tracker di EF, per un caso che nessun modulo produce (§3.3, condizione 1) e che l'handler chiede già così |
+| Riconoscere lo scope proprio perturbando la chiave sul tracker (`CurrentValues.Clone()` con un'altra chiave, e lo scope confrontato) | chiuderebbe anche un grant scritto su una riga che non esiste, con un pezzo furbo sul tracker di EF, per un caso che nessun modulo produce (§3.3, condizione 1) e che l'handler chiede già così; Carmine ha accettato la convenzione, senza controllo sulla chiave (risposta 3 sulla #237) |
 | Cercare la riga sopra nel database, da una chiave esterna o leggendo lo scope come `{modulo}:{tipo}:{id}` | il nucleo non legge gli scope (nota del 15 settembre §3.1), e sarebbe una query per ogni riga nuova |
-| Le alternative alla creazione ancora senza scope | due domande diverse alla creazione; oggi non cambia niente (§3.3, §6) |
+| Le alternative alla creazione ancora senza scope | due domande diverse alla creazione; Carmine ha scelto lo scope della riga nuova (risposta 1 sulla #237) |
 | Lo spostamento fra scope lasciato al motore CRUD | il guardiano è la rete sotto le policy: una scrittura fuori dal motore sposterebbe una riga con il solo scope nuovo |
 
 ## 6. Le domande a Carmine, e le risposte
@@ -187,9 +211,22 @@ quell'evento** (uno slot nuovo, una rotta)?
 2. **Sì per un figlio, mai per un evento nuovo**: chi collabora su un evento deve poterne caricare gli slot; una riga nuova che non è figlia
    della riga con lo scope resta com'è — un permesso dato su una riga non ne fa nascere altre.
 
-**Dette al revisore**, perché sono conseguenze della forma e non righe delle risposte: le alternative segnate `AlsoOnCreation` chiedono la
-creazione con lo stesso scope (§3.3, oggi non cambia niente), e nessuna alternativa sposta una riga fra scope (§3.4, chiude per lo scope il
-punto 2 di A3). Se Carmine preferisce lasciarle com'erano, ognuna è una riga del guardiano e un test.
+### 6.1 Dopo la revisione (9 ottobre 2026)
+
+[I rilievi del revisore][rv237] sulla #237: «approvabile sul codice, con un test da aggiungere». **Da correggere**: lo scope di una riga
+tolta non era provato (rilievo 1: il test 3 di §4). **Minori**: lo stub mai letto, creduto com'è scritto, scope compreso (2), e lo scope
+costruito dalle sole colonne mappate (3): due frasi nel riassunto di `IHasResourceScope` e in §3.2. **Per il maintainer** i punti 4–6,
+due dei quali erano le conseguenze della forma che questa nota diceva al revisore. Le risposte di Carmine (date in chat alla sessione
+master e pubblicate su sua istruzione: [le risposte 1–3][a237] e [la risposta 4][a4237]):
+
+1. **Un'alternativa segnata per la creazione si chiede con lo scope della riga nuova: sì.** Sostituisce, sapendolo, il «senza scope» della
+   nota di A3: chi collabora su un evento ne crea i figli con un'alternativa come con `Edit` (§3.3).
+2. **Nessuna alternativa sposta una riga fra due scope: sì** (§3.4).
+3. **«Mai un evento nuovo» per convenzione: accettato così com'è scritto.** Vale perché i grant si scrivono solo su righe che esistono;
+   nessun controllo sulla chiave è chiesto (§3.3, §5).
+4. **`EventBookings.Edit` tenuto su un evento solo, e la propria prenotazione in quell'evento: resta com'è** (il rilievo 6). Chi lo tiene è
+   staff di quell'evento, e l'audit dice chi ha fatto che cosa; il permesso non è segnato `DeniedToStakeholder`. (`Edit` su una riga con
+   scope non è mai chiesto come `DeniedToStakeholder`, ed era così anche prima di questa fase.)
 
 ## 7. Che cosa si tocca
 
@@ -208,9 +245,11 @@ punto 2 di A3). Se Carmine preferisce lasciarle com'erano, ognuna è una riga de
   alla creazione (lo scope con cui la riga nuova risponde). Un grant su una riga scrive quella riga e quelle che rispondono con il suo
   scope, e le crea — un grant su un evento ne crea gli slot e le rotte —, mai un'altra riga come lei, perché lo scope proprio di una riga
   nuova è costruito sulla chiave che il database non ha ancora dato. Si regge su due condizioni: **un grant si scrive su una riga che
-  esiste**, e **lo scope proprio di una riga si costruisce sulla sua chiave**. Le alternative `AlsoOnCreation` chiedono la creazione allo
-  stesso modo («senza scope» non vale più); una riga che cambia scope chiede `Edit` sui due scope, come fra dipartimenti e FIR, e nessuna
-  alternativa la sposta.
+  esiste** («mai un evento nuovo» è una convenzione accettata da Carmine, risposta 3 sulla #237, senza controllo sulla chiave), e **lo scope
+  proprio di una riga si costruisce sulla sua chiave**, dalle sole colonne mappate. Le alternative `AlsoOnCreation` chiedono la creazione
+  allo stesso modo («senza scope» di A3 non vale più, risposta 1); una riga che cambia scope chiede `Edit` sui due scope, come fra
+  dipartimenti e FIR, e nessuna alternativa la sposta (risposta 2). Lo scope di prima si legge dai valori originali del tracker: **uno stub
+  mai letto è creduto com'è scritto, scope compreso**, il limite di E10h, e l'endpoint carica la riga che scrive.
 - **§6.3**, la voce «Un grant su una riga sola»: «Tutto nell'unico handler» diventa «nell'unico handler e, dal 9 ott 2026 (E10i), nel
   guardiano: in modifica, all'eliminazione e alla creazione delle righe che rispondono con il suo scope».
 - **`09-design-m4.md` §13** («Che cosa chiede al nucleo»): una riga in più, il grant su un evento solo nel guardiano (E10i, questa nota),

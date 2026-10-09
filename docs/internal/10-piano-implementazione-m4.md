@@ -2461,10 +2461,36 @@ spostamento fra dipartimenti chiede ancora i due lati. Ognuno cade sul codice di
 - **Non verificato**: la CI (la dice la PR; `build-test` cadrà sulla bomba a tempo del meteo, l'issue #236); `pnpm e2e` e
   `pnpm e2e:full`: nessuna schermata cambia, quindi né la porta 5129 né `ivaohub_e2e_e10i` sono stati usati; le prenotazioni (la #233 non
   è su `main`): la stessa regola le copre, e la rivede la sessione di E6a dopo il merge.
+- **Quello che la CI ha saltato**: `build-test` sulla prima testa (`e248dff`) è caduto a «Test .NET» sul solo test del meteo (1691 su
+  1692), e ha saltato ogni passo dopo. Rifatti in locale, sulla stessa testa e nell'ordine del workflow, su richiesta della sessione
+  coordinatrice: il controllo che i test di spina dorsale girino (`ArchitectureTests` 15 su 15 scritti, `ForkabilityXxDivisionTests` 3 su
+  3), `gen:api` senza differenze, lint, `format:check`, typecheck, `pnpm test` 643/643, `i18n:sync` e `i18n:check`, `build`,
+  `git diff --exit-code` pulito; scritti nel corpo della PR sotto «Not verified by CI». Lo smoke no: gira su `vite preview` con ogni
+  `/api/**` finto (`web/e2e/fixtures.ts`), e nessun file di `web/` cambia.
+
+**Dopo la revisione** (9 ottobre 2026, [i rilievi del revisore][rv237], «approvabile sul codice, con un test da aggiungere», e le risposte
+di Carmine sulla #237, [1–3][a237] e [4][a4237], date in chat alla sessione master e pubblicate su sua istruzione):
+
+- **Il rilievo 1, da correggere**: un test nuovo, `ARemovedPartIsJudgedByTheItemItHadNotByTheOneWrittenIntoIt` — una parte dell'altro
+  item, caricata, con l'id dell'item tenuto scritto dentro e tolta nello stesso salvataggio: il grant sull'item tenuto è rifiutato, quello
+  sull'item che aveva la toglie. **Provato che cade** con il guardiano che legge lo scope dell'istanza all'eliminazione (una modifica
+  locale, mai nel ramo: `No exception was thrown`); rimesso il file della fase, toccato e ricompilato con lo stesso diff, la classe 7 su 7.
+- **I rilievi 2 e 3, minori**: due frasi nel riassunto di `IHasResourceScope` e nella nota (§3.2) — ⚠️ uno stub mai letto è creduto
+  com'è scritto, scope compreso (il limite di E10h vale anche qui), e uno scope si costruisce dalle sole colonne mappate (la copia dei
+  valori originali non carica navigazioni).
+- **Le risposte di Carmine**, registrate nella nota (§6.1, «Stato»): sì all'alternativa che crea con lo scope della riga nuova, sapendo
+  che sostituisce il «senza scope» di A3 (1); sì, nessuna alternativa sposta una riga fra scope (2); «mai un evento nuovo» per
+  convenzione, senza controllo sulla chiave (3); `EventBookings.Edit` su un evento solo e la propria prenotazione restano come sono (4).
+  Gli scostamenti qui sopra sono quindi decisi.
+- ⚠️ **Il push aspetta** la #241 di Carmine, che corregge il test del meteo (#236): poi `main` si unisce sul ramo e si fa un push solo,
+  così la CI gira intera (la richiesta del master).
 
 [i235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235
 [a235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235#issuecomment-6070088402
 [i236]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/236
+[rv237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083800096
+[a237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083875849
+[a4237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083895328
 
 ### E11a — Postazioni e disponibilità
 

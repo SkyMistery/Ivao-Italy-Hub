@@ -12,8 +12,9 @@
 E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i
 piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
 `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10i** (questa, la #237, del nucleo, senza coda: **decisa da Carmine** sulla #235 — un grant su un evento solo
-scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo; «Che cosa ha lasciato E10i», sotto) ed **E6a** (la #233, prenotare:
+**Il prossimo passo**: **E10i** (questa, la #237, del nucleo, senza coda: **decisa da Carmine** sulla #235 e, dopo la revisione, sulla
+#237 — un grant su un evento solo scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo; il push delle correzioni aspetta la
+#241 del meteo e unisce `main`; «Che cosa ha lasciato E10i», sotto) ed **E6a** (la #233, prenotare:
 il server, in coda dopo la #232, ora unita): la sua sessione ha messo `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato
 E10h», sotto). ⚠️ **Da oggi la suite di unità cade su `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`**, su ogni ramo e su
 `main`: una data fissa del maintainer contro l'ora vera, non di una fase (`10`, E10i, «Trovato»; segnalata a Carmine dalla sessione di
@@ -156,7 +157,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E10i (9 ottobre 2026, branch `m4/e10i-scoped-grant-writes`, PR #237, del nucleo, senza coda)
 
 - **Che cosa c'è** (nota `decisions/2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga.md`, **decisa** da Carmine sulla #235: sì alla
-  fase, e un grant su un evento solo crea un figlio di quell'evento, mai un evento nuovo; il dettaglio in `10`, E10i, «Com'è andata»):
+  fase, e un grant su un evento solo crea un figlio di quell'evento, mai un evento nuovo; e dopo la revisione sulla #237: l'alternativa
+  che crea chiede lo scope della riga nuova, nessuna alternativa sposta una riga fra scope, «mai un evento nuovo» per convenzione, e
+  `EventBookings.Edit` su un evento solo con la propria prenotazione resta com'è; il dettaglio in `10`, E10i, «Com'è andata» e «Dopo la
+  revisione»):
   - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`) chiede `{Area}.Edit` **con lo scope della riga**, come l'unico
     handler: in modifica (la riga com'è scritta), all'eliminazione (la riga com'era) e alla creazione (lo scope con cui la riga nuova
     risponde). Una domanda sola, `Holds`, per `Edit` e per ogni alternativa.
@@ -178,7 +182,14 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Lo scope proprio di una riga si costruisce sulla sua chiave**, mai su qualcosa che chi la scrive sceglie (l'indirizzo, un codice):
     un grant scritto su quello creerebbe la riga. E **un grant con scope si scrive su una riga che esiste**: la schermata del modulo che
     darà il grant «su un evento solo» lo scrive per un evento che ha trovato (`ModuleGrants.GiveAsync`), mai su un id che le arriva e
-    basta. Sono le due condizioni del riassunto di `IHasResourceScope`.
+    basta. Sono le due condizioni del riassunto di `IHasResourceScope`; «mai un evento nuovo» si regge su questa convenzione, accettata da
+    Carmine senza un controllo sulla chiave (risposta 3 sulla #237).
+  - ⚠️ **Lo scope di prima si legge dai valori originali del tracker** (all'eliminazione, e in modifica quando la riga si sposta): quindi
+    **uno stub mai letto è creduto com'è scritto, scope compreso** — il limite di E10h vale anche qui, e l'endpoint carica la riga che
+    scrive —, e **uno scope si costruisce dalle sole colonne mappate della riga** (`Event.ScopeOf(EventId)`), mai da una navigazione, che
+    quella copia non carica.
+  - **`EventBookings.Edit` tenuto su un evento solo** lascia correggere anche la propria prenotazione in quell'evento: Carmine lo lascia
+    così (risposta 4 sulla #237), chi lo tiene è staff dell'evento e l'audit dice chi ha fatto che cosa.
   - **E6a** (la #233): dopo il merge di E10i, un grant di `EventBookings.Edit` su un evento solo toglie le prenotazioni di quell'evento; il
     suo `TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow` resta com'è (il membro di un evento solo agisce su un altro evento:
     403 dall'handler), e il caso positivo, se lo si vuole, è una riga in più del suo test.
