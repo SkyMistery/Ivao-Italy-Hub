@@ -68,6 +68,28 @@ public sealed class EventsMail(HubDbContext hub, INotificationService notificati
     }
 
     /// <summary>
+    /// The flight of a booked slot corrected by the staff (E6a, Carmine's answer 3 on #233): to its pilot, with the flight as it is
+    /// now — callsign, airports, times, the types it admits — and the aircraft they chose, which the booking keeps.
+    /// </summary>
+    public Task BookingChangedAsync(Event row, EventSlot slot, EventBooking booking, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(slot);
+        ArgumentNullException.ThrowIfNull(booking);
+
+        return SendAsync(EventsNotifications.BookingChanged, row, [booking.BookerVid], (data, _) =>
+        {
+            data["callsign"] = slot.Callsign ?? booking.Callsign ?? string.Empty;
+            data["departure"] = slot.DepartureIcao ?? string.Empty;
+            data["arrival"] = slot.ArrivalIcao ?? string.Empty;
+            data["offBlock"] = slot.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
+            data["onBlock"] = slot.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
+            data["types"] = string.Join('/', slot.AircraftTypes);
+            data["aircraft"] = booking.AircraftIcao;
+        }, cancellationToken);
+    }
+
+    /// <summary>
     /// One intent per language of the people told, each with the event's title in that language and its page: a cancellation of an
     /// event of four hundred slots is one or two intents, not four hundred.
     /// </summary>

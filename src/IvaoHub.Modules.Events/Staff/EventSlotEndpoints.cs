@@ -213,6 +213,10 @@ public static class EventSlotEndpoints
             options.BeforeSave = (slot, saving) =>
                 saving.Services.GetRequiredService<SlotSaving>().PrepareAsync(slot, saving.IsNew, saving.CancellationToken);
 
+            // A booked slot whose flight a correction changed: its pilot is told (E6a, Carmine's answer 3 on #233).
+            options.AfterSave = (slot, saving) =>
+                saving.Services.GetRequiredService<SlotSaving>().AfterSaveAsync(slot, saving.CancellationToken);
+
             // A booked slot is not deleted (§1.5, E6a): the staff take its booking away first.
             options.Delete = (slot, services, cancellationToken) =>
                 services.GetRequiredService<SlotSaving>().DeleteAsync(slot, cancellationToken);
@@ -346,14 +350,22 @@ public static class EventSlotEndpoints
 /// gives it its airport and its direction; its time there inside the event's window with a margin; its callsign and off block once
 /// in the event; its place in its rotation — so that a correction cannot make what a load would refuse. And what deleting one
 /// refuses: a slot a pilot booked (E6a).
+/// <para>A booked slot is still corrected, and its booking stays (E6a, Carmine's answer 3 on #233): when the correction changes the
+/// flight its pilot booked — the callsign, the times, the airports, the aircraft types it admits —, the pilot is told once the save
+/// is done (<see cref="EventsNotifications.BookingChanged"/>). Nothing is refused and nothing is checked again against the pilot's
+/// other bookings: a retiming of many slots must not make the staff take the bookings away one by one.</para>
 /// </summary>
 public sealed class SlotSaving(
     EventsDbContext database,
     EventChildren children,
     IAirportDirectory airports,
     IAircraftTypeDirectory aircraft,
-    ModuleSettingsStore settings)
+    ModuleSettingsStore settings,
+    EventsMail mail)
 {
+    /// <summary>Whether the save being prepared changes the flight a pilot may have booked: what <see cref="AfterSaveAsync"/> tells.</summary>
+    private bool _flightChanged;
+
     /// <summary>The fields of the form, by the columns of the table the rules name: the aircraft types are two fields, below.</summary>
     private static readonly Dictionary<string, string> Fields = new(StringComparer.Ordinal)
     {
@@ -377,6 +389,9 @@ public sealed class SlotSaving(
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(EventSlot slot, bool isNew, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(slot);
+
+        // Read before anything is refused, and told only after the save, as new times of an event are.
+        _flightChanged = !isNew && FlightChanged(slot);
 
         if (await children.EventAsync(slot.EventId, cancellationToken) is not { } parent)
         {
@@ -492,6 +507,50 @@ public sealed class SlotSaving(
         }
 
         return refusals.IsEmpty ? null : refusals.Errors;
+    }
+
+    /// <summary>
+    /// What follows a correction that changed the flight of a booked slot (E6a, Carmine's answer 3 on #233): its pilot is told the
+    /// flight as it is now, and keeps the booking and the aircraft they chose. Nothing for a slot nobody booked, and nothing when only
+    /// the stand, the flight number, the rotation or which admitted type comes first moved.
+    /// </summary>
+    public async Task AfterSaveAsync(EventSlot slot, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+
+        if (!_flightChanged)
+        {
+            return;
+        }
+
+        _flightChanged = false;
+        var booking = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
+            .FirstOrDefaultAsync(row => row.SlotId == slot.Id, cancellationToken);
+        if (booking is null || await children.EventAsync(slot.EventId, cancellationToken) is not { } parent)
+        {
+            return;
+        }
+
+        await mail.BookingChangedAsync(parent, slot, booking, cancellationToken);
+    }
+
+    /// <summary>
+    /// Whether the correction changes what a pilot booked: the callsign they fly, the times, the two airports, or the aircraft types
+    /// the slot admits — as a set, so that only putting another of them first is no change. The stand and the flight number are the
+    /// staff's to plan with, and the rotation the slot's place in a day.
+    /// </summary>
+    private bool FlightChanged(EventSlot slot)
+    {
+        var entry = database.Entry(slot);
+        object? Was(string property) => entry.Property(property).OriginalValue;
+
+        return !Equals(Was(nameof(EventSlot.Callsign)), slot.Callsign)
+            || !Equals(Was(nameof(EventSlot.DepartureIcao)), slot.DepartureIcao)
+            || !Equals(Was(nameof(EventSlot.ArrivalIcao)), slot.ArrivalIcao)
+            || !Equals(Was(nameof(EventSlot.OffBlockUtc)), slot.OffBlockUtc)
+            || !Equals(Was(nameof(EventSlot.OnBlockUtc)), slot.OnBlockUtc)
+            || Was(nameof(EventSlot.AircraftTypesJson)) is not string types
+            || !new EventSlot { AircraftTypesJson = types }.AircraftTypes.ToHashSet(StringComparer.Ordinal).SetEquals(slot.AircraftTypes);
     }
 
     /// <summary>

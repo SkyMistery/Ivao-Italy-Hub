@@ -331,6 +331,10 @@
     "bookingRemoved": {
       "title": "Bookings taken away",
       "description": "An email when the staff of the events take a booking of yours away, with the reason."
+    },
+    "bookingChanged": {
+      "title": "Booked flights corrected",
+      "description": "An email when the staff of the events correct the flight of a slot you booked: its callsign, times, airports or aircraft types."
     }
   },
   "mail": {
@@ -346,6 +350,10 @@
       "bookingRemoved": {
         "subject": "[Events] Booking taken away: {{callsign}}, {{title}}",
         "body": "The staff of the events have taken away your booking of {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, in {{title}}.\n\nWhy: {{reason}}\n\nThe slot is free again. The event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingChanged": {
+        "subject": "[Events] Your booked flight changed: {{callsign}}, {{title}}",
+        "body": "The staff of the events have corrected the flight you booked in {{title}}. It is now {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, on block {{onBlock}} UTC, for {{types}}.\n\nYour booking stays, with your {{aircraft}}. If it no longer suits you, you can withdraw it until its off block.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       }
     }
   },

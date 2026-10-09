@@ -23,5 +23,11 @@ public static class EventsNotifications
     /// <summary>The staff took a pilot's booking away, with the reason (§3.6; E6a): to that pilot.</summary>
     public const string BookingRemoved = "events.bookingRemoved";
 
-    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged, BookingRemoved];
+    /// <summary>
+    /// The staff corrected the flight of a booked slot — its callsign, its times, its airports or the aircraft types it admits — and
+    /// the booking stays (E6a, Carmine's answer 3 on #233): to its pilot, with the flight as it is now.
+    /// </summary>
+    public const string BookingChanged = "events.bookingChanged";
+
+    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged, BookingRemoved, BookingChanged];
 }

@@ -331,6 +331,10 @@
     "bookingRemoved": {
       "title": "Prenotazioni tolte",
       "description": "Una mail quando lo staff degli eventi toglie una tua prenotazione, con il motivo."
+    },
+    "bookingChanged": {
+      "title": "Voli prenotati corretti",
+      "description": "Una mail quando lo staff degli eventi corregge il volo di uno slot che hai prenotato: callsign, orari, aeroporti o tipi di aereo."
     }
   },
   "mail": {
@@ -346,6 +350,10 @@
       "bookingRemoved": {
         "subject": "[Eventi] Prenotazione tolta: {{callsign}}, {{title}}",
         "body": "Lo staff degli eventi ha tolto la tua prenotazione di {{callsign}}, da {{departure}} a {{arrival}}, off block {{offBlock}} UTC, in {{title}}.\n\nIl motivo: {{reason}}\n\nLo slot è di nuovo libero. L'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "bookingChanged": {
+        "subject": "[Eventi] Il volo che hai prenotato è cambiato: {{callsign}}, {{title}}",
+        "body": "Lo staff degli eventi ha corretto il volo che hai prenotato in {{title}}. Ora è {{callsign}}, da {{departure}} a {{arrival}}, off block {{offBlock}} UTC, on block {{onBlock}} UTC, per {{types}}.\n\nLa tua prenotazione resta, con il tuo {{aircraft}}. Se non ti va più bene, puoi ritirarla fino al suo off block.\n\nL'evento: {{url}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
       }
     }
   },
