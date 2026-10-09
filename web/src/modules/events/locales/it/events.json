@@ -141,6 +141,7 @@
     "title": "Rotte",
     "create": "Nuova rotta",
     "edit": "Rotta",
+    "empty": "Qui compariranno le rotte da inserire nel piano di volo, da uno scalo all'altro.",
     "fields": {
       "departureIcao": "Da",
       "arrivalIcao": "A",
@@ -162,6 +163,7 @@
     "title": "Slot",
     "create": "Nuovo slot",
     "edit": "Slot",
+    "empty": "Qui compariranno gli slot dell'evento: si incollano da una tabella o si creano uno per uno.",
     "fields": {
       "callsign": "Nominativo",
       "flightNumber": "Numero di volo",

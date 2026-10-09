@@ -142,6 +142,7 @@
     "title": "Routes",
     "create": "New route",
     "edit": "Route",
+    "empty": "The routes to file in the flight plan, from one airport to another, will show up here.",
     "fields": {
       "departureIcao": "From",
       "arrivalIcao": "To",
@@ -163,6 +164,7 @@
     "title": "Slots",
     "create": "New slot",
     "edit": "Slot",
+    "empty": "The slots of the event will show up here: they are pasted from a table or created one by one.",
     "fields": {
       "callsign": "Callsign",
       "flightNumber": "Flight number",

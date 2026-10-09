@@ -99,6 +99,9 @@ export function SlotsTab({ event, editable }: { event: EventDetailDto; editable:
         search={search}
         onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
         {...(tools === null ? {} : { toolbar: tools })}
+        // The slots are the event's, not a department's: an empty tab says where they come from (#224). The same
+        // words to whoever only reads them, who has none of the buttons above.
+        emptyDescription={t('events:slots.empty')}
         actions={(row) =>
           editable && row.kind === 'Public' ? (
             <Button asChild variant="ghost" size="sm">
