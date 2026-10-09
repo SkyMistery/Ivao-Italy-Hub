@@ -63,9 +63,12 @@ Per non ripeterle trenta volte:
 - **I job** seguono le convenzioni di M2 (`[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, mai un'eccezione, `RunAsync`
   per i test) e la regola della nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` §8: **ognuno decide che cosa fare dai suoi
   dati** («fatto il» sulle righe, l'ultimo giro riuscito), mai dall'ora in cui gira, così un giro perso o doppio non fa danni. ⚠️ Il
-  recupero dei giri persi e il `POST` pianificato **non sono ancora nel codice** del nucleo (coda del maintainer): un job degli eventi
+  recupero dei giri persi e il `POST` pianificato ~~**non sono ancora nel codice** del nucleo (coda del maintainer): un job degli eventi
   deve essere giusto anche se gira tardi o due volte, e il riepilogo dei validatori scrive da sé il suo «già mandato oggi»
-  (`ReviewDigestJob` dei tour non lo ha).
+  (`ReviewDigestJob` dei tour non lo ha)~~ **li porta E10j** (nota `2026-10-09-i-job-che-recuperano`): un job gira una volta per
+  occorrenza del suo cron qualunque processo sia vivo, e il «già mandato oggi» di un riepilogo è la riga del suo giro in
+  `hub_jobs_log`, senza un segno suo. Un job degli eventi: ogni giro scrive la sua riga con `FinishedAt` su ogni uscita, e il suo
+  trigger dice il fuso (`InTimeZone`). Decidere dai propri dati resta la regola: un giro tardi resta possibile.
 - **Tutto gira in locale prima del push** (`CONTRIBUTING.md`, «Tests»): build, unit, **integrazione intera senza filtro**, `pnpm
   lint`, `pnpm typecheck`, `pnpm test`, e `pnpm e2e:full` quando c'è una schermata; i file generati si rigenerano (`pnpm gen:api`,
   `pnpm i18n:sync`). ⚠️ **Un worktree non ha `tiles/`**: per `pnpm e2e:full` serve un hard link a `tiles/basemap.pmtiles` della
@@ -109,6 +112,7 @@ Per non ripeterle trenta volte:
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
+| E10j | Nucleo: i job che recuperano e il POST pianificato | E0 (la voce 2 della coda del nucleo, affidata da Carmine sulla #231; la chiede E9) | un job gira una volta per occorrenza qualunque processo sia vivo: il guardiano davanti a ogni giro (il blocco del job, l'ultimo giro riletto), il recupero dopo l'avvio e ogni minuto, `POST /api/jobs/run` con il token dell'installazione; le mail salvate una per una; i fusi del nucleo |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1581,7 +1585,8 @@ Design §7.4, §17.2 n.7; nota `i-tre-blocchi…`. Nessuna PR in questo reposito
 
 ⚠️ **Prima di E9**: l'hub **in produzione** (piano §15 punti 2c e 3: il nome e il posto della produzione non sono ancora decisi) e, nel
 nucleo, **il recupero dei giri persi dei job** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`): senza, su un Passenger che
-dorme, il promemoria del giorno prima può non partire.
+dorme, il promemoria del giorno prima può non partire. **Il recupero lo porta E10j** (sotto); in produzione serve anche l'operazione
+pianificata dell'host che chiama `POST /api/jobs/run` (`docs/DEPLOYING.md`).
 **Fatta quando**: `booking.it.ivao.aero` risponde con il 301 e il Gate Manager legge le prenotazioni dall'hub.
 
 **Com'è andata**: *(a fase chiusa)*
@@ -2383,6 +2388,107 @@ master e pubblicata su sua istruzione):
 [a232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269
 [a3232]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155
 [a3232old]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041353964
+
+### E10j — Nucleo: i job che recuperano e il POST pianificato
+
+**Da dove viene**: non c'era in E0, dove il recupero era della coda del maintainer (le regole di tutte le fasi, «I job»; E9, ⚠️). È la
+voce 2 della coda del codice del nucleo (`HANDOFF.md`): la strada B e la strada E della nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`,
+decise da Carmine sulla #165. `dalberone` l'ha offerta sulla issue #231 perché E9 la chiede (il promemoria del giorno prima di E6b e
+`events-release` girano solo a processo vivo), e **Carmine l'ha affidata a lui** ([la risposta][a231j], autore `SkyMistery`: una fase
+del nucleo sua, una PR sua e una nota nuova che fissa la forma nel codice; il master la rivede tutta). Branch `m4/e10j-jobs-catch-up`,
+da `main` a `0f72737`. **PR del nucleo**, senza coda, con la sua nota; nessuna migrazione.
+
+1. **Un job è dovuto** quando il suo cron ha un'occorrenza fra l'inizio del suo ultimo giro in `hub_jobs_log` e adesso, nel fuso
+   del trigger; si controlla qualche secondo dopo l'avvio e poi ogni minuto, e si lancia con `IScheduler.TriggerJob`. Generico per
+   ogni job, anche dei moduli; nessuna tabella nuova, nessun job nuovo.
+2. **Le quattro correzioni**: un solo esecutore per job fra più processi; l'esito di ogni mail salvato subito
+   (`NotificationDispatchJob`); il riepilogo delle 07:00 una volta al giorno (`ReviewDigestJob` è di Flight Ops: il nucleo dà il modo
+   generico, il resto è una domanda al maintainer); i fusi espliciti dei trigger.
+3. **Il `POST` protetto** che l'operazione pianificata di Plesk chiama: fa il lavoro dovuto dentro la richiesta, con un token dei
+   segreti, rifiutato senza; scritto in `docs/DEPLOYING.md`.
+
+**Test**: integrazione: un giro perso mentre il processo era spento gira all'avvio dopo; uno non dovuto no; di due processi uno solo
+lo fa; l'esito di una mail si salva una per una, e un processo fermato a metà lotto non rimanda niente di già mandato; il `POST` è
+rifiutato senza il token e con il token fa girare i dovuti. Ognuna cade sul codice di `main`.
+**Fatta quando**: un job dell'hub gira una volta per occorrenza del suo cron qualunque processo sia vivo, e l'operazione pianificata ha
+il suo indirizzo.
+
+**Com'è andata** (9 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo senza coda, da `main` a `0f72737`):
+
+- **Fatto** (nota nuova `2026-10-09-i-job-che-recuperano`, **Proposta**, con tre domande a Carmine sulla #239; il codice è la
+  raccomandazione di ognuna):
+  - **`src/IvaoHub.Core/Jobs/`** (nuovo, namespace `IvaoHub.Core.Jobs`): `JobSchedule` (la regola «dovuto», pura, con
+    `JobCron`), `ScheduledJobs` (il guardiano, un `ITriggerListener` su tutti i trigger, e `RunDueAsync`, il lancio dei dovuti),
+    `JobLocks` (i blocchi `hub-job:<database>:<job>` di un processo su una sua connessione), `JobCatchUp` (il `BackgroundService` del
+    recupero), `JobRunEndpoints` (`POST /api/jobs/run`, `RunDueJobs`), `JobOptions` e `JobOptionsValidator` (`Jobs:CatchUp`,
+    `Jobs:Token`), `JobServiceCollectionExtensions.AddHubJobs`;
+  - **`src/IvaoHub.Core/Services/DatabaseLock.cs`** (nuovo): la meccanica di `GET_LOCK` presa da `InitialisationLock`, che ora la
+    usa con la stessa API pubblica, gli stessi messaggi e le stesse parole di `starts.txt`;
+  - **`NotificationDispatchJob`**: l'esito di ogni mail salvato dopo la mail, senza il token del giro;
+  - **i fusi**: `notification-dispatch` in UTC (`NotificationServiceCollectionExtensions.TriggerName`), `fir-boundaries-sync` nel
+    fuso della divisione con la pipeline delle opzioni (`AirspaceServiceCollectionExtensions.TriggerName`);
+  - **`Program.cs`**: `AddHubJobs()` e `MapJobRunEndpoints()`; e un commit `style` a parte, l'ordine delle `using` che `dotnet
+    format` chiedeva già su `main`;
+  - **`web/src/shared/api/schema.d.ts`** rigenerato (`RunDueJobs`, `JobRunResponse`); **`docs/DEPLOYING.md`**: il token nei segreti,
+    la sezione sull'operazione pianificata, i controlli dopo una consegna, i limiti noti;
+  - **i test**: `ScheduledJobsTests` (integrazione, 5, con due job sonda e ogni altro job in pausa), `JobLocksTests` (integrazione,
+    2), `NotificationOutcomeTests` (integrazione, 1), `ScheduledJobsTests` (unità, 12 metodi, 17 casi). Nessun VID: le mail della
+    prova sono per caselle condivise (VID zero).
+- **Scelte, scritte nella nota** (§1):
+  1. **l'ultimo giro *finito*, non *riuscito*** (domanda 1): con «riuscito» un giro `partial` o `failed` si rifarebbe ogni minuto
+     (`RefDataSyncJob` riscaricherebbe 14 MB di aeroporti ogni minuto);
+  2. **il blocco del database, non un giro `running` con una scadenza** (domanda 2), e **una connessione sola per processo** per
+     tutti i blocchi dei suoi job: al primo risveglio del mattino una decina di job partono insieme, e il server ha un tetto di
+     connessioni per utente. Il primo giro di codice aveva una connessione per giro, come `InitialisationLock`: cambiato prima della
+     PR;
+  3. **la memoria del processo** accanto al registro: `FlightCheckJob` non scrive una riga quando non trova niente, e senza la memoria
+     il controllo di ogni minuto lo lancerebbe ogni minuto;
+  4. **un secondo di tolleranza**: un'occorrenza entro un secondo dall'inizio di un giro è di quel giro (il riepilogo di ieri
+     recuperato alle 06:59:59 non riparte alle 07:00);
+  5. **il recupero acceso per difetto solo in `Production`**: i test d'integrazione e il banco e2e non vedono giri che non hanno
+     chiesto, e non chiamano servizi fuori; il guardiano invece è acceso ovunque;
+  6. **il `POST` aspetta al più 80 s** i giri che lancia e quelli già in corso, dentro i 100 s di Cloudflare; **solo il token
+     nell'intestazione** (domanda 3: «Recupera un URL» fa una GET senza intestazioni);
+  7. **niente nei moduli**: gli eventi e il training hanno trigger ogni quarto d'ora, che cade agli stessi istanti in ogni fuso; gli
+     otto trigger di Flight Ops sono una richiesta al maintainer (nota §3), come i tour dopo E10e ed E10g.
+- **Trovato, e scritto nella nota**: ⚠️ **Quartz.NET non fa scattare un trigger in anticipo**. Il primo giro di codice prendeva come
+  «adesso» il più tardi fra l'orologio e l'ora del trigger, per il Quartz di Java, che si sveglia 2 ms prima: nell'IL della 3.20 il
+  ciclo di `QuartzSchedulerThread` aspetta finché manca più di zero, e su 31 scatti misurati il listener è arrivato sempre dopo l'ora
+  (da 0,07 a 49 ms). Tolto. ⚠️ **Quartz tiene uno scheduler per nome in un processo**: due host di un test con lo stesso nome
+  condividerebbero lo scheduler, quindi `ScheduledJobsTests` dà a ogni host un nome suo. ⚠️ **Quartz avvisa i listener di un job
+  prima di quelli del trigger**: il blocco torna dopo che il job risulta finito, e il test dei due processi aspetta il blocco libero
+  prima dell'ultimo lancio, per provare la rilettura del registro e non il blocco occupato.
+- **Lette le fasi del nucleo che corrono**, dai file delle loro PR: **E10i** (#237: l'interceptor, `DomainContracts.cs`, il modulo di
+  prova) ed **E10k** (#238: il web, le lingue del nucleo, `UI-GUIDELINES.md`) non hanno file di codice in comune con questa; con tutte e
+  due solo `10` e `HANDOFF-M4.md`, un conflitto di documenti per chi è unita dopo. **E6b**: avvisata di come il recupero copre il suo
+  promemoria; il suo `events-reminders` scrive già la riga con `FinishedAt` su ogni uscita, e il suo trigger dice UTC.
+- **Verificato, in locale** (9 ottobre 2026, `main` a `0f72737`):
+  - `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui 17 file C# toccati: pulito, dopo l'ordine delle `using`
+    di `Program.cs` (un commit `style` a parte: `dotnet format` lo chiedeva già su `main`);
+  - unità **1203/1204**: cade solo `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, la data fissa uscita dai 30 giorni di
+    NOAA (#236), rossa su ogni ramo da stamattina e del maintainer; `ScheduledJobsTests` e `InitialisationKeyTests` 26/26;
+  - **integrazione intera, senza filtro, 505/505** al primo giro (9,5 minuti); le quattro classi nuove con `InitialisationMarkerTests`
+    17/17 dopo l'ultimo ritocco;
+  - **la prova al contrario**: `Program.cs`, `NotificationDispatchJob.cs`, i due file dei trigger e `InitialisationLock.cs` rimessi da
+    `0f72737`, toccati e ricompilati (i tipi nuovi restano, non registrati): **cadono tutte e sei** le prove di comportamento — due giri
+    invece di uno (`OfTwoProcesses…`, `ARunDone…`), 404 invece di 401, nessun giro in 30–60 s (`ARunLost…`, `TheScheduledTaskRuns…`),
+    le due mail partite rimaste `Pending`; rimessi i file della fase, toccati e ricompilati, tutte verdi;
+  - **una sonda usa e getta** (`ZzThrowaway…`, cancellata): 31 scatti di un cron di ogni secondo, sempre dopo l'ora prevista (§ sopra);
+  - in `web/`: `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **643/643 in 88 file** (un primo giro è morto
+    di memoria, con un simulatore di volo aperto accanto: il secondo è pulito); `pnpm gen:api` con l'endpoint nuovo, nel commit;
+  - `pnpm e2e:full` sul banco `http://127.0.0.1:5130`, database `ivaohub_e2e_e10j` nuovo, dietro il lock di Mailpit: **57/57** al primo giro (11,1 minuti), e nel log del banco nessuna riga del guardiano (nessun blocco che non si è potuto chiedere, nessun giro saltato);
+  - le regole di `core-guard` rifatte in PowerShell dalla base di merge (`0f72737`): 22 file, nessuno del maintainer, 13 del nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR; il test del meteo sarà rosso, sopra);
+  - **Passenger vero**: due processi veri, un processo spento e risvegliato, l'operazione pianificata di Plesk. Alla consegna:
+    `diagnostics/starts.txt` per i risvegli; `hub_jobs_log` per i notturni che girano la mattina una volta e il riepilogo una volta al
+    giorno; nel log del giorno «Launched … job(s) that were due» e «The scheduled task ran …»; la cronologia dell'operazione pianificata.
+    ⚠️ Il primo risveglio dopo quella consegna fa girare una volta ogni job mai girato lì, i notturni compresi (la scadenza dei file
+    elimina quelli i cui usi sono finiti; i contorni dei FIR si scaricano per la prima volta: nota §1.4);
+  - il `wait_timeout` del server e il tetto delle connessioni dell'utente; quanto dura sul server un recupero del mattino;
+  - il pannello: come può chiamare l'operazione pianificata (domanda 3).
+
+[a231j]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/231#issuecomment-6070088780
 
 ### E11a — Postazioni e disponibilità
 
