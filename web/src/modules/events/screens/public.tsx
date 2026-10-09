@@ -10,7 +10,6 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { holdsPermissionAnywhere } from '../../../shared/api/bootstrap';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { describeProblem } from '../../../shared/forms';
-import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { ListFilter } from '../../../shared/list';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
@@ -81,6 +80,9 @@ export function EventsPublicPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t('events:public.title')} description={t('events:public.description')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('events:public.title')}</H1>
         <Lead>{t('events:public.description')}</Lead>
@@ -202,7 +204,7 @@ export function EventPublicPage() {
  * staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const read = useLocalized();
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const kinds = bootstrap?.calendarKinds ?? [];
@@ -210,16 +212,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
   return (
     <article className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
-      <PageMetadata
-        title={event.title}
-        description={event.summary}
-        imageMediaId={event.bannerMediaId}
-        divisionName={resolveLocalized(
-          bootstrap?.division.name,
-          i18n.language,
-          bootstrap?.division.defaultLocale ?? i18n.language,
-        )}
-      />
+      {/* The row's title in the tab; the division's name after it comes from the root (#224). */}
+      <PageMetadata title={event.title} description={event.summary} imageMediaId={event.bannerMediaId} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RouterAnchor href={EVENTS_PAGE} className="text-sm underline">
