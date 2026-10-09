@@ -21,12 +21,13 @@ namespace IvaoHub.IntegrationTests;
 /// The scheduled jobs once per occurrence whichever process is alive (note
 /// <c>decisions/2026-10-09-i-job-che-recuperano.md</c>), through the real host and the real MariaDB: a run lost while no
 /// process was alive is made up a few seconds after the start, and a job not due is not; of two processes one runs a job and
-/// the other leaves it; a run done for its occurrence is not done again; and the scheduled task's address runs what is due
-/// inside its request, with the installation's token and only with it.
-/// <para>Two probe jobs of the test's own stand for the hub's, with a schedule that comes once a year: what makes one due is
-/// the row of its last run the test writes first. Every other job of the test's hosts is paused before the hub's first
-/// check, so nothing of the hub runs here, and no service outside is called. Each host has a scheduler of its own name:
-/// Quartz keeps one scheduler per name in a process, and two hosts here are two processes.</para>
+/// the other leaves it; a run done for its occurrence is not done again; the jobs that are due start one after the other;
+/// which runs count as the last; a job paused is left alone; and the scheduled task's address runs what is due inside its
+/// request, with the installation's token and only with it, for as long as its wait.
+/// <para>Probe jobs of the test's own stand for the hub's, with a schedule that comes once a year: what makes one due is the
+/// rows of its last runs the test writes first. Every other job of the test's hosts is paused before the hub's first check,
+/// so nothing of the hub runs here, and no service outside is called. Each host has a scheduler of its own name: Quartz
+/// keeps one scheduler per name in a process, and two hosts here are two processes.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -36,6 +37,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const string Address = "/api/jobs/run";
     private const string CatchUpKey = "Jobs:CatchUp";
     private const string TokenKey = "Jobs:Token";
+    private const string WaitKey = "Jobs:WaitSeconds";
 
     private const string Token = "e10j-test-token-of-the-installation-0123456789";
 
@@ -69,8 +71,8 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
 
         // A first of January has gone by since the last run of one, and none since the last run of the other.
-        await LastRunAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), token);
-        await LastRunAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), "succeeded", token);
 
         var recorder = new Recorder();
         var host = Host(catchUp: true, token: null, recorder);
@@ -97,7 +99,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task OfTwoProcessesOneRunsTheJobAndTheOtherLeavesItToIt()
     {
         var token = TestContext.Current.CancellationToken;
-        await LastRunAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
 
         var first = new Recorder();
         var second = new Recorder();
@@ -134,7 +136,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task ARunDoneForItsOccurrenceIsNotDoneAgain()
     {
         var token = TestContext.Current.CancellationToken;
-        await LastRunAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
 
         var recorder = new Recorder();
         var scheduler = await SchedulerOf(Host(catchUp: false, token: null, recorder), token);
@@ -151,10 +153,101 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheJobsThatAreDueStartOneAfterTheOther()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        // Two due together, as a night's jobs are in the morning.
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+
+        using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
+
+        // The first stays inside the gate: the second does not start while it runs.
+        _probe.Close();
+        var call = RunAsync(client, Token, token);
+        await _probe.StartedAsync(Probe.Due, run: 1).WaitAsync(TimeSpan.FromSeconds(30), token);
+        await Task.Delay(TimeSpan.FromSeconds(2), token);
+        Assert.Equal(0, _probe.Runs(Probe.NotDue));
+
+        // The first ends, and the second starts after it.
+        _probe.Open();
+        using var response = await call.WaitAsync(TimeSpan.FromSeconds(60), token);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            [(Probe.Due, "Ran"), (Probe.NotDue, "Ran")],
+            await OutcomesAsync(response, token));
+        Assert.Equal(1, _probe.Runs(Probe.Due));
+        Assert.Equal(1, _probe.Runs(Probe.NotDue));
+    }
+
+    [Fact]
+    public async Task ARunLeftRunningIsMadeUpAndAFailedOneWaitsForItsNextOccurrence()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        // One ran two years ago, and a run of it a minute ago never ended: a process died under it.
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddMinutes(-1), "running", token);
+
+        // The other failed a minute ago: it ended, and its next occurrence has not come.
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), "failed", token);
+
+        using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
+        using var response = await RunAsync(client, Token, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal([(Probe.Due, "Ran")], await OutcomesAsync(response, token));
+        Assert.Equal(1, _probe.Runs(Probe.Due));
+        Assert.Equal(0, _probe.Runs(Probe.NotDue));
+    }
+
+    [Fact]
+    public async Task AJobThatWritesNoRowIsNotLaunchedAgainByTheProcessThatRanIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        // A job that writes nothing when it finds nothing to do, as the tours' checks: the log never says it ran.
+        var recorder = new Recorder();
+        using var client = Host(catchUp: false, token: Token, recorder, [Probe.Silent]).CreateClient();
+
+        using (var first = await RunAsync(client, Token, token))
+        {
+            Assert.Equal([(Probe.Silent, "Ran")], await OutcomesAsync(first, token));
+        }
+
+        // The next minute, the process that ran it remembers it.
+        using (var next = await RunAsync(client, Token, token))
+        {
+            Assert.Empty(await OutcomesAsync(next, token));
+        }
+
+        Assert.Equal(1, _probe.Runs(Probe.Silent));
+        Assert.Equal(["ran"], recorder.Of(Probe.Silent));
+    }
+
+    [Fact]
+    public async Task APausedJobIsNotLaunched()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+
+        var host = Host(catchUp: false, token: Token, new Recorder());
+        await (await SchedulerOf(host, token)).PauseJob(new JobKey(Probe.NotDue), token);
+
+        using var client = host.CreateClient();
+        using var response = await RunAsync(client, Token, token);
+
+        Assert.Equal([(Probe.Due, "Ran")], await OutcomesAsync(response, token));
+        Assert.Equal(0, _probe.Runs(Probe.NotDue));
+    }
+
+    [Fact]
     public async Task TheScheduledTasksAddressRefusesACallWithoutTheToken()
     {
         var token = TestContext.Current.CancellationToken;
-        await LastRunAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
 
         using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
 
@@ -184,11 +277,28 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheScheduledTasksAddressIsLimitedAsTheLoginIs()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
+
+        // Ten refusals a minute from one address, then no more: a wrong token cannot fill the log.
+        for (var call = 0; call < 10; call++)
+        {
+            using var refused = await RunAsync(client, Token + "-not-it", token);
+            Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        }
+
+        using var limited = await RunAsync(client, Token + "-not-it", token);
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+    }
+
+    [Fact]
     public async Task TheScheduledTaskRunsWhatIsDueInsideItsRequest()
     {
         var token = TestContext.Current.CancellationToken;
-        await LastRunAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), token);
-        await LastRunAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), token);
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), "succeeded", token);
 
         using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
 
@@ -202,11 +312,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         _probe.Open();
         using var response = await call;
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var jobs = (await response.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("jobs").EnumerateArray().ToList();
-        var due = Assert.Single(jobs, job => job.GetProperty("job").GetString() == Probe.Due);
-        Assert.Equal("Ran", due.GetProperty("outcome").GetString());
-        Assert.DoesNotContain(jobs, job => job.GetProperty("job").GetString() == Probe.NotDue);
+        Assert.Equal([(Probe.Due, "Ran")], await OutcomesAsync(response, token));
 
         // The run had ended when the answer left: its own row says so.
         await using var scope = _base.Services.CreateAsyncScope();
@@ -219,13 +325,39 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(0, _probe.Runs(Probe.NotDue));
     }
 
+    [Fact]
+    public async Task TheScheduledTasksCallWaitsNoLongerThanItsWaitAndThePassGoesOn()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+
+        using var client = Host(catchUp: false, token: Token, new Recorder(), waitSeconds: 2).CreateClient();
+
+        // The first run stays inside the gate for longer than the installation's wait: the answer leaves without it.
+        _probe.Close();
+        using var response = await RunAsync(client, Token, token).WaitAsync(TimeSpan.FromSeconds(20), token);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal([(Probe.Due, "Running"), (Probe.NotDue, "Waiting")], await OutcomesAsync(response, token));
+
+        // After the answer the pass goes on while the process lives: the second starts when the first has ended.
+        Assert.Equal(0, _probe.Runs(Probe.NotDue));
+        _probe.Open();
+        await _probe.StartedAsync(Probe.NotDue, run: 1).WaitAsync(TimeSpan.FromSeconds(30), token);
+    }
+
     // ---- the pieces --------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// A host of the test's own: the two probes and a recorder of what became of their runs, every other job paused, and
-    /// the jobs' settings as the test says.
+    /// A host of the test's own: the probes it is given (the two that keep a log, unless told), a recorder of what became of
+    /// their runs, every other job paused, and the jobs' settings as the test says.
     /// </summary>
-    private WebApplicationFactory<Program> Host(bool catchUp, string? token, Recorder recorder)
+    private WebApplicationFactory<Program> Host(
+        bool catchUp,
+        string? token,
+        Recorder recorder,
+        string[]? probes = null,
+        int? waitSeconds = null)
     {
         var host = _base.WithWebHostBuilder(builder =>
         {
@@ -234,6 +366,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 {
                     [CatchUpKey] = catchUp ? "true" : "false",
                     [TokenKey] = token,
+                    [WaitKey] = waitSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 }));
 
             builder.ConfigureTestServices(services =>
@@ -243,7 +376,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 {
                     quartz.SchedulerName = $"e10j-test-{Guid.NewGuid():N}";
 
-                    foreach (var job in Probe.Jobs)
+                    foreach (var job in probes ?? [Probe.Due, Probe.NotDue])
                     {
                         quartz.AddJob<ProbeJob>(detail => detail.WithIdentity(job));
                         quartz.AddTrigger(trigger => trigger
@@ -274,8 +407,16 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return await client.SendAsync(request, cancellationToken);
     }
 
-    /// <summary>The row of a run that ended, written as a job writes it.</summary>
-    private async Task LastRunAsync(string job, DateTime startedAt, CancellationToken cancellationToken)
+    /// <summary>The jobs the answer names, in its order, with what became of each.</summary>
+    private static async Task<List<(string Job, string Outcome)>> OutcomesAsync(HttpResponseMessage response, CancellationToken cancellationToken) =>
+        [.. (await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken)).GetProperty("jobs").EnumerateArray()
+            .Select(job => (job.GetProperty("job").GetString()!, job.GetProperty("outcome").GetString()!))];
+
+    /// <summary>
+    /// A row of a run as a job writes it: started then, and ended a second later unless it says <c>running</c>, which a
+    /// process that died leaves behind.
+    /// </summary>
+    private async Task RowAsync(string job, DateTime startedAt, string status, CancellationToken cancellationToken)
     {
         await using var scope = _base.Services.CreateAsyncScope();
         var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
@@ -283,8 +424,8 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             Job = job,
             StartedAt = startedAt,
-            FinishedAt = startedAt.AddSeconds(1),
-            Status = "succeeded",
+            FinishedAt = status == "running" ? null : startedAt.AddSeconds(1),
+            Status = status,
             Message = Probe.Seeded,
         });
 
@@ -324,7 +465,11 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         public const string Due = "e10j-probe-due";
         public const string NotDue = "e10j-probe-not-due";
-        public static readonly string[] Jobs = [Due, NotDue];
+
+        /// <summary>A probe that writes no row, as the tours' checks when they find nothing to do.</summary>
+        public const string Silent = "e10j-probe-silent";
+
+        public static readonly string[] Jobs = [Due, NotDue, Silent];
 
         /// <summary>The first of January at midnight: the schedule never comes while a test runs.</summary>
         public const string Yearly = "0 0 0 1 1 ?";
@@ -362,13 +507,23 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
     }
 
-    /// <summary>A job of the test, written as the hub's are: its row in the log, the work, the row ended.</summary>
+    /// <summary>
+    /// A job of the test, written as the hub's are: its row in the log, the work, the row ended — or no row at all, for the
+    /// silent one.
+    /// </summary>
     [DisallowConcurrentExecution]
     internal sealed class ProbeJob(HubDbContext hub, IClock clock, Probe probe) : IJob
     {
         public async Task Execute(IJobExecutionContext context)
         {
             var job = context.JobDetail.Key.Name;
+            if (job == Probe.Silent)
+            {
+                probe.Start(job);
+                await probe.Gate;
+                return;
+            }
+
             var entry = new JobLogEntry { Job = job, StartedAt = clock.UtcNow, Status = "running", Message = Probe.Written };
             hub.JobsLog.Add(entry);
             await hub.SaveChangesAsync(CancellationToken.None);

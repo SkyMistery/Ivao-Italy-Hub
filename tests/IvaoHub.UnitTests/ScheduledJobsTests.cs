@@ -1,14 +1,21 @@
+using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using IvaoHub.Core.Airspace;
+using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Jobs;
 using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Quartz;
+using Quartz.Impl;
+using Quartz.Impl.Matchers;
 using Xunit;
 
 namespace IvaoHub.UnitTests;
@@ -160,6 +167,24 @@ public sealed class ScheduledJobsTests
     }
 
     [Fact]
+    public void TheScheduledTasksCallWaitsEightySecondsUnlessTheInstallationSaysOtherwise()
+    {
+        var validator = new JobOptionsValidator();
+
+        Assert.Equal(TimeSpan.FromSeconds(80), new JobOptions().Wait);
+        Assert.Equal(TimeSpan.FromSeconds(45), new JobOptions { WaitSeconds = 45 }.Wait);
+        Assert.True(validator.Validate(null, new JobOptions { WaitSeconds = 45 }).Succeeded);
+
+        // Not a wait any proxy would make: the start stops, naming the key.
+        foreach (var seconds in new[] { 0, -5, JobOptions.LongestWaitSeconds + 1 })
+        {
+            var failed = validator.Validate(null, new JobOptions { WaitSeconds = seconds });
+            Assert.True(failed.Failed);
+            Assert.Contains(failed.Failures!, failure => failure.Contains("'Jobs:WaitSeconds'", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
     public void TheScheduledTaskCarriesTheTokenAsABearer()
     {
         const string token = "e10j-unit-token-of-the-installation-0123456789";
@@ -172,6 +197,58 @@ public sealed class ScheduledJobsTests
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Basic {token}"), token));
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Bearer {token}x"), token));
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Bearer {token[..^1]}"), token));
+    }
+
+    // ---- the guard that cannot decide ------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ARunGoesAheadWhenItsLockCannotBeAskedFor()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        // Nobody answers at that address: neither the lock nor the log can be asked (Carmine on #239, answer 4).
+        var unreachable = new DbContextOptionsBuilder<HubDbContext>()
+            .UseMySql(
+                "Server=127.0.0.1;Port=1;Database=nobody;User ID=nobody;Password=nobody;Connection Timeout=2",
+                new MariaDbServerVersion(HubDbContext.ServerVersion))
+            .Options;
+        var services = new ServiceCollection();
+        services.AddScoped(_ => new HubDbContext(unreachable));
+        await using var provider = services.BuildServiceProvider();
+
+        var factory = new StdSchedulerFactory(new NameValueCollection
+        {
+            ["quartz.scheduler.instanceName"] = $"e10j-unit-{Guid.NewGuid():N}",
+        });
+        var scheduler = await factory.GetScheduler(token);
+        await using var locks = new JobLocks();
+        scheduler.ListenerManager.AddTriggerListener(
+            new ScheduledJobs(
+                factory,
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                locks,
+                new SystemClock(),
+                new Lifetime(),
+                NullLogger<ScheduledJobs>.Instance),
+            EverythingMatcher<TriggerKey>.AllTriggers());
+
+        var key = new JobKey($"e10j-unit-probe-{Guid.NewGuid():N}");
+        var ran = Signalled.Expect(key.Name);
+        await scheduler.ScheduleJob(
+            JobBuilder.Create<Signalled>().WithIdentity(key).Build(),
+            TriggerBuilder.Create().ForJob(key).WithCronSchedule("0 0 0 1 1 ?", schedule => schedule.InTimeZone(TimeZoneInfo.Utc)).Build(),
+            token);
+        await scheduler.Start(token);
+
+        try
+        {
+            await scheduler.TriggerJob(key, token);
+            await ran.WaitAsync(TimeSpan.FromSeconds(30), token);
+        }
+        finally
+        {
+            await scheduler.Shutdown(waitForJobsToComplete: true, token);
+        }
     }
 
     // ---- the zones of the core's triggers ----------------------------------------------------------------------------------
@@ -216,6 +293,39 @@ public sealed class ScheduledJobsTests
         var quartz = provider.GetRequiredService<IOptions<QuartzOptions>>().Value;
 
         return Assert.IsAssignableFrom<ICronTrigger>(Assert.Single(quartz.Triggers, trigger => trigger.Key.Name == name));
+    }
+
+    /// <summary>A job that says it ran, and does nothing else.</summary>
+    internal sealed class Signalled : IJob
+    {
+        private static readonly ConcurrentDictionary<string, TaskCompletionSource> Runs = new(StringComparer.Ordinal);
+
+        public static Task Expect(string job) =>
+            Runs.GetOrAdd(job, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+
+        public Task Execute(IJobExecutionContext context)
+        {
+            if (Runs.TryGetValue(context.JobDetail.Key.Name, out var run))
+            {
+                run.TrySetResult();
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>A host that never stops while the test runs.</summary>
+    private sealed class Lifetime : IHostApplicationLifetime
+    {
+        public CancellationToken ApplicationStarted => CancellationToken.None;
+
+        public CancellationToken ApplicationStopping => CancellationToken.None;
+
+        public CancellationToken ApplicationStopped => CancellationToken.None;
+
+        public void StopApplication()
+        {
+        }
     }
 
     /// <summary>An environment by name, and nothing else.</summary>
