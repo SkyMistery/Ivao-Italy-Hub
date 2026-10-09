@@ -2520,7 +2520,9 @@ vuote nelle due lingue; nella smoke degli eventi `toHaveTitle` su `/events` e su
 parla di un dipartimento.
 
 **Com'è andata** (9 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238; nata sopra E10k a
-`d307774`, e prima del push ne ha unito la testa nuova, `b36e663`, con il formato dei suoi quattro file: sotto, «Trovato»):
+`d307774`, e prima del push ne ha unito la testa nuova, `b36e663`, con il formato dei suoi quattro file: sotto, «Trovato». Dopo il primo
+push, su indicazione della sessione coordinatrice, ha unito anche `fdb551d` (`212d676`): la revisione di E10k — due correzioni piccole
+del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa3707a`, con la #241 che rimette verde il test del meteo):
 
 - **Fatto**:
   - **`/events`** (`EventsPublicPage` in `web/src/modules/events/screens/public.tsx`):
@@ -2581,8 +2583,12 @@ parla di un dipartimento.
     sessione di E6b): E6b rende obbligatorio `bookingOpensAtUtc` in `PublicEventDto`, e il test nuovo scrive un `PublicEventDto` intero,
     quindi va aggiunto `bookingOpensAtUtc: null` al suo evento; e la pagina `/events/mine` di E6b (`MyBookingsPage` in
     `screens/mine.tsx`) dice il suo titolo con `<PageMetadata title={t('events:mine.title')} />`.
-- **Verificato, in locale** (9 ottobre 2026; i passi web che la CI salta finché #236 non è corretto, sotto «Non verificato»):
-  - sull'albero finale (E10k unita a `b36e663`, le quattro liste): `pnpm lint`, `pnpm format:check` («All matched files use Prettier code
+- **Verificato, in locale** (9 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+  - dopo l'unione di `fdb551d` (`212d676`, `main` ad `aa3707a`): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
+    `pnpm i18n:check` (822 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **670/670** in 92 file (i tre in più sono della
+    revisione di E10k); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1187/1187** (il test del meteo verde); la
+    smoke **173/173** al primo giro (1,2 minuti); `pnpm e2e:full` **57/57** al primo giro (11,0 minuti, `ivaohub_e2e_e4c` ricreato);
+  - al primo push (E10k unita a `b36e663`, le quattro liste): `pnpm lint`, `pnpm format:check` («All matched files use Prettier code
     style!»), `pnpm typecheck` e `pnpm i18n:check` (822 chiavi letterali in `en` e `it`) verdi; `pnpm test` **667/667** in 92 file;
     `pnpm i18n:sync` senza differenze dopo il suo commit;
   - i test nuovi da soli 8/8; **la prova al contrario**, due volte: con le tre schermate di E10k rimesse (le chiavi e il test tenuti)
@@ -2594,13 +2600,14 @@ parla di un dipartimento.
     minuti; un primo giro fermato al test 2 dal riavvio dell'app), e **57/57** al primo giro sull'albero finale (11,5 minuti);
   - le regole di `core-guard` rifatte in PowerShell (con `-cmatch`, come `=~` di bash) sul tratto della fase, da E10k a `b36e663`:
     tredici file — le cinque schermate, il test nuovo, i file di lingua del modulo e le loro copie in `locales/`, lo spec degli eventi,
-    `10` e questo handoff —, nessuno del maintainer né del nucleo: «Only the contributor's module and documents». Sulla PR, finché la
+    `10` e `HANDOFF-M4.md` —, nessuno del maintainer né del nucleo: «Only the contributor's module and documents». Sulla PR, finché la
     #238 non è unita, il diff verso `main` porta anche i file di E10k con la sua nota: `core-guard` li elenca come nucleo giustificato da
     quella nota;
-  - niente in C#: le suite .NET non le ho rifatte; che l'hub parta con le chiavi nuove l'ha provato `e2e:full`.
+  - niente in C# di questa fase; che l'hub parta con le chiavi nuove l'ha provato `e2e:full`.
 - **Non verificato**:
-  - la CI: `build-test` è rosso a «Test .NET» per #236 (la correzione del maintainer, la #241, era aperta al push), e sulla PR non gira
-    nessun passo web — lint, formato, typecheck, vitest, i18n, la smoke, il giro —: li ho fatti girare in locale, sopra;
+  - la CI del primo push: «Test .NET» rosso per #236, e nessun passo web (li ho fatti girare in locale, sopra). Dopo l'unione di
+    `fdb551d` la CI gira intera, e la sua lettura la dice la PR;
+  - la suite di integrazione, in locale: nessun file .NET di questa fase, e il client NOAA di `main` l'ha provato la CI della #241;
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
 ### E11a — Postazioni e disponibilità
