@@ -13,12 +13,12 @@ E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei t
 piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla
 `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
 **Il prossimo passo**: **E10i** (questa, la #237, del nucleo, senza coda: **decisa da Carmine** sulla #235 e, dopo la revisione, sulla
-#237 — un grant su un evento solo scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo; il push delle correzioni aspetta la
-#241 del meteo e unisce `main`; «Che cosa ha lasciato E10i», sotto) ed **E6a** (la #233, prenotare:
+#237 — un grant su un evento solo scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo; `main` unito a `aa3707a`, la #241
+del meteo; «Che cosa ha lasciato E10i», sotto) ed **E6a** (la #233, prenotare:
 il server, in coda dopo la #232, ora unita): la sua sessione ha messo `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato
-E10h», sotto). ⚠️ **Da oggi la suite di unità cade su `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`**, su ogni ramo e su
-`main`: una data fissa del maintainer contro l'ora vera, non di una fase (`10`, E10i, «Trovato»; segnalata a Carmine dalla sessione di
-E6a con l'issue #236). **E4b** («chi è online
+E10h», sotto). Il 9 ottobre la suite di unità cadeva su `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, su ogni ramo e su
+`main` (una data fissa contro l'ora vera; l'issue #236): **corretta dalla #241 di Carmine** (0.6.6, il client di NOAA con `IClock`); un
+ramo nato prima la prende unendo `main`. **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
 («Che cosa ha lasciato E4b», sotto). Da E3b un evento si **pubblica**, entra nel calendario e nella ricerca quando si vede e ne esce alla
 fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in `/events` e nel blocco `events.eventList`, il FOD ne scrive le
@@ -193,9 +193,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **E6a** (la #233): dopo il merge di E10i, un grant di `EventBookings.Edit` su un evento solo toglie le prenotazioni di quell'evento; il
     suo `TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow` resta com'è (il membro di un evento solo agisce su un altro evento:
     403 dall'handler), e il caso positivo, se lo si vuole, è una riga in più del suo test.
-  - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cade dal 9 ottobre 2026 alle 06:00 UTC su ogni
-    ramo: una data fissa contro `DateTime.UtcNow` e la finestra di 30 giorni di NOAA. Non è di nessuna fase di M4 e non si tocca (`CLAUDE.md`
-    §0 regola 3): la si dice nella PR finché il maintainer non la corregge (issue #236, aperta dalla sessione di E6a).
+  - **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cadeva dal 9 ottobre 2026 alle 06:00 UTC su ogni
+    ramo: una data fissa contro `DateTime.UtcNow` e la finestra di 30 giorni di NOAA (l'issue #236, aperta dalla sessione di E6a). **La #241
+    di Carmine l'ha corretta** (0.6.6): un ramo nato da `main` prima di `aa3707a` la prende unendo `main`, come ha fatto E10i.
 
 ### Che cosa ha lasciato E10h (7 ottobre 2026, branch `m4/e10h-stakeholder-withdraws`, PR #232, del nucleo, senza coda)
 

@@ -2482,8 +2482,13 @@ di Carmine sulla #237, [1–3][a237] e [4][a4237], date in chat alla sessione ma
   che sostituisce il «senza scope» di A3 (1); sì, nessuna alternativa sposta una riga fra scope (2); «mai un evento nuovo» per
   convenzione, senza controllo sulla chiave (3); `EventBookings.Edit` su un evento solo e la propria prenotazione restano come sono (4).
   Gli scostamenti qui sopra sono quindi decisi.
-- ⚠️ **Il push aspetta** la #241 di Carmine, che corregge il test del meteo (#236): poi `main` si unisce sul ramo e si fa un push solo,
-  così la CI gira intera (la richiesta del master).
+- **`main` unito** a `aa3707a` (la #241 di Carmine, 0.6.6: il client di NOAA misura la finestra con `IClock`, e il test del meteo della
+  #236 torna verde), senza conflitti, dopo la #241 e come chiede il revisore: un push solo, così `build-test` gira intero.
+- **Verificato**, dopo il merge: `dotnet build IvaoHub.sln` 0 avvisi; `dotnet format --verify-no-changes` sui due file C# della revisione:
+  pulito; unità **1187/1187** (il meteo compreso); integrazione intera, senza filtro, **506/506** al primo giro (9,8 minuti, con le suite
+  di altre sessioni accanto); nel web, nell'ordine del workflow, `gen:api` senza differenze, lint, `format:check`, typecheck,
+  `pnpm test` 643/643, `i18n:sync` e `i18n:check`, `build`, `git diff --exit-code` pulito; le regole di `core-guard` dalla nuova merge
+  base (`aa3707a`): quattro file del nucleo con la nota nuova, nessuno del maintainer — passa.
 
 [i235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235
 [a235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235#issuecomment-6070088402
