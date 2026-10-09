@@ -1786,7 +1786,7 @@ tenendo i due lati, `bookingChanged` di E6a e `bookingReminder` di questa fase �
      tratta e la pagina la dice di nuovo libera; il coordinatore degli eventi legge le prenotazioni nella scheda e toglie l'altra con un
      motivo, che il pilota legge in Mailpit —; `full/events-staff.spec.ts` conferma «Pubblica», e una volta la annulla.
 - **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-09-le-pagine-delle-prenotazioni.md`,
-  «Proposta», con le domande a Carmine sulla #240; il dettaglio è lì): dieci letture — «Prenota» solo quando il server lo accetterebbe;
+  **decisa** da Carmine sulla #240 — sì a tutto, sotto —; il dettaglio è lì): dieci letture — «Prenota» solo quando il server lo accetterebbe;
   «tuo» dalla lista del pilota; i filtri nell'indirizzo, la compagnia dal nominativo; la riga dell'apertura; la striscia, il suo giorno e
   il suo posto; la conferma di «Pubblica»; `/events/mine`; il blocco; la scheda dello staff; il promemoria. **Due scostamenti da
   guardare**: la striscia sta **dentro** la pagina, non nello spazio del banner che `docs/UI-GUIDELINES.md` vuole per una striscia —
@@ -1847,6 +1847,35 @@ tenendo i due lati, `bookingChanged` di E6a e `bookingReminder` di questa fase �
   reminded in 0 mail(s)»), e in Mailpit è rimasta quella mail sola. Come coordinatore degli eventi: la scheda «Prenotazioni»
   con «Bench Pilot (999002)» e «Togli». La pagina a 375 px: i filtri in due colonne, le tabelle degli slot che scorrono nel loro
   riquadro come in E5.
+- **Dopo la revisione** (9 ottobre 2026; [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083823581),
+  letti sulla prima testa, `012b3e4`, con la CI che salta tutti i passi web per la #236; le correzioni in `c691b74`):
+  1. **Un 409 dice «riprova»** (punto 1): `describeProblem` del nucleo risponde a un 409 per il suo stato, con `errors.conflict.title`
+     (qualcuno ha cambiato quello che si salva), e non legge il titolo del server: `SlotBooking` dice `events:errors.bookingTryAgain` su un
+     409. Test nuovo, con un 409 (prima solo un 400).
+  2. **Chi accede dal dialog torna alla pagina** (punto 2): il link passava `location.href`, un indirizzo intero, e `SafeReturnUrl` del
+     server risponde `/` a quello che non comincia con `/`: ora il percorso e la query. Il vitest e lo smoke dicono l'indirizzo esatto.
+  3. **Un rifiuto rilegge la pagina** (punto 3): `useBook` e `useBookRotation` rileggono anche su un rifiuto; `EventSlots` tiene l'id
+     dello slot aperto, non una sua copia, quindi il dialog dice lo slot com'è letto adesso; e su uno slot diventato «preso» il dialog dice
+     ancora il rifiuto, invece di niente.
+  4. **Nessun colore libero** (punto 4): la spunta di una tratta prenotata prende il colore del testo (`text-green-600` era il solo
+     colore di quel genere in `web/src`).
+  - **Non fatti, perché chiedono il nucleo** (i punti bassi 5 e 6): la casella di ricerca della lista generata ha una parola sola per
+    ogni lista, e il nominativo di uno slot sta su un'altra riga, che la ricerca del motore non segue; il `ConfirmDialog` del nucleo si
+    chiude alla conferma, e un rifiuto di «togli» si dice sotto il bottone. Il punto 8 è la lettura 10, decisa; il punto 9 (lo stesso
+    link d'accesso in tour e training) non è di questa PR.
+  - **Al contrario** (il codice di prima rimesso per la prova, poi di nuovo il nuovo): i quattro test nuovi cadono ognuno per la sua
+    ragione — sul 409 non c'è la frase «riprova»; dopo il rifiuto la pagina è letta una volta sola
+    (`expected "vi.fn()" to be called 2 times, but got 1 times`); il link dice
+    `returnUrl=http%3A%2F%2Flocalhost%3A3000%2Fevents%2F…`; il dialog aperto dice ancora «Free» di uno slot preso —, e i diciassette di
+    prima restano verdi.
+  - **Verificato**: `pnpm typecheck`, `lint`, `format:check` verdi; `pnpm test` **671 in 92 file**; lo smoke `events-public.spec.ts`
+    dietro il lock dello smoke **16/16**.
+- **Le risposte di Carmine** (9 ottobre 2026, sulla #240, di SkyMistery su sua istruzione: [le risposte 1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158)
+  e [la risposta 6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota è
+  **decisa** (§7). Le prenotazioni vicine, la striscia sotto il titolo, la compagnia dal nominativo; le tre cose fuori dal design (la
+  conferma di «Pubblica», la riga «Prenotazioni», l'indirizzo `mine`); il resto delle dieci letture come scritte. **`EventsPeople` è
+  accettato per ora**: è il quarto lettore di nomi per VID, e **un lettore nel nucleo entra nella coda del nucleo prima che se ne scriva
+  un quinto**.
 - **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera — molti piloti che prenotano e un giro del promemoria in due
   processi: la gara dei due giri è deterministica, con una transazione del test al posto del primo —; il formato del log binario della
   MariaDB di produzione (la risposta 2 di Carmine sulla #233: lo prova la consegna, e vale anche per il segno del job); il promemoria letto

@@ -30,8 +30,12 @@ rotazione e ritira fino all'off block, lo staff toglie una prenotazione con un m
 orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto); da E6b **si prenota dalle pagine**: «Prenota» e
 «Prenota tutta la rotazione» nel dialog di uno slot, i filtri, l'apertura con il conto alla rovescia, `/events/mine` con «Ritira», il
 blocco `events.myEvents`, la scheda «Prenotazioni» dello staff con «Togli», la conferma prima di «Pubblica» e il promemoria del giorno
-prima, `events-reminders` («Che cosa ha lasciato E6b», sotto). **La nota di E6b è una «Proposta»**: due domande a Carmine sulla #240 —
-le letture, con la striscia degli scali dentro la pagina, e il quarto lettore di nomi per VID. **Le tre domande di E6a hanno la risposta di
+prima, `events-reminders` («Che cosa ha lasciato E6b», sotto). **Carmine ha risposto sulla #240**
+([1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158),
+[6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota
+`2026-10-09-le-pagine-delle-prenotazioni` è **decisa**; ⚠️ **un lettore di nomi per VID nel nucleo entra nella coda del nucleo prima
+che se ne scriva un quinto** (`EventsPeople` è il quarto, accettato per ora). **Il revisore ha letto la #240**: le quattro correzioni del
+dialog di uno slot che chiedeva sono fatte sulla stessa PR. **Le tre domande di E6a hanno la risposta di
 Carmine** ([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670), nota
 `2026-10-07-le-prenotazioni-sul-server` ora **decisa**): sì alle prime dieci letture; uno slot prenotato si corregge ancora e il pilota è
 avvisato quando cambia il volo (`events.bookingChanged`, fatto sulla #233); l'eraser degli eventi resta a E8b, con la regola qui sotto; il
@@ -175,7 +179,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 
 - **Che cosa c'è** (il dettaglio in `10`, E6b, «Com'è andata»; nessuna migrazione; del nucleo solo i due conteggi dei blocchi; una nota
-  nuova, `2026-10-09-le-pagine-delle-prenotazioni`, **«Proposta»**, con due domande a Carmine sulla #240):
+  nuova, `2026-10-09-le-pagine-delle-prenotazioni`, **decisa** da Carmine sulla #240 — sì a tutto —; dopo la revisione, le quattro
+  correzioni del dialog di uno slot: un 409 dice «riprova», chi accede dal dialog torna alla pagina, un rifiuto rilegge la pagina e il
+  dialog segue lo slot com'è letto adesso, nessun colore libero):
   - **La pagina di un evento** (`screens/public.tsx`, `EventSlots.tsx`, `SlotBooking.tsx`, `BookingOpening.tsx`): i filtri degli slot
     nell'indirizzo (`direction`, `from`, `until`, `type`, `airline`, `rotation`: `eventPageSearchSchema`), offerti solo quando restringono;
     **«Prenota»** con la scelta dell'aereo e **«Prenota tutta la rotazione»** nel dialog di uno slot, solo quando il server lo
@@ -221,8 +227,15 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     volte; il suo trigger dice il fuso (UTC).
   - ⚠️ **E10i** (#237): finché non è unita, un grant su un evento solo mostra la scheda «Prenotazioni», ma «Togli» risponde 403 (il
     guardiano, «Che cosa ha lasciato E6a»).
-  - ⚠️ **La nota di E6b è una «Proposta»**: la striscia dentro la pagina, non nel banner di `docs/UI-GUIDELINES.md`, e il quarto lettore
-    di nomi per VID aspettano la risposta di Carmine sulla #240.
+  - ⚠️ **Un lettore di nomi per VID nel nucleo, prima di un quinto** (risposta 4 di Carmine sulla #240): oggi ce ne sono quattro —
+    `PirepReview.NamesAsync` dei tour, `TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople` —; una fase che ne vorrebbe un
+    altro aspetta quello del nucleo, che entra nella sua coda, e i quattro poi passano a lui. La striscia degli scali resta dentro la
+    pagina (risposta 2): il banner sarebbe una fase del nucleo, non chiesta.
+  - ⚠️ **Un 409 di una prenotazione non passa da `describeProblem`**: il nucleo risponde a ogni 409 con la sua frase («qualcuno ha
+    cambiato…») e non legge il titolo del server; il dialog dice `events:errors.bookingTryAgain`. Lo stesso vale per i verbi dei privati
+    di E7. E un link d'accesso porta il percorso e la query (`window.location.pathname` + `search`): `SafeReturnUrl` del server manda
+    alla home un indirizzo intero — lo stesso difetto è in `main` nelle pagine di tour e training (il punto 9 della revisione, non di
+    questa fase).
   - ⚠️ **Nessuna prenotazione su un'installazione vera finché E8b non è unita**, e il log binario si prova alla consegna (risposte 2 e 4 di
     Carmine sulla #233): vale anche per il segno del promemoria, scritto in una transazione `READ COMMITTED`.
   - ⚠️ **Una mail del giro completo** parte con la coda del nucleo, una volta al minuto, **nella lingua della persona**: il pilota del

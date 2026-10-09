@@ -1,7 +1,11 @@
 # Le pagine delle prenotazioni: le letture del design (E6b)
 
 **Data:** 9 ottobre 2026 — fase E6b di M4 (prenotare: le pagine), PR #240
-**Stato:** **Proposta** — la domanda a Carmine è un commento sulla #240 (§5). La #240 è in coda dopo la #233 di E6a.
+**Stato:** **Decisa** — Carmine ha risposto sulla #240 il 9 ottobre 2026, sì a tutto (§7): [le risposte 1–5][a240] e [la risposta
+6][b240], di SkyMistery su sua istruzione. La #240 è in coda dopo la #233 di E6a.
+
+[a240]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158
+[b240]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo — la lista e il form generati (`MapCrud` in sola
 lettura, `DataList`, `col.person`, `SchemaForm`), il `ConfirmDialog` del nucleo, i blocchi Data, il servizio delle notifiche, la
 striscia del nucleo con gli scali (E4b), le impostazioni del modulo (`reminderLeadHours`), `[NotAudited]`. Sono letture del design M4
@@ -131,6 +135,43 @@ Poste in inglese sulla #240; in italiano dicono:
 >    è il quarto. Raccomandato: va bene così adesso, e un lettore dei nomi nel nucleo — che i quattro userebbero — è una fase del nucleo
 >    a parte, quando la vuoi. Oppure la vuoi prima di unire E6b?
 
+## 6. Dopo la revisione
+
+[I rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083823581) (9 ottobre 2026, sulla prima
+testa, `012b3e4`) non chiedono una decisione nuova: sono difetti del dialog di uno slot, corretti nel modulo, e nessuna lettura cambia.
+
+- **Un 409 dice «riprova»** (punto 1): `describeProblem` del nucleo risponde a un 409 con la sua frase — qualcuno ha cambiato quello che
+  si salva — e non legge il titolo del server; il dialog dice `events:errors.bookingTryAgain`, la lettura 1 com'era scritta.
+- **Chi accede dal dialog torna alla pagina** (punto 2): il link porta il percorso e la query, non l'indirizzo intero, che
+  `SafeReturnUrl` del server trasforma nella home.
+- **Un rifiuto rilegge la pagina** (punto 3), come una prenotazione: uno slot preso un attimo prima diventa «preso», il dialog lo segue e
+  il rifiuto resta detto.
+- **Nessun colore libero** (punto 4): la spunta di una tratta prenotata prende il colore del testo.
+- **Non fatti, perché chiedono il nucleo** (i punti bassi 5 e 6): la casella di ricerca della lista generata ha una parola sola per ogni
+  lista («Cerca»), e il nominativo di uno slot sta su un'altra riga, che la ricerca del motore non segue; il `ConfirmDialog` del nucleo si
+  chiude alla conferma, e un rifiuto di «togli» si dice sotto il bottone, come per ogni conferma dell'hub.
+- **Il punto 8** (`reminded_at` non si cancella quando lo staff sposta uno slot già ricordato) è la lettura 10 com'era scritta, decisa
+  da Carmine con le altre (§7, risposta 6). **Il punto 9** (lo stesso link d'accesso in tour e training) non è di questa PR.
+
+## 7. Le risposte di Carmine
+
+Date in chat al master il 9 ottobre 2026 e pubblicate sulla #240 su sua istruzione, di SkyMistery: [le risposte 1–5][a240] e [la
+risposta 6][b240]. **Sì a tutto.**
+
+1. **(a) Le prenotazioni vicine del promemoria: sì.** Una mail per le prenotazioni di un pilota in un evento che cadono entro
+   `reminderLeadHours` dopo la prima dovuta.
+2. **(b) La striscia di chi è online sugli scali dell'evento, dentro la pagina sotto il titolo: sì**, adesso. Il banner sarebbe una fase
+   del nucleo, e non è chiesto.
+3. **(c) La compagnia di uno slot sono le lettere con cui comincia il nominativo: sì.**
+4. **`EventsPeople`, un lettore di nomi del modulo: accettato per ora.** È il quarto: **un lettore di nomi per VID nel nucleo entra nella
+   coda del nucleo, prima che se ne scriva un quinto**; poi i quattro passano a lui.
+5. **Le tre cose fuori dal design: sì** — la conferma prima di «Pubblica» (lettura 6), la riga «Prenotazioni» con il conto alla rovescia
+   (lettura 4), e l'indirizzo riservato `mine` (lettura 7).
+6. **Sì al resto delle dieci letture del §2, come scritte**: quando «Prenota» si offre nel dialog e che cosa dice altrimenti (1), «Tuo»
+   dalla lista del lettore (2), i filtri sulla pagina e nell'indirizzo (3), `/events/mine` con quello che resta da volare e il passato
+   (7), il blocco `events.myEvents` (8), la scheda «Prenotazioni» dello staff come risorsa in sola lettura del motore (9), e il promemoria
+   del giorno prima con il segno scritto prima della mail (10).
+
 ## Da portare nel piano
 
 - Design M4 §3.3: «Prenota» nel dialog dello slot, offerto solo quando il server lo accetterebbe, l'aereo principale già scelto; la
@@ -144,6 +185,7 @@ Poste in inglese sulla #240; in italiano dicono:
   la conferma prima di «Pubblica».
 - Design M4 §7.3: `events.myEvents` sono le prenotazioni ancora da volare.
 - Piano §16.6: E6b non aggiunge endpoint scritti a mano; la lista dello staff è una risorsa `MapCrud`.
-- `docs/UI-GUIDELINES.md`, se Carmine tiene la lettura 5: la striscia di uno spazio che una schermata chiede (gli scali di un evento) può
-  stare nella pagina, sotto il suo titolo; quella della divisione resta nel banner.
-- La domanda 2, se Carmine vuole il lettore dei nomi nel nucleo.
+- `docs/UI-GUIDELINES.md` (risposta 2, la lettura 5): la striscia di uno spazio che una schermata chiede (gli scali di un evento) sta
+  nella pagina, sotto il suo titolo; quella della divisione resta nel banner.
+- La coda del codice del nucleo (`HANDOFF.md`; risposta 4): un lettore di nomi per VID nel nucleo, prima che se ne scriva un quinto —
+  oggi `PirepReview.NamesAsync` dei tour, `TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople` —; poi i quattro passano a lui.
