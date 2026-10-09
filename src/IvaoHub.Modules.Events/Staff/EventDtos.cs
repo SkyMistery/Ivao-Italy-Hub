@@ -192,6 +192,12 @@ public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWrit
             .Must(slug => slug is null || SlugPattern().IsMatch(slug.Trim().ToLowerInvariant()))
             .WithMessage("errors.slug.invalid");
 
+        // The member's own page of the events is /events/mine (E6b, design §7.1): an event there would be a page nobody reaches.
+        RuleFor(row => row.Slug)
+            .Must(slug => !string.Equals(slug.Trim(), MinePage, StringComparison.OrdinalIgnoreCase))
+            .When(row => !string.IsNullOrWhiteSpace(row.Slug))
+            .WithMessage("events:errors.slugReserved");
+
         RuleFor(row => row.Organizer).IsInEnum().WithMessage("errors.required");
 
         // The page of whoever organises it leaves the site, so a browser has to follow it: the same rule as a link's.
@@ -230,6 +236,9 @@ public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWrit
             }
         });
     }
+
+    /// <summary>The address under <c>/events/</c> of the member's own page, which no event takes.</summary>
+    public const string MinePage = "mine";
 
     /// <summary>What an address of an event may hold: lower case letters, digits and single dashes, as every address of the hub.</summary>
     [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$")]

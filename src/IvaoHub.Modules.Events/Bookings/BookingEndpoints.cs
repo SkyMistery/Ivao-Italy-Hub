@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IvaoHub.Modules.Events.Bookings;
 
@@ -21,6 +22,8 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// <para>Any signed in member books and withdraws, and reads their own bookings and nobody else's: a pilot is not a role, and no
 /// permission gives a member the area's <c>View</c> (design §1.1, no <c>IHasParticipants</c>). Taking a booking away is the staff's,
 /// with <c>EventBookings.Edit</c> asked of the one handler on the booking — on its event's departments and scope.</para>
+/// <para>The staff read the bookings of an event with whoever made them (E6b) in a list of the CRUD engine, read only, at
+/// <see cref="StaffPattern"/>: the tab «Bookings» of the event's page (<see cref="StaffBookings"/>).</para>
 /// </summary>
 public static class BookingEndpoints
 {
@@ -33,6 +36,29 @@ public static class BookingEndpoints
     public static IEndpointRouteBuilder MapBookingEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
+
+        // The staff's list (E6b): every booking of an event, with its pilot and its flight, by the time of the flight at the airport of
+        // the event; filter[eventId] is the event, ?q= a VID. Read only: a booking changes through the pilot's verbs and «take away».
+        var noNames = new Dictionary<int, string>();
+        app.MapCrud<EventBooking, EventBookingDto, EventBookingDto, EventBookingDto>(StaffPattern, options =>
+        {
+            options.PermissionArea = EventsPermissions.BookingsArea;
+            options.Name = "EventBookings";
+            options.ReadPolicy = EventsPermissions.BookingsView;
+            options.WritePolicy = EventsPermissions.BookingsEdit;
+            options.ReadOnly = true;
+            options.ContextType = typeof(EventsDbContext);
+            options.Source = StaffBookings.ByFlightTime;
+            options.Sortable.Add(nameof(EventBooking.CreatedAt));
+            options.Filterable.Add(nameof(EventBooking.EventId));
+            options.SearchFields.Add(booking => booking.BookerVid.ToString());
+
+            // A page names its pilots and reads its slots in one query each; a row alone has neither.
+            options.ToList = booking => StaffBookings.Row(booking, slot: null, noNames);
+            options.ToListPage = (bookings, services, cancellationToken) =>
+                services.GetRequiredService<StaffBookings>().RowsAsync(bookings, cancellationToken);
+            options.ToDetail = booking => StaffBookings.Row(booking, slot: null, noNames);
+        });
 
         var mine = app.MapGroup(MinePattern).WithTags("EventBookings").RequireAuthorization(HubPolicies.SignedIn);
 

@@ -29,5 +29,11 @@ public static class EventsNotifications
     /// </summary>
     public const string BookingChanged = "events.bookingChanged";
 
-    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged, BookingRemoved, BookingChanged];
+    /// <summary>
+    /// The reminder of the day before (§3.8; E6b): to a pilot, <c>reminderLeadHours</c> before the off block of a booking, with the
+    /// near bookings of the same event in the same mail.
+    /// </summary>
+    public const string BookingReminder = "events.bookingReminder";
+
+    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged, BookingRemoved, BookingChanged, BookingReminder];
 }
