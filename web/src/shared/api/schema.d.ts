@@ -183,6 +183,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RunDueJobs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/kind-presets": {
         parameters: {
             query?: never;
@@ -4943,6 +4959,23 @@ export interface components {
             state: null | string;
             transponder: null | string;
         };
+        /** @description One job the hub launched because it was due, and what became of it. */
+        JobRunOutcome: {
+            /** @description The job's name, the one its rows in `hub_jobs_log` carry. */
+            job: string;
+            /** @description What became of the run. */
+            outcome: components["schemas"]["JobRunState"];
+        };
+        /** @description What the scheduled task's call did. */
+        JobRunResponse: {
+            /** @description Each job that was due, and what became of its run by the time the answer left. */
+            jobs: components["schemas"]["JobRunOutcome"][];
+        };
+        /**
+         * @description What became of a run the hub launched.
+         * @enum {unknown}
+         */
+        JobRunState: "Ran" | "Skipped" | "Running";
         JsonElement: unknown;
         JsonNode: unknown;
         JsonObject: Record<string, never>;
@@ -8977,6 +9010,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RequestDiagnosticsResponse"];
                 };
+            };
+        };
+    };
+    RunDueJobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRunResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
