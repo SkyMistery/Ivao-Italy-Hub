@@ -12,8 +12,9 @@ E3a (#214), E3b (#221), E4 (#223), E4b (#226), E5 (#228), E10a (#210), E10b (#20
 E10g (#230), **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217),
 1.30 (#229) e 1.31 (#234), la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219,
 #225) e gli spec che dicono al banco che cosa rimettono a posto (#227).
-**Il prossimo passo**: **E10j** (questa, la #239, del nucleo, senza coda: **Proposta**, tre domande a Carmine, nota
-`2026-10-09-i-job-che-recuperano` §2), accanto a E10i (#237) ed E10k (#238), le altre fasi del nucleo di oggi; **E6a** (la #233, prenotare: il
+**Il prossimo passo**: **E10j** (questa, la #239, del nucleo, senza coda: **decisa** da Carmine sulla #239 tranne la domanda 3, il
+token nell'indirizzo, ancora aperta; nota `2026-10-09-i-job-che-recuperano` §2; le correzioni della revisione aspettano la #241 di
+Carmine, il test del meteo, per una CI intera), accanto a E10i (#237) ed E10k (#238), le altre fasi del nucleo di oggi; **E6a** (la #233, prenotare: il
 server) aveva sotto solo la #232, ora unita, ed **E6b** la segue. Da E10h il membro cancella la riga che ha mandato dove l'entità lo
 dice: E6a mette `[WithdrawnByStakeholder]` sulla prenotazione («Che cosa ha lasciato E10h», sotto). **E4b** («chi è online
 sugli scali», del nucleo) è unita: la striscia sulla pagina dell'evento, il giorno dell'evento, la monta una fase del modulo dopo di lei
@@ -153,18 +154,21 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E10j (9 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **Proposta**: tre domande a Carmine sulla #239, il codice è la
-  raccomandazione; il dettaglio in `10`, E10j, «Com'è andata»):
+- **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239 tranne la domanda 3, ancora
+  aperta: l'ultimo giro *finito*, il blocco del database, i job dovuti uno dopo l'altro, il blocco che si apre accettato; il dettaglio
+  in `10`, E10j, «Com'è andata» e «Dopo la revisione»):
   - **Ogni job Quartz dell'hub gira una volta per occorrenza del suo cron, qualunque processo sia vivo**, e nessun job cambia:
     `src/IvaoHub.Core/Jobs/ScheduledJobs.cs` è un `ITriggerListener` su tutti i trigger che, prima di ogni giro, prende il blocco
     del job nel database (`hub-job:<database>:<job>`, `JobLocks`, una connessione per processo fuori dal pool) e rilegge l'ultimo giro
     **finito** in `hub_jobs_log`: un altro processo che lo fa, o un giro che ha già coperto l'occorrenza, e il giro salta.
-  - **Il recupero** (`JobCatchUp`): cinque secondi dopo l'avvio e ogni minuto lancia i job dovuti (`JobSchedule.IsDue`: un'occorrenza
-    del cron, nel fuso del trigger, dopo l'inizio dell'ultimo giro finito). **Acceso per difetto solo in `Production`**
-    (`Jobs:CatchUp`): sul banco e nei test d'integrazione i job girano alle loro ore come prima.
+  - **Il recupero** (`JobCatchUp`): cinque secondi dopo l'avvio e ogni minuto fa **un giro** sui job dovuti (`JobSchedule.IsDue`:
+    un'occorrenza del cron, nel fuso del trigger, dopo l'inizio dell'ultimo giro finito) e li lancia **uno dopo l'altro**; un giro alla
+    volta per processo. **Acceso per difetto solo in `Production`** (`Jobs:CatchUp`): sul banco e nei test d'integrazione i job girano
+    alle loro ore come prima.
   - **`POST /api/jobs/run`** per l'operazione pianificata dell'host, con `Authorization: Bearer <Jobs:Token>` (almeno 32 caratteri,
-    dai segreti): lancia i dovuti e risponde quando hanno finito, al più dopo 80 s (`JobRunEndpoints`); 404 senza token configurato,
-    401 con un altro, 403 senza `Authorization` (il guardiano di `/api`). In `docs/DEPLOYING.md`.
+    dai segreti): si unisce al giro e risponde quando è finito, al più dopo `Jobs:WaitSeconds` (80 se manca); 404 senza token
+    configurato, 401 con un altro, 403 senza `Authorization` (il guardiano di `/api`), 429 oltre dieci chiamate al minuto (il limite del
+    login). In `docs/DEPLOYING.md`.
   - **La coda delle mail** salva l'esito di ogni mail subito; **i fusi** del nucleo sono espliciti (la coda in UTC, i contorni dei FIR
     nel fuso della divisione).
 - **Per chi scrive un job degli eventi** (il promemoria di E6b, `events-roster`, `events-after`, `events-digest`, `events-retention`):
@@ -172,12 +176,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   il recupero e il blocco lo coprono, se: **ogni giro scrive la sua riga con `FinishedAt` su ogni uscita**, con `Job` uguale al nome
   del job in Quartz; **il trigger dice il suo fuso** (`InTimeZone`, il fuso della divisione con la pipeline delle opzioni come
   `training-expiry` quando l'ora conta per chi legge); **decide dai suoi dati** (la regola di sempre). Un riepilogo non scrive un suo
-  «già mandato oggi»: è la riga del giro.
-- ⚠️ **Le tre domande** (nota §2): l'ultimo giro *finito* invece di *riuscito*; il blocco del database invece di una riga con una
-  scadenza; il token nell'indirizzo per «Recupera un URL» di Plesk. Una risposta diversa dalla raccomandazione cambia il codice prima
-  dell'unione.
+  «già mandato oggi»: è la riga del giro. ⚠️ Ma **un giro fermato a metà si rifà**: un job che manda mail con un salvataggio per mail
+  (come il riepilogo dei tour) le rimanda; le mail di un giro in un salvataggio solo, come `AwardQueueMailJob`, o un segno per
+  destinatario.
+- ⚠️ **I fusi di `events-release` e `training-reminders`**: dicono UTC nella **prossima fase del loro modulo** (due righe in
+  `EventsModule.cs` e in `TrainingModule.cs`; la regola 6 le tiene fuori da una PR del nucleo). Un quarto d'ora cade agli stessi istanti
+  in ogni fuso, ma la nota del 28 settembre (§7) li vuole espliciti (il punto 6 della revisione della #239).
+- ⚠️ **La domanda 3** (il token nell'indirizzo per «Recupera un URL» di Plesk) è aperta: se Carmine dice sì, la GET entra nella #239
+  prima dell'unione.
 - ⚠️ **Flight Ops resta al maintainer** (nota §3): i fusi degli otto trigger dei tour (il riepilogo delle 07:00 nel fuso della
-  divisione, UTC dove il commento dice UTC) sono una richiesta a una sua sessione; il resto lo copre il nucleo.
+  divisione, UTC dove il commento dice UTC) e il riepilogo fermato a metà, che rimanda le mail già in coda (nota §1.7), sono una
+  richiesta a una sua sessione; il resto lo copre il nucleo.
 - ⚠️ **Quartz tiene uno scheduler per nome in un processo**: un test che avvia due host vivi insieme dà a ognuno un nome suo
   (`ScheduledJobsTests.Host`), o i due condividono lo scheduler del primo.
 - ⚠️ **Un test che mette in pausa un job** (`TourTests`, `EventsLifeTests`, `AwardQueueMailTests`) resta com'è: il recupero salta i

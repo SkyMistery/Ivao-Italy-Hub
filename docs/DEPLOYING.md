@@ -153,6 +153,7 @@ lock if a deny rule is ever lost. Never put the file in a zip or a mail.
 | `Smtp` | optional. Without it nothing is sent and nothing is lost: notifications queue up. On a test installation, leaving it out keeps test data from mailing real people |
 | `Jobs:Token` | optional: the token of the host's scheduled task ([below](#the-scheduled-jobs-and-the-hosts-scheduled-task)), random and at least 32 characters long, or the application refuses to start. A secret of the installation, not of a person: it opens `/api/jobs/run` and nothing else. Without it that address does not exist |
 | `Jobs:CatchUp` | optional, `true` or `false`. Left out, a production installation makes up, after a start, the runs of its scheduled jobs it lost while it was stopped, and every other environment does not ([below](#the-scheduled-jobs-and-the-hosts-scheduled-task)) |
+| `Jobs:WaitSeconds` | optional: how long the scheduled task's call waits for the runs at most, from 1 to 600 seconds; 80 when left out, inside Cloudflare's 100. Say less behind a proxy that gives up sooner |
 
 `diagnostics/startup.txt` shows, after every start, the version, the commit, the environment, the `domain`, the
 `access` (`public` or `private: staff only, not indexed`) and the migrations applied. It never contains a secret.
@@ -209,9 +210,9 @@ the table `hub_jobs_log`. But Passenger stops an idle hub after 10–30 seconds,
 (`docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`):
 
 - **A job runs once for each occurrence of its schedule, whichever process is alive.** A few seconds after a start, and
-  every minute after, the hub launches every job whose hour came since its last run ended: the night's jobs run a few
-  seconds after the first visit of the morning, once. A run that failed waits for its next hour. This is on by default in
-  production (`Jobs:CatchUp`).
+  every minute after, the hub runs every job whose hour came since its last run ended, **one after the other**: the night's
+  jobs run a few seconds after the first visit of the morning, once each, never all together. A run that failed waits for
+  its next hour. This is on by default in production (`Jobs:CatchUp`).
 - **Two processes never run the same job together.** Before a run the hub takes the job's named lock in the database,
   `hub-job:<database>:<job>`, on one connection of its own outside the pool, held while any of its jobs runs. A process
   that finds the lock taken leaves the run to the one that has it. A process that dies releases its locks with its
@@ -224,11 +225,13 @@ the table `hub_jobs_log`. But Passenger stops an idle hub after 10–30 seconds,
   curl -fsS -X POST -H "Authorization: Bearer <token>" https://<host>/api/jobs/run
   ```
 
-  `<token>` is `Jobs:Token` of the secrets file. The call wakes the hub and runs every job that is due inside the request.
-  The hub answers when those runs have ended, or after 80 seconds at most, inside Cloudflare's 100. The answer lists each
-  job launched and what became of it: `Ran`, `Skipped` (another process ran it, or it had already run), or `Running` (not
-  finished when the answer left). Passenger does not stop a process while it answers. An installation without `Jobs:Token`
-  answers 404, and a call with another token 401.
+  `<token>` is `Jobs:Token` of the secrets file. The call wakes the hub and runs the jobs that are due inside the request,
+  one after the other. The hub answers when they have ended, or after 80 seconds at most (`Jobs:WaitSeconds`), inside
+  Cloudflare's 100; what is left goes on while the process lives. The answer lists each job in the order they start and
+  what became of it: `Ran`, `Skipped` (another process ran it, or it had already run), `Running` (not finished when the
+  answer left) or `Waiting` (not started yet). Passenger does not stop a process while it answers. An installation without
+  `Jobs:Token` answers 404, a call with another token 401, and more than ten calls a minute from one address 429, as the
+  login does.
   - ⚠️ **Only the header is accepted today.** Whether the panel lets a task run a command is the host's to say. "Fetch a
     URL" sends a GET without headers, and the token in the address is a question still open (question 3 of the note
     above).
@@ -266,7 +269,8 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | As super administrator, change something harmless, then read the audit log | the address recorded is **yours** (behind Cloudflare, the `ip=` line of `https://<host>/cdn-cgi/trace` in the same browser), never `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right. If it is not, the next row shows why |
 | As super administrator, open `https://<host>/api/admin/diagnostics/request` in the browser | how the hub sees your request: `believed.address` is yours and `scheme` is `https`. If not, the same answer says why: the neighbour and its family, the forwarding headers as they arrived and how many entries each holds, the names of every header, and the settings of the forwarded headers. Nothing of it is stored |
 | The last run of the host's scheduled task, in the panel | a `200` and a JSON with `jobs`. A `401` is a token that is not `Jobs:Token`, a `404` an installation without `Jobs:Token` |
-| The log of the day, `logs/hub-<date>.log`, after a visit following a quiet hour | `Launched … job(s) that were due`, once for that visit; `is running in another process` or `has already run for its last occurrence` only when two processes were alive together |
+| The log of the day, `logs/hub-<date>.log`, after a visit following a quiet hour | `Ran … job(s) that were due, one after the other`, once for that visit; `is running in another process` or `has already run for its last occurrence` only when two processes were alive together |
+| The database's `wait_timeout`, in the panel's phpMyAdmin: `SHOW VARIABLES LIKE 'wait_timeout'` | longer than the longest run in `hub_jobs_log` (MariaDB's default is 28800 seconds). A shorter one closes the connection that holds the jobs' locks during a long run, and the lock is lost |
 
 ## Updating
 

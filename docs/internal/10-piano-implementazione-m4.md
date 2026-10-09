@@ -2482,13 +2482,66 @@ il suo indirizzo.
   - la CI (la dice la PR; il test del meteo sarà rosso, sopra);
   - **Passenger vero**: due processi veri, un processo spento e risvegliato, l'operazione pianificata di Plesk. Alla consegna:
     `diagnostics/starts.txt` per i risvegli; `hub_jobs_log` per i notturni che girano la mattina una volta e il riepilogo una volta al
-    giorno; nel log del giorno «Launched … job(s) that were due» e «The scheduled task ran …»; la cronologia dell'operazione pianificata.
+    giorno; nel log del giorno «Ran … job(s) that were due, one after the other» e «The scheduled task ran …»; la cronologia
+    dell'operazione pianificata.
     ⚠️ Il primo risveglio dopo quella consegna fa girare una volta ogni job mai girato lì, i notturni compresi (la scadenza dei file
     elimina quelli i cui usi sono finiti; i contorni dei FIR si scaricano per la prima volta: nota §1.4);
   - il `wait_timeout` del server e il tetto delle connessioni dell'utente; quanto dura sul server un recupero del mattino;
   - il pannello: come può chiamare l'operazione pianificata (domanda 3).
+- **La CI della prima cima** (`018e12e`): `core-guard` verde; `build-test` rosso a `Test .NET` per il test del meteo (#236) soltanto,
+  e ogni passo dopo saltato. Rifatti in locale sulla stessa cima, su richiesta della sessione che coordina: il build `Release` 0 avvisi,
+  i test della spina dorsale contati come `backbone-ran.sh` (15 su 15, 3 su 3), `gen:api`, `lint`, `format:check`, `typecheck`,
+  `test` 643/643, `i18n:sync`, `i18n:check`, `build` e nessun file generato da committare, il pacchetto self-contained con i suoi file;
+  scritti nella PR, «Not verified by CI».
+
+**Dopo la revisione** (9 ottobre 2026, [i rilievi del revisore sulla #239][r239j], «approvable on the code», e [le risposte di Carmine
+1 e 2][a239ja] e [3 e 4][a239jb], date in chat al master e pubblicate su sua istruzione, autore `SkyMistery`):
+
+- **Le risposte**: sì all'ultimo giro *finito* (domanda 1) e al blocco del database (domanda 2), cambiando il §3 della nota del 28
+  settembre; **i job dovuti partono uno dopo l'altro** (sul punto 9 della revisione); **il blocco che si apre quando non si può chiedere
+  è accettato** (punto 10). **La domanda 3** (il token nell'indirizzo) resta aperta: il maintainer guarda il pannello. Nella nota, con i
+  link (intestazione, §1, §2).
+- **I quattro da correggere**:
+  1. **i job dovuti partono uno dopo l'altro**: un **giro** per processo (`ScheduledJobs.Join`), che il recupero e il POST condividono;
+     ogni job parte quando il guardiano ha detto che il precedente è finito o saltato; un giro aspetta un job al più dieci minuti
+     (`LongestRun`). Scartato il tetto allo scheduler (`MaxConcurrency`), che fermerebbe anche la coda delle mail dietro un giro lungo;
+  2. **il riepilogo fermato a metà** rimanda le mail già in coda: è di `ReviewDigestJob`, cioè di Flight Ops, e resta al maintainer;
+     scritto nella nota (§1.7, §3) e nell'handoff;
+  3. **le prove che mancavano**, in `ScheduledJobsTests` (integrazione, da 5 a 11) e nell'unità: i job dovuti uno dopo l'altro; una
+     riga rimasta `running` si recupera e una `failed` aspetta; un job che non scrive righe non riparte nel processo che l'ha fatto (la
+     memoria); un job in pausa non parte; il POST non aspetta più della sua attesa, e il giro va avanti dopo; il limite dell'indirizzo; e
+     **il giro che parte quando il blocco non si può chiedere** (unità, `ARunGoesAheadWhenItsLockCannotBeAskedFor`, uno scheduler di
+     Quartz vero davanti a un database che non risponde);
+  4. **l'indirizzo ha il limite del login** (`RequireRateLimiting(AuthEndpoints.RateLimitPolicy)` in `Program.cs`, dieci chiamate al
+     minuto, poi 429) e **il rifiuto è un'informazione**, non un avviso.
+- **I tre bassi**: 5) per la connessione ferma dei blocchi **si legge il `wait_timeout` del server alla consegna**, non un ping (nota §1.3,
+  e una riga dei controlli di `docs/DEPLOYING.md`); 6) i trigger di `EventsModule` e `TrainingModule` dicono il loro fuso **in una fase
+  del loro modulo** (regola 6: fuori da una PR del nucleo), scritto nella nota (§1.8) e nell'handoff; 7) **la memoria tiene anche quello
+  che il registro ha detto**: un job si rilegge solo quando quello che il processo sa lo dice dovuto, e la maggior parte dei minuti non
+  chiede niente al database. La query raggruppata leggerebbe ogni riga del registro.
+- **In più**: `Jobs:WaitSeconds` (da 1 a 600, 80 se manca) al posto della costante dell'attesa, per chi installa dietro un proxy che si
+  arrende prima, e per provare l'attesa senza aspettare ottanta secondi; lo stato `Waiting` di un job del giro non ancora partito
+  (`schema.d.ts` rigenerato).
+- **Le prove al contrario**, una mutazione alla volta sul codice della fase, ricompilato, rimesso e ricompilato: otto, e ognuna fa
+  cadere la sua prova: senza il filtro su `FinishedAt`, e con «succeeded» al suo posto,
+  `ARunLeftRunningIsMadeUpAndAFailedOneWaitsForItsNextOccurrence`; senza la memoria di un giro fatto partire,
+  `AJobThatWritesNoRowIsNotLaunchedAgainByTheProcessThatRanIt`; con i trigger in pausa contati, `APausedJobIsNotLaunched`; con i job
+  dovuti lanciati tutti insieme, `TheJobsThatAreDueStartOneAfterTheOther`; senza il limite dell'attesa,
+  `TheScheduledTasksCallWaitsNoLongerThanItsWaitAndThePassGoesOn`; con il giro fermato quando il blocco non si può chiedere,
+  `ARunGoesAheadWhenItsLockCannotBeAskedFor` (unità); senza il limite dell'indirizzo,
+  `TheScheduledTasksAddressIsLimitedAsTheLoginIs`. Rimesso il codice e ricompilato, il build è pulito.
+- **Verificato dopo la revisione**: `dotnet build` 0 avvisi; `dotnet format --verify-no-changes` sui sette file C# toccati: pulito;
+  unità **1205/1206** (cade solo il meteo, #236); **integrazione intera, senza filtro, 511/511** al primo giro (9,3 minuti); in
+  `web/` `lint`, `typecheck`, `format:check`, `i18n:check` verdi, `test` 643/643, `gen:api` con lo stato `Waiting`, nel commit. Non
+  rifatti: `e2e:full`, perché nessuna schermata cambia e sul banco il recupero è spento (il guardiano non è cambiato), e il
+  pacchetto.
+- **Il push aspetta** la #241 di Carmine, che corregge il test del meteo (#236): poi `main` si unisce al branch e si spinge una
+  volta, così la CI gira intera.
 
 [a231j]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/231#issuecomment-6070088780
+[r239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083855377
+[a239ja]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083876741
+[a239jb]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083894931
 
 ### E11a — Postazioni e disponibilità
 
