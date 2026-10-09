@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router';
 import { FileQuestion, ShieldOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PageMetadata } from '../seo/PageMetadata';
+
 import { EmptyState } from './layout-pieces';
 
 /**
@@ -15,16 +17,21 @@ export function NotFound() {
   const { t } = useTranslation();
 
   return (
-    <EmptyState
-      Icon={FileQuestion}
-      title={t('notFound.title')}
-      description={t('notFound.description')}
-      action={
-        <Button asChild variant="secondary">
-          <Link to="/">{t('notFound.home')}</Link>
-        </Button>
-      }
-    />
+    <>
+      {/* Its tab says so too (#224), wherever it is drawn: by a route, or by a module's page whose
+          row is not there. */}
+      <PageMetadata title={t('notFound.title')} />
+      <EmptyState
+        Icon={FileQuestion}
+        title={t('notFound.title')}
+        description={t('notFound.description')}
+        action={
+          <Button asChild variant="secondary">
+            <Link to="/">{t('notFound.home')}</Link>
+          </Button>
+        }
+      />
+    </>
   );
 }
 
