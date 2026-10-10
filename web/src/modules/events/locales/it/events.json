@@ -177,7 +177,15 @@
       "onBlockUtc": "On block",
       "stand": "Stand",
       "rotationCode": "Rotazione",
-      "rotationLeg": "Tratta"
+      "rotationLeg": "Tratta",
+      "kind": "Slot",
+      "eventAirportIcao": "Scalo dell'evento"
+    },
+    "options": {
+      "kind": {
+        "Public": "Pubblico",
+        "Private": "Privato"
+      }
     },
     "hints": {
       "callsign": "Lettere e cifre: il nominativo con cui si collega il pilota.",
@@ -201,6 +209,13 @@
       "description": "Si eliminano tutti gli slot di questo evento che nessuno ha prenotato, pubblici e privati. Uno prenotato resta.",
       "confirm": "Eliminali",
       "done": "Slot liberi eliminati: {{count}}."
+    },
+    "generate": {
+      "trigger": "Genera gli slot privati",
+      "title": "Generare gli slot privati?",
+      "description": "Ora per ora, ogni scalo dell'evento riceve gli slot privati per cui la sua capacità lascia posto, a intervalli regolari, lontano dagli slot pubblici. Gli slot privati liberi che ci sono già vengono sostituiti; quelli prenotati da un pilota restano.",
+      "confirm": "Generali",
+      "done": "Slot privati generati: {{generated}}. Liberi sostituiti: {{removed}}; prenotati tenuti: {{kept}}."
     },
     "load": {
       "open": "Incolla o carica",
@@ -315,6 +330,68 @@
       "thisLeg": "questo volo"
     }
   },
+  "private": {
+    "title": "Slot privati",
+    "lead": "Uno slot privato è un orario a uno scalo dell'evento, per il volo che un pilota sceglie: ogni ora si apre con i suoi slot liberi, e chi ne prenota uno scrive da dove arriva o dove va, e quando. Un arrivo può prendere anche la sua partenza dallo stesso scalo, così che tutte e due abbiano lo stesso gate.",
+    "hour": "Ora (UTC)",
+    "free": "Liberi",
+    "range": "{{from}}–{{to}}",
+    "freeOf": "{{free}} su {{of}}",
+    "full": "Pieno",
+    "dialog": {
+      "arrivals": "Arrivi a {{airport}}",
+      "departures": "Partenze da {{airport}}",
+      "hour": "Dalle {{from}} alle {{to}}, gli orari in UTC.",
+      "panel": "Prenota uno slot privato",
+      "noneFree": "In quest'ora non resta nessuno slot libero.",
+      "signIn": "Accedi per prenotare uno slot privato",
+      "withDeparture": "Prenota anche la partenza dallo stesso scalo",
+      "book": "Prenota",
+      "booked": "Prenotato: {{callsign}}.",
+      "bookedWithDeparture": "Prenotati: {{callsign}}, e la sua partenza {{departure}}."
+    },
+    "arrival": {
+      "fields": {
+        "slotId": "Il tuo slot: on block",
+        "callsign": "Nominativo",
+        "aircraftIcao": "Aereo",
+        "otherIcao": "Da",
+        "otherTimeUtc": "Off block da lì",
+        "departure": "La partenza",
+        "departure.slotId": "Il suo slot: off block",
+        "departure.callsign": "Nominativo",
+        "departure.otherIcao": "Per",
+        "departure.otherTimeUtc": "On block là"
+      },
+      "hints": {
+        "slotId": "Quando arrivi al gate, fra gli slot liberi di quest'ora.",
+        "callsign": "Lettere e cifre: il nominativo con cui ti colleghi.",
+        "aircraftIcao": "Il codice ICAO dell'aereo che voli: A320.",
+        "otherIcao": "Il codice ICAO dell'aeroporto da cui parti.",
+        "otherTimeUtc": "Quando lasci il gate di quell'aeroporto, in UTC.",
+        "departure.slotId": "Quando riparti, dal gate a cui sei arrivato, con lo stesso aereo.",
+        "departure.callsign": "Il nominativo del volo in partenza: può essere un altro.",
+        "departure.otherIcao": "Il codice ICAO dell'aeroporto dove vai.",
+        "departure.otherTimeUtc": "Quando arrivi al gate là, in UTC."
+      }
+    },
+    "departure": {
+      "fields": {
+        "slotId": "Il tuo slot: off block",
+        "callsign": "Nominativo",
+        "aircraftIcao": "Aereo",
+        "otherIcao": "Per",
+        "otherTimeUtc": "On block là"
+      },
+      "hints": {
+        "slotId": "Quando lasci il gate, fra gli slot liberi di quest'ora.",
+        "callsign": "Lettere e cifre: il nominativo con cui ti colleghi.",
+        "aircraftIcao": "Il codice ICAO dell'aereo che voli: A320.",
+        "otherIcao": "Il codice ICAO dell'aeroporto dove vai.",
+        "otherTimeUtc": "Quando arrivi al gate là, in UTC."
+      }
+    }
+  },
   "mine": {
     "title": "Le mie prenotazioni",
     "lead": "Gli slot che hai prenotato negli eventi, anche passati. Una prenotazione si ritira fino all'off block del suo volo.",
@@ -329,7 +406,10 @@
     "stand": "Stand {{stand}}",
     "withdraw": "Ritira",
     "withdrawTitle": "Ritirare la prenotazione di {{callsign}}?",
-    "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo."
+    "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo.",
+    "withdrawPaired": "Lo slot torna libero, e un altro pilota può prenotarlo. {{callsign}}, prenotato insieme, resta tuo da solo.",
+    "pairedDeparture": "Con la sua partenza {{callsign}}, dallo stesso gate.",
+    "pairedArrival": "Con il suo arrivo {{callsign}}, allo stesso gate."
   },
   "bookings": {
     "fields": {
@@ -516,6 +596,15 @@
     "aircraftNotAllowed": "Questo slot non ammette questo tipo di aereo.",
     "slotGone": "Questo slot non c'è più nell'evento.",
     "slotBooked": "Un pilota ha prenotato questo slot: togli la prenotazione prima di eliminarlo.",
-    "eventHasBookings": "Dei piloti hanno prenotato slot di questo evento: non si elimina. Annullalo."
+    "eventHasBookings": "Dei piloti hanno prenotato slot di questo evento: non si elimina. Annullalo.",
+    "noPrivateSlots": "Questo evento non ha slot privati: prima accendili nelle sue impostazioni.",
+    "noCapacity": "Nessuno scalo di questo evento ha una capacità: dagliela nella scheda degli scali, poi generali.",
+    "privateSlotsTooMany": "Sarebbero più di 5.000 slot privati: controlla la capacità degli scali e gli orari dell'evento.",
+    "slotNotPrivate": "Questo è uno slot pubblico: si prenota com'è, con «Prenota».",
+    "otherIsTheSlots": "Questo è lo scalo dello slot: scrivi l'altro aeroporto del tuo volo.",
+    "offBlockPassed": "Questo off block è passato: un volo si prenota prima che parta.",
+    "pairedOnlyForArrival": "Solo un arrivo prenota una partenza con sé.",
+    "pairedNotADeparture": "La partenza collegata è una partenza privata dallo scalo dove l'arrivo atterra.",
+    "pairedTooSoon": "La partenza parte troppo presto: dopo che l'arrivo atterra, parte almeno i minuti fra due prenotazioni di un pilota più tardi."
   }
 }
