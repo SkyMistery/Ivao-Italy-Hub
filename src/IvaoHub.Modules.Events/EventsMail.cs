@@ -1,6 +1,7 @@
 using System.Globalization;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
 using IvaoHub.Core.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,11 @@ namespace IvaoHub.Modules.Events;
 /// an event, so that a cancellation, new times and a booking taken away say it alike. A moment is written in UTC, and the sentence
 /// around it says so.
 /// </summary>
-public sealed class EventsMail(HubDbContext hub, INotificationService notifications, IOptions<DivisionOptions> division)
+public sealed class EventsMail(
+    HubDbContext hub,
+    INotificationService notifications,
+    LocaleCatalog catalog,
+    IOptions<DivisionOptions> division)
 {
     /// <summary>A moment as a mail writes it, the day and the time in UTC; the sentence around it says UTC.</summary>
     public static string Moment(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
@@ -46,6 +51,34 @@ public sealed class EventsMail(HubDbContext hub, INotificationService notificati
             data["ends"] = Moment(row.EndsAtUtc);
         }, cancellationToken);
     }
+
+    /// <summary>
+    /// The reminder of the day before (§3.8, E6b): to one pilot, their flights of one event in one mail — each with its callsign and
+    /// flight number, the aircraft they chose, where and when it leaves and lands and its stand, and under it the routes the flight
+    /// operations wrote for its two airports, with their remarks in the pilot's language. The template says the rest: the times are in
+    /// UTC, and a callsign taken on the network is flown with another.
+    /// </summary>
+    public Task BookingReminderAsync(
+        Event row,
+        int vid,
+        IReadOnlyList<(EventBooking Booking, EventSlot Slot)> flights,
+        IReadOnlyList<EventRoute> routes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(flights);
+        ArgumentNullException.ThrowIfNull(routes);
+
+        return SendAsync(EventsNotifications.BookingReminder, row, [vid], (data, locale) =>
+        {
+            data["count"] = flights.Count.ToString(CultureInfo.InvariantCulture);
+            data["flights"] = string.Join('\n', flights.Select(flight => Flight(flight.Booking, flight.Slot, routes, locale)));
+            data["mine"] = $"https://{division.Value.Domain}{MinePath}";
+        }, cancellationToken);
+    }
+
+    /// <summary>The member's own page of the events (§7.1), where a booking is withdrawn.</summary>
+    public const string MinePath = $"/events/{Staff.EventWriteDtoValidator.MinePage}";
 
     /// <summary>
     /// A booking taken away by the staff (§3.6): to its pilot, with the flight and the reason — the reason as the staff wrote it,
@@ -127,5 +160,37 @@ public sealed class EventsMail(HubDbContext hub, INotificationService notificati
                 new NotificationIntent(type, [.. language.Select(NotificationRecipient.Member)], data),
                 cancellationToken);
         }
+    }
+
+    /// <summary>The word before the stand of a flight, in a reminder.</summary>
+    public const string StandKey = "events:mail.events.bookingReminder.stand";
+
+    /// <summary>The word before a route of the flight operations, in a reminder.</summary>
+    public const string RouteKey = "events:mail.events.bookingReminder.route";
+
+    /// <summary>
+    /// One flight of a reminder: callsign and flight number, the aircraft, where and when it leaves and lands, the stand — the two
+    /// words in the pilot's language —, and under it each route of the flight operations from its departure to its arrival, with its
+    /// remarks.
+    /// </summary>
+    private string Flight(EventBooking booking, EventSlot slot, IReadOnlyList<EventRoute> routes, string locale)
+    {
+        var number = slot.FlightNumber is { Length: > 0 } flightNumber ? $" ({flightNumber})" : string.Empty;
+        var stand = slot.Stand is { Length: > 0 } place ? $", {catalog.Resolve(locale, StandKey)} {place}" : string.Empty;
+        var off = slot.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
+        var on = slot.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
+
+        List<string> lines =
+        [
+            $"- {slot.Callsign ?? booking.Callsign}{number}, {booking.AircraftIcao}: {slot.DepartureIcao} {off} → {slot.ArrivalIcao} {on}{stand}",
+        ];
+
+        foreach (var route in routes.Where(route => route.DepartureIcao == slot.DepartureIcao && route.ArrivalIcao == slot.ArrivalIcao))
+        {
+            var remarks = route.Remarks?.Resolve(locale, division.Value.DefaultLocale) is { Length: > 0 } text ? $" ({text})" : string.Empty;
+            lines.Add($"  {catalog.Resolve(locale, RouteKey)}: {route.Route}{remarks}");
+        }
+
+        return string.Join('\n', lines);
     }
 }

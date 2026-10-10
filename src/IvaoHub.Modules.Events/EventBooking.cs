@@ -68,7 +68,11 @@ public sealed class EventBooking : IEventChild, IVisible, ISubmittedByMembers, I
     /// <summary>Why (E13b): a network failure, a fault of the hub.</summary>
     public string? UnflownExcusedNote { get; set; }
 
-    /// <summary>When the reminder of the day before left (E6b): once per booking.</summary>
+    /// <summary>
+    /// When the reminder of the day before left (E6b): once per booking. The job's own bookkeeping, as the reminder of a training is
+    /// (M3, A8): writing it alone is not a change of the booking, so it leaves no audit row.
+    /// </summary>
+    [NotAudited]
     public DateTime? RemindedAt { get; set; }
 
     public DateTime CreatedAt { get; set; }

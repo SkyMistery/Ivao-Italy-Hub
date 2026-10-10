@@ -28,7 +28,9 @@ namespace IvaoHub.Modules.Events;
 /// <c>events.eventList</c> — and the routes the flight operations write; E5 its public slots — loaded from a table, with their
 /// rotations, listed and corrected in the back office and listed on its page — and the export the gate manager reads with a
 /// personal token; E6a the bookings on the server — a pilot books a public slot or a whole rotation and withdraws, the staff take a
-/// booking away with a reason, and an event somebody booked tells them when it is cancelled or its times change.
+/// booking away with a reason, and an event somebody booked tells them when it is cancelled or its times change —; E6b their pages —
+/// the staff's list of the bookings of an event, the block <c>events.myEvents</c> of a pilot's bookings still to fly — and the
+/// reminder of the day before, <c>events-reminders</c>.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -50,12 +52,13 @@ public sealed class EventsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page. Its other half is in
-    /// <c>web/src/modules/events/</c>; the manifest test reads this literal.
+    /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; and the reader's bookings still to fly
+    /// (E6b), on <c>/me</c>. Their other halves are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
     [
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -112,6 +115,18 @@ public sealed class EventsModule : ModuleBase
         // The bookings (E6a): the pilot's verbs under their lock, and the mails of the module.
         services.AddScoped<PilotBookings>();
         services.AddScoped<EventsMail>();
+
+        // Their pages (E6b): the staff's list with the pilots' names, the block of a pilot's bookings, and the reminder of the day before.
+        services.AddScoped<EventsPeople>();
+        services.AddScoped<StaffBookings>();
+        services.AddScoped<IDataBlockProvider, MyEventsProvider>();
+        services.AddScoped<BookingRemindersJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<BookingRemindersJob>(job => job.WithIdentity(BookingRemindersJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(BookingRemindersJob.JobName)
+                .WithIdentity($"{BookingRemindersJob.JobName}-quarterly")
+                .WithCronSchedule(BookingRemindersJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)

@@ -1739,7 +1739,168 @@ per un visitatore. Smoke: la pagina a un visitatore mostra «preso» senza nomi.
 **Fatta quando**: sul banco il pilota prenota una rotazione, la ritrova in `/events/mine` e in `/me`, ne ritira una tratta, e il
 promemoria arriva una volta in Mailpit.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, nata **in coda dopo la #233** di E6a, dal suo branch a
+`008039e`; prima del primo commit la testa di E6a con le risposte di Carmine, `3326454`, presa con un avanzamento veloce — il lavoro in
+corso rimesso sopra con `git apply --3way`, i conflitti in `EventsNotifications.cs` e nelle parole delle notifiche e delle mail risolti
+tenendo i due lati, `bookingChanged` di E6a e `bookingReminder` di questa fase —; **nessuna migrazione**: `reminded_at` c'è da E6a):
+
+- **Fatto**:
+  1. **La lista degli slot** (punto 1; design §3.3; nota `2026-10-07-gli-slot-sulla-pagina-dell-evento` §6). **I filtri** — partenze o
+     arrivi, «dalle» e «fino alle» (le ore in UTC allo scalo dell'evento), il tipo d'aereo, la compagnia, la rotazione — stanno
+     nell'indirizzo (`eventPageSearchSchema` in `schemas.ts`, il `validateSearch` della rotta `/events/$slug`) e restringono gli slot nel
+     browser (`narrowSlots` e `slotFilterChoices` in `screens/slotList.ts`); ognuno si offre solo quando restringe qualcosa. **«Prenota»**
+     nel dialog dello slot di E5 (`screens/SlotBooking.tsx`): l'aereo fra i tipi ammessi, il principale per primo e già scelto; «Prenota
+     tutta la rotazione» da una tratta, con le tratte prenotate e il perché di ognuna delle altre; offerto solo quando il server lo
+     accetterebbe, altrimenti il dialog dice perché no; un visitatore accede e torna alla pagina; uno slot del lettore è **«Tuo»**, letto
+     dalla sua lista (`GET /api/events/mine/bookings`), mai dalla pagina. **La riga «Prenotazioni»** fra i fatti dell'evento
+     (`BookingOpening` in `screens/BookingOpening.tsx`): «Aprono il» con il conto alla rovescia (`role="timer"`), «Aperte dal», «Chiuse:
+     l'evento è annullato»; a zero la pagina rilegge l'evento. La lettura della pagina prende `bookingOpensAtUtc` (`PublicEventDto`).
+  2. **`/events/mine`** (punto 2; §7.1): `screens/mine.tsx`, una rotta del membro: «Da volare» (l'on block ancora da venire) e
+     «Passate», sotto i loro eventi; «Ritira» finché `withdrawable`, con un `ConfirmDialog` rosso. Ci portano un link da `/events` (a chi
+     ha fatto il login) e uno dalla pagina di un evento (a chi vi ha prenotato). **L'indirizzo `mine`** non lo prende nessun evento
+     (`events:errors.slugReserved`, `EventWriteDtoValidator.MinePage`).
+  3. **Il blocco `events.myEvents`** (punto 3; §7.3) nelle due metà: `blocks/myEvents.tsx` e `blocks/index.ts` (schema, componente,
+     icona `PlaneTakeoff`, dati d'esempio per la galleria), e `BlockDescriptor("events.myEvents", …, AlwaysLive: true)` con
+     `Bookings/MyEventsProvider.cs`: a un visitatore `{ signedIn: false }`, a un membro le prenotazioni ancora da volare, la risposta di
+     `PilotBookings.MineAsync`. I due conteggi più uno: `DataBlockEndToEndTests` 18 → 19, `uiKit.test.ts` 43 → 44. Si mette su `/me` dal
+     back office.
+  4. **La scheda «Prenotazioni»** (punto 4; §7.2): `screens/bookings.tsx`, una **risorsa `MapCrud` in sola lettura**,
+     `/api/events/bookings` (`EventBookings.View`, `filter[eventId]`, `?q=` un VID, ordinabile per data di prenotazione), nell'ordine
+     dell'orario del volo (`StaffBookings.ByFlightTime`: la sorgente unisce lo slot, e il motore tiene il suo ordine), con il pilota come
+     `{ vid, name }` — una lettura di nomi per pagina di righe (`ToListPage`, `EventsPeople`) — per `col.person`. **«Togli»**: il
+     `ConfirmDialog` del nucleo con il form generato del motivo (`bookingRemovalSchema`; la conferma spenta finché è vuoto), il verbo
+     `…/remove` di E6a. La scheda a chi ha `EventBookings.View`, «Togli» a chi ha `EventBookings.Edit`.
+  5. **Il promemoria del giorno prima** (punto 5; §3.8, §8.4): il job **`events-reminders`** (`Bookings/BookingRemindersJob.cs`), ai
+     minuti 10, 25, 40 e 55, con il trigger in UTC; il tipo **`events.bookingReminder`** (la parola del profilo e il modello in
+     `events.json`), mandato da `EventsMail.BookingReminderAsync`: i voli del pilota in quell'evento — nominativo, numero, aereo, partenza e
+     arrivo con gli orari, lo stand — e sotto ognuno le rotte del FOD per i suoi due aeroporti, con le note. Una mail per pilota ed
+     evento, con **le prenotazioni vicine** (`BookingRemindersJob.Window`: fino a `reminderLeadHours` dopo la prima dovuta); **una volta**:
+     `reminded_at` scritto prima della mail e **`[NotAudited]`**, sotto un `SELECT … FOR UPDATE` delle prenotazioni del pilota non ancora
+     ricordate in una transazione `READ COMMITTED`; decide dai suoi dati, mai dall'ora.
+  6. **Le tre richieste di `dalberone` dopo la prova sul banco**: **la conferma prima di «Pubblica»** (`screens/events.tsx`, il
+     `ConfirmDialog` del nucleo, blu, `events.publish.confirmTitle` e `confirmDescription`); **la riga dell'apertura** (il punto 1);
+     **la striscia di E4b sulla pagina** (`EventDayStrip` in `screens/BookingOpening.tsx`): `LiveStatusStrip` del nucleo con gli scali
+     dell'evento, nei giorni dell'evento nell'ora della divisione, non per un evento di tutta la divisione né per uno annullato.
+  7. **I test**: `EventsBookingPagesTests` (integrazione, 6, VID **761063–761066** — un coordinatore senza indirizzo, due piloti con
+     l'indirizzo, un membro —, scali `XEG1`–`XEG3`, tipi `XE7A`/`XE7B`, slug `evt-test-e6b-…`): il promemoria una volta a ogni pilota, le
+     tratte vicine in una mail con le rotte, nessuna riga d'audit, il secondo giro senza niente; un evento annullato e un volo partito non
+     ricordati; **due giri insieme** (una transazione del test tiene la prenotazione segnata e non confermata, il giro aspetta nel
+     database, `INNODB_TRX`, il test conferma: il giro non manda niente); il blocco a un visitatore, a un pilota e a un membro senza
+     prenotazioni; la lista dello staff per orario, con i nomi e uno pseudonimo, 403 a un membro e 401 a un visitatore; l'indirizzo
+     `mine` rifiutato. `EventsRemindersTests` (unità, 4): la finestra di una mail ai suoi bordi. Vitest: `SlotBooking.test.tsx`,
+     `bookingTimes.test.ts`, `myBookings.test.ts`, `blocks/myEvents.test.tsx`, nuovi, e i filtri in `slotList.test.ts` ed
+     `EventSlots.test.tsx`. Smoke `events-public.spec.ts`, sei in più: un visitatore legge «preso» e nessun nome, e gli si chiede di
+     accedere; un membro prenota con l'aereo che sceglie e lo slot è suo; la riga dell'apertura con il conto alla rovescia; la striscia
+     nel giorno dell'evento con i suoi scali, e non in un altro; i filtri nell'indirizzo; `/events/mine` che ritira. Il giro completo:
+     `full/events-bookings.spec.ts`, nuovo — il pilota del banco prenota una rotazione intera, la ritrova in `/events/mine`, ne ritira una
+     tratta e la pagina la dice di nuovo libera; il coordinatore degli eventi legge le prenotazioni nella scheda e toglie l'altra con un
+     motivo, che il pilota legge in Mailpit —; `full/events-staff.spec.ts` conferma «Pubblica», e una volta la annulla.
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-09-le-pagine-delle-prenotazioni.md`,
+  **decisa** da Carmine sulla #240 — sì a tutto, sotto —; il dettaglio è lì): dieci letture — «Prenota» solo quando il server lo accetterebbe;
+  «tuo» dalla lista del pilota; i filtri nell'indirizzo, la compagnia dal nominativo; la riga dell'apertura; la striscia, il suo giorno e
+  il suo posto; la conferma di «Pubblica»; `/events/mine`; il blocco; la scheda dello staff; il promemoria. **Due scostamenti da
+  guardare**: la striscia sta **dentro** la pagina, non nello spazio del banner che `docs/UI-GUIDELINES.md` vuole per una striscia —
+  quello tiene la striscia della divisione, e metterci quella dell'evento chiede una fase del nucleo (la domanda 1(b)) —; e `EventsPeople`
+  è **il quarto lettore di nomi per VID** dell'hub, dopo tour, training e contatti (la domanda 2). **Nessun endpoint scritto a mano in
+  più**: la lista è `MapCrud`, il blocco un fornitore di blocchi Data. **Non fatto**: l'handoff di E6a suggeriva di dire in
+  `/events/mine` quando una prenotazione non va più con un'altra dopo una correzione dello staff; la pagina non lo dice — lo dice la mail
+  `bookingChanged`, e la pagina mostra il volo com'è ora.
+- **Trovato, e scritto per chi viene dopo**: ⚠️ `englishCommon` di `web/e2e/locales.ts` (del nucleo) non ha `common.cancel` né
+  `liveStatus.airportsTitle`: le spec del modulo leggono quelle parole da `locales/en/common.json` da sole, e il file del nucleo resta com'è.
+  ⚠️ Una mail del giro completo parte con la coda del nucleo, una volta al minuto, e **nella lingua della persona**: il pilota del banco
+  legge in italiano anche quando il browser della spec legge in inglese. Una spec che aspetta Mailpit alza il suo tempo
+  (`test.setTimeout`) e cerca la mail per il timbro del giro, che sta nel titolo delle due lingue (il primo giro è caduto sui 30 secondi
+  predefiniti, il secondo sul titolo inglese). ⚠️ `react-hooks/purity` rifiuta `Date.now()` dove React può rileggerlo: il conto alla
+  rovescia tiene `counting` nel suo stato. ⚠️ Un `Link` di TanStack (`RouterAnchor`) in vitest vuole un router in memoria. ⚠️ Un tipo
+  importato nei due sensi fra `schemas.ts` e `slotList.ts` era un import circolare: `SLOT_DIRECTIONS` sta in `schemas.ts`. ⚠️ Le
+  fixture dello smoke di un evento dicono ora `bookingOpensAtUtc`. ⚠️ Dopo il riavvio dell'app Docker Desktop era spento: il banco non
+  partiva (`Unable to connect to any of the specified MySQL hosts`) finché non l'ho riavviato. ⚠️ Il banco del giro completo riacceso per
+  guardare manda subito la coda delle mail che il giro ha lasciato (alle 15:48 tre mail del training al pilota e al trainer del banco):
+  chi lo riaccende con Mailpit tiene il lock di Mailpit. **Guardando sul banco** (il «fatta quando», sotto): ⚠️ `/events/mine` non dice
+  il suo titolo nella scheda del browser — il `PageMetadata` del nucleo oggi prende il titolo di una riga; E10k (#238) gli fa prendere
+  una frase tradotta, ed E4c, dopo di lei, mette i titoli alle pagine degli eventi: per `/events/mine` è una riga,
+  `<PageMetadata title={t('events:mine.title')} />`, come per `/events`, e la aggiunge chi delle due, E4c o E6b, prende l'altra per
+  seconda (l'handoff) —; ⚠️ con la
+  barra laterale, a 1280 px la scheda «Prenotazioni» (1026 px) sborda dal suo riquadro (927 px) e «Togli» si raggiunge scorrendo: la
+  lista generata scorre, come la scheda «Slot» di E5 (1052 px), e a 1440 px ci stanno tutte e due; ⚠️ il dialog di uno slot (di E5, il
+  `Dialog` di Atmosphere) dice al lettore di schermo «Close» in inglese anche in italiano: del nucleo, non toccato. In italiano la
+  scheda «Prenotazioni» diceva «Da … Per …» accanto alla scheda «Slot», che dice «Da … A …»: ora «A» (`597d5b2`).
+- **Al contrario** (9 ottobre 2026; il codice rimesso poi con lo stesso hash, toccato e ricompilato, e la classe di nuovo verde): senza il
+  `FOR UPDATE` il giro che aspettava manda la mail una seconda volta (`TwoRunsAtOnceSendTheReminderOnce`, `Assert.Empty`); senza
+  `[NotAudited]` compare la riga d'audit del segno (`Assert.False`); con la finestra delle sole prenotazioni dovute, senza le vicine, la
+  seconda tratta manca dalla mail (`TheReminderGoesOnceToEachPilotWithTheirNearFlightsInOneMailAndTheRoutes`).
+- **Verificato, in locale** (9 ottobre 2026, sull'ultima testa): `dotnet build IvaoHub.sln` senza avvisi né errori e `dotnet format
+  --verify-no-changes` sui quattordici file C# della fase; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; unità **1202/1203** — la
+  sola caduta è `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours` (#236), la bomba a tempo del nucleo che cade su ogni branch dal
+  9 ottobre e non si tocca —; **integrazione intera senza filtro 520/520** (8,9 minuti); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (821 chiavi) verdi; `pnpm test` **668 in 92 file**; `pnpm -C web exec playwright test --workers=2` dietro il lock dello
+  smoke **179/179** al primo giro (1,4 minuti); **`pnpm e2e:full` 58/58 al primo giro** (12,8 minuti, il suo worker solo) sul banco
+  `http://127.0.0.1:5132` (`ivaohub_e2e_e6b` ricreato prima), dietro il lock di Mailpit, preso dopo quello di E10j. La spec nuova, da
+  sola, prima: due giri caduti sull'attesa della mail (i 30 secondi predefiniti, poi il titolo inglese: «Trovato»), poi 1/1 (24 secondi).
+  Dopo la parola corretta della scheda (`597d5b2`): `i18n:check`, `format:check` e `pnpm test` (668) di nuovo verdi. **Quello che la CI
+  salta finché c'è la #236** (`build-test` cade a «Test .NET» e salta tutti i passi dopo), rifatto qui sulla testa: il controllo dei test
+  di spina dorsale (`ArchitectureTests` 15 su 15 scritti, `ForkabilityXxDivisionTests` 3 su 3, lanciati da soli dagli assembly),
+  `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm build` verde e `git diff --exit-code` pulito; il pacchetto self-contained
+  no. Le regole di
+  `core-guard` in PowerShell dalla base di merge `eb8e8ef`: **PASS** — nessun file del maintainer; del nucleo i due conteggi dei blocchi
+  di questa fase ed `ErasureTests.cs` di E6a; tre note nuove, una di E6b.
+- **Sul banco, il «fatta quando»** (9 ottobre 2026, dalle 15:47 ora italiana, UTC+2: il registro dei job dice le 13:55 per il giro delle
+  15:55; il banco della fase riacceso su 5132 dall'ultima pubblicazione, `ivaohub_e2e_e6b`, il lock di Mailpit tenuto per tutto il
+  tempo): un evento di quella sera a Fiumicino e Malpensa — la rotazione R1 di
+  due tratte e un volo da Bari, le prenotazioni aperte da un'ora, la rotta del FOD da Fiumicino a Malpensa con una nota — ed
+  `events.myEvents` sulla dashboard `me`, composti dall'API come farebbe il web team. Nel pannello del browser, come il pilota del banco:
+  la pagina dell'evento con la striscia degli scali (era il suo giorno) e «Aperte dal»; il dialog di XEE611 con «A320 (principale)» già
+  scelto; A20N e «Prenota tutta la rotazione»: «Prenotate: 2 tratte su 2», e le due tratte «Tuo» sulla pagina, in `/events/mine` e nel
+  riquadro di `/me`; «Ritira» su XEE612, chiesto una volta di più: XEE612 di nuovo «Libero». **Il giro delle 15:55** ha ricordato XEE611
+  soltanto («1 booking(s) reminded in 1 mail(s)», `reminded_at` scritto), e alle 15:56 in Mailpit è arrivata **una** mail, in italiano,
+  con XEE611, l'A20N, lo stand B12 e sotto la rotta con la sua nota; **il giro delle 16:10** non ha mandato niente («0 booking(s)
+  reminded in 0 mail(s)»), e in Mailpit è rimasta quella mail sola. Come coordinatore degli eventi: la scheda «Prenotazioni»
+  con «Bench Pilot (999002)» e «Togli». La pagina a 375 px: i filtri in due colonne, le tabelle degli slot che scorrono nel loro
+  riquadro come in E5.
+- **Dopo la revisione** (9 ottobre 2026; [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083823581),
+  letti sulla prima testa, `012b3e4`, con la CI che salta tutti i passi web per la #236; le correzioni in `c691b74`):
+  1. **Un 409 dice «riprova»** (punto 1): `describeProblem` del nucleo risponde a un 409 per il suo stato, con `errors.conflict.title`
+     (qualcuno ha cambiato quello che si salva), e non legge il titolo del server: `SlotBooking` dice `events:errors.bookingTryAgain` su un
+     409. Test nuovo, con un 409 (prima solo un 400).
+  2. **Chi accede dal dialog torna alla pagina** (punto 2): il link passava `location.href`, un indirizzo intero, e `SafeReturnUrl` del
+     server risponde `/` a quello che non comincia con `/`: ora il percorso e la query. Il vitest e lo smoke dicono l'indirizzo esatto.
+  3. **Un rifiuto rilegge la pagina** (punto 3): `useBook` e `useBookRotation` rileggono anche su un rifiuto; `EventSlots` tiene l'id
+     dello slot aperto, non una sua copia, quindi il dialog dice lo slot com'è letto adesso; e su uno slot diventato «preso» il dialog dice
+     ancora il rifiuto, invece di niente.
+  4. **Nessun colore libero** (punto 4): la spunta di una tratta prenotata prende il colore del testo (`text-green-600` era il solo
+     colore di quel genere in `web/src`).
+  - **Non fatti, perché chiedono il nucleo** (i punti bassi 5 e 6): la casella di ricerca della lista generata ha una parola sola per
+    ogni lista, e il nominativo di uno slot sta su un'altra riga, che la ricerca del motore non segue; il `ConfirmDialog` del nucleo si
+    chiude alla conferma, e un rifiuto di «togli» si dice sotto il bottone. Il punto 8 è la lettura 10, decisa; il punto 9 (lo stesso
+    link d'accesso in tour e training) non è di questa PR.
+  - **Al contrario** (il codice di prima rimesso per la prova, poi di nuovo il nuovo): i quattro test nuovi cadono ognuno per la sua
+    ragione — sul 409 non c'è la frase «riprova»; dopo il rifiuto la pagina è letta una volta sola
+    (`expected "vi.fn()" to be called 2 times, but got 1 times`); il link dice
+    `returnUrl=http%3A%2F%2Flocalhost%3A3000%2Fevents%2F…`; il dialog aperto dice ancora «Free» di uno slot preso —, e i diciassette di
+    prima restano verdi.
+  - **Verificato**: `pnpm typecheck`, `lint`, `format:check` verdi; `pnpm test` **671 in 92 file**; lo smoke `events-public.spec.ts`
+    dietro il lock dello smoke **16/16**.
+- **Le risposte di Carmine** (9 ottobre 2026, sulla #240, di SkyMistery su sua istruzione: [le risposte 1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158)
+  e [la risposta 6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota è
+  **decisa** (§7). Le prenotazioni vicine, la striscia sotto il titolo, la compagnia dal nominativo; le tre cose fuori dal design (la
+  conferma di «Pubblica», la riga «Prenotazioni», l'indirizzo `mine`); il resto delle dieci letture come scritte. **`EventsPeople` è
+  accettato per ora**: è il quarto lettore di nomi per VID, e **un lettore nel nucleo entra nella coda del nucleo prima che se ne scriva
+  un quinto**.
+- **La testa di E6a con `main` a `aa3707a`** (9 ottobre 2026, sera): la #241 di Carmine (0.6.6: il client NOAA legge l'`IClock` del
+  nucleo) ha corretto il test del meteo della #236; E6a ha unito `main` (`f4c63e6`) e i suoi documenti (`92cd928`), e la sessione che
+  coordina ha dato il via. Unita qui (`1b21ccf`), mai un rebase: nessun conflitto — porta solo i file della #241 (`Directory.Build.props`,
+  la sua nota, `NoaaWeatherClient.cs`, `WeatherTests.cs`) e il paragrafo nuovo di E6a in questo file, unito da solo —, e la CI torna
+  intera. **Rifatto tutto sull'albero unito**: `dotnet build` senza avvisi né errori; unità **1203/1203**, il test del meteo compreso;
+  **integrazione intera senza filtro 520/520** (6,4 minuti); `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm lint`,
+  `format:check`, `typecheck` verdi, `pnpm test` **671 in 92 file**, `i18n:check` (821 chiavi), `pnpm build` verde e
+  `git diff --exit-code` pulito; lo smoke dietro il suo lock **179/179** al primo giro (1,1 minuti); **`pnpm e2e:full` 58/58 al primo
+  giro** (10,8 minuti, 5132, `ivaohub_e2e_e6b` ricreato prima, dietro il lock di Mailpit, preso dopo quello di E4c); le regole di
+  `core-guard` dalla nuova base di merge `aa3707a`: **PASS**, e `ArchitectureTests` da sola 15 su 15 scritti.
+- **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera — molti piloti che prenotano e un giro del promemoria in due
+  processi: la gara dei due giri è deterministica, con una transazione del test al posto del primo —; il formato del log binario della
+  MariaDB di produzione (la risposta 2 di Carmine sulla #233: lo prova la consegna, e vale anche per il segno del job); il promemoria letto
+  in una casella vera (Mailpit sul banco); la striscia con i dati veri della rete (sul banco li dà la fixture); il conto alla rovescia
+  con un lettore di schermo vero (`role="timer"` letto nel DOM, non ascoltato).
 
 ### E7 — Gli slot privati
 

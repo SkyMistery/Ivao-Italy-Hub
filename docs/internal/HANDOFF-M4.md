@@ -6,27 +6,39 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 8 ottobre 2026 — **fase E6a** (modulo: prenotare, il server), sul branch `m4/e6a-booking-server`, **PR #233**
-verso `main`, nata **in coda dopo la #228** di E5 — dalla sua testa `d901f43`, che porta già il branch di E10g (#230) e `main` a `e9702b2`,
-e con la testa di E5 dopo la prova sul banco, `25d23f5`, unita dopo l'apertura della PR, e poi con quella che ha preso E10g e con lui
-`main` a `7b84a75`, `ecf88b9`, e con l'ultima, `ba53a97` — e **in coda anche dopo la #232** di **E10h** (il nucleo: chi ha mandato una
-riga se la riprende), una fase del nucleo nata da questa — il ritiro del pilota cancella la riga, e il guardiano dell'interceptor non lo
-lasciava fare — e unita al branch, fino alla sua testa finale `eb8e8ef`, che porta `main` a `1f2a687`. **La #230 e la #228 sono unite**
-(7 ottobre), e con loro il piano 1.31 (#234): **la #233 è in coda solo dopo la #232**. Prima di E6a: **fase E5** (gli slot pubblici e
-l'esportazione), **PR #228**, unita. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**,
-**E5 (#228)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)** ed E15a (#207), il
-passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli
-eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa
-rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, la monta la
-prima fase del modulo dopo di lei («Che cosa ha lasciato E4b», sotto): E6b, in coda su questo branch, la trova qui.
-**Il prossimo passo**: **E10h** (la #232, decisa da Carmine, anche sul rilievo 6), poi **E6a** (la #233, in coda dopo la #232); poi
-**E6b** (prenotare: le pagine), in coda sul branch di E6a. Da E3b un evento si **pubblica**, entra nel
+**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E6b** (modulo: prenotare, le pagine), sul branch `m4/e6b-booking-pages`, **PR #240**
+verso `main`, nata **in coda dopo la #233** di E6a, dalla sua testa con le risposte di Carmine, `3326454`, e dopo la revisione con la
+sua testa nuova, `92cd928`, che porta `main` a `aa3707a` con la #241 (0.6.6, il test del meteo corretto): unita in `1b21ccf`, e la CI
+torna intera. Prima di E6b: **fase E6a**
+(modulo: prenotare, il server), **PR #233**, nata in coda dopo la #228 di E5 e poi anche dopo la #232 di **E10h** (il nucleo: chi ha
+mandato una riga se la riprende), una fase del nucleo nata da lei — il ritiro del pilota cancella la riga, e il guardiano
+dell'interceptor non lo lasciava fare. **La #228 e la #232 sono unite** (7 e 8 ottobre, `main` a `0f72737`): la #233 non è più in coda
+dopo nessuna. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, E10a
+(#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei
+tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella
+ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a
+posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b,
+dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga scrive quella riga,
+e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k** (#238: le parole delle liste e i titoli delle
+schede), con **E4c** (gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino
+del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa): un branch che porta `main` a `aa3707a` ha
+di nuovo la CI intera.
+**Il prossimo passo**: **E6a** (la #233), poi **E6b** (la #240, in coda dopo la #233); poi **E7** (gli slot privati), in coda sul
+branch di E6b. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
 con un token personale («Che cosa ha lasciato E5», sotto); da E6a **si prenota**, sul server: un pilota prende uno slot pubblico o tutta una
 rotazione e ritira fino all'off block, lo staff toglie una prenotazione con un motivo, e chi ha prenotato sa di un annullamento e di nuovi
-orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto). **Le tre domande di E6a hanno la risposta di
+orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto); da E6b **si prenota dalle pagine**: «Prenota» e
+«Prenota tutta la rotazione» nel dialog di uno slot, i filtri, l'apertura con il conto alla rovescia, `/events/mine` con «Ritira», il
+blocco `events.myEvents`, la scheda «Prenotazioni» dello staff con «Togli», la conferma prima di «Pubblica» e il promemoria del giorno
+prima, `events-reminders` («Che cosa ha lasciato E6b», sotto). **Carmine ha risposto sulla #240**
+([1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158),
+[6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota
+`2026-10-09-le-pagine-delle-prenotazioni` è **decisa**; ⚠️ **un lettore di nomi per VID nel nucleo entra nella coda del nucleo prima
+che se ne scriva un quinto** (`EventsPeople` è il quarto, accettato per ora). **Il revisore ha letto la #240**: le quattro correzioni del
+dialog di uno slot che chiedeva sono fatte sulla stessa PR. **Le tre domande di E6a hanno la risposta di
 Carmine** ([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670), nota
 `2026-10-07-le-prenotazioni-sul-server` ora **decisa**): sì alle prime dieci letture; uno slot prenotato si corregge ancora e il pilota è
 avvisato quando cambia il volo (`events.bookingChanged`, fatto sulla #233); l'eraser degli eventi resta a E8b, con la regola qui sotto; il
@@ -166,6 +178,76 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
+
+- **Che cosa c'è** (il dettaglio in `10`, E6b, «Com'è andata»; nessuna migrazione; del nucleo solo i due conteggi dei blocchi; una nota
+  nuova, `2026-10-09-le-pagine-delle-prenotazioni`, **decisa** da Carmine sulla #240 — sì a tutto —; dopo la revisione, le quattro
+  correzioni del dialog di uno slot: un 409 dice «riprova», chi accede dal dialog torna alla pagina, un rifiuto rilegge la pagina e il
+  dialog segue lo slot com'è letto adesso, nessun colore libero):
+  - **La pagina di un evento** (`screens/public.tsx`, `EventSlots.tsx`, `SlotBooking.tsx`, `BookingOpening.tsx`): i filtri degli slot
+    nell'indirizzo (`direction`, `from`, `until`, `type`, `airline`, `rotation`: `eventPageSearchSchema`), offerti solo quando restringono;
+    **«Prenota»** con la scelta dell'aereo e **«Prenota tutta la rotazione»** nel dialog di uno slot, solo quando il server lo
+    accetterebbe, altrimenti il perché; **«Tuo»** sugli slot del lettore, dalla sua lista; la riga **«Prenotazioni»** con l'apertura e il
+    conto alla rovescia (`bookingOpensAtUtc` è nella lettura della pagina, `PublicEventDto`); **la striscia di E4b** con gli scali
+    dell'evento nei suoi giorni, nell'ora della divisione (`EventDayStrip`), dentro la pagina sotto il titolo.
+  - **`/events/mine`** (`screens/mine.tsx`, una rotta del membro): «Da volare» e «Passate», per evento, «Ritira» finché `withdrawable`.
+    L'indirizzo `mine` non lo prende nessun evento (`EventWriteDtoValidator.MinePage`, `events:errors.slugReserved`).
+  - **Il blocco `events.myEvents`** (`blocks/myEvents.tsx`, `Bookings/MyEventsProvider.cs`, sempre vivo): le prenotazioni ancora da volare
+    (`PilotBookings.MineAsync`), a un visitatore `signedIn: false`. Nessun seme lo mette su `/me`: lo mette il back office.
+  - **La scheda «Prenotazioni»** dello staff (`screens/bookings.tsx`): `GET /api/events/bookings`, una risorsa `MapCrud` in sola lettura
+    (`StaffBookings`: l'ordine dell'orario del volo, il pilota `{ vid, name }` da `EventsPeople`), `col.person`, «Togli» con il motivo.
+  - **Il promemoria del giorno prima**: `events-reminders` (`Bookings/BookingRemindersJob.cs`), ai minuti 10, 25, 40, 55 UTC;
+    `events.bookingReminder` una volta per prenotazione (`reminded_at`, `[NotAudited]`), le vicine in una mail con le rotte del FOD, sotto
+    un `FOR UPDATE` in `READ COMMITTED`; scrive la sua riga in `hub_jobs_log` a ogni giro, come `events-release`.
+  - **«Pubblica» chiede conferma** (`screens/events.tsx`).
+  - **I test**: `EventsBookingPagesTests` (integrazione, 6, VID **761063–761066**, scali `XEG1`–`XEG3`, tipi `XE7A`/`XE7B`, slug
+    `evt-test-e6b-…`), `EventsRemindersTests` (unità, 4), vitest, sei smoke in `events-public.spec.ts`, il giro completo
+    `full/events-bookings.spec.ts` (slug `evt-test-e2e-e6b-…`, voli `XEE601`–`XEE603`) e la conferma in `full/events-staff.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **E7** (i privati): il promemoria, il blocco e `/events/mine` contano sull'off block di uno slot pubblico — il job prende solo
+    `SlotKind.Public` con un off block, e mostra quello che `MineAsync` dà —. Un privato ha l'orario allo scalo e `other_time_utc`: E7
+    allarga la query dei dovuti e `RemindAsync` di `BookingRemindersJob`, le righe della mail (`EventsMail`, `Flight`) e decide quale
+    orario fa «dovuto». Il dialog di `SlotBooking` è di uno slot pubblico; i filtri leggono la compagnia dal nominativo dello slot.
+  - **E8b** (la cancellazione): la scheda dello staff dice lo pseudonimo con `col.person`; il blocco e `/events/mine` sono del pilota
+    stesso; il promemoria non va a uno pseudonimo (`EventsMail`).
+  - **E12** (il roster): `events.myEvents` aspetta i turni. La risposta ha `signedIn` e `bookings`; i turni sono un campo in più della
+    stessa risposta, e il blocco li disegna sotto le prenotazioni.
+  - **E13a/E13b**: `reminded_at` è la contabilità del job, non un dato del volo, e non lascia righe d'audit.
+  - **E4c** (dopo la #238 di E10k, i titoli e le frasi delle liste vuote degli eventi): la scheda «Prenotazioni» è una lista generata in
+    più degli eventi (`screens/bookings.tsx`, le parole `events:bookings`), e non c'era quando E4c è nata; e **`/events/mine` non dice il
+    suo titolo** nella scheda del browser: con il `PageMetadata` di E10k è una riga, `<PageMetadata title={t('events:mine.title')} />`,
+    come per `/events`. La aggiunge chi delle due, E4c o E6b, prende l'altra per seconda; e chi lo fa aggiunge anche `bookingOpensAtUtc:
+    null` dopo `endsAtUtc` nel `PublicEventDto` scritto per intero da `titlesAndEmptyLists.test.tsx` di E4c (il campo di E6b è
+    obbligatorio nel client generato; detto dalla sessione di E4c il 9 ottobre). Per il resto i due branch si uniscono da soli, tranne
+    l'intestazione di questo file.
+  - ⚠️ **Le schede dello staff di un evento sbordano a 1280 px** con la barra laterale: «Prenotazioni» (1026 px su 927) come «Slot» di
+    E5 (1052): la lista scorre, e «Togli» si raggiunge scorrendo; a 1440 px ci stanno. Il dialog di uno slot dice «Close» in inglese al
+    lettore di schermo (il `Dialog` di Atmosphere, del nucleo).
+  - ⚠️ **Il banco del giro completo riacceso per guardare** manda subito la coda di mail che il giro ha lasciato: chi lo riaccende con
+    Mailpit tiene il lock di Mailpit.
+  - **E10j** (#239, il recupero dei giri): `events-reminders` decide dai suoi dati, quindi un giro recuperato o ripetuto non manda niente due
+    volte; il suo trigger dice il fuso (UTC).
+  - ⚠️ **E10i** (#237): finché non è unita, un grant su un evento solo mostra la scheda «Prenotazioni», ma «Togli» risponde 403 (il
+    guardiano, «Che cosa ha lasciato E6a»).
+  - ⚠️ **Un lettore di nomi per VID nel nucleo, prima di un quinto** (risposta 4 di Carmine sulla #240): oggi ce ne sono quattro —
+    `PirepReview.NamesAsync` dei tour, `TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople` —; una fase che ne vorrebbe un
+    altro aspetta quello del nucleo, che entra nella sua coda, e i quattro poi passano a lui. La striscia degli scali resta dentro la
+    pagina (risposta 2): il banner sarebbe una fase del nucleo, non chiesta.
+  - ⚠️ **Un 409 di una prenotazione non passa da `describeProblem`**: il nucleo risponde a ogni 409 con la sua frase («qualcuno ha
+    cambiato…») e non legge il titolo del server; il dialog dice `events:errors.bookingTryAgain`. Lo stesso vale per i verbi dei privati
+    di E7. E un link d'accesso porta il percorso e la query (`window.location.pathname` + `search`): `SafeReturnUrl` del server manda
+    alla home un indirizzo intero — lo stesso difetto è in `main` nelle pagine di tour e training (il punto 9 della revisione, non di
+    questa fase).
+  - ⚠️ **Nessuna prenotazione su un'installazione vera finché E8b non è unita**, e il log binario si prova alla consegna (risposte 2 e 4 di
+    Carmine sulla #233): vale anche per il segno del promemoria, scritto in una transazione `READ COMMITTED`.
+  - ⚠️ **Una mail del giro completo** parte con la coda del nucleo, una volta al minuto, **nella lingua della persona**: il pilota del
+    banco legge in italiano. Una spec che la aspetta alza `test.setTimeout` e la cerca per il timbro del giro, che sta nel titolo delle
+    due lingue.
+  - ⚠️ `englishCommon` (`web/e2e/locales.ts`, del nucleo) non ha `common.cancel` né `liveStatus.airportsTitle`: le spec del modulo le
+    leggono da `locales/en/common.json`.
+  - **`WeatherTests`** (#236) è corretto dalla #241 (0.6.6): la #240 porta `main` a `aa3707a` attraverso la testa di E6a, e la CI gira
+    intera.
 
 ### Che cosa ha lasciato E6a (7–9 ottobre 2026, branch `m4/e6a-booking-server`, PR #233; la #228 e la #232 sono unite)
 

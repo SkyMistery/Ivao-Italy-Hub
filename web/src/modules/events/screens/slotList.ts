@@ -1,4 +1,4 @@
-import { SLOT_COLUMNS } from '../schemas';
+import { SLOT_COLUMNS, type SLOT_DIRECTIONS } from '../schemas';
 
 /**
  * The public slots of an event as data (design M4 §3.1, §7.1, E5): the page lists them by the airport of the event they are at, its
@@ -17,6 +17,104 @@ export interface PublicSlot {
   readonly isArrival: boolean;
   readonly departure: { readonly icao: string };
   readonly arrival: { readonly icao: string };
+}
+
+/** A public slot as the filters of the page read it (E6b): its callsign and the aircraft types it admits, besides the above. */
+export interface FilteredSlot extends PublicSlot {
+  readonly callsign: string;
+  readonly aircraftTypes: readonly string[];
+}
+
+export type SlotDirection = (typeof SLOT_DIRECTIONS)[number];
+
+/**
+ * What the list of the slots is narrowed to (design M4 §3.3, E6b): arrivals or departures, a stretch of hours at the airport of the
+ * event, an aircraft type, an airline, a rotation. Each left out lets everything through; they all come from the address.
+ */
+export interface SlotFilters {
+  readonly direction?: SlotDirection | undefined;
+  /** The first hour shown, as `2026-10-26T18`: the hour of the time at the airport of the event, in UTC. */
+  readonly from?: string | undefined;
+  /** The hour the list stops at, written the same way: a slot at 20:00 is not shown «until 20:00», one at 19:59 is. */
+  readonly until?: string | undefined;
+  /** An aircraft type the slot admits — the main one or another. */
+  readonly type?: string | undefined;
+  /** The letters a callsign starts with (`slotAirline`). */
+  readonly airline?: string | undefined;
+  /** The code of a rotation: its legs. */
+  readonly rotation?: string | undefined;
+}
+
+/** The hour of an instant, in UTC, as the filters write it: `2026-10-26T18`. */
+export function slotHour(instant: string): string {
+  return new Date(instant).toISOString().slice(0, 13);
+}
+
+/** The hour after one written so: `2026-10-26T19` after `2026-10-26T18`, the next day after `T23`. */
+export function nextHour(hour: string): string {
+  return new Date(Date.parse(`${hour}:00:00Z`) + 3_600_000).toISOString().slice(0, 13);
+}
+
+/**
+ * The airline of a slot, as its callsign says it: the letters it starts with, up to its first digit — `XYZ` of `XYZ123`. A callsign
+ * that starts with a digit names none. Read off the callsign because a slot has no column of its own for it: the flight number is
+ * left empty as often as not.
+ */
+export function slotAirline(callsign: string): string | null {
+  const letters = /^[A-Za-z]+(?=\d)/.exec(callsign.trim());
+  return letters === null ? null : letters[0].toUpperCase();
+}
+
+/** Whether a slot passes every filter written. */
+export function passes(slot: FilteredSlot, filters: SlotFilters): boolean {
+  const hour = slotHour(slotTime(slot));
+
+  return (
+    (filters.direction === undefined || slot.isArrival === (filters.direction === 'arrivals')) &&
+    (filters.from === undefined || hour >= filters.from) &&
+    (filters.until === undefined || hour < filters.until) &&
+    (filters.type === undefined || slot.aircraftTypes.includes(filters.type)) &&
+    (filters.airline === undefined || slotAirline(slot.callsign) === filters.airline) &&
+    (filters.rotation === undefined || slot.rotation === filters.rotation)
+  );
+}
+
+/** The slots that pass every filter written, in the order they came. */
+export function narrowSlots<TSlot extends FilteredSlot>(
+  slots: readonly TSlot[],
+  filters: SlotFilters,
+): TSlot[] {
+  return slots.filter((slot) => passes(slot, filters));
+}
+
+/** Whether any filter is written: then a list that holds nothing says so, rather than looking like an event with no slots. */
+export function anyFilter(filters: SlotFilters): boolean {
+  return Object.values(filters).some((value) => value !== undefined);
+}
+
+/**
+ * What each filter offers: what the slots hold, once each and in order — an option no slot has would narrow to nothing. The hours a
+ * list starts from are the hours of its slots, the hours it stops at the hours after them.
+ */
+export interface SlotFilterChoices {
+  readonly hours: string[];
+  readonly ends: string[];
+  readonly types: string[];
+  readonly airlines: string[];
+  readonly rotations: string[];
+}
+
+export function slotFilterChoices(slots: readonly FilteredSlot[]): SlotFilterChoices {
+  const sorted = (values: Iterable<string>) => [...new Set(values)].sort();
+  const hours = sorted(slots.map((slot) => slotHour(slotTime(slot))));
+
+  return {
+    hours,
+    ends: hours.map(nextHour),
+    types: sorted(slots.flatMap((slot) => slot.aircraftTypes)),
+    airlines: sorted(slots.map((slot) => slotAirline(slot.callsign)).filter((airline) => airline !== null)),
+    rotations: sorted(slots.map((slot) => slot.rotation).filter((rotation) => rotation !== null)),
+  };
 }
 
 /**

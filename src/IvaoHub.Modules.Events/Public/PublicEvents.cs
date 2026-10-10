@@ -70,7 +70,8 @@ public sealed record PublicEventCardDto(
 /// <summary>
 /// An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
 /// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
-/// cancelled one with its note; and its public slots (E5), by their off block, free or taken.
+/// cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
+/// the page says and counts down to until then — none for an event without slots.
 /// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
 /// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
@@ -86,6 +87,7 @@ public sealed record PublicEventDto(
     long? BannerMediaId,
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
+    DateTime? BookingOpensAtUtc,
     EventStateKind State,
     EventUnseen? Unseen,
     bool WholeDivision,
@@ -240,6 +242,7 @@ public sealed class PublicEvents(
             row.BannerMediaId,
             row.StartsAtUtc,
             row.EndsAtUtc,
+            row.BookingOpensAtUtc,
             EventState.Of(row, now),
             seen ? null : EventState.Unseen(row, now),
             row.WholeDivision,
