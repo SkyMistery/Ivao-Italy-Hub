@@ -47,6 +47,7 @@ import { BookingOpening, EventDayStrip } from './BookingOpening';
 import { AirportName, EventCards, EventWhen } from './EventCards';
 import { EventSlots } from './EventSlots';
 import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
+import { PrivateSlots } from './PrivateSlots';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -213,8 +214,8 @@ export function EventPublicPage() {
  * One event (§7.1): the banner; the state, the kind, the title and the summary; on its day who is online at its airports (E6b); when,
  * in UTC and in the division's time; who organises it and the airports; when its bookings open, counted down to (E6b); a cancelled one
  * with its note; the routes the flight operations wrote; its public slots (E5), narrowed by the filters of the address and booked from
- * the dialog of a slot (E6b); the description. To the staff, when nobody else sees it, a line that says so and why, and the way back to
- * the back office.
+ * the dialog of a slot (E6b); its private slots by airport, direction and hour, booked with the flight the pilot flies (E7); the
+ * description. To the staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
   const { t, i18n } = useTranslation();
@@ -371,6 +372,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       {event.slots.length === 0 ? null : (
         <EventSlots event={event} filters={filters} onFilter={onFilter} viewer={viewer} />
       )}
+
+      {event.privateSlots.length === 0 ? null : <PrivateSlots event={event} viewer={viewer} />}
 
       {/* A member's way to their bookings, all of them and the withdrawing (E6b). */}
       {viewer.mine.size === 0 ? null : (

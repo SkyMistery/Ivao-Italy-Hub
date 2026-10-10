@@ -42,6 +42,7 @@ function booking(id: number, eventId: number, callsign: string): MyBookingDto {
     leg: null,
     withdrawable: true,
     createdAt: '2099-11-01T10:00:00Z',
+    pairedBookingId: null,
   };
 }
 

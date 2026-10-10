@@ -178,7 +178,15 @@
       "onBlockUtc": "On block",
       "stand": "Stand",
       "rotationCode": "Rotation",
-      "rotationLeg": "Leg"
+      "rotationLeg": "Leg",
+      "kind": "Slot",
+      "eventAirportIcao": "Airport of the event"
+    },
+    "options": {
+      "kind": {
+        "Public": "Public",
+        "Private": "Private"
+      }
     },
     "hints": {
       "callsign": "Letters and digits: the callsign the pilot connects with.",
@@ -202,6 +210,13 @@
       "description": "Every slot of this event that nobody booked is deleted, public and private. A booked one stays.",
       "confirm": "Delete them",
       "done": "Free slots deleted: {{count}}."
+    },
+    "generate": {
+      "trigger": "Generate the private slots",
+      "title": "Generate the private slots?",
+      "description": "Hour by hour, each airport of the event gets the private slots its capacity leaves room for, at regular intervals, away from the public slots. The free private slots already there are replaced; the ones a pilot booked stay.",
+      "confirm": "Generate them",
+      "done": "Private slots generated: {{generated}}. Free ones replaced: {{removed}}; booked ones kept: {{kept}}."
     },
     "load": {
       "open": "Paste or load",
@@ -316,6 +331,68 @@
       "thisLeg": "this flight"
     }
   },
+  "private": {
+    "title": "Private slots",
+    "lead": "A private slot is a time at an airport of the event, for the flight a pilot chooses: each hour opens with its free slots, and whoever books one writes where they come from or go to, and when. An arrival can take its departure from the same airport too, so that both get the same gate.",
+    "hour": "Hour (UTC)",
+    "free": "Free",
+    "range": "{{from}}–{{to}}",
+    "freeOf": "{{free}} of {{of}}",
+    "full": "Full",
+    "dialog": {
+      "arrivals": "Arriving at {{airport}}",
+      "departures": "Leaving {{airport}}",
+      "hour": "From {{from}} to {{to}}, the times in UTC.",
+      "panel": "Book a private slot",
+      "noneFree": "No free slot is left in this hour.",
+      "signIn": "Sign in to book a private slot",
+      "withDeparture": "Book the departure from the same airport too",
+      "book": "Book",
+      "booked": "Booked: {{callsign}}.",
+      "bookedWithDeparture": "Booked: {{callsign}}, and its departure {{departure}}."
+    },
+    "arrival": {
+      "fields": {
+        "slotId": "Your slot: on block",
+        "callsign": "Callsign",
+        "aircraftIcao": "Aircraft",
+        "otherIcao": "From",
+        "otherTimeUtc": "Off block there",
+        "departure": "The departure",
+        "departure.slotId": "Its slot: off block",
+        "departure.callsign": "Callsign",
+        "departure.otherIcao": "To",
+        "departure.otherTimeUtc": "On block there"
+      },
+      "hints": {
+        "slotId": "When you reach the gate, among the free slots of this hour.",
+        "callsign": "Letters and digits: the callsign you connect with.",
+        "aircraftIcao": "The ICAO code of the aircraft you fly: A320.",
+        "otherIcao": "The ICAO code of the airport you leave from.",
+        "otherTimeUtc": "When you leave that airport's gate, in UTC.",
+        "departure.slotId": "When you leave again, from the gate you came to, with the same aircraft.",
+        "departure.callsign": "The callsign of the flight out: it may be another one.",
+        "departure.otherIcao": "The ICAO code of the airport you go to.",
+        "departure.otherTimeUtc": "When you reach the gate there, in UTC."
+      }
+    },
+    "departure": {
+      "fields": {
+        "slotId": "Your slot: off block",
+        "callsign": "Callsign",
+        "aircraftIcao": "Aircraft",
+        "otherIcao": "To",
+        "otherTimeUtc": "On block there"
+      },
+      "hints": {
+        "slotId": "When you leave the gate, among the free slots of this hour.",
+        "callsign": "Letters and digits: the callsign you connect with.",
+        "aircraftIcao": "The ICAO code of the aircraft you fly: A320.",
+        "otherIcao": "The ICAO code of the airport you go to.",
+        "otherTimeUtc": "When you reach the gate there, in UTC."
+      }
+    }
+  },
   "mine": {
     "title": "My bookings",
     "lead": "The slots you booked in the events, past ones too. A booking is withdrawn until the off block of its flight.",
@@ -330,7 +407,10 @@
     "stand": "Stand {{stand}}",
     "withdraw": "Withdraw",
     "withdrawTitle": "Withdraw your booking of {{callsign}}?",
-    "withdrawDescription": "The slot is free again, and another pilot may book it."
+    "withdrawDescription": "The slot is free again, and another pilot may book it.",
+    "withdrawPaired": "The slot is free again, and another pilot may book it. {{callsign}}, booked with it, stays yours on its own.",
+    "pairedDeparture": "With its departure {{callsign}}, from the same gate.",
+    "pairedArrival": "With its arrival {{callsign}}, at the same gate."
   },
   "bookings": {
     "fields": {
@@ -517,6 +597,15 @@
     "aircraftNotAllowed": "This slot does not allow this aircraft type.",
     "slotGone": "This slot is no longer in the event.",
     "slotBooked": "A pilot booked this slot: take the booking away before deleting it.",
-    "eventHasBookings": "Pilots booked slots of this event: it cannot be deleted. Cancel it instead."
+    "eventHasBookings": "Pilots booked slots of this event: it cannot be deleted. Cancel it instead.",
+    "noPrivateSlots": "This event has no private slots: switch them on in its settings first.",
+    "noCapacity": "No airport of this event has a capacity: give one in the tab of the airports, then generate them.",
+    "privateSlotsTooMany": "That would be more than 5,000 private slots: check the capacity of the airports and the times of the event.",
+    "slotNotPrivate": "This is a public slot: it is booked as it is, with «Book».",
+    "otherIsTheSlots": "This is the airport of the slot: write the other airport of your flight.",
+    "offBlockPassed": "This off block time has passed: a flight is booked before it leaves.",
+    "pairedOnlyForArrival": "Only an arrival books a departure with it.",
+    "pairedNotADeparture": "The linked departure is a private departure from the airport the arrival lands at.",
+    "pairedTooSoon": "The departure leaves too soon: after the arrival lands, it leaves at least the minutes between two bookings of a pilot later."
   }
 }

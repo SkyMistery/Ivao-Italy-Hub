@@ -50,6 +50,13 @@ public sealed record PublicEventSlotDto(
     bool Taken);
 
 /// <summary>
+/// A private slot as the page of its event offers it (design M4 §3.4, §7.1, E7): an airport of the event, arriving there or leaving
+/// it, the time there, and whether it is taken — never by whom (plan §9.7). The page groups them by airport, direction and hour, and
+/// the pilot who books one writes the rest of the flight.
+/// </summary>
+public sealed record PublicPrivateSlotDto(long Id, string AirportIcao, bool IsArrival, DateTime TimeUtc, bool Taken);
+
+/// <summary>
 /// An event as a card of <c>/events</c> and of the block <c>events.eventList</c> shows it (design M4 §7.1, §7.3): what fits on a
 /// tile, the same for whoever is looking. <c>Airports</c> are its own, in their order and with their names; an event of the whole
 /// division has none.
@@ -71,7 +78,8 @@ public sealed record PublicEventCardDto(
 /// An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
 /// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
 /// cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
-/// the page says and counts down to until then — none for an event without slots.
+/// the page says and counts down to until then — none for an event without slots; and its private slots (E7), by airport, direction
+/// and time, free or taken.
 /// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
 /// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
@@ -94,6 +102,7 @@ public sealed record PublicEventDto(
     IReadOnlyList<PublicEventAirportDto> Airports,
     IReadOnlyList<PublicEventRouteDto> Routes,
     IReadOnlyList<PublicEventSlotDto> Slots,
+    IReadOnlyList<PublicPrivateSlotDto> PrivateSlots,
     DateTime? CancelledAt,
     Localized<string>? CancellationNote);
 
@@ -209,13 +218,23 @@ public sealed class PublicEvents(
             .OrderBy(route => route.Id)
             .ToListAsync(cancellationToken);
 
-        // The public slots, one query even for the hundreds of a big event (§10.1), by their off block; the private ones are
-        // offered by airport and hour (E7).
-        var slots = await database.Slots.AsNoTracking()
-            .Where(slot => slot.EventId == row.Id && slot.Kind == SlotKind.Public)
+        // The slots, one query even for the hundreds of a big event (§10.1): the public ones by their off block, the private ones by
+        // their airport, direction and time there, which the page groups by the hour (E7).
+        var all = await database.Slots.AsNoTracking()
+            .Where(slot => slot.EventId == row.Id)
+            .ToListAsync(cancellationToken);
+        var slots = all
+            .Where(slot => slot.Kind == SlotKind.Public)
             .OrderBy(slot => slot.OffBlockUtc)
             .ThenBy(slot => slot.Id)
-            .ToListAsync(cancellationToken);
+            .ToList();
+        var privateSlots = all
+            .Where(slot => slot.Kind == SlotKind.Private && (slot.IsArrival ? slot.OnBlockUtc : slot.OffBlockUtc) is not null)
+            .OrderBy(slot => slot.EventAirportIcao, StringComparer.Ordinal)
+            .ThenBy(slot => slot.IsArrival)
+            .ThenBy(slot => slot.IsArrival ? slot.OnBlockUtc : slot.OffBlockUtc)
+            .ThenBy(slot => slot.Id)
+            .ToList();
 
         // Which of them are taken (E6a), whoever reads the page — a booking is a row of a member, which the global filter hides from
         // a visitor —, and never by whom: only the slots it names leave this query.
@@ -269,6 +288,14 @@ public sealed class PublicEvents(
                     slot.RotationCode,
                     slot.RotationLeg,
                     slot.IsArrival,
+                    Taken: taken.Contains(slot.Id))),
+            ],
+            [
+                .. privateSlots.Select(slot => new PublicPrivateSlotDto(
+                    slot.Id,
+                    slot.EventAirportIcao,
+                    slot.IsArrival,
+                    (slot.IsArrival ? slot.OnBlockUtc : slot.OffBlockUtc)!.Value,
                     Taken: taken.Contains(slot.Id))),
             ],
             row.CancelledAt,

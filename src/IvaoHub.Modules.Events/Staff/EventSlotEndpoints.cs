@@ -168,9 +168,10 @@ internal static class SlotMapper
 /// <summary>
 /// The slots of an event (design M4 §1.5, §3.1, §7.2, E5): a resource of the CRUD engine filtered by <c>filter[eventId]</c>, read
 /// with <c>EventBookings.View</c> and written with <c>EventBookings.Edit</c> on the event's care — the tab «Slots» of the event's
-/// page is a generated list, and each slot a generated form for the corrections after a load —, and two verbs on the slots of one
-/// event, written by hand next to it: <b>load</b> a table, pasted or from a file (<see cref="SlotLoading"/>), and <b>delete the free
-/// ones</b>. Both are verbs of design §7.2 («incollare»; «elimina i liberi» of the tab).
+/// page is a generated list, and each slot a generated form for the corrections after a load —, and three verbs on the slots of one
+/// event, written by hand next to it: <b>load</b> a table, pasted or from a file (<see cref="SlotLoading"/>), <b>delete the free
+/// ones</b>, and <b>generate the private slots</b> (E7, <see cref="PrivateSlotGeneration"/>). All three are verbs of design §7.2
+/// («incollare»; «genera gli slot privati», «elimina i liberi» of the tab).
 /// </summary>
 public static class EventSlotEndpoints
 {
@@ -241,7 +242,48 @@ public static class EventSlotEndpoints
             .Produces(StatusCodes.Status409Conflict)
             .RequireAuthorization(EventsPermissions.BookingsEdit);
 
+        app.MapPost($"{EventSlotsPattern}/generate", GenerateAsync)
+            .WithName("EventsSlotsGenerate")
+            .WithTags("EventSlots")
+            .Produces<PrivateSlotsGeneratedDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .RequireAuthorization(EventsPermissions.BookingsEdit);
+
         return app;
+    }
+
+    /// <summary>
+    /// «Generate the private slots» (§3.2, §7.2, E7): the free private slots of the event are replaced by the ones its airports' capacity
+    /// leaves room for, the booked ones stay and count. Asked of the one handler on the event, as every write of its slots is. A pilot
+    /// booking one of the free slots in the same moment, or another write taking them first, is a 409: read the slots again.
+    /// </summary>
+    private static async Task<IResult> GenerateAsync(
+        long id,
+        EventsDbContext database,
+        PrivateSlotGeneration generation,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var (row, refusal) = await WritableEventAsync(id, database, authorization, currentUser, catalog, http);
+        if (row is null)
+        {
+            return refusal!;
+        }
+
+        try
+        {
+            var (result, problems) = await generation.GenerateAsync(row, http.RequestAborted);
+            return result is null ? CrudProblems.Validation(problems, catalog, currentUser.Locale) : Results.Ok(result);
+        }
+        catch (Exception exception) when (exception is DbUpdateConcurrencyException || DatabaseErrors.SlotWasBooked(exception))
+        {
+            return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
+        }
     }
 
     /// <summary>

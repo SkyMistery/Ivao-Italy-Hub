@@ -96,6 +96,22 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "paired_slot_id": null
   },
   {
+    "slot_id": 3131,
+    "callsign": "XYZ71",
+    "flight_number": null,
+    "booked_by": 100002,
+    "aircraft_icao": "B738",
+    "aircraft_types": [],
+    "gate": null,
+    "eobt": "2026-10-17T17:15:00Z",
+    "eat": "2026-10-17T19:45:00Z",
+    "origin_icao": "LEMD",
+    "destination_icao": "EHAM",
+    "rotation": null,
+    "leg": null,
+    "paired_slot_id": 3152
+  },
+  {
     "slot_id": 3120,
     "callsign": null,
     "flight_number": null,
@@ -110,6 +126,22 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "rotation": null,
     "leg": null,
     "paired_slot_id": null
+  },
+  {
+    "slot_id": 3152,
+    "callsign": "XYZ72",
+    "flight_number": null,
+    "booked_by": 100002,
+    "aircraft_icao": "B738",
+    "aircraft_types": [],
+    "gate": null,
+    "eobt": "2026-10-17T20:45:00Z",
+    "eat": "2026-10-17T23:05:00Z",
+    "origin_icao": "EHAM",
+    "destination_icao": "LEMD",
+    "rotation": null,
+    "leg": null,
+    "paired_slot_id": 3131
   }
 ]
 ```
@@ -117,17 +149,17 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
 | Field | What it is |
 |---|---|
 | `slot_id` | the slot's identity in the hub, the same for as long as the slot exists |
-| `callsign` | the flight's callsign; `null` on a private slot |
-| `flight_number` | the flight number, when the staff wrote one |
+| `callsign` | the flight's callsign; on a private slot, the one its pilot wrote, `null` while it is free |
+| `flight_number` | the flight number, when the staff wrote one; `null` on a private slot |
 | `booked_by` | the member who booked the slot, by their network number; `null` while the slot is free. A **negative** number stands for a member whose data the hub erased at their request: the booking is kept, the person is not |
-| `aircraft_icao` | the aircraft type the pilot chose when booking, among those the slot allows; `null` while the slot is free |
+| `aircraft_icao` | the aircraft type the pilot chose when booking, among those the slot allows — on a private slot, the one they declared; `null` while the slot is free |
 | `aircraft_types` | the aircraft types the slot admits, ICAO codes, **the first the main one** — what the stands are planned for before anybody books; empty on a private slot, whose pilot says the type |
 | `gate` | the stand the staff wrote for the slot; `null` when there is none, and on a private slot |
-| `eobt` | the off block time at `origin_icao`; `null` on a private arrival |
-| `eat` | the on block time at `destination_icao`; `null` on a private departure |
-| `origin_icao`, `destination_icao` | the two airports of the flight, ICAO codes |
+| `eobt` | the off block time at `origin_icao`; `null` on a private arrival nobody booked |
+| `eat` | the on block time at `destination_icao`; `null` on a private departure nobody booked |
+| `origin_icao`, `destination_icao` | the two airports of the flight, ICAO codes; on a private slot nobody booked, only the airport of the event |
 | `rotation`, `leg` | the rotation the flight belongs to and its place in it, from 1; `null` when it belongs to none |
-| `paired_slot_id` | for a private slot, the slot paired with it on the same stand; `null` otherwise |
+| `paired_slot_id` | on a private arrival booked with its departure from the same airport, the slot of that departure — and on the departure, the arrival's: the aircraft lands and leaves again, **the two take the same stand**; `null` otherwise |
 
 - A **public** slot is a flight the staff wrote: its callsign, its two airports, its two times. Every slot touches an airport
   of the event: it departs from one, or arrives at one. One pilot books it, with one of the aircraft types it allows; the pilot
@@ -135,6 +167,11 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
   at the next.
 - A **private** slot is a time offered at an airport of the event, for a pilot who books it with a flight of their own: until
   then it carries only that airport — as `origin_icao` for a departure, `destination_icao` for an arrival — and its time there.
+  Once booked it carries the flight its pilot wrote: the callsign, the aircraft type, the other airport and the time there — an
+  arrival's `eobt` is when it leaves that airport. Its gate stays `null`: the stands of the private slots are the program's to
+  give.
+- **An arrival and its departure** (`paired_slot_id`, each naming the other) are booked together by one pilot. Either may be
+  withdrawn or taken away on its own: the other stays booked, and from the next request its `paired_slot_id` is `null`.
 - The legs of a rotation follow one another: each departs from where the one before arrived, after it arrived.
 
 ## 4. Answers that are not 200

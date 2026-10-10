@@ -182,6 +182,7 @@ function event(overrides: Record<string, unknown> = {}) {
       },
     ],
     slots: [],
+    privateSlots: [],
     cancelledAt: null,
     cancellationNote: null,
     ...overrides,

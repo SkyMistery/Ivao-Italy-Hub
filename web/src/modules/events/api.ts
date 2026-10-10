@@ -21,10 +21,11 @@ import type {
 /**
  * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events, their
  * airports, their routes and their slots through the CRUD engine, and the endpoints written by hand beside it — cancelling and the
- * presets of the kinds (E3a), publishing (E3b), loading the slots of an event from a table and deleting its free ones (E5); and the
- * page of an event, the one read of the site (E4), which lists its public slots (E5). The list of `/events` is the block
- * `events.eventList`, read through the endpoint every block is read through. The bookings (E6b): a pilot's own — read, made, made
- * for a whole rotation, withdrawn — through the verbs of E6a, and the staff's list of the bookings of an event with «take away».
+ * presets of the kinds (E3a), publishing (E3b), loading the slots of an event from a table and deleting its free ones (E5),
+ * generating its private slots (E7); and the page of an event, the one read of the site (E4), which lists its public slots (E5) and
+ * its private ones (E7). The list of `/events` is the block `events.eventList`, read through the endpoint every block is read through.
+ * The bookings (E6b): a pilot's own — read, made, made for a whole rotation, made for a private slot with its flight (E7), withdrawn —
+ * through the verbs of E6a and E7, and the staff's list of the bookings of an event with «take away».
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -47,10 +48,14 @@ export type PublicEventDto = components['schemas']['PublicEventDto'];
 export type PublicEventRouteDto = components['schemas']['PublicEventRouteDto'];
 export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto'];
 export type PublicEventSlotDto = components['schemas']['PublicEventSlotDto'];
+export type PublicPrivateSlotDto = components['schemas']['PublicPrivateSlotDto'];
 export type EventSlotDto = components['schemas']['EventSlotDto'];
 export type SlotLoadResultDto = components['schemas']['SlotLoadResultDto'];
+export type PrivateSlotsGeneratedDto = components['schemas']['PrivateSlotsGeneratedDto'];
 export type MyBookingDto = components['schemas']['MyBookingDto'];
 export type RotationBookingDto = components['schemas']['RotationBookingDto'];
+export type PrivateBookingRequest = components['schemas']['PrivateBookingRequest'];
+export type PrivateBookingDto = components['schemas']['PrivateBookingDto'];
 export type EventBookingDto = components['schemas']['EventBookingDto'];
 type EventWriteDto = components['schemas']['EventWriteDto'];
 
@@ -531,6 +536,22 @@ export function useDeleteFreeSlots(eventId: number) {
   });
 }
 
+/**
+ * «Generate the private slots» (§3.2, E7): the free private slots of the event replaced by the ones the capacity of its airports
+ * leaves room for; the booked ones stay. A refusal — no private slots, no capacity — comes back as one sentence.
+ */
+export function useGeneratePrivateSlots(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<PrivateSlotsGeneratedDto> =>
+      unwrap(await api.POST('/api/events/events/{id}/slots/generate', { params: { path: { id: eventId } } })),
+    onSuccess: async () => {
+      await slotsChanged(queryClient);
+    },
+  });
+}
+
 // ---- the public side (E4) --------------------------------------------------------------------------
 
 /**
@@ -619,6 +640,26 @@ export function useBookRotation() {
       aircraftIcao: string;
     }): Promise<RotationBookingDto> =>
       unwrap(await api.POST('/api/events/mine/bookings/rotation', { body: { slotId, aircraftIcao } })),
+    onSuccess: async () => {
+      await bookingsChanged(queryClient);
+    },
+    onError: () => {
+      void bookingsChanged(queryClient);
+    },
+  });
+}
+
+/**
+ * Books a private slot with the flight the pilot flies (§3.4, E7) — and an arrival's linked departure with it, both or neither. A
+ * refusal comes back on its field, the departure's under `departure.…`; a 409 is «try again», nothing booked. A refusal reads the page
+ * again, as for a public slot.
+ */
+export function useBookPrivate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: PrivateBookingRequest): Promise<PrivateBookingDto> =>
+      unwrap(await api.POST('/api/events/mine/bookings/private', { body: request })),
     onSuccess: async () => {
       await bookingsChanged(queryClient);
     },

@@ -3,6 +3,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Modules.Events.Bookings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -81,8 +82,8 @@ public sealed class EventsMail(
     public const string MinePath = $"/events/{Staff.EventWriteDtoValidator.MinePage}";
 
     /// <summary>
-    /// A booking taken away by the staff (§3.6): to its pilot, with the flight and the reason — the reason as the staff wrote it,
-    /// in their words.
+    /// A booking taken away by the staff (§3.6): to its pilot, with the flight — a private one's as they wrote it (E7) — and the
+    /// reason, as the staff wrote it, in their words.
     /// </summary>
     public Task BookingRemovedAsync(Event row, EventSlot slot, EventBooking booking, string reason, CancellationToken cancellationToken)
     {
@@ -90,12 +91,14 @@ public sealed class EventsMail(
         ArgumentNullException.ThrowIfNull(slot);
         ArgumentNullException.ThrowIfNull(booking);
 
+        var flight = BookedFlight.Of(slot, booking);
+
         return SendAsync(EventsNotifications.BookingRemoved, row, [booking.BookerVid], (data, _) =>
         {
-            data["callsign"] = slot.Callsign ?? booking.Callsign ?? string.Empty;
-            data["departure"] = slot.DepartureIcao ?? string.Empty;
-            data["arrival"] = slot.ArrivalIcao ?? string.Empty;
-            data["offBlock"] = slot.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
+            data["callsign"] = flight.Callsign ?? string.Empty;
+            data["departure"] = flight.DepartureIcao ?? string.Empty;
+            data["arrival"] = flight.ArrivalIcao ?? string.Empty;
+            data["offBlock"] = flight.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
             data["reason"] = reason;
         }, cancellationToken);
     }
@@ -169,23 +172,24 @@ public sealed class EventsMail(
     public const string RouteKey = "events:mail.events.bookingReminder.route";
 
     /// <summary>
-    /// One flight of a reminder: callsign and flight number, the aircraft, where and when it leaves and lands, the stand — the two
-    /// words in the pilot's language —, and under it each route of the flight operations from its departure to its arrival, with its
-    /// remarks.
+    /// One flight of a reminder: callsign and flight number, the aircraft, where and when it leaves and lands — a private one's as its
+    /// pilot wrote it (E7) —, the stand — the two words in the pilot's language —, and under it each route of the flight operations
+    /// from its departure to its arrival, with its remarks.
     /// </summary>
     private string Flight(EventBooking booking, EventSlot slot, IReadOnlyList<EventRoute> routes, string locale)
     {
+        var flight = BookedFlight.Of(slot, booking);
         var number = slot.FlightNumber is { Length: > 0 } flightNumber ? $" ({flightNumber})" : string.Empty;
         var stand = slot.Stand is { Length: > 0 } place ? $", {catalog.Resolve(locale, StandKey)} {place}" : string.Empty;
-        var off = slot.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
-        var on = slot.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
+        var off = flight.OffBlockUtc is { } offBlock ? Moment(offBlock) : string.Empty;
+        var on = flight.OnBlockUtc is { } onBlock ? Moment(onBlock) : string.Empty;
 
         List<string> lines =
         [
-            $"- {slot.Callsign ?? booking.Callsign}{number}, {booking.AircraftIcao}: {slot.DepartureIcao} {off} → {slot.ArrivalIcao} {on}{stand}",
+            $"- {flight.Callsign}{number}, {booking.AircraftIcao}: {flight.DepartureIcao} {off} → {flight.ArrivalIcao} {on}{stand}",
         ];
 
-        foreach (var route in routes.Where(route => route.DepartureIcao == slot.DepartureIcao && route.ArrivalIcao == slot.ArrivalIcao))
+        foreach (var route in routes.Where(route => route.DepartureIcao == flight.DepartureIcao && route.ArrivalIcao == flight.ArrivalIcao))
         {
             var remarks = route.Remarks?.Resolve(locale, division.Value.DefaultLocale) is { Length: > 0 } text ? $" ({text})" : string.Empty;
             lines.Add($"  {catalog.Resolve(locale, RouteKey)}: {route.Route}{remarks}");
