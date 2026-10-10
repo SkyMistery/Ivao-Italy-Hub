@@ -78,12 +78,12 @@ ci sono da E5 (`evt_slots`) ed E6a (`evt_bookings`).
     rifiuto del server cade sul suo campo; un interruttore aggiunge la partenza collegata. I filtri di E6b restano dei pubblici. Nessuna
     lettura nuova: i privati viaggiano nella lettura della pagina (`PublicEventDto.PrivateSlots`), mai chi li ha presi.
 17. **`/events/mine`** dice il volo a cui una prenotazione è collegata, e il ritiro di una delle due dice che l'altra resta (la nota del
-    ritiro, decisa: la strada A). **La scheda «Slot»** dello staff ha «Genera gli slot privati» su un evento con slot privati, chiesto una volta di più (blu:
-    niente di prenotato si perde), e la lista dice se uno slot è pubblico o privato e il suo scalo.
+    ritiro, decisa: la strada A). **La scheda «Slot»** dello staff ha «Genera gli slot privati» su un evento con slot privati, chiesto
+    una volta di più (blu: niente di prenotato si perde), e la lista dice se uno slot è pubblico o privato e il suo scalo.
 
-**Gli endpoint scritti a mano di E7** (per il conto del piano §16.6): due verbi che il design nomina — `POST
-/api/events/events/{id}/slots/generate` («genera gli slot privati», §7.2) e `POST /api/events/mine/bookings/private` (prenotare, §7.2, nel
-flusso del membro). Nessuna lettura nuova.
+**Gli endpoint scritti a mano di E7** (per il conto del piano §16.6): due verbi che il design nomina —
+`POST /api/events/events/{id}/slots/generate` («genera gli slot privati», §7.2) e `POST /api/events/mine/bookings/private` (prenotare,
+§7.2, nel flusso del membro). Nessuna lettura nuova.
 
 ## 4. Le domande a Carmine
 
