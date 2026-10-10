@@ -286,27 +286,30 @@ function PrivateHourDialog({
       })}
       description={t('events:private.dialog.hour', { from: time(hour.fromUtc), to: time(hour.toUtc) })}
     >
-      {mine.length === 0 ? null : (
-        <ul className="flex flex-col gap-1 text-sm">
-          {mine.map(({ slot, booking }) => (
-            <li key={slot.id} className="flex items-center gap-2">
-              <Badge variant="flat" color="blue" text={t('events:public.yours')} />
-              <span className="tabular-nums">{time(slot.timeUtc)}</span>
-              <span className="font-mono">{booking.callsign}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Two flights' fields are taller than a window, a phone's first: the dialog's own content scrolls, its title stays. */}
+      <div className="scroll-thin -mr-2 flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-2">
+        {mine.length === 0 ? null : (
+          <ul className="flex flex-col gap-1 text-sm">
+            {mine.map(({ slot, booking }) => (
+              <li key={slot.id} className="flex items-center gap-2">
+                <Badge variant="flat" color="blue" text={t('events:public.yours')} />
+                <span className="tabular-nums">{time(slot.timeUtc)}</span>
+                <span className="font-mono">{booking.callsign}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      <PrivateBooking
-        event={event}
-        airport={airport}
-        isArrival={isArrival}
-        hour={hour}
-        time={time}
-        viewer={viewer}
-        nowMs={openedAt}
-      />
+        <PrivateBooking
+          event={event}
+          airport={airport}
+          isArrival={isArrival}
+          hour={hour}
+          time={time}
+          viewer={viewer}
+          nowMs={openedAt}
+        />
+      </div>
     </Dialog>
   );
 }
