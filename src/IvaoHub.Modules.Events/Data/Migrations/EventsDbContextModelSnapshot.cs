@@ -819,6 +819,112 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     b.ToTable("evt_event_airports", (string)null);
                 });
 
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventBooking", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AircraftIcao")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("aircraft_icao");
+
+                    b.Property<int>("BookerVid")
+                        .HasColumnType("int")
+                        .HasColumnName("booker_vid");
+
+                    b.Property<string>("Callsign")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("callsign");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_id");
+
+                    b.Property<DateTime?>("FlownAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("flown_at");
+
+                    b.Property<DateTime?>("FlownCheckedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("flown_checked_at");
+
+                    b.Property<long?>("FlownSessionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("flown_session_id");
+
+                    b.Property<string>("OtherIcao")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("other_icao");
+
+                    b.Property<DateTime?>("OtherTimeUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("other_time_utc");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<long?>("PairedBookingId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("paired_booking_id");
+
+                    b.Property<DateTime?>("RemindedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("reminded_at");
+
+                    b.Property<long>("SlotId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("slot_id");
+
+                    b.Property<int?>("UnflownExcusedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("unflown_excused_by");
+
+                    b.Property<string>("UnflownExcusedNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("unflown_excused_note");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("visibility");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evt_bookings");
+
+                    b.HasIndex("BookerVid")
+                        .HasDatabaseName("ix_evt_bookings_booker_vid");
+
+                    b.HasIndex("SlotId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_evt_bookings_slot_id");
+
+                    b.HasIndex("EventId", "BookerVid")
+                        .HasDatabaseName("ix_evt_bookings_event_id_booker_vid");
+
+                    b.ToTable("evt_bookings", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.Modules.Events.EventRoute", b =>
                 {
                     b.Property<long>("Id")
@@ -1039,6 +1145,16 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_evt_event_airports_evt_events_event_id");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventBooking", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.Events.EventSlot", null)
+                        .WithMany()
+                        .HasForeignKey("SlotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evt_bookings_evt_slots_slot_id");
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventRoute", b =>

@@ -2,6 +2,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -16,14 +17,31 @@ namespace IvaoHub.Modules.Events.Staff;
 /// saveable; an event about the whole division with no airports of its own (§1.3); and its public slots switched off only once
 /// it has none (E5). A published event stays one that could be published (E3b): a change that it could not be published with is
 /// refused, with the refusals of «Publish».
+/// <para>And what follows a save (E6a): new times of an event somebody booked are told to whoever booked
+/// (<see cref="EventsNotifications.EventChanged"/>), once the save is done.</para>
 /// </summary>
-public sealed class EventSaving(EventsDbContext database, HubDbContext hub, EventPublishing publishing, ModuleSettingsStore settings)
+public sealed class EventSaving(
+    EventsDbContext database,
+    HubDbContext hub,
+    EventPublishing publishing,
+    ModuleSettingsStore settings,
+    EventsMail mail)
 {
+    /// <summary>Whether the save being prepared moves the start or the end of a published event: what <see cref="AfterSaveAsync"/> tells.</summary>
+    private bool _timesChanged;
+
     public async Task<IReadOnlyDictionary<string, string[]>?> PrepareAsync(Event row, bool isNew, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
 
         var problems = new Refusals();
+
+        // Read before anything is refused, and told only after the save (§8.3): a cancelled event has told its pilots already.
+        _timesChanged = !isNew
+            && row.Status == PublishStatus.Published
+            && row.CancelledAt is null
+            && (database.Entry(row).Property(nameof(Event.StartsAtUtc)).OriginalValue is DateTime starts && starts != row.StartsAtUtc
+                || database.Entry(row).Property(nameof(Event.EndsAtUtc)).OriginalValue is DateTime ends && ends != row.EndsAtUtc);
 
         if (await CrudSource.BackOffice<Event>(database).AnyAsync(other => other.Slug == row.Slug && other.Id != row.Id, cancellationToken))
         {
@@ -76,15 +94,45 @@ public sealed class EventSaving(EventsDbContext database, HubDbContext hub, Even
     }
 
     /// <summary>
-    /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. E3a has no such rows yet; the
-    /// first table of them (the bookings, E6a) refuses here, and every later one adds its own check, so whoever took part is
-    /// never deleted with the event: it is cancelled instead. Its airports, its routes (E4) and its slots (E5) go with it, through
-    /// the same unit of work, so each leaves its row in the audit — and each is a write of its own area, which whoever deletes an
-    /// event holds (§6.2: the coordinator and the assistant of the base department hold every area of the events).
+    /// What follows a save that moved the start or the end of a published event (§8.3, E6a): whoever booked one of its slots is told
+    /// the new times, once each. Nothing when the times did not move, and nothing for an event nobody booked.
+    /// </summary>
+    public async Task AfterSaveAsync(Event row, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (!_timesChanged)
+        {
+            return;
+        }
+
+        _timesChanged = false;
+        await mail.EventChangedAsync(row, await BookersAsync(row.Id, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>Whoever booked a slot of an event, each once: whoever is told when it changes or is cancelled (§8.3).</summary>
+    public Task<List<int>> BookersAsync(long eventId, CancellationToken cancellationToken) =>
+        CrudSource.BackOffice<EventBooking>(database)
+            .Where(booking => booking.EventId == eventId)
+            .Select(booking => booking.BookerVid)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. The bookings (E6a) are the first
+    /// table of them and refuse here, and every later one adds its own check, so whoever took part is never deleted with the event:
+    /// it is cancelled instead. Its airports, its routes (E4) and its slots (E5) go with it, through the same unit of work, so each
+    /// leaves its row in the audit — and each is a write of its own area, which whoever deletes an event holds (§6.2: the coordinator
+    /// and the assistant of the base department hold every area of the events).
     /// </summary>
     public async Task DeleteAsync(Event row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
+
+        if (await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasBookings");
+        }
 
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));

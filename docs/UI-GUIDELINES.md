@@ -149,6 +149,11 @@ network could not be asked it draws **nothing**: `updatedAt` of null means "no a
 the same as nobody being connected, and four zeroes would be the site answering a question it never
 got an answer to.
 
+The strip of an airspace **a screen asks about** — the airports of an event, on the days of the event — is the one
+exception to the `banner` slot: it sits **inside that page, under its title**, because the slot holds the division's
+strip and the layout does not know a page's airports (decided on #240,
+`docs/internal/decisions/2026-10-09-le-pagine-delle-prenotazioni.md`). The division's strip stays in the banner.
+
 `MessageThread` draws a conversation of a member with a department: the message, the objects it is
 about, the answers in order and the box to answer. It hides nothing itself — for the member who
 wrote, the server has already taken the name and the VID off every answer from the department's

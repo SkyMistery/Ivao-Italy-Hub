@@ -1,7 +1,8 @@
 import { Badge, Button, H1, H2, Label, Lead, Select } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { ExternalLink } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -22,9 +23,14 @@ import {
   calendarKindColour,
   type CalendarViewMode,
 } from '../../../shared/ui';
-import { publicEventQuery, type PublicEventDto } from '../api';
+import { myBookingsQuery, publicEventQuery, type PublicEventDto } from '../api';
 import { EVENTS_VIEW } from '../permissions';
-import { eventsPublicSearchSchema, type EventsPublicSearch } from '../schemas';
+import {
+  eventPageSearchSchema,
+  eventsPublicSearchSchema,
+  type EventPageSearch,
+  type EventsPublicSearch,
+} from '../schemas';
 
 import {
   EVENT_LIST_BLOCK,
@@ -36,8 +42,10 @@ import {
   narrowCards,
   type EventListData,
 } from './cards';
+import { BookingOpening, EventDayStrip } from './BookingOpening';
 import { AirportName, EventCards, EventWhen } from './EventCards';
 import { EventSlots } from './EventSlots';
+import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -86,6 +94,12 @@ export function EventsPublicPage() {
       <header className="flex flex-col gap-2">
         <H1>{t('events:public.title')}</H1>
         <Lead>{t('events:public.description')}</Lead>
+        {/* A member's own bookings are a page of theirs (E6b): the way there is where the events are. */}
+        {bootstrap?.user === null || bootstrap?.user === undefined ? null : (
+          <RouterAnchor href={MY_EVENTS_PAGE} className="text-sm underline">
+            {t('events:mine.title')}
+          </RouterAnchor>
+        )}
       </header>
 
       {answer.isError ? (
@@ -198,17 +212,51 @@ export function EventPublicPage() {
 }
 
 /**
- * One event (§7.1): the banner; the state, the kind, the title and the summary; when, in UTC and in the division's time; who
- * organises it and the airports; a cancelled one with its note; the routes the flight operations wrote; its public slots (E5); the
- * description. To the
- * staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
+ * One event (§7.1): the banner; the state, the kind, the title and the summary; on its day who is online at its airports (E6b); when,
+ * in UTC and in the division's time; who organises it and the airports; when its bookings open, counted down to (E6b); a cancelled one
+ * with its note; the routes the flight operations wrote; its public slots (E5), narrowed by the filters of the address and booked from
+ * the dialog of a slot (E6b); the description. To the staff, when nobody else sees it, a line that says so and why, and the way back to
+ * the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
   const { t } = useTranslation();
   const read = useLocalized();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const kinds = bootstrap?.calendarKinds ?? [];
   const summary = read(event.summary);
+  const timezone = bootstrap?.division.timezone;
+
+  // What the slots are narrowed to lives in the address, as the filters of /events do: a link keeps them.
+  const filters = eventPageSearchSchema.parse(useSearch({ strict: false }));
+  const onFilter = (patch: Partial<EventPageSearch>) =>
+    void navigate({
+      search: ((previous: EventPageSearch) => ({ ...previous, ...patch })) as never,
+      to: '.',
+      replace: true,
+    });
+
+  // The reader's own bookings of this event, from their own list: the page never says who took a slot.
+  const signedIn = bootstrap?.user !== null && bootstrap?.user !== undefined;
+  const { data: mine } = useQuery({ ...myBookingsQuery(), enabled: signedIn });
+  const viewer = useMemo<SlotViewer>(
+    () => ({
+      signedIn,
+      mine: new Map(
+        (mine ?? [])
+          .filter((booking) => booking.eventId === event.id)
+          .map((booking) => [booking.slotId, booking]),
+      ),
+    }),
+    [signedIn, mine, event.id],
+  );
+
+  // When the count reaches the opening, the page is read again: the slots are offered from that moment.
+  const slug = event.slug;
+  const onOpen = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: publicEventQuery(slug).queryKey });
+  }, [queryClient, slug]);
 
   return (
     <article className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
@@ -256,6 +304,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
         {summary === '' ? null : <Lead>{summary}</Lead>}
       </header>
 
+      <EventDayStrip event={event} timezone={timezone} />
+
       {event.cancelledAt === null ? null : (
         <Notice
           tone="warning"
@@ -267,12 +317,17 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[max-content_1fr]">
         <dt className="text-muted-foreground text-sm">{t('events:public.when')}</dt>
         <dd>
-          <EventWhen
-            startsAtUtc={event.startsAtUtc}
-            endsAtUtc={event.endsAtUtc}
-            timezone={bootstrap?.division.timezone}
-          />
+          <EventWhen startsAtUtc={event.startsAtUtc} endsAtUtc={event.endsAtUtc} timezone={timezone} />
         </dd>
+
+        {event.bookingOpensAtUtc === null ? null : (
+          <>
+            <dt className="text-muted-foreground text-sm">{t('events:public.booking.title')}</dt>
+            <dd>
+              <BookingOpening event={event} timezone={timezone} onOpen={onOpen} />
+            </dd>
+          </>
+        )}
 
         <dt className="text-muted-foreground text-sm">{t('events:events.fields.organizer')}</dt>
         <dd className="flex flex-wrap items-center gap-x-3">
@@ -307,7 +362,16 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
       {event.routes.length === 0 ? null : <EventRoutes event={event} />}
 
-      {event.slots.length === 0 ? null : <EventSlots event={event} />}
+      {event.slots.length === 0 ? null : (
+        <EventSlots event={event} filters={filters} onFilter={onFilter} viewer={viewer} />
+      )}
+
+      {/* A member's way to their bookings, all of them and the withdrawing (E6b). */}
+      {viewer.mine.size === 0 ? null : (
+        <RouterAnchor href={MY_EVENTS_PAGE} className="text-sm underline">
+          {t('events:mine.title')}
+        </RouterAnchor>
+      )}
 
       <ContentRenderer body={readBody(event.body)} />
     </article>

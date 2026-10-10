@@ -36,7 +36,8 @@
       "description": "Description",
       "airports": "Airports",
       "routes": "Routes",
-      "slots": "Slots"
+      "slots": "Slots",
+      "bookings": "Bookings"
     },
     "actions": {
       "publish": "Publish",
@@ -44,7 +45,9 @@
     },
     "publish": {
       "problems": "Before it can be published, it still needs:",
-      "saveFirst": "Save the settings first: «Publish» publishes the event as it is saved."
+      "saveFirst": "Save the settings first: «Publish» publishes the event as it is saved.",
+      "confirmTitle": "Publish the event?",
+      "confirmDescription": "It will be on the site, in the calendar and in the search, and it will not go back to a draft: from then on it can only be cancelled."
     },
     "delete": {
       "title": "Delete this event?",
@@ -194,7 +197,7 @@
     },
     "delete": {
       "title": "Delete this slot?",
-      "description": "The slot is taken out of the event and off its page."
+      "description": "The slot is taken out of the event and off its page. A booked slot is not deleted: take its booking away first."
     },
     "deleteFree": {
       "trigger": "Delete the free ones",
@@ -238,7 +241,19 @@
       "kind": "Kind",
       "anyKind": "Every kind",
       "airport": "Airport",
-      "anyAirport": "Every airport"
+      "anyAirport": "Every airport",
+      "title": "Narrow the slots",
+      "direction": "Departures or arrivals",
+      "bothDirections": "Both",
+      "from": "From (UTC)",
+      "until": "Until (UTC)",
+      "anyHour": "Any time",
+      "anyType": "Every type",
+      "airline": "Airline",
+      "anyAirline": "Every airline",
+      "rotation": "Rotation",
+      "anyRotation": "Every slot",
+      "noSlots": "No slot with these filters."
     },
     "calendar": "In the calendar",
     "calendarEmpty": "No event in this stretch of the calendar.",
@@ -261,6 +276,29 @@
     "slotState": "Slot",
     "free": "Free",
     "taken": "Taken",
+    "yours": "Yours",
+    "onlineAtTheAirports": "Online at the airports of the event",
+    "booking": {
+      "title": "Bookings",
+      "panel": "Book this slot",
+      "opensAt": "They open on",
+      "openSince": "Open since",
+      "untilOffBlock": "Each slot is booked until its off block.",
+      "countdownDays": "In {{days}} d {{time}}",
+      "countdown": "In {{time}}",
+      "closedCancelled": "Closed: the event is cancelled.",
+      "notOpen": "The bookings of this event are not open yet: the page says when they open.",
+      "signIn": "Sign in to book this slot",
+      "aircraft": "The aircraft you fly",
+      "book": "Book with {{aircraft}}",
+      "bookRotation": "Book the whole rotation",
+      "yours": "This slot is yours, with your {{aircraft}}.",
+      "toMine": "Your bookings",
+      "rotationResult": "The legs of the rotation",
+      "rotationDone": "Booked: {{booked}} legs of {{of}}.",
+      "rotationNone": "No leg booked.",
+      "legBooked": "booked"
+    },
     "leg": "leg {{leg}}",
     "departures": "Departures",
     "arrivals": "Arrivals",
@@ -281,6 +319,48 @@
       "thisLeg": "this flight"
     }
   },
+  "mine": {
+    "title": "My bookings",
+    "lead": "The slots you booked in the events, past ones too. A booking is withdrawn until the off block of its flight.",
+    "none": "No booking yet",
+    "noneDescription": "Book a slot from the page of an event.",
+    "toEvents": "Go to the events",
+    "upcoming": "Still to fly",
+    "noneUpcoming": "No flight to come.",
+    "past": "Past",
+    "rotation": "rotation {{rotation}}",
+    "rotationLeg": "rotation {{rotation}}, leg {{leg}}",
+    "stand": "Stand {{stand}}",
+    "withdraw": "Withdraw",
+    "withdrawTitle": "Withdraw your booking of {{callsign}}?",
+    "withdrawDescription": "The slot is free again, and another pilot may book it."
+  },
+  "bookings": {
+    "fields": {
+      "pilot": "Pilot",
+      "callsign": "Callsign",
+      "aircraftIcao": "Aircraft",
+      "departureIcao": "From",
+      "offBlockUtc": "Off block",
+      "arrivalIcao": "To",
+      "onBlockUtc": "On block",
+      "rotation": "Rotation",
+      "createdAt": "Booked on",
+      "remindedAt": "Reminder sent"
+    },
+    "remove": {
+      "trigger": "Take away",
+      "title": "Take away the booking of {{callsign}}?",
+      "description": "The slot is free again, and the pilot receives an email with the reason.",
+      "confirm": "Take it away",
+      "fields": {
+        "reason": "Why"
+      },
+      "hints": {
+        "reason": "In your own words: the pilot reads it in the email, and it is kept nowhere else."
+      }
+    }
+  },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
   },
@@ -297,6 +377,13 @@
         "kinds": "The words of the calendar, as the calendar's block takes them. None, every kind.",
         "limit": "Zero shows as many as one list holds: the fifty soonest."
       }
+    },
+    "myEvents": {
+      "label": "My bookings",
+      "signIn": "Sign in to see your bookings.",
+      "none": "No booking.",
+      "toEvents": "Go to the events",
+      "all": "All your bookings"
     }
   },
   "settings": {
@@ -330,17 +417,43 @@
     "eventChanged": {
       "title": "Events whose times change",
       "description": "An email when the times of an event you booked a slot of, have a shift in or registered for change."
+    },
+    "bookingRemoved": {
+      "title": "Bookings taken away",
+      "description": "An email when the staff of the events take a booking of yours away, with the reason."
+    },
+    "bookingChanged": {
+      "title": "Booked flights corrected",
+      "description": "An email when the staff of the events correct the flight of a slot you booked: its callsign, times, airports or aircraft types."
+    },
+    "bookingReminder": {
+      "title": "Reminders of your flights",
+      "description": "An email the day before the flights you booked in an event, with their stands and the routes of the flight operations."
     }
   },
   "mail": {
     "events": {
       "eventCancelled": {
-        "subject": "[Events] Cancelled: {{event}}",
-        "body": "{{event}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "subject": "[Events] Cancelled: {{title}}",
+        "body": "{{title}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "eventChanged": {
-        "subject": "[Events] New times: {{event}}",
-        "body": "The times of {{event}} have changed: it now runs from {{starts}} to {{ends}}.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "subject": "[Events] New times: {{title}}",
+        "body": "The times of {{title}} have changed: it now runs from {{starts}} to {{ends}}, in UTC. Check that your bookings still suit you.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingRemoved": {
+        "subject": "[Events] Booking taken away: {{callsign}}, {{title}}",
+        "body": "The staff of the events have taken away your booking of {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, in {{title}}.\n\nWhy: {{reason}}\n\nThe slot is free again. The event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingChanged": {
+        "subject": "[Events] Your booked flight changed: {{callsign}}, {{title}}",
+        "body": "The staff of the events have corrected the flight you booked in {{title}}. It is now {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, on block {{onBlock}} UTC, for {{types}}.\n\nYour booking stays, with your {{aircraft}}. If it no longer suits you, you can withdraw it until its off block.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingReminder": {
+        "subject": "[Events] Your flights in {{title}}",
+        "body": "Your flights in {{title}} are close. The times are in UTC.\n\n{{flights}}\n\nFly with the callsign of your slot; if it is already in use on the network, connect with another one.\n\nThe event: {{url}}\nYour bookings, which you can withdraw until their off block: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
+        "stand": "stand",
+        "route": "Route"
       }
     }
   },
@@ -351,6 +464,7 @@
     "endsBeforeItStarts": "The event ends before it starts.",
     "visibilityChoice": "An event is seen by everybody or by the members.",
     "slugTaken": "Another event has this address.",
+    "slugReserved": "This address is the page of a member's own bookings: choose another.",
     "wholeDivisionHasAirports": "This event has airports of its own: take them out before making it about the whole division.",
     "eventUnknown": "This event does not exist.",
     "wholeDivisionHasNoAirports": "An event about the whole division has no airports of its own.",
@@ -393,6 +507,19 @@
     "slotTwice": "The event already has a slot with this callsign at this off block time.",
     "slotNotPublic": "A private slot is not corrected as a flight.",
     "exportDraft": "This event is a draft: it is exported once it is published.",
-    "bookingsContract": "Say which version of the contract the program speaks, in the Hub-Bookings-Contract header."
+    "bookingsContract": "Say which version of the contract the program speaks, in the Hub-Bookings-Contract header.",
+    "bookingPrivateSlot": "A private slot is booked from its own form, with the flight you fly.",
+    "slotNotInRotation": "This slot is not a leg of a rotation.",
+    "bookingCancelledEvent": "This event is cancelled: its slots are booked no more.",
+    "bookingNotOpen": "The bookings of this event are not open yet.",
+    "slotClosed": "This slot is closed: its off block time has passed.",
+    "slotAlreadyYours": "You booked this slot already.",
+    "slotJustTaken": "Slot just taken by another pilot.",
+    "bookingTryAgain": "Too many bookings in the same instant: nothing was booked. Try again.",
+    "bookingIncompatible": "Too close to another of your bookings in this event: there are fewer minutes than the event asks between the end of one and the start of the other.",
+    "aircraftNotAllowed": "This slot does not allow this aircraft type.",
+    "slotGone": "This slot is no longer in the event.",
+    "slotBooked": "A pilot booked this slot: take the booking away before deleting it.",
+    "eventHasBookings": "Pilots booked slots of this event: it cannot be deleted. Cancel it instead."
   }
 }
