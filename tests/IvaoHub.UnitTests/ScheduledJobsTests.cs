@@ -23,7 +23,8 @@ namespace IvaoHub.UnitTests;
 /// <summary>
 /// The pieces of the scheduled jobs that read no database (note <c>decisions/2026-10-09-i-job-che-recuperano.md</c>): when a
 /// job is due, the name of its lock, what the installation may say about the jobs, how the scheduled task's token is
-/// compared, and the time zones of the core's own triggers. The runs themselves are proven on MariaDB, in
+/// compared, in a header or in the address, and masked in the log, and the time zones of the core's own triggers. The runs
+/// themselves are proven on MariaDB, in
 /// <c>IvaoHub.IntegrationTests.ScheduledJobsTests</c>.
 /// </summary>
 public sealed class ScheduledJobsTests
@@ -197,7 +198,40 @@ public sealed class ScheduledJobsTests
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Basic {token}"), token));
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Bearer {token}x"), token));
         Assert.False(JobRunEndpoints.Carries(new StringValues($"Bearer {token[..^1]}"), token));
+        Assert.False(JobRunEndpoints.Carries(new StringValues("Bearer    "), token));
     }
+
+    [Fact]
+    public void TheTokenInTheAddressIsComparedAsTheHeadersIs()
+    {
+        const string token = "e10j-unit-token-of-the-installation-0123456789";
+
+        Assert.True(JobRunEndpoints.IsTheToken(token, token));
+        Assert.True(JobRunEndpoints.IsTheToken($" {token} ", token));
+
+        Assert.False(JobRunEndpoints.IsTheToken(null, token));
+        Assert.False(JobRunEndpoints.IsTheToken(string.Empty, token));
+        Assert.False(JobRunEndpoints.IsTheToken("   ", token));
+        Assert.False(JobRunEndpoints.IsTheToken($"{token}x", token));
+        Assert.False(JobRunEndpoints.IsTheToken(token[..^1], token));
+        Assert.False(JobRunEndpoints.IsTheToken(token.ToUpperInvariant(), token));
+    }
+
+    [Theory]
+    [InlineData("?token=secret", "?token=***")]
+    [InlineData("?a=1&token=secret&b=2", "?a=1&token=***&b=2")]
+    [InlineData("?TOKEN=secret", "?TOKEN=***")]
+    [InlineData("?%74oken=secret", "?%74oken=***")]
+    [InlineData("?token=one&token=two", "?token=***&token=***")]
+    [InlineData("token=secret", "token=***")]
+    [InlineData("?token=a%3Db&next=1", "?token=***&next=1")]
+    [InlineData("?tokens=secret", null)]
+    [InlineData("?token", null)]
+    [InlineData("?a=1", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void TheHubsLogWritesTheTokenOfTheAddressMasked(string? queryString, string? logged) =>
+        Assert.Equal(logged, JobRunEndpoints.MaskToken(queryString));
 
     // ---- the guard that cannot decide ------------------------------------------------------------------------------------
 

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -13,6 +14,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 using Quartz.Impl.Matchers;
+using Serilog.Core;
+using Serilog.Events;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -23,7 +26,8 @@ namespace IvaoHub.IntegrationTests;
 /// process was alive is made up a few seconds after the start, and a job not due is not; of two processes one runs a job and
 /// the other leaves it; a run done for its occurrence is not done again; the jobs that are due start one after the other;
 /// which runs count as the last; a job paused is left alone; and the scheduled task's address runs what is due inside its
-/// request, with the installation's token and only with it, for as long as its wait.
+/// request, with the installation's token and only with it, in a header or in the address, for as long as its wait, and
+/// the token in the address never reaches the hub's log.
 /// <para>Probe jobs of the test's own stand for the hub's, with a schedule that comes once a year: what makes one due is the
 /// rows of its last runs the test writes first. Every other job of the test's hosts is paused before the hub's first check,
 /// so nothing of the hub runs here, and no service outside is called. Each host has a scheduler of its own name: Quartz
@@ -282,15 +286,87 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
         using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
 
-        // Ten refusals a minute from one address, then no more: a wrong token cannot fill the log.
+        // Ten refusals a minute from one address, the token in a header or in the address, then no more: a wrong token
+        // cannot fill the log.
         for (var call = 0; call < 10; call++)
         {
-            using var refused = await RunAsync(client, Token + "-not-it", token);
+            using var refused = call % 2 == 0
+                ? await RunAsync(client, Token + "-not-it", token)
+                : await RunFromTheAddressAsync(client, Token + "-not-it", token);
             Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
         }
 
         using var limited = await RunAsync(client, Token + "-not-it", token);
         Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+
+        // The same limit for both ways, before the token is even looked at.
+        using var limitedToo = await RunFromTheAddressAsync(client, Token, token);
+        Assert.Equal(HttpStatusCode.TooManyRequests, limitedToo.StatusCode);
+    }
+
+    [Fact]
+    public async Task TheAddressTakesTheTokenInItsQueryWithTheSameAnswers()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await RowAsync(Probe.Due, DateTime.UtcNow.AddYears(-2), "succeeded", token);
+        await RowAsync(Probe.NotDue, DateTime.UtcNow.AddMinutes(-1), "succeeded", token);
+
+        using var client = Host(catchUp: false, token: Token, new Recorder()).CreateClient();
+
+        // No token, an empty one, or another: refused as in a header. A GET needs no header of the hub's own client.
+        foreach (var query in new[] { string.Empty, "?token=", $"?token={Token}-not-it" })
+        {
+            using var refused = await client.GetAsync(new Uri(Address + query, UriKind.Relative), token);
+            Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+            Assert.Equal("Bearer", refused.Headers.WwwAuthenticate.ToString());
+        }
+
+        Assert.Equal(0, _probe.Runs(Probe.Due));
+
+        // With the token it runs what is due inside the request, as the POST does.
+        using (var ran = await RunFromTheAddressAsync(client, Token, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, ran.StatusCode);
+            Assert.Equal([(Probe.Due, "Ran")], await OutcomesAsync(ran, token));
+        }
+
+        Assert.Equal(1, _probe.Runs(Probe.Due));
+
+        // An installation that has no token has no such address, either way.
+        using var without = Host(catchUp: false, token: null, new Recorder()).CreateClient();
+        using var missing = await RunFromTheAddressAsync(without, Token, token);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task TheTokenInTheAddressIsNeverWrittenToTheHubsLog()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var log = new LogCapture();
+
+        // ASP.NET Core told to write everything about its requests, as an installation may to look at them.
+        using var client = Host(catchUp: false, token: Token, new Recorder(), log: log).CreateClient();
+
+        using (var refused = await RunFromTheAddressAsync(client, Token + "-not-it", token))
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        }
+
+        using (var ran = await RunFromTheAddressAsync(client, Token, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, ran.StatusCode);
+        }
+
+        // Its lines of the two requests are written, with their query string, and the token's value is not.
+        var lines = log.Events
+            .Where(logEvent => logEvent.MessageTemplate.Text.StartsWith("Request starting", StringComparison.Ordinal)
+                && LogCapture.Written(logEvent).Contains(Address, StringComparison.Ordinal))
+            .ToList();
+        Assert.Equal(2, lines.Count);
+        Assert.All(lines, line => Assert.Contains("?token=***", LogCapture.Written(line), StringComparison.Ordinal));
+
+        // The wrong token starts with the right one: neither is anywhere in the log.
+        Assert.DoesNotContain(log.Events, logEvent => LogCapture.Written(logEvent).Contains(Token, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -350,27 +426,41 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     /// <summary>
     /// A host of the test's own: the probes it is given (the two that keep a log, unless told), a recorder of what became of
-    /// their runs, every other job paused, and the jobs' settings as the test says.
+    /// their runs, every other job paused, and the jobs' settings as the test says. With a <paramref name="log"/>, every
+    /// event of the host's log reaches it, and ASP.NET Core writes everything about its requests.
     /// </summary>
     private WebApplicationFactory<Program> Host(
         bool catchUp,
         string? token,
         Recorder recorder,
         string[]? probes = null,
-        int? waitSeconds = null)
+        int? waitSeconds = null,
+        LogCapture? log = null)
     {
         var host = _base.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    [CatchUpKey] = catchUp ? "true" : "false",
-                    [TokenKey] = token,
-                    [WaitKey] = waitSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                }));
+            var settings = new Dictionary<string, string?>
+            {
+                [CatchUpKey] = catchUp ? "true" : "false",
+                [TokenKey] = token,
+                [WaitKey] = waitSeconds?.ToString(CultureInfo.InvariantCulture),
+            };
+
+            if (log is not null)
+            {
+                settings["Serilog:MinimumLevel:Override:Microsoft.AspNetCore"] = "Verbose";
+            }
+
+            builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
 
             builder.ConfigureTestServices(services =>
             {
+                // The hub's logger takes every sink registered here, after its own enrichers.
+                if (log is not null)
+                {
+                    services.AddSingleton<ILogEventSink>(log);
+                }
+
                 services.AddSingleton(_probe);
                 services.AddQuartz(quartz =>
                 {
@@ -406,6 +496,10 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
         return await client.SendAsync(request, cancellationToken);
     }
+
+    /// <summary>The call of a panel that can only fetch an address: the token in it.</summary>
+    private static Task<HttpResponseMessage> RunFromTheAddressAsync(HttpClient client, string token, CancellationToken cancellationToken) =>
+        client.GetAsync(new Uri($"{Address}?token={Uri.EscapeDataString(token)}", UriKind.Relative), cancellationToken);
 
     /// <summary>The jobs the answer names, in its order, with what became of each.</summary>
     private static async Task<List<(string Job, string Outcome)>> OutcomesAsync(HttpResponseMessage response, CancellationToken cancellationToken) =>
@@ -445,7 +539,7 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         command.Parameters.AddWithValue("@name", $"hub-job:{connection.Database}:{job}");
 
         var deadline = DateTime.UtcNow.AddSeconds(30);
-        while (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture) != 1)
+        while (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture) != 1)
         {
             Assert.True(DateTime.UtcNow < deadline, $"The lock of {job} was still held after 30 seconds.");
             await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
@@ -605,5 +699,24 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    /// <summary>Every event of a host's log, as its sinks receive it: after the hub's enrichers.</summary>
+    internal sealed class LogCapture : ILogEventSink
+    {
+        private readonly ConcurrentQueue<LogEvent> _events = new();
+
+        public IReadOnlyList<LogEvent> Events => [.. _events];
+
+        public void Emit(LogEvent logEvent) => _events.Enqueue(logEvent);
+
+        /// <summary>Everything an event can write: its message, each of its properties, and its exception.</summary>
+        public static string Written(LogEvent logEvent) => string.Join(
+            '\n',
+            [
+                logEvent.RenderMessage(CultureInfo.InvariantCulture),
+                .. logEvent.Properties.Select(property => $"{property.Key}={property.Value}"),
+                logEvent.Exception?.ToString() ?? string.Empty,
+            ]);
     }
 }
