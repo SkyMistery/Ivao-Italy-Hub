@@ -472,35 +472,36 @@ public sealed class HubSaveChangesInterceptor(
         // Held on one of the departments of the row: whoever creates a row of a module has to put in
         // at least one department they hold the permission on (M2, note
         // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.3). A row of one department has one.
-        // And on its FIR, for a permission held on one (M3, A11a).
-        RequireAny(permission, owned.OwnerDepartments, RowFir(entry));
+        // And on its FIR, for a permission held on one (M3, A11a). And with its scope, as the single handler asks (M4, E10i, note
+        // 2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga): a permission granted on one row writes that row and the rows that
+        // answer with its scope — the slots of an event — and brings those into existence, never another row like it.
+        RequireAny(permission, owned.OwnerDepartments, RowScope(entry), RowFir(entry));
 
-        if (entry.State == EntityState.Modified
-            && OriginalDepartments(entry) is var original
-            && OriginalFir(entry) is var originalFir
-            && (!original.SequenceEqual(owned.OwnerDepartments) || !IsSameFir(originalFir, RowFir(entry))))
+        if (entry.State == EntityState.Modified && IsMoved(entry, owned))
         {
             // Moving a row between departments needs the permission on both sides, or it would be
             // a way of taking rows away from a department one row at a time. The same between two
-            // FIRs (M3, A11a): the team of a FIR neither takes a row of another FIR nor gives one away.
-            RequireAny(permission, original, originalFir);
+            // FIRs (M3, A11a): the team of a FIR neither takes a row of another FIR nor gives one away. And between two scopes
+            // (M4, E10i): a permission granted on one event neither takes a slot of another event nor gives one away.
+            RequireAny(permission, OriginalDepartments(entry), OriginalScope(entry), OriginalFir(entry));
         }
     }
 
     /// <summary>
     /// Whether one of the permissions the entity declares besides <c>Edit</c> lets this write through
-    /// (<see cref="AlsoWrittenWithAttribute"/>), each asked the way the single handler asks it. A change: with the row's
-    /// scope, never by the member the row is about, and never to move the row somewhere else. A creation, only for an
-    /// alternative marked so: without a scope — a new row has none of its own yet, and a permission granted on one row does
-    /// not bring others into existence — on at least one of the row's departments, as <c>Edit</c> is. A deletion, only for an
-    /// alternative marked so whose permission reaches only the rows assigned to the writer, with the row's scope.
+    /// (<see cref="AlsoWrittenWithAttribute"/>), each asked the way the single handler asks it, and the way <c>Edit</c> is: held
+    /// on the row, on one of its departments, with its scope and its FIR (<see cref="Holds"/>). A change: never by the member the
+    /// row is about, and never to move the row somewhere else (<see cref="IsMoved"/>). A creation, only for an alternative marked
+    /// so, with the scope the new row answers with (M4, E10i, note 2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga): a
+    /// permission granted on one row brings into existence the rows that answer with its scope, never another row like it. A
+    /// deletion, only for an alternative marked so whose permission reaches only the rows assigned to the writer.
     /// <para>Such a permission (<c>OnlyForAssignee</c> in the catalogue, M3, A3b) counts only on a row assigned to the writer
     /// (<see cref="IHasAssignee"/>): as the new row is, as the removed row was, and before and after a change, so a row is
     /// neither handed over nor taken. On any other row it does not count and <c>Edit</c> decides, which is what the single
     /// handler answers.</para>
     /// <para>Every one of them is asked with the row's FIR as well (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir): one the
     /// team of a FIR holds on its own FIR writes the rows of that FIR — the new row's, the removed row's, and the same before
-    /// and after a change, since no alternative moves a row between FIRs any more than between departments.</para>
+    /// and after a change, since no alternative moves a row between FIRs any more than between departments or scopes.</para>
     /// </summary>
     private bool IsWrittenWithAnAlternative(EntityEntry entry, IOwnedByDepartment owned)
     {
@@ -510,7 +511,7 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         var alternatives = entry.Metadata.ClrType.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false);
-        var scope = (entry.Entity as IHasResourceScope)?.ResourceScope;
+        var scope = RowScope(entry);
         var fir = RowFir(entry);
         var theirs = alternatives.Any(alternative => catalogue.IsOnlyForAssignee(alternative.Permission))
             && IsAssignedToTheWriter(entry);
@@ -522,20 +523,48 @@ public sealed class HubSaveChangesInterceptor(
         {
             EntityState.Added => alternatives.Any(alternative => alternative.AlsoOnCreation
                 && Reaches(alternative)
-                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, null, fir))),
+                && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir)),
 
             EntityState.Modified => alternatives.Any(alternative => Reaches(alternative)
-                    && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope, fir)))
-                && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments)
-                && IsSameFir(OriginalFir(entry), fir),
+                    && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir))
+                && !IsMoved(entry, owned),
 
             EntityState.Deleted => theirs && alternatives.Any(alternative => alternative.AlsoOnDeletion
                 && catalogue.IsOnlyForAssignee(alternative.Permission)
-                && owned.OwnerDepartments.Any(department => currentUser.Has(alternative.Permission, department, scope, fir))),
+                && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir)),
 
             _ => false,
         };
     }
+
+    /// <summary>
+    /// The scope the row answers with (<see cref="IHasResourceScope"/>, M4, E10i): the new row's or the changed row's as it is
+    /// being written, the removed row's as it was — as its FIR is read. A new row answers with the scope of the row above it when
+    /// it is one of its rows (a slot, with its event's), which a permission granted on that row reaches; or with its own, built on
+    /// a key the database has not given yet, which no grant names. None for a row that does not say one.
+    /// </summary>
+    private static string? RowScope(EntityEntry entry) =>
+        entry.State == EntityState.Deleted ? OriginalScope(entry) : (entry.Entity as IHasResourceScope)?.ResourceScope;
+
+    /// <summary>The scope the row answered with before this write, read from the original values, as its FIR is.</summary>
+    private static string? OriginalScope(EntityEntry entry) =>
+        entry.Entity is IHasResourceScope && entry.State != EntityState.Added
+            ? (entry.OriginalValues.ToObject() as IHasResourceScope)?.ResourceScope
+            : (entry.Entity as IHasResourceScope)?.ResourceScope;
+
+    /// <summary>Two scopes are the same one as the single handler compares them, character by character; two rows with none are alike.</summary>
+    private static bool IsSameScope(string? before, string? after) =>
+        string.Equals(before, after, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Whether a change takes the row somewhere else: into other departments, another FIR (M3, A11a) or another scope (M4,
+    /// E10i) — the three places a permission is held on a row in. <c>Edit</c> is then asked on both sides, and no alternative
+    /// lets it through.
+    /// </summary>
+    private static bool IsMoved(EntityEntry entry, IOwnedByDepartment owned) =>
+        !OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments)
+        || !IsSameScope(OriginalScope(entry), RowScope(entry))
+        || !IsSameFir(OriginalFir(entry), RowFir(entry));
 
     /// <summary>
     /// The FIR the row says it belongs to (<see cref="IHasFir"/>, M3, A11a): the new row's or the changed row's as it is being
@@ -588,9 +617,17 @@ public sealed class HubSaveChangesInterceptor(
         return DepartmentMask.Departments(mask);
     }
 
-    private void RequireAny(string permission, IReadOnlyList<Department> departments, string? fir)
+    /// <summary>
+    /// Whether the writer holds the permission on the row: on one of its departments, with its scope and its FIR — the question
+    /// the single handler asks of a row. <c>Edit</c> and every alternative are asked it alike, so the guard asks it one way (M4,
+    /// E10i): until then <c>Edit</c> was asked without the row's scope, and a permission granted on one row never wrote it.
+    /// </summary>
+    private bool Holds(string permission, IReadOnlyList<Department> departments, string? scope, string? fir) =>
+        departments.Any(department => currentUser.Has(permission, department, scope, fir));
+
+    private void RequireAny(string permission, IReadOnlyList<Department> departments, string? scope, string? fir)
     {
-        if (departments.Any(department => currentUser.Has(permission, department, null, fir)))
+        if (Holds(permission, departments, scope, fir))
         {
             return;
         }
