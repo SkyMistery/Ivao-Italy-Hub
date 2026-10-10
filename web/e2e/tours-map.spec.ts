@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { expect, test, type Page } from '@playwright/test';
 
 import { stubTheApi } from './fixtures';
+import { englishCommon } from './locales';
 
 /**
  * The map of a tour in a real browser, under the real policy (M2, T10).
@@ -18,6 +22,11 @@ import { stubTheApi } from './fixtures';
  */
 
 const SLUG = 'across-the-alps';
+
+/** The words of the module, read from the file the browser fetches. */
+const words = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../locales/en/flightops.json', import.meta.url)), 'utf8'),
+) as { public: { signInToReport: string } };
 
 const tour = {
   id: 1,
@@ -185,4 +194,19 @@ test('the map of a tour draws, with no base map to draw on and under the real po
   // ⚠️ The assertion the whole file is for: not one refusal from the policy. A `worker-src` or an
   // `img-src` that MapLibre needs and this hub does not grant shows up here and nowhere else.
   expect(complaints).toEqual([]);
+});
+
+test('a visitor who signs in from the page of a tour comes back to it, query and hash too', async ({ page }) => {
+  await stubTheTours(page);
+
+  await page.goto(`/tours/${SLUG}?from=calendar#legs`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Across the Alps' })).toBeVisible();
+
+  // The value, whole: the server answers `/` to a return address that is not a path of this site
+  // and says nothing, so a link that merely begins with `/auth/login` proves nothing. The link of
+  // the page and the one of the bar say the same, because both go through `loginHref`.
+  const back = `/auth/login?returnUrl=${encodeURIComponent(`/tours/${SLUG}?from=calendar#legs`)}`;
+
+  await expect(page.getByRole('link', { name: words.public.signInToReport })).toHaveAttribute('href', back);
+  await expect(page.getByRole('link', { name: englishCommon.auth.login })).toHaveAttribute('href', back);
 });
