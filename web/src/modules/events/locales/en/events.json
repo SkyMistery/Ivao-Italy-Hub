@@ -336,6 +336,7 @@
     "withdrawDescription": "The slot is free again, and another pilot may book it."
   },
   "bookings": {
+    "empty": "The pilots' bookings of the event's slots will show up here.",
     "fields": {
       "pilot": "Pilot",
       "callsign": "Callsign",

@@ -336,6 +336,7 @@
     "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo."
   },
   "bookings": {
+    "empty": "Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.",
     "fields": {
       "pilot": "Pilota",
       "callsign": "Nominativo",
