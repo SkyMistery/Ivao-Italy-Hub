@@ -26,6 +26,9 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The slots of the events, public and private (E5).</summary>
     public DbSet<EventSlot> Slots => Set<EventSlot>();
 
+    /// <summary>The pilots' bookings of the slots (E6a).</summary>
+    public DbSet<EventBooking> Bookings => Set<EventBooking>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -106,6 +109,33 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
             // A public slot is one flight of its event at one off block time (§1.5); a private one has no callsign, and a unique
             // index lets any number of empty ones through. It is also the index the lists read the slots of an event by.
             slot.HasIndex(row => new { row.EventId, row.Callsign, row.OffBlockUtc }).IsUnique();
+        });
+
+        modelBuilder.Entity<EventBooking>(booking =>
+        {
+            booking.ToTable("evt_bookings");
+            booking.HasKey(row => row.Id);
+            booking.Ignore(row => row.StakeholderVid);
+            booking.Ignore(row => row.ResourceScope);
+            booking.Property(row => row.AircraftIcao).HasMaxLength(4).IsRequired();
+            booking.Property(row => row.Callsign).HasMaxLength(EventSlot.MaxCodeLength);
+            booking.Property(row => row.OtherIcao).HasMaxLength(4);
+            booking.Property(row => row.UnflownExcusedNote).HasMaxLength(EventBooking.MaxNoteLength);
+
+            // One slot, one booking (§1.6): the database says it, so two pilots booking the same slot in the same instant meet here
+            // and one of them wins (§10.1). It is also the index of the key below.
+            booking.HasIndex(row => row.SlotId).IsUnique();
+
+            // A booked slot is not deleted (§1.5): the server says so first, and the key makes sure nobody forgets — an event
+            // deleted takes its slots, and a booked one stops it. No key towards the event itself: every insert would take a shared
+            // lock on the row the first booking of a pilot locks (§3.5), and two pilots booking the same slot could deadlock there.
+            booking.HasOne<EventSlot>().WithMany().HasForeignKey(row => row.SlotId).OnDelete(DeleteBehavior.Restrict);
+
+            // A pilot's bookings of an event: the row the next booking locks, and the ones its compatibility is checked against.
+            booking.HasIndex(row => new { row.EventId, row.BookerVid });
+
+            // A pilot's bookings of every event: their own page.
+            booking.HasIndex(row => row.BookerVid);
         });
     }
 }

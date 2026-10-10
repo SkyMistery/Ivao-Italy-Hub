@@ -118,9 +118,9 @@ export const eventsSearchSchema = listSearchSchema.extend({
 
 export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
-/** The tabs of an event's page: its settings, its description, its airports, its routes, its slots (design M4 §7.2). */
+/** The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings (design M4 §7.2). */
 export const eventEditorSearchSchema = z.object({
-  tab: z.enum(['settings', 'description', 'airports', 'routes', 'slots']).optional(),
+  tab: z.enum(['settings', 'description', 'airports', 'routes', 'slots', 'bookings']).optional(),
 });
 
 export type EventEditorTab = NonNullable<z.infer<typeof eventEditorSearchSchema>['tab']>;
@@ -339,3 +339,34 @@ export const eventsPublicSearchSchema = z.object({
 });
 
 export type EventsPublicSearch = z.output<typeof eventsPublicSearchSchema>;
+
+/** The two directions of a slot from the airport of the event (design M4 §3.3): the address writes one, or neither. */
+export const SLOT_DIRECTIONS = ['departures', 'arrivals'] as const;
+
+/**
+ * The address of the page of an event (E6b): what its list of slots is narrowed to (design M4 §3.3) — arrivals or departures, a
+ * stretch of hours at the airport of the event, an aircraft type, an airline, a rotation (`SlotFilters`). Left out, every slot. `catch`
+ * on each, as `/events` does: an address edited by hand shows the slots, not an error.
+ */
+export const eventPageSearchSchema = z.object({
+  direction: z.enum(SLOT_DIRECTIONS).optional().catch(undefined),
+  from: z.string().optional().catch(undefined),
+  until: z.string().optional().catch(undefined),
+  type: z.string().optional().catch(undefined),
+  airline: z.string().optional().catch(undefined),
+  rotation: z.string().optional().catch(undefined),
+});
+
+export type EventPageSearch = z.output<typeof eventPageSearchSchema>;
+
+// ---- the bookings (E6b) ------------------------------------------------------------------------------
+
+/**
+ * «Take away» (§3.6): why, in the staff's own words — the pilot reads it in the mail. Required by the server; the dialog keeps its
+ * confirmation off while it is empty, so the field passes as it is written, an emptied one included.
+ */
+export const bookingRemovalSchema = z.object({
+  reason: z.string().meta({ multiline: true }),
+});
+
+export type BookingRemovalValues = z.output<typeof bookingRemovalSchema>;

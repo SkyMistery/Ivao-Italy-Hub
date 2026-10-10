@@ -1,15 +1,16 @@
-import { Ticket } from 'lucide-react';
+import { PlaneTakeoff, Ticket } from 'lucide-react';
 import { z } from 'zod';
 
 import type { BlockRegistration } from '../../../shared/modules';
 import type { EventListData } from '../screens/cards';
 
 import { EventListBlock } from './eventList';
+import { MyEventsBlock, type MyEventsData } from './myEvents';
 
 /**
  * The blocks of the events (design M4 §7.3), as the manifest lists them. Each has its other half in `EventsModule.Blocks` on the
- * server, and the manifest test compares the two. The first is the list of the events (E4); the member's, the ATC's and the
- * staff's queue arrive with their phases (E6b, E12, E13b).
+ * server, and the manifest test compares the two. The first is the list of the events (E4), the second the member's bookings still
+ * to fly (E6b); the ATC's and the staff's queue arrive with their phases (E12, E13b).
  *
  * The example the gallery draws is of its own making — kinds and airports no division has —, and its dates are counted from when
  * the gallery is drawn, so that what is to come stays to come.
@@ -84,4 +85,54 @@ export const eventListBlock: BlockRegistration = {
   propertyLabels: 'events:blocks.eventList',
   group: 'data',
   icon: Ticket,
+};
+
+/** A booking of the gallery's own making: a flight of an event of no division, some days from when the gallery is drawn. */
+function galleryBooking(id: number, callsign: string, days: number, from: string, to: string) {
+  return {
+    id,
+    slotId: id,
+    eventId: 1,
+    eventSlug: 'gallery-evening',
+    eventTitle: { en: 'An evening at two airports', it: 'Una sera su due scali' },
+    eventState: 'BookingOpen',
+    kind: 'Public',
+    callsign,
+    flightNumber: null,
+    aircraftIcao: 'XA20',
+    departureIcao: from,
+    offBlockUtc: inDays(days),
+    arrivalIcao: to,
+    onBlockUtc: inDays(days + 0.05),
+    isArrival: false,
+    stand: null,
+    rotation: 'R1',
+    leg: id,
+    withdrawable: true,
+    createdAt: inDays(-1),
+  } as const;
+}
+
+/**
+ * The reader's bookings still to fly (§7.3, E6b): on `/me`, where a dashboard puts it from the back office. No property — it is the
+ * reader's —, and a line that asks a visitor to sign in.
+ */
+export const myEventsBlock: BlockRegistration = {
+  type: 'events.myEvents',
+  version: 1,
+  kind: 'Data',
+  alwaysLive: true,
+  schema: z.object({}),
+  component: MyEventsBlock,
+  example: {},
+  exampleData: {
+    signedIn: true,
+    bookings: [
+      galleryBooking(1, 'XXA101', 5, 'XX01', 'XX02'),
+      galleryBooking(2, 'XXA102', 5.1, 'XX02', 'XX01'),
+    ],
+  } satisfies MyEventsData,
+  editorLabelKey: 'events:blocks.myEvents.label',
+  group: 'data',
+  icon: PlaneTakeoff,
 };
