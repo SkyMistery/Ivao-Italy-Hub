@@ -15,18 +15,20 @@ import englishEvents from '../locales/en/events.json';
 import italianEvents from '../locales/it/events.json';
 
 import { AirportsTab } from './airports';
+import { BookingsTab } from './bookings';
 import { EventsPage } from './events';
+import { MyBookingsPage } from './mine';
 import { EventPublicPage, EventsPublicPage } from './public';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
 
 /**
- * What the events say of themselves with the words the core now takes (#224, E4c): `/events` names itself in the browser tab, as
- * the core's list pages do; the page of an event keeps the tab it had, now that the division's name after its title comes from
- * the root and not from a name the page worked out by hand; and the lists of the events in the back office — the «Slots»,
- * «Routes» and «Airports» tabs of an event, and the events themselves —, empty, say what will be there instead of the core's
- * sentence about what a department creates: the same words to whoever writes the rows and to whoever only reads them, who has none
- * of the buttons.
+ * What the events say of themselves with the words the core now takes (#224, E4c): `/events` and a member's `/events/mine` name
+ * themselves in the browser tab, as the core's list pages do; the page of an event keeps the tab it had, now that the division's
+ * name after its title comes from the root and not from a name the page worked out by hand; and the lists of the events in the back
+ * office — the «Slots», «Routes», «Airports» and «Bookings» tabs of an event, and the events themselves —, empty, say what will be
+ * there instead of the core's sentence about what a department creates: the same words to whoever writes the rows and to whoever only
+ * reads them, who has none of the buttons.
  *
  * ⚠️ The root is the application's own (`__root.tsx`), as in the core's `-titles.test.tsx`: the division's name is said there,
  * once, above every page, and a root of the test's would prove a tree nobody runs.
@@ -75,6 +77,8 @@ const event: PublicEventDto = {
   bannerMediaId: null,
   startsAtUtc: '2099-11-21T16:00:00Z',
   endsAtUtc: '2099-11-21T22:00:00Z',
+  // An event whose bookings open nobody has said when: the page draws no count down (E6b), which this test does not look at.
+  bookingOpensAtUtc: null,
   state: 'Announced',
   unseen: null,
   wholeDivision: false,
@@ -91,20 +95,24 @@ const detail = { id: event.id } as EventDetailDto;
 /** What every list and the block of the events answer: nothing at all. */
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
+/** The answers that are not a page of rows: the page of the event, and a member's own bookings, a plain list (E6b). */
+const ANSWERS: Readonly<Record<string, unknown>> = {
+  '/api/events/public/{slug}': event,
+  '/api/events/mine/bookings': [],
+};
+
 afterEach(() => {
   api.get.mockReset();
 });
 
 /**
- * The application's root with the pages of the events under it, at `path`: `/events`, the page of the event, and under a route
- * `/_staff`, whose context is the root's bootstrap as the back office's layout hands it on, its tabs and the list of the events.
+ * The application's root with the pages of the events under it, at `path`: `/events`, a member's `/events/mine`, the page of the
+ * event, and under a route `/_staff`, whose context is the root's bootstrap as the back office's layout hands it on, its tabs and the
+ * list of the events.
  */
 async function open(path: string, { editable = false }: { editable?: boolean } = {}) {
   api.get.mockImplementation((route: string) =>
-    Promise.resolve({
-      data: route === '/api/events/public/{slug}' ? event : EMPTY,
-      response: new Response(null),
-    }),
+    Promise.resolve({ data: ANSWERS[route] ?? EMPTY, response: new Response(null) }),
   );
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -116,6 +124,7 @@ async function open(path: string, { editable = false }: { editable?: boolean } =
   const router = createRouter({
     routeTree: rootRoute.addChildren([
       createRoute({ getParentRoute: () => rootRoute, path: '/events', component: EventsPublicPage }),
+      createRoute({ getParentRoute: () => rootRoute, path: '/events/mine', component: MyBookingsPage }),
       createRoute({ getParentRoute: () => rootRoute, path: '/events/$slug', component: EventPublicPage }),
       staff.addChildren([
         createRoute({
@@ -132,6 +141,11 @@ async function open(path: string, { editable = false }: { editable?: boolean } =
           getParentRoute: () => staff,
           path: '/airports',
           component: () => <AirportsTab event={detail} editable={editable} />,
+        }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/bookings',
+          component: () => <BookingsTab event={detail} editable={editable} />,
         }),
         createRoute({ getParentRoute: () => staff, path: '/staff/events', component: EventsPage }),
       ]),
@@ -182,6 +196,16 @@ describe('the tab of a page of the events', () => {
     await act(() => i18n.changeLanguage('it'));
     await waitFor(() => expect(document.title).toBe('Un evento di prova — IVAO Esempio'));
     expect(said('meta[property="og:site_name"]')).toBe('IVAO Esempio');
+  });
+
+  test('a member’s /events/mine says its title in the tab, in the language on screen', async () => {
+    const { i18n } = await open('/events/mine');
+
+    await waitFor(() => expect(document.title).toBe(`${englishEvents.mine.title} — IVAO Example`));
+    expect(said('meta[name="description"]')).toBe(englishEvents.mine.lead);
+
+    await act(() => i18n.changeLanguage('it'));
+    await waitFor(() => expect(document.title).toBe(`${italianEvents.mine.title} — IVAO Esempio`));
   });
 });
 
@@ -240,6 +264,18 @@ describe('the empty lists of the events', () => {
 
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.airports.empty)).toBeInTheDocument();
+    expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+
+  test('an empty «Bookings» tab says what will be there, in both languages, and not the core’s sentence', async () => {
+    const { i18n } = await open('/bookings', { editable: true });
+
+    expect(await screen.findByText(englishEvents.bookings.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishCommon.list.empty.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.bookings.empty)).toBeInTheDocument();
     expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
   });
 
