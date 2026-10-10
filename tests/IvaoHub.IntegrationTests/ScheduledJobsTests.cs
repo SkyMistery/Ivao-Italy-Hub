@@ -365,6 +365,13 @@ public sealed class ScheduledJobsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(2, lines.Count);
         Assert.All(lines, line => Assert.Contains("?token=***", LogCapture.Written(line), StringComparison.Ordinal));
 
+        // Serilog's own line of each request writes the path, without the query string.
+        var requests = log.Events
+            .Where(logEvent => logEvent.MessageTemplate.Text.StartsWith("HTTP {RequestMethod} {RequestPath}", StringComparison.Ordinal))
+            .ToList();
+        Assert.Equal(2, requests.Count);
+        Assert.All(requests, request => Assert.Equal($"\"{Address}\"", request.Properties["RequestPath"].ToString()));
+
         // The wrong token starts with the right one: neither is anywhere in the log.
         Assert.DoesNotContain(log.Events, logEvent => LogCapture.Written(logEvent).Contains(Token, StringComparison.Ordinal));
     }
