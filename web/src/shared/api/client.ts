@@ -51,9 +51,35 @@ export const api = createClient<paths>({
 
 api.use(unauthorizedMiddleware);
 
-/** Where the browser goes to start a login. A Kestrel endpoint, not a route of this application. */
+/**
+ * Where the browser goes to start a login. A Kestrel endpoint, not a route of this application.
+ *
+ * `returnUrl` is where the visitor stands: the router's `location.href` (path, query and hash) is the
+ * one to pass, and it is what every caller passes. The window's is taken as well, because the two
+ * share a name and only one of them begins with a slash.
+ */
 export function loginHref(returnUrl: string): string {
-  return `/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+  return `/auth/login?returnUrl=${encodeURIComponent(returnPath(returnUrl))}`;
+}
+
+/**
+ * An address of this site as the server wants it back: a path that begins with one slash, with its
+ * query and its hash.
+ *
+ * ⚠️ The server answers `/` to anything else (`SafeReturnUrl`, against open redirects) and says
+ * nothing: an absolute address of this very site would sign the visitor in and leave them on the
+ * home page, a fault no screen shows. So the reduction is made here, once, and an address of
+ * another site becomes `/` here as it would there. The server's check stays the one that counts.
+ */
+function returnPath(address: string): string {
+  const here = window.location.origin;
+
+  try {
+    const url = new URL(address, here);
+    return url.origin === here ? `${url.pathname}${url.search}${url.hash}` : '/';
+  } catch {
+    return '/';
+  }
 }
 
 /**

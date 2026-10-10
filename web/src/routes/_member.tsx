@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, redirect, useMatches } from '@tanstack/react-router';
 
 import { Shell } from '../app/layouts/Chrome';
+import { loginHref } from '../shared/api/client';
 
 /**
  * Recipe 1 (design M0 §7.3): the guard reads the bootstrap the root already loaded and never
@@ -13,7 +14,7 @@ import { Shell } from '../app/layouts/Chrome';
 export const Route = createFileRoute('/_member')({
   beforeLoad: ({ context, location }) => {
     if (!context.bootstrap.user) {
-      throw redirect({ href: `/auth/login?returnUrl=${encodeURIComponent(location.href)}` });
+      throw redirect({ href: loginHref(location.href) });
     }
   },
   component: MemberLayout,
