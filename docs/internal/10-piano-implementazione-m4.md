@@ -110,7 +110,7 @@ Per non ripeterle trenta volte:
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
 | E10k | Nucleo: le parole delle liste e i titoli delle schede | E0 (l'issue #224, decisa da Carmine) | la paginazione della lista generata tradotta; il titolo della scheda di ogni pagina, il nome della divisione come predefinito; una frase vuota per lista; «Premi Invio per salvare» solo dove Invio salva |
-| E4c | Gli eventi dicono il loro titolo e le loro liste vuote | E4, E5, E10k (l'uso dei suoi pezzi negli eventi, in una fase a sé: scelta di dalberone) | `/events` dice il suo titolo nella scheda; la pagina di un evento lascia il nome della divisione alla radice; le liste vuote del modulo — le schede «Slot», «Rotte» e «Scali», `/staff/events` — dicono una frase loro |
+| E4c | Gli eventi dicono il loro titolo e le loro liste vuote | E4, E5, E10k (l'uso dei suoi pezzi negli eventi, in una fase a sé: scelta di dalberone) | `/events` e `/events/mine` dicono il loro titolo nella scheda; la pagina di un evento lascia il nome della divisione alla radice; le liste vuote del modulo — le schede «Slot», «Rotte», «Scali» e «Prenotazioni», `/staff/events` — dicono una frase loro |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -2908,7 +2908,10 @@ parla di un dipartimento.
 **Com'è andata** (9 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238; nata sopra E10k a
 `d307774`, e prima del push ne ha unito la testa nuova, `b36e663`, con il formato dei suoi quattro file: sotto, «Trovato». Dopo il primo
 push, su indicazione della sessione coordinatrice, ha unito anche `fdb551d` (`212d676`): la revisione di E10k — due correzioni piccole
-del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa3707a`, con la #241 che rimette verde il test del meteo):
+del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa3707a`, con la #241 che rimette verde il test del meteo. Il 10
+ottobre, unite E6a (#233) ed E6b (#240), la #242 era in conflitto sui documenti: il revisore ha chiesto `main`
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6096405374)), e questa fase ha unito `f7e9839`,
+la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #240 e la #242, e fa le due righe che toccavano a lei):
 
 - **Fatto**:
   - **`/events`** (`EventsPublicPage` in `web/src/modules/events/screens/public.tsx`):
@@ -2924,11 +2927,15 @@ del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa37
     «Non c'è ancora niente»;
   - **anche la scheda «Scali» e `/staff/events`** (seconda scelta di dalberone, sotto): `emptyDescription={t('events:airports.empty')}`
     in `AirportsTab` (`screens/airports.tsx`) ed `emptyDescription={t('events:events.empty')}` in `EventsPage` (`screens/events.tsx`),
-    dove `emptyAction` offre ancora «Nuovo evento» a chi scrive gli eventi. Così nessuna lista generata del modulo dice più la frase del
-    nucleo;
-  - **i test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (8), sulla radice vera dell'app come
+    dove `emptyAction` offre ancora «Nuovo evento» a chi scrive gli eventi;
+  - **dopo l'unione di E6b** (10 ottobre, le due righe della seconda fra la #240 e la #242, e la terza scelta di dalberone):
+    `/events/mine` (`MyBookingsPage` in `screens/mine.tsx`) dice il suo titolo con
+    `<PageMetadata title={t('events:mine.title')} description={t('events:mine.lead')} />`; il `PublicEventDto` del test ha
+    `bookingOpensAtUtc: null`, che E6b rende obbligatorio; e la scheda «Prenotazioni» (`BookingsTab` in `screens/bookings.tsx`) dice
+    `events:bookings.empty`. Così nessuna lista generata del modulo dice più la frase del nucleo;
+  - **i test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (10), sulla radice vera dell'app come
     `web/src/routes/-titles.test.tsx` di E10k; due `toHaveTitle` in `web/e2e/events-public.spec.ts`, la smoke degli eventi.
-- **Scelte di dalberone** (9 ottobre, chieste con la raccomandazione per prima; accolte tutte e due):
+- **Scelte di dalberone** (9 e 10 ottobre, chieste con la raccomandazione per prima; accolte tutte e tre):
   1. **parole che descrivono, non che invitano** (prima del codice). Il prompt proponeva «Nessuno slot: incolla una tabella o creane
      uno», che parla a chi scrive; ma la scheda la vede anche chi legge e basta (`EventBookings.View` o `EventRoutes.View` senza la
      scrittura: nella divisione l'ED e l'FOD li hanno insieme, ma un grant a un VID può dare la sola lettura), e a lui i bottoni non si
@@ -2944,15 +2951,20 @@ del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa37
        up here, each with its capacity.» (la scheda si disegna solo per un evento con scali suoi, mai per uno di tutta la divisione);
      - `events.empty`: «Qui compariranno gli eventi della divisione, dalle bozze a quelli conclusi.» — «The events of the division will
        show up here, from the drafts to the ended ones.» (sotto un filtro senza righe, «Annullati» per esempio, si legge lo stesso, come
-       prima la frase del nucleo).
+       prima la frase del nucleo);
+  3. **anche la scheda «Prenotazioni» di E6b** (10 ottobre, all'unione di `main`: la quinta lista generata del modulo, nata dopo E4c):
+     - `bookings.empty`: «Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.» — «The pilots' bookings of the event's
+       slots will show up here.».
 - **Scelte della fase**:
-  1. le chiavi nelle sezioni delle quattro liste, `slots.empty`, `routes.empty`, `airports.empty` ed `events.empty`: la schermata le passa
-     da sé, e `DataList` non le legge per convenzione (la nota di E10k, §2.3, scarta `<labels>.empty` proprio perché lo stesso `labels`
-     serve a più liste);
+  1. le chiavi nelle sezioni delle cinque liste, `slots.empty`, `routes.empty`, `airports.empty`, `events.empty` e `bookings.empty`: la
+     schermata le passa da sé, e `DataList` non le legge per convenzione (la nota di E10k, §2.3, scarta `<labels>.empty` proprio perché lo
+     stesso `labels` serve a più liste);
   2. i test montano la radice vera, e le schede e la lista degli eventi sotto una rotta `/_staff` del test, senza componente: il contesto
      è quello della radice, il bootstrap, e `useRouteContext({ from: '/_staff' })` lo legge come nel back office;
   3. la frase degli slot dice come arrivano oggi, incollati o creati: quando **E7** porterà nella stessa scheda gli slot privati
-     generati, la rilegge.
+     generati, la rilegge;
+  4. `/events/mine` passa anche la descrizione, `events:mine.lead`, come `/events` passa la sua: la riga concordata con E6b diceva solo il
+     titolo.
 - **Trovato**:
   - ⚠️ **`pnpm format:check` cadeva su quattro file di E10k**, del nucleo: `web/src/routes/-titles.test.tsx`,
     `web/src/shared/forms/SchemaForm.enter.test.tsx`, `web/src/shared/forms/SchemaForm.tsx` e `web/src/shared/list/DataList.words.test.tsx`
@@ -2961,15 +2973,21 @@ del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa37
     l'ho detto alla sessione coordinatrice, E10k li ha corretti (`68b0a3a`, solo formato; `b36e663` nei suoi documenti) e questa fase ne
     ha unito la testa prima del push (`55b9b3c`): ora `format:check` è verde su tutto;
   - `pnpm i18n:check` non legge le chiavi con lo spazio dei nomi: la sua espressione (`[\w.-]+`) si ferma ai due punti di
-    `t('events:…')`. Le quattro chiavi nuove le prova il test vitest, che legge il testo nelle due lingue; che le due lingue abbiano le
+    `t('events:…')`. Le cinque chiavi nuove le prova il test vitest, che legge il testo nelle due lingue; che le due lingue abbiano le
     stesse chiavi lo controlla `i18n:check`; nessuna fa doppione con il nucleo (nessun file del nucleo ha in cima `slots`, `routes`,
-    `airports` o `events`: `events` c'è solo in `flightops.json`, un altro modulo, e lì si legge con lo spazio dei nomi);
-  - **con E6b** (in coda dopo la #233, sugli stessi `public.tsx` ed `events.json`): `git merge-tree` con la sua testa fonde puliti tutti
-    i file di codice, e resta il conflitto noto di `HANDOFF-M4.md`. ⚠️ Due righe per chi delle due arriva seconda (concordate con la
-    sessione di E6b): E6b rende obbligatorio `bookingOpensAtUtc` in `PublicEventDto`, e il test nuovo scrive un `PublicEventDto` intero,
-    quindi va aggiunto `bookingOpensAtUtc: null` al suo evento; e la pagina `/events/mine` di E6b (`MyBookingsPage` in
-    `screens/mine.tsx`) dice il suo titolo con `<PageMetadata title={t('events:mine.title')} />`.
-- **Verificato, in locale** (9 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+    `airports`, `events` o `bookings`: `events` c'è solo in `flightops.json`, un altro modulo, e lì si legge con lo spazio dei nomi);
+  - **con E6b** (sugli stessi `public.tsx` ed `events.json`): `git merge-tree` con la sua testa fondeva puliti tutti i file di codice, e
+    così è stato all'unione di `main` del 10 ottobre (il solo conflitto, l'intestazione di `HANDOFF-M4.md`). Le due righe concordate con
+    la sessione di E6b per la seconda fra la #240 e la #242 le ha fatte E4c (sopra, «Fatto»).
+- **Verificato, in locale** (9 e 10 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+  - dopo l'unione di `f7e9839` (`6d4ab5d`, `main` a `ba06d66`) e le righe della seconda fra la #240 e la #242: `pnpm lint`,
+    `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test`
+    **708/708** in 97 file (i 698 di E10k con `main`, e i 10 di questa fase); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi,
+    unità **1203/1203**; i test nuovi da soli 10/10, e **la prova al contrario** sui due nuovi: con `mine.tsx` e `bookings.tsx` di `main`
+    cadono loro 2 su 10; la smoke **180/180** al primo giro (1,1 minuti), i due `toHaveTitle` compresi; `pnpm e2e:full` **58/58** al primo
+    giro (11,8 minuti, `ivaohub_e2e_e4c` ricreato; uno spec in più, di E6b); le regole di
+    `core-guard` dalla testa di E10k `f7e9839`: quindici file, i tredici di prima con `bookings.tsx` e `mine.tsx`, nessuno del maintainer
+    né del nucleo;
   - dopo l'unione di `fdb551d` (`212d676`, `main` ad `aa3707a`): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
     `pnpm i18n:check` (822 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **670/670** in 92 file (i tre in più sono della
     revisione di E10k); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1187/1187** (il test del meteo verde); la
@@ -2993,7 +3011,8 @@ del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa37
 - **Non verificato**:
   - la CI del primo push: «Test .NET» rosso per #236, e nessun passo web (li ho fatti girare in locale, sopra). Dopo l'unione di
     `fdb551d` la CI gira intera, e la sua lettura la dice la PR;
-  - la suite di integrazione, in locale: nessun file .NET di questa fase, e il client NOAA di `main` l'ha provato la CI della #241;
+  - la suite di integrazione, in locale: nessun file .NET di questa fase, e il C# dell'albero unito è quello di `main`, provato dalla CI
+    delle sue PR (la #241, la #233, la #240, la #244); la CI della #242 la rifà;
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
 ### E11a — Postazioni e disponibilità

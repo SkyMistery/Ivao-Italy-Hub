@@ -176,29 +176,30 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E4c (9 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238)
+### Che cosa ha lasciato E4c (9–10 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4c, «Com'è andata»; nessun file del nucleo, nessuna nota nuova): gli eventi usano i pezzi di
   E10k.
-  - **`/events` dice il suo titolo nella scheda**: `PageMetadata` con `events:public.title` ed `events:public.description` in
-    `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`), «Eventi — IVAO Italia».
-  - **La pagina di un evento** (`EventScreen`, lo stesso file) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
+  - **`/events` e `/events/mine` dicono il loro titolo nella scheda**: `PageMetadata` con `events:public.title` ed
+    `events:public.description` in `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`), «Eventi — IVAO Italia»; con
+    `events:mine.title` ed `events:mine.lead` in `MyBookingsPage` (`screens/mine.tsx`), «Le mie prenotazioni — IVAO Italia».
+  - **La pagina di un evento** (`EventScreen`, `public.tsx`) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
     e la scheda dice come prima il titolo dell'evento e «— IVAO Italia».
-  - **Le liste vuote del modulo dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede «Slot»
-    (`events:slots.empty`), «Rotte» (`events:routes.empty`) e «Scali» (`events:airports.empty`) di un evento, e `/staff/events`
-    (`events:events.empty`). Parole che descrivono e non invitano (scelta di dalberone): vere per chi scrive, che ha i bottoni sopra, e
-    per chi legge e basta, che non li ha.
-  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (8, sulla radice vera dell'app) e due `toHaveTitle` nella
+  - **Le cinque liste generate del modulo, vuote, dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede
+    «Slot» (`events:slots.empty`), «Rotte» (`events:routes.empty`), «Scali» (`events:airports.empty`) e «Prenotazioni»
+    (`events:bookings.empty`) di un evento, e `/staff/events` (`events:events.empty`). Parole che descrivono e non invitano (scelte di
+    dalberone): vere per chi scrive, che ha i bottoni sopra, e per chi legge e basta, che non li ha.
+  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (10, sulla radice vera dell'app) e due `toHaveTitle` nella
     smoke `web/e2e/events-public.spec.ts`.
+  - **Le due righe della seconda fra la #240 e la #242** le ha fatte E4c all'unione di `main` del 10 ottobre: `bookingOpensAtUtc: null`
+    nel `PublicEventDto` del test e il titolo di `/events/mine`.
 - **Che cosa devono sapere le fasi dopo**:
   - **Una pagina nuova degli eventi** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, senza `divisionName`; **una
     lista nuova del modulo** dice la sua frase vuota con `emptyDescription`, una chiave `<lista>.empty` passata dalla schermata (`DataList`
-    non la legge da sé).
-  - ⚠️ **Con E6b** (in coda dopo la #233), chi delle due arriva seconda fa due righe (concordate con la sua sessione): aggiunge
-    `bookingOpensAtUtc: null` all'evento di `titlesAndEmptyLists.test.tsx` (E6b rende il campo obbligatorio in `PublicEventDto`), e fa
-    dire a `/events/mine` il suo titolo con `<PageMetadata title={t('events:mine.title')} />` (`MyBookingsPage`, `screens/mine.tsx`). La
-    scheda «Prenotazioni» di E6b dice ancora la frase del nucleo: la sua frase vuota è di E6b. I file di codice si fondono puliti
-    (`git merge-tree`); resta il conflitto solito di questo file.
+    non la legge da sé). Il test che lo prova sulla radice vera è `titlesAndEmptyLists.test.tsx`: una pagina o una lista nuova ci
+    aggiunge la sua rotta e il suo caso.
+  - ⚠️ **Il `PublicEventDto` del test è scritto per intero**: un campo nuovo e obbligatorio della lettura della pagina (come
+    `bookingOpensAtUtc` di E6b) va aggiunto lì, o il typecheck cade.
   - **E7** (gli slot privati generati nella stessa scheda) rilegge `events:slots.empty`, che oggi parla degli slot incollati o creati.
   - **La CI**: al primo push di questa fase «Test .NET» era rosso per #236, e la CI saltava i passi web (lint, `format:check`,
     typecheck, vitest, i18n, la smoke, il giro), fatti in locale ed elencati nella PR (`format:check` compreso: lo aveva mancato E10k,
