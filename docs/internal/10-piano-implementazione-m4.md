@@ -2875,6 +2875,17 @@ di Carmine sulla #237, [1–3][a237] e [4][a4237], date in chat alla sessione ma
   di altre sessioni accanto); nel web, nell'ordine del workflow, `gen:api` senza differenze, lint, `format:check`, typecheck,
   `pnpm test` 643/643, `i18n:sync` e `i18n:check`, `build`, `git diff --exit-code` pulito; le regole di `core-guard` dalla nuova merge
   base (`aa3707a`): quattro file del nucleo con la nota nuova, nessuno del maintainer — passa.
+- **`main` unito di nuovo** a `ba06d66` il 10 ottobre (la #233 di E6a, la #240 di E6b, la #243 con il piano 1.32, la #244 con la 0.6.7),
+  dopo [la richiesta del revisore][m2237], che ha letto le correzioni e le trova come chiesto: conflitto solo in `HANDOFF-M4.md`, risolto
+  con l'intestazione di E10i aggiornata e il suo blocco in cima, sotto quelli di E6b ed E6a; `10` si è unito da solo. Nessun test delle
+  prenotazioni cambia con il guardiano nuovo: `EventsBookingsTests` prova il membro di un evento solo su **un altro** evento (403
+  dall'handler), e la trappola di E6a «un grant su un evento solo non scrive» è chiusa da questa fase (detto nell'handoff).
+- **Verificato**, dopo il secondo merge: `dotnet build IvaoHub.sln` 0 avvisi; unità **1203/1203**; integrazione intera, senza filtro,
+  **529/529** al primo giro (7,1 minuti), le prenotazioni di E6a ed E6b comprese; nel web `gen:api` senza differenze, lint,
+  `format:check`, typecheck, `i18n:sync` e `i18n:check` (821 chiavi), `build`, `git diff --exit-code` pulito, e `pnpm test` **679/679**
+  in 93 file — al primo giro, con l'integrazione che girava accanto, era caduto per tempo un test del nucleo che la fase non tocca
+  (`BodyEditor.test.tsx`, «undo gives the body back», 5,2 s su 5): da solo 3 giri su 3, e il giro intero, ripetuto da solo, 679/679; le
+  regole di `core-guard` dalla merge base `ba06d66`: dodici file, quattro del nucleo con la nota nuova — passa.
 
 [i235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235
 [a235]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/235#issuecomment-6070088402
@@ -2882,6 +2893,7 @@ di Carmine sulla #237, [1–3][a237] e [4][a4237], date in chat alla sessione ma
 [rv237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083800096
 [a237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083875849
 [a4237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083895328
+[m2237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6096404865
 
 ### E11a — Postazioni e disponibilità
 
