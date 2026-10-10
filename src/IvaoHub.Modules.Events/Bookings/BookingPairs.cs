@@ -9,8 +9,8 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// them one gate — the arrival names the departure (<see cref="EventBooking.PairedBookingId"/>), and the two are read as a pair while
 /// both are there.
 /// <para><b>When one of the two goes</b> — withdrawn by its pilot, taken away by the staff — <b>the link dissolves and the other
-/// stays</b>, an ordinary private booking: the recommendation of the note 2026-10-10-il-ritiro-di-un-volo-collegato, asked of the
-/// maintainer with issue #245. Each booking is already whole on its own — its slot, its compatibility, its off block —, and the arrival
+/// stays</b>, an ordinary private booking: the maintainer's answer on issue #245, in the note 2026-10-10-il-ritiro-di-un-volo-collegato
+/// (way A). Each booking is already whole on its own — its slot, its compatibility, its off block —, and the arrival
 /// closes before its departure does: a rule that took both away could not hold after the arrival's off block. A pair is born together
 /// and never made again later.</para>
 /// </summary>
