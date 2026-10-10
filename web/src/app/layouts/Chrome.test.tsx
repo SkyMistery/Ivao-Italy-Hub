@@ -74,7 +74,7 @@ const bootstrap: Bootstrap = {
   commit: null,
 };
 
-function renderShell(me: Bootstrap = bootstrap) {
+function renderShell(me: Bootstrap = bootstrap, at = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   // A real router, in memory: the header links are TanStack `Link`s and a `Link` outside a router
@@ -90,7 +90,7 @@ function renderShell(me: Bootstrap = bootstrap) {
 
   const router = createRouter({
     routeTree: rootRoute,
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [at] }),
     context: { queryClient },
   });
 
@@ -149,6 +149,20 @@ test('the theme toggle carries our own words, not the ones Atmosphere ships', as
   // no screenshot review catches, because it appears on hover.
   const toggle = screen.getByRole('button', { name: englishCommon.theme.toggle });
   expect(toggle).toHaveAttribute('title', englishCommon.theme.toggle);
+});
+
+test('the sign in of the bar comes back to the address the visitor stands on, query and hash too', async () => {
+  // With the path alone, as it was until 10 October 2026, somebody who signed in while choosing a
+  // leg came back to the page without the leg. The value is asserted whole: the server answers `/`
+  // to a return address it does not like and says nothing, so "it begins with /auth/login" proves
+  // nothing.
+  renderShell(bootstrap, '/tours/xx-test/report?leg=2#notes');
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(screen.getByRole('link', { name: englishCommon.auth.login })).toHaveAttribute(
+    'href',
+    '/auth/login?returnUrl=%2Ftours%2Fxx-test%2Freport%3Fleg%3D2%23notes',
+  );
 });
 
 /**

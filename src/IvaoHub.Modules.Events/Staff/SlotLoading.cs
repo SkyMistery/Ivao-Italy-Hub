@@ -15,7 +15,7 @@ public enum SlotLoadMode
     /// <summary>They stay, and the table's slots join them.</summary>
     Add,
 
-    /// <summary>The free ones go, and the table's take their place; a booked one stays (E6a).</summary>
+    /// <summary>The free public ones go, and the table's take their place; a booked one stays (E6a).</summary>
     ReplaceFree,
 }
 
@@ -43,13 +43,17 @@ public sealed class SlotLoadRequestValidator : AbstractValidator<SlotLoadRequest
 }
 
 /// <summary>
-/// The free slots of an event: the slots nobody booked. Until the bookings exist (E6a) that is every slot; E6a narrows it here, and
-/// the load's «replace» and «delete the free ones» follow, so a booked slot is never taken away by either.
+/// The free slots of an event: the slots no booking names (E6a). The load's «replace» and «delete the free ones» ask here, so a booked
+/// slot is never taken away by either. The bookings are read whoever asks — a booking is a member's row, which the global filter
+/// hides from a visitor and a job —, in one query.
 /// </summary>
 internal static class SlotRows
 {
-    public static IQueryable<EventSlot> Free(EventsDbContext database, long eventId) =>
-        database.Slots.Where(slot => slot.EventId == eventId);
+    public static IQueryable<EventSlot> Free(EventsDbContext database, long eventId)
+    {
+        var bookings = CrudSource.BackOffice<EventBooking>(database);
+        return database.Slots.Where(slot => slot.EventId == eventId && !bookings.Any(booking => booking.SlotId == slot.Id));
+    }
 }
 
 /// <summary>

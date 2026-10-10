@@ -65,6 +65,8 @@ public static class EventEndpoints
             options.Apply = EventMapper.Apply;
             options.BeforeSave = (row, saving) =>
                 saving.Services.GetRequiredService<EventSaving>().PrepareAsync(row, saving.IsNew, saving.CancellationToken);
+            options.AfterSave = (row, saving) =>
+                saving.Services.GetRequiredService<EventSaving>().AfterSaveAsync(row, saving.CancellationToken);
             options.Delete = (row, services, cancellationToken) =>
                 services.GetRequiredService<EventSaving>().DeleteAsync(row, cancellationToken);
         });
@@ -151,13 +153,16 @@ public static class EventEndpoints
 
     /// <summary>
     /// Cancels an event (§2.3): when, who, and why in every language of the division — the page says it until the end. An event
-    /// cancelled stays cancelled, and one that is over is not cancelled any more: it happened. Whoever booked, has a shift or
-    /// registered is told (<see cref="EventsNotifications.EventCancelled"/>) once their rows exist (E6a, E12, E16).
+    /// cancelled stays cancelled, and one that is over is not cancelled any more: it happened. Whoever booked one of its slots is
+    /// told, with the note, once the cancellation is saved (<see cref="EventsNotifications.EventCancelled"/>, E6a); whoever has a
+    /// shift or registered with their rows (E12, E16). The bookings stay, and say who had booked.
     /// </summary>
     private static async Task<IResult> CancelAsync(
         long id,
         EventCancelRequest request,
         EventsDbContext database,
+        EventSaving saving,
+        EventsMail mail,
         IValidator<EventCancelRequest> validator,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
@@ -210,6 +215,8 @@ public static class EventEndpoints
         row.CancelledBy = currentUser.Vid;
         row.CancellationNote = request.Note;
         await database.SaveChangesAsync(http.RequestAborted);
+
+        await mail.EventCancelledAsync(row, await saving.BookersAsync(row.Id, http.RequestAborted), http.RequestAborted);
 
         return Results.Ok(EventMapper.ToDetail(row, now));
     }
