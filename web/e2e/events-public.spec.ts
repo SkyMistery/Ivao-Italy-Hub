@@ -23,6 +23,12 @@ import { englishCommon } from './locales';
  * staff are told when nobody else sees it; the block draws the same cards on a page of the site. What the server decides — what is
  * public, the 404 after the end, who writes the routes and the slots — is proved by `EventsPublicTests` and `EventsSlotsTests`
  * (integration); the rounds against the real server are `full/events-public.spec.ts` and `full/events-slots.spec.ts`.
+ *
+ * And the bookings (E6b): a visitor reads «taken» and nobody's name, and is asked to sign in to book; a member books a slot from
+ * its dialog with the aircraft they choose, and finds it theirs; the page says when the bookings open and counts down to it; on the
+ * event's day the core's strip counts its airports; the filters of the address narrow the slots; `/events/mine` lists a member's
+ * bookings and withdraws one. The server's side is `EventsBookingsTests` and `EventsBookingPagesTests`, the round
+ * `full/events-bookings.spec.ts`.
  */
 
 /** The words of the module, read from the file the browser fetches: a copied sentence passes while the screen shows a key. */
@@ -51,14 +57,45 @@ const words = JSON.parse(
     slots: string;
     free: string;
     taken: string;
+    yours: string;
     departures: string;
     arrivals: string;
     otherTypes: string;
     rotationHint: string;
+    onlineAtTheAirports: string;
     detail: { main: string; legs: string };
+    filters: { direction: string; noSlots: string };
+    booking: {
+      title: string;
+      opensAt: string;
+      openSince: string;
+      untilOffBlock: string;
+      notOpen: string;
+      signIn: string;
+      aircraft: string;
+      book: string;
+      yours: string;
+      toMine: string;
+    };
+  };
+  mine: {
+    title: string;
+    upcoming: string;
+    past: string;
+    withdraw: string;
+    withdrawTitle: string;
   };
   blocks: { eventList: { all: string } };
 };
+
+/** The core's title of the strip asked for some airports (E4b), read from the file the browser fetches. */
+const airportsTitle = (
+  JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../locales/en/common.json', import.meta.url)), 'utf8'),
+  ) as {
+    liveStatus: { airportsTitle: string };
+  }
+).liveStatus.airportsTitle;
 
 const json = (body: unknown, status = 200) => ({
   status,
@@ -130,6 +167,7 @@ function event(overrides: Record<string, unknown> = {}) {
     bannerMediaId: null,
     startsAtUtc: '2099-11-21T18:00:00.000Z',
     endsAtUtc: '2099-11-21T22:00:00.000Z',
+    bookingOpensAtUtc: null,
     state: 'Announced',
     unseen: null,
     wholeDivision: false,
@@ -475,4 +513,289 @@ test('on a page of the site the block draws the same cards, and the way to all o
     'href',
     '/events',
   );
+});
+
+// ---- the bookings (E6b) ----------------------------------------------------------------------------------------------
+
+/** A member of the division, signed in: no position, nothing of the staff. */
+const memberBootstrap = {
+  ...visitorBootstrap,
+  user: {
+    vid: 222222,
+    firstName: 'Test',
+    lastName: 'Pilot',
+    positions: [],
+    isStaff: false,
+    isSuperadmin: false,
+    hasAllDepartments: false,
+    locale: 'en',
+    departments: [],
+    firs: [],
+    tokenAudiences: [],
+  },
+};
+
+/** The bookings of the page's event opened at the start of the year: any slot whose off block is to come is booked. */
+const OPENED = '2026-01-01T00:00:00.000Z';
+
+/** A booking of the member's, as `/api/events/mine/bookings` lists it. */
+function myBooking(
+  id: number,
+  slotId: number,
+  callsign: string,
+  hours: readonly [string, string],
+  extra: object = {},
+) {
+  return {
+    id,
+    slotId,
+    eventId: 41,
+    eventSlug: 'evt-test-smoke-page',
+    eventTitle: { en: 'A smoke evening', it: 'Una sera smoke' },
+    eventState: 'BookingOpen',
+    kind: 'Public',
+    callsign,
+    flightNumber: null,
+    aircraftIcao: 'XA21',
+    departureIcao: 'XXAA',
+    offBlockUtc: hours[0],
+    arrivalIcao: 'XXCC',
+    onBlockUtc: hours[1],
+    isArrival: false,
+    stand: null,
+    rotation: null,
+    leg: null,
+    withdrawable: true,
+    createdAt: '2099-11-01T10:00:00.000Z',
+    ...extra,
+  };
+}
+
+test('a visitor reads «taken» and nobody’s name, and is asked to sign in to book a free slot', async ({
+  page,
+}) => {
+  await stubTheEvents(page, [], {
+    'evt-test-smoke-page': event({
+      bookingOpensAtUtc: OPENED,
+      state: 'BookingOpen',
+      slots: slotsOfTwoAirports,
+    }),
+  });
+
+  await page.goto('/events/evt-test-smoke-page');
+
+  // The taken slot: taken, and nothing of whoever took it — nothing to book either.
+  await page.getByRole('button', { name: 'XSM300' }).click();
+  const taken = page.getByRole('dialog', { name: 'XSM300' });
+  await expect(taken.getByText(words.public.taken)).toBeVisible();
+  await expect(taken.getByRole('button', { name: /Book/ })).toHaveCount(0);
+  await expect(taken.getByRole('link')).toHaveCount(0);
+  await expect(taken).not.toContainText(/Test|Pilot|\d{6}/);
+  await page.keyboard.press('Escape');
+
+  // A free one: the way to sign in, back to this page — its path, which is all the server takes back to.
+  await page.getByRole('button', { name: 'XSM101' }).click();
+  const free = page.getByRole('dialog', { name: 'XSM101 · XS101' });
+  await expect(free.getByRole('link', { name: words.public.booking.signIn })).toHaveAttribute(
+    'href',
+    `/auth/login?returnUrl=${encodeURIComponent('/events/evt-test-smoke-page')}`,
+  );
+  await expect(free.getByRole('button', { name: /Book/ })).toHaveCount(0);
+});
+
+test('a member books a free slot from its dialog with the aircraft they choose, and the slot is theirs', async ({
+  page,
+}) => {
+  let booked = false;
+  const page41 = (taken: boolean) =>
+    event({
+      bookingOpensAtUtc: OPENED,
+      state: 'BookingOpen',
+      slots: slotsOfTwoAirports.map((one) => (one.id === 1 ? { ...one, taken } : one)),
+    });
+  const theirs = myBooking(70, 1, 'XSM101', ['2099-11-21T18:00:00.000Z', '2099-11-21T19:00:00.000Z']);
+
+  await stubTheApi(page);
+  await page.route('**/api/me', (route) => route.fulfill(json(memberBootstrap)));
+  await page.route('**/api/events/public/*', (route) => route.fulfill(json(page41(booked))));
+  await page.route('**/api/events/mine/bookings', async (route) => {
+    if (route.request().method() === 'POST') {
+      expect(route.request().postDataJSON()).toEqual({ slotId: 1, aircraftIcao: 'XA21' });
+      booked = true;
+      return route.fulfill(json(theirs, 201));
+    }
+
+    return route.fulfill(json(booked ? [theirs] : []));
+  });
+
+  await page.goto('/events/evt-test-smoke-page');
+  await page.getByRole('button', { name: 'XSM101' }).click();
+  const detail = page.getByRole('dialog', { name: 'XSM101 · XS101' });
+
+  // The main type is chosen; the pilot flies the other one.
+  const choice = detail.getByRole('radiogroup', { name: words.public.booking.aircraft });
+  await expect(choice.getByRole('radio', { name: /XA20/ })).toBeChecked();
+  await choice.getByRole('radio', { name: /XA21/ }).click();
+  await detail
+    .getByRole('button', { name: words.public.booking.book.replace('{{aircraft}}', 'XA21') })
+    .click();
+
+  await expect(detail.getByText(words.public.booking.yours.replace('{{aircraft}}', 'XA21'))).toBeVisible();
+  await expect(detail.getByRole('link', { name: words.public.booking.toMine })).toHaveAttribute(
+    'href',
+    '/events/mine',
+  );
+
+  // Closed, the row is theirs; the page leads to their bookings.
+  await page.keyboard.press('Escape');
+  const row = page.getByRole('button', { name: 'XSM101' }).locator('xpath=ancestor::tr');
+  await expect(row).toContainText(words.public.yours);
+  await expect(page.getByRole('link', { name: words.mine.title })).toHaveAttribute('href', '/events/mine');
+});
+
+test('the page says when the bookings open, counts down to it, and offers nothing before', async ({
+  page,
+}) => {
+  await stubTheEvents(page, [], {
+    'evt-test-smoke-page': event({
+      bookingOpensAtUtc: '2099-11-01T18:00:00.000Z',
+      slots: slotsOfTwoAirports,
+    }),
+    'evt-test-smoke-open': event({
+      slug: 'evt-test-smoke-open',
+      bookingOpensAtUtc: OPENED,
+      state: 'BookingOpen',
+      slots: slotsOfTwoAirports,
+    }),
+  });
+
+  await page.goto('/events/evt-test-smoke-page');
+
+  // When, in UTC and where the division lives, and how long is left, to the second.
+  const facts = page.locator('dl');
+  await expect(facts.getByText(words.public.booking.opensAt)).toBeVisible();
+  await expect(facts.getByText(/18:00Z$/).last()).toBeVisible();
+  await expect(facts.getByText(/19:00 LT\)$/).last()).toBeVisible();
+  const timer = facts.getByRole('timer');
+  await expect(timer).toHaveText(/^In \d+ d \d{2}:\d{2}:\d{2}$/);
+  const first = await timer.textContent();
+  await expect(timer).not.toHaveText(first ?? '');
+
+  // Nothing to book yet.
+  await page.getByRole('button', { name: 'XSM101' }).click();
+  await expect(page.getByRole('dialog').getByText(words.public.booking.notOpen)).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // Once open: since when, until each off block, and no count.
+  await page.goto('/events/evt-test-smoke-open');
+  await expect(page.locator('dl').getByText(words.public.booking.openSince)).toBeVisible();
+  await expect(page.locator('dl').getByText(words.public.booking.untilOffBlock)).toBeVisible();
+  await expect(page.locator('dl').getByRole('timer')).toHaveCount(0);
+});
+
+test('on the event’s day the core’s strip counts its airports, and not on another day', async ({ page }) => {
+  const asked: unknown[] = [];
+  const now = Date.now();
+
+  await stubTheEvents(page, [], {
+    'evt-test-smoke-page': event({
+      startsAtUtc: new Date(now).toISOString(),
+      endsAtUtc: new Date(now + 3_600_000).toISOString(),
+    }),
+    'evt-test-smoke-later': event({ slug: 'evt-test-smoke-later' }),
+  });
+  await page.route('**/api/blocks/data/networkStats**', (route) => {
+    const encoded = new URL(route.request().url()).searchParams.get('props') ?? '';
+    asked.push(JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')));
+    return route.fulfill(
+      json({
+        updatedAt: new Date(now).toISOString(),
+        figures: [
+          { figure: 'divisionAtc', value: 2 },
+          { figure: 'divisionPilots', value: 5 },
+        ],
+      }),
+    );
+  });
+
+  await page.goto('/events/evt-test-smoke-page');
+
+  const strip = page.getByRole('region', { name: words.public.onlineAtTheAirports });
+  await expect(strip.getByText(airportsTitle)).toBeVisible();
+  await expect
+    .poll(() =>
+      asked.some((props) => JSON.stringify((props as { airports?: unknown }).airports) === '["XXAA","XXBB"]'),
+    )
+    .toBe(true);
+
+  // An event twenty years away is not on its day.
+  await page.goto('/events/evt-test-smoke-later');
+  await expect(page.getByRole('heading', { level: 1, name: 'A smoke evening' })).toBeVisible();
+  await expect(page.getByRole('region', { name: words.public.onlineAtTheAirports })).toHaveCount(0);
+});
+
+test('the filters of the address narrow the slots, and a choice is kept in it', async ({ page }) => {
+  await stubTheEvents(page, [], { 'evt-test-smoke-page': event({ slots: slotsOfTwoAirports }) });
+
+  await page.goto('/events/evt-test-smoke-page?direction=arrivals');
+
+  const slots = page.getByRole('region', { name: words.public.slots });
+  await expect(slots.getByRole('table', { name: words.public.arrivals })).toHaveCount(2);
+  await expect(slots.getByRole('table', { name: words.public.departures })).toHaveCount(0);
+
+  // Departures, chosen on the page: the address says it.
+  await page.locator('#slots-direction').click();
+  await page.getByRole('option', { name: words.public.departures, exact: true }).click();
+  await expect(page).toHaveURL(/direction=departures/);
+  await expect(slots.getByRole('table', { name: words.public.arrivals })).toHaveCount(0);
+  await expect(slots.getByRole('table', { name: words.public.departures })).toHaveCount(1);
+
+  // A filter nothing passes says so.
+  await page.goto('/events/evt-test-smoke-page?type=XNONE');
+  await expect(page.getByText(words.public.filters.noSlots)).toBeVisible();
+});
+
+test('/events/mine lists a member’s flights still to fly and the past ones, and withdraws one', async ({
+  page,
+}) => {
+  let withdrawn = false;
+  const toFly = myBooking(71, 1, 'XSM101', ['2099-11-21T18:00:00.000Z', '2099-11-21T19:00:00.000Z']);
+  const flown = myBooking(72, 9, 'XSM050', ['2026-01-10T18:00:00.000Z', '2026-01-10T19:00:00.000Z'], {
+    withdrawable: false,
+    eventState: 'Ended',
+  });
+
+  await stubTheApi(page);
+  await page.route('**/api/me', (route) => route.fulfill(json(memberBootstrap)));
+  await page.route('**/api/events/mine/bookings', (route) =>
+    route.fulfill(json(withdrawn ? [flown] : [flown, toFly])),
+  );
+  await page.route('**/api/events/mine/bookings/71', (route) => {
+    expect(route.request().method()).toBe('DELETE');
+    withdrawn = true;
+    return route.fulfill({ status: 204 });
+  });
+
+  await page.goto('/events/mine');
+
+  await expect(page.getByRole('heading', { level: 1, name: words.mine.title })).toBeVisible();
+  const upcoming = page.getByRole('region', { name: words.mine.upcoming });
+  const past = page.getByRole('region', { name: words.mine.past });
+  await expect(upcoming).toContainText('XSM101');
+  await expect(upcoming.getByRole('link', { name: 'A smoke evening' })).toHaveAttribute(
+    'href',
+    '/events/evt-test-smoke-page',
+  );
+  await expect(past).toContainText('XSM050');
+  // A flight gone is not withdrawn.
+  await expect(past.getByRole('button', { name: words.mine.withdraw })).toHaveCount(0);
+
+  await upcoming.getByRole('button', { name: words.mine.withdraw }).click();
+  const confirm = page.getByRole('alertdialog', {
+    name: words.mine.withdrawTitle.replace('{{callsign}}', 'XSM101'),
+  });
+  await confirm.getByRole('button', { name: words.mine.withdraw }).click();
+
+  await expect(page.getByText('XSM101')).toHaveCount(0);
+  await expect(past).toContainText('XSM050');
 });

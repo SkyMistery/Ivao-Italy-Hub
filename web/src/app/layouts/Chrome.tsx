@@ -7,7 +7,7 @@ import {
   type NavigationMenuProps,
   Separator,
 } from '@ivao/atmosphere-react';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +43,9 @@ interface LegalLink {
 export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t, i18n } = useTranslation();
   const logout = useLogout();
+  // The router's address and not the window's: it is the one that changes with the page, and it
+  // carries the query and the hash.
+  const here = useLocation({ select: (location) => location.href });
 
   const user = bootstrap.user;
   const title = resolveLocalized(bootstrap.division.name, i18n.language, bootstrap.division.defaultLocale);
@@ -172,11 +175,14 @@ export function AppHeader({ bootstrap }: { bootstrap: Bootstrap }) {
           {user === null ? (
             // A full navigation, not a router link: /auth/login is a Kestrel endpoint.
             //
+            // It sends the whole address the visitor stands on, query and hash too: with the path
+            // alone, signing in on `/tours/<slug>/report?leg=2` came back without the leg.
+            //
             // ⚠️ `secondary` and not the primary variant, now that it sits on the banner: the primary
             // button is the same blue as the bar behind it, so the one call to action of the public
             // site was a dark rectangle on a dark rectangle. Measured by looking at it.
             <Button asChild variant="secondary" size="sm">
-              <a href={loginHref(window.location.pathname)}>{t('auth.login')}</a>
+              <a href={loginHref(here)}>{t('auth.login')}</a>
             </Button>
           ) : (
             <>

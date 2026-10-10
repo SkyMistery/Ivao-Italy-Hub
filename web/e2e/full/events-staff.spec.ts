@@ -261,11 +261,15 @@ test('the coordinator of the events reads what an event still needs, and publish
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
 
-    // «Publish» answers with what it still needs, field by field, and publishes nothing.
+    // «Publish» is asked once more (E6b): a published event never goes back to a draft. Answered, it says what the event still
+    // needs, field by field, and publishes nothing.
     const refused = page.waitForResponse(
       (response) => response.request().method() === 'POST' && response.url().endsWith('/publish'),
     );
     await page.getByRole('button', { name: events.events.actions.publish }).click();
+    const question = page.getByRole('alertdialog', { name: events.events.publish.confirmTitle });
+    await expect(question).toContainText(events.events.publish.confirmDescription);
+    await question.getByRole('button', { name: events.events.actions.publish }).click();
     expect((await refused).status()).toBe(400);
     await expect(page.getByText(events.events.publish.problems)).toBeVisible();
     await expect(page.getByRole('listitem').filter({ hasText: events.events.fields.airports })).toContainText(
@@ -282,8 +286,19 @@ test('the coordinator of the events reads what an event still needs, and publish
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
     await expect(page.getByText(events.events.publish.problems)).toHaveCount(0);
+
+    // Asked, and let go: nothing is published.
+    await page.getByRole('button', { name: events.events.actions.publish }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: englishCancel() }).click();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await expect(page.getByText(events.events.options.state.Draft, { exact: true })).toBeVisible();
+
     await whileWaitingFor(page, 'POST', '/publish', async () => {
       await page.getByRole('button', { name: events.events.actions.publish }).click();
+      await page
+        .getByRole('alertdialog')
+        .getByRole('button', { name: events.events.actions.publish })
+        .click();
     });
 
     await expect(page.getByText(events.events.options.state.Announced, { exact: true })).toBeVisible();
@@ -339,6 +354,10 @@ test('«Publish» waits while the settings hold changes nobody saved', async ({ 
     await expect(page.getByText(events.events.publish.saveFirst)).toHaveCount(0);
     await whileWaitingFor(page, 'POST', '/publish', async () => {
       await publish.click();
+      await page
+        .getByRole('alertdialog')
+        .getByRole('button', { name: events.events.actions.publish })
+        .click();
     });
     await expect(page.getByText(events.events.options.state.Announced, { exact: true })).toBeVisible();
     await expect(page.locator('[id="slug"]')).toHaveValue(`${waiting.slug}-moved`);
@@ -347,6 +366,15 @@ test('«Publish» waits while the settings hold changes nobody saved', async ({ 
     await context.close();
   }
 });
+
+/** The core's word for letting a question go (`common.cancel`), read from the file the browser fetches. */
+function englishCancel(): string {
+  return (
+    JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../../locales/en/common.json', import.meta.url)), 'utf8'),
+    ) as { common: { cancel: string } }
+  ).common.cancel;
+}
 
 /** The word of the training's exam in the seed: a kind of the calendar that is no event's. */
 function englishExam(): string {
@@ -366,7 +394,7 @@ function englishEvents() {
       create: string;
       tabs: { airports: string };
       actions: { cancel: string; publish: string };
-      publish: { problems: string; saveFirst: string };
+      publish: { problems: string; saveFirst: string; confirmTitle: string; confirmDescription: string };
       fields: { kind: string; title: string; summary: string; airports: string; bookingOpensAtUtc: string };
       options: { state: { Draft: string; Announced: string; Cancelled: string } };
     };

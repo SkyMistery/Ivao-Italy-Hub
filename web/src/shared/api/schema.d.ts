@@ -263,6 +263,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/bookings/{id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsBookingRemove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -1497,6 +1513,86 @@ export interface paths {
         put: operations["EventSlotsUpdate"];
         post?: never;
         delete: operations["EventSlotsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventBookingsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventBookingsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsMyBookings"];
+        put?: never;
+        post: operations["EventsBook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/bookings/rotation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsBookRotation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["EventsWithdraw"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3466,11 +3562,11 @@ export interface components {
          * @description One slot as the gate manager of the division reads it (design M4 §7.4): the fields it reads today from the booking system it
          *     leaves, by their names there, with every time in UTC — and the stable identity of the slot it asks for, the flight number, the
          *     rotation and the leg, and for a private slot the slot paired with it (E7), arrival and departure on the same gate.
-         *     Whoever booked it and the aircraft they chose come with the bookings (E6a): empty on a free slot. The aircraft types the
-         *     slot admits come before any booking, its main one first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento §7: an addition to
-         *     version 1, so that the stands can be planned before the pilots book); none on a private slot, whose pilot declares the type
-         *     (E7). The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands are managed
-         *     (§0.2).
+         *     Whoever booked it — their VID — and the aircraft type they chose among those the slot allows (E6a): empty on a free slot.
+         *     The aircraft types the slot admits come before any booking, its main one first (note 2026-10-07-gli-slot-sulla-pagina-dell-evento
+         *     §7: an addition to version 1, so that the stands can be planned before the pilots book); none on a private slot, whose pilot
+         *     declares the type (E7). The gate is the stand the staff wrote, empty when there is none and on a private slot, until the stands
+         *     are managed (§0.2).
          */
         BookingExportDto: {
             /** Format: int64 */
@@ -3493,6 +3589,19 @@ export interface components {
             leg: null | number;
             /** Format: int64 */
             paired_slot_id: null | number;
+        };
+        /** @description What the staff send to take a booking away (§3.6): the reason, which the pilot reads in the mail. */
+        BookingRemovalRequest: {
+            reason: null | string;
+        };
+        /**
+         * @description What a pilot sends to book a public slot (design M4 §3.3), or the whole rotation of one (§3.3, §17.1 n.16): the slot, and the
+         *     aircraft type they fly among those it allows — for a rotation, the one they fly every leg with.
+         */
+        BookingRequest: {
+            /** Format: int64 */
+            slotId: number;
+            aircraftIcao: null | string;
         };
         /**
          * @description One block, as the server declares it. What it looks like and what its properties mean live in
@@ -4453,6 +4562,41 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /**
+         * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
+         *     core names a person — `{ vid, name }`, so that the list writes a person whose data was erased with the core's word —, the flight of
+         *     its slot with the aircraft the pilot chose, when they booked, and when the reminder of the day before left. The flight is read off
+         *     the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
+         *     The flight is empty only where the engine maps one row with no page around it (GET /api/events/bookings/{id}): the
+         *     list reads the slots of a page in one query (StaffBookings.RowsAsync).
+         */
+        EventBookingDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            slotId: number;
+            pilot: components["schemas"]["EventMemberDto"];
+            callsign: null | string;
+            flightNumber: null | string;
+            aircraftIcao: string;
+            departureIcao: null | string;
+            /** Format: date-time */
+            offBlockUtc: null | string;
+            arrivalIcao: null | string;
+            /** Format: date-time */
+            onBlockUtc: null | string;
+            stand: null | string;
+            rotation: null | string;
+            /** Format: int32 */
+            leg: null | number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            remindedAt: null | string;
+        };
         /** @description "Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read. */
         EventCancelRequest: {
             note: components["schemas"]["LocalizedOfstring"];
@@ -4522,6 +4666,12 @@ export interface components {
             endsAtUtc: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @description A person as the staff's pages of the events name them: the VID that always is, and the name the hub has — none when it has none. */
+        EventMemberDto: {
+            /** Format: int32 */
+            vid: number;
+            name: null | string;
         };
         /**
          * @description Who organises an event (design M4 §1.2): the division itself, the network with the division, or another division.
@@ -5391,6 +5541,40 @@ export interface components {
         ModuleMaintenanceRequest: {
             maintenance: boolean;
         };
+        /**
+         * @description A booking as its pilot reads it on their own page (design M4 §7.1, E6b): the event — its address, its title, what its dates
+         *     say now —, the flight of the slot with the aircraft chosen, and whether it may still be withdrawn: until the off block (§3.6).
+         *     Past ones too: the page of the member keeps them.
+         */
+        MyBookingDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            slotId: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            eventState: components["schemas"]["EventStateKind"];
+            kind: components["schemas"]["SlotKind"];
+            callsign: string;
+            flightNumber: null | string;
+            aircraftIcao: string;
+            departureIcao: string;
+            /** Format: date-time */
+            offBlockUtc: string;
+            arrivalIcao: string;
+            /** Format: date-time */
+            onBlockUtc: string;
+            isArrival: boolean;
+            stand: null | string;
+            rotation: null | string;
+            /** Format: int32 */
+            leg: null | number;
+            withdrawable: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
         /** @description One leg as the pilot's map colours it (design M2 §8.1). */
         MyLegDto: {
             /** Format: int64 */
@@ -5853,6 +6037,29 @@ export interface components {
         PagedResultOfEventAirportDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventAirportDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventBookingDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventBookingDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -6727,7 +6934,8 @@ export interface components {
         /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
          *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
-         *     cancelled one with its note; and its public slots (E5), by their off block, free or taken.
+         *     cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
+         *     the page says and counts down to until then — none for an event without slots.
          *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
          *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
@@ -6747,6 +6955,8 @@ export interface components {
             startsAtUtc: string;
             /** Format: date-time */
             endsAtUtc: string;
+            /** Format: date-time */
+            bookingOpensAtUtc: null | string;
             state: components["schemas"]["EventStateKind"];
             unseen: null | components["schemas"]["EventUnseen"];
             wholeDivision: boolean;
@@ -6770,9 +6980,8 @@ export interface components {
          * @description A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
          *     allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
          *     the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
-         *     a booking names it (E6a); until then every one is free. The page draws from this alone the airport of the event a slot is at,
-         *     its table of departures or arrivals and its detail with the legs of its rotation (note
-         *     2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
+         *     a booking names it (E6a). The page draws from this alone the airport of the event a slot is at, its table of departures or
+         *     arrivals and its detail with the legs of its rotation (note 2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
          */
         PublicEventSlotDto: {
             /** Format: int64 */
@@ -7339,6 +7548,14 @@ export interface components {
             metars: components["schemas"]["WeatherBulletinDto"][];
             tafs: components["schemas"]["WeatherBulletinDto"][];
         };
+        /**
+         * @description What «book the whole rotation» did (§3.3, c3): the legs booked, in one transaction, and the ones that were not — already taken,
+         *     the pilot's already, closed, not compatible with their bookings, or not allowing the aircraft — each with its reason.
+         */
+        RotationBookingDto: {
+            booked: components["schemas"]["MyBookingDto"][];
+            notBooked: components["schemas"]["RotationLegRefusalDto"][];
+        };
         /** @description A rotation as the form loads it. */
         RotationDto: {
             /** Format: int64 */
@@ -7356,6 +7573,15 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /** @description A leg of a rotation the pilot did not get, and why, as the i18n key they read: taken, closed, not compatible… */
+        RotationLegRefusalDto: {
+            /** Format: int64 */
+            slotId: number;
+            /** Format: int32 */
+            leg: null | number;
+            callsign: string;
+            reason: string;
         };
         /** @description A rotation as the list shows it: its hub, and how many of its legs are still flown out of how many it needs. */
         RotationListDto: {
@@ -9090,6 +9316,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     EventsPublicEvent: {
@@ -9179,6 +9412,53 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    EventsBookingRemove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRemovalRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12966,6 +13246,211 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventBookingsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventBookingDto"];
+                };
+            };
+        };
+    };
+    EventBookingsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventBookingDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsMyBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyBookingDto"][];
+                };
+            };
+        };
+    };
+    EventsBook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyBookingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsBookRotation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotationBookingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsWithdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
             };
             /** @description Not Found */
             404: {

@@ -67,8 +67,8 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
     "slot_id": 3108,
     "callsign": "ABC101",
     "flight_number": "AB101",
-    "booked_by": null,
-    "aircraft_icao": null,
+    "booked_by": 100001,
+    "aircraft_icao": "A320",
     "aircraft_types": ["A320", "A20N"],
     "gate": "B12",
     "eobt": "2026-10-17T17:00:00Z",
@@ -119,8 +119,8 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
 | `slot_id` | the slot's identity in the hub, the same for as long as the slot exists |
 | `callsign` | the flight's callsign; `null` on a private slot |
 | `flight_number` | the flight number, when the staff wrote one |
-| `booked_by` | the member who booked the slot, by their network number; `null` while the slot is free |
-| `aircraft_icao` | the aircraft type the pilot chose when booking; `null` while the slot is free |
+| `booked_by` | the member who booked the slot, by their network number; `null` while the slot is free. A **negative** number stands for a member whose data the hub erased at their request: the booking is kept, the person is not |
+| `aircraft_icao` | the aircraft type the pilot chose when booking, among those the slot allows; `null` while the slot is free |
 | `aircraft_types` | the aircraft types the slot admits, ICAO codes, **the first the main one** — what the stands are planned for before anybody books; empty on a private slot, whose pilot says the type |
 | `gate` | the stand the staff wrote for the slot; `null` when there is none, and on a private slot |
 | `eobt` | the off block time at `origin_icao`; `null` on a private arrival |
@@ -130,7 +130,9 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
 | `paired_slot_id` | for a private slot, the slot paired with it on the same stand; `null` otherwise |
 
 - A **public** slot is a flight the staff wrote: its callsign, its two airports, its two times. Every slot touches an airport
-  of the event: it departs from one, or arrives at one.
+  of the event: it departs from one, or arrives at one. One pilot books it, with one of the aircraft types it allows; the pilot
+  may withdraw until its off block time, and the staff may take the booking away, so a slot booked at one request can be free
+  at the next.
 - A **private** slot is a time offered at an airport of the event, for a pilot who books it with a flight of their own: until
   then it carries only that airport — as `origin_icao` for a departure, `destination_icao` for an arrival — and its time there.
 - The legs of a rotation follow one another: each departs from where the one before arrived, after it arrived.

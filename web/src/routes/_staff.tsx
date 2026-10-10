@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { StaffLayout } from '../app/layouts/StaffLayout';
+import { loginHref } from '../shared/api/client';
 
 /**
  * Recipe 1 (design M0 §7.3), copied and not reinvented: signed out goes to the login by `href`,
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/_staff')({
     const me = context.bootstrap;
 
     if (!me.user) {
-      throw redirect({ href: `/auth/login?returnUrl=${encodeURIComponent(location.href)}` });
+      throw redirect({ href: loginHref(location.href) });
     }
 
     if (!me.user.isStaff && !me.user.isSuperadmin) {

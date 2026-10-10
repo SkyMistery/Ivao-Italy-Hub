@@ -1,13 +1,16 @@
 import { TooltipProvider } from '@ivao/atmosphere-react';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { I18nextProvider } from 'react-i18next';
 import { describe, expect, test } from 'vitest';
 
 import { createTestI18n, renderWithProviders } from '../../../test/harness';
-import type { PublicEventDto, PublicEventSlotDto } from '../api';
+import type { MyBookingDto, PublicEventDto, PublicEventSlotDto } from '../api';
 import englishEvents from '../locales/en/events.json';
 
 import { EventSlots } from './EventSlots';
+import type { SlotFilters } from './slotList';
 
 /**
  * The public slots of an event as a visitor reads them (note 2026-10-07-gli-slot-sulla-pagina-dell-evento): by the airport of the
@@ -233,5 +236,82 @@ describe('the slots on the page of an event', () => {
     const alone = await screen.findByRole('dialog', { name: 'XSM300' });
     expect(within(alone).queryByRole('region')).not.toBeInTheDocument();
     expect(within(alone).getByText(words.taken)).toBeInTheDocument();
+  });
+});
+
+describe('the slots narrowed and booked (E6b)', () => {
+  function drawWith(filters: SlotFilters, mine: ReadonlyMap<number, MyBookingDto> = new Map()) {
+    return renderWithProviders(
+      <TooltipProvider>
+        <EventSlots
+          event={event([airportA, airportB], rotationAndAlone)}
+          filters={filters}
+          onFilter={() => {}}
+          viewer={{ signedIn: true, mine }}
+        />
+      </TooltipProvider>,
+      { i18n },
+    );
+  }
+
+  test('the filters offer what the slots hold, and narrow the tables', () => {
+    drawWith({ direction: 'arrivals' });
+
+    // Both directions are there to choose from, a rotation too; a single airline is no choice.
+    const filters = screen.getByRole('group', { name: words.filters.title });
+    expect(within(filters).getByText(words.filters.direction)).toBeInTheDocument();
+    expect(within(filters).getByText(words.filters.rotation)).toBeInTheDocument();
+    expect(within(filters).queryByText(words.filters.airline)).not.toBeInTheDocument();
+
+    // The arrivals alone: no table of departures anywhere.
+    expect(screen.queryByRole('table', { name: words.departures })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('table', { name: words.arrivals })).toHaveLength(2);
+  });
+
+  test('nothing left is said, rather than an event with no slots', () => {
+    drawWith({ type: 'XNONE' });
+
+    expect(screen.getByText(words.filters.noSlots)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  test("a slot of the reader's own bookings is theirs, and another pilot's only taken", () => {
+    drawWith({}, new Map([[1, { id: 70, slotId: 1, aircraftIcao: 'XA21' } as unknown as MyBookingDto]]));
+
+    const out = screen.getByRole('button', { name: 'XSM101' }).closest('tr')!;
+    expect(within(out).getByText(words.yours)).toBeInTheDocument();
+    const taken = screen.getByRole('button', { name: 'XSM300' }).closest('tr')!;
+    expect(within(taken).getByText(words.taken)).toBeInTheDocument();
+    expect(within(taken).queryByText(words.yours)).not.toBeInTheDocument();
+  });
+
+  test('an open slot says what the page reads now: taken by another pilot while it was open', async () => {
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const page = (slots: readonly PublicEventSlotDto[]) => (
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={client}>
+          <TooltipProvider>
+            <EventSlots
+              event={event([airportA, airportB], slots)}
+              viewer={{ signedIn: true, mine: new Map() }}
+            />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </I18nextProvider>
+    );
+    const { rerender } = render(page(rotationAndAlone));
+
+    await user.click(screen.getByRole('button', { name: 'XSM101' }));
+    const detail = await screen.findByRole('dialog', { name: 'XSM101 · XS101' });
+    expect(within(detail).getByText(words.free)).toBeInTheDocument();
+
+    // The page read again — after a booking, or a refusal —, the leg out now taken: the dialog follows it.
+    rerender(page(rotationAndAlone.map((one) => (one.id === 1 ? { ...one, taken: true } : one))));
+    expect(
+      within(screen.getByRole('dialog', { name: 'XSM101 · XS101' })).getByText(words.taken),
+    ).toBeInTheDocument();
   });
 });
