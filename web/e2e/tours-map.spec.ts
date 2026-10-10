@@ -196,7 +196,9 @@ test('the map of a tour draws, with no base map to draw on and under the real po
   expect(complaints).toEqual([]);
 });
 
-test('a visitor who signs in from the page of a tour comes back to it, query and hash too', async ({ page }) => {
+test('a visitor who signs in from the page of a tour comes back to it, query and hash too', async ({
+  page,
+}) => {
   await stubTheTours(page);
 
   await page.goto(`/tours/${SLUG}?from=calendar#legs`);
