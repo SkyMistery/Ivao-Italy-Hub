@@ -1490,7 +1490,232 @@ la rotazione intera con una tratta già presa; lo staff toglie e la mail parte; 
 l'esportazione ha `booked_by`. Unit: la compatibilità nei due sensi, ai bordi.
 **Fatta quando**: i test della concorrenza passano sulla MariaDB vera, in locale e in CI.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (7 ottobre 2026, branch `m4/e6a-booking-server`, PR #233, nata **in coda dopo la #228** di E5, dal suo branch a
+`d901f43`; **in coda anche dopo la #232** della fase del nucleo E10h, nata da questa fase e unita al branch — il codice a `55d7658`
+(`96ddd21`), i documenti a `1fb1a11` (`9302b06`: conflitti solo in questo file e in `HANDOFF-M4.md`, risolti tenendo i due lati) —; dopo
+l'apertura della PR, la testa di E5 dopo la prova sul banco, `25d23f5` (`d767cc0`, sotto); una migrazione additiva, `AddEventBookings`):
+
+- **Fatto**:
+  1. **`evt_bookings` intera** (punto 1; design §1.6): `EventBooking` (`src/IvaoHub.Modules.Events/EventBooking.cs`) con tutte le colonne
+     del piano, più il dipartimento e la maschera dell'evento (§1.1) e la visibilità `Members` scritta dal getter, come i PIREP;
+     `ISubmittedByMembers`, `IHasStakeholder` (il pilota), `IVisible`, `[Audited]`, area `EventBookings`, **lo scope dell'evento**
+     (`IHasResourceScope`), e `[WithdrawnByStakeholder]` della fase del nucleo E10h (il ritiro, sotto). Non `IAuditable`: `created_at` lo
+     scrive il verbo. L'indice univoco su `slot_id`, **una chiave verso lo slot con `RESTRICT`** e nessuna verso l'evento, gli indici
+     `(event_id, booker_vid)` e `booker_vid`.
+  2. **I verbi del pilota** (punto 2; §3.3, §3.5, §3.6): sotto `/api/events/mine/bookings` (`Bookings/BookingEndpoints.cs`, a chiunque
+     abbia fatto il login), in `Bookings/PilotBookings.cs`: **prenota** uno slot pubblico (`POST`, lo slot e l'aereo), **prenota tutta la
+     rotazione** (`POST …/rotation`, da una tratta qualunque, con un aereo solo), **ritira** (`DELETE …/{id}`), e **le sue** (`GET`). Le
+     regole pure in `Bookings/BookingRules.cs`: la compatibilità con `bookingGapMinutes` nei due sensi, l'off block che chiude lo slot,
+     l'evento che non prende prenotazioni (annullato, o non ancora aperte). **Il blocco del pilota** come dice il design: `SELECT … FOR
+     UPDATE` sulla sua prima prenotazione dell'evento o sulla riga dell'evento, in una transazione **`READ COMMITTED`** (il perché nella
+     nota, §1 punto 1); poi si rileggono l'evento — un annullamento salvato mentre la richiesta aspettava si vede — e le sue prenotazioni, e
+     si controlla la compatibilità. L'indice univoco, o il deadlock di due insert
+     della stessa chiave, risponde «slot appena preso da un altro pilota» (`events:errors.slotJustTaken`); una tratta della rotazione presa
+     nello stesso istante fallisce da sola, e un deadlock della rotazione è un 409.
+  3. **Lo staff toglie** (punto 3): `POST /api/events/bookings/{id}/remove` con un motivo obbligatorio, `EventBookings.Edit` chiesto
+     all'unico handler sulla prenotazione; la mail **`events.bookingRemoved`** (tipo nuovo, parola del profilo e modello in
+     `events.json`) attraverso **`EventsMail`** (`src/IvaoHub.Modules.Events/EventsMail.cs`), le mail del modulo nella lingua di ognuno, un
+     intento per lingua, mai allo pseudonimo di una persona cancellata.
+  4. **Le regole che crescono** (punto 4): uno slot prenotato non si elimina (`SlotSaving.DeleteAsync`, `events:errors.slotBooked`);
+     «libero» è uno slot che nessuna prenotazione nomina (`SlotRows.Free`), quindi «sostituisci» ed «elimina i liberi» lasciano i prenotati,
+     e rispondono 409 se un pilota ne prenota uno nello stesso istante; un evento con prenotazioni non si elimina (`EventSaving.DeleteAsync`,
+     `events:errors.eventHasBookings`); annullare avvisa chi ha prenotato (`events.eventCancelled`, con la nota), e cambiare l'inizio o la
+     fine di un evento pubblicato anche (`events.eventChanged`, dopo il salvataggio del form, `EventSaving.AfterSaveAsync`), una volta per
+     persona.
+  5. **Il membro legge le sue righe** (punto 5): `GET /api/events/mine/bookings`, anche le passate; nessun `IHasParticipants`.
+  6. **La pagina e l'esportazione**: `PublicEventSlotDto.Taken` vero per uno slot prenotato, mai da chi; l'esportazione dà `booked_by` e
+     `aircraft_icao` (dentro la versione 1, `docs/events-bookings-export.md` aggiornato).
+  7. **I test**: `EventsBookingsTests` (unità, 12: la compatibilità nei due sensi e ai bordi, l'off block, l'apertura e l'annullato),
+     `EventsBookingsTests` (integrazione, 11, VID 761043–761046, scali `XEF1`–`XEF4`, tipi `XE6A`/`XE6B`, slug `evt-test-e6a-…`): il pilota che
+     prenota e legge solo le sue, il ritiro, la prenotazione a evento in corso e il ritiro dopo l'off block rifiutato, l'apertura e
+     l'annullamento con la mail, la rotazione intera, lo staff che toglie con la mail, le regole che crescono con `eventChanged`, e **le
+     quattro gare deterministiche**: una transazione del test (`HeldTransaction`) tiene quello che terrebbe la prima richiesta, la richiesta
+     in prova aspetta nel database (`INNODB_TRX`, con root), il test conferma — due piloti sullo stesso slot; due prenotazioni
+     incompatibili dello stesso pilota, sulla riga dell'evento e su quella della sua prima prenotazione; una tratta della rotazione presa
+     nello stesso istante; una prenotazione che aspetta mentre l'evento si annulla. `EventsTestRows` toglie anche le prenotazioni, prima
+     degli slot; `ErasureTests` ha le due righe di `evt_bookings` (nota `2026-10-07-le-colonne-delle-prenotazioni-in-erasuretests`).
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-07-le-prenotazioni-sul-server.md`,
+  «Proposta» con le domande a Carmine sulla #233; il dettaglio è lì): la transazione `READ COMMITTED`; la chiave verso lo slot e nessuna
+  verso l'evento; le risposte; fino all'off block anche di un arrivo, l'evento annullato; la rotazione con un aereo solo, sempre 200 con il
+  perché di ogni tratta; il motivo dello staff obbligatorio, non conservato, senza un limite di tempo; le mail una volta per persona,
+  `eventChanged` per l'inizio e la fine; le righe del membro da `/mine`, la lista dello staff in E6b; lo scope dell'evento, non
+  `IAuditable`; la pagina e l'esportazione chiunque chieda; uno slot prenotato si corregge ancora. **Il segnaposto del titolo nei modelli
+  delle mail** è `{{title}}`, non `{{event}}` come lo avevano scritto E3a ed E3b: `EventsArchitectureTests` rifiuta la stringa `"event"`
+  (una parola del calendario) nel codice del modulo.
+- **Il ritiro e la fase del nucleo E10h**: il guardiano dell'interceptor lasciava al membro creare e cambiare una riga
+  `ISubmittedByMembers` + `IHasStakeholder`, non cancellarla («cancellarla resta del dipartimento», nota `2026-09-23-il-pirep` §5): un
+  pilota che ritira avrebbe ricevuto un 403. Trovato leggendo il codice prima di scriverlo; tre strade a `dalberone` — una fase del nucleo
+  prima, la domanda a Carmine prima, E6a senza il ritiro —: **ha scelto la fase del nucleo**, E10h (la #232, branch
+  `m4/e10h-stakeholder-withdraws`, da `main` a `e9702b2`, in una sessione sua, con la sua nota
+  `2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`). Qui la prenotazione porta il suo attributo, e il ritiro cancella la riga attraverso
+  l'interceptor: l'audit tiene il VID del pilota. ⚠️ **Il ritiro carica la riga prima di toglierla, e resta così**: la nota di E10h è
+  decisa da Carmine sulla #232, e la sua risposta 2 accetta che il guardiano legga l'interessato dai valori originali del tracker, quindi una
+  riga attaccata senza leggerla (uno stub) passerebbe con il VID che vi scrive chi chiama. `PilotBookings.WithdrawAsync` legge la
+  prenotazione per id **e** per pilota (`BookerVid` = chi chiede), poi la toglie: la prenotazione di un altro non si trova (404).
+- **Trovato, e scritto per chi viene dopo**: ⚠️ un `FOR UPDATE` che non trova righe, con l'isolamento predefinito, blocca il buco
+  dell'indice, e due prime prenotazioni di piloti diversi si incastrano: la transazione è `READ COMMITTED`. ⚠️ Con il log binario in
+  formato `STATEMENT` MariaDB rifiuta le scritture di una transazione `READ COMMITTED` (la domanda 2 a Carmine). ⚠️ Il blocco si legge con
+  `Database.SqlQuery<long>` e la colonna chiamata `Value`: EF manda la query com'è quando non la compone. ⚠️ Una prenotazione è una riga
+  di un membro: il filtro globale la nasconde a un visitatore e a un job, quindi ogni lettura che conta le prenotazioni «di chiunque»
+  passa da `CrudSource.BackOffice` (una variabile locale dentro una query: EF la porta nella sottoquery). ⚠️ Un test che deve vedere una
+  richiesta aspettare il database usa `INNODB_TRX` con l'utente root (come `InitialisationMarkerTests`), non più spesso di ogni 100 ms.
+- **Al contrario** (7 ottobre 2026): senza il blocco del pilota (`LockThePilotAsync` vuoto) cade la gara dello stesso pilota («The request
+  never waited for the transaction the test holds»), e quella dello stesso slot resta verde; con l'indice su `slot_id` non univoco (la
+  migrazione cambiata solo per la prova) cadono le due gare dello slot, quella semplice e la tratta della rotazione, allo stesso modo. Il
+  codice rimesso com'era (lo stesso hash), toccato e ricompilato: la classe di nuovo 9/9. Rileggendo il verbo, una cancellazione salvata
+  mentre la prima prenotazione di un pilota aspettava la riga dell'evento non si vedeva: ora l'evento si rilegge sotto il blocco
+  (`8ec2967`), con la sua gara deterministica; senza la rilettura quella prenotazione è creata (201 invece del rifiuto), con il codice
+  rimesso di nuovo verde. **Il ritiro prima di E10h**: il test del ritiro, scritto prima che E10h esistesse, cadeva con **403**
+  (`Expected: NoContent`, `Actual: Forbidden`): il guardiano del nucleo, che la fase E10h estende. Unito il branch di E10h a `55d7658`
+  (`96ddd21`, nessun conflitto) e messo il suo attributo sulla prenotazione (`f058a05`), passa.
+- **Verificato, in locale** (7 ottobre 2026, sul branch con E10h dentro, il codice a `f79365a`): `dotnet build` della soluzione senza
+  avvisi e `dotnet format --verify-no-changes` sui file C# toccati; unità **1186/1186** (`EventsBookingsTests` 12); **integrazione intera
+  senza filtro 502/502** (9,5 minuti), `EventsBookingsTests` 11/11 e `WithdrawnByStakeholderTests` 5/5 insieme; `pnpm gen:api` e `pnpm
+  i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **629 in 86 file**; `pnpm e2e
+  --workers=2` dietro il lock dello smoke **172/172** al primo giro; **`pnpm e2e:full` 57/57 al primo giro** (11,5 minuti, il suo worker
+  solo) sul banco `http://127.0.0.1:5128` (`ivaohub_e2e_e6a` ricreato prima), dietro il lock di Mailpit. Prima del merge di E10h, sullo
+  stesso codice meno il ritiro e la rilettura: unità 1181/1181, integrazione intera 495/495 (8,2 minuti), smoke 172/172, `e2e:full` 57/57
+  (11,7 minuti). Le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS** — nessun file del maintainer; del
+  nucleo, di questa fase, solo `ErasureTests.cs`, il resto è di E10g (#230) e di E10h (#232); sei note nuove, due di E6a.
+- **La CI della prima spinta** (`08c81ef`): verde, `build-test` (22 minuti e mezzo) e `core-guard`.
+- **La testa nuova di E5, dopo l'apertura della PR** (7 ottobre 2026): dalberone ha riaperto la #228 dopo la prova sul banco — il tipo
+  principale, la pagina degli slot per scalo, `aircraft_types` nell'esportazione («Com'è andata» di E5) —, e la regola della coda (se il
+  branch di E5 si muove, E6a lo unisce, mai un rebase) l'ha portata qui: `25d23f5`, unita in `d767cc0`. Conflitti in quattro file, risolti
+  tenendo i due lati: `Export/BookingsExport.cs` (il commento della DTO, e in `Flight` `booked_by` e `aircraft_icao` della prenotazione
+  accanto ad `aircraft_types` dello slot), `Public/PublicEvents.cs` (il commento della DTO dello slot, senza più «finché E6a non c'è ogni
+  slot è libero»), `docs/events-bookings-export.md` (l'esempio prenotato porta anche i tipi; le righe di `booked_by`, `aircraft_icao` e
+  `aircraft_types`) e `schema.d.ts`, rigenerato dalla build unita. Il resto — i tipi del form in due campi, `SlotValues.MainFirst`, la
+  pagina — si è unito da solo; i test di E6a caricano gli slot dalla tabella, la cui cella `A320/A20N` non cambia. **Verificato di nuovo,
+  sull'albero unito**: `dotnet build` senza
+  avvisi e `dotnet format` sui due file C#; unità **1191/1191**; **integrazione intera senza filtro 502/502** (6,1 minuti); `pnpm gen:api` e
+  `pnpm i18n:sync` rifatti; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **636 in 87 file**; `pnpm e2e
+  --workers=2` dietro il lock dello smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57 al primo giro** (11,4 minuti) sul banco
+  `http://127.0.0.1:5128` (`ivaohub_e2e_e6a` ricreato prima), dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base
+  di merge `e9702b2`: **PASS**, sette note nuove (una di E5).
+- **La PR in conflitto con `main`**: alle 14:04 UTC del 7 ottobre `main` ha preso la #226 (E4b), e da allora tutta la coda — la #230, la
+  #228, la #232 e la #233 — è in conflitto con `main` in `HANDOFF-M4.md`. Una PR in conflitto non riceve la CI: la spinta con la testa di
+  E5 non ne ha, e vale la verifica locale qui sopra. `main` non si unisce qui da solo — il range della fase si riempirebbe di E4b, e il
+  merge andrebbe rifatto quando E5 prende `main` —: ogni branch lo prende al suo passo della coda, quando il master lo chiede. Per la stessa
+  ragione la testa nuova di E10h (`ec9b3b4`, dopo la sua revisione: la forma non cambia, la nota è decisa da Carmine [sulla
+  #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6039778269)) all'inizio non è unita qui: porta `main` con sé.
+- **Poi la coda si è mossa** (7 ottobre, pomeriggio): E10g ha preso `main` (`b8cb66e`) ed E5 ha preso E10g (`ce110ba`, `ecf88b9`). La
+  regola della coda ha portato qui la testa di E5 (`67c870f`), e con lei `main` a `7b84a75`; allora anche la testa decisa di E10h non
+  portava più niente d'altro, ed è unita (`8ab7c69`). Conflitti solo nei documenti: in `HANDOFF-M4.md` l'intestazione di E6a in cima, i
+  blocchi di E10h, E5, E10g ed E4b sotto, e l'ultimo punto di E10h il suo (il rilievo 6 aperto); in questo file la riga di E10g della
+  tabella, con il suo testo dopo le risposte di Carmine. Un confronto delle righe di ogni lato con il risultato mostra solo le perdite
+  volute. La PR non è più in conflitto con `main`, e la CI torna. E5 si è mosso ancora una volta prima della spinta, con le otto risposte
+  di Carmine sulla pagina degli slot (`ba53a97`, unita in `d36f4b7`): solo pagine, test e documenti, nessun file C#; il conflitto, una riga
+  dell'intestazione di `HANDOFF-M4.md`, prende la nota ora decisa.
+- **Dopo la revisione** (7 ottobre 2026; [i rilievi del master](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6039678626),
+  letti sulla prima testa, `08c81ef`: approvabile sul codice dopo quattro correzioni):
+  1. **«Togli» nella cura dell'evento com'è ora** (punto 1): la prenotazione è un `IEventChild`, e `RemoveAsync` le copia la cura
+     dell'evento (`EventChildren.AdoptAsync`) prima di chiedere `EventBookings.Edit` all'unico handler; il guardiano, che su una
+     cancellazione legge i dipartimenti dell'istanza, vede gli stessi.
+  2. **I 403 sulla riga** (punto 2): `TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow`, con tre membri dello staff per un
+     grant a un VID, senza indirizzo (761084–761086, lasciate libere da E10f e poi da E4b, unite; nessun ref e nessun worktree le usa,
+     il grep con il codice d'uscita di `git grep`): un grant su un
+     altro evento, il dipartimento uscito dall'evento e uno che l'altro evento non ha mai avuto ricevono 403; il dipartimento entrato toglie.
+     La cura dell'evento è cambiata direttamente nel database: nessun form la scrive ancora.
+  3. **Un deadlock è «riprova»** (punto 3): solo la chiave duplicata dà «preso» (`DatabaseErrors.Duplicated`); un deadlock esce dal verbo e
+     l'endpoint risponde 409 con `events:errors.bookingTryAgain`, chiave nuova, la stessa della rotazione. Il test lo costruisce: una
+     transazione del test più pesante (nove prenotazioni scritte) chiede la riga che il pilota tiene, mentre il pilota aspetta la sua chiave;
+     il database riporta indietro il più leggero, il pilota.
+  4. **`READ COMMITTED` provato** (punto 4): `TheFirstBookingOfAPilotWaitingForAnotherPilotsFirstTakesNoGapAndGoesThrough` (deterministico:
+     la prima prenotazione del pilota aspetta la riga dell'evento, l'altra scrive nel buco dell'indice e conferma) e
+     `TheFirstBookingsOfSixPilotsSentTogetherAreAllMade` (sei prime prenotazioni mandate insieme, tutte 201).
+  5. **I punti minori**: il 201 senza un indirizzo (punto 5); la mail dopo la cancellazione, voluta (punto 6: il perché nella nota, lettura
+     6); la rilettura sotto il blocco con `EventState.Seen` (punto 7) — una bozza la scartava già il filtro globale, che legge solo i
+     pubblicati, e il modulo non ha un verbo che riporti un evento in bozza; mancava un evento che smette di vedersi per le sue date, ora
+     404 (`ABookingWaitingForTheEventWhileItStopsBeingSeenIsNotFound`). **Restano due 500** (punto 8): un'attesa di blocco scaduta
+     (`innodb_lock_wait_timeout`, 50 secondi) in una prenotazione, e un deadlock in «elimina i liberi»; rari, non toccati.
+  - **Al contrario** (il codice rimesso poi con lo stesso hash, toccato e ricompilato): senza la cura copiata il dipartimento uscito toglie
+    (`Expected: Forbidden`, `Actual: NoContent`); con «preso» anche per il deadlock, `Conflict` contro `BadRequest`; senza `Seen`, `NotFound`
+    contro `Created`; con l'indirizzo di prima cade l'`Assert.Null`; con l'isolamento predefinito (`RepeatableRead`) cadono i due test del
+    punto 4, con un 409 da un deadlock. La classe 16/16 in tre giri di fila.
+  - ⚠️ **Trovato, del nucleo, non toccato**: un grant su un evento solo (`events:event:{id}`) passa l'unico handler ma non il guardiano
+    dell'interceptor, che chiede `{Area}.Edit` sui dipartimenti della riga senza il suo scope (`RequireAny`): non toglie una prenotazione di
+    quell'evento (misurato: `ForbiddenDomainException`), e allo stesso modo non correggerebbe un suo slot. Il design dice che un grant a un
+    VID vale «anche su un evento solo» (§6). Detto a `dalberone`.
+  - **Verificato di nuovo, sull'ultimo codice**: `dotnet build` della soluzione senza avvisi e `dotnet format --verify-no-changes` sui sette
+    file C# toccati; unità **1191/1191**; **integrazione intera senza filtro 507/507** (5,6 minuti), `EventsBookingsTests` 16/16 in tre giri
+    di fila; `pnpm gen:api` (il 409 di `EventsBook`) e `pnpm i18n:sync` (la chiave nuova) rifatti; `pnpm lint`, `typecheck`,
+    `format:check`, `i18n:check` verdi; `pnpm test` **636 in 87 file**; `pnpm e2e --workers=2` dietro il lock dello smoke **173/173** al
+    primo giro; **`pnpm e2e:full` 57/57 al primo giro** (11,4 minuti) sul banco `http://127.0.0.1:5128` (`ivaohub_e2e_e6a` ricreato prima),
+    dietro il lock di Mailpit; le regole di `core-guard` in PowerShell dalla base di merge `e9702b2`: **PASS**.
+- **Verificato sull'ultima testa** (con E5 a `ecf88b9`, E10h a `ec9b3b4` e `main` a `7b84a75`): `dotnet build` senza avvisi, `pnpm gen:api`
+  e `pnpm i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,7 minuti); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **640 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57
+  al primo giro** (11,4 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima); le regole di `core-guard` in PowerShell dalla nuova base di merge
+  `7b84a75`: **PASS**. Dopo la testa di E5 a `ba53a97`, che non tocca il C#: i controlli web verdi, `pnpm test` **643 in 88 file**, smoke
+  **173/173** al primo giro, **`pnpm e2e:full` 57/57 al primo giro** (11,5 minuti, `ivaohub_e2e_e6a` ricreato prima). La CI su `707c407`
+  (la testa con la frase sullo stub): verde.
+- **L'8 ottobre: la #230 e la #228 unite, la regola di Carmine sul rilievo 6, la testa finale di E10h.** La #230 e la #228 sono entrate in
+  `main` il 7 ottobre sera, con il piano 1.31 (#234): la #233 resta in coda solo dopo la #232. Carmine ha risposto sul rilievo 6 di E10h
+  ([sulla #232](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/232#issuecomment-6041679155), di SkyMistery su sua istruzione): la nota
+  di ogni fase che mette `[WithdrawnByStakeholder]` dice perché la sua riga non porta una decisione. La nota di E6a lo dice nel §2
+  (`0a324a0`): il ritiro finisce all'off block, l'unica decisione dello staff sul pilota — la giustificazione di un «non volato», E13b —
+  cade dopo il volo, e «togli» cancella la riga; con un ⚠️ per E13a ed E13b, perché uno slot può partire fino a sei ore dopo la fine
+  dell'evento mentre `events-after` gira dopo `ends_at_utc`. Poi la testa finale di E10h (`eb8e8ef`, unita in `6451158`), che porta
+  `main` a `1f2a687`: nel codice cambia solo il riassunto del segno; conflitti solo nei documenti — la riga, la sezione e il blocco di E10h
+  prendono il suo testo nuovo, l'intestazione e il blocco di E6a restano —, e il confronto delle righe mostra solo le perdite volute.
+- **Verificato sull'ultima testa** (con E10h a `eb8e8ef` e `main` a `1f2a687`): `dotnet build` senza avvisi, `pnpm gen:api` e `pnpm
+  i18n:sync` senza differenze; unità **1199/1199**; **integrazione intera senza filtro 513/513** (5,6 minuti); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` **643 in 88 file**; smoke **173/173** al primo giro; **`pnpm e2e:full` 57/57 al primo
+  giro** (11,6 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima, il lock di Mailpit preso solo per il giro); le regole di `core-guard` in
+  PowerShell dalla base di merge `1f2a687`: **PASS**. La CI su `008039e`: verde.
+- **Le risposte di Carmine** (8 ottobre 2026, [sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6069142670),
+  di SkyMistery su sua istruzione; la #232 è unita la sera stessa, `main` a `0f72737`, e la #233 resta MERGEABLE senza unirlo): la nota è
+  **decisa** (§6).
+  1. **Sì alle prime dieci letture.** La lettura 10 chiede che `docs/events-bookings-export.md` dica `booked_by` negativo dopo una
+     cancellazione: lo diceva già, nella riga di `booked_by`.
+  2. **Il log binario non è verificato**: si prova con la prima prenotazione sull'installazione di prova alla prossima consegna, prima di
+     aprire le prenotazioni di un evento vero; punto aperto, lo chiude il maintainer, scritto nella nota e nell'intestazione di
+     `HANDOFF-M4.md`.
+  3. **Uno slot prenotato si corregge, e il pilota è avvisato** — codice su questa PR. `SlotSaving.PrepareAsync` confronta, prima di ogni
+     rifiuto, il volo salvato con quello corretto (`FlightChanged`: callsign, aeroporti, off block, on block, e i tipi ammessi come
+     insieme, letti dai valori originali del tracker; i tipi dalla colonna `AircraftTypesJson`, con la conversione dell'entità), e
+     `SlotSaving.AfterSaveAsync` — `CrudOptions.AfterSave` del CRUD degli slot, come `eventChanged` per l'evento — manda al pilota
+     **`events.bookingChanged`** (`EventsNotifications`, `EventsMail.BookingChangedAsync`, la parola del profilo e il modello in
+     `events.json`): il volo com'è ora, i tipi ammessi, il suo aereo, e l'invito a ritirarla fino all'off block se non gli va più bene.
+     Stand, numero di volo, rotazione o il solo tipo principale: nessuno avvisato; uno slot che nessuno ha prenotato: nessuno. **Il callsign
+     avvisa anche lui**: la risposta nomina orari, aeroporti e tipi, e il suo titolo dice «quando cambia quello che ha prenotato» — il
+     callsign è il volo con cui il pilota si collega (detto alla revisione). **Che cosa succede alla compatibilità** (la domanda di
+     Carmine): **non si ricontrolla**, né con le altre prenotazioni del pilota (`bookingGapMinutes`) né con l'aereo che ha scelto. La
+     prenotazione resta com'è anche se ora è troppo vicina a un'altra sua o il suo aereo non è più ammesso, e la mail glielo fa sapere;
+     decide il pilota. La catena della rotazione dello slot si controlla come prima. Il caricamento della tabella non tocca mai uno slot che
+     c'è (aggiunge, o sostituisce i liberi): uno slot prenotato si corregge solo dal suo form. Test:
+     `ABookedSlotCorrectedByTheStaffKeepsItsBookingAndTellsItsPilotWhenTheFlightChanges` — stand, numero di volo e ordine dei tipi non
+     avvisano; orari nuovi a cinque minuti da un'altra prenotazione del pilota (l'evento ne chiede dieci) avvisano, e la prenotazione resta;
+     tipi che lasciano fuori il suo aereo avvisano, e la prenotazione lo tiene; uno slot libero non avvisa nessuno. **Al contrario**: senza
+     avviso, `Assert.Single() Failure: The collection was empty`; con un avviso a ogni correzione, `Assert.Empty() Failure`; il codice
+     rimesso con lo stesso hash, toccato e ricompilato.
+  4. **L'eraser a E8b, accettato con una regola**: nessuna prenotazione su un'installazione vera finché E8b non è unita; l'installazione
+     di prova non è vincolata. Scritto nell'intestazione di `HANDOFF-M4.md`, dove si legge la consegna.
+  - **Verificato** (9 ottobre 2026, sull'ultima testa): `dotnet build` senza avvisi e `dotnet format --verify-no-changes` sui quattro
+    file C# toccati; `pnpm gen:api` e `pnpm i18n:sync` rifatti; unità **1198/1199** — la sola caduta è
+    `WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`, una bomba a tempo del nucleo che non è di questa fase: chiede la storia del
+    9 settembre 2026 alle 06:00 UTC, e `NoaaWeatherClient` risponde `null` oltre `IWeatherSource.HistoryWindow` (30 giorni, letti su
+    `DateTime.UtcNow`), quindi cade su ogni branch, `main` compreso, dalle 06:00 UTC del 9 ottobre; non toccata (regola 3), detta alla
+    sessione che coordina —; **integrazione intera senza filtro 514/514** (6,9 minuti), `EventsBookingsTests` 17/17; `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **643 in 88 file**; smoke **173/173** al primo giro; `pnpm e2e:full`
+    **56/57** al primo giro (11,6 minuti, 5128, `ivaohub_e2e_e6a` ricreato prima): la spec del nucleo `e2e/full/preview.spec.ts:25`
+    (l'anteprima dell'editor con il browser rallentato due volte) è scaduta a 30 secondi sotto il carico del giro, e da sola sullo stesso
+    banco e sullo stesso albero, `--repeat-each=3`, **3/3** (5,6–5,8 secondi ciascuna); questo giro non cambia codice web. Le regole di
+    `core-guard` in PowerShell dalla base di merge `eb8e8ef`: **PASS** — del nucleo solo `ErasureTests.cs`, due note nuove.
+- **`main` unito a `aa3707a`** (9 ottobre 2026, sera; la #241, 0.6.6: il client NOAA legge l'`IClock` del nucleo, e il test del meteo che
+  cadeva su ogni branch dal mattino, la #236, passa di nuovo), come chiedono la sessione che coordina e il revisore
+  ([sulla #233](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/233#issuecomment-6086571124)), perché `build-test` giri intero:
+  sulla testa `3326454` «Test .NET» era rosso per la #236 e la CI saltava tutti i passi dopo — il controllo dei test portanti, il web, la
+  smoke, il giro intero e il pacchetto —, rifatti a mano su quella testa (`lint`, `format:check`, `typecheck`, `i18n:check`, `gen:api`
+  senza differenze; detti nel corpo della PR). Il merge (`f4c63e6`) porta solo la #241 — `Directory.Build.props`, la sua nota,
+  `NoaaWeatherClient.cs`, `WeatherTests.cs` —, senza conflitti e senza codice web: rifatte le suite .NET, `dotnet build` senza avvisi,
+  unità **1199/1199**, **integrazione intera senza filtro 514/514** (10,7 minuti, con le suite di altre sessioni sulla stessa macchina); le
+  regole di `core-guard` dalla base di merge `aa3707a`: **PASS**. Il web, la smoke e il giro intero non si sono rifatti: il merge non li
+  tocca, e la CI li rifà interi.
+- **Non verificato**: la CI dell'ultima testa (la dice la PR); la sera vera dell'apertura — molti piloti, due processi, il pool di quindici connessioni:
+  le gare dei test sono deterministiche, con una transazione del test al posto della prima richiesta, non due processi —; il formato del
+  log binario della MariaDB di produzione (risposta 2: lo prova la consegna); le mail lette davvero in una casella (i test leggono la coda,
+  `hub_notifications`); le pagine, che sono di E6b.
 
 ### E6b — Prenotare: le pagine
 

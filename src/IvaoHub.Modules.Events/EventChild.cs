@@ -8,6 +8,8 @@ namespace IvaoHub.Modules.Events;
 /// §1.1, note 2026-09-29-chi-lavora-sugli-eventi §2.6): its care is copied from the event at every write, before its permission
 /// is asked (<c>CrudOptions.BeforeAuthorize</c>), as a leg of a tour takes its tour's. The one handler and the interceptor's
 /// guard then read it as they read the event.
+/// <para>A pilot's booking is one too (E6a), though a member sends it: the staff's «take away» copies the event's care onto it
+/// before it asks, so a department that came into the event after the booking reaches it and one that left does not.</para>
 /// </summary>
 public interface IEventChild : IOwnedByDepartment
 {

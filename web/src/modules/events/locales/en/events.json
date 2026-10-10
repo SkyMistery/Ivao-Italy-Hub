@@ -190,7 +190,7 @@
     },
     "delete": {
       "title": "Delete this slot?",
-      "description": "The slot is taken out of the event and off its page."
+      "description": "The slot is taken out of the event and off its page. A booked slot is not deleted: take its booking away first."
     },
     "deleteFree": {
       "trigger": "Delete the free ones",
@@ -326,17 +326,33 @@
     "eventChanged": {
       "title": "Events whose times change",
       "description": "An email when the times of an event you booked a slot of, have a shift in or registered for change."
+    },
+    "bookingRemoved": {
+      "title": "Bookings taken away",
+      "description": "An email when the staff of the events take a booking of yours away, with the reason."
+    },
+    "bookingChanged": {
+      "title": "Booked flights corrected",
+      "description": "An email when the staff of the events correct the flight of a slot you booked: its callsign, times, airports or aircraft types."
     }
   },
   "mail": {
     "events": {
       "eventCancelled": {
-        "subject": "[Events] Cancelled: {{event}}",
-        "body": "{{event}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "subject": "[Events] Cancelled: {{title}}",
+        "body": "{{title}} has been cancelled.\n\nWhy: {{note}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "eventChanged": {
-        "subject": "[Events] New times: {{event}}",
-        "body": "The times of {{event}} have changed: it now runs from {{starts}} to {{ends}}.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "subject": "[Events] New times: {{title}}",
+        "body": "The times of {{title}} have changed: it now runs from {{starts}} to {{ends}}, in UTC. Check that your bookings still suit you.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingRemoved": {
+        "subject": "[Events] Booking taken away: {{callsign}}, {{title}}",
+        "body": "The staff of the events have taken away your booking of {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, in {{title}}.\n\nWhy: {{reason}}\n\nThe slot is free again. The event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "bookingChanged": {
+        "subject": "[Events] Your booked flight changed: {{callsign}}, {{title}}",
+        "body": "The staff of the events have corrected the flight you booked in {{title}}. It is now {{callsign}}, {{departure}} to {{arrival}}, off block {{offBlock}} UTC, on block {{onBlock}} UTC, for {{types}}.\n\nYour booking stays, with your {{aircraft}}. If it no longer suits you, you can withdraw it until its off block.\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       }
     }
   },
@@ -389,6 +405,19 @@
     "slotTwice": "The event already has a slot with this callsign at this off block time.",
     "slotNotPublic": "A private slot is not corrected as a flight.",
     "exportDraft": "This event is a draft: it is exported once it is published.",
-    "bookingsContract": "Say which version of the contract the program speaks, in the Hub-Bookings-Contract header."
+    "bookingsContract": "Say which version of the contract the program speaks, in the Hub-Bookings-Contract header.",
+    "bookingPrivateSlot": "A private slot is booked from its own form, with the flight you fly.",
+    "slotNotInRotation": "This slot is not a leg of a rotation.",
+    "bookingCancelledEvent": "This event is cancelled: its slots are booked no more.",
+    "bookingNotOpen": "The bookings of this event are not open yet.",
+    "slotClosed": "This slot is closed: its off block time has passed.",
+    "slotAlreadyYours": "You booked this slot already.",
+    "slotJustTaken": "Slot just taken by another pilot.",
+    "bookingTryAgain": "Too many bookings in the same instant: nothing was booked. Try again.",
+    "bookingIncompatible": "Too close to another of your bookings in this event: there are fewer minutes than the event asks between the end of one and the start of the other.",
+    "aircraftNotAllowed": "This slot does not allow this aircraft type.",
+    "slotGone": "This slot is no longer in the event.",
+    "slotBooked": "A pilot booked this slot: take the booking away before deleting it.",
+    "eventHasBookings": "Pilots booked slots of this event: it cannot be deleted. Cancel it instead."
   }
 }

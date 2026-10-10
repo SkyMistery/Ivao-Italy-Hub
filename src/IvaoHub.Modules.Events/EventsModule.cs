@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
+using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
@@ -26,7 +27,8 @@ namespace IvaoHub.Modules.Events;
 /// it is seen and when it ends; E4 its public side — the page of an event, the list of <c>/events</c> as the block
 /// <c>events.eventList</c> — and the routes the flight operations write; E5 its public slots — loaded from a table, with their
 /// rotations, listed and corrected in the back office and listed on its page — and the export the gate manager reads with a
-/// personal token.
+/// personal token; E6a the bookings on the server — a pilot books a public slot or a whole rotation and withdraws, the staff take a
+/// booking away with a reason, and an event somebody booked tells them when it is cancelled or its times change.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -106,6 +108,10 @@ public sealed class EventsModule : ModuleBase
         // Its public slots (E5): a table loaded all or nothing, and what a correction of one slot asks of the others.
         services.AddScoped<SlotLoading>();
         services.AddScoped<SlotSaving>();
+
+        // The bookings (E6a): the pilot's verbs under their lock, and the mails of the module.
+        services.AddScoped<PilotBookings>();
+        services.AddScoped<EventsMail>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
@@ -116,5 +122,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventSlotEndpoints();
         endpoints.MapPublicEventEndpoints();
         endpoints.MapBookingsExport();
+        endpoints.MapBookingEndpoints();
     }
 }

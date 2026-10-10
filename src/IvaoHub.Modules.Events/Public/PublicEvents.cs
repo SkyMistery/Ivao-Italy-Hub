@@ -31,9 +31,8 @@ public sealed record PublicEventRouteDto(
 /// A public slot as the page of its event shows it (design M4 §7.1, E5): the flight — callsign, flight number, the aircraft types
 /// allowed, its main one first, from and to with their times, the stand —, its rotation and its place in it, whether it arrives at
 /// the event or leaves it, and whether it is taken: to whoever reads the page, never who took it (plan §9.7). A slot is taken once
-/// a booking names it (E6a); until then every one is free. The page draws from this alone the airport of the event a slot is at,
-/// its table of departures or arrivals and its detail with the legs of its rotation (note
-/// 2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
+/// a booking names it (E6a). The page draws from this alone the airport of the event a slot is at, its table of departures or
+/// arrivals and its detail with the legs of its rotation (note 2026-10-07-gli-slot-sulla-pagina-dell-evento): no read of its own.
 /// </summary>
 public sealed record PublicEventSlotDto(
     long Id,
@@ -216,6 +215,14 @@ public sealed class PublicEvents(
             .ThenBy(slot => slot.Id)
             .ToListAsync(cancellationToken);
 
+        // Which of them are taken (E6a), whoever reads the page — a booking is a row of a member, which the global filter hides from
+        // a visitor —, and never by whom: only the slots it names leave this query.
+        var taken = (await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
+                .Where(booking => booking.EventId == row.Id)
+                .Select(booking => booking.SlotId)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+
         var named = await NamesAsync(
             own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao }))
                 .Concat(slots.SelectMany(slot => new[] { slot.DepartureIcao!, slot.ArrivalIcao! })),
@@ -259,7 +266,7 @@ public sealed class PublicEvents(
                     slot.RotationCode,
                     slot.RotationLeg,
                     slot.IsArrival,
-                    Taken: false)),
+                    Taken: taken.Contains(slot.Id))),
             ],
             row.CancelledAt,
             row.CancellationNote);
