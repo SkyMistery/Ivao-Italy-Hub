@@ -35,7 +35,19 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 7 ottobre 2026 — piano **1.31**: **gli slot pubblici di un evento e l'esportazione per il Gate Manager** —
+**Ultimo aggiornamento:** 10 ottobre 2026 — piano **1.32**: **un pilota prenota, ritira e riceve il promemoria** — E6a (#233:
+`evt_bookings` con la migrazione additiva `AddEventBookings`, i verbi del pilota sotto `/api/events/mine/bookings`, la rotazione
+intera, «togli» dello staff, le mail `bookingRemoved` e `bookingChanged`) ed E6b (#240: «Prenota» nel dialog dello slot,
+`/events/mine`, il blocco `events.myEvents`, la scheda «Prenotazioni» dello staff, il job `events-reminders`, la striscia degli
+scali dentro la pagina dell'evento), con **E10h** del nucleo sotto (#232: `[WithdrawnByStakeholder]`, il membro cancella la riga
+che lo riguarda). **`main` è alla 0.6.6** (#241: il client NOAA misura la finestra della storia con `IClock`). **M4 è a 17 fasi
+su 29**, più E4b, E10g ed E10h; il prossimo passo del modulo è **E7**. Aperte, di `dalberone`: E10i (#237), E10j (#239), E10k
+(#238), E4c (#242). ⚠️ **Una trappola nuova**: **l'ora si legge da `IClock`, mai da `DateTime.UtcNow`**, e un test d'unità che
+scrive una data fissa dà al codice un orologio fisso — dal 9 ottobre `build-test` cadeva ovunque per un test con la data del 9
+settembre (#236). ⚠️ **Prima di aprire le prenotazioni a un evento vero**: E8b unita (la cancellazione dei dati di una persona
+negli eventi) e la prima prenotazione sull'installazione di prova riuscita (il formato del log binario del server non è
+verificato). Il grant su una riga sola che il guardiano rifiutava è la #237, aperta. La prossima consegna è la **0.7.0**, con
+tre migrazioni additive degli eventi. Prima, piano **1.31** (7 ottobre 2026): **gli slot pubblici di un evento e l'esportazione per il Gate Manager** —
 E5 (#228: `evt_slots` con la migrazione additiva `AddEventSlots`, la tabella degli slot letta dal server con le rotazioni e la
 finestra dell'evento, la lista sulla pagina per scalo con partenze e arrivi, l'esportazione con un token personale dell'audience
 `events.bookings` e la versione nell'intestazione `Hub-Bookings-Contract`, `docs/events-bookings-export.md`) — e **due pezzi del
@@ -127,7 +139,10 @@ marcatore che non si scrive) e 0.4.2 (l'accesso dalla pagina d'errore). ✅ **1,
 viola le regole nuove; l'avvio rifiuta ora sei dichiarazioni di un permesso segnato che farebbero rispondere diversamente handler e
 guardiano (piano §16 punto 2). Restano: 2
 job che recuperano + POST dell'operazione pianificata di Plesk → 3 la strada A, solo se l'avvio scende sotto ~3 s → 4 l'hub che
-chiama sé stesso: aspetta. Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
+chiama sé stesso: aspetta. **Dal 9 ott 2026** (piano 1.32): **la voce 2 la scrive `dalberone`** (issue #231, decisa da Carmine; PR #239 aperta,
+fase E10j) — cambia, solo per questa voce, «il codice arriva nelle PR di Carmine» della nota del 28 settembre —; e una voce
+nuova, **5: un lettore di nomi per VID nel nucleo**, prima che se ne scriva un quinto (oggi `PirepReview.NamesAsync` dei tour,
+`TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople`), poi i quattro passano a lui (deciso da Carmine sulla #240). Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
 `hub.lang`, un giro futuro. Da A11a, se il maintainer vuole: `firStaffScope` **obbligatorio** nel calcolo dei permessi (oggi ha
 il predefinito `own`, per non toccare tre suoi test), in una PR sua.
 **M3** (`dalberone`, `HANDOFF-M3.md`): ✅ **chiusa il 30 set 2026** con A12d (#191): unite A0–A12d, il giro completo
