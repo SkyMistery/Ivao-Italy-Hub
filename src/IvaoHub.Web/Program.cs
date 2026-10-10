@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using IvaoHub.Core.Airspace;
 using IvaoHub.Core.Atc;
 using IvaoHub.Core.Auth;
@@ -8,6 +9,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Jobs;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
@@ -19,11 +21,10 @@ using IvaoHub.Web;
 using IvaoHub.Web.E2E;
 using IvaoHub.Web.Endpoints;
 using IvaoHub.Web.OpenApi;
-using Scalar.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
-using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
+using Scalar.AspNetCore;
 using Serilog;
 
 // How long each step of the start takes, counted from the creation of the process: a visitor waits for all of it
@@ -61,10 +62,12 @@ foreach (var secretFile in paths.SecretFiles())
 builder.Configuration.AddJsonFile(paths.OAuthFile, optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
 
+// The token of the scheduled task's address never reaches the log, whatever level an installation sets (JobTokenLogMask).
 builder.Services.AddSerilog((services, logger) => logger
     .ReadFrom.Configuration(builder.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
+    .Enrich.With<JobTokenLogMask>()
     .WriteTo.Console()
     .WriteTo.File(
         Path.Combine(paths.Logs, "hub-.log"),
@@ -185,7 +188,13 @@ builder.Services.AddHubNotifications();
 // The mail to whoever assigns the awards, about the signals every module writes into the core's queue (M4, E10d).
 builder.Services.AddHubAwards();
 
-// The login is the one place an outsider can make the server do work before proving anything.
+// Every scheduled job, the core's and the modules', once per occurrence whichever process is alive: one runner across
+// processes, the runs lost while the host kept the hub stopped made up after a start, and the address the host's scheduled
+// task calls (note 2026-10-09-i-job-che-recuperano).
+builder.Services.AddHubJobs();
+
+// The login is the one place an outsider can make the server do work before proving anything; the address of the host's
+// scheduled task, which refuses a wrong token, is limited the same way, so that refusals cannot fill the log.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -379,6 +388,10 @@ app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
 app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
+
+// The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token in a
+// header (POST) or, for a panel that can only fetch an address, in the address (GET).
+app.MapJobRunEndpoints().RequireRateLimiting(AuthEndpoints.RateLimitPolicy);
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
 app.MapModuleEndpoints();

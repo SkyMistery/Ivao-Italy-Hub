@@ -136,7 +136,8 @@ lock if a deny rule is ever lost. Never put the file in a zip or a mail.
   "ForwardedHeaders": {
     "TrustedNetworks": ["127.0.0.1/32", "::1/128", "<the Cloudflare ranges>"]
   },
-  "Installation": { "Domain": "<host>", "Preview": true }
+  "Installation": { "Domain": "<host>", "Preview": true },
+  "Jobs": { "Token": "<a random secret of at least 32 characters>" }
 }
 ```
 
@@ -150,6 +151,9 @@ lock if a deny rule is ever lost. Never put the file in a zip or a mail.
 | `Installation:Domain` | the host every absolute link is built on — mails, sitemap, robots.txt — when it is not `division.json → domain`, as on a test installation. A host name only |
 | `Installation:Preview` | `true` for a private installation: not indexed (robots.txt, no sitemap, `X-Robots-Tag` on every response) and **open to the staff of the division and the super administrators only**; anybody else is turned away at the end of the IVAO round trip, before anything about them is written |
 | `Smtp` | optional. Without it nothing is sent and nothing is lost: notifications queue up. On a test installation, leaving it out keeps test data from mailing real people |
+| `Jobs:Token` | optional: the token of the host's scheduled task ([below](#the-scheduled-jobs-and-the-hosts-scheduled-task)), random and at least 32 characters long, or the application refuses to start. A secret of the installation, not of a person: it opens `/api/jobs/run` and nothing else, in a header or, where the panel can only fetch an address, in the address. Without it that address does not exist |
+| `Jobs:CatchUp` | optional, `true` or `false`. Left out, a production installation makes up, after a start, the runs of its scheduled jobs it lost while it was stopped, and every other environment does not ([below](#the-scheduled-jobs-and-the-hosts-scheduled-task)) |
+| `Jobs:WaitSeconds` | optional: how long the scheduled task's call waits for the runs at most, from 1 to 600 seconds; 80 when left out, inside Cloudflare's 100. Say less behind a proxy that gives up sooner |
 
 `diagnostics/startup.txt` shows, after every start, the version, the commit, the environment, the `domain`, the
 `access` (`public` or `private: staff only, not indexed`) and the migrations applied. It never contains a secret.
@@ -197,6 +201,54 @@ of the site — never the file: `/secrets/<your file name>.json`, `/config/divis
   start never destroys data. `diagnostics/startup.txt` lists what the start applied.
 - `max_allowed_packet`: the default is enough; uploads go to disk, never into the database.
 
+## The scheduled jobs and the host's scheduled task
+
+The hub does its periodic work itself: the mail queue every minute, the release of tours and events every quarter of an
+hour, the weather at minutes 5 and 35, the reference data and the clean-ups at night. Each job writes one row per run in
+the table `hub_jobs_log`. But Passenger stops an idle hub after 10–30 seconds, and a stopped hub runs nothing
+(`docs/internal/decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md`). So
+(`docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`):
+
+- **A job runs once for each occurrence of its schedule, whichever process is alive.** A few seconds after a start, and
+  every minute after, the hub runs every job whose hour came since its last run ended, **one after the other**: the night's
+  jobs run a few seconds after the first visit of the morning, once each, never all together. A run that failed waits for
+  its next hour. This is on by default in production (`Jobs:CatchUp`).
+- **Two processes never run the same job together.** Before a run the hub takes the job's named lock in the database,
+  `hub-job:<database>:<job>`, on one connection of its own outside the pool, held while any of its jobs runs. A process
+  that finds the lock taken leaves the run to the one that has it. A process that dies releases its locks with its
+  connection. The user of the database needs no privilege for this.
+- **The host's scheduled task gives the hub its work when nobody visits.** In the panel of the subscription (Plesk:
+  "Scheduled Tasks"), create a task owned by the installation, never by a person's account, that runs at fixed hours.
+  Minutes `5` and `35` of every hour suit the weather. **Where the panel lets a task run a command, use that**, with the
+  token in a header:
+
+  ```bash
+  curl -fsS -X POST -H "Authorization: Bearer <token>" https://<host>/api/jobs/run
+  ```
+
+  **Where it can only fetch an address** ("Fetch a URL"), the token goes in the address instead, as the fallback:
+
+  ```text
+  https://<host>/api/jobs/run?token=<token>
+  ```
+
+  `<token>` is `Jobs:Token` of the secrets file; in the address, encode any character other than letters, digits, `-`,
+  `_`, `.` and `~`. Either call wakes the hub and runs the jobs that are due inside the request, one after the other. The
+  hub answers when they have ended, or after 80 seconds at most (`Jobs:WaitSeconds`), inside Cloudflare's 100; what is
+  left goes on while the process lives. The answer lists each job in the order they start and what became of it: `Ran`,
+  `Skipped` (another process ran it, or it had already run), `Running` (not finished when the answer left) or `Waiting`
+  (not started yet). Passenger does not stop a process while it answers. An installation without `Jobs:Token` answers
+  404, a call with another token (or the address without one) 401, and more than ten calls a minute from one address
+  429, both ways together, as the login does.
+  - ⚠️ **What the address costs.** The token travels in the address, so the host's web server and the proxies in front
+    (Cloudflare) write it in their own logs, and the panel shows it to whoever can read the task. The hub's own log never
+    does: it writes `token=***`. The token opens this address and nothing else, and its only power is to run now what is
+    due anyway. A token that leaked is replaced in the secrets file and in the task; the hub reads the new one at its
+    next start (`tmp/restart.txt`).
+  - ⚠️ **What the panel offers is still to be seen**: whoever sets up the scheduled task at the delivery says which of
+    the two ways it allows (`docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`, §2).
+  - With two calls an hour, a mail can wait up to half an hour when nobody uses the site.
+
 ## The first installation
 
 1. Create the database and its user (above).
@@ -207,7 +259,8 @@ of the site — never the file: `/secrets/<your file name>.json`, `/config/divis
    **in binary mode**, keeping the sub-folders. If you start with `./IvaoHub.Web`, set it to `755`.
 5. Put `config/division.json` and `secrets/<unguessable>.json` in place, and create `tmp/`.
 6. Open the site once: Passenger starts the process on the first request.
-7. Run the checks below.
+7. Create the host's scheduled task ([above](#the-scheduled-jobs-and-the-hosts-scheduled-task)).
+8. Run the checks below.
 
 ## After every deploy: the checks
 
@@ -227,6 +280,10 @@ Not in the minute of the restart: give it the time to apply its migrations.
 | The deny checks of the section above | 403, 404, or the page of the site |
 | As super administrator, change something harmless, then read the audit log | the address recorded is **yours** (behind Cloudflare, the `ip=` line of `https://<host>/cdn-cgi/trace` in the same browser), never `127.0.0.1` nor a Cloudflare address: that is how you know `TrustedNetworks` is right. If it is not, the next row shows why |
 | As super administrator, open `https://<host>/api/admin/diagnostics/request` in the browser | how the hub sees your request: `believed.address` is yours and `scheme` is `https`. If not, the same answer says why: the neighbour and its family, the forwarding headers as they arrived and how many entries each holds, the names of every header, and the settings of the forwarded headers. Nothing of it is stored |
+| The last run of the host's scheduled task, in the panel | a `200` and a JSON with `jobs`. A `401` is a token that is not `Jobs:Token`, a `404` an installation without `Jobs:Token` |
+| The log of the day, when the task fetches the address with the token | the token is nowhere in it. ASP.NET Core's lines of a request, written when an installation lowers `Microsoft.AspNetCore` to `Information`, show `token=***` |
+| The log of the day, `logs/hub-<date>.log`, after a visit following a quiet hour | `Ran … job(s) that were due, one after the other`, once for that visit; `is running in another process` or `has already run for its last occurrence` only when two processes were alive together |
+| The database's `wait_timeout`, in the panel's phpMyAdmin: `SHOW VARIABLES LIKE 'wait_timeout'` | longer than the longest run in `hub_jobs_log` (MariaDB's default is 28800 seconds). A shorter one closes the connection that holds the jobs' locks during a long run, and the lock is lost |
 
 ## Updating
 
@@ -260,9 +317,14 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   exception (no ICU, a truncated `.dll`, out of memory), still says so only on standard output, which is in
   Passenger's log.
 - **Passenger stops an idle application** and starts it again on the next request. The scheduled jobs (the mail
-  queue, the reference data, the release of the tours) only run while the process is alive
-  (`docs/internal/decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md`). `passenger_min_instances 1` keeps one
-  alive, where the host allows it.
+  queue, the reference data, the release of the tours) only run while a process is alive: what they lost while it was
+  stopped is made up a few seconds after the next start, and the host's scheduled task gives the hub its work at fixed
+  hours ([above](#the-scheduled-jobs-and-the-hosts-scheduled-task)). Between two calls of the task, and with no visit,
+  nothing runs. A long job made up after a visit can be stopped with the process before it ends: it is made up again,
+  and the scheduled task's call, which the process answers only when its runs have ended, lets it finish
+  (`docs/internal/decisions/2026-09-28-i-job-quando-passenger-spegne-l-hub.md`,
+  `docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`). `passenger_min_instances 1` keeps one process alive,
+  where the host allows it.
 - **The cold start is paid by a visitor.** Measured on a Plesk + Passenger host (28 September 2026, version 0.2.1): Passenger
   stopped the hub after **10–30 s** without requests, and the first request after the silence took **8–10 s** instead of
   0.2 s. Version 0.2.4 cuts about 40% of it (ReadyToRun, the modules' migrations only when pending, TieredPGO off):
@@ -292,3 +354,6 @@ not measured:
   checks"): the tests send the chain measured there, the server has not shown it yet.
 - The page a member who is not staff meets on a private installation, on a deployed host (measured in development).
 - Whether the zip, unpacked by a hosting panel, keeps the execute bit that `zip` records on Linux.
+- The host's scheduled task on a real panel: which of the two ways it allows (a command, or only an address), and how
+  long the jobs of a night take on the server when they are made up in the morning (`hub_jobs_log` says it: the start and
+  the end of every run).

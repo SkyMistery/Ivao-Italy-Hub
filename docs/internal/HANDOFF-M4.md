@@ -6,25 +6,28 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E6b** (modulo: prenotare, le pagine), sul branch `m4/e6b-booking-pages`, **PR #240**
-verso `main`, nata **in coda dopo la #233** di E6a, dalla sua testa con le risposte di Carmine, `3326454`, e dopo la revisione con la
-sua testa nuova, `92cd928`, che porta `main` a `aa3707a` con la #241 (0.6.6, il test del meteo corretto): unita in `1b21ccf`, e la CI
-torna intera. Prima di E6b: **fase E6a**
+**Ultimo aggiornamento:** 10 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
+`m4/e10j-jobs-catch-up`, **PR #239** verso `main`, nata da `main` a `0f72737`, senza coda: dopo la revisione ha unito `main` a
+`aa3707a` (la `0.6.6`, il test del meteo corretto), e dopo la risposta di Carmine alla domanda 3 a `ba06d66` (la `0.6.7`, il piano
+1.32). Prima di E10j: **fase E6b** (modulo: prenotare, le pagine), **PR #240**, nata in coda dopo la #233 di E6a, e **fase E6a**
 (modulo: prenotare, il server), **PR #233**, nata in coda dopo la #228 di E5 e poi anche dopo la #232 di **E10h** (il nucleo: chi ha
 mandato una riga se la riprende), una fase del nucleo nata da lei — il ritiro del pilota cancella la riga, e il guardiano
-dell'interceptor non lo lasciava fare. **La #228 e la #232 sono unite** (7 e 8 ottobre, `main` a `0f72737`): la #233 non è più in coda
-dopo nessuna. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, E10a
-(#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei
-tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella
-ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a
-posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b,
-dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga scrive quella riga,
-e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k** (#238: le parole delle liste e i titoli delle
-schede), con **E4c** (gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino
-del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa): un branch che porta `main` a `aa3707a` ha
-di nuovo la CI intera.
-**Il prossimo passo**: **E6a** (la #233), poi **E6b** (la #240, in coda dopo la #233); poi **E7** (gli slot privati), in coda sul
-branch di E6b. Da E3b un evento si **pubblica**, entra nel
+dell'interceptor non lo lasciava fare. **La #233 e la #240 sono unite** (10 ottobre). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
+(#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204),
+E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo
+(#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e **1.32 (#243)**, la parola degli eventi nella ricerca
+(#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225, #241, #244) e gli spec che dicono al banco che cosa
+rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha
+montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga
+scrive quella riga, e i figli di un evento), **E10j** (#239, questa) ed **E10k** (#238: le parole delle liste e i titoli delle schede),
+con **E4c** (#242, gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino del
+9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa).
+**Il prossimo passo**: **E10j** (questa, la #239, del nucleo, senza coda), **decisa** da Carmine sulla #239, la domanda 3 compresa: il
+token anche nell'indirizzo, accanto all'intestazione, per un pannello che sa solo «Recupera un URL» ([la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044)), sulla #239 con il suo test. ⚠️ **Che cosa
+offre l'operazione pianificata del pannello resta un punto aperto: lo chiude chi la imposta, alla consegna** (il maintainer non ha
+accesso al pannello; nota `2026-10-09-i-job-che-recuperano` §2, e «Che cosa ha lasciato E10j», sotto). Poi **E7** (gli slot privati),
+in coda sul branch di E6b. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -165,7 +168,9 @@ lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatC
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
 l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
-da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»); i job che
+recuperano i giri persi mentre Passenger tiene l'hub spento e l'indirizzo dell'operazione pianificata, che E0 lasciava alla coda del
+maintainer, **portati da E10j** (sotto, «Che cosa ha lasciato E10j»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -178,6 +183,54 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10j (9–10 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239: l'ultimo giro *finito*, il
+  blocco del database, i job dovuti uno dopo l'altro, il blocco che si apre accettato, e il token anche nell'indirizzo; il dettaglio
+  in `10`, E10j, «Com'è andata», «Dopo la revisione» e «Dopo la risposta 5»):
+  - **Ogni job Quartz dell'hub gira una volta per occorrenza del suo cron, qualunque processo sia vivo**, e nessun job cambia:
+    `src/IvaoHub.Core/Jobs/ScheduledJobs.cs` è un `ITriggerListener` su tutti i trigger che, prima di ogni giro, prende il blocco
+    del job nel database (`hub-job:<database>:<job>`, `JobLocks`, una connessione per processo fuori dal pool) e rilegge l'ultimo giro
+    **finito** in `hub_jobs_log`: un altro processo che lo fa, o un giro che ha già coperto l'occorrenza, e il giro salta.
+  - **Il recupero** (`JobCatchUp`): cinque secondi dopo l'avvio e ogni minuto fa **un giro** sui job dovuti (`JobSchedule.IsDue`:
+    un'occorrenza del cron, nel fuso del trigger, dopo l'inizio dell'ultimo giro finito) e li lancia **uno dopo l'altro**; un giro alla
+    volta per processo. **Acceso per difetto solo in `Production`** (`Jobs:CatchUp`): sul banco e nei test d'integrazione i job girano
+    alle loro ore come prima.
+  - **`/api/jobs/run`** per l'operazione pianificata dell'host, con il token `Jobs:Token` (almeno 32 caratteri, dai segreti)
+    **nell'intestazione** (`POST`, `Authorization: Bearer …`) o, per un pannello che sa solo recuperare un indirizzo, **nell'indirizzo**
+    (`GET …?token=…`, la risposta 5): si unisce al giro e risponde quando è finito, al più dopo `Jobs:WaitSeconds` (80 se manca); 404
+    senza token configurato, 401 senza o con un altro, 403 per un `POST` senza `Authorization` (il guardiano di `/api`), 429 oltre
+    dieci chiamate al minuto dei due modi insieme (il limite del login). **Il token dell'indirizzo non va mai nel log dell'hub**:
+    `JobTokenLogMask` (progetto Web) lo scrive `token=***` nelle righe di ASP.NET Core di una richiesta. In `docs/DEPLOYING.md`, con il
+    prezzo del ripiego: il token nei log del server web e dei proxy davanti.
+  - **La coda delle mail** salva l'esito di ogni mail subito; **i fusi** del nucleo sono espliciti (la coda in UTC, i contorni dei FIR
+    nel fuso della divisione).
+- **Per chi scrive un job degli eventi** (il promemoria di E6b, `events-roster`, `events-after`, `events-digest`, `events-retention`):
+  niente da chiamare. Registrato come gli altri (`AddJob<…>(job => job.WithIdentity(JobName))` e un trigger cron `.ForJob(JobName)`),
+  il recupero e il blocco lo coprono, se: **ogni giro scrive la sua riga con `FinishedAt` su ogni uscita**, con `Job` uguale al nome
+  del job in Quartz; **il trigger dice il suo fuso** (`InTimeZone`, il fuso della divisione con la pipeline delle opzioni come
+  `training-expiry` quando l'ora conta per chi legge); **decide dai suoi dati** (la regola di sempre). Un riepilogo non scrive un suo
+  «già mandato oggi»: è la riga del giro. ⚠️ Ma **un giro fermato a metà si rifà**: un job che manda mail con un salvataggio per mail
+  (come il riepilogo dei tour) le rimanda; le mail di un giro in un salvataggio solo, come `AwardQueueMailJob`, o un segno per
+  destinatario.
+- ⚠️ **I fusi di `events-release` e `training-reminders`**: dicono UTC nella **prossima fase del loro modulo** (due righe in
+  `EventsModule.cs` e in `TrainingModule.cs`; la regola 6 le tiene fuori da una PR del nucleo). Un quarto d'ora cade agli stessi istanti
+  in ogni fuso, ma la nota del 28 settembre (§7) li vuole espliciti (il punto 6 della revisione della #239).
+- ⚠️ **Che cosa offre l'operazione pianificata del pannello è un punto aperto: lo chiude chi la imposta, alla consegna** (il
+  maintainer non ha accesso al pannello; risposta 5 sulla #239, nota §2): dove il pannello esegue un comando, l'intestazione; dove
+  recupera solo un indirizzo, il token nell'indirizzo.
+- ⚠️ **Flight Ops resta al maintainer** (nota §3): i fusi degli otto trigger dei tour (il riepilogo delle 07:00 nel fuso della
+  divisione, UTC dove il commento dice UTC) e il riepilogo fermato a metà, che rimanda le mail già in coda (nota §1.7), sono una
+  richiesta a una sua sessione; il resto lo copre il nucleo.
+- ⚠️ **Quartz tiene uno scheduler per nome in un processo**: un test che avvia due host vivi insieme dà a ognuno un nome suo
+  (`ScheduledJobsTests.Host`), o i due condividono lo scheduler del primo.
+- ⚠️ **Un test che mette in pausa un job** (`TourTests`, `EventsLifeTests`, `AwardQueueMailTests`) resta com'è: il recupero salta i
+  job in pausa, e nei test è spento.
+- **Per provare che cosa scrive il log dell'hub**: il logger legge con `ReadFrom.Services` ogni `ILogEventSink` registrato nei servizi
+  dell'host, quindi un test ne registra uno suo con `ConfigureTestServices` e riceve ogni evento dopo gli arricchitori dell'hub
+  (`ScheduledJobsTests.LogCapture`); il livello di una categoria si abbassa con `Serilog:MinimumLevel:Override:<categoria>` nella
+  configurazione del test.
 
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 
