@@ -4,6 +4,7 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { createBuildWatch } from '../app/newBuild';
 import { bootstrapQuery } from '../features/me/queries';
 import { useDivisionLanguage } from '../shared/i18n/useDivisionLanguage';
+import { DivisionTitle } from '../shared/seo/PageMetadata';
 import { NotFound } from '../shared/ui';
 
 /**
@@ -54,10 +55,17 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   ),
 });
 
-/** The one place that knows the division before any route draws: its languages hold from here down. */
+/**
+ * The one place that knows the division before any route draws: its languages hold from here down,
+ * and so does its name, the title of a tab whose page says none of its own (#224).
+ */
 function Root() {
   const { bootstrap } = Route.useRouteContext();
   useDivisionLanguage(bootstrap.division);
 
-  return <Outlet />;
+  return (
+    <DivisionTitle division={bootstrap.division}>
+      <Outlet />
+    </DivisionTitle>
+  );
 }

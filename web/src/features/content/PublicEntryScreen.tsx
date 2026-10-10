@@ -1,5 +1,4 @@
 import { Button, H1, Lead } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,10 +10,8 @@ import {
   usePublishedEmbedding,
 } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
-import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
-import { bootstrapQuery } from '../me/queries';
 
 import { DocumentFooter, DocumentNotice, DocumentStrip } from './DocumentFrame';
 import type { PublicContentDto } from './queries';
@@ -38,7 +35,6 @@ import { usePrintMode } from './usePrintMode';
 export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
-  const { data: bootstrap } = useQuery(bootstrapQuery);
   const printing = usePrintMode();
 
   // The frame of an interactive block, addressed by the version being read: a published version
@@ -61,11 +57,6 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
         description={content.summary}
         seo={content.seo}
         imageMediaId={content.coverMediaId}
-        divisionName={resolveLocalized(
-          bootstrap?.division.name,
-          i18n.language,
-          bootstrap?.division.defaultLocale ?? i18n.language,
-        )}
       />
 
       <header className="flex flex-col gap-3">

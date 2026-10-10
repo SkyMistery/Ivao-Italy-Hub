@@ -7,6 +7,7 @@ import type { Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { ListFilter } from '../../shared/list';
+import { PageMetadata } from '../../shared/seo/PageMetadata';
 
 /**
  * A public list of one kind of content: `/news` and `/documents`.
@@ -68,6 +69,9 @@ export function PublicListScreen({
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t(`${titles}.public.title`)} description={t(`${titles}.public.description`)} />
+
       <header className="flex flex-col gap-1">
         <H1>{t(`${titles}.public.title`)}</H1>
         <Lead>{t(`${titles}.public.description`)}</Lead>
