@@ -62,10 +62,12 @@ foreach (var secretFile in paths.SecretFiles())
 builder.Configuration.AddJsonFile(paths.OAuthFile, optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
 
+// The token of the scheduled task's address never reaches the log, whatever level an installation sets (JobTokenLogMask).
 builder.Services.AddSerilog((services, logger) => logger
     .ReadFrom.Configuration(builder.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
+    .Enrich.With<JobTokenLogMask>()
     .WriteTo.Console()
     .WriteTo.File(
         Path.Combine(paths.Logs, "hub-.log"),
@@ -387,7 +389,8 @@ app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
 app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
 
-// The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token.
+// The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token in a
+// header (POST) or, for a panel that can only fetch an address, in the address (GET).
 app.MapJobRunEndpoints().RequireRateLimiting(AuthEndpoints.RateLimitPolicy);
 
 // Last, so that a module cannot shadow a route of the core by mapping the same pattern first.
