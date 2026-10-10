@@ -6,21 +6,22 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 10 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
+**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
 `m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda, e **unita di nuovo a `main`** a `aa3707a`
-(la #241, 0.6.6: il test del meteo corretto) e a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
-l'accesso). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a
-(#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed
-E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e
-**1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225, #241,
-#244) e gli spec che dicono al banco che cosa rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali
-dell'evento, il giorno dell'evento, l'ha montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**:
-**E10i** (#237: un grant su una riga scrive quella riga, e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k**
-(questa, la #238), con **E4c** (#242: il titolo di `/events` e le frasi vuote delle schede «Slot» e «Rotte», gli usi degli eventi di
-E10k) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino del 9 ottobre (#236), **è corretto in
-`main` dalla #241** di Carmine (0.6.6, la sera stessa).
-**Il prossimo passo**: **E10k** (la #238: **decisa da Carmine** sull'issue #224 e, dopo la revisione, sulla #238; approvabile, con `main`
-unito e la CI intera), poi **E4c** (la #242, in coda dopo la #238); **E7** (gli slot privati) viene dopo E6b. Da E3b un evento si **pubblica**, entra nel
+(la #241, 0.6.6: il test del meteo corretto), a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
+l'accesso) e a `0c2f85a` (E10i, la #237). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
+(#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
+**E10g (#230)**, **E10h (#232)**, **E10i (#237)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216),
+i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e **1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del
+nucleo fino alla `0.6.7` (#218, #219, #225, **#241** — il test del meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo
+l'accesso) e gli spec che dicono al banco che cosa rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli
+scali dell'evento, il giorno dell'evento, l'ha montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del
+nucleo**: **E10k** (questa, la #238) ed **E10j** (#239: il recupero dei giri dei job), con **E4c** (#242: il titolo di `/events` e le
+frasi vuote delle schede «Slot» e «Rotte», gli usi degli eventi di E10k) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva
+su ogni branch dal mattino del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa).
+**Il prossimo passo**: l'ordine in cui Carmine unisce è **#238 → #242 → #239**: **E10k** (questa, la #238: **decisa da Carmine**
+sull'issue #224 e, dopo la revisione, sulla #238; il revisore ha letto le correzioni, e con `main` unito e la CI verde la dice pronta al
+maintainer), poi **E4c** (la #242), poi **E10j** (la #239); ed **E7** (gli slot privati), il passo del modulo dopo E6b. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -161,7 +162,9 @@ lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatC
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
 l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
-da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»);
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»); il grant su un evento
+solo che scrive davvero l'evento e le sue righe, che E0 dava per esistente, **portato da E10i** (il guardiano chiede con lo scope della
+riga: sotto, «Che cosa ha lasciato E10i»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -223,6 +226,51 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
 [a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
+
+### Che cosa ha lasciato E10i (9–10 ottobre 2026, branch `m4/e10i-scoped-grant-writes`, PR #237, del nucleo, senza coda; `main` unito a `ba06d66`, con E6a ed E6b)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga.md`, **decisa** da Carmine sulla #235: sì alla
+  fase, e un grant su un evento solo crea un figlio di quell'evento, mai un evento nuovo; e dopo la revisione sulla #237: l'alternativa
+  che crea chiede lo scope della riga nuova, nessuna alternativa sposta una riga fra scope, «mai un evento nuovo» per convenzione, e
+  `EventBookings.Edit` su un evento solo con la propria prenotazione resta com'è; il dettaglio in `10`, E10i, «Com'è andata» e «Dopo la
+  revisione»):
+  - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`) chiede `{Area}.Edit` **con lo scope della riga**, come l'unico
+    handler: in modifica (la riga com'è scritta), all'eliminazione (la riga com'era) e alla creazione (lo scope con cui la riga nuova
+    risponde). Una domanda sola, `Holds`, per `Edit` e per ogni alternativa.
+  - **Un grant su un evento solo** (`events:event:{id}`) cambia e toglie l'evento e le sue righe — scali, rotte, slot e prenotazioni —,
+    ne **crea** i figli (uno slot, una rotta, un caricamento della tabella degli slot), e **non crea un evento nuovo**: lo scope proprio di
+    un evento nuovo è `events:event:0`, la chiave che il database non ha ancora dato, che nessun grant nomina.
+  - **Lo spostamento fra scope** (`IsMoved`): una modifica che cambia dipartimenti, FIR o scope chiede `Edit` anche sulla riga di prima,
+    e nessuna alternativa la sposta.
+  - **Il modulo di prova**: `SamplePart` (`smp_parts`, `tests/IvaoHub.IntegrationTests/SampleParts.cs`), una parte che risponde con lo
+    scope del suo item (`SampleItem.ScopeOf`), migrazione `AddSampleParts`; i test `ResourceScopeWriteTests` (7, sul guardiano) ed
+    `EventsScopedGrantTests` (2, sugli endpoint veri degli eventi), VID 761097.
+  - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler, il motore CRUD e la lista generata
+    non cambiano.
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Una riga figlia risponde con lo scope della riga sopra di lei** (`ResourceScope => Event.ScopeOf(EventId)`), com'è già per
+    scali, rotte e slot: così un grant su un evento la scrive e la crea. Ogni tabella nuova delle righe dello staff di un evento (per
+    esempio le postazioni di E11a, le regole di award di E14b) fa lo stesso, come vuole la nota `2026-09-29-chi-lavora-sugli-eventi`
+    (punto 6), e il grant su un evento solo vale anche lì senza altro codice.
+  - ⚠️ **Lo scope proprio di una riga si costruisce sulla sua chiave**, mai su qualcosa che chi la scrive sceglie (l'indirizzo, un codice):
+    un grant scritto su quello creerebbe la riga. E **un grant con scope si scrive su una riga che esiste**: la schermata del modulo che
+    darà il grant «su un evento solo» lo scrive per un evento che ha trovato (`ModuleGrants.GiveAsync`), mai su un id che le arriva e
+    basta. Sono le due condizioni del riassunto di `IHasResourceScope`; «mai un evento nuovo» si regge su questa convenzione, accettata da
+    Carmine senza un controllo sulla chiave (risposta 3 sulla #237).
+  - ⚠️ **Lo scope di prima si legge dai valori originali del tracker** (all'eliminazione, e in modifica quando la riga si sposta): quindi
+    **uno stub mai letto è creduto com'è scritto, scope compreso** — il limite di E10h vale anche qui, e l'endpoint carica la riga che
+    scrive —, e **uno scope si costruisce dalle sole colonne mappate della riga** (`Event.ScopeOf(EventId)`), mai da una navigazione, che
+    quella copia non carica.
+  - **`EventBookings.Edit` tenuto su un evento solo** lascia correggere anche la propria prenotazione in quell'evento: Carmine lo lascia
+    così (risposta 4 sulla #237), chi lo tiene è staff dell'evento e l'audit dice chi ha fatto che cosa.
+  - **E6a ed E6b** (unite): con E10i un grant di `EventBookings.Edit` su un evento solo toglie le prenotazioni di quell'evento («Togli»
+    della scheda «Prenotazioni» di E6b) e ne corregge gli slot: **la trappola «Un grant su un evento solo non scrive»** del blocco di E6a,
+    qui sotto, **è chiusa da questa fase**. `EventsBookingsTests.TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow` resta com'è
+    (il membro di un evento solo agisce su un altro evento: 403 dall'handler); il caso positivo, se lo si vuole, è una riga in più di quel
+    test, in una fase del modulo.
+  - **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cadeva dal 9 ottobre 2026 alle 06:00 UTC su ogni
+    ramo: una data fissa contro `DateTime.UtcNow` e la finestra di 30 giorni di NOAA (l'issue #236, aperta dalla sessione di E6a). **La #241
+    di Carmine l'ha corretta** (0.6.6): un ramo nato da `main` prima di `aa3707a` la prende unendo `main`, come ha fatto E10i.
 
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 
