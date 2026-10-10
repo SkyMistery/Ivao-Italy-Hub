@@ -112,7 +112,7 @@ Per non ripeterle trenta volte:
 | E10f | Nucleo: `Awards.Assign` con un grant | E10d | `Awards.Assign` si dà con un grant, detto sul permesso; la divisione lo dà all'MD (decisa da Carmine sulla #205) |
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
-| E10j | Nucleo: i job che recuperano e il POST pianificato | E0 (la voce 2 della coda del nucleo, affidata da Carmine sulla #231; la chiede E9) | un job gira una volta per occorrenza qualunque processo sia vivo: il guardiano davanti a ogni giro (il blocco del job, l'ultimo giro riletto), il recupero dopo l'avvio e ogni minuto, `POST /api/jobs/run` con il token dell'installazione; le mail salvate una per una; i fusi del nucleo |
+| E10j | Nucleo: i job che recuperano e il POST pianificato | E0 (la voce 2 della coda del nucleo, affidata da Carmine sulla #231; la chiede E9) | un job gira una volta per occorrenza qualunque processo sia vivo: il guardiano davanti a ogni giro (il blocco del job, l'ultimo giro riletto), il recupero dopo l'avvio e ogni minuto, `POST` e `GET /api/jobs/run` con il token dell'installazione, nell'intestazione o nell'indirizzo; le mail salvate una per una; i fusi del nucleo |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -2885,8 +2885,8 @@ il suo indirizzo.
 
 - **Le risposte**: sì all'ultimo giro *finito* (domanda 1) e al blocco del database (domanda 2), cambiando il §3 della nota del 28
   settembre; **i job dovuti partono uno dopo l'altro** (sul punto 9 della revisione); **il blocco che si apre quando non si può chiedere
-  è accettato** (punto 10). **La domanda 3** (il token nell'indirizzo) resta aperta: il maintainer guarda il pannello. Nella nota, con i
-  link (intestazione, §1, §2).
+  è accettato** (punto 10). **La domanda 3** (il token nell'indirizzo) era ancora aperta: la risposta è arrivata il 10 ottobre (sotto,
+  «Dopo la risposta 5»). Nella nota, con i link (intestazione, §1, §2).
 - **I quattro da correggere**:
   1. **i job dovuti partono uno dopo l'altro**: un **giro** per processo (`ScheduledJobs.Join`), che il recupero e il POST condividono;
      ogni job parte quando il guardiano ha detto che il precedente è finito o saltato; un giro aspetta un job al più dieci minuti
@@ -2924,12 +2924,48 @@ il suo indirizzo.
 - **Il push ha aspettato** la #241 di Carmine, che corregge il test del meteo (#236). Unita la #241, `main` (`aa3707a`, la `0.6.6`) si
   è unito al branch senza conflitti, e dopo l'unione: build 0 avvisi, unità **1206/1206** (il meteo passa), integrazione intera, senza
   filtro, **511/511** al primo giro (10,4 minuti); le regole di core-guard dalla nuova base, `aa3707a`, passano come prima. Poi un push
-  solo, così la CI gira intera.
+  solo, così la CI gira intera: verde su `bcb458b` (21,5 minuti).
+
+**Dopo la risposta 5** (10 ottobre 2026, [la risposta di Carmine alla domanda 3][a239jc], data in chat al master e pubblicata su sua
+istruzione, autore `SkyMistery`; e [la richiesta del revisore di unire `main`][m239j], che ha letto le correzioni della revisione «as
+asked»):
+
+- **La risposta**: sì al token anche nell'indirizzo, accanto all'intestazione, così che l'indirizzo funzioni qualunque cosa offra il
+  pannello, a cui il maintainer non ha accesso. La nota è **decisa** (intestazione, §1.5, §2).
+- **Fatto**: `GET /api/jobs/run?token=…` accanto al `POST`, con lo stesso token, le stesse risposte (404, 401, il giro dentro la
+  richiesta) e lo stesso limite: i due modi sono un gruppo di rotte, e `Program.cs` limita il gruppo. Il confronto è uno solo,
+  `JobRunEndpoints.IsTheToken`, in tempo costante sugli hash.
+- **Il token non va nel log dell'hub**: si è guardato che cosa scrive di una richiesta. La riga di Serilog scrive il percorso senza la
+  query string; le righe di ASP.NET Core («Request starting …», «Request finished …») la scrivono intera quando il loro livello le
+  lascia passare (lo sviluppo, o un'installazione che abbassa `Microsoft.AspNetCore`). Quindi un arricchitore di Serilog del progetto
+  Web, `JobTokenLogMask`, maschera il valore di ogni parametro `token` della proprietà `QueryString`: `token=***`
+  (`JobRunEndpoints.MaskToken`, il nome decodificato e in ogni maiuscola). Provato: un sink del test riceve ogni evento dell'host con
+  `Microsoft.AspNetCore` a `Verbose`, e il token non c'è.
+- **`docs/DEPLOYING.md`**: le due vie, l'intestazione dove il pannello esegue un comando, l'indirizzo come ripiego, con il suo
+  prezzo (il token nei log del server web e dei proxy davanti, e nel pannello) e il cambio del token se trapela; una riga dei
+  controlli (il log del giorno non ha il token).
+- ⚠️ **Che cosa offre il pannello è un punto aperto: lo chiude chi imposta l'operazione pianificata, alla consegna**, come il formato
+  del log binario sulla #233. Nella nota (§1.5, §2) e nell'handoff.
+- **Le prove** (`ScheduledJobsTests`, integrazione, da 11 a 13): la GET con le stesse risposte; il limite, alternando l'intestazione
+  e l'indirizzo, poi 429 per tutti e due; il token mai nel log dell'hub (le righe «Request starting» con `?token=***`, quella di
+  Serilog con il solo percorso). Unità: il confronto del token nell'indirizzo, e la maschera della query string (dodici casi).
+- **Le mutazioni**, una alla volta, ricompilando: senza l'arricchitore cade la prova del log; la GET fuori dal gruppo limitato cade
+  quella del limite; il nome del parametro non decodificato cade il caso `%74oken`; qualunque token nell'indirizzo cade quella delle
+  risposte. Quattro su quattro; rimesso il codice e ricompilato, il build è pulito.
+- **`main` unito a `ba06d66`** (E6a #233, E6b #240, il piano 1.32 #243, la `0.6.7` #244): un conflitto solo, in `HANDOFF-M4.md`,
+  risolto con l'intestazione e il blocco di E10j in cima e quelli di E6b ed E6a sotto; il codice senza sovrapposizioni.
+- **Verificato dopo la risposta 5**, con `main` unito: `dotnet build` 0 avvisi; `dotnet format --verify-no-changes` sui diciotto file
+  C# della PR: pulito; unità **1235/1235**; **integrazione intera, senza filtro, 536/536** al primo giro (6,5 minuti); in `web/`,
+  nell'ordine della CI, `gen:api` senza differenze, `lint`, `format:check`, `typecheck`, `test` **679/679** in 93 file, `i18n:sync`,
+  `i18n:check` e `build` verdi, nessun file generato da committare. Non rifatti: lo smoke e `e2e:full` (l'indirizzo è sotto `/api`,
+  nessuna schermata cambia; li fa la CI) e il pacchetto.
 
 [a231j]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/231#issuecomment-6070088780
 [r239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083855377
 [a239ja]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083876741
 [a239jb]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083894931
+[a239jc]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044
+[m239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6096405209
 
 ### E11a — Postazioni e disponibilità
 

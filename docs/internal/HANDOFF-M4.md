@@ -184,11 +184,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10j (9 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo, senza coda)
+### Che cosa ha lasciato E10j (9–10 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo, senza coda)
 
-- **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239 tranne la domanda 3, ancora
-  aperta: l'ultimo giro *finito*, il blocco del database, i job dovuti uno dopo l'altro, il blocco che si apre accettato; il dettaglio
-  in `10`, E10j, «Com'è andata» e «Dopo la revisione»):
+- **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239: l'ultimo giro *finito*, il
+  blocco del database, i job dovuti uno dopo l'altro, il blocco che si apre accettato, e il token anche nell'indirizzo; il dettaglio
+  in `10`, E10j, «Com'è andata», «Dopo la revisione» e «Dopo la risposta 5»):
   - **Ogni job Quartz dell'hub gira una volta per occorrenza del suo cron, qualunque processo sia vivo**, e nessun job cambia:
     `src/IvaoHub.Core/Jobs/ScheduledJobs.cs` è un `ITriggerListener` su tutti i trigger che, prima di ogni giro, prende il blocco
     del job nel database (`hub-job:<database>:<job>`, `JobLocks`, una connessione per processo fuori dal pool) e rilegge l'ultimo giro
@@ -197,10 +197,13 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     un'occorrenza del cron, nel fuso del trigger, dopo l'inizio dell'ultimo giro finito) e li lancia **uno dopo l'altro**; un giro alla
     volta per processo. **Acceso per difetto solo in `Production`** (`Jobs:CatchUp`): sul banco e nei test d'integrazione i job girano
     alle loro ore come prima.
-  - **`POST /api/jobs/run`** per l'operazione pianificata dell'host, con `Authorization: Bearer <Jobs:Token>` (almeno 32 caratteri,
-    dai segreti): si unisce al giro e risponde quando è finito, al più dopo `Jobs:WaitSeconds` (80 se manca); 404 senza token
-    configurato, 401 con un altro, 403 senza `Authorization` (il guardiano di `/api`), 429 oltre dieci chiamate al minuto (il limite del
-    login). In `docs/DEPLOYING.md`.
+  - **`/api/jobs/run`** per l'operazione pianificata dell'host, con il token `Jobs:Token` (almeno 32 caratteri, dai segreti)
+    **nell'intestazione** (`POST`, `Authorization: Bearer …`) o, per un pannello che sa solo recuperare un indirizzo, **nell'indirizzo**
+    (`GET …?token=…`, la risposta 5): si unisce al giro e risponde quando è finito, al più dopo `Jobs:WaitSeconds` (80 se manca); 404
+    senza token configurato, 401 senza o con un altro, 403 per un `POST` senza `Authorization` (il guardiano di `/api`), 429 oltre
+    dieci chiamate al minuto dei due modi insieme (il limite del login). **Il token dell'indirizzo non va mai nel log dell'hub**:
+    `JobTokenLogMask` (progetto Web) lo scrive `token=***` nelle righe di ASP.NET Core di una richiesta. In `docs/DEPLOYING.md`, con il
+    prezzo del ripiego: il token nei log del server web e dei proxy davanti.
   - **La coda delle mail** salva l'esito di ogni mail subito; **i fusi** del nucleo sono espliciti (la coda in UTC, i contorni dei FIR
     nel fuso della divisione).
 - **Per chi scrive un job degli eventi** (il promemoria di E6b, `events-roster`, `events-after`, `events-digest`, `events-retention`):
@@ -214,8 +217,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - ⚠️ **I fusi di `events-release` e `training-reminders`**: dicono UTC nella **prossima fase del loro modulo** (due righe in
   `EventsModule.cs` e in `TrainingModule.cs`; la regola 6 le tiene fuori da una PR del nucleo). Un quarto d'ora cade agli stessi istanti
   in ogni fuso, ma la nota del 28 settembre (§7) li vuole espliciti (il punto 6 della revisione della #239).
-- ⚠️ **La domanda 3** (il token nell'indirizzo per «Recupera un URL» di Plesk) è aperta: se Carmine dice sì, la GET entra nella #239
-  prima dell'unione.
+- ⚠️ **Che cosa offre l'operazione pianificata del pannello è un punto aperto: lo chiude chi la imposta, alla consegna** (il
+  maintainer non ha accesso al pannello; risposta 5 sulla #239, nota §2): dove il pannello esegue un comando, l'intestazione; dove
+  recupera solo un indirizzo, il token nell'indirizzo.
 - ⚠️ **Flight Ops resta al maintainer** (nota §3): i fusi degli otto trigger dei tour (il riepilogo delle 07:00 nel fuso della
   divisione, UTC dove il commento dice UTC) e il riepilogo fermato a metà, che rimanda le mail già in coda (nota §1.7), sono una
   richiesta a una sua sessione; il resto lo copre il nucleo.
@@ -223,6 +227,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   (`ScheduledJobsTests.Host`), o i due condividono lo scheduler del primo.
 - ⚠️ **Un test che mette in pausa un job** (`TourTests`, `EventsLifeTests`, `AwardQueueMailTests`) resta com'è: il recupero salta i
   job in pausa, e nei test è spento.
+- **Per provare che cosa scrive il log dell'hub**: il logger legge con `ReadFrom.Services` ogni `ILogEventSink` registrato nei servizi
+  dell'host, quindi un test ne registra uno suo con `ConfigureTestServices` e riceve ogni evento dopo gli arricchitori dell'hub
+  (`ScheduledJobsTests.LogCapture`); il livello di una categoria si abbassa con `Serilog:MinimumLevel:Override:<categoria>` nella
+  configurazione del test.
 
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 

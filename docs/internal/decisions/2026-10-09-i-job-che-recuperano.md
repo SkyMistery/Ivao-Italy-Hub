@@ -1,16 +1,18 @@
 # I job che recuperano e il POST pianificato
 
 **Data:** 9 ottobre 2026
-**Stato:** **decisa**, tranne la domanda 3 del §2, **ancora aperta**. Il lavoro è deciso: è la voce 2 della coda del codice del
-nucleo, la strada B e la strada E della nota `2026-09-28-i-job-quando-passenger-spegne-l-hub` (decisa da Carmine sulla #165: [B e le
-quattro correzioni][d165a], [il POST pianificato al posto del Worker][d165b]), affidata a `dalberone` da Carmine sulla issue #231
-([la risposta][a231], autore `SkyMistery`: una fase del nucleo sua, una PR sua, e una nota nuova che fissa la forma nel codice).
-Questa è quella nota. Tre punti della forma non erano decisi dalla nota del 28 settembre, o la cambiavano: le **tre domande del
-§2**, sulla PR #239. **Carmine ha risposto il 9 ottobre 2026** (in chat al master, che ha pubblicato le risposte sulla #239 su sua
-istruzione, autore `SkyMistery`): **sì alle domande 1 e 2** ([risposte 1 e 2][a239a]), cambiando consapevolmente il §3 della nota
-del 28 settembre; **i job dovuti partono uno dopo l'altro** e **il blocco che si apre quando non si può chiedere è accettato**, sui
-punti 9 e 10 della revisione ([risposte 3 e 4][a239b]). **La domanda 3** (il token nell'indirizzo) aspetta che il maintainer guardi
-che cosa offre il pannello. Il codice dopo la revisione è nel §1; le correzioni della revisione ([i rilievi][r239]) nel §7.
+**Stato:** **decisa**. Il lavoro è deciso: è la voce 2 della coda del codice del nucleo, la strada B e la strada E della nota
+`2026-09-28-i-job-quando-passenger-spegne-l-hub` (decisa da Carmine sulla #165: [B e le quattro correzioni][d165a], [il POST
+pianificato al posto del Worker][d165b]), affidata a `dalberone` da Carmine sulla issue #231 ([la risposta][a231], autore
+`SkyMistery`: una fase del nucleo sua, una PR sua, e una nota nuova che fissa la forma nel codice). Questa è quella nota. Tre punti
+della forma non erano decisi dalla nota del 28 settembre, o la cambiavano: le **tre domande del §2**, sulla PR #239. **Carmine ha
+risposto il 9 e il 10 ottobre 2026** (in chat al master, che ha pubblicato le risposte sulla #239 su sua istruzione, autore
+`SkyMistery`): **sì alle domande 1 e 2** ([risposte 1 e 2][a239a]), cambiando consapevolmente il §3 della nota del 28 settembre;
+**i job dovuti partono uno dopo l'altro** e **il blocco che si apre quando non si può chiedere è accettato**, sui punti 9 e 10
+della revisione ([risposte 3 e 4][a239b]); **sì alla domanda 3, il token anche nell'indirizzo, accanto all'intestazione**
+([risposta 5][a239c], 10 ottobre). ⚠️ **Che cosa offre l'operazione pianificata del pannello resta un punto aperto: lo chiude chi
+la imposta, alla consegna** (§2). Il codice dopo la revisione e le risposte è nel §1; le correzioni della revisione ([i
+rilievi][r239]) nel §7.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono lo scheduler (Quartz) e il registro dei giri (`hub_jobs_log`);
 nessuna tabella nuova, nessuna migrazione, nessun job nuovo, nessun bus. È un cambio del nucleo, nella sua PR (`CLAUDE.md` §0
 regola 6), e nessun job cambia: il meccanismo copre ogni job che Quartz conosce, quelli dei moduli compresi.
@@ -22,6 +24,7 @@ regola 6), e nessun job cambia: il meccanismo copre ogni job che Quartz conosce,
 [r239]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083855377
 [a239a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083876741
 [a239b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083894931
+[a239c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044
 
 ## 1. La forma nel codice
 
@@ -142,23 +145,27 @@ cron in pausa).
   e tour, la scadenza dei training. È quello che avrebbero fatto a processo vivo, e Carmine l'accetta ([risposta 3][a239b]); che
   partissero insieme no, e ora partono uno dopo l'altro. Chi consegna lo sa prima.
 
-### 1.5 Il POST pianificato (`JobRunEndpoints`)
+### 1.5 L'indirizzo pianificato: il POST, e la GET con il token nell'indirizzo (`JobRunEndpoints`)
 
 **`POST /api/jobs/run`**: si unisce al giro in corso, o ne fa partire uno (§1.4), ma **dentro la richiesta**, e risponde quando il
 giro è finito (Passenger non spegne un processo che sta rispondendo, nota del 28 settembre §5). È l'indirizzo dell'operazione
-pianificata di Plesk (strada E).
+pianificata di Plesk (strada E). Accanto, per un pannello che sa solo recuperare un indirizzo, **`GET /api/jobs/run?token=…`**
+(la risposta 5): lo stesso token, le stesse risposte, lo stesso limite, lo stesso giro.
 
 - **Il token** sta in `Jobs:Token`, nel file dei segreti o in `Jobs__Token` (`CLAUDE.md` §6), e arriva come
-  **`Authorization: Bearer <token>`**. È un segreto dell'installazione e non di una persona: non è un token personale, apre solo
-  questo indirizzo, e l'unica cosa che fa fare è far girare adesso quello che è dovuto comunque. **Almeno 32 caratteri**: uno più
-  corto ferma l'avvio con un messaggio che nomina la chiave (`JobOptionsValidator`); nessun token va bene.
-- **Le risposte**: un'installazione senza token non ha l'indirizzo (**404**); una chiamata con un altro token è rifiutata (**401**,
-  con `WWW-Authenticate: Bearer`, e una riga informativa nel log, mai il token); una chiamata senza `Authorization` la ferma prima
-  il guardiano di `/api` contro le richieste da un altro sito (**403**, `HubPipeline.UseCrossSiteRequestGuard`), che lascia passare
-  un `Bearer` per la stessa ragione per cui lascia passare i token personali. Il confronto è in tempo costante, sugli hash.
+  **`Authorization: Bearer <token>`** (il POST) o come parametro **`token`** dell'indirizzo (la GET). È un segreto
+  dell'installazione e non di una persona: non è un token personale, apre solo questo indirizzo, e l'unica cosa che fa fare è far
+  girare adesso quello che è dovuto comunque. **Almeno 32 caratteri**: uno più corto ferma l'avvio con un messaggio che nomina la
+  chiave (`JobOptionsValidator`); nessun token va bene.
+- **Le risposte**: un'installazione senza token non ha l'indirizzo (**404**); una chiamata con un altro token, o senza, è rifiutata
+  (**401**, con `WWW-Authenticate: Bearer`, e una riga informativa nel log, mai il token); un POST senza `Authorization` lo ferma
+  prima il guardiano di `/api` contro le richieste da un altro sito (**403**, `HubPipeline.UseCrossSiteRequestGuard`), che lascia
+  passare un `Bearer` per la stessa ragione per cui lascia passare i token personali, e che lascia passare ogni GET. Il confronto è
+  in tempo costante, sugli hash, uguale per i due modi (`JobRunEndpoints.IsTheToken`).
 - **Un limite, come il login** (il punto 4 della revisione): `Program.cs` dà all'indirizzo il limitatore che c'è già per `/auth`
   (`AuthEndpoints.RateLimitPolicy`, dieci chiamate al minuto per indirizzo, poi **429**), e il rifiuto si scrive come informazione,
-  non come avviso: chi prova un token dopo l'altro non riempie il log. L'operazione pianificata chiama due volte l'ora.
+  non come avviso: chi prova un token dopo l'altro non riempie il log. I due modi sono **un gruppo di rotte** (`MapGroup`), e il
+  limite vale per il gruppo: dieci chiamate al minuto dei due insieme. L'operazione pianificata chiama due volte l'ora.
 - **Aspetta al più 80 secondi** (`Jobs:WaitSeconds`, da 1 a 600, 80 se manca) il giro **e i giri già in corso quando arriva** (un
   giro che Quartz ha fatto partire un attimo prima): la risposta deve partire prima che i proxy davanti si arrendano (Cloudflare a
   100 s), con l'avvio di un hub spento davanti; un'installazione dietro un proxy che si arrende prima dice meno. Dopo la risposta il
@@ -166,11 +173,23 @@ pianificata di Plesk (strada E).
 - **Che cosa risponde**: `200` con i job del giro, nell'ordine in cui partono, e l'esito di ognuno: `Ran`, `Skipped`, `Running` (partito
   e non finito) o `Waiting` (non ancora partito quando la risposta è uscita); i dettagli di ogni giro sono nella sua riga di
   `hub_jobs_log`.
-- **Il pannello**: la nota del 28 settembre lascia a questa PR, secondo la risposta dell'amministratore, se accettare il token
-  anche nell'indirizzo per «Recupera un URL», che fa solo una GET senza intestazioni. Il codice di oggi accetta **solo
-  l'intestazione**: è la **domanda 3** (§2), **ancora aperta**.
+- **Il token nell'indirizzo** (la risposta 5). Dove il pannello sa eseguire un comando, **la via è l'intestazione**; l'indirizzo con
+  il token è **il ripiego**, per «Recupera un URL», che fa solo una GET senza intestazioni. Costa che il token finisca nei log del
+  server web dell'host e dei proxy davanti (Cloudflare), e nell'operazione che il pannello mostra: `docs/DEPLOYING.md` lo dice, con
+  il cambio del token se trapela. **Nel log dell'hub no**, e si è guardato che cosa scrive di una richiesta:
+  - la riga di Serilog di ogni richiesta (`UseSerilogRequestLogging`) scrive il percorso, senza la query string;
+  - le righe di ASP.NET Core di una richiesta («Request starting …», «Request finished …», categoria
+    `Microsoft.AspNetCore.Hosting.Diagnostics`, livello `Information`) scrivono la query string intera. In produzione
+    `appsettings.json` le tace (`Microsoft.AspNetCore` a `Warning`), ma le scrive lo sviluppo, e le scriverebbe un'installazione
+    che abbassa il livello per guardare le sue richieste;
+  - quindi un arricchitore di Serilog del progetto Web, **`JobTokenLogMask`**, riscrive la proprietà `QueryString` di ogni evento
+    con il valore di ogni parametro `token` mascherato, `token=***` (`JobRunEndpoints.MaskToken`): il nome letto come lo legge
+    l'indirizzo, decodificato e in ogni maiuscola. La riga resta, il token no, a ogni livello.
+- **Che cosa offre il pannello** è un **punto aperto**: il maintainer non ha accesso al pannello dell'hosting, quindi **lo chiude
+  chi imposta l'operazione pianificata, alla consegna**, scegliendo la via (§2), come il formato del log binario sulla #233.
 - È un verbo del nucleo fuori da ogni risorsa, come la diagnostica della richiesta (piano §16 punto 6): nessuna riga letta o
-  scritta qui, i job scrivono le loro. Sta nel contratto OpenAPI (`RunDueJobs`) e nel client generato, che la pagina non usa.
+  scritta qui, i job scrivono le loro. Sta nel contratto OpenAPI (`RunDueJobs` e `RunDueJobsFromTheAddress`) e nel client
+  generato, che la pagina non usa.
 
 ### 1.6 L'esito di ogni mail salvato subito (`NotificationDispatchJob`)
 
@@ -221,14 +240,25 @@ trigger abbia, detto o no.
 
 Sulla PR #239, una per una ([il commento][q239]); il codice era la raccomandazione.
 
-**Le risposte** (Carmine, 9 ottobre 2026, in chat al master, pubblicate sulla #239 su sua istruzione, autore `SkyMistery`):
+**Le risposte** (Carmine, 9 e 10 ottobre 2026, in chat al master, pubblicate sulla #239 su sua istruzione, autore `SkyMistery`):
 - **1: sì, «finito»** ([risposta 1][a239a]): cambia il §3 della nota del 28 settembre, consapevolmente; un giro fallito aspetta la
   sua occorrenza dopo, e si recupera solo un giro che non è finito.
 - **2: sì, il blocco del database** ([risposta 2][a239a]), come per l'inizializzazione (#218); cambia il «giro `running` con una
   scadenza» della stessa nota.
-- **3: ancora aperta**: il maintainer guarda che cosa offre l'operazione pianificata del pannello ([risposte 3 e 4][a239b]).
 - E sui punti 9 e 10 della revisione ([risposte 3 e 4][a239b]): **i job dovuti partono uno dopo l'altro**, non insieme (§1.4); **il
   blocco che si apre quando non si può chiedere è accettato** così com'è scritto (§1.2).
+- **3: sì, il token anche nell'indirizzo, accanto all'intestazione, così che l'indirizzo funzioni qualunque cosa offra il
+  pannello** ([risposta 5][a239c], 10 ottobre). Il maintainer non ha accesso al pannello dell'hosting, quindi che cosa sa fare la
+  sua operazione pianificata (eseguire un comando, o solo recuperare un indirizzo) **non si sa**. Quindi:
+  - una `GET /api/jobs/run?token=…` accanto al `POST` con l'intestazione, in questa PR, con le sue prove: lo stesso token, le
+    stesse risposte, lo stesso limite (§1.5);
+  - **dove il pannello sa eseguire un comando, la via è l'intestazione**; l'indirizzo con il token è il ripiego.
+    `docs/DEPLOYING.md` dice le due, e che cosa costa il ripiego: il token nei log del server web e dei proxy davanti;
+  - il token non si scrive nel log dell'hub neanche per questa via: guardato che cosa scrive il log delle richieste della query
+    string, e provato (§1.5, §5).
+
+  ⚠️ **Che cosa offre il pannello resta un punto aperto: lo chiude chi imposta l'operazione pianificata, alla consegna**, come il
+  formato del log binario sulla #233. Scritto anche in `HANDOFF-M4.md`.
 
 [q239]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6082013815
 
@@ -329,6 +359,21 @@ passaggio dei tour al nucleo dopo E10e ed E10g:
   posto), la memoria di un giro fatto partire, il controllo della pausa, i job uno dopo l'altro (tutti insieme con `Task.WhenAll`),
   il limite dell'attesa, il giro senza blocco (fermato al posto di partire), il limite dell'indirizzo. Otto su otto, una alla volta,
   ricompilando.
+- **Dopo la risposta 5** (il token nell'indirizzo), tre prove d'integrazione e due d'unità:
+  - la GET con le stesse risposte: senza token, con uno vuoto o con un altro **401** (e nessuna intestazione del client dell'hub
+    serve), con il token il giro dentro la richiesta, `Ran`; **404** su un'installazione senza token;
+  - il limite: dieci rifiuti in un minuto, alternando l'intestazione e l'indirizzo, poi **429** per tutti e due, prima ancora di
+    guardare il token;
+  - **il token non è mai nel log dell'hub**: ogni evento dell'host arriva a un sink del test (registrato nei servizi, che il logger
+    legge con `ReadFrom.Services`), con `Microsoft.AspNetCore` a `Verbose`; le righe «Request starting» delle due chiamate ci sono,
+    con `?token=***`, la riga di Serilog di ognuna ha il percorso senza la query string, e né il token né quello sbagliato
+    compaiono in un messaggio, in una proprietà o in un'eccezione;
+  - (unità) il token nell'indirizzo confrontato come nell'intestazione; la maschera della query string: ogni maiuscola, un nome
+    codificato (`%74oken`), due token, un altro parametro, nessun valore.
+- **Le mutazioni della risposta 5**, una alla volta, ricompilando: senza l'arricchitore in `Program.cs` le righe «Request starting»
+  portano il token (cade la prova del log); la GET fuori dal gruppo limitato (cade quella del limite: 401 al posto di 429); il nome
+  del parametro non decodificato (cade il caso `%74oken`); qualunque token nell'indirizzo (cade quella delle risposte: 200 al posto
+  di 401). Quattro su quattro.
 
 ## 6. Non verificato
 
@@ -338,7 +383,10 @@ passaggio dei tour al nucleo dopo E10e ed E10g:
   e «The scheduled task ran …»; la cronologia dell'operazione pianificata in Plesk dice il `200` e l'elenco.
 - **Il `wait_timeout` del server** e il tetto delle connessioni dell'utente: non letti; il primo si legge alla consegna (§1.3).
 - **Quanto dura sul server il giro del mattino**, i job notturni uno dopo l'altro: lo dirà `hub_jobs_log` con i tempi dei giri.
-- **Il pannello di Plesk** (§2, domanda 3).
+- **Il pannello di Plesk**: quale delle due vie concede. Punto aperto, lo chiude chi imposta l'operazione pianificata alla consegna
+  (§2).
+- **I log del server web e dei proxy**: che il token dell'indirizzo ci finisca è il prezzo del ripiego, detto in
+  `docs/DEPLOYING.md`; non si è guardato quanto li tengono.
 
 ## 7. Le correzioni della revisione
 
@@ -358,14 +406,19 @@ passaggio dei tour al nucleo dopo E10e ed E10g:
 - **§5.2**, la riga «Job»: la forma — il guardiano davanti a ogni giro (il blocco `hub-job:<database>:<job>` su una connessione
   del processo, e l'ultimo giro riletto; un blocco che non si può chiedere lascia partire il giro, risposta 4), il recupero cinque
   secondi dopo l'avvio e ogni minuto (acceso per difetto solo in `Production`, `Jobs:CatchUp`), **i job dovuti uno dopo l'altro**,
-  un giro alla volta per processo (risposta 3), il POST `/api/jobs/run` con il token `Jobs:Token`; un job è dovuto secondo l'ultimo
-  giro **finito** (risposta 1), il blocco del database al posto di una riga con scadenza (risposta 2).
-- **§11.3 punto 6** (l'operazione pianificata): l'indirizzo, l'intestazione, i 32 caratteri, le risposte (404, 401, 403, 429 oltre
-  dieci al minuto), l'attesa di 80 s (`Jobs:WaitSeconds`), lo stato `Waiting`; come la chiama il pannello (domanda 3, aperta).
+  un giro alla volta per processo (risposta 3), l'indirizzo `/api/jobs/run` con il token `Jobs:Token`, nell'intestazione (`POST`)
+  o nell'indirizzo (`GET`, risposta 5); un job è dovuto secondo l'ultimo giro **finito** (risposta 1), il blocco del database al
+  posto di una riga con scadenza (risposta 2).
+- **§11.3 punto 6** (l'operazione pianificata): l'indirizzo, i 32 caratteri, le risposte (404, 401, 403 per un `POST` senza
+  intestazione, 429 oltre dieci al minuto dei due modi insieme), l'attesa di 80 s (`Jobs:WaitSeconds`), lo stato `Waiting`; **le due
+  vie** (risposta 5): l'intestazione dove il pannello esegue un comando, il token nell'indirizzo come ripiego, con il suo prezzo (i
+  log del server web e dei proxy) e il log dell'hub che non lo scrive mai (`JobTokenLogMask`, `token=***`); **che cosa offre il
+  pannello**, punto aperto, lo chiude chi imposta l'operazione alla consegna.
 - **§11.3 punto 6 o il foglio della consegna**: il `wait_timeout` del server si legge alla consegna (§1.3).
 - **§11.3 punto 9**, il trattino di Passenger: il codice c'è; resta all'host l'operazione pianificata e la domanda sull'inattività;
   il lavoro di un giro lungo finisce dentro il POST.
-- **§16 punto 6** (gli endpoint scritti a mano del nucleo): `POST /api/jobs/run`, fra i verbi del nucleo fuori da ogni risorsa.
+- **§16 punto 6** (gli endpoint scritti a mano del nucleo): `POST` e `GET /api/jobs/run`, fra i verbi del nucleo fuori da ogni
+  risorsa.
 - **La coda del codice del nucleo** (`HANDOFF.md`): la voce 2 è fatta; la richiesta a Flight Ops del §3 (i fusi, e il riepilogo
   fermato a metà); i fusi di `events-release` e `training-reminders` in una fase del loro modulo (§1.8).
 - **La nota del 28 settembre** (`2026-09-28-i-job-quando-passenger-spegne-l-hub`) §3: «riuscito» diventa «finito», e la riga
