@@ -27,8 +27,9 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// serialised by a lock on the pilot's bookings not reminded yet (<c>SELECT … FOR UPDATE</c>): the second reads them reminded, and sends
 /// nothing. The mark goes before the mail, as the training's reminder: a mail that fails to be queued is a reminder lost, never one sent
 /// twice.</para>
-/// <para>A cancelled event is reminded no more; a private slot waits for its flight (E7). Past the filter of the members, as the staff
-/// read: the job is nobody. It never throws: a failure is a row in <c>hub_jobs_log</c>, as for every job of the hub.</para>
+/// <para>A cancelled event is reminded no more. A private slot is reminded by the off block of the flight its pilot wrote (E7): a
+/// departure's time at the airport of the event, the time an arrival leaves the other airport. Past the filter of the members, as the
+/// staff read: the job is nobody. It never throws: a failure is a row in <c>hub_jobs_log</c>, as for every job of the hub.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class BookingRemindersJob(
@@ -85,25 +86,31 @@ public sealed class BookingRemindersJob(
             var lead = TimeSpan.FromHours(settings.ReminderLeadHours);
             var until = now + lead;
 
-            // Who has a booking due now, in which event: each pair is one mail at most.
-            var due = await (
+            // Who has a booking due now, in which event: each pair is one mail at most. The off block of a flight is the slot's, or —
+            // for a private arrival (E7) — the time its pilot leaves the other airport: the database narrows to either, and the
+            // flight itself decides (BookedFlight), so that the rule is read in one place.
+            var candidates = await (
                     from booking in CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
                     join slot in database.Slots.AsNoTracking() on booking.SlotId equals slot.Id
                     join row in CrudSource.BackOffice<Event>(database).AsNoTracking() on booking.EventId equals row.Id
                     where booking.RemindedAt == null
                         && row.CancelledAt == null
-                        && slot.Kind == SlotKind.Public
-                        && slot.OffBlockUtc > now
-                        && slot.OffBlockUtc <= until
-                    select new { booking.EventId, booking.BookerVid })
-                .Distinct()
+                        && ((slot.OffBlockUtc > now && slot.OffBlockUtc <= until)
+                            || (booking.OtherTimeUtc > now && booking.OtherTimeUtc <= until))
+                    select new { booking, slot })
                 .ToListAsync(cancellationToken);
+
+            var due = candidates
+                .Where(entry => BookedFlight.Of(entry.slot, entry.booking).OffBlockUtc is { } offBlock && offBlock > now && offBlock <= until)
+                .Select(entry => (entry.booking.EventId, entry.booking.BookerVid))
+                .Distinct()
+                .ToList();
 
             var reminded = 0;
             var mails = 0;
-            foreach (var pair in due)
+            foreach (var (eventId, vid) in due)
             {
-                var count = await RemindAsync(pair.EventId, pair.BookerVid, now, lead, cancellationToken);
+                var count = await RemindAsync(eventId, vid, now, lead, cancellationToken);
                 reminded += count;
                 mails += count > 0 ? 1 : 0;
             }
@@ -158,12 +165,15 @@ public sealed class BookingRemindersJob(
                 .ToListAsync(cancellationToken);
             var slotIds = bookings.Select(booking => booking.SlotId).ToList();
             var slots = await database.Slots.AsNoTracking()
-                .Where(slot => slotIds.Contains(slot.Id) && slot.Kind == SlotKind.Public && slot.OffBlockUtc != null)
+                .Where(slot => slotIds.Contains(slot.Id))
                 .ToDictionaryAsync(slot => slot.Id, cancellationToken);
 
+            // Each by the off block of its flight: a public slot's, a private one's as its pilot wrote it (E7).
             flights = [.. Window(
-                bookings.Where(booking => slots.ContainsKey(booking.SlotId)).Select(booking => (Booking: booking, Slot: slots[booking.SlotId])),
-                flight => flight.Slot.OffBlockUtc!.Value,
+                bookings
+                    .Where(booking => slots.TryGetValue(booking.SlotId, out var slot) && BookedFlight.Of(slot, booking).OffBlockUtc is not null)
+                    .Select(booking => (Booking: booking, Slot: slots[booking.SlotId])),
+                flight => BookedFlight.Of(flight.Slot, flight.Booking).OffBlockUtc!.Value,
                 now,
                 lead)];
             if (flights.Count == 0)
