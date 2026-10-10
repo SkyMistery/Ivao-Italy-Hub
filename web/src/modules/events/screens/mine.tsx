@@ -8,6 +8,7 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
+import { PageMetadata } from '../../../shared/seo/PageMetadata';
 import { ConfirmDialog, EmptyState, Notice } from '../../../shared/ui';
 import { myBookingsQuery, useWithdrawBooking, type MyBookingDto } from '../api';
 
@@ -46,6 +47,9 @@ export function MyBookingsPage() {
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224, E4c), as /events does. */}
+      <PageMetadata title={t('events:mine.title')} description={t('events:mine.lead')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('events:mine.title')}</H1>
         <Lead>{t('events:mine.lead')}</Lead>

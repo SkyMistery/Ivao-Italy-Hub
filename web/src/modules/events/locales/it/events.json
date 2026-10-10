@@ -14,6 +14,7 @@
     "description": "Tutti gli eventi della divisione, bozze e passati compresi: le impostazioni, la descrizione, gli scali con la capacità, e pubblicarli, annullarli o eliminarli.",
     "create": "Nuovo evento",
     "edit": "Evento",
+    "empty": "Qui compariranno gli eventi della divisione, dalle bozze a quelli conclusi.",
     "open": "Apri",
     "saved": "Evento salvato.",
     "readOnly": "Puoi leggere questo evento: cambiarlo spetta a chi scrive gli eventi.",
@@ -124,6 +125,7 @@
     "title": "Scali",
     "create": "Nuovo scalo",
     "edit": "Scalo",
+    "empty": "Qui compariranno gli scali dell'evento, ognuno con la sua capacità.",
     "fields": {
       "icao": "Codice ICAO",
       "ordinal": "Ordine",
@@ -144,6 +146,7 @@
     "title": "Rotte",
     "create": "Nuova rotta",
     "edit": "Rotta",
+    "empty": "Qui compariranno le rotte da inserire nel piano di volo, da uno scalo all'altro.",
     "fields": {
       "departureIcao": "Da",
       "arrivalIcao": "A",
@@ -165,6 +168,7 @@
     "title": "Slot",
     "create": "Nuovo slot",
     "edit": "Slot",
+    "empty": "Qui compariranno gli slot dell'evento: si incollano da una tabella o si creano uno per uno.",
     "fields": {
       "callsign": "Nominativo",
       "flightNumber": "Numero di volo",
@@ -332,6 +336,7 @@
     "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo."
   },
   "bookings": {
+    "empty": "Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.",
     "fields": {
       "pilot": "Pilota",
       "callsign": "Nominativo",

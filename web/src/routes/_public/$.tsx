@@ -1,5 +1,4 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useTranslation } from 'react-i18next';
 
 import {
   ContentRenderer,
@@ -9,7 +8,6 @@ import {
   usePublishedEmbedding,
 } from '../../blocks';
 import { publicPageQuery } from '../../features/content/queries';
-import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
 import { NotFound } from '../../shared/ui';
@@ -52,26 +50,15 @@ export const Route = createFileRoute('/_public/$')({
 });
 
 function PublicContentPage() {
-  const { i18n } = useTranslation();
   const read = useLocalized();
   const content = Route.useLoaderData();
-  const { bootstrap } = Route.useRouteContext();
 
   const body = readBody(content.body);
   const embedding = usePublishedEmbedding(content);
 
   return (
     <article className="flex flex-col">
-      <PageMetadata
-        title={content.title}
-        description={content.summary}
-        seo={content.seo}
-        divisionName={resolveLocalized(
-          bootstrap.division.name,
-          i18n.language,
-          bootstrap.division.defaultLocale,
-        )}
-      />
+      <PageMetadata title={content.title} description={content.summary} seo={content.seo} />
 
       {/* The title of the row is what a browser tab and a search result use; what the page itself
           shows is whatever heading block the editor put at the top of it.

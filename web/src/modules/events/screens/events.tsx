@@ -145,6 +145,8 @@ export function EventsPage() {
             <RouterAnchor href={`${EVENTS}/${row.id}`}>{t('events:events.open')}</RouterAnchor>
           </Button>
         )}
+        // The events are a section of their own, not a department's (plan 0.72): an empty list says what will be there (#224).
+        emptyDescription={t('events:events.empty')}
         {...(create === null ? {} : { emptyAction: create })}
       />
     </PageShell>

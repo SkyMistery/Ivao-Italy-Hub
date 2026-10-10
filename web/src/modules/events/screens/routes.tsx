@@ -68,6 +68,9 @@ export function RoutesTab({ event, editable }: { event: EventDetailDto; editable
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
       {...(create === null ? {} : { toolbar: create })}
+      // The routes are the event's, not a department's: an empty tab says what they will be (#224), to whoever writes
+      // them and whoever only reads them.
+      emptyDescription={t('events:routes.empty')}
       actions={(row) =>
         editable ? (
           <Button asChild variant="ghost" size="sm">

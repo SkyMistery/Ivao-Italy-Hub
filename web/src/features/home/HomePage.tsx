@@ -9,11 +9,9 @@ import {
   startsWithPageTitle,
   usePublishedEmbedding,
 } from '../../blocks';
-import { resolveLocalized } from '../../shared/i18n/localized';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
 import { publicContentQuery } from '../content/queries';
-import { bootstrapQuery } from '../me/queries';
 
 /**
  * The front page of the division site, which is a published `cms_contents` row and not a screen.
@@ -29,9 +27,8 @@ import { bootstrapQuery } from '../me/queries';
 export const HOME_SLUG = 'home';
 
 export function HomePage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const read = useLocalized();
-  const { data: bootstrap } = useQuery(bootstrapQuery);
 
   // Not the route's loader: a site whose home has never been published still has to open, and a
   // failure here is a page to draw rather than an error boundary to hit.
@@ -49,16 +46,7 @@ export function HomePage() {
 
   return (
     <article className="flex flex-col">
-      <PageMetadata
-        title={home.data.title}
-        description={home.data.summary}
-        seo={home.data.seo}
-        divisionName={resolveLocalized(
-          bootstrap?.division.name,
-          i18n.language,
-          bootstrap?.division.defaultLocale ?? i18n.language,
-        )}
-      />
+      <PageMetadata title={home.data.title} description={home.data.summary} seo={home.data.seo} />
 
       {/* The title of the row is what a browser tab and a search result use; what the page itself
           shows is whatever heading block the editor put at the top of it.

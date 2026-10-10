@@ -15,6 +15,7 @@
     "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
     "create": "New event",
     "edit": "Event",
+    "empty": "The events of the division will show up here, from the drafts to the ended ones.",
     "open": "Open",
     "saved": "Event saved.",
     "readOnly": "You can read this event: changing it is for whoever writes the events.",
@@ -125,6 +126,7 @@
     "title": "Airports",
     "create": "New airport",
     "edit": "Airport",
+    "empty": "The airports of the event will show up here, each with its capacity.",
     "fields": {
       "icao": "ICAO code",
       "ordinal": "Order",
@@ -145,6 +147,7 @@
     "title": "Routes",
     "create": "New route",
     "edit": "Route",
+    "empty": "The routes to file in the flight plan, from one airport to another, will show up here.",
     "fields": {
       "departureIcao": "From",
       "arrivalIcao": "To",
@@ -166,6 +169,7 @@
     "title": "Slots",
     "create": "New slot",
     "edit": "Slot",
+    "empty": "The slots of the event will show up here: they are pasted from a table or created one by one.",
     "fields": {
       "callsign": "Callsign",
       "flightNumber": "Flight number",
@@ -333,6 +337,7 @@
     "withdrawDescription": "The slot is free again, and another pilot may book it."
   },
   "bookings": {
+    "empty": "The pilots' bookings of the event's slots will show up here.",
     "fields": {
       "pilot": "Pilot",
       "callsign": "Callsign",

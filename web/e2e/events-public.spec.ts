@@ -250,6 +250,8 @@ test('a visitor reads the events to come as cards, each leading to its page, and
   await page.goto('/events?view=monthList&on=2099-11-01');
 
   await expect(page.getByRole('heading', { level: 1, name: words.public.title })).toBeVisible();
+  // The tab says the heading too, and the division's name after it, which the root says (#224, E4c).
+  await expect(page).toHaveTitle(`${words.public.title} — ${visitorBootstrap.division.name.en}`);
 
   // Every card, with its state, the division's word for its kind, where it is — the whole division for an online day.
   const cards = page.locator('article');
@@ -315,6 +317,8 @@ test('the page of an event says when, who organises it, where, its routes and it
   await page.goto('/events/evt-test-smoke-page');
 
   await expect(page.getByRole('heading', { level: 1, name: 'A smoke evening' })).toBeVisible();
+  // Its tab as before: its title, then the division's name, which the root now says (E4c).
+  await expect(page).toHaveTitle(`A smoke evening — ${visitorBootstrap.division.name.en}`);
   await expect(page.getByText('Real Flight Ops')).toBeVisible();
 
   // When, in UTC and where the division lives: one date and two times, for an evening.

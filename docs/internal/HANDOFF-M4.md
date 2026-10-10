@@ -6,25 +6,22 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 9 ottobre 2026 — **fase E6b** (modulo: prenotare, le pagine), sul branch `m4/e6b-booking-pages`, **PR #240**
-verso `main`, nata **in coda dopo la #233** di E6a, dalla sua testa con le risposte di Carmine, `3326454`, e dopo la revisione con la
-sua testa nuova, `92cd928`, che porta `main` a `aa3707a` con la #241 (0.6.6, il test del meteo corretto): unita in `1b21ccf`, e la CI
-torna intera. Prima di E6b: **fase E6a**
-(modulo: prenotare, il server), **PR #233**, nata in coda dopo la #228 di E5 e poi anche dopo la #232 di **E10h** (il nucleo: chi ha
-mandato una riga se la riprende), una fase del nucleo nata da lei — il ritiro del pilota cancella la riga, e il guardiano
-dell'interceptor non lo lasciava fare. **La #228 e la #232 sono unite** (7 e 8 ottobre, `main` a `0f72737`): la #233 non è più in coda
-dopo nessuna. Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, E10a
-(#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei
-tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229) e **1.31 (#234)**, la parola degli eventi nella
-ricerca (#222), le altre correzioni del nucleo fino alla `0.6.5` (#218, #219, #225) e gli spec che dicono al banco che cosa rimettono a
-posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b,
-dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga scrive quella riga,
-e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k** (#238: le parole delle liste e i titoli delle
-schede), con **E4c** (gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino
-del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa): un branch che porta `main` a `aa3707a` ha
-di nuovo la CI intera.
-**Il prossimo passo**: **E6a** (la #233), poi **E6b** (la #240, in coda dopo la #233); poi **E7** (gli slot privati), in coda sul
-branch di E6b. Da E3b un evento si **pubblica**, entra nel
+**Ultimo aggiornamento:** 10 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
+`m4/e4c-events-titles-and-empty-lists`, **PR #242** verso `main`, **in coda dopo la #238** (E10k): nata dal branch di E10k, ne ha unito
+la testa `b36e663` prima del primo push, poi `fdb551d` (con `main` ad `aa3707a`, la #241: il test del meteo corretto) e `f7e9839` (con
+`main` a `ba06d66`: E6a, E6b, il piano 1.32 e la #244, 0.6.7). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a
+(#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed
+E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e
+**1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225, #241,
+#244) e gli spec che dicono al banco che cosa rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali
+dell'evento, il giorno dell'evento, l'ha montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**:
+**E10i** (#237: un grant su una riga scrive quella riga, e i figli di un evento), **E10j** (#239: il recupero dei giri dei job) ed **E10k**
+(la #238), con **E4c** (questa, la #242: il titolo di `/events` e di `/events/mine`, la frase vuota delle cinque liste generate degli
+eventi — gli usi degli eventi di E10k) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino del 9 ottobre (#236), **è corretto in
+`main` dalla #241** di Carmine (0.6.6, la sera stessa).
+**Il prossimo passo**: **E10k** (la #238: **decisa da Carmine** sull'issue #224 e, dopo la revisione, sulla #238; approvabile, con `main`
+unito e la CI intera), poi **E4c** (questa, la #242, in coda dopo la #238: «Che cosa ha lasciato E4c», sotto); **E7** (gli slot
+privati) viene dopo E6b. Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -178,6 +175,85 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E4c (9–10 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4c, «Com'è andata»; nessun file del nucleo, nessuna nota nuova): gli eventi usano i pezzi di
+  E10k.
+  - **`/events` e `/events/mine` dicono il loro titolo nella scheda**: `PageMetadata` con `events:public.title` ed
+    `events:public.description` in `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`), «Eventi — IVAO Italia»; con
+    `events:mine.title` ed `events:mine.lead` in `MyBookingsPage` (`screens/mine.tsx`), «Le mie prenotazioni — IVAO Italia».
+  - **La pagina di un evento** (`EventScreen`, `public.tsx`) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
+    e la scheda dice come prima il titolo dell'evento e «— IVAO Italia».
+  - **Le cinque liste generate del modulo, vuote, dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede
+    «Slot» (`events:slots.empty`), «Rotte» (`events:routes.empty`), «Scali» (`events:airports.empty`) e «Prenotazioni»
+    (`events:bookings.empty`) di un evento, e `/staff/events` (`events:events.empty`). Parole che descrivono e non invitano (scelte di
+    dalberone): vere per chi scrive, che ha i bottoni sopra, e per chi legge e basta, che non li ha.
+  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (10, sulla radice vera dell'app) e due `toHaveTitle` nella
+    smoke `web/e2e/events-public.spec.ts`.
+  - **Le due righe della seconda fra la #240 e la #242** le ha fatte E4c all'unione di `main` del 10 ottobre: `bookingOpensAtUtc: null`
+    nel `PublicEventDto` del test e il titolo di `/events/mine`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **Una pagina nuova degli eventi** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, senza `divisionName`; **una
+    lista nuova del modulo** dice la sua frase vuota con `emptyDescription`, una chiave `<lista>.empty` passata dalla schermata (`DataList`
+    non la legge da sé). Il test che lo prova sulla radice vera è `titlesAndEmptyLists.test.tsx`: una pagina o una lista nuova ci
+    aggiunge la sua rotta e il suo caso.
+  - ⚠️ **Il `PublicEventDto` del test è scritto per intero**: un campo nuovo e obbligatorio della lettura della pagina (come
+    `bookingOpensAtUtc` di E6b) va aggiunto lì, o il typecheck cade.
+  - **E7** (gli slot privati generati nella stessa scheda) rilegge `events:slots.empty`, che oggi parla degli slot incollati o creati.
+  - **La CI**: al primo push di questa fase «Test .NET» era rosso per #236, e la CI saltava i passi web (lint, `format:check`,
+    typecheck, vitest, i18n, la smoke, il giro), fatti in locale ed elencati nella PR (`format:check` compreso: lo aveva mancato E10k,
+    corretto da lei prima del push di questa). La #241 di Carmine l'ha corretto; con E10k unita a `fdb551d`, che porta `main` a
+    `aa3707a`, la CI della #242 gira intera.
+
+### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede.md`, **decisa** da Carmine sull'issue
+  #224, [la sua risposta][a224k]: sì ai quattro punti; e sulla #238, [la sua risposta][a238k]: sì alla lettura più larga — il titolo
+  predefinito su ogni pagina, il back office compreso, e i titoli di `/news`, `/documents`, `/search` — e la dipendenza da React 19
+  accettata; il dettaglio in `10`, E10k, «Com'è andata» e «Dopo la revisione»). Tutto nel browser, niente in C#:
+  - **La paginazione della lista generata** (`Pages` in `web/src/shared/list/DataList.tsx`): i pezzi di `Pagination` di Atmosphere
+    (`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) con le parole `list.pages.*` del nucleo — «‹ Precedente
+    1 2 3 Successiva ›», i due «…» per la prima e l'ultima pagina con il loro nome. Un «…» solo dove nasconde una pagina.
+  - **La frase vuota per lista**: `emptyDescription` di `DataList`, la frase della schermata già tradotta; senza, `list.empty.description`
+    come prima. Detta solo quando non si cerca niente.
+  - **Il titolo della scheda**: `DivisionTitle` (`web/src/shared/seo/PageMetadata.tsx`), montato una volta da `Root` in
+    `web/src/routes/__root.tsx`, scrive il nome della divisione come titolo predefinito di ogni pagina e lo dà all'albero sotto.
+    `PageMetadata` prende anche una frase già tradotta come `title` e `description`, e `divisionName` è **facoltativo** (senza, il nome
+    della radice). `NotFound` dice il suo titolo; `/news`, `/documents`, `/calendar` e `/search` il loro; `_public/$.tsx`, `HomePage` e
+    `PublicEntryScreen` non passano più il nome a mano.
+  - **La frase di Invio del form generato** (`whereEnterSaves` in `web/src/shared/forms/SchemaForm.tsx`): niente frase dove nessuna
+    casella è di una riga, `form.submitHintOneLine` dove ci sono caselle di una riga e di più righe, `form.submitHint` com'era dove sono
+    tutte di una riga. Le caselle di una riga di una **lista ripetibile non contano** (sullo schermo ci sono solo dopo «Aggiungi»), quelle
+    di più righe sì (dalla revisione della #238).
+  - **Sei chiavi nuove del nucleo** in `locales/{en,it}/common.json`: `list.pages.label`, `.previous`, `.next`, `.first`, `.last`,
+    `form.submitHintOneLine`. Nessun doppione nei file dei moduli.
+  - **I test** (vitest, 16): `web/src/shared/list/DataList.words.test.tsx`, `web/src/shared/forms/SchemaForm.enter.test.tsx`,
+    `web/src/routes/-titles.test.tsx` (sulla radice vera). `docs/UI-GUIDELINES.md` dice tutto questo in inglese.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase degli eventi dopo questa** (scelta di dalberone il 9 ottobre: la regola 6 vuole il nucleo e il modulo in due PR): in
+    `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`)
+    `<PageMetadata title={t('events:public.title')} description={t('events:public.description')} />`; in `EventScreen`, lo stesso file,
+    il `divisionName` calcolato a mano si toglie; le schede «Slot» (`screens/slots.tsx`) e «Rotte» (`screens/routes.tsx`) passano
+    `emptyDescription={t('events:…')}` con parole loro, chiavi nuove in `events.json` (poi `pnpm i18n:sync`).
+  - **Ogni pagina nuova** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, e **non passa `divisionName`**: lo dice la
+    radice. Una lista di un modulo dice la sua frase vuota con `emptyDescription`.
+  - ⚠️ **Il titolo predefinito regge sull'ordine di React**: React 19 mette un `<title>` che monta prima di quelli già nella testa, e il
+    browser mostra il primo; la radice monta prima di ogni pagina. **Mai un `<title>` predefinito sotto una pagina o in un layout**: il
+    titolo di una pagina montata prima di lui perderebbe la scheda. `web/src/routes/-titles.test.tsx` lo prova sulla radice vera.
+  - ⚠️ **`/tours` è del maintainer**: dice il nome della divisione (il predefinito) finché il maintainer non aggiunge la sua riga in
+    `PublicToursPage`. La pagina di un tour passa ancora `divisionName`, e va bene così.
+  - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) **cade dalle 06:00 UTC del 9 ottobre su ogni
+    branch**, `main` compreso: chiede la storia del 9 settembre 2026, e oltre i 30 giorni di `IWeatherSource.HistoryWindow`
+    `NoaaWeatherClient.GetHistoryAsync` risponde `null`. Non si tocca (regola 3): l'issue #236 lo porta a Carmine. Fino alla sua
+    correzione `build-test` è rosso su ogni PR, e la PR lo dice. ⚠️ **E con «Test .NET» rosso la CI salta ogni passo dopo**: lint,
+    `format:check`, typecheck, vitest, la smoke, il giro completo. Si fanno in locale, `pnpm -C web run format:check` compreso (E10k l'ha
+    mancato al primo push), e la PR li elenca.
+  - **In un test che naviga su un router fatto per il test**, `router.navigate({ to })` prende i tipi delle rotte registrate dall'app
+    (`/search` vuole i suoi parametri): `router.history.push(path)` non ha tipi di rotta.
+
+[a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 

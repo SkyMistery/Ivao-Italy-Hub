@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../app/layouts/RouterAnchor';
 import { highlight } from '../../shared/search/highlight';
+import { PageMetadata } from '../../shared/seo/PageMetadata';
 
 import { kindLabel } from './kindLabel';
 import type { SearchHit, SearchResponse } from './queries';
@@ -34,6 +35,9 @@ export function SearchResults({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t('search.title')} />
+
       <header className="flex flex-col gap-3">
         <H1>{t('search.title')}</H1>
 
