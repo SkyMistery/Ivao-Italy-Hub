@@ -412,7 +412,7 @@
   "mine": {
     "title": "Le mie prenotazioni",
     "lead": "Gli slot che hai prenotato negli eventi, anche passati. Una prenotazione si ritira fino all'off block del suo volo.",
-    "none": "Ancora nessuna prenotazione",
+    "none": "Nessuna prenotazione",
     "noneDescription": "Prenota uno slot dalla pagina di un evento.",
     "toEvents": "Vai agli eventi",
     "upcoming": "Da volare",

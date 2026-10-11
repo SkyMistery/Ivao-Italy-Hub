@@ -412,7 +412,7 @@
   "mine": {
     "title": "My bookings",
     "lead": "The slots you booked in the events, past ones too. A booking is withdrawn until the off block of its flight.",
-    "none": "No booking yet",
+    "none": "No booking",
     "noneDescription": "Book a slot from the page of an event.",
     "toEvents": "Go to the events",
     "upcoming": "Still to fly",
