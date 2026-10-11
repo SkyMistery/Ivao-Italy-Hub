@@ -1974,8 +1974,9 @@ da E5 ed E6a):
      `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`): il coordinatore degli eventi genera nella scheda i
      privati di un RFO (undici), il pilota del banco prenota sulla pagina un arrivo con la sua partenza, `/events/mine` dice la coppia, e
      il programma del Gate Manager, con un token e nient'altro, legge le due nell'esportazione, ognuna con lo slot dell'altra e senza gate.
-- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-11-gli-slot-privati.md`, **«Proposta»**,
-  le due domande a Carmine sulla #246; il ritiro di uno dei due collegati nella nota `2026-10-10-il-ritiro-di-un-volo-collegato`,
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-11-gli-slot-privati.md`, «Proposta»
+  all'apertura con le due domande a Carmine sulla #246, poi **decisa** — sotto, «Dopo la revisione» —; il ritiro di uno dei due
+  collegati nella nota `2026-10-10-il-ritiro-di-un-volo-collegato`,
   **decisa** — la strada A, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/245#issuecomment-6102449241) —): diciassette
   letture, il dettaglio è nella nota. Quelle da guardare: le ore sono **quelle dell'evento**, l'ultima tagliata con la sua parte di
   capacità, e nessun privato nel margine di sei ore di E5 (lettura 1); ogni orario tenuto prende **il passo più vicino** (2); in
@@ -1983,7 +1984,8 @@ da E5 ed E6a):
   generazione (7); l'altro aeroporto di un privato **può essere un altro scalo dell'evento** (9); la partenza collegata la vola **lo
   stesso aereo**, almeno `bookingGapMinutes` dopo l'arrivo (12). **Uno scostamento**: l'interruttore degli slot privati si spegne anche
   con dei privati — la regola gemella di `hasPublicSlots`, scritta, faceva cadere un test di E5, e l'ho tolta invece di toccarlo (lettura 8,
-  domanda 2). **Gli endpoint scritti a mano**: due verbi che il design nomina (§7.2), «genera» e «prenota un privato»; nessuna lettura
+  domanda 2); **superato** dalla risposta 2 di Carmine: il passaggio da acceso a spento è rifiutato, e il test di E5 resta com'è
+  (sotto). **Gli endpoint scritti a mano**: due verbi che il design nomina (§7.2), «genera» e «prenota un privato»; nessuna lettura
   nuova. L'handoff di E6b chiedeva a E7 il promemoria di un privato: parte all'off block del suo volo (lettura 14).
 - **Trovato, e scritto per chi viene dopo**: ⚠️ **il dialog di un'ora con la partenza** è alto due voli di campi: a 1280×720 il `Dialog`
   di Atmosphere cresceva oltre il bordo e «Prenota» non si raggiungeva — l'ha trovato il giro completo («outside of the viewport») —; ora
@@ -2028,6 +2030,52 @@ da E5 ed E6a):
   nello stesso istante è deterministica, con una transazione del test); il dialog letto da un lettore di schermo vero; il gate davvero
   assegnato (lo assegna il programma del Gate Manager, fuori dall'hub); «Genera» e «togli» di una coppia con un grant su un evento solo,
   che con E10i passano dal guardiano come gli altri verbi della scheda — nessun test di E7 lo prova.
+- **Dopo la revisione** (11 ottobre 2026, sera; [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113085610),
+  letti sulla prima testa, `0d766fe`, con la CI verde; le correzioni in `f16a1a4`, `6cbf95e`, `dff122a` e `12c45e0`; prima di loro
+  `main` unito a `bea8c0e`, con la #238 di E10k, in `acb80cd` — il conflitto solo in `HANDOFF-M4.md`: l'intestazione di E7 tenuta, il
+  blocco di E10k intero sotto quello di E7 —):
+  1. **Due generazioni insieme** (punto 1): quando nessun privato libero c'era ancora — la prima generazione, o tutti prenotati — due
+     generazioni dello stesso evento scrivevano tutte e due l'insieme intero (niente di unico ferma due slot senza nominativo), e la
+     capacità raddoppiava. Ora `PrivateSlotGeneration` prende la **riga dell'evento `FOR UPDATE`** in una transazione `READ COMMITTED`
+     intorno a tutto quello che legge e scrive, come il blocco della prima prenotazione di un pilota, e **rilegge l'evento sotto il
+     blocco** (l'interruttore, le ore, la cura); un evento sparito nel frattempo è 404 (`GenerationResult.NotFound`).
+  2. **Un deadlock di «Genera» è un 409** «leggi di nuovo» (punto 2), come uno slot prenotato nello stesso istante: l'endpoint prende
+     anche `DatabaseErrors.Deadlocked`.
+  3. **I test che mancavano** (punto 3), in `EventsPrivateSlotsTests` (integrazione, sette in più, quattordici in tutto): le due
+     generazioni insieme; il deadlock di «Genera», con la richiesta vittima di una transazione più pesante (quaranta slot di un altro
+     evento); il tetto dei 5.000 (999 arrivi l'ora per sei ore); una generazione contro una prenotazione **nei due ordini** — la prima
+     prenotazione di un pilota in volo tiene la riga dell'evento e la generazione che l'aspetta tiene lo slot prenotato; la seconda
+     prenotazione di un pilota, ferma sul suo blocco, trova il suo slot sostituito da una generazione e risponde 404 —; il **409 di un
+     deadlock in `BookPrivateAsync`**; e l'interruttore (sotto). Ogni gara con una transazione del test tenuta nel database
+     (`INNODB_TRX`), come in E6a.
+  4. **Contare prima di costruire** (punto 4): `PrivateSlotGenerator.Count`, ora per ora come `Generate` ma senza costruire, si ferma
+     oltre il tetto per quanto lungo sia l'evento; la generazione lo chiede prima di fare uno slot. Unità: il conto uguale a quello che
+     `Generate` fa in sei casi, e 999 l'ora per vent'anni che si ferma alla sesta ora.
+  5. **Il dialog dopo un rifiuto** (punto 5): il form dell'ora tiene quello che il pilota scrive come stato (non più un `ref`), e si
+     ridisegna quando gli slot offerti cambiano — la sua chiave sono gli slot offerti —, con quello che ha scritto e il primo libero al
+     posto del suo, e lo dice (`events:errors.slotJustTaken`). Vitest nuovo, su una pagina che si rilegge come quella vera. E **«Genera»
+     rifiutato rilegge gli slot** (`useGeneratePrivateSlots`, `onError`).
+  6. **La lettura della pagina porta ogni privato a ogni lettore** (punto 6): detto nella nota (§6) e lasciato così.
+  - **Le risposte di Carmine** ([sulla #246](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113461257), di
+    SkyMistery su sua istruzione; la nota `2026-10-11-gli-slot-privati` è **decisa**, §5): **sì alle letture (a)–(g)**, la (e) compresa
+    sapendolo; **l'interruttore dei privati non passa da acceso a spento finché l'evento ne ha** — la raccomandazione della domanda 2 non
+    è passata —: in `EventSaving` accanto alla regola dei pubblici, solo quel passaggio (il valore di prima dal tracker), con la chiave
+    `events:errors.hasPrivateSlots`; il test di E5 resta com'è. Il punto 9 del revisore (i privati liberi dopo un cambio delle date) è la
+    lettura 6, approvata come scritta.
+  - **Al contrario** (11 ottobre 2026; il codice di prima rimesso per la prova, poi di nuovo il nuovo, toccato e ricompilato, la classe di
+    nuovo verde): sul server della testa `acb80cd` cadono i quattro test che devono cadere, ognuno per la sua ragione — la seconda
+    generazione ne scrive altri quattro (`(4, 0, 0)` invece di `(4, 4, 0)`), la generazione contro la prenotazione in volo risponde 409,
+    il deadlock risponde **500**, l'interruttore si spegne —; gli altri tre (il tetto, l'altro ordine, il deadlock di una prenotazione)
+    provano quello che c'era già e passano. Sul componente di prima il vitest nuovo cade: il menu degli slot resta vuoto.
+  - **Verificato, in locale** (sulla testa `12c45e0`, poi con i documenti): `dotnet build IvaoHub.sln -c Release` senza avvisi né
+    errori; unità **1220/1220**; **integrazione intera 543/543** (10,6 minuti; le sette nuove comprese); i test di spina dorsale da soli
+    dagli assembly di Release, `ArchitectureTests` 15 su 15 scritti e `ForkabilityXxDivisionTests` 3 su 3; `pnpm i18n:sync` e
+    `pnpm gen:api` senza differenze; `pnpm lint`, `typecheck`, `format:check` (dopo `prettier --write` sul componente) e `i18n:check`
+    (830 chiavi) verdi; `pnpm test` **711 in 98 file**; lo smoke dietro il suo lock **180/180** al primo giro (1,1 minuti, con la sua
+    `pnpm build`); **`pnpm e2e:full` 59/59** (12,7 minuti, 5134, `ivaohub_e2e_e7` ricreato, dietro il lock di Mailpit) — al secondo
+    tentativo: il primo è morto dopo mezzo minuto, prima di ogni spec, con il runner di Playwright uscito `0xC0000409` (lo stesso crash
+    visto una volta in M3), e ha lasciato acceso il server del banco su 5134, fermato a mano —; le regole di `core-guard` dalla base di
+    merge `bea8c0e`: **PASS** — solo il modulo e i documenti, e `schema.d.ts`; due note nuove.
 
 ### E8a — Nucleo: la cancellazione vede gli eventi
 
