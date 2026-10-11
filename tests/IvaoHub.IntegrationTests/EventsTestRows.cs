@@ -9,7 +9,7 @@ namespace IvaoHub.IntegrationTests;
 /// <summary>
 /// What the tests of the events leave in the shared database, taken back: the events of one class — by the stem of their
 /// addresses —, their airports, their routes (E4), their slots (E5) and the bookings of the slots (E6a, first: a booked slot is not
-/// deleted) and, since an event projects itself (E3b), its calendar entry, its lines in the search and its files in use. A delete
+/// deleted), the registrations to an event in person (E16: its questions and its statistics go with the event) and, since an event projects itself (E3b), its calendar entry, its lines in the search and its files in use. A delete
 /// that goes past the interceptor takes the rows and not what they projected: without this a published event of a test would stay
 /// in the calendar of every class after it.
 /// </summary>
@@ -30,6 +30,7 @@ internal static class EventsTestRows
         await database.Airports.IgnoreQueryFilters().Where(airport => ids.Contains(airport.EventId)).ExecuteDeleteAsync(cancellationToken);
         await database.Routes.IgnoreQueryFilters().Where(route => ids.Contains(route.EventId)).ExecuteDeleteAsync(cancellationToken);
         await database.Bookings.IgnoreQueryFilters().Where(booking => ids.Contains(booking.EventId)).ExecuteDeleteAsync(cancellationToken);
+        await database.Registrations.IgnoreQueryFilters().Where(registration => ids.Contains(registration.EventId)).ExecuteDeleteAsync(cancellationToken);
         await database.Slots.IgnoreQueryFilters().Where(slot => ids.Contains(slot.EventId)).ExecuteDeleteAsync(cancellationToken);
         await database.Events.IgnoreQueryFilters().Where(row => ids.Contains(row.Id)).ExecuteDeleteAsync(cancellationToken);
 
