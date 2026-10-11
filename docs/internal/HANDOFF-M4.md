@@ -6,7 +6,12 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
+**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10l** (nucleo: il pulsante di chiusura delle finestre parla la lingua), sul branch
+`m4/e10l-dialog-close-label`, **PR #250** verso `main`, nata da `main` a `bea8c0e` (con **E10k, la #238, unita**), senza coda; **decisa
+da Carmine** sull'issue #224. Il `Dialog` del nucleo c'è; gli eventi ci passano in una fase loro dopo questa («Che cosa ha lasciato
+E10l», sotto). Aperte accanto: **E4c** (#242), **E10j** (#239), **E7** (#246) ed **E8b** (#249).
+
+**L'aggiornamento prima:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
 `m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda, e **unita di nuovo a `main`** a `aa3707a`
 (la #241, 0.6.6: il test del meteo corretto), a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
 l'accesso) e a `0c2f85a` (E10i, la #237). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
@@ -177,6 +182,37 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10l (11 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-il-pulsante-di-chiusura-delle-finestre.md`, **decisa** da Carmine sull'issue #224,
+  [la sua risposta][a224l]: comporlo nel nucleo, come la #238 per la paginazione; non una richiesta ad Atmosphere; il dettaglio in `10`,
+  E10l, «Com'è andata»). Tutto nel browser, niente in C#, nessuna dipendenza nuova:
+  - **`Dialog` del nucleo** (`web/src/shared/ui/Dialog.tsx`, da `shared/ui`), la **venticinquesima voce** dell'elenco chiuso
+    (`catalog.ts`, galleria, `docs/UI-GUIDELINES.md` §3): la molecola `Dialog` di Atmosphere ricomposta dai suoi pezzi, con le stesse
+    props (`trigger`, `title`, `description`, `children`, `footer`, `open`, `onOpenChange`…) e lo stesso aspetto; la «X» è un
+    `DialogClose` nostro con `aria-label={t('common.close')}` — «Chiudi», «Close». **`closeButton`** (predefinito `true`) al posto di
+    `topRightCloseButton`.
+  - **La chiave `common.close`** nelle due lingue (e due della galleria).
+  - **La guardia** (`web/src/shared/ui/Dialog.test.tsx`): nessun file di `web/src` importa da Atmosphere `Dialog`,
+    `DialogTopRightClose`, `Sheet` o `SheetContent`, tranne quelli di `NOT_MOVED_YET`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase degli eventi dopo questa** (regola 6): `EventSlots.tsx` (il dialog di uno slot) e, quando E7 è unita, `PrivateSlots.tsx`
+    (il dialog dell'ora privata) importano `Dialog` da `../../../shared/ui` invece che da Atmosphere — le props sono le stesse, e
+    nessuno dei due passa `topRightCloseButton` — e i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx` (un test di dalberone).
+    Nessun test né spec degli eventi cerca la parola «Close».
+  - **Un dialog nuovo** si disegna con il `Dialog` del nucleo, una domanda con `ConfirmDialog`; mai il `Dialog` o il `Sheet` di Atmosphere:
+    la guardia cade.
+  - ⚠️ **La «X» non è in `DialogContent`**: in Atmosphere 3.1.0 la disegna `DialogTopRightClose`, montato dalla molecola `Dialog` e da
+    `SheetContent`. Un `DialogContent` composto a mano (la palette di ricerca) non ha la «X» e non va spostato.
+  - ⚠️ **`PrivateSlots.tsx` è già in `NOT_MOVED_YET`** anche se in `main` non c'è ancora: così né E7 (#246) né questa PR fanno cadere
+    l'altra, chiunque entri prima. Per lo stesso motivo la guardia chiede «nessuno fuori dalla lista», non «la lista uguale».
+  - ⚠️ **I toast dicono ancora «Close»**: `ToastClose` di Atmosphere, montato senza props dalla molecola `Toast` che `useNotice()` usa,
+    ha «Close» come `aria-label` predefinito. Non è un dialog, la risposta di Carmine non lo copre: una domanda per Carmine, se dalberone
+    la porta.
+  - **I tour** non hanno dialog oggi; se ne avranno, sono del maintainer, e la guardia lo dice.
+
+[a224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6113461064
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 

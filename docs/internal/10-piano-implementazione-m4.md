@@ -3011,6 +3011,73 @@ master e pubblicata su sua istruzione):
 [r238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
 [a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
+### E10l — Nucleo: il pulsante di chiusura delle finestre parla la lingua
+
+**Da dove viene**: non c'era in E0. La «X» del dialog di uno slot dice «Close» al lettore di schermo anche in italiano: l'ha vista
+dalberone sul banco di prova l'11 ottobre 2026 e l'ha portata a Carmine sull'issue #224 ([il rilievo][r224l]); **Carmine ha deciso**
+([la sua risposta][a224l], data in chat alla sessione master e pubblicata su sua istruzione): comporla nel nucleo, come la #238 fa per la
+paginazione, in una PR piccola del nucleo con la sua nota; non una richiesta ad Atmosphere. Branch `m4/e10l-dialog-close-label`, da
+`main` a `bea8c0e` (con E10k, la #238). **PR del nucleo** senza coda, con la sua nota (caso b); niente in C#.
+
+1. **Un dialog del nucleo** composto dai pezzi di Atmosphere e di Radix, con la «X» che ha un `aria-label` tradotto (una chiave nuova
+   del nucleo, nelle due lingue).
+2. **I dialog del nucleo** ci passano in questa PR, se hanno la «X».
+3. **I dialog dei moduli no** (regola 6): quelli degli eventi in una fase dopo; quelli dei tour, se ci sono, sono del maintainer.
+
+**Test**: vitest con il nome della «X» in italiano e in inglese, e nessun «Close» nei dialog del nucleo; la prova che cade sul codice di
+oggi.
+**Fatta quando**: un dialog dell'hub dice la parola della sua «X» nella lingua dello schermo, e niente nel nucleo monta più quella di
+Atmosphere.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-il-pulsante-di-chiusura-delle-finestre`, **decisa**, con il link alla risposta di Carmine):
+  - **`Dialog`** in `web/src/shared/ui/Dialog.tsx`, esportato da `shared/ui`: la molecola `Dialog` di Atmosphere ricomposta dai suoi
+    pezzi (`DialogRoot`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`) con le
+    stesse props, le stesse classi e lo stesso ordine, e la «X» nostra: `DialogClose` (il `Close` di Radix che Atmosphere esporta) con
+    le classi di `DialogTopRightClose`, l'icona `X` di lucide e `aria-label={t('common.close')}`. `closeButton` al posto di
+    `topRightCloseButton`;
+  - **la venticinquesima voce** dell'elenco chiuso (`catalog.ts`), con la sua sezione nella galleria (`DialogSample`) e il suo paragrafo
+    in `docs/UI-GUIDELINES.md` §3;
+  - **tre chiavi nuove** in `locales/{en,it}/common.json`: `common.close` («Close», «Chiudi») e, per la galleria,
+    `uiKit.sample.dialogTrigger` e `.dialogTitle`;
+  - **i test** (vitest, 5): `web/src/shared/ui/Dialog.test.tsx`, con la guardia che nessun file di `web/src` importi da Atmosphere
+    `Dialog`, `DialogTopRightClose`, `Sheet` o `SheetContent`, tranne i due degli eventi che aspettano (`NOT_MOVED_YET`).
+- **Scostamenti dal prompt, scritti nella nota** (§1, §2):
+  1. ⚠️ **la «X» non è in `DialogContent`**, come dicevano il rilievo e il prompt: in Atmosphere 3.1.0 `DialogContent` è portale, sfondo
+     e contenuto, e basta. La disegna `DialogTopRightClose`, montato dalla molecola `Dialog` (e da `SheetContent`). Letto nel pacchetto;
+  2. **i dialog del nucleo non si spostano**: `ConfirmDialog` (un `AlertDialog`) e `SearchPalette` (un `DialogContent` composto a mano)
+     non hanno la «X». In `main` l'unico che la ha è `EventSlots.tsx` degli eventi;
+  3. **nessuna dipendenza nuova**: Atmosphere esporta i pezzi di Radix che servono (`DialogClose`, `DialogRoot`, `DialogTrigger`), e
+     `package.json` non cambia;
+  4. **voce nuova dell'elenco, non un cambio di `ConfirmDialog`**, che chiede e non ha la «X»;
+  5. **la guardia ammette `PrivateSlots.tsx`**, che non è in `main`: è di E7 (#246, aperta accanto, e E8b sopra) e monta il `Dialog` di
+     Atmosphere; nella lista perché nessuna delle due PR faccia cadere l'altra, e per questo il test chiede «nessuno fuori dalla lista» e
+     non «la lista uguale».
+- **Trovato**: ⚠️ **lo stesso «Close» nei toast**. La molecola `Toast` di Atmosphere, che `useNotice()` usa, monta `ToastClose` senza
+  props, e il suo `aria-label` predefinito è «Close». Non è un dialog e la risposta di Carmine non lo copre: non toccato, detto a
+  dalberone (nota §4).
+- **Lette le fasi che corrono accanto** (11 ottobre): un `git grep` dei branch `origin/m4/*` trova il `Dialog` di Atmosphere solo in
+  `EventSlots.tsx` e, su E7 ed E8b, in `PrivateSlots.tsx`; nessun test né spec cerca la parola «Close».
+- **Verificato, in locale** (11 ottobre 2026, `main` a `bea8c0e`):
+  - `pnpm lint`, `pnpm typecheck`, `pnpm format:check` e `pnpm i18n:check` verdi; `pnpm test` **703/703** in 97 file;
+  - i test nuovi da soli 5/5, con `uiKit.test.ts` 11/11; **la prova al contrario**: con il `Dialog` di Atmosphere al posto del nostro
+    (i test tenuti) cadono 2 su 5 — la «X» in italiano («Unable to find … name "Chiudi"») e la guardia, che trova il file —, e i tre
+    che passano sono ciò che non cambia; rimesso il file della fase, 5/5;
+  - `dotnet build IvaoHub.sln` 0 avvisi; unità **1203/1203**;
+  - la smoke (`pnpm -C web exec playwright test --workers=2`, dietro il suo lock) **180/180** al primo giro (1,4 minuti);
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`bea8c0e`): dodici file, nessuno del maintainer, nove del nucleo
+    con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `pnpm e2e:full` e l'integrazione: niente server cambiato, e nessuno spec apre un dialog con la «X» del nucleo (la usa solo la
+    galleria, finché gli eventi non passano);
+  - un lettore di schermo vero, e la «X» guardata in un browser vero: i test leggono il nome accessibile nel DOM di jsdom;
+  - la fase degli eventi dopo questa.
+
+[r224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6107362979
+[a224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6113461064
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
