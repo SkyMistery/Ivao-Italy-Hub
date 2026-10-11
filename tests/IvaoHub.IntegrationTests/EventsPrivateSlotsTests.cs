@@ -31,7 +31,10 @@ namespace IvaoHub.IntegrationTests;
 /// capacity of the airports, less what the other flights already hold, and generating again replaces the free ones and keeps the
 /// booked ones; a pilot books one with the flight they fly, checked like any other booking of theirs, and an arrival with its linked
 /// departure — both or neither, also when the database answers in the same instant; the export carries the private flights with the
-/// slot each is paired with; one of a pair going leaves the other, unlinked; the reminder goes by the off block of the flight.
+/// slot each is paired with; one of a pair going leaves the other, unlinked; the reminder goes by the off block of the flight. And,
+/// after the review of #246: two generations of an event at once write its slots once; a generation caught in a deadlock, or past
+/// its ceiling, writes nothing; a generation and a booking meet in either order; a private booking caught in a deadlock is told to
+/// try again; and the switch of the private slots is not turned off while the event has some.
 /// <para>⚠️ The coordinator is seeded **without an address**, as in <see cref="EventsStaffTests"/>: the tests of the contacts assert who
 /// of the events receives a message. The two pilots have one each: they are told by mail. The job of the reminders is paused in the
 /// host's scheduler, so the only runs are the test's.</para>
@@ -539,6 +542,232 @@ public sealed class EventsPrivateSlotsTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.NotNull(Assert.Single(await BookingsAsync(id, token)).RemindedAt);
     }
 
+    // ---- after the review of #246 ----------------------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task TwoGenerationsOfAnEventAtOnceWriteItsPrivateSlotsOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "twice", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 4));
+
+        // A generation in flight holds the event's row and has written the whole set, not committed yet. The second one waits for the
+        // row, then reads the set the first committed and replaces it: four private slots, not eight (the review of #246, point 1).
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE", token);
+            foreach (var minutes in new[] { 0, 15, 30, 45 })
+            {
+                await held.SlotAsync(id, day.AddHours(17).AddMinutes(minutes), token);
+            }
+
+            var racing = GenerateAsync(coordinator, id, token);
+            await WaitForALockWaitAsync(token);
+            await held.CommitAsync(token);
+
+            var second = await OkAsync(await racing, token);
+            Assert.Equal((4, 4, 0), (second.GetProperty("generated").GetInt32(), second.GetProperty("removed").GetInt32(), second.GetProperty("kept").GetInt32()));
+        }
+
+        Assert.Equal([Clock(17, 0), Clock(17, 15), Clock(17, 30), Clock(17, 45)], Times(await PrivateSlotsAsync(id, token), First, arrivals: true));
+    }
+
+    [Fact]
+    public async Task ADeadlockDuringAGenerationIsAConflictAndWritesNothing()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "generation-deadlock", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 4));
+        var ballast = await EventAsync(coordinator, "generation-ballast", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 4));
+        await OkAsync(await GenerateAsync(coordinator, id, token), token);
+        var before = await PrivateSlotsAsync(id, token);
+
+        // Another transaction, heavier than any generation of four slots: forty slots of another event written, and the first slot this
+        // generation replaces held. The generation takes the event's row and waits for that slot; then the other asks for the event's
+        // row. The database rolls the lighter of the two back — the generation —, which answers «read again» (the review of #246, point 2).
+        await using (var held = await HeldAsync(id, token))
+        {
+            for (var minutes = 0; minutes < 40; minutes++)
+            {
+                await held.SlotAsync(ballast, day.AddHours(17).AddMinutes(minutes), token);
+            }
+
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_slots WHERE id = {before[0].Id} FOR UPDATE", token);
+
+            var racing = GenerateAsync(coordinator, id, token);
+            await WaitForALockWaitAsync(token);
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE", token);
+
+            using var answer = await racing;
+            Assert.Equal(HttpStatusCode.Conflict, answer.StatusCode);
+        }
+
+        Assert.Equal(before.Select(slot => slot.Id), (await PrivateSlotsAsync(id, token)).Select(slot => slot.Id));
+    }
+
+    [Fact]
+    public async Task AGenerationPastItsCeilingIsRefusedBeforeASlotIsMade()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+
+        // The most arrivals an airport takes in an hour, for six hours: 5,994 private slots, more than one generation makes.
+        var id = await EventAsync(coordinator, "ceiling", publicSlots: false, day.AddHours(12), day.AddHours(18), token, Capacity(First, arrivals: EventAirport.MaxPerHour));
+
+        Assert.Equal(["events:errors.privateSlotsTooMany"], (await RefusedAsync(await GenerateAsync(coordinator, id, token), token))[PrivateSlotGeneration.Field]);
+        Assert.Empty(await PrivateSlotsAsync(id, token));
+    }
+
+    [Fact]
+    public async Task AGenerationWaitsForABookingInFlightAndKeepsItsSlot()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "booking-first", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 4));
+        await OkAsync(await GenerateAsync(coordinator, id, token), token);
+        var wanted = (await PrivateSlotsAsync(id, token)).Single(slot => slot.OnBlockUtc == day.AddHours(17).AddMinutes(30));
+
+        // A pilot's first booking of the event in flight: it holds the event's row, where the pilot's lock takes it, and has written its
+        // booking, not committed yet. The generation waits for the row, then reads the booking: the slot stays, and counts — not a 409
+        // on a delete the booking stops (the review of #246, point 3).
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE", token);
+            await held.BookAsync(wanted.Id, PilotVid, "XEI801", day.AddHours(16).AddMinutes(30), token);
+
+            var racing = GenerateAsync(coordinator, id, token);
+            await WaitForALockWaitAsync(token);
+            await held.CommitAsync(token);
+
+            var again = await OkAsync(await racing, token);
+            Assert.Equal((3, 3, 1), (again.GetProperty("generated").GetInt32(), again.GetProperty("removed").GetInt32(), again.GetProperty("kept").GetInt32()));
+        }
+
+        var slots = await PrivateSlotsAsync(id, token);
+        Assert.Contains(slots, slot => slot.Id == wanted.Id);
+        Assert.Equal([Clock(17, 0), Clock(17, 15), Clock(17, 30), Clock(17, 45)], Times(slots, First, arrivals: true));
+        Assert.Equal(wanted.Id, Assert.Single(await BookingsAsync(id, token)).SlotId);
+    }
+
+    [Fact]
+    public async Task ABookingOfASlotAGenerationReplacedInTheMeantimeFindsItGone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "generation-first", publicSlots: false, day.AddHours(17), day.AddHours(19), token, Capacity(First, arrivals: 2));
+        await OkAsync(await GenerateAsync(coordinator, id, token), token);
+        await PublishAsync(coordinator, id, token);
+        var slots = await PrivateSlotsAsync(id, token);
+        var early = slots.Single(slot => slot.OnBlockUtc == day.AddHours(17));
+        var wanted = slots.Single(slot => slot.OnBlockUtc == day.AddHours(18).AddMinutes(30));
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+        var first = (await CreatedAsync(await BookPrivateAsync(pilot, Arrival(early.Id, "XEI811", Away, day.AddHours(16)), token), token))
+            .GetProperty("booking").GetProperty("id").GetInt64();
+
+        // The pilot's second booking in flight: it read its slot free and waits for the pilot's lock — the row of their first booking —,
+        // which another transaction holds. Meanwhile the staff generate again, and that slot is one of the free ones replaced. When the
+        // pilot's request goes on, the slot it read is gone: nothing is booked (the review of #246, point 3, the other order).
+        await using (var held = await HeldAsync(id, token))
+        {
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_bookings WHERE id = {first} FOR UPDATE", token);
+
+            var racing = BookPrivateAsync(pilot, Arrival(wanted.Id, "XEI812", Away, day.AddHours(17).AddMinutes(30)), token);
+            await WaitForALockWaitAsync(token);
+
+            var again = await OkAsync(await GenerateAsync(coordinator, id, token), token);
+            Assert.Equal((3, 3, 1), (again.GetProperty("generated").GetInt32(), again.GetProperty("removed").GetInt32(), again.GetProperty("kept").GetInt32()));
+            await held.CommitAsync(token);
+
+            using var answer = await racing;
+            Assert.Equal(HttpStatusCode.NotFound, answer.StatusCode);
+        }
+
+        Assert.Equal([early.Id], (await BookingsAsync(id, token)).Select(booking => booking.SlotId));
+        Assert.DoesNotContain(await PrivateSlotsAsync(id, token), slot => slot.Id == wanted.Id);
+    }
+
+    [Fact]
+    public async Task APrivateBookingCaughtInADeadlockIsToldToTryAgain()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "booking-deadlock", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 12));
+        await OkAsync(await GenerateAsync(coordinator, id, token), token);
+        await PublishAsync(coordinator, id, token);
+        var slots = (await PrivateSlotsAsync(id, token)).OrderBy(slot => slot.OnBlockUtc).ToList();
+
+        using var pilot = await SignedInAsync(PilotVid, token);
+        var first = (await CreatedAsync(await BookPrivateAsync(pilot, Arrival(slots[0].Id, "XEI901", Away, day.AddHours(16)), token), token))
+            .GetProperty("booking").GetProperty("id").GetInt64();
+        var wanted = slots[^1];
+
+        // Another transaction has written many bookings, the slot the pilot wants among them, and not committed. The pilot's booking of
+        // it takes the pilot's lock — the row of their first booking —, finds the slot free, and waits on the other's key; then the
+        // other asks for the row the pilot holds. The database rolls the lighter of the two back: the pilot's, which answers «try
+        // again», nothing booked (the review of #246, point 3).
+        await using (var held = await HeldAsync(id, token))
+        {
+            foreach (var slot in slots.Skip(1).Take(8))
+            {
+                await held.BookAsync(slot.Id, OtherPilotVid, "XEI902", day.AddHours(16), token);
+            }
+
+            await held.BookAsync(wanted.Id, OtherPilotVid, "XEI903", day.AddHours(16), token);
+
+            var racing = BookPrivateAsync(pilot, Arrival(wanted.Id, "XEI904", Away, day.AddHours(17).AddMinutes(20)), token);
+            await WaitForALockWaitAsync(token);
+            await held.LockAsync($"SELECT id AS `Value` FROM evt_bookings WHERE id = {first} FOR UPDATE", token);
+
+            using var answer = await racing;
+            Assert.Equal(HttpStatusCode.Conflict, answer.StatusCode);
+        }
+
+        Assert.Equal([slots[0].Id], (await BookingsAsync(id, token)).Select(booking => booking.SlotId));
+    }
+
+    [Fact]
+    public async Task ThePrivateSlotsAreNotSwitchedOffWhileTheEventHasSome()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var day = Day(days: 21);
+        var id = await EventAsync(coordinator, "switch", publicSlots: false, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 2));
+        await OkAsync(await GenerateAsync(coordinator, id, token), token);
+
+        // Off with its private slots there: refused on the switch, with a key of its own (Carmine's answer 2 on #246).
+        var version = (await OkAsync(await coordinator.GetAsync($"{EventEndpoints.Pattern}/{id}", token), token)).GetProperty("rowVersion").GetDateTime();
+        var off = Payload(Slug("switch"), day.AddHours(17), day.AddHours(18), publicSlots: false, privateSlots: false) with { RowVersion = version };
+        Assert.Equal(["events:errors.hasPrivateSlots"], (await RefusedAsync(await coordinator.PutAsJsonAsync($"{EventEndpoints.Pattern}/{id}", off, token), token))["privateSlots"]);
+
+        // The free ones deleted first, as for the public slots: then it goes.
+        await OkAsync(await coordinator.PostAsync(new Uri($"{EventEndpoints.Pattern}/{id}/slots/delete-free", UriKind.Relative), null, token), token);
+        Assert.False((await OkAsync(await coordinator.PutAsJsonAsync($"{EventEndpoints.Pattern}/{id}", off, token), token)).GetProperty("privateSlots").GetBoolean());
+
+        // Only that change: an event that never had the switch on is not asked, a private slot written on it as E5's test of the export
+        // writes one included.
+        var never = await EventAsync(coordinator, "switch-never", publicSlots: true, day.AddHours(17), day.AddHours(18), token, Capacity(First, arrivals: 2), privateSlots: false);
+        await using (var held = await HeldAsync(never, token))
+        {
+            await held.SlotAsync(never, day.AddHours(17), token);
+            await held.CommitAsync(token);
+        }
+
+        var neverVersion = (await OkAsync(await coordinator.GetAsync($"{EventEndpoints.Pattern}/{never}", token), token)).GetProperty("rowVersion").GetDateTime();
+        await OkAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{EventEndpoints.Pattern}/{never}",
+                Payload(Slug("switch-never"), day.AddHours(17), day.AddHours(19), publicSlots: true, privateSlots: false) with { RowVersion = neverVersion },
+                token),
+            token);
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------------
 
     private static string Slug(string name) => $"{SlugStem}-{name}";
@@ -775,6 +1004,19 @@ public sealed class EventsPrivateSlotsTests(MariaDbFixture mariaDb) : IAsyncLife
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// A transaction of the test on the events, in the isolation the verbs use: what another request holds while it runs. Nobody is
+    /// signed in on it — the installation itself —, so the write guard leaves it alone.
+    /// </summary>
+    private async Task<HeldTransaction> HeldAsync(long eventId, CancellationToken cancellationToken)
+    {
+        var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        var parent = await database.Events.IgnoreQueryFilters().AsNoTracking().SingleAsync(row => row.Id == eventId, cancellationToken);
+        var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        return new HeldTransaction(scope, database, transaction, parent);
+    }
+
     /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
     /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms: asked more often, it keeps answering what
     /// it saw the first time (CONTRIBUTING.md).</remarks>
@@ -885,5 +1127,64 @@ public sealed class EventsPrivateSlotsTests(MariaDbFixture mariaDb) : IAsyncLife
         await hub.Notifications.Where(row => People.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
         await hub.PersonalTokens.Where(row => People.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
         await hub.JobsLog.Where(run => run.Job == BookingRemindersJob.JobName).ExecuteDeleteAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// A transaction the test holds on the events, as a request in flight would: a private slot or a booking written and not committed,
+    /// a lock taken. Disposed without a commit, it is rolled back.
+    /// </summary>
+    private sealed class HeldTransaction(
+        AsyncServiceScope scope,
+        EventsDbContext database,
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction,
+        Event parent) : IAsyncDisposable
+    {
+        /// <summary>A private arrival at the first airport of the class, as the generator writes one, in the care of the event held.</summary>
+        public async Task SlotAsync(long eventId, DateTime at, CancellationToken cancellationToken)
+        {
+            database.Slots.Add(new EventSlot
+            {
+                EventId = eventId,
+                Kind = SlotKind.Private,
+                EventAirportIcao = First,
+                IsArrival = true,
+                OnBlockUtc = at,
+                Generated = true,
+                OwnerDepartment = parent.OwnerDepartment,
+                OwnerDepartmentMask = parent.OwnerDepartmentMask,
+            });
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
+        /// <summary>A private arrival of <paramref name="vid"/> written in the transaction, leaving the airport away from the class at a time.</summary>
+        public async Task BookAsync(long slotId, int vid, string callsign, DateTime leaves, CancellationToken cancellationToken)
+        {
+            database.Bookings.Add(new EventBooking
+            {
+                EventId = parent.Id,
+                SlotId = slotId,
+                BookerVid = vid,
+                AircraftIcao = TypeA,
+                Callsign = callsign,
+                OtherIcao = Away,
+                OtherTimeUtc = leaves,
+                CreatedAt = DateTime.UtcNow,
+                OwnerDepartment = parent.OwnerDepartment,
+                OwnerDepartmentMask = parent.OwnerDepartmentMask,
+            });
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
+        /// <summary>A row locked in the transaction, as a lock of the verbs is taken.</summary>
+        public Task LockAsync(FormattableString sql, CancellationToken cancellationToken) =>
+            database.Database.SqlQuery<long>(sql).ToListAsync(cancellationToken);
+
+        public Task CommitAsync(CancellationToken cancellationToken) => transaction.CommitAsync(cancellationToken);
+
+        public async ValueTask DisposeAsync()
+        {
+            await transaction.DisposeAsync();
+            await scope.DisposeAsync();
+        }
     }
 }
