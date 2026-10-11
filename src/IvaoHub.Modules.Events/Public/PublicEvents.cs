@@ -79,7 +79,7 @@ public sealed record PublicEventCardDto(
 /// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
 /// cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
 /// the page says and counts down to until then — none for an event without slots; and its private slots (E7), by airport, direction
-/// and time, free or taken.
+/// and time, free or taken; and for an event in person (E16) its venue and the questions a member answers to register.
 /// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
 /// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
@@ -104,7 +104,16 @@ public sealed record PublicEventDto(
     IReadOnlyList<PublicEventSlotDto> Slots,
     IReadOnlyList<PublicPrivateSlotDto> PrivateSlots,
     DateTime? CancelledAt,
-    Localized<string>? CancellationNote);
+    Localized<string>? CancellationNote,
+    bool InPerson,
+    Localized<string>? Venue,
+    IReadOnlyList<PublicQuestionDto> Questions);
+
+/// <summary>
+/// A question of an event in person as its page asks it (§4-bis, E16): what the member's form is built from. Read by whoever reads the
+/// page — the questions are no secret —, answered by a signed in member.
+/// </summary>
+public sealed record PublicQuestionDto(long Id, QuestionType Type, Localized<string> Label, IReadOnlyList<QuestionChoice> Choices, bool Required);
 
 /// <summary>
 /// The events as the site shows them (design M4 §7.1, §7.3, E4): the cards of the events to come and of those in progress, for
@@ -244,6 +253,15 @@ public sealed class PublicEvents(
                 .ToListAsync(cancellationToken))
             .ToHashSet();
 
+        // The questions of an event in person (E16), in the order of the member's form.
+        var questions = row.InPerson
+            ? await database.Questions.AsNoTracking()
+                .Where(question => question.EventId == row.Id)
+                .OrderBy(question => question.Ordinal)
+                .ThenBy(question => question.Id)
+                .ToListAsync(cancellationToken)
+            : [];
+
         var named = await NamesAsync(
             own.Concat(routes.SelectMany(route => new[] { route.DepartureIcao, route.ArrivalIcao }))
                 .Concat(slots.SelectMany(slot => new[] { slot.DepartureIcao!, slot.ArrivalIcao! })),
@@ -299,7 +317,10 @@ public sealed class PublicEvents(
                     Taken: taken.Contains(slot.Id))),
             ],
             row.CancelledAt,
-            row.CancellationNote);
+            row.CancellationNote,
+            row.InPerson,
+            row.Venue,
+            [.. questions.Select(question => new PublicQuestionDto(question.Id, question.Type, question.Label, question.Choices, question.Required))]);
     }
 
     /// <summary>Every airport named, with the name the core knows, in one question to the core.</summary>

@@ -37,7 +37,9 @@
       "airports": "Scali",
       "routes": "Rotte",
       "slots": "Slot",
-      "bookings": "Prenotazioni"
+      "bookings": "Prenotazioni",
+      "questions": "Domande",
+      "registrations": "Iscrizioni"
     },
     "actions": {
       "publish": "Pubblica",
@@ -78,7 +80,9 @@
       "bannerMediaId": "Banner",
       "airports": "Scali",
       "state": "Stato",
-      "updatedAt": "Ultima modifica"
+      "updatedAt": "Ultima modifica",
+      "inPerson": "In presenza",
+      "venue": "Luogo"
     },
     "hints": {
       "kind": "Un tipo degli eventi, come li elencano le loro impostazioni: tutti i tipi del calendario finché non ne elencano nessuno. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni per quel tipo; cambiali come serve a questo evento.",
@@ -88,7 +92,9 @@
       "externalUrl": "Per un evento della rete o di un'altra divisione: la loro pagina dell'evento.",
       "slug": "L'indirizzo della sua pagina, /events/…",
       "visibleFromUtc": "Lascialo vuoto per mostrare l'evento appena è pubblicato.",
-      "bookingOpensAtUtc": "Da quando i piloti prenotano; ogni slot si chiude al suo orario di off block. Lascialo vuoto per un evento senza slot."
+      "bookingOpensAtUtc": "Da quando i piloti prenotano; ogni slot si chiude al suo orario di off block. Lascialo vuoto per un evento senza slot.",
+      "inPerson": "Si viene all'evento di persona: i membri si iscrivono rispondendo alle sue domande.",
+      "venue": "Dove si svolge l'evento: lo dicono la sua pagina e le email ai membri. Serve per pubblicare un evento in presenza, in ogni lingua della divisione."
     },
     "options": {
       "state": {
@@ -461,7 +467,9 @@
   },
   "erasure": {
     "bookingsToCome": "Prenotazioni di eventi non ancora finiti: cancellate, e i loro slot di nuovo liberi",
-    "bookingsOver": "Prenotazioni di eventi finiti, tenute senza il pilota e senza il volo che aveva scritto"
+    "bookingsOver": "Prenotazioni di eventi finiti, tenute senza il pilota e senza il volo che aveva scritto",
+    "registrationsToCome": "Iscrizioni a eventi non ancora finiti: cancellate",
+    "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -502,13 +510,15 @@
       "kindPresets.inPerson": "In presenza",
       "bookingGapMinutes": "Minuti fra due prenotazioni dello stesso pilota",
       "pilotRetentionMonths": "Mesi per cui si tengono le prenotazioni dei piloti dopo un evento",
-      "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria"
+      "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria",
+      "inPersonRetentionMonths": "Mesi per cui si tengono le iscrizioni a un evento in presenza dopo l'evento"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
       "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
       "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
-      "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block."
+      "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block.",
+      "inPersonRetentionMonths": "Dopo questi mesi dalla fine di un evento in presenza, le sue iscrizioni e i posti delle sue attività si cancellano; le somme restano nelle sue statistiche."
     }
   },
   "notifications": {
@@ -531,6 +541,14 @@
     "bookingReminder": {
       "title": "Promemoria dei tuoi voli",
       "description": "Una mail il giorno prima dei voli che hai prenotato in un evento, con gli stand e le rotte delle flight operations."
+    },
+    "registrationReceived": {
+      "title": "Le tue iscrizioni agli eventi in presenza",
+      "description": "Un'email quando ti iscrivi a un evento in presenza o cambi le risposte, con quello che hai risposto."
+    },
+    "registrationRemoved": {
+      "title": "Iscrizioni tolte",
+      "description": "Un'email quando lo staff degli eventi toglie una tua iscrizione, con il motivo."
     }
   },
   "mail": {
@@ -556,6 +574,14 @@
         "body": "I tuoi voli di {{title}} sono vicini. Gli orari sono in UTC.\n\n{{flights}}\n\nVola con il nominativo del tuo slot; se sulla rete è già occupato, collegati con un altro.\n\nL'evento: {{url}}\nLe tue prenotazioni, che puoi ritirare fino al loro off block: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
         "stand": "stand",
         "route": "Rotta"
+      },
+      "registrationReceived": {
+        "subject": "[Eventi] Sei iscritto: {{title}}",
+        "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo."
+      },
+      "registrationRemoved": {
+        "subject": "[Eventi] Iscrizione tolta: {{title}}",
+        "body": "Lo staff degli eventi ha tolto la tua iscrizione a {{title}}.\n\nPerché: {{reason}}\n\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo."
       }
     }
   },
@@ -633,6 +659,82 @@
     "offBlockPassed": "Questo off block è passato: un volo si prenota prima che parta.",
     "pairedOnlyForArrival": "Solo un arrivo prenota una partenza con sé.",
     "pairedNotADeparture": "La partenza collegata è una partenza privata dallo scalo dove l'arrivo atterra.",
-    "pairedTooSoon": "La partenza parte troppo presto: dopo che l'arrivo atterra, parte almeno i minuti fra due prenotazioni di un pilota più tardi."
+    "pairedTooSoon": "La partenza parte troppo presto: dopo che l'arrivo atterra, parte almeno i minuti fra due prenotazioni di un pilota più tardi.",
+    "answerYesNo": "Rispondi sì o no.",
+    "answerChoice": "Scegli fra le scelte della domanda.",
+    "answerQuantity": "Un numero intero da 0 a 999.",
+    "answerText": "Scrivi la risposta come testo.",
+    "registrationClosed": "Le iscrizioni a questo evento sono chiuse: è cominciato, o è annullato.",
+    "inPersonHasQuestions": "L'evento ha ancora domande o iscrizioni: togli prima le iscrizioni ed elimina le domande.",
+    "eventHasRegistrations": "Qualcuno si è iscritto a questo evento: annullalo invece.",
+    "questionNotInPerson": "L'evento non è in presenza: accendi prima «In presenza» nelle sue impostazioni.",
+    "questionsTooMany": "Un evento fa al più 30 domande.",
+    "questionAnsweredType": "Qualcuno ha già risposto a questa domanda: il tipo di risposta resta.",
+    "questionAnsweredChoices": "Qualcuno ha già risposto a questa domanda: le scelte si riscrivono e si aggiungono, non si tolgono.",
+    "questionChoicesCount": "Da 2 a 20 scelte.",
+    "questionChoicesOnlyForChoice": "Solo una domanda a una scelta o a più scelte ha delle scelte."
+  },
+  "questions": {
+    "title": "Domande",
+    "create": "Nuova domanda",
+    "edit": "Domanda",
+    "fields": {
+      "ordinal": "Ordine",
+      "type": "Tipo di risposta",
+      "label": "Domanda",
+      "choices": "Scelte",
+      "choices.key": "Chiave",
+      "choices.label": "Scelta",
+      "required": "Risposta obbligatoria",
+      "sums": "Che cosa hanno risposto gli iscritti"
+    },
+    "hints": {
+      "ordinal": "Le domande si fanno dalla più bassa.",
+      "type": "Quando qualcuno ha risposto alla domanda, il tipo di risposta resta.",
+      "label": "I membri la leggono nella loro lingua: scrivila in ogni lingua della divisione.",
+      "choices": "Solo per una scelta o più scelte, almeno due. Quando qualcuno ha risposto alla domanda, le scelte si riscrivono, si riordinano e si aggiungono, non si tolgono.",
+      "required": "Senza una risposta l'iscrizione non è accettata. Un sì o no ne ha sempre una."
+    },
+    "options": {
+      "type": {
+        "YesNo": "Sì o no",
+        "Choice": "Una scelta",
+        "MultiChoice": "Più scelte",
+        "Quantity": "Un numero",
+        "Text": "Un testo"
+      }
+    },
+    "delete": {
+      "title": "Eliminare questa domanda?",
+      "description": "La domanda esce dal form. Le risposte già date non si mostrano e non si contano più."
+    }
+  },
+  "registrations": {
+    "fields": {
+      "member": "Membro",
+      "answers": "Risposte",
+      "createdAt": "Iscritto il",
+      "updatedAt": "Risposte cambiate il"
+    },
+    "answers": {
+      "yes": "Sì",
+      "no": "No"
+    },
+    "sums": {
+      "answered": "Hanno risposto",
+      "total": "Totale"
+    },
+    "remove": {
+      "trigger": "Togli",
+      "title": "Togliere questa iscrizione?",
+      "description": "Il membro non è più iscritto, e riceve un'email con il motivo.",
+      "confirm": "Toglila",
+      "fields": {
+        "reason": "Perché"
+      },
+      "hints": {
+        "reason": "Con parole tue: il membro lo legge nell'email, e non è tenuto da nessun'altra parte."
+      }
+    }
   }
 }

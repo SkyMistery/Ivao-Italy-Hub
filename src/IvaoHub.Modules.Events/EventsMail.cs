@@ -126,6 +126,36 @@ public sealed class EventsMail(
     }
 
     /// <summary>
+    /// A registration to an event in person received or changed (§4-bis.2, E16): to its member, with the venue and their answers as
+    /// they are now, one line each, written in their language.
+    /// </summary>
+    public Task RegistrationReceivedAsync(
+        Event row,
+        int vid,
+        Func<string, IReadOnlyList<string>> answers,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(answers);
+
+        return SendAsync(EventsNotifications.RegistrationReceived, row, [vid], (data, locale) =>
+        {
+            data["starts"] = Moment(row.StartsAtUtc);
+            data["venue"] = row.Venue?.Resolve(locale, division.Value.DefaultLocale) ?? string.Empty;
+            data["answers"] = string.Join('\n', answers(locale).Select(line => $"- {line}"));
+            data["mine"] = $"https://{division.Value.Domain}{MinePath}";
+        }, cancellationToken);
+    }
+
+    /// <summary>A registration taken away by the staff (E16): to its member, with the reason, as the staff wrote it.</summary>
+    public Task RegistrationRemovedAsync(Event row, int vid, string reason, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return SendAsync(EventsNotifications.RegistrationRemoved, row, [vid], (data, _) => data["reason"] = reason, cancellationToken);
+    }
+
+    /// <summary>
     /// One intent per language of the people told, each with the event's title in that language and its page: a cancellation of an
     /// event of four hundred slots is one or two intents, not four hundred.
     /// </summary>

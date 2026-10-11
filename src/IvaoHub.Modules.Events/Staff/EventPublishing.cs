@@ -73,6 +73,12 @@ public sealed class EventPublishing(EventsDbContext database, IOptions<DivisionO
             problems.Add(AirportsField, SlotsNeedAirportsKey);
         }
 
+        // An event in person says where it takes place, to everybody it is for (§4-bis, E16).
+        if (row.InPerson && (row.Venue is null || !row.Venue.HasAll(locales)))
+        {
+            problems.Missing("venue", row.Venue?.MissingLocales(locales) ?? locales);
+        }
+
         // An event of the network or of another division sends to their page.
         if (row.Organizer != EventOrganizer.Division && string.IsNullOrWhiteSpace(row.ExternalUrl))
         {

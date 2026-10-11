@@ -162,8 +162,8 @@ public static class EventEndpoints
     /// <summary>
     /// Cancels an event (§2.3): when, who, and why in every language of the division — the page says it until the end. An event
     /// cancelled stays cancelled, and one that is over is not cancelled any more: it happened. Whoever booked one of its slots is
-    /// told, with the note, once the cancellation is saved (<see cref="EventsNotifications.EventCancelled"/>, E6a); whoever has a
-    /// shift or registered with their rows (E12, E16). The bookings stay, and say who had booked.
+    /// told, with the note, once the cancellation is saved (<see cref="EventsNotifications.EventCancelled"/>, E6a); whoever registered
+    /// to it too (E16), and whoever has a shift with their rows (E12). The bookings stay, and say who had booked.
     /// </summary>
     private static async Task<IResult> CancelAsync(
         long id,
@@ -224,7 +224,7 @@ public static class EventEndpoints
         row.CancellationNote = request.Note;
         await database.SaveChangesAsync(http.RequestAborted);
 
-        await mail.EventCancelledAsync(row, await saving.BookersAsync(row.Id, http.RequestAborted), http.RequestAborted);
+        await mail.EventCancelledAsync(row, await saving.PeopleToTellAsync(row.Id, http.RequestAborted), http.RequestAborted);
 
         return Results.Ok(EventMapper.ToDetail(row, now));
     }

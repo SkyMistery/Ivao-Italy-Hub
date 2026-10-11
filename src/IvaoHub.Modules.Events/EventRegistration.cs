@@ -20,9 +20,6 @@ namespace IvaoHub.Modules.Events;
 [WithdrawnByStakeholder]
 public sealed class EventRegistration : IEventChild, IVisible, ISubmittedByMembers, IHasStakeholder, IHasResourceScope
 {
-    /// <summary>The longest reason a registration is taken away with.</summary>
-    public const int MaxReasonLength = 1000;
-
     public long Id { get; set; }
 
     public long EventId { get; set; }

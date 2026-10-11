@@ -48,6 +48,9 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
     /// </summary>
     public const string SearchKind = EventsModule.ModuleKey;
 
+    /// <summary>The longest venue of an event in person, in each language: an address with the name of the place.</summary>
+    public const int MaxVenueLength = 300;
+
     /// <summary>The body an event starts with: no sections.</summary>
     public const string EmptyBody = """{"schemaVersion":1,"sections":[]}""";
 
