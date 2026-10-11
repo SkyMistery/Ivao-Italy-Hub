@@ -2151,10 +2151,50 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
   tempo): nel pannello del browser, come il coordinatore degli eventi e in italiano, un RFO del mese scorso con il suo scalo; «Duplica»
   nella barra, la pagina con la frase sugli slot privati, l'inizio proposto (con l'ora della divisione sotto), l'indirizzo e «Anche gli
   slot pubblici» acceso; «Duplica» apre la bozza nuova, con la barra di una bozza. I due eventi tolti dopo, il banco spento.
-- **Non verificato**: la CI della testa (la dice la PR); le risposte di Carmine alle due domande dell'issue #248; una cancellazione vera,
-  di una persona con prenotazioni vere, sull'installazione di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test
-  scrive un file con `DeletedAt`, senza file sul disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la
-  pagina di «Duplica» letta da un lettore di schermo vero.
+- **Dopo l'apertura della PR, chiesto da dalberone** (11 ottobre 2026, guardando il banco di E7; arrivato attraverso la sessione che
+  coordina):
+  1. **`/events/mine` vuota dice «Nessuna prenotazione»** («No booking»), non più «Ancora nessuna prenotazione» («No booking yet»): a un
+     pilota che ha appena ritirato la sua sola prenotazione, quell'«ancora» parlava di una prenotazione che aveva appena avuto. Le frasi di
+     una lista vuota descrivono.
+  2. **La testa della pagina di un evento**, con il disegno di dalberone (nota nuova `decisions/2026-10-11-la-testa-della-pagina-di-un-evento.md`,
+     **«Proposta»**, con **una domanda** a Carmine in [un commento sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6108168944): cambia
+     l'ordine del design §7.1 e la riga «Prenotazioni» decisa con E6b). Sotto titolo e riassunto **due righe corte** al posto dei fatti in
+     righe con l'etichetta — quando, in UTC e nell'ora della divisione («21 nov 2099 · 17:00–21:00Z (18:00–22:00 LT)»); le prenotazioni
+     come **badge** (aperte; «Prenotazioni dal …» con accanto il conto alla rovescia di E6b; chiuse), gli scali come codici con il nome al
+     passaggio del mouse, chi organizza solo quando non è la divisione, con la sua pagina —; il badge dello stato sopra il titolo tolto,
+     quello del tipo tenuto; «Ogni slot si prenota fino al suo off block» sotto il titolo «Slot»; **gli slot subito dopo la testa**, poi
+     gli slot privati, in fondo la descrizione e le rotte. In `screens/EventHead.tsx` (nuovo), `BookingOpening.tsx` (il badge; il conto
+     com'era), `public.tsx`, `EventSlots.tsx`; gli orari della testa e lo stato delle prenotazioni come dati, in `cards.ts` (`headSpan`,
+     `headMoment`) e `bookingTimes.ts` (`bookingStage`). Le parole: nuove `public.organizedBy.*`, `public.booking.opensOn`, `open`,
+     `closed`; tolte `public.when`, `public.booking.title`, `opensAt`, `openSince`, `closedCancelled`, che nessuno legge più. **I test**:
+     Vitest della riga (`EventHead.test.tsx`, 6: l'organizzatore taciuto per la divisione e detto per un'altra divisione e per la rete, il
+     momento e il conto, chiuse, un online day senza badge e senza puntino), dell'ordine della pagina (`public.test.tsx`), degli orari e
+     dello stato (`cards.test.ts` 4 in più, `bookingTimes.test.ts` 2 in più).
+     **Le spec di altre fasi che leggevano le righe vecchie**, cambiate in dove leggono e non in che cosa controllano: la smoke
+     `events-public.spec.ts` — di E4, quando, gli scali e chi organizza ora nella testa, e la descrizione sopra le rotte; di E6b, il momento,
+     il conto e «aperte» nella testa, «fino al suo off block» negli slot — e il giro `full/events-bookings.spec.ts` di E6b («aperte» nella
+     testa). ⚠️ **Due righe di E4 leggevano il badge dello stato sulla pagina**, che non c'è più: su un evento annullato «Cancelled» diventa
+     «Prenotazioni chiuse» nella testa (la fixture di quel test prende un'apertura delle prenotazioni, perché la testa abbia che cosa
+     dire), e «Ended» sulla pagina che vede solo lo staff è tolta — lo dice l'avviso dello staff, che il test legge già nella riga prima.
+  3. **Misurata a 375 px** con uno spec usa e getta su una porta sua (4189), in italiano e in inglese, con le prenotazioni da aprire (il
+     badge più lungo, il conto e chi organizza, con la sua pagina) e aperte: niente dell'articolo esce dai 343 px utili; le due righe vanno
+     a capo fra un fatto e l'altro, mai dentro l'ora locale né dentro il conto, e il puntino resta con il fatto che lo segue; con le
+     prenotazioni aperte la seconda riga sta in una, «[Prenotazioni aperte] · XXAA · XXBB», e il titolo «Slot» comincia a 465 px
+     dall'alto. Guardata anche a 1280 px. Lo spec e la sua configurazione tolti prima del commit.
+  4. **Trovato**: ⚠️ a 375 px **la pagina scorre di lato per il menu del sito** (781 px: il `NAV` della testata del nucleo, nella fixture
+     della smoke) — fuori dall'articolo, già così prima, e non di questa fase.
+  5. **Al contrario** (rimesso poi com'era): con le rotte di nuovo sopra gli slot, il test dell'ordine cade (`expected false to be true`);
+     con chi organizza detto anche per la divisione, due test della riga cadono.
+  6. **Verificato, in locale, sulla testa nuova** (nessun file C#): `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (824 chiavi)
+     verdi; `pnpm i18n:sync` senza differenze; `pnpm test` **705 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock **180/180**
+     al primo giro (59 secondi); **`pnpm e2e:full` 61/61 al primo giro** (12,6 minuti, il suo worker solo) sul banco
+     `http://127.0.0.1:5136`, `ivaohub_e2e_e8b` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge
+     `0c2f85a`: **PASS**, con quattro note nuove (due di E7, due di E8b).
+- **Non verificato**: la CI della testa (la dice la PR); le risposte di Carmine alle due domande dell'issue #248 e a quella sulla testa
+  della pagina (#249); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione di prova; il banner di un evento
+  eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul disco); la copia di una descrizione con
+  immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina di un evento lette da un lettore di schermo
+  vero (gli scali sono `abbr`, i puntini nascosti); la testa su un telefono vero (misurata nel Chromium di Playwright a 375 px).
 
 ### E9 — Fuori dal repository: il Gate Manager, il primo evento, `ivao-booking` spento
 

@@ -26,7 +26,9 @@ parole delle liste e i titoli delle schede), con **E4c** (gli usi degli eventi) 
 strada A, il legame si scioglie e l'altra prenotazione resta —; **le due domande** della nota `2026-10-11-gli-slot-privati` sono a Carmine
 sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246: **le due domande** della nota
 `2026-10-11-duplica-e-la-cancellazione-negli-eventi` sono a Carmine con l'**issue #248** — gli slot privati di «Duplica» e quando è
-concluso un evento annullato —, e la fase le scrive come raccomandato; «Che cosa ha lasciato E8b», sotto). ⚠️ **Con l'unione della #249
+concluso un evento annullato —, e la fase le scrive come raccomandato; dopo l'apertura, **la testa della pagina di un evento** disegnata
+da dalberone, con **una domanda** della nota `2026-10-11-la-testa-della-pagina-di-un-evento` a Carmine in un commento sulla #249; «Che
+cosa ha lasciato E8b», sotto). ⚠️ **Con l'unione della #249
 cade la regola di Carmine sulla #233** («nessuna prenotazione su un'installazione vera finché E8b non è unita»: l'eraser degli eventi
 c'è); **resta il log binario**, da provare con la prima prenotazione sull'installazione di prova alla consegna. Da E8b un evento si
 **duplica** su una nuova data, come bozza, e la cancellazione dei dati di una persona tocca anche le sue prenotazioni. **E10i è unita**: un
@@ -193,8 +195,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
-  una nota nuova, `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, **«Proposta»**, con due domande a Carmine sull'**issue #248**,
-  aperta all'inizio della fase):
+  due note nuove, **«Proposta»**: `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, con due domande a Carmine sull'**issue #248**,
+  aperta all'inizio della fase, e `2026-10-11-la-testa-della-pagina-di-un-evento`, con una domanda in un commento sulla **#249**):
   - **«Duplica»**: `POST /api/events/events/{id}/duplicate` (`Staff/EventDuplication.cs`). La copia pura in `EventCopy` — l'evento con
     ogni sua impostazione, nella stessa cura, gli orari spostati della stessa differenza, una bozza; uno scalo, una rotta e uno slot
     pubblico com'erano, ai nuovi orari —, il piano letto prima di scrivere (`EventDuplicatePlan`: il banner solo se la libreria ha ancora il
@@ -214,14 +216,25 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **`docs/FORKING.md`**: la sezione «The events module» — il dipartimento di base, i `positionGrants` dell'ED e di chi collabora, le
     impostazioni con `kindPresets` per prima, pagine, blocchi, mail e job, il Gate Manager, che cosa tiene e che cosa cancella, che cosa
     non fa ancora —, e lo stato in testa.
+  - **La testa della pagina di un evento** (chiesta da dalberone dopo l'apertura della PR): sotto titolo e riassunto due righe corte —
+    quando, in UTC e nell'ora della divisione; le prenotazioni come badge (aperte; dal momento, con il conto di E6b; chiuse), gli scali come
+    codici, chi organizza solo quando non è la divisione —, senza il badge dello stato (il tipo resta); poi gli slot, i privati, in fondo la
+    descrizione e le rotte. `screens/EventHead.tsx`, il badge in `BookingOpening.tsx`, i dati in `cards.ts` (`headSpan`, `headMoment`) e
+    `bookingTimes.ts` (`bookingStage`). E `/events/mine` vuota dice «Nessuna prenotazione».
   - **I test**: unità `EventsDuplicationTests` (6); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
     **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`) ed
     `EventsErasureTests` (1; VID **761098**, la persona cancellata, e **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
-    `schemas.test.ts`.
+    `schemas.test.ts`; per la testa `EventHead.test.tsx` (6), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
+    `bookingTimes.test.ts`.
 - **Che cosa deve sapere la fase dopo**:
   - **Le due domande dell'issue #248**: una risposta diversa da quella raccomandata è una correzione sul branch di E8b prima dell'unione —
     la (B) della domanda 1 toglie la generazione da `EventDuplication.SaveAsync`, la (A) la fa sempre; la (ii) o la (iii) della domanda 2
-    cambiano `EventsPersonalData`, non `EventState.IsOver`.
+    cambiano `EventsPersonalData`, non `EventState.IsOver`. **La domanda sulla testa** (#249): la (B) rimette rotte e descrizione sopra gli
+    slot in `public.tsx`; la (C) torna alle righe di prima.
+  - ⚠️ **La #242 di E4c tocca anche `public.tsx`** (i metadati della pagina): unita prima della #249, `main` si unisce nel branch di E8b e il
+    file si risolve tenendo le due cose.
+  - **Un fatto nuovo nella testa** di un evento (per esempio il luogo di un evento in presenza, M4c) si aggiunge come una voce in più di
+    `facts` in `EventHead`, che gli mette davanti il suo puntino.
   - **E9** (fuori dal repository): M4a è nel codice; ⚠️ **la regola di Carmine sulla #233 cade con l'unione della #249** (l'eraser c'è), e
     **il log binario** resta da provare alla prima prenotazione sull'installazione di prova, alla consegna (risposta 2 sulla #233).
   - **E11a, E14b, E15b** (M4b) ed **E16, E17** (M4c): **«Duplica» si allarga** con le righe della loro fase — le postazioni ATC con le
