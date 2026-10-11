@@ -1,3 +1,4 @@
+using System.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
@@ -8,6 +9,14 @@ namespace IvaoHub.Modules.Events.Staff;
 /// <summary>How many private slots a generation wrote, how many free ones it took away first, and how many booked ones it kept.</summary>
 public sealed record PrivateSlotsGeneratedDto(int Generated, int Removed, int Kept);
 
+/// <summary>What «generate» came to: done, refused on the event's private slots, or about an event that is not there any more.</summary>
+public enum GenerationResult
+{
+    Done,
+    Refused,
+    NotFound,
+}
+
 /// <summary>
 /// «Generate the private slots» (design M4 §3.2, §7.2, E7): for an event with private slots, every airport of it with a capacity gets
 /// its private slots for the event's hours (<see cref="PrivateSlotGenerator"/>), at regular intervals and away from the times already
@@ -17,9 +26,16 @@ public sealed record PrivateSlotsGeneratedDto(int Generated, int Removed, int Ke
 /// <para><b>What counts in an hour</b>: every flight already there, at every airport of the event it touches — a public slot as the
 /// staff wrote it, a private one as its pilot wrote it (<see cref="BookedFlight"/>) —, in its direction: a flight between two airports
 /// of the event is a departure from one and an arrival at the other.</para>
+/// <para><b>One generation of an event at a time</b> (the review of #246, point 1): the generation takes the row of the event
+/// <c>FOR UPDATE</c>, in a transaction that reads what is committed, around everything it reads and writes — as the lock of a pilot's
+/// first booking does (<see cref="PilotBookings"/>). A second generation of the same event waits, then reads the slots the first
+/// wrote and replaces them: nothing unique stops two writes of a whole set of slots without a callsign, so without the lock the
+/// capacity would be doubled. The event itself is read again under the lock, as it is then: its switch, its hours, its care.</para>
 /// <para>All of it in one save — the free private slots that go, the new ones in the event's care —, each with its row in the audit.
-/// A pilot booking a free private slot in the same moment stops its delete (the key of the booking), and the staff are told to look
-/// again; the same when another generation, or «delete the free ones», took some of them first.</para>
+/// A pilot booking a free private slot in the same moment either took the event's row first, and the generation reads the booking
+/// and keeps the slot; or meets the generation on the slot itself: the key of the booking stops the delete, the staff are told to
+/// read again, and a deadlock between the two is answered the same way; or finds the slot gone. The same when another write took
+/// the free slots first.</para>
 /// </summary>
 public sealed class PrivateSlotGeneration(EventsDbContext database)
 {
@@ -28,75 +44,104 @@ public sealed class PrivateSlotGeneration(EventsDbContext database)
 
     /// <summary>
     /// The most private slots one generation makes: the busiest event with a few airports and a few hours takes a few thousand; more is
-    /// a capacity or a window typed wrong — 999 an hour for days —, refused before a page of tens of thousands of slots is written.
+    /// a capacity or a window typed wrong — 999 an hour for days —, refused before a page of tens of thousands of slots is written,
+    /// and counted before one is built (<see cref="PrivateSlotGenerator.Count"/>).
     /// </summary>
     public const int MaxSlots = 5000;
 
-    public async Task<(PrivateSlotsGeneratedDto? Result, Refusals Problems)> GenerateAsync(Event row, CancellationToken cancellationToken)
+    public async Task<(GenerationResult Result, PrivateSlotsGeneratedDto? Generated, Refusals Problems)> GenerateAsync(
+        Event row,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
 
         var problems = new Refusals();
 
-        // The switch says what the event has (§1.2): no private slots, nothing to generate.
-        if (!row.PrivateSlots)
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        var locked = await database.Database
+            .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {row.Id} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
+        var current = locked.Count == 0
+            ? null
+            : await CrudSource.BackOffice<Event>(database).AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == row.Id, cancellationToken);
+        if (current is null)
         {
-            return (null, problems.Add(Field, "events:errors.noPrivateSlots"));
+            return (GenerationResult.NotFound, null, problems);
+        }
+
+        // The switch says what the event has (§1.2): no private slots, nothing to generate.
+        if (!current.PrivateSlots)
+        {
+            return Refused(problems.Add(Field, "events:errors.noPrivateSlots"));
         }
 
         var airports = await database.Airports.AsNoTracking()
-            .Where(airport => airport.EventId == row.Id)
+            .Where(airport => airport.EventId == current.Id)
             .OrderBy(airport => airport.Ordinal)
             .ThenBy(airport => airport.Id)
             .ToListAsync(cancellationToken);
 
         if (airports.Count == 0)
         {
-            return (null, problems.Add(Field, EventPublishing.SlotsNeedAirportsKey));
+            return Refused(problems.Add(Field, EventPublishing.SlotsNeedAirportsKey));
         }
 
         if (airports.All(airport => SlotCapacity.Of(airport).IsEmpty))
         {
-            return (null, problems.Add(Field, "events:errors.noCapacity"));
+            return Refused(problems.Add(Field, "events:errors.noCapacity"));
         }
 
-        var slots = await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken);
+        var slots = await database.Slots.Where(slot => slot.EventId == current.Id).ToListAsync(cancellationToken);
         var bookings = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
-            .Where(booking => booking.EventId == row.Id)
+            .Where(booking => booking.EventId == current.Id)
             .ToDictionaryAsync(booking => booking.SlotId, cancellationToken);
 
         // The free private slots the generator made go; the booked ones, and every public one, stay and count.
         var leaving = slots.Where(slot => slot is { Kind: SlotKind.Private, Generated: true } && !bookings.ContainsKey(slot.Id)).ToList();
         var staying = slots.Except(leaving).ToList();
         var held = Held(staying, bookings, airports.Select(airport => airport.Icao).ToHashSet(StringComparer.Ordinal));
+        IReadOnlyCollection<HeldSlot> HeldAt(EventAirport airport) => held.GetValueOrDefault(airport.Icao) ?? [];
+
+        // Counted first, built only when it is not too many.
+        var count = 0;
+        foreach (var airport in airports)
+        {
+            count += PrivateSlotGenerator.Count(SlotCapacity.Of(airport), current.StartsAtUtc, current.EndsAtUtc, HeldAt(airport), MaxSlots - count);
+            if (count > MaxSlots)
+            {
+                return Refused(problems.Add(Field, "events:errors.privateSlotsTooMany"));
+            }
+        }
 
         var generated = airports
             .SelectMany(airport => PrivateSlotGenerator
-                .Generate(SlotCapacity.Of(airport), row.StartsAtUtc, row.EndsAtUtc, held.GetValueOrDefault(airport.Icao) ?? [])
+                .Generate(SlotCapacity.Of(airport), current.StartsAtUtc, current.EndsAtUtc, HeldAt(airport))
                 .Select(slot => new EventSlot
                 {
-                    EventId = row.Id,
+                    EventId = current.Id,
                     Kind = SlotKind.Private,
                     EventAirportIcao = airport.Icao,
                     IsArrival = slot.IsArrival,
                     OffBlockUtc = slot.IsArrival ? null : slot.AtUtc,
                     OnBlockUtc = slot.IsArrival ? slot.AtUtc : null,
                     Generated = true,
-                    OwnerDepartment = row.OwnerDepartment,
-                    OwnerDepartmentMask = row.OwnerDepartmentMask,
+                    OwnerDepartment = current.OwnerDepartment,
+                    OwnerDepartmentMask = current.OwnerDepartmentMask,
                 }))
             .ToList();
-
-        if (generated.Count > MaxSlots)
-        {
-            return (null, problems.Add(Field, "events:errors.privateSlotsTooMany"));
-        }
 
         database.Slots.RemoveRange(leaving);
         database.Slots.AddRange(generated);
         await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
-        return (new PrivateSlotsGeneratedDto(generated.Count, leaving.Count, staying.Count(slot => slot.Kind == SlotKind.Private)), problems);
+        return (
+            GenerationResult.Done,
+            new PrivateSlotsGeneratedDto(generated.Count, leaving.Count, staying.Count(slot => slot.Kind == SlotKind.Private)),
+            problems);
+
+        static (GenerationResult, PrivateSlotsGeneratedDto?, Refusals) Refused(Refusals refusals) => (GenerationResult.Refused, null, refusals);
     }
 
     /// <summary>

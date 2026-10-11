@@ -169,6 +169,38 @@ public sealed class EventsPrivateSlotsTests
         Assert.Empty(Generate(none, At(17), At(22)));
     }
 
+    // ---- the count before the slots (the review of #246, point 4) ----------------------------------------------------------------
+
+    [Fact]
+    public void TheCountIsWhatTheGeneratorMakes()
+    {
+        (string Reason, SlotCapacity Capacity, DateTime Starts, DateTime Ends, HeldSlot[] Held)[] generations =
+        [
+            ("each direction, a public arrival and departure", new SlotCapacity(null, 4, 2), At(17), At(19), [new HeldSlot(At(17, 7), true), new HeldSlot(At(17, 20), false)]),
+            ("an hour fuller than its capacity", new SlotCapacity(null, 2, null), At(17), At(18), [new HeldSlot(At(17, 5), true), new HeldSlot(At(17, 25), true), new HeldSlot(At(17, 40), true)]),
+            ("movements, three departures held", new SlotCapacity(6, null, null), At(17), At(19), [new HeldSlot(At(17), false), new HeldSlot(At(17, 10), false), new HeldSlot(At(18, 20), false)]),
+            ("a part of an hour at the end", new SlotCapacity(null, 30, 7), At(18), At(19, 45), [new HeldSlot(At(19, 30), true)]),
+            ("times outside the event", new SlotCapacity(null, 2, null), At(17), At(19), [new HeldSlot(At(23, 59), true), new HeldSlot(At(16, 59), true)]),
+            ("no capacity", new SlotCapacity(null, null, null), At(17), At(22), []),
+        ];
+
+        foreach (var (reason, capacity, starts, ends, held) in generations)
+        {
+            Assert.True(
+                PrivateSlotGenerator.Count(capacity, starts, ends, held, limit: int.MaxValue) == Generate(capacity, starts, ends, held).Count,
+                reason);
+        }
+    }
+
+    [Fact]
+    public void TheCountStopsPastItsLimitHoweverLongTheEvent()
+    {
+        // 999 arrivals an hour for twenty years: the count stops in its sixth hour, past five thousand, and builds no slot.
+        var count = PrivateSlotGenerator.Count(new SlotCapacity(null, 999, null), At(0), At(0).AddYears(20), [], limit: 5000);
+
+        Assert.Equal(999 * 6, count);
+    }
+
     // ---- the flight of a private booking (§3.4, §3.5) ----------------------------------------------------------------------------
 
     [Fact]
