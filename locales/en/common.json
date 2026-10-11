@@ -117,6 +117,7 @@
     "addEntry": "Add",
     "removeEntry": "Remove",
     "submitHint": "Press Enter to save.",
+    "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "suggest": {
@@ -133,6 +134,13 @@
       "title": "Nothing here yet",
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
+    },
+    "pages": {
+      "label": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "first": "First page",
+      "last": "Last page"
     },
     "file": "Open the file",
     "edit": {
