@@ -24,11 +24,12 @@ pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10j**
 parole delle liste e i titoli delle schede), con **E4c** (gli usi degli eventi) in coda dopo la #238.
 **Il prossimo passo**: **E7** (la #246: **il ritiro di uno dei due voli collegati è deciso** da Carmine sull'issue #245 — la
 strada A, il legame si scioglie e l'altra prenotazione resta —; **le due domande** della nota `2026-10-11-gli-slot-privati` sono a Carmine
-sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246: **le due domande** della nota
-`2026-10-11-duplica-e-la-cancellazione-negli-eventi` sono a Carmine con l'**issue #248** — gli slot privati di «Duplica» e quando è
-concluso un evento annullato —, e la fase le scrive come raccomandato; dopo l'apertura, **la testa della pagina di un evento** disegnata
-da dalberone, con **una domanda** della nota `2026-10-11-la-testa-della-pagina-di-un-evento` a Carmine in un commento sulla #249; «Che
-cosa ha lasciato E8b», sotto). ⚠️ **Con l'unione della #249
+sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246, **rivista: approvabile**; le due
+note sono **decise** — le due domande dell'issue #248 come raccomandate, e la testa della pagina di un evento disegnata da dalberone,
+con i nomi degli scali leggibili senza mouse —, e i cinque punti bassi della revisione sono fatti; «Che cosa ha lasciato E8b», sotto).
+⚠️ **Il buco dell'audit** che la revisione ha trovato — le righe dell'audit di una prenotazione ritirata o tolta prima di una
+cancellazione tengono il volo privato — è, per la risposta 2 di Carmine sulla #249, **una fase del nucleo di M4** a parte, da unire
+**prima che le prenotazioni si aprano su un'installazione vera**. ⚠️ **Con l'unione della #249
 cade la regola di Carmine sulla #233** («nessuna prenotazione su un'installazione vera finché E8b non è unita»: l'eraser degli eventi
 c'è); **resta il log binario**, da provare con la prima prenotazione sull'installazione di prova alla consegna. Da E8b un evento si
 **duplica** su una nuova data, come bozza, e la cancellazione dei dati di una persona tocca anche le sue prenotazioni. **E10i è unita**: un
@@ -195,14 +196,18 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
-  due note nuove, **«Proposta»**: `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, con due domande a Carmine sull'**issue #248**,
-  aperta all'inizio della fase, e `2026-10-11-la-testa-della-pagina-di-un-evento`, con una domanda in un commento sulla **#249**):
+  due note nuove, **decise** da Carmine: `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, con le sue risposte sull'**issue #248**
+  (la (A′) e la (i)), e `2026-10-11-la-testa-della-pagina-di-un-evento`, con la sua risposta 1 sulla **#249** (la (A), con i nomi degli
+  scali leggibili senza mouse)):
   - **«Duplica»**: `POST /api/events/events/{id}/duplicate` (`Staff/EventDuplication.cs`). La copia pura in `EventCopy` — l'evento con
     ogni sua impostazione, nella stessa cura, gli orari spostati della stessa differenza, una bozza; uno scalo, una rotta e uno slot
     pubblico com'erano, ai nuovi orari —, il piano letto prima di scrivere (`EventDuplicatePlan`: il banner solo se la libreria ha ancora il
     file, gli slot pubblici se chiesti, se generare i privati) e il salvataggio in una transazione (`SaveAsync`). **I privati si generano
     con la copia** (con `PrivateSlotGeneration` di E7) quando i suoi slot pubblici ci sono già — copiati, o l'evento non ne prende —, e
-    altrimenti li fa «Genera» dopo la tabella nuova: la domanda 1. **Chi duplica**: `Events.Edit` sull'evento nuovo com'è prima di essere
+    altrimenti li fa «Genera» dopo la tabella nuova (la (A′)); quando il generatore li rifiuta la risposta lo dice
+    (`EventDuplicatedDto.PrivateSlotsNotGenerated`, la chiave del rifiuto), e la pagina invece di aprire la copia dice perché, con
+    «Apri la copia». Un nuovo inizio che sposterebbe un orario fuori dal calendario è rifiutato (`EventCopy.MovesWithinTheCalendar`).
+    **Chi duplica**: `Events.Edit` sull'evento nuovo com'è prima di essere
     scritto (scope `events:event:0`: un grant su un evento solo non duplica), e il permesso dell'area di ogni riga che la copia scrive
     (`EventDuplicatePlan.AreasWritten`), chiesti all'unico handler prima di scrivere. Le regole dell'indirizzo sono scritte una volta,
     `EventAddressRules.EventAddress`, per il form e per «Duplica». La pagina: «Duplica» nella barra di un evento, in ogni stato
@@ -210,7 +215,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **`EventsPersonalData`** (`src/IvaoHub.Modules.Events/EventsPersonalData.cs`): le prenotazioni della persona di un evento non ancora
     finito si cancellano, e lo slot torna libero; quelle di un evento finito restano con lo pseudonimo, senza `callsign`, `other_icao`,
     `other_time_utc`, `unflown_excused_note` e `flown_session_id`. **«Finito»** si legge in un posto solo, **`EventState.IsOver`** (la fine
-    passata, annullato o no: la domanda 2), che ora usano anche `Of`, `IsSeen` e `Unseen`.
+    passata, annullato o no: la (i)), che ora usano anche `Of`, `IsSeen` e `Unseen`. Una prenotazione il cui evento non c'è più è lasciata
+    fuori, come dall'anteprima. Che cosa dà l'esportazione dopo una cancellazione lo dice `docs/events-bookings-export.md`.
   - **Il giro completo di M4a**: `web/e2e/full/events-round.spec.ts` (slug `evt-test-e2e-e8b-…`, voli `XEE811`–`XEE813`, `XEE821`–`XEE822`,
     `XEP901`), due test — il giro dell'RFO, dall'incolla a «Duplica», e l'RFE del mese scorso, finito, duplicato su una nuova data.
   - **`docs/FORKING.md`**: la sezione «The events module» — il dipartimento di base, i `positionGrants` dell'ED e di chi collabora, le
@@ -218,21 +224,27 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     non fa ancora —, e lo stato in testa.
   - **La testa della pagina di un evento** (chiesta da dalberone dopo l'apertura della PR): sotto titolo e riassunto due righe corte —
     quando, in UTC e nell'ora della divisione; le prenotazioni come badge (aperte; dal momento, con il conto di E6b; chiuse), gli scali come
-    codici, chi organizza solo quando non è la divisione —, senza il badge dello stato (il tipo resta); poi gli slot, i privati, in fondo la
+    codici, ognuno con il suo nome al passaggio del mouse, al focus e al tocco (**`Hint`**, esportato da `EventSlots.tsx` e non copiato),
+    chi organizza solo quando non è la divisione —, senza il badge dello stato (il tipo resta); poi gli slot, i privati, in fondo la
     descrizione e le rotte. `screens/EventHead.tsx`, il badge in `BookingOpening.tsx`, i dati in `cards.ts` (`headSpan`, `headMoment`) e
     `bookingTimes.ts` (`bookingStage`). E `/events/mine` vuota dice «Nessuna prenotazione».
-  - **I test**: unità `EventsDuplicationTests` (6); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
+  - **I test**: unità `EventsDuplicationTests` (7); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
     **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`) ed
     `EventsErasureTests` (1; VID **761098**, la persona cancellata, e **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
-    `schemas.test.ts`; per la testa `EventHead.test.tsx` (6), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
+    `schemas.test.ts`; per la testa `EventHead.test.tsx` (7), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
     `bookingTimes.test.ts`.
 - **Che cosa deve sapere la fase dopo**:
-  - **Le due domande dell'issue #248**: una risposta diversa da quella raccomandata è una correzione sul branch di E8b prima dell'unione —
-    la (B) della domanda 1 toglie la generazione da `EventDuplication.SaveAsync`, la (A) la fa sempre; la (ii) o la (iii) della domanda 2
-    cambiano `EventsPersonalData`, non `EventState.IsOver`. **La domanda sulla testa** (#249): la (B) rimette rotte e descrizione sopra gli
-    slot in `public.tsx`; la (C) torna alle righe di prima.
+  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine): una fase **del nucleo** di M4, con la sua
+    PR e una nota — le righe dell'audit di una prenotazione ritirata o tolta prima di una cancellazione perdono il volo privato e le note,
+    come le righe che restano —, **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b. Non è di E8b: la
+    prepara la sessione che coordina.
+  - **La risposta di «Duplica»** è `EventDuplicatedDto` (l'evento e `privateSlotsNotGenerated`), non più `EventDetailDto`: un client del
+    verbo legge `event`.
   - ⚠️ **La #242 di E4c tocca anche `public.tsx`** (i metadati della pagina): unita prima della #249, `main` si unisce nel branch di E8b e il
     file si risolve tenendo le due cose.
+  - **`Hint`** resta un pezzo della pagina di un evento (`EventSlots.tsx`), usato dalla lista degli slot e dalla testa: una **seconda
+    schermata** che volesse un tooltip che si apre al tocco porta una decisione a Carmine, mai una copia (la risposta sulla #228, ripetuta
+    sulla #249).
   - **Un fatto nuovo nella testa** di un evento (per esempio il luogo di un evento in presenza, M4c) si aggiunge come una voce in più di
     `facts` in `EventHead`, che gli mette davanti il suo puntino.
   - **E9** (fuori dal repository): M4a è nel codice; ⚠️ **la regola di Carmine sulla #233 cade con l'unione della #249** (l'eraser c'è), e

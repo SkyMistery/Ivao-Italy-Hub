@@ -2190,11 +2190,50 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
      al primo giro (59 secondi); **`pnpm e2e:full` 61/61 al primo giro** (12,6 minuti, il suo worker solo) sul banco
      `http://127.0.0.1:5136`, `ivaohub_e2e_e8b` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge
      `0c2f85a`: **PASS**, con quattro note nuove (due di E7, due di E8b).
-- **Non verificato**: la CI della testa (la dice la PR); le risposte di Carmine alle due domande dell'issue #248 e a quella sulla testa
-  della pagina (#249); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione di prova; il banner di un evento
-  eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul disco); la copia di una descrizione con
-  immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina di un evento lette da un lettore di schermo
-  vero (gli scali sono `abbr`, i puntini nascosti); la testa su un telefono vero (misurata nel Chromium di Playwright a 375 px).
+- **La revisione e le risposte di Carmine** (11 ottobre 2026, sera):
+  - **[I rilievi del revisore sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816)**: approvabile,
+    niente da correggere; cinque punti bassi, presi tutti perché costano poco (sotto).
+  - **[Le risposte sull'issue #248](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248#issuecomment-6113460643)**: la (A′) e la (i),
+    come scritte; la nota `2026-10-11-duplica-e-la-cancellazione-negli-eventi` è **decisa**, con le risposte e i punti della revisione
+    nel suo §6.
+  - **[Le risposte sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471)**: 1. la testa è la (A),
+    sapendolo — l'ordine del design §7.1 e la riga «Prenotazioni» di E6b cambiano, e che la pagina non dica più «in corso» né da quando
+    le prenotazioni sono aperte è accettato —, **con un cambio: i nomi degli scali leggibili senza mouse**, come sceglie chi
+    contribuisce, mai una seconda copia di `Hint`. 2. **Il buco dell'audit** (il punto 7 del revisore: le righe dell'audit di una
+    prenotazione ritirata o tolta prima della cancellazione tengono il volo privato) è **una fase del nucleo di M4**, con la sua PR e
+    una nota, unita prima che le prenotazioni si aprano su un'installazione vera: **non di E8b**, la prepara la sessione che coordina.
+    La nota `2026-10-11-la-testa-della-pagina-di-un-evento` è **decisa**, con la risposta e la scelta nel suo §6.
+  - **Fatto**: 1. **i nomi degli scali nella testa** con `Hint`, il pezzo della pagina degli slot — esportato da `EventSlots.tsx`,
+    dove resta, non copiato —: il codice di uno scalo che l'hub conosce è un bottone, con il nome al passaggio del mouse, al focus della
+    tastiera e al tocco di un telefono, che si chiama per chi legge lo schermo con il codice e il nome («XXAA · Smoke Airport A»); il
+    codice di uno che l'hub non conosce più resta da solo. Scelto invece del nome accanto al codice perché la riga resta quella del
+    disegno (« · LIRF») e quel pezzo apre già al tocco. 2. **L'eraser** lascia fuori una prenotazione il cui evento non c'è più, come il
+    join dell'anteprima (`TryGetValue`): le due dicono le stesse righe (punto 1). 3. **`docs/events-bookings-export.md`** dice che cosa dà
+    l'esportazione dopo una cancellazione: le prenotazioni di un evento finito con `booked_by` negativo e, su uno slot privato, senza
+    callsign, altro aeroporto e orario lì (punto 2). 4. **«Duplica» dice perché la copia non ha i suoi slot privati**: la risposta 201 è
+    ora `EventDuplicatedDto` — l'evento nuovo e, quando il generatore ha rifiutato, la sua chiave (`privateSlotsNotGenerated`) —, e la
+    pagina, invece di aprire la copia, lo dice con le parole del rifiuto e un bottone «Apri la copia» (punto 3). 5. **Un nuovo inizio
+    che sposterebbe un orario dell'evento fuori dal calendario** — gli anni 1000–9999 di una colonna DATETIME — è rifiutato sul suo
+    campo (`events:errors.duplicateOutOfCalendar`, `EventCopy.MovesWithinTheCalendar`), non più un 500 (punto 4). 6. **Il test della
+    cancellazione** guarda anche il callsign della partenza collegata (`XEJ804`) e la riga «erased» dell'audit di ognuna delle quattro
+    prenotazioni che vanno, senza niente di loro (punto 5). Il punto 8 del revisore (la descrizione copiata com'è) non ha avuto
+    risposta: resta la lettura 4 della nota.
+  - **I test**: `EventHead.test.tsx` 7 (uno in più: il nome al focus e al tocco); la smoke prende il nome al focus nel test della
+    pagina di E4 e, nel blocco «on a phone», al tocco; `EventsDuplicationTests` 7 (il calendario); `EventsDuplicateTests` con la
+    risposta nuova, il perché dei privati non generati e l'inizio fuori dal calendario; `EventsErasureTests` con la partenza collegata e
+    le righe «erased».
+  - **Al contrario** (rimesso poi com'era, toccato e ricompilato, la classe di nuovo 3/3): senza il controllo sul calendario la copia
+    a fine 9999 risponde 500; senza la chiave del rifiuto la copia senza capacità risponde `null` invece di `events:errors.noCapacity`.
+  - **Verificato, in locale** (11 ottobre 2026, sera): `dotnet build` Debug e Release senza avvisi; `dotnet format --verify-no-changes`
+    sui sette file C# toccati; unità **1225/1225**; `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di
+    Release; `EventsDuplicateTests` ed `EventsErasureTests` 4/4; `pnpm gen:api` e `pnpm i18n:sync` senza altre differenze; `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **706 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock
+    **181/181** al primo giro (1,3 minuti). L'integrazione intera e `pnpm e2e:full`: dopo il merge della testa nuova di E7, sotto.
+- **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
+  di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
+  disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina
+  di un evento lette da un lettore di schermo vero (i puntini nascosti, i nomi degli scali nei bottoni); la testa su un telefono vero
+  (misurata nel Chromium di Playwright a 375 px, il tocco provato con `hasTouch`).
 
 ### E9 — Fuori dal repository: il Gate Manager, il primo evento, `ivao-booking` spento
 
