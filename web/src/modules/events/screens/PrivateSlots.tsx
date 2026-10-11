@@ -8,7 +8,7 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { ApiError } from '../../../shared/api/problem';
-import { SchemaForm } from '../../../shared/forms';
+import { SchemaForm, type ChoiceOption } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { Notice } from '../../../shared/ui';
 import {
@@ -318,7 +318,7 @@ function PrivateHourDialog({
  * The flight of a private slot (§3.4, E7): the slot among the free ones of the hour, the callsign, the aircraft, the other airport and
  * the time there — the generated form of its schema, so that every refusal of the server lands on its field. An arrival may take its
  * departure from the same airport too: the switch adds the departure's own flight, flown with the same aircraft, and the two are booked
- * together or not at all. A 409 is «try again», nothing booked.
+ * together or not at all. A 409 is «try again», nothing booked; a slot taken by another pilot in the meantime leaves the choices.
  */
 export function PrivateBooking({
   event,
@@ -351,9 +351,9 @@ export function PrivateBooking({
     departures: departures.map((slot) => ({ value: String(slot.id), label: time(slot.timeUtc) })),
   };
 
-  // The form drawn — with the departure or without — and what it starts with; what it holds as it is written, so that the switch of
-  // the departure keeps it (as the page that loads the slots keeps a table, E5). The generated form says what it holds a moment
-  // after each keystroke (its live delay): the time a hand takes to reach the switch.
+  // The form drawn — with the departure or without — and what it holds as it is written: the switch of the departure draws it again
+  // with what was written (as the page that loads the slots keeps a table, E5), and so do the slots offered when they change (below).
+  // The generated form says what it holds a moment after each keystroke (its live delay): the time a hand takes to reach the switch.
   const [drawn, setDrawn] = useState<{ withDeparture: boolean; values: PrivatePairValues }>(() => ({
     withDeparture: false,
     values: {
@@ -364,18 +364,23 @@ export function PrivateBooking({
       departure: { slotId: choices.departures[0]?.value ?? '', callsign: '', otherIcao: '' },
     },
   }));
-  const written = useRef<PrivatePairValues>(drawn.values);
+
+  const write = (values: PrivateFlightValues | PrivatePairValues) => {
+    setDrawn((current) => ({
+      ...current,
+      values: 'departure' in values ? values : { ...values, departure: current.values.departure },
+    }));
+  };
 
   const turn = (withDeparture: boolean) => {
-    const values = written.current;
     // The departure flies on as the arrival came, unless the pilot says otherwise.
-    setDrawn({
+    setDrawn(({ values }) => ({
       withDeparture,
       values: {
         ...values,
         departure: { ...values.departure, callsign: values.departure.callsign || values.callsign },
       },
-    });
+    }));
   };
 
   if (book.isSuccess) {
@@ -416,9 +421,33 @@ export function PrivateBooking({
         return;
       }
 
+      // Kept as it was sent: a refusal reads the page again, and the form is drawn again with it if a slot left the choices.
+      write(values);
       throw error;
     }
   };
+
+  // The slots offered now. A refusal reads the page again, and a slot another pilot took a moment ago leaves the choices: the form is
+  // then drawn again with what the pilot wrote and the first free slot in place of theirs, and says why — never with a slot that is
+  // not offered any more (the review of #246, point 5).
+  const offered = (id: string, options: readonly ChoiceOption[]) =>
+    options.some((option) => option.value === id);
+  const taken =
+    !offered(drawn.values.slotId, choices.slots) ||
+    (drawn.withDeparture && !offered(drawn.values.departure.slotId, choices.departures));
+  const defaults: PrivatePairValues = {
+    ...drawn.values,
+    slotId: offered(drawn.values.slotId, choices.slots)
+      ? drawn.values.slotId
+      : (choices.slots[0]?.value ?? ''),
+    departure: {
+      ...drawn.values.departure,
+      slotId: offered(drawn.values.departure.slotId, choices.departures)
+        ? drawn.values.departure.slotId
+        : (choices.departures[0]?.value ?? ''),
+    },
+  };
+  const choiceKey = [...choices.slots, ...choices.departures].map((option) => option.value).join(',');
 
   const form = {
     locales: bootstrap?.division.locales ?? [],
@@ -440,26 +469,23 @@ export function PrivateBooking({
       )}
 
       {tryAgain ? <Notice tone="error" title={t('events:errors.bookingTryAgain')} /> : null}
+      {taken ? <Notice tone="error" title={t('events:errors.slotJustTaken')} /> : null}
 
       {drawn.withDeparture ? (
         <SchemaForm
-          key="pair"
+          key={`pair:${choiceKey}`}
           schema={privatePairSchema(choices)}
-          defaults={drawn.values}
-          onChange={(values) => {
-            written.current = values;
-          }}
+          defaults={defaults}
+          onChange={write}
           onSubmit={submit}
           {...form}
         />
       ) : (
         <SchemaForm
-          key="one"
+          key={`one:${choiceKey}`}
           schema={privateFlightSchema(choices)}
-          defaults={withoutDeparture(drawn.values)}
-          onChange={(values) => {
-            written.current = { ...values, departure: written.current.departure };
-          }}
+          defaults={withoutDeparture(defaults)}
+          onChange={write}
           onSubmit={submit}
           {...form}
         />
