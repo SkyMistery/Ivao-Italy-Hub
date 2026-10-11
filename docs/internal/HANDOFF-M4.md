@@ -6,7 +6,10 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
+**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10n** (nucleo: i dati di una persona cancellata nell'audit delle righe già tolte,
+decisa da Carmine sulla #249), sul branch `m4/e10n-erased-audit-rows`, **PR #251** verso `main`, nata da `main` a `bea8c0e`, senza coda;
+⚠️ **E8b la usa dopo l'unione** per le prenotazioni, e **nessuna prenotazione su un'installazione vera prima delle due** («Che cosa ha
+lasciato E10n», sotto). Prima: **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
 `m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda, e **unita di nuovo a `main`** a `aa3707a`
 (la #241, 0.6.6: il test del meteo corretto), a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
 l'accesso) e a `0c2f85a` (E10i, la #237). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
@@ -177,6 +180,37 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10n (11 ottobre 2026, branch `m4/e10n-erased-audit-rows`, PR #251, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-i-dati-di-una-persona-nell-audit.md`, **decisa** da Carmine sulla #249, [la risposta
+  2][a249n2]: il buco dell'audit del [punto 7 del revisore][rv249n2], come meccanismo del nucleo per ogni modulo; la forma è della nota):
+  - **Il segno** `[ErasedWith(nameof(…Vid))]` (`src/IvaoHub.Core/Privacy/ErasedWithAttribute.cs`) su una colonna di un'entità
+    `[Audited]`: la colonna è un dato della persona che l'altra colonna, della stessa riga, nomina. `PersonColumns.ErasedWith(entity)` lo
+    legge dal modello e rifiuta un segno che non nomina una colonna di persona (`Vid`, `…Vid`, `…By`).
+  - **Il passo della cancellazione** `AuditRedaction.EmptyGoneAsync`, in ogni contesto dopo l'eraser e prima dello pseudonimo: le righe
+    d'audit delle righe che nominavano la persona e **non ci sono più** perdono le colonne segnate (diventano `null` nel JSON), in
+    `created`, `updated` e `deleted`; il resto della storia resta, con lo pseudonimo. Una riga che c'è resta del suo eraser, come prima.
+  - **I test**: `ErasedAuditTests` (integrazione, 3) e `ErasedColumnsTests` (unità, 4). Il modulo di prova segna `SampleItem.Title`
+    come dato del membro di cui parla (`SampleItems.cs`, nessuna migrazione). **VID 761100** preso da questa fase (la persona cancellata,
+    fuori dal blocco di M4, che è finito).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **E8b (la #249) segna le prenotazioni** dopo l'unione di questa (scelta di dalberone, l'11 ottobre: la regola 6 vuole il nucleo e
+    il modulo in due PR): unisce `main` e mette `[ErasedWith(nameof(BookerVid))]` su `Callsign`, `OtherIcao`, `OtherTimeUtc`,
+    `UnflownExcusedNote`, `FlownSessionId` di `EventBooking` — le cinque colonne che il suo eraser svuota —, con un suo test di una
+    prenotazione ritirata prima della cancellazione (le copie senza nominativo, con lo pseudonimo). **Le prenotazioni non si aprono su
+    un'installazione vera prima di E8b e di questa** (Carmine, risposta 2 sulla #249).
+  - **Ogni colonna nuova che è un dato di una persona**, su una riga che si può togliere prima di una cancellazione (un ritiro, una riga
+    tolta dallo staff), porta il segno con la colonna di persona della stessa riga. `ErasedAuditTests.EveryMarkOfThePersonsDataNamesAPersonColumn`
+    legge i contesti di ogni modulo e cade su un segno sbagliato.
+  - ⚠️ **Il limite**: un dato su una riga figlia, la cui persona è nominata solo dalla riga sopra (le note di una sessione di training),
+    non è coperto. Se servisse, è un'altra nota.
+  - ⚠️ **Le chiavi del JSON dell'audit sono i nomi delle proprietà** (`"Callsign"`), non in camel case: `Serialize` scrive un
+    dizionario, le cui chiavi le opzioni web non cambiano. Il riassunto di `PersonColumns.IsVidName` diceva «camel case», ora corretto;
+    un test che legge l'audit cerca `"Title"`.
+
+[rv249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 

@@ -3011,6 +3011,68 @@ master e pubblicata su sua istruzione):
 [r238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
 [a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
+### E10n — Nucleo: una persona cancellata non resta nel registro
+
+**Da dove viene**: non c'era in E0. Il revisore, rileggendo E8b sulla #249, ha trovato un buco del nucleo ([il punto 7][rv249n]): una
+prenotazione che il pilota ha ritirato, o che lo staff ha tolto, **prima** della cancellazione non è più una riga, nessun eraser la
+trova, e le sue righe `created` e `deleted` nell'audit tengono il nominativo, l'altro aeroporto e l'orario, con il solo VID cambiato
+nello pseudonimo. **Carmine ha deciso** ([la risposta 2 sulla #249][a249n], 11 ottobre, data in chat alla sessione master e pubblicata
+su sua istruzione): lo prende dalberone, come fase del nucleo di M4; un meccanismo del nucleo per ogni modulo, non un caso degli eventi;
+i test nei test della cancellazione del nucleo; **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b.
+Branch `m4/e10n-erased-audit-rows`, da `main` a `bea8c0e`. **PR del nucleo** senza coda, con la sua nota (caso b).
+
+**Fatta quando**: le righe d'audit di una riga tolta prima della cancellazione perdono i dati della persona che l'eraser toglie dalle
+righe che restano; una riga che resta e le righe di un'altra persona non cambiano.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10n-erased-audit-rows`, PR #251, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-i-dati-di-una-persona-nell-audit`, **decisa**, con il link alla risposta di Carmine; la forma è della
+  nota, §3):
+  - **il segno** `[ErasedWith(nameof(…Vid))]` (`src/IvaoHub.Core/Privacy/ErasedWithAttribute.cs`) su una colonna: è un dato della
+    persona che un'altra colonna della stessa riga nomina. `PersonColumns.ErasedWith(entity)` lo legge dal modello, raggruppato per
+    persona, e rifiuta un segno che non nomina una colonna di persona;
+  - **il passo** `AuditRedaction.EmptyGoneAsync`, chiamato da `PersonalDataErasure` in ogni contesto dopo l'eraser e prima dello
+    pseudonimo, e nel contesto del nucleo: trova le chiavi delle righe che nominavano la persona nella colonna del segno (dalle copie
+    intere dell'audit), toglie quelle che ci sono ancora, e svuota le colonne segnate in ogni riga d'audit di quelle chiavi
+    (`AuditRedaction.Empty`). `HubSaveChangesInterceptor.ReadKey` è ora `internal`, perché la chiave si scriva in un modo solo;
+  - i riassunti di `IPersonalDataEraser`, `PersonalDataErasure` e `AuditRedaction` lo dicono;
+  - **i test**: `ErasedAuditTests` (integrazione, 3) e `ErasedColumnsTests` (unità, 4); il modulo di prova segna `SampleItem.Title`
+    come dato del membro di cui parla (nessuna migrazione).
+- **Scelte di dalberone** (11 ottobre, chieste prima del codice con la raccomandazione per prima; tutte e due accolte):
+  1. **le prenotazioni le segna E8b**, dopo l'unione di questa: la regola 6 vuole il nucleo e il modulo in due PR (nota §4);
+  2. **la persona cancellata dei test è 761100**, nuova: i VID di M4 sono finiti, e una persona già usata non si cancella.
+- **Scelte della fase, scritte nella nota** (§3, §5):
+  1. **il segno sulla colonna**, non un elenco dell'eraser: il nucleo lo legge dal modello come le colonne di persona;
+  2. **la persona è una colonna della stessa riga**: cancellare lo staff che ha scusato un volo non svuota il nominativo del pilota;
+  3. **solo le righe che non ci sono più**: una riga che c'è resta del suo eraser, e cambia come prima;
+  4. **le colonne svuotate, non la riga d'audit intera**: la storia (che cosa, chi, quando, le altre colonne) resta.
+- **Trovato**:
+  - ⚠️ **Le chiavi del JSON dell'audit sono i nomi delle proprietà** (`"Title"`, `"BookerVid"`), non in camel case: `Serialize`
+    scrive un dizionario, e `JsonSerializerDefaults.Web` non cambia le chiavi di un dizionario. Il riassunto di
+    `PersonColumns.IsVidName` diceva «camel case» (la regola regge sui due modi), ed è corretto; il passo nuovo cerca il nome com'è.
+  - **Il limite**, detto nella nota (§3.1): un dato su una riga figlia, la cui persona la nomina la riga sopra (le note di una sessione
+    di training), non è coperto.
+- **Lette le fasi che corrono accanto** (11 ottobre): E10m (il lettore dei nomi) ed E10l (il pulsante di chiusura delle finestre) non
+  toccano la cancellazione, l'interceptor né il modulo di prova, e nessuna usa 761100; conflitti solo nei documenti di M4.
+- **Verificato, in locale** (11 ottobre 2026, `main` a `bea8c0e`):
+  - `dotnet build IvaoHub.sln` in Debug e in Release, 0 avvisi; unità **1207/1207** (le architetture comprese); integrazione intera, senza
+    filtro, **532/532** al primo giro (9 minuti); `ErasedAuditTests` con `ErasureTests` 7/7;
+  - **la prova al contrario**: tolte le due chiamate a `EmptyGoneAsync` (modifica locale, mai nel ramo), cadono i test 1 e 2 di
+    `ErasedAuditTests` (il titolo resta nelle tre righe d'audit della riga tolta) e passa il terzo; rimesse e ricompilate, 3/3;
+  - `pnpm gen:api` senza differenze, `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:sync` (nessuna differenza),
+    `pnpm i18n:check` (830 chiavi) verdi; `pnpm test` **698/698** in 96 file; `pnpm build` verde;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`bea8c0e`): sei file del nucleo, uno condiviso dei test
+    (`SampleItems.cs`), la nota nuova, nessun file del maintainer — passa.
+- **Non verificato**:
+  - le prenotazioni: le segna E8b dopo l'unione, con il suo test;
+  - una cancellazione già fatta prima di questa fase non si rifà: le copie di righe tolte prima di quella restano con i dati (oggi
+    nessuna installazione vera ha prenotazioni);
+  - la smoke e `pnpm e2e:full`, non eseguite: la fase non tocca il browser né un endpoint, e nessuno spec cancella una persona;
+  - la CI (la dice la PR).
+
+[rv249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
