@@ -258,7 +258,8 @@ public static class EventSlotEndpoints
     /// <summary>
     /// «Generate the private slots» (§3.2, §7.2, E7): the free private slots of the event are replaced by the ones its airports' capacity
     /// leaves room for, the booked ones stay and count. Asked of the one handler on the event, as every write of its slots is. A pilot
-    /// booking one of the free slots in the same moment, or another write taking them first, is a 409: read the slots again.
+    /// booking one of the free slots in the same moment, another write taking them first, or a deadlock with either (the review of
+    /// #246, point 2) is a 409: read the slots again — nothing was written.
     /// </summary>
     private static async Task<IResult> GenerateAsync(
         long id,
@@ -277,10 +278,17 @@ public static class EventSlotEndpoints
 
         try
         {
-            var (result, problems) = await generation.GenerateAsync(row, http.RequestAborted);
-            return result is null ? CrudProblems.Validation(problems, catalog, currentUser.Locale) : Results.Ok(result);
+            var (result, generated, problems) = await generation.GenerateAsync(row, http.RequestAborted);
+            return result switch
+            {
+                GenerationResult.Done => Results.Ok(generated),
+                GenerationResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+                _ => Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser),
+            };
         }
-        catch (Exception exception) when (exception is DbUpdateConcurrencyException || DatabaseErrors.SlotWasBooked(exception))
+        catch (Exception exception) when (exception is DbUpdateConcurrencyException
+            || DatabaseErrors.SlotWasBooked(exception)
+            || DatabaseErrors.Deadlocked(exception))
         {
             return Problem(StatusCodes.Status409Conflict, CrudProblems.ConflictTitleKey, catalog, currentUser);
         }

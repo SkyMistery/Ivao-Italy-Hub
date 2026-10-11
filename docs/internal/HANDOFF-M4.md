@@ -6,11 +6,11 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E8b** (modulo: «Duplica», la cancellazione dei dati di una persona, il giro completo
-di M4a), sul branch `m4/e8b-duplicate-and-m4a-round`, **PR #249** verso `main`, **in coda dopo la #246** di E7, dal suo branch a
-`0d766fe` (E7 non è ancora unita), e con `main` unito a `bea8c0e` (la #238 di E10k) dopo la revisione: con E8b **M4a è finita nel
-codice**, e dopo restano E9, fuori dal repository, e M4b o M4c («Che cosa ha lasciato E8b», sotto). Prima, **fase E7** (modulo: gli
-slot privati), sul branch `m4/e7-private-slots`, **PR #246**
+**Ultimo aggiornamento:** 11 ottobre 2026, sera — **fase E8b** (modulo: «Duplica», la cancellazione dei dati di una persona, il giro
+completo di M4a), sul branch `m4/e8b-duplicate-and-m4a-round`, **PR #249** verso `main`, **in coda dopo la #246** di E7, nata dal suo
+branch a `0d766fe` e, dopo le due revisioni, con la sua testa nuova unita a `7a847a8` (E7 non è ancora unita; porta `main` a `bea8c0e`,
+con la #238 di E10k): con E8b **M4a è finita nel codice**, e dopo restano E9, fuori dal repository, e M4b o M4c («Che cosa ha lasciato
+E8b», sotto). Prima, **fase E7** (modulo: gli slot privati), sul branch `m4/e7-private-slots`, **PR #246**
 verso `main`: nata in coda dopo la #240 di E6b, già unita quando la fase è partita — il branch, ancora vuoto, è andato a `main` a
 `ba06d66` con un avanzamento veloce —, e con `main` unito a `0c2f85a` (la #237 di E10i) prima dell'apertura: la PR non è in coda dopo
 nessuna. Prima di E7, in `main`: **E10i** (il nucleo: un grant su una riga scrive la sua riga, **PR #237**), unita la sera del 10
@@ -22,12 +22,14 @@ ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (
 — il test del meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo l'accesso) e gli spec che dicono al banco che cosa rimettono
 a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b,
 dentro la pagina («Che cosa ha lasciato E6b», sotto). **E10k** (le parole delle liste e i titoli delle schede) è unita la sera dell'11
-ottobre («Che cosa ha lasciato E10k», sotto). **In corso, del nucleo**: **E10j** (#239: il recupero dei giri dei job); l'ordine in cui
-Carmine unisce è **#242 → #239**: prima **E4c** (#242: il titolo di `/events` e le frasi vuote delle schede «Slot» e «Rotte», gli usi
-degli eventi di E10k), che tocca anche `public.tsx` di E8b.
+ottobre («Che cosa ha lasciato E10k», sotto). **In corso, del nucleo**: **E10j** (#239: il recupero dei giri dei job), ed **E10n**
+(#251: le righe dell'audit di una persona cancellata, sotto). L'ordine del maintainer è **#242, poi #239; la #246 e la #249 dopo le loro
+correzioni**: prima **E4c** (#242: il titolo di `/events` e le frasi vuote delle schede «Slot» e «Rotte», gli usi degli eventi di E10k),
+che tocca anche `public.tsx` di E8b.
 **Il prossimo passo**: **E7** (la #246: **il ritiro di uno dei due voli collegati è deciso** da Carmine sull'issue #245 — la
-strada A, il legame si scioglie e l'altra prenotazione resta —; **le due domande** della nota `2026-10-11-gli-slot-privati` sono a Carmine
-sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246, **rivista: approvabile**; le due
+strada A, il legame si scioglie e l'altra prenotazione resta —, e **la nota `2026-10-11-gli-slot-privati` è decisa** sulla #246 — sì
+alle letture (a)–(g), e l'interruttore dei privati non si spegne finché l'evento ne ha —; le correzioni del revisore sono fatte; «Che
+cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246, **rivista: approvabile**; le due
 note sono **decise** — le due domande dell'issue #248 come raccomandate, e la testa della pagina di un evento disegnata da dalberone,
 con i nomi degli scali leggibili senza mouse —, e i cinque punti bassi della revisione sono fatti; «Che cosa ha lasciato E8b», sotto).
 ⚠️ **Il buco dell'audit** che la revisione ha trovato — le righe dell'audit di una prenotazione ritirata o tolta prima di una
@@ -197,7 +199,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe`; `main` unito a `bea8c0e`, con E10k)
+### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe` e, dopo la revisione, alla sua testa nuova `7a847a8`; `main` a `bea8c0e`, con E10k)
 
 - **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
   due note nuove, **decise** da Carmine: `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, con le sue risposte sull'**issue #248**
@@ -269,15 +271,21 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     il fondo vuoto), e la riga di «Regole di tutte le fasi» sull'hard link vale solo per chi vuole vedere la mappa.
   - ⚠️ Un campo `datetime` del form generato è in UTC (`SchemaForm` scrive `${written}:00Z`): la spec scrive gli orari di «Duplica» così.
 
-### Che cosa ha lasciato E7 (10–11 ottobre 2026, branch `m4/e7-private-slots`, PR #246; nata in coda dopo la #240, unita prima che la PR si aprisse; `main` unito a `0c2f85a`, con E10i)
+### Che cosa ha lasciato E7 (10–11 ottobre 2026, branch `m4/e7-private-slots`, PR #246; nata in coda dopo la #240, unita prima che la PR si aprisse; `main` unito a `0c2f85a`, con E10i, e dopo la revisione a `bea8c0e`, con E10k)
 
-- **Che cosa c'è** (il dettaglio in `10`, E7, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
-  due note nuove: `2026-10-10-il-ritiro-di-un-volo-collegato`, **decisa** da Carmine sull'issue #245 — la strada A: il legame si scioglie,
-  l'altra prenotazione resta —, e `2026-10-11-gli-slot-privati`, **«Proposta»**, con due domande a Carmine sulla #246):
+- **Che cosa c'è** (il dettaglio in `10`, E7, «Com'è andata» e «Dopo la revisione»; **nessuna migrazione**, niente del nucleo — solo
+  `schema.d.ts` generato —; due note nuove, **tutte e due decise**: `2026-10-10-il-ritiro-di-un-volo-collegato`, da Carmine sull'issue
+  #245 — la strada A: il legame si scioglie, l'altra prenotazione resta —, e `2026-10-11-gli-slot-privati`, da Carmine sulla #246 — sì
+  alle letture (a)–(g); l'interruttore dei privati non passa da acceso a spento finché l'evento ne ha —; dopo la revisione, le sei
+  correzioni del revisore sulla stessa PR):
   - **«Genera gli slot privati»**: il generatore, puro (`Staff/PrivateSlotGenerator.cs`), e il servizio (`Staff/PrivateSlotGeneration.cs`),
     `POST /api/events/events/{id}/slots/generate` (`EventBookings.Edit`), il bottone nella scheda «Slot». Dalla capacità di ogni scalo, ora
     per ora dell'evento, meno i voli che restano (i pubblici e i privati prenotati, in ogni scalo che toccano); passi regolari, lontano
-    dagli orari tenuti; rigenerare sostituisce i liberi e tiene i prenotati; al più 5.000.
+    dagli orari tenuti; rigenerare sostituisce i liberi e tiene i prenotati; al più 5.000, **contati prima di costruire uno slot**
+    (`PrivateSlotGenerator.Count`). **Una generazione per evento alla volta**: la riga dell'evento `FOR UPDATE` in una transazione
+    `READ COMMITTED` intorno a tutto, l'evento riletto sotto il blocco; un deadlock è un 409 «leggi di nuovo».
+  - **L'interruttore dei privati** (`EventSaving`): il passaggio da acceso a spento è rifiutato finché l'evento ha dei privati
+    (`events:errors.hasPrivateSlots`, sul campo `privateSlots`); un evento che non l'ha mai avuto acceso non è chiesto.
   - **Prenotare un privato** con il suo volo, e un arrivo con la partenza collegata dallo stesso scalo, tutte e due o nessuna
     (`PilotBookings.BookPrivateAsync`, `POST /api/events/mine/bookings/private`). **Il volo di una prenotazione si legge solo da
     `BookedFlight`** (`Bookings/BookingRules.cs`): di un privato l'altro aeroporto e il suo orario li scrive il pilota, e l'off block di
@@ -288,14 +296,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **L'esportazione** porta i privati con il volo del pilota, il gate vuoto e `paired_slot_id` (aggiunta alla versione 1,
     `docs/events-bookings-export.md`); **la pagina** la sezione «Slot privati» (`screens/PrivateSlots.tsx`, `screens/privateList.ts`);
     `/events/mine` il volo collegato.
-  - **I test**: unità `EventsPrivateSlotsTests` (15); integrazione `EventsPrivateSlotsTests` (7; VID **761087, 761088, 761095, 761096**;
-    scali `XEI1`–`XEI3`, tipi `XE8A`/`XE8B`, slug `evt-test-e7-…`); vitest `privateList.test.ts` e `PrivateSlots.test.tsx` (12); il giro
-    completo `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`).
+  - **I test**: unità `EventsPrivateSlotsTests` (17); integrazione `EventsPrivateSlotsTests` (14, sette dopo la revisione: le gare con
+    una transazione del test tenuta nel database, il tetto, l'interruttore; VID **761087, 761088, 761095, 761096**; scali `XEI1`–`XEI3`,
+    tipi `XE8A`/`XE8B`, slug `evt-test-e7-…`, voli `XEI8xx`/`XEI9xx` dopo la revisione); vitest `privateList.test.ts` e
+    `PrivateSlots.test.tsx` (13); il giro completo `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`).
 - **Che cosa deve sapere la fase dopo**:
   - **E8b** (la cancellazione, «Duplica»): un privato ha il volo scritto dal pilota sulla prenotazione (`callsign`, `other_icao`,
     `other_time_utc`): l'eraser degli eventi lo cancella con la riga. Una fase che toglie una sola prenotazione di una coppia chiama
     `BookingPairs.LetGoAsync` prima del `Remove`, come il ritiro e «togli». Gli slot privati hanno `Generated` vero: «Duplica» decide se
-    copiarli o lasciarli al generatore, che si preme di nuovo sull'evento nuovo.
+    copiarli o lasciarli al generatore, che si preme di nuovo sull'evento nuovo. ⚠️ **`PrivateSlotGeneration.GenerateAsync` apre la sua
+    transazione** (e prende la riga dell'evento `FOR UPDATE`): non si chiama dentro un'altra — «Duplica», «una transazione», o lascia
+    «Genera» allo staff o la chiama dopo il suo commit.
   - **E13a** (i voli fatti): il volo da cercare nel tracker è quello di `BookedFlight` — partenza, arrivo e orari di un privato li ha
     scritti il pilota —, non quello dello slot.
   - **E4c** (#242): `PublicEventDto` ha `privateSlots`, obbligatorio nel client generato: chi delle due, E4c o E7, arriva in `main` per
@@ -304,9 +315,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Due campi nuovi in fixture di fasi prima**, nessuna asserzione toccata: `pairedBookingId: null` nel campione della galleria
     (`blocks/index.ts`) e in `blocks/myEvents.test.tsx` di E6b, `privateSlots: []` in `event()` dello smoke `web/e2e/events-public.spec.ts`.
     Una fase che aggiunge un campo obbligatorio a `MyBookingDto` o a `PublicEventDto` fa lo stesso.
-  - ⚠️ **L'interruttore degli slot privati si spegne anche con dei privati** (la lettura 8, la domanda 2 sulla #246): la regola gemella di
-    `hasPublicSlots` fa cadere `EventsSlotsTests` di E5, che scrive un privato su un evento senza l'interruttore. Se Carmine la vuole, la
-    fase che la scrive corregge anche quel test, con il suo sì.
+  - ⚠️ **L'interruttore dei privati non passa da acceso a spento finché l'evento ne ha** (la risposta 2 di Carmine sulla #246): solo
+    quel passaggio, letto dal tracker, così `EventsSlotsTests` di E5, che scrive un privato su un evento che non l'ha mai acceso, resta
+    com'è. La regola legge i privati quando l'evento si salva: una generazione che si chiude nello stesso istante può lasciarne su un
+    evento spento — «elimina i liberi» li toglie.
+  - ⚠️ **La lettura della pagina porta ogni slot privato a ogni lettore** (circa 0,4 MB al tetto, il punto 6 del revisore): detto nella
+    nota e lasciato così. Una fase che la cambia (solo i conti, e una lettura dell'ora aperta) è una lettura scritta a mano in più.
   - ⚠️ **Nel tema scuro i campi di un dialog non hanno bordo** (i token di Atmosphere: `--input` e `--background` sono tutti e due
     `fuselage-900`): vale per ogni `Dialog` con un campo — il dialog dei privati, «Togli» di E6b, … —. È del nucleo; non toccato.
   - ⚠️ **Il dialog di un'ora con la partenza** è alto due voli di campi: il suo contenuto scorre sotto il titolo, al più il 65% della

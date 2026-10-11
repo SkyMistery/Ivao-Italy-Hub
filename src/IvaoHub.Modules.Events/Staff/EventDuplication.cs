@@ -281,7 +281,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         string? notGenerated = null;
         if (plan.GeneratesPrivateSlots)
         {
-            var (_, refused) = await generation.GenerateAsync(copy, cancellationToken);
+            var (_, _, refused) = await generation.GenerateAsync(copy, cancellationToken);
             notGenerated = refused.Errors.Values.SelectMany(keys => keys).FirstOrDefault();
         }
 

@@ -585,6 +585,7 @@
     "slotsNeedAirports": "An event with slots needs at least one airport of its own.",
     "externalUrlRequired": "An event organised by others needs the link to their page.",
     "hasPublicSlots": "This event has public slots: delete them before switching the public slots off.",
+    "hasPrivateSlots": "This event has private slots: delete the free ones and take the bookings away before switching the private slots off.",
     "airportHasSlots": "Some slots are at this airport: delete them first.",
     "noPublicSlots": "This event has no public slots: switch them on in its settings first.",
     "sheetColumnMissing": "The header has no such column.",

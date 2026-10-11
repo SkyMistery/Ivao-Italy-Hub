@@ -585,6 +585,7 @@
     "slotsNeedAirports": "Un evento con slot ha bisogno di almeno uno scalo suo.",
     "externalUrlRequired": "Un evento organizzato da altri ha bisogno del link alla loro pagina.",
     "hasPublicSlots": "Questo evento ha slot pubblici: eliminali prima di spegnere gli slot pubblici.",
+    "hasPrivateSlots": "Questo evento ha slot privati: elimina quelli liberi e togli le prenotazioni prima di spegnere gli slot privati.",
     "airportHasSlots": "Ci sono slot su questo scalo: eliminali prima.",
     "noPublicSlots": "Questo evento non ha slot pubblici: prima accendili nelle sue impostazioni.",
     "sheetColumnMissing": "L'intestazione non ha questa colonna.",

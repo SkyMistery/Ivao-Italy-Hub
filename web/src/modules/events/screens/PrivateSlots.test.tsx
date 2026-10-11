@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,6 +27,7 @@ vi.mock('../../../shared/api/client', async () => ({
 }));
 
 const { PrivateSlots } = await import('./PrivateSlots');
+const { publicEventQuery } = await import('../api');
 
 const i18n = createTestI18n();
 i18n.addResourceBundle('en', 'events', englishEvents);
@@ -92,6 +93,12 @@ async function draw(ui: ReactNode) {
   );
 
   await waitFor(() => expect(router.state.status).toBe('idle'));
+}
+
+/** The page of the event as the real one reads it: a refusal of a booking reads it again. */
+function ReadPage() {
+  const { data } = useQuery(publicEventQuery('evt-test-smoke'));
+  return data ? <PrivateSlots event={data} viewer={member} /> : null;
 }
 
 /** Opens the hour of the arrivals at 17:00 and waits for its form. */
@@ -235,6 +242,53 @@ describe('the private slots on the page of an event', () => {
     // Not the core's sentence for a 409, which is about somebody else's change to what is being saved.
     expect(within(dialog).queryByText(i18n.t('errors.conflict.title'))).not.toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: words.dialog.book })).toBeEnabled();
+  });
+
+  test('a slot another pilot took leaves the choices once the page is read again, and what was written stays', async () => {
+    const user = userEvent.setup();
+    // The page as the server says it: the first read with 17:00 free, the ones after the refusal with 17:00 taken.
+    const before = [slot(11, true, at(17)), slot(14, true, at(17, 15)), slot(22, false, at(18, 30))];
+    const after = [slot(11, true, at(17), true), slot(14, true, at(17, 15)), slot(22, false, at(18, 30))];
+    let reads = 0;
+    api.get.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === '/api/events/public/{slug}'
+          ? ok(event({ privateSlots: reads++ === 0 ? before : after }))
+          : ok({ division: { locales: ['en', 'it'], defaultLocale: 'en', timezone: 'UTC' } }),
+      ),
+    );
+    api.post
+      .mockResolvedValueOnce(
+        refused(400, { title: 'Some fields', errors: { slotId: ['events:errors.slotJustTaken'] } }),
+      )
+      .mockResolvedValueOnce(ok({ booking: { id: 70, callsign: 'XSM701' }, departure: null }, 201));
+    await draw(<ReadPage />);
+
+    const dialog = await openArrivals(user);
+    await user.type(within(dialog).getByLabelText(words.arrival.fields.callsign), 'XSM701');
+    await user.type(within(dialog).getByLabelText(words.arrival.fields.aircraftIcao), 'XA20');
+    await user.type(within(dialog).getByLabelText(words.arrival.fields.otherIcao), 'XXBB');
+    await user.click(within(dialog).getByRole('button', { name: words.dialog.book }));
+
+    // Read again, 17:00 is not offered: the form chooses 17:15, keeps what the pilot wrote, and says why.
+    const chosen = () => within(dialog).getByRole('combobox', { name: words.arrival.fields.slotId });
+    await waitFor(() => expect(chosen()).toHaveTextContent('17:15'));
+    expect(within(dialog).getByText(englishEvents.errors.slotJustTaken)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(words.arrival.fields.callsign)).toHaveValue('XSM701');
+
+    await user.click(within(dialog).getByRole('button', { name: words.dialog.book }));
+    await waitFor(() =>
+      expect(api.post).toHaveBeenLastCalledWith('/api/events/mine/bookings/private', {
+        body: {
+          slotId: 14,
+          aircraftIcao: 'XA20',
+          callsign: 'XSM701',
+          otherIcao: 'XXBB',
+          otherTimeUtc: null,
+          departure: null,
+        },
+      }),
+    );
   });
 
   test('otherwise it says why not: a visitor signs in first, the bookings open later, the hour is full', async () => {

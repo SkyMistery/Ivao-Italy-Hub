@@ -570,7 +570,8 @@ export function useDeleteFreeSlots(eventId: number) {
 
 /**
  * «Generate the private slots» (§3.2, E7): the free private slots of the event replaced by the ones the capacity of its airports
- * leaves room for; the booked ones stay. A refusal — no private slots, no capacity — comes back as one sentence.
+ * leaves room for; the booked ones stay. A refusal — no private slots, no capacity — comes back as one sentence. A refusal reads the
+ * slots again too: a 409 says another write changed them in the same moment (the review of #246, point 5).
  */
 export function useGeneratePrivateSlots(eventId: number) {
   const queryClient = useQueryClient();
@@ -580,6 +581,9 @@ export function useGeneratePrivateSlots(eventId: number) {
       unwrap(await api.POST('/api/events/events/{id}/slots/generate', { params: { path: { id: eventId } } })),
     onSuccess: async () => {
       await slotsChanged(queryClient);
+    },
+    onError: () => {
+      void slotsChanged(queryClient);
     },
   });
 }

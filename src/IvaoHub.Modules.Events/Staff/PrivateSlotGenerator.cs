@@ -46,16 +46,49 @@ public readonly record struct GeneratedSlot(DateTime AtUtc, bool IsArrival);
 public static class PrivateSlotGenerator
 {
     /// <summary>The hours of an event: from its start, an hour each, the last one cut at its end. None for an event that does not last.</summary>
-    public static IReadOnlyList<(DateTime FromUtc, DateTime ToUtc)> Hours(DateTime startsAtUtc, DateTime endsAtUtc)
+    public static IReadOnlyList<(DateTime FromUtc, DateTime ToUtc)> Hours(DateTime startsAtUtc, DateTime endsAtUtc) =>
+        [.. EachHour(startsAtUtc, endsAtUtc)];
+
+    /// <summary>
+    /// How many private slots <see cref="Generate"/> makes for one airport, counted without making them, and no further than past
+    /// <paramref name="limit"/>: the ceiling of a generation is asked before a slot is built, whatever the capacity and however long
+    /// the event (the review of #246, point 4). Each time held takes a step of its hour while the hour has one free, so an hour gives
+    /// its steps less the times it holds, and never fewer than none.
+    /// </summary>
+    public static int Count(SlotCapacity capacity, DateTime startsAtUtc, DateTime endsAtUtc, IReadOnlyCollection<HeldSlot> held, int limit)
     {
-        var hours = new List<(DateTime, DateTime)>();
-        for (var from = startsAtUtc; from < endsAtUtc; from = from.AddHours(1))
+        ArgumentNullException.ThrowIfNull(capacity);
+        ArgumentNullException.ThrowIfNull(held);
+
+        var count = 0;
+        foreach (var (from, to) in EachHour(startsAtUtc, endsAtUtc))
         {
-            var to = from.AddHours(1);
-            hours.Add((from, to < endsAtUtc ? to : endsAtUtc));
+            var inTheHour = held.Where(slot => slot.AtUtc >= from && slot.AtUtc < to).ToList();
+
+            if (capacity.Movements is { } movements)
+            {
+                count += Math.Max(0, Steps(from, to, movements) - inTheHour.Count);
+            }
+            else
+            {
+                if (capacity.Arrivals is { } arrivals)
+                {
+                    count += Math.Max(0, Steps(from, to, arrivals) - inTheHour.Count(slot => slot.IsArrival));
+                }
+
+                if (capacity.Departures is { } departures)
+                {
+                    count += Math.Max(0, Steps(from, to, departures) - inTheHour.Count(slot => !slot.IsArrival));
+                }
+            }
+
+            if (count > limit)
+            {
+                break;
+            }
         }
 
-        return hours;
+        return count;
     }
 
     /// <summary>The private slots of one airport for the event's hours, by their time; none for an airport with no capacity.</summary>
@@ -70,7 +103,7 @@ public static class PrivateSlotGenerator
 
         var generated = new List<GeneratedSlot>();
 
-        foreach (var (from, to) in Hours(startsAtUtc, endsAtUtc))
+        foreach (var (from, to) in EachHour(startsAtUtc, endsAtUtc))
         {
             var inTheHour = held.Where(slot => slot.AtUtc >= from && slot.AtUtc < to).ToList();
 
@@ -119,7 +152,7 @@ public static class PrivateSlotGenerator
         ArgumentNullException.ThrowIfNull(held);
 
         var minutes = (toUtc - fromUtc).TotalMinutes;
-        var count = (int)Math.Floor(perHour * minutes / 60);
+        var count = Steps(fromUtc, toUtc, perHour);
         if (count <= 0)
         {
             return [];
@@ -151,4 +184,18 @@ public static class PrivateSlotGenerator
 
         return [.. steps.Where((_, index) => !taken[index])];
     }
+
+    /// <summary>The hours of an event one by one, so that a count can stop before the end of a long one.</summary>
+    private static IEnumerable<(DateTime FromUtc, DateTime ToUtc)> EachHour(DateTime startsAtUtc, DateTime endsAtUtc)
+    {
+        for (var from = startsAtUtc; from < endsAtUtc; from = from.AddHours(1))
+        {
+            var to = from.AddHours(1);
+            yield return (from, to < endsAtUtc ? to : endsAtUtc);
+        }
+    }
+
+    /// <summary>The steps a capacity cuts an hour in: its part of an hour of the capacity, rounded down.</summary>
+    private static int Steps(DateTime fromUtc, DateTime toUtc, int perHour) =>
+        (int)Math.Floor(perHour * (toUtc - fromUtc).TotalMinutes / 60);
 }
