@@ -6,7 +6,10 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E7** (modulo: gli slot privati), sul branch `m4/e7-private-slots`, **PR #246**
+**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E8b** (modulo: «Duplica», la cancellazione dei dati di una persona, il giro completo
+di M4a), sul branch `m4/e8b-duplicate-and-m4a-round`, **PR #249** verso `main`, **in coda dopo la #246** di E7, dal suo branch a
+`0d766fe` (E7 non è ancora unita): con E8b **M4a è finita nel codice**, e dopo restano E9, fuori dal repository, e M4b o M4c («Che cosa ha
+lasciato E8b», sotto). Prima, **fase E7** (modulo: gli slot privati), sul branch `m4/e7-private-slots`, **PR #246**
 verso `main`: nata in coda dopo la #240 di E6b, già unita quando la fase è partita — il branch, ancora vuoto, è andato a `main` a
 `ba06d66` con un avanzamento veloce —, e con `main` unito a `0c2f85a` (la #237 di E10i) prima dell'apertura: la PR non è in coda dopo
 nessuna. Prima di E7, in `main`: **E10i** (il nucleo: un grant su una riga scrive la sua riga, **PR #237**), unita la sera del 10
@@ -19,9 +22,14 @@ meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo l'accesso) e g
 (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha montata E6b, dentro la
 pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10j** (#239: il recupero dei giri dei job) ed **E10k** (#238: le
 parole delle liste e i titoli delle schede), con **E4c** (gli usi degli eventi) in coda dopo la #238.
-**Il prossimo passo**: **E7** (questa, la #246: **il ritiro di uno dei due voli collegati è deciso** da Carmine sull'issue #245 — la
+**Il prossimo passo**: **E7** (la #246: **il ritiro di uno dei due voli collegati è deciso** da Carmine sull'issue #245 — la
 strada A, il legame si scioglie e l'altra prenotazione resta —; **le due domande** della nota `2026-10-11-gli-slot-privati` sono a Carmine
-sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** («Duplica», la cancellazione, il giro completo di M4a). **E10i è unita**: un
+sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in coda dopo la #246: **le due domande** della nota
+`2026-10-11-duplica-e-la-cancellazione-negli-eventi` sono a Carmine con l'**issue #248** — gli slot privati di «Duplica» e quando è
+concluso un evento annullato —, e la fase le scrive come raccomandato; «Che cosa ha lasciato E8b», sotto). ⚠️ **Con l'unione della #249
+cade la regola di Carmine sulla #233** («nessuna prenotazione su un'installazione vera finché E8b non è unita»: l'eraser degli eventi
+c'è); **resta il log binario**, da provare con la prima prenotazione sull'installazione di prova alla consegna. Da E8b un evento si
+**duplica** su una nuova data, come bozza, e la cancellazione dei dati di una persona tocca anche le sue prenotazioni. **E10i è unita**: un
 grant su un evento solo scrive l'evento e le sue righe e ne crea i figli, mai un evento nuovo («Che cosa ha lasciato E10i», sotto). Da
 E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
@@ -181,6 +189,53 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
+  una nota nuova, `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, **«Proposta»**, con due domande a Carmine sull'**issue #248**,
+  aperta all'inizio della fase):
+  - **«Duplica»**: `POST /api/events/events/{id}/duplicate` (`Staff/EventDuplication.cs`). La copia pura in `EventCopy` — l'evento con
+    ogni sua impostazione, nella stessa cura, gli orari spostati della stessa differenza, una bozza; uno scalo, una rotta e uno slot
+    pubblico com'erano, ai nuovi orari —, il piano letto prima di scrivere (`EventDuplicatePlan`: il banner solo se la libreria ha ancora il
+    file, gli slot pubblici se chiesti, se generare i privati) e il salvataggio in una transazione (`SaveAsync`). **I privati si generano
+    con la copia** (con `PrivateSlotGeneration` di E7) quando i suoi slot pubblici ci sono già — copiati, o l'evento non ne prende —, e
+    altrimenti li fa «Genera» dopo la tabella nuova: la domanda 1. **Chi duplica**: `Events.Edit` sull'evento nuovo com'è prima di essere
+    scritto (scope `events:event:0`: un grant su un evento solo non duplica), e il permesso dell'area di ogni riga che la copia scrive
+    (`EventDuplicatePlan.AreasWritten`), chiesti all'unico handler prima di scrivere. Le regole dell'indirizzo sono scritte una volta,
+    `EventAddressRules.EventAddress`, per il form e per «Duplica». La pagina: «Duplica» nella barra di un evento, in ogni stato
+    (`EventDuplicatePage`, `/staff/events/$id/duplicate`, `duplicateSchema`).
+  - **`EventsPersonalData`** (`src/IvaoHub.Modules.Events/EventsPersonalData.cs`): le prenotazioni della persona di un evento non ancora
+    finito si cancellano, e lo slot torna libero; quelle di un evento finito restano con lo pseudonimo, senza `callsign`, `other_icao`,
+    `other_time_utc`, `unflown_excused_note` e `flown_session_id`. **«Finito»** si legge in un posto solo, **`EventState.IsOver`** (la fine
+    passata, annullato o no: la domanda 2), che ora usano anche `Of`, `IsSeen` e `Unseen`.
+  - **Il giro completo di M4a**: `web/e2e/full/events-round.spec.ts` (slug `evt-test-e2e-e8b-…`, voli `XEE811`–`XEE813`, `XEE821`–`XEE822`,
+    `XEP901`), due test — il giro dell'RFO, dall'incolla a «Duplica», e l'RFE del mese scorso, finito, duplicato su una nuova data.
+  - **`docs/FORKING.md`**: la sezione «The events module» — il dipartimento di base, i `positionGrants` dell'ED e di chi collabora, le
+    impostazioni con `kindPresets` per prima, pagine, blocchi, mail e job, il Gate Manager, che cosa tiene e che cosa cancella, che cosa
+    non fa ancora —, e lo stato in testa.
+  - **I test**: unità `EventsDuplicationTests` (6); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
+    **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`) ed
+    `EventsErasureTests` (1; VID **761098**, la persona cancellata, e **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
+    `schemas.test.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Le due domande dell'issue #248**: una risposta diversa da quella raccomandata è una correzione sul branch di E8b prima dell'unione —
+    la (B) della domanda 1 toglie la generazione da `EventDuplication.SaveAsync`, la (A) la fa sempre; la (ii) o la (iii) della domanda 2
+    cambiano `EventsPersonalData`, non `EventState.IsOver`.
+  - **E9** (fuori dal repository): M4a è nel codice; ⚠️ **la regola di Carmine sulla #233 cade con l'unione della #249** (l'eraser c'è), e
+    **il log binario** resta da provare alla prima prenotazione sull'installazione di prova, alla consegna (risposta 2 sulla #233).
+  - **E11a, E14b, E15b** (M4b) ed **E16, E17** (M4c): **«Duplica» si allarga** con le righe della loro fase — le postazioni ATC con le
+    finestre, le regole di award, le domande e le attività —: una funzione in `EventCopy` per la riga, la lettura in `PlanAsync`, l'area in
+    `AreasWritten`, l'aggiunta in `SaveAsync`. **Niente dei membri** (disponibilità, turni, PIREP, iscrizioni) si copia mai.
+    **`EventsPersonalData` si allarga** con le loro righe (E15b per M4b, E16 ed E17 per M4c), con la stessa regola di «finito».
+  - **E15b** (la conservazione, `events-retention`): `pilotRetentionMonths` conta da `EndsAtUtc`, e «finito» è `EventState.IsOver`.
+  - ⚠️ **`EventsDuplicationTests.TheCopyNamesEveryColumnOfTheEvent`**: una colonna nuova di `evt_events` (nessuna fase dovrebbe
+    migrarla: nasce intera in E2) fa cadere il test finché non si decide in `EventCopy.Of` se la copia la prende, la sposta o la lascia.
+  - ⚠️ **I VID di prova degli eventi sono finiti**: con 761015 e 761098 di E8b, ogni VID di `761001–761099` è nel codice di un test. Una
+    fase dopo riusa le persone di una classe unita (come E8b con 761063) o chiede a `dalberone` un'altra fascia.
+  - ⚠️ **Nessun worktree, e nemmeno la cartella principale, ha `tiles/basemap.pmtiles`**: il giro completo gira senza (le mappe disegnano
+    il fondo vuoto), e la riga di «Regole di tutte le fasi» sull'hard link vale solo per chi vuole vedere la mappa.
+  - ⚠️ Un campo `datetime` del form generato è in UTC (`SchemaForm` scrive `${written}:00Z`): la spec scrive gli orari di «Duplica» così.
 
 ### Che cosa ha lasciato E7 (10–11 ottobre 2026, branch `m4/e7-private-slots`, PR #246; nata in coda dopo la #240, unita prima che la PR si aprisse; `main` unito a `0c2f85a`, con E10i)
 
