@@ -925,7 +925,8 @@ public sealed class HubSaveChangesInterceptor(
         _pending.Remove(pending.Context);
     }
 
-    private static string ReadKey(EntityEntry entry)
+    /// <summary>The key of a row as its audit rows hold it in <c>entity_id</c>: the erasure finds them by it (M4, E10n).</summary>
+    internal static string ReadKey(EntityEntry entry)
     {
         var key = entry.Metadata.FindPrimaryKey();
         if (key is null)

@@ -1,7 +1,10 @@
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +16,8 @@ namespace IvaoHub.Core.Privacy;
 /// with what authority; it stops saying it about the person.
 /// <list type="number">
 /// <item>The copies of a row the erasure deleted or emptied lose their data (<see cref="EmptyAsync"/>).</item>
+/// <item>The copies of a row about the person that was gone before the erasure lose the columns marked as their data
+/// (<see cref="EmptyGoneAsync"/>, M4, E10n).</item>
 /// <item>The rows the person wrote carry the pseudonym and no address (<see cref="ReplaceAsync"/>).</item>
 /// <item>The rows about their user carry the pseudonym as their key, and no data.</item>
 /// <item>Everywhere else, a property of the JSON that names a person (<see cref="PersonColumns.IsVidName"/>) and holds their
@@ -52,6 +57,162 @@ public static class AuditRedaction
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The columns marked as a person's data (<see cref="ErasedWithAttribute"/>), emptied in the audit rows of the rows that named
+    /// the person in the marked person column and no longer exist: a booking withdrawn the week before keeps its row in the log,
+    /// and loses the flight its pilot wrote (M4, E10n, note <c>2026-10-11-i-dati-di-una-persona-nell-audit</c>). A row that still
+    /// names the person is its eraser's, and is left as it is here: emptied whole by <see cref="EmptyAsync"/> if the eraser
+    /// deleted or emptied it, kept if the module keeps it. Another person's rows are not touched.
+    /// <para>Run in every context, for the audited tables the context rewrites, after the module's eraser and before the
+    /// pseudonym is written, so that the person is still found by their VID. A row is found by its full copies, which name the
+    /// person (<c>created</c>, <c>deleted</c>); then every audit row of its key is emptied, an <c>updated</c> one included.</para>
+    /// </summary>
+    public static async Task EmptyGoneAsync(DbContext context, int vid, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        foreach (var entity in context.Model.GetEntityTypes().Where(entity => PersonColumns.RewrittenBy(context, entity)
+            && entity.ClrType.IsDefined(typeof(AuditedAttribute), inherit: false)))
+        {
+            var table = entity.GetTableName()!;
+            foreach (var (person, columns) in PersonColumns.ErasedWith(entity))
+            {
+                var gone = await NamedAsync(context, table, person.Name, vid, cancellationToken);
+                if (gone.Count == 0)
+                {
+                    continue;
+                }
+
+                var task = (Task<List<string>>)LiveKeysMethod.MakeGenericMethod(entity.ClrType)
+                    .Invoke(null, [context, person.Name, vid, cancellationToken])!;
+                gone.ExceptWith(await task);
+
+                var names = columns.Select(column => column.Name).ToArray();
+                foreach (var keys in gone.Chunk(Page))
+                {
+                    var rows = await context.Set<AuditLogEntry>()
+                        .Where(row => row.Entity == table && keys.Contains(row.EntityId)
+                            && (row.BeforeJson != null || row.AfterJson != null))
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var row in rows)
+                    {
+                        row.BeforeJson = Empty(row.BeforeJson, names);
+                        row.AfterJson = Empty(row.AfterJson, names);
+                    }
+                }
+            }
+        }
+    }
+
+    private static readonly MethodInfo LiveKeysMethod = typeof(AuditRedaction)
+        .GetMethod(nameof(LiveKeysAsync), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    /// <summary>The keys of the table's audit rows whose JSON holds the person in this property: the rows that named them, once.</summary>
+    private static async Task<HashSet<string>> NamedAsync(
+        DbContext context,
+        string table,
+        string property,
+        int vid,
+        CancellationToken cancellationToken)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var pattern = $"%{vid.ToString(CultureInfo.InvariantCulture)}%";
+        var last = 0L;
+        while (true)
+        {
+            var rows = await context.Set<AuditLogEntry>().AsNoTracking()
+                .Where(row => row.Entity == table && row.Id > last
+                    && (EF.Functions.Like(row.BeforeJson!, pattern) || EF.Functions.Like(row.AfterJson!, pattern)))
+                .OrderBy(row => row.Id)
+                .Take(Page)
+                .Select(row => new { row.Id, row.EntityId, row.BeforeJson, row.AfterJson })
+                .ToListAsync(cancellationToken);
+
+            if (rows.Count == 0)
+            {
+                return keys;
+            }
+
+            foreach (var row in rows.Where(row => Names(row.BeforeJson, property, vid) || Names(row.AfterJson, property, vid)))
+            {
+                keys.Add(row.EntityId);
+            }
+
+            last = rows[^1].Id;
+        }
+    }
+
+    /// <summary>The keys, as the log holds them, of the rows of the table that name the person in this property today.</summary>
+    private static async Task<List<string>> LiveKeysAsync<TEntity>(
+        DbContext context,
+        string property,
+        int vid,
+        CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        // Every row, whoever is signed in: the back office's way of reading, as PersonColumnRewrite reads them next. A person
+        // column is an int or an int? (PersonColumns.IsVid), and EF wants the property read as the type it is.
+        var source = CrudSource.BackOffice<TEntity>(context).AsTracking();
+        var rows = await (context.Model.FindEntityType(typeof(TEntity))!.FindProperty(property)!.ClrType == typeof(int)
+                ? source.Where(row => EF.Property<int>(row, property) == vid)
+                : source.Where(row => EF.Property<int?>(row, property) == vid))
+            .ToListAsync(cancellationToken);
+
+        return [.. rows.Select(row => HubSaveChangesInterceptor.ReadKey(context.Entry(row)))];
+    }
+
+    private static bool Names(string? json, string property, int vid)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return false;
+        }
+
+        try
+        {
+            return JsonNode.Parse(json) is JsonObject row && row[property] is JsonValue value && Holds(value, vid);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The JSON of one audit row with these properties emptied; the same text when it has none of them.</summary>
+    public static string? Empty(string? json, IReadOnlyCollection<string> properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+        if (string.IsNullOrEmpty(json))
+        {
+            return json;
+        }
+
+        JsonNode? root;
+        try
+        {
+            root = JsonNode.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return json;
+        }
+
+        if (root is not JsonObject row)
+        {
+            return json;
+        }
+
+        var changed = false;
+        foreach (var property in properties.Where(property => row[property] is not null))
+        {
+            row[property] = null;
+            changed = true;
+        }
+
+        return changed ? row.ToJsonString() : json;
     }
 
     /// <summary>Everything else, over the whole log, through the core's context. Returns how many rows it changed.</summary>

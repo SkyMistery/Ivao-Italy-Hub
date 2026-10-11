@@ -31,8 +31,9 @@ public sealed record ErasureResultDto(int Pseudonym, IReadOnlyList<ErasureLine> 
 /// <list type="number">
 /// <item>a pseudonym: a negative number, new for this erasure, that nothing ties back to the VID;</item>
 /// <item>every enabled module: its <see cref="IPersonalDataEraser"/>, if it has one, deletes or empties its rows about the
-/// person; then the core writes the pseudonym into every column of its contexts that names them (<see cref="PersonColumns"/>)
-/// and empties the audit rows of what was erased;</item>
+/// person; then the core empties the columns marked as their data in the audit rows of their rows gone before the erasure
+/// (<see cref="ErasedWithAttribute"/>), writes the pseudonym into every column of its contexts that names them
+/// (<see cref="PersonColumns"/>) and empties the audit rows of what was erased;</item>
 /// <item>the core the same way: the threads the person opened go whole, they leave the threads they took part in, and
 /// their notifications, preferences, awards, tokens, grants, positions and user go;</item>
 /// <item>the audit log (<see cref="AuditRedaction"/>), and one row that says an erasure happened — with the pseudonym, never
@@ -113,6 +114,7 @@ public sealed class PersonalDataErasure(
             lines.AddRange(await EraseCoreAsync(vid, cancellationToken));
             await database.SaveChangesAsync(cancellationToken);
 
+            await AuditRedaction.EmptyGoneAsync(database, vid, cancellationToken);
             named += await PersonColumnRewrite.RewriteAsync(database, new ErasureRequest(vid, pseudonym), cancellationToken);
             await database.SaveChangesAsync(cancellationToken);
 
@@ -180,6 +182,8 @@ public sealed class PersonalDataErasure(
             var named = 0;
             foreach (var context in contexts)
             {
+                // Before the pseudonym: the rows gone before today are found by the VID their copies still hold.
+                await AuditRedaction.EmptyGoneAsync(context, request.Vid, cancellationToken);
                 named += await PersonColumnRewrite.RewriteAsync(context, request, cancellationToken);
                 await context.SaveChangesAsync(cancellationToken);
 

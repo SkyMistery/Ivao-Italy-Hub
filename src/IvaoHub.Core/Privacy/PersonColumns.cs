@@ -36,13 +36,50 @@ public static class PersonColumns
         return IsVid(property) || VidLists.Contains(property.Name);
     }
 
-    /// <summary>The same rule on a bare name, for the JSON of an audit row, whose properties are camel case.</summary>
+    /// <summary>
+    /// The same rule on a bare name, for the JSON of an audit row — whose properties are the entity's, as named in C#
+    /// (<c>"BookerVid"</c>) — and for other JSON the core reads, which may be camel case.
+    /// </summary>
     public static bool IsVidName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         return name.Equals("Vid", StringComparison.OrdinalIgnoreCase)
             || name.EndsWith("Vid", StringComparison.Ordinal)
             || (name.Length > 2 && name.EndsWith("By", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The columns of an entity marked as a person's data (<see cref="ErasedWithAttribute"/>), with the person column each names,
+    /// grouped by it. Refuses a mark that does not name a person column of the same entity: a mark that names nothing would empty
+    /// nothing, without a word.
+    /// </summary>
+    public static IReadOnlyList<(IReadOnlyProperty Person, IReadOnlyList<IReadOnlyProperty> Columns)> ErasedWith(IReadOnlyEntityType entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var marked = entity.GetProperties()
+            .Select(property => (Property: property,
+                Mark: property.PropertyInfo?.GetCustomAttributes(typeof(ErasedWithAttribute), inherit: false)
+                    .OfType<ErasedWithAttribute>()
+                    .FirstOrDefault()))
+            .Where(column => column.Mark is not null)
+            .ToList();
+
+        var groups = new List<(IReadOnlyProperty, IReadOnlyList<IReadOnlyProperty>)>();
+        foreach (var group in marked.GroupBy(column => column.Mark!.Person, StringComparer.Ordinal))
+        {
+            var person = entity.FindProperty(group.Key);
+            if (person is null || !IsVid(person))
+            {
+                throw new InvalidOperationException(
+                    $"{entity.ClrType.Name}.{group.First().Property.Name} is marked as the data of '{group.Key}', which is not an "
+                    + "integer column of the same entity that names a person (Vid, …Vid or …By).");
+            }
+
+            groups.Add((person, [.. group.Select(column => column.Property)]));
+        }
+
+        return groups;
     }
 
     /// <summary>
