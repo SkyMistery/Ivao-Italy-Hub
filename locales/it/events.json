@@ -356,6 +356,18 @@
       "arrival": "Arrivo",
       "legs": "Le tratte della rotazione {{rotation}}",
       "thisLeg": "questo volo"
+    },
+    "registration": {
+      "title": "Iscrizione",
+      "signIn": "Accedi per iscriverti",
+      "closed": "Le iscrizioni sono chiuse: l'evento è cominciato, o è annullato.",
+      "registered": "Sei iscritto.",
+      "saved": "Le tue risposte sono salvate.",
+      "register": "Iscriviti",
+      "save": "Salva le risposte",
+      "fields": {
+        "answers": "Le tue risposte"
+      }
     }
   },
   "private": {
@@ -437,7 +449,12 @@
     "withdrawDescription": "Lo slot torna libero, e un altro pilota può prenotarlo.",
     "withdrawPaired": "Lo slot torna libero, e un altro pilota può prenotarlo. {{callsign}}, prenotato insieme, resta tuo da solo.",
     "pairedDeparture": "Con la sua partenza {{callsign}}, dallo stesso gate.",
-    "pairedArrival": "Con il suo arrivo {{callsign}}, allo stesso gate."
+    "pairedArrival": "Con il suo arrivo {{callsign}}, allo stesso gate.",
+    "registrations": "Le mie iscrizioni",
+    "noAnswers": "Nessuna risposta.",
+    "changeAnswers": "Cambia le risposte",
+    "withdrawRegistrationTitle": "Ritirarti da {{title}}?",
+    "withdrawRegistrationDescription": "Non sei più iscritto: puoi iscriverti di nuovo fino all'inizio dell'evento."
   },
   "bookings": {
     "fields": {
@@ -683,7 +700,6 @@
       "type": "Tipo di risposta",
       "label": "Domanda",
       "choices": "Scelte",
-      "choices.key": "Chiave",
       "choices.label": "Scelta",
       "required": "Risposta obbligatoria",
       "sums": "Che cosa hanno risposto gli iscritti"

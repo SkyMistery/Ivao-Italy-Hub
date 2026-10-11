@@ -18,6 +18,7 @@ import { AirportForm } from './screens/airports';
 import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './screens/events';
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
+import { QuestionForm } from './screens/questions';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
 import { SlotForm, SlotLoadPage } from './screens/slots';
@@ -29,7 +30,8 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * block of the list — and the routes of an event, in a tab of its page; E5 its slots, in a tab too, with the page that loads
  * them from a table, and listed on its page; E6b the bookings — booked from the page of an event, a member's own on
  * `/events/mine` and in the block `events.myEvents`, the staff's in a tab of the event's page; E8b the page that duplicates an
- * event onto a new date.
+ * event onto a new date; E16 the events in person — their questions and their registrations in tabs of the event's page, a question on
+ * a page of its own, a member's registrations on `/events/mine`.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -89,6 +91,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/duplicate',
       permission: EVENTS_EDIT,
       component: EventDuplicatePage,
+    },
+    // A question of an event in person (E16): written by whoever writes the event.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/questions/$questionId',
+      permission: EVENTS_EDIT,
+      component: QuestionForm,
     },
     {
       area: 'staff',

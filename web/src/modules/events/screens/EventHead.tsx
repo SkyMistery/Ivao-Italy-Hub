@@ -1,6 +1,6 @@
 import { Badge, H1, Lead } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, MapPin } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,8 +18,8 @@ import { Hint } from './EventSlots';
  * The head of the page of an event, as dalberone drew it after the bench (note 2026-10-11-la-testa-della-pagina-di-un-evento, decided
  * by Carmine on #249): the kind, the title and the summary; then two short lines in place of the facts in rows — when it runs, in UTC
  * and where the division lives; its bookings as a badge (`BookingOpening`), its airports by their codes, each with its name on hover,
- * focus and tap (`Hint`, the piece the slots of the same page open), and who organises it when it is not the division, with their
- * page. On a phone each line wraps. The slots come right after it: what a pilot came for.
+ * focus and tap (`Hint`, the piece the slots of the same page open), where an event in person takes place (E16), and who organises it
+ * when it is not the division, with their page. On a phone each line wraps. The slots come right after it: what a pilot came for.
  */
 export function EventHead({
   event,
@@ -69,6 +69,21 @@ export function EventHead({
           ),
       });
     }
+  }
+
+  // Where an event in person takes place (E16, §4-bis): the fact the head of the page gives it, as E8b left room for.
+  const venue = event.inPerson ? read(event.venue ?? {}) : '';
+  if (venue !== '') {
+    facts.push({
+      key: 'venue',
+      fact: (
+        <span className="inline-flex items-center gap-1">
+          <MapPin aria-hidden className="size-3.5" />
+          <span className="sr-only">{t('events:events.fields.venue')}</span>
+          {venue}
+        </span>
+      ),
+    });
   }
 
   // Who organises it, only when it is not the division — on the division's own site that goes without saying —, and their page.

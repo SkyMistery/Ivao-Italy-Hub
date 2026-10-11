@@ -355,6 +355,18 @@
       "arrival": "Arrival",
       "legs": "The legs of rotation {{rotation}}",
       "thisLeg": "this flight"
+    },
+    "registration": {
+      "title": "Registration",
+      "signIn": "Sign in to register",
+      "closed": "Registrations are closed: the event has started, or it is cancelled.",
+      "registered": "You are registered.",
+      "saved": "Your answers are saved.",
+      "register": "Register",
+      "save": "Save your answers",
+      "fields": {
+        "answers": "Your answers"
+      }
     }
   },
   "private": {
@@ -436,7 +448,12 @@
     "withdrawDescription": "The slot is free again, and another pilot may book it.",
     "withdrawPaired": "The slot is free again, and another pilot may book it. {{callsign}}, booked with it, stays yours on its own.",
     "pairedDeparture": "With its departure {{callsign}}, from the same gate.",
-    "pairedArrival": "With its arrival {{callsign}}, at the same gate."
+    "pairedArrival": "With its arrival {{callsign}}, at the same gate.",
+    "registrations": "My registrations",
+    "noAnswers": "No answer given.",
+    "changeAnswers": "Change your answers",
+    "withdrawRegistrationTitle": "Withdraw from {{title}}?",
+    "withdrawRegistrationDescription": "You are no longer registered: you can register again until the event starts."
   },
   "bookings": {
     "fields": {
@@ -682,7 +699,6 @@
       "type": "Kind of answer",
       "label": "Question",
       "choices": "Choices",
-      "choices.key": "Key",
       "choices.label": "Choice",
       "required": "An answer is required",
       "sums": "What the registrations answered"

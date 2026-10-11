@@ -9,7 +9,14 @@ import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { ConfirmDialog, EmptyState, Notice } from '../../../shared/ui';
-import { myBookingsQuery, useWithdrawBooking, type MyBookingDto } from '../api';
+import {
+  myBookingsQuery,
+  myRegistrationsQuery,
+  useWithdrawBooking,
+  useWithdrawRegistration,
+  type MyBookingDto,
+  type MyRegistrationDto,
+} from '../api';
 
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
@@ -18,15 +25,17 @@ import { bookingsByEvent, splitBookings } from './myBookings';
  * `/events/mine` (design M4 §7.1, E6b), for a signed in member: their bookings, the flights still to fly first — by their off block —,
  * then the past ones, the latest first; each under its event, with the aircraft they chose, and «withdraw» until its off block (§3.6).
  * One answer, `GET /api/events/mine/bookings`, the one the block `events.myEvents` reads too. The shifts of the ATC, the record of the
- * flights not flown and the reports of support join it with their phases (M4b).
+ * flights not flown and the reports of support join it with their phases (M4b). Above them, the member's registrations to the events in
+ * person (E16, §4-bis.2), each with their answers, «change» on the event's page and «withdraw» until the event starts.
  */
 export function MyBookingsPage() {
   const { t, i18n } = useTranslation();
   const mine = useQuery(myBookingsQuery());
+  const registrations = useQuery(myRegistrationsQuery());
   // The bookings to come and the past ones are told apart from when the page was drawn, and stay so while it is read.
   const [drawnAt] = useState(() => Date.now());
 
-  if (mine.isPending) {
+  if (mine.isPending || registrations.isPending) {
     return (
       <p className="text-muted-foreground mx-auto w-full max-w-3xl px-4 py-10 text-sm">
         {t('common.loading')}
@@ -34,10 +43,13 @@ export function MyBookingsPage() {
     );
   }
 
-  if (mine.data === undefined) {
+  if (mine.data === undefined || registrations.data === undefined) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-10">
-        <Notice tone="error" title={describeProblem(mine.error, t, i18n.language) ?? t('errors.unknown')} />
+        <Notice
+          tone="error"
+          title={describeProblem(mine.error ?? registrations.error, t, i18n.language) ?? t('errors.unknown')}
+        />
       </div>
     );
   }
@@ -53,7 +65,18 @@ export function MyBookingsPage() {
         <Lead>{t('events:mine.lead')}</Lead>
       </header>
 
-      {mine.data.length === 0 ? (
+      {registrations.data.length === 0 ? null : (
+        <section className="flex flex-col gap-4" aria-label={t('events:mine.registrations')}>
+          <H2>{t('events:mine.registrations')}</H2>
+          <ul className="flex flex-col gap-6">
+            {registrations.data.map((registration) => (
+              <RegistrationItem key={registration.id} registration={registration} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {mine.data.length === 0 && registrations.data.length === 0 ? (
         <EmptyState
           title={t('events:mine.none')}
           description={t('events:mine.noneDescription')}
@@ -63,7 +86,7 @@ export function MyBookingsPage() {
             </Button>
           }
         />
-      ) : (
+      ) : mine.data.length === 0 ? null : (
         <>
           <section className="flex flex-col gap-4" aria-label={t('events:mine.upcoming')}>
             <H2>{t('events:mine.upcoming')}</H2>
@@ -199,6 +222,77 @@ function BookingItem({ booking, paired }: { booking: MyBookingDto; paired?: MyBo
             disabled={withdraw.isPending}
             onConfirm={() => withdraw.mutate(booking.id)}
           />
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+/**
+ * One registration to an event in person (§4-bis.2): the event with its state, when it starts and where, the answers as the member gave
+ * them — one line per question, in their language —, «change» on the event's page while it takes registrations, and «withdraw» until it
+ * starts, asked once more.
+ */
+function RegistrationItem({ registration }: { registration: MyRegistrationDto }) {
+  const { t, i18n } = useTranslation();
+  const read = useLocalized();
+  const moment = useMoment();
+  const withdraw = useWithdrawRegistration();
+  const refusal = describeProblem(withdraw.error, t, i18n.language);
+  const title = read(registration.eventTitle) || registration.eventSlug;
+
+  return (
+    <li
+      className="bg-card text-card-foreground border-border flex flex-col gap-3 rounded-lg border p-4"
+      aria-label={title}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <H3 className="text-lg">
+          <RouterAnchor href={eventHref(registration.eventSlug)} className="underline">
+            {title}
+          </RouterAnchor>
+        </H3>
+        <Badge
+          variant="flat"
+          color={STATE_COLOURS[registration.eventState] ?? 'gray'}
+          text={t(`events:events.options.state.${registration.eventState}`)}
+        />
+      </div>
+      <Subtle className="text-sm tabular-nums">
+        {t('calendar.utc', { at: moment(registration.startsAtUtc) })}
+        {registration.venue === null ? null : ` · ${read(registration.venue)}`}
+      </Subtle>
+      {registration.lines.length === 0 ? (
+        <Subtle className="text-sm">{t('events:mine.noAnswers')}</Subtle>
+      ) : (
+        <ul className="flex flex-col gap-1 text-sm">
+          {registration.lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+      {refusal === null ? null : <Notice tone="error" title={refusal} />}
+      {registration.changeable || registration.withdrawable ? (
+        <div className="flex flex-wrap gap-2">
+          {registration.changeable ? (
+            <Button asChild variant="outline">
+              <RouterAnchor href={`${eventHref(registration.eventSlug)}#registration`}>
+                {t('events:mine.changeAnswers')}
+              </RouterAnchor>
+            </Button>
+          ) : null}
+          {registration.withdrawable ? (
+            <ConfirmDialog
+              triggerText={t('events:mine.withdraw')}
+              triggerVariant="secondary"
+              title={t('events:mine.withdrawRegistrationTitle', { title })}
+              description={t('events:mine.withdrawRegistrationDescription')}
+              confirmText={t('events:mine.withdraw')}
+              confirmVariant="destructive"
+              disabled={withdraw.isPending}
+              onConfirm={() => withdraw.mutate(registration.eventId)}
+            />
+          ) : null}
         </div>
       ) : null}
     </li>

@@ -46,6 +46,7 @@ import { EventHead } from './EventHead';
 import { EventSlots } from './EventSlots';
 import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
 import { PrivateSlots } from './PrivateSlots';
+import { RegistrationSection } from './Registration';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -213,7 +214,8 @@ export function EventPublicPage() {
  * summary, and two short lines with when, in UTC and in the division's time, its bookings, counted down to until they open (E6b), its
  * airports and who organises it when it is not the division —; on its day who is online at its airports (E6b); a cancelled one with
  * its note. Then what a pilot came for: its public slots (E5), narrowed by the filters of the address and booked from the dialog of a
- * slot (E6b), and its private slots by airport, direction and hour, booked with the flight the pilot flies (E7). At the bottom the
+ * slot (E6b), and its private slots by airport, direction and hour, booked with the flight the pilot flies (E7); for an event in person the
+ * registration with its questions (E16). At the bottom the
  * description and the routes the flight operations wrote. To the staff, when nobody else sees it, a line that says so and why, and the
  * way back to the back office.
  */
@@ -309,6 +311,9 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       )}
 
       {event.privateSlots.length === 0 ? null : <PrivateSlots event={event} viewer={viewer} />}
+
+      {/* An event in person (E16): the registration, with the questions. */}
+      <RegistrationSection event={event} signedIn={signedIn} />
 
       {/* A member's way to their bookings, all of them and the withdrawing (E6b). */}
       {viewer.mine.size === 0 ? null : (
