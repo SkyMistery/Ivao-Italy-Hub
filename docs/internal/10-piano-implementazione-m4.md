@@ -2202,7 +2202,8 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
     le prenotazioni sono aperte è accettato —, **con un cambio: i nomi degli scali leggibili senza mouse**, come sceglie chi
     contribuisce, mai una seconda copia di `Hint`. 2. **Il buco dell'audit** (il punto 7 del revisore: le righe dell'audit di una
     prenotazione ritirata o tolta prima della cancellazione tengono il volo privato) è **una fase del nucleo di M4**, con la sua PR e
-    una nota, unita prima che le prenotazioni si aprano su un'installazione vera: **non di E8b**, la prepara la sessione che coordina.
+    una nota, unita prima che le prenotazioni si aprano su un'installazione vera: **non di E8b**; è **E10n** (#251,
+    `[ErasedWith(nameof(BookerVid))]`), e dopo il suo merge E8b segna le cinque colonne che la sua cancellazione svuota, con un test.
     La nota `2026-10-11-la-testa-della-pagina-di-un-evento` è **decisa**, con la risposta e la scelta nel suo §6.
   - **Fatto**: 1. **i nomi degli scali nella testa** con `Hint`, il pezzo della pagina degli slot — esportato da `EventSlots.tsx`,
     dove resta, non copiato —: il codice di uno scalo che l'hub conosce è un bottone, con il nome al passaggio del mouse, al focus della

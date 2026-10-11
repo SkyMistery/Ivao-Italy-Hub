@@ -31,8 +31,9 @@ sulla PR; «Che cosa ha lasciato E7», sotto), poi **E8b** (questa, la #249, in 
 note sono **decise** — le due domande dell'issue #248 come raccomandate, e la testa della pagina di un evento disegnata da dalberone,
 con i nomi degli scali leggibili senza mouse —, e i cinque punti bassi della revisione sono fatti; «Che cosa ha lasciato E8b», sotto).
 ⚠️ **Il buco dell'audit** che la revisione ha trovato — le righe dell'audit di una prenotazione ritirata o tolta prima di una
-cancellazione tengono il volo privato — è, per la risposta 2 di Carmine sulla #249, **una fase del nucleo di M4** a parte, da unire
-**prima che le prenotazioni si aprano su un'installazione vera**. ⚠️ **Con l'unione della #249
+cancellazione tengono il volo privato — è, per la risposta 2 di Carmine sulla #249, **una fase del nucleo di M4** a parte, **E10n
+(#251)**, da unire **prima che le prenotazioni si aprano su un'installazione vera**; dopo il suo merge E8b segna le colonne della
+prenotazione che la sua cancellazione svuota. ⚠️ **Con l'unione della #249
 cade la regola di Carmine sulla #233** («nessuna prenotazione su un'installazione vera finché E8b non è unita»: l'eraser degli eventi
 c'è); **resta il log binario**, da provare con la prima prenotazione sull'installazione di prova alla consegna. Da E8b un evento si
 **duplica** su una nuova data, come bozza, e la cancellazione dei dati di una persona tocca anche le sue prenotazioni. **E10i è unita**: un
@@ -237,10 +238,13 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `schemas.test.ts`; per la testa `EventHead.test.tsx` (7), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
     `bookingTimes.test.ts`.
 - **Che cosa deve sapere la fase dopo**:
-  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine): una fase **del nucleo** di M4, con la sua
-    PR e una nota — le righe dell'audit di una prenotazione ritirata o tolta prima di una cancellazione perdono il volo privato e le note,
-    come le righe che restano —, **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b. Non è di E8b: la
-    prepara la sessione che coordina.
+  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine): una fase **del nucleo** di M4, **E10n**
+    (**#251**, nota `2026-10-11-i-dati-di-una-persona-nell-audit`) — le righe dell'audit di una prenotazione ritirata o tolta prima di una
+    cancellazione perdono il volo privato e le note, come le righe che restano, con `[ErasedWith(nameof(BookerVid))]` su una proprietà —,
+    **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b. Non è di E8b; **dopo il suo merge**, sulla
+    #249: `main` unito, `[ErasedWith(nameof(BookerVid))]` sulle cinque colonne che l'eraser svuota (`Callsign`, `OtherIcao`,
+    `OtherTimeUtc`, `UnflownExcusedNote`, `FlownSessionId`) e un test in `EventsErasureTests` (una prenotazione privata ritirata prima
+    della cancellazione: le sue righe dell'audit con lo pseudonimo e senza le cinque).
   - **La risposta di «Duplica»** è `EventDuplicatedDto` (l'evento e `privateSlotsNotGenerated`), non più `EventDetailDto`: un client del
     verbo legge `event`.
   - ⚠️ **La #242 di E4c tocca anche `public.tsx`** (i metadati della pagina): unita prima della #249, `main` si unisce nel branch di E8b e il
