@@ -35,7 +35,10 @@ public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasR
     /// What a grant has to name to reach this row alone. A module chooses the shape; the core only
     /// ever compares it.
     /// </summary>
-    public string ResourceScope => $"{SampleModule.ModuleKey}:item:{Id}";
+    public string ResourceScope => ScopeOf(Id);
+
+    /// <summary>The scope of an item: the row's own, and the one its parts answer with (<see cref="SamplePart"/>, M4, E10i).</summary>
+    public static string ScopeOf(long itemId) => $"{SampleModule.ModuleKey}:item:{itemId}";
 
     public Visibility Visibility { get; set; }
 
@@ -67,6 +70,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
     public DbSet<SampleSubmission> Submissions => Set<SampleSubmission>();
 
     public DbSet<SampleReport> Reports => Set<SampleReport>();
+
+    public DbSet<SamplePart> Parts => Set<SamplePart>();
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
@@ -119,6 +124,15 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             report.Property(row => row.Title).HasMaxLength(128).IsRequired();
             report.Ignore(row => row.StakeholderVid);
             report.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
+        });
+
+        modelBuilder.Entity<SamplePart>(part =>
+        {
+            part.ToTable("smp_parts");
+            part.HasKey(row => row.Id);
+            part.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            part.Ignore(row => row.ResourceScope);
+            part.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
         });
     }
 }
