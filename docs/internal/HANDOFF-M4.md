@@ -6,7 +6,16 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
+**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10m** (nucleo: un solo lettore dei nomi), sul branch `m4/e10m-names-reader`,
+**PR #252** verso `main`, nata da `main` a `bea8c0e` (con E10k, la #238, unita), senza coda. **Decisa da Carmine sull'issue #247**: il
+nucleo ha `MemberNames.ReadAsync` (`Core/People/`), i fili dei contatti lo usano, e la formazione e gli eventi ci passano sopra in due
+piccole fasi di dalberone dopo l'unione («Che cosa ha lasciato E10m», sotto); i tour in una sessione di Carmine. **In corso, del
+nucleo, nella stessa sera**: E10l (#250, la parola del bottone che chiude un dialog) ed E10n (#251, i dati di una persona cancellata
+lasciano l'audit delle righe già tolte). Nessuna delle due tocca il codice di questa (E10n cambia `PersonalDataErasure`, non come se ne
+va l'utente); tutte e tre scrivono questo file e `10-piano-implementazione-m4.md`, e chi è unita dopo unisce `main`.
+Il resto di questo paragrafo è lo stato come l'ha scritto E10k.
+
+**Lo stato scritto da E10k:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
 `m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda, e **unita di nuovo a `main`** a `aa3707a`
 (la #241, 0.6.6: il test del meteo corretto), a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
 l'accesso) e a `0c2f85a` (E10i, la #237). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
@@ -177,6 +186,41 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10m (11 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-un-solo-lettore-dei-nomi.md`, **decisa** da Carmine sull'issue #247, [la sua
+  risposta][a247m2]; il dettaglio in `10`, E10m, «Com'è andata»):
+  - **`MemberNames.ReadAsync`** (`src/IvaoHub.Core/People/MemberNames.cs`, namespace `IvaoHub.Core.People`), statico, con il
+    `HubDbContext` di chi chiede: `ReadAsync(hub, IEnumerable<int> vids, ct)` e `ReadAsync(hub, IEnumerable<int?> vids, ct)` →
+    `IReadOnlyDictionary<int, string>`. Il nome è `$"{FirstName} {LastName}".Trim()` in .NET; chi l'hub non conosce manca; un VID nullo
+    manca; **un VID sotto uno non ha mai un nome** (una persona cancellata); **un nome vuoto resta `""`**; nessuno da chiedere non va al
+    database. Nessuna registrazione, nessuna migrazione.
+  - **I fili dei contatti lo usano** (`ContactThreads.ReadAsync`); la loro copia se n'è andata.
+  - **`tests/IvaoHub.IntegrationTests/MemberNamesTests.cs`** (7): il lettore da solo, il test gemello con le tre copie dei moduli, e una
+    prova per ogni differenza fra le quattro copie (nota §2). Usa le persone dei fili dei contatti (670011–670014) e rimette i loro nomi.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase della formazione** (piccola, di dalberone, dopo l'unione di questa PR): `TrainingPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Training/TrainingPeople.cs`) risponde `MemberNames.ReadAsync(hub, vids, cancellationToken)`, oppure se ne va e
+    i chiamanti chiedono al nucleo; `Member`, `Label` e `IsErased` restano. In `MemberNamesTests` esce la riga della formazione dal
+    test gemello e da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` (dopo il passaggio, la formazione non nomina più una riga sotto
+    uno: è uno stato che l'hub non scrive, e la PR lo dice). Nessuna pagina cambia.
+  - **La fase degli eventi** (piccola, di dalberone, dopo l'unione): lo stesso con `EventsPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Events/EventsPeople.cs`); `EventMemberDto` e `Member` restano; in `MemberNamesTests` esce la riga degli eventi.
+    Le due fasi sono indipendenti e possono andare in parallelo: toccano righe diverse dello stesso test, che si uniscono senza conflitti
+    se ognuna toglie solo la sua.
+  - **I tour** (`PirepReview.NamesAsync`) li passa **una sessione di Carmine**; fino ad allora il test gemello tiene le due risposte
+    uguali, e la riga dei tour in `MemberNamesTests` se ne va con lei.
+  - **Ogni fase nuova che nomina qualcuno per VID** chiede a `MemberNames`, mai una copia; la pagina lo scrive con `personName` (o
+    `col.person`) del browser, che fa del nome vuoto e di quello che manca il VID da solo.
+  - ⚠️ **Il nome vuoto è `""`, non `null`**: chi vuole «nessun nome» per un nome vuoto lo dice nel suo `Member`, come i tour. Il lettore
+    non lo decide per tutti, perché la mail della formazione e il `personName` lo leggono già a modo loro.
+  - ⚠️ **Il nome si taglia in .NET, dopo la lettura**: unirlo nella query (`FirstName + " " + LastName`, `.Trim()` tradotto in `TRIM`)
+    lascia un tab o uno spazio non separabile ai bordi. `ABlankOtherThanASpaceAtTheEdgeOfANameIsTrimmedToo` lo prova.
+  - ⚠️ La sequenza di escape di U+00A0 scritta con gli strumenti Write ed Edit diventa il carattere: nel test è rimessa come
+    sequenza con node.
+
+[a247m2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/247#issuecomment-6113460844
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 
