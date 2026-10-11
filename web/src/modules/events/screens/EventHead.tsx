@@ -11,13 +11,15 @@ import { calendarKindColour } from '../../../shared/ui';
 import type { PublicEventDto } from '../api';
 
 import { BookingOpening } from './BookingOpening';
-import { headSpan } from './cards';
+import { airportLabel, headSpan } from './cards';
+import { Hint } from './EventSlots';
 
 /**
- * The head of the page of an event, as dalberone drew it after the bench (note 2026-10-11-la-testa-della-pagina-di-un-evento): the
- * kind, the title and the summary; then two short lines in place of the facts in rows — when it runs, in UTC and where the division
- * lives; its bookings as a badge (`BookingOpening`), its airports by their codes, the name on hover, and who organises it when it is
- * not the division, with their page. On a phone each line wraps. The slots come right after it: what a pilot came for.
+ * The head of the page of an event, as dalberone drew it after the bench (note 2026-10-11-la-testa-della-pagina-di-un-evento, decided
+ * by Carmine on #249): the kind, the title and the summary; then two short lines in place of the facts in rows — when it runs, in UTC
+ * and where the division lives; its bookings as a badge (`BookingOpening`), its airports by their codes, each with its name on hover,
+ * focus and tap (`Hint`, the piece the slots of the same page open), and who organises it when it is not the division, with their
+ * page. On a phone each line wraps. The slots come right after it: what a pilot came for.
  */
 export function EventHead({
   event,
@@ -59,9 +61,11 @@ export function EventHead({
           airport.name === null || airport.name === '' ? (
             <span className="font-mono">{airport.icao}</span>
           ) : (
-            <abbr title={airport.name} className="font-mono">
-              {airport.icao}
-            </abbr>
+            // Its name on hover, on focus and on a tap — read without a mouse, on a phone too (Carmine, answer 1 on #249) —; to
+            // a reader of the screen, the code and the name, as a list names an airport.
+            <Hint text={airport.name} label={airportLabel(airport)}>
+              <span className="font-mono underline decoration-dotted underline-offset-2">{airport.icao}</span>
+            </Hint>
           ),
       });
     }

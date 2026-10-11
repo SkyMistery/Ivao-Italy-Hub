@@ -1,10 +1,16 @@
 # Gli slot privati: le letture del design (E7)
 
 **Data:** 11 ottobre 2026 — fase E7 di M4 (gli slot privati), PR #246
-**Stato:** **Proposta** — le domande sono a Carmine con un commento sulla #246 (§4). E7 scrive le letture come le raccomanda questa nota;
-una risposta diversa è una correzione sul branch della fase. Il ritiro di uno dei due voli collegati è un'altra nota, già **decisa**
-(nota `2026-10-10-il-ritiro-di-un-volo-collegato`: la strada A,
+**Stato:** **Decisa** — Carmine ha risposto sulla #246 l'11 ottobre 2026 (§5): [le risposte][a246], di SkyMistery su sua istruzione.
+**Sì alle letture (a)–(g) come scritte**; **l'interruttore dei privati no, com'era**: il passaggio da acceso a spento è rifiutato finché
+l'evento ne ha (la domanda 2: la raccomandazione non è passata, e la lettura 8 è superata). Le correzioni chieste dal revisore nella
+stessa revisione sono in §6. Il ritiro di uno dei due voli collegati è un'altra nota, già **decisa** (nota
+`2026-10-10-il-ritiro-di-un-volo-collegato`: la strada A,
 [la risposta di Carmine sull'issue #245](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/245#issuecomment-6102449241)).
+
+[a246]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113461257
+[r246]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113085610
+
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo — `IAirportDirectory`, `IAircraftTypeDirectory`,
 `Refusals`, l'unico handler, il guardiano dell'interceptor, il blocco del pilota e `READ COMMITTED` di E6a, il servizio delle notifiche,
 `SchemaForm`, la lettura della pagina che c'è (`PublicEventDto`), il `ContractVersion` dell'esportazione —; sono letture del design M4 §1.3,
@@ -37,9 +43,10 @@ ci sono da E5 (`evt_slots`) ed E6a (`evt_bookings`).
 7. **Al più 5.000 privati** per generazione (`events:errors.privateSlotsTooMany`): l'evento più grande con qualche scalo e qualche ora ne
    fa qualche migliaio; di più è una capacità o una finestra scritte male (999 l'ora per giorni), rifiutate prima di scrivere decine di
    migliaia di righe.
-8. **L'interruttore degli slot privati si spegne anche con dei privati**: non c'è la regola gemella di `hasPublicSlots` (E5). La prova
+8. ~~**L'interruttore degli slot privati si spegne anche con dei privati**: non c'è la regola gemella di `hasPublicSlots` (E5). La prova
    l'ha scritta E7 e l'ha tolta: un test di E5 (`EventsSlotsTests`, l'esportazione) scrive un privato nel database di un evento senza
-   l'interruttore, come «lo farà il generatore di E7», e cadeva. I privati restano finché «elimina i liberi» non li toglie. La domanda 2.
+   l'interruttore, come «lo farà il generatore di E7», e cadeva. I privati restano finché «elimina i liberi» non li toglie. La domanda 2.~~
+   **Superata dalla risposta 2 di Carmine (§5)**: il passaggio da acceso a spento è rifiutato finché l'evento ha dei privati.
 
 ## 2. Prenotare un privato (§3.4, §3.5)
 
@@ -98,14 +105,56 @@ Poste in inglese sulla #246; in italiano dicono:
 >    (raccomandato: i privati sono del generatore, e «elimina i liberi» li toglie), o vuoi la regola gemella in una fase dopo, con il test di
 >    E5 che scrive un privato su un evento senza l'interruttore corretto?
 
+## 5. Le risposte di Carmine
+
+Date in chat al master l'11 ottobre 2026 e pubblicate sulla #246 su sua istruzione, di SkyMistery: [le risposte][a246].
+
+1. **Le letture (a)–(g): sì, come scritte.** Anche la **(e)**, sapendolo: un volo verso un altro scalo dell'evento vi prende posto senza
+   tenervi uno slot, finché la generazione dopo non lo conta. Un volo fra due scali dell'evento è legittimo, e non si rifiuta.
+2. **L'interruttore «slot privati»: non com'era.** Spento con dei privati non nascondeva niente e non fermava niente — la pagina li
+   disegnava, un pilota li prenotava, l'esportazione li portava —, e toglieva solo il generatore allo staff. Quindi **il passaggio da
+   acceso a spento è rifiutato finché l'evento ha dei privati**: lo staff elimina prima i liberi e toglie le prenotazioni, come per i
+   pubblici. **Solo quel passaggio**: un evento che non ha mai avuto l'interruttore acceso non è toccato dalla regola, e il test di E5
+   resta com'è. Codice su questa PR, con il suo test e **una chiave sua**.
+
+Fatto sulla stessa PR: in `EventSaving` la regola accanto a quella dei pubblici, con il valore di prima dell'interruttore letto dal
+tracker (`OriginalValue`), sul campo `privateSlots`, la chiave `events:errors.hasPrivateSlots`; il test
+`EventsPrivateSlotsTests.ThePrivateSlotsAreNotSwitchedOffWhileTheEventHasSome` (rifiutato con i privati, accettato dopo «elimina i
+liberi», non chiesto a un evento che non l'ha mai avuto acceso). ⚠️ La regola legge i privati quando l'evento si salva: una generazione
+che si conclude nello stesso istante di un salvataggio che spegne l'interruttore può lasciarne qualcuno su un evento spento — lo staff
+li vede nella scheda e li elimina con «elimina i liberi».
+
+## 6. Dopo la revisione
+
+[I rilievi del revisore][r246] sulla prima testa (`0d766fe`), fatti sulla stessa PR; nessuno cambia una lettura approvata, due la
+precisano:
+
+- **Lettura 5, rigenerare**: due generazioni dello stesso evento nello stesso momento, quando non c'era ancora nessun privato libero,
+  scrivevano tutte e due l'insieme intero — niente di unico ferma due slot senza nominativo — e la capacità raddoppiava (il punto 1).
+  Ora una generazione prende la **riga dell'evento `FOR UPDATE`**, in una transazione `READ COMMITTED` intorno a tutto quello che legge
+  e scrive, come il blocco della prima prenotazione di un pilota (E6a), e rilegge l'evento sotto il blocco: la seconda aspetta, poi
+  sostituisce quello che la prima ha scritto. Un **deadlock** durante «Genera» rispondeva 500: è un **409** «leggi di nuovo» (il punto 2).
+- **Lettura 7, il tetto**: si chiede **prima di costruire** uno slot — il generatore conta quello che farebbe, ora per ora, e si ferma
+  oltre il tetto, per quanto lungo sia l'evento (il punto 4).
+- **Lettura 16, la pagina**: dopo un rifiuto la pagina si rilegge, e il form dell'ora non tiene più uno slot che non è più offerto: si
+  ridisegna con quello che il pilota ha scritto e il primo libero al posto del suo, e dice perché (il punto 5). E **la lettura della
+  pagina porta ogni slot privato a ogni lettore**, che ne vede solo i conti per ora: al tetto sono circa 0,4 MB (il punto 6). Detto qui
+  e lasciato com'è: la stessa lettura porta già gli slot pubblici, e dare solo i conti chiederebbe una lettura scritta a mano in più per
+  l'ora aperta, che la lettura 16 evita.
+- **Il punto 9 del revisore** — i privati liberi restano dopo un cambio delle date o della capacità, prenotabili fuori dalle ore finché
+  non si preme «Genera» — è la **lettura 6**, approvata come scritta nella risposta 1: resta così.
+- **I test che mancavano** (il punto 3), in `EventsPrivateSlotsTests` (integrazione): il tetto dei 5.000; una generazione contro una
+  prenotazione nei due ordini; il 409 di un deadlock in `BookPrivateAsync`; e le due generazioni insieme e il deadlock di «Genera».
+
 ## Da portare nel piano
 
 - Design M4 §3.2: il generatore — le ore dell'evento, i passi regolari e il passo più vicino, i versi in movimenti, che cosa tiene un'ora
-  (un volo fra due scali in tutti e due), rigenerare, i rifiuti e il tetto di 5.000; l'interruttore dei privati (la domanda 2).
+  (un volo fra due scali in tutti e due, (e) compresa), rigenerare **sotto il blocco della riga dell'evento**, i rifiuti e il tetto di
+  5.000 **contato prima di costruire**; l'interruttore dei privati **non passa da acceso a spento finché l'evento ne ha** (la risposta 2).
 - Design M4 §3.4 e §3.5: il volo di un privato e fino a quando si prenota; la partenza collegata (stesso scalo, stesso aereo, il gap, tutta o
   niente); il volo di una prenotazione letto in un posto solo (`BookedFlight`).
 - Design M4 §3.8: il promemoria di un privato all'off block del suo volo.
-- Design M4 §7.1, §7.2: i privati sulla pagina per scalo, verso e ora con il form generato; «Genera gli slot privati» nella scheda; il
-  collegamento in `/events/mine`.
+- Design M4 §7.1, §7.2: i privati sulla pagina per scalo, verso e ora con il form generato, e la lettura della pagina che li porta
+  tutti a ogni lettore; «Genera gli slot privati» nella scheda; il collegamento in `/events/mine`.
 - Design M4 §7.4: il volo di un privato e `paired_slot_id` nell'esportazione, aggiunta alla versione 1.
 - Piano §16.6: il conto degli endpoint a mano di M4 (due verbi di E7).

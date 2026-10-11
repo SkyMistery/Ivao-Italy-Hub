@@ -91,7 +91,7 @@ public static class EventEndpoints
 
         group.MapPost("/{id:long}/duplicate", DuplicateAsync)
             .WithName("EventsDuplicate")
-            .Produces<EventDetailDto>(StatusCodes.Status201Created)
+            .Produces<EventDuplicatedDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
@@ -234,7 +234,8 @@ public static class EventEndpoints
     /// the staff, and nothing of the members (<see cref="EventDuplication"/>). <c>Events.Edit</c> is asked of the one handler on the new
     /// event as it will be stored — in the care of the one it copies, and with the scope of a row not stored yet, so a grant on one
     /// event alone duplicates nothing: a new event is never its (E10i) —; then the area of every row the copy writes, before anything is
-    /// written. 201 with the new event, which its page opens.
+    /// written. A start that would move a time of the event off the calendar is refused on its field. 201 with the new event, which its
+    /// page opens, and why its private slots were not generated when the generator refused them (<see cref="EventDuplicatedDto"/>).
     /// </summary>
     private static async Task<IResult> DuplicateAsync(
         long id,
@@ -267,6 +268,15 @@ public static class EventEndpoints
             return CrudProblems.Validation(validation, catalog, currentUser.Locale);
         }
 
+        // A start at an edge of the calendar would move a time of the event past it: refused on its field, before anything is built.
+        if (!EventCopy.MovesWithinTheCalendar(source, request.StartsAtUtc!.Value))
+        {
+            return CrudProblems.Validation(
+                new Refusals().Add(EventDuplication.StartField, "events:errors.duplicateOutOfCalendar"),
+                catalog,
+                currentUser.Locale);
+        }
+
         var plan = await duplication.PlanAsync(source, request, http.RequestAborted);
         foreach (var permission in plan.AreasWritten)
         {
@@ -276,11 +286,11 @@ public static class EventEndpoints
             }
         }
 
-        var (copy, problems) = await duplication.SaveAsync(plan, http.RequestAborted);
+        var (copy, notGenerated, problems) = await duplication.SaveAsync(plan, http.RequestAborted);
 
         return copy is null
             ? CrudProblems.Validation(problems, catalog, currentUser.Locale)
-            : Results.Created($"{Pattern}/{copy.Id}", EventMapper.ToDetail(copy, clock.UtcNow));
+            : Results.Created($"{Pattern}/{copy.Id}", new EventDuplicatedDto(EventMapper.ToDetail(copy, clock.UtcNow), notGenerated));
     }
 
     /// <summary>The presets of the kinds, as the settings hold them: the form of an event reads them, and changes nothing.</summary>

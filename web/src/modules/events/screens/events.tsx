@@ -645,7 +645,8 @@ export function EventEditor() {
 /**
  * "Duplicate" (§2.3-bis, E8b): the start and the address of the new draft — the start proposed is the event's, so whoever keeps the
  * hour changes the day —, and its public slots too, asked only of an event that takes some; then the new event's page. What comes with
- * the copy and what does not is said above the form, and for an event with private slots how they are made again.
+ * the copy and what does not is said above the form, and for an event with private slots how they are made again. A copy whose private
+ * slots the generator refused stays here a moment, to say so and why, with the way to it (the review of #249, point 3).
  */
 export function EventDuplicatePage() {
   const { t } = useTranslation();
@@ -656,6 +657,7 @@ export function EventDuplicatePage() {
 
   const event = useQuery(eventQuery(id)).data;
   const duplicate = useDuplicateEvent(id);
+  const [withoutPrivateSlots, setWithoutPrivateSlots] = useState<{ copy: number; why: string } | null>(null);
 
   if (event === undefined) {
     return null;
@@ -675,29 +677,49 @@ export function EventDuplicatePage() {
         { label: title },
       ]}
     >
-      <div className="flex flex-col gap-6">
-        {event.privateSlots ? <Notice tone="info" title={t('events:duplicate.privateSlots')} /> : null}
-        <SchemaForm
-          schema={duplicateSchema(event.publicSlots)}
-          defaults={{ startsAtUtc: event.startsAtUtc, slug: '', publicSlots: event.publicSlots }}
-          locales={bootstrap.division.locales}
-          labels="events:duplicate"
-          division={{
-            defaultLocale: bootstrap.division.defaultLocale,
-            timezone: bootstrap.division.timezone,
-          }}
-          onSubmit={async (values) => {
-            const copy = await duplicate.mutateAsync(values);
-            void navigate({ href: `${EVENTS}/${copy.id}` });
-          }}
-          submitLabel={t('events:duplicate.submit')}
-          secondaryAction={
-            <Button asChild variant="ghost">
-              <RouterAnchor href={back}>{t('common.cancel')}</RouterAnchor>
-            </Button>
-          }
-        />
-      </div>
+      {withoutPrivateSlots === null ? (
+        <div className="flex flex-col gap-6">
+          {event.privateSlots ? <Notice tone="info" title={t('events:duplicate.privateSlots')} /> : null}
+          <SchemaForm
+            schema={duplicateSchema(event.publicSlots)}
+            defaults={{ startsAtUtc: event.startsAtUtc, slug: '', publicSlots: event.publicSlots }}
+            locales={bootstrap.division.locales}
+            labels="events:duplicate"
+            division={{
+              defaultLocale: bootstrap.division.defaultLocale,
+              timezone: bootstrap.division.timezone,
+            }}
+            onSubmit={async (values) => {
+              const { event: copy, privateSlotsNotGenerated } = await duplicate.mutateAsync(values);
+              if (privateSlotsNotGenerated === null) {
+                void navigate({ href: `${EVENTS}/${copy.id}` });
+              } else {
+                setWithoutPrivateSlots({ copy: copy.id, why: privateSlotsNotGenerated });
+              }
+            }}
+            submitLabel={t('events:duplicate.submit')}
+            secondaryAction={
+              <Button asChild variant="ghost">
+                <RouterAnchor href={back}>{t('common.cancel')}</RouterAnchor>
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        // Made, without what the generator refused: its own words say what to put right, and «Generate» on the copy says it again.
+        <div className="flex flex-col items-start gap-4">
+          <Notice
+            tone="warning"
+            title={t('events:duplicate.privateSlotsNotGenerated')}
+            description={t(withoutPrivateSlots.why)}
+          />
+          <Button asChild>
+            <RouterAnchor href={`${EVENTS}/${withoutPrivateSlots.copy}`}>
+              {t('events:duplicate.openCopy')}
+            </RouterAnchor>
+          </Button>
+        </div>
+      )}
     </PageShell>
   );
 }

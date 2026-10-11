@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -93,10 +94,10 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var others = await PublicSlotAsync(toCome, "XEJ802", soon.AddHours(18), token);
         var landing = await PrivateSlotAsync(toCome, arrival: true, soon.AddHours(18), token);
         var leaving = await PrivateSlotAsync(toCome, arrival: false, soon.AddHours(19), token);
-        await BookingAsync(toCome, theirs, PersonVid, token);
+        var theirsBooked = await BookingAsync(toCome, theirs, PersonVid, token);
         await BookingAsync(toCome, others, OtherVid, token);
         var departure = await BookingAsync(toCome, leaving, PersonVid, token, row => (row.Callsign, row.OtherIcao, row.OtherTimeUtc) = ("XEJ804", Away, soon.AddHours(20)));
-        await BookingAsync(toCome, landing, PersonVid, token, row => (row.Callsign, row.OtherIcao, row.OtherTimeUtc, row.PairedBookingId) = ("XEJ803", Away, soon.AddHours(17), departure));
+        var arrival = await BookingAsync(toCome, landing, PersonVid, token, row => (row.Callsign, row.OtherIcao, row.OtherTimeUtc, row.PairedBookingId) = ("XEJ803", Away, soon.AddHours(17), departure));
 
         // Ended: a public slot they flew, found in a session of the network; their private arrival not flown, which the staff excused
         // with a note; another pilot's not flown, which they excused as staff, in their own words.
@@ -119,11 +120,13 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // Cancelled by them as staff and still to end, with a booking of theirs; and cancelled and ended, with another.
         var cancelled = await EventAsync("cancelled", soon.AddDays(2), cancelledBy: PersonVid, token);
-        await BookingAsync(cancelled, await PublicSlotAsync(cancelled, "XEJ821", soon.AddDays(2).AddHours(18), token), PersonVid, token);
+        var ofCancelled = await BookingAsync(cancelled, await PublicSlotAsync(cancelled, "XEJ821", soon.AddDays(2).AddHours(18), token), PersonVid, token);
         var cancelledEnded = await EventAsync("cancelled-ended", past.AddDays(-2), cancelledBy: OtherVid, token);
         var keptOfCancelled = await BookingAsync(cancelledEnded, await PublicSlotAsync(cancelledEnded, "XEJ831", past.AddDays(-2).AddHours(18), token), PersonVid, token);
 
-        Assert.True(await AuditMentionsAsync("XEJ812", token), "Without the private flight in the audit log, the check below would prove nothing.");
+        Assert.True(
+            await AuditMentionsAsync("XEJ812", token) && await AuditMentionsAsync("XEJ804", token),
+            "Without the private flights in the audit log, the check below would prove nothing.");
 
         // What the superadmin reads before confirming, and what the erasure did: the same lines.
         using var superadmin = await SignedInAsync(SuperadminVid, token);
@@ -164,10 +167,18 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal((int?)pseudonym, (await EventRowAsync(cancelled, token)).CancelledBy);
         Assert.Equal(pseudonym, Assert.Single(await BookingsAsync(cancelledEnded, token), row => row.Id == keptOfCancelled).BookerVid);
 
-        // Nothing of the private flights in the audit log: of the bookings that went, and of the ones that stayed.
+        // Nothing of the private flights in the audit log: of the bookings that went — the arrival and its linked departure —, and of the
+        // ones that stayed.
         Assert.False(await AuditMentionsAsync("XEJ803", token));
+        Assert.False(await AuditMentionsAsync("XEJ804", token));
         Assert.False(await AuditMentionsAsync("XEJ812", token));
         Assert.False(await AuditMentionsAsync(NoteAboutThem, token));
+
+        // Each booking that went keeps its row in the audit log, «erased», and nothing of it (the review of #249, point 5).
+        long[] went = [theirsBooked, arrival, departure, ofCancelled];
+        Assert.Equal(
+            went.Select(id => (id.ToString(CultureInfo.InvariantCulture), (string?)null, (string?)null)).Order(),
+            (await ErasedRowsAsync(went, token)).Order());
 
         // Run again: nothing left about the VID.
         Assert.All(EventsLines(await EraseAsync(superadmin, PersonVid, token)), line => Assert.Equal(0, line.Count));
@@ -329,6 +340,18 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
             .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
+    }
+
+    /// <summary>The rows the audit log keeps of these bookings going in an erasure: which one, and what it copies of it before and after.</summary>
+    private async Task<List<(string Id, string? Before, string? After)>> ErasedRowsAsync(long[] bookings, CancellationToken cancellationToken)
+    {
+        var ids = bookings.Select(id => id.ToString(CultureInfo.InvariantCulture)).ToArray();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var rows = await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking()
+            .Where(row => row.Action == "erased" && row.Entity == "evt_bookings" && ids.Contains(row.EntityId))
+            .ToListAsync(cancellationToken);
+
+        return [.. rows.Select(row => (row.EntityId, row.BeforeJson, row.AfterJson))];
     }
 
     private async Task<HttpClient> SignedInAsync(int vid, CancellationToken cancellationToken)

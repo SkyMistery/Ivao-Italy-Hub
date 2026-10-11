@@ -110,6 +110,7 @@ Per non ripeterle trenta volte:
 | E10g | Nucleo: la versione di un contratto | E0 (la chiede E5: il punto 9 di Carmine sulla #228) | `ContractVersion`: l'intestazione di un contratto, le versioni, il 400 con le accettate; la copia dei tour resta, e il passaggio dei tour al nucleo è di una sessione di Carmine |
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
 | E10i | Nucleo: il grant su una riga scrive la sua riga | E0 (la trova E6a: issue #235, decisa da Carmine) | il guardiano chiede `{Area}.Edit` con lo scope della riga, come l'handler: un grant su un evento solo cambia e toglie l'evento e le sue righe, ne crea i figli (slot, rotte), mai un evento nuovo |
+| E10k | Nucleo: le parole delle liste e i titoli delle schede | E0 (l'issue #224, decisa da Carmine) | la paginazione della lista generata tradotta; il titolo della scheda di ogni pagina, il nome della divisione come predefinito; una frase vuota per lista; «Premi Invio per salvare» solo dove Invio salva |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -1973,8 +1974,9 @@ da E5 ed E6a):
      `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`): il coordinatore degli eventi genera nella scheda i
      privati di un RFO (undici), il pilota del banco prenota sulla pagina un arrivo con la sua partenza, `/events/mine` dice la coppia, e
      il programma del Gate Manager, con un token e nient'altro, legge le due nell'esportazione, ognuna con lo slot dell'altra e senza gate.
-- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-11-gli-slot-privati.md`, **«Proposta»**,
-  le due domande a Carmine sulla #246; il ritiro di uno dei due collegati nella nota `2026-10-10-il-ritiro-di-un-volo-collegato`,
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-11-gli-slot-privati.md`, «Proposta»
+  all'apertura con le due domande a Carmine sulla #246, poi **decisa** — sotto, «Dopo la revisione» —; il ritiro di uno dei due
+  collegati nella nota `2026-10-10-il-ritiro-di-un-volo-collegato`,
   **decisa** — la strada A, [la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/245#issuecomment-6102449241) —): diciassette
   letture, il dettaglio è nella nota. Quelle da guardare: le ore sono **quelle dell'evento**, l'ultima tagliata con la sua parte di
   capacità, e nessun privato nel margine di sei ore di E5 (lettura 1); ogni orario tenuto prende **il passo più vicino** (2); in
@@ -1982,7 +1984,8 @@ da E5 ed E6a):
   generazione (7); l'altro aeroporto di un privato **può essere un altro scalo dell'evento** (9); la partenza collegata la vola **lo
   stesso aereo**, almeno `bookingGapMinutes` dopo l'arrivo (12). **Uno scostamento**: l'interruttore degli slot privati si spegne anche
   con dei privati — la regola gemella di `hasPublicSlots`, scritta, faceva cadere un test di E5, e l'ho tolta invece di toccarlo (lettura 8,
-  domanda 2). **Gli endpoint scritti a mano**: due verbi che il design nomina (§7.2), «genera» e «prenota un privato»; nessuna lettura
+  domanda 2); **superato** dalla risposta 2 di Carmine: il passaggio da acceso a spento è rifiutato, e il test di E5 resta com'è
+  (sotto). **Gli endpoint scritti a mano**: due verbi che il design nomina (§7.2), «genera» e «prenota un privato»; nessuna lettura
   nuova. L'handoff di E6b chiedeva a E7 il promemoria di un privato: parte all'off block del suo volo (lettura 14).
 - **Trovato, e scritto per chi viene dopo**: ⚠️ **il dialog di un'ora con la partenza** è alto due voli di campi: a 1280×720 il `Dialog`
   di Atmosphere cresceva oltre il bordo e «Prenota» non si raggiungeva — l'ha trovato il giro completo («outside of the viewport») —; ora
@@ -2027,6 +2030,52 @@ da E5 ed E6a):
   nello stesso istante è deterministica, con una transazione del test); il dialog letto da un lettore di schermo vero; il gate davvero
   assegnato (lo assegna il programma del Gate Manager, fuori dall'hub); «Genera» e «togli» di una coppia con un grant su un evento solo,
   che con E10i passano dal guardiano come gli altri verbi della scheda — nessun test di E7 lo prova.
+- **Dopo la revisione** (11 ottobre 2026, sera; [i rilievi del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113085610),
+  letti sulla prima testa, `0d766fe`, con la CI verde; le correzioni in `f16a1a4`, `6cbf95e`, `dff122a` e `12c45e0`; prima di loro
+  `main` unito a `bea8c0e`, con la #238 di E10k, in `acb80cd` — il conflitto solo in `HANDOFF-M4.md`: l'intestazione di E7 tenuta, il
+  blocco di E10k intero sotto quello di E7 —):
+  1. **Due generazioni insieme** (punto 1): quando nessun privato libero c'era ancora — la prima generazione, o tutti prenotati — due
+     generazioni dello stesso evento scrivevano tutte e due l'insieme intero (niente di unico ferma due slot senza nominativo), e la
+     capacità raddoppiava. Ora `PrivateSlotGeneration` prende la **riga dell'evento `FOR UPDATE`** in una transazione `READ COMMITTED`
+     intorno a tutto quello che legge e scrive, come il blocco della prima prenotazione di un pilota, e **rilegge l'evento sotto il
+     blocco** (l'interruttore, le ore, la cura); un evento sparito nel frattempo è 404 (`GenerationResult.NotFound`).
+  2. **Un deadlock di «Genera» è un 409** «leggi di nuovo» (punto 2), come uno slot prenotato nello stesso istante: l'endpoint prende
+     anche `DatabaseErrors.Deadlocked`.
+  3. **I test che mancavano** (punto 3), in `EventsPrivateSlotsTests` (integrazione, sette in più, quattordici in tutto): le due
+     generazioni insieme; il deadlock di «Genera», con la richiesta vittima di una transazione più pesante (quaranta slot di un altro
+     evento); il tetto dei 5.000 (999 arrivi l'ora per sei ore); una generazione contro una prenotazione **nei due ordini** — la prima
+     prenotazione di un pilota in volo tiene la riga dell'evento e la generazione che l'aspetta tiene lo slot prenotato; la seconda
+     prenotazione di un pilota, ferma sul suo blocco, trova il suo slot sostituito da una generazione e risponde 404 —; il **409 di un
+     deadlock in `BookPrivateAsync`**; e l'interruttore (sotto). Ogni gara con una transazione del test tenuta nel database
+     (`INNODB_TRX`), come in E6a.
+  4. **Contare prima di costruire** (punto 4): `PrivateSlotGenerator.Count`, ora per ora come `Generate` ma senza costruire, si ferma
+     oltre il tetto per quanto lungo sia l'evento; la generazione lo chiede prima di fare uno slot. Unità: il conto uguale a quello che
+     `Generate` fa in sei casi, e 999 l'ora per vent'anni che si ferma alla sesta ora.
+  5. **Il dialog dopo un rifiuto** (punto 5): il form dell'ora tiene quello che il pilota scrive come stato (non più un `ref`), e si
+     ridisegna quando gli slot offerti cambiano — la sua chiave sono gli slot offerti —, con quello che ha scritto e il primo libero al
+     posto del suo, e lo dice (`events:errors.slotJustTaken`). Vitest nuovo, su una pagina che si rilegge come quella vera. E **«Genera»
+     rifiutato rilegge gli slot** (`useGeneratePrivateSlots`, `onError`).
+  6. **La lettura della pagina porta ogni privato a ogni lettore** (punto 6): detto nella nota (§6) e lasciato così.
+  - **Le risposte di Carmine** ([sulla #246](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/246#issuecomment-6113461257), di
+    SkyMistery su sua istruzione; la nota `2026-10-11-gli-slot-privati` è **decisa**, §5): **sì alle letture (a)–(g)**, la (e) compresa
+    sapendolo; **l'interruttore dei privati non passa da acceso a spento finché l'evento ne ha** — la raccomandazione della domanda 2 non
+    è passata —: in `EventSaving` accanto alla regola dei pubblici, solo quel passaggio (il valore di prima dal tracker), con la chiave
+    `events:errors.hasPrivateSlots`; il test di E5 resta com'è. Il punto 9 del revisore (i privati liberi dopo un cambio delle date) è la
+    lettura 6, approvata come scritta.
+  - **Al contrario** (11 ottobre 2026; il codice di prima rimesso per la prova, poi di nuovo il nuovo, toccato e ricompilato, la classe di
+    nuovo verde): sul server della testa `acb80cd` cadono i quattro test che devono cadere, ognuno per la sua ragione — la seconda
+    generazione ne scrive altri quattro (`(4, 0, 0)` invece di `(4, 4, 0)`), la generazione contro la prenotazione in volo risponde 409,
+    il deadlock risponde **500**, l'interruttore si spegne —; gli altri tre (il tetto, l'altro ordine, il deadlock di una prenotazione)
+    provano quello che c'era già e passano. Sul componente di prima il vitest nuovo cade: il menu degli slot resta vuoto.
+  - **Verificato, in locale** (sulla testa `12c45e0`, poi con i documenti): `dotnet build IvaoHub.sln -c Release` senza avvisi né
+    errori; unità **1220/1220**; **integrazione intera 543/543** (10,6 minuti; le sette nuove comprese); i test di spina dorsale da soli
+    dagli assembly di Release, `ArchitectureTests` 15 su 15 scritti e `ForkabilityXxDivisionTests` 3 su 3; `pnpm i18n:sync` e
+    `pnpm gen:api` senza differenze; `pnpm lint`, `typecheck`, `format:check` (dopo `prettier --write` sul componente) e `i18n:check`
+    (830 chiavi) verdi; `pnpm test` **711 in 98 file**; lo smoke dietro il suo lock **180/180** al primo giro (1,1 minuti, con la sua
+    `pnpm build`); **`pnpm e2e:full` 59/59** (12,7 minuti, 5134, `ivaohub_e2e_e7` ricreato, dietro il lock di Mailpit) — al secondo
+    tentativo: il primo è morto dopo mezzo minuto, prima di ogni spec, con il runner di Playwright uscito `0xC0000409` (lo stesso crash
+    visto una volta in M3), e ha lasciato acceso il server del banco su 5134, fermato a mano —; le regole di `core-guard` dalla base di
+    merge `bea8c0e`: **PASS** — solo il modulo e i documenti, e `schema.d.ts`; due note nuove.
 
 ### E8a — Nucleo: la cancellazione vede gli eventi
 
@@ -2190,11 +2239,69 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
      al primo giro (59 secondi); **`pnpm e2e:full` 61/61 al primo giro** (12,6 minuti, il suo worker solo) sul banco
      `http://127.0.0.1:5136`, `ivaohub_e2e_e8b` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge
      `0c2f85a`: **PASS**, con quattro note nuove (due di E7, due di E8b).
-- **Non verificato**: la CI della testa (la dice la PR); le risposte di Carmine alle due domande dell'issue #248 e a quella sulla testa
-  della pagina (#249); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione di prova; il banner di un evento
-  eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul disco); la copia di una descrizione con
-  immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina di un evento lette da un lettore di schermo
-  vero (gli scali sono `abbr`, i puntini nascosti); la testa su un telefono vero (misurata nel Chromium di Playwright a 375 px).
+- **La revisione e le risposte di Carmine** (11 ottobre 2026, sera):
+  - **[I rilievi del revisore sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816)**: approvabile,
+    niente da correggere; cinque punti bassi, presi tutti perché costano poco (sotto).
+  - **[Le risposte sull'issue #248](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248#issuecomment-6113460643)**: la (A′) e la (i),
+    come scritte; la nota `2026-10-11-duplica-e-la-cancellazione-negli-eventi` è **decisa**, con le risposte e i punti della revisione
+    nel suo §6.
+  - **[Le risposte sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471)**: 1. la testa è la (A),
+    sapendolo — l'ordine del design §7.1 e la riga «Prenotazioni» di E6b cambiano, e che la pagina non dica più «in corso» né da quando
+    le prenotazioni sono aperte è accettato —, **con un cambio: i nomi degli scali leggibili senza mouse**, come sceglie chi
+    contribuisce, mai una seconda copia di `Hint`. 2. **Il buco dell'audit** (il punto 7 del revisore: le righe dell'audit di una
+    prenotazione ritirata o tolta prima della cancellazione tengono il volo privato) è **una fase del nucleo di M4**, con la sua PR e
+    una nota, unita prima che le prenotazioni si aprano su un'installazione vera: **non di E8b**; è **E10n** (#251,
+    `[ErasedWith(nameof(BookerVid))]`), e dopo il suo merge E8b segna le cinque colonne che la sua cancellazione svuota, con un test.
+    La nota `2026-10-11-la-testa-della-pagina-di-un-evento` è **decisa**, con la risposta e la scelta nel suo §6.
+  - **Fatto**: 1. **i nomi degli scali nella testa** con `Hint`, il pezzo della pagina degli slot — esportato da `EventSlots.tsx`,
+    dove resta, non copiato —: il codice di uno scalo che l'hub conosce è un bottone, con il nome al passaggio del mouse, al focus della
+    tastiera e al tocco di un telefono, che si chiama per chi legge lo schermo con il codice e il nome («XXAA · Smoke Airport A»); il
+    codice di uno che l'hub non conosce più resta da solo. Scelto invece del nome accanto al codice perché la riga resta quella del
+    disegno (« · LIRF») e quel pezzo apre già al tocco. 2. **L'eraser** lascia fuori una prenotazione il cui evento non c'è più, come il
+    join dell'anteprima (`TryGetValue`): le due dicono le stesse righe (punto 1). 3. **`docs/events-bookings-export.md`** dice che cosa dà
+    l'esportazione dopo una cancellazione: le prenotazioni di un evento finito con `booked_by` negativo e, su uno slot privato, senza
+    callsign, altro aeroporto e orario lì (punto 2). 4. **«Duplica» dice perché la copia non ha i suoi slot privati**: la risposta 201 è
+    ora `EventDuplicatedDto` — l'evento nuovo e, quando il generatore ha rifiutato, la sua chiave (`privateSlotsNotGenerated`) —, e la
+    pagina, invece di aprire la copia, lo dice con le parole del rifiuto e un bottone «Apri la copia» (punto 3). 5. **Un nuovo inizio
+    che sposterebbe un orario dell'evento fuori dal calendario** — gli anni 1000–9999 di una colonna DATETIME — è rifiutato sul suo
+    campo (`events:errors.duplicateOutOfCalendar`, `EventCopy.MovesWithinTheCalendar`), non più un 500 (punto 4). 6. **Il test della
+    cancellazione** guarda anche il callsign della partenza collegata (`XEJ804`) e la riga «erased» dell'audit di ognuna delle quattro
+    prenotazioni che vanno, senza niente di loro (punto 5). Il punto 8 del revisore (la descrizione copiata com'è) non ha avuto
+    risposta: resta la lettura 4 della nota.
+  - **I test**: `EventHead.test.tsx` 7 (uno in più: il nome al focus e al tocco); la smoke prende il nome al focus nel test della
+    pagina di E4 e, nel blocco «on a phone», al tocco; `EventsDuplicationTests` 7 (il calendario); `EventsDuplicateTests` con la
+    risposta nuova, il perché dei privati non generati e l'inizio fuori dal calendario; `EventsErasureTests` con la partenza collegata e
+    le righe «erased».
+  - **Al contrario** (rimesso poi com'era, toccato e ricompilato, la classe di nuovo 3/3): senza il controllo sul calendario la copia
+    a fine 9999 risponde 500; senza la chiave del rifiuto la copia senza capacità risponde `null` invece di `events:errors.noCapacity`.
+  - **Verificato, in locale** (11 ottobre 2026, sera): `dotnet build` Debug e Release senza avvisi; `dotnet format --verify-no-changes`
+    sui sette file C# toccati; unità **1225/1225**; `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di
+    Release; `EventsDuplicateTests` ed `EventsErasureTests` 4/4; `pnpm gen:api` e `pnpm i18n:sync` senza altre differenze; `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **706 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock
+    **181/181** al primo giro (1,3 minuti). L'integrazione intera e `pnpm e2e:full`: dopo il merge della testa nuova di E7, sotto.
+  - **I merge**: `main` a `bea8c0e` (la #238 di E10k; in conflitto solo `HANDOFF-M4.md`), poi **la testa nuova di E7** a `7a847a8`,
+    dopo la sua revisione (di nuovo solo `HANDOFF-M4.md`). ⚠️ **Il generatore di E7 è cambiato sotto «Duplica»**: dalla revisione della
+    #246 prende la riga dell'evento `FOR UPDATE` in una transazione **sua**, e risponde con tre valori. «Duplica» lo chiama dentro la
+    transazione che scrive la copia, e la connessione rifiutava la seconda: **ogni copia che genera i suoi privati rispondeva 500**
+    («The connection is already in a transaction», provato sul commit di merge: le due classi che duplicano con i privati cadono). Ora
+    **il generatore si unisce a una transazione già aperta** — il blocco e le scritture sono suoi, e chi lo chiama fa il commit —, e da
+    solo, come «Genera», apre e chiude la sua come prima: «Duplica» resta una transazione sola, il generatore compreso, come l'ha letta
+    la revisione. Il merge porta solo la lettura dei tre valori; l'unione alla transazione è un commit suo, perché si veda.
+  - **Verificato, in locale, sulla testa dopo i due merge** (11–12 ottobre 2026): `dotnet build` Debug e Release senza avvisi;
+    `dotnet format --verify-no-changes` sui dieci file C# del tratto; unità **1227/1227**; **integrazione intera senza filtro 547/547**
+    (7,0 minuti); `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di Release; `pnpm gen:api` e
+    `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (833 chiavi) verdi; `pnpm test` **726 in
+    100 file**; `pnpm build` verde; lo smoke dietro il suo lock **181/181** al primo giro (1,2 minuti). **`pnpm e2e:full`**, sul banco
+    `http://127.0.0.1:5136` con `ivaohub_e2e_e8b` ricreato ogni volta, dietro il lock di Mailpit: **la prima corsa 60/61** (12,0
+    minuti) — la spec di E7 `events-private.spec.ts:159` non ha trovato il titolo della pagina del pilota in cinque secondi: il browser
+    ha caricato la pagina e i suoi asset e poi, per cinque secondi, non ha chiesto niente (nessuna `/api/me` nel log del server), un
+    inceppamento sotto carico —; la spec da sola, `--repeat-each 3`, **3/3**; **la seconda corsa intera 61/61** (11,7 minuti). Le regole di
+    `core-guard` dalla base di merge `bea8c0e`: **PASS**, con quattro note nuove.
+- **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
+  di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
+  disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina
+  di un evento lette da un lettore di schermo vero (i puntini nascosti, i nomi degli scali nei bottoni); la testa su un telefono vero
+  (misurata nel Chromium di Playwright a 375 px, il tocco provato con `hasTouch`).
 
 ### E9 — Fuori dal repository: il Gate Manager, il primo evento, `ivao-booking` spento
 
@@ -3133,6 +3240,121 @@ di Carmine sulla #237, [1–3][a237] e [4][a4237], date in chat alla sessione ma
 [a237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083875849
 [a4237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6083895328
 [m2237]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/237#issuecomment-6096404865
+
+### E10k — Nucleo: le parole delle liste e i titoli delle schede
+
+**Da dove viene**: non c'era in E0. Sono quattro cose che dalberone ha visto sul banco di prova il 6 e il 7 ottobre 2026 (sui branch di
+E4 e di E5), tutte nel codice di `main`. Le ha portate a Carmine sull'issue #224 (le prime due, con l'offerta di prenderla) e in un
+commento della stessa issue (le altre due), e **Carmine ha deciso** ([la sua risposta sulla #224][a224k], 9 ottobre, data in chat alla
+sessione master e pubblicata su sua istruzione): sì ai quattro punti, una PR piccola del nucleo con una nota nuova, le chiavi nuove del
+nucleo nelle due lingue, nessun test del maintainer cambiato. Branch `m4/e10k-lists-and-titles`, da `main` a `0f72737`. **PR del
+nucleo** senza coda, con la sua nota (caso b); niente in C#.
+
+1. **La paginazione** della lista generata con le parole dei file di lingua, non con quelle di `Pagination` di Atmosphere.
+2. **Il titolo della scheda**: il nome della divisione come predefinito, mai quello del prodotto; un titolo proprio per le pagine elenco
+   del nucleo e per la pagina che non c'è; il modo per le pagine elenco dei moduli.
+3. **Una frase vuota per lista**, facoltativa; quella di oggi resta il predefinito.
+4. **«Premi Invio per salvare»** tolto o riformulato sotto una casella di più righe.
+
+**Test**: vitest per le parole della paginazione nelle due lingue, i titoli, la frase vuota (la predefinita e quella di una lista) e la
+frase di Invio sotto una casella di più righe.
+**Fatta quando**: nessuna lista dice una parola inglese sotto un'altra lingua, nessuna scheda dice il nome del prodotto, una lista di un
+modulo può dire la sua frase vuota, e il lettore di schermo non promette un salvataggio che Invio non fa.
+
+**Com'è andata** (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo senza coda, da `main` a `0f72737`):
+
+- **Fatto** (nota nuova `2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede`, **decisa**, con il link alla risposta di Carmine):
+  - **la paginazione** (`Pages` in `web/src/shared/list/DataList.tsx`): i pezzi di `Pagination` di Atmosphere (`PaginationRoot`,
+    `PaginationContent`, `PaginationItem`, `PaginationLink`) con le icone di `lucide-react` e le chiavi `list.pages.label`, `.previous`,
+    `.next`, `.first`, `.last`; lo stesso aspetto e la stessa finestra di prima;
+  - **la frase vuota**: `emptyDescription` di `DataList`, accanto a `emptyAction`;
+  - **i titoli** (`web/src/shared/seo/PageMetadata.tsx`): `DivisionTitle`, montato da `Root` in `web/src/routes/__root.tsx`; `title` e
+    `description` di `PageMetadata` prendono anche una frase tradotta, e `divisionName` è facoltativo; `NotFound` dice il suo titolo;
+    `/news` e `/documents` (`PublicListScreen`), `/calendar` (`PublicCalendarScreen`) e `/search` (`SearchResults`) il loro; `_public/$.tsx`,
+    `HomePage` e `PublicEntryScreen` non passano più il nome a mano;
+  - **la frase di Invio**: `whereEnterSaves` in `web/src/shared/forms/SchemaForm.tsx`, i tre casi, la chiave `form.submitHintOneLine`;
+  - **sei chiavi nuove** in `locales/{en,it}/common.json`, nessun doppione nei file dei moduli (cercato prima, piano §16 punto 16);
+    `docs/UI-GUIDELINES.md` dice le quattro cose in inglese;
+  - **i test** (vitest, 16): `web/src/shared/list/DataList.words.test.tsx` (7), `web/src/shared/forms/SchemaForm.enter.test.tsx` (5),
+    `web/src/routes/-titles.test.tsx` (4, sulla radice vera dell'app).
+- **Scelte di dalberone** (9 ottobre, chieste prima del codice con la raccomandazione per prima; tutte e tre accolte):
+  1. **la parte degli eventi in una fase dopo**. Il prompt chiedeva di usare in questa PR i pezzi nuovi negli eventi (il titolo di
+     `/events`, le frasi vuote delle schede «Slot» e «Rotte»), ma `CLAUDE.md` §0 regola 6 vuole il nucleo in una PR a sé, mai insieme
+     al codice del modulo che lo usa (come E4b con la striscia). La fase dopo è scritta nella nota (§4) e nell'handoff;
+  2. **parole e non frecce** nella paginazione;
+  3. **tre casi** per la frase di Invio: niente frase, la frase riformulata, la frase di oggi.
+- **Scelte della fase, scritte nella nota** (§2, §5):
+  1. **un «…» solo dove nasconde una pagina**: Atmosphere ne disegna uno anche sulla prima e sull'ultima di tre pagine, accanto al numero
+     a cui porta;
+  2. **il titolo predefinito alla radice** e non nel layout: la pagina che non c'è della radice non ha layout, e lì `DivisionTitle` sta
+     sopra tutto. Regge sull'ordine in cui React 19 mette i `<title>`, letto nel sorgente di react-dom 19.2.8 e provato sulla radice vera;
+  3. **`divisionName` facoltativo, non tolto**: lo passa la pagina di un tour, che è del maintainer;
+  4. **le tre pagine del nucleo senza il nome a mano**, perché nel nucleo ci sia una strada sola;
+  5. **`/search` fra le pagine elenco**: la pagina dei risultati ha il suo titolo, come le altre;
+  6. **una prop per la frase vuota**, non una convenzione su `<labels>.empty`: lo stesso `labels` lo usano più liste.
+- **Trovato**:
+  - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer, T2) cade dalle 06:00 UTC del 9 ottobre su
+    ogni branch, `main` compreso: chiede la storia del 9 settembre 2026, e oltre i 30 giorni di `IWeatherSource.HistoryWindow`
+    `NoaaWeatherClient.GetHistoryAsync` risponde `null`. L'ha visto la sessione di E10i, che l'ha detto a questa; dalberone ha aperto
+    l'issue #236 per Carmine. Non toccato (regola 3): fino alla correzione `build-test` è rosso su ogni PR, questa compresa;
+  - in un test che costruisce un router suo, `router.navigate({ to })` prende i tipi delle rotte registrate dall'app (`/search` vuole i
+    suoi parametri): il test naviga con `router.history.push`.
+- **Lette le fasi che corrono accanto** (9 ottobre): E10j ha scritto a questa sessione quali file tocca (i job, `Program.cs`,
+  `schema.d.ts`), nessuno di questa fase; E10i tocca l'interceptor e il modulo di prova; E6b i file degli eventi. Conflitti solo nei
+  documenti di M4, per chi arriva secondo.
+- **Verificato, in locale** (9 ottobre 2026, `main` a `0f72737`):
+  - `pnpm lint`, `pnpm typecheck` e `pnpm i18n:check` (822 chiavi letterali in `en` e `it`) verdi; `pnpm test` **659/659** in 91 file;
+  - i test nuovi da soli 16/16; **la prova al contrario**: con il codice di `main` rimesso (le parole e i test nuovi tenuti) cadono 12 test
+    su 16, e i quattro che passano sono quelli di ciò che non cambia; rimessi i file della fase, 16/16;
+  - `dotnet build IvaoHub.sln` 0 avvisi; unità **1186/1187** (cade solo `WeatherTests…`, sopra); integrazione intera, senza filtro,
+    **497/497** al primo giro (5,7 minuti);
+  - la smoke `pnpm e2e` **173/173** (con 16 worker: il `--workers=2` dato dopo il `--` di `pnpm run` non è arrivato a Playwright);
+  - `pnpm e2e:full` sulla porta 5131 con `ivaohub_e2e_e10k` nuovo: **57/57** al primo giro (10,8 minuti);
+  - **guardato in un Chrome vero** (il pannello del browser dell'app, Chrome 152, sul banco di questa fase rimesso in piedi senza
+    ripubblicare né mandare mail): le schede dicono «Calendario — IVAO Italia», «News — IVAO Italia», «Documenti — IVAO Italia», «Cerca
+    — IVAO Italia», «Questa pagina non esiste — IVAO Italia» e «Home — IVAO Italia»; `/events`, `/tours` e il back office «IVAO Italia».
+    Nella testa del documento l'ordine è quello che la nota dice: il titolo della pagina, poi quello della divisione, poi quello di
+    `index.html`. L'audit (531 righe, pagina 5) dice «Pagine», «Precedente», «Prima pagina», 4, 5, 6, «Ultima pagina», «Successiva», con
+    l'aspetto di prima e nessuna parola inglese;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`0f72737`): venti file, nessuno del maintainer, diciassette del
+    nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR, rossa su `build-test` per `WeatherTests` finché Carmine non lo corregge);
+  - `/tours` (del maintainer, da adottare con una riga) e la fase degli eventi dopo questa;
+  - un lettore di schermo vero sulla frase di Invio: i test leggono il testo nascosto nel DOM, e nel Chrome vero non l'ho guardata;
+  - un browser diverso da Chrome; i titoli in inglese nel Chrome vero (le stesse chiavi, provate in inglese e in italiano da vitest).
+
+**Dopo il primo push** (9 ottobre 2026, la sessione che coordina, con la misura della sessione di E4c sulla testa `d307774`):
+
+- **`pnpm -C web run format:check` cadeva su quattro file della fase** (`-titles.test.tsx`, `SchemaForm.enter.test.tsx`,
+  `SchemaForm.tsx`, `DataList.words.test.tsx`: righe oltre 110 colonne, un ternario che sta su una riga, uno `<span>` fra parentesi). Non
+  l'avevo eseguito: la lista dei passi della fase non lo nominava. Corretto con `prettier --write` sui quattro file, solo formattazione
+  (26+/15-), in un commit `style` a sé.
+- ⚠️ **La CI oggi non l'avrebbe detto**: quando «Test .NET» cade per `WeatherTests` (#236), ogni passo dopo è saltato — lint, formattazione,
+  typecheck, vitest, la smoke, il giro completo e il pacchetto. Finché #236 è aperta, quei passi si fanno in locale e la PR li elenca.
+- **Rifatto sulla nuova testa**: `pnpm lint`, `pnpm format:check` («All matched files use Prettier code style!»), `pnpm typecheck`,
+  `pnpm i18n:check` (822 chiavi) verdi; `pnpm gen:api` senza differenze; `pnpm test` **659/659** in 91 file; la smoke **173/173**. Un giro
+  della smoke cominciato poco prima di un riavvio dell'app ne aveva dati 160/173, con le cadute solo nelle spec della formazione
+  (`toBeVisible`); rifatta a macchina ferma, 173/173, e i quattro file della formazione con `--repeat-each=2` 62/62.
+
+**Dopo la revisione** (9 ottobre 2026, [i rilievi][r238k] e [la risposta di Carmine][a238k] sulla #238, data in chat alla sessione
+master e pubblicata su sua istruzione):
+
+- **Approvabile sul codice, niente da correggere**; da unire con `main` dopo la correzione del test del meteo (#236, la #241 di Carmine),
+  con la CI intera.
+- **Carmine: sì alla lettura più larga** del punto 2 della #224 — il nome della divisione è il titolo predefinito di ogni pagina, il back
+  office compreso, e `/news`, `/documents` e `/search` dicono il loro titolo —, e **la dipendenza da React 19 è accettata**, con
+  `-titles.test.tsx` a tenerla. Scritto nella nota (intestazione e §6), con il link.
+- **I due rilievi bassi, fatti** (nota §6): le caselle di una riga di una lista ripetibile non contano più per la frase di Invio (quelle
+  di più righe sì), e `og:title` non si scrive vuoto. Un test per ciascuno; con il codice di prima cadono quei due e nessun altro (10 su
+  12 passano).
+- **Rifatto**: `pnpm lint`, `pnpm typecheck` e `pnpm format:check` verdi; i tre file di test della fase 19/19.
+- **Il push aspetta** l'unione della #241, come chiede la sessione che coordina: poi `main` unito sul branch e un push solo, perché la CI
+  giri intera.
+
+[a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[r238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
 
 ### E11a — Postazioni e disponibilità
 

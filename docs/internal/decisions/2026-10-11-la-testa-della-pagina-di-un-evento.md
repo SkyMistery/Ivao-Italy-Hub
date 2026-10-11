@@ -1,14 +1,15 @@
 # La testa della pagina di un evento: due righe sotto il titolo, gli slot subito dopo (E8b)
 
 **Data:** 11 ottobre 2026 — fase E8b di M4, chiesta da dalberone dopo il banco di E7 (#246)
-**Stato:** **Proposta** — una domanda a Carmine con [un commento sulla #249][q] (§4). E8b scrive la pagina come la descrive questa
-nota; una risposta diversa è una correzione sul branch della fase.
+**Stato:** **Decisa** — da Carmine, [la sua risposta 1 sulla #249][a] alla domanda [del commento sulla #249][q] (§4): la (A), con
+un cambio, i nomi degli scali leggibili senza mouse (§6). La lettura 5 qui sotto è già quella decisa.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)**: solo la pagina del modulo e le sue parole — nessun meccanismo, niente nel
 nucleo, nessun endpoint, nessuna migrazione. Cambia però due cose già decise: l'ordine della pagina nel design M4 §7.1 («banner,
 titolo, date in UTC e nell'ora della divisione, tipo, organizzatore, scali, rotte, descrizione. Poi: slot pubblici…, slot
 privati…») e la riga «Prenotazioni» decisa con E6b (#240, piano 1.32). Per questo è una domanda, e non una lettura.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6108168944
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
 ## 1. Che cosa ha chiesto dalberone
 
@@ -58,9 +59,13 @@ E6b) e, sotto, le rotte li spingevano fuori dal primo schermo di un telefono.
    sua nota; bozza, non ancora visibile e concluso, che vede solo lo staff, li dice l'avviso dello staff; «in corso» lo dicono gli
    orari e, sugli scali, la striscia di chi è online; «annunciato» non dice niente che il badge delle prenotazioni non dica meglio.
    Le schede di `/events` tengono stato e tipo: in una lista è lo stato che distingue un evento dall'altro.
-5. **Gli scali come codici**, il nome al passaggio del mouse (`abbr`) quando l'hub lo conosce; «Tutti gli aeroporti della
-   divisione» per un evento di tutta la divisione. I nomi restano dove servono: nelle sezioni degli slot (una per scalo, quando
-   sono più d'uno), negli slot privati e nelle rotte.
+5. **Gli scali come codici**, e il nome di uno che l'hub conosce **leggibile senza mouse** (la risposta di Carmine, §6): il codice è
+   `Hint`, il pezzo che la pagina degli slot usa già, e il nome si apre al passaggio del mouse, al focus della tastiera e al tocco di
+   un telefono; a chi legge lo schermo il bottone si chiama con il codice e il nome («LIRF · Roma Fiumicino»), come una lista nomina
+   uno scalo. Il codice di uno scalo che l'hub non conosce più resta da solo. «Tutti gli aeroporti della divisione» per un evento di
+   tutta la divisione. I nomi restano anche dove già c'erano: nelle sezioni degli slot (una per scalo, quando sono più d'uno), negli
+   slot privati e nelle rotte. *Proposta prima*: il nome solo nel `title` di un `abbr`, che il telefono e la tastiera non
+   raggiungono.
 6. **Chi organizza**, solo se non è la divisione: «Organizzato dalla rete, con la divisione» o «Organizzato da un'altra
    divisione», e accanto «La loro pagina» ↗. La pagina esterna di un evento **della divisione**, se qualcuno la scrive, non compare
    più: il campo è per gli altri (il suo suggerimento lo dice, «Per un evento della rete o di un'altra divisione»), e «La loro
@@ -88,15 +93,35 @@ Posta in inglese con [un commento sulla #249][q]; in italiano dice:
 ## 5. Che cosa si tocca
 
 Solo la pagina del modulo e le sue parole: `EventHead.tsx` (nuovo), `BookingOpening.tsx` (il badge al posto della riga),
-`public.tsx` (la testa e l'ordine), `EventSlots.tsx` (la frase dell'off block), `cards.ts` e `bookingTimes.ts` (gli orari della
+`public.tsx` (la testa e l'ordine), `EventSlots.tsx` (la frase dell'off block, e `Hint` esportato per la testa), `cards.ts` e `bookingTimes.ts` (gli orari della
 testa e lo stato delle prenotazioni, come dati), le parole (nuove `public.organizedBy.*` e `public.booking.opensOn`, `open`,
 `closed`; tolte `public.when` e `public.booking.title`, `opensAt`, `openSince`, `closedCancelled`, che nessuno legge più). I test:
 Vitest della riga (`EventHead.test.tsx`), dell'ordine (`public.test.tsx`), degli orari e dello stato; le spec che leggevano le righe
 vecchie — la smoke `events-public.spec.ts` (E4, E6b) e il giro `full/events-bookings.spec.ts` (E6b) — leggono la testa nuova.
 
+## 6. La risposta di Carmine
+
+11 ottobre 2026, [la sua risposta 1 sulla #249][a] (autore `SkyMistery`: data in chat al master e pubblicata da lui su sua
+istruzione):
+- **la (A)**, sapendolo: le due righe sotto il titolo, le prenotazioni come badge, senza il badge dello stato, gli slot per primi e
+  in fondo la descrizione e le rotte, al posto dell'ordine del design §7.1 e della riga «Prenotazioni» decisa con E6b. Che la pagina
+  non dica più «in corso», né da quando le prenotazioni sono aperte, è accettato;
+- **con un cambio: i nomi degli scali leggibili senza mouse.** Nel solo `title` di un `abbr` né un telefono né la tastiera li
+  raggiungono, e un evento su uno scalo solo, senza rotte, non lo nominava da nessuna parte. Come farlo — il nome accanto al codice
+  dove c'è spazio, o il pezzo che la pagina degli slot ha già per il tocco — lo sceglie chi contribuisce; **mai una seconda copia di
+  `Hint`** (la risposta sulla #228 resta: una seconda schermata che lo vuole porta una decisione).
+
+**La scelta di E8b**: il pezzo della pagina degli slot, `Hint`, usato dalla testa della stessa pagina — esportato da
+`EventSlots.tsx`, dove resta, e non copiato —, perché la riga resta quella del disegno di dalberone («· LIRF»), e quel pezzo apre già
+il suo testo al passaggio, al focus e al tocco (lettura 5). Il nome accanto al codice avrebbe allungato la riga di ogni scalo, e
+il suo puntino si sarebbe confuso con quelli fra un fatto e l'altro.
+
 ## Da portare nel piano
 
 - Design M4 §7.1, `/events/{slug}`: la testa (due righe; il badge delle prenotazioni al posto della riga «Prenotazioni» decisa con
-  E6b; chi organizza solo se non è la divisione; gli scali come codici; il tipo sì, lo stato no) e l'ordine (gli slot, gli slot
-  privati, poi la descrizione e le rotte); «ogni slot fino al suo off block» accanto agli slot.
+  E6b; chi organizza solo se non è la divisione; gli scali come codici, il nome leggibile senza mouse con `Hint`; il tipo sì, lo
+  stato no) e l'ordine (gli slot, gli slot privati, poi la descrizione e le rotte); «ogni slot fino al suo off block» accanto agli
+  slot.
 - Piano 1.32, la riga «Prenotazioni» di E6b: diventa il badge della testa.
+- Il piano, dove dice che `Hint` è un pezzo della pagina degli slot (§8.3, dalla nota `2026-10-07-gli-slot-sulla-pagina-dell-evento`):
+  lo usa anche la testa della stessa pagina, per i nomi degli scali.

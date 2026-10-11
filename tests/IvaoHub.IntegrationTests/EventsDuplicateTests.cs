@@ -137,9 +137,9 @@ public sealed class EventsDuplicateTests(MariaDbFixture mariaDb) : IAsyncLifetim
         // Thirty days later, two hours and a quarter earlier in the day.
         var newStart = day.AddDays(30).AddHours(15).AddMinutes(-15);
         var difference = newStart - day.AddHours(17);
-        var copied = await CreatedAsync(await DuplicateAsync(coordinator, id, new EventDuplicateRequest(newStart, $"  {Slug("copy").ToUpperInvariant()}  ", PublicSlots: true), token), token);
+        var (copied, notGenerated) = await CopiedAsync(await DuplicateAsync(coordinator, id, new EventDuplicateRequest(newStart, $"  {Slug("copy").ToUpperInvariant()}  ", PublicSlots: true), token), token);
         var copyId = copied.GetProperty("id").GetInt64();
-        Assert.Equal((nameof(EventStateKind.Draft), Slug("copy")), (copied.GetProperty("state").GetString(), copied.GetProperty("slug").GetString()));
+        Assert.Equal((nameof(EventStateKind.Draft), Slug("copy"), (string?)null), (copied.GetProperty("state").GetString(), copied.GetProperty("slug").GetString(), notGenerated));
 
         var (source, copy) = (await EventRowAsync(id, token), await EventRowAsync(copyId, token));
 
@@ -194,7 +194,9 @@ public sealed class EventsDuplicateTests(MariaDbFixture mariaDb) : IAsyncLifetim
         await OkAsync(await LoadAsync(coordinator, rfo, Table(Line("XEJ201", TypeA, First, day.AddHours(17).AddMinutes(30), Away, day.AddHours(18).AddMinutes(30), stand: null, rotation: null, leg: null)), token), token);
         await OkAsync(await GenerateAsync(coordinator, rfo, token), token);
 
-        var copy = (await CreatedAsync(await DuplicateAsync(coordinator, rfo, new EventDuplicateRequest(day.AddDays(7).AddHours(17), Slug("rfo-copy"), PublicSlots: false), token), token)).GetProperty("id").GetInt64();
+        var (rfoCopy, rfoNotGenerated) = await CopiedAsync(await DuplicateAsync(coordinator, rfo, new EventDuplicateRequest(day.AddDays(7).AddHours(17), Slug("rfo-copy"), PublicSlots: false), token), token);
+        var copy = rfoCopy.GetProperty("id").GetInt64();
+        Assert.Null(rfoNotGenerated);
         Assert.Empty(await SlotsAsync(copy, kind: null, token));
         Assert.Equal(await AirportsAsync(rfo, token), await AirportsAsync(copy, token));
         Assert.Equal(12, (await OkAsync(await GenerateAsync(coordinator, copy, token), token)).GetProperty("generated").GetInt32());
@@ -211,15 +213,19 @@ public sealed class EventsDuplicateTests(MariaDbFixture mariaDb) : IAsyncLifetim
                 (PublishStatus.Published, monthAgo.AddDays(-10), monthAgo.AddDays(-1), CoordinatorVid, Text("evt-test-e8b weather"), gone),
             token);
 
-        var again = await CreatedAsync(await DuplicateAsync(coordinator, mse, new EventDuplicateRequest(day.AddHours(17), Slug("mse-copy"), PublicSlots: false), token), token);
+        var (again, mseNotGenerated) = await CopiedAsync(await DuplicateAsync(coordinator, mse, new EventDuplicateRequest(day.AddHours(17), Slug("mse-copy"), PublicSlots: false), token), token);
         var mseCopy = await EventRowAsync(again.GetProperty("id").GetInt64(), token);
+        Assert.Null(mseNotGenerated);
         Assert.Equal((PublishStatus.Draft, (DateTime?)null, (int?)null, (long?)null), (mseCopy.Status, mseCopy.CancelledAt, mseCopy.CancelledBy, mseCopy.BannerMediaId));
         Assert.Equal(nameof(EventStateKind.Draft), again.GetProperty("state").GetString());
         Assert.Equal(Places(await SlotsAsync(mse, SlotKind.Private, token), day - monthAgo), Places(await SlotsAsync(mseCopy.Id, SlotKind.Private, token), TimeSpan.Zero));
 
-        // One whose airports say no capacity is copied all the same, without private slots: «Generate» on it says why.
+        // One whose airports say no capacity is copied all the same, without private slots: the answer says why (the review of #249,
+        // point 3), and «Generate» on it says the same.
         var none = await EventAsync(coordinator, "none", publicSlots: false, privateSlots: true, day.AddHours(17), day.AddHours(20), token, [Capacity(First)]);
-        var noneCopy = (await CreatedAsync(await DuplicateAsync(coordinator, none, new EventDuplicateRequest(day.AddDays(1).AddHours(17), Slug("none-copy"), PublicSlots: false), token), token)).GetProperty("id").GetInt64();
+        var (noneCopied, noneNotGenerated) = await CopiedAsync(await DuplicateAsync(coordinator, none, new EventDuplicateRequest(day.AddDays(1).AddHours(17), Slug("none-copy"), PublicSlots: false), token), token);
+        var noneCopy = noneCopied.GetProperty("id").GetInt64();
+        Assert.Equal("events:errors.noCapacity", noneNotGenerated);
         Assert.Empty(await SlotsAsync(noneCopy, kind: null, token));
         Assert.Equal(["events:errors.noCapacity"], (await RefusedAsync(await GenerateAsync(coordinator, noneCopy, token), token))[PrivateSlotGeneration.Field]);
     }
@@ -282,6 +288,10 @@ public sealed class EventsDuplicateTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(["events:errors.slugReserved"], (await RefusedAsync(await DuplicateAsync(coordinator, full, new EventDuplicateRequest(newStart, "mine", PublicSlots: true), token), token))["slug"]);
         Assert.Equal(["errors.slug.invalid"], (await RefusedAsync(await DuplicateAsync(coordinator, full, new EventDuplicateRequest(newStart, "not an address", PublicSlots: true), token), token))["slug"]);
         Assert.Equal(["errors.required"], (await RefusedAsync(await DuplicateAsync(coordinator, full, new EventDuplicateRequest(null, Slug("no-start"), PublicSlots: true), token), token))["startsAtUtc"]);
+        // A start at the edge of the calendar, whose end would fall past it: refused on its field, not a 500 (the review of #249, point 4).
+        var edge = new DateTime(9999, 12, 31, 22, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(["events:errors.duplicateOutOfCalendar"], (await RefusedAsync(await DuplicateAsync(coordinator, full, new EventDuplicateRequest(edge, Slug("edge"), PublicSlots: true), token), token))["startsAtUtc"]);
+        Assert.False(await EventExistsAsync(Slug("edge"), token));
         using (var missing = await DuplicateAsync(coordinator, 0, new EventDuplicateRequest(newStart, Slug("missing"), PublicSlots: true), token))
         {
             Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
@@ -405,6 +415,14 @@ public sealed class EventsDuplicateTests(MariaDbFixture mariaDb) : IAsyncLifetim
                 $"{response.RequestMessage?.RequestUri}: {response.StatusCode}: {await response.Content.ReadAsStringAsync(cancellationToken)}");
             return await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
         }
+    }
+
+    /// <summary>A copy made: the new event, and why its private slots were not generated when the generator refused them.</summary>
+    private static async Task<(JsonElement Event, string? PrivateSlotsNotGenerated)> CopiedAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var answer = await CreatedAsync(response, cancellationToken);
+        var why = answer.GetProperty("privateSlotsNotGenerated");
+        return (answer.GetProperty("event"), why.ValueKind == JsonValueKind.Null ? null : why.GetString());
     }
 
     private static async Task<JsonElement> OkAsync(HttpResponseMessage response, CancellationToken cancellationToken)
