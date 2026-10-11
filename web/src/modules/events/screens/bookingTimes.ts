@@ -34,6 +34,32 @@ export function bookingsOpen(
   );
 }
 
+/**
+ * What the head of the page of an event says of its bookings at `nowMs` (note 2026-10-11-la-testa-della-pagina-di-un-evento): none
+ * for an event that takes none; `opens` until they open; `open` from then; `closed` once the event is cancelled or over. Each slot
+ * still closes on its own at its off block (`slotOpen`).
+ */
+export type BookingStage = 'none' | 'opens' | 'open' | 'closed';
+
+export function bookingStage(
+  event: {
+    readonly bookingOpensAtUtc: string | null;
+    readonly cancelledAt: string | null;
+    readonly endsAtUtc: string;
+  },
+  nowMs: number,
+): BookingStage {
+  if (event.bookingOpensAtUtc === null) {
+    return 'none';
+  }
+
+  if (event.cancelledAt !== null || nowMs >= Date.parse(event.endsAtUtc)) {
+    return 'closed';
+  }
+
+  return nowMs < Date.parse(event.bookingOpensAtUtc) ? 'opens' : 'open';
+}
+
 /** Whether a slot can still be booked, or withdrawn, at `nowMs`: until its off block, which is already closed (§3.3, §3.6). */
 export function slotOpen(slot: { readonly offBlockUtc: string }, nowMs: number): boolean {
   return nowMs < Date.parse(slot.offBlockUtc);

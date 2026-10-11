@@ -293,8 +293,11 @@
       "NotSeenYet": "For now only the staff of the events sees this page: the event is published, and the others see it from the moment written in «Seen from».",
       "Over": "Only the staff of the events sees this page: the event is over, and the site keeps no archive."
     },
-    "when": "When",
     "wholeDivision": "Every airport of the division",
+    "organizedBy": {
+      "Network": "Organised by the network, with the division",
+      "OtherDivision": "Organised by another division"
+    },
     "organizerPage": "Their page",
     "cancelled": "This event is cancelled.",
     "routes": "Routes",
@@ -308,14 +311,13 @@
     "yours": "Yours",
     "onlineAtTheAirports": "Online at the airports of the event",
     "booking": {
-      "title": "Bookings",
       "panel": "Book this slot",
-      "opensAt": "They open on",
-      "openSince": "Open since",
+      "opensOn": "Bookings from {{at}}",
+      "open": "Bookings open",
+      "closed": "Bookings closed",
       "untilOffBlock": "Each slot is booked until its off block.",
       "countdownDays": "In {{days}} d {{time}}",
       "countdown": "In {{time}}",
-      "closedCancelled": "Closed: the event is cancelled.",
       "notOpen": "The bookings of this event are not open yet: the page says when they open.",
       "signIn": "Sign in to book this slot",
       "aircraft": "The aircraft you fly",

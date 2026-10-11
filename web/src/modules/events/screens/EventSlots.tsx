@@ -99,6 +99,10 @@ export function EventSlots({
             {t('events:public.slotsOn', { day: moment(slotTime(first), { time: false }) })}
           </Subtle>
         ) : null}
+        {/* By the slots, where it is read (note 2026-10-11-la-testa-della-pagina-di-un-evento): the head's badge says only «open». */}
+        {event.bookingOpensAtUtc === null || event.cancelledAt !== null ? null : (
+          <Subtle className="text-sm">{t('events:public.booking.untilOffBlock')}</Subtle>
+        )}
       </div>
 
       {onFilter === undefined ? null : (

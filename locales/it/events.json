@@ -293,8 +293,11 @@
       "NotSeenYet": "Per ora questa pagina la vede solo lo staff degli eventi: l'evento è pubblicato, e gli altri lo vedono dal momento scritto in «Visibile dal».",
       "Over": "Questa pagina la vede solo lo staff degli eventi: l'evento è concluso, e il sito non tiene un archivio."
     },
-    "when": "Quando",
     "wholeDivision": "Tutti gli aeroporti della divisione",
+    "organizedBy": {
+      "Network": "Organizzato dalla rete, con la divisione",
+      "OtherDivision": "Organizzato da un'altra divisione"
+    },
     "organizerPage": "La loro pagina",
     "cancelled": "Questo evento è annullato.",
     "routes": "Rotte",
@@ -308,14 +311,13 @@
     "yours": "Tuo",
     "onlineAtTheAirports": "In rete sugli scali dell'evento",
     "booking": {
-      "title": "Prenotazioni",
       "panel": "Prenota questo slot",
-      "opensAt": "Aprono il",
-      "openSince": "Aperte dal",
+      "opensOn": "Prenotazioni dal {{at}}",
+      "open": "Prenotazioni aperte",
+      "closed": "Prenotazioni chiuse",
       "untilOffBlock": "Ogni slot si prenota fino al suo off block.",
       "countdownDays": "Fra {{days}} g {{time}}",
       "countdown": "Fra {{time}}",
-      "closedCancelled": "Chiuse: l'evento è annullato.",
       "notOpen": "Le prenotazioni di questo evento non sono ancora aperte: la pagina dice quando aprono.",
       "signIn": "Accedi per prenotare questo slot",
       "aircraft": "L'aereo con cui voli",
