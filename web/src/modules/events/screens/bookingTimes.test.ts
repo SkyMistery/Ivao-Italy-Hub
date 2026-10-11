@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { bookingsOpen, countdown, dayIn, onTheEventsDay, slotOpen } from './bookingTimes';
+import { bookingStage, bookingsOpen, countdown, dayIn, onTheEventsDay, slotOpen } from './bookingTimes';
 
 /**
  * The moments of the bookings of an event (E6b): how long until they open, to the second; when they are open and a slot can still
@@ -45,6 +45,28 @@ describe('what can be booked', () => {
     const slot = { offBlockUtc: '2099-11-21T18:00:00Z' };
     expect(slotOpen(slot, at('2099-11-21T17:59:59Z'))).toBe(true);
     expect(slotOpen(slot, at('2099-11-21T18:00:00Z'))).toBe(false);
+  });
+});
+
+describe('what the head of the page says of the bookings (E8b)', () => {
+  const event = {
+    bookingOpensAtUtc: '2099-11-20T18:00:00Z',
+    cancelledAt: null,
+    endsAtUtc: '2099-11-21T22:00:00Z',
+  };
+
+  test('from when until they open, then open until the event is over', () => {
+    expect(bookingStage(event, at('2099-11-20T17:59:59Z'))).toBe('opens');
+    expect(bookingStage(event, at('2099-11-20T18:00:00Z'))).toBe('open');
+    expect(bookingStage(event, at('2099-11-21T21:59:59Z'))).toBe('open');
+    expect(bookingStage(event, at('2099-11-21T22:00:00Z'))).toBe('closed');
+  });
+
+  test('closed on a cancelled event, even before the opening; nothing on an event that takes no booking', () => {
+    expect(bookingStage({ ...event, cancelledAt: '2099-11-19T09:00:00Z' }, at('2099-11-19T10:00:00Z'))).toBe(
+      'closed',
+    );
+    expect(bookingStage({ ...event, bookingOpensAtUtc: null }, at('2099-11-21T10:00:00Z'))).toBe('none');
   });
 });
 
