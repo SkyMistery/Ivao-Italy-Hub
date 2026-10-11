@@ -14,9 +14,9 @@ namespace IvaoHub.Modules.Events.Staff;
 /// save: an address no other event has, a kind the calendar has and still offers and that is a kind of the events — one with a
 /// row in the settings' presets, or any kind while they have none (note 2026-10-06-i-tipi-che-un-evento-sceglie) —, asked when
 /// it is chosen, as a calendar entry's is, so an event whose kind the division retired or took off its presets since stays
-/// saveable; an event about the whole division with no airports of its own (§1.3); and its public slots switched off only once
-/// it has none (E5). A published event stays one that could be published (E3b): a change that it could not be published with is
-/// refused, with the refusals of «Publish».
+/// saveable; an event about the whole division with no airports of its own (§1.3); its public slots switched off only once it
+/// has none (E5), and its private slots switched from on to off only once it has none (E7). A published event stays one that
+/// could be published (E3b): a change that it could not be published with is refused, with the refusals of «Publish».
 /// <para>And what follows a save (E6a): new times of an event somebody booked are told to whoever booked
 /// (<see cref="EventsNotifications.EventChanged"/>), once the save is done.</para>
 /// </summary>
@@ -78,6 +78,16 @@ public sealed class EventSaving(
             && await database.Slots.AnyAsync(slot => slot.EventId == row.Id && slot.Kind == SlotKind.Public, cancellationToken))
         {
             problems.Add("publicSlots", "events:errors.hasPublicSlots");
+        }
+
+        // The same for the private slots, and only the change from on to off (Carmine's answer 2 on #246): off with private slots
+        // there, the switch would hide nothing and stop nothing, and take the generator away from the staff. They delete the free
+        // ones and take the bookings away first; an event that never had the switch on is not asked.
+        if (!row.PrivateSlots && !isNew
+            && database.Entry(row).Property(nameof(Event.PrivateSlots)).OriginalValue is true
+            && await database.Slots.AnyAsync(slot => slot.EventId == row.Id && slot.Kind == SlotKind.Private, cancellationToken))
+        {
+            problems.Add("privateSlots", "events:errors.hasPrivateSlots");
         }
 
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
