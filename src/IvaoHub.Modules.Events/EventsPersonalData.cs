@@ -11,8 +11,8 @@ namespace IvaoHub.Modules.Events;
 /// 2026-09-25-la-cancellazione-dei-dati-di-una-persona and 2026-10-11-duplica-e-la-cancellazione-negli-eventi §2), for the rows of M4a:
 /// a pilot's bookings.
 /// <list type="bullet">
-/// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — question
-/// 2 to the maintainer, issue #248, coded as recommended): its slot is free again, on the page and in the export. Through the change
+/// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — Carmine's
+/// answer 2 on issue #248, (i)): its slot is free again, on the page and in the export. Through the change
 /// tracker, so that the audit keeps that a row went and the core empties its copies.</item>
 /// <item>A booking of an event <b>over</b> stays, under the pseudonym the core writes into <c>booker_vid</c>: it is the event's history,
 /// which its statistics count. Without what is the person's — the flight of a private slot as they wrote it (the callsign, the other
@@ -48,9 +48,11 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             .Where(row => eventIds.Contains(row.Id))
             .ToDictionaryAsync(row => row.Id, cancellationToken);
 
+        // A booking whose event is gone — unreachable today, since its slot's key holds the event — is left out, as the preview's join
+        // leaves it out: the two say the same lines (the review of #249, point 1).
         var now = clock.UtcNow;
-        var over = bookings.Where(booking => EventState.IsOver(events[booking.EventId], now)).ToList();
-        var toCome = bookings.Except(over).ToList();
+        var over = bookings.Where(booking => events.TryGetValue(booking.EventId, out var row) && EventState.IsOver(row, now)).ToList();
+        var toCome = bookings.Where(booking => events.TryGetValue(booking.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
 
         // The history of the event, without the person: the slot, the aircraft, whether and when it was flown and checked, the link
         // of a pair, when it was booked. The core writes the pseudonym into the pilot's column afterwards.
