@@ -37,8 +37,7 @@ const words = JSON.parse(
 ) as {
   events: {
     options: {
-      state: { BookingOpen: string; Cancelled: string; Ended: string };
-      organizer: { OtherDivision: string };
+      state: { BookingOpen: string };
     };
   };
   routes: { fields: { route: string } };
@@ -53,6 +52,7 @@ const words = JSON.parse(
     wholeDivision: string;
     cancelled: string;
     routes: string;
+    organizedBy: { OtherDivision: string };
     organizerPage: string;
     slots: string;
     free: string;
@@ -66,9 +66,9 @@ const words = JSON.parse(
     detail: { main: string; legs: string };
     filters: { direction: string; noSlots: string };
     booking: {
-      title: string;
-      opensAt: string;
-      openSince: string;
+      opensOn: string;
+      open: string;
+      closed: string;
       untilOffBlock: string;
       notOpen: string;
       signIn: string;
@@ -318,25 +318,31 @@ test('the page of an event says when, who organises it, where, its routes and it
   await expect(page.getByRole('heading', { level: 1, name: 'A smoke evening' })).toBeVisible();
   await expect(page.getByText('Real Flight Ops')).toBeVisible();
 
-  // When, in UTC and where the division lives: one date and two times, for an evening.
-  const facts = page.locator('dl');
-  await expect(facts.getByText(/18:00 – 22:00Z$/)).toBeVisible();
-  await expect(facts.getByText(/19:00 – 23:00 LT\)$/)).toBeVisible();
+  // Under the title (E8b, note 2026-10-11-la-testa-della-pagina-di-un-evento): when, in UTC and where the division lives — the day
+  // once, then the times of an evening.
+  const head = page.locator('article > header');
+  await expect(head.getByText(/ · 18:00–22:00Z$/)).toBeVisible();
+  await expect(head.getByText('(19:00–23:00 LT)', { exact: true })).toBeVisible();
 
-  // Who organises it, with their page; its airports, by name when the hub knows it.
-  await expect(facts.getByText(words.events.options.organizer.OtherDivision)).toBeVisible();
-  await expect(facts.getByRole('link', { name: words.public.organizerPage })).toHaveAttribute(
+  // In the same line its airports by their codes, the name on hover when the hub knows it, and who organises it — another
+  // division —, with their page.
+  await expect(head.getByText('XXAA', { exact: true })).toHaveAttribute('title', 'Smoke Airport A');
+  await expect(head.getByText('XXBB', { exact: true })).toBeVisible();
+  await expect(head.getByText(words.public.organizedBy.OtherDivision)).toBeVisible();
+  await expect(head.getByRole('link', { name: words.public.organizerPage })).toHaveAttribute(
     'href',
     'https://example.org/the-event',
   );
-  await expect(facts.getByText('Smoke Airport A')).toBeVisible();
 
-  // The route of the flight operations, and the description.
-  await expect(page.getByRole('heading', { level: 2, name: words.public.routes })).toBeVisible();
+  // The route of the flight operations, and the description: both at the bottom, the description first.
+  const routes = page.getByRole('heading', { level: 2, name: words.public.routes });
+  await expect(routes).toBeVisible();
   const route = page.getByRole('row').filter({ hasText: 'DCT SMOKE UL1 DCT' });
   await expect(route).toContainText('XXAA');
   await expect(route).toContainText('Above the clouds.');
-  await expect(page.getByText('Bring your best landing.')).toBeVisible();
+  const description = page.getByText('Bring your best landing.');
+  await expect(description).toBeVisible();
+  expect((await description.boundingBox())!.y).toBeLessThan((await routes.boundingBox())!.y);
 
   // Not a page only the staff see, and no way to the back office for a visitor.
   for (const line of Object.values(words.public.staffOnly)) {
@@ -443,6 +449,7 @@ test('a cancelled event shows its note', async ({ page }) => {
   await stubTheEvents(page, [], {
     'evt-test-smoke-page': event({
       state: 'Cancelled',
+      bookingOpensAtUtc: OPENED,
       cancelledAt: '2099-11-20T09:00:00.000Z',
       cancellationNote: { en: 'The weather closed both airports.', it: 'Il meteo ha chiuso i due scali.' },
     }),
@@ -452,7 +459,10 @@ test('a cancelled event shows its note', async ({ page }) => {
 
   await expect(page.getByText(words.public.cancelled)).toBeVisible();
   await expect(page.getByText('The weather closed both airports.')).toBeVisible();
-  await expect(page.getByText(words.events.options.state.Cancelled, { exact: true })).toBeVisible();
+  // At a glance, in the line under the title (E8b): its bookings closed, with no count — the state is the notice's to say.
+  const head = page.locator('article > header');
+  await expect(head.getByText(words.public.booking.closed, { exact: true })).toBeVisible();
+  await expect(head.getByRole('timer')).toHaveCount(0);
 });
 
 test('an event the reader may not see is not found', async ({ page }) => {
@@ -477,10 +487,9 @@ test('the staff of the events read an event nobody else sees, told so and why, w
 
   await page.goto('/events/evt-test-smoke-page');
 
-  // The reason the server gives, and only that one.
+  // The reason the server gives, and only that one: the page says it there, without a badge of the state (E8b).
   await expect(page.getByText(words.public.staffOnly.Over)).toBeVisible();
   await expect(page.getByText(words.public.staffOnly.Draft)).toHaveCount(0);
-  await expect(page.getByText(words.events.options.state.Ended, { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: words.public.backOffice })).toHaveAttribute(
     'href',
     '/staff/events/41',
@@ -672,12 +681,14 @@ test('the page says when the bookings open, counts down to it, and offers nothin
 
   await page.goto('/events/evt-test-smoke-page');
 
-  // When, in UTC and where the division lives, and how long is left, to the second.
-  const facts = page.locator('dl');
-  await expect(facts.getByText(words.public.booking.opensAt)).toBeVisible();
-  await expect(facts.getByText(/18:00Z$/).last()).toBeVisible();
-  await expect(facts.getByText(/19:00 LT\)$/).last()).toBeVisible();
-  const timer = facts.getByRole('timer');
+  // In the line under the title (E8b): from when, in UTC and where the division lives, and how long is left, to the second.
+  const head = page.locator('article > header');
+  await expect(
+    head.getByText(words.public.booking.opensOn.replace('{{at}}', 'Nov 1, 2099, 18:00Z (19:00 LT)'), {
+      exact: true,
+    }),
+  ).toBeVisible();
+  const timer = head.getByRole('timer');
   await expect(timer).toHaveText(/^In \d+ d \d{2}:\d{2}:\d{2}$/);
   const first = await timer.textContent();
   await expect(timer).not.toHaveText(first ?? '');
@@ -687,11 +698,14 @@ test('the page says when the bookings open, counts down to it, and offers nothin
   await expect(page.getByRole('dialog').getByText(words.public.booking.notOpen)).toBeVisible();
   await page.keyboard.press('Escape');
 
-  // Once open: since when, until each off block, and no count.
+  // Once open: open, and no count; until each off block, said by the slots.
   await page.goto('/events/evt-test-smoke-open');
-  await expect(page.locator('dl').getByText(words.public.booking.openSince)).toBeVisible();
-  await expect(page.locator('dl').getByText(words.public.booking.untilOffBlock)).toBeVisible();
-  await expect(page.locator('dl').getByRole('timer')).toHaveCount(0);
+  const opened = page.locator('article > header');
+  await expect(opened.getByText(words.public.booking.open, { exact: true })).toBeVisible();
+  await expect(opened.getByRole('timer')).toHaveCount(0);
+  await expect(
+    page.getByRole('region', { name: words.public.slots }).getByText(words.public.booking.untilOffBlock),
+  ).toBeVisible();
 });
 
 test('on the event’s day the core’s strip counts its airports, and not on another day', async ({ page }) => {
