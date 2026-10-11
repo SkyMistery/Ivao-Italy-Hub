@@ -2287,6 +2287,16 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
     **il generatore si unisce a una transazione già aperta** — il blocco e le scritture sono suoi, e chi lo chiama fa il commit —, e da
     solo, come «Genera», apre e chiude la sua come prima: «Duplica» resta una transazione sola, il generatore compreso, come l'ha letta
     la revisione. Il merge porta solo la lettura dei tre valori; l'unione alla transazione è un commit suo, perché si veda.
+  - **Verificato, in locale, sulla testa dopo i due merge** (11–12 ottobre 2026): `dotnet build` Debug e Release senza avvisi;
+    `dotnet format --verify-no-changes` sui dieci file C# del tratto; unità **1227/1227**; **integrazione intera senza filtro 547/547**
+    (7,0 minuti); `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di Release; `pnpm gen:api` e
+    `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (833 chiavi) verdi; `pnpm test` **726 in
+    100 file**; `pnpm build` verde; lo smoke dietro il suo lock **181/181** al primo giro (1,2 minuti). **`pnpm e2e:full`**, sul banco
+    `http://127.0.0.1:5136` con `ivaohub_e2e_e8b` ricreato ogni volta, dietro il lock di Mailpit: **la prima corsa 60/61** (12,0
+    minuti) — la spec di E7 `events-private.spec.ts:159` non ha trovato il titolo della pagina del pilota in cinque secondi: il browser
+    ha caricato la pagina e i suoi asset e poi, per cinque secondi, non ha chiesto niente (nessuna `/api/me` nel log del server), un
+    inceppamento sotto carico —; la spec da sola, `--repeat-each 3`, **3/3**; **la seconda corsa intera 61/61** (11,7 minuti). Le regole di
+    `core-guard` dalla base di merge `bea8c0e`: **PASS**, con quattro note nuove.
 - **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
   di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
   disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina
