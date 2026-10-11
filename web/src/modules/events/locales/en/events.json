@@ -11,7 +11,7 @@
   },
   "events": {
     "title": "Events",
-    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
+    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling, duplicating or deleting it.",
     "create": "New event",
     "edit": "Event",
     "open": "Open",
@@ -40,7 +40,8 @@
     },
     "actions": {
       "publish": "Publish",
-      "cancel": "Cancel the event"
+      "cancel": "Cancel the event",
+      "duplicate": "Duplicate"
     },
     "publish": {
       "problems": "Before it can be published, it still needs:",
@@ -118,6 +119,22 @@
     },
     "hints": {
       "note": "Shown on the page of the event, in every language of the division."
+    }
+  },
+  "duplicate": {
+    "title": "Duplicate the event",
+    "description": "A new draft with every time moved by the difference between the two starts: the settings, the description, the banner while the library still has it, the airports with their capacity and the routes, and the public slots if you choose. Nothing of the members comes with it: no booking.",
+    "privateSlots": "The private slots are never copied: they are generated again from the capacity of the airports — with the new event when its public slots come with it, or it takes none; otherwise with «Generate the private slots», once its new table is loaded.",
+    "submit": "Duplicate",
+    "fields": {
+      "startsAtUtc": "Starts",
+      "slug": "Address",
+      "publicSlots": "The public slots too"
+    },
+    "hints": {
+      "startsAtUtc": "The start of the new event, in UTC: its end, the opening of its bookings and the times of its slots move by as much.",
+      "slug": "The address of the new event's page, /events/…: another one than this event's.",
+      "publicSlots": "With their rotations, at the new times."
     }
   },
   "airports": {
