@@ -249,6 +249,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     della cancellazione: le sue righe dell'audit con lo pseudonimo e senza le cinque).
   - **La risposta di «Duplica»** è `EventDuplicatedDto` (l'evento e `privateSlotsNotGenerated`), non più `EventDetailDto`: un client del
     verbo legge `event`.
+  - ⚠️ **`PrivateSlotGeneration.GenerateAsync` dentro una transazione già aperta** (E8b, al merge della testa nuova di E7): blocca e
+    scrive in quella, e il commit è di chi lo chiama — «Duplica» lo chiama così, per una copia che nessun altro vede ancora. Da solo
+    apre la sua, `READ COMMITTED`, con la riga dell'evento `FOR UPDATE`. Chi lo chiama da dentro una transazione su un evento che altri
+    vedono deve pensare al livello d'isolamento della sua.
   - ⚠️ **La #242 di E4c tocca anche `public.tsx`** (i metadati della pagina): unita prima della #249, `main` si unisce nel branch di E8b e il
     file si risolve tenendo le due cose.
   - **`Hint`** resta un pezzo della pagina di un evento (`EventSlots.tsx`), usato dalla lista degli slot e dalla testa: una **seconda

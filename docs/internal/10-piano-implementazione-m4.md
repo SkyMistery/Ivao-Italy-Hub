@@ -2279,6 +2279,14 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
     Release; `EventsDuplicateTests` ed `EventsErasureTests` 4/4; `pnpm gen:api` e `pnpm i18n:sync` senza altre differenze; `pnpm lint`,
     `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **706 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock
     **181/181** al primo giro (1,3 minuti). L'integrazione intera e `pnpm e2e:full`: dopo il merge della testa nuova di E7, sotto.
+  - **I merge**: `main` a `bea8c0e` (la #238 di E10k; in conflitto solo `HANDOFF-M4.md`), poi **la testa nuova di E7** a `7a847a8`,
+    dopo la sua revisione (di nuovo solo `HANDOFF-M4.md`). ⚠️ **Il generatore di E7 è cambiato sotto «Duplica»**: dalla revisione della
+    #246 prende la riga dell'evento `FOR UPDATE` in una transazione **sua**, e risponde con tre valori. «Duplica» lo chiama dentro la
+    transazione che scrive la copia, e la connessione rifiutava la seconda: **ogni copia che genera i suoi privati rispondeva 500**
+    («The connection is already in a transaction», provato sul commit di merge: le due classi che duplicano con i privati cadono). Ora
+    **il generatore si unisce a una transazione già aperta** — il blocco e le scritture sono suoi, e chi lo chiama fa il commit —, e da
+    solo, come «Genera», apre e chiude la sua come prima: «Duplica» resta una transazione sola, il generatore compreso, come l'ha letta
+    la revisione. Il merge porta solo la lettura dei tre valori; l'unione alla transazione è un commit suo, perché si veda.
 - **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
   di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
   disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina
