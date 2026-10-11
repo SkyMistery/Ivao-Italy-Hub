@@ -29,6 +29,15 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The pilots' bookings of the slots (E6a).</summary>
     public DbSet<EventBooking> Bookings => Set<EventBooking>();
 
+    /// <summary>The questions of the events in person (E16).</summary>
+    public DbSet<EventQuestion> Questions => Set<EventQuestion>();
+
+    /// <summary>The members' registrations to the events in person (E16).</summary>
+    public DbSet<EventRegistration> Registrations => Set<EventRegistration>();
+
+    /// <summary>The numbers of each event (§1.10), born whole with E16.</summary>
+    public DbSet<EventStats> Stats => Set<EventStats>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -36,6 +45,7 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
         configurationBuilder.Properties<EventOrganizer>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<SlotKind>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<QuestionType>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -136,6 +146,49 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A pilot's bookings of every event: their own page.
             booking.HasIndex(row => row.BookerVid);
+        });
+
+        modelBuilder.Entity<EventQuestion>(question =>
+        {
+            question.ToTable("evt_questions");
+            question.HasKey(row => row.Id);
+            question.Ignore(row => row.ResourceScope);
+            question.Ignore(row => row.Choices);
+            question.Property(row => row.ChoicesJson).HasColumnName("choices").HasColumnType("json").IsRequired();
+            question.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its questions with it, as it takes its airports. The key is also the index the form reads by.
+            question.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventRegistration>(registration =>
+        {
+            registration.ToTable("evt_registrations");
+            registration.HasKey(row => row.Id);
+            registration.Ignore(row => row.StakeholderVid);
+            registration.Ignore(row => row.ResourceScope);
+            registration.Property(row => row.AnswersJson).HasColumnName("answers").HasColumnType("json").IsRequired();
+
+            // One registration per member per event (§4-bis.1): the database says it, so two requests of the same member in the
+            // same instant meet here. It is also the index the staff's list reads an event by. No key towards the event, as for a
+            // booking: an event with registrations is not deleted (the save refuses it), it is cancelled.
+            registration.HasIndex(row => new { row.EventId, row.Vid }).IsUnique();
+
+            // A member's registrations of every event: their own page.
+            registration.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<EventStats>(stats =>
+        {
+            stats.ToTable("evt_event_stats");
+            stats.HasKey(row => row.Id);
+            stats.Ignore(row => row.ResourceScope);
+            stats.Property(row => row.AnswerSumsJson).HasColumnName("answer_sums").HasColumnType("json").IsRequired();
+            stats.Property(row => row.ActivitySeatsJson).HasColumnName("activity_seats").HasColumnType("json").IsRequired();
+
+            // One row per event, which an event deleted takes with it.
+            stats.HasIndex(row => row.EventId).IsUnique();
+            stats.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
