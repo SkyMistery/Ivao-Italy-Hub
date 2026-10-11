@@ -1,8 +1,8 @@
 # «Duplica» e la cancellazione dei dati di una persona negli eventi: le letture del design (E8b)
 
 **Data:** 11 ottobre 2026 — fase E8b di M4 («Duplica», la cancellazione, il giro completo di M4a)
-**Stato:** **Proposta** — due domande a Carmine con [l'issue #248][q], aperta all'inizio della fase perché il codice ne dipende (§4).
-E8b scrive le letture come le raccomanda questa nota; una risposta diversa è una correzione sul branch della fase.
+**Stato:** **Decisa** — da Carmine, [le sue risposte sull'issue #248][a] alle due domande dell'[issue][q], aperta all'inizio della fase
+perché il codice ne dipende (§4): la (A′) e la (i), come raccomandate e come E8b le scrive (§6).
 **Regola applicata:** `CLAUDE.md` §5, casi **(a)** e **(b)**: nessun meccanismo nuovo — l'unico handler, il guardiano
 dell'interceptor, la cura dell'evento sulle sue righe (`IEventChild`), il generatore degli slot privati di E7
 (`PrivateSlotGeneration`), `IPersonalDataEraser`, la riscrittura delle colonne di persona del nucleo (`PersonColumns`) e la sua
@@ -10,6 +10,9 @@ modalità «cancellazione» —; sono letture del design M4 §2.3-bis e §11.1 e
 `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5. **Nessuna migrazione**, niente nel nucleo.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248#issuecomment-6113460643
+[r]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
 ## 1. «Duplica» (design §2.3-bis)
 
@@ -103,12 +106,36 @@ Solo il modulo e i suoi documenti: `Staff/EventDuplication.cs` (nuovo), `Staff/E
 `EventsPersonalData.cs` (nuovo), `EventsModule.cs`, le parole del modulo, le pagine (`web/src/modules/events/`), `docs/FORKING.md`.
 Nessuna migrazione: ogni colonna c'è da E2, E5 ed E6a.
 
+## 6. Le risposte di Carmine, e la revisione
+
+11 ottobre 2026, [le sue risposte sull'issue #248][a] (autore `SkyMistery`: date in chat al master e pubblicate da lui su sua
+istruzione):
+1. **«Duplica» e gli slot privati: la (A′).** La copia genera i suoi slot privati nella sua transazione quando i suoi slot pubblici
+   ci sono già — li ha copiati, o l'evento non ne prende —; altrimenti li lascia a «Genera», premuto dopo che la tabella nuova è
+   caricata. Mai oltre la capacità.
+2. **Un evento annullato è concluso quando passa la sua fine, la (i)**, come ogni altro: prima, le prenotazioni della persona
+   cancellata si cancellano; dopo, restano con lo pseudonimo. Un orologio solo, lo stesso da cui conta la conservazione.
+
+**La revisione** ([i rilievi sulla #249][r]: approvabile, niente da correggere) ha cinque punti bassi, presi tutti perché costano
+poco: (1) l'eraser lascia fuori una prenotazione il cui evento non c'è più, come fa il join dell'anteprima (`TryGetValue`), così le
+due dicono le stesse righe; (2) `docs/events-bookings-export.md` dice che cosa dà l'esportazione dopo una cancellazione; (3) «Duplica»
+dice quando la copia non ha potuto generare i suoi slot privati: la risposta porta la chiave del perché (`EventDuplicatedDto`), e la
+pagina lo dice con la via alla copia; (4) un nuovo inizio che sposterebbe un orario dell'evento fuori dal calendario — gli anni 1000–
+9999 di una colonna DATETIME — è rifiutato sul suo campo (`events:errors.duplicateOutOfCalendar`), non più un 500; (5) il test della
+cancellazione guarda anche il callsign della partenza collegata e le righe «erased» dell'audit.
+
+**Fuori da E8b**: il buco dell'audit che il revisore ha trovato (punto 7) — le righe dell'audit di una prenotazione ritirata o tolta
+**prima** della cancellazione tengono il callsign, l'altro aeroporto, l'orario e le note — è, per [la risposta 2 di Carmine sulla
+#249][a2], **una fase del nucleo di M4**, con la sua PR e una nota nuova, unita prima che le prenotazioni si aprano su
+un'installazione vera. Il punto 8 del revisore (la descrizione copiata com'è scritta) non ha avuto risposta: resta la lettura 4.
+
 ## Da portare nel piano
 
 - Design M4 §2.3-bis: la nuova data d'inizio è un istante e ogni orario si sposta della stessa differenza; che cosa copia l'evento
   (le impostazioni, la cura; il banner finché la libreria lo ha, la descrizione com'è), gli slot pubblici a scelta e non
-  ricontrollati, gli slot privati (la domanda 1), chi duplica (i permessi delle aree che la copia scrive, mai un evento nuovo con un
-  grant su un evento solo), l'indirizzo, il tipo che non si sceglie di nuovo.
-- Design M4 §11.1: quando un evento è concluso (la domanda 2); che cosa resta di una prenotazione tenuta (senza il volo privato, la
-  nota e la sessione della rete); una coppia va o resta intera.
+  ricontrollati, gli slot privati (la (A′) della domanda 1, decisa; la risposta dice perché non sono stati generati quando il
+  generatore li rifiuta), chi duplica (i permessi delle aree che la copia scrive, mai un evento nuovo con un grant su un evento
+  solo), l'indirizzo, il tipo che non si sceglie di nuovo, un nuovo inizio che sposterebbe un orario fuori dal calendario rifiutato.
+- Design M4 §11.1: quando un evento è concluso (la (i) della domanda 2, decisa); che cosa resta di una prenotazione tenuta (senza il
+  volo privato, la nota e la sessione della rete), e che cosa ne dà l'esportazione; una coppia va o resta intera.
 - Piano §16.6: il conto degli endpoint a mano di M4 (uno di E8b).
