@@ -3036,7 +3036,11 @@ push, su indicazione della sessione coordinatrice, ha unito anche `fdb551d` (`21
 del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa3707a`, con la #241 che rimette verde il test del meteo. Il 10
 ottobre, unite E6a (#233) ed E6b (#240), la #242 era in conflitto sui documenti: il revisore ha chiesto `main`
 ([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6096405374)), e questa fase ha unito `f7e9839`,
-la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #240 e la #242, e fa le due righe che toccavano a lei):
+la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #240 e la #242, e fa le due righe che toccavano a lei. La
+CI di quella testa è stata verde; poi la #237 (E10i) unita l'ha rimessa in conflitto sui documenti
+([il commento del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6102842072): Carmine unisce una PR alla
+volta, #238 → #242 → #239). L'11 ottobre, unita la #238, questa fase ha unito `main` a `bea8c0e` (`bb63261`), con E10k ed E10i: di nuovo
+in conflitto solo l'intestazione di `HANDOFF-M4.md`):
 
 - **Fatto**:
   - **`/events`** (`EventsPublicPage` in `web/src/modules/events/screens/public.tsx`):
@@ -3104,7 +3108,11 @@ la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #2
   - **con E6b** (sugli stessi `public.tsx` ed `events.json`): `git merge-tree` con la sua testa fondeva puliti tutti i file di codice, e
     così è stato all'unione di `main` del 10 ottobre (il solo conflitto, l'intestazione di `HANDOFF-M4.md`). Le due righe concordate con
     la sessione di E6b per la seconda fra la #240 e la #242 le ha fatte E4c (sopra, «Fatto»).
-- **Verificato, in locale** (9 e 10 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+- **Verificato, in locale** (9–11 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+  - dopo l'unione di `main` a `bea8c0e` (`bb63261`, con E10k ed E10i): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
+    `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **708/708** in 97 file;
+    `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1203/1203**; la suite di integrazione intera, senza filtro,
+    **529/529** (8,0 minuti; entra la guardia di scrittura di E10i); la smoke **180/180** al primo giro (1,3 minuti);
   - dopo l'unione di `f7e9839` (`6d4ab5d`, `main` a `ba06d66`) e le righe della seconda fra la #240 e la #242: `pnpm lint`,
     `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test`
     **708/708** in 97 file (i 698 di E10k con `main`, e i 10 di questa fase); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi,
@@ -3136,8 +3144,9 @@ la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #2
 - **Non verificato**:
   - la CI del primo push: «Test .NET» rosso per #236, e nessun passo web (li ho fatti girare in locale, sopra). Dopo l'unione di
     `fdb551d` la CI gira intera, e la sua lettura la dice la PR;
-  - la suite di integrazione, in locale: nessun file .NET di questa fase, e il C# dell'albero unito è quello di `main`, provato dalla CI
-    delle sue PR (la #241, la #233, la #240, la #244); la CI della #242 la rifà;
+  - la suite di integrazione in locale prima dell'ultima unione: l'ho fatta girare solo dopo (sopra); prima il C# dell'albero era quello
+    di `main`, provato dalla CI delle sue PR;
+  - `pnpm e2e:full` in locale dopo l'ultima unione (l'ultimo giro, 58/58, è sull'albero con `main` a `ba06d66`): lo fa la CI;
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
 ### E11a — Postazioni e disponibilità
