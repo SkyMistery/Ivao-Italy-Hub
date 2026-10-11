@@ -126,6 +126,8 @@
     "description": "A new draft with every time moved by the difference between the two starts: the settings, the description, the banner while the library still has it, the airports with their capacity and the routes, and the public slots if you choose. Nothing of the members comes with it: no booking.",
     "privateSlots": "The private slots are never copied: they are generated again from the capacity of the airports — with the new event when its public slots come with it, or it takes none; otherwise with «Generate the private slots», once its new table is loaded.",
     "submit": "Duplicate",
+    "privateSlotsNotGenerated": "The copy is made, as a draft, without its private slots.",
+    "openCopy": "Open the copy",
     "fields": {
       "startsAtUtc": "Starts",
       "slug": "Address",
@@ -563,6 +565,7 @@
     "endsBeforeItStarts": "The event ends before it starts.",
     "visibilityChoice": "An event is seen by everybody or by the members.",
     "slugTaken": "Another event has this address.",
+    "duplicateOutOfCalendar": "From this start a time of the event would fall outside the calendar: choose a nearer date.",
     "slugReserved": "This address is the page of a member's own bookings: choose another.",
     "wholeDivisionHasAirports": "This event has airports of its own: take them out before making it about the whole division.",
     "eventUnknown": "This event does not exist.",

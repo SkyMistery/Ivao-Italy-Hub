@@ -4696,6 +4696,15 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+         *     refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+         *     when they were generated, or were not to be.
+         */
+        EventDuplicatedDto: {
+            event: components["schemas"]["EventDetailDto"];
+            privateSlotsNotGenerated: null | string;
+        };
+        /**
          * @description "Duplicate" (§2.3-bis, E8b): the start of the new event — an instant in UTC, as every time of an event; every other time moves by
          *     the same difference —, its address, and whether the public slots come too, with their rotations.
          */
@@ -12974,7 +12983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventDetailDto"];
+                    "application/json": components["schemas"]["EventDuplicatedDto"];
                 };
             };
             /** @description Bad Request */

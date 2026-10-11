@@ -126,6 +126,8 @@
     "description": "Una bozza nuova, con ogni orario spostato della differenza fra i due inizi: le impostazioni, la descrizione, il banner finché la libreria lo ha ancora, gli scali con la capacità e le rotte, e gli slot pubblici se li scegli. Niente dei membri: nessuna prenotazione.",
     "privateSlots": "Gli slot privati non si copiano mai: si generano di nuovo dalla capacità degli scali — con il nuovo evento quando i suoi slot pubblici vengono con lui, o non ne prende; altrimenti con «Genera gli slot privati», dopo che la sua tabella nuova è caricata.",
     "submit": "Duplica",
+    "privateSlotsNotGenerated": "La copia è fatta, come bozza, senza i suoi slot privati.",
+    "openCopy": "Apri la copia",
     "fields": {
       "startsAtUtc": "Inizio",
       "slug": "Indirizzo",
@@ -563,6 +565,7 @@
     "endsBeforeItStarts": "L'evento finisce prima di cominciare.",
     "visibilityChoice": "Un evento lo vedono tutti, o i membri.",
     "slugTaken": "Un altro evento ha questo indirizzo.",
+    "duplicateOutOfCalendar": "Da questo inizio un orario dell'evento uscirebbe dal calendario: scegli una data più vicina.",
     "slugReserved": "Questo indirizzo è della pagina delle prenotazioni di un membro: scegline un altro.",
     "wholeDivisionHasAirports": "Questo evento ha scali suoi: toglili prima di farlo valere su tutta la divisione.",
     "eventUnknown": "Questo evento non esiste.",

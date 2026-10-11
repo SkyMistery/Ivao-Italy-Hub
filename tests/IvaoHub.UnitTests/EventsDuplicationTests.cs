@@ -143,6 +143,26 @@ public sealed class EventsDuplicationTests
     }
 
     [Fact]
+    public void ANewStartThatWouldMoveATimeOffTheCalendarIsRefusedBeforeAnythingIsBuilt()
+    {
+        // The review of #249, point 4: the source opens its page ten days before its start and ends four hours after it.
+        var source = Source();
+
+        Assert.True(EventCopy.MovesWithinTheCalendar(source, NewStart));
+        Assert.True(EventCopy.MovesWithinTheCalendar(source, new DateTime(9999, 12, 31, 19, 0, 0, DateTimeKind.Utc)));
+        Assert.True(EventCopy.MovesWithinTheCalendar(source, new DateTime(1000, 1, 11, 0, 0, 0, DateTimeKind.Utc)));
+
+        // Its end past the last day a DATETIME holds, its page opened before the first one.
+        Assert.False(EventCopy.MovesWithinTheCalendar(source, new DateTime(9999, 12, 31, 21, 0, 0, DateTimeKind.Utc)));
+        Assert.False(EventCopy.MovesWithinTheCalendar(source, new DateTime(1000, 1, 10, 0, 0, 0, DateTimeKind.Utc)));
+
+        // Without the dates it does not have, only its own start and end count.
+        source.VisibleFromUtc = null;
+        source.BookingOpensAtUtc = null;
+        Assert.True(EventCopy.MovesWithinTheCalendar(source, new DateTime(1000, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
+    }
+
+    [Fact]
     public void ACopyAsksTheAreaOfEveryRowItWrites()
     {
         var copy = EventCopy.Of(Source(), NewStart, "evt-copy", banner: true);

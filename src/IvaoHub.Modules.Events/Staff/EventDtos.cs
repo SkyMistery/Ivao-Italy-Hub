@@ -95,6 +95,13 @@ public sealed record EventPublishRequest(DateTime RowVersion);
 /// </summary>
 public sealed record EventDuplicateRequest(DateTime? StartsAtUtc, string Slug, bool PublicSlots);
 
+/// <summary>
+/// What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+/// refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+/// when they were generated, or were not to be.
+/// </summary>
+public sealed record EventDuplicatedDto(EventDetailDto Event, string? PrivateSlotsNotGenerated);
+
 /// <summary>Events to and from their payloads: by hand, because the state is read off the clock and the description is a document.</summary>
 internal static class EventMapper
 {

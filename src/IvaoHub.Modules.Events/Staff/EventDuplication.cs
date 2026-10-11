@@ -13,6 +13,27 @@ namespace IvaoHub.Modules.Events.Staff;
 /// </summary>
 public static class EventCopy
 {
+    /// <summary>The first and the last instant a DATETIME column of the database holds: a moved time outside them cannot be stored.</summary>
+    private static readonly DateTime FirstStored = new(1000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime LastStored = new(9999, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+
+    /// <summary>
+    /// Whether every time of <paramref name="source"/>, moved to start at <paramref name="startsAtUtc"/>, is still an instant the
+    /// database stores — the years 1000 to 9999 of its DATETIME columns (the review of #249, point 4): a start typed at an edge of the
+    /// calendar is refused on its field, never a 500 of a time that does not fit. Its slots sit within its hours, so its own times are
+    /// the ones to ask.
+    /// </summary>
+    public static bool MovesWithinTheCalendar(Event source, DateTime startsAtUtc)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        var difference = startsAtUtc - source.StartsAtUtc;
+
+        return new[] { source.StartsAtUtc, source.EndsAtUtc, source.VisibleFromUtc, source.BookingOpensAtUtc }
+            .OfType<DateTime>()
+            .All(at => difference >= TimeSpan.Zero ? LastStored - at >= difference : at - FirstStored >= difference.Negate());
+    }
+
     /// <summary>
     /// The new event: every setting of <paramref name="source"/> — its kind, its five switches, who organises it and their page, its
     /// words and its description, who reads it, the length of a shift, the venue, the three limits of whoever books and does not fly —,
@@ -167,7 +188,7 @@ public sealed record EventDuplicatePlan(
 /// and the hub makes <b>a draft</b> with every time moved by the same difference, copying the event's settings, its description and its
 /// banner, its airports with their capacity, its routes and — if the staff choose — its public slots with their rotations. <b>Nothing of
 /// the members</b>: no booking. One endpoint, one transaction.
-/// <para><b>The private slots are generated again</b>, never copied (question 1 to the maintainer, issue #248; coded as recommended): in
+/// <para><b>The private slots are generated again</b>, never copied (Carmine's answer 1 on issue #248, A′): in
 /// the same transaction, by the generator of E7, when the copy's public slots are already there — it copied them, or the event takes
 /// none (an MSE) —; otherwise «Generate the private slots» makes them on the new event once the new table is loaded, since private
 /// slots generated before it would take the steps and the capacity the new table then takes.</para>
@@ -177,6 +198,9 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
 {
     /// <summary>Where a refusal of the address lands: the field of the request.</summary>
     public const string SlugField = "slug";
+
+    /// <summary>Where a refusal of the new start lands: the field of the request.</summary>
+    public const string StartField = "startsAtUtc";
 
     /// <summary>The rows of <paramref name="source"/> its copy carries, read once, and the copy built from them; nothing written.</summary>
     public async Task<EventDuplicatePlan> PlanAsync(Event source, EventDuplicateRequest request, CancellationToken cancellationToken)
@@ -218,9 +242,12 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
     /// <summary>
     /// Writes the copy and its rows, all or nothing: the address refused when another event has it, also when the unique index answers
     /// in the same instant. The private slots the plan generates are what «Generate» would make on the new event; what it would refuse —
-    /// no airport with a capacity, more than it makes at once — leaves the copy without them, and the same press on it says why.
+    /// no airport with a capacity, more than it makes at once — leaves the copy without them, and its key comes back with the copy
+    /// (<c>PrivateSlotsNotGenerated</c>, the review of #249, point 3): the page says so, and the same press on the copy says it again.
     /// </summary>
-    public async Task<(Event? Copy, Refusals Problems)> SaveAsync(EventDuplicatePlan plan, CancellationToken cancellationToken)
+    public async Task<(Event? Copy, string? PrivateSlotsNotGenerated, Refusals Problems)> SaveAsync(
+        EventDuplicatePlan plan,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
 
@@ -229,7 +256,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
 
         if (await CrudSource.BackOffice<Event>(database).AnyAsync(other => other.Slug == copy.Slug, cancellationToken))
         {
-            return (null, problems.Add(SlugField, "events:errors.slugTaken"));
+            return (null, null, problems.Add(SlugField, "events:errors.slugTaken"));
         }
 
         await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
@@ -243,7 +270,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         {
             // Another event took the address an instant before: the unique index answered.
             database.Entry(copy).State = EntityState.Detached;
-            return (null, problems.Add(SlugField, "events:errors.slugTaken"));
+            return (null, null, problems.Add(SlugField, "events:errors.slugTaken"));
         }
 
         database.Airports.AddRange(plan.Airports.Select(airport => EventCopy.Airport(airport, copy)));
@@ -251,12 +278,14 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         database.Slots.AddRange(plan.PublicSlots.Select(slot => EventCopy.PublicSlot(slot, copy, plan.Difference)));
         await database.SaveChangesAsync(cancellationToken);
 
+        string? notGenerated = null;
         if (plan.GeneratesPrivateSlots)
         {
-            await generation.GenerateAsync(copy, cancellationToken);
+            var (_, refused) = await generation.GenerateAsync(copy, cancellationToken);
+            notGenerated = refused.Errors.Values.SelectMany(keys => keys).FirstOrDefault();
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return (copy, problems);
+        return (copy, notGenerated, problems);
     }
 }

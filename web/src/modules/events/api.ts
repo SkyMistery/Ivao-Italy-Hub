@@ -44,6 +44,7 @@ const bookingsKey = ['events', 'bookings'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
 export type EventDetailDto = components['schemas']['EventDetailDto'];
+export type EventDuplicatedDto = components['schemas']['EventDuplicatedDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
 export type EventRouteDto = components['schemas']['EventRouteDto'];
 export type PublicEventDto = components['schemas']['PublicEventDto'];
@@ -251,7 +252,7 @@ export function useDuplicateEvent(id: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (values: DuplicateFormValues): Promise<EventDetailDto> =>
+    mutationFn: async (values: DuplicateFormValues): Promise<EventDuplicatedDto> =>
       unwrap(
         await api.POST('/api/events/events/{id}/duplicate', {
           params: { path: { id } },
@@ -265,7 +266,7 @@ export function useDuplicateEvent(id: number) {
           },
         }),
       ),
-    onSuccess: async (copy) => {
+    onSuccess: async ({ event: copy }) => {
       queryClient.setQueryData(eventQuery(copy.id).queryKey, copy);
       await queryClient.invalidateQueries({ queryKey: [...eventsKey, 'list'] });
     },
