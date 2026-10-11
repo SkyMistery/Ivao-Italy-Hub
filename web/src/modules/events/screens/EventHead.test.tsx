@@ -1,4 +1,5 @@
-import { screen, within } from '@testing-library/react';
+import { TooltipProvider } from '@ivao/atmosphere-react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { createTestI18n, renderWithProviders } from '../../../test/harness';
@@ -6,9 +7,10 @@ import type { PublicEventDto } from '../api';
 import englishEvents from '../locales/en/events.json';
 
 /**
- * The head of the page of an event as dalberone drew it (E8b; note 2026-10-11-la-testa-della-pagina-di-un-evento): under the title and
- * the summary, when it runs in UTC and where the division lives; then its bookings as a badge — open, from when with the count, or
- * closed —, its airports by their codes, and who organises it only when it is not the division. The words are the module's own file.
+ * The head of the page of an event as dalberone drew it (E8b; note 2026-10-11-la-testa-della-pagina-di-un-evento, decided by Carmine on
+ * #249): under the title and the summary, when it runs in UTC and where the division lives; then its bookings as a badge — open, from
+ * when with the count, or closed —, its airports by their codes, each name read without a mouse, and who organises it only when it is
+ * not the division. The words are the module's own file.
  */
 
 const api = vi.hoisted(() => ({ get: vi.fn() }));
@@ -66,9 +68,14 @@ beforeEach(() => {
   api.get.mockResolvedValue({ data: bootstrap, response: new Response(null, { status: 200 }) });
 });
 
-/** Draws the head and waits for the calendar's word for its kind, which the bootstrap brings. */
+/** Draws the head, under the tooltips' provider the application mounts, and waits for the calendar's word for its kind. */
 async function draw(one: PublicEventDto) {
-  renderWithProviders(<EventHead event={one} timezone="Europe/Rome" onOpen={() => {}} />, { i18n });
+  renderWithProviders(
+    <TooltipProvider>
+      <EventHead event={one} timezone="Europe/Rome" onOpen={() => {}} />
+    </TooltipProvider>,
+    { i18n },
+  );
   await screen.findByText('RFO');
 }
 
@@ -90,12 +97,27 @@ describe('the head of the page of an event', () => {
 
     const line = factsLine();
     expect(within(line).getByText(words.booking.open)).toBeInTheDocument();
-    // A code the hub knows names its airport on hover; one it no longer knows is the code alone.
-    expect(within(line).getByText('XXAA')).toHaveAttribute('title', 'Smoke Airport A');
-    expect(within(line).getByText('XXBB')).not.toHaveAttribute('title');
+    // A code the hub knows is a button named by its code and its name; one it no longer knows is the code alone.
+    expect(within(line).getByRole('button', { name: 'XXAA · Smoke Airport A' })).toHaveTextContent(/^XXAA$/);
+    expect(within(line).queryByRole('button', { name: /XXBB/ })).not.toBeInTheDocument();
     // Nothing else: the division organising goes without saying on its own site.
     expect(line).toHaveTextContent(new RegExp(`^${words.booking.open}·XXAA·XXBB$`));
     expect(within(line).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  test("an airport's name is read without a mouse: on the keyboard's focus, and on a tap that the next one closes", async () => {
+    await draw(event());
+    const code = within(factsLine()).getByRole('button', { name: 'XXAA · Smoke Airport A' });
+
+    act(() => code.focus());
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Smoke Airport A');
+    act(() => code.blur());
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+
+    fireEvent.click(code);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Smoke Airport A');
+    fireEvent.click(code);
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
   });
 
   test('another division, or the network, is said in the same line, with their page when there is one', async () => {

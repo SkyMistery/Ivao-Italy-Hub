@@ -324,9 +324,11 @@ test('the page of an event says when, who organises it, where, its routes and it
   await expect(head.getByText(/ · 18:00–22:00Z$/)).toBeVisible();
   await expect(head.getByText('(19:00–23:00 LT)', { exact: true })).toBeVisible();
 
-  // In the same line its airports by their codes, the name on hover when the hub knows it, and who organises it — another
-  // division —, with their page.
-  await expect(head.getByText('XXAA', { exact: true })).toHaveAttribute('title', 'Smoke Airport A');
+  // In the same line its airports by their codes — the name the hub knows on the keyboard's focus too (Carmine, answer 1 on #249),
+  // the code alone of one it no longer knows —, and who organises it, another division, with their page.
+  const known = head.getByRole('button', { name: 'XXAA · Smoke Airport A' });
+  await known.focus();
+  await expect(page.getByRole('tooltip')).toHaveText('Smoke Airport A');
   await expect(head.getByText('XXBB', { exact: true })).toBeVisible();
   await expect(head.getByText(words.public.organizedBy.OtherDivision)).toBeVisible();
   await expect(head.getByRole('link', { name: words.public.organizerPage })).toHaveAttribute(
@@ -425,6 +427,20 @@ test('the page of an event lists its public slots by airport, departures and arr
 
 test.describe('on a phone', () => {
   test.use({ hasTouch: true });
+
+  test("a tap on an airport's code in the head of the page shows its name, and the next tap closes it", async ({
+    page,
+  }) => {
+    await stubTheEvents(page, [], { 'evt-test-smoke-page': event() });
+    await page.goto('/events/evt-test-smoke-page');
+
+    // Carmine, answer 1 on #249: a phone, which has no hover, reads the name too.
+    const code = page.locator('article > header').getByRole('button', { name: 'XXAA · Smoke Airport A' });
+    await code.tap();
+    await expect(page.getByRole('tooltip')).toHaveText('Smoke Airport A');
+    await code.tap();
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+  });
 
   test('a tap opens what a hover would show, the next tap closes it, and neither opens the slot', async ({
     page,
