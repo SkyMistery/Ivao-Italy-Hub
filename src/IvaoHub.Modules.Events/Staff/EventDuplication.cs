@@ -281,6 +281,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         string? notGenerated = null;
         if (plan.GeneratesPrivateSlots)
         {
+            // In this transaction: the generator takes the copy's row under it and writes there, and the commit below is one for all.
             var (_, _, refused) = await generation.GenerateAsync(copy, cancellationToken);
             notGenerated = refused.Errors.Values.SelectMany(keys => keys).FirstOrDefault();
         }
