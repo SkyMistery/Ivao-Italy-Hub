@@ -437,6 +437,10 @@
       }
     }
   },
+  "erasure": {
+    "bookingsToCome": "Prenotazioni di eventi non ancora finiti: cancellate, e i loro slot di nuovo liberi",
+    "bookingsOver": "Prenotazioni di eventi finiti, tenute senza il pilota e senza il volo che aveva scritto"
+  },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
   },

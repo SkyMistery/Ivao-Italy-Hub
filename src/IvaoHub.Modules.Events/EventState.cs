@@ -66,7 +66,7 @@ public static class EventState
             return EventStateKind.Draft;
         }
 
-        if (now >= row.EndsAtUtc)
+        if (IsOver(row, now))
         {
             return EventStateKind.Ended;
         }
@@ -95,7 +95,7 @@ public static class EventState
 
         return row.Status == PublishStatus.Published
             && (row.VisibleFromUtc is not { } visible || now >= visible)
-            && now < row.EndsAtUtc;
+            && !IsOver(row, now);
     }
 
     /// <summary>
@@ -111,12 +111,24 @@ public static class EventState
             return EventUnseen.Draft;
         }
 
-        if (now >= row.EndsAtUtc)
+        if (IsOver(row, now))
         {
             return EventUnseen.Over;
         }
 
         return row.VisibleFromUtc is { } visible && now < visible ? EventUnseen.NotSeenYet : null;
+    }
+
+    /// <summary>
+    /// Whether the event is over (§2.4): its end has passed — whatever else is true of it, a cancelled event too. The erasure of a
+    /// person's data asks it of the event of each of their bookings (§11.1, E8b; note 2026-10-11-duplica-e-la-cancellazione-negli-eventi,
+    /// reading 11): a booking of an event over is the event's history, and stays without the person; one of an event still to end goes.
+    /// </summary>
+    public static bool IsOver(Event row, DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return now >= row.EndsAtUtc;
     }
 
     /// <summary>

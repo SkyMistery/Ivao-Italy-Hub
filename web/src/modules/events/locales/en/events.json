@@ -437,6 +437,10 @@
       }
     }
   },
+  "erasure": {
+    "bookingsToCome": "Bookings of events still to end: deleted, and their slots free again",
+    "bookingsOver": "Bookings of events that ended, kept without the pilot and without the flight they wrote"
+  },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
   },

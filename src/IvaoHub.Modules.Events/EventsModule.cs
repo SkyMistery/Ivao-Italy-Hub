@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
@@ -130,6 +131,10 @@ public sealed class EventsModule : ModuleBase
                 .ForJob(BookingRemindersJob.JobName)
                 .WithIdentity($"{BookingRemindersJob.JobName}-quarterly")
                 .WithCronSchedule(BookingRemindersJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
+        // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
+        // without them.
+        services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)
