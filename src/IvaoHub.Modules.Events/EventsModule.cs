@@ -32,7 +32,8 @@ namespace IvaoHub.Modules.Events;
 /// booking away with a reason, and an event somebody booked tells them when it is cancelled or its times change —; E6b their pages —
 /// the staff's list of the bookings of an event, the block <c>events.myEvents</c> of a pilot's bookings still to fly — and the
 /// reminder of the day before, <c>events-reminders</c>; E7 its private slots — generated from the capacity of its airports, booked
-/// with the flight the pilot flies and an arrival's linked departure, exported with the slot each is paired with.
+/// with the flight the pilot flies and an arrival's linked departure, exported with the slot each is paired with —; E8b «Duplicate», a
+/// draft of an event onto a new date, and the module's half of erasing a person's data.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -131,6 +132,9 @@ public sealed class EventsModule : ModuleBase
                 .ForJob(BookingRemindersJob.JobName)
                 .WithIdentity($"{BookingRemindersJob.JobName}-quarterly")
                 .WithCronSchedule(BookingRemindersJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
+        // «Duplicate» (E8b): a draft of an event onto a new date, with its rows of the staff and nothing of the members.
+        services.AddScoped<EventDuplication>();
 
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.

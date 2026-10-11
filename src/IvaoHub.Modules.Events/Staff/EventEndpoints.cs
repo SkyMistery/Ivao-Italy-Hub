@@ -21,10 +21,10 @@ namespace IvaoHub.Modules.Events.Staff;
 /// The events in the back office (design M4 §7.2, E3a): a resource of the CRUD engine, read with <c>Events.View</c>, written
 /// with <c>Events.Edit</c>, deleted with <c>Events.Delete</c> too — which only the coordinator and the assistant of the base
 /// department hold, so whoever collaborates never deletes (§6.3). Its list has the views of <see cref="EventViews"/>.
-/// <para>⚠️ Three hand written endpoints hang off it: <b>publish</b> (§2.2, E3b) and <b>cancel</b> (§2.3), two verbs that are not
-/// fields of the form; and the <b>presets of the kinds</b>, a read: the form presets the switches from them when the kind changes
-/// (§1.12), and whoever writes events reads them there — the settings themselves are read only by whoever manages them, which an
-/// advisor of the department who creates events does not.</para>
+/// <para>⚠️ Four hand written endpoints hang off it: <b>publish</b> (§2.2, E3b), <b>cancel</b> (§2.3) and <b>duplicate</b>
+/// (§2.3-bis, E8b), three verbs that are not fields of the form; and the <b>presets of the kinds</b>, a read: the form presets the
+/// switches from them when the kind changes (§1.12), and whoever writes events reads them there — the settings themselves are read
+/// only by whoever manages them, which an advisor of the department who creates events does not.</para>
 /// </summary>
 public static class EventEndpoints
 {
@@ -87,6 +87,14 @@ public static class EventEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict)
+            .RequireAuthorization(EventsPermissions.Edit);
+
+        group.MapPost("/{id:long}/duplicate", DuplicateAsync)
+            .WithName("EventsDuplicate")
+            .Produces<EventDetailDto>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(EventsPermissions.Edit);
 
         app.MapGet(KindPresetsPattern, KindPresetsAsync)
@@ -219,6 +227,60 @@ public static class EventEndpoints
         await mail.EventCancelledAsync(row, await saving.BookersAsync(row.Id, http.RequestAborted), http.RequestAborted);
 
         return Results.Ok(EventMapper.ToDetail(row, now));
+    }
+
+    /// <summary>
+    /// Duplicates an event (§2.3-bis, E8b): a draft with every time moved by the same difference, the event's settings and its rows of
+    /// the staff, and nothing of the members (<see cref="EventDuplication"/>). <c>Events.Edit</c> is asked of the one handler on the new
+    /// event as it will be stored — in the care of the one it copies, and with the scope of a row not stored yet, so a grant on one
+    /// event alone duplicates nothing: a new event is never its (E10i) —; then the area of every row the copy writes, before anything is
+    /// written. 201 with the new event, which its page opens.
+    /// </summary>
+    private static async Task<IResult> DuplicateAsync(
+        long id,
+        EventDuplicateRequest request,
+        EventsDbContext database,
+        EventDuplication duplication,
+        IValidator<EventDuplicateRequest> validator,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        IClock clock,
+        HttpContext http)
+    {
+        var source = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .FirstOrDefaultAsync(candidate => candidate.Id == id, http.RequestAborted);
+        if (source is null)
+        {
+            return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+        }
+
+        var unborn = new Event { OwnerDepartment = source.OwnerDepartment, OwnerDepartmentMask = source.OwnerDepartmentMask };
+        if (!(await authorization.AuthorizeAsync(http.User, unborn, EventsPermissions.Edit)).Succeeded)
+        {
+            return Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser);
+        }
+
+        var validation = await validator.ValidateAsync(request, http.RequestAborted);
+        if (!validation.IsValid)
+        {
+            return CrudProblems.Validation(validation, catalog, currentUser.Locale);
+        }
+
+        var plan = await duplication.PlanAsync(source, request, http.RequestAborted);
+        foreach (var permission in plan.AreasWritten)
+        {
+            if (!(await authorization.AuthorizeAsync(http.User, unborn, permission)).Succeeded)
+            {
+                return Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser);
+            }
+        }
+
+        var (copy, problems) = await duplication.SaveAsync(plan, http.RequestAborted);
+
+        return copy is null
+            ? CrudProblems.Validation(problems, catalog, currentUser.Locale)
+            : Results.Created($"{Pattern}/{copy.Id}", EventMapper.ToDetail(copy, clock.UtcNow));
     }
 
     /// <summary>The presets of the kinds, as the settings hold them: the form of an event reads them, and changes nothing.</summary>
