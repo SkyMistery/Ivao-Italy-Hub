@@ -61,6 +61,28 @@ test('each question is a field of the kind its type draws, by its answer key, wi
     { value: '3', label: 'Monitor' },
   ]);
   expect(fields[4]?.meta.multiline).toBe(true);
+
+  // Each named with the question's own words (E10o), never a key of the language files.
+  expect(fields.map((field) => field.meta.label)).toEqual([
+    'Dinner',
+    'Seat',
+    'Equipment',
+    'Chairs',
+    'Anything else',
+  ]);
+});
+
+test('a choice not required can go back to no choice; a required one cannot', () => {
+  const optional = questions.map((question) =>
+    question.id === 12 ? { ...question, required: false } : question,
+  );
+  const seat = (schema: ReturnType<typeof registrationSchema>) => {
+    const [answers] = readFields(schema);
+    return answers?.kind === 'object' ? answers.children[1] : undefined;
+  };
+
+  expect(seat(registrationSchema(questions, read))?.optional).toBe(false);
+  expect(seat(registrationSchema(optional, read))).toMatchObject({ optional: true, meta: { label: 'Seat' } });
 });
 
 test('a form with nothing answered passes its schema: every rule is the server’s', () => {

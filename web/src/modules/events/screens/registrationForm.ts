@@ -29,7 +29,12 @@ export function registrationSchema(
 
 export type RegistrationValues = { answers: Record<string, unknown> };
 
+/**
+ * One question as a field, named with its own words (`.meta({ label })`, E10o: the language files have no row of the staff). A choice
+ * not required is optional, so its select can go back to «no choice», in the core's word.
+ */
 function field(question: PublicQuestionDto, read: (text: Record<string, string>) => string) {
+  const label = read(question.label);
   const choices: ChoiceOption[] = question.choices.map((choice) => ({
     value: choice.key,
     label: read(choice.label),
@@ -37,15 +42,17 @@ function field(question: PublicQuestionDto, read: (text: Record<string, string>)
 
   switch (question.type) {
     case 'YesNo':
-      return z.boolean();
+      return z.boolean().meta({ label });
     case 'Choice':
-      return z.string().meta({ choices });
+      return question.required
+        ? z.string().meta({ label, choices })
+        : z.string().meta({ label, choices }).optional();
     case 'MultiChoice':
-      return z.array(z.string()).meta({ multi: true, choices });
+      return z.array(z.string()).meta({ label, multi: true, choices });
     case 'Quantity':
-      return z.number().int().optional();
+      return z.number().int().meta({ label }).optional();
     default:
-      return z.string().meta({ multiline: true });
+      return z.string().meta({ label, multiline: true });
   }
 }
 
