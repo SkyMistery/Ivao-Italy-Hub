@@ -182,7 +182,8 @@ public sealed class PersonalDataErasure(
             var named = 0;
             foreach (var context in contexts)
             {
-                // Before the pseudonym: the rows gone before today are found by the VID their copies still hold.
+                // After the eraser, so that what it deleted is gone and emptied whole below; the log keeps the VID until
+                // AuditRedaction.ReplaceAsync, at the very end, and that is what finds the rows gone before today.
                 await AuditRedaction.EmptyGoneAsync(context, request.Vid, cancellationToken);
                 named += await PersonColumnRewrite.RewriteAsync(context, request, cancellationToken);
                 await context.SaveChangesAsync(cancellationToken);
