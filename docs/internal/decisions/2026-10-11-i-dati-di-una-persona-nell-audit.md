@@ -6,7 +6,7 @@
 nucleo di M4**: la sua PR, una nota nuova, **un meccanismo del nucleo per ogni modulo, non un caso degli eventi**, i test nei test della
 cancellazione del nucleo, **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b. **La forma nel codice è
 di questa nota** (§3), come per ogni fase del nucleo (`10`, «Regole di tutte le fasi»). Chi la applica alle prenotazioni l'ha scelto
-dalberone (§4).
+dalberone (§4). **Dopo [la revisione][rv251]** (12 ottobre 2026) le due correzioni e i tre punti bassi sono fatti sulla stessa PR (§7).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la cancellazione dei dati di una persona (`PersonalDataErasure`,
 `AuditRedaction`, nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona` §4), che già svuota l'audit delle righe che cancella e
 scrive lo pseudonimo nel resto; nessun meccanismo nuovo accanto. È una PR del nucleo, prima del codice del modulo che la usa (`CLAUDE.md`
@@ -56,8 +56,11 @@ la colonna nominata indica**. Sulla prenotazione sarà:
 
 - **La persona è una colonna della stessa riga** che nomina una persona (`PersonColumns.IsVid`: un intero `Vid`, `…Vid`, `…By`). Così il
   dato è di chi la riga dice, non di chiunque la riga nomini: cancellare lo staff che ha scusato un volo non svuota il nominativo del
-  pilota. `PersonColumns.ErasedWith(entity)` legge i segni dal modello, raggruppati per persona, e **rifiuta** un segno che nomina una
-  colonna che non è una persona (`InvalidOperationException`): un segno sbagliato non svuoterebbe niente senza dire niente.
+  pilota. `PersonColumns.ErasedWith(entity)` legge i segni, raggruppati per persona, e **rifiuta** (`InvalidOperationException`) un
+  segno che la cancellazione non potrebbe onorare — che svuoterebbe niente senza dire niente —: su una proprietà che il modello non
+  mappa, su un'entità che non è `[Audited]` o la cui chiave non è una colonna sola, o che nomina una colonna che non è una persona.
+  **L'avvio li controlla tutti** (`PersonColumns.VerifyErasedWith`, in `HubPipeline.InitializeAsync` accanto a `VerifyAlternatives` e
+  `VerifyWithdrawals`, dopo la revisione, §7): un segno sbagliato ferma l'avvio, mai una cancellazione a metà dei moduli.
 - **Sulla colonna, non nell'eraser**: il segno sta dove sta la colonna, come `[NotAudited]`, e il nucleo lo legge dal modello come le
   colonne di persona — una tabella nuova è coperta il giorno in cui nasce, senza un elenco da tenere a mano altrove.
 - **Il limite, detto**: copre un dato che sta sulla riga della persona. Un dato su una riga figlia, la cui persona è nominata solo dalla
@@ -66,17 +69,24 @@ la colonna nominata indica**. Sulla prenotazione sarà:
 
 ### 3.2 Il passo della cancellazione: `AuditRedaction.EmptyGoneAsync`
 
-In ogni contesto, **dopo l'eraser del modulo e prima dello pseudonimo** (la persona si trova ancora dal suo VID), per ogni tabella
-`[Audited]` che il contesto riscrive (`PersonColumns.RewrittenBy`) e che ha dei segni:
+In ogni contesto, **dopo l'eraser del modulo** (ciò che ha tolto non c'è più, e `EmptyAsync` lo svuota per intero subito dopo) **e
+prima di `ReplaceAsync`**, che alla fine di tutto cambia il VID dell'audit nello pseudonimo — ed è il VID nell'audit che trova la
+persona qui —, per ogni tabella che il contesto riscrive (`PersonColumns.RewrittenBy`) e che ha dei segni:
 
 1. **Le righe che nominavano la persona**: le righe d'audit della tabella il cui JSON contiene il VID (un `LIKE`, a pagine di 500, come
    `ReplaceAsync`), lette, e tenute quelle dove la colonna di persona del segno **vale proprio il VID** — le copie intere, `created` e
-   `deleted`. Le loro chiavi.
-2. **Meno quelle che ci sono ancora**: le righe della tabella che oggi nominano la persona in quella colonna (`CrudSource.BackOffice`,
-   come `PersonColumnRewrite`), con la chiave scritta come la scrive l'audit (`HubSaveChangesInterceptor.ReadKey`, ora `internal`).
-3. **Su ogni riga d'audit di quelle chiavi** — `created`, `updated`, `deleted`: un `updated` porta solo le colonne cambiate e non la
-   persona, e si trova dalla chiave — le proprietà segnate diventano `null` nel JSON (`AuditRedaction.Empty`). Il resto resta: l'azione,
-   chi l'ha fatta, quando, le altre colonne; la persona prende poi lo pseudonimo da `ReplaceAsync`, come oggi.
+   `deleted`, e un `updated` che cambia la persona. Le loro chiavi.
+2. **Meno quelle che ci sono ancora, di chiunque siano** (dopo la revisione, §7): le chiavi che una riga della tabella ha ancora,
+   lette con la sola chiave (`CrudSource.BackOffice`, come `PersonColumnRewrite`) e scritte come le scrive l'audit
+   (`HubSaveChangesInterceptor.FormatKey`, lo stesso pezzo di `ReadKey`). Una riga che c'è è del suo eraser: anche una che è passata a
+   un'altra persona, e una rimasta da un primo giro fallito a metà con lo pseudonimo già scritto.
+3. **Di ogni chiave rimasta, le copie scritte mentre la riga era della persona** (`AuditRedaction.EmptyWhileHeld`, dopo la revisione):
+   le righe d'audit della chiave in ordine, e per ogni lato — `before`, `after` — chi la riga indicava allora: un lato che ha la colonna
+   di persona lo dice, uno che non ce l'ha (un `updated` di un'altra colonna) è della persona del lato prima, e dopo un `deleted` non è
+   di nessuno; prima della prima copia che la nomina — una storia cominciata prima che la tabella fosse audita — è di chi quella copia
+   dice com'era prima. Sui lati della persona le proprietà segnate diventano `null` nel JSON (`AuditRedaction.Empty`). Il resto resta:
+   l'azione, chi l'ha fatta, quando, le altre colonne, e i lati di un'altra persona; la persona prende poi lo pseudonimo da
+   `ReplaceAsync`, come oggi.
 
 Nel flusso: `PersonalDataErasure.EraseModuleAsync`, una riga prima di `PersonColumnRewrite`, e lo stesso per il contesto del nucleo
 (oggi nessuna entità del nucleo ha un segno, e il passo non fa query).
@@ -93,7 +103,8 @@ Nel flusso: `PersonalDataErasure.EraseModuleAsync`, una riga prima di `PersonCol
   restano come sono; nessuna riga nuova nel risultato (come `EmptyAsync`, il passo non conta); nessuna migrazione, nessun endpoint,
   niente nel browser. `ErasureTests` non cambia. Senza segni, la cancellazione fa ciò che faceva.
 - **Il rifacimento**: una cancellazione fallita a metà si rifà; il passo trova la persona dal VID finché `ReplaceAsync` non l'ha scritto,
-  e una colonna già vuota resta vuota.
+  una colonna già vuota resta vuota, e una riga rimasta dal primo giro, con lo pseudonimo già dentro, c'è ancora: resta del suo eraser
+  (la prima forma la prendeva per tolta, §7).
 
 ## 4. Chi lo applica
 
@@ -118,7 +129,7 @@ Nel flusso: `PersonalDataErasure.EraseModuleAsync`, una riga prima di `PersonCol
 
 ## 6. I test
 
-- **`ErasedAuditTests`** (integrazione, nuova, 3; il nucleo e il modulo di prova sull'host vero, sulla MariaDB vera), con `SampleItem`
+- **`ErasedAuditTests`** (integrazione, nuova, 3, **6 dopo la revisione**; il nucleo e il modulo di prova sull'host vero, sulla MariaDB vera), con `SampleItem`
   che ora segna `Title` come dato del membro di cui parla (`[ErasedWith(nameof(StakeholderVid))]`, in `SampleItems.cs`; nessuna
   migrazione: il segno non è nel modello di EF). Persone: **761100**, nuovo (la persona cancellata, mai usata da un altro test, scelta di
   dalberone); **780096** e **780097** di `ErasureTests` (l'altro membro, solo nominato su una riga; il superadmin, seminato com'è lì).
@@ -128,21 +139,64 @@ Nel flusso: `PersonalDataErasure.EraseModuleAsync`, una riga prima di `PersonCol
      `erased`, quella che il modulo tiene ha il titolo nella sua storia;
   2. **una seconda cancellazione** della stessa persona non cambia niente delle righe d'audit;
   3. **ogni segno dei contesti dell'host** — del nucleo e di ogni modulo, il modulo di prova compreso — nomina una colonna di persona
-     della sua entità: un segno sbagliato farebbe cadere ogni cancellazione, e qui si vede il giorno in cui si scrive.
-- **`ErasedColumnsTests`** (unità, nuova, 4): `AuditRedaction.Empty` svuota le proprietà segnate e nient'altro, e rende lo stesso testo
-  quando non ne ha (un `updated` di un'altra colonna, una colonna già vuota, i nomi di un `autosaved`, nessun dato);
-  `PersonColumns.ErasedWith` legge i segni con la loro persona e rifiuta quello che nomina una colonna che non è una persona.
+     della sua entità: un segno sbagliato farebbe cadere ogni cancellazione, e qui si vede il giorno in cui si scrive;
+  4. (dopo la revisione) **una riga passata di mano**: una che c'è ancora, ora di un altro membro, tiene tutte le sue copie; una tolta
+     dopo essere passata perde il titolo solo nelle copie di quando era della persona — il `created` e il lato `before` del cambio —, e
+     tiene quello dell'altro membro nel lato `after` e nel `deleted`;
+  5. (dopo la revisione) **un secondo giro dopo un primo fallito a metà**: una riga rimasta con lo pseudonimo già scritto (lo stato del
+     primo giro, scritto com'è lui: solo la colonna di persona, senza riga d'audit) tiene la sua storia;
+  6. (dopo la revisione) **ciò che la persona ha fatto da staff**: una riga di un altro membro che ha creato e tolto prima della
+     cancellazione, con il suo VID in `CreatedBy` e `UpdatedBy` (che prendono lo pseudonimo) **e come titolo**, tiene i suoi dati: solo
+     la colonna di persona del segno dice di chi sono.
+- **`ErasedColumnsTests`** (unità, nuova, 4, **10 dopo la revisione**): `AuditRedaction.Empty` svuota le proprietà segnate e nient'altro,
+  e rende lo stesso testo quando non ne ha (un `updated` di un'altra colonna, una colonna già vuota, i nomi di un `autosaved`, nessun
+  dato); `AuditRedaction.EmptyWhileHeld` su una riga passata di mano, su una storia cominciata prima dell'audit e su una riga di un altro
+  con il VID in altre proprietà; `PersonColumns.ErasedWith` legge i segni con la loro persona e rifiuta i quattro segni sbagliati, e
+  `VerifyErasedWith` con loro.
 - **La prova al contrario**: tolte le due chiamate a `EmptyGoneAsync` da `PersonalDataErasure` (modifica locale, mai nel ramo), cadono i
-  due test 1 e 2 (il titolo resta in tutte e tre le righe d'audit della riga tolta); rimesse, 3 su 3.
+  due test 1 e 2 (il titolo resta in tutte e tre le righe d'audit della riga tolta); rimesse, 3 su 3. **Dopo la revisione**: con il
+  nucleo del primo push rimesso (`86b2008`, i test nuovi tenuti), cadono i test 4 e 5 (`Assert.Equal() Failure: Strings differ`: la riga
+  passata di mano e quella rimasta dal primo giro perdono il titolo) e passano gli altri quattro; rimessi i file della correzione,
+  toccati e ricompilati, 6 su 6. Il 6 passa anche sulla forma di prima: è la metà «non toccato» che mancava ai test, non un difetto.
+
+## 7. Dopo la revisione (12 ottobre 2026)
+
+[I rilievi del revisore][rv251] sulla #251: «la forma è giusta ed è ciò che il maintainer ha chiesto»; da correggere prima
+dell'unione i punti 1 e 2, e tre bassi. Fatti tutti sulla stessa PR:
+
+1. **«Tolta» voleva dire «nessuna riga nomina oggi la persona in quella colonna», non «nessuna riga ha quella chiave».** Due casi
+   sbagliavano: **una riga passata di mano** (prima di A, ora di B: cancellare A svuotava ogni copia di una riga di B, le sue comprese) e
+   **un secondo giro dopo un primo fallito a metà** (i moduli fanno il commit prima del nucleo, quindi una riga rimasta ha già lo
+   pseudonimo mentre l'audit ha ancora il VID: il secondo giro la prendeva per tolta, contro §3.3). Il revisore offriva due vie, e
+   **le ho prese tutte e due**, perché ciascuna chiude un caso che l'altra lascia: si tolgono le chiavi che **esistono del tutto** (§3.2
+   punto 2: chiude il secondo giro, e la riga passata di mano che c'è ancora), e di una riga tolta si svuotano **solo le copie scritte
+   mentre era della persona** (§3.2 punto 3: chiude la riga passata di mano e poi tolta, di cui la sola prima via svuoterebbe anche i
+   lati dell'altra persona). Un test per caso (§6, 4 e 5), che con la forma di prima cade.
+2. **La metà «non toccato» dei test**: la persona che fa da staff su una riga di un altro, tolta prima della cancellazione, con il suo
+   VID in `CreatedBy`, `UpdatedBy` e come titolo (§6, 6), e in unità `EmptyWhileHeld` con il VID in altre proprietà. Il filtro della
+   tabella resta in tutte e due le query dell'audit.
+3. **(basso) Un segno sbagliato all'avvio**: `PersonColumns.VerifyErasedWith`, accanto a `VerifyAlternatives` e `VerifyWithdrawals`; e
+   ora rifiutati anche il segno su un'entità non `[Audited]`, su una proprietà non mappata e su una chiave di più colonne (§3.1).
+4. **(basso) La sola chiave**: `LiveKeysAsync` caricava le righe intere per leggerne la chiave; `ExistingKeysAsync` legge solo la chiave
+   (§3.2 punto 2), e `ReadKey` è tornato privato, con `FormatKey` come pezzo comune.
+5. **(basso) Il commento sull'ordine**, in `PersonalDataErasure` e in `EmptyGoneAsync`: l'audit tiene il VID fino a `ReplaceAsync`, alla
+   fine di tutto; ciò che vuole il passo dopo l'eraser è che ciò che l'eraser toglie sia già tolto.
+
+**Per il maintainer** i punti 6–8 (nessuna entità vera ha ancora il segno: la #249 viene dopo questa, con il commit di E8b che segna le
+cinque colonne; la prenotazione ritirata tiene aereo, slot e orari sotto lo pseudonimo; le cancellazioni già fatte non si rifanno).
+
+[rv251]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771
 
 ## Da portare nel piano
 
 - **§9.7 / §16** (la cancellazione dei dati di una persona, la voce di `IPersonalDataEraser` e `PersonColumns`): **dall'11 ott 2026** (M4,
   E10n, decisa da Carmine sulla #249, risposta 2) una colonna che è un dato della persona nominata da un'altra colonna della stessa riga
   porta `[ErasedWith(nameof(…Vid))]`; alla cancellazione il nucleo svuota quelle colonne nelle righe d'audit delle righe che nominavano la
-  persona e **non ci sono più** — tolte prima, da lei o dallo staff —, prima di scrivere lo pseudonimo (`AuditRedaction.EmptyGoneAsync`).
-  Una riga che c'è resta del suo eraser. Copre un dato sulla riga della persona, non su una riga figlia. Un segno che non nomina una
-  colonna di persona è rifiutato.
+  persona e **non ci sono più** — nessuna riga con quella chiave: tolte prima, da lei o dallo staff —, e di quelle solo nelle copie
+  scritte mentre la riga era sua, dopo l'eraser e prima che l'audit prenda lo pseudonimo (`AuditRedaction.EmptyGoneAsync`). Una riga che
+  c'è resta del suo eraser, di chiunque sia ora. Copre un dato sulla riga della persona, non su una riga figlia. Un segno che la
+  cancellazione non potrebbe onorare (non una persona, un'entità non `[Audited]`, una proprietà non mappata, una chiave di più colonne)
+  ferma l'avvio (`PersonColumns.VerifyErasedWith`, dopo la revisione della #251).
 - **`CLAUDE.md` §2**, la riga «Erasing a person's data (GDPR)»: una frase in più, «a column of the person's data on a row that may be
   gone before the erasure is marked `[ErasedWith(nameof(…Vid))]`, and the core empties it in that row's audit».
 - **`09-design-m4.md` §11.1** (la cancellazione negli eventi): le cinque colonne della prenotazione segnate da E8b dopo questa fase.

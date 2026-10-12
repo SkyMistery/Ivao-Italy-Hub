@@ -3070,6 +3070,32 @@ righe che restano; una riga che resta e le righe di un'altra persona non cambian
   - la smoke e `pnpm e2e:full`, non eseguite: la fase non tocca il browser né un endpoint, e nessuno spec cancella una persona;
   - la CI (la dice la PR).
 
+**Dopo la revisione** (12 ottobre 2026, [i rilievi][rv251n] sulla #251: la forma è giusta; due correzioni prima dell'unione e tre punti
+bassi, tutti fatti; nota §7):
+
+- **«Tolta» è ora «nessuna riga con quella chiave»**, non «nessuna riga nomina oggi la persona»: una riga passata a un altro membro, e
+  una rimasta da un primo giro fallito a metà con lo pseudonimo già scritto, ci sono ancora e restano del loro eraser. E di una riga
+  tolta si svuotano **solo le copie scritte mentre era della persona** (`AuditRedaction.EmptyWhileHeld`): una riga passata di mano e poi
+  tolta tiene i dati dell'altro membro. Le due vie che il revisore offriva, prese insieme: ciascuna chiude un caso che l'altra lascia.
+- **I test di ciò che non si tocca**: la persona da staff su una riga di un altro membro, con il suo VID in `CreatedBy`, `UpdatedBy` e
+  come titolo; in unità, il VID in altre proprietà.
+- **I bassi**: un segno sbagliato ferma l'avvio (`PersonColumns.VerifyErasedWith` in `HubPipeline.InitializeAsync`, accanto a
+  `VerifyAlternatives` e `VerifyWithdrawals`), e sono rifiutati anche il segno su un'entità non `[Audited]`, su una proprietà non
+  mappata e su una chiave di più colonne; si legge solo la chiave delle righe che ci sono (`ExistingKeysAsync`; `ReadKey` torna
+  privato, `FormatKey` è il pezzo comune); il commento sull'ordine dice la ragione giusta.
+- **Un file del nucleo in più**: `src/IvaoHub.Web/HubPipeline.cs` (la riga dell'avvio).
+- **In coda** (la richiesta del revisore, [la coda][q251n]): **#242 → #250 → #252 → #251 → #249 → #239**. Questa viene dopo E10m (#252),
+  con il suo branch unito (che porta E10l, E4c e `main`); E8b (#249) la unisce dopo, con il commit che segna le cinque colonne della
+  prenotazione.
+- **Verificato, in locale** (12 ottobre 2026, prima dell'unione del branch di sotto): `dotnet build IvaoHub.sln` 0 avvisi; unità
+  **1213/1213**; `ErasedAuditTests` e `ErasureTests` 10/10; `ErasedAuditTests` **6/6**; integrazione intera, senza filtro, **535/535** al primo giro (10,7 minuti).
+  **La prova al contrario**: con il nucleo del primo push (`86b2008`) e i test nuovi, cadono i due casi del revisore — la riga passata
+  di mano e quella rimasta dal primo giro (`Assert.Equal() Failure: Strings differ`) — e passano gli altri quattro; rimessi i file della
+  correzione, toccati e ricompilati, 6/6. I test di unità nuovi chiamano `EmptyWhileHeld` e `VerifyErasedWith`, che il primo push non ha:
+  la prova al contrario non li compila.
+
+[rv251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771
+[q251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6120884106
 [rv249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
 [a249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
