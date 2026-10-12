@@ -110,6 +110,7 @@ function galleryBooking(id: number, callsign: string, days: number, from: string
     leg: id,
     withdrawable: true,
     createdAt: inDays(-1),
+    pairedBookingId: null,
   } as const;
 }
 

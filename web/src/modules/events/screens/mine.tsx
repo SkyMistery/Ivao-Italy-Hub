@@ -8,6 +8,7 @@ import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
+import { PageMetadata } from '../../../shared/seo/PageMetadata';
 import { ConfirmDialog, EmptyState, Notice } from '../../../shared/ui';
 import { myBookingsQuery, useWithdrawBooking, type MyBookingDto } from '../api';
 
@@ -43,9 +44,14 @@ export function MyBookingsPage() {
   }
 
   const { upcoming, past } = splitBookings(mine.data, drawnAt);
+  // A private arrival and its linked departure (E7) may fall one among the flights to come and one among the past ones.
+  const byId = new Map(mine.data.map((booking) => [booking.id, booking]));
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224, E4c), as /events does. */}
+      <PageMetadata title={t('events:mine.title')} description={t('events:mine.lead')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('events:mine.title')}</H1>
         <Lead>{t('events:mine.lead')}</Lead>
@@ -73,14 +79,14 @@ export function MyBookingsPage() {
                 </RouterAnchor>
               </p>
             ) : (
-              <BookingGroups bookings={upcoming} />
+              <BookingGroups bookings={upcoming} byId={byId} />
             )}
           </section>
 
           {past.length === 0 ? null : (
             <section className="flex flex-col gap-4" aria-label={t('events:mine.past')}>
               <H2>{t('events:mine.past')}</H2>
-              <BookingGroups bookings={past} />
+              <BookingGroups bookings={past} byId={byId} />
             </section>
           )}
         </>
@@ -90,7 +96,13 @@ export function MyBookingsPage() {
 }
 
 /** The bookings under their events, each event once, in the order its first booking comes. */
-function BookingGroups({ bookings }: { bookings: readonly MyBookingDto[] }) {
+function BookingGroups({
+  bookings,
+  byId,
+}: {
+  bookings: readonly MyBookingDto[];
+  byId: ReadonlyMap<number, MyBookingDto>;
+}) {
   const { t } = useTranslation();
   const read = useLocalized();
 
@@ -116,7 +128,11 @@ function BookingGroups({ bookings }: { bookings: readonly MyBookingDto[] }) {
           </div>
           <ul className="flex flex-col divide-y">
             {group.bookings.map((booking) => (
-              <BookingItem key={booking.id} booking={booking} />
+              <BookingItem
+                key={booking.id}
+                booking={booking}
+                paired={booking.pairedBookingId === null ? undefined : byId.get(booking.pairedBookingId)}
+              />
             ))}
           </ul>
         </section>
@@ -127,9 +143,10 @@ function BookingGroups({ bookings }: { bookings: readonly MyBookingDto[] }) {
 
 /**
  * One booking: the flight — callsign and number, the aircraft chosen, from and to with their times in UTC, the stand, its leg of a
- * rotation — and «withdraw» while its off block is to come. Withdrawing is asked once more: the slot goes back to everybody.
+ * rotation, the flight it is linked with when it is a private arrival or its departure (E7) — and «withdraw» while its off block is to
+ * come. Withdrawing is asked once more: the slot goes back to everybody, and the linked flight stays the pilot's, on its own.
  */
-function BookingItem({ booking }: { booking: MyBookingDto }) {
+function BookingItem({ booking, paired }: { booking: MyBookingDto; paired?: MyBookingDto | undefined }) {
   const { t, i18n } = useTranslation();
   const moment = useMoment();
   const withdraw = useWithdrawBooking();
@@ -160,6 +177,13 @@ function BookingItem({ booking }: { booking: MyBookingDto }) {
         {booking.stand === null ? null : (
           <Subtle className="text-sm">{t('events:mine.stand', { stand: booking.stand })}</Subtle>
         )}
+        {paired === undefined ? null : (
+          <Subtle className="text-sm">
+            {t(booking.isArrival ? 'events:mine.pairedDeparture' : 'events:mine.pairedArrival', {
+              callsign: paired.callsign,
+            })}
+          </Subtle>
+        )}
         {refusal === null ? null : <Notice tone="error" title={refusal} />}
       </div>
 
@@ -169,7 +193,11 @@ function BookingItem({ booking }: { booking: MyBookingDto }) {
             triggerText={t('events:mine.withdraw')}
             triggerVariant="secondary"
             title={t('events:mine.withdrawTitle', { callsign: booking.callsign })}
-            description={t('events:mine.withdrawDescription')}
+            description={
+              paired === undefined
+                ? t('events:mine.withdrawDescription')
+                : t('events:mine.withdrawPaired', { callsign: paired.callsign })
+            }
             confirmText={t('events:mine.withdraw')}
             confirmVariant="destructive"
             disabled={withdraw.isPending}

@@ -67,10 +67,15 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
         return [.. bookings.Select(booking => Row(booking, slots.GetValueOrDefault(booking.SlotId), names))];
     }
 
-    /// <summary>One booking with the flight of its slot — none known, the flight empty — and the name of its pilot.</summary>
+    /// <summary>
+    /// One booking with its flight (<see cref="BookedFlight"/>: a public slot's own, a private one's as its pilot wrote it, E7) — none
+    /// known, the slot not read, the flight empty but for a private callsign — and the name of its pilot.
+    /// </summary>
     public static EventBookingDto Row(EventBooking booking, EventSlot? slot, IReadOnlyDictionary<int, string> names)
     {
         ArgumentNullException.ThrowIfNull(booking);
+
+        var flight = slot is null ? new BookedFlight(booking.Callsign, null, null, null, null) : BookedFlight.Of(slot, booking);
 
         return new EventBookingDto(
             booking.Id,
@@ -78,13 +83,13 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
             booking.OwnerDepartment,
             booking.SlotId,
             EventsPeople.Member(booking.BookerVid, names),
-            slot?.Callsign ?? booking.Callsign,
+            flight.Callsign,
             slot?.FlightNumber,
             booking.AircraftIcao,
-            slot?.DepartureIcao,
-            slot?.OffBlockUtc,
-            slot?.ArrivalIcao,
-            slot?.OnBlockUtc,
+            flight.DepartureIcao,
+            flight.OffBlockUtc,
+            flight.ArrivalIcao,
+            flight.OnBlockUtc,
             slot?.Stand,
             slot?.RotationCode,
             slot?.RotationLeg,
