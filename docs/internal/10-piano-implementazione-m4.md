@@ -4341,9 +4341,11 @@ Design §4-bis.1, §4-bis.2, §11; nota `gli-eventi-in-presenza`. Branch `m4/e16
 rifiutato; la cancellazione di un iscritto. E2e: il pilota si iscrive rispondendo a tre domande.
 **Fatta quando**: sul banco un evento in presenza raccoglie un'iscrizione e lo staff ne vede le somme.
 
-**Com'è andata** (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #PRNUM, la prima fase di **M4c**, scelta da dalberone prima di
+**Com'è andata** (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255, la prima fase di **M4c**, scelta da dalberone prima di
 M4b; nata **in coda dopo la #249** di E8b, dal suo branch a `4bc847e`, e con la sua testa nuova `4a2b062` unita prima del codice —
-E7 a `7a847a8` e `main` a `bea8c0e` dentro —; **una migrazione**, `AddInPersonRegistration`):
+E7 a `7a847a8` e `main` a `bea8c0e` dentro —; poi **in coda dopo la #254** di E10o, la cui testa `a97a1fd` porta tutta la coda del master
+(E10j, E8b a `889ba1a`, E10n, E10m, E10l, E4c, `main` ad `a75ed6c`); **una migrazione**, `AddInPersonRegistration`, l'ultima del contesto
+dopo il merge):
 
 - **Fatto**:
   1. **`evt_questions`, `evt_registrations` ed `evt_event_stats`** (punti 1 e 6), una migrazione. `EventQuestion` è una riga dello staff
@@ -4370,12 +4372,14 @@ E7 a `7a847a8` e `main` a `bea8c0e` dentro —; **una migrazione**, `AddInPerson
      e «Togli» con il motivo e la mail `registrationRemoved` (`EventBookings.Edit`); **le somme** nella lista delle domande.
   5. **`EventsPersonalData`** (punto 5): l'iscrizione a un evento non finito si cancella, quella a un evento finito resta con lo pseudonimo,
      senza i testi; due righe dell'anteprima. `ErasureTests` con `evt_questions.created_by`, `.updated_by`, `evt_registrations.vid`.
+     Con **E10n** nella coda, le risposte portano `[ErasedWith(nameof(Vid))]`: quelle di un'iscrizione ritirata prima della cancellazione
+     escono anche dall'audit (provato in `EventsRegistrationsTests`).
      **`inPersonRetentionMonths`** (3) nelle impostazioni.
   6. **I test**: integrazione `EventsRegistrationsTests` (5; VID **761101–761105**, slug `evt-test-e16-…`): le risposte per tipo, una per
      campo, e un'obbligatoria lasciata fuori, poi l'iscrizione, il cambio, le mail, un altro membro che non vede niente; le somme e la lista
      dello staff, «Togli» con e senza motivo, un membro che non legge e non toglie; il ritiro prima e dopo l'inizio; la domanda a cui
      qualcuno ha risposto (il tipo e le scelte), l'evento che non si elimina, l'annullamento che avvisa l'iscritto; la cancellazione di un
-     iscritto. Vitest `registrationForm.test.ts` (3). Il giro `full/events-in-person.spec.ts`: il «fatta quando».
+     iscritto, e una sua iscrizione ritirata prima, che esce dall'audit. Vitest `registrationForm.test.ts` (4: i campi per tipo con il nome della domanda, la scelta facoltativa, i valori di partenza). Il giro `full/events-in-person.spec.ts`: il «fatta quando».
 - **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-domande-e-l-iscrizione.md`, **decisa** da Carmine sull'issue #253 — (A) a
   tutte e due le domande —): le letture 1–20 della nota — le chiavi delle scelte, che cosa tiene una domanda con risposte, i limiti, `updated_at`,
   fino a quando ci si iscrive e ci si ritira, la mail a ogni cambio, le somme con `Events.View` nella lista delle domande, la riga tenuta
@@ -4384,11 +4388,13 @@ E7 a `7a847a8` e `main` a `bea8c0e` dentro —; **una migrazione**, `AddInPerson
 - **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti con
   la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b), `inPerson` e `venue` in `eventForm.test.ts` (E3a: esiste per
   dire che il form rispecchia `EventWriteDto`), i campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`, `public.test.tsx`,
-  lo smoke `events-public.spec.ts`), `inPersonRetentionMonths` in `schemas.test.ts`, le iscrizioni in `EventsTestRows`.
+  lo smoke `events-public.spec.ts`, e dopo il merge della coda `titlesAndEmptyLists.test.tsx` di E4c, con la risposta vuota delle iscrizioni),
+  `inPersonRetentionMonths` in `schemas.test.ts`, le iscrizioni in `EventsTestRows`.
 - **Gli endpoint scritti a mano** (piano §16.6): quattro, verbi — tre del flusso del membro (leggere le proprie, iscriversi o cambiare,
   ritirarsi) e «togli» dello staff.
 - **Trovato, e scritto per chi viene dopo**: le parole che il server scrive seguono la lingua dell'account, non il cookie `hub.lang`
-  (sul banco, le persone leggono l'italiano anche con la pagina in inglese); la trappola è nell'handoff.
+  (sul banco, le persone leggono l'italiano anche con la pagina in inglese); la trappola è nell'handoff. **Lo smoke** ha trovato che
+  `/events/mine` restava su «Loading...» quando la lettura delle iscrizioni non rispondeva: ora le prenotazioni non la aspettano.
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

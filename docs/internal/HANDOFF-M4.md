@@ -7,8 +7,8 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 12 ottobre 2026 — **fase E16** (modulo, la prima di **M4c**: le domande e l'iscrizione a un evento in
-presenza, ed `evt_event_stats` intera), sul branch `m4/e16-in-person-registration`, **PR #PRNUM** verso `main`, **in coda dopo la #254** di
-E10o, l'ottava della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #PRNUM**, con E11a dopo): nata dal branch di E8b a
+presenza, ed `evt_event_stats` intera), sul branch `m4/e16-in-person-registration`, **PR #255** verso `main`, **in coda dopo la #254** di
+E10o, l'ottava della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255**, con E11a dopo): nata dal branch di E8b a
 `4bc847e`, ha unito la testa di E10o `a97a1fd`, che porta tutta la coda sotto. La nota `2026-10-12-le-domande-e-l-iscrizione` è
 **decisa** da Carmine sull'issue #253 (A a tutte e due le domande: le etichette del form del membro da E10o; «Togli» un'iscrizione con il
 motivo e una mail). Da E16 un evento può essere **in presenza**, con il luogo: lo staff scrive le sue domande, un membro si iscrive
@@ -245,7 +245,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E16 (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #PRNUM; nata in coda dopo la #249 dal branch di E8b a `4bc847e`, ora in coda dopo la #254 di E10o, con la sua testa `a97a1fd` unita)
+### Che cosa ha lasciato E16 (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255; nata in coda dopo la #249 dal branch di E8b a `4bc847e`, ora in coda dopo la #254 di E10o, con la sua testa `a97a1fd` unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E16, «Com'è andata»; **una migrazione**, `AddInPersonRegistration`; niente del nucleo — solo
   `schema.d.ts` generato —; una nota nuova, `2026-10-12-le-domande-e-l-iscrizione`, **decisa** da Carmine sull'**issue #253** — (A) a tutte e due
