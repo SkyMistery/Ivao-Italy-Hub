@@ -199,6 +199,49 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E16 (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #PRNUM; in coda dopo la #249 di E8b, dal suo branch a `4a2b062`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E16, «Com'è andata»; **una migrazione**, `AddInPersonRegistration`; niente del nucleo — solo
+  `schema.d.ts` generato —; una nota nuova, `2026-10-12-le-domande-e-l-iscrizione`, **decisa** da Carmine sull'**issue #253** — (A) a tutte e due
+  le domande —): la prima fase di **M4c**, scelta da dalberone prima di M4b.
+  - **Le tabelle**: `evt_questions` (`EventQuestion`: ordine, tipo dall'elenco chiuso, domanda e scelte tradotte, obbligatoria; le scelte
+    con una chiave che il server dà e che non cambia), `evt_registrations` (`EventRegistration`: il membro in `vid`, le risposte in JSON per
+    `q{id}`, `created_at`, `updated_at`; univoca su `(event_id, vid)`, `[WithdrawnByStakeholder]`), ed **`evt_event_stats` intera**
+    (`EventStats`, tutte le colonne del design §1.10: **E13a non la migra**; in E16 nessuno la scrive).
+  - **Il form dell'evento** ha «In presenza» e il luogo (`EventWriteDto` in coda, con un predefinito, `presetSwitches`); il luogo serve per
+    pubblicare un evento in presenza, e sta nella testa della pagina (un fatto in più di `EventHead`).
+  - **Le domande**: `/api/events/questions`, una risorsa del motore (`Staff/EventQuestionEndpoints.cs`), la scheda «Domande» con **le
+    somme** nella lista (`Registrations/RegistrationSums.cs`), ogni domanda in un form generato (`screens/questions.tsx`).
+  - **L'iscrizione**: le risposte controllate per tipo in un posto solo (`Registrations/RegistrationAnswers.cs`), i verbi del membro
+    (`Registrations/MemberRegistrations.cs`, `GET`/`PUT`/`DELETE /api/events/mine/registrations…`), la scheda «Iscrizioni» con «Togli» e
+    il motivo (`Registrations/RegistrationEndpoints.cs`, `StaffRegistrations.cs`, `screens/registrations.tsx`), la sezione della pagina
+    dell'evento (`screens/Registration.tsx`, il form costruito dalle domande in `screens/registrationForm.ts`) e `/events/mine`.
+  - **Le mail**: `events.registrationReceived` a ogni iscrizione e cambio, `events.registrationRemoved` con il motivo; annullare e cambiare
+    gli orari avvisano anche gli iscritti (`EventSaving.PeopleToTellAsync`).
+  - **`EventsPersonalData`** per le iscrizioni; **`inPersonRetentionMonths`** nelle impostazioni.
+  - **I test**: integrazione `EventsRegistrationsTests` (5; VID **761101–761105**, una fascia nuova data da dalberone; slug `evt-test-e16-…`);
+    vitest `registrationForm.test.ts`; il giro `web/e2e/full/events-in-person.spec.ts` (slug `evt-test-e2e-e16-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **Le due domande dell'issue #253 sono decise** ([le risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540)):
+    le etichette del form del membro vengono dal nucleo, con la fase **E10o** (un campo porta il suo nome nello schema), e **E16 è in coda
+    dopo la sua PR**; «Togli» un'iscrizione chiede il motivo e manda `events.registrationRemoved`, com'è scritto.
+  - **E17** (le attività, la conservazione, «Duplica»): `RegistrationRules.IsOpen` e `IsWithdrawable` dicono fino a quando; un posto di
+    un'attività lo prende solo chi ha una riga in `evt_registrations`; **`registrationReceived` aspetta i turni** (il design: «con risposte e
+    turni delle attività»), un dato in più di `EventsMail.RegistrationReceivedAsync`; **la conservazione** scrive le somme in
+    `evt_event_stats` (`RegistrationSums.Of`, la colonna `answer_sums`) prima di cancellare le iscrizioni; **«Duplica»** copia le domande
+    (non le iscrizioni) — le chiavi delle scelte com'erano.
+  - ⚠️ **E10n** (#251, del nucleo, non ancora unita quando E16 si è aperta): con E10n unita, `EventRegistration.AnswersJson` prende
+    `[ErasedWith(nameof(Vid))]`, così le risposte di un'iscrizione ritirata o tolta prima della cancellazione escono anche dall'audit; con
+    un test, come E8b per le prenotazioni.
+  - ⚠️ **Le parole che il server scrive** — le risposte di un'iscrizione, le somme — sono nella lingua dell'account (`ICurrentUser.Locale`),
+    non in quella del cookie `hub.lang`: per un membro il selettore cambia le due insieme, ma **sul banco** `readInEnglish` cambia solo la
+    pagina, e le persone del banco leggono l'italiano. La spec le attende in italiano.
+  - ⚠️ **Due test del modulo di fasi prima, cresciuti con la forma** (detto nella PR): due righe dell'anteprima in `EventsErasureTests`
+    (E8b); `inPerson` e `venue` in `eventForm.test.ts` (E3a); i tre campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`,
+    `public.test.tsx`, lo smoke `events-public.spec.ts`) e `inPersonRetentionMonths` in `schemas.test.ts`. Una fase che aggiunge un campo
+    obbligatorio fa lo stesso.
+  - ⚠️ **I VID di prova**: la fascia del modulo è finita; E16 ha usato **761101–761105** (dopo 761100 di E10n), dati da dalberone.
+
 ### Che cosa ha lasciato E8b (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; in coda dopo la #246 di E7, dal suo branch a `0d766fe` e, dopo la revisione, alla sua testa nuova `7a847a8`; `main` a `bea8c0e`, con E10k)
 
 - **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
