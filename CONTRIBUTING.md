@@ -149,6 +149,7 @@ CI fails on a diff after regenerating them, so regenerate before pushing:
   the chain for `MySqlErrorCode.LockDeadlock`. Two inserts of the same key meet as one whenever the row was just deleted
   and not purged yet. To wait for a lock in a test, poll `information_schema.INNODB_TRX` no more often than every
   100 ms: read faster, InnoDB keeps answering from its cache.
-- **Quartz cron expressions run in local time.**
+- **Quartz cron expressions run in local time**, when the trigger does not say its time zone. The core's triggers all say
+  theirs, and a module says its own (`docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`).
 - **CI does not run `dotnet format`** on the whole solution; format the files you touch
   (`dotnet format --include <files>`).
