@@ -18,6 +18,7 @@ import {
   slotsQuery,
   useDeleteFreeSlots,
   useDeleteSlot,
+  useGeneratePrivateSlots,
   useLoadSlots,
   useSaveSlot,
   type EventDetailDto,
@@ -37,6 +38,9 @@ import { sheetProblems } from './slotList';
 const EVENTS = '/staff/events';
 
 const columns: readonly ColumnSpec<EventSlotDto>[] = [
+  // Public or private (E7): a private slot is its airport and its time, the rest of its flight its pilot's.
+  col.badge('kind', 'events:slots'),
+  col.text('eventAirportIcao'),
   col.text('callsign', { sortable: true }),
   col.text('flightNumber'),
   col.list('aircraftTypes'),
@@ -49,14 +53,20 @@ const columns: readonly ColumnSpec<EventSlotDto>[] = [
   col.number('rotationLeg'),
 ];
 
-/** The slots of an event, by their time at its airport: the page and the search are the tab's, the address is the event's. */
+/**
+ * The slots of an event, by their time at its airport: the page and the search are the tab's, the address is the event's. On an event
+ * with private slots, «Generate the private slots» (E7) makes them from the capacity of its airports — generated again, the free ones
+ * are replaced and the booked ones stay —, asked once more first.
+ */
 export function SlotsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
   const deleteFree = useDeleteFreeSlots(event.id);
+  const generate = useGeneratePrivateSlots(event.id);
   const base = `${EVENTS}/${event.id}`;
-  const refusal = describeProblem(deleteFree.error, t, i18n.language);
+  const refusal =
+    describeProblem(deleteFree.error, t, i18n.language) ?? describeProblem(generate.error, t, i18n.language);
 
   const tools = editable ? (
     <div className="flex flex-wrap items-center gap-2">
@@ -72,13 +82,32 @@ export function SlotsTab({ event, editable }: { event: EventDetailDto; editable:
           {t('events:slots.create')}
         </RouterAnchor>
       </Button>
+      {event.privateSlots ? (
+        <ConfirmDialog
+          triggerText={t('events:slots.generate.trigger')}
+          triggerVariant="secondary"
+          title={t('events:slots.generate.title')}
+          description={t('events:slots.generate.description')}
+          confirmText={t('events:slots.generate.confirm')}
+          // Blue: the free private slots it replaces are made again, and nothing a pilot booked is touched.
+          confirmVariant="primary"
+          disabled={generate.isPending}
+          onConfirm={() => {
+            deleteFree.reset();
+            generate.mutate();
+          }}
+        />
+      ) : null}
       <ConfirmDialog
         triggerText={t('events:slots.deleteFree.trigger')}
         title={t('events:slots.deleteFree.title')}
         description={t('events:slots.deleteFree.description')}
         confirmText={t('events:slots.deleteFree.confirm')}
         disabled={deleteFree.isPending}
-        onConfirm={() => deleteFree.mutate()}
+        onConfirm={() => {
+          generate.reset();
+          deleteFree.mutate();
+        }}
       />
     </div>
   ) : null;
@@ -87,6 +116,9 @@ export function SlotsTab({ event, editable }: { event: EventDetailDto; editable:
     <div className="flex flex-col gap-4">
       {deleteFree.isSuccess ? (
         <Notice tone="success" title={t('events:slots.deleteFree.done', { count: deleteFree.data })} />
+      ) : null}
+      {generate.isSuccess ? (
+        <Notice tone="success" title={t('events:slots.generate.done', generate.data)} />
       ) : null}
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       <DataList

@@ -15,9 +15,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace IvaoHub.Modules.Events.Bookings;
 
 /// <summary>
-/// The bookings (design M4 §3.3, §3.6, §7.1, E6a): the pilot's own, under <c>/api/events/mine/bookings</c> — reading them, booking a
-/// public slot, booking the whole rotation of one, withdrawing one —, and the staff's «take away» of any booking of an event, with a
-/// reason the pilot reads in a mail. Verbs the design names (§7.2: «prenotare, ritirare»), written by hand because a booking is not a
+/// The bookings (design M4 §3.3, §3.4, §3.6, §7.1, E6a, E7): the pilot's own, under <c>/api/events/mine/bookings</c> — reading them,
+/// booking a public slot, booking the whole rotation of one, booking a private slot with the flight they fly and an arrival's linked
+/// departure with it, withdrawing one —, and the staff's «take away» of any booking of an event, with a reason the pilot reads in a mail. Verbs the design names (§7.2: «prenotare, ritirare»), written by hand because a booking is not a
 /// form over a row: it is a choice among slots, checked against the pilot's other bookings under a lock (<see cref="PilotBookings"/>).
 /// <para>Any signed in member books and withdraws, and reads their own bookings and nobody else's: a pilot is not a role, and no
 /// permission gives a member the area's <c>View</c> (design §1.1, no <c>IHasParticipants</c>). Taking a booking away is the staff's,
@@ -76,6 +76,14 @@ public static class BookingEndpoints
         mine.MapPost("/rotation", BookRotationAsync)
             .WithName("EventsBookRotation")
             .Produces<RotationBookingDto>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
+
+        // A private slot with the flight the pilot flies, and an arrival's linked departure with it (E7).
+        mine.MapPost("/private", BookPrivateAsync)
+            .WithName("EventsBookPrivate")
+            .Produces<PrivateBookingDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict);
@@ -162,6 +170,42 @@ public static class BookingEndpoints
         }
     }
 
+    /// <summary>
+    /// Books a private slot (§3.4, E7): with its flight, and for an arrival its linked departure, both or neither. A refusal lands on its
+    /// field, the departure's under <c>departure.…</c>; a deadlock is «try again», nothing booked.
+    /// </summary>
+    private static async Task<IResult> BookPrivateAsync(
+        PrivateBookingRequest request,
+        PilotBookings bookings,
+        IValidator<PrivateBookingRequest> validator,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var validation = await validator.ValidateAsync(request, http.RequestAborted);
+        if (!validation.IsValid)
+        {
+            return CrudProblems.Validation(validation, catalog, currentUser.Locale);
+        }
+
+        try
+        {
+            var (result, booked, problems) = await bookings.BookPrivateAsync(request, http.RequestAborted);
+
+            return result switch
+            {
+                BookingResult.Done => Results.Created((string?)null, booked),
+                BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+                _ => Results.NotFound(),
+            };
+        }
+        catch (Exception exception) when (DatabaseErrors.Deadlocked(exception))
+        {
+            // The linked departure included: neither is booked.
+            return TryAgain(catalog, currentUser);
+        }
+    }
+
     private static async Task<IResult> WithdrawAsync(
         long id,
         PilotBookings bookings,
@@ -220,6 +264,8 @@ public static class BookingEndpoints
 
         var slot = await database.Slots.AsNoTracking().FirstAsync(candidate => candidate.Id == booking.SlotId, http.RequestAborted);
 
+        // One of a private arrival and its linked departure goes alone: the link dissolves, and the other stays (E7).
+        await BookingPairs.LetGoAsync(database, booking, http.RequestAborted);
         database.Bookings.Remove(booking);
 
         try
