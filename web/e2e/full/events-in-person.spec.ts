@@ -17,9 +17,9 @@ import { benchUrl, mailFor, readInEnglish, test, whileWaitingFor } from './bench
  */
 
 const events = englishEvents();
-// What the server writes in words — the answers, the sums — is in the language of the account, Italian for the bench's people: the
-// cookie of the page changes the page only (the switcher of a member changes both).
-const words = wordsOf('it');
+// The answers and the sums are written by the page, in the language on screen (Carmine's answer 6 on #255); the mail keeps the
+// server's words, in the language of the account — Italian for the bench's people.
+const words = wordsOf('en');
 const asTheClientDoes = { 'X-Requested-With': 'hub' };
 const stem = 'evt-test-e2e-e16';
 const stamp = Date.now().toString(36);
@@ -174,9 +174,9 @@ test('a pilot registers to an event in person answering three questions, and the
   const mine = page
     .getByRole('region', { name: events.mine.registrations })
     .getByRole('listitem', { name: title.en });
-  await expect(mine).toContainText(`${dinner.it}: ${words.registrations.answers.yes}`);
-  await expect(mine).toContainText(`${equipment.it}: PC, Monitor`);
-  await expect(mine).toContainText(`${chairs.it}: 2`);
+  await expect(mine).toContainText(`${dinner.en}: ${words.registrations.answers.yes}`);
+  await expect(mine).toContainText(`${equipment.en}: PC, Monitor`);
+  await expect(mine).toContainText(`${chairs.en}: 2`);
 
   // ---------------------------------------------------------------- the coordinator reads the sums and the pilot
   const staff = await coordinator.newPage();
@@ -184,7 +184,7 @@ test('a pilot registers to an event in person answering three questions, and the
     throw new Error(`The page threw: ${error.message}`);
   });
   await staff.goto(`/staff/events/${id}?tab=questions`);
-  // The questions in the page's language, the sums in the account's.
+  // The questions and their sums in the page's language.
   await expect(staff.getByRole('row').filter({ hasText: dinner.en })).toContainText(
     `${words.registrations.answers.yes} 1`,
   );
@@ -199,7 +199,7 @@ test('a pilot registers to an event in person answering three questions, and the
     'true',
   );
   await expect(staff.getByRole('row').filter({ hasText: 'Bench Pilot (999002)' })).toContainText(
-    `${chairs.it}: 2`,
+    `${chairs.en}: 2`,
   );
 
   // The pilot is told, in their mailbox and in their language: the run's stamp is in the title of both.
