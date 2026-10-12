@@ -3655,7 +3655,10 @@ E7 a `7a847a8` e `main` a `bea8c0e` dentro —; **una migrazione**, `AddInPerson
      `RegistrationAnswers` (un rifiuto per campo, un'obbligatoria senza risposta `errors.required`); iscriversi o cambiare (`PUT`), ritirarsi
      (`DELETE`) fino all'inizio, leggere le proprie (`GET`), sotto `/api/events/mine/registrations`; la sezione «Iscrizione» della pagina
      dell'evento (`screens/Registration.tsx`, `#registration`) e le iscrizioni in `/events/mine`. `registrationReceived` a ogni iscrizione e
-     cambio; annullare e cambiare gli orari avvisano anche gli iscritti, una mail per persona. ETICHETTE
+     cambio; annullare e cambiare gli orari avvisano anche gli iscritti, una mail per persona. **Ogni campo si chiama con le parole della
+     sua domanda** (`.meta({ label })`) grazie a **E10o**, la fase del nucleo che Carmine ha voluto prima (risposta 1 sull'issue #253):
+     il branch di E10o è unito in quello di E16 (a `1a8c074`), e la PR di E16 è in coda dopo la sua; una scelta non obbligatoria torna a
+     «nessuna scelta» con la parola del nucleo.
   4. **Lo staff** (punto 4): la scheda «Iscrizioni» (`EventBookings.View`), una risorsa del motore in sola lettura con le risposte in parole,
      e «Togli» con il motivo e la mail `registrationRemoved` (`EventBookings.Edit`); **le somme** nella lista delle domande.
   5. **`EventsPersonalData`** (punto 5): l'iscrizione a un evento non finito si cancella, quella a un evento finito resta con lo pseudonimo,
@@ -3666,8 +3669,8 @@ E7 a `7a847a8` e `main` a `bea8c0e` dentro —; **una migrazione**, `AddInPerson
      dello staff, «Togli» con e senza motivo, un membro che non legge e non toglie; il ritiro prima e dopo l'inizio; la domanda a cui
      qualcuno ha risposto (il tipo e le scelte), l'evento che non si elimina, l'annullamento che avvisa l'iscritto; la cancellazione di un
      iscritto. Vitest `registrationForm.test.ts` (3). Il giro `full/events-in-person.spec.ts`: il «fatta quando».
-- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-domande-e-l-iscrizione.md`, **«Proposta»**, con le due domande
-  dell'issue #253): le letture 1–20 della nota — le chiavi delle scelte, che cosa tiene una domanda con risposte, i limiti, `updated_at`,
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-domande-e-l-iscrizione.md`, **decisa** da Carmine sull'issue #253 — (A) a
+  tutte e due le domande —): le letture 1–20 della nota — le chiavi delle scelte, che cosa tiene una domanda con risposte, i limiti, `updated_at`,
   fino a quando ci si iscrive e ci si ritira, la mail a ogni cambio, le somme con `Events.View` nella lista delle domande, la riga tenuta
   di un evento finito senza i testi, le colonne di `evt_event_stats` —; **«Duplica» non copia ancora le domande**: è di E17 (punto 3 di
   E17).
