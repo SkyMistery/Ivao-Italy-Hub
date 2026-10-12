@@ -76,7 +76,9 @@ interface FormEnvironment {
  * exactly alike from in here.
  *
  * Labels come from i18n under `<labels>.fields.<path>`, and the choices of a select under
- * `<labels>.options.<path>.<value>`: a screen carries no user facing string either.
+ * `<labels>.options.<path>.<value>`: a screen carries no user facing string either. A field whose
+ * schema carries its own name (`.meta({ label })`, a form built from rows) is the one exception: the
+ * caller has already written it in the language on screen, as it does the labels of `choices`.
  */
 export function SchemaForm<TValues extends Record<string, unknown>>({
   schema,
@@ -782,7 +784,15 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
   // group keeps a name of its own: i18next resolves a dotted key either way, while a nested `seo`
   // would be an object where a word has to be. Measured rather than assumed, and it is the shape
   // the tests of this file have used since M0.
-  const label = t(`${labels}.fields.${node.path}`);
+  //
+  // A field that carries its own name in its schema is drawn with it: a question an event's staff
+  // wrote is a row, and no language file holds it (note 2026-10-12-un-campo-dice-il-suo-nome).
+  const label = node.meta.label ?? t(`${labels}.fields.${node.path}`);
+
+  // What an optional select says for "nothing chosen". Its own key beside the field's, as it always
+  // was; for a field with a name of its own there is no key beside it, so the core says it with one
+  // word that fits any field.
+  const none = node.meta.label === undefined ? t(`${labels}.options.${node.path}.none`) : t('form.none');
 
   // The sentence under a field, drawn only when the language files carry one. It is a convention
   // rather than a schema flag on purpose: a hint is words, and words live in `locales/`.
@@ -848,7 +858,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     }
 
     case 'icon':
-      return <IconChoice node={node} name={name} labels={labels} label={label} hint={hint} error={error} />;
+      return <IconChoice node={node} name={name} none={none} label={label} hint={hint} error={error} />;
 
     case 'instant':
       return (
@@ -885,12 +895,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                   // The labels are the caller's, already in the language on screen. For a set only
                   // known at runtime — the permission catalogue, which depends on the modules
                   // installed — the label *is* the value, and that is what `choices` hands over.
-                  items={[
-                    ...(node.optional
-                      ? [{ value: NO_CHOICE, label: t(`${labels}.options.${node.path}.none`) }]
-                      : []),
-                    ...choices,
-                  ]}
+                  items={[...(node.optional ? [{ value: NO_CHOICE, label: none }] : []), ...choices]}
                 />
               )}
             />
@@ -998,9 +1003,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                 // gesture: leaving it out would make the first choice permanent.
                 onValueChange={(chosen) => field.onChange(chosen === NO_CHOICE ? undefined : chosen)}
                 items={[
-                  ...(node.optional
-                    ? [{ value: NO_CHOICE, label: t(`${labels}.options.${node.path}.none`) }]
-                    : []),
+                  ...(node.optional ? [{ value: NO_CHOICE, label: none }] : []),
                   ...node.options.map((option) => ({
                     value: option,
                     label: t(`${labels}.options.${node.path}.${option}`),
@@ -1220,19 +1223,19 @@ function LocalizedObject({
 function IconChoice({
   node,
   name,
-  labels,
+  none,
   label,
   hint,
   error,
 }: {
   node: Extract<FieldNode, { kind: 'icon' }>;
   name: string;
-  labels: string;
+  /** What "no icon" is called: the field's own key, or the core's word for a field with its own name. */
+  none: string;
   label: string;
   hint: string | undefined;
   error: string | undefined;
 }) {
-  const { t } = useTranslation();
   const { control } = useFormContext();
 
   return (
@@ -1250,7 +1253,7 @@ function IconChoice({
             {node.optional ? (
               <IconOption
                 chosen={typeof field.value !== 'string' || field.value === ''}
-                label={t(`${labels}.options.${node.path}.none`)}
+                label={none}
                 onChoose={() => field.onChange(undefined)}
               />
             ) : null}
