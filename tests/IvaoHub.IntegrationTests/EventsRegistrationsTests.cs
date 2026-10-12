@@ -46,6 +46,9 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
     /// <summary>A text answer that says who wrote it: the erasure takes it away.</summary>
     private const string TheirWords = "evt-test-e16 their words";
 
+    /// <summary>The answer of a registration withdrawn before the erasure: the audit's copies lose it (E10n).</summary>
+    private const string GoneWords = "evt-test-e16 withdrawn words";
+
     private static readonly string[] Locales = ["it", "en"];
 
     private static readonly int[] People = [MemberVid, OtherVid, CoordinatorVid, PersonVid, SuperadminVid];
@@ -301,6 +304,19 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         var kept = await RegistrationRowAsync(over, PersonVid, $$"""{"q{{text}}":"{{TheirWords}}","q{{dinner}}":true}""", token);
         await RegistrationRowAsync(over, OtherVid, $$"""{"q{{text}}":"evt-test-e16 another's words"}""", token);
 
+        // A registration the person sent and withdrew before the erasure: no eraser finds it, and its copies in the audit hold their words
+        // until the core empties them (E10n, the mark on the answers).
+        var withdrawnFrom = await EventRowAsync("erase-withdrawn", now.AddDays(6), now.AddDays(6).AddHours(6), token);
+        var (withdrawnText, _) = await QuestionRowsAsync(withdrawnFrom, token);
+        using (var person = await SignedInAsync(PersonVid, token))
+        {
+            await CreatedAsync(await person.PutAsJsonAsync(Mine(withdrawnFrom), Request((withdrawnText, GoneWords)), token), token);
+            using var withdrawn = await person.DeleteAsync(Mine(withdrawnFrom), token);
+            Assert.Equal(HttpStatusCode.NoContent, withdrawn.StatusCode);
+        }
+
+        Assert.True(await AuditMentionsAsync(GoneWords, token), "Without the answer in the audit, the check below would prove nothing.");
+
         using var superadmin = await SignedInAsync(SuperadminVid, token);
         (string Key, int Count, string Outcome)[] lines =
         [
@@ -323,6 +339,9 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         Assert.Equal(pseudonym, stored[kept].Vid);
         Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true}"""), JsonNode.Parse(stored[kept].AnswersJson), JsonNode.DeepEquals);
         Assert.Contains(stored.Values, row => row.Vid == OtherVid && row.AnswersJson.Contains("another's words", StringComparison.Ordinal));
+
+        // The registration withdrawn before: nothing of its answers in the audit.
+        Assert.False(await AuditMentionsAsync(GoneWords, token));
 
         // Run again: nothing left about the VID.
         Assert.All(
@@ -485,6 +504,14 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             .Where(registration => registration.EventId == eventId)
             .OrderBy(registration => registration.Id)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>Whether a row of the audit log still copies a text with the marker in it, before or after its change.</summary>
+    private async Task<bool> AuditMentionsAsync(string marker, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
+            .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
     }
 
     /// <summary>The mails of one type queued for a member of the class, about an event of the class, oldest first.</summary>

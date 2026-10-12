@@ -1,4 +1,5 @@
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Privacy;
 
 namespace IvaoHub.Modules.Events;
 
@@ -29,8 +30,10 @@ public sealed class EventRegistration : IEventChild, IVisible, ISubmittedByMembe
 
     /// <summary>
     /// The answers, a JSON object by question (<see cref="EventQuestion.AnswerKey"/>): <c>true</c> or <c>false</c>, the key of a
-    /// choice, the keys of several, a number, a text. A question nobody answered is not in it.
+    /// choice, the keys of several, a number, a text. A question nobody answered is not in it. The member's own data: a registration
+    /// withdrawn or taken away before their erasure leaves no answer in the audit either (<see cref="ErasedWithAttribute"/>, E10n).
     /// </summary>
+    [ErasedWith(nameof(Vid))]
     public string AnswersJson { get; set; } = "{}";
 
     public DateTime CreatedAt { get; set; }

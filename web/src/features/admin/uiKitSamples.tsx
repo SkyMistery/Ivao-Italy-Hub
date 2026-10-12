@@ -13,6 +13,7 @@ import {
   CalendarView,
   ConfirmDialog,
   ContactForm,
+  Dialog,
   EmptyState,
   Hero,
   LiveStatusStrip,
@@ -215,6 +216,19 @@ export function ConfirmDialogSample() {
       confirmText={t('common.delete')}
       onConfirm={() => undefined}
     />
+  );
+}
+
+export function DialogSample() {
+  const { t } = useTranslation();
+  return (
+    <Dialog
+      trigger={t('uiKit.sample.dialogTrigger')}
+      title={t('uiKit.sample.dialogTitle')}
+      description={t('uiKit.sample.heroLead')}
+    >
+      <p className="text-muted-foreground text-sm">{t('uiKit.sample.pageBody')}</p>
+    </Dialog>
   );
 }
 

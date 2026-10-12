@@ -1,4 +1,5 @@
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Privacy;
 
 namespace IvaoHub.Modules.Events;
 
@@ -16,6 +17,9 @@ namespace IvaoHub.Modules.Events;
 /// <c>View</c> (no <c>IHasParticipants</c>). Withdrawing deletes it (§3.6) — the pilot takes back what they sent, which the write
 /// guard of the core lets them do because the entity says so (<see cref="WithdrawnByStakeholderAttribute"/>, E10h) —, and the audit
 /// of the core keeps who did what.</para>
+/// <para>The five columns <see cref="EventsPersonalData"/> empties on a booking it keeps are the pilot's data
+/// (<see cref="ErasedWithAttribute"/>, E10n): a booking withdrawn or taken away before the pilot's erasure is a row no eraser finds,
+/// and the core empties them in its copies in the audit log (note 2026-10-11-i-dati-di-una-persona-nell-audit).</para>
 /// </summary>
 [Audited]
 [PermissionArea(EventsPermissions.BookingsArea)]
@@ -42,12 +46,15 @@ public sealed class EventBooking : IEventChild, IVisible, ISubmittedByMembers, I
     public string AircraftIcao { get; set; } = string.Empty;
 
     /// <summary>A private slot only (E7): the callsign the pilot flies with — a public slot has its own.</summary>
+    [ErasedWith(nameof(BookerVid))]
     public string? Callsign { get; set; }
 
     /// <summary>A private slot only (E7): the other airport of the flight, the event's being the slot's.</summary>
+    [ErasedWith(nameof(BookerVid))]
     public string? OtherIcao { get; set; }
 
     /// <summary>A private slot only (E7): the time at the other airport — the off block of an arrival, the on block of a departure.</summary>
+    [ErasedWith(nameof(BookerVid))]
     public DateTime? OtherTimeUtc { get; set; }
 
     /// <summary>A private arrival only (E7): the departure booked with it from the same airport, so that both get the same gate.</summary>
@@ -57,6 +64,7 @@ public sealed class EventBooking : IEventChild, IVisible, ISubmittedByMembers, I
     public DateTime? FlownAt { get; set; }
 
     /// <summary>The session of the network the flight was found in (E13a).</summary>
+    [ErasedWith(nameof(BookerVid))]
     public long? FlownSessionId { get; set; }
 
     /// <summary>When the check after the event looked at this booking (E13a): the job decides from it, not from the hour.</summary>
@@ -66,6 +74,7 @@ public sealed class EventBooking : IEventChild, IVisible, ISubmittedByMembers, I
     public int? UnflownExcusedBy { get; set; }
 
     /// <summary>Why (E13b): a network failure, a fault of the hub.</summary>
+    [ErasedWith(nameof(BookerVid))]
     public string? UnflownExcusedNote { get; set; }
 
     /// <summary>
