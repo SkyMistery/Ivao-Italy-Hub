@@ -146,6 +146,108 @@ public sealed class ErasedAuditTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A row that changed hands (after the review of #251): one still in the table is its eraser's, whoever it is about now, and
+    /// keeps every copy; of one taken away, only the copies written while it was the person's lose the data — the side of the
+    /// change that was theirs —, and the other member's keep it.
+    /// </summary>
+    [Fact]
+    public async Task ARowThatChangedHandsKeepsTheOtherMembersData()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var stamp = Guid.NewGuid().ToString("N");
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        var stays = await CreateItemAsync(superadmin, $"e10n-was-mine-{stamp}", PersonVid, token);
+        await UpdateItemAsync(superadmin, stays, $"e10n-now-theirs-{stamp}", OtherVid, token);
+        _items.Add(stays);
+
+        var gone = await CreateItemAsync(superadmin, $"e10n-mine-{stamp}", PersonVid, token);
+        await UpdateItemAsync(superadmin, gone, $"e10n-theirs-{stamp}", OtherVid, token);
+        await DeleteItemAsync(superadmin, gone, token);
+
+        await EraseAsync(superadmin, PersonVid, token);
+
+        var kept = await SnapshotAsync(stays, token);
+        Assert.Equal(["created", "updated"], kept.Select(row => row.Action));
+        Assert.Equal($"e10n-was-mine-{stamp}", Title(kept[0].AfterJson));
+        Assert.Equal($"e10n-was-mine-{stamp}", Title(kept[1].BeforeJson));
+        Assert.Equal($"e10n-now-theirs-{stamp}", Title(kept[1].AfterJson));
+
+        var emptied = await SnapshotAsync(gone, token);
+        Assert.Equal(["created", "updated", "deleted"], emptied.Select(row => row.Action));
+        Assert.Null(Title(emptied[0].AfterJson));
+        Assert.Null(Title(emptied[1].BeforeJson));
+        Assert.Equal($"e10n-theirs-{stamp}", Title(emptied[1].AfterJson));
+        Assert.Equal($"e10n-theirs-{stamp}", Title(emptied[2].BeforeJson));
+        Assert.DoesNotContain(emptied, row => $"{row.BeforeJson}{row.AfterJson}".Contains($"e10n-mine-{stamp}", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A second run after a first that failed half way (after the review of #251): the modules commit before the core, so a row
+    /// that stayed already holds the pseudonym while the log still holds the VID. It is still in the table, so it is its eraser's,
+    /// and its history is kept. The state the first run leaves is written here as it writes it — the person column only, with no
+    /// audit row (the interceptor writes none for it in erasure mode).
+    /// </summary>
+    [Fact]
+    public async Task ASecondRunAfterAFirstThatFailedHalfWayLeavesTheRowsThatStayed()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var stamp = Guid.NewGuid().ToString("N");
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        var stayed = await CreateItemAsync(superadmin, $"e10n-stayed-{stamp}", PersonVid, token);
+        _items.Add(stayed);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<SampleDbContext>().Items.IgnoreQueryFilters()
+                .Where(row => row.Id == stayed)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.StakeholderVid, -PersonVid), token);
+        }
+
+        await EraseAsync(superadmin, PersonVid, token);
+
+        var history = await SnapshotAsync(stayed, token);
+        Assert.Equal(["created"], history.Select(row => row.Action));
+        Assert.Equal($"e10n-stayed-{stamp}", Title(history[0].AfterJson));
+    }
+
+    /// <summary>
+    /// What the erased person did as staff (after the review of #251): a row about another member that they wrote and took away
+    /// before the erasure keeps its data — with their number in <c>CreatedBy</c> and <c>UpdatedBy</c>, which take the pseudonym,
+    /// and as the very title of the row, which is a word like any other. Only the marked person column says whose the data is.
+    /// </summary>
+    [Fact]
+    public async Task WhatThePersonDidAsStaffOnAnotherMembersRowKeepsItsData()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var number = PersonVid.ToString(CultureInfo.InvariantCulture);
+
+        // As a super administrator for a while, as in ErasureTests.
+        await SeedUserAsync(PersonVid, superadmin: true, token);
+        long theirs;
+        using (var person = await SignedInAsync(PersonVid, token))
+        {
+            theirs = await CreateItemAsync(person, number, OtherVid, token);
+            await DeleteItemAsync(person, theirs, token);
+        }
+
+        await SeedUserAsync(PersonVid, superadmin: false, token);
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var pseudonym = await EraseAsync(superadmin, PersonVid, token);
+
+        var history = await SnapshotAsync(theirs, token);
+        Assert.Equal(["created", "deleted"], history.Select(row => row.Action));
+        Assert.All(history, row => Assert.Equal(pseudonym, row.Vid));
+
+        var deleted = JsonNode.Parse(history[1].BeforeJson!)!.AsObject();
+        Assert.Equal(number, deleted["Title"]!.GetValue<string>());
+        Assert.Equal(OtherVid, deleted["StakeholderVid"]!.GetValue<int>());
+        Assert.Equal((pseudonym, pseudonym), (deleted["CreatedBy"]!.GetValue<int>(), deleted["UpdatedBy"]!.GetValue<int>()));
+        Assert.Equal(number, Title(history[0].AfterJson));
+    }
+
+    /// <summary>
     /// Every mark of the hub names a person column of its own entity (<see cref="PersonColumns.ErasedWith"/>): a mark that did not
     /// would make every erasure fail, so it is caught here, in the core's contexts and in every module's, the day it is written.
     /// </summary>
@@ -173,6 +275,8 @@ public sealed class ErasedAuditTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     private sealed record AuditCopy(string Action, int Vid, string? BeforeJson, string? AfterJson);
+
+    private static string? Title(string? json) => JsonNode.Parse(json!)!["Title"]?.GetValue<string>();
 
     private static async Task<List<AuditCopy>> RowsOfAsync(IQueryable<AuditLogEntry> audit, long id, CancellationToken cancellationToken)
     {
