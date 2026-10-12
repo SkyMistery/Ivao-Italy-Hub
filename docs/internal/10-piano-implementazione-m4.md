@@ -3555,6 +3555,12 @@ bassi, tutti fatti; nota §7):
   di mano e quella rimasta dal primo giro (`Assert.Equal() Failure: Strings differ`) — e passano gli altri quattro; rimessi i file della
   correzione, toccati e ricompilati, 6/6. I test di unità nuovi chiamano `EmptyWhileHeld` e `VerifyErasedWith`, che il primo push non ha:
   la prova al contrario non li compila.
+- **Unita la testa di E10m `2509a72`** (con E10l, E4c e `main` ad `a75ed6c`, E7 compresa), senza rebase; conflitti solo in questo piano e
+  nell'handoff (le sezioni di E10l ed E10m prima di questa; nell'handoff l'intestazione e il blocco di E10n in cima). **Rifatto dopo
+  l'unione**: `dotnet build IvaoHub.sln` 0 avvisi; unità **1230/1230**; integrazione intera, senza filtro, **556/556** al primo giro
+  (10,6 minuti); `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm lint`, `pnpm format:check`, `pnpm typecheck`,
+  `pnpm i18n:check` (835 chiavi) e `pnpm build` verdi, `pnpm test` **728/728** in 100 file; le regole di `core-guard` contro `main` ad
+  `a75ed6c`: nessun file del maintainer, i file del nucleo con le tre note nuove della coda.
 
 [rv251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771
 [q251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6120884106
