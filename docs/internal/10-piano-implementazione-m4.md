@@ -4179,6 +4179,12 @@ ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo
      nessuna postazione scritta su un evento annullato o finito; **il FIR tenuto** finché il nominativo non cambia (anche in eliminazione);
      **le postazioni da cui si sceglie filtrate dall'unico handler** sull'evento e sul FIR di ognuna (`division-positions?eventId=`). Un test
      d'integrazione per 3, 6, 7 e 8; il 409 non è provato da un test (due salvataggi nello stesso istante dello stesso membro).
+  4. **La testa di E16 dopo la sua revisione** (`4a31186`, con la forma nuova dei DTO delle domande) unita con un merge: un conflitto in
+     `PublicEvents.cs`, le domande nella forma di E16 (`PublicQuestionDto.Of`) e l'ATC di E11a tenuti insieme.
+  - **Verificato, in locale, sul merge**: `dotnet build` senza avvisi; unità **1275/1275**; **integrazione intera senza filtro 596/596**
+    (508 s), `EventsAtcTests` 10/10; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (850 chiavi) verdi; `pnpm test` **766 in 106
+    file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141, `ivaohub_e2e_e11a` tolto prima; le regole di `core-guard` da
+    `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
 
 [r256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
 [a256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
