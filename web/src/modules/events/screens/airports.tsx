@@ -65,6 +65,9 @@ export function AirportsTab({ event, editable }: { event: EventDetailDto; editab
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
       {...(create === null ? {} : { toolbar: create })}
+      // The airports are the event's, not a department's: an empty tab says what will be there (#224), to whoever writes
+      // them and whoever only reads them.
+      emptyDescription={t('events:airports.empty')}
       actions={(row) =>
         editable ? (
           <Button asChild variant="ghost" size="sm">
