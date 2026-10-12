@@ -3189,7 +3189,10 @@ la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #2
 CI di quella testa è stata verde; poi la #237 (E10i) unita l'ha rimessa in conflitto sui documenti
 ([il commento del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6102842072): Carmine unisce una PR alla
 volta, #238 → #242 → #239). L'11 ottobre, unita la #238, questa fase ha unito `main` a `bea8c0e` (`bb63261`), con E10k ed E10i: di nuovo
-in conflitto solo l'intestazione di `HANDOFF-M4.md`):
+in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #246 (E7), il revisore ha chiesto **una coda sola**,
+**#242 → #250 → #252 → #251 → #249 → #239**, con la #242 in fondo e pronta
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6120883096)): questa fase ha unito `main` ad
+`a75ed6c` (`346e20d9`), in conflitto l'intestazione e la cima dei blocchi di `HANDOFF-M4.md`):
 
 - **Fatto**:
   - **`/events`** (`EventsPublicPage` in `web/src/modules/events/screens/public.tsx`):
@@ -3211,9 +3214,13 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`):
     `<PageMetadata title={t('events:mine.title')} description={t('events:mine.lead')} />`; il `PublicEventDto` del test ha
     `bookingOpensAtUtc: null`, che E6b rende obbligatorio; e la scheda «Prenotazioni» (`BookingsTab` in `screens/bookings.tsx`) dice
     `events:bookings.empty`. Così nessuna lista generata del modulo dice più la frase del nucleo;
-  - **i test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (10), sulla radice vera dell'app come
+  - **dopo l'unione di E7** (12 ottobre, la riga della seconda fra la #242 e la #246 e la quarta scelta di dalberone): il
+    `PublicEventDto` del test ha `privateSlots: []`, che E7 rende obbligatorio (lo chiede il suo handoff); e la scheda «Slot», dove E7
+    genera gli slot privati, dice la sua frase secondo i tipi di slot dell'evento (`emptySlotsKey` in `screens/slots.tsx`):
+    `events:slots.empty` con i soli pubblici, `events:slots.emptyPrivate` con i soli privati, `events:slots.emptyBoth` con tutti e due;
+  - **i test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (12), sulla radice vera dell'app come
     `web/src/routes/-titles.test.tsx` di E10k; due `toHaveTitle` in `web/e2e/events-public.spec.ts`, la smoke degli eventi.
-- **Scelte di dalberone** (9 e 10 ottobre, chieste con la raccomandazione per prima; accolte tutte e tre):
+- **Scelte di dalberone** (9, 10 e 12 ottobre, chieste con la raccomandazione per prima; accolte tutte e quattro):
   1. **parole che descrivono, non che invitano** (prima del codice). Il prompt proponeva «Nessuno slot: incolla una tabella o creane
      uno», che parla a chi scrive; ma la scheda la vede anche chi legge e basta (`EventBookings.View` o `EventRoutes.View` senza la
      scrittura: nella divisione l'ED e l'FOD li hanno insieme, ma un grant a un VID può dare la sola lettura), e a lui i bottoni non si
@@ -3232,15 +3239,23 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`):
        prima la frase del nucleo);
   3. **anche la scheda «Prenotazioni» di E6b** (10 ottobre, all'unione di `main`: la quinta lista generata del modulo, nata dopo E4c):
      - `bookings.empty`: «Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.» — «The pilots' bookings of the event's
-       slots will show up here.».
+       slots will show up here.»;
+  4. **una frase per tipo di slot nella scheda «Slot»** (12 ottobre, all'unione di E7, che vi genera gli slot privati: la frase di prima
+     diceva solo «si incollano da una tabella o si creano uno per uno»), scelta dai flag dell'evento:
+     - `slots.emptyPrivate`: «Qui compariranno gli slot privati dell'evento, generati dalla capacità dei suoi scali.» — «The private
+       slots of the event will show up here, generated from the capacity of its airports.»;
+     - `slots.emptyBoth`: «Qui compariranno gli slot dell'evento: quelli pubblici si incollano da una tabella o si creano uno per uno,
+       quelli privati si generano dalla capacità degli scali.» — «The slots of the event will show up here: the public ones are pasted
+       from a table or created one by one, the private ones generated from the capacity of its airports.»;
+     - con i soli pubblici resta `slots.empty`.
 - **Scelte della fase**:
-  1. le chiavi nelle sezioni delle cinque liste, `slots.empty`, `routes.empty`, `airports.empty`, `events.empty` e `bookings.empty`: la
-     schermata le passa da sé, e `DataList` non le legge per convenzione (la nota di E10k, §2.3, scarta `<labels>.empty` proprio perché lo
-     stesso `labels` serve a più liste);
+  1. le chiavi nelle sezioni delle cinque liste — `slots.empty` (con `emptyPrivate` ed `emptyBoth`), `routes.empty`, `airports.empty`,
+     `events.empty` e `bookings.empty` —: la schermata le passa da sé, e `DataList` non le legge per convenzione (la nota di E10k, §2.3,
+     scarta `<labels>.empty` proprio perché lo stesso `labels` serve a più liste);
   2. i test montano la radice vera, e le schede e la lista degli eventi sotto una rotta `/_staff` del test, senza componente: il contesto
      è quello della radice, il bootstrap, e `useRouteContext({ from: '/_staff' })` lo legge come nel back office;
-  3. la frase degli slot dice come arrivano oggi, incollati o creati: quando **E7** porterà nella stessa scheda gli slot privati
-     generati, la rilegge;
+  3. la frase degli slot la sceglie una funzione della schermata, `emptySlotsKey`, dai flag `publicSlots` e `privateSlots` dell'evento:
+     una chiave fatta a runtime, che `i18n:check` non legge; la prova il test, nelle due lingue;
   4. `/events/mine` passa anche la descrizione, `events:mine.lead`, come `/events` passa la sua: la riga concordata con E6b diceva solo il
      titolo.
 - **Trovato**:
@@ -3257,7 +3272,16 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`):
   - **con E6b** (sugli stessi `public.tsx` ed `events.json`): `git merge-tree` con la sua testa fondeva puliti tutti i file di codice, e
     così è stato all'unione di `main` del 10 ottobre (il solo conflitto, l'intestazione di `HANDOFF-M4.md`). Le due righe concordate con
     la sessione di E6b per la seconda fra la #240 e la #242 le ha fatte E4c (sopra, «Fatto»).
-- **Verificato, in locale** (9–11 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+- **Verificato, in locale** (9–12 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+  - dopo l'unione di `main` ad `a75ed6c` (`346e20d9`, con E7) e le frasi della scheda «Slot»: `pnpm lint`, `pnpm format:check`,
+    `pnpm typecheck` e `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **723/723** in 99 file;
+    `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1220/1220**; i test nuovi da soli 12/12, e **la prova al
+    contrario** sui due nuovi: con la sola `slots.empty` cadono loro 2 su 12; la suite di integrazione intera, senza filtro, **542/543**
+    (11,4 minuti): cade solo `ErasureTests.WhatIsAboutThePersonGoesAndWhatTheyDidForOthersStaysUnderThePseudonym` alla riga 145, del
+    maintainer, che cerca il VID della persona come sottostringa nel JSON di tutto il registro di audit condiviso (l'instabilità già
+    vista sulla #178); la classe da sola **4/4**; la smoke **180/180** al primo giro (1,2 minuti); `pnpm e2e:full` **59/59** al primo giro (11,9 minuti,
+    `ivaohub_e2e_e4c` ricreato, dopo l'attesa del lucchetto di Mailpit tenuto da un'altra sessione; uno spec in più, di E7); le regole di
+    `core-guard` contro `main` (la #238 unita): quindici file, solo del modulo e documenti;
   - dopo l'unione di `main` a `bea8c0e` (`bb63261`, con E10k ed E10i): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
     `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **708/708** in 97 file;
     `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1203/1203**; la suite di integrazione intera, senza filtro,
@@ -3293,9 +3317,8 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`):
 - **Non verificato**:
   - la CI del primo push: «Test .NET» rosso per #236, e nessun passo web (li ho fatti girare in locale, sopra). Dopo l'unione di
     `fdb551d` la CI gira intera, e la sua lettura la dice la PR;
-  - la suite di integrazione in locale prima dell'ultima unione: l'ho fatta girare solo dopo (sopra); prima il C# dell'albero era quello
-    di `main`, provato dalla CI delle sue PR;
-  - `pnpm e2e:full` in locale dopo l'ultima unione (l'ultimo giro, 58/58, è sull'albero con `main` a `ba06d66`): lo fa la CI;
+  - la suite di integrazione in locale prima dell'unione dell'11 ottobre: il C# dell'albero era quello di `main`, provato dalla CI delle
+    sue PR; da allora gira a ogni unione (sopra);
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
 ### E11a — Postazioni e disponibilità

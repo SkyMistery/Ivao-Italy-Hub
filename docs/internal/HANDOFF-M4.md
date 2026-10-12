@@ -183,7 +183,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E4c (9–11 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, nata in coda dopo la #238; `main` unito a `bea8c0e` dopo di lei)
+### Che cosa ha lasciato E4c (9–12 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in fondo alla coda #242 → #250 → #252 → #251 → #249 → #239; `main` unito ad `a75ed6c`, con E7)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4c, «Com'è andata»; nessun file del nucleo, nessuna nota nuova): gli eventi usano i pezzi di
   E10k.
@@ -193,21 +193,24 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La pagina di un evento** (`EventScreen`, `public.tsx`) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
     e la scheda dice come prima il titolo dell'evento e «— IVAO Italia».
   - **Le cinque liste generate del modulo, vuote, dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede
-    «Slot» (`events:slots.empty`), «Rotte» (`events:routes.empty`), «Scali» (`events:airports.empty`) e «Prenotazioni»
-    (`events:bookings.empty`) di un evento, e `/staff/events` (`events:events.empty`). Parole che descrivono e non invitano (scelte di
-    dalberone): vere per chi scrive, che ha i bottoni sopra, e per chi legge e basta, che non li ha.
-  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (10, sulla radice vera dell'app) e due `toHaveTitle` nella
+    «Slot», «Rotte» (`events:routes.empty`), «Scali» (`events:airports.empty`) e «Prenotazioni» (`events:bookings.empty`) di un evento, e
+    `/staff/events` (`events:events.empty`). La scheda «Slot» sceglie la sua dai tipi di slot dell'evento (`emptySlotsKey` in
+    `screens/slots.tsx`): `events:slots.empty` con i soli pubblici, `events:slots.emptyPrivate` con i soli privati di E7,
+    `events:slots.emptyBoth` con tutti e due. Parole che descrivono e non invitano (scelte di dalberone): vere per chi scrive, che ha i
+    bottoni sopra, e per chi legge e basta, che non li ha.
+  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (12, sulla radice vera dell'app) e due `toHaveTitle` nella
     smoke `web/e2e/events-public.spec.ts`.
-  - **Le due righe della seconda fra la #240 e la #242** le ha fatte E4c all'unione di `main` del 10 ottobre: `bookingOpensAtUtc: null`
-    nel `PublicEventDto` del test e il titolo di `/events/mine`.
+  - **Le righe lasciate alla seconda** le ha fatte E4c: all'unione di E6b (10 ottobre) `bookingOpensAtUtc: null` nel `PublicEventDto` del
+    test e il titolo di `/events/mine`; all'unione di E7 (12 ottobre) `privateSlots: []` nello stesso `PublicEventDto`.
 - **Che cosa devono sapere le fasi dopo**:
   - **Una pagina nuova degli eventi** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, senza `divisionName`; **una
     lista nuova del modulo** dice la sua frase vuota con `emptyDescription`, una chiave `<lista>.empty` passata dalla schermata (`DataList`
     non la legge da sé). Il test che lo prova sulla radice vera è `titlesAndEmptyLists.test.tsx`: una pagina o una lista nuova ci
     aggiunge la sua rotta e il suo caso.
   - ⚠️ **Il `PublicEventDto` del test è scritto per intero**: un campo nuovo e obbligatorio della lettura della pagina (come
-    `bookingOpensAtUtc` di E6b) va aggiunto lì, o il typecheck cade.
-  - **E7** (gli slot privati generati nella stessa scheda) rilegge `events:slots.empty`, che oggi parla degli slot incollati o creati.
+    `bookingOpensAtUtc` di E6b e `privateSlots` di E7) va aggiunto lì, o il typecheck cade.
+  - **Un modo nuovo di far nascere gli slot** (un'altra strada oltre a incollare, creare e generare) rilegge le tre frasi della scheda
+    «Slot».
   - **La CI**: al primo push di questa fase «Test .NET» era rosso per #236, e la CI saltava i passi web (lint, `format:check`,
     typecheck, vitest, i18n, la smoke, il giro), fatti in locale ed elencati nella PR (`format:check` compreso: lo aveva mancato E10k,
     corretto da lei prima del push di questa). La #241 di Carmine l'ha corretto; con E10k unita a `fdb551d`, che porta `main` a
