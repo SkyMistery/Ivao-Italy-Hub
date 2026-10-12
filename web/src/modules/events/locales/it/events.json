@@ -169,6 +169,8 @@
     "create": "Nuovo slot",
     "edit": "Slot",
     "empty": "Qui compariranno gli slot dell'evento: si incollano da una tabella o si creano uno per uno.",
+    "emptyPrivate": "Qui compariranno gli slot privati dell'evento, generati dalla capacità dei suoi scali.",
+    "emptyBoth": "Qui compariranno gli slot dell'evento: quelli pubblici si incollano da una tabella o si creano uno per uno, quelli privati si generano dalla capacità degli scali.",
     "fields": {
       "callsign": "Nominativo",
       "flightNumber": "Numero di volo",

@@ -170,6 +170,8 @@
     "create": "New slot",
     "edit": "Slot",
     "empty": "The slots of the event will show up here: they are pasted from a table or created one by one.",
+    "emptyPrivate": "The private slots of the event will show up here, generated from the capacity of its airports.",
+    "emptyBoth": "The slots of the event will show up here: the public ones are pasted from a table or created one by one, the private ones generated from the capacity of its airports.",
     "fields": {
       "callsign": "Callsign",
       "flightNumber": "Flight number",

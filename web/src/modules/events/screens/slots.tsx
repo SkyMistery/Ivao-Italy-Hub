@@ -54,6 +54,18 @@ const columns: readonly ColumnSpec<EventSlotDto>[] = [
 ];
 
 /**
+ * What an empty tab says of where the slots come from, by the kinds the event has (E4c): the public ones pasted from a table or created
+ * one by one, the private ones generated from the capacity of its airports (E7), or both.
+ */
+function emptySlotsKey(event: Pick<EventDetailDto, 'publicSlots' | 'privateSlots'>): string {
+  if (event.publicSlots && event.privateSlots) {
+    return 'events:slots.emptyBoth';
+  }
+
+  return event.privateSlots ? 'events:slots.emptyPrivate' : 'events:slots.empty';
+}
+
+/**
  * The slots of an event, by their time at its airport: the page and the search are the tab's, the address is the event's. On an event
  * with private slots, «Generate the private slots» (E7) makes them from the capacity of its airports — generated again, the free ones
  * are replaced and the booked ones stay —, asked once more first.
@@ -131,9 +143,9 @@ export function SlotsTab({ event, editable }: { event: EventDetailDto; editable:
         search={search}
         onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
         {...(tools === null ? {} : { toolbar: tools })}
-        // The slots are the event's, not a department's: an empty tab says where they come from (#224). The same
-        // words to whoever only reads them, who has none of the buttons above.
-        emptyDescription={t('events:slots.empty')}
+        // The slots are the event's, not a department's: an empty tab says where they come from (#224), by the kinds of slots
+        // the event has. The same words to whoever only reads them, who has none of the buttons above.
+        emptyDescription={t(emptySlotsKey(event))}
         actions={(row) =>
           editable && row.kind === 'Public' ? (
             <Button asChild variant="ghost" size="sm">
