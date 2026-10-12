@@ -115,6 +115,29 @@ public static class EventCopy
     }
 
     /// <summary>
+    /// A position of the copy (E11a): its callsign, its FIR and the staff's note as they were, its hours moved by
+    /// <paramref name="difference"/>, in the copy's care. Not checked again against the core's directory: it was accepted, and its form
+    /// checks it at the next save, as a slot's.
+    /// </summary>
+    public static EventAtcPosition AtcPosition(EventAtcPosition source, Event copy, TimeSpan difference)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+
+        return new EventAtcPosition
+        {
+            EventId = copy.Id,
+            Callsign = source.Callsign,
+            Fir = source.Fir,
+            FromUtc = source.FromUtc + difference,
+            ToUtc = source.ToUtc + difference,
+            Note = source.Note,
+            OwnerDepartment = copy.OwnerDepartment,
+            OwnerDepartmentMask = copy.OwnerDepartmentMask,
+        };
+    }
+
+    /// <summary>
     /// A public slot of the copy: its flight and its place in its rotation as they were, its two times moved by
     /// <paramref name="difference"/>, in the copy's care. Not checked again against the airports and the types the core knows today
     /// (reading 5): it was accepted, and its form checks it at the next save.
@@ -147,8 +170,8 @@ public static class EventCopy
 }
 
 /// <summary>
-/// What a copy writes, read before anything is written: the new event, how far its times move, the rows that come with it, and whether
-/// its private slots are generated with it.
+/// What a copy writes, read before anything is written: the new event, how far its times move, the rows that come with it — its ATC
+/// positions too (E11a) —, and whether its private slots are generated with it.
 /// </summary>
 public sealed record EventDuplicatePlan(
     Event Copy,
@@ -156,11 +179,13 @@ public sealed record EventDuplicatePlan(
     IReadOnlyList<EventAirport> Airports,
     IReadOnlyList<EventRoute> Routes,
     IReadOnlyList<EventSlot> PublicSlots,
-    bool GeneratesPrivateSlots)
+    bool GeneratesPrivateSlots,
+    IReadOnlyList<EventAtcPosition>? AtcPositions = null)
 {
     /// <summary>
     /// The permissions a copy asks besides <c>Events.Edit</c> (reading 8): the area of every row it writes, as deleting an event asks
-    /// the routes' (E4) — its routes, and its slots when it carries some, the public ones copied or the private ones generated.
+    /// the routes' (E4) — its routes, its slots when it carries some, the public ones copied or the private ones generated, and its ATC
+    /// positions (E11a).
     /// </summary>
     public IReadOnlyList<string> AreasWritten
     {
@@ -178,6 +203,11 @@ public sealed record EventDuplicatePlan(
                 areas.Add(EventsPermissions.BookingsEdit);
             }
 
+            if (AtcPositions is { Count: > 0 })
+            {
+                areas.Add(EventsPermissions.AtcEdit);
+            }
+
             return areas;
         }
     }
@@ -186,8 +216,8 @@ public sealed record EventDuplicatePlan(
 /// <summary>
 /// «Duplicate» (design M4 §2.3-bis, E8b; note 2026-10-11-duplica-e-la-cancellazione-negli-eventi §1): a new start and a new address,
 /// and the hub makes <b>a draft</b> with every time moved by the same difference, copying the event's settings, its description and its
-/// banner, its airports with their capacity, its routes and — if the staff choose — its public slots with their rotations. <b>Nothing of
-/// the members</b>: no booking. One endpoint, one transaction.
+/// banner, its airports with their capacity, its routes, its ATC positions (E11a) and — if the staff choose — its public slots with their
+/// rotations. <b>Nothing of the members</b>: no booking, no availability. One endpoint, one transaction.
 /// <para><b>The private slots are generated again</b>, never copied (Carmine's answer 1 on issue #248, A′): in
 /// the same transaction, by the generator of E7, when the copy's public slots are already there — it copied them, or the event takes
 /// none (an MSE) —; otherwise «Generate the private slots» makes them on the new event once the new table is loaded, since private
@@ -236,7 +266,14 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         // Generated around the public slots when they are there already; left to «Generate» when a new table is still to come.
         var generates = copy.PrivateSlots && (request.PublicSlots || !copy.PublicSlots);
 
-        return new EventDuplicatePlan(copy, copy.StartsAtUtc - source.StartsAtUtc, airports, routes, slots, generates);
+        // The positions the ATC opened (E11a), by the hour they open; never the members' availabilities.
+        var positions = await database.AtcPositions.AsNoTracking()
+            .Where(position => position.EventId == source.Id)
+            .OrderBy(position => position.FromUtc)
+            .ThenBy(position => position.Id)
+            .ToListAsync(cancellationToken);
+
+        return new EventDuplicatePlan(copy, copy.StartsAtUtc - source.StartsAtUtc, airports, routes, slots, generates, positions);
     }
 
     /// <summary>
@@ -276,6 +313,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         database.Airports.AddRange(plan.Airports.Select(airport => EventCopy.Airport(airport, copy)));
         database.Routes.AddRange(plan.Routes.Select(route => EventCopy.Route(route, copy)));
         database.Slots.AddRange(plan.PublicSlots.Select(slot => EventCopy.PublicSlot(slot, copy, plan.Difference)));
+        database.AtcPositions.AddRange((plan.AtcPositions ?? []).Select(position => EventCopy.AtcPosition(position, copy, plan.Difference)));
         await database.SaveChangesAsync(cancellationToken);
 
         string? notGenerated = null;

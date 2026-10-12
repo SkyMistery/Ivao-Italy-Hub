@@ -2,7 +2,8 @@
   "nav": {
     "section": "Eventi",
     "events": "Eventi",
-    "settings": "Impostazioni degli eventi"
+    "settings": "Impostazioni degli eventi",
+    "atc": "ATC degli eventi"
   },
   "search": {
     "kinds": {
@@ -38,7 +39,8 @@
       "slots": "Slot",
       "bookings": "Prenotazioni",
       "questions": "Domande",
-      "registrations": "Iscrizioni"
+      "registrations": "Iscrizioni",
+      "atc": "ATC"
     },
     "actions": {
       "publish": "Pubblica",
@@ -81,7 +83,9 @@
       "state": "Stato",
       "updatedAt": "Ultima modifica",
       "inPerson": "In presenza",
-      "venue": "Luogo"
+      "venue": "Luogo",
+      "hasRoster": "Roster ATC",
+      "shiftMinutes": "Durata di un turno, in minuti"
     },
     "hints": {
       "kind": "Un tipo degli eventi, come li elencano le loro impostazioni: tutti i tipi del calendario finché non ne elencano nessuno. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni per quel tipo; cambiali come serve a questo evento.",
@@ -93,7 +97,9 @@
       "visibleFromUtc": "Lascialo vuoto per mostrare l'evento appena è pubblicato.",
       "bookingOpensAtUtc": "Da quando i piloti prenotano; ogni slot si chiude al suo orario di off block. Lascialo vuoto per un evento senza slot.",
       "inPerson": "Si viene all'evento di persona: i membri si iscrivono rispondendo alle sue domande.",
-      "venue": "Dove si svolge l'evento: lo dicono la sua pagina e le email ai membri. Serve per pubblicare un evento in presenza, in ogni lingua della divisione."
+      "venue": "Dove si svolge l'evento: lo dicono la sua pagina e le email ai membri. Serve per pubblicare un evento in presenza, in ogni lingua della divisione.",
+      "hasRoster": "L'evento ha un roster ATC: le sue postazioni si aprono nella scheda «ATC», e i controllori danno la loro disponibilità dalla sua pagina.",
+      "shiftMinutes": "Ogni postazione si divide in turni di questa durata. Lascialo vuoto per la durata delle impostazioni."
     },
     "options": {
       "state": {
@@ -367,6 +373,35 @@
       "fields": {
         "answers": "Le tue risposte"
       }
+    },
+    "atc": {
+      "title": "ATC",
+      "positions": "Le postazioni che l'evento apre",
+      "noPositions": "Le postazioni non sono ancora aperte.",
+      "position": "Postazione",
+      "from": "Apre (UTC)",
+      "to": "Chiude (UTC)",
+      "closesAt": "Puoi dare la tua disponibilità fino al {{date}}.",
+      "signIn": "Accedi per dare la tua disponibilità",
+      "closed": "Le disponibilità sono chiuse.",
+      "ratingTooLow": "Per dare la tua disponibilità serve un rating ATC almeno {{rating}}.",
+      "given": "Hai dato la tua disponibilità.",
+      "saved": "La tua disponibilità è salvata.",
+      "give": "Dai la tua disponibilità",
+      "save": "Salva la disponibilità",
+      "yourWindows": "Quando puoi controllare",
+      "withdrawTitle": "Ritirare la tua disponibilità per {{title}}?",
+      "withdrawDescription": "Il roster non conterà su di te: puoi darla di nuovo finché le disponibilità non chiudono.",
+      "fields": {
+        "windows": "Quando puoi controllare",
+        "windows.fromUtc": "Dalle",
+        "windows.toUtc": "Alle",
+        "note": "Nota"
+      },
+      "hints": {
+        "windows": "Una finestra o più, dentro l'orario dell'evento, in UTC.",
+        "note": "Per lo staff che fa il roster: una postazione che preferisci, un tuo trainee…"
+      }
     }
   },
   "private": {
@@ -485,7 +520,9 @@
     "bookingsToCome": "Prenotazioni di eventi non ancora finiti: cancellate, e i loro slot di nuovo liberi",
     "bookingsOver": "Prenotazioni di eventi finiti, tenute senza il pilota e senza il volo che aveva scritto",
     "registrationsToCome": "Iscrizioni a eventi non ancora finiti: cancellate",
-    "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto"
+    "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto",
+    "availabilitiesToCome": "Disponibilità ATC per eventi non ancora finiti: cancellate",
+    "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -527,14 +564,28 @@
       "bookingGapMinutes": "Minuti fra due prenotazioni dello stesso pilota",
       "pilotRetentionMonths": "Mesi per cui si tengono le prenotazioni dei piloti dopo un evento",
       "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria",
-      "inPersonRetentionMonths": "Mesi per cui si tengono le iscrizioni a un evento in presenza dopo l'evento"
+      "inPersonRetentionMonths": "Mesi per cui si tengono le iscrizioni a un evento in presenza dopo l'evento",
+      "shiftMinutes": "Durata di un turno del roster, in minuti",
+      "minimumAtcRating": "Rating ATC minimo per dare la disponibilità",
+      "maxConsecutiveShifts": "Turni di fila, al massimo",
+      "breakShifts": "Turni di pausa dopo di loro",
+      "applicationsCloseDays": "Giorni prima di un evento in cui chiudono le disponibilità",
+      "rosterPublishDays": "Giorni prima di un evento in cui si pubblica il roster",
+      "experienceMonths": "Mesi di postazioni contati come esperienza"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
       "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
       "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
       "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block.",
-      "inPersonRetentionMonths": "Dopo questi mesi dalla fine di un evento in presenza, le sue iscrizioni e i posti delle sue attività si cancellano; le somme restano nelle sue statistiche."
+      "inPersonRetentionMonths": "Dopo questi mesi dalla fine di un evento in presenza, le sue iscrizioni e i posti delle sue attività si cancellano; le somme restano nelle sue statistiche.",
+      "shiftMinutes": "La durata di un turno quando l'evento non dice la sua.",
+      "minimumAtcRating": "Un membro sotto questo rating non dà la sua disponibilità. Vuoto: ogni membro.",
+      "maxConsecutiveShifts": "Il roster non propone nessuno per più turni di questi uno dopo l'altro.",
+      "breakShifts": "Dopo quei turni di fila, un controllore riposa questi turni prima del successivo.",
+      "applicationsCloseDays": "I controllori danno e cambiano la loro disponibilità fino a questi giorni prima dell'inizio; poi si propone il roster.",
+      "rosterPublishDays": "Il roster si pubblica questi giorni prima dell'inizio: non più dei giorni della chiusura, perché lo staff abbia il tempo di correggerlo.",
+      "experienceMonths": "Quanto indietro contano le postazioni aperte da un controllore quando si propone il roster."
     }
   },
   "notifications": {
@@ -688,7 +739,21 @@
     "questionAnsweredType": "Qualcuno ha già risposto a questa domanda: il tipo di risposta resta.",
     "questionAnsweredChoices": "Qualcuno ha già risposto a questa domanda: le scelte si riscrivono e si aggiungono, non si tolgono.",
     "questionChoicesCount": "Da 2 a 20 scelte.",
-    "questionChoicesOnlyForChoice": "Solo una domanda a una scelta o a più scelte ha delle scelte."
+    "questionChoicesOnlyForChoice": "Solo una domanda a una scelta o a più scelte ha delle scelte.",
+    "availabilityClosed": "Questo evento ora non prende disponibilità: non ha ancora postazioni, è annullato, o le disponibilità sono chiuse.",
+    "ratingTooLow": "Il tuo rating ATC è sotto quello che questo evento chiede.",
+    "windowOutsideEvent": "La finestra è fuori dall'orario dell'evento.",
+    "windowEndsBeforeItStarts": "Finisce prima di cominciare.",
+    "windowsOverlap": "Questa finestra si sovrappone a un'altra: uniscile.",
+    "tooManyWindows": "Al più 12 finestre.",
+    "positionUnknown": "Non è una postazione della divisione.",
+    "eventHasNoRoster": "L'evento non ha un roster: accendi prima «Roster ATC» nelle sue impostazioni.",
+    "positionOutsideEvent": "La postazione apre o chiude fuori dall'orario dell'evento.",
+    "positionTwice": "L'evento apre già questa postazione in ore che si sovrappongono a queste.",
+    "hasRosterRows": "L'evento ha ancora postazioni o disponibilità: elimina prima le postazioni; con delle disponibilità, annulla invece l'evento.",
+    "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
+    "ratingUnknown": "Scegli un rating dell'elenco.",
+    "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli."
   },
   "questions": {
     "title": "Domande",
@@ -749,6 +814,59 @@
       },
       "hints": {
         "reason": "Con parole tue: il membro lo legge nell'email, e non è tenuto da nessun'altra parte."
+      }
+    }
+  },
+  "atc": {
+    "title": "ATC degli eventi",
+    "description": "Gli eventi con un roster non ancora finiti: le postazioni che ognuno apre, e chi è disponibile a controllarle.",
+    "open": "Apri",
+    "empty": "Nessun evento con un roster da venire.",
+    "head": "Le disponibilità chiudono il {{date}}. Un turno dura {{minutes}} minuti.",
+    "readOnly": "Leggi le postazioni di questo evento: cambiarle spetta allo staff del suo ATC.",
+    "events": {
+      "fields": {
+        "title": "Evento",
+        "state": "Stato",
+        "startsAtUtc": "Inizio",
+        "closesAtUtc": "Chiusura delle disponibilità"
+      }
+    },
+    "positions": {
+      "title": "Postazioni",
+      "create": "Nuova postazione",
+      "edit": "Postazione",
+      "empty": "Nessuna postazione ancora: aprine una, e i controllori potranno dare la loro disponibilità.",
+      "fields": {
+        "callsign": "Postazione",
+        "name": "Nome",
+        "fir": "FIR",
+        "fromUtc": "Apre",
+        "toUtc": "Chiude",
+        "note": "Nota",
+        "candidates": "Disponibili"
+      },
+      "hints": {
+        "callsign": "Una delle postazioni della divisione.",
+        "fromUtc": "In UTC. Lascialo vuoto per l'inizio dell'evento.",
+        "toUtc": "In UTC. Lascialo vuoto per la fine dell'evento.",
+        "note": "Per lo staff: i membri non la leggono."
+      },
+      "delete": {
+        "title": "Eliminare questa postazione?",
+        "description": "La postazione non si apre più a questo evento, e nessuno vi è proposto."
+      }
+    },
+    "candidates": {
+      "title": "Chi è disponibile",
+      "empty": "Nessuno ha ancora dato la sua disponibilità in queste ore.",
+      "fields": {
+        "controller": "Controllore",
+        "rating": "Rating",
+        "wholePosition": "Per tutto il tempo",
+        "windows": "Disponibile",
+        "note": "Nota",
+        "createdAt": "Data il"
       }
     }
   }
