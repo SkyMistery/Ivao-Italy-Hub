@@ -35,7 +35,24 @@
 > `(after #N)`, e unita la #N il passo della coda lo fa il master (solo la fase, nessun conflitto, CI verde), chiedendo di fondere
 > `main` solo se serve. Il merge resta di Carmine, una PR alla volta, per numero.
 
-**Ultimo aggiornamento:** 10 ottobre 2026 — piano **1.32**: **un pilota prenota, ritira e riceve il promemoria** — E6a (#233:
+**Ultimo aggiornamento:** 12 ottobre 2026 — piano **1.33**: **gli slot privati, «Duplica», la cancellazione negli eventi e sette
+pezzi del nucleo** — E7 (#246: il generatore dalle capacità degli scali, il volo di un privato, la partenza collegata), E8b (#249:
+«Duplica», `EventsPersonalData`, la testa della pagina di un evento, il giro di M4a) ed E4c (#242: i titoli e le frasi vuote degli
+eventi), con **sette fasi del nucleo**: E10i (#237: il grant su una riga nel guardiano), E10k (#238: la paginazione,
+`emptyDescription`, `PageMetadata` e `DivisionTitle`), E10l (#250: il `Dialog` del nucleo, venticinquesimo dell'elenco chiuso),
+E10m (#252: `MemberNames`), E10n (#251: `[ErasedWith]`), E10j (#239: i job che recuperano e `/api/jobs/run`), E10o (#254:
+`.meta({ label })` nel form generato). **`main` è alla 0.6.7** (#244: l'accesso dalla barra riporta query e hash). **M4 è a 19
+fasi su 29**, più E4b, E4c ed E10g–E10o; **M4a è chiusa nel repository**, resta E9, fuori. Aperte, di `dalberone`: **E16** (#255)
+ed **E11a** (#256). ⚠️ **Trappole nuove**: **`location.href` sono due cose** — quello di `useLocation()` è relativo, quello della
+finestra è assoluto —, e l'indirizzo dell'accesso si scrive **solo con `loginHref`**; **la porta 4173**: `playwright.config.ts`
+riusa in locale un server già acceso su quella porta, e se è di un altro programma `pnpm e2e` prova quel sito e cade con errori
+che non c'entrano; **un segno `[ErasedWith]` che il nucleo non può onorare ferma l'avvio** (un'entità non `[Audited]`, una chiave
+di più colonne, una proprietà non mappata, una colonna che non nomina una persona); **un dialog si monta con il `Dialog` del
+nucleo**, mai con quello di Atmosphere, che scrive «Close»; **un trigger dice il suo fuso**. ⚠️ **Prima di aprire le prenotazioni
+a un evento vero** resta la prima prenotazione riuscita sull'installazione di prova (il log binario): E8b è unita e il buco
+dell'audit è chiuso. ⚠️ **L'operazione pianificata dell'host** per `/api/jobs/run` non è impostata, e che cosa offre il pannello
+non si sa: senza, i job girano solo quando qualcuno è sul sito (piano §11.3 punto 6). La prossima consegna è la **0.7.0**, con le
+stesse tre migrazioni additive degli eventi. Prima, piano **1.32** (10 ottobre 2026): **un pilota prenota, ritira e riceve il promemoria** — E6a (#233:
 `evt_bookings` con la migrazione additiva `AddEventBookings`, i verbi del pilota sotto `/api/events/mine/bookings`, la rotazione
 intera, «togli» dello staff, le mail `bookingRemoved` e `bookingChanged`) ed E6b (#240: «Prenota» nel dialog dello slot,
 `/events/mine`, il blocco `events.myEvents`, la scheda «Prenotazioni» dello staff, il job `events-reminders`, la striscia degli
@@ -142,7 +159,13 @@ job che recuperano + POST dell'operazione pianificata di Plesk → 3 la strada A
 chiama sé stesso: aspetta. **Dal 9 ott 2026** (piano 1.32): **la voce 2 la scrive `dalberone`** (issue #231, decisa da Carmine; PR #239 aperta,
 fase E10j) — cambia, solo per questa voce, «il codice arriva nelle PR di Carmine» della nota del 28 settembre —; e una voce
 nuova, **5: un lettore di nomi per VID nel nucleo**, prima che se ne scriva un quinto (oggi `PirepReview.NamesAsync` dei tour,
-`TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople`), poi i quattro passano a lui (deciso da Carmine sulla #240). Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
+`TrainingPeople`, `ContactThreads` del nucleo ed `EventsPeople`), poi i quattro passano a lui (deciso da Carmine sulla #240). **Dal 12 ott 2026** (piano 1.33): ✅ **la voce 2 è fatta** (E10j, #239: i
+job recuperano sotto il blocco del database, e `/api/jobs/run` aspetta l'operazione pianificata dell'host) — resta **a Flight
+Ops, in una sessione di Carmine**: i fusi degli otto trigger dei tour e il riepilogo dei validatori fermato a metà, che rimanda
+la mail a chi l'aveva già (nota `2026-10-09-i-job-che-recuperano` §3); i fusi di `events-release` e `training-reminders` in una
+fase del loro modulo. ✅ **La voce 5 è fatta nel nucleo** (E10m, #252: `MemberNames`, e `ContactThreads` ci passa sopra); restano
+i tre lettori dei moduli, ognuno in una sua fase — `TrainingPeople` ed `EventsPeople` di `dalberone`, `PirepReview.NamesAsync`
+dei tour di una sessione di Carmine, che porta sul nucleo anche i segni `[ErasedWith]` dei tour, se ne hanno. Notato e non fatto (#173): la SPA non applica il `user.locale` del bootstrap quando manca il cookie
 `hub.lang`, un giro futuro. Da A11a, se il maintainer vuole: `firStaffScope` **obbligatorio** nel calcolo dei permessi (oggi ha
 il predefinito `own`, per non toccare tre suoi test), in una PR sua.
 **M3** (`dalberone`, `HANDOFF-M3.md`): ✅ **chiusa il 30 set 2026** con A12d (#191): unite A0–A12d, il giro completo
