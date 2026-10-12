@@ -26,15 +26,20 @@ public static class NotificationServiceCollectionExtensions
         services.TryAddScoped<INotificationService, NotificationService>();
         services.AddScoped<NotificationDispatchJob>();
 
+        // In UTC, said rather than left to the server's clock (note 2026-10-09-i-job-che-recuperano): a minute is a minute
+        // in every zone, and a schedule that names no zone is one somebody has to guess.
         services.AddQuartz(quartz => quartz
             .AddJob<NotificationDispatchJob>(job => job.WithIdentity(NotificationDispatchJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(NotificationDispatchJob.JobName)
-                .WithIdentity($"{NotificationDispatchJob.JobName}-minute")
-                .WithCronSchedule(EveryMinuteCron)));
+                .WithIdentity(TriggerName)
+                .WithCronSchedule(EveryMinuteCron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         return services;
     }
+
+    /// <summary>The trigger of every minute, by name: what a test reads to see the zone it was given.</summary>
+    public const string TriggerName = $"{NotificationDispatchJob.JobName}-minute";
 }

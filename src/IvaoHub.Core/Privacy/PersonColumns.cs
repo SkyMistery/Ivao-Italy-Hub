@@ -1,4 +1,6 @@
+using System.Reflection;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -36,13 +38,88 @@ public static class PersonColumns
         return IsVid(property) || VidLists.Contains(property.Name);
     }
 
-    /// <summary>The same rule on a bare name, for the JSON of an audit row, whose properties are camel case.</summary>
+    /// <summary>
+    /// The same rule on a bare name, for the JSON of an audit row — whose properties are the entity's, as named in C#
+    /// (<c>"BookerVid"</c>) — and for other JSON the core reads, which may be camel case.
+    /// </summary>
     public static bool IsVidName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         return name.Equals("Vid", StringComparison.OrdinalIgnoreCase)
             || name.EndsWith("Vid", StringComparison.Ordinal)
             || (name.Length > 2 && name.EndsWith("By", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The columns of an entity marked as a person's data (<see cref="ErasedWithAttribute"/>), with the person column each names,
+    /// grouped by it. Refuses a mark the erasure could not honour, which would empty nothing without a word: one on a property the
+    /// model does not map, on an entity that is not <see cref="AuditedAttribute"/> or whose key is not one column, or naming a
+    /// column that is not a person column of the same entity. The hub asks it of every context when it starts
+    /// (<see cref="VerifyErasedWith"/>), so a wrong mark stops the start and never an erasure half way.
+    /// </summary>
+    public static IReadOnlyList<(IReadOnlyProperty Person, IReadOnlyList<IReadOnlyProperty> Columns)> ErasedWith(IReadOnlyEntityType entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var marked = entity.ClrType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(info => (Info: info, Mark: info.GetCustomAttribute<ErasedWithAttribute>(inherit: false)))
+            .Where(column => column.Mark is not null)
+            .ToList();
+
+        if (marked.Count == 0)
+        {
+            return [];
+        }
+
+        string Refusal(PropertyInfo info, string why) =>
+            $"{entity.ClrType.Name}.{info.Name} is marked as a person's data (ErasedWith), but {why}.";
+
+        if (!entity.ClrType.IsDefined(typeof(AuditedAttribute), inherit: false))
+        {
+            throw new InvalidOperationException(Refusal(marked[0].Info, $"{entity.ClrType.Name} is not [Audited]: it has no audit rows to empty"));
+        }
+
+        if (entity.FindPrimaryKey() is not { Properties.Count: 1 })
+        {
+            throw new InvalidOperationException(Refusal(marked[0].Info, $"the key of {entity.ClrType.Name} is not one column"));
+        }
+
+        var groups = new List<(IReadOnlyProperty, IReadOnlyList<IReadOnlyProperty>)>();
+        foreach (var group in marked.GroupBy(column => column.Mark!.Person, StringComparer.Ordinal))
+        {
+            var person = entity.FindProperty(group.Key);
+            if (person is null || !IsVid(person))
+            {
+                throw new InvalidOperationException(Refusal(
+                    group.First().Info,
+                    $"'{group.Key}' is not an integer column of the same entity that names a person (Vid, …Vid or …By)"));
+            }
+
+            var columns = new List<IReadOnlyProperty>();
+            foreach (var (info, _) in group)
+            {
+                columns.Add(entity.FindProperty(info.Name)
+                    ?? throw new InvalidOperationException(Refusal(info, "the model does not map it: it is in no audit row")));
+            }
+
+            groups.Add((person, columns));
+        }
+
+        return groups;
+    }
+
+    /// <summary>
+    /// Every mark of a context's entities, checked when the hub starts, next to the write guard's marks (M4, E10n, after the
+    /// review of #251): the refusal of <see cref="ErasedWith"/> comes before anybody's data is touched.
+    /// </summary>
+    public static void VerifyErasedWith(IReadOnlyModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        foreach (var entity in model.GetEntityTypes())
+        {
+            ErasedWith(entity);
+        }
     }
 
     /// <summary>

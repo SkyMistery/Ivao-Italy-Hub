@@ -6,6 +6,8 @@ import {
   cardAirports,
   cardKinds,
   eventHref,
+  headMoment,
+  headSpan,
   narrowCards,
   spanText,
   type EventCard,
@@ -116,5 +118,44 @@ describe('when an event runs', () => {
     expect(spanText('2026-11-21T22:30:00Z', '2026-11-21T23:30:00Z', format, 'Europe/Rome')).toBe(
       '2026-11-21 23:30 – 2026-11-22 00:30',
     );
+  });
+
+  describe('as the head of its page says it (E8b)', () => {
+    test('an evening is its day once, then its times; where the division lives, the times alone', () => {
+      expect(headSpan('2026-11-21T17:00:00Z', '2026-11-21T21:00:00Z', format, 'Europe/Rome')).toEqual({
+        utc: '2026-11-21 · 17:00–21:00',
+        local: '18:00–22:00',
+      });
+    });
+
+    test('a local time on another day says its day; an event over midnight both its dates', () => {
+      expect(headSpan('2026-11-21T21:00:00Z', '2026-11-21T23:30:00Z', format, 'Europe/Rome')).toEqual({
+        utc: '2026-11-21 · 21:00–23:30',
+        local: '2026-11-21 22:00 – 2026-11-22 00:30',
+      });
+      expect(headSpan('2026-11-21T23:00:00Z', '2026-11-22T01:00:00Z', format, 'Europe/Rome')).toEqual({
+        utc: '2026-11-21 23:00 – 2026-11-22 01:00',
+        local: '2026-11-22 · 00:00–02:00',
+      });
+    });
+
+    test('without the zone of the division, UTC alone', () => {
+      expect(headSpan('2026-11-21T17:00:00Z', '2026-11-21T21:00:00Z', format)).toEqual({
+        utc: '2026-11-21 · 17:00–21:00',
+        local: null,
+      });
+    });
+
+    test('the moment the bookings open, with its date in UTC and its time alone where it is the same day', () => {
+      expect(headMoment('2026-11-14T18:00:00Z', format, 'Europe/Rome')).toEqual({
+        utc: '2026-11-14 18:00',
+        local: '19:00',
+      });
+      expect(headMoment('2026-11-14T23:30:00Z', format, 'Europe/Rome')).toEqual({
+        utc: '2026-11-14 23:30',
+        local: '2026-11-15 00:30',
+      });
+      expect(headMoment('2026-11-14T18:00:00Z', format)).toEqual({ utc: '2026-11-14 18:00', local: null });
+    });
   });
 });

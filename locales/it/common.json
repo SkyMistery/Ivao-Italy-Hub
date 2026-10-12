@@ -8,6 +8,7 @@
     "cancel": "Annulla",
     "delete": "Elimina",
     "edit": "Modifica",
+    "close": "Chiudi",
     "breadcrumb": "Percorso di navigazione"
   },
   "nav": {
@@ -370,7 +371,9 @@
       "noticeWarning": "Due sezioni non sono più nel template.",
       "noticeSuccess": "Bozza salvata.",
       "noticeInfo": "Una bozza la vede solo lo staff.",
-      "noticeToast": "Mostralo come toast"
+      "noticeToast": "Mostralo come toast",
+      "dialogTrigger": "Apri la finestra",
+      "dialogTitle": "Una finestra"
     },
     "registry": {
       "title": "Registri",

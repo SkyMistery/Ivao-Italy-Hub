@@ -28,6 +28,7 @@ import {
   kindPresetsQuery,
   useCancelEvent,
   useDeleteEvent,
+  useDuplicateEvent,
   usePublishEvent,
   useSaveEvent,
   type EventDetailDto,
@@ -44,6 +45,7 @@ import {
 import {
   EVENT_VIEWS,
   cancelSchema,
+  duplicateSchema,
   emptyEvent,
   eventEditorSearchSchema,
   eventKinds,
@@ -68,8 +70,8 @@ import { SlotsTab } from './slots';
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
  * with the editor of the content as a tour's briefing is, its airports with their capacity, its routes (E4) and its slots (E5), and the way to
- * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, deleting one
- * nobody took part in.
+ * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, duplicating it
+ * onto a new date (E8b), deleting one nobody took part in.
  *
  * The switches of an event are preset by its kind (§1.12): choosing a kind in the form sets them to what the division's
  * settings say of that kind, and the staff changes them before saving or afterwards. Everything else is the server's answer:
@@ -145,6 +147,8 @@ export function EventsPage() {
             <RouterAnchor href={`${EVENTS}/${row.id}`}>{t('events:events.open')}</RouterAnchor>
           </Button>
         )}
+        // The events are a section of their own, not a department's (plan 0.72): an empty list says what will be there (#224).
+        emptyDescription={t('events:events.empty')}
         {...(create === null ? {} : { emptyAction: create })}
       />
     </PageShell>
@@ -366,11 +370,13 @@ function PublishProblems({ error }: { error: unknown }) {
 }
 
 /**
- * The bar of an event that exists: what happens to it without its form — published, cancelled with a note, or deleted.
+ * The bar of an event that exists: what happens to it without its form — published, cancelled with a note, duplicated onto a new
+ * date (E8b), or deleted.
  * «Publish» publishes the event as it is saved, so it waits while the settings hold changes nobody saved (`edited`, E4): pressed
  * then, the form would be drawn again on the published row and the changes lost without a word (E3b's ⚠️). And it is asked once
  * more (E6b, dalberone after the bench): a published event is on the site, in the calendar and in the search, and never goes back
- * to a draft — it can only be cancelled. Blue, not red: nothing is lost.
+ * to a draft — it can only be cancelled. Blue, not red: nothing is lost. «Duplicate» is offered in every state: last year's event,
+ * ended, is the one it exists for.
  */
 function EventActions({ event, edited }: { event: EventDetailDto; edited: boolean }) {
   const { t, i18n } = useTranslation();
@@ -393,7 +399,7 @@ function EventActions({ event, edited }: { event: EventDetailDto; edited: boolea
     i18n.language,
   );
 
-  if (!publishable && !cancellable && !deletable) {
+  if (!publishable && !cancellable && !writer && !deletable) {
     return null;
   }
 
@@ -416,6 +422,13 @@ function EventActions({ event, edited }: { event: EventDetailDto; edited: boolea
           <Button asChild variant="outline">
             <RouterAnchor href={`${EVENTS}/${event.id}/cancel`}>
               {t('events:events.actions.cancel')}
+            </RouterAnchor>
+          </Button>
+        ) : null}
+        {writer ? (
+          <Button asChild variant="outline">
+            <RouterAnchor href={`${EVENTS}/${event.id}/duplicate`}>
+              {t('events:events.actions.duplicate')}
             </RouterAnchor>
           </Button>
         ) : null}
@@ -627,6 +640,88 @@ export function EventEditor() {
           />
         )}
       </div>
+    </PageShell>
+  );
+}
+
+/**
+ * "Duplicate" (§2.3-bis, E8b): the start and the address of the new draft — the start proposed is the event's, so whoever keeps the
+ * hour changes the day —, and its public slots too, asked only of an event that takes some; then the new event's page. What comes with
+ * the copy and what does not is said above the form, and for an event with private slots how they are made again. A copy whose private
+ * slots the generator refused stays here a moment, to say so and why, with the way to it (the review of #249, point 3).
+ */
+export function EventDuplicatePage() {
+  const { t } = useTranslation();
+  const read = useLocalized();
+  const { bootstrap } = useRouteContext({ from: '/_staff' });
+  const navigate = useNavigate();
+  const id = Number(useParams({ strict: false }).id);
+
+  const event = useQuery(eventQuery(id)).data;
+  const duplicate = useDuplicateEvent(id);
+  const [withoutPrivateSlots, setWithoutPrivateSlots] = useState<{ copy: number; why: string } | null>(null);
+
+  if (event === undefined) {
+    return null;
+  }
+
+  const title = t('events:duplicate.title');
+  const back = `${EVENTS}/${event.id}`;
+
+  return (
+    <PageShell
+      title={title}
+      description={t('events:duplicate.description')}
+      breadcrumb={[
+        { label: t('events:nav.section') },
+        { label: t('events:events.title'), to: EVENTS },
+        { label: read(event.title) || t('events:events.edit'), to: back },
+        { label: title },
+      ]}
+    >
+      {withoutPrivateSlots === null ? (
+        <div className="flex flex-col gap-6">
+          {event.privateSlots ? <Notice tone="info" title={t('events:duplicate.privateSlots')} /> : null}
+          <SchemaForm
+            schema={duplicateSchema(event.publicSlots)}
+            defaults={{ startsAtUtc: event.startsAtUtc, slug: '', publicSlots: event.publicSlots }}
+            locales={bootstrap.division.locales}
+            labels="events:duplicate"
+            division={{
+              defaultLocale: bootstrap.division.defaultLocale,
+              timezone: bootstrap.division.timezone,
+            }}
+            onSubmit={async (values) => {
+              const { event: copy, privateSlotsNotGenerated } = await duplicate.mutateAsync(values);
+              if (privateSlotsNotGenerated === null) {
+                void navigate({ href: `${EVENTS}/${copy.id}` });
+              } else {
+                setWithoutPrivateSlots({ copy: copy.id, why: privateSlotsNotGenerated });
+              }
+            }}
+            submitLabel={t('events:duplicate.submit')}
+            secondaryAction={
+              <Button asChild variant="ghost">
+                <RouterAnchor href={back}>{t('common.cancel')}</RouterAnchor>
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        // Made, without what the generator refused: its own words say what to put right, and «Generate» on the copy says it again.
+        <div className="flex flex-col items-start gap-4">
+          <Notice
+            tone="warning"
+            title={t('events:duplicate.privateSlotsNotGenerated')}
+            description={t(withoutPrivateSlots.why)}
+          />
+          <Button asChild>
+            <RouterAnchor href={`${EVENTS}/${withoutPrivateSlots.copy}`}>
+              {t('events:duplicate.openCopy')}
+            </RouterAnchor>
+          </Button>
+        </div>
+      )}
     </PageShell>
   );
 }

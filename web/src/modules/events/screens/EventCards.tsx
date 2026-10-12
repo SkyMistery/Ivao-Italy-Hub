@@ -15,7 +15,7 @@ import { STATE_COLOURS, eventHref, spanText, type EventAirport, type EventCard }
  * The cards of the events (design M4 §7.1, §7.3, E4): the banner, the state and the kind, the title, the summary, when, and the
  * airports by code and name. Written once and drawn twice — by `/events` and by the block `events.eventList` — because they are the
  * same cards, and a second copy is a second thing to keep in step. A card is the same for whoever is looking. The page of an event
- * draws its times and its airports with the same two pieces, `EventWhen` and `AirportName`.
+ * names the airports of its routes with the same `AirportName`; its head says when in two short lines of its own (`EventHead`).
  */
 
 export function EventCards({ cards }: { cards: readonly EventCard[] }) {

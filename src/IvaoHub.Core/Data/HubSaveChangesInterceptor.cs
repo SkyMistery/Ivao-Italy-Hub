@@ -933,11 +933,12 @@ public sealed class HubSaveChangesInterceptor(
             return string.Empty;
         }
 
-        var values = key.Properties.Select(property =>
-            Convert.ToString(entry.Property(property.Name).CurrentValue, CultureInfo.InvariantCulture) ?? string.Empty);
-
-        return string.Join(':', values);
+        return FormatKey(key.Properties.Select(property => entry.Property(property.Name).CurrentValue));
     }
+
+    /// <summary>A key as the audit rows hold it in <c>entity_id</c>: the erasure finds a row's rows by it (M4, E10n).</summary>
+    internal static string FormatKey(IEnumerable<object?> values) =>
+        string.Join(':', values.Select(value => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty));
 
     private static string ResolvePermissionArea(DbContext context, Type entityType) =>
         PermissionAreaOf(context.GetType(), entityType);

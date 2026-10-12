@@ -1374,6 +1374,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RunDueJobsFromTheAddress"];
+        put?: never;
+        post: operations["RunDueJobs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/events": {
         parameters: {
             query?: never;
@@ -1432,6 +1448,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["EventsCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsDuplicate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4680,6 +4712,25 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+         *     refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+         *     when they were generated, or were not to be.
+         */
+        EventDuplicatedDto: {
+            event: components["schemas"]["EventDetailDto"];
+            privateSlotsNotGenerated: null | string;
+        };
+        /**
+         * @description "Duplicate" (§2.3-bis, E8b): the start of the new event — an instant in UTC, as every time of an event; every other time moves by
+         *     the same difference —, its address, and whether the public slots come too, with their rotations.
+         */
+        EventDuplicateRequest: {
+            /** Format: date-time */
+            startsAtUtc: null | string;
+            slug: string;
+            publicSlots: boolean;
+        };
+        /**
          * @description An event as the staff's list shows it (design M4 §7.2): its state is read off its dates, never stored (§2.1), and its kind
          *     is shown with the division's word for it, which the calendar keeps — null when the calendar no longer has that kind.
          */
@@ -5125,6 +5176,23 @@ export interface components {
             state: null | string;
             transponder: null | string;
         };
+        /** @description One job the hub found due, and what became of it. */
+        JobRunOutcome: {
+            /** @description The job's name, the one its rows in `hub_jobs_log` carry. */
+            job: string;
+            /** @description What became of the run. */
+            outcome: components["schemas"]["JobRunState"];
+        };
+        /** @description What the scheduled task's call did. */
+        JobRunResponse: {
+            /** @description Each job that was due, in the order they start, and what became of it by the time the answer left. */
+            jobs: components["schemas"]["JobRunOutcome"][];
+        };
+        /**
+         * @description What became of a job the hub found due.
+         * @enum {unknown}
+         */
+        JobRunState: "Ran" | "Skipped" | "Running" | "Waiting";
         JsonElement: unknown;
         JsonNode: unknown;
         JsonObject: Record<string, never>;
@@ -12658,6 +12726,62 @@ export interface operations {
             };
         };
     };
+    RunDueJobsFromTheAddress: {
+        parameters: {
+            query?: {
+                token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRunResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RunDueJobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRunResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     EventsList: {
         parameters: {
             query?: {
@@ -12920,6 +13044,55 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsDuplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventDuplicateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDuplicatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

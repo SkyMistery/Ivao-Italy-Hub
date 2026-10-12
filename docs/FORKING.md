@@ -4,16 +4,19 @@ The code knows nothing about any particular division. There is no ICAO code, no 
 position and no URL hardcoded anywhere: a fork is a matter of configuration and content, not of
 editing sources.
 
-> **Status, 30 September 2026: M0, M1, M2 and M3 are on `main`.** Releases are tags `v<version>`,
-> each with its package on the GitHub release ([`DELIVERING.md`](DELIVERING.md)).
+> **Status, 11 October 2026: M0, M1, M2 and M3 are on `main`, and the first part of M4.** Releases are
+> tags `v<version>`, each with its package on the GitHub release ([`DELIVERING.md`](DELIVERING.md)).
 > M0 is the foundations and the generic backbone: configuration, sign-in, permissions, the CRUD
 > engine, the generated back office screens, the module boundary. M1 is the public site around them:
 > pages from templates, navigation, news, documents, media, search, the calendar, contacts and
 > notifications. M2 is the first module, **the tours** (`flightops`): tours and their legs, the
 > pilots' reports against the network's tracker, automatic checks, validation, disputes and awards.
 > M3 is the second, **the training** (`training`): a member's request for the next rating, the
-> trainers, the dates of the sessions, the reports, and the exams in the calendar. The events module
-> (M4) is being written. Everything below holds for `main`.
+> trainers, the dates of the sessions, the reports, and the exams in the calendar. M4 is the third,
+> **the events** (`events`): its first part — the events, their slots and the pilots' bookings, and
+> the export a gate manager reads — is on `main`; the controllers' roster, what happens after an
+> event and the events people come to in person are being written. Everything below holds for
+> `main`.
 
 ## Forking it, start to finish
 
@@ -492,6 +495,121 @@ assign.
 - **Group trainings, GCAs and flight briefings.**
 - **The exam itself**, which is booked, held and graded on the network. The hub puts it in the calendar,
   and keeps only the VIDs of the candidate and of the examiner.
+
+## The events module
+
+The events (`events`) are the third module, and every build has them. Its first part follows an event
+from its draft to the evening it is flown:
+
+- the events department writes an event — its kind, its words and its description, its banner, its
+  airports with their capacity — and publishes it, at once or from a date; the flight operations write
+  its routes; it is in the calendar and in the search while it can be seen, and nowhere once it is over;
+- the **public slots** are pasted from a spreadsheet, or loaded from a CSV file, with their rotations;
+  the **private slots** are generated from the capacity of each airport, around the public ones;
+- from the opening of the bookings, a member books a public slot, or a whole rotation, or a private slot
+  with the flight they fly — an arrival with its departure from the same gate —, and withdraws it until
+  its off block; the staff take a booking away with a reason;
+- a gate manager reads the bookings with a personal token, and every step writes to whoever it concerns;
+- **«Duplicate»** copies an event onto a new date as a draft: last year's RFE, with its airports, routes
+  and, if you choose, its public slots, every time moved by as much.
+
+What a fork decides about it is, again, configuration and data.
+
+### Who manages it
+
+`division.json` gives the module its base department (`"modules": { "events": { "baseDepartment":
+"ED" } }`): every event is in its care, whoever else works on it. The positions of the events department
+are read like any other — `XX-EC` its coordinator, `XX-EAC` the assistant, `XX-EA1` to `XX-EA9` its
+advisors —, and `positionGrants` in the example file gives them what the module expects:
+
+| Permission | What it allows | Coordinator, assistant | Advisors |
+| --- | --- | --- | --- |
+| `Events.View` | every event in the back office, drafts and past ones included | ✓ | ✓ |
+| `Events.Edit` | create, change, publish, cancel and duplicate an event; its airports and their capacity | ✓ | ✓ |
+| `Events.Delete` | delete an event nobody took part in | ✓ | |
+| `Events.ManageSettings` | the settings below | ✓ | |
+| `EventRoutes.View`, `.Edit` | the routes of an event | ✓ | ✓ |
+| `EventBookings.View` | the slots and the bookings, with the pilots' VIDs; the export a gate manager reads | ✓ | ✓ |
+| `EventBookings.Edit` | load and correct the slots, generate the private ones, take a booking away | ✓ | ✓ |
+| `EventAtc.View`, `.Edit` | the ATC of an event (with the roster, in the second part) | ✓ | ✓ |
+| `EventReports.View` | the reports of support (in the second part) | ✓ | ✓ |
+
+Other departments collaborate on a part of every event, and the example file gives them that part **on
+the events department**, at every level — the permission, and not the department, so they never delete
+an event nor read the rest of what the department keeps:
+
+| Who | What they hold |
+| --- | --- |
+| The ATC operations (`AOD`) | `Events.View`, `EventAtc.View`, `EventAtc.Edit` |
+| The flight operations (`FOD`) | `Events.View`, `EventRoutes.View`, `EventRoutes.Edit`: they write the routes |
+| The membership (`MD`) | `Events.View`, `EventReports.View`, `EventReports.Edit`: they validate the reports of support |
+| The team of each FIR (`"firTeam": true`) | `EventAtc.View`, `EventAtc.Edit` on the positions of their own FIR, once the events have ATC positions |
+
+Change the levels in the file, not in code; a division whose departments are organised otherwise moves the
+rows. A member outside these positions is given a permission by name on the permissions screen.
+
+### Its settings
+
+The department changes them from `/staff/events/settings`, and none of them assumes anything about your
+division:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `kindPresets` | none | the kinds an event chooses from, each with the switches a new event of that kind starts with |
+| `bookingGapMinutes` | 10 | the least minutes between two bookings of one pilot in the same event, one way or the other |
+| `reminderLeadHours` | 24 | how long before the off block of a booking its pilot is reminded of it |
+| `pilotRetentionMonths` | 24 | how long after an event the bookings of its pilots are kept, once the second part of the module deletes them |
+
+**`kindPresets`** is the one to write on day one. The kinds of an event are words of the calendar — the
+seed brings `rfe`, `rfo`, `mse` and `online-day`, which you rename or retire at
+`/staff/admin/calendar-kinds` like any other kind —, and the behaviour of an event is in five switches,
+not in its kind: public slots, private slots, an ATC roster, the whole division instead of its own
+airports, an event in person. A row of `kindPresets` says which switches a kind turns on when the staff
+choose it, and the staff can still change them on the event. With no row at all, an event chooses from
+every kind of the calendar, with every switch off; once there is one, it chooses from the kinds that have
+a row. The repository's own division writes, for instance, an RFE with public slots, an RFO with public
+and private slots, an MSE with private slots only, and an online day about the whole division.
+
+### Pages, blocks and mails
+
+- **The pages**: `/events`, public, with the events to come and in progress and the calendar under them;
+  `/events/{slug}`, the page of one event, with its slots — free or taken, never by whom —, and, for a
+  member, the bookings; `/events/mine` for a member's own; `/staff/events` and the pages under it for the
+  department. The module reserves the first segment of an address, `events`, and no event takes the
+  address `mine`.
+- **Two Data blocks**, placed with the editor like any other: `events.eventList` on a public page, and
+  `events.myEvents`, a member's bookings still to fly, on `/me`. The hub places neither for you.
+- **The mails**, five kinds, each of which a member can switch off from their profile: an event they
+  booked cancelled, or its times changed; a booking taken away by the staff, or its flight corrected; the
+  reminder before a flight. The module has two jobs, both every quarter of an hour: the one that projects
+  an event again when it is seen and when it ends (`events-release`), and the reminders
+  (`events-reminders`).
+
+### The gate manager
+
+The gates of an event are given by a program of your division, outside the hub. It reads the bookings with
+a **personal token** that whoever reads the bookings makes at `/me/tokens`, with the audience
+`events.bookings`: no shared key, and the token's permissions are those of the person, read again at every
+request. [`docs/events-bookings-export.md`](events-bookings-export.md) is the whole contract, with its
+versions and `curl` examples. Nothing is needed on your server to allow it, and the hub works without one:
+the stands of the public slots are written by the staff, and the private ones have none.
+
+### What it keeps
+
+The events, their airports, routes and slots stay, for the staff. A pilot's bookings stay after the event
+too: they are its history. When the super administrator erases the data of a person, their bookings of an
+event still to end are deleted, and the slots are free again; the ones of an event that ended stay under a
+pseudonym, without the flight they wrote for a private slot, the note the staff wrote about it and the
+session of the network it was found in. What they did as staff — an event cancelled, a flight excused —
+stays under the pseudonym.
+
+### What it does not do yet
+
+- **The controllers**: the positions to open, the availability, the roster, the reliability of whoever
+  does not show up, and the reports of support with their awards — the second part of the module.
+- **The events people come to in person**, with their registration — the third part.
+- **The stands of the private slots**, which the gate manager gives; the hub keeps the pair of an arrival
+  and its departure, for one gate.
 
 ## What a division never has to touch
 

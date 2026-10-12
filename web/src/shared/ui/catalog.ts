@@ -43,6 +43,10 @@ export const UI_KIT_COMPONENTS = [
   // The twenty-fourth, and the first the plan listed from the start (§8.3): an IVAO rating as text, with the vocabulary
   // of the ratings the core keeps (M3, A1, note 2026-09-25-le-ore-e-il-vocabolario-dei-rating).
   'RatingBadge',
+  // The twenty-fifth, and the second that replaces something Atmosphere ships, for the reason of the first:
+  // its `Dialog` draws an «X» whose label is the English "Close" written into the library (#224, note
+  // 2026-10-11-il-pulsante-di-chiusura-delle-finestre). The same parts, put back together with the word translated.
+  'Dialog',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

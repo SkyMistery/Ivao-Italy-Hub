@@ -1,7 +1,6 @@
-import { Badge, Button, H1, H2, Label, Lead, Select } from '@ivao/atmosphere-react';
+import { H1, H2, Label, Lead, Select } from '@ivao/atmosphere-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { ExternalLink } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +10,6 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { holdsPermissionAnywhere } from '../../../shared/api/bootstrap';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { describeProblem } from '../../../shared/forms';
-import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { ListFilter } from '../../../shared/list';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
@@ -21,7 +19,6 @@ import {
   EmptyState,
   NotFound,
   Notice,
-  calendarKindColour,
   type CalendarViewMode,
 } from '../../../shared/ui';
 import { myBookingsQuery, publicEventQuery, type PublicEventDto } from '../api';
@@ -35,7 +32,6 @@ import {
 
 import {
   EVENT_LIST_BLOCK,
-  STATE_COLOURS,
   airportLabel,
   calendarItems,
   cardAirports,
@@ -43,8 +39,9 @@ import {
   narrowCards,
   type EventListData,
 } from './cards';
-import { BookingOpening, EventDayStrip } from './BookingOpening';
-import { AirportName, EventCards, EventWhen } from './EventCards';
+import { EventDayStrip } from './BookingOpening';
+import { AirportName, EventCards } from './EventCards';
+import { EventHead } from './EventHead';
 import { EventSlots } from './EventSlots';
 import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
 import { PrivateSlots } from './PrivateSlots';
@@ -90,6 +87,9 @@ export function EventsPublicPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t('events:public.title')} description={t('events:public.description')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('events:public.title')}</H1>
         <Lead>{t('events:public.description')}</Lead>
@@ -211,20 +211,20 @@ export function EventPublicPage() {
 }
 
 /**
- * One event (§7.1): the banner; the state, the kind, the title and the summary; on its day who is online at its airports (E6b); when,
- * in UTC and in the division's time; who organises it and the airports; when its bookings open, counted down to (E6b); a cancelled one
- * with its note; the routes the flight operations wrote; its public slots (E5), narrowed by the filters of the address and booked from
- * the dialog of a slot (E6b); its private slots by airport, direction and hour, booked with the flight the pilot flies (E7); the
- * description. To the staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
+ * One event (§7.1): the banner; its head (`EventHead`, note 2026-10-11-la-testa-della-pagina-di-un-evento) — the kind, the title, the
+ * summary, and two short lines with when, in UTC and in the division's time, its bookings, counted down to until they open (E6b), its
+ * airports and who organises it when it is not the division —; on its day who is online at its airports (E6b); a cancelled one with
+ * its note. Then what a pilot came for: its public slots (E5), narrowed by the filters of the address and booked from the dialog of a
+ * slot (E6b), and its private slots by airport, direction and hour, booked with the flight the pilot flies (E7). At the bottom the
+ * description and the routes the flight operations wrote. To the staff, when nobody else sees it, a line that says so and why, and the
+ * way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const read = useLocalized();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: bootstrap } = useQuery(bootstrapQuery);
-  const kinds = bootstrap?.calendarKinds ?? [];
-  const summary = read(event.summary);
   const timezone = bootstrap?.division.timezone;
 
   // What the slots are narrowed to lives in the address, as the filters of /events do: a link keeps them.
@@ -259,16 +259,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
   return (
     <article className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
-      <PageMetadata
-        title={event.title}
-        description={event.summary}
-        imageMediaId={event.bannerMediaId}
-        divisionName={resolveLocalized(
-          bootstrap?.division.name,
-          i18n.language,
-          bootstrap?.division.defaultLocale ?? i18n.language,
-        )}
-      />
+      {/* The row's title in the tab; the division's name after it comes from the root (#224). */}
+      <PageMetadata title={event.title} description={event.summary} imageMediaId={event.bannerMediaId} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RouterAnchor href={EVENTS_PAGE} className="text-sm underline">
@@ -294,22 +286,7 @@ function EventScreen({ event }: { event: PublicEventDto }) {
         />
       )}
 
-      <header className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="flat"
-            color={STATE_COLOURS[event.state] ?? 'gray'}
-            text={t(`events:events.options.state.${event.state}`)}
-          />
-          <Badge
-            variant="flat"
-            color={calendarKindColour(event.kind, kinds)}
-            text={read(kinds.find((word) => word.key === event.kind)?.label) || event.kind}
-          />
-        </div>
-        <H1>{read(event.title)}</H1>
-        {summary === '' ? null : <Lead>{summary}</Lead>}
-      </header>
+      <EventHead event={event} timezone={timezone} onOpen={onOpen} />
 
       <EventDayStrip event={event} timezone={timezone} />
 
@@ -320,54 +297,6 @@ function EventScreen({ event }: { event: PublicEventDto }) {
           description={read(event.cancellationNote ?? {})}
         />
       )}
-
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[max-content_1fr]">
-        <dt className="text-muted-foreground text-sm">{t('events:public.when')}</dt>
-        <dd>
-          <EventWhen startsAtUtc={event.startsAtUtc} endsAtUtc={event.endsAtUtc} timezone={timezone} />
-        </dd>
-
-        {event.bookingOpensAtUtc === null ? null : (
-          <>
-            <dt className="text-muted-foreground text-sm">{t('events:public.booking.title')}</dt>
-            <dd>
-              <BookingOpening event={event} timezone={timezone} onOpen={onOpen} />
-            </dd>
-          </>
-        )}
-
-        <dt className="text-muted-foreground text-sm">{t('events:events.fields.organizer')}</dt>
-        <dd className="flex flex-wrap items-center gap-x-3">
-          <span>{t(`events:events.options.organizer.${event.organizer}`)}</span>
-          {event.externalUrl === null ? null : (
-            <Button asChild size="sm" variant="ghost">
-              <a href={event.externalUrl} target="_blank" rel="noreferrer">
-                <ExternalLink aria-hidden className="mr-1 size-4" />
-                {t('events:public.organizerPage')}
-              </a>
-            </Button>
-          )}
-        </dd>
-
-        <dt className="text-muted-foreground text-sm">{t('events:events.fields.airports')}</dt>
-        <dd>
-          {event.wholeDivision ? (
-            t('events:public.wholeDivision')
-          ) : event.airports.length === 0 ? (
-            '—'
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {event.airports.map((airport) => (
-                <li key={airport.icao}>
-                  <AirportName airport={airport} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </dd>
-      </dl>
-
-      {event.routes.length === 0 ? null : <EventRoutes event={event} />}
 
       {event.slots.length === 0 ? null : (
         <EventSlots event={event} filters={filters} onFilter={onFilter} viewer={viewer} />
@@ -383,6 +312,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       )}
 
       <ContentRenderer body={readBody(event.body)} />
+
+      {event.routes.length === 0 ? null : <EventRoutes event={event} />}
     </article>
   );
 }

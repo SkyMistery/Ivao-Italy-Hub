@@ -172,6 +172,10 @@ of a departure from it, the on block of an arrival at it — and then by `slot_i
   give.
 - **An arrival and its departure** (`paired_slot_id`, each naming the other) are booked together by one pilot. Either may be
   withdrawn or taken away on its own: the other stays booked, and from the next request its `paired_slot_id` is `null`.
+- **After the hub erased a member's data** at their request: their bookings of an event still to end are gone, and those slots
+  are free at the next request; their bookings of an event that ended stay, with `booked_by` negative. A private one of those keeps
+  its aircraft type, its airport of the event and its time there, and `paired_slot_id`, but nothing more of the flight its pilot
+  wrote: `callsign`, the other airport and the time there are `null`.
 - The legs of a rotation follow one another: each departs from where the one before arrived, after it arrived.
 
 ## 4. Answers that are not 200
