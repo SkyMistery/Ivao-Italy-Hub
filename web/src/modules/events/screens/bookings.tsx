@@ -30,7 +30,7 @@ const columns: readonly ColumnSpec<EventBookingDto>[] = [
 ];
 
 export function BookingsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
 
@@ -44,6 +44,9 @@ export function BookingsTab({ event, editable }: { event: EventDetailDto; editab
       timezone={bootstrap.division.timezone}
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
+      // The bookings are the event's, not a department's: an empty tab says what will be there (#224, E4c), to whoever takes
+      // them away and whoever only reads them.
+      emptyDescription={t('events:bookings.empty')}
       actions={(row) => (editable ? <RemoveBooking booking={row} /> : null)}
     />
   );
