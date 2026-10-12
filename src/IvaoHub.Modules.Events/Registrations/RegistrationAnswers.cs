@@ -77,9 +77,34 @@ public static class RegistrationAnswers
         Of(registration).ContainsKey(EventQuestion.AnswerKey(questionId));
 
     /// <summary>
+    /// Whether a stored answer fits its question as it is now (the review of #255, point 3): a question whose type changed, in the
+    /// instant between the staff's check and a member's change, may leave a value of the old type. Every reader skips such a value
+    /// rather than fail on it.
+    /// </summary>
+    public static bool Fits(EventQuestion question, JsonNode? answer)
+    {
+        ArgumentNullException.ThrowIfNull(question);
+
+        if (answer is null)
+        {
+            return false;
+        }
+
+        var kind = answer.GetValueKind();
+        return question.Type switch
+        {
+            QuestionType.YesNo => kind is JsonValueKind.True or JsonValueKind.False,
+            QuestionType.MultiChoice => kind == JsonValueKind.Array
+                && answer.AsArray().All(item => item is not null && item.GetValueKind() == JsonValueKind.String),
+            QuestionType.Quantity => kind == JsonValueKind.Number && answer.AsValue().TryGetValue<int>(out _),
+            _ => kind == JsonValueKind.String,
+        };
+    }
+
+    /// <summary>
     /// The answers in words, one line per question answered, in the order of the form: «the question: the answer», in this language.
-    /// What the staff read in the list of the registrations, and what the member reads in the mail (§8.3: «with a summary of the
-    /// answers»).
+    /// What the member reads in the mail (§8.3: «with a summary of the answers»), in the language of who receives it. The pages write
+    /// their own words from the answers, in the language on screen (Carmine's answer 6 on #255).
     /// </summary>
     public static IReadOnlyList<string> Lines(
         IReadOnlyList<EventQuestion> questions,
@@ -96,7 +121,7 @@ public static class RegistrationAnswers
 
         foreach (var question in questions)
         {
-            if (answers[EventQuestion.AnswerKey(question.Id)] is not { } answer)
+            if (answers[EventQuestion.AnswerKey(question.Id)] is not { } answer || !Fits(question, answer))
             {
                 continue;
             }

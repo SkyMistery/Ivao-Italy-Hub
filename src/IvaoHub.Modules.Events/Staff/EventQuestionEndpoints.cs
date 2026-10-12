@@ -1,6 +1,5 @@
 using System.Globalization;
 using FluentValidation;
-using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
@@ -14,9 +13,10 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.Events.Staff;
 
 /// <summary>
-/// A question of an event in person as its list and its form show it (design M4 §4-bis.1). <c>Sums</c> is what the registrations
-/// answered to it, in words of the reader's language (<see cref="RegistrationSums"/>): read in the list, where a page sums its
-/// questions in one query; empty on a row read alone.
+/// A question of an event in person as its list and its form show it (design M4 §4-bis.1). <c>Sum</c> is what the registrations
+/// answered to it, in numbers by the keys of the question (<see cref="RegistrationSums"/>), which the page writes in words in the
+/// language on screen (Carmine's answer 6 on #255): read in the list, where a page sums its questions in one pass; all zero on a row
+/// read alone.
 /// </summary>
 public sealed record EventQuestionDto(
     long Id,
@@ -27,7 +27,7 @@ public sealed record EventQuestionDto(
     Localized<string> Label,
     IReadOnlyList<QuestionChoice> Choices,
     bool Required,
-    IReadOnlyList<string> Sums,
+    QuestionSum Sum,
     DateTime UpdatedAt,
     DateTime RowVersion);
 
@@ -88,7 +88,7 @@ public sealed class EventQuestionWriteDtoValidator : AbstractValidator<EventQues
 /// <summary>Questions to and from their payloads: by hand, because a new choice gets its key here.</summary>
 internal static class QuestionMapper
 {
-    public static EventQuestionDto ToDto(EventQuestion question, IReadOnlyList<string> sums) => new(
+    public static EventQuestionDto ToDto(EventQuestion question, QuestionSum sum) => new(
         question.Id,
         question.EventId,
         question.OwnerDepartment,
@@ -97,7 +97,7 @@ internal static class QuestionMapper
         question.Label,
         question.Choices,
         question.Required,
-        sums,
+        sum,
         question.UpdatedAt,
         question.RowVersion);
 
@@ -165,9 +165,9 @@ public static class EventQuestionEndpoints
             options.Sortable.Add(nameof(EventQuestion.Ordinal));
             options.Filterable.Add(nameof(EventQuestion.EventId));
 
-            options.ToList = question => QuestionMapper.ToDto(question, []);
+            options.ToList = question => QuestionMapper.ToDto(question, RegistrationSums.None(question));
             options.ToListPage = PageAsync;
-            options.ToDetail = question => QuestionMapper.ToDto(question, []);
+            options.ToDetail = question => QuestionMapper.ToDto(question, RegistrationSums.None(question));
             options.Apply = QuestionMapper.Apply;
             options.BeforeAuthorize = async (question, saving) =>
                 (await saving.Services.GetRequiredService<EventChildren>().AdoptAsync(question, saving.CancellationToken)).Refusal;
@@ -233,30 +233,27 @@ public static class EventQuestionEndpoints
         return refusals.IsEmpty ? null : refusals.Errors;
     }
 
-    /// <summary>A page of questions with their sums: the registrations of their events read once, and summed in the reader's language.</summary>
+    /// <summary>
+    /// A page of questions with their sums: the registrations of their events read once, each parsed once, and every question of an
+    /// event summed in one pass (the review of #255, point 4).
+    /// </summary>
     private static async Task<IReadOnlyList<EventQuestionDto>> PageAsync(
         IReadOnlyList<EventQuestion> questions,
         IServiceProvider services,
         CancellationToken cancellationToken)
     {
         var database = services.GetRequiredService<EventsDbContext>();
-        var catalog = services.GetRequiredService<LocaleCatalog>();
-        var locale = services.GetRequiredService<ICurrentUser>().Locale;
-        var fallback = services.GetRequiredService<IOptions<DivisionOptions>>().Value.DefaultLocale;
-
         var eventIds = questions.Select(question => question.EventId).Distinct().ToList();
         var registrations = (await CrudSource.BackOffice<EventRegistration>(database).AsNoTracking()
                 .Where(registration => eventIds.Contains(registration.EventId))
                 .ToListAsync(cancellationToken))
             .ToLookup(registration => registration.EventId);
 
-        return
-        [
-            .. questions.Select(question =>
-            {
-                var sum = RegistrationSums.Of([question], [.. registrations[question.EventId]])[0];
-                return QuestionMapper.ToDto(question, RegistrationSums.Words(question, sum, locale, fallback, catalog));
-            }),
-        ];
+        var sums = questions
+            .GroupBy(question => question.EventId)
+            .SelectMany(ofEvent => RegistrationSums.Of([.. ofEvent], [.. registrations[ofEvent.Key]]))
+            .ToDictionary(sum => sum.Key, sum => sum.Value);
+
+        return [.. questions.Select(question => QuestionMapper.ToDto(question, sums[question.Id]))];
     }
 }

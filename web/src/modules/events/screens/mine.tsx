@@ -21,6 +21,7 @@ import {
 
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
+import { RegistrationAnswers } from './RegistrationAnswers';
 
 /**
  * `/events/mine` (design M4 §7.1, E6b), for a signed in member: their bookings, the flights still to fly first — by their off block —,
@@ -240,7 +241,7 @@ function BookingItem({ booking, paired }: { booking: MyBookingDto; paired?: MyBo
 
 /**
  * One registration to an event in person (§4-bis.2): the event with its state, when it starts and where, the answers as the member gave
- * them — one line per question, in their language —, «change» on the event's page while it takes registrations, and «withdraw» until it
+ * them — one line per question, in the language on screen —, «change» on the event's page while it takes registrations, and «withdraw» until it
  * starts, asked once more.
  */
 function RegistrationItem({ registration }: { registration: MyRegistrationDto }) {
@@ -272,15 +273,7 @@ function RegistrationItem({ registration }: { registration: MyRegistrationDto })
         {t('calendar.utc', { at: moment(registration.startsAtUtc) })}
         {registration.venue === null ? null : ` · ${read(registration.venue)}`}
       </Subtle>
-      {registration.lines.length === 0 ? (
-        <Subtle className="text-sm">{t('events:mine.noAnswers')}</Subtle>
-      ) : (
-        <ul className="flex flex-col gap-1 text-sm">
-          {registration.lines.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      )}
+      <RegistrationAnswers registration={registration} />
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       {registration.changeable || registration.withdrawable ? (
         <div className="flex flex-wrap gap-2">

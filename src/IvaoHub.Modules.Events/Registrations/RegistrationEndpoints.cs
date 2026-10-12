@@ -56,10 +56,10 @@ public static class RegistrationEndpoints
             options.Filterable.Add(nameof(EventRegistration.EventId));
             options.SearchFields.Add(registration => registration.Vid.ToString());
 
-            options.ToList = registration => StaffRegistrations.Row(registration, noNames, []);
+            options.ToList = registration => StaffRegistrations.Row(registration, noNames);
             options.ToListPage = (registrations, services, cancellationToken) =>
                 services.GetRequiredService<StaffRegistrations>().RowsAsync(registrations, cancellationToken);
-            options.ToDetail = registration => StaffRegistrations.Row(registration, noNames, []);
+            options.ToDetail = registration => StaffRegistrations.Row(registration, noNames);
         });
 
         var mine = app.MapGroup(MinePattern).WithTags("EventRegistrations").RequireAuthorization(HubPolicies.SignedIn);

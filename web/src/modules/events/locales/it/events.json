@@ -734,7 +734,7 @@
   "registrations": {
     "fields": {
       "member": "Membro",
-      "answers": "Risposte",
+      "lines": "Risposte",
       "createdAt": "Iscritto il",
       "updatedAt": "Risposte cambiate il"
     },

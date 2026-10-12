@@ -113,7 +113,15 @@ public sealed record PublicEventDto(
 /// A question of an event in person as its page asks it (§4-bis, E16): what the member's form is built from. Read by whoever reads the
 /// page — the questions are no secret —, answered by a signed in member.
 /// </summary>
-public sealed record PublicQuestionDto(long Id, QuestionType Type, Localized<string> Label, IReadOnlyList<QuestionChoice> Choices, bool Required);
+public sealed record PublicQuestionDto(long Id, QuestionType Type, Localized<string> Label, IReadOnlyList<QuestionChoice> Choices, bool Required)
+{
+    /// <summary>A question as a page asks it: the event's page, and a member's own registrations (E16).</summary>
+    public static PublicQuestionDto Of(EventQuestion question)
+    {
+        ArgumentNullException.ThrowIfNull(question);
+        return new(question.Id, question.Type, question.Label, question.Choices, question.Required);
+    }
+}
 
 /// <summary>
 /// The events as the site shows them (design M4 §7.1, §7.3, E4): the cards of the events to come and of those in progress, for
@@ -320,7 +328,7 @@ public sealed class PublicEvents(
             row.CancellationNote,
             row.InPerson,
             row.Venue,
-            [.. questions.Select(question => new PublicQuestionDto(question.Id, question.Type, question.Label, question.Choices, question.Required))]);
+            [.. questions.Select(PublicQuestionDto.Of)]);
     }
 
     /// <summary>Every airport named, with the name the core knows, in one question to the core.</summary>

@@ -4880,9 +4880,10 @@ export interface components {
             rowVersion: string;
         };
         /**
-         * @description A question of an event in person as its list and its form show it (design M4 §4-bis.1). `Sums` is what the registrations
-         *     answered to it, in words of the reader's language (RegistrationSums): read in the list, where a page sums its
-         *     questions in one query; empty on a row read alone.
+         * @description A question of an event in person as its list and its form show it (design M4 §4-bis.1). `Sum` is what the registrations
+         *     answered to it, in numbers by the keys of the question (RegistrationSums), which the page writes in words in the
+         *     language on screen (Carmine's answer 6 on #255): read in the list, where a page sums its questions in one pass; all zero on a row
+         *     read alone.
          */
         EventQuestionDto: {
             /** Format: int64 */
@@ -4896,7 +4897,7 @@ export interface components {
             label: components["schemas"]["LocalizedOfstring"];
             choices: components["schemas"]["QuestionChoice"][];
             required: boolean;
-            sums: string[];
+            sum: components["schemas"]["QuestionSum"];
             /** Format: date-time */
             updatedAt: string;
             /** Format: date-time */
@@ -4920,9 +4921,10 @@ export interface components {
         };
         /**
          * @description A registration as the staff of an event read it in the tab «Registrations» of its page (design M4 §7.2, E16): the member, named the
-         *     way the core names a person (`{ vid, name }`, so that an erased one is said with the core's word), their answers in words of
-         *     the reader's language, one line per question, when they registered and when they last changed their answers. The words are read in
-         *     the list, where a page reads its questions and its names in one query each; a row read alone has none.
+         *     way the core names a person (`{ vid, name }`, so that an erased one is said with the core's word), their answers as they sent
+         *     them, by question — the page writes them in words in the language on screen, with the event's questions (Carmine's answer 6 on
+         *     #255) —, when they registered and when they last changed their answers. The names are read in the list, one query a page; a row
+         *     read alone has none.
          */
         EventRegistrationDto: {
             /** Format: int64 */
@@ -4931,7 +4933,7 @@ export interface components {
             eventId: number;
             ownerDepartment: components["schemas"]["Department"];
             member: components["schemas"]["EventMemberDto"];
-            answers: string[];
+            answers: components["schemas"]["JsonObject"];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -5866,9 +5868,9 @@ export interface components {
             progress: components["schemas"]["LegProgress"];
         };
         /**
-         * @description A registration as its member reads it, on `/events/mine` and on the event's page: the event, the answers as the form holds
-         *     them — to draw it again for a change — and in words of the member's language, and whether it can still be changed or withdrawn:
-         *     until the event starts (§4-bis.2).
+         * @description A registration as its member reads it, on `/events/mine` and on the event's page: the event with its questions, the answers as
+         *     the form holds them — to draw it again for a change, and for the page to write in words in the language on screen (Carmine's answer 6
+         *     on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2).
          */
         MyRegistrationDto: {
             /** Format: int64 */
@@ -5883,8 +5885,8 @@ export interface components {
             /** Format: date-time */
             endsAtUtc: string;
             venue: null | components["schemas"]["LocalizedOfstring"];
+            questions: components["schemas"]["PublicQuestionDto"][];
             answers: components["schemas"]["JsonObject"];
-            lines: string[];
             changeable: boolean;
             withdrawable: boolean;
             /** Format: date-time */
@@ -7669,6 +7671,27 @@ export interface components {
         QuestionChoiceWriteDto: {
             key: null | string;
             label: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
+         * @description What the registrations of an event answered to one question, summed (design M4 §4-bis.2: «how many at dinner, how many
+         *     monitors»): how many answered; for a yes or no, how many of each; for a choice, how many chose each, by the choice's key; for a
+         *     quantity, the total. Numbers only: the staff's list of the questions carries them and the page writes their words in the language
+         *     on screen (Carmine's answer 6 on #255); the statistics keep them once the registrations are gone (string EventStats.AnswerSumsJson, E17).
+         */
+        QuestionSum: {
+            /** Format: int64 */
+            questionId: number;
+            /** Format: int32 */
+            answered: number;
+            /** Format: int32 */
+            yes: number;
+            /** Format: int32 */
+            no: number;
+            /** Format: int32 */
+            total: number;
+            choices: {
+                [key: string]: number;
+            };
         };
         /**
          * @description What a question of an event in person asks (design M4 §4-bis.1): a closed list, so that the server checks every answer by its

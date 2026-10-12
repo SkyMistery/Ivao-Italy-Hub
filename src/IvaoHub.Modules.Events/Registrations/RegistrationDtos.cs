@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events.Public;
 
 namespace IvaoHub.Modules.Events.Registrations;
 
@@ -11,9 +12,9 @@ namespace IvaoHub.Modules.Events.Registrations;
 public sealed record RegistrationRequest(JsonObject? Answers);
 
 /// <summary>
-/// A registration as its member reads it, on <c>/events/mine</c> and on the event's page: the event, the answers as the form holds
-/// them — to draw it again for a change — and in words of the member's language, and whether it can still be changed or withdrawn:
-/// until the event starts (§4-bis.2).
+/// A registration as its member reads it, on <c>/events/mine</c> and on the event's page: the event with its questions, the answers as
+/// the form holds them — to draw it again for a change, and for the page to write in words in the language on screen (Carmine's answer 6
+/// on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2).
 /// </summary>
 public sealed record MyRegistrationDto(
     long Id,
@@ -24,8 +25,8 @@ public sealed record MyRegistrationDto(
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     Localized<string>? Venue,
+    IReadOnlyList<PublicQuestionDto> Questions,
     JsonObject Answers,
-    IReadOnlyList<string> Lines,
     bool Changeable,
     bool Withdrawable,
     DateTime CreatedAt,
@@ -33,16 +34,17 @@ public sealed record MyRegistrationDto(
 
 /// <summary>
 /// A registration as the staff of an event read it in the tab «Registrations» of its page (design M4 §7.2, E16): the member, named the
-/// way the core names a person (<c>{ vid, name }</c>, so that an erased one is said with the core's word), their answers in words of
-/// the reader's language, one line per question, when they registered and when they last changed their answers. The words are read in
-/// the list, where a page reads its questions and its names in one query each; a row read alone has none.
+/// way the core names a person (<c>{ vid, name }</c>, so that an erased one is said with the core's word), their answers as they sent
+/// them, by question — the page writes them in words in the language on screen, with the event's questions (Carmine's answer 6 on
+/// #255) —, when they registered and when they last changed their answers. The names are read in the list, one query a page; a row
+/// read alone has none.
 /// </summary>
 public sealed record EventRegistrationDto(
     long Id,
     long EventId,
     Department OwnerDepartment,
     EventMemberDto Member,
-    IReadOnlyList<string> Answers,
+    JsonObject Answers,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

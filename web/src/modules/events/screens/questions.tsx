@@ -13,25 +13,29 @@ import { ConfirmDialog, Notice, PageShell } from '../../../shared/ui';
 import {
   eventQuery,
   questionQuery,
+  questionRowsQuery,
   questionToFormValues,
   questionsQuery,
   useDeleteQuestion,
   useSaveQuestion,
   type EventDetailDto,
-  type EventQuestionDto,
+  type QuestionRow,
 } from '../api';
 import { emptyQuestion, questionSchema } from '../schemas';
 
+import { sumWords, useAnswerWords } from './answers';
+
 /**
  * The questions of an event in person (design M4 §4-bis, §7.2, E16): a tab of the event's page with the generated list — in the order
- * of the member's form, with what the registrations answered so far, summed (the statistics of the event, read with the event) —, each
+ * of the member's form, with what the registrations answered so far, summed (the statistics of the event, read with the event: the
+ * server counts, the page writes the words in the language on screen) —, each
  * question opened in a generated form on a page of its own, as the routes are. Whoever writes the event writes its questions; what a
  * question somebody answered still allows is the server's to say.
  */
 
 const EVENTS = '/staff/events';
 
-const columns: readonly ColumnSpec<EventQuestionDto>[] = [
+const columns: readonly ColumnSpec<QuestionRow>[] = [
   col.number('ordinal', { sortable: true }),
   col.localized('label'),
   col.badge('type', 'events:questions'),
@@ -41,6 +45,8 @@ const columns: readonly ColumnSpec<EventQuestionDto>[] = [
 
 export function QuestionsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
   const { t, i18n } = useTranslation();
+  const read = useLocalized();
+  const words = useAnswerWords();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
   const base = `${EVENTS}/${event.id}`;
@@ -57,7 +63,10 @@ export function QuestionsTab({ event, editable }: { event: EventDetailDto; edita
   return (
     <DataList
       columns={columns}
-      query={questionsQuery(event.id, search)}
+      // The sums in words of the language on screen (Carmine's answer 6 on #255).
+      query={questionRowsQuery(event.id, search, i18n.language, (question) =>
+        sumWords(question, question.sum, read, words),
+      )}
       labels="events:questions"
       locale={i18n.language}
       defaultLocale={bootstrap.division.defaultLocale}
