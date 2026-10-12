@@ -3426,7 +3426,9 @@ PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #
   di E3a. ⚠️ **Le disponibilità in `/events/mine`** arrivano con i turni, in E12 (il design §7.1 le mette lì). ⚠️ **La cancellazione delle
   disponibilità** è qui, nella fase che crea la colonna, e non in E15b come diceva l'handoff di E8b.
 - **Test condivisi toccati** (i casi del piano): `ErasureTests` (le quattro colonne di persona). **Test del modulo di fasi prima, cresciuti
-  con la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16), a zero;
+  con la forma**: **`EventsSkeletonTests`** (E2), che diceva i due grant al team di un FIR né applicati né ricordati in attesa della prima
+  riga con il FIR — ora li trova applicati e ricordati, come il piano prevedeva per E11a (la suite intera era rossa solo lì); le due righe
+  nuove dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16), a zero;
   `hasRoster` e `shiftMinutes` in `eventForm.test.ts` (E3a); le impostazioni dell'ATC in `schemas.test.ts`, con il rating che torna dalla
   sua scelta; `atc` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, lo smoke `events-public.spec.ts`); le righe
   dell'ATC in `EventsTestRows`.
@@ -3439,8 +3441,19 @@ PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #
      dell'ATC sono `head` e `heads`.
   3. **Un `SchemaForm` con un campo `datetime`** vuole `division.timezone`, o lancia: la sezione del membro aspetta il bootstrap prima del
      form (trovato dalla prova di componente).
-- **Verificato, in locale**: *(VERIFIED)*
-- **Non verificato**: *(UNVERIFIED)*
+- **Verificato, in locale** (12 ottobre 2026, sul branch prima del commit dei documenti finali): `dotnet build` senza avvisi; `dotnet format
+  --verify-no-changes` sui file C# toccati; unità **1233/1233**; **integrazione intera senza filtro 560/560** (683 s; al primo giro 559/560,
+  la sola `EventsSkeletonTests` di E2, cresciuta con la forma, sopra); `EventsAtcTests` da sola 8/8; `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (844 chiavi) verdi; `pnpm test` **746 in 103 file**; `pnpm gen:api` e `i18n:sync` rifatti; lo smoke `pnpm exec playwright
+  test --workers=2` **181/181** dietro il suo lock; **`pnpm e2e:full` 63/63 al primo giro** (13,4 minuti) sul banco `http://127.0.0.1:5141`,
+  `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit (la spec nuova da sola, prima, 1/1 al secondo giro: il primo cadeva sul grant al
+  trainer non ancora entrato, corretto nella spec); le regole di `core-guard` rifatte a mano sul diff dal branch di E16: un file del nucleo
+  (`ErasureTests.cs`) e la nota nuova, nessun file del maintainer.
+- **Non verificato**: la CI (la dice la PR); la risposta di Carmine alla domanda della nota; E10n e E10m nel branch (non erano nella linea
+  quando la fase è partita: `[ErasedWith]` sulla nota della disponibilità aspetta E10n); una divisione con `firStaffScope: all` sulle
+  postazioni (provato con `own`, quello di IT; con `all` vale la regola del nucleo provata da A11a); il form delle finestre a 375 px; la
+  migrazione su un'installazione vera (la CI applica la catena su una MariaDB 11.4.10 vera); le postazioni di un evento con migliaia di
+  disponibilità (la lettura dei candidati è in memoria, per un evento).
 
 ### E11b — La proposta del roster e la correzione
 
