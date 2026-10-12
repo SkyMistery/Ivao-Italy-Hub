@@ -3454,7 +3454,21 @@ asked»):
   C# della PR: pulito; unità **1235/1235**; **integrazione intera, senza filtro, 536/536** al primo giro (6,5 minuti); in `web/`,
   nell'ordine della CI, `gen:api` senza differenze, `lint`, `format:check`, `typecheck`, `test` **679/679** in 93 file, `i18n:sync`,
   `i18n:check` e `build` verdi, nessun file generato da committare. Non rifatti: lo smoke e `e2e:full` (l'indirizzo è sotto `/api`,
-  nessuna schermata cambia; li fa la CI) e il pacchetto.
+  nessuna schermata cambia; li fa la CI) e il pacchetto. La CI su `c0f0519`: verde (`build-test` 21:38–22:07 UTC).
+
+**In coda** (12 ottobre 2026): alla [seconda lettura][r2239j] il revisore non ha più niente da correggere («as asked; nothing more to
+fix»), e [chiede una coda sola][q239j], perché ogni unione rimetteva in conflitto le altre sull'intestazione di `HANDOFF-M4.md`:
+**#242 → #250 → #252 → #251 → #249 → #239**, la #239 l'ultima.
+
+- **Unita la testa di E8b `889ba1a`** (con E10n, E10m, E10l, E4c e `main` ad `a75ed6c`, E7 compresa), senza rebase. Due conflitti, solo
+  nei documenti: in `10` la riga e la sezione di E10j fra quelle di E10i ed E10k; in `HANDOFF-M4.md` l'intestazione di E10j in cima,
+  quella di E8b sotto («L'aggiornamento di E8b»), E10j fra i pezzi portati dopo E10i, e il blocco di E10j sopra quelli di E8b, E10n,
+  E10m, E10l ed E4c. Nessun conflitto nel codice; `schema.d.ts` unito da solo, uguale al client rigenerato.
+- **Il range proprio della fase**: `git diff m4/e8b-duplicate-and-m4a-round...m4/e10j-jobs-catch-up`, gli stessi 23 file.
+- **Verificato dopo l'unione**: `dotnet build` 0 avvisi; unità **1269/1269**; **integrazione intera, senza filtro, 577/577** al primo
+  giro (10,9 minuti), i chiamanti dei servizi che la coda ha cambiato compresi; in `web/`, nell'ordine della CI, `gen:api` senza
+  differenze, `lint`, `format:check`, `typecheck`, `test` **743/743** in 102 file, `i18n:sync`, `i18n:check` e `build` verdi; le regole
+  di core-guard contro `main` ad `a75ed6c`: 92 file, nessuno del maintainer, 33 del nucleo, le sei note nuove della coda; passano.
 
 [a231j]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/231#issuecomment-6070088780
 [r239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083855377
@@ -3462,6 +3476,8 @@ asked»):
 [a239jb]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6083894931
 [a239jc]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044
 [m239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6096405209
+[r2239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6113746824
+[q239j]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6120884888
 
 ### E10k — Nucleo: le parole delle liste e i titoli delle schede
 
