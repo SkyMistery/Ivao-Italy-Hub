@@ -230,6 +230,35 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239)
+
+- **Che cosa c'è** (nota `decisions/2026-10-12-un-campo-dice-il-suo-nome.md`, **decisa** da Carmine sull'issue #253, [la sua
+  risposta][a253o], punto 1: A, prima una fase del nucleo; non B, i file di lingua non tengono righe; il dettaglio in `10`, E10o, «Com'è
+  andata»). Tutto nel browser, niente in C#:
+  - **Un campo dice il suo nome**: `.meta({ label })` sullo schema di un campo (`FieldMeta.label`, `web/src/shared/forms/schema.ts`),
+    una stringa **già nella lingua sullo schermo**, come le etichette di `choices`. `SchemaForm` la disegna al posto di
+    `<labels>.fields.<path>`, per ogni tipo di campo: la riga, l'interruttore, il gruppo di caselle (il suo `aria-label`), il fieldset,
+    le schede di lingua. Senza, tutto com'era.
+  - **Il «nessuno» del nucleo**: una select opzionale di un campo con un nome suo dice `form.none` («No choice» / «Nessuna scelta»);
+    gli altri campi la loro `<labels>.options.<path>.none`. Vale per la select di `choices`, quella di una `z.enum` e la griglia delle
+    icone.
+  - **I test** (vitest, 10): `web/src/shared/forms/SchemaForm.label.test.tsx`, con lo schema del form di E16. `docs/UI-GUIDELINES.md`
+    dice l'annotazione in inglese.
+- **Che cosa devono sapere le fasi dopo**:
+  - **E16** (il form del membro, `web/src/modules/events/screens/registrationForm.ts` sul suo branch) si mette in coda dopo questa e
+    passa a ogni campo `.meta({ label: <il testo della domanda nella lingua sullo schermo> })`; l'oggetto `answers` tiene il suo nome
+    i18n. Una domanda non obbligatoria di una scelta è `.optional()`, e dice «Nessuna scelta» da sé.
+  - **Un form costruito da righe** (E17 con le attività, il form di un fork) fa lo stesso: mai le parole di una riga in i18n a runtime
+    (Carmine, #253).
+  - **Uno schema scritto nel codice non porta `label`**: i suoi nomi sono chiavi, e `DataList` fa le intestazioni di colonna dalle
+    stesse chiavi.
+  - ⚠️ **Il suggerimento sotto un campo resta in i18n** (`<labels>.hints.<path>`): un form costruito da righe che ne volesse uno
+    aggiunge l'annotazione accanto a `label`, con una nota.
+  - ⚠️ **Le opzioni di una `z.enum` restano chiavi** anche su un campo con un nome suo: un insieme che viene da righe è `choices` con
+    `{ value, label }`.
+
+[a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
+
 ### Che cosa ha lasciato E10j (9–12 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo; ultima della coda #242 → #250 → #252 → #251 → #249 → #239, con la testa di E8b `889ba1a` unita, `main` ad `a75ed6c`)
 
 - **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239: l'ultimo giro *finito*, il
