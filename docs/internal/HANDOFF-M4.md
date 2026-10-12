@@ -6,7 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10l** (nucleo: il pulsante di chiusura delle finestre parla la lingua), sul branch
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10m** (nucleo: un solo lettore dei nomi), sul branch `m4/e10m-names-reader`,
+**PR #252** verso `main`, **in coda dopo la #250**, la terza della coda **#242 → #250 → #252 → #251 → #249 → #239**: nata da `main` a
+`bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #247, **approvabile senza niente da correggere** per il revisore
+([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6119781289)), e ha unito la testa di E10l `2e4164d`
+(con E4c e `main` ad `a75ed6c`, E7 compresa). Il nucleo ha `MemberNames.ReadAsync` (`Core/People/`), i fili dei contatti lo usano, e la
+formazione e gli eventi ci passano sopra in due piccole fasi di dalberone dopo l'unione («Che cosa ha lasciato E10m», sotto); i tour in
+una sessione di Carmine.
+
+**L'aggiornamento di E10l:** 12 ottobre 2026 — **fase E10l** (nucleo: il pulsante di chiusura delle finestre parla la lingua), sul branch
 `m4/e10l-dialog-close-label`, **PR #250** verso `main`, **in coda dopo la #242**, la seconda della coda **#242 → #250 → #252 → #251 →
 #249 → #239**: nata da `main` a `bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #224, **approvabile senza niente da
 correggere** per il revisore ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/250#issuecomment-6113746994)), e ha unito
@@ -189,6 +197,41 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10m (11–12 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo; in coda dopo la #250, con la testa di E10l `2e4164d`)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-un-solo-lettore-dei-nomi.md`, **decisa** da Carmine sull'issue #247, [la sua
+  risposta][a247m2]; il dettaglio in `10`, E10m, «Com'è andata»):
+  - **`MemberNames.ReadAsync`** (`src/IvaoHub.Core/People/MemberNames.cs`, namespace `IvaoHub.Core.People`), statico, con il
+    `HubDbContext` di chi chiede: `ReadAsync(hub, IEnumerable<int> vids, ct)` e `ReadAsync(hub, IEnumerable<int?> vids, ct)` →
+    `IReadOnlyDictionary<int, string>`. Il nome è `$"{FirstName} {LastName}".Trim()` in .NET; chi l'hub non conosce manca; un VID nullo
+    manca; **un VID sotto uno non ha mai un nome** (una persona cancellata); **un nome vuoto resta `""`**; nessuno da chiedere non va al
+    database. Nessuna registrazione, nessuna migrazione.
+  - **I fili dei contatti lo usano** (`ContactThreads.ReadAsync`); la loro copia se n'è andata.
+  - **`tests/IvaoHub.IntegrationTests/MemberNamesTests.cs`** (7): il lettore da solo, il test gemello con le tre copie dei moduli, e una
+    prova per ogni differenza fra le quattro copie (nota §2). Usa le persone dei fili dei contatti (670011–670014) e rimette i loro nomi.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase della formazione** (piccola, di dalberone, dopo l'unione di questa PR): `TrainingPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Training/TrainingPeople.cs`) risponde `MemberNames.ReadAsync(hub, vids, cancellationToken)`, oppure se ne va e
+    i chiamanti chiedono al nucleo; `Member`, `Label` e `IsErased` restano. In `MemberNamesTests` esce la riga della formazione dal
+    test gemello e da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` (dopo il passaggio, la formazione non nomina più una riga sotto
+    uno: è uno stato che l'hub non scrive, e la PR lo dice). Nessuna pagina cambia.
+  - **La fase degli eventi** (piccola, di dalberone, dopo l'unione): lo stesso con `EventsPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Events/EventsPeople.cs`); `EventMemberDto` e `Member` restano; in `MemberNamesTests` esce la riga degli eventi.
+    Le due fasi sono indipendenti e possono andare in parallelo: toccano righe diverse dello stesso test, che si uniscono senza conflitti
+    se ognuna toglie solo la sua.
+  - **I tour** (`PirepReview.NamesAsync`) li passa **una sessione di Carmine**; fino ad allora il test gemello tiene le due risposte
+    uguali, e la riga dei tour in `MemberNamesTests` se ne va con lei.
+  - **Ogni fase nuova che nomina qualcuno per VID** chiede a `MemberNames`, mai una copia; la pagina lo scrive con `personName` (o
+    `col.person`) del browser, che fa del nome vuoto e di quello che manca il VID da solo.
+  - ⚠️ **Il nome vuoto è `""`, non `null`**: chi vuole «nessun nome» per un nome vuoto lo dice nel suo `Member`, come i tour. Il lettore
+    non lo decide per tutti, perché la mail della formazione e il `personName` lo leggono già a modo loro.
+  - ⚠️ **Il nome si taglia in .NET, dopo la lettura**: unirlo nella query (`FirstName + " " + LastName`, `.Trim()` tradotto in `TRIM`)
+    lascia un tab o uno spazio non separabile ai bordi. `ABlankOtherThanASpaceAtTheEdgeOfANameIsTrimmedToo` lo prova.
+  - ⚠️ La sequenza di escape di U+00A0 scritta con gli strumenti Write ed Edit diventa il carattere: nel test è rimessa come
+    sequenza con node.
+
+[a247m2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/247#issuecomment-6113460844
 
 ### Che cosa ha lasciato E10l (11–12 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo; in coda dopo la #242, con la testa di E4c `8683d53` unita, `main` ad `a75ed6c`, con E7)
 

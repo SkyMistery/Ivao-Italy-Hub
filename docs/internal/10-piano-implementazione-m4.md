@@ -3401,6 +3401,78 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #24
     sue PR; da allora gira a ogni unione (sopra);
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
+### E10m — Nucleo: un solo lettore dei nomi
+
+**Da dove viene**: non c'era in E0. L'ha portata la revisione di E6b (#240): `EventsPeople` era il quarto lettore dei nomi per VID, dopo
+quello dei fili dei contatti, dei tour e della formazione, e **Carmine** l'ha accettato per ora, mettendo **un lettore dei nomi nel
+nucleo** nella coda del nucleo «prima che se ne scriva un quinto» ([risposta 4 sulla #240][a240m]). dalberone si è offerto di scriverlo
+(issue #247), e **Carmine ha deciso** ([la sua risposta sulla #247][a247m], 11 ottobre, data in chat alla sessione master e pubblicata
+su sua istruzione): sì, una fase del nucleo con la sua PR e una nota nuova; la copia del nucleo passa sopra di lui nella stessa PR, con
+test che tengono ciò che rispondono oggi i quattro; la formazione e gli eventi dopo, in piccole fasi di dalberone; i tour in una
+sessione di Carmine. Branch `m4/e10m-names-reader`, da `main` a `bea8c0e`. **PR del nucleo** senza coda, con la sua nota (caso b);
+nessuna migrazione.
+
+1. **Il lettore** nel nucleo: prende VID e risponde nomi da `hub_users` (nome e cognome, tagliati); chi l'hub non conosce fuori; una
+   persona cancellata, un VID negativo, senza nome.
+2. **`ContactThreads` passa sopra di lui**, senza cambiare ciò che risponde.
+3. **Il codice dei moduli resta fuori** (regola 6): il HANDOFF dice che cosa faranno le fasi della formazione e degli eventi.
+
+**Test**: integrazione: il lettore da solo; lo stesso che rispondono le tre copie dei moduli; uno per ogni differenza fra le quattro.
+Ognuno provato al contrario su un lettore rotto.
+**Fatta quando**: il nucleo ha un lettore dei nomi che risponde come le quattro copie, i fili dei contatti lo usano, e ogni modulo può
+passarci sopra senza che cambi una pagina.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-un-solo-lettore-dei-nomi`, **decisa** sulla #247, con una domanda a Carmine nel corpo della PR):
+  - **`src/IvaoHub.Core/People/MemberNames.cs`**, namespace `IvaoHub.Core.People`, una cartella nuova: una classe statica con
+    `ReadAsync(HubDbContext, IEnumerable<int>, …)` e `ReadAsync(HubDbContext, IEnumerable<int?>, …)`, che risponde
+    `IReadOnlyDictionary<int, string>`. Nessuna registrazione, nessuna migrazione, nessun endpoint, nessuna chiave, niente nel browser;
+  - **`ContactThreads.ReadAsync`** chiede i nomi degli autori a `MemberNames`; il suo `NamesAsync` privato se n'è andato.
+    `ContactThreadTests` (del maintainer) non cambia, e passa;
+  - **`tests/IvaoHub.IntegrationTests/MemberNamesTests.cs`** (integrazione, 7): il lettore da solo; il test gemello con `PirepReview`,
+    `TrainingPeople` ed `EventsPeople` su cinque richieste; il nome vuoto tenuto e letto da ogni modulo a modo suo; un bianco che non è
+    uno spazio ai bordi tagliato; e una per ogni differenza (nota §2): un VID sotto uno mai nominato, nessuno da chiedere che non arriva
+    al database, un VID nullo lasciato fuori.
+- **Le quattro copie confrontate** (nota §2): rispondono lo stesso in ogni stato che l'hub scrive. Tre differenze, nessuna visibile a
+  una pagina: **i tour lasciano fuori un VID sotto uno** prima di chiedere, gli altri lo chiedono (cambia solo con una riga di
+  `hub_users` sotto uno, che l'hub non scrive); **formazione ed eventi non vanno al database** quando non c'è nessuno da chiedere, nucleo
+  e tour sì; **tour e formazione prendono VID nulli**. Il lettore le decide come la copia più stretta: sotto uno mai un nome (la
+  decisione sulla #247), nessuna query a vuoto, il nullo fuori. Di forma: il nucleo leggeva la riga intera e rispondeva un dizionario
+  modificabile.
+- **Scelte, scritte nella nota** (§3): `Core/People/` e non `Core/Auth/`, `Core/Privacy/` o `Core/Content/`; una classe statica con il
+  contesto passato da chi chiede, invece di un servizio nel contenitore; **il nome vuoto tenuto** (`""`), perché è lì che le pagine si
+  separano — i tour lo fanno `null`, la mail della formazione scrive il VID, il `personName` del browser anche.
+- **Le prove al contrario** (il lettore rotto, i sette casi rieseguiti, poi rimesso):
+  1. senza `vid > 0`: cadono 2 su 7, `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` e `NobodyToAskAboutDoesNotReachTheDatabase`;
+  2. senza il ritorno quando non c'è nessuno da chiedere: cade 1, `NobodyToAskAboutDoesNotReachTheDatabase`;
+  3. il nome unito e tagliato nella query (`(FirstName + " " + LastName).Trim()`, il `TRIM` di MariaDB): cadono 3, il lettore da solo,
+     il test gemello e `ABlankOtherThanASpaceAtTheEdgeOfANameIsTrimmedToo`;
+  4. il nome vuoto lasciato fuori: cadono 2, `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay` e il test gemello;
+  5. senza `Trim`: cadono 4, il lettore da solo, il test gemello, il nome vuoto (`" "`) e il bianco ai bordi;
+  6. un VID nullo letto come un valore (`vid!.Value`) invece di lasciarlo fuori: cadono 3, `AMissingVidIsLeftOutLikeAnUnknownOne`,
+     `NobodyToAskAboutDoesNotReachTheDatabase` e il test gemello.
+- **Trovato**: gli altri lettori di un nome nell'hub non sono fra i quattro e restano (nota §5); due di loro, chi ha pubblicato un
+  contenuto e chi l'ha segnato pronto (`ContentEndpoints`, `ContentReviewService`), uniscono nome e cognome nella query senza tagliare:
+  passarli cambierebbe ciò che rispondono, e non è di questa decisione.
+- **Verificato**: `dotnet build` in Debug e in Release, 0 avvisi e 0 errori; unità **1203/1203**; integrazione intera, senza filtro,
+  **536/536** (9,6 min); `pnpm lint`, `pnpm typecheck`, `pnpm format:check` verdi, `pnpm test` **698/698** in 96 file. **Non girati**
+  la smoke e `pnpm e2e:full`: nessuno schermo cambia, e il filo dei contatti lo legge `ContactThreadTests` sul server vero, come per
+  E10g, E10h ed E10i; la porta 5138 e `ivaohub_e2e_e10m` non sono stati usati.
+- **Dopo la revisione** (12 ottobre 2026, [i rilievi sulla #252][r252m]): **approvabile, niente da correggere**, pronta per il
+  maintainer. Il revisore ha chiesto **una coda sola** ([sulla #252][q252m]), perché ogni unione rimetteva in conflitto le altre sulla
+  cima di `HANDOFF-M4.md`: **#242 → #250 → #252 → #251 → #249 → #239**. La #252 è la terza, **in coda dopo la #250**: ha unito la testa
+  di E10l `2e4164d` (con E4c e `main` ad `a75ed6c`, E7 compresa), con i conflitti solo in questo file e in `HANDOFF-M4.md` (le sezioni di
+  E10l e di E10m una dopo l'altra, il blocco di E10m in cima). Il merge non tocca il nucleo né le copie dei moduli. Rifatti: build, 0
+  avvisi; unità **1220/1220**; integrazione intera **550/550** (10,0 min); `lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+  `pnpm test` **728/728** in 100 file.
+
+[r252m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6119781289
+[q252m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6120883727
+
+[a240m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158
+[a247m]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/247#issuecomment-6113460844
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
