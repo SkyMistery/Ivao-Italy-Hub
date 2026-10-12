@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10l** (nucleo: il pulsante di chiusura delle finestre parla la lingua), sul branch
+`m4/e10l-dialog-close-label`, **PR #250** verso `main`, **in coda dopo la #242**, la seconda della coda **#242 → #250 → #252 → #251 →
+#249 → #239**: nata da `main` a `bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #224, **approvabile senza niente da
+correggere** per il revisore ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/250#issuecomment-6113746994)), e ha unito
+la testa di E4c `8683d53` (con `main` ad `a75ed6c`, E7 compresa). Il `Dialog` del nucleo c'è; i due dialog degli eventi — quello di uno
+slot e, con E7 unita, quello dell'ora privata — ci passano in una fase loro dopo questa («Che cosa ha lasciato E10l», sotto).
+
+**L'aggiornamento prima:** 12 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
 `m4/e4c-events-titles-and-empty-lists`, **PR #242** verso `main`, **in fondo alla coda** che il revisore ha chiesto il 12 ottobre: nata dal
 branch di E10k, ne ha unito le teste fino alla #238, e ha unito **`main` ad `a75ed6c`** (con E7, la #246). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**,
 **E7 (#246)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)**, **E10i
@@ -182,6 +189,40 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10l (11–12 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo; in coda dopo la #242, con la testa di E4c `8683d53` unita, `main` ad `a75ed6c`, con E7)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-il-pulsante-di-chiusura-delle-finestre.md`, **decisa** da Carmine sull'issue #224,
+  [la sua risposta][a224l]: comporlo nel nucleo, come la #238 per la paginazione; non una richiesta ad Atmosphere; il dettaglio in `10`,
+  E10l, «Com'è andata»). Tutto nel browser, niente in C#, nessuna dipendenza nuova:
+  - **`Dialog` del nucleo** (`web/src/shared/ui/Dialog.tsx`, da `shared/ui`), la **venticinquesima voce** dell'elenco chiuso
+    (`catalog.ts`, galleria, `docs/UI-GUIDELINES.md` §3): la molecola `Dialog` di Atmosphere ricomposta dai suoi pezzi, con le stesse
+    props (`trigger`, `title`, `description`, `children`, `footer`, `open`, `onOpenChange`…) e lo stesso aspetto; la «X» è un
+    `DialogClose` nostro con `aria-label={t('common.close')}` — «Chiudi», «Close». **`closeButton`** (predefinito `true`) al posto di
+    `topRightCloseButton`.
+  - **La chiave `common.close`** nelle due lingue (e due della galleria).
+  - **La guardia** (`web/src/shared/ui/Dialog.test.tsx`): nessun file di `web/src` importa da Atmosphere `Dialog`,
+    `DialogTopRightClose`, `Sheet` o `SheetContent`, tranne quelli di `NOT_MOVED_YET`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase degli eventi dopo questa** (regola 6): `EventSlots.tsx` (il dialog di uno slot) e `PrivateSlots.tsx` di E7 (il dialog
+    dell'ora privata) importano `Dialog` da `../../../shared/ui` invece che da Atmosphere — le props sono le stesse, e
+    nessuno dei due passa `topRightCloseButton` — e i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx` (un test di dalberone).
+    Nessun test né spec degli eventi cerca la parola «Close».
+  - **Un dialog nuovo** si disegna con il `Dialog` del nucleo, una domanda con `ConfirmDialog`; mai il `Dialog` o il `Sheet` di Atmosphere:
+    la guardia cade.
+  - ⚠️ **La «X» non è in `DialogContent`**: in Atmosphere 3.1.0 la disegna `DialogTopRightClose`, montato dalla molecola `Dialog` e da
+    `SheetContent`. Un `DialogContent` composto a mano (la palette di ricerca) non ha la «X» e non va spostato.
+  - ⚠️ **`PrivateSlots.tsx` era in `NOT_MOVED_YET` prima di essere in `main`**, perché né E7 (#246) né questa PR facessero cadere
+    l'altra; E7 è entrata per prima, e con la sua testa unita qui la guardia lo trova e lo ammette. Per lo stesso motivo la guardia
+    chiede «nessuno fuori dalla lista», non «la lista uguale».
+  - Il `Dialog` del nucleo cambia solo la «X»: **i campi senza bordo nel tema scuro** e **il contenuto lungo che scorre** che E7 ha trovato
+    nei suoi dialog («Che cosa ha lasciato E7», sotto) restano com'erano.
+  - ⚠️ **I toast dicono ancora «Close»**: `ToastClose` di Atmosphere, montato senza props dalla molecola `Toast` che `useNotice()` usa,
+    ha «Close» come `aria-label` predefinito. Non è un dialog, la risposta di Carmine non lo copre: una domanda per Carmine, se dalberone
+    la porta.
+  - **I tour** non hanno dialog oggi; se ne avranno, sono del maintainer, e la guardia lo dice.
+
+[a224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6113461064
 
 ### Che cosa ha lasciato E4c (9–12 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in fondo alla coda #242 → #250 → #252 → #251 → #249 → #239; `main` unito ad `a75ed6c`, con E7)
 

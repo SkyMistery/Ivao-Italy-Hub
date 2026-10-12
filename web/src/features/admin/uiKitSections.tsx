@@ -15,6 +15,7 @@ import {
   ConfirmDialogSample,
   ContactFormSample,
   DataListSample,
+  DialogSample,
   LiveStatusStripSample,
   MessageThreadSample,
   RouteMapSample,
@@ -131,6 +132,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
       </div>
     ),
   },
+  { name: 'Dialog' satisfies UiKitComponent, render: () => <DialogSample /> },
 ];
 
 /**
