@@ -8,6 +8,7 @@ import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from 
 import type {
   AirportFormValues,
   CancelFormValues,
+  DuplicateFormValues,
   EventFormValues,
   EventsSearch,
   EventsSettings,
@@ -22,8 +23,9 @@ import type {
  * Every call the screens of the events make (M4): the settings through the core's settings of a module (E2); the events, their
  * airports, their routes and their slots through the CRUD engine, and the endpoints written by hand beside it — cancelling and the
  * presets of the kinds (E3a), publishing (E3b), loading the slots of an event from a table and deleting its free ones (E5),
- * generating its private slots (E7); and the page of an event, the one read of the site (E4), which lists its public slots (E5) and
- * its private ones (E7). The list of `/events` is the block `events.eventList`, read through the endpoint every block is read through.
+ * generating its private slots (E7), duplicating it (E8b); and the page of an event, the one read of the site (E4), which lists its
+ * public slots (E5) and its private ones (E7). The list of `/events` is the block `events.eventList`, read through the endpoint every
+ * block is read through.
  * The bookings (E6b): a pilot's own — read, made, made for a whole rotation, made for a private slot with its flight (E7), withdrawn —
  * through the verbs of E6a and E7, and the staff's list of the bookings of an event with «take away».
  */
@@ -42,6 +44,7 @@ const bookingsKey = ['events', 'bookings'] as const;
 
 export type EventListDto = components['schemas']['EventListDto'];
 export type EventDetailDto = components['schemas']['EventDetailDto'];
+export type EventDuplicatedDto = components['schemas']['EventDuplicatedDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
 export type EventRouteDto = components['schemas']['EventRouteDto'];
 export type PublicEventDto = components['schemas']['PublicEventDto'];
@@ -236,6 +239,35 @@ export function useCancelEvent(id: number) {
       ),
     onSuccess: async (saved) => {
       queryClient.setQueryData(eventQuery(saved.id).queryKey, saved);
+      await queryClient.invalidateQueries({ queryKey: [...eventsKey, 'list'] });
+    },
+  });
+}
+
+/**
+ * Duplicates an event (§2.3-bis, E8b): a new draft from its start and its address, with its public slots when asked. The answer is the
+ * new event, which the page then opens; a refusal comes back field by field.
+ */
+export function useDuplicateEvent(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: DuplicateFormValues): Promise<EventDuplicatedDto> =>
+      unwrap(
+        await api.POST('/api/events/events/{id}/duplicate', {
+          params: { path: { id } },
+          body: {
+            startsAtUtc:
+              values.startsAtUtc === undefined || values.startsAtUtc.trim() === ''
+                ? null
+                : values.startsAtUtc,
+            slug: values.slug.trim(),
+            publicSlots: values.publicSlots,
+          },
+        }),
+      ),
+    onSuccess: async ({ event: copy }) => {
+      queryClient.setQueryData(eventQuery(copy.id).queryKey, copy);
       await queryClient.invalidateQueries({ queryKey: [...eventsKey, 'list'] });
     },
   });

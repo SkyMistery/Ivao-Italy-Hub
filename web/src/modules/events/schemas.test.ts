@@ -5,6 +5,7 @@ import { readFields } from '../../shared/forms';
 
 import { routeToFormValues } from './api';
 import {
+  duplicateSchema,
   emptyRoute,
   eventsPublicSearchSchema,
   kindChoices,
@@ -112,6 +113,28 @@ test('a route comes back into its form in every language of the division, the re
 
   expect(values.remarks).toEqual({ en: '', it: '' });
   expect(routeSchema.parse(values)).toEqual(values);
+});
+
+test('the form of «Duplicate» (E8b) has a field for everything the request carries, the public slots asked only of an event that takes some', () => {
+  const sent: Record<keyof components['schemas']['EventDuplicateRequest'], true> = {
+    startsAtUtc: true,
+    slug: true,
+    publicSlots: true,
+  };
+
+  const shown = (takesPublicSlots: boolean) =>
+    readFields(duplicateSchema(takesPublicSlots))
+      .filter((field) => field.meta.hidden !== true)
+      .map((field) => field.path)
+      .sort();
+
+  expect(
+    readFields(duplicateSchema(true))
+      .map((field) => field.path)
+      .sort(),
+  ).toEqual(Object.keys(sent).sort());
+  expect(shown(true)).toEqual(['publicSlots', 'slug', 'startsAtUtc']);
+  expect(shown(false)).toEqual(['slug', 'startsAtUtc']);
 });
 
 test('the address of /events keeps the kind, the airport and the calendar, and drops a view that does not exist', () => {

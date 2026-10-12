@@ -57,7 +57,11 @@ public sealed class PrivateSlotGeneration(EventsDbContext database)
 
         var problems = new Refusals();
 
-        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        // Inside a transaction already open — «Duplicate» generates the private slots of its copy in its own, one transaction for the
+        // whole copy (E8b) — the lock and the writes are that one's, and its caller commits: the copy is a row nobody else sees yet.
+        await using var transaction = database.Database.CurrentTransaction is null
+            ? await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            : null;
         var locked = await database.Database
             .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {row.Id} FOR UPDATE")
             .ToListAsync(cancellationToken);
@@ -134,7 +138,10 @@ public sealed class PrivateSlotGeneration(EventsDbContext database)
         database.Slots.RemoveRange(leaving);
         database.Slots.AddRange(generated);
         await database.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         return (
             GenerationResult.Done,

@@ -1438,6 +1438,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsDuplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/airports": {
         parameters: {
             query?: never;
@@ -4678,6 +4694,25 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /**
+         * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+         *     refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+         *     when they were generated, or were not to be.
+         */
+        EventDuplicatedDto: {
+            event: components["schemas"]["EventDetailDto"];
+            privateSlotsNotGenerated: null | string;
+        };
+        /**
+         * @description "Duplicate" (§2.3-bis, E8b): the start of the new event — an instant in UTC, as every time of an event; every other time moves by
+         *     the same difference —, its address, and whether the public slots come too, with their rotations.
+         */
+        EventDuplicateRequest: {
+            /** Format: date-time */
+            startsAtUtc: null | string;
+            slug: string;
+            publicSlots: boolean;
         };
         /**
          * @description An event as the staff's list shows it (design M4 §7.2): its state is read off its dates, never stored (§2.1), and its kind
@@ -12920,6 +12955,55 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsDuplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventDuplicateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDuplicatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -99,6 +99,10 @@ export function EventSlots({
             {t('events:public.slotsOn', { day: moment(slotTime(first), { time: false }) })}
           </Subtle>
         ) : null}
+        {/* By the slots, where it is read (note 2026-10-11-la-testa-della-pagina-di-un-evento): the head's badge says only «open». */}
+        {event.bookingOpensAtUtc === null || event.cancelledAt !== null ? null : (
+          <Subtle className="text-sm">{t('events:public.booking.untilOffBlock')}</Subtle>
+        )}
       </div>
 
       {onFilter === undefined ? null : (
@@ -390,7 +394,8 @@ function RotationMark() {
  * Atmosphere's tooltip, opened by a tap too (§2 of the note): a phone has no hover, and a Radix tooltip opens only for a mouse that
  * moves and on focus. The trigger is a button, so the keyboard reaches it and its words are read on focus; a press turns it over,
  * a tap included, and opens no row it sits in. **A piece of this screen**, not a component of the module (Carmine, point 8 on
- * #228): the day a second screen wants a tooltip that opens on a tap, that is a decision to bring to him, not a copy.
+ * #228): the day a second screen wants a tooltip that opens on a tap, that is a decision to bring to him, not a copy. The head of the
+ * same page names its airports with it (`EventHead`; Carmine, answer 1 on #249).
  *
  * ⚠️ What a press turns over is what was shown **when the press began**: between the press and its click Radix closes the tooltip
  * (a press on its trigger, a tap anywhere) and opens it again (a tap focuses the button after the finger lifts), so the state at
@@ -400,7 +405,7 @@ function RotationMark() {
  * With a `label` the tooltip only shows the button's own name: it is not given as its description too, or a reader would hear it
  * twice.
  */
-function Hint({ text, label, children }: { text: string; label?: string; children: ReactNode }) {
+export function Hint({ text, label, children }: { text: string; label?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const shownAtPress = useRef<boolean | null>(null);
 

@@ -12,7 +12,7 @@
   },
   "events": {
     "title": "Events",
-    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling or deleting it.",
+    "description": "Every event of the division, drafts and past ones included: its settings, its description, its airports with their capacity, and publishing, cancelling, duplicating or deleting it.",
     "create": "New event",
     "edit": "Event",
     "empty": "The events of the division will show up here, from the drafts to the ended ones.",
@@ -42,7 +42,8 @@
     },
     "actions": {
       "publish": "Publish",
-      "cancel": "Cancel the event"
+      "cancel": "Cancel the event",
+      "duplicate": "Duplicate"
     },
     "publish": {
       "problems": "Before it can be published, it still needs:",
@@ -120,6 +121,24 @@
     },
     "hints": {
       "note": "Shown on the page of the event, in every language of the division."
+    }
+  },
+  "duplicate": {
+    "title": "Duplicate the event",
+    "description": "A new draft with every time moved by the difference between the two starts: the settings, the description, the banner while the library still has it, the airports with their capacity and the routes, and the public slots if you choose. Nothing of the members comes with it: no booking.",
+    "privateSlots": "The private slots are never copied: they are generated again from the capacity of the airports — with the new event when its public slots come with it, or it takes none; otherwise with «Generate the private slots», once its new table is loaded.",
+    "submit": "Duplicate",
+    "privateSlotsNotGenerated": "The copy is made, as a draft, without its private slots.",
+    "openCopy": "Open the copy",
+    "fields": {
+      "startsAtUtc": "Starts",
+      "slug": "Address",
+      "publicSlots": "The public slots too"
+    },
+    "hints": {
+      "startsAtUtc": "The start of the new event, in UTC: its end, the opening of its bookings and the times of its slots move by as much.",
+      "slug": "The address of the new event's page, /events/…: another one than this event's.",
+      "publicSlots": "With their rotations, at the new times."
     }
   },
   "airports": {
@@ -282,8 +301,11 @@
       "NotSeenYet": "For now only the staff of the events sees this page: the event is published, and the others see it from the moment written in «Seen from».",
       "Over": "Only the staff of the events sees this page: the event is over, and the site keeps no archive."
     },
-    "when": "When",
     "wholeDivision": "Every airport of the division",
+    "organizedBy": {
+      "Network": "Organised by the network, with the division",
+      "OtherDivision": "Organised by another division"
+    },
     "organizerPage": "Their page",
     "cancelled": "This event is cancelled.",
     "routes": "Routes",
@@ -297,14 +319,13 @@
     "yours": "Yours",
     "onlineAtTheAirports": "Online at the airports of the event",
     "booking": {
-      "title": "Bookings",
       "panel": "Book this slot",
-      "opensAt": "They open on",
-      "openSince": "Open since",
+      "opensOn": "Bookings from {{at}}",
+      "open": "Bookings open",
+      "closed": "Bookings closed",
       "untilOffBlock": "Each slot is booked until its off block.",
       "countdownDays": "In {{days}} d {{time}}",
       "countdown": "In {{time}}",
-      "closedCancelled": "Closed: the event is cancelled.",
       "notOpen": "The bookings of this event are not open yet: the page says when they open.",
       "signIn": "Sign in to book this slot",
       "aircraft": "The aircraft you fly",
@@ -402,7 +423,7 @@
   "mine": {
     "title": "My bookings",
     "lead": "The slots you booked in the events, past ones too. A booking is withdrawn until the off block of its flight.",
-    "none": "No booking yet",
+    "none": "No booking",
     "noneDescription": "Book a slot from the page of an event.",
     "toEvents": "Go to the events",
     "upcoming": "Still to fly",
@@ -444,6 +465,10 @@
         "reason": "In your own words: the pilot reads it in the email, and it is kept nowhere else."
       }
     }
+  },
+  "erasure": {
+    "bookingsToCome": "Bookings of events still to end: deleted, and their slots free again",
+    "bookingsOver": "Bookings of events that ended, kept without the pilot and without the flight they wrote"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -548,6 +573,7 @@
     "endsBeforeItStarts": "The event ends before it starts.",
     "visibilityChoice": "An event is seen by everybody or by the members.",
     "slugTaken": "Another event has this address.",
+    "duplicateOutOfCalendar": "From this start a time of the event would fall outside the calendar: choose a nearer date.",
     "slugReserved": "This address is the page of a member's own bookings: choose another.",
     "wholeDivisionHasAirports": "This event has airports of its own: take them out before making it about the whole division.",
     "eventUnknown": "This event does not exist.",

@@ -15,7 +15,7 @@ import {
   eventsSearchSchema,
 } from './schemas';
 import { AirportForm } from './screens/airports';
-import { EventCancelPage, EventEditor, EventsPage } from './screens/events';
+import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './screens/events';
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
 import { RouteForm } from './screens/routes';
@@ -28,7 +28,8 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * its description and its airports, and the page that cancels one; E4 the public side — `/events`, the page of an event, the
  * block of the list — and the routes of an event, in a tab of its page; E5 its slots, in a tab too, with the page that loads
  * them from a table, and listed on its page; E6b the bookings — booked from the page of an event, a member's own on
- * `/events/mine` and in the block `events.myEvents`, the staff's in a tab of the event's page.
+ * `/events/mine` and in the block `events.myEvents`, the staff's in a tab of the event's page; E8b the page that duplicates an
+ * event onto a new date.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -81,6 +82,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/cancel',
       permission: EVENTS_EDIT,
       component: EventCancelPage,
+    },
+    // «Duplicate» (E8b): the start and the address of a new draft copied from the event.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/duplicate',
+      permission: EVENTS_EDIT,
+      component: EventDuplicatePage,
     },
     {
       area: 'staff',

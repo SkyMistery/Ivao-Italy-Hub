@@ -2106,7 +2106,227 @@ la cancellazione di un pilota di prova (una prenotazione aperta sparita, una chi
 giro completo verde.
 **Fatta quando**: il giro completo di M4a passa in locale e in CI, e un RFE si duplica su una nuova data.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (11 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249, nata **in coda dopo la #246** di E7, dal suo branch
+a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase —; **nessuna migrazione**: ogni colonna c'è da E2, E5 ed E6a):
+
+- **Fatto**:
+  1. **«Duplica»** (punto 1; design §2.3-bis): `POST /api/events/events/{id}/duplicate` (`EventsDuplicate`), in
+     `Staff/EventDuplication.cs`. **La copia pura**, `EventCopy`: il nuovo evento con ogni impostazione di quello di partenza — il tipo, i
+     cinque interruttori, chi organizza e il suo link, titolo, riassunto e descrizione, la visibilità, la durata di un turno, il luogo, i tre
+     limiti di chi non vola —, nella stessa cura, con ogni orario spostato della differenza fra il nuovo inizio e il vecchio (la fine,
+     «visibile dal», l'apertura delle prenotazioni); una bozza, mai pubblicata, non annullata, senza i segni dei job; uno scalo con la sua
+     capacità, una rotta e uno slot pubblico com'erano, ai nuovi orari, nella cura della copia. **Il piano**, `EventDuplicatePlan`, letto
+     prima di scrivere (`PlanAsync`): il banner solo se la libreria ha ancora il file (`DeletedAt` vuoto e `HasFile`), gli scali, le rotte
+     nell'ordine in cui sono scritte, gli slot pubblici se chiesti, e se generare i privati. **Il salvataggio**, `SaveAsync`, in una
+     transazione: l'evento, poi le sue righe, poi i privati con `PrivateSlotGeneration` di E7 **quando i pubblici della copia ci sono già**
+     — copiati, o l'evento non ne prende —, e un rifiuto del generatore (nessuna capacità, più di 5.000) lascia la copia senza privati;
+     l'indirizzo è rifiutato se un altro evento lo ha, anche quando l'indice univoco risponde nello stesso istante. **Chi duplica**:
+     `Events.Edit` chiesto all'unico handler sull'evento nuovo com'è prima di essere scritto — nella cura dell'altro, con lo scope
+     `events:event:0`, quindi un grant su un evento solo non duplica (E10i) —, poi il permesso dell'area di ogni riga che la copia scrive
+     (`AreasWritten`: `EventRoutes.Edit` per le rotte, `EventBookings.Edit` per gli slot, copiati o generati), tutto prima di scrivere; 201
+     con l'evento nuovo e il suo indirizzo. **Le regole dell'indirizzo scritte una volta**: `EventAddressRules.EventAddress`, per
+     `EventWriteDtoValidator` (le due regole di prima, nello stesso ordine) e per `EventDuplicateRequestValidator`. **La pagina**: «Duplica»
+     nella barra di un evento, in ogni stato, a chi ha `Events.Edit` sulla riga (`screens/events.tsx`); `EventDuplicatePage` sulla rotta
+     `/staff/events/$id/duplicate`, con il form generato da `duplicateSchema` — l'inizio, proposto quello dell'evento, l'indirizzo, e «anche
+     gli slot pubblici» su un evento che ne prende —, la frase che dice come si rifanno i privati su un evento che ne ha, e dopo la pagina
+     della copia (`useDuplicateEvent`).
+  2. **`EventsPersonalData`** (punto 2; design §11.1): `src/IvaoHub.Modules.Events/EventsPersonalData.cs`, registrato come
+     `IPersonalDataEraser`. Le prenotazioni della persona di un evento **non ancora finito** si cancellano, attraverso il contesto (l'audit
+     tiene che una riga è andata e il nucleo ne svuota le copie), e lo slot torna libero; quelle di un evento **finito** restano, con lo
+     pseudonimo che il nucleo scrive in `booker_vid`, senza `callsign`, `other_icao`, `other_time_utc`, `unflown_excused_note` e
+     `flown_session_id`. **«Finito»** si legge in un posto solo, `EventState.IsOver` (la fine passata, annullato o no), che ora usano anche
+     `Of`, `IsSeen` e `Unseen`. Una coppia va o resta intera. Le righe dell'anteprima: `events:erasure.bookingsToCome` (cancellate) ed
+     `events:erasure.bookingsOver` (tenute).
+  3. **Il giro completo di M4a** (punto 3): `web/e2e/full/events-round.spec.ts`, due test. **Il giro dell'RFO**: il coordinatore degli
+     eventi (`?as=events`) incolla nella scheda «Slot» una tabella — una rotazione di due tratte e un volo da solo —, genera i privati
+     (diciassette: cinque ore di due arrivi e due partenze a Roma, meno i tre orari che i pubblici tengono lì) e pubblica, con la conferma;
+     il pilota del banco prenota tutta la rotazione dal dialog di una tratta e un arrivo privato dal dialog della sua ora, e ritira una tratta
+     in `/events/mine`; il programma del Gate Manager, con un token e nient'altro, legge l'esportazione — la tratta tenuta con il pilota e
+     l'A20N, quella ritirata libera, l'arrivo privato con il suo volo e senza gate —; il coordinatore duplica l'RFO dalla sua pagina su una
+     settimana dopo, e la bozza ha i tre pubblici ai nuovi orari e i diciassette privati generati intorno. **L'RFE del mese scorso**,
+     pubblicato e finito, duplicato su una data fra venti giorni, con i suoi slot: il «fatta quando».
+  4. **`docs/FORKING.md`** (punto 4): lo stato in testa (la prima parte di M4 è su `main`) e la sezione «The events module» — che cosa fa,
+     il dipartimento di base, i `positionGrants` dell'ED (coordinatore e assistente, consiglieri) e di chi collabora (AOD, FOD, MD, i team dei
+     FIR) sul dipartimento degli eventi, le impostazioni con `kindPresets` per prima, pagine, blocchi, mail e job, il Gate Manager, che cosa
+     tiene e che cosa cancella, che cosa non fa ancora.
+  5. **I test**: `EventsDuplicationTests` (unità, 6: la copia prende ogni impostazione e sposta ogni orario, è una bozza; **nomina ogni
+     colonna dell'evento**, così una colonna nuova si decide lì; il banner che la libreria non ha più resta indietro; le date facoltative
+     vuote restano vuote; scali, rotte e slot com'erano; le aree che la copia chiede). `EventsDuplicateTests` (integrazione, 3; VID
+     **761063**, il coordinatore di E6b, riusato, e **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi
+     `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`): un RFO con due scali, due rotte, una rotazione e i privati, pubblicato e prenotato, duplicato
+     su trenta giorni dopo e due ore e un quarto prima — le righe uguali ai nuovi orari, i privati quelli di partenza spostati, nessuna
+     prenotazione, nessuna voce di calendario, l'uso del banner per sempre —; senza i pubblici niente privati, e «Genera» li fa; un evento
+     che non prende pubblici, del mese scorso, pubblicato, annullato e finito, con il banner eliminato, copiato come bozza con i privati e
+     senza banner; uno senza capacità copiato senza privati; chi duplica — un membro e un grant su un evento solo 403, un visitatore 401,
+     `Events.Edit` sul dipartimento senza `EventRoutes.Edit` 403 su un evento con rotte e 201 su uno senza, con le rotte e senza
+     `EventBookings.Edit` 403 con gli slot e 201 senza —, e i rifiuti dell'indirizzo e dell'inizio, e il 404. `EventsErasureTests`
+     (integrazione, 1; VID **761098**, la persona cancellata, e **761015**, il superadmin; slug `evt-test-e8b-erase-…`): quattro eventi
+     scritti dall'installazione — da venire, finito, annullato da venire, annullato e finito —, l'anteprima e la cancellazione con le stesse
+     righe, la pagina con gli slot di nuovo liberi, le prenotazioni tenute senza volo, nota e sessione, il lavoro come staff con lo
+     pseudonimo e le sue parole, niente dei voli privati nell'audit, una seconda cancellazione che non trova niente. Vitest: il form di
+     «Duplica» in `schemas.test.ts`. Il giro completo, sopra.
+- **Scelte e scostamenti** (comportamento che il design non dice: nota nuova `decisions/2026-10-11-duplica-e-la-cancellazione-negli-eventi.md`,
+  **«Proposta»**, con **due domande** a Carmine sull'[issue #248](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248), aperta
+  all'inizio della fase perché il codice ne dipende; il dettaglio è nella nota): sedici letture. Le due domande: **gli slot privati di
+  «Duplica»** — raccomandata e scritta la (A′): generati con la copia quando i suoi pubblici ci sono già, altrimenti lasciati a «Genera» —
+  e **quando è concluso un evento annullato** — raccomandata e scritta la (i): quando passa la sua fine, come ogni altro. Le altre da
+  guardare: **la nuova data d'inizio è un istante**, non un giorno; **il banner si copia finché la libreria lo ha**, la descrizione com'è;
+  **chi duplica chiede anche le aree delle righe che la copia scrive**, come per eliminare (E4); **il tipo non si sceglie di nuovo**;
+  **una prenotazione tenuta perde anche la nota dello staff e la sessione della rete**, oltre al volo privato (il design dice «senza i dati
+  del volo privato e senza note»; la sessione la lega alla persona sul tracker, come quella di un volo dei tour). **Gli endpoint scritti a
+  mano**: uno, «Duplica» (§2.3-bis: «un solo endpoint»). Nessuna lettura nuova.
+- **Trovato, e scritto per chi viene dopo**: ⚠️ **i VID di prova degli eventi sono finiti** — nel codice di ogni ramo restavano liberi solo
+  761015 e 761098 (verificato con `git grep` su ogni ramo remoto e nei file non ancora spinti di ogni worktree), e per gli altri ruoli
+  E8b riusa il coordinatore di E6b, già unita —; ⚠️ **nessun worktree, e nemmeno la cartella principale, ha `tiles/basemap.pmtiles`**: il
+  giro completo gira senza, le mappe disegnano il fondo vuoto; ⚠️ un campo `datetime` del form generato è in UTC (`SchemaForm` scrive
+  `${written}:00Z`); ⚠️ commentata la registrazione dell'eraser per una prova, la build cade su `IDE0005` (la `using` di
+  `IvaoHub.Core.Privacy` non serve più): la prova tiene la `using` con un `typeof`.
+- **Al contrario** (11 ottobre 2026; il codice rimesso poi com'era, toccato e ricompilato, e le due classi di nuovo 4/4): senza
+  l'eraser registrato l'anteprima non ha le righe degli eventi (`Assert.Equal() Failure: Collections differ`, `Actual: []`); con i privati
+  generati sempre, la copia di un RFO senza i suoi pubblici ne ha (`Assert.Empty() Failure: Collection was not empty`); con gli slot
+  copiati senza spostare gli orari, `2026-10-31T17:30` invece di `2026-11-30T15:15`; con un evento annullato mai «finito», la cancellazione
+  toglie cinque prenotazioni invece di quattro; con le prenotazioni tenute senza svuotarle, la sessione della rete resta (`987654` invece
+  di `null`).
+- **Verificato, in locale** (11 ottobre 2026, sull'ultima testa): `dotnet build IvaoHub.sln` e `-c Release`, come la CI, senza avvisi né
+  errori; `dotnet format --verify-no-changes` sui nove file C# della fase; unità **1224/1224**; **integrazione intera senza filtro 540/540**
+  (6,4 minuti; le quattro in più sono di E8b), e le due classi nuove da sole 4/4; i test di spina dorsale lanciati da soli dagli assembly
+  di Release, `ArchitectureTests` 15 su 15 e `ForkabilityXxDivisionTests` 3 su 3; `pnpm gen:api` e `pnpm i18n:sync` senza differenze;
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (822 chiavi) verdi; `pnpm test` **692 in 95 file**; `pnpm build` verde; lo smoke
+  dietro il suo lock **180/180** al primo giro (1,0 minuti); la spec nuova da sola, prima, **2/2** al primo giro sul banco
+  `http://127.0.0.1:5136` (`ivaohub_e2e_e8b` ricreato prima); **`pnpm e2e:full` 61/61 al primo giro** (11,9 minuti, il suo worker
+  solo) sullo stesso banco, `ivaohub_e2e_e8b` ricreato di nuovo, dietro il lock di Mailpit, preso solo per il giro. Le regole di
+  `core-guard` in PowerShell dalla base di merge `0c2f85a`: **PASS** — nessun file del maintainer né del nucleo (solo `schema.d.ts`,
+  generato); tre note nuove, due di E7 e una di E8b.
+- **Sul banco, a mano** (11 ottobre 2026, il banco della fase riacceso su 5136 senza ripubblicare, il lock di Mailpit tenuto per tutto il
+  tempo): nel pannello del browser, come il coordinatore degli eventi e in italiano, un RFO del mese scorso con il suo scalo; «Duplica»
+  nella barra, la pagina con la frase sugli slot privati, l'inizio proposto (con l'ora della divisione sotto), l'indirizzo e «Anche gli
+  slot pubblici» acceso; «Duplica» apre la bozza nuova, con la barra di una bozza. I due eventi tolti dopo, il banco spento.
+- **Dopo l'apertura della PR, chiesto da dalberone** (11 ottobre 2026, guardando il banco di E7; arrivato attraverso la sessione che
+  coordina):
+  1. **`/events/mine` vuota dice «Nessuna prenotazione»** («No booking»), non più «Ancora nessuna prenotazione» («No booking yet»): a un
+     pilota che ha appena ritirato la sua sola prenotazione, quell'«ancora» parlava di una prenotazione che aveva appena avuto. Le frasi di
+     una lista vuota descrivono.
+  2. **La testa della pagina di un evento**, con il disegno di dalberone (nota nuova `decisions/2026-10-11-la-testa-della-pagina-di-un-evento.md`,
+     **«Proposta»**, con **una domanda** a Carmine in [un commento sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6108168944): cambia
+     l'ordine del design §7.1 e la riga «Prenotazioni» decisa con E6b). Sotto titolo e riassunto **due righe corte** al posto dei fatti in
+     righe con l'etichetta — quando, in UTC e nell'ora della divisione («21 nov 2099 · 17:00–21:00Z (18:00–22:00 LT)»); le prenotazioni
+     come **badge** (aperte; «Prenotazioni dal …» con accanto il conto alla rovescia di E6b; chiuse), gli scali come codici con il nome al
+     passaggio del mouse, chi organizza solo quando non è la divisione, con la sua pagina —; il badge dello stato sopra il titolo tolto,
+     quello del tipo tenuto; «Ogni slot si prenota fino al suo off block» sotto il titolo «Slot»; **gli slot subito dopo la testa**, poi
+     gli slot privati, in fondo la descrizione e le rotte. In `screens/EventHead.tsx` (nuovo), `BookingOpening.tsx` (il badge; il conto
+     com'era), `public.tsx`, `EventSlots.tsx`; gli orari della testa e lo stato delle prenotazioni come dati, in `cards.ts` (`headSpan`,
+     `headMoment`) e `bookingTimes.ts` (`bookingStage`). Le parole: nuove `public.organizedBy.*`, `public.booking.opensOn`, `open`,
+     `closed`; tolte `public.when`, `public.booking.title`, `opensAt`, `openSince`, `closedCancelled`, che nessuno legge più. **I test**:
+     Vitest della riga (`EventHead.test.tsx`, 6: l'organizzatore taciuto per la divisione e detto per un'altra divisione e per la rete, il
+     momento e il conto, chiuse, un online day senza badge e senza puntino), dell'ordine della pagina (`public.test.tsx`), degli orari e
+     dello stato (`cards.test.ts` 4 in più, `bookingTimes.test.ts` 2 in più).
+     **Le spec di altre fasi che leggevano le righe vecchie**, cambiate in dove leggono e non in che cosa controllano: la smoke
+     `events-public.spec.ts` — di E4, quando, gli scali e chi organizza ora nella testa, e la descrizione sopra le rotte; di E6b, il momento,
+     il conto e «aperte» nella testa, «fino al suo off block» negli slot — e il giro `full/events-bookings.spec.ts` di E6b («aperte» nella
+     testa). ⚠️ **Due righe di E4 leggevano il badge dello stato sulla pagina**, che non c'è più: su un evento annullato «Cancelled» diventa
+     «Prenotazioni chiuse» nella testa (la fixture di quel test prende un'apertura delle prenotazioni, perché la testa abbia che cosa
+     dire), e «Ended» sulla pagina che vede solo lo staff è tolta — lo dice l'avviso dello staff, che il test legge già nella riga prima.
+  3. **Misurata a 375 px** con uno spec usa e getta su una porta sua (4189), in italiano e in inglese, con le prenotazioni da aprire (il
+     badge più lungo, il conto e chi organizza, con la sua pagina) e aperte: niente dell'articolo esce dai 343 px utili; le due righe vanno
+     a capo fra un fatto e l'altro, mai dentro l'ora locale né dentro il conto, e il puntino resta con il fatto che lo segue; con le
+     prenotazioni aperte la seconda riga sta in una, «[Prenotazioni aperte] · XXAA · XXBB», e il titolo «Slot» comincia a 465 px
+     dall'alto. Guardata anche a 1280 px. Lo spec e la sua configurazione tolti prima del commit.
+  4. **Trovato**: ⚠️ a 375 px **la pagina scorre di lato per il menu del sito** (781 px: il `NAV` della testata del nucleo, nella fixture
+     della smoke) — fuori dall'articolo, già così prima, e non di questa fase.
+  5. **Al contrario** (rimesso poi com'era): con le rotte di nuovo sopra gli slot, il test dell'ordine cade (`expected false to be true`);
+     con chi organizza detto anche per la divisione, due test della riga cadono.
+  6. **Verificato, in locale, sulla testa nuova** (nessun file C#): `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (824 chiavi)
+     verdi; `pnpm i18n:sync` senza differenze; `pnpm test` **705 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock **180/180**
+     al primo giro (59 secondi); **`pnpm e2e:full` 61/61 al primo giro** (12,6 minuti, il suo worker solo) sul banco
+     `http://127.0.0.1:5136`, `ivaohub_e2e_e8b` ricreato, dietro il lock di Mailpit; le regole di `core-guard` dalla base di merge
+     `0c2f85a`: **PASS**, con quattro note nuove (due di E7, due di E8b).
+- **La revisione e le risposte di Carmine** (11 ottobre 2026, sera):
+  - **[I rilievi del revisore sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816)**: approvabile,
+    niente da correggere; cinque punti bassi, presi tutti perché costano poco (sotto).
+  - **[Le risposte sull'issue #248](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/248#issuecomment-6113460643)**: la (A′) e la (i),
+    come scritte; la nota `2026-10-11-duplica-e-la-cancellazione-negli-eventi` è **decisa**, con le risposte e i punti della revisione
+    nel suo §6.
+  - **[Le risposte sulla #249](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471)**: 1. la testa è la (A),
+    sapendolo — l'ordine del design §7.1 e la riga «Prenotazioni» di E6b cambiano, e che la pagina non dica più «in corso» né da quando
+    le prenotazioni sono aperte è accettato —, **con un cambio: i nomi degli scali leggibili senza mouse**, come sceglie chi
+    contribuisce, mai una seconda copia di `Hint`. 2. **Il buco dell'audit** (il punto 7 del revisore: le righe dell'audit di una
+    prenotazione ritirata o tolta prima della cancellazione tengono il volo privato) è **una fase del nucleo di M4**, con la sua PR e
+    una nota, unita prima che le prenotazioni si aprano su un'installazione vera: **non di E8b**; è **E10n** (#251,
+    `[ErasedWith(nameof(BookerVid))]`), e dopo il suo merge E8b segna le cinque colonne che la sua cancellazione svuota, con un test.
+    La nota `2026-10-11-la-testa-della-pagina-di-un-evento` è **decisa**, con la risposta e la scelta nel suo §6.
+  - **Fatto**: 1. **i nomi degli scali nella testa** con `Hint`, il pezzo della pagina degli slot — esportato da `EventSlots.tsx`,
+    dove resta, non copiato —: il codice di uno scalo che l'hub conosce è un bottone, con il nome al passaggio del mouse, al focus della
+    tastiera e al tocco di un telefono, che si chiama per chi legge lo schermo con il codice e il nome («XXAA · Smoke Airport A»); il
+    codice di uno che l'hub non conosce più resta da solo. Scelto invece del nome accanto al codice perché la riga resta quella del
+    disegno (« · LIRF») e quel pezzo apre già al tocco. 2. **L'eraser** lascia fuori una prenotazione il cui evento non c'è più, come il
+    join dell'anteprima (`TryGetValue`): le due dicono le stesse righe (punto 1). 3. **`docs/events-bookings-export.md`** dice che cosa dà
+    l'esportazione dopo una cancellazione: le prenotazioni di un evento finito con `booked_by` negativo e, su uno slot privato, senza
+    callsign, altro aeroporto e orario lì (punto 2). 4. **«Duplica» dice perché la copia non ha i suoi slot privati**: la risposta 201 è
+    ora `EventDuplicatedDto` — l'evento nuovo e, quando il generatore ha rifiutato, la sua chiave (`privateSlotsNotGenerated`) —, e la
+    pagina, invece di aprire la copia, lo dice con le parole del rifiuto e un bottone «Apri la copia» (punto 3). 5. **Un nuovo inizio
+    che sposterebbe un orario dell'evento fuori dal calendario** — gli anni 1000–9999 di una colonna DATETIME — è rifiutato sul suo
+    campo (`events:errors.duplicateOutOfCalendar`, `EventCopy.MovesWithinTheCalendar`), non più un 500 (punto 4). 6. **Il test della
+    cancellazione** guarda anche il callsign della partenza collegata (`XEJ804`) e la riga «erased» dell'audit di ognuna delle quattro
+    prenotazioni che vanno, senza niente di loro (punto 5). Il punto 8 del revisore (la descrizione copiata com'è) non ha avuto
+    risposta: resta la lettura 4 della nota.
+  - **I test**: `EventHead.test.tsx` 7 (uno in più: il nome al focus e al tocco); la smoke prende il nome al focus nel test della
+    pagina di E4 e, nel blocco «on a phone», al tocco; `EventsDuplicationTests` 7 (il calendario); `EventsDuplicateTests` con la
+    risposta nuova, il perché dei privati non generati e l'inizio fuori dal calendario; `EventsErasureTests` con la partenza collegata e
+    le righe «erased».
+  - **Al contrario** (rimesso poi com'era, toccato e ricompilato, la classe di nuovo 3/3): senza il controllo sul calendario la copia
+    a fine 9999 risponde 500; senza la chiave del rifiuto la copia senza capacità risponde `null` invece di `events:errors.noCapacity`.
+  - **Verificato, in locale** (11 ottobre 2026, sera): `dotnet build` Debug e Release senza avvisi; `dotnet format --verify-no-changes`
+    sui sette file C# toccati; unità **1225/1225**; `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di
+    Release; `EventsDuplicateTests` ed `EventsErasureTests` 4/4; `pnpm gen:api` e `pnpm i18n:sync` senza altre differenze; `pnpm lint`,
+    `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **706 in 97 file**; `pnpm build` verde; lo smoke dietro il suo lock
+    **181/181** al primo giro (1,3 minuti). L'integrazione intera e `pnpm e2e:full`: dopo il merge della testa nuova di E7, sotto.
+  - **I merge**: `main` a `bea8c0e` (la #238 di E10k; in conflitto solo `HANDOFF-M4.md`), poi **la testa nuova di E7** a `7a847a8`,
+    dopo la sua revisione (di nuovo solo `HANDOFF-M4.md`). ⚠️ **Il generatore di E7 è cambiato sotto «Duplica»**: dalla revisione della
+    #246 prende la riga dell'evento `FOR UPDATE` in una transazione **sua**, e risponde con tre valori. «Duplica» lo chiama dentro la
+    transazione che scrive la copia, e la connessione rifiutava la seconda: **ogni copia che genera i suoi privati rispondeva 500**
+    («The connection is already in a transaction», provato sul commit di merge: le due classi che duplicano con i privati cadono). Ora
+    **il generatore si unisce a una transazione già aperta** — il blocco e le scritture sono suoi, e chi lo chiama fa il commit —, e da
+    solo, come «Genera», apre e chiude la sua come prima: «Duplica» resta una transazione sola, il generatore compreso, come l'ha letta
+    la revisione. Il merge porta solo la lettura dei tre valori; l'unione alla transazione è un commit suo, perché si veda.
+  - **Verificato, in locale, sulla testa dopo i due merge** (11–12 ottobre 2026): `dotnet build` Debug e Release senza avvisi;
+    `dotnet format --verify-no-changes` sui dieci file C# del tratto; unità **1227/1227**; **integrazione intera senza filtro 547/547**
+    (7,0 minuti); `ArchitectureTests` 15/15 e `ForkabilityXxDivisionTests` 3/3 dagli assembly di Release; `pnpm gen:api` e
+    `pnpm i18n:sync` senza differenze; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (833 chiavi) verdi; `pnpm test` **726 in
+    100 file**; `pnpm build` verde; lo smoke dietro il suo lock **181/181** al primo giro (1,2 minuti). **`pnpm e2e:full`**, sul banco
+    `http://127.0.0.1:5136` con `ivaohub_e2e_e8b` ricreato ogni volta, dietro il lock di Mailpit: **la prima corsa 60/61** (12,0
+    minuti) — la spec di E7 `events-private.spec.ts:159` non ha trovato il titolo della pagina del pilota in cinque secondi: il browser
+    ha caricato la pagina e i suoi asset e poi, per cinque secondi, non ha chiesto niente (nessuna `/api/me` nel log del server), un
+    inceppamento sotto carico —; la spec da sola, `--repeat-each 3`, **3/3**; **la seconda corsa intera 61/61** (11,7 minuti). Le regole di
+    `core-guard` dalla base di merge `bea8c0e`: **PASS**, con quattro note nuove.
+- **La seconda lettura e la coda** (12 ottobre 2026): il revisore, [alla seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6119780940),
+  **niente più da correggere**; la #246 di E7 è unita; poi [ha chiesto una coda sola](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6120884494),
+  **#242 → #250 → #252 → #251 → #249 → #239**, perché ogni unione rimetteva in conflitto le altre sulla testa di `HANDOFF-M4.md`. E8b è
+  la quinta, **in coda dopo la #251** di E10n:
+  1. **Il merge della testa di E10n** `b4ea56e` (con E10m, E10l, E4c e `main` ad `a75ed6c`, E7 compresa): in conflitto solo
+     `HANDOFF-M4.md` — il paragrafo e il blocco di E8b in cima, quelli di E10n, E10m, E10l ed E4c sotto —; `public.tsx` ed `events.tsx`
+     si sono uniti da soli, i metadati della pagina di E4c accanto alla testa di E8b.
+  2. **I segni** (`e35e35b`): `[ErasedWith(nameof(BookerVid))]` sulle cinque colonne della prenotazione che `EventsPersonalData`
+     svuota — `Callsign`, `OtherIcao`, `OtherTimeUtc`, `UnflownExcusedNote`, `FlownSessionId` —, la riga che la nota di E10n (§4) chiede
+     agli eventi: una prenotazione ritirata o tolta prima della cancellazione del suo pilota è una riga che nessun eraser trova, e il
+     nucleo le svuota nelle sue copie dell'audit. Nessuna migrazione: il segno non è nel modello di EF.
+  3. **Il test** (`159e635`, in `EventsErasureTests`): un arrivo privato con le cinque colonne scritte, ritirato prima della
+     cancellazione; dopo, le sue due copie dell'audit (`created`, `deleted`) restano, con lo pseudonimo, l'aereo e lo slot, e senza le
+     cinque (le chiavi del JSON sono i nomi delle proprietà); né il nominativo né la nota restano nell'audit. **Al contrario** (rimessi
+     poi, toccati e ricompilati, la classe di nuovo 2/2): senza i cinque segni il test cade, «Callsign is still in the audit: XEJ841».
+     `ErasedAuditTests` di E10n legge i segni di ogni contesto, i nostri compresi: 6/6.
+  4. **Verificato, in locale, sulla testa in coda**: `dotnet build` Debug e Release senza avvisi; `dotnet format --verify-no-changes` sui
+     file C# degli eventi; unità **1237/1237**; **integrazione intera senza filtro 561/561** (8,0 minuti); `ArchitectureTests` 15/15 e
+     `ForkabilityXxDivisionTests` 3/3 dagli assembly di Release; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm lint`,
+     `typecheck`, `format:check`, `i18n:check` (838 chiavi) verdi; `pnpm test` **743 in 102 file**; `pnpm build` verde; lo smoke dietro il
+     suo lock **181/181** al primo giro (1,2 minuti); **`pnpm e2e:full` 61/61 al primo giro** (12,4 minuti) sul banco `http://127.0.0.1:5136`, `ivaohub_e2e_e8b`
+     ricreato, dietro il lock di Mailpit. Le regole di `core-guard`: dalla base di merge con `main` `a75ed6c`, **PASS** — i file del
+     nucleo sono delle fasi sotto nella coda (E10l, E10m, E10n), ognuna con la sua nota —; sul solo tratto di E8b, dalla testa di E10n,
+     **PASS** senza nessun file del nucleo, con le due note di E8b.
+- **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
+  di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
+  disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina
+  di un evento lette da un lettore di schermo vero (i puntini nascosti, i nomi degli scali nei bottoni); la testa su un telefono vero
+  (misurata nel Chromium di Playwright a 375 px, il tocco provato con `hasTouch`).
 
 ### E9 — Fuori dal repository: il Gate Manager, il primo evento, `ivao-booking` spento
 

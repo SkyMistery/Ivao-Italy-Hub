@@ -155,8 +155,10 @@ test('a pilot books a whole rotation, finds it in their bookings and withdraws a
   // ---------------------------------------------------------------- the pilot books the rotation from a leg
   await page.goto(`/events/${slug}`);
   await expect(page.getByRole('heading', { level: 1, name: title.en })).toBeVisible();
-  // The bookings are open, since a moment written on the page.
-  await expect(page.locator('dl').getByText(events.public.booking.openSince)).toBeVisible();
+  // The bookings are open, as the line under the title says (E8b).
+  await expect(
+    page.locator('article > header').getByText(events.public.booking.open, { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'XEE601' }).click();
   const detail = page.getByRole('dialog', { name: 'XEE601 · XE601' });
@@ -246,7 +248,7 @@ function englishEvents() {
       free: string;
       yours: string;
       booking: {
-        openSince: string;
+        open: string;
         aircraft: string;
         bookRotation: string;
         rotationResult: string;

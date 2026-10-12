@@ -226,6 +226,21 @@ export const cancelSchema = z.object({
 
 export type CancelFormValues = z.output<typeof cancelSchema>;
 
+/**
+ * "Duplicate" (§2.3-bis, E8b), mirroring `EventDuplicateRequest`: the start of the new event — every other time moves by as much —,
+ * its address, and whether its public slots come too, asked only of an event that takes some. Every rule is the server's: the address
+ * one an event may have, and free.
+ */
+export function duplicateSchema(takesPublicSlots: boolean) {
+  return z.object({
+    startsAtUtc: z.string().optional().meta({ datetime: true }),
+    slug: z.string(),
+    publicSlots: z.boolean().meta({ hidden: !takesPublicSlots }),
+  });
+}
+
+export type DuplicateFormValues = z.output<ReturnType<typeof duplicateSchema>>;
+
 // ---- the routes of an event (E4) ---------------------------------------------------------------------
 
 /**
