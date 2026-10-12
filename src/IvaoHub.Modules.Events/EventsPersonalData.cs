@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
@@ -83,8 +84,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
 
     /// <summary>
     /// The person's registrations to the events in person (E16; note 2026-09-29-i-dati-dei-membri-negli-eventi §2.5: «treated as the
-    /// bookings»): one of an event still to end goes; one of an event over stays, under the pseudonym, with the answers the sums count
-    /// — a yes or no, a choice, a quantity — and without their texts, which are their words (as a booking kept loses the staff's note).
+    /// bookings»): one of an event still to end goes; one of an event over stays, under the pseudonym, with only the answers the sums count
+    /// — a yes or no, a choice, several choices, a quantity, to questions the event still has — and nothing else: no text, which is their
+    /// words, as a booking kept loses the staff's note (Carmine's answer 2 on #255), and no history in the audit.
     /// </summary>
     private async Task<(int ToCome, int Over)> EraseRegistrationsAsync(int vid, DateTime now, CancellationToken cancellationToken)
     {
@@ -93,26 +95,35 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
             .Where(row => eventIds.Contains(row.Id))
             .ToDictionaryAsync(row => row.Id, cancellationToken);
-        var texts = (await database.Questions.AsNoTracking()
-                .Where(question => eventIds.Contains(question.EventId) && question.Type == QuestionType.Text)
+        var counted = (await database.Questions.AsNoTracking()
+                .Where(question => eventIds.Contains(question.EventId) && question.Type != QuestionType.Text)
                 .ToListAsync(cancellationToken))
-            .Select(question => EventQuestion.AnswerKey(question.Id))
-            .ToHashSet(StringComparer.Ordinal);
+            .ToLookup(question => question.EventId);
 
         var over = registrations.Where(registration => events.TryGetValue(registration.EventId, out var row) && EventState.IsOver(row, now)).ToList();
         var toCome = registrations.Where(registration => events.TryGetValue(registration.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
 
         foreach (var registration in over)
         {
+            // Only what the sums count, of questions the event still has, as it fits them; every other key goes — a text, an answer to a
+            // question deleted since, a value of another type (the review of #255, point 1).
             var answers = RegistrationAnswers.Of(registration);
-            foreach (var key in answers.Select(answer => answer.Key).Where(texts.Contains).ToList())
+            var kept = new JsonObject();
+            foreach (var question in counted[registration.EventId])
             {
-                answers.Remove(key);
+                var key = EventQuestion.AnswerKey(question.Id);
+                if (RegistrationAnswers.Fits(question, answers[key]))
+                {
+                    kept[key] = answers[key]!.DeepClone();
+                }
             }
 
-            registration.AnswersJson = answers.ToJsonString();
-        }
+            registration.AnswersJson = kept.ToJsonString();
 
+            // Written even when nothing changed, so the core counts the row as emptied and empties its earlier copies in the audit, which may
+            // still hold words the member took out of an earlier answer (point 2): a row whose only change is the pseudonym keeps its history.
+            database.Entry(registration).Property(row => row.AnswersJson).IsModified = true;
+        }
         database.Registrations.RemoveRange(toCome);
 
         return (toCome.Count, over.Count);
