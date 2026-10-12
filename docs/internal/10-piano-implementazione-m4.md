@@ -4167,6 +4167,22 @@ ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo
   postazioni (provato con `own`, quello di IT; con `all` vale la regola del nucleo provata da A11a); il form delle finestre a 375 px; la
   migrazione su un'installazione vera (la CI applica la catena su una MariaDB 11.4.10 vera); le postazioni di un evento con migliaia di
   disponibilità (la lettura dei candidati è in memoria, per un evento).
+- **Dopo la revisione** (12 ottobre 2026; [i rilievi del revisore][r256], «nessun difetto che la ferma nel codice»; [la risposta di
+  Carmine][a256]: **sì alle dieci letture**, la nota è **decisa**):
+  1. **«Duplica» e le postazioni** (punto 1): un test d'integrazione — la copia con le postazioni a ore spostate, il rifiuto a chi scrive gli
+     eventi senza `EventAtc.Edit` senza scrivere niente, e un evento eliminato che porta via le sue postazioni con l'audit.
+  2. **Le finestre dei candidati** (punto 2): **una seconda domanda a Carmine**, Proposta ([domanda 2][q256b]; (A) una colonna del nucleo, (B)
+     gli istanti di quello che il candidato copre dentro la postazione, (C) il testo in due orologi; raccomandata la (B)). Il codice resta
+     com'è finché non risponde.
+  3. Punti 3–8: la propria disponibilità letta e ritirata oltre la visibilità dell'evento; **409** per un cambio dello stesso membro da
+     un'altra finestra (`AvailabilityResult.Changed`); la sovrapposizione di due creazioni nello stesso istante detta nella nota e lasciata;
+     nessuna postazione scritta su un evento annullato o finito; **il FIR tenuto** finché il nominativo non cambia (anche in eliminazione);
+     **le postazioni da cui si sceglie filtrate dall'unico handler** sull'evento e sul FIR di ognuna (`division-positions?eventId=`). Un test
+     d'integrazione per 3, 6, 7 e 8; il 409 non è provato da un test (due salvataggi nello stesso istante dello stesso membro).
+
+[r256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
+[a256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
+[q256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6132606484
 
 ### E11b — La proposta del roster e la correzione
 

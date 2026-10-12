@@ -3,7 +3,8 @@
 **Data:** 12 ottobre 2026 — fase E11a di M4 (la prima di M4b), PR #256
 **Stato:** **decisa** (Carmine, 12 ottobre 2026, in chat al master, che ha pubblicato la risposta sulla #256 su sua istruzione:
 [risposta][a]): **sì alle dieci letture**, come raccomandate. La domanda era il primo commento della PR ([domanda][q]). Le correzioni della
-revisione ([rilievi][r]), che stanno a parte dalla risposta, sono in §6.
+revisione ([rilievi][r]), che stanno a parte dalla risposta, sono in §6; **il punto 2 è una seconda domanda, Proposta** ([domanda
+2][q2]), e aspetta la sua risposta.
 **Regola applicata:** `CLAUDE.md` §5. Le tabelle, i permessi, le regole del roster e i predefiniti sono **decisi** (design `09-design-m4.md`
 §1.7, §1.12, §4.1, §4.2, §6; note `2026-09-29-il-roster-atc`, `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`);
 la forma per lo staff di un FIR è quella scritta in E2 («Le due verifiche del design §6.3», `10`, E2). Questa nota registra **le letture**
@@ -14,6 +15,7 @@ grant al team di un FIR, `[WithdrawnByStakeholder]`, `IAtcPositionDirectory` e i
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6129863697
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
 [r]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
+[q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6132606484
 
 ## 1. Che cosa serviva decidere
 
@@ -125,7 +127,15 @@ I rilievi del revisore sulla #256 ([rilievi][r]), che stanno a parte dalla rispo
 
 1. **«Duplica» e le postazioni senza un test** → un test d'integrazione: la copia ha le postazioni con le ore spostate, chi scrive gli eventi
    senza `EventAtc.Edit` è rifiutato e niente si scrive, ed eliminare un evento ne elimina le postazioni, ognuna con la sua riga dell'audit.
-2. **Le finestre dei candidati scritte come testo in C#** → *(PUNTO2)*.
+2. **Le finestre dei candidati scritte come testo in C#** → **Proposta, una seconda domanda a Carmine** ([domanda 2][q2]): la lista generata
+   non ha una colonna per più istanti (`col.date` ne disegna uno, `col.list` parole), e un candidato ha da 1 a 12 finestre. **(A)** una
+   colonna nuova nella lista del nucleo (`col.ranges`), con una fase del nucleo e la sua nota prima; **(B)** solo nel modulo: per ogni
+   candidato gli istanti di quello che copre **dentro la postazione** (`availableFromUtc`, `availableToUtc`, due `col.date`), con «per tutto
+   il tempo» e il numero delle finestre — i buchi fra una finestra e l'altra non si vedono più, solo «non per tutto il tempo»; **(C)** il
+   testo tenuto, scritto dal server in UTC e nell'ora della divisione — parole fatte in C#, la forma che Carmine ha già scartato per le liste
+   sulla #255. **Raccomandata la (B)**: ogni orario di quella pagina lo disegna la lista, negli stessi due orologi; la (A) se un giorno lo
+   staff vorrà i buchi (il roster di E11b, per postazione e ora, mostra comunque la copertura). **Il codice resta com'è finché Carmine non
+   risponde.**
 3. **Le letture del membro attraverso il filtro dell'evento** → la disponibilità **propria** si legge e si ritira con l'evento letto oltre la
    visibilità (un evento che il membro non vede più, perché il suo «visibile dal» è stato spostato, lascia ritirare fino alla chiusura); darla
    chiede ancora un evento che il membro vede.
