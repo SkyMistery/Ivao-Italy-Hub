@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10m** (nucleo: un solo lettore dei nomi), sul branch `m4/e10m-names-reader`,
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10n** (nucleo: i dati di una persona cancellata nell'audit delle righe già tolte,
+decisa da Carmine sulla #249), sul branch `m4/e10n-erased-audit-rows`, **PR #251** verso `main`, **in coda dopo la #252**, la quarta
+della coda **#242 → #250 → #252 → #251 → #249 → #239**: nata da `main` a `bea8c0e`, corretta dopo la revisione (12 ottobre: le due
+correzioni e i tre bassi, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771)), e ha unito la
+testa di E10m `2509a72` (con E10l, E4c e `main` ad `a75ed6c`, E7 compresa). ⚠️ **E8b (#249) la unisce dopo** e segna le cinque colonne
+della prenotazione; **nessuna prenotazione su un'installazione vera prima delle due** («Che cosa ha lasciato E10n», sotto).
+
+**L'aggiornamento di E10m:** 12 ottobre 2026 — **fase E10m** (nucleo: un solo lettore dei nomi), sul branch `m4/e10m-names-reader`,
 **PR #252** verso `main`, **in coda dopo la #250**, la terza della coda **#242 → #250 → #252 → #251 → #249 → #239**: nata da `main` a
 `bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #247, **approvabile senza niente da correggere** per il revisore
 ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6119781289)), e ha unito la testa di E10l `2e4164d`
@@ -197,6 +204,40 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10n (11–12 ottobre 2026, branch `m4/e10n-erased-audit-rows`, PR #251, del nucleo, in coda dopo la #252)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-i-dati-di-una-persona-nell-audit.md`, **decisa** da Carmine sulla #249, [la risposta
+  2][a249n2]: il buco dell'audit del [punto 7 del revisore][rv249n2], come meccanismo del nucleo per ogni modulo; la forma è della nota):
+  - **Il segno** `[ErasedWith(nameof(…Vid))]` (`src/IvaoHub.Core/Privacy/ErasedWithAttribute.cs`) su una colonna di un'entità
+    `[Audited]`: la colonna è un dato della persona che l'altra colonna, della stessa riga, nomina. `PersonColumns.ErasedWith(entity)` lo
+    legge dal modello e rifiuta un segno che non nomina una colonna di persona (`Vid`, `…Vid`, `…By`).
+  - **Il passo della cancellazione** `AuditRedaction.EmptyGoneAsync`, in ogni contesto dopo l'eraser e prima che l'audit prenda lo
+    pseudonimo: le righe d'audit delle righe che nominavano la persona e **non ci sono più** — nessuna riga con quella chiave — perdono le
+    colonne segnate (diventano `null` nel JSON) nelle copie scritte **mentre la riga era sua** (`EmptyWhileHeld`, dopo la revisione); il
+    resto della storia resta, con lo pseudonimo. Una riga che c'è resta del suo eraser, di chiunque sia ora, come prima.
+  - **Un segno sbagliato ferma l'avvio** (`PersonColumns.VerifyErasedWith` in `HubPipeline.InitializeAsync`, dopo la revisione): non una
+    persona, un'entità non `[Audited]`, una proprietà non mappata, una chiave di più colonne.
+  - **I test**: `ErasedAuditTests` (integrazione, 6 dopo la revisione) ed `ErasedColumnsTests` (unità, 10). Il modulo di prova segna `SampleItem.Title`
+    come dato del membro di cui parla (`SampleItems.cs`, nessuna migrazione). **VID 761100** preso da questa fase (la persona cancellata,
+    fuori dal blocco di M4, che è finito).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **E8b (la #249) segna le prenotazioni** dopo l'unione di questa (scelta di dalberone, l'11 ottobre: la regola 6 vuole il nucleo e
+    il modulo in due PR): unisce `main` e mette `[ErasedWith(nameof(BookerVid))]` su `Callsign`, `OtherIcao`, `OtherTimeUtc`,
+    `UnflownExcusedNote`, `FlownSessionId` di `EventBooking` — le cinque colonne che il suo eraser svuota —, con un suo test di una
+    prenotazione ritirata prima della cancellazione (le copie senza nominativo, con lo pseudonimo). **Le prenotazioni non si aprono su
+    un'installazione vera prima di E8b e di questa** (Carmine, risposta 2 sulla #249).
+  - **Ogni colonna nuova che è un dato di una persona**, su una riga che si può togliere prima di una cancellazione (un ritiro, una riga
+    tolta dallo staff), porta il segno con la colonna di persona della stessa riga. `ErasedAuditTests.EveryMarkOfThePersonsDataNamesAPersonColumn`
+    legge i contesti di ogni modulo e cade su un segno sbagliato.
+  - ⚠️ **Il limite**: un dato su una riga figlia, la cui persona è nominata solo dalla riga sopra (le note di una sessione di training),
+    non è coperto. Se servisse, è un'altra nota.
+  - ⚠️ **Le chiavi del JSON dell'audit sono i nomi delle proprietà** (`"Callsign"`), non in camel case: `Serialize` scrive un
+    dizionario, le cui chiavi le opzioni web non cambiano. Il riassunto di `PersonColumns.IsVidName` diceva «camel case», ora corretto;
+    un test che legge l'audit cerca `"Title"`.
+
+[rv249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
 ### Che cosa ha lasciato E10m (11–12 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo; in coda dopo la #250, con la testa di E10l `2e4164d`)
 

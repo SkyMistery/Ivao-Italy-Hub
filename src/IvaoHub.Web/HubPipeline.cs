@@ -5,6 +5,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -191,6 +192,10 @@ internal static class HubPipeline
 
             // And a row its member takes back by deleting it (M4, E10h): marked only where the guard knows the member it is about.
             HubSaveChangesInterceptor.VerifyWithdrawals(entities);
+
+            // And the columns marked as a person's data (M4, E10n): a mark the erasure could not honour stops the start here,
+            // rather than an erasure half way through the modules.
+            PersonColumns.VerifyErasedWith(model);
 
             // The areas whose rows say their FIR, the only ones a grant to the team of a FIR may name a permission of (M3,
             // A11a): the seed of positionGrants and the permissions screen ask the catalogue, from here on.
