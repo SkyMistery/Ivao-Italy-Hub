@@ -11,9 +11,9 @@
 > della persona. È una richiesta precisa del TD (`dalberone`, 25 settembre 2026): gli esami si gestiscono su IVAO, e all'hub
 > servono solo per metterli nel calendario.
 
-**Ultimo aggiornamento:** 6 ottobre 2026 — **fase A13d**, i piccoli resti del training: il percorso senza lo storico, lo storico dal
-lato del capo di una FIR, il commento dell'online day nei conflitti delle date (il predefinito resta `["event"]`, Carmine sulla #220).
-Branch `m3/a13d-cleanup`, PR #220, da `main` a 78df526.
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase A13f**, due pezzi del nucleo uniti il 12 ottobre: il training legge i nomi con il
+lettore del nucleo (`MemberNames`, E10m) e il trigger dei promemoria dice il suo fuso, UTC (E10j). Branch
+`m3/a13f-training-names-reader`, PR #258, da `main` a `cea6244`.
 
 **M3 è chiusa e tutta in `main`** (piano 1.26):
 
@@ -54,7 +54,8 @@ se A12c si fa. **Tentarla è una scelta di `dalberone`, non ancora presa.**
   - **A10 in tre** (`08`, A10): A10a (#151), A10b (#153) e A10c (#178), unite;
   - **A11 in due**: A11a (#159) e A11b (#182), unite;
   - **A12 in quattro**: A12a (#187), A12b (#189) e A12d (#191), unite, e A12c fuori;
-  - **A13 in quattro**: A13a (#196), A13b (#197) e A13c (#201), unite, e A13d (#220, questa).
+  - **A13 in quattro**: A13a (#196), A13b (#197), A13c (#201) e A13d (#220), unite; poi A13f (#258, questa), che prende due pezzi
+    del nucleo.
 - In C# una chiave di un modulo si chiede con il namespace (`training:…`, #138).
 
 ## Da leggere, nell'ordine
@@ -126,6 +127,40 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato A13f (12 ottobre 2026, branch `m3/a13f-training-names-reader`, PR #258)
+
+- **Da dove viene**: due pezzi che il nucleo ha unito il 12 ottobre e che chiedono una piccola fase del training: il lettore unico dei
+  nomi (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`; «Che cosa ha lasciato E10m» in `HANDOFF-M4.md`) e il punto 6 della
+  revisione di E10j (#239; «I fusi di `events-release` e `training-reminders`» in `HANDOFF-M4.md`). Codice del modulo, un test del
+  modulo nuovo e **due righe tolte da un test del nucleo**. Nessuna migrazione, nessuna nota, nessuno schermo cambia (`08`, A13f).
+- **Che cosa c'è**:
+  - **`TrainingPeople.NamesAsync` risponde con `MemberNames.ReadAsync(hub, vids, ct)`** (`Core/People/`). Resta, perché ha dieci
+    chiamanti nel modulo; non legge più `hub_users` da sé. `Member`, `Label` e `IsErased` restano come erano.
+  - **In `MemberNamesTests` (del nucleo) esce la riga del training**: dal test gemello, ora
+    `TheReaderAnswersWhatTheToursAndTheEventsAnswer`, e da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt`. Il riassunto della classe
+    dice che il training è passato sul lettore. `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay` legge ancora `Label` e `Member`
+    del training, che restano.
+  - **Il trigger `training-reminders-quarterly` dice UTC** (`TrainingModule.cs`), come `events-reminders`; il suo nome è
+    `TrainingRemindersJob.TriggerName`. Un quarto d'ora cade agli stessi istanti in ogni fuso: il comportamento non cambia.
+  - **`TrainingJobTriggersTests`** (unità, 2): il fuso dei due trigger del training, UTC per i promemoria e quello della divisione per
+    la chiusura notturna.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Il training non nomina più un VID sotto uno**, nemmeno se una riga di `hub_users` lo avesse: è uno stato che l'hub non scrive (la
+    cancellazione toglie l'utente, e uno pseudonimo non è di nessuno). Prima lo nominava; la PR lo dice.
+  - ⚠️ **Il core-guard della PR è rosso, e lo deve essere**: `MemberNamesTests.cs` è un file di test che esiste già e che non ha
+    «training» nel percorso, quindi per il guard è nucleo, e la PR non aggiunge una nota. Toglierne la riga del training è proprio quello
+    che il blocco di E10m chiede a questa fase; `dalberone` ha scelto di non aggiungere una nota senza decisione solo per farlo passare.
+    La fase degli eventi che fa lo stesso con `EventsPeople` avrà lo stesso rosso.
+  - ⚠️ **La fase degli eventi va in conflitto con questa in `MemberNamesTests`**, al contrario di quanto dice il blocco di E10m: le righe
+    del training e degli eventi sono vicine (`var training`/`var events`, i due `Assert.Equal` del gemello, le due righe sotto
+    «What the training's and the events' copies answer»), e git dà conflitto anche quando due rami tolgono due righe vicine diverse
+    (provato in un repository di prova). Il conflitto si risolve togliendo tutte e due.
+  - **E10l ed E10o non chiedono niente al training**: i suoi schermi aprono le finestre con il `ConfirmDialog` del nucleo e non
+    importano `Dialog` né `Sheet` da Atmosphere (il training non è in `NOT_MOVED_YET`); i suoi schemi sono scritti nel codice, e uno
+    schema così non porta `.meta({ label })` (HANDOFF-M4, E10o), e senza `label` il form generato è com'era.
+  - Banco: nessuno schermo cambia. VID: nessuno nuovo (`MemberNamesTests` usa le persone dei fili dei contatti, 670011–670014).
+- **La fase dopo**: nessuna di M3 in `08`. A12c resta una scelta di `dalberone`.
 
 ### Che cosa ha lasciato A13d (5–6 ottobre 2026, branch `m3/a13d-cleanup`, PR #220)
 
