@@ -29,7 +29,8 @@ import { registrationDefaults, registrationSchema, type RegistrationValues } fro
  */
 export function RegistrationSection({ event, signedIn }: { event: PublicEventDto; signedIn: boolean }) {
   const { t } = useTranslation();
-  const mine = useQuery({ ...myRegistrationsQuery(), enabled: signedIn });
+  // Read only for an event in person, by a member: no other page asks.
+  const mine = useQuery({ ...myRegistrationsQuery(), enabled: signedIn && event.inPerson });
   // The registrations are open or closed from when the page was drawn, as the server's verbs will say again.
   const [drawnAt] = useState(() => Date.now());
 

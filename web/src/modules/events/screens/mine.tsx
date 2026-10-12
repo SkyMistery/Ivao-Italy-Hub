@@ -35,7 +35,7 @@ export function MyBookingsPage() {
   // The bookings to come and the past ones are told apart from when the page was drawn, and stay so while it is read.
   const [drawnAt] = useState(() => Date.now());
 
-  if (mine.isPending || registrations.isPending) {
+  if (mine.isPending) {
     return (
       <p className="text-muted-foreground mx-auto w-full max-w-3xl px-4 py-10 text-sm">
         {t('common.loading')}
@@ -43,16 +43,18 @@ export function MyBookingsPage() {
     );
   }
 
-  if (mine.data === undefined || registrations.data === undefined) {
+  if (mine.data === undefined) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-10">
-        <Notice
-          tone="error"
-          title={describeProblem(mine.error ?? registrations.error, t, i18n.language) ?? t('errors.unknown')}
-        />
+        <Notice tone="error" title={describeProblem(mine.error, t, i18n.language) ?? t('errors.unknown')} />
       </div>
     );
   }
+
+  // The registrations are a section of their own (E16), drawn when they arrive: an answer that failed says so there, and the bookings
+  // are read all the same.
+  const registered = registrations.data ?? [];
+  const registrationsFailed = describeProblem(registrations.error, t, i18n.language);
 
   const { upcoming, past } = splitBookings(mine.data, drawnAt);
   // A private arrival and its linked departure (E7) may fall one among the flights to come and one among the past ones.
@@ -65,18 +67,22 @@ export function MyBookingsPage() {
         <Lead>{t('events:mine.lead')}</Lead>
       </header>
 
-      {registrations.data.length === 0 ? null : (
+      {registered.length === 0 && registrationsFailed === null ? null : (
         <section className="flex flex-col gap-4" aria-label={t('events:mine.registrations')}>
           <H2>{t('events:mine.registrations')}</H2>
+          {registrationsFailed === null ? null : <Notice tone="error" title={registrationsFailed} />}
           <ul className="flex flex-col gap-6">
-            {registrations.data.map((registration) => (
+            {registered.map((registration) => (
               <RegistrationItem key={registration.id} registration={registration} />
             ))}
           </ul>
         </section>
       )}
 
-      {mine.data.length === 0 && registrations.data.length === 0 ? (
+      {mine.data.length === 0 &&
+      !registrations.isPending &&
+      registered.length === 0 &&
+      registrationsFailed === null ? (
         <EmptyState
           title={t('events:mine.none')}
           description={t('events:mine.noneDescription')}
