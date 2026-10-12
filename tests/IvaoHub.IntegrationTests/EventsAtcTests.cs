@@ -106,6 +106,7 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            await database.UserGrants.Where(grant => grant.Vid != null && People.Contains(grant.Vid.Value) && grant.Reason == SlugStem).ExecuteDeleteAsync();
             await database.UserStaffPositions.Where(position => People.Contains(position.Vid)).ExecuteDeleteAsync();
             await database.Users.Where(user => People.Contains(user.Vid))
                 .ExecuteUpdateAsync(set => set.SetProperty(user => user.IsSuperadmin, false).SetProperty(user => user.RatingAtc, (int?)null));
@@ -545,6 +546,114 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
     }
 
+    /// <summary>
+    /// «Duplicate» carries the positions (the review of #256, point 1): copied with their hours moved by the difference, their FIR and their
+    /// note as they were, and asked with <c>EventAtc.Edit</c> — whoever writes events without the ATC is refused, and nothing is written —;
+    /// and deleting an event takes its positions with it, each with its row in the audit.
+    /// </summary>
+    [Fact]
+    public async Task DuplicateCopiesThePositionsMovedAndDeletingAnEventTakesThem()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, ends) = Window(days: 26);
+        var id = await EventRowAsync("dup", starts, ends, hasRoster: true, token);
+        await PositionRowAsync(id, Tower, starts, starts.AddHours(2), token);
+        await PositionRowAsync(id, Approach, starts.AddHours(1), ends, token);
+        var moved = starts.AddDays(7);
+
+        // Whoever writes events and not the ATC: refused, and no event made.
+        await GrantAsync(TraineeVid, EventsPermissions.View, token);
+        await GrantAsync(TraineeVid, EventsPermissions.Edit, token);
+        using (var writer = await SignedInAsync(TraineeVid, token))
+        using (var response = await writer.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/duplicate", new EventDuplicateRequest(moved, Slug("dup-refused"), PublicSlots: false), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            Assert.False(await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().AnyAsync(row => row.Slug == Slug("dup-refused"), token));
+        }
+
+        // The coordinator: the copy has the two positions, a week later.
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var copy = (await CreatedAsync(
+            await coordinator.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/duplicate", new EventDuplicateRequest(moved, Slug("dup-copy"), PublicSlots: false), token),
+            token)).GetProperty("event").GetProperty("id").GetInt64();
+        Assert.Equal(
+            [(Tower, Fir, moved, moved.AddHours(2)), (Approach, OtherFir, moved.AddHours(1), ends.AddDays(7))],
+            (await PositionsAsync(copy, token)).OrderBy(position => position.FromUtc).Select(position => (position.Callsign, position.Fir, position.FromUtc, position.ToUtc)));
+
+        // Deleted: its positions go with it, and the audit says so.
+        using (var response = await coordinator.DeleteAsync($"{EventEndpoints.Pattern}/{copy}", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        Assert.Empty(await PositionsAsync(copy, token));
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            Assert.Equal(2, await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.CountAsync(
+                row => row.Entity == "evt_atc_positions" && row.Action == "deleted" && row.Vid == CoordinatorVid,
+                token));
+        }
+    }
+
+    /// <summary>
+    /// The small points of the review of #256: no position written on an event cancelled or over (point 6); a position keeps the FIR it
+    /// was written with while its callsign does not change, so the chief of that FIR still deletes it after the directory moved the
+    /// callsign (point 7); the positions offered to the chief of a FIR are their FIR's (point 8); and a member takes back the availability
+    /// they gave to an event they no longer see (point 3).
+    /// </summary>
+    [Fact]
+    public async Task ThePositionsAndTheAvailabilitiesKeepToTheirEventAndTheirFir()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, ends) = Window(days: 27);
+        using var aod = await SignedInAsync(AodVid, token);
+
+        // Cancelled, and over: nothing opened.
+        var cancelled = await EventRowAsync("small-cancelled", starts, ends, hasRoster: true, token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == cancelled)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.CancelledAt, DateTime.UtcNow), token);
+        }
+
+        var over = await EventRowAsync("small-over", DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2).AddHours(4), hasRoster: true, token);
+        Assert.Equal(["events:errors.alreadyCancelled"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(cancelled, Tower), token), token))["eventId"]);
+        Assert.Equal(["events:errors.eventOver"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(over, Tower), token), token))["eventId"]);
+
+        // A position written when the approach was the first FIR's: its chief still deletes it, on the FIR it was written with.
+        var id = await EventRowAsync("small", starts, ends, hasRoster: true, token);
+        var written = await PositionRowAsync(id, Approach, starts, ends, token, fir: Fir);
+        using var chief = await SignedInAsync(ChiefVid, token);
+        using (var response = await chief.DeleteAsync($"{AtcPositionEndpoints.Pattern}/{written}", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        // The positions offered: the chief their FIR's, the ATC operations every one.
+        Assert.Equal([Tower], await OfferedAsync(chief, id, token));
+        Assert.Equal([Tower, Approach], (await OfferedAsync(aod, id, token)).Order(StringComparer.Ordinal));
+
+        // An event the member no longer sees — its «seen from» moved after they gave their availability —: they still read and withdraw it.
+        var unseen = await EventRowAsync("small-unseen", starts, ends, hasRoster: true, token);
+        await AvailabilityRowAsync(unseen, ControllerVid, starts, ends, note: null, token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == unseen)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.VisibleFromUtc, starts.AddDays(-1)), token);
+        }
+
+        using var controller = await SignedInAsync(ControllerVid, token);
+        Assert.Contains(unseen, (await OkAsync(await controller.GetAsync(AvailabilityEndpoints.MinePattern, token), token)).EnumerateArray().Select(row => row.GetProperty("eventId").GetInt64()));
+        using (var response = await controller.DeleteAsync(Mine(unseen), token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+    }
+
     /// <summary>The least ATC rating of the settings is one of the core's vocabulary: another number is refused on its field.</summary>
     [Fact]
     public async Task TheLeastRatingIsOneOfTheVocabulary()
@@ -610,6 +719,30 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
             row.Venue,
             row.HasRoster,
             row.ShiftMinutes);
+    }
+
+    /// <summary>The callsigns of the positions of the division a reader is offered on an event.</summary>
+    private static async Task<List<string>> OfferedAsync(HttpClient reader, long eventId, CancellationToken cancellationToken) =>
+        [
+            .. (await OkAsync(await reader.GetAsync($"{AtcPositionEndpoints.DivisionPositionsPattern}?eventId={eventId}", cancellationToken), cancellationToken))
+                .EnumerateArray().Select(row => row.GetProperty("callsign").GetString()!),
+        ];
+
+    /// <summary>A permission on the events department to a VID, as the permissions screen writes one; taken back with the class.</summary>
+    private async Task GrantAsync(int vid, string permission, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        database.UserGrants.Add(new UserGrant
+        {
+            Vid = vid,
+            Kind = GrantKind.Permission,
+            Value = permission,
+            Department = Department.ED,
+            Effect = GrantEffect.Grant,
+            Reason = SlugStem,
+        });
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>The callsigns of an event's positions a reader finds in the generated list.</summary>
@@ -742,8 +875,11 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return row.Id;
     }
 
-    /// <summary>A position of an event, written by the installation, with the FIR the class's directory gives it.</summary>
-    private async Task<long> PositionRowAsync(long eventId, string callsign, DateTime from, DateTime to, CancellationToken cancellationToken)
+    /// <summary>
+    /// A position of an event, written by the installation, with the FIR the class's directory gives it — or another one, as written on a
+    /// day the directory said otherwise.
+    /// </summary>
+    private async Task<long> PositionRowAsync(long eventId, string callsign, DateTime from, DateTime to, CancellationToken cancellationToken, string? fir = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
@@ -752,7 +888,7 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             EventId = eventId,
             Callsign = callsign,
-            Fir = callsign == Tower ? Fir : OtherFir,
+            Fir = fir ?? (callsign == Tower ? Fir : OtherFir),
             FromUtc = from,
             ToUtc = to,
             OwnerDepartment = Department.ED,

@@ -224,7 +224,7 @@ export function AtcPositionForm() {
   const event = useQuery(atcEventQuery(eventId)).data;
   const position = useQuery({ ...atcPositionQuery(id ?? 0), enabled: id !== null }).data ?? null;
   const editable = event !== undefined && holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
-  const positions = useQuery({ ...divisionPositionsQuery(), enabled: editable }).data;
+  const positions = useQuery({ ...divisionPositionsQuery(eventId), enabled: editable }).data;
   const save = useSaveAtcPosition(id);
   const remove = useDeleteAtcPosition();
 

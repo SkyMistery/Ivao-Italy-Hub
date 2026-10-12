@@ -219,12 +219,10 @@ public static class AtcPositionEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(EventsPermissions.AtcView);
 
-        atc.MapGet("/division-positions", async (IAtcPositionDirectory directory, HttpContext http) =>
-                (await directory.OfDivisionAsync(http.RequestAborted))
-                    .Select(position => new AtcPositionChoiceDto(position.Callsign, position.Name, position.Type, position.Fir))
-                    .ToList())
+        atc.MapGet("/division-positions", DivisionPositionsAsync)
             .WithName("EventsAtcDivisionPositions")
             .Produces<List<AtcPositionChoiceDto>>()
+            .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(EventsPermissions.AtcEdit);
 
         atc.MapGet("/ratings", (RatingVocabulary vocabulary) =>
@@ -259,24 +257,30 @@ public static class AtcPositionEndpoints
             position.ToUtc = parent.EndsAtUtc;
         }
 
-        var found = await saving.Services.GetRequiredService<IAtcPositionDirectory>()
-            .FindAsync([position.Callsign], saving.CancellationToken);
-        if (found.TryGetValue(position.Callsign, out var known))
-        {
-            position.Callsign = known.Callsign;
-            position.Fir = known.Fir;
-            return null;
-        }
-
-        // One the directory no longer lists keeps the FIR it was written with, so that it can still be corrected or deleted; a new
-        // callsign has to be one the directory lists.
-        return !saving.IsNew
+        // A position whose callsign does not change keeps the FIR it was written with — on a change of its hours or its note, and on its
+        // deletion (the review of #256, point 7): the handler is asked on the stored row and on the row as it would become, the guard on
+        // the original and the new FIR, and a FIR the directory gave the callsign since would make the two differ, leaving the row to
+        // nobody of either FIR. The FIR is copied when the callsign is written.
+        if (!saving.IsNew
             && string.Equals(
                 (string?)saving.Database.Entry(position).Property(nameof(EventAtcPosition.Callsign)).OriginalValue,
                 position.Callsign,
-                StringComparison.Ordinal)
-            ? null
-            : EventChildren.Refusal("callsign", UnknownPositionKey);
+                StringComparison.OrdinalIgnoreCase))
+        {
+            position.Callsign = (string)saving.Database.Entry(position).Property(nameof(EventAtcPosition.Callsign)).OriginalValue!;
+            return null;
+        }
+
+        var found = await saving.Services.GetRequiredService<IAtcPositionDirectory>()
+            .FindAsync([position.Callsign], saving.CancellationToken);
+        if (!found.TryGetValue(position.Callsign, out var known))
+        {
+            return EventChildren.Refusal("callsign", UnknownPositionKey);
+        }
+
+        position.Callsign = known.Callsign;
+        position.Fir = known.Fir;
+        return null;
     }
 
     /// <summary>
@@ -293,6 +297,17 @@ public static class AtcPositionEndpoints
         if (!parent.HasRoster)
         {
             return EventChildren.Refusal("eventId", "events:errors.eventHasNoRoster");
+        }
+
+        // Nothing to open on an event cancelled or over (the review of #256, point 6): its roster will never be proposed.
+        if (parent.CancelledAt is not null)
+        {
+            return EventChildren.Refusal("eventId", "events:errors.alreadyCancelled");
+        }
+
+        if (EventState.IsOver(parent, saving.Services.GetRequiredService<IClock>().UtcNow))
+        {
+            return EventChildren.Refusal("eventId", "events:errors.eventOver");
         }
 
         if (position.ToUtc <= position.FromUtc)
@@ -355,6 +370,46 @@ public static class AtcPositionEndpoints
         var number = Math.Max(page ?? 1, 1);
 
         return Results.Ok(new PagedResult<AtcCandidateDto>([.. all.Skip((number - 1) * size).Take(size)], number, size, all.Count));
+    }
+
+    /// <summary>
+    /// The positions of the division the reader may open on an event (the review of #256, point 8): each asked of the one handler as the
+    /// position would be — in the event's care and scope, with the FIR the directory gives it —, so the chief of a FIR is offered the
+    /// positions of their FIR and nothing they would be refused, and the staff of a department every position. The order of the callsigns.
+    /// </summary>
+    private static async Task<IResult> DivisionPositionsAsync(
+        long eventId,
+        EventsDbContext database,
+        IAtcPositionDirectory directory,
+        IAuthorizationService authorization,
+        HttpContext http)
+    {
+        var parent = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .FirstOrDefaultAsync(row => row.Id == eventId, http.RequestAborted);
+        if (parent is null)
+        {
+            return Results.NotFound();
+        }
+
+        var offered = new List<AtcPositionChoiceDto>();
+        foreach (var position in await directory.OfDivisionAsync(http.RequestAborted))
+        {
+            var probe = new EventAtcPosition
+            {
+                EventId = parent.Id,
+                Callsign = position.Callsign,
+                Fir = position.Fir,
+                OwnerDepartment = parent.OwnerDepartment,
+                OwnerDepartmentMask = parent.OwnerDepartmentMask,
+            };
+
+            if ((await authorization.AuthorizeAsync(http.User, probe, EventsPermissions.AtcEdit)).Succeeded)
+            {
+                offered.Add(new AtcPositionChoiceDto(position.Callsign, position.Name, position.Type, position.Fir));
+            }
+        }
+
+        return Results.Ok(offered);
     }
 
     /// <summary>The events with a roster still to end, the soonest first — drafts too: the positions are opened before an event is published.</summary>

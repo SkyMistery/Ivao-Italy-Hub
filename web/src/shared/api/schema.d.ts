@@ -15111,7 +15111,9 @@ export interface operations {
     };
     EventsAtcDivisionPositions: {
         parameters: {
-            query?: never;
+            query: {
+                eventId: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -15126,6 +15128,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AtcPositionChoiceDto"][];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -15218,6 +15227,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     EventsWithdrawAvailability: {
@@ -15249,6 +15265,13 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

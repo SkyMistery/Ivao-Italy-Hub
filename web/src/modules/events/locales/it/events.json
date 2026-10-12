@@ -760,7 +760,8 @@
     "hasRosterRows": "L'evento ha ancora postazioni o disponibilità: elimina prima le postazioni; con delle disponibilità, annulla invece l'evento.",
     "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
     "ratingUnknown": "Scegli un rating dell'elenco.",
-    "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli."
+    "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
+    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: rileggila e salva di nuovo."
   },
   "questions": {
     "title": "Domande",

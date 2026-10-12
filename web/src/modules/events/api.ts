@@ -1071,13 +1071,15 @@ export function atcCandidatesQuery(positionId: number, search: ListSearch) {
   });
 }
 
-/** The positions of the division, which a position of an event is chosen from: the reference data of the night. */
-export function divisionPositionsQuery() {
+/**
+ * The positions of the division the reader may open on an event, which a position is chosen from: the server asks the one handler of
+ * each, so the chief of a FIR is offered their FIR's (the review of #256, point 8).
+ */
+export function divisionPositionsQuery(eventId: number) {
   return queryOptions({
-    queryKey: [...atcKey, 'division-positions'] as const,
+    queryKey: [...atcKey, 'division-positions', eventId] as const,
     queryFn: async (): Promise<AtcPositionChoiceDto[]> =>
-      unwrap(await api.GET('/api/events/atc/division-positions')),
-    staleTime: Infinity,
+      unwrap(await api.GET('/api/events/atc/division-positions', { params: { query: { eventId } } })),
   });
 }
 

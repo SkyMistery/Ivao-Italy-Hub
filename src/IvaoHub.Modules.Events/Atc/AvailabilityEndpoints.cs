@@ -2,7 +2,6 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
-using IvaoHub.Modules.Events.Bookings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -35,13 +34,15 @@ public static class AvailabilityEndpoints
             .Produces<MyAvailabilityDto>()
             .Produces<MyAvailabilityDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
 
         mine.MapDelete("/{eventId:long}", WithdrawAsync)
             .WithName("EventsWithdrawAvailability")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
 
         return app;
     }
@@ -60,11 +61,19 @@ public static class AvailabilityEndpoints
         // No address of its own: an availability is read in the member's list, and nowhere else.
         return result switch
         {
-            BookingResult.Done => created ? Results.Created((string?)null, given) : Results.Ok(given),
-            BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            AvailabilityResult.Done => created ? Results.Created((string?)null, given) : Results.Ok(given),
+            AvailabilityResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            AvailabilityResult.Changed => Changed(catalog, currentUser),
             _ => Results.NotFound(),
         };
     }
+
+    /// <summary>The key a 409 of a member's availability says: it changed from another window of theirs, read it again.</summary>
+    public const string ChangedKey = "events:errors.availabilityChanged";
+
+    /// <summary>Changed meanwhile from another window of the member's: a 409 that says to read it again (the review of #256, point 4).</summary>
+    private static IResult Changed(LocaleCatalog catalog, ICurrentUser currentUser) =>
+        Results.Problem(statusCode: StatusCodes.Status409Conflict, title: catalog.Resolve(currentUser.Locale, ChangedKey));
 
     private static async Task<IResult> WithdrawAsync(
         long eventId,
@@ -77,8 +86,9 @@ public static class AvailabilityEndpoints
 
         return result switch
         {
-            BookingResult.Done => Results.NoContent(),
-            BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            AvailabilityResult.Done => Results.NoContent(),
+            AvailabilityResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            AvailabilityResult.Changed => Changed(catalog, currentUser),
             _ => Results.NotFound(),
         };
     }

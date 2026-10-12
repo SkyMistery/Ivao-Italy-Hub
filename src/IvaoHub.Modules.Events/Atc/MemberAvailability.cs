@@ -11,6 +11,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Atc;
 
+/// <summary>
+/// What a member's verb on their availability came to: done, refused field by field, nothing of theirs there, or changed meanwhile from
+/// another window of theirs — read it again (a 409, the review of #256, point 4).
+/// </summary>
+public enum AvailabilityResult
+{
+    Done,
+    Refused,
+    NotFound,
+    Changed,
+}
+
 /// <summary>What a member sends to give their availability for an event, or to change it (design M4 §4.2): the windows, and a note.</summary>
 public sealed record AvailabilityRequest(IReadOnlyList<AtcWindowDto>? Windows, string? Note);
 
@@ -53,7 +65,7 @@ public sealed class MemberAvailability(
     /// Gives the member's availability for an event, or changes it (§4.2): an event with a roster they see, not cancelled, with a position,
     /// before the close; their ATC rating at least the setting's least; the windows checked by <see cref="AtcRules.Check"/>.
     /// </summary>
-    public async Task<(BookingResult Result, MyAvailabilityDto? Availability, bool Created, Refusals Problems)> SaveAsync(
+    public async Task<(AvailabilityResult Result, MyAvailabilityDto? Availability, bool Created, Refusals Problems)> SaveAsync(
         long eventId,
         AvailabilityRequest request,
         CancellationToken cancellationToken)
@@ -65,19 +77,19 @@ public sealed class MemberAvailability(
         var row = await database.Events.AsNoTracking().Where(EventState.Seen(now)).FirstOrDefaultAsync(candidate => candidate.Id == eventId, cancellationToken);
         if (row is null || !row.HasRoster)
         {
-            return (BookingResult.NotFound, null, false, problems);
+            return (AvailabilityResult.NotFound, null, false, problems);
         }
 
         var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
         if (!AtcRules.IsOpen(row, settings, await HasPositionsAsync(row.Id, cancellationToken), now))
         {
-            return (BookingResult.Refused, null, false, problems.Add("id", AtcRules.ClosedKey));
+            return (AvailabilityResult.Refused, null, false, problems.Add("id", AtcRules.ClosedKey));
         }
 
         var vid = currentUser.Vid;
         if (!AtcRules.IsRatedEnough(vocabulary, settings, await people.AtcRatingAsync(vid, cancellationToken)))
         {
-            return (BookingResult.Refused, null, false, problems.Add("id", AtcRules.RatingTooLowKey));
+            return (AvailabilityResult.Refused, null, false, problems.Add("id", AtcRules.RatingTooLowKey));
         }
 
         var windows = AtcRules.Check(row, request.Windows, problems);
@@ -88,7 +100,7 @@ public sealed class MemberAvailability(
 
         if (!problems.IsEmpty)
         {
-            return (BookingResult.Refused, null, false, problems);
+            return (AvailabilityResult.Refused, null, false, problems);
         }
 
         var availability = await database.AtcAvailabilities.FirstOrDefaultAsync(
@@ -139,16 +151,17 @@ public sealed class MemberAvailability(
         {
             // The same member gave it from another window an instant before: theirs is there, and this is a change of it.
             database.ChangeTracker.Clear();
-            return (BookingResult.Refused, null, false, problems.Add("id", BookingRules.TryAgainKey));
+            return (AvailabilityResult.Refused, null, false, problems.Add("id", BookingRules.TryAgainKey));
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Withdrawn from another window while this change was on its way.
+            // Changed or withdrawn from another window of theirs while this change was on its way: what they see is no longer what is
+            // stored, and they read it again (409), never «not found» for an availability that may well be there.
             database.ChangeTracker.Clear();
-            return (BookingResult.NotFound, null, false, problems);
+            return (AvailabilityResult.Changed, null, false, problems);
         }
 
-        return (BookingResult.Done, Mine(availability, row, windows, settings, now), created, problems);
+        return (AvailabilityResult.Done, Mine(availability, row, windows, settings, now), created, problems);
     }
 
     /// <summary>
@@ -156,7 +169,7 @@ public sealed class MemberAvailability(
     /// core lets the member who sent them do (<c>[WithdrawnByStakeholder]</c>, E10h), loaded first so that the guard reads whose they are;
     /// the audit keeps who withdrew. Somebody else's is not found.
     /// </summary>
-    public async Task<(BookingResult Result, Refusals Problems)> WithdrawAsync(long eventId, CancellationToken cancellationToken)
+    public async Task<(AvailabilityResult Result, Refusals Problems)> WithdrawAsync(long eventId, CancellationToken cancellationToken)
     {
         var problems = new Refusals();
         var vid = currentUser.Vid;
@@ -165,14 +178,16 @@ public sealed class MemberAvailability(
             cancellationToken);
         if (availability is null)
         {
-            return (BookingResult.NotFound, problems);
+            return (AvailabilityResult.NotFound, problems);
         }
 
-        var row = await database.Events.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == eventId, cancellationToken);
+        // Their own row: the event read past who may see it now (the review of #256, point 3), so an event the member no longer sees
+        // still lets them take back what they gave, until the close.
+        var row = await CrudSource.BackOffice<Event>(database).AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == eventId, cancellationToken);
         var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
         if (row is null || !AtcRules.IsWithdrawable(row, settings, clock.UtcNow))
         {
-            return (BookingResult.Refused, problems.Add("id", AtcRules.ClosedKey));
+            return (AvailabilityResult.Refused, problems.Add("id", AtcRules.ClosedKey));
         }
 
         database.AtcWindows.RemoveRange(await database.AtcWindows.Where(window => window.AvailabilityId == availability.Id).ToListAsync(cancellationToken));
@@ -184,11 +199,11 @@ public sealed class MemberAvailability(
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Withdrawn from another window a moment before: there is nothing left to withdraw.
-            return (BookingResult.NotFound, problems);
+            // Changed or withdrawn from another window of theirs a moment before: they read it again.
+            return (AvailabilityResult.Changed, problems);
         }
 
-        return (BookingResult.Done, problems);
+        return (AvailabilityResult.Done, problems);
     }
 
     /// <summary>The member's own availabilities, past ones too, by the start of their events. A visitor has none.</summary>
@@ -199,7 +214,8 @@ public sealed class MemberAvailability(
 
         var rows = await database.AtcAvailabilities.AsNoTracking()
             .Where(availability => availability.ControllerVid == vid)
-            .Join(database.Events.AsNoTracking(), availability => availability.EventId, row => row.Id, (availability, row) => new { availability, row })
+            // Their own rows, every one: the events read past who may see them now (the review of #256, point 3).
+            .Join(CrudSource.BackOffice<Event>(database).AsNoTracking(), availability => availability.EventId, row => row.Id, (availability, row) => new { availability, row })
             .ToListAsync(cancellationToken);
 
         var ids = rows.Select(entry => entry.availability.Id).ToList();

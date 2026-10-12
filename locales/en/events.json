@@ -761,7 +761,8 @@
     "hasRosterRows": "The event still has positions or availabilities: delete its positions first; with availabilities, cancel the event instead.",
     "eventHasAvailabilities": "Some controllers gave their availability for this event: cancel it instead.",
     "ratingUnknown": "Choose a rating of the list.",
-    "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those."
+    "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
+    "availabilityChanged": "Your availability changed in another window meanwhile: read it again and save once more."
   },
   "questions": {
     "title": "Questions",
