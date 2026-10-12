@@ -8,6 +8,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "close": "Close",
     "breadcrumb": "Breadcrumb"
   },
   "nav": {
@@ -369,7 +370,9 @@
       "noticeWarning": "Two sections are not in the template any more.",
       "noticeSuccess": "Draft saved.",
       "noticeInfo": "A draft is only visible to the staff.",
-      "noticeToast": "Show it as a toast"
+      "noticeToast": "Show it as a toast",
+      "dialogTrigger": "Open the dialog",
+      "dialogTitle": "A dialog"
     },
     "registry": {
       "title": "Registries",

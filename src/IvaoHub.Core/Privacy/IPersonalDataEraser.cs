@@ -51,6 +51,9 @@ public sealed record ErasureRequest(int Vid, int Pseudonym)
 /// else. The columns that name them are the core's job, for every module alike (<see cref="PersonColumns"/>): after
 /// <see cref="EraseAsync"/> the core turns every one of them that still holds the VID into the pseudonym, in the same
 /// transaction, and takes the copies of what the module deleted out of the audit log.</para>
+/// <para>A row of the person's data that may be gone before the erasure — withdrawn, taken away — is found by no eraser, and its
+/// copies in the audit log are the core's too: the module marks the columns that are the person's data
+/// (<see cref="ErasedWithAttribute"/>), and the core empties them there (M4, E10n).</para>
 /// <para>It writes through the module's own context, which the core has already put in a transaction and in erasure mode:
 /// no stamps, and an audit row without the data for every audited row deleted or emptied. It must be safe to run twice: an
 /// erasure that failed half way is run again.</para>

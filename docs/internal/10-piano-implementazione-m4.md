@@ -111,6 +111,7 @@ Per non ripeterle trenta volte:
 | E10h | Nucleo: il ritiro di chi ha mandato la riga | E0 (la chiede E6a: «ritirare cancella la riga», design §1.6) | `[WithdrawnByStakeholder]`: il membro che una riga `ISubmittedByMembers` riguarda la cancella, com'era caricata, se l'entità lo dice; l'avvio rifiuta il segno dove il guardiano non lo onorerebbe |
 | E10i | Nucleo: il grant su una riga scrive la sua riga | E0 (la trova E6a: issue #235, decisa da Carmine) | il guardiano chiede `{Area}.Edit` con lo scope della riga, come l'handler: un grant su un evento solo cambia e toglie l'evento e le sue righe, ne crea i figli (slot, rotte), mai un evento nuovo |
 | E10k | Nucleo: le parole delle liste e i titoli delle schede | E0 (l'issue #224, decisa da Carmine) | la paginazione della lista generata tradotta; il titolo della scheda di ogni pagina, il nome della divisione come predefinito; una frase vuota per lista; «Premi Invio per salvare» solo dove Invio salva |
+| E4c | Gli eventi dicono il loro titolo e le loro liste vuote | E4, E5, E10k (l'uso dei suoi pezzi negli eventi, in una fase a sé: scelta di dalberone) | `/events` e `/events/mine` dicono il loro titolo nella scheda; la pagina di un evento lascia il nome della divisione alla radice; le liste vuote del modulo — le schede «Slot», «Rotte», «Scali» e «Prenotazioni», `/staff/events` — dicono una frase loro |
 | E11a | Postazioni e disponibilità | E8b, E10c | `evt_atc_positions`, `evt_atc_availability`; i grant `firTeam` prendono effetto |
 | E11b | La proposta del roster e la correzione | E11a, E10b | `evt_atc_shifts`, il proponente deterministico, `events-roster` alla chiusura, la correzione con gli avvisi |
 | E12 | Pubblicazione, mail, cessione | E11b | il roster pubblicato per data, le mail, `/events/{slug}/roster`, i turni in `/me`, `evt_atc_shift_transfers`, `events.atcCoverage` |
@@ -3355,6 +3356,412 @@ master e pubblicata su sua istruzione):
 [a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
 [r238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083800690
 [a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
+
+### E10l — Nucleo: il pulsante di chiusura delle finestre parla la lingua
+
+**Da dove viene**: non c'era in E0. La «X» del dialog di uno slot dice «Close» al lettore di schermo anche in italiano: l'ha vista
+dalberone sul banco di prova l'11 ottobre 2026 e l'ha portata a Carmine sull'issue #224 ([il rilievo][r224l]); **Carmine ha deciso**
+([la sua risposta][a224l], data in chat alla sessione master e pubblicata su sua istruzione): comporla nel nucleo, come la #238 fa per la
+paginazione, in una PR piccola del nucleo con la sua nota; non una richiesta ad Atmosphere. Branch `m4/e10l-dialog-close-label`, da
+`main` a `bea8c0e` (con E10k, la #238). **PR del nucleo** senza coda, con la sua nota (caso b); niente in C#.
+
+1. **Un dialog del nucleo** composto dai pezzi di Atmosphere e di Radix, con la «X» che ha un `aria-label` tradotto (una chiave nuova
+   del nucleo, nelle due lingue).
+2. **I dialog del nucleo** ci passano in questa PR, se hanno la «X».
+3. **I dialog dei moduli no** (regola 6): quelli degli eventi in una fase dopo; quelli dei tour, se ci sono, sono del maintainer.
+
+**Test**: vitest con il nome della «X» in italiano e in inglese, e nessun «Close» nei dialog del nucleo; la prova che cade sul codice di
+oggi.
+**Fatta quando**: un dialog dell'hub dice la parola della sua «X» nella lingua dello schermo, e niente nel nucleo monta più quella di
+Atmosphere.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-il-pulsante-di-chiusura-delle-finestre`, **decisa**, con il link alla risposta di Carmine):
+  - **`Dialog`** in `web/src/shared/ui/Dialog.tsx`, esportato da `shared/ui`: la molecola `Dialog` di Atmosphere ricomposta dai suoi
+    pezzi (`DialogRoot`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`) con le
+    stesse props, le stesse classi e lo stesso ordine, e la «X» nostra: `DialogClose` (il `Close` di Radix che Atmosphere esporta) con
+    le classi di `DialogTopRightClose`, l'icona `X` di lucide e `aria-label={t('common.close')}`. `closeButton` al posto di
+    `topRightCloseButton`;
+  - **la venticinquesima voce** dell'elenco chiuso (`catalog.ts`), con la sua sezione nella galleria (`DialogSample`) e il suo paragrafo
+    in `docs/UI-GUIDELINES.md` §3;
+  - **tre chiavi nuove** in `locales/{en,it}/common.json`: `common.close` («Close», «Chiudi») e, per la galleria,
+    `uiKit.sample.dialogTrigger` e `.dialogTitle`;
+  - **i test** (vitest, 5): `web/src/shared/ui/Dialog.test.tsx`, con la guardia che nessun file di `web/src` importi da Atmosphere
+    `Dialog`, `DialogTopRightClose`, `Sheet` o `SheetContent`, tranne i due degli eventi che aspettano (`NOT_MOVED_YET`).
+- **Scostamenti dal prompt, scritti nella nota** (§1, §2):
+  1. ⚠️ **la «X» non è in `DialogContent`**, come dicevano il rilievo e il prompt: in Atmosphere 3.1.0 `DialogContent` è portale, sfondo
+     e contenuto, e basta. La disegna `DialogTopRightClose`, montato dalla molecola `Dialog` (e da `SheetContent`). Letto nel pacchetto;
+  2. **i dialog del nucleo non si spostano**: `ConfirmDialog` (un `AlertDialog`) e `SearchPalette` (un `DialogContent` composto a mano)
+     non hanno la «X». In `main` l'unico che la ha è `EventSlots.tsx` degli eventi;
+  3. **nessuna dipendenza nuova**: Atmosphere esporta i pezzi di Radix che servono (`DialogClose`, `DialogRoot`, `DialogTrigger`), e
+     `package.json` non cambia;
+  4. **voce nuova dell'elenco, non un cambio di `ConfirmDialog`**, che chiede e non ha la «X»;
+  5. **la guardia ammette `PrivateSlots.tsx`**, che non è in `main`: è di E7 (#246, aperta accanto, e E8b sopra) e monta il `Dialog` di
+     Atmosphere; nella lista perché nessuna delle due PR faccia cadere l'altra, e per questo il test chiede «nessuno fuori dalla lista» e
+     non «la lista uguale».
+- **Trovato**: ⚠️ **lo stesso «Close» nei toast**. La molecola `Toast` di Atmosphere, che `useNotice()` usa, monta `ToastClose` senza
+  props, e il suo `aria-label` predefinito è «Close». Non è un dialog e la risposta di Carmine non lo copre: non toccato, detto a
+  dalberone (nota §4).
+- **Lette le fasi che corrono accanto** (11 ottobre): un `git grep` dei branch `origin/m4/*` trova il `Dialog` di Atmosphere solo in
+  `EventSlots.tsx` e, su E7 ed E8b, in `PrivateSlots.tsx`; nessun test né spec cerca la parola «Close».
+- **Verificato, in locale** (11 ottobre 2026, `main` a `bea8c0e`):
+  - `pnpm lint`, `pnpm typecheck`, `pnpm format:check` e `pnpm i18n:check` verdi; `pnpm test` **703/703** in 97 file;
+  - i test nuovi da soli 5/5, con `uiKit.test.ts` 11/11; **la prova al contrario**: con il `Dialog` di Atmosphere al posto del nostro
+    (i test tenuti) cadono 2 su 5 — la «X» in italiano («Unable to find … name "Chiudi"») e la guardia, che trova il file —, e i tre
+    che passano sono ciò che non cambia; rimesso il file della fase, 5/5;
+  - `dotnet build IvaoHub.sln` 0 avvisi; unità **1203/1203**;
+  - la smoke (`pnpm -C web exec playwright test --workers=2`, dietro il suo lock) **180/180** al primo giro (1,4 minuti);
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`bea8c0e`): dodici file, nessuno del maintainer, nove del nucleo
+    con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `pnpm e2e:full` e l'integrazione: niente server cambiato, e nessuno spec apre un dialog con la «X» del nucleo (la usa solo la
+    galleria, finché gli eventi non passano);
+  - un lettore di schermo vero, e la «X» guardata in un browser vero: i test leggono il nome accessibile nel DOM di jsdom;
+  - la fase degli eventi dopo questa.
+
+**In coda** (12 ottobre 2026): il revisore la dice **approvabile, niente da correggere** ([i rilievi][r250l]), e chiede una coda sola
+([sulla #250][q250l]), perché ogni unione rimetteva in conflitto le altre sull'intestazione di `HANDOFF-M4.md`: **#242 → #250 → #252 →
+#251 → #249 → #239**. Questa è la seconda, `(after #242)`.
+
+- **Unita la testa di E4c `8683d53`**, che porta `main` ad `a75ed6c` (con E7, la #246). Conflitti solo in `HANDOFF-M4.md` (l'intestazione,
+  e il mio blocco sopra quelli di E4c ed E7) e in questo file (le sezioni di E10l e di E4c, tenute tutte e due); nessun file di codice.
+- **Con E7 in `main`, `PrivateSlots.tsx` c'è davvero**: la guardia lo trova e lo ammette, com'era scritto. Passa al `Dialog` del nucleo
+  con le stesse props del dialog di uno slot (`open`, `onOpenChange`, `title`, `description`): per la fase degli eventi è un import.
+- **Rifatto**: `pnpm lint`, `pnpm typecheck`, `pnpm format:check` e `pnpm i18n:check` verdi; `pnpm test` **728/728** in 100 file;
+  `dotnet build IvaoHub.sln` 0 avvisi; unità **1220/1220**; la smoke (`--workers=2`, dietro il suo lock) **180/180** al primo giro (1,2 minuti).
+
+[r250l]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/250#issuecomment-6113746994
+[q250l]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/250#issuecomment-6120883413
+[r224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6107362979
+[a224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6113461064
+
+### E4c — Gli eventi dicono il loro titolo e le loro liste vuote
+
+**Da dove viene**: non c'era in E0. **E10k** (la #238, del nucleo, decisa da Carmine sull'issue #224) ha dato ai moduli i pezzi per dire
+il titolo della scheda e la frase di una lista vuota. Il suo prompt chiedeva di usarli anche negli eventi, e **dalberone ha scelto il 9
+ottobre 2026** di farlo in una fase del modulo dopo: `CLAUDE.md` §0 regola 6 vuole il nucleo in una PR a sé, mai insieme al codice del
+modulo che lo usa (la nota di E10k, §4; E10k, «Scelte di dalberone» 1). Branch `m4/e4c-events-titles-and-empty-lists`, nata `--no-track`
+dal branch di E10k alla sua testa (`d307774`), **in coda dopo la #238**. Fase del modulo: nessun file del nucleo, nessuna nota nuova.
+
+1. **`/events` dice il suo titolo nella scheda**, con le chiavi del suo `H1` e del suo `Lead`, come le pagine elenco del nucleo.
+2. **La pagina di un evento non calcola più a mano il nome della divisione**: lo dice la radice, e la sua scheda non cambia.
+3. **Le schede «Slot» e «Rotte»**, vuote, dicono una frase loro al posto di quella del nucleo, che parla di quello che crea un
+   dipartimento.
+
+**Test**: vitest nel modulo — il titolo di `/events` nella scheda, quello della pagina di un evento com'era, la frase delle due schede
+vuote nelle due lingue; nella smoke degli eventi `toHaveTitle` su `/events` e sulla pagina di un evento.
+**Fatta quando**: `/events` ha la sua scheda, la pagina di un evento non passa più `divisionName`, e nessuna scheda vuota di un evento
+parla di un dipartimento.
+
+**Com'è andata** (9 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in coda dopo la #238; nata sopra E10k a
+`d307774`, e prima del push ne ha unito la testa nuova, `b36e663`, con il formato dei suoi quattro file: sotto, «Trovato». Dopo il primo
+push, su indicazione della sessione coordinatrice, ha unito anche `fdb551d` (`212d676`): la revisione di E10k — due correzioni piccole
+del nucleo in `32dbe3b`, la risposta di Carmine sulla #238 — e `main` ad `aa3707a`, con la #241 che rimette verde il test del meteo. Il 10
+ottobre, unite E6a (#233) ed E6b (#240), la #242 era in conflitto sui documenti: il revisore ha chiesto `main`
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6096405374)), e questa fase ha unito `f7e9839`,
+la testa di E10k con `main` a `ba06d66` (`6d4ab5d`); E4c è la seconda fra la #240 e la #242, e fa le due righe che toccavano a lei. La
+CI di quella testa è stata verde; poi la #237 (E10i) unita l'ha rimessa in conflitto sui documenti
+([il commento del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6102842072): Carmine unisce una PR alla
+volta, #238 → #242 → #239). L'11 ottobre, unita la #238, questa fase ha unito `main` a `bea8c0e` (`bb63261`), con E10k ed E10i: di nuovo
+in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #246 (E7), il revisore ha chiesto **una coda sola**,
+**#242 → #250 → #252 → #251 → #249 → #239**, con la #242 in fondo e pronta
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6120883096)): questa fase ha unito `main` ad
+`a75ed6c` (`346e20d9`), in conflitto l'intestazione e la cima dei blocchi di `HANDOFF-M4.md`):
+
+- **Fatto**:
+  - **`/events`** (`EventsPublicPage` in `web/src/modules/events/screens/public.tsx`):
+    `<PageMetadata title={t('events:public.title')} description={t('events:public.description')} />` prima di `<header>`, come
+    `PublicCalendarScreen` e `PublicListScreen`. La scheda dice «Eventi — IVAO Italia», e la descrizione della testa è la frase sotto il
+    titolo;
+  - **la pagina di un evento** (`EventScreen`, lo stesso file): tolto `divisionName={resolveLocalized(...)}`, il nome viene da
+    `DivisionTitle` della radice; dal file escono `resolveLocalized` e `i18n`. La scheda dice il titolo dell'evento e «— IVAO Italia» come
+    prima, e `og:site_name` pure;
+  - **le schede vuote**: `emptyDescription={t('events:slots.empty')}` in `SlotsTab` (`screens/slots.tsx`) ed
+    `emptyDescription={t('events:routes.empty')}` in `RoutesTab` (`screens/routes.tsx`); le due chiavi in
+    `web/src/modules/events/locales/{en,it}/events.json`, copiate in `locales/` da `pnpm i18n:sync`. Il titolo resta quello del nucleo,
+    «Non c'è ancora niente»;
+  - **anche la scheda «Scali» e `/staff/events`** (seconda scelta di dalberone, sotto): `emptyDescription={t('events:airports.empty')}`
+    in `AirportsTab` (`screens/airports.tsx`) ed `emptyDescription={t('events:events.empty')}` in `EventsPage` (`screens/events.tsx`),
+    dove `emptyAction` offre ancora «Nuovo evento» a chi scrive gli eventi;
+  - **dopo l'unione di E6b** (10 ottobre, le due righe della seconda fra la #240 e la #242, e la terza scelta di dalberone):
+    `/events/mine` (`MyBookingsPage` in `screens/mine.tsx`) dice il suo titolo con
+    `<PageMetadata title={t('events:mine.title')} description={t('events:mine.lead')} />`; il `PublicEventDto` del test ha
+    `bookingOpensAtUtc: null`, che E6b rende obbligatorio; e la scheda «Prenotazioni» (`BookingsTab` in `screens/bookings.tsx`) dice
+    `events:bookings.empty`. Così nessuna lista generata del modulo dice più la frase del nucleo;
+  - **dopo l'unione di E7** (12 ottobre, la riga della seconda fra la #242 e la #246 e la quarta scelta di dalberone): il
+    `PublicEventDto` del test ha `privateSlots: []`, che E7 rende obbligatorio (lo chiede il suo handoff); e la scheda «Slot», dove E7
+    genera gli slot privati, dice la sua frase secondo i tipi di slot dell'evento (`emptySlotsKey` in `screens/slots.tsx`):
+    `events:slots.empty` con i soli pubblici, `events:slots.emptyPrivate` con i soli privati, `events:slots.emptyBoth` con tutti e due;
+  - **i test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (12), sulla radice vera dell'app come
+    `web/src/routes/-titles.test.tsx` di E10k; due `toHaveTitle` in `web/e2e/events-public.spec.ts`, la smoke degli eventi.
+- **Scelte di dalberone** (9, 10 e 12 ottobre, chieste con la raccomandazione per prima; accolte tutte e quattro):
+  1. **parole che descrivono, non che invitano** (prima del codice). Il prompt proponeva «Nessuno slot: incolla una tabella o creane
+     uno», che parla a chi scrive; ma la scheda la vede anche chi legge e basta (`EventBookings.View` o `EventRoutes.View` senza la
+     scrittura: nella divisione l'ED e l'FOD li hanno insieme, ma un grant a un VID può dare la sola lettura), e a lui i bottoni non si
+     disegnano. Le frasi sono vere per tutti e due, come quella del nucleo, e i bottoni sopra la lista dicono che cosa fare
+     (`docs/UI-GUIDELINES.md`: la frase dice la lista, l'azione sta a parte):
+     - `slots.empty`: «Qui compariranno gli slot dell'evento: si incollano da una tabella o si creano uno per uno.» — «The slots of the
+       event will show up here: they are pasted from a table or created one by one.»;
+     - `routes.empty`: «Qui compariranno le rotte da inserire nel piano di volo, da uno scalo all'altro.» — «The routes to file in the
+       flight plan, from one airport to another, will show up here.»;
+  2. **anche le altre due liste del modulo** (a metà fase: il prompt e la nota di E10k, §4, nominavano solo «Slot» e «Rotte», ma la
+     scheda «Scali» e la lista degli eventi dicevano anche loro la frase del nucleo), con parole dello stesso tipo:
+     - `airports.empty`: «Qui compariranno gli scali dell'evento, ognuno con la sua capacità.» — «The airports of the event will show
+       up here, each with its capacity.» (la scheda si disegna solo per un evento con scali suoi, mai per uno di tutta la divisione);
+     - `events.empty`: «Qui compariranno gli eventi della divisione, dalle bozze a quelli conclusi.» — «The events of the division will
+       show up here, from the drafts to the ended ones.» (sotto un filtro senza righe, «Annullati» per esempio, si legge lo stesso, come
+       prima la frase del nucleo);
+  3. **anche la scheda «Prenotazioni» di E6b** (10 ottobre, all'unione di `main`: la quinta lista generata del modulo, nata dopo E4c):
+     - `bookings.empty`: «Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.» — «The pilots' bookings of the event's
+       slots will show up here.»;
+  4. **una frase per tipo di slot nella scheda «Slot»** (12 ottobre, all'unione di E7, che vi genera gli slot privati: la frase di prima
+     diceva solo «si incollano da una tabella o si creano uno per uno»), scelta dai flag dell'evento:
+     - `slots.emptyPrivate`: «Qui compariranno gli slot privati dell'evento, generati dalla capacità dei suoi scali.» — «The private
+       slots of the event will show up here, generated from the capacity of its airports.»;
+     - `slots.emptyBoth`: «Qui compariranno gli slot dell'evento: quelli pubblici si incollano da una tabella o si creano uno per uno,
+       quelli privati si generano dalla capacità degli scali.» — «The slots of the event will show up here: the public ones are pasted
+       from a table or created one by one, the private ones generated from the capacity of its airports.»;
+     - con i soli pubblici resta `slots.empty`.
+- **Scelte della fase**:
+  1. le chiavi nelle sezioni delle cinque liste — `slots.empty` (con `emptyPrivate` ed `emptyBoth`), `routes.empty`, `airports.empty`,
+     `events.empty` e `bookings.empty` —: la schermata le passa da sé, e `DataList` non le legge per convenzione (la nota di E10k, §2.3,
+     scarta `<labels>.empty` proprio perché lo stesso `labels` serve a più liste);
+  2. i test montano la radice vera, e le schede e la lista degli eventi sotto una rotta `/_staff` del test, senza componente: il contesto
+     è quello della radice, il bootstrap, e `useRouteContext({ from: '/_staff' })` lo legge come nel back office;
+  3. la frase degli slot la sceglie una funzione della schermata, `emptySlotsKey`, dai flag `publicSlots` e `privateSlots` dell'evento:
+     una chiave fatta a runtime, che `i18n:check` non legge; la prova il test, nelle due lingue;
+  4. `/events/mine` passa anche la descrizione, `events:mine.lead`, come `/events` passa la sua: la riga concordata con E6b diceva solo il
+     titolo.
+- **Trovato**:
+  - ⚠️ **`pnpm format:check` cadeva su quattro file di E10k**, del nucleo: `web/src/routes/-titles.test.tsx`,
+    `web/src/shared/forms/SchemaForm.enter.test.tsx`, `web/src/shared/forms/SchemaForm.tsx` e `web/src/shared/list/DataList.words.test.tsx`
+    (righe oltre i 110 caratteri di `web/.prettierrc.json`, o che prettier riunisce). La CI della #238 non lo vedeva: `build-test` si
+    ferma prima, a «Test .NET», per `WeatherTests` (#236). Non li ho toccati (sono della PR di E10k, e questa fase non tocca il nucleo):
+    l'ho detto alla sessione coordinatrice, E10k li ha corretti (`68b0a3a`, solo formato; `b36e663` nei suoi documenti) e questa fase ne
+    ha unito la testa prima del push (`55b9b3c`): ora `format:check` è verde su tutto;
+  - `pnpm i18n:check` non legge le chiavi con lo spazio dei nomi: la sua espressione (`[\w.-]+`) si ferma ai due punti di
+    `t('events:…')`. Le cinque chiavi nuove le prova il test vitest, che legge il testo nelle due lingue; che le due lingue abbiano le
+    stesse chiavi lo controlla `i18n:check`; nessuna fa doppione con il nucleo (nessun file del nucleo ha in cima `slots`, `routes`,
+    `airports`, `events` o `bookings`: `events` c'è solo in `flightops.json`, un altro modulo, e lì si legge con lo spazio dei nomi);
+  - **con E6b** (sugli stessi `public.tsx` ed `events.json`): `git merge-tree` con la sua testa fondeva puliti tutti i file di codice, e
+    così è stato all'unione di `main` del 10 ottobre (il solo conflitto, l'intestazione di `HANDOFF-M4.md`). Le due righe concordate con
+    la sessione di E6b per la seconda fra la #240 e la #242 le ha fatte E4c (sopra, «Fatto»).
+- **Verificato, in locale** (9–12 ottobre 2026; al primo push la CI saltava i passi web, sotto «Non verificato»):
+  - dopo l'unione di `main` ad `a75ed6c` (`346e20d9`, con E7) e le frasi della scheda «Slot»: `pnpm lint`, `pnpm format:check`,
+    `pnpm typecheck` e `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **723/723** in 99 file;
+    `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1220/1220**; i test nuovi da soli 12/12, e **la prova al
+    contrario** sui due nuovi: con la sola `slots.empty` cadono loro 2 su 12; la suite di integrazione intera, senza filtro, **542/543**
+    (11,4 minuti): cade solo `ErasureTests.WhatIsAboutThePersonGoesAndWhatTheyDidForOthersStaysUnderThePseudonym` alla riga 145, del
+    maintainer, che cerca il VID della persona come sottostringa nel JSON di tutto il registro di audit condiviso (l'instabilità già
+    vista sulla #178); la classe da sola **4/4**; la smoke **180/180** al primo giro (1,2 minuti); `pnpm e2e:full` **59/59** al primo giro (11,9 minuti,
+    `ivaohub_e2e_e4c` ricreato, dopo l'attesa del lucchetto di Mailpit tenuto da un'altra sessione; uno spec in più, di E7); le regole di
+    `core-guard` contro `main` (la #238 unita): quindici file, solo del modulo e documenti;
+  - dopo l'unione di `main` a `bea8c0e` (`bb63261`, con E10k ed E10i): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
+    `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **708/708** in 97 file;
+    `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1203/1203**; la suite di integrazione intera, senza filtro,
+    **529/529** (8,0 minuti; entra la guardia di scrittura di E10i); la smoke **180/180** al primo giro (1,3 minuti);
+  - dopo l'unione di `f7e9839` (`6d4ab5d`, `main` a `ba06d66`) e le righe della seconda fra la #240 e la #242: `pnpm lint`,
+    `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (830 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test`
+    **708/708** in 97 file (i 698 di E10k con `main`, e i 10 di questa fase); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi,
+    unità **1203/1203**; i test nuovi da soli 10/10, e **la prova al contrario** sui due nuovi: con `mine.tsx` e `bookings.tsx` di `main`
+    cadono loro 2 su 10; la smoke **180/180** al primo giro (1,1 minuti), i due `toHaveTitle` compresi; `pnpm e2e:full` **58/58** al primo
+    giro (11,8 minuti, `ivaohub_e2e_e4c` ricreato; uno spec in più, di E6b); le regole di
+    `core-guard` dalla testa di E10k `f7e9839`: quindici file, i tredici di prima con `bookings.tsx` e `mine.tsx`, nessuno del maintainer
+    né del nucleo;
+  - dopo l'unione di `fdb551d` (`212d676`, `main` ad `aa3707a`): `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e
+    `pnpm i18n:check` (822 chiavi) verdi, `pnpm i18n:sync` senza differenze; `pnpm test` **670/670** in 92 file (i tre in più sono della
+    revisione di E10k); `dotnet build IvaoHub.sln --configuration Release` 0 avvisi, unità **1187/1187** (il test del meteo verde); la
+    smoke **173/173** al primo giro (1,2 minuti); `pnpm e2e:full` **57/57** al primo giro (11,0 minuti, `ivaohub_e2e_e4c` ricreato);
+  - al primo push (E10k unita a `b36e663`, le quattro liste): `pnpm lint`, `pnpm format:check` («All matched files use Prettier code
+    style!»), `pnpm typecheck` e `pnpm i18n:check` (822 chiavi letterali in `en` e `it`) verdi; `pnpm test` **667/667** in 92 file;
+    `pnpm i18n:sync` senza differenze dopo il suo commit;
+  - i test nuovi da soli 8/8; **la prova al contrario**, due volte: con le tre schermate di E10k rimesse (le chiavi e il test tenuti)
+    cadevano 5 test su 6, e passava quello della pagina di un evento, che non deve cambiare; con `airports.tsx` ed `events.tsx` senza la
+    frase cadono i loro 2 test su 8; rimessi i file della fase, tutti verdi;
+  - la smoke `pnpm -C web exec playwright test --workers=2` **173/173** al primo giro due volte: sulla testa `9bcd459` (1,7 minuti) e
+    sull'albero finale (1,2 minuti), i due `toHaveTitle` compresi;
+  - `pnpm e2e:full` sulla porta 5133 con `ivaohub_e2e_e4c` ricreato ogni volta: **57/57** al primo giro sulla testa `9bcd459` (12,2
+    minuti; un primo giro fermato al test 2 dal riavvio dell'app), e **57/57** al primo giro sull'albero finale (11,5 minuti);
+  - le regole di `core-guard` rifatte in PowerShell (con `-cmatch`, come `=~` di bash) sul tratto della fase, da E10k a `b36e663`:
+    tredici file — le cinque schermate, il test nuovo, i file di lingua del modulo e le loro copie in `locales/`, lo spec degli eventi,
+    `10` e `HANDOFF-M4.md` —, nessuno del maintainer né del nucleo: «Only the contributor's module and documents». Sulla PR, finché la
+    #238 non è unita, il diff verso `main` porta anche i file di E10k con la sua nota: `core-guard` li elenca come nucleo giustificato da
+    quella nota;
+  - niente in C# di questa fase; che l'hub parta con le chiavi nuove l'ha provato `e2e:full`.
+- **Non verificato**:
+  - la CI del primo push: «Test .NET» rosso per #236, e nessun passo web (li ho fatti girare in locale, sopra). Dopo l'unione di
+    `fdb551d` la CI gira intera, e la sua lettura la dice la PR;
+  - la suite di integrazione in locale prima dell'unione dell'11 ottobre: il C# dell'albero era quello di `main`, provato dalla CI delle
+    sue PR; da allora gira a ogni unione (sopra);
+  - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
+
+### E10m — Nucleo: un solo lettore dei nomi
+
+**Da dove viene**: non c'era in E0. L'ha portata la revisione di E6b (#240): `EventsPeople` era il quarto lettore dei nomi per VID, dopo
+quello dei fili dei contatti, dei tour e della formazione, e **Carmine** l'ha accettato per ora, mettendo **un lettore dei nomi nel
+nucleo** nella coda del nucleo «prima che se ne scriva un quinto» ([risposta 4 sulla #240][a240m]). dalberone si è offerto di scriverlo
+(issue #247), e **Carmine ha deciso** ([la sua risposta sulla #247][a247m], 11 ottobre, data in chat alla sessione master e pubblicata
+su sua istruzione): sì, una fase del nucleo con la sua PR e una nota nuova; la copia del nucleo passa sopra di lui nella stessa PR, con
+test che tengono ciò che rispondono oggi i quattro; la formazione e gli eventi dopo, in piccole fasi di dalberone; i tour in una
+sessione di Carmine. Branch `m4/e10m-names-reader`, da `main` a `bea8c0e`. **PR del nucleo** senza coda, con la sua nota (caso b);
+nessuna migrazione.
+
+1. **Il lettore** nel nucleo: prende VID e risponde nomi da `hub_users` (nome e cognome, tagliati); chi l'hub non conosce fuori; una
+   persona cancellata, un VID negativo, senza nome.
+2. **`ContactThreads` passa sopra di lui**, senza cambiare ciò che risponde.
+3. **Il codice dei moduli resta fuori** (regola 6): il HANDOFF dice che cosa faranno le fasi della formazione e degli eventi.
+
+**Test**: integrazione: il lettore da solo; lo stesso che rispondono le tre copie dei moduli; uno per ogni differenza fra le quattro.
+Ognuno provato al contrario su un lettore rotto.
+**Fatta quando**: il nucleo ha un lettore dei nomi che risponde come le quattro copie, i fili dei contatti lo usano, e ogni modulo può
+passarci sopra senza che cambi una pagina.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-un-solo-lettore-dei-nomi`, **decisa** sulla #247, con una domanda a Carmine nel corpo della PR):
+  - **`src/IvaoHub.Core/People/MemberNames.cs`**, namespace `IvaoHub.Core.People`, una cartella nuova: una classe statica con
+    `ReadAsync(HubDbContext, IEnumerable<int>, …)` e `ReadAsync(HubDbContext, IEnumerable<int?>, …)`, che risponde
+    `IReadOnlyDictionary<int, string>`. Nessuna registrazione, nessuna migrazione, nessun endpoint, nessuna chiave, niente nel browser;
+  - **`ContactThreads.ReadAsync`** chiede i nomi degli autori a `MemberNames`; il suo `NamesAsync` privato se n'è andato.
+    `ContactThreadTests` (del maintainer) non cambia, e passa;
+  - **`tests/IvaoHub.IntegrationTests/MemberNamesTests.cs`** (integrazione, 7): il lettore da solo; il test gemello con `PirepReview`,
+    `TrainingPeople` ed `EventsPeople` su cinque richieste; il nome vuoto tenuto e letto da ogni modulo a modo suo; un bianco che non è
+    uno spazio ai bordi tagliato; e una per ogni differenza (nota §2): un VID sotto uno mai nominato, nessuno da chiedere che non arriva
+    al database, un VID nullo lasciato fuori.
+- **Le quattro copie confrontate** (nota §2): rispondono lo stesso in ogni stato che l'hub scrive. Tre differenze, nessuna visibile a
+  una pagina: **i tour lasciano fuori un VID sotto uno** prima di chiedere, gli altri lo chiedono (cambia solo con una riga di
+  `hub_users` sotto uno, che l'hub non scrive); **formazione ed eventi non vanno al database** quando non c'è nessuno da chiedere, nucleo
+  e tour sì; **tour e formazione prendono VID nulli**. Il lettore le decide come la copia più stretta: sotto uno mai un nome (la
+  decisione sulla #247), nessuna query a vuoto, il nullo fuori. Di forma: il nucleo leggeva la riga intera e rispondeva un dizionario
+  modificabile.
+- **Scelte, scritte nella nota** (§3): `Core/People/` e non `Core/Auth/`, `Core/Privacy/` o `Core/Content/`; una classe statica con il
+  contesto passato da chi chiede, invece di un servizio nel contenitore; **il nome vuoto tenuto** (`""`), perché è lì che le pagine si
+  separano — i tour lo fanno `null`, la mail della formazione scrive il VID, il `personName` del browser anche.
+- **Le prove al contrario** (il lettore rotto, i sette casi rieseguiti, poi rimesso):
+  1. senza `vid > 0`: cadono 2 su 7, `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` e `NobodyToAskAboutDoesNotReachTheDatabase`;
+  2. senza il ritorno quando non c'è nessuno da chiedere: cade 1, `NobodyToAskAboutDoesNotReachTheDatabase`;
+  3. il nome unito e tagliato nella query (`(FirstName + " " + LastName).Trim()`, il `TRIM` di MariaDB): cadono 3, il lettore da solo,
+     il test gemello e `ABlankOtherThanASpaceAtTheEdgeOfANameIsTrimmedToo`;
+  4. il nome vuoto lasciato fuori: cadono 2, `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay` e il test gemello;
+  5. senza `Trim`: cadono 4, il lettore da solo, il test gemello, il nome vuoto (`" "`) e il bianco ai bordi;
+  6. un VID nullo letto come un valore (`vid!.Value`) invece di lasciarlo fuori: cadono 3, `AMissingVidIsLeftOutLikeAnUnknownOne`,
+     `NobodyToAskAboutDoesNotReachTheDatabase` e il test gemello.
+- **Trovato**: gli altri lettori di un nome nell'hub non sono fra i quattro e restano (nota §5); due di loro, chi ha pubblicato un
+  contenuto e chi l'ha segnato pronto (`ContentEndpoints`, `ContentReviewService`), uniscono nome e cognome nella query senza tagliare:
+  passarli cambierebbe ciò che rispondono, e non è di questa decisione.
+- **Verificato**: `dotnet build` in Debug e in Release, 0 avvisi e 0 errori; unità **1203/1203**; integrazione intera, senza filtro,
+  **536/536** (9,6 min); `pnpm lint`, `pnpm typecheck`, `pnpm format:check` verdi, `pnpm test` **698/698** in 96 file. **Non girati**
+  la smoke e `pnpm e2e:full`: nessuno schermo cambia, e il filo dei contatti lo legge `ContactThreadTests` sul server vero, come per
+  E10g, E10h ed E10i; la porta 5138 e `ivaohub_e2e_e10m` non sono stati usati.
+- **Dopo la revisione** (12 ottobre 2026, [i rilievi sulla #252][r252m]): **approvabile, niente da correggere**, pronta per il
+  maintainer. Il revisore ha chiesto **una coda sola** ([sulla #252][q252m]), perché ogni unione rimetteva in conflitto le altre sulla
+  cima di `HANDOFF-M4.md`: **#242 → #250 → #252 → #251 → #249 → #239**. La #252 è la terza, **in coda dopo la #250**: ha unito la testa
+  di E10l `2e4164d` (con E4c e `main` ad `a75ed6c`, E7 compresa), con i conflitti solo in questo file e in `HANDOFF-M4.md` (le sezioni di
+  E10l e di E10m una dopo l'altra, il blocco di E10m in cima). Il merge non tocca il nucleo né le copie dei moduli. Rifatti: build, 0
+  avvisi; unità **1220/1220**; integrazione intera **550/550** (10,0 min); `lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+  `pnpm test` **728/728** in 100 file.
+
+[r252m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6119781289
+[q252m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6120883727
+
+[a240m]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158
+[a247m]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/247#issuecomment-6113460844
+
+### E10n — Nucleo: una persona cancellata non resta nel registro
+
+**Da dove viene**: non c'era in E0. Il revisore, rileggendo E8b sulla #249, ha trovato un buco del nucleo ([il punto 7][rv249n]): una
+prenotazione che il pilota ha ritirato, o che lo staff ha tolto, **prima** della cancellazione non è più una riga, nessun eraser la
+trova, e le sue righe `created` e `deleted` nell'audit tengono il nominativo, l'altro aeroporto e l'orario, con il solo VID cambiato
+nello pseudonimo. **Carmine ha deciso** ([la risposta 2 sulla #249][a249n], 11 ottobre, data in chat alla sessione master e pubblicata
+su sua istruzione): lo prende dalberone, come fase del nucleo di M4; un meccanismo del nucleo per ogni modulo, non un caso degli eventi;
+i test nei test della cancellazione del nucleo; **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b.
+Branch `m4/e10n-erased-audit-rows`, da `main` a `bea8c0e`. **PR del nucleo** senza coda, con la sua nota (caso b).
+
+**Fatta quando**: le righe d'audit di una riga tolta prima della cancellazione perdono i dati della persona che l'eraser toglie dalle
+righe che restano; una riga che resta e le righe di un'altra persona non cambiano.
+
+**Com'è andata** (11 ottobre 2026, branch `m4/e10n-erased-audit-rows`, PR #251, del nucleo senza coda, da `main` a `bea8c0e`):
+
+- **Fatto** (nota nuova `2026-10-11-i-dati-di-una-persona-nell-audit`, **decisa**, con il link alla risposta di Carmine; la forma è della
+  nota, §3):
+  - **il segno** `[ErasedWith(nameof(…Vid))]` (`src/IvaoHub.Core/Privacy/ErasedWithAttribute.cs`) su una colonna: è un dato della
+    persona che un'altra colonna della stessa riga nomina. `PersonColumns.ErasedWith(entity)` lo legge dal modello, raggruppato per
+    persona, e rifiuta un segno che non nomina una colonna di persona;
+  - **il passo** `AuditRedaction.EmptyGoneAsync`, chiamato da `PersonalDataErasure` in ogni contesto dopo l'eraser e prima dello
+    pseudonimo, e nel contesto del nucleo: trova le chiavi delle righe che nominavano la persona nella colonna del segno (dalle copie
+    intere dell'audit), toglie quelle che ci sono ancora, e svuota le colonne segnate in ogni riga d'audit di quelle chiavi
+    (`AuditRedaction.Empty`). `HubSaveChangesInterceptor.ReadKey` è ora `internal`, perché la chiave si scriva in un modo solo;
+  - i riassunti di `IPersonalDataEraser`, `PersonalDataErasure` e `AuditRedaction` lo dicono;
+  - **i test**: `ErasedAuditTests` (integrazione, 3) e `ErasedColumnsTests` (unità, 4); il modulo di prova segna `SampleItem.Title`
+    come dato del membro di cui parla (nessuna migrazione).
+- **Scelte di dalberone** (11 ottobre, chieste prima del codice con la raccomandazione per prima; tutte e due accolte):
+  1. **le prenotazioni le segna E8b**, dopo l'unione di questa: la regola 6 vuole il nucleo e il modulo in due PR (nota §4);
+  2. **la persona cancellata dei test è 761100**, nuova: i VID di M4 sono finiti, e una persona già usata non si cancella.
+- **Scelte della fase, scritte nella nota** (§3, §5):
+  1. **il segno sulla colonna**, non un elenco dell'eraser: il nucleo lo legge dal modello come le colonne di persona;
+  2. **la persona è una colonna della stessa riga**: cancellare lo staff che ha scusato un volo non svuota il nominativo del pilota;
+  3. **solo le righe che non ci sono più**: una riga che c'è resta del suo eraser, e cambia come prima;
+  4. **le colonne svuotate, non la riga d'audit intera**: la storia (che cosa, chi, quando, le altre colonne) resta.
+- **Trovato**:
+  - ⚠️ **Le chiavi del JSON dell'audit sono i nomi delle proprietà** (`"Title"`, `"BookerVid"`), non in camel case: `Serialize`
+    scrive un dizionario, e `JsonSerializerDefaults.Web` non cambia le chiavi di un dizionario. Il riassunto di
+    `PersonColumns.IsVidName` diceva «camel case» (la regola regge sui due modi), ed è corretto; il passo nuovo cerca il nome com'è.
+  - **Il limite**, detto nella nota (§3.1): un dato su una riga figlia, la cui persona la nomina la riga sopra (le note di una sessione
+    di training), non è coperto.
+- **Lette le fasi che corrono accanto** (11 ottobre): E10m (il lettore dei nomi) ed E10l (il pulsante di chiusura delle finestre) non
+  toccano la cancellazione, l'interceptor né il modulo di prova, e nessuna usa 761100; conflitti solo nei documenti di M4.
+- **Verificato, in locale** (11 ottobre 2026, `main` a `bea8c0e`):
+  - `dotnet build IvaoHub.sln` in Debug e in Release, 0 avvisi; unità **1207/1207** (le architetture comprese); integrazione intera, senza
+    filtro, **532/532** al primo giro (9 minuti); `ErasedAuditTests` con `ErasureTests` 7/7;
+  - **la prova al contrario**: tolte le due chiamate a `EmptyGoneAsync` (modifica locale, mai nel ramo), cadono i test 1 e 2 di
+    `ErasedAuditTests` (il titolo resta nelle tre righe d'audit della riga tolta) e passa il terzo; rimesse e ricompilate, 3/3;
+  - `pnpm gen:api` senza differenze, `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:sync` (nessuna differenza),
+    `pnpm i18n:check` (830 chiavi) verdi; `pnpm test` **698/698** in 96 file; `pnpm build` verde;
+  - le regole di `core-guard` rifatte in PowerShell dalla merge base (`bea8c0e`): sei file del nucleo, uno condiviso dei test
+    (`SampleItems.cs`), la nota nuova, nessun file del maintainer — passa.
+- **Non verificato**:
+  - le prenotazioni: le segna E8b dopo l'unione, con il suo test;
+  - una cancellazione già fatta prima di questa fase non si rifà: le copie di righe tolte prima di quella restano con i dati (oggi
+    nessuna installazione vera ha prenotazioni);
+  - la smoke e `pnpm e2e:full`, non eseguite: la fase non tocca il browser né un endpoint, e nessuno spec cancella una persona;
+  - la CI (la dice la PR).
+
+**Dopo la revisione** (12 ottobre 2026, [i rilievi][rv251n] sulla #251: la forma è giusta; due correzioni prima dell'unione e tre punti
+bassi, tutti fatti; nota §7):
+
+- **«Tolta» è ora «nessuna riga con quella chiave»**, non «nessuna riga nomina oggi la persona»: una riga passata a un altro membro, e
+  una rimasta da un primo giro fallito a metà con lo pseudonimo già scritto, ci sono ancora e restano del loro eraser. E di una riga
+  tolta si svuotano **solo le copie scritte mentre era della persona** (`AuditRedaction.EmptyWhileHeld`): una riga passata di mano e poi
+  tolta tiene i dati dell'altro membro. Le due vie che il revisore offriva, prese insieme: ciascuna chiude un caso che l'altra lascia.
+- **I test di ciò che non si tocca**: la persona da staff su una riga di un altro membro, con il suo VID in `CreatedBy`, `UpdatedBy` e
+  come titolo; in unità, il VID in altre proprietà.
+- **I bassi**: un segno sbagliato ferma l'avvio (`PersonColumns.VerifyErasedWith` in `HubPipeline.InitializeAsync`, accanto a
+  `VerifyAlternatives` e `VerifyWithdrawals`), e sono rifiutati anche il segno su un'entità non `[Audited]`, su una proprietà non
+  mappata e su una chiave di più colonne; si legge solo la chiave delle righe che ci sono (`ExistingKeysAsync`; `ReadKey` torna
+  privato, `FormatKey` è il pezzo comune); il commento sull'ordine dice la ragione giusta.
+- **Un file del nucleo in più**: `src/IvaoHub.Web/HubPipeline.cs` (la riga dell'avvio).
+- **In coda** (la richiesta del revisore, [la coda][q251n]): **#242 → #250 → #252 → #251 → #249 → #239**. Questa viene dopo E10m (#252),
+  con il suo branch unito (che porta E10l, E4c e `main`); E8b (#249) la unisce dopo, con il commit che segna le cinque colonne della
+  prenotazione.
+- **Verificato, in locale** (12 ottobre 2026, prima dell'unione del branch di sotto): `dotnet build IvaoHub.sln` 0 avvisi; unità
+  **1213/1213**; `ErasedAuditTests` e `ErasureTests` 10/10; `ErasedAuditTests` **6/6**; integrazione intera, senza filtro, **535/535** al primo giro (10,7 minuti).
+  **La prova al contrario**: con il nucleo del primo push (`86b2008`) e i test nuovi, cadono i due casi del revisore — la riga passata
+  di mano e quella rimasta dal primo giro (`Assert.Equal() Failure: Strings differ`) — e passano gli altri quattro; rimessi i file della
+  correzione, toccati e ricompilati, 6/6. I test di unità nuovi chiamano `EmptyWhileHeld` e `VerifyErasedWith`, che il primo push non ha:
+  la prova al contrario non li compila.
+- **Unita la testa di E10m `2509a72`** (con E10l, E4c e `main` ad `a75ed6c`, E7 compresa), senza rebase; conflitti solo in questo piano e
+  nell'handoff (le sezioni di E10l ed E10m prima di questa; nell'handoff l'intestazione e il blocco di E10n in cima). **Rifatto dopo
+  l'unione**: `dotnet build IvaoHub.sln` 0 avvisi; unità **1230/1230**; integrazione intera, senza filtro, **556/556** al primo giro
+  (10,6 minuti); `pnpm gen:api` e `pnpm i18n:sync` senza differenze, `pnpm lint`, `pnpm format:check`, `pnpm typecheck`,
+  `pnpm i18n:check` (835 chiavi) e `pnpm build` verdi, `pnpm test` **728/728** in 100 file; le regole di `core-guard` contro `main` ad
+  `a75ed6c`: nessun file del maintainer, i file del nucleo con le tre note nuove della coda.
+
+[rv251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771
+[q251n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6120884106
+[rv249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
 ### E11a — Postazioni e disponibilità
 
