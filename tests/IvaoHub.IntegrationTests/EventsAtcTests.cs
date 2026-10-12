@@ -498,6 +498,20 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await AvailabilityRowAsync(toCome, PersonVid, now.AddDays(10), now.AddDays(10).AddHours(2), "evt-test-e11a to come", token);
         var kept = await AvailabilityRowAsync(over, PersonVid, now.AddDays(-10), now.AddDays(-10).AddHours(2), "evt-test-e11a their words", token);
 
+        // An availability the person gave and withdrew before the erasure: no eraser finds it, and its copies in the audit hold their note
+        // until the core empties them (E10n, the mark on the note).
+        var (starts, ends) = Window(days: 25);
+        var withdrawnFrom = await EventRowAsync("erase-withdrawn", starts, ends, hasRoster: true, token);
+        await PositionRowAsync(withdrawnFrom, Tower, starts, ends, token);
+        using (var person = await SignedInAsync(PersonVid, token))
+        {
+            await CreatedAsync(await person.PutAsJsonAsync(Mine(withdrawnFrom), Request((starts, ends)) with { Note = GoneWords }, token), token);
+            using var withdrawn = await person.DeleteAsync(Mine(withdrawnFrom), token);
+            Assert.Equal(HttpStatusCode.NoContent, withdrawn.StatusCode);
+        }
+
+        Assert.True(await AuditMentionsAsync(GoneWords, token), "Without the note in the audit, the check below would prove nothing.");
+
         using var superadmin = await SignedInAsync(SuperadminVid, token);
         (string Key, int Count, string Outcome)[] lines =
         [
@@ -515,6 +529,20 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var stored = Assert.Single(await AvailabilitiesAsync(over, token));
         Assert.Equal((kept, pseudonym, (string?)null), (stored.Id, stored.ControllerVid, stored.Note));
         Assert.Equal([pseudonym], (await WindowsAsync(over, token)).Select(window => window.ControllerVid));
+
+        // The availability withdrawn before: nothing of its note in the audit.
+        Assert.False(await AuditMentionsAsync(GoneWords, token));
+    }
+
+    /// <summary>A note that says who wrote it, on an availability withdrawn before the erasure.</summary>
+    private const string GoneWords = "evt-test-e11a gone words";
+
+    /// <summary>Whether a row of the audit log still copies a text with the marker in it, before or after its change.</summary>
+    private async Task<bool> AuditMentionsAsync(string marker, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
+            .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
     }
 
     /// <summary>The least ATC rating of the settings is one of the core's vocabulary: another number is refused on its field.</summary>

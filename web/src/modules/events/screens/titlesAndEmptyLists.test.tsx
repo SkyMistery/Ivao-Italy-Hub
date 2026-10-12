@@ -92,6 +92,8 @@ const event: PublicEventDto = {
   inPerson: false,
   venue: null,
   questions: [],
+  // The ATC of an event with a roster (E11a): none here.
+  atc: null,
 };
 
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */

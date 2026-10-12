@@ -1,4 +1,5 @@
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Privacy;
 
 namespace IvaoHub.Modules.Events;
 
@@ -32,7 +33,11 @@ public sealed class EventAtcAvailability : IEventChild, IVisible, ISubmittedByMe
     /// <summary>The controller: whoever the row is about.</summary>
     public int ControllerVid { get; set; }
 
-    /// <summary>What the controller adds, in their own words.</summary>
+    /// <summary>
+    /// What the controller adds, in their own words: the column <see cref="EventsPersonalData"/> empties on an availability it keeps, and
+    /// the core empties in the audit of one withdrawn before the controller's erasure (<see cref="ErasedWithAttribute"/>, E10n).
+    /// </summary>
+    [ErasedWith(nameof(ControllerVid))]
     public string? Note { get; set; }
 
     public DateTime CreatedAt { get; set; }
