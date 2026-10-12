@@ -4019,7 +4019,9 @@ oggi.
 **Fatta quando**: il form del membro di E16 si disegna dallo schema costruito dalle righe, con il testo delle domande come nomi dei
 campi, e nessun form scritto prima cambia.
 
-**Com'è andata** (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239):
+**Com'è andata** (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; il branch è
+stato pubblicato una prima volta senza PR, a `1a8c074`, perché E16 ci costruisse sopra il suo form mentre la coda andava avanti — la
+richiesta della sessione che coordina):
 
 - **Fatto** (nota nuova `2026-10-12-un-campo-dice-il-suo-nome`, **decisa**, con il link alla risposta di Carmine):
   - **`FieldMeta.label`** (`web/src/shared/forms/schema.ts`): `.meta({ label })`, una stringa già nella lingua sullo schermo, letta
@@ -4045,12 +4047,19 @@ campi, e nessun form scritto prima cambia.
   - `dotnet build IvaoHub.sln` 0 avvisi; unità **1220/1220**;
   - la smoke (`playwright test --workers=2`) **180/180** (1,2 minuti);
   - `pnpm e2e:full` sulla porta 5138 con `ivaohub_e2e_e10o` nuovo: **59/59** al primo giro (12,8 minuti), sul codice di `main` più questa fase;
-  - le regole di `core-guard` rifatte in PowerShell dalla merge base: CORE_GUARD.
+  - le regole di `core-guard` rifatte in PowerShell: sul tratto della fase (da `0963908`) nessun file del maintainer, sei del nucleo
+    (`schema.ts`, `SchemaForm.tsx`, il test nuovo, i due `common.json`, `docs/UI-GUIDELINES.md`) con la nota nuova — passa; sul tutto
+    da `main` `a75ed6c` (la coda sotto compresa) nessun file del maintainer, 36 del nucleo con sette note nuove — passa.
+- **Dopo aver unito la testa di E10j** (`0963908`, 12 ottobre: E8b, E10n, E10m, E10l, E4c e `main` ad `a75ed6c`), un merge senza
+  conflitti, rifatto sul codice unito: `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (839 chiavi) verdi,
+  `pnpm gen:api` senza differenze, `pnpm test` **753/753** in 103 file, `pnpm build` verde; `dotnet build IvaoHub.sln -c Release` 0
+  avvisi, unità **1269/1269**, integrazione intera, senza filtro, **577/577** (Release); la smoke **181/181** (1,2 minuti);
+  `pnpm e2e:full` sulla porta 5138 con `ivaohub_e2e_e10o` ricreato: **61/61** al primo giro (11,9 minuti).
 - **Non verificato**:
   - la CI (la dice la PR);
   - il form di E16 su questo nucleo in un browser: lo guarda E16, dopo l'unione (i test usano il suo schema, non le sue pagine);
   - un lettore di schermo vero sul nome del gruppo di caselle (vitest legge il nome accessibile dal DOM);
-  - l'integrazione .NET: nessun file del server cambia.
+  - l'integrazione .NET prima del merge (nessun file del server cambia): fatta dopo, sul codice unito.
 
 [a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 

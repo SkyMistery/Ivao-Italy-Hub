@@ -6,7 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
+`m4/e10o-field-names-in-schema`, **PR #254** verso `main`, **in coda dopo la #239**, la settima della coda **#242 → #250 → #252 → #251
+→ #249 → #239 → #254**, con E16 dopo: nata da `main` a `a75ed6c`, **decisa** da Carmine sull'issue #253 ([la sua risposta, punto
+1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540): A, prima una fase del nucleo), e ha unito la testa
+di E10j `0963908` (con E8b, E10n, E10m, E10l, E4c e `main` ad `a75ed6c`). Da E10o un campo del form generato può dire **il suo nome
+nello schema** (`.meta({ label })`), già nella lingua sullo schermo, e la sua select opzionale dice «Nessuna scelta» con una parola del
+nucleo: è quello che serve al form del membro di E16, costruito dalle domande di un evento («Che cosa ha lasciato E10o», sotto).
+
+**L'aggiornamento di E10j:** 12 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
 `m4/e10j-jobs-catch-up`, **PR #239** verso `main`, **in coda dopo la #249**, l'ultima della coda **#242 → #250 → #252 → #251 → #249 →
 #239**: nata da `main` a `0f72737`, **decisa** da Carmine sulla #239 con le sue cinque risposte, la domanda 3 compresa (il token anche
 nell'indirizzo, accanto all'intestazione, per un pannello che sa solo «Recupera un URL»: [la risposta
@@ -230,7 +238,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239)
+### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; con la testa di E10j `0963908`)
 
 - **Che cosa c'è** (nota `decisions/2026-10-12-un-campo-dice-il-suo-nome.md`, **decisa** da Carmine sull'issue #253, [la sua
   risposta][a253o], punto 1: A, prima una fase del nucleo; non B, i file di lingua non tengono righe; il dettaglio in `10`, E10o, «Com'è
