@@ -7,6 +7,7 @@ import type { CalendarKind, Department } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { ListFilter } from '../../shared/list';
+import { PageMetadata } from '../../shared/seo/PageMetadata';
 import {
   CALENDAR_SCREEN_VIEWS,
   CalendarView,
@@ -76,6 +77,9 @@ export function PublicCalendarScreen({
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t('calendar.public.title')} description={t('calendar.public.description')} />
+
       <header className="flex flex-col gap-1">
         <H1>{t('calendar.public.title')}</H1>
         <Lead>{t('calendar.public.description')}</Lead>

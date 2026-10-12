@@ -1,4 +1,4 @@
-import { Subtle } from '@ivao/atmosphere-react';
+import { Badge } from '@ivao/atmosphere-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -6,12 +6,14 @@ import { useMoment } from '../../../shared/i18n/useMoment';
 import { LiveStatusStrip } from '../../../shared/ui';
 import type { PublicEventDto } from '../api';
 
-import { countdown, onTheEventsDay } from './bookingTimes';
+import { bookingStage, countdown, onTheEventsDay } from './bookingTimes';
+import { headMoment } from './cards';
 
 /**
- * When the pilots of an event book (design M4 §3.3, §7.1, E6b; asked by dalberone after the bench): the moment the bookings open, in
- * UTC and where the division lives, and until then how long is left, to the second. Once it has come, the bookings are open from that
- * moment, each slot until its own off block; a cancelled event takes no booking.
+ * When the pilots of an event book (design M4 §3.3, §7.1, E6b; asked by dalberone after the bench), as a badge in the line under the
+ * title (note 2026-10-11-la-testa-della-pagina-di-un-evento): until they open, the moment they do, in UTC and where the division lives,
+ * and how long is left, to the second; then «open» — each slot until its own off block, which the list of the slots says —; «closed»
+ * once the event is cancelled or over. Nothing for an event that takes no booking.
  *
  * `onOpen` is told once, when the count reaches nothing: the page reads the event again, and the slots are offered.
  */
@@ -20,7 +22,7 @@ export function BookingOpening({
   timezone,
   onOpen,
 }: {
-  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt'>;
+  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt' | 'endsAtUtc'>;
   timezone: string | undefined;
   onOpen: () => void;
 }) {
@@ -29,10 +31,10 @@ export function BookingOpening({
   const opensAt = event.bookingOpensAtUtc;
   const opensMs = opensAt === null ? Number.NaN : Date.parse(opensAt);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const left = Number.isNaN(opensMs) ? null : countdown(nowMs, opensMs);
-  const counting = left !== null && event.cancelledAt === null;
+  const stage = bookingStage(event, nowMs);
+  const counting = stage === 'opens';
 
-  // A second at a time while the count runs, and nothing once it has run out: only this line is drawn again.
+  // A second at a time while the count runs, and nothing once it has run out: only this badge is drawn again.
   useEffect(() => {
     if (!counting) {
       return undefined;
@@ -50,42 +52,46 @@ export function BookingOpening({
     return () => window.clearInterval(timer);
   }, [counting, opensMs, onOpen]);
 
-  if (opensAt === null) {
+  if (stage === 'none' || opensAt === null) {
     return null;
   }
 
-  if (event.cancelledAt !== null) {
-    return <span>{t('events:public.booking.closedCancelled')}</span>;
+  if (stage !== 'opens') {
+    return (
+      <Badge
+        variant="flat"
+        color={stage === 'open' ? 'blue' : 'gray'}
+        text={t(`events:public.booking.${stage}`)}
+      />
+    );
   }
 
-  const when = (
-    <span className="flex flex-col leading-tight">
-      <span className="font-semibold tabular-nums">{t('calendar.utc', { at: moment(opensAt) })}</span>
-      {timezone === undefined ? null : (
-        <Subtle className="tabular-nums">
-          {t('calendar.local', { at: moment(opensAt, { timeZone: timezone }) })}
-        </Subtle>
-      )}
-    </span>
-  );
+  const at = headMoment(opensAt, moment, timezone);
+  const left = countdown(nowMs, opensMs);
 
-  return left === null ? (
-    <span className="flex flex-col gap-1">
-      <span>{t('events:public.booking.openSince')}</span>
-      {when}
-      <Subtle className="text-sm">{t('events:public.booking.untilOffBlock')}</Subtle>
-    </span>
-  ) : (
-    <span className="flex flex-col gap-1">
-      <span>{t('events:public.booking.opensAt')}</span>
-      {when}
+  return (
+    <>
+      <Badge
+        variant="flat"
+        color="gray"
+        text={t('events:public.booking.opensOn', {
+          at: [
+            t('calendar.utc', { at: at.utc }),
+            at.local === null ? '' : t('calendar.local', { at: at.local }),
+          ]
+            .filter((part) => part !== '')
+            .join(' '),
+        })}
+      />
       {/* A timer is not announced every second: `role="timer"` is read when somebody asks for it, not as it ticks. */}
-      <span role="timer" className="text-sm font-semibold tabular-nums">
-        {left.days > 0
-          ? t('events:public.booking.countdownDays', { days: left.days, time: left.time })
-          : t('events:public.booking.countdown', { time: left.time })}
-      </span>
-    </span>
+      {left === null ? null : (
+        <span role="timer" className="font-semibold whitespace-nowrap tabular-nums">
+          {left.days > 0
+            ? t('events:public.booking.countdownDays', { days: left.days, time: left.time })
+            : t('events:public.booking.countdown', { time: left.time })}
+        </span>
+      )}
+    </>
   );
 }
 

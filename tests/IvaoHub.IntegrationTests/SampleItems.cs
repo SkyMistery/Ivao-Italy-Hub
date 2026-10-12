@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Privacy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -26,6 +27,11 @@ public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasR
 {
     public long Id { get; set; }
 
+    /// <summary>
+    /// The data of the member the row is about, the way a booking's callsign is its pilot's (M4, E10n): an erasure of that member
+    /// empties it in the audit rows of an item already gone (<see cref="ErasedWithAttribute"/>).
+    /// </summary>
+    [ErasedWith(nameof(StakeholderVid))]
     public string Title { get; set; } = string.Empty;
 
     /// <summary>The member this row is about, when it is about one.</summary>
@@ -35,7 +41,10 @@ public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasR
     /// What a grant has to name to reach this row alone. A module chooses the shape; the core only
     /// ever compares it.
     /// </summary>
-    public string ResourceScope => $"{SampleModule.ModuleKey}:item:{Id}";
+    public string ResourceScope => ScopeOf(Id);
+
+    /// <summary>The scope of an item: the row's own, and the one its parts answer with (<see cref="SamplePart"/>, M4, E10i).</summary>
+    public static string ScopeOf(long itemId) => $"{SampleModule.ModuleKey}:item:{itemId}";
 
     public Visibility Visibility { get; set; }
 
@@ -67,6 +76,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
     public DbSet<SampleSubmission> Submissions => Set<SampleSubmission>();
 
     public DbSet<SampleReport> Reports => Set<SampleReport>();
+
+    public DbSet<SamplePart> Parts => Set<SamplePart>();
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
     {
@@ -119,6 +130,15 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options, I
             report.Property(row => row.Title).HasMaxLength(128).IsRequired();
             report.Ignore(row => row.StakeholderVid);
             report.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
+        });
+
+        modelBuilder.Entity<SamplePart>(part =>
+        {
+            part.ToTable("smp_parts");
+            part.HasKey(row => row.Id);
+            part.Property(row => row.Title).HasMaxLength(128).IsRequired();
+            part.Ignore(row => row.ResourceScope);
+            part.Property(row => row.OwnerDepartment).HasConversion<string>().HasMaxLength(4);
         });
     }
 }

@@ -6,6 +6,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.People;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -185,7 +186,9 @@ public sealed class ContactThreads(
 
         // The member who wrote reads the department as the author of every answer that is not theirs: no VID, no name.
         var readerIsSender = message.CreatedBy == currentUser.Vid;
-        var authors = readerIsSender ? [] : await NamesAsync(replies.Select(reply => reply.AuthorVid), cancellationToken);
+        var authors = readerIsSender
+            ? new Dictionary<int, string>()
+            : await MemberNames.ReadAsync(database, replies.Select(reply => reply.AuthorVid), cancellationToken);
 
         var locale = currentUser.Locale;
         var fallback = division.Value.DefaultLocale;
@@ -339,15 +342,6 @@ public sealed class ContactThreads(
         recipients.AddRange(staff.Where(vid => !except.Contains(vid)).Select(NotificationRecipient.Member));
 
         return recipients;
-    }
-
-    private async Task<Dictionary<int, string>> NamesAsync(IEnumerable<int> vids, CancellationToken cancellationToken)
-    {
-        var wanted = vids.Distinct().ToArray();
-        return await database.Users
-            .AsNoTracking()
-            .Where(user => wanted.Contains(user.Vid))
-            .ToDictionaryAsync(user => user.Vid, user => $"{user.FirstName} {user.LastName}".Trim(), cancellationToken);
     }
 
     private Dictionary<string, string> Data(ContactMessage message, string body, string url, int sender) =>

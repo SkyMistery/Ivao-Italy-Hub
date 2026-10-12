@@ -660,6 +660,41 @@ namespace IvaoHub.IntegrationTests.Migrations
                     b.ToTable("smp_items", (string)null);
                 });
 
+            modelBuilder.Entity("IvaoHub.IntegrationTests.SamplePart", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_smp_parts");
+
+                    b.ToTable("smp_parts", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.IntegrationTests.SampleRecord", b =>
                 {
                     b.Property<long>("Id")

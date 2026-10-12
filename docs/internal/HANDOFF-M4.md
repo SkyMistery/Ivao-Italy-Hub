@@ -6,28 +6,71 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 10 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
-`m4/e10j-jobs-catch-up`, **PR #239** verso `main`, nata da `main` a `0f72737`, senza coda: dopo la revisione ha unito `main` a
-`aa3707a` (la `0.6.6`, il test del meteo corretto), e dopo la risposta di Carmine alla domanda 3 a `ba06d66` (la `0.6.7`, il piano
-1.32). Prima di E10j: **fase E6b** (modulo: prenotare, le pagine), **PR #240**, nata in coda dopo la #233 di E6a, e **fase E6a**
-(modulo: prenotare, il server), **PR #233**, nata in coda dopo la #228 di E5 e poi anche dopo la #232 di **E10h** (il nucleo: chi ha
-mandato una riga se la riprende), una fase del nucleo nata da lei — il ritiro del pilota cancella la riga, e il guardiano
-dell'interceptor non lo lasciava fare. **La #233 e la #240 sono unite** (10 ottobre). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a
-(#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204),
-E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo
-(#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e **1.32 (#243)**, la parola degli eventi nella ricerca
-(#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225, #241, #244) e gli spec che dicono al banco che cosa
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
+`m4/e10j-jobs-catch-up`, **PR #239** verso `main`, **in coda dopo la #249**, l'ultima della coda **#242 → #250 → #252 → #251 → #249 →
+#239**: nata da `main` a `0f72737`, **decisa** da Carmine sulla #239 con le sue cinque risposte, la domanda 3 compresa (il token anche
+nell'indirizzo, accanto all'intestazione, per un pannello che sa solo «Recupera un URL»: [la risposta
+5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044)), rivista due volte — alla seconda lettura [niente
+più da correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6113746824) —, e ha unito la testa di E8b
+`889ba1a` (con E10n, E10m, E10l, E4c e `main` ad `a75ed6c`, E7 compresa). Da E10j ogni job Quartz dell'hub, del nucleo e dei moduli,
+gira una volta per occorrenza qualunque processo sia vivo: i giri persi mentre Passenger tiene l'hub spento si recuperano dopo un
+avvio, uno dopo l'altro, e l'operazione pianificata dell'host chiama `/api/jobs/run` con il token dell'installazione («Che cosa ha
+lasciato E10j», sotto). ⚠️ **Che cosa offre l'operazione pianificata del pannello resta un punto aperto: lo chiude chi la imposta, alla
+consegna** (il maintainer non ha accesso al pannello; nota `2026-10-09-i-job-che-recuperano` §2).
+
+**L'aggiornamento di E8b:** 12 ottobre 2026 — **fase E8b** (modulo: «Duplica», la cancellazione dei dati di una persona, il giro completo
+di M4a), sul branch `m4/e8b-duplicate-and-m4a-round`, **PR #249** verso `main`, **in coda dopo la #251**, la quinta della coda **#242 →
+#250 → #252 → #251 → #249 → #239**: nata dal branch di E7 a `0d766fe`, rivista due volte — approvabile, e alla seconda lettura
+[niente più da correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6119780940) —, con le due note **decise**
+da Carmine (sull'issue #248 e sulla #249), e ha unito la testa di E10n `b4ea56e` (con E10m, E10l, E4c e `main` ad `a75ed6c`, E7
+compresa). Con E8b **M4a è finita nel codice**, e dopo restano E9, fuori dal repository, e M4b o M4c. Da E8b un evento si **duplica**
+su una nuova data, come bozza, e la cancellazione dei dati di una persona tocca anche le sue prenotazioni; E8b segna le cinque colonne
+della prenotazione che la sua cancellazione svuota (`[ErasedWith(nameof(BookerVid))]`, la riga che la nota di E10n chiede a un modulo),
+così anche l'audit di una prenotazione ritirata prima della cancellazione le perde. ⚠️ **Con E10n ed E8b unite cade la regola di Carmine
+sulla #233** («nessuna prenotazione su un'installazione vera finché E8b non è unita»); **resta il log binario**, da provare con la prima
+prenotazione sull'installazione di prova alla consegna («Che cosa ha lasciato E8b», sotto).
+
+**L'aggiornamento di E10n:** 12 ottobre 2026 — **fase E10n** (nucleo: i dati di una persona cancellata nell'audit delle righe già tolte,
+decisa da Carmine sulla #249), sul branch `m4/e10n-erased-audit-rows`, **PR #251** verso `main`, **in coda dopo la #252**, la quarta
+della coda **#242 → #250 → #252 → #251 → #249 → #239**: nata da `main` a `bea8c0e`, corretta dopo la revisione (12 ottobre: le due
+correzioni e i tre bassi, [i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/251#issuecomment-6119839771)), e ha unito la
+testa di E10m `2509a72` (con E10l, E4c e `main` ad `a75ed6c`, E7 compresa). ⚠️ **E8b (#249) la unisce dopo** e segna le cinque colonne
+della prenotazione; **nessuna prenotazione su un'installazione vera prima delle due** («Che cosa ha lasciato E10n», sotto).
+
+**L'aggiornamento di E10m:** 12 ottobre 2026 — **fase E10m** (nucleo: un solo lettore dei nomi), sul branch `m4/e10m-names-reader`,
+**PR #252** verso `main`, **in coda dopo la #250**, la terza della coda **#242 → #250 → #252 → #251 → #249 → #239**: nata da `main` a
+`bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #247, **approvabile senza niente da correggere** per il revisore
+([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/252#issuecomment-6119781289)), e ha unito la testa di E10l `2e4164d`
+(con E4c e `main` ad `a75ed6c`, E7 compresa). Il nucleo ha `MemberNames.ReadAsync` (`Core/People/`), i fili dei contatti lo usano, e la
+formazione e gli eventi ci passano sopra in due piccole fasi di dalberone dopo l'unione («Che cosa ha lasciato E10m», sotto); i tour in
+una sessione di Carmine.
+
+**L'aggiornamento di E10l:** 12 ottobre 2026 — **fase E10l** (nucleo: il pulsante di chiusura delle finestre parla la lingua), sul branch
+`m4/e10l-dialog-close-label`, **PR #250** verso `main`, **in coda dopo la #242**, la seconda della coda **#242 → #250 → #252 → #251 →
+#249 → #239**: nata da `main` a `bea8c0e` (con E10k, la #238), **decisa da Carmine** sull'issue #224, **approvabile senza niente da
+correggere** per il revisore ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/250#issuecomment-6113746994)), e ha unito
+la testa di E4c `8683d53` (con `main` ad `a75ed6c`, E7 compresa). Il `Dialog` del nucleo c'è; i due dialog degli eventi — quello di uno
+slot e, con E7 unita, quello dell'ora privata — ci passano in una fase loro dopo questa («Che cosa ha lasciato E10l», sotto).
+
+**L'aggiornamento prima:** 12 ottobre 2026 — **fase E4c** (gli eventi dicono il loro titolo e le loro liste vuote), sul branch
+`m4/e4c-events-titles-and-empty-lists`, **PR #242** verso `main`, **in fondo alla coda** che il revisore ha chiesto il 12 ottobre: nata dal
+branch di E10k, ne ha unito le teste fino alla #238, e ha unito **`main` ad `a75ed6c`** (con E7, la #246). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**,
+**E7 (#246)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)**, **E10i
+(#237)**, **E10k (#238)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31
+(#234) e **1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225,
+**#241** — il test del meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo l'accesso) e gli spec che dicono al banco che cosa
 rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha
-montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del nucleo**: **E10i** (#237: un grant su una riga
-scrive quella riga, e i figli di un evento), **E10j** (#239, questa) ed **E10k** (#238: le parole delle liste e i titoli delle schede),
-con **E4c** (#242, gli usi degli eventi) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva su ogni branch dal mattino del
-9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa).
-**Il prossimo passo**: **E10j** (questa, la #239, del nucleo, senza coda), **decisa** da Carmine sulla #239, la domanda 3 compresa: il
-token anche nell'indirizzo, accanto all'intestazione, per un pannello che sa solo «Recupera un URL» ([la
-risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/239#issuecomment-6099399044)), sulla #239 con il suo test. ⚠️ **Che cosa
-offre l'operazione pianificata del pannello resta un punto aperto: lo chiude chi la imposta, alla consegna** (il maintainer non ha
-accesso al pannello; nota `2026-10-09-i-job-che-recuperano` §2, e «Che cosa ha lasciato E10j», sotto). Poi **E7** (gli slot privati),
-in coda sul branch di E6b. Da E3b un evento si **pubblica**, entra nel
+montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, in una coda sola** (il revisore, 12 ottobre 2026,
+[sulla #242](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/242#issuecomment-6120883096), perché ogni unione rimetteva in conflitto
+le altre sull'intestazione di questo file): **#242 → #250 → #252 → #251 → #249 → #239**. In fondo **E4c** (questa, la #242: il titolo di
+`/events` e di `/events/mine`, la frase vuota delle cinque liste generate degli eventi — gli usi degli eventi di E10k), poi **E10l**
+(#250), la #252 e la #251, **E8b** (#249: «Duplica», la cancellazione, il giro completo di M4a) ed **E10j** (#239, del nucleo: il recupero
+dei giri dei job). Il maintainer unisce dal fondo, una alla volta.
+**Il prossimo passo**: unire la coda dal fondo, a cominciare dalla #242. **E7 è unita** (la #246): il ritiro di uno dei due voli collegati
+(Carmine sull'issue #245, la strada A: il legame si scioglie e l'altra prenotazione resta) e la nota `2026-10-11-gli-slot-privati`
+(decisa sulla #246) sono decisi («Che cosa ha lasciato E7», sotto). **E10i è unita**: un grant su un evento solo scrive l'evento e le sue righe e ne crea i
+figli, mai un evento nuovo («Che cosa ha lasciato E10i», sotto); **E10k è unita**: la lista generata dice le sue pagine e la sua frase
+vuota, ogni scheda il suo titolo («Che cosa ha lasciato E10k», sotto). Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -36,7 +79,9 @@ rotazione e ritira fino all'off block, lo staff toglie una prenotazione con un m
 orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto); da E6b **si prenota dalle pagine**: «Prenota» e
 «Prenota tutta la rotazione» nel dialog di uno slot, i filtri, l'apertura con il conto alla rovescia, `/events/mine` con «Ritira», il
 blocco `events.myEvents`, la scheda «Prenotazioni» dello staff con «Togli», la conferma prima di «Pubblica» e il promemoria del giorno
-prima, `events-reminders` («Che cosa ha lasciato E6b», sotto). **Carmine ha risposto sulla #240**
+prima, `events-reminders` («Che cosa ha lasciato E6b», sotto); da E7 ha i suoi **slot privati**: lo staff li genera dalla capacità degli
+scali, un pilota ne prenota uno con il suo volo, e un arrivo con la sua partenza dallo stesso scalo, e l'esportazione li porta con lo
+slot collegato, lo stesso gate da dare («Che cosa ha lasciato E7», sotto). **Carmine ha risposto sulla #240**
 ([1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158),
 [6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota
 `2026-10-09-le-pagine-delle-prenotazioni` è **decisa**; ⚠️ **un lettore di nomi per VID nel nucleo entra nella coda del nucleo prima
@@ -168,9 +213,10 @@ lasciato E10d»); ~~la distanza nel nucleo (E10e)~~ **portata da E10e** (`GreatC
 lasciato E10e»); ~~le prenotazioni ATC della rete (E15a)~~ **portate da E15a** (`IAtcBookingSource`: sotto, «Che cosa ha lasciato
 E15a»); la versione del contratto di un programma esterno, che E0 non prevedeva, **portata da E10g** (`ContractVersion`, per
 l'esportazione di E5: sotto, «Che cosa ha lasciato E10g»); il membro che cancella la riga che ha mandato, che E0 non prevedeva, **portato
-da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»); i job che
-recuperano i giri persi mentre Passenger tiene l'hub spento e l'indirizzo dell'operazione pianificata, che E0 lasciava alla coda del
-maintainer, **portati da E10j** (sotto, «Che cosa ha lasciato E10j»);
+da E10h** (`[WithdrawnByStakeholder]`, per il ritiro della prenotazione di E6a: sotto, «Che cosa ha lasciato E10h»); il grant su un evento
+solo che scrive davvero l'evento e le sue righe, che E0 dava per esistente, **portato da E10i** (il guardiano chiede con lo scope della
+riga: sotto, «Che cosa ha lasciato E10i»); i job che recuperano i giri persi mentre Passenger tiene l'hub spento e l'indirizzo
+dell'operazione pianificata, che E0 lasciava alla coda del maintainer, **portati da E10j** (sotto, «Che cosa ha lasciato E10j»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
 1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
 
@@ -184,7 +230,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10j (9–10 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo, senza coda)
+### Che cosa ha lasciato E10j (9–12 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo; ultima della coda #242 → #250 → #252 → #251 → #249 → #239, con la testa di E8b `889ba1a` unita, `main` ad `a75ed6c`)
 
 - **Che cosa c'è** (nota `decisions/2026-10-09-i-job-che-recuperano.md`, **decisa** da Carmine sulla #239: l'ultimo giro *finito*, il
   blocco del database, i job dovuti uno dopo l'altro, il blocco che si apre accettato, e il token anche nell'indirizzo; il dettaglio
@@ -231,6 +277,368 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   dell'host, quindi un test ne registra uno suo con `ConfigureTestServices` e riceve ogni evento dopo gli arricchitori dell'hub
   (`ScheduledJobsTests.LogCapture`); il livello di una categoria si abbassa con `Serilog:MinimumLevel:Override:<categoria>` nella
   configurazione del test.
+
+### Che cosa ha lasciato E8b (11–12 ottobre 2026, branch `m4/e8b-duplicate-and-m4a-round`, PR #249; nata dal branch di E7 a `0d766fe`, ne ha unito la testa nuova `7a847a8`, ora in coda dopo la #251 con la testa di E10n `b4ea56e`, `main` ad `a75ed6c`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E8b, «Com'è andata»; **nessuna migrazione**, niente del nucleo — solo `schema.d.ts` generato —;
+  due note nuove, **decise** da Carmine: `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, con le sue risposte sull'**issue #248**
+  (la (A′) e la (i)), e `2026-10-11-la-testa-della-pagina-di-un-evento`, con la sua risposta 1 sulla **#249** (la (A), con i nomi degli
+  scali leggibili senza mouse)):
+  - **«Duplica»**: `POST /api/events/events/{id}/duplicate` (`Staff/EventDuplication.cs`). La copia pura in `EventCopy` — l'evento con
+    ogni sua impostazione, nella stessa cura, gli orari spostati della stessa differenza, una bozza; uno scalo, una rotta e uno slot
+    pubblico com'erano, ai nuovi orari —, il piano letto prima di scrivere (`EventDuplicatePlan`: il banner solo se la libreria ha ancora il
+    file, gli slot pubblici se chiesti, se generare i privati) e il salvataggio in una transazione (`SaveAsync`). **I privati si generano
+    con la copia** (con `PrivateSlotGeneration` di E7) quando i suoi slot pubblici ci sono già — copiati, o l'evento non ne prende —, e
+    altrimenti li fa «Genera» dopo la tabella nuova (la (A′)); quando il generatore li rifiuta la risposta lo dice
+    (`EventDuplicatedDto.PrivateSlotsNotGenerated`, la chiave del rifiuto), e la pagina invece di aprire la copia dice perché, con
+    «Apri la copia». Un nuovo inizio che sposterebbe un orario fuori dal calendario è rifiutato (`EventCopy.MovesWithinTheCalendar`).
+    **Chi duplica**: `Events.Edit` sull'evento nuovo com'è prima di essere
+    scritto (scope `events:event:0`: un grant su un evento solo non duplica), e il permesso dell'area di ogni riga che la copia scrive
+    (`EventDuplicatePlan.AreasWritten`), chiesti all'unico handler prima di scrivere. Le regole dell'indirizzo sono scritte una volta,
+    `EventAddressRules.EventAddress`, per il form e per «Duplica». La pagina: «Duplica» nella barra di un evento, in ogni stato
+    (`EventDuplicatePage`, `/staff/events/$id/duplicate`, `duplicateSchema`).
+  - **`EventsPersonalData`** (`src/IvaoHub.Modules.Events/EventsPersonalData.cs`): le prenotazioni della persona di un evento non ancora
+    finito si cancellano, e lo slot torna libero; quelle di un evento finito restano con lo pseudonimo, senza `callsign`, `other_icao`,
+    `other_time_utc`, `unflown_excused_note` e `flown_session_id`. **«Finito»** si legge in un posto solo, **`EventState.IsOver`** (la fine
+    passata, annullato o no: la (i)), che ora usano anche `Of`, `IsSeen` e `Unseen`. Una prenotazione il cui evento non c'è più è lasciata
+    fuori, come dall'anteprima. Che cosa dà l'esportazione dopo una cancellazione lo dice `docs/events-bookings-export.md`. **Le cinque
+    colonne svuotate sono segnate** `[ErasedWith(nameof(BookerVid))]` su `EventBooking` (dopo E10n, la #251): l'audit di una prenotazione
+    ritirata o tolta prima della cancellazione le perde anche lui.
+  - **Il giro completo di M4a**: `web/e2e/full/events-round.spec.ts` (slug `evt-test-e2e-e8b-…`, voli `XEE811`–`XEE813`, `XEE821`–`XEE822`,
+    `XEP901`), due test — il giro dell'RFO, dall'incolla a «Duplica», e l'RFE del mese scorso, finito, duplicato su una nuova data.
+  - **`docs/FORKING.md`**: la sezione «The events module» — il dipartimento di base, i `positionGrants` dell'ED e di chi collabora, le
+    impostazioni con `kindPresets` per prima, pagine, blocchi, mail e job, il Gate Manager, che cosa tiene e che cosa cancella, che cosa
+    non fa ancora —, e lo stato in testa.
+  - **La testa della pagina di un evento** (chiesta da dalberone dopo l'apertura della PR): sotto titolo e riassunto due righe corte —
+    quando, in UTC e nell'ora della divisione; le prenotazioni come badge (aperte; dal momento, con il conto di E6b; chiuse), gli scali come
+    codici, ognuno con il suo nome al passaggio del mouse, al focus e al tocco (**`Hint`**, esportato da `EventSlots.tsx` e non copiato),
+    chi organizza solo quando non è la divisione —, senza il badge dello stato (il tipo resta); poi gli slot, i privati, in fondo la
+    descrizione e le rotte. `screens/EventHead.tsx`, il badge in `BookingOpening.tsx`, i dati in `cards.ts` (`headSpan`, `headMoment`) e
+    `bookingTimes.ts` (`bookingStage`). E `/events/mine` vuota dice «Nessuna prenotazione».
+  - **I test**: unità `EventsDuplicationTests` (7); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
+    **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`) ed
+    `EventsErasureTests` (2, il secondo una prenotazione ritirata prima della cancellazione; VID **761098**, la persona cancellata, e
+    **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
+    `schemas.test.ts`; per la testa `EventHead.test.tsx` (7), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
+    `bookingTimes.test.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine) è chiuso da **E10n** (**#251**, del nucleo,
+    sotto nella coda) e dai segni di E8b sulle cinque colonne della prenotazione. **Una colonna nuova della prenotazione** che è un dato del
+    pilota (M4b, M4c) porta lo stesso segno, `[ErasedWith(nameof(BookerVid))]`, e la sua riga nell'eraser se una prenotazione tenuta la
+    deve perdere; `ErasedAuditTests` di E10n cade su un segno che non nomina una colonna di persona, e l'avvio pure.
+  - **La risposta di «Duplica»** è `EventDuplicatedDto` (l'evento e `privateSlotsNotGenerated`), non più `EventDetailDto`: un client del
+    verbo legge `event`.
+  - ⚠️ **`PrivateSlotGeneration.GenerateAsync` dentro una transazione già aperta** (E8b, al merge della testa nuova di E7): blocca e
+    scrive in quella, e il commit è di chi lo chiama — «Duplica» lo chiama così, per una copia che nessun altro vede ancora. Da solo
+    apre la sua, `READ COMMITTED`, con la riga dell'evento `FOR UPDATE`. Chi lo chiama da dentro una transazione su un evento che altri
+    vedono deve pensare al livello d'isolamento della sua.
+  - **E4c (la #242) è sotto nella coda**: `public.tsx` ha i suoi metadati della pagina accanto alla testa di E8b, uniti da soli.
+  - **`Hint`** resta un pezzo della pagina di un evento (`EventSlots.tsx`), usato dalla lista degli slot e dalla testa: una **seconda
+    schermata** che volesse un tooltip che si apre al tocco porta una decisione a Carmine, mai una copia (la risposta sulla #228, ripetuta
+    sulla #249).
+  - **Un fatto nuovo nella testa** di un evento (per esempio il luogo di un evento in presenza, M4c) si aggiunge come una voce in più di
+    `facts` in `EventHead`, che gli mette davanti il suo puntino.
+  - **E9** (fuori dal repository): M4a è nel codice; ⚠️ **la regola di Carmine sulla #233 cade con l'unione della #249** (l'eraser c'è), e
+    **il log binario** resta da provare alla prima prenotazione sull'installazione di prova, alla consegna (risposta 2 sulla #233).
+  - **E11a, E14b, E15b** (M4b) ed **E16, E17** (M4c): **«Duplica» si allarga** con le righe della loro fase — le postazioni ATC con le
+    finestre, le regole di award, le domande e le attività —: una funzione in `EventCopy` per la riga, la lettura in `PlanAsync`, l'area in
+    `AreasWritten`, l'aggiunta in `SaveAsync`. **Niente dei membri** (disponibilità, turni, PIREP, iscrizioni) si copia mai.
+    **`EventsPersonalData` si allarga** con le loro righe (E15b per M4b, E16 ed E17 per M4c), con la stessa regola di «finito».
+  - **E15b** (la conservazione, `events-retention`): `pilotRetentionMonths` conta da `EndsAtUtc`, e «finito» è `EventState.IsOver`.
+  - ⚠️ **`EventsDuplicationTests.TheCopyNamesEveryColumnOfTheEvent`**: una colonna nuova di `evt_events` (nessuna fase dovrebbe
+    migrarla: nasce intera in E2) fa cadere il test finché non si decide in `EventCopy.Of` se la copia la prende, la sposta o la lascia.
+  - ⚠️ **I VID di prova degli eventi sono finiti**: con 761015 e 761098 di E8b, ogni VID di `761001–761099` è nel codice di un test. Una
+    fase dopo riusa le persone di una classe unita (come E8b con 761063) o chiede a `dalberone` un'altra fascia.
+  - ⚠️ **Nessun worktree, e nemmeno la cartella principale, ha `tiles/basemap.pmtiles`**: il giro completo gira senza (le mappe disegnano
+    il fondo vuoto), e la riga di «Regole di tutte le fasi» sull'hard link vale solo per chi vuole vedere la mappa.
+  - ⚠️ Un campo `datetime` del form generato è in UTC (`SchemaForm` scrive `${written}:00Z`): la spec scrive gli orari di «Duplica» così.
+
+### Che cosa ha lasciato E10n (11–12 ottobre 2026, branch `m4/e10n-erased-audit-rows`, PR #251, del nucleo, in coda dopo la #252)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-i-dati-di-una-persona-nell-audit.md`, **decisa** da Carmine sulla #249, [la risposta
+  2][a249n2]: il buco dell'audit del [punto 7 del revisore][rv249n2], come meccanismo del nucleo per ogni modulo; la forma è della nota):
+  - **Il segno** `[ErasedWith(nameof(…Vid))]` (`src/IvaoHub.Core/Privacy/ErasedWithAttribute.cs`) su una colonna di un'entità
+    `[Audited]`: la colonna è un dato della persona che l'altra colonna, della stessa riga, nomina. `PersonColumns.ErasedWith(entity)` lo
+    legge dal modello e rifiuta un segno che non nomina una colonna di persona (`Vid`, `…Vid`, `…By`).
+  - **Il passo della cancellazione** `AuditRedaction.EmptyGoneAsync`, in ogni contesto dopo l'eraser e prima che l'audit prenda lo
+    pseudonimo: le righe d'audit delle righe che nominavano la persona e **non ci sono più** — nessuna riga con quella chiave — perdono le
+    colonne segnate (diventano `null` nel JSON) nelle copie scritte **mentre la riga era sua** (`EmptyWhileHeld`, dopo la revisione); il
+    resto della storia resta, con lo pseudonimo. Una riga che c'è resta del suo eraser, di chiunque sia ora, come prima.
+  - **Un segno sbagliato ferma l'avvio** (`PersonColumns.VerifyErasedWith` in `HubPipeline.InitializeAsync`, dopo la revisione): non una
+    persona, un'entità non `[Audited]`, una proprietà non mappata, una chiave di più colonne.
+  - **I test**: `ErasedAuditTests` (integrazione, 6 dopo la revisione) ed `ErasedColumnsTests` (unità, 10). Il modulo di prova segna `SampleItem.Title`
+    come dato del membro di cui parla (`SampleItems.cs`, nessuna migrazione). **VID 761100** preso da questa fase (la persona cancellata,
+    fuori dal blocco di M4, che è finito).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **E8b (la #249) segna le prenotazioni** dopo l'unione di questa (scelta di dalberone, l'11 ottobre: la regola 6 vuole il nucleo e
+    il modulo in due PR): unisce `main` e mette `[ErasedWith(nameof(BookerVid))]` su `Callsign`, `OtherIcao`, `OtherTimeUtc`,
+    `UnflownExcusedNote`, `FlownSessionId` di `EventBooking` — le cinque colonne che il suo eraser svuota —, con un suo test di una
+    prenotazione ritirata prima della cancellazione (le copie senza nominativo, con lo pseudonimo). **Le prenotazioni non si aprono su
+    un'installazione vera prima di E8b e di questa** (Carmine, risposta 2 sulla #249).
+  - **Ogni colonna nuova che è un dato di una persona**, su una riga che si può togliere prima di una cancellazione (un ritiro, una riga
+    tolta dallo staff), porta il segno con la colonna di persona della stessa riga. `ErasedAuditTests.EveryMarkOfThePersonsDataNamesAPersonColumn`
+    legge i contesti di ogni modulo e cade su un segno sbagliato.
+  - ⚠️ **Il limite**: un dato su una riga figlia, la cui persona è nominata solo dalla riga sopra (le note di una sessione di training),
+    non è coperto. Se servisse, è un'altra nota.
+  - ⚠️ **Le chiavi del JSON dell'audit sono i nomi delle proprietà** (`"Callsign"`), non in camel case: `Serialize` scrive un
+    dizionario, le cui chiavi le opzioni web non cambiano. Il riassunto di `PersonColumns.IsVidName` diceva «camel case», ora corretto;
+    un test che legge l'audit cerca `"Title"`.
+
+[rv249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
+[a249n2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
+
+### Che cosa ha lasciato E10m (11–12 ottobre 2026, branch `m4/e10m-names-reader`, PR #252, del nucleo; in coda dopo la #250, con la testa di E10l `2e4164d`)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-un-solo-lettore-dei-nomi.md`, **decisa** da Carmine sull'issue #247, [la sua
+  risposta][a247m2]; il dettaglio in `10`, E10m, «Com'è andata»):
+  - **`MemberNames.ReadAsync`** (`src/IvaoHub.Core/People/MemberNames.cs`, namespace `IvaoHub.Core.People`), statico, con il
+    `HubDbContext` di chi chiede: `ReadAsync(hub, IEnumerable<int> vids, ct)` e `ReadAsync(hub, IEnumerable<int?> vids, ct)` →
+    `IReadOnlyDictionary<int, string>`. Il nome è `$"{FirstName} {LastName}".Trim()` in .NET; chi l'hub non conosce manca; un VID nullo
+    manca; **un VID sotto uno non ha mai un nome** (una persona cancellata); **un nome vuoto resta `""`**; nessuno da chiedere non va al
+    database. Nessuna registrazione, nessuna migrazione.
+  - **I fili dei contatti lo usano** (`ContactThreads.ReadAsync`); la loro copia se n'è andata.
+  - **`tests/IvaoHub.IntegrationTests/MemberNamesTests.cs`** (7): il lettore da solo, il test gemello con le tre copie dei moduli, e una
+    prova per ogni differenza fra le quattro copie (nota §2). Usa le persone dei fili dei contatti (670011–670014) e rimette i loro nomi.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase della formazione** (piccola, di dalberone, dopo l'unione di questa PR): `TrainingPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Training/TrainingPeople.cs`) risponde `MemberNames.ReadAsync(hub, vids, cancellationToken)`, oppure se ne va e
+    i chiamanti chiedono al nucleo; `Member`, `Label` e `IsErased` restano. In `MemberNamesTests` esce la riga della formazione dal
+    test gemello e da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` (dopo il passaggio, la formazione non nomina più una riga sotto
+    uno: è uno stato che l'hub non scrive, e la PR lo dice). Nessuna pagina cambia.
+  - **La fase degli eventi** (piccola, di dalberone, dopo l'unione): lo stesso con `EventsPeople.NamesAsync`
+    (`src/IvaoHub.Modules.Events/EventsPeople.cs`); `EventMemberDto` e `Member` restano; in `MemberNamesTests` esce la riga degli eventi.
+    Le due fasi sono indipendenti e possono andare in parallelo: toccano righe diverse dello stesso test, che si uniscono senza conflitti
+    se ognuna toglie solo la sua.
+  - **I tour** (`PirepReview.NamesAsync`) li passa **una sessione di Carmine**; fino ad allora il test gemello tiene le due risposte
+    uguali, e la riga dei tour in `MemberNamesTests` se ne va con lei.
+  - **Ogni fase nuova che nomina qualcuno per VID** chiede a `MemberNames`, mai una copia; la pagina lo scrive con `personName` (o
+    `col.person`) del browser, che fa del nome vuoto e di quello che manca il VID da solo.
+  - ⚠️ **Il nome vuoto è `""`, non `null`**: chi vuole «nessun nome» per un nome vuoto lo dice nel suo `Member`, come i tour. Il lettore
+    non lo decide per tutti, perché la mail della formazione e il `personName` lo leggono già a modo loro.
+  - ⚠️ **Il nome si taglia in .NET, dopo la lettura**: unirlo nella query (`FirstName + " " + LastName`, `.Trim()` tradotto in `TRIM`)
+    lascia un tab o uno spazio non separabile ai bordi. `ABlankOtherThanASpaceAtTheEdgeOfANameIsTrimmedToo` lo prova.
+  - ⚠️ La sequenza di escape di U+00A0 scritta con gli strumenti Write ed Edit diventa il carattere: nel test è rimessa come
+    sequenza con node.
+
+[a247m2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/247#issuecomment-6113460844
+
+### Che cosa ha lasciato E10l (11–12 ottobre 2026, branch `m4/e10l-dialog-close-label`, PR #250, del nucleo; in coda dopo la #242, con la testa di E4c `8683d53` unita, `main` ad `a75ed6c`, con E7)
+
+- **Che cosa c'è** (nota `decisions/2026-10-11-il-pulsante-di-chiusura-delle-finestre.md`, **decisa** da Carmine sull'issue #224,
+  [la sua risposta][a224l]: comporlo nel nucleo, come la #238 per la paginazione; non una richiesta ad Atmosphere; il dettaglio in `10`,
+  E10l, «Com'è andata»). Tutto nel browser, niente in C#, nessuna dipendenza nuova:
+  - **`Dialog` del nucleo** (`web/src/shared/ui/Dialog.tsx`, da `shared/ui`), la **venticinquesima voce** dell'elenco chiuso
+    (`catalog.ts`, galleria, `docs/UI-GUIDELINES.md` §3): la molecola `Dialog` di Atmosphere ricomposta dai suoi pezzi, con le stesse
+    props (`trigger`, `title`, `description`, `children`, `footer`, `open`, `onOpenChange`…) e lo stesso aspetto; la «X» è un
+    `DialogClose` nostro con `aria-label={t('common.close')}` — «Chiudi», «Close». **`closeButton`** (predefinito `true`) al posto di
+    `topRightCloseButton`.
+  - **La chiave `common.close`** nelle due lingue (e due della galleria).
+  - **La guardia** (`web/src/shared/ui/Dialog.test.tsx`): nessun file di `web/src` importa da Atmosphere `Dialog`,
+    `DialogTopRightClose`, `Sheet` o `SheetContent`, tranne quelli di `NOT_MOVED_YET`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase degli eventi dopo questa** (regola 6): `EventSlots.tsx` (il dialog di uno slot) e `PrivateSlots.tsx` di E7 (il dialog
+    dell'ora privata) importano `Dialog` da `../../../shared/ui` invece che da Atmosphere — le props sono le stesse, e
+    nessuno dei due passa `topRightCloseButton` — e i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx` (un test di dalberone).
+    Nessun test né spec degli eventi cerca la parola «Close».
+  - **Un dialog nuovo** si disegna con il `Dialog` del nucleo, una domanda con `ConfirmDialog`; mai il `Dialog` o il `Sheet` di Atmosphere:
+    la guardia cade.
+  - ⚠️ **La «X» non è in `DialogContent`**: in Atmosphere 3.1.0 la disegna `DialogTopRightClose`, montato dalla molecola `Dialog` e da
+    `SheetContent`. Un `DialogContent` composto a mano (la palette di ricerca) non ha la «X» e non va spostato.
+  - ⚠️ **`PrivateSlots.tsx` era in `NOT_MOVED_YET` prima di essere in `main`**, perché né E7 (#246) né questa PR facessero cadere
+    l'altra; E7 è entrata per prima, e con la sua testa unita qui la guardia lo trova e lo ammette. Per lo stesso motivo la guardia
+    chiede «nessuno fuori dalla lista», non «la lista uguale».
+  - Il `Dialog` del nucleo cambia solo la «X»: **i campi senza bordo nel tema scuro** e **il contenuto lungo che scorre** che E7 ha trovato
+    nei suoi dialog («Che cosa ha lasciato E7», sotto) restano com'erano.
+  - ⚠️ **I toast dicono ancora «Close»**: `ToastClose` di Atmosphere, montato senza props dalla molecola `Toast` che `useNotice()` usa,
+    ha «Close» come `aria-label` predefinito. Non è un dialog, la risposta di Carmine non lo copre: una domanda per Carmine, se dalberone
+    la porta.
+  - **I tour** non hanno dialog oggi; se ne avranno, sono del maintainer, e la guardia lo dice.
+
+[a224l]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6113461064
+
+### Che cosa ha lasciato E4c (9–12 ottobre 2026, branch `m4/e4c-events-titles-and-empty-lists`, PR #242, in fondo alla coda #242 → #250 → #252 → #251 → #249 → #239; `main` unito ad `a75ed6c`, con E7)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4c, «Com'è andata»; nessun file del nucleo, nessuna nota nuova): gli eventi usano i pezzi di
+  E10k.
+  - **`/events` e `/events/mine` dicono il loro titolo nella scheda**: `PageMetadata` con `events:public.title` ed
+    `events:public.description` in `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`), «Eventi — IVAO Italia»; con
+    `events:mine.title` ed `events:mine.lead` in `MyBookingsPage` (`screens/mine.tsx`), «Le mie prenotazioni — IVAO Italia».
+  - **La pagina di un evento** (`EventScreen`, `public.tsx`) non passa più `divisionName`: il nome viene dalla radice (`DivisionTitle`),
+    e la scheda dice come prima il titolo dell'evento e «— IVAO Italia».
+  - **Le cinque liste generate del modulo, vuote, dicono una frase loro** con `emptyDescription`, sotto il titolo del nucleo: le schede
+    «Slot», «Rotte» (`events:routes.empty`), «Scali» (`events:airports.empty`) e «Prenotazioni» (`events:bookings.empty`) di un evento, e
+    `/staff/events` (`events:events.empty`). La scheda «Slot» sceglie la sua dai tipi di slot dell'evento (`emptySlotsKey` in
+    `screens/slots.tsx`): `events:slots.empty` con i soli pubblici, `events:slots.emptyPrivate` con i soli privati di E7,
+    `events:slots.emptyBoth` con tutti e due. Parole che descrivono e non invitano (scelte di dalberone): vere per chi scrive, che ha i
+    bottoni sopra, e per chi legge e basta, che non li ha.
+  - **I test**: `web/src/modules/events/screens/titlesAndEmptyLists.test.tsx` (12, sulla radice vera dell'app) e due `toHaveTitle` nella
+    smoke `web/e2e/events-public.spec.ts`.
+  - **Le righe lasciate alla seconda** le ha fatte E4c: all'unione di E6b (10 ottobre) `bookingOpensAtUtc: null` nel `PublicEventDto` del
+    test e il titolo di `/events/mine`; all'unione di E7 (12 ottobre) `privateSlots: []` nello stesso `PublicEventDto`.
+- **Che cosa devono sapere le fasi dopo**:
+  - **Una pagina nuova degli eventi** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, senza `divisionName`; **una
+    lista nuova del modulo** dice la sua frase vuota con `emptyDescription`, una chiave `<lista>.empty` passata dalla schermata (`DataList`
+    non la legge da sé). Il test che lo prova sulla radice vera è `titlesAndEmptyLists.test.tsx`: una pagina o una lista nuova ci
+    aggiunge la sua rotta e il suo caso.
+  - ⚠️ **Il `PublicEventDto` del test è scritto per intero**: un campo nuovo e obbligatorio della lettura della pagina (come
+    `bookingOpensAtUtc` di E6b e `privateSlots` di E7) va aggiunto lì, o il typecheck cade.
+  - **Un modo nuovo di far nascere gli slot** (un'altra strada oltre a incollare, creare e generare) rilegge le tre frasi della scheda
+    «Slot».
+  - **La CI**: al primo push di questa fase «Test .NET» era rosso per #236, e la CI saltava i passi web (lint, `format:check`,
+    typecheck, vitest, i18n, la smoke, il giro), fatti in locale ed elencati nella PR (`format:check` compreso: lo aveva mancato E10k,
+    corretto da lei prima del push di questa). La #241 di Carmine l'ha corretto; con E10k unita a `fdb551d`, che porta `main` a
+    `aa3707a`, la CI della #242 gira intera.
+
+### Che cosa ha lasciato E7 (10–11 ottobre 2026, branch `m4/e7-private-slots`, PR #246; nata in coda dopo la #240, unita prima che la PR si aprisse; `main` unito a `0c2f85a`, con E10i, e dopo la revisione a `bea8c0e`, con E10k)
+
+- **Che cosa c'è** (il dettaglio in `10`, E7, «Com'è andata» e «Dopo la revisione»; **nessuna migrazione**, niente del nucleo — solo
+  `schema.d.ts` generato —; due note nuove, **tutte e due decise**: `2026-10-10-il-ritiro-di-un-volo-collegato`, da Carmine sull'issue
+  #245 — la strada A: il legame si scioglie, l'altra prenotazione resta —, e `2026-10-11-gli-slot-privati`, da Carmine sulla #246 — sì
+  alle letture (a)–(g); l'interruttore dei privati non passa da acceso a spento finché l'evento ne ha —; dopo la revisione, le sei
+  correzioni del revisore sulla stessa PR):
+  - **«Genera gli slot privati»**: il generatore, puro (`Staff/PrivateSlotGenerator.cs`), e il servizio (`Staff/PrivateSlotGeneration.cs`),
+    `POST /api/events/events/{id}/slots/generate` (`EventBookings.Edit`), il bottone nella scheda «Slot». Dalla capacità di ogni scalo, ora
+    per ora dell'evento, meno i voli che restano (i pubblici e i privati prenotati, in ogni scalo che toccano); passi regolari, lontano
+    dagli orari tenuti; rigenerare sostituisce i liberi e tiene i prenotati; al più 5.000, **contati prima di costruire uno slot**
+    (`PrivateSlotGenerator.Count`). **Una generazione per evento alla volta**: la riga dell'evento `FOR UPDATE` in una transazione
+    `READ COMMITTED` intorno a tutto, l'evento riletto sotto il blocco; un deadlock è un 409 «leggi di nuovo».
+  - **L'interruttore dei privati** (`EventSaving`): il passaggio da acceso a spento è rifiutato finché l'evento ha dei privati
+    (`events:errors.hasPrivateSlots`, sul campo `privateSlots`); un evento che non l'ha mai avuto acceso non è chiesto.
+  - **Prenotare un privato** con il suo volo, e un arrivo con la partenza collegata dallo stesso scalo, tutte e due o nessuna
+    (`PilotBookings.BookPrivateAsync`, `POST /api/events/mine/bookings/private`). **Il volo di una prenotazione si legge solo da
+    `BookedFlight`** (`Bookings/BookingRules.cs`): di un privato l'altro aeroporto e il suo orario li scrive il pilota, e l'off block di
+    un arrivo è l'orario in cui lascia l'altro aeroporto — mai l'orario dello slot.
+  - **Il legame** (`Bookings/BookingPairs.cs`): `paired_booking_id` sta sull'arrivo e nomina la partenza; `Of` dà le coppie nei due sensi
+    quando ci sono tutte e due; `LetGoAsync` scioglie il legame nello stesso salvataggio in cui la partenza se ne va (il ritiro del
+    pilota, «togli» dello staff).
+  - **L'esportazione** porta i privati con il volo del pilota, il gate vuoto e `paired_slot_id` (aggiunta alla versione 1,
+    `docs/events-bookings-export.md`); **la pagina** la sezione «Slot privati» (`screens/PrivateSlots.tsx`, `screens/privateList.ts`);
+    `/events/mine` il volo collegato.
+  - **I test**: unità `EventsPrivateSlotsTests` (17); integrazione `EventsPrivateSlotsTests` (14, sette dopo la revisione: le gare con
+    una transazione del test tenuta nel database, il tetto, l'interruttore; VID **761087, 761088, 761095, 761096**; scali `XEI1`–`XEI3`,
+    tipi `XE8A`/`XE8B`, slug `evt-test-e7-…`, voli `XEI8xx`/`XEI9xx` dopo la revisione); vitest `privateList.test.ts` e
+    `PrivateSlots.test.tsx` (13); il giro completo `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E8b** (la cancellazione, «Duplica»): un privato ha il volo scritto dal pilota sulla prenotazione (`callsign`, `other_icao`,
+    `other_time_utc`): l'eraser degli eventi lo cancella con la riga. Una fase che toglie una sola prenotazione di una coppia chiama
+    `BookingPairs.LetGoAsync` prima del `Remove`, come il ritiro e «togli». Gli slot privati hanno `Generated` vero: «Duplica» decide se
+    copiarli o lasciarli al generatore, che si preme di nuovo sull'evento nuovo. ⚠️ **`PrivateSlotGeneration.GenerateAsync` apre la sua
+    transazione** (e prende la riga dell'evento `FOR UPDATE`): non si chiama dentro un'altra — «Duplica», «una transazione», o lascia
+    «Genera» allo staff o la chiama dopo il suo commit.
+  - **E13a** (i voli fatti): il volo da cercare nel tracker è quello di `BookedFlight` — partenza, arrivo e orari di un privato li ha
+    scritti il pilota —, non quello dello slot.
+  - **E4c** (#242): `PublicEventDto` ha `privateSlots`, obbligatorio nel client generato: chi delle due, E4c o E7, arriva in `main` per
+    seconda aggiunge `privateSlots: []` dopo `slots` nel `PublicEventDto` scritto per intero da `titlesAndEmptyLists.test.tsx` (con
+    `bookingOpensAtUtc: null`, che E6b ha già chiesto).
+  - ⚠️ **Due campi nuovi in fixture di fasi prima**, nessuna asserzione toccata: `pairedBookingId: null` nel campione della galleria
+    (`blocks/index.ts`) e in `blocks/myEvents.test.tsx` di E6b, `privateSlots: []` in `event()` dello smoke `web/e2e/events-public.spec.ts`.
+    Una fase che aggiunge un campo obbligatorio a `MyBookingDto` o a `PublicEventDto` fa lo stesso.
+  - ⚠️ **L'interruttore dei privati non passa da acceso a spento finché l'evento ne ha** (la risposta 2 di Carmine sulla #246): solo
+    quel passaggio, letto dal tracker, così `EventsSlotsTests` di E5, che scrive un privato su un evento che non l'ha mai acceso, resta
+    com'è. La regola legge i privati quando l'evento si salva: una generazione che si chiude nello stesso istante può lasciarne su un
+    evento spento — «elimina i liberi» li toglie.
+  - ⚠️ **La lettura della pagina porta ogni slot privato a ogni lettore** (circa 0,4 MB al tetto, il punto 6 del revisore): detto nella
+    nota e lasciato così. Una fase che la cambia (solo i conti, e una lettura dell'ora aperta) è una lettura scritta a mano in più.
+  - ⚠️ **Nel tema scuro i campi di un dialog non hanno bordo** (i token di Atmosphere: `--input` e `--background` sono tutti e due
+    `fuselage-900`): vale per ogni `Dialog` con un campo — il dialog dei privati, «Togli» di E6b, … —. È del nucleo; non toccato.
+  - ⚠️ **Il dialog di un'ora con la partenza** è alto due voli di campi: il suo contenuto scorre sotto il titolo, al più il 65% della
+    finestra. Un dialog nuovo con molti campi fa lo stesso, o a 1280×720 il bottone esce dalla finestra.
+  - **E10i** (#237, unita qui): con un grant su un evento solo «Genera» crea e toglie gli slot di quell'evento come gli altri verbi della
+    scheda — non provato da un test di E7.
+
+### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede.md`, **decisa** da Carmine sull'issue
+  #224, [la sua risposta][a224k]: sì ai quattro punti; e sulla #238, [la sua risposta][a238k]: sì alla lettura più larga — il titolo
+  predefinito su ogni pagina, il back office compreso, e i titoli di `/news`, `/documents`, `/search` — e la dipendenza da React 19
+  accettata; il dettaglio in `10`, E10k, «Com'è andata» e «Dopo la revisione»). Tutto nel browser, niente in C#:
+  - **La paginazione della lista generata** (`Pages` in `web/src/shared/list/DataList.tsx`): i pezzi di `Pagination` di Atmosphere
+    (`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) con le parole `list.pages.*` del nucleo — «‹ Precedente
+    1 2 3 Successiva ›», i due «…» per la prima e l'ultima pagina con il loro nome. Un «…» solo dove nasconde una pagina.
+  - **La frase vuota per lista**: `emptyDescription` di `DataList`, la frase della schermata già tradotta; senza, `list.empty.description`
+    come prima. Detta solo quando non si cerca niente.
+  - **Il titolo della scheda**: `DivisionTitle` (`web/src/shared/seo/PageMetadata.tsx`), montato una volta da `Root` in
+    `web/src/routes/__root.tsx`, scrive il nome della divisione come titolo predefinito di ogni pagina e lo dà all'albero sotto.
+    `PageMetadata` prende anche una frase già tradotta come `title` e `description`, e `divisionName` è **facoltativo** (senza, il nome
+    della radice). `NotFound` dice il suo titolo; `/news`, `/documents`, `/calendar` e `/search` il loro; `_public/$.tsx`, `HomePage` e
+    `PublicEntryScreen` non passano più il nome a mano.
+  - **La frase di Invio del form generato** (`whereEnterSaves` in `web/src/shared/forms/SchemaForm.tsx`): niente frase dove nessuna
+    casella è di una riga, `form.submitHintOneLine` dove ci sono caselle di una riga e di più righe, `form.submitHint` com'era dove sono
+    tutte di una riga. Le caselle di una riga di una **lista ripetibile non contano** (sullo schermo ci sono solo dopo «Aggiungi»), quelle
+    di più righe sì (dalla revisione della #238).
+  - **Sei chiavi nuove del nucleo** in `locales/{en,it}/common.json`: `list.pages.label`, `.previous`, `.next`, `.first`, `.last`,
+    `form.submitHintOneLine`. Nessun doppione nei file dei moduli.
+  - **I test** (vitest, 16): `web/src/shared/list/DataList.words.test.tsx`, `web/src/shared/forms/SchemaForm.enter.test.tsx`,
+    `web/src/routes/-titles.test.tsx` (sulla radice vera). `docs/UI-GUIDELINES.md` dice tutto questo in inglese.
+- **Che cosa devono sapere le fasi dopo**:
+  - **La fase degli eventi dopo questa** (scelta di dalberone il 9 ottobre: la regola 6 vuole il nucleo e il modulo in due PR): in
+    `EventsPublicPage` (`web/src/modules/events/screens/public.tsx`)
+    `<PageMetadata title={t('events:public.title')} description={t('events:public.description')} />`; in `EventScreen`, lo stesso file,
+    il `divisionName` calcolato a mano si toglie; le schede «Slot» (`screens/slots.tsx`) e «Rotte» (`screens/routes.tsx`) passano
+    `emptyDescription={t('events:…')}` con parole loro, chiavi nuove in `events.json` (poi `pnpm i18n:sync`).
+  - **Ogni pagina nuova** dice il suo titolo con `PageMetadata`, la stessa chiave del suo `H1`, e **non passa `divisionName`**: lo dice la
+    radice. Una lista di un modulo dice la sua frase vuota con `emptyDescription`.
+  - ⚠️ **Il titolo predefinito regge sull'ordine di React**: React 19 mette un `<title>` che monta prima di quelli già nella testa, e il
+    browser mostra il primo; la radice monta prima di ogni pagina. **Mai un `<title>` predefinito sotto una pagina o in un layout**: il
+    titolo di una pagina montata prima di lui perderebbe la scheda. `web/src/routes/-titles.test.tsx` lo prova sulla radice vera.
+  - ⚠️ **`/tours` è del maintainer**: dice il nome della divisione (il predefinito) finché il maintainer non aggiunge la sua riga in
+    `PublicToursPage`. La pagina di un tour passa ancora `divisionName`, e va bene così.
+  - ⚠️ **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) **cade dalle 06:00 UTC del 9 ottobre su ogni
+    branch**, `main` compreso: chiede la storia del 9 settembre 2026, e oltre i 30 giorni di `IWeatherSource.HistoryWindow`
+    `NoaaWeatherClient.GetHistoryAsync` risponde `null`. Non si tocca (regola 3): l'issue #236 lo porta a Carmine. Fino alla sua
+    correzione `build-test` è rosso su ogni PR, e la PR lo dice. ⚠️ **E con «Test .NET» rosso la CI salta ogni passo dopo**: lint,
+    `format:check`, typecheck, vitest, la smoke, il giro completo. Si fanno in locale, `pnpm -C web run format:check` compreso (E10k l'ha
+    mancato al primo push), e la PR li elenca.
+  - **In un test che naviga su un router fatto per il test**, `router.navigate({ to })` prende i tipi delle rotte registrate dall'app
+    (`/search` vuole i suoi parametri): `router.history.push(path)` non ha tipi di rotta.
+
+[a224k]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/224#issuecomment-6070089222
+[a238k]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/238#issuecomment-6083876286
+
+### Che cosa ha lasciato E10i (9–10 ottobre 2026, branch `m4/e10i-scoped-grant-writes`, PR #237, del nucleo, senza coda; `main` unito a `ba06d66`, con E6a ed E6b)
+
+- **Che cosa c'è** (nota `decisions/2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga.md`, **decisa** da Carmine sulla #235: sì alla
+  fase, e un grant su un evento solo crea un figlio di quell'evento, mai un evento nuovo; e dopo la revisione sulla #237: l'alternativa
+  che crea chiede lo scope della riga nuova, nessuna alternativa sposta una riga fra scope, «mai un evento nuovo» per convenzione, e
+  `EventBookings.Edit` su un evento solo con la propria prenotazione resta com'è; il dettaglio in `10`, E10i, «Com'è andata» e «Dopo la
+  revisione»):
+  - **Il guardiano** (`HubSaveChangesInterceptor.EnsureWriteIsAllowed`) chiede `{Area}.Edit` **con lo scope della riga**, come l'unico
+    handler: in modifica (la riga com'è scritta), all'eliminazione (la riga com'era) e alla creazione (lo scope con cui la riga nuova
+    risponde). Una domanda sola, `Holds`, per `Edit` e per ogni alternativa.
+  - **Un grant su un evento solo** (`events:event:{id}`) cambia e toglie l'evento e le sue righe — scali, rotte, slot e prenotazioni —,
+    ne **crea** i figli (uno slot, una rotta, un caricamento della tabella degli slot), e **non crea un evento nuovo**: lo scope proprio di
+    un evento nuovo è `events:event:0`, la chiave che il database non ha ancora dato, che nessun grant nomina.
+  - **Lo spostamento fra scope** (`IsMoved`): una modifica che cambia dipartimenti, FIR o scope chiede `Edit` anche sulla riga di prima,
+    e nessuna alternativa la sposta.
+  - **Il modulo di prova**: `SamplePart` (`smp_parts`, `tests/IvaoHub.IntegrationTests/SampleParts.cs`), una parte che risponde con lo
+    scope del suo item (`SampleItem.ScopeOf`), migrazione `AddSampleParts`; i test `ResourceScopeWriteTests` (7, sul guardiano) ed
+    `EventsScopedGrantTests` (2, sugli endpoint veri degli eventi), VID 761097.
+  - Nessuna migrazione del nucleo, nessun endpoint, nessuna chiave, niente nel browser; l'unico handler, il motore CRUD e la lista generata
+    non cambiano.
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Una riga figlia risponde con lo scope della riga sopra di lei** (`ResourceScope => Event.ScopeOf(EventId)`), com'è già per
+    scali, rotte e slot: così un grant su un evento la scrive e la crea. Ogni tabella nuova delle righe dello staff di un evento (per
+    esempio le postazioni di E11a, le regole di award di E14b) fa lo stesso, come vuole la nota `2026-09-29-chi-lavora-sugli-eventi`
+    (punto 6), e il grant su un evento solo vale anche lì senza altro codice.
+  - ⚠️ **Lo scope proprio di una riga si costruisce sulla sua chiave**, mai su qualcosa che chi la scrive sceglie (l'indirizzo, un codice):
+    un grant scritto su quello creerebbe la riga. E **un grant con scope si scrive su una riga che esiste**: la schermata del modulo che
+    darà il grant «su un evento solo» lo scrive per un evento che ha trovato (`ModuleGrants.GiveAsync`), mai su un id che le arriva e
+    basta. Sono le due condizioni del riassunto di `IHasResourceScope`; «mai un evento nuovo» si regge su questa convenzione, accettata da
+    Carmine senza un controllo sulla chiave (risposta 3 sulla #237).
+  - ⚠️ **Lo scope di prima si legge dai valori originali del tracker** (all'eliminazione, e in modifica quando la riga si sposta): quindi
+    **uno stub mai letto è creduto com'è scritto, scope compreso** — il limite di E10h vale anche qui, e l'endpoint carica la riga che
+    scrive —, e **uno scope si costruisce dalle sole colonne mappate della riga** (`Event.ScopeOf(EventId)`), mai da una navigazione, che
+    quella copia non carica.
+  - **`EventBookings.Edit` tenuto su un evento solo** lascia correggere anche la propria prenotazione in quell'evento: Carmine lo lascia
+    così (risposta 4 sulla #237), chi lo tiene è staff dell'evento e l'audit dice chi ha fatto che cosa.
+  - **E6a ed E6b** (unite): con E10i un grant di `EventBookings.Edit` su un evento solo toglie le prenotazioni di quell'evento («Togli»
+    della scheda «Prenotazioni» di E6b) e ne corregge gli slot: **la trappola «Un grant su un evento solo non scrive»** del blocco di E6a,
+    qui sotto, **è chiusa da questa fase**. `EventsBookingsTests.TheStaffTakeABookingAwayWithThePermissionOnItsEventAsItIsNow` resta com'è
+    (il membro di un evento solo agisce su un altro evento: 403 dall'handler); il caso positivo, se lo si vuole, è una riga in più di quel
+    test, in una fase del modulo.
+  - **`WeatherTests.AForecastIsAskedForWithADateAndWithoutHours`** (unità, del maintainer) cadeva dal 9 ottobre 2026 alle 06:00 UTC su ogni
+    ramo: una data fissa contro `DateTime.UtcNow` e la finestra di 30 giorni di NOAA (l'issue #236, aperta dalla sessione di E6a). **La #241
+    di Carmine l'ha corretta** (0.6.6): un ramo nato da `main` prima di `aa3707a` la prende unendo `main`, come ha fatto E10i.
 
 ### Che cosa ha lasciato E6b (9 ottobre 2026, branch `m4/e6b-booking-pages`, PR #240, in coda dopo la #233)
 

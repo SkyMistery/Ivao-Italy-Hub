@@ -89,6 +89,19 @@ public sealed record EventCancelRequest(Localized<string> Note, DateTime RowVers
 /// <summary>"Publish" (§2.2, E3b): the version read; what the event needs to be published is <see cref="EventPublishing"/>'s.</summary>
 public sealed record EventPublishRequest(DateTime RowVersion);
 
+/// <summary>
+/// "Duplicate" (§2.3-bis, E8b): the start of the new event — an instant in UTC, as every time of an event; every other time moves by
+/// the same difference —, its address, and whether the public slots come too, with their rotations.
+/// </summary>
+public sealed record EventDuplicateRequest(DateTime? StartsAtUtc, string Slug, bool PublicSlots);
+
+/// <summary>
+/// What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+/// refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+/// when they were generated, or were not to be.
+/// </summary>
+public sealed record EventDuplicatedDto(EventDetailDto Event, string? PrivateSlotsNotGenerated);
+
 /// <summary>Events to and from their payloads: by hand, because the state is read off the clock and the description is a document.</summary>
 internal static class EventMapper
 {
@@ -170,7 +183,7 @@ internal static class EventMapper
 /// has to be one; what needs other rows — a free address, a kind of the calendar, a whole division without airports — is
 /// <see cref="EventSaving"/>.
 /// </summary>
-public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWriteDto>
+public sealed class EventWriteDtoValidator : AbstractValidator<EventWriteDto>
 {
     public EventWriteDtoValidator(BlockDocumentWalker walker, BlockRegistry blocks)
     {
@@ -186,17 +199,7 @@ public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWrit
             .Must(title => title is not null && title.Values.Any(text => !string.IsNullOrWhiteSpace(text)))
             .WithMessage("errors.required");
 
-        RuleFor(row => row.Slug)
-            .NotEmpty().WithMessage("errors.required")
-            .MaximumLength(Event.MaxSlugLength).WithMessage("errors.text.tooLong")
-            .Must(slug => slug is null || SlugPattern().IsMatch(slug.Trim().ToLowerInvariant()))
-            .WithMessage("errors.slug.invalid");
-
-        // The member's own page of the events is /events/mine (E6b, design §7.1): an event there would be a page nobody reaches.
-        RuleFor(row => row.Slug)
-            .Must(slug => !string.Equals(slug.Trim(), MinePage, StringComparison.OrdinalIgnoreCase))
-            .When(row => !string.IsNullOrWhiteSpace(row.Slug))
-            .WithMessage("events:errors.slugReserved");
+        RuleFor(row => row.Slug).EventAddress();
 
         RuleFor(row => row.Organizer).IsInEnum().WithMessage("errors.required");
 
@@ -239,10 +242,41 @@ public sealed partial class EventWriteDtoValidator : AbstractValidator<EventWrit
 
     /// <summary>The address under <c>/events/</c> of the member's own page, which no event takes.</summary>
     public const string MinePage = "mine";
+}
+
+/// <summary>
+/// The rules of the address of an event, written once for the two payloads that give one (§1.2): the form (E3a) and «Duplicate»
+/// (E8b). Whether another event has it already needs the other rows, and is the save's.
+/// </summary>
+internal static partial class EventAddressRules
+{
+    public static IRuleBuilderOptions<T, string> EventAddress<T>(this IRuleBuilder<T, string> rule) =>
+        rule
+            .NotEmpty().WithMessage("errors.required")
+            .MaximumLength(Event.MaxSlugLength).WithMessage("errors.text.tooLong")
+            .Must(slug => slug is null || SlugPattern().IsMatch(slug.Trim().ToLowerInvariant()))
+            .WithMessage("errors.slug.invalid")
+
+            // The member's own page of the events is /events/mine (E6b, design §7.1): an event there would be a page nobody reaches.
+            .Must(slug => string.IsNullOrWhiteSpace(slug) || !string.Equals(slug.Trim(), EventWriteDtoValidator.MinePage, StringComparison.OrdinalIgnoreCase))
+            .WithMessage("events:errors.slugReserved");
 
     /// <summary>What an address of an event may hold: lower case letters, digits and single dashes, as every address of the hub.</summary>
     [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
     private static partial Regex SlugPattern();
+}
+
+/// <summary>
+/// The rules «Duplicate» (§2.3-bis) can answer from its payload: a start, and an address an event may have. Whether another event has
+/// that address already is the save's (<see cref="EventDuplication"/>).
+/// </summary>
+public sealed class EventDuplicateRequestValidator : AbstractValidator<EventDuplicateRequest>
+{
+    public EventDuplicateRequestValidator()
+    {
+        RuleFor(request => request.StartsAtUtc).NotNull().WithMessage("errors.required");
+        RuleFor(request => request.Slug).EventAddress();
+    }
 }
 
 /// <summary>The note of a cancellation, in every language of the division: the page of the event says it to everybody until its end.</summary>

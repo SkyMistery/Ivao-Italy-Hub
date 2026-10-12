@@ -8,6 +8,7 @@
     "cancel": "Annulla",
     "delete": "Elimina",
     "edit": "Modifica",
+    "close": "Chiudi",
     "breadcrumb": "Percorso di navigazione"
   },
   "nav": {
@@ -117,6 +118,7 @@
     "addEntry": "Aggiungi",
     "removeEntry": "Rimuovi",
     "submitHint": "Premi Invio per salvare.",
+    "submitHintOneLine": "Premi Invio in un campo di una riga per salvare.",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
     "suggest": {
@@ -133,6 +135,13 @@
       "title": "Non c'è ancora niente",
       "description": "Tutto quello che questo dipartimento crea comparirà in questo elenco.",
       "noMatch": "Nessuna riga corrisponde alla ricerca."
+    },
+    "pages": {
+      "label": "Pagine",
+      "previous": "Precedente",
+      "next": "Successiva",
+      "first": "Prima pagina",
+      "last": "Ultima pagina"
     },
     "file": "Apri il file",
     "edit": {
@@ -361,7 +370,9 @@
       "noticeWarning": "Due sezioni non sono più nel template.",
       "noticeSuccess": "Bozza salvata.",
       "noticeInfo": "Una bozza la vede solo lo staff.",
-      "noticeToast": "Mostralo come toast"
+      "noticeToast": "Mostralo come toast",
+      "dialogTrigger": "Apri la finestra",
+      "dialogTitle": "Una finestra"
     },
     "registry": {
       "title": "Registri",

@@ -8,6 +8,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
+    "close": "Close",
     "breadcrumb": "Breadcrumb"
   },
   "nav": {
@@ -117,6 +118,7 @@
     "addEntry": "Add",
     "removeEntry": "Remove",
     "submitHint": "Press Enter to save.",
+    "submitHintOneLine": "Press Enter in a one-line field to save.",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "suggest": {
@@ -133,6 +135,13 @@
       "title": "Nothing here yet",
       "description": "Everything this department creates will show up in this list.",
       "noMatch": "No row matches that search."
+    },
+    "pages": {
+      "label": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "first": "First page",
+      "last": "Last page"
     },
     "file": "Open the file",
     "edit": {
@@ -361,7 +370,9 @@
       "noticeWarning": "Two sections are not in the template any more.",
       "noticeSuccess": "Draft saved.",
       "noticeInfo": "A draft is only visible to the staff.",
-      "noticeToast": "Show it as a toast"
+      "noticeToast": "Show it as a toast",
+      "dialogTrigger": "Open the dialog",
+      "dialogTitle": "A dialog"
     },
     "registry": {
       "title": "Registries",

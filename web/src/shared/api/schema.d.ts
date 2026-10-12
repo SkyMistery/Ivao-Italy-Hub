@@ -231,6 +231,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/slots/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsSlotsGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/public/{slug}": {
         parameters: {
             query?: never;
@@ -1438,6 +1454,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/events/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsDuplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/airports": {
         parameters: {
             query?: never;
@@ -1592,6 +1624,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["EventsBookRotation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/bookings/private": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsBookPrivate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4664,6 +4712,25 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
+         *     refused — the key of why, the one «Generate the private slots» on the copy answers with too (the review of #249, point 3); null
+         *     when they were generated, or were not to be.
+         */
+        EventDuplicatedDto: {
+            event: components["schemas"]["EventDetailDto"];
+            privateSlotsNotGenerated: null | string;
+        };
+        /**
+         * @description "Duplicate" (§2.3-bis, E8b): the start of the new event — an instant in UTC, as every time of an event; every other time moves by
+         *     the same difference —, its address, and whether the public slots come too, with their rotations.
+         */
+        EventDuplicateRequest: {
+            /** Format: date-time */
+            startsAtUtc: null | string;
+            slug: string;
+            publicSlots: boolean;
+        };
+        /**
          * @description An event as the staff's list shows it (design M4 §7.2): its state is read off its dates, never stored (§2.1), and its kind
          *     is shown with the division's word for it, which the calendar keeps — null when the calendar no longer has that kind.
          */
@@ -5576,8 +5643,9 @@ export interface components {
         };
         /**
          * @description A booking as its pilot reads it on their own page (design M4 §7.1, E6b): the event — its address, its title, what its dates
-         *     say now —, the flight of the slot with the aircraft chosen, and whether it may still be withdrawn: until the off block (§3.6).
-         *     Past ones too: the page of the member keeps them.
+         *     say now —, the flight with the aircraft chosen (BookedFlight: a public slot's own, a private one's with the flight its
+         *     pilot wrote, E7), and whether it may still be withdrawn: until the off block (§3.6). Past ones too: the page of the member keeps
+         *     them. A private arrival and its linked departure each name the other (`PairedBookingId`), while both are there.
          */
         MyBookingDto: {
             /** Format: int64 */
@@ -5607,6 +5675,8 @@ export interface components {
             withdrawable: boolean;
             /** Format: date-time */
             createdAt: string;
+            /** Format: int64 */
+            pairedBookingId: null | number;
         };
         /** @description One leg as the pilot's map colours it (design M2 §8.1). */
         MyLegDto: {
@@ -6863,6 +6933,45 @@ export interface components {
             atcContacts?: null | components["schemas"]["AtcContactWriteDto"][];
             exemptions?: null | components["schemas"]["AtcExemptionWriteDto"][];
         };
+        /** @description What booking a private slot made (§3.4): the booking, and the linked departure booked with it, when one was asked for. */
+        PrivateBookingDto: {
+            booking: components["schemas"]["MyBookingDto"];
+            departure: null | components["schemas"]["MyBookingDto"];
+        };
+        /**
+         * @description What a pilot sends to book a private slot (design M4 §3.4, E7): the slot — an airport of the event, a direction, a time there —
+         *     and the flight they fly through it: the callsign, the aircraft type they declare, the other airport and the time there — where an
+         *     arrival leaves from and when, where a departure goes and when it lands. An arrival may bring its <b>linked departure</b>: a private
+         *     departure from the same airport, booked in the same request, so that both get the same gate; the same aircraft flies both.
+         */
+        PrivateBookingRequest: {
+            /** Format: int64 */
+            slotId: number;
+            aircraftIcao: null | string;
+            callsign: null | string;
+            otherIcao: null | string;
+            /** Format: date-time */
+            otherTimeUtc: null | string;
+            departure: null | components["schemas"]["PrivateDepartureRequest"];
+        };
+        /** @description The linked departure of a private arrival (§3.4): its slot, and its own flight — the callsign, where it goes and when it lands there. */
+        PrivateDepartureRequest: {
+            /** Format: int64 */
+            slotId: number;
+            callsign: null | string;
+            otherIcao: null | string;
+            /** Format: date-time */
+            otherTimeUtc: null | string;
+        };
+        /** @description How many private slots a generation wrote, how many free ones it took away first, and how many booked ones it kept. */
+        PrivateSlotsGeneratedDto: {
+            /** Format: int32 */
+            generated: number;
+            /** Format: int32 */
+            removed: number;
+            /** Format: int32 */
+            kept: number;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -6968,7 +7077,8 @@ export interface components {
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
          *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
          *     cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
-         *     the page says and counts down to until then — none for an event without slots.
+         *     the page says and counts down to until then — none for an event without slots; and its private slots (E7), by airport, direction
+         *     and time, free or taken.
          *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
          *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
@@ -6996,6 +7106,7 @@ export interface components {
             airports: components["schemas"]["PublicEventAirportDto"][];
             routes: components["schemas"]["PublicEventRouteDto"][];
             slots: components["schemas"]["PublicEventSlotDto"][];
+            privateSlots: components["schemas"]["PublicPrivateSlotDto"][];
             /** Format: date-time */
             cancelledAt: null | string;
             cancellationNote: null | components["schemas"]["LocalizedOfstring"];
@@ -7121,6 +7232,20 @@ export interface components {
             id: number;
             slug: string;
             title: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
+         * @description A private slot as the page of its event offers it (design M4 §3.4, §7.1, E7): an airport of the event, arriving there or leaving
+         *     it, the time there, and whether it is taken — never by whom (plan §9.7). The page groups them by airport, direction and hour, and
+         *     the pilot who books one writes the rest of the flight.
+         */
+        PublicPrivateSlotDto: {
+            /** Format: int64 */
+            id: number;
+            airportIcao: string;
+            isArrival: boolean;
+            /** Format: date-time */
+            timeUtc: string;
+            taken: boolean;
         };
         /** @description One rotation of a hub tour, so that the page groups the legs the way the tour flies them (design M2 §1.3). */
         PublicRotationDto: {
@@ -9333,6 +9458,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SlotsDeletedDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsSlotsGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateSlotsGeneratedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -12874,6 +13051,55 @@ export interface operations {
             };
         };
     };
+    EventsDuplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventDuplicateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDuplicatedDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     EventAirportsList: {
         parameters: {
             query?: {
@@ -13487,6 +13713,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RotationBookingDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsBookPrivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateBookingDto"];
                 };
             };
             /** @description Bad Request */

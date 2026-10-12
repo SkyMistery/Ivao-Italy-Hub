@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
@@ -30,7 +31,9 @@ namespace IvaoHub.Modules.Events;
 /// personal token; E6a the bookings on the server — a pilot books a public slot or a whole rotation and withdraws, the staff take a
 /// booking away with a reason, and an event somebody booked tells them when it is cancelled or its times change —; E6b their pages —
 /// the staff's list of the bookings of an event, the block <c>events.myEvents</c> of a pilot's bookings still to fly — and the
-/// reminder of the day before, <c>events-reminders</c>.
+/// reminder of the day before, <c>events-reminders</c>; E7 its private slots — generated from the capacity of its airports, booked
+/// with the flight the pilot flies and an arrival's linked departure, exported with the slot each is paired with —; E8b «Duplicate», a
+/// draft of an event onto a new date, and the module's half of erasing a person's data.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -108,9 +111,11 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<PublicEvents>();
         services.AddScoped<IDataBlockProvider, EventListProvider>();
 
-        // Its public slots (E5): a table loaded all or nothing, and what a correction of one slot asks of the others.
+        // Its public slots (E5): a table loaded all or nothing, and what a correction of one slot asks of the others. Its private
+        // slots (E7): generated from the capacity of its airports.
         services.AddScoped<SlotLoading>();
         services.AddScoped<SlotSaving>();
+        services.AddScoped<PrivateSlotGeneration>();
 
         // The bookings (E6a): the pilot's verbs under their lock, and the mails of the module.
         services.AddScoped<PilotBookings>();
@@ -127,6 +132,13 @@ public sealed class EventsModule : ModuleBase
                 .ForJob(BookingRemindersJob.JobName)
                 .WithIdentity($"{BookingRemindersJob.JobName}-quarterly")
                 .WithCronSchedule(BookingRemindersJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
+        // «Duplicate» (E8b): a draft of an event onto a new date, with its rows of the staff and nothing of the members.
+        services.AddScoped<EventDuplication>();
+
+        // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
+        // without them.
+        services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)

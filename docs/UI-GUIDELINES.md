@@ -40,9 +40,9 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`, `RatingBadge`.
+`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`, `RatingBadge`, `Dialog`.
 
-`StaffSidebar` is the navigation of the back office, and it is the one entry on this list that
+`StaffSidebar` is the navigation of the back office, and it was the first entry on this list that
 replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
 worth knowing before anybody proposes going back: Atmosphere's `Sidebar` draws its own collapse
 button, last in the panel, the full width of it, carrying the string `"Close sidebar"` written into
@@ -61,6 +61,18 @@ One department is open at a time, and the entry drawn as current is the **most s
 not every match: a department's dashboard lives at the department's root, which every other
 address of it begins with. The search sits at the top of the panel through a `top` slot rather
 than an import, because a shared component may never reach into a feature.
+
+`Dialog` is the second, for the same reason. Atmosphere's `Dialog` draws its «X» with
+`DialogTopRightClose`, whose screen-reader label is the string `"Close"` written into the library,
+under every interface, with no way to give it another word. The hub's `Dialog` takes the same props
+(`trigger`, `title`, `description`, `footer`, and `closeButton` for the «X») and is put back together
+from the same parts Atmosphere exports — `DialogRoot`, `DialogTrigger`, `DialogContent`,
+`DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` and Radix's `DialogClose` — with
+the same classes, so it looks exactly as it did; only the «X» is ours, named with `common.close`.
+Draw a dialog with it, never with Atmosphere's `Dialog` or `Sheet` (whose content draws the same
+«X»): `shared/ui/Dialog.test.tsx` fails on a screen that imports either, except the events' screens
+that are still waiting to move. It is not `ConfirmDialog`, which asks a question and is closed by
+its two buttons, and it is not the search palette, which is a bare `DialogContent` closed by Escape.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
@@ -105,7 +117,10 @@ to the gallery fails until the section exists, so a component cannot quietly sto
 
 When Atmosphere nearly does what is needed, wrap it rather than replace it — `DataList` is
 Atmosphere's `DataTable` in server side mode, with the paging drawn by us because Atmosphere's own
-writes "Rows per page" in English. A component that does something genuinely new is a decision.
+writes "Rows per page" in English; and drawn from the parts of Atmosphere's `Pagination`
+(`PaginationRoot`, `PaginationContent`, `PaginationItem`, `PaginationLink`) rather than with it,
+because `Pagination` writes "Previous" and "Next" itself and takes no words. A component that does
+something genuinely new is a decision.
 
 `ContactForm` is on the list since G7: writing to a department is mounted from more than one place —
 the contact page, and any section of a department's own page that grows one — and what it adds to a
@@ -296,6 +311,11 @@ A list does not write a person's name inside its query instead: a page of rows i
 there is no language, so the pseudonym would stay a number. Like every column, it is `sortable` only
 when the server declares it in `CrudOptions.Sortable`, and then it sorts by the name, which is what
 the cell shows.
+
+An empty list says the core's sentence under its title, which speaks of what a department creates.
+A list whose rows are not a department's — a module's, since modules do not belong to departments —
+says its own with `emptyDescription`, a sentence of its language file; `emptyAction` still offers
+what to do next.
 
 A column can be written in place: `col.number('sort', { editable: true })` draws a field in the cell
 and `col.badge('visibility', 'content', { editable: ['Public', 'Members', 'Staff'] })` a select — a badge cannot
@@ -834,8 +854,25 @@ and organising in the other. `DataList` does that for a `col.date`; anywhere els
 `Intl.DateTimeFormat` with `timeZone: 'UTC'` and with `bootstrap.division.timezone`. Never the time
 zone of the browser on its own.
 
+## A page names itself
+
+Every page says its title in the browser tab, followed by the division's name — "Calendar — IVAO
+Example" — through `PageMetadata` (`shared/seo/`): a row's page with the row's title, a page that is
+not a row (a list, the page that is not there) with its sentence of the language files, the same
+words as its heading. The division's name comes from the root of the route tree, which also makes it
+the tab of every page that names nothing: a tab never says the product's name. A module's own list
+page does the same, in one line.
+
+The default works because of where it stands: React 19 puts a `<title>` it mounts before the ones
+already in the head, and the root mounts before any page. A default drawn by a page, or below one,
+would take the tab from the pages under it.
+
 ## Accessibility, briefly
 
 Every input has a `<label>` bound to it; the generator does this for you. An icon that carries no
 meaning is `aria-hidden`; an icon-only button gets an `aria-label`. An error message is
 `role="alert"`, so it is announced when it appears rather than only seen.
+
+A generated form tells a screen reader that Enter saves only where it does: from a box of one line.
+A form whose boxes are all of several lines — where Enter starts a new line — says nothing, and one
+with both kinds says which box it means.
