@@ -377,6 +377,12 @@ What the schema may say about how a field is drawn:
 - an **optional** `z.enum` also gets a "nothing chosen" entry, labelled
   `<labels>.options.<path>.none`. A select has no gesture for going back, so without it the first
   choice a coordinator makes would be permanent;
+- `.meta({ label: 'T-shirt size' })` gives a field **its own name**, written by the caller already in
+  the language on screen, in place of `<labels>.fields.<path>`. It is for a form whose schema is
+  built from rows — the questions an event's staff wrote — whose text no language file holds; a
+  schema written in the code never carries it, because its names are i18n keys. An **optional**
+  select of such a field says "nothing chosen" with the core's word, `form.none`, since there is no
+  key beside it to hold its own;
 - `.meta({ media: true })` on a **number** is a file of the media library, chosen in `MediaPicker`.
   Never a number to type: a free identifier is how a page ends up pointing at a file somebody
   deleted years ago. The screen hands `SchemaForm` the library to choose from (`mediaLibrary`),

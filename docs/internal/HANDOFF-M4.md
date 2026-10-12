@@ -6,7 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
+`m4/e10o-field-names-in-schema`, **PR #254** verso `main`, **in coda dopo la #239**, la settima della coda **#242 → #250 → #252 → #251
+→ #249 → #239 → #254**, con E16 dopo: nata da `main` a `a75ed6c`, **decisa** da Carmine sull'issue #253 ([la sua risposta, punto
+1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540): A, prima una fase del nucleo), e ha unito la testa
+di E10j `0963908` (con E8b, E10n, E10m, E10l, E4c e `main` ad `a75ed6c`). Da E10o un campo del form generato può dire **il suo nome
+nello schema** (`.meta({ label })`), già nella lingua sullo schermo, e la sua select opzionale dice «Nessuna scelta» con una parola del
+nucleo: è quello che serve al form del membro di E16, costruito dalle domande di un evento («Che cosa ha lasciato E10o», sotto).
+
+**L'aggiornamento di E10j:** 12 ottobre 2026 — **fase E10j** (nucleo: i job che recuperano e il POST pianificato), sul branch
 `m4/e10j-jobs-catch-up`, **PR #239** verso `main`, **in coda dopo la #249**, l'ultima della coda **#242 → #250 → #252 → #251 → #249 →
 #239**: nata da `main` a `0f72737`, **decisa** da Carmine sulla #239 con le sue cinque risposte, la domanda 3 compresa (il token anche
 nell'indirizzo, accanto all'intestazione, per un pannello che sa solo «Recupera un URL»: [la risposta
@@ -229,6 +237,35 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; con la testa di E10j `0963908`)
+
+- **Che cosa c'è** (nota `decisions/2026-10-12-un-campo-dice-il-suo-nome.md`, **decisa** da Carmine sull'issue #253, [la sua
+  risposta][a253o], punto 1: A, prima una fase del nucleo; non B, i file di lingua non tengono righe; il dettaglio in `10`, E10o, «Com'è
+  andata»). Tutto nel browser, niente in C#:
+  - **Un campo dice il suo nome**: `.meta({ label })` sullo schema di un campo (`FieldMeta.label`, `web/src/shared/forms/schema.ts`),
+    una stringa **già nella lingua sullo schermo**, come le etichette di `choices`. `SchemaForm` la disegna al posto di
+    `<labels>.fields.<path>`, per ogni tipo di campo: la riga, l'interruttore, il gruppo di caselle (il suo `aria-label`), il fieldset,
+    le schede di lingua. Senza, tutto com'era.
+  - **Il «nessuno» del nucleo**: una select opzionale di un campo con un nome suo dice `form.none` («No choice» / «Nessuna scelta»);
+    gli altri campi la loro `<labels>.options.<path>.none`. Vale per la select di `choices`, quella di una `z.enum` e la griglia delle
+    icone.
+  - **I test** (vitest, 10): `web/src/shared/forms/SchemaForm.label.test.tsx`, con lo schema del form di E16. `docs/UI-GUIDELINES.md`
+    dice l'annotazione in inglese.
+- **Che cosa devono sapere le fasi dopo**:
+  - **E16** (il form del membro, `web/src/modules/events/screens/registrationForm.ts` sul suo branch) si mette in coda dopo questa e
+    passa a ogni campo `.meta({ label: <il testo della domanda nella lingua sullo schermo> })`; l'oggetto `answers` tiene il suo nome
+    i18n. Una domanda non obbligatoria di una scelta è `.optional()`, e dice «Nessuna scelta» da sé.
+  - **Un form costruito da righe** (E17 con le attività, il form di un fork) fa lo stesso: mai le parole di una riga in i18n a runtime
+    (Carmine, #253).
+  - **Uno schema scritto nel codice non porta `label`**: i suoi nomi sono chiavi, e `DataList` fa le intestazioni di colonna dalle
+    stesse chiavi.
+  - ⚠️ **Il suggerimento sotto un campo resta in i18n** (`<labels>.hints.<path>`): un form costruito da righe che ne volesse uno
+    aggiunge l'annotazione accanto a `label`, con una nota.
+  - ⚠️ **Le opzioni di una `z.enum` restano chiavi** anche su un campo con un nome suo: un insieme che viene da righe è `choices` con
+    `{ value, label }`.
+
+[a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 
 ### Che cosa ha lasciato E10j (9–12 ottobre 2026, branch `m4/e10j-jobs-catch-up`, PR #239, del nucleo; ultima della coda #242 → #250 → #252 → #251 → #249 → #239, con la testa di E8b `889ba1a` unita, `main` ad `a75ed6c`)
 

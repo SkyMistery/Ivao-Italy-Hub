@@ -4000,6 +4000,69 @@ bassi, tutti fatti; nota §7):
 [rv249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113085816
 [a249n]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6113461471
 
+### E10o — Nucleo: un campo dice il suo nome
+
+**Da dove viene**: non c'era in E0. La sessione di E16 (le domande e l'iscrizione di un evento in presenza) ha trovato che il form del
+membro — «il `SchemaForm` di sempre, con lo schema costruito dalle righe» (design §4-bis) — non sa nominare i suoi campi: `SchemaForm`
+cerca ogni nome in i18n, e il testo di una domanda è una riga scritta dallo staff dell'evento. L'ha chiesto a Carmine sull'issue #253, e
+**Carmine ha deciso** ([la sua risposta][a253o], punto 1, 12 ottobre, data in chat al master e pubblicata su sua istruzione): **A, prima
+una fase del nucleo**; non B, perché i file di lingua non sono un posto dove tenere righe. Branch `m4/e10o-field-names-in-schema`, da
+`main` a `a75ed6c`. **PR del nucleo** con la sua nota (caso b), in coda dopo la #239 (la coda unica che il revisore ha chiesto); E16 si
+mette in coda dopo questa. Niente in C#.
+
+1. Un campo può portare il suo nome nello schema, già nella lingua sullo schermo, come le etichette di `choices`; senza, il nome è la
+   chiave di sempre.
+2. Una select opzionale di un campo con un nome suo dice «nessuno» con una parola del nucleo, nelle due lingue.
+
+**Test**: vitest per un campo con il suo nome, uno senza (com'era), e il «nessuno» della select opzionale; ognuno provato sul codice di
+oggi.
+**Fatta quando**: il form del membro di E16 si disegna dallo schema costruito dalle righe, con il testo delle domande come nomi dei
+campi, e nessun form scritto prima cambia.
+
+**Com'è andata** (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; il branch è
+stato pubblicato una prima volta senza PR, a `1a8c074`, perché E16 ci costruisse sopra il suo form mentre la coda andava avanti — la
+richiesta della sessione che coordina):
+
+- **Fatto** (nota nuova `2026-10-12-un-campo-dice-il-suo-nome`, **decisa**, con il link alla risposta di Carmine):
+  - **`FieldMeta.label`** (`web/src/shared/forms/schema.ts`): `.meta({ label })`, una stringa già nella lingua sullo schermo, letta
+    come ogni altra annotazione, dentro o fuori da `optional`;
+  - **`SchemaForm`** (`Field`): il nome è `node.meta.label`, altrimenti `<labels>.fields.<path>`; ogni tipo di campo lo riceve
+    (l'interruttore, la select, il gruppo di caselle con il suo `aria-label`, il numero, il testo, il fieldset, le schede di lingua);
+  - **la voce «nessuno»**: per un campo con un nome suo `form.none` («No choice» / «Nessuna scelta»), per gli altri la chiave di sempre;
+    calcolata una volta e usata dalla select di `choices`, dalla select di una `z.enum` e dalla griglia delle icone (`IconChoice` riceve
+    la parola invece del prefisso);
+  - **una chiave nuova** in `locales/{en,it}/common.json` (`form.none`); `docs/UI-GUIDELINES.md` dice l'annotazione in inglese;
+  - **i test** (vitest, 10): `web/src/shared/forms/SchemaForm.label.test.tsx`, con lo schema di E16 (`answers.q<id>`, i cinque tipi).
+- **Scelte della fase, scritte nella nota** (§2):
+  1. **niente `hint` nello schema**: E16 non ne ha bisogno, e `<labels>.hints.<path>` resta com'è;
+  2. **le opzioni di una `z.enum` restano chiavi i18n** anche su un campo con un nome suo: un insieme che viene da righe è `choices`;
+  3. **`label` e non `title`/`description` di zod**: quelli sono di JSON Schema; `label` è la parola che le scelte usano già;
+  4. **«Nessuna scelta»** in italiano: neutra rispetto al genere del campo.
+- **Verificato, in locale** (12 ottobre 2026, `main` a `a75ed6c`):
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (831 chiavi letterali in `en` e `it`) verdi; `pnpm test`
+    **721/721** in 99 file; `pnpm build` verde;
+  - **la prova al contrario**: con i quattro file della fase rimessi come su `main` (il test nuovo tenuto) cadono 7 casi su 10, e i tre
+    che passano sono quelli di ciò che non cambia (il campo senza nome suo, il suo «nessuno», la lettura dello schema); rimessi i file,
+    10/10;
+  - `dotnet build IvaoHub.sln` 0 avvisi; unità **1220/1220**;
+  - la smoke (`playwright test --workers=2`) **180/180** (1,2 minuti);
+  - `pnpm e2e:full` sulla porta 5138 con `ivaohub_e2e_e10o` nuovo: **59/59** al primo giro (12,8 minuti), sul codice di `main` più questa fase;
+  - le regole di `core-guard` rifatte in PowerShell: sul tratto della fase (da `0963908`) nessun file del maintainer, sei del nucleo
+    (`schema.ts`, `SchemaForm.tsx`, il test nuovo, i due `common.json`, `docs/UI-GUIDELINES.md`) con la nota nuova — passa; sul tutto
+    da `main` `a75ed6c` (la coda sotto compresa) nessun file del maintainer, 36 del nucleo con sette note nuove — passa.
+- **Dopo aver unito la testa di E10j** (`0963908`, 12 ottobre: E8b, E10n, E10m, E10l, E4c e `main` ad `a75ed6c`), un merge senza
+  conflitti, rifatto sul codice unito: `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (839 chiavi) verdi,
+  `pnpm gen:api` senza differenze, `pnpm test` **753/753** in 103 file, `pnpm build` verde; `dotnet build IvaoHub.sln -c Release` 0
+  avvisi, unità **1269/1269**, integrazione intera, senza filtro, **577/577** (Release); la smoke **181/181** (1,2 minuti);
+  `pnpm e2e:full` sulla porta 5138 con `ivaohub_e2e_e10o` ricreato: **61/61** al primo giro (11,9 minuti).
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - il form di E16 su questo nucleo in un browser: lo guarda E16, dopo l'unione (i test usano il suo schema, non le sue pagine);
+  - un lettore di schermo vero sul nome del gruppo di caselle (vitest legge il nome accessibile dal DOM);
+  - l'integrazione .NET prima del merge (nessun file del server cambia): fatta dopo, sul codice unito.
+
+[a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b

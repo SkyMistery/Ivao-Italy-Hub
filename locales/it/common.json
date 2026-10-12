@@ -121,6 +121,7 @@
     "submitHintOneLine": "Premi Invio in un campo di una riga per salvare.",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
+    "none": "Nessuna scelta",
     "suggest": {
       "empty": "Nel sito non c’è niente che corrisponda. Vale quello che scrivi.",
       "emptyClosed": "Qui non corrisponde niente. Una voce di menu porta a una pagina di questo sito, a una sua schermata, o a un link della libreria."

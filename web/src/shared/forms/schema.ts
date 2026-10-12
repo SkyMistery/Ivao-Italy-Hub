@@ -12,6 +12,17 @@ import { z } from 'zod';
 
 /** What `.meta({ ... })` may say about a field. Anything else is ignored. */
 export interface FieldMeta {
+  /**
+   * The name of the field, written by the caller **already in the language on screen**, as the
+   * labels of `choices` are. Absent — every schema written in the code — the name is the i18n key
+   * `<labels>.fields.<path>`, as it always was.
+   *
+   * It exists for a form whose schema is built from rows: the questions of an event in person are
+   * written by its staff in every language of the division, so no language file holds their text,
+   * and the language files are not a place to keep rows (decided by Carmine on #253, note
+   * `2026-10-12-un-campo-dice-il-suo-nome`). The generator never translates it: it draws it.
+   */
+  label?: string;
   /** A translated field: `LocaleFields` draws it, one tab per language of the division. */
   localized?: boolean;
   /** A long text: a textarea rather than a single line input. */
