@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Privacy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -26,6 +27,11 @@ public sealed class SampleItem : IOwnedByDepartment, IVisible, IAuditable, IHasR
 {
     public long Id { get; set; }
 
+    /// <summary>
+    /// The data of the member the row is about, the way a booking's callsign is its pilot's (M4, E10n): an erasure of that member
+    /// empties it in the audit rows of an item already gone (<see cref="ErasedWithAttribute"/>).
+    /// </summary>
+    [ErasedWith(nameof(StakeholderVid))]
     public string Title { get; set; } = string.Empty;
 
     /// <summary>The member this row is about, when it is about one.</summary>

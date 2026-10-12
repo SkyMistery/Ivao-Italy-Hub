@@ -4,6 +4,7 @@ export { DepartmentBadge, VisibilityBadge, StatusBadge, RatingBadge, type Visibi
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
+export { Dialog } from './Dialog';
 export { Notice } from './Notice';
 export { useNotice, type NoticeTone } from './notices';
 export { CalendarView } from './CalendarView';
