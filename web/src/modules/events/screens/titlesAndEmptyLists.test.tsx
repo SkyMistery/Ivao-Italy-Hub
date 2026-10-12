@@ -85,12 +85,14 @@ const event: PublicEventDto = {
   airports: [],
   routes: [],
   slots: [],
+  // The private slots of the page's read (E7): none, as nothing here looks at them.
+  privateSlots: [],
   cancelledAt: null,
   cancellationNote: null,
 };
 
-/** The same event as its tabs in the back office read it: by its id. */
-const detail = { id: event.id } as EventDetailDto;
+/** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
+const detail = { id: event.id, publicSlots: true, privateSlots: false } as EventDetailDto;
 
 /** What every list and the block of the events answer: nothing at all. */
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
@@ -110,7 +112,13 @@ afterEach(() => {
  * event, and under a route `/_staff`, whose context is the root's bootstrap as the back office's layout hands it on, its tabs and the
  * list of the events.
  */
-async function open(path: string, { editable = false }: { editable?: boolean } = {}) {
+async function open(
+  path: string,
+  {
+    editable = false,
+    slots = {},
+  }: { editable?: boolean; slots?: Partial<Pick<EventDetailDto, 'publicSlots' | 'privateSlots'>> } = {},
+) {
   api.get.mockImplementation((route: string) =>
     Promise.resolve({ data: ANSWERS[route] ?? EMPTY, response: new Response(null) }),
   );
@@ -130,7 +138,7 @@ async function open(path: string, { editable = false }: { editable?: boolean } =
         createRoute({
           getParentRoute: () => staff,
           path: '/slots',
-          component: () => <SlotsTab event={detail} editable={editable} />,
+          component: () => <SlotsTab event={{ ...detail, ...slots }} editable={editable} />,
         }),
         createRoute({
           getParentRoute: () => staff,
@@ -232,6 +240,31 @@ describe('the empty lists of the events', () => {
     expect(await screen.findByText(englishEvents.slots.empty)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: englishEvents.slots.load.open })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: englishEvents.slots.create })).not.toBeInTheDocument();
+  });
+
+  test('on an event with private slots alone, an empty «Slots» tab says they are generated, in both languages', async () => {
+    const { i18n } = await open('/slots', {
+      editable: true,
+      slots: { publicSlots: false, privateSlots: true },
+    });
+
+    expect(await screen.findByText(englishEvents.slots.emptyPrivate)).toBeInTheDocument();
+    expect(screen.queryByText(englishEvents.slots.empty)).not.toBeInTheDocument();
+    // Whoever writes the slots has the way the sentence speaks of, above it (E7).
+    expect(screen.getByRole('button', { name: englishEvents.slots.generate.trigger })).toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.slots.emptyPrivate)).toBeInTheDocument();
+  });
+
+  test('on an event with both kinds of slots, an empty «Slots» tab says how each comes, in both languages', async () => {
+    const { i18n } = await open('/slots', { slots: { publicSlots: true, privateSlots: true } });
+
+    expect(await screen.findByText(englishEvents.slots.emptyBoth)).toBeInTheDocument();
+    expect(screen.queryByText(englishEvents.slots.empty)).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.slots.emptyBoth)).toBeInTheDocument();
   });
 
   test('an empty «Routes» tab says what its routes will be, in both languages, and not the core’s sentence', async () => {
