@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -48,6 +49,9 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// <summary>The note of the staff about the person's flight not flown, which goes; and the person's own note as staff, which stays.</summary>
     private const string NoteAboutThem = "evt-test-e8b network failure";
     private const string TheirWords = "evt-test-e8b their words";
+
+    /// <summary>The note on a booking withdrawn before the erasure, which its copies in the audit log lose.</summary>
+    private const string WithdrawnNote = "evt-test-e8b withdrawn before";
 
     private static readonly string[] Locales = ["it", "en"];
 
@@ -182,6 +186,47 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // Run again: nothing left about the VID.
         Assert.All(EventsLines(await EraseAsync(superadmin, PersonVid, token)), line => Assert.Equal(0, line.Count));
+    }
+
+    [Fact]
+    public async Task APrivateBookingWithdrawnBeforeTheErasureLeavesNothingOfItsFlightInTheAuditLog()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var soon = Day(days: 12);
+
+        // Their private arrival, with all five columns of theirs written, withdrawn a week before the erasure: no row any more,
+        // only its two copies in the audit log, which no eraser finds (E10n, Carmine's answer 2 on #249).
+        var withdrawnEvent = await EventAsync("withdrawn", soon, cancelledBy: null, token);
+        var landing = await PrivateSlotAsync(withdrawnEvent, arrival: true, soon.AddHours(18), token);
+        var withdrawn = await BookingAsync(
+            withdrawnEvent,
+            landing,
+            PersonVid,
+            token,
+            row => (row.Callsign, row.OtherIcao, row.OtherTimeUtc, row.UnflownExcusedNote, row.FlownSessionId) =
+                ("XEJ841", Away, soon.AddHours(17), WithdrawnNote, 765432));
+        await WithdrawAsync(withdrawn, token);
+        Assert.True(
+            await AuditMentionsAsync("XEJ841", token) && await AuditMentionsAsync(WithdrawnNote, token),
+            "Without the flight in the audit log, the check below would prove nothing.");
+
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var pseudonym = (await EraseAsync(superadmin, PersonVid, token)).GetProperty("pseudonym").GetInt32();
+
+        // Its two copies stay, under the pseudonym, with the aircraft and the slot; the five columns of the pilot's are empty. The
+        // keys of the audit's JSON are the properties' names.
+        var copies = await AuditRowsAsync(withdrawn, token);
+        Assert.Equal(["created", "deleted"], copies.Select(row => row.Action));
+        foreach (var copy in new[] { JsonNode.Parse(copies[0].AfterJson!)!.AsObject(), JsonNode.Parse(copies[1].BeforeJson!)!.AsObject() })
+        {
+            Assert.Equal((pseudonym, Type, landing), (copy["BookerVid"]!.GetValue<int>(), copy["AircraftIcao"]!.GetValue<string>(), copy["SlotId"]!.GetValue<long>()));
+            foreach (var column in (string[])["Callsign", "OtherIcao", "OtherTimeUtc", "UnflownExcusedNote", "FlownSessionId"])
+            {
+                Assert.True(copy.ContainsKey(column) && copy[column] is null, $"{column} is still in the audit: {copy[column]}");
+            }
+        }
+
+        Assert.False(await AuditMentionsAsync("XEJ841", token) || await AuditMentionsAsync(WithdrawnNote, token));
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------------
@@ -340,6 +385,28 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
             .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
+    }
+
+    /// <summary>A booking taken back as the installation would, through the context: the audit keeps its created and deleted copies.</summary>
+    private async Task WithdrawAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        database.Bookings.Remove(await database.Bookings.IgnoreQueryFilters().SingleAsync(row => row.Id == id, cancellationToken));
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Every row of the audit log of one booking, in their order: what happened, and its copies before and after.</summary>
+    private async Task<List<(string Action, string? BeforeJson, string? AfterJson)>> AuditRowsAsync(long id, CancellationToken cancellationToken)
+    {
+        var key = id.ToString(CultureInfo.InvariantCulture);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var rows = await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking()
+            .Where(row => row.Entity == "evt_bookings" && row.EntityId == key)
+            .OrderBy(row => row.Id)
+            .ToListAsync(cancellationToken);
+
+        return [.. rows.Select(row => (row.Action, row.BeforeJson, row.AfterJson))];
     }
 
     /// <summary>The rows the audit log keeps of these bookings going in an erasure: which one, and what it copies of it before and after.</summary>
