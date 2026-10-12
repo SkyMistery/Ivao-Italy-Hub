@@ -149,7 +149,7 @@ internal static class AtcPositionMapper
 /// (§6.2), who write the positions of an event and not the event. A position is a callsign of the core's positions of the division, whose
 /// FIR the server copies from the core's directory before the permission is asked: with <c>firStaffScope: own</c> the staff of a FIR
 /// write and list the positions of their FIR alone, the one handler, the guard and the list saying the same.</item>
-/// <item>⚠️ <b>Four hand written reads</b> (readings 1 and 2 of the note): the controllers available on one position, asked of the one
+/// <item>⚠️ <b>Five hand written reads</b> (readings 1 and 2 of the note): the controllers available on one position, asked of the one
 /// handler on the position — so the staff of a FIR read the candidates of their positions, which say no FIR of their own (E2's form,
 /// point 7) —; the heads of the events with a roster, for whoever holds <c>EventAtc.View</c> somewhere and not <c>Events.View</c>
 /// (E2's form, point 7); and the two lists of the core the forms choose from, the positions of the division and the ATC ratings, as the

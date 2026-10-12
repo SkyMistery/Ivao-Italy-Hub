@@ -152,7 +152,9 @@ test('the ATC operations open two positions of an event, and a pilot gives their
   const master = await contextAs(browser, 'master');
   await removeOurRows(coordinator.request, pilot.request, master.request);
 
-  // A grant written signs its holder out: the trainer signs in once it is there.
+  // A grant goes to staff the hub knows — whoever signed in once, on a fresh bench too —, and a grant written signs its holder out: the
+  // trainer signs in before it, and again once it is there.
+  await (await contextAs(browser, 'trainer')).close();
   await grantTheAtc(master.request);
   const trainer = await contextAs(browser, 'trainer');
 

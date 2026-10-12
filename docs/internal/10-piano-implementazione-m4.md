@@ -3378,7 +3378,69 @@ del suo FIR**; la disponibilità rifiutata sotto il rating minimo e dopo la chiu
 l'area `IHasFir`. E2e: il pilota del banco (AS3) dà la disponibilità.
 **Fatta quando**: sul banco l'AOD (con un grant) apre due postazioni e il pilota dà la sua disponibilità.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #PRNUM, la prima fase di **M4b**; nata **in coda dopo la
+PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #251 di E10n né con la #252 di E10m —; **una migrazione**,
+`AddAtcPositionsAndAvailability`):
+
+- **Fatto**:
+  1. **`evt_atc_positions`** (punto 1): `EventAtcPosition`, una riga dello staff dell'evento (`IEventChild`, `[Audited]`, lo scope
+     dell'evento) nell'area **`EventAtc`** e **`IHasFir`**: il nominativo è una postazione della divisione (`IAtcPositionDirectory.FindAsync`),
+     e **il FIR lo copia il server dalla directory in `BeforeAuthorize`**, prima che l'unico handler e il guardiano lo chiedano. È la prima
+     riga dell'area con un FIR: **all'avvio il catalogo impara `EventAtc` fra le aree con un FIR, e i due grant `firTeam` del seme di E2
+     prendono effetto** (provato togliendoli e rifacendo il seme come un avvio). Le ore vuote sono la finestra dell'evento; dentro la
+     finestra, lo stesso nominativo due volte solo in ore che non si sovrappongono, solo su un evento con un roster.
+  2. **`evt_atc_availability`** e le sue finestre, **`evt_atc_availability_windows`** (punto 2): `EventAtcAvailability` (univoca su
+     `(event_id, controller_vid)`, senza chiave verso l'evento, come l'iscrizione) ed `EventAtcWindow` (le righe figlie, con il controllore e
+     l'evento sulla riga e una chiave verso la disponibilità), tutte e due righe del membro (`ISubmittedByMembers`, `IHasStakeholder`,
+     `IVisible` ai membri, `[Audited]`) con **`[WithdrawnByStakeholder]`**: la decisione del roster è il turno di E11b, la disponibilità non
+     ne porta (la regola di Carmine sulla #232, detta nel riassunto dell'entità e nella nota). `ErasureTests` con le quattro colonne di
+     persona; `EventsPersonalData` con le due righe dell'anteprima.
+  3. **La scheda «ATC»** dello staff (punto 3): le postazioni come lista e form generati (`/api/events/atc/positions`, `EventAtc.View` ed
+     `EventAtc.Edit`), il nominativo scelto fra le postazioni della divisione; sulla pagina di una postazione **chi è disponibile** — la forma
+     decisa in E2, punto 7: l'unico handler chiesto **sulla postazione**, con il suo FIR, e le disponibilità che la toccano, lette dal modulo —,
+     con il rating, le finestre in UTC e «per tutto il tempo»; quanti sono disponibili su ogni postazione. Per chi tiene l'ATC senza gli
+     eventi (lo staff di un FIR) la sezione **«ATC degli eventi»** (`/staff/events/atc`) e la pagina dell'ATC di un evento, con le intestazioni
+     lette dall'area (`/api/events/atc/events`). **`has_roster` e `shift_minutes`** nel form dell'evento (in coda a `EventWriteDto`, con un
+     predefinito, come «In presenza» in E16); l'interruttore non si spegne con postazioni o disponibilità; un evento con disponibilità non si
+     elimina.
+  4. **La disponibilità del membro** (punto 4): `/api/events/mine/availability` (`GET`, `PUT`, `DELETE`), la sezione «ATC» della pagina
+     dell'evento (`screens/Availability.tsx`, `#atc`) con le postazioni a tutti e il form delle finestre; fino a inizio −
+     `applicationsCloseDays`, con un rating almeno `minimumAtcRating` (sotto, la pagina dice quale); si cambia fino alla chiusura e si ritira
+     fino alla chiusura. Le regole in un posto solo, `Atc/AtcRules.cs`.
+  5. **Le impostazioni dell'ATC** (punto 5): `shiftMinutes` 60, `minimumAtcRating` nessuno (scelto fra i rating ATC del vocabolario:
+     `/api/events/atc/ratings`), `maxConsecutiveShifts` 2, `breakShifts` 1, `applicationsCloseDays` 3, `rosterPublishDays` 2,
+     `experienceMonths` 12, con i loro limiti; `rosterPublishDays` non più dei giorni della chiusura.
+  6. **«Duplica»** copia le postazioni (con le ore spostate, chiedendo `EventAtc.Edit`), mai una disponibilità — l'allargamento che l'handoff
+     di E8b chiedeva a ogni fase con righe dello staff.
+  7. **I test**: integrazione `EventsAtcTests` (8; VID **761106–761113**, una fascia nuova data da dalberone il 12 ottobre; slug
+     `evt-test-e11a-…`; due FIR di prova, `XXAA` e `XXBB`, con una directory dei FIR e una delle postazioni che conoscono solo loro, come
+     `TrainingFirHeadsTests`): i grant al team di un FIR applicati da un avvio; AOD e capo FIR scrivono le postazioni e non il testo
+     dell'evento; **con `own` il capo di un FIR solo le postazioni del suo FIR** — creazione, spostamento, eliminazione, lista, candidati, e
+     il guardiano senza endpoint —; una postazione nell'evento; la disponibilità rifiutata **sotto il rating minimo e dopo la chiusura**,
+     cambiata e ritirata, con l'audit; lo staff che la legge per postazione; la cancellazione di un controllore; il rating minimo del
+     vocabolario. Unità `EventsAtcRulesTests` (5) e le impostazioni dell'ATC in `EventsSettingsTests`. Vitest `Availability.test.tsx` (4) e
+     i form in `schemas.test.ts`. Il giro `full/events-atc.spec.ts`: il «fatta quando».
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-postazioni-e-la-disponibilita.md`, **Proposta**, la domanda a Carmine sulla
+  PR): le dieci letture della nota. ⚠️ **Cinque letture scritte a mano** (le intestazioni degli eventi con un roster, due; i candidati di
+  una postazione; le postazioni della divisione e i rating ATC da cui si sceglie): uno scostamento dal design §7.2, come la lettura dei preset
+  di E3a. ⚠️ **Le disponibilità in `/events/mine`** arrivano con i turni, in E12 (il design §7.1 le mette lì). ⚠️ **La cancellazione delle
+  disponibilità** è qui, nella fase che crea la colonna, e non in E15b come diceva l'handoff di E8b.
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le quattro colonne di persona). **Test del modulo di fasi prima, cresciuti
+  con la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16), a zero;
+  `hasRoster` e `shiftMinutes` in `eventForm.test.ts` (E3a); le impostazioni dell'ATC in `schemas.test.ts`, con il rating che torna dalla
+  sua scelta; `atc` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, lo smoke `events-public.spec.ts`); le righe
+  dell'ATC in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): otto — tre verbi del flusso del membro (leggere le proprie, dare o cambiare, ritirare) e
+  cinque letture (le intestazioni, due; i candidati; le due liste da cui si sceglie).
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Il banco**: un grant a un VID va solo a chi è già entrato nell'hub (`errors.grant.notStaff`) — sul banco appena nato il trainer
+     non c'è finché non entra una volta —, e un grant scritto lo fa rientrare. La spec lo fa entrare prima e dopo.
+  2. ⚠️ **Una chiave di query `'event'`** in `api.ts` fa cadere `EventsArchitectureTests`: è un tipo del calendario del seme. Le chiavi
+     dell'ATC sono `head` e `heads`.
+  3. **Un `SchemaForm` con un campo `datetime`** vuole `division.timezone`, o lancia: la sezione del membro aspetta il bootstrap prima del
+     form (trovato dalla prova di componente).
+- **Verificato, in locale**: *(VERIFIED)*
+- **Non verificato**: *(UNVERIFIED)*
 
 ### E11b — La proposta del roster e la correzione
 
