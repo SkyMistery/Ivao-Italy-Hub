@@ -7,7 +7,7 @@ import { CALENDAR_SCREEN_VIEWS } from '../../shared/ui';
 
 /**
  * The forms of the events (M4: the settings of E2, the event of E3a, its routes and the filters of `/events` of E4, its slots
- * and the table they are loaded from of E5), as zod
+ * and the table they are loaded from of E5, the flight of a private slot of E7), as zod
  * schemas: types and what is required. The rules — a kind the calendar has, the ranges, an airport the hub knows — are the
  * server's (design M0 §7.5).
  *
@@ -358,6 +358,48 @@ export const eventPageSearchSchema = z.object({
 });
 
 export type EventPageSearch = z.output<typeof eventPageSearchSchema>;
+
+// ---- the private slots (E7) --------------------------------------------------------------------------
+
+/** What the fields of the flight of a private slot choose from, already written on screen: slots by their time there. */
+export interface PrivateFlightChoices {
+  /** The free private slots of the hour opened, the value the slot's id as text, the label its time. */
+  readonly slots: readonly ChoiceOption[];
+  /** The free private departures from the same airport an arrival may link (§3.4), the same way. */
+  readonly departures: readonly ChoiceOption[];
+}
+
+/**
+ * The flight a pilot flies through a private slot (design M4 §3.4, E7), mirroring `PrivateBookingRequest`: the slot among the free ones
+ * of its hour, the callsign, the aircraft type, the other airport and the time there — where an arrival leaves from and when, where a
+ * departure lands and when. Every rule is the server's: the types, the airports, the order of the times, the gap to the pilot's other
+ * flights.
+ */
+export function privateFlightSchema(choices: PrivateFlightChoices) {
+  return z.object({
+    slotId: z.string().meta({ choices: choices.slots }),
+    callsign: z.string(),
+    aircraftIcao: z.string(),
+    otherIcao: z.string(),
+    otherTimeUtc: z.string().optional().meta({ datetime: true }),
+  });
+}
+
+/** The flight of a private arrival with its linked departure (§3.4): the same aircraft, and the departure's own flight. */
+export function privatePairSchema(choices: PrivateFlightChoices) {
+  return privateFlightSchema(choices).extend({
+    departure: z.object({
+      slotId: z.string().meta({ choices: choices.departures }),
+      callsign: z.string(),
+      otherIcao: z.string(),
+      otherTimeUtc: z.string().optional().meta({ datetime: true }),
+    }),
+  });
+}
+
+export type PrivateFlightValues = z.output<ReturnType<typeof privateFlightSchema>>;
+
+export type PrivatePairValues = z.output<ReturnType<typeof privatePairSchema>>;
 
 // ---- the bookings (E6b) ------------------------------------------------------------------------------
 

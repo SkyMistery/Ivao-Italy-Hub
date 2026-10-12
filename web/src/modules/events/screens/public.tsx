@@ -11,7 +11,6 @@ import { bootstrapQuery } from '../../../features/me/queries';
 import { holdsPermissionAnywhere } from '../../../shared/api/bootstrap';
 import { mediaFileUrl } from '../../../shared/api/mediaUrl';
 import { describeProblem } from '../../../shared/forms';
-import { resolveLocalized } from '../../../shared/i18n/localized';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { ListFilter } from '../../../shared/list';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
@@ -47,6 +46,7 @@ import { BookingOpening, EventDayStrip } from './BookingOpening';
 import { AirportName, EventCards, EventWhen } from './EventCards';
 import { EventSlots } from './EventSlots';
 import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
+import { PrivateSlots } from './PrivateSlots';
 
 /**
  * The public side of the events (design M4 §7.1, E4): `/events`, the events to come and those in progress as cards, narrowed to a
@@ -89,6 +89,9 @@ export function EventsPublicPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
+      {/* The tab says what the heading says (#224). */}
+      <PageMetadata title={t('events:public.title')} description={t('events:public.description')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('events:public.title')}</H1>
         <Lead>{t('events:public.description')}</Lead>
@@ -213,11 +216,11 @@ export function EventPublicPage() {
  * One event (§7.1): the banner; the state, the kind, the title and the summary; on its day who is online at its airports (E6b); when,
  * in UTC and in the division's time; who organises it and the airports; when its bookings open, counted down to (E6b); a cancelled one
  * with its note; the routes the flight operations wrote; its public slots (E5), narrowed by the filters of the address and booked from
- * the dialog of a slot (E6b); the description. To the staff, when nobody else sees it, a line that says so and why, and the way back to
- * the back office.
+ * the dialog of a slot (E6b); its private slots by airport, direction and hour, booked with the flight the pilot flies (E7); the
+ * description. To the staff, when nobody else sees it, a line that says so and why, and the way back to the back office.
  */
 function EventScreen({ event }: { event: PublicEventDto }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const read = useLocalized();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -258,16 +261,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
   return (
     <article className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10">
-      <PageMetadata
-        title={event.title}
-        description={event.summary}
-        imageMediaId={event.bannerMediaId}
-        divisionName={resolveLocalized(
-          bootstrap?.division.name,
-          i18n.language,
-          bootstrap?.division.defaultLocale ?? i18n.language,
-        )}
-      />
+      {/* The row's title in the tab; the division's name after it comes from the root (#224). */}
+      <PageMetadata title={event.title} description={event.summary} imageMediaId={event.bannerMediaId} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RouterAnchor href={EVENTS_PAGE} className="text-sm underline">
@@ -371,6 +366,8 @@ function EventScreen({ event }: { event: PublicEventDto }) {
       {event.slots.length === 0 ? null : (
         <EventSlots event={event} filters={filters} onFilter={onFilter} viewer={viewer} />
       )}
+
+      {event.privateSlots.length === 0 ? null : <PrivateSlots event={event} viewer={viewer} />}
 
       {/* A member's way to their bookings, all of them and the withdrawing (E6b). */}
       {viewer.mine.size === 0 ? null : (

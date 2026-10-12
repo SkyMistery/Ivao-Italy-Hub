@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -134,46 +135,62 @@ public static class BookingsExport
         // Who booked each (E6a), one query for the whole event: the program reads them as the staff of the bookings do.
         var bookings = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
             .Where(booking => booking.EventId == row.Id)
-            .ToDictionaryAsync(booking => booking.SlotId, http.RequestAborted);
+            .ToListAsync(http.RequestAborted);
+        var bySlot = bookings.ToDictionary(booking => booking.SlotId);
 
-        return Results.Ok(slots.Select(slot => Flight(slot, bookings.GetValueOrDefault(slot.Id))).ToList());
+        // A private arrival and its linked departure (E7), each pointing at the other's slot: one gate for the two.
+        var slotOfBooking = bookings.ToDictionary(booking => booking.Id, booking => booking.SlotId);
+        var pairs = BookingPairs.Of(bookings);
+
+        return Results.Ok(slots
+            .Select(slot => bySlot.GetValueOrDefault(slot.Id) is { } booking
+                ? Flight(slot, booking, pairs.TryGetValue(booking.Id, out var paired) ? slotOfBooking[paired] : null)
+                : Flight(slot, booking: null, pairedSlotId: null))
+            .ToList());
     }
 
     /// <summary>
-    /// A slot as a flight, with whoever booked it: a public one is its own flight; a private one is only its airport and its time
-    /// there — the departure leaves from it, the arrival lands at it — until E7 reads the rest of its flight from the booking.
+    /// A slot as a flight (<see cref="BookedFlight"/>), with whoever booked it. A public one is its own flight. A private one is its
+    /// airport and its time there — the departure leaves from it, the arrival lands at it — and, once booked, the flight its pilot wrote
+    /// (E7): the callsign, the other airport and the time there; no gate until the stands are managed (§0.2), and the slot paired with
+    /// it — an arrival's linked departure, a departure's arrival — for the one gate the two share.
     /// </summary>
-    private static BookingExportDto Flight(EventSlot slot, EventBooking? booking) => slot.Kind == SlotKind.Public
-        ? new BookingExportDto(
-            slot.Id,
-            slot.Callsign,
-            slot.FlightNumber,
-            booking?.BookerVid,
-            booking?.AircraftIcao,
-            slot.AircraftTypes,
-            slot.Stand,
-            slot.OffBlockUtc,
-            slot.OnBlockUtc,
-            slot.DepartureIcao,
-            slot.ArrivalIcao,
-            slot.RotationCode,
-            slot.RotationLeg,
-            PairedSlotId: null)
-        : new BookingExportDto(
-            slot.Id,
-            Callsign: null,
-            FlightNumber: null,
-            booking?.BookerVid,
-            booking?.AircraftIcao,
-            AircraftTypes: [],
-            Gate: null,
-            slot.IsArrival ? null : slot.OffBlockUtc,
-            slot.IsArrival ? slot.OnBlockUtc : null,
-            slot.IsArrival ? null : slot.EventAirportIcao,
-            slot.IsArrival ? slot.EventAirportIcao : null,
-            Rotation: null,
-            Leg: null,
-            PairedSlotId: null);
+    private static BookingExportDto Flight(EventSlot slot, EventBooking? booking, long? pairedSlotId)
+    {
+        var flight = BookedFlight.Of(slot, booking);
+
+        return slot.Kind == SlotKind.Public
+            ? new BookingExportDto(
+                slot.Id,
+                flight.Callsign,
+                slot.FlightNumber,
+                booking?.BookerVid,
+                booking?.AircraftIcao,
+                slot.AircraftTypes,
+                slot.Stand,
+                flight.OffBlockUtc,
+                flight.OnBlockUtc,
+                flight.DepartureIcao,
+                flight.ArrivalIcao,
+                slot.RotationCode,
+                slot.RotationLeg,
+                PairedSlotId: null)
+            : new BookingExportDto(
+                slot.Id,
+                flight.Callsign,
+                FlightNumber: null,
+                booking?.BookerVid,
+                booking?.AircraftIcao,
+                AircraftTypes: [],
+                Gate: null,
+                flight.OffBlockUtc,
+                flight.OnBlockUtc,
+                flight.DepartureIcao,
+                flight.ArrivalIcao,
+                Rotation: null,
+                Leg: null,
+                pairedSlotId);
+    }
 
     private static IResult Problem(int status, string titleKey, string? code, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(
