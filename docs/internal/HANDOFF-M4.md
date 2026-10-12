@@ -6,22 +6,26 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 11 ottobre 2026 — **fase E10k** (nucleo: le parole delle liste e i titoli delle schede), sul branch
-`m4/e10k-lists-and-titles`, **PR #238** verso `main`, nata da `main` a `0f72737`, senza coda, e **unita di nuovo a `main`** a `aa3707a`
-(la #241, 0.6.6: il test del meteo corretto), a `ba06d66` (E6a, E6b, il piano 1.32 e la #244, 0.6.7: l'indirizzo di ritorno dopo
-l'accesso) e a `0c2f85a` (E10i, la #237). Sono unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b
-(#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**, E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213),
-**E10g (#230)**, **E10h (#232)**, **E10i (#237)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216),
-i piani 1.29 (#217), 1.30 (#229), 1.31 (#234) e **1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del
-nucleo fino alla `0.6.7` (#218, #219, #225, **#241** — il test del meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo
-l'accesso) e gli spec che dicono al banco che cosa rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli
-scali dell'evento, il giorno dell'evento, l'ha montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso, del
-nucleo**: **E10k** (questa, la #238) ed **E10j** (#239: il recupero dei giri dei job), con **E4c** (#242: il titolo di `/events` e le
-frasi vuote delle schede «Slot» e «Rotte», gli usi degli eventi di E10k) in coda dopo la #238. **`WeatherTests` del nucleo**, che cadeva
-su ogni branch dal mattino del 9 ottobre (#236), **è corretto in `main` dalla #241** di Carmine (0.6.6, la sera stessa).
-**Il prossimo passo**: l'ordine in cui Carmine unisce è **#238 → #242 → #239**: **E10k** (questa, la #238: **decisa da Carmine**
-sull'issue #224 e, dopo la revisione, sulla #238; il revisore ha letto le correzioni, e con `main` unito e la CI verde la dice pronta al
-maintainer), poi **E4c** (la #242), poi **E10j** (la #239); ed **E7** (gli slot privati), il passo del modulo dopo E6b. Da E3b un evento si **pubblica**, entra nel
+**Ultimo aggiornamento:** 11 ottobre 2026, sera — **fase E7** (modulo: gli slot privati), sul branch `m4/e7-private-slots`, **PR #246**
+verso `main`, **dopo la revisione e le risposte di Carmine**: le correzioni sulla stessa PR, e `main` unito a `bea8c0e` (la #238 di
+E10k). Nata in coda dopo la #240 di E6b, già unita quando la fase è partita — il branch, ancora vuoto, è andato a `main` a `ba06d66` con
+un avanzamento veloce —, e con `main` unito a `0c2f85a` (la #237 di E10i) prima dell'apertura: la PR non è in coda dopo nessuna. Sono
+unite E1 (#200), E2 (#209), E2b (#212), E3a (#214), E3b (#221), E4 (#223), **E4b (#226)**, **E5 (#228)**, **E6a (#233)**, **E6b (#240)**,
+E10a (#210), E10b (#208), E10c (#204), E10d (#205), E10e (#206), E10f (#213), **E10g (#230)**, **E10h (#232)**, **E10i (#237)**, **E10k
+(#238)** ed E15a (#207), il passaggio dei tour al calcolo del nucleo (#211), la `0.6.0` (#216), i piani 1.29 (#217), 1.30 (#229), 1.31
+(#234) e **1.32 (#243)**, la parola degli eventi nella ricerca (#222), le altre correzioni del nucleo fino alla `0.6.7` (#218, #219, #225,
+**#241** — il test del meteo con `IClock` — e **#244** — l'indirizzo di ritorno dopo l'accesso) e gli spec che dicono al banco che cosa
+rimettono a posto (#227). **E4b** non migra niente; la striscia di chi è online sugli scali dell'evento, il giorno dell'evento, l'ha
+montata E6b, dentro la pagina («Che cosa ha lasciato E6b», sotto). **In corso**: **E4c** (#242: il titolo di `/events` e le frasi vuote
+delle schede «Slot» e «Rotte», gli usi degli eventi di E10k), **E10j** (#239, del nucleo: il recupero dei giri dei job) ed **E8b** (#249:
+«Duplica», la cancellazione, il giro completo di M4a), in coda dopo la #246.
+**Il prossimo passo**: l'ordine del maintainer è **#242, poi #239; la #246 e la #249 dopo le loro correzioni**. **E7** (questa, la #246):
+**il ritiro di uno dei due voli collegati è deciso** da Carmine sull'issue #245 — la strada A, il legame si scioglie e l'altra
+prenotazione resta —, e **la nota `2026-10-11-gli-slot-privati` è decisa** sulla #246 — sì alle letture (a)–(g), e l'interruttore
+dei privati non si spegne finché l'evento ne ha —; le correzioni del revisore sono fatte («Che cosa ha lasciato E7», sotto). Poi **E8b**
+(la #249), che unisce la testa nuova di E7. **E10i è unita**: un grant su un evento solo scrive l'evento e le sue righe e ne crea i
+figli, mai un evento nuovo («Che cosa ha lasciato E10i», sotto); **E10k è unita**: la lista generata dice le sue pagine e la sua frase
+vuota, ogni scheda il suo titolo («Che cosa ha lasciato E10k», sotto). Da E3b un evento si **pubblica**, entra nel
 calendario e nella ricerca quando si vede e ne esce alla fine, e tiene i suoi file; da E4 ha la sua pagina `/events/{slug}`, sta in
 `/events` e nel blocco `events.eventList`, il FOD ne scrive le rotte, e il suo tipo è uno dei tipi degli eventi («Che cosa ha lasciato E4»,
 sotto); da E5 ha i suoi **slot pubblici**, caricati da una tabella con le rotazioni e mostrati sulla sua pagina, e il Gate Manager li legge
@@ -30,7 +34,9 @@ rotazione e ritira fino all'off block, lo staff toglie una prenotazione con un m
 orari, e di una correzione del volo che ha prenotato («Che cosa ha lasciato E6a», sotto); da E6b **si prenota dalle pagine**: «Prenota» e
 «Prenota tutta la rotazione» nel dialog di uno slot, i filtri, l'apertura con il conto alla rovescia, `/events/mine` con «Ritira», il
 blocco `events.myEvents`, la scheda «Prenotazioni» dello staff con «Togli», la conferma prima di «Pubblica» e il promemoria del giorno
-prima, `events-reminders` («Che cosa ha lasciato E6b», sotto). **Carmine ha risposto sulla #240**
+prima, `events-reminders` («Che cosa ha lasciato E6b», sotto); da E7 ha i suoi **slot privati**: lo staff li genera dalla capacità degli
+scali, un pilota ne prenota uno con il suo volo, e un arrivo con la sua partenza dallo stesso scalo, e l'esportazione li porta con lo
+slot collegato, lo stesso gate da dare («Che cosa ha lasciato E7», sotto). **Carmine ha risposto sulla #240**
 ([1–5](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083877158),
 [6](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/240#issuecomment-6083894346)): **sì a tutto**, e la nota
 `2026-10-09-le-pagine-delle-prenotazioni` è **decisa**; ⚠️ **un lettore di nomi per VID nel nucleo entra nella coda del nucleo prima
@@ -177,6 +183,63 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E7 (10–11 ottobre 2026, branch `m4/e7-private-slots`, PR #246; nata in coda dopo la #240, unita prima che la PR si aprisse; `main` unito a `0c2f85a`, con E10i, e dopo la revisione a `bea8c0e`, con E10k)
+
+- **Che cosa c'è** (il dettaglio in `10`, E7, «Com'è andata» e «Dopo la revisione»; **nessuna migrazione**, niente del nucleo — solo
+  `schema.d.ts` generato —; due note nuove, **tutte e due decise**: `2026-10-10-il-ritiro-di-un-volo-collegato`, da Carmine sull'issue
+  #245 — la strada A: il legame si scioglie, l'altra prenotazione resta —, e `2026-10-11-gli-slot-privati`, da Carmine sulla #246 — sì
+  alle letture (a)–(g); l'interruttore dei privati non passa da acceso a spento finché l'evento ne ha —; dopo la revisione, le sei
+  correzioni del revisore sulla stessa PR):
+  - **«Genera gli slot privati»**: il generatore, puro (`Staff/PrivateSlotGenerator.cs`), e il servizio (`Staff/PrivateSlotGeneration.cs`),
+    `POST /api/events/events/{id}/slots/generate` (`EventBookings.Edit`), il bottone nella scheda «Slot». Dalla capacità di ogni scalo, ora
+    per ora dell'evento, meno i voli che restano (i pubblici e i privati prenotati, in ogni scalo che toccano); passi regolari, lontano
+    dagli orari tenuti; rigenerare sostituisce i liberi e tiene i prenotati; al più 5.000, **contati prima di costruire uno slot**
+    (`PrivateSlotGenerator.Count`). **Una generazione per evento alla volta**: la riga dell'evento `FOR UPDATE` in una transazione
+    `READ COMMITTED` intorno a tutto, l'evento riletto sotto il blocco; un deadlock è un 409 «leggi di nuovo».
+  - **L'interruttore dei privati** (`EventSaving`): il passaggio da acceso a spento è rifiutato finché l'evento ha dei privati
+    (`events:errors.hasPrivateSlots`, sul campo `privateSlots`); un evento che non l'ha mai avuto acceso non è chiesto.
+  - **Prenotare un privato** con il suo volo, e un arrivo con la partenza collegata dallo stesso scalo, tutte e due o nessuna
+    (`PilotBookings.BookPrivateAsync`, `POST /api/events/mine/bookings/private`). **Il volo di una prenotazione si legge solo da
+    `BookedFlight`** (`Bookings/BookingRules.cs`): di un privato l'altro aeroporto e il suo orario li scrive il pilota, e l'off block di
+    un arrivo è l'orario in cui lascia l'altro aeroporto — mai l'orario dello slot.
+  - **Il legame** (`Bookings/BookingPairs.cs`): `paired_booking_id` sta sull'arrivo e nomina la partenza; `Of` dà le coppie nei due sensi
+    quando ci sono tutte e due; `LetGoAsync` scioglie il legame nello stesso salvataggio in cui la partenza se ne va (il ritiro del
+    pilota, «togli» dello staff).
+  - **L'esportazione** porta i privati con il volo del pilota, il gate vuoto e `paired_slot_id` (aggiunta alla versione 1,
+    `docs/events-bookings-export.md`); **la pagina** la sezione «Slot privati» (`screens/PrivateSlots.tsx`, `screens/privateList.ts`);
+    `/events/mine` il volo collegato.
+  - **I test**: unità `EventsPrivateSlotsTests` (17); integrazione `EventsPrivateSlotsTests` (14, sette dopo la revisione: le gare con
+    una transazione del test tenuta nel database, il tetto, l'interruttore; VID **761087, 761088, 761095, 761096**; scali `XEI1`–`XEI3`,
+    tipi `XE8A`/`XE8B`, slug `evt-test-e7-…`, voli `XEI8xx`/`XEI9xx` dopo la revisione); vitest `privateList.test.ts` e
+    `PrivateSlots.test.tsx` (13); il giro completo `full/events-private.spec.ts` (slug `evt-test-e2e-e7-…`, voli `XEP801`/`XEP802`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E8b** (la cancellazione, «Duplica»): un privato ha il volo scritto dal pilota sulla prenotazione (`callsign`, `other_icao`,
+    `other_time_utc`): l'eraser degli eventi lo cancella con la riga. Una fase che toglie una sola prenotazione di una coppia chiama
+    `BookingPairs.LetGoAsync` prima del `Remove`, come il ritiro e «togli». Gli slot privati hanno `Generated` vero: «Duplica» decide se
+    copiarli o lasciarli al generatore, che si preme di nuovo sull'evento nuovo. ⚠️ **`PrivateSlotGeneration.GenerateAsync` apre la sua
+    transazione** (e prende la riga dell'evento `FOR UPDATE`): non si chiama dentro un'altra — «Duplica», «una transazione», o lascia
+    «Genera» allo staff o la chiama dopo il suo commit.
+  - **E13a** (i voli fatti): il volo da cercare nel tracker è quello di `BookedFlight` — partenza, arrivo e orari di un privato li ha
+    scritti il pilota —, non quello dello slot.
+  - **E4c** (#242): `PublicEventDto` ha `privateSlots`, obbligatorio nel client generato: chi delle due, E4c o E7, arriva in `main` per
+    seconda aggiunge `privateSlots: []` dopo `slots` nel `PublicEventDto` scritto per intero da `titlesAndEmptyLists.test.tsx` (con
+    `bookingOpensAtUtc: null`, che E6b ha già chiesto).
+  - ⚠️ **Due campi nuovi in fixture di fasi prima**, nessuna asserzione toccata: `pairedBookingId: null` nel campione della galleria
+    (`blocks/index.ts`) e in `blocks/myEvents.test.tsx` di E6b, `privateSlots: []` in `event()` dello smoke `web/e2e/events-public.spec.ts`.
+    Una fase che aggiunge un campo obbligatorio a `MyBookingDto` o a `PublicEventDto` fa lo stesso.
+  - ⚠️ **L'interruttore dei privati non passa da acceso a spento finché l'evento ne ha** (la risposta 2 di Carmine sulla #246): solo
+    quel passaggio, letto dal tracker, così `EventsSlotsTests` di E5, che scrive un privato su un evento che non l'ha mai acceso, resta
+    com'è. La regola legge i privati quando l'evento si salva: una generazione che si chiude nello stesso istante può lasciarne su un
+    evento spento — «elimina i liberi» li toglie.
+  - ⚠️ **La lettura della pagina porta ogni slot privato a ogni lettore** (circa 0,4 MB al tetto, il punto 6 del revisore): detto nella
+    nota e lasciato così. Una fase che la cambia (solo i conti, e una lettura dell'ora aperta) è una lettura scritta a mano in più.
+  - ⚠️ **Nel tema scuro i campi di un dialog non hanno bordo** (i token di Atmosphere: `--input` e `--background` sono tutti e due
+    `fuselage-900`): vale per ogni `Dialog` con un campo — il dialog dei privati, «Togli» di E6b, … —. È del nucleo; non toccato.
+  - ⚠️ **Il dialog di un'ora con la partenza** è alto due voli di campi: il suo contenuto scorre sotto il titolo, al più il 65% della
+    finestra. Un dialog nuovo con molti campi fa lo stesso, o a 1280×720 il bottone esce dalla finestra.
+  - **E10i** (#237, unita qui): con un grant su un evento solo «Genera» crea e toglie gli slot di quell'evento come gli altri verbi della
+    scheda — non provato da un test di E7.
 
 ### Che cosa ha lasciato E10k (9 ottobre 2026, branch `m4/e10k-lists-and-titles`, PR #238, del nucleo, senza coda)
 
