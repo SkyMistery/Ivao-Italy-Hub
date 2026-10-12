@@ -40,6 +40,7 @@ import {
   narrowCards,
   type EventListData,
 } from './cards';
+import { AvailabilitySection } from './Availability';
 import { EventDayStrip } from './BookingOpening';
 import { AirportName, EventCards } from './EventCards';
 import { EventHead } from './EventHead';
@@ -215,7 +216,7 @@ export function EventPublicPage() {
  * airports and who organises it when it is not the division —; on its day who is online at its airports (E6b); a cancelled one with
  * its note. Then what a pilot came for: its public slots (E5), narrowed by the filters of the address and booked from the dialog of a
  * slot (E6b), and its private slots by airport, direction and hour, booked with the flight the pilot flies (E7); for an event in person the
- * registration with its questions (E16). At the bottom the
+ * registration with its questions (E16); for an event with a roster its positions and a controller's availability (E11a). At the bottom the
  * description and the routes the flight operations wrote. To the staff, when nobody else sees it, a line that says so and why, and the
  * way back to the back office.
  */
@@ -314,6 +315,9 @@ function EventScreen({ event }: { event: PublicEventDto }) {
 
       {/* An event in person (E16): the registration, with the questions. */}
       <RegistrationSection event={event} signedIn={signedIn} />
+
+      {/* An event with a roster (E11a): its positions, and a controller's availability. */}
+      <AvailabilitySection event={event} signedIn={signedIn} />
 
       {/* A member's way to their bookings, all of them and the withdrawing (E6b). */}
       {viewer.mine.size === 0 ? null : (

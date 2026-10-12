@@ -5,11 +5,16 @@ import { readFields } from '../../shared/forms';
 
 import { routeToFormValues } from './api';
 import {
+  atcPositionSchema,
+  availabilitySchema,
   duplicateSchema,
+  emptyAtcPosition,
+  emptyAvailability,
   emptyRoute,
   eventsPublicSearchSchema,
   kindChoices,
   routeSchema,
+  settingsFromFormValues,
   settingsSchema,
   settingsToFormValues,
   type EventsSettings,
@@ -43,10 +48,17 @@ const saved: EventsSettings = {
   pilotRetentionMonths: 24,
   inPersonRetentionMonths: 3,
   reminderLeadHours: 24,
+  shiftMinutes: 60,
+  minimumAtcRating: 4,
+  maxConsecutiveShifts: 2,
+  breakShifts: 1,
+  applicationsCloseDays: 3,
+  rosterPublishDays: 2,
+  experienceMonths: 12,
 };
 
 test('the form has a field for every setting, and nothing else', () => {
-  const fields = readFields(settingsSchema({ kinds: [] }));
+  const fields = readFields(settingsSchema({ kinds: [], ratings: [] }));
 
   expect(fields.map((field) => field.path).sort()).toEqual(Object.keys(saved).sort());
 
@@ -59,8 +71,62 @@ test('the form has a field for every setting, and nothing else', () => {
   );
 });
 
-test('the settings come back from the form as they went in', () => {
-  expect(settingsSchema({ kinds: [] }).parse(settingsToFormValues(saved))).toEqual(saved);
+test('the settings come back from the form as they went in, the least rating through its choice (E11a)', () => {
+  expect(
+    settingsFromFormValues(settingsSchema({ kinds: [], ratings: [] }).parse(settingsToFormValues(saved))),
+  ).toEqual(saved);
+  expect(settingsToFormValues(saved).minimumAtcRating).toBe(String(saved.minimumAtcRating));
+
+  // No least rating: an empty choice, and none again on the way back.
+  const anyMember = { ...saved, minimumAtcRating: null };
+  expect(settingsToFormValues(anyMember)).not.toHaveProperty('minimumAtcRating');
+  expect(settingsFromFormValues({ ...settingsToFormValues(anyMember), minimumAtcRating: '' })).toEqual(
+    anyMember,
+  );
+});
+
+test('the form of a position has a field for everything a position is written with (E11a), and a new one opens the whole event', () => {
+  const written: Record<keyof components['schemas']['EventAtcPositionWriteDto'], true> = {
+    eventId: true,
+    callsign: true,
+    fromUtc: true,
+    toUtc: true,
+    note: true,
+    rowVersion: true,
+  };
+
+  expect(
+    readFields(atcPositionSchema([]))
+      .map((field) => field.path)
+      .sort(),
+  ).toEqual(Object.keys(written).sort());
+
+  const fresh = emptyAtcPosition(7);
+  expect(atcPositionSchema([]).parse(fresh)).toEqual(fresh);
+  expect(fresh).not.toHaveProperty('fromUtc');
+});
+
+test('the form of an availability has the windows and the note of the request (E11a), a new one the whole event', () => {
+  const sent: Record<keyof components['schemas']['AvailabilityRequest'], true> = {
+    windows: true,
+    note: true,
+  };
+  const window: Record<keyof components['schemas']['AtcWindowDto'], true> = { fromUtc: true, toUtc: true };
+
+  const fields = readFields(availabilitySchema);
+  expect(fields.map((field) => field.path).sort()).toEqual(Object.keys(sent).sort());
+  const windows = fields.find((field) => field.path === 'windows');
+  expect(windows?.kind === 'list' ? windows.children.map((child) => child.path).sort() : []).toEqual(
+    Object.keys(window)
+      .map((name) => `windows.${name}`)
+      .sort(),
+  );
+
+  const fresh = emptyAvailability('2026-11-21T17:00:00Z', '2026-11-21T23:00:00Z');
+  expect(availabilitySchema.parse(fresh)).toEqual({
+    windows: [{ fromUtc: '2026-11-21T17:00:00Z', toUtc: '2026-11-21T23:00:00Z' }],
+    note: '',
+  });
 });
 
 test('a kind the calendar no longer has stays on offer once, so that its row can be seen and taken out', () => {

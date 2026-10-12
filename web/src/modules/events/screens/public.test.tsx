@@ -101,6 +101,7 @@ const event = {
   inPerson: false,
   venue: null,
   questions: [],
+  atc: null,
 } as unknown as PublicEventDto;
 
 const bootstrap = {
