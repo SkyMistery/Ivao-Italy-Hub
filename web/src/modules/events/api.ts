@@ -816,11 +816,15 @@ export function questionToFormValues(
   };
 }
 
-/** What changes when a question changes: its list, and the page of its event, which builds the member's form from them. */
+/**
+ * What changes when a question changes: its list, the page of its event, which builds the member's form from them, and the staff's list
+ * of the registrations, whose answers are written in words with them.
+ */
 async function questionsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: questionsKey }),
     queryClient.invalidateQueries({ queryKey: publicKey }),
+    queryClient.invalidateQueries({ queryKey: registrationsKey }),
   ]);
 }
 
@@ -858,17 +862,68 @@ export function useDeleteQuestion() {
   });
 }
 
-/** The registrations of an event as its staff read them (§4-bis.2): a page of them, the first registered first unless sorted. */
-export function staffRegistrationsQuery(eventId: number, search: ListSearch) {
+/** A question of the staff's list with its sums in words of the language on screen (Carmine's answer 6 on #255). */
+export type QuestionRow = EventQuestionDto & { readonly sums: string[] };
+
+/**
+ * The questions of an event as the tab «Questions» lists them: each with its sums, which the server sends as numbers and sums writes
+ * in the language on screen — part of the key, so another language reads the page again.
+ */
+export function questionRowsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  sums: (question: EventQuestionDto) => string[],
+) {
   return queryOptions({
-    queryKey: [...registrationsKey, 'list', eventId, search] as const,
-    queryFn: async () =>
-      unwrap(
+    queryKey: [...questionsKey, 'rows', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/questions', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((question): QuestionRow => ({ ...question, sums: sums(question) })),
+      };
+    },
+  });
+}
+
+/** A registration of the staff's list with its answers in words of the language on screen. */
+export type RegistrationRow = EventRegistrationDto & { readonly lines: string[] };
+
+/**
+ * The registrations of an event as its staff read them (§4-bis.2): a page of them, the first registered first unless sorted, each with
+ * its answers, which the server sends as they were given and lines writes in the language on screen with the event's questions.
+ */
+export function staffRegistrationsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  lines: (registration: EventRegistrationDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...registrationsKey, 'list', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
         await api.GET('/api/events/registrations', {
           params: { query: toQuery(search) },
           querySerializer: listQuerySerializer({ eventId: String(eventId) }),
         }),
-      ),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((registration): RegistrationRow => ({
+          ...registration,
+          lines: lines(registration),
+        })),
+      };
+    },
   });
 }
 

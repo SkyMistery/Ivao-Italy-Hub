@@ -312,8 +312,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Le mail**: `events.registrationReceived` a ogni iscrizione e cambio, `events.registrationRemoved` con il motivo; annullare e cambiare
     gli orari avvisano anche gli iscritti (`EventSaving.PeopleToTellAsync`).
   - **`EventsPersonalData`** per le iscrizioni; **`inPersonRetentionMonths`** nelle impostazioni.
-  - **I test**: integrazione `EventsRegistrationsTests` (5; VID **761101–761105**, una fascia nuova data da dalberone; slug `evt-test-e16-…`);
-    vitest `registrationForm.test.ts`; il giro `web/e2e/full/events-in-person.spec.ts` (slug `evt-test-e2e-e16-…`).
+  - **I test**: integrazione `EventsRegistrationsTests` (9 dopo la revisione; VID **761101–761105**, una fascia nuova data da dalberone;
+    slug `evt-test-e16-…`); vitest `registrationForm.test.ts`, `answers.test.ts`; il giro `web/e2e/full/events-in-person.spec.ts` (slug
+    `evt-test-e2e-e16-…`).
 - **Che cosa deve sapere la fase dopo**:
   - **Le due domande dell'issue #253 sono decise** ([le risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540)):
     le etichette del form del membro vengono dal nucleo, con la fase **E10o** (un campo porta il suo nome nello schema), e **E16 è in coda
@@ -325,9 +326,18 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     (non le iscrizioni) — le chiavi delle scelte com'erano.
   - **E10n** (#251, nella coda sotto): `EventRegistration.AnswersJson` porta `[ErasedWith(nameof(Vid))]`, così le risposte di un'iscrizione
     ritirata o tolta prima della cancellazione escono anche dall'audit; `EventsRegistrationsTests` lo prova con un'iscrizione ritirata.
-  - ⚠️ **Le parole che il server scrive** — le risposte di un'iscrizione, le somme — sono nella lingua dell'account (`ICurrentUser.Locale`),
-    non in quella del cookie `hub.lang`: per un membro il selettore cambia le due insieme, ma **sul banco** `readInEnglish` cambia solo la
-    pagina, e le persone del banco leggono l'italiano. La spec le attende in italiano.
+  - **Dopo la revisione sulla #255** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660),
+    [la risposta di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914): sì alle letture 15, 20, 4 e
+    12, no alle parole delle liste scritte dal server). ⚠️ **Le liste ricevono dati, la pagina scrive le parole nella lingua sullo
+    schermo**: `EventQuestionDto.Sum` (numeri per chiave), le risposte com'erano date in `EventRegistrationDto` e in `MyRegistrationDto` (che
+    porta anche le domande del suo evento), e `screens/answers.ts` che le scrive; **le mail** tengono le parole del server
+    (`RegistrationAnswers.Lines`), nella lingua di chi le riceve. Una fase che mette un valore in parole in una lista fa lo stesso (E17: i
+    posti delle attività). ⚠️ **La cancellazione** tiene di un'iscrizione finita solo le risposte contate alle domande che ci sono, e marca
+    sempre la riga come cambiata, così l'audit perde le sue copie di prima: una tabella nuova di E17 (i posti) che tiene righe con lo
+    pseudonimo guarda lo stesso caso. ⚠️ **Ogni lettura salta un valore che non torna con la sua domanda** (`RegistrationAnswers.Fits`, e in
+    TS `answerLines`).
+  - ⚠️ **Sul banco** le persone leggono l'italiano anche con la pagina in inglese (`readInEnglish` mette solo il cookie): le **mail**
+    arrivano in italiano, le pagine no.
   - ⚠️ **Due test del modulo di fasi prima, cresciuti con la forma** (detto nella PR): due righe dell'anteprima in `EventsErasureTests`
     (E8b); `inPerson` e `venue` in `eventForm.test.ts` (E3a); i tre campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`,
     `public.test.tsx`, lo smoke `events-public.spec.ts`) e `inPersonRetentionMonths` in `schemas.test.ts`. Una fase che aggiunge un campo

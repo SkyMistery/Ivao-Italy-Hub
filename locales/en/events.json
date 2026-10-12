@@ -801,7 +801,7 @@
   "registrations": {
     "fields": {
       "member": "Member",
-      "answers": "Answers",
+      "lines": "Answers",
       "createdAt": "Registered on",
       "updatedAt": "Answers changed on"
     },

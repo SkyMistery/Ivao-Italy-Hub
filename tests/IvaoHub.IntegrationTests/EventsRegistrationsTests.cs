@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -16,6 +18,7 @@ using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -48,6 +51,9 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
 
     /// <summary>The answer of a registration withdrawn before the erasure: the audit's copies lose it (E10n).</summary>
     private const string GoneWords = "evt-test-e16 withdrawn words";
+
+    /// <summary>A text answer the member took out of their registration before it was kept by the erasure (the review of #255, point 2).</summary>
+    private const string EarlierWords = "evt-test-e16 earlier words";
 
     private static readonly string[] Locales = ["it", "en"];
 
@@ -130,10 +136,17 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             JsonNode.DeepEquals);
         Assert.True(registered.GetProperty("changeable").GetBoolean());
 
-        // Changed: the same registration, the optional answers taken out, and the words in the member's language.
+        // Changed: the same registration, the optional answers taken out; the answers as data with the event's questions, which the page
+        // writes in words in the language on screen (Carmine's answer 6 on #255).
         var changed = await OkAsync(await member.PutAsJsonAsync(Mine(id), Request((q.Dinner, false), (q.Seat, "1")), token), token);
         Assert.Equal(registered.GetProperty("id").GetInt64(), changed.GetProperty("id").GetInt64());
-        Assert.Equal(["Coming to dinner: No", "Seat: Window"], changed.GetProperty("lines").EnumerateArray().Select(line => line.GetString()));
+        Assert.Equal(
+            JsonNode.Parse($$"""{"q{{q.Dinner}}":false,"q{{q.Seat}}":"1"}"""),
+            JsonNode.Parse(changed.GetProperty("answers").GetRawText()),
+            JsonNode.DeepEquals);
+        Assert.Equal(
+            [q.Dinner, q.Seat, q.Gear, q.Chairs, q.Note],
+            changed.GetProperty("questions").EnumerateArray().Select(question => question.GetProperty("id").GetInt64()));
 
         // Told each time, with the answers as they were then.
         var mails = await MailsAsync(MemberVid, EventsNotifications.RegistrationReceived, token);
@@ -159,25 +172,26 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         await CreatedAsync(await member.PutAsJsonAsync(Mine(id), Request((q.Dinner, true), (q.Seat, "1"), (q.Gear, new[] { "1", "2" }), (q.Chairs, 2), (q.Note, "vegetarian")), token), token);
         await CreatedAsync(await other.PutAsJsonAsync(Mine(id), Request((q.Dinner, true), (q.Seat, "2"), (q.Gear, new[] { "2" }), (q.Chairs, 3)), token), token);
 
-        // The sums of each question, in the reader's language, in the order of the form.
+        // The sums of each question, in numbers by the keys of the question, in the order of the form: the page writes the words.
         var questions = await OkAsync(await coordinator.GetAsync($"{EventQuestionEndpoints.Pattern}?filter[eventId]={id}", token), token);
         Assert.Equal(
             [
-                ["Yes 2", "No 0"],
-                ["Window 1", "Aisle 1"],
-                ["PC 1", "Monitor 2"],
-                ["Total 5"],
-                ["Answered 1"],
+                "answered 2, yes 2, no 0, total 0, choices ",
+                "answered 2, yes 0, no 0, total 0, choices 1=1 2=1",
+                "answered 2, yes 0, no 0, total 0, choices 1=1 2=2",
+                "answered 2, yes 0, no 0, total 5, choices ",
+                "answered 1, yes 0, no 0, total 0, choices ",
             ],
-            questions.GetProperty("items").EnumerateArray().Select(row => row.GetProperty("sums").EnumerateArray().Select(sum => sum.GetString()!).ToArray()));
+            questions.GetProperty("items").EnumerateArray().Select(row => Sum(row.GetProperty("sum"))));
 
-        // The registrations, with the members named and their answers in words.
+        // The registrations, with the members named and their answers as they gave them.
         var list = (await OkAsync(await coordinator.GetAsync($"{RegistrationEndpoints.StaffPattern}?filter[eventId]={id}", token), token))
             .GetProperty("items").EnumerateArray().ToList();
         Assert.Equal([MemberVid, OtherVid], list.Select(row => row.GetProperty("member").GetProperty("vid").GetInt32()));
         Assert.Equal(
-            ["Coming to dinner: Yes", "Seat: Window", "Equipment: PC, Monitor", "Chairs: 2", "Anything else: vegetarian"],
-            list[0].GetProperty("answers").EnumerateArray().Select(line => line.GetString()));
+            JsonNode.Parse($$"""{"q{{q.Dinner}}":true,"q{{q.Seat}}":"1","q{{q.Gear}}":["1","2"],"q{{q.Chairs}}":2,"q{{q.Note}}":"vegetarian"}"""),
+            JsonNode.Parse(list[0].GetProperty("answers").GetRawText()),
+            JsonNode.DeepEquals);
 
         // A member reads nobody's registrations there.
         using (var response = await member.GetAsync($"{RegistrationEndpoints.StaffPattern}?filter[eventId]={id}", token))
@@ -301,7 +315,16 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         var over = await EventRowAsync("erase-over", now.AddDays(-5), now.AddDays(-5).AddHours(6), token);
         var (text, dinner) = await QuestionRowsAsync(over, token);
         await RegistrationRowAsync(toCome, PersonVid, "{}", token);
-        var kept = await RegistrationRowAsync(over, PersonVid, $$"""{"q{{text}}":"{{TheirWords}}","q{{dinner}}":true}""", token);
+
+        // Two questions the staff deleted after the person answered them — a text and a yes or no —: the answers stay in the row until
+        // the member's next change, which never comes once the event is over (the review of #255, point 1).
+        var (deletedText, deletedYesNo) = await QuestionRowsAsync(over, token);
+        var kept = await RegistrationRowAsync(
+            over,
+            PersonVid,
+            $$"""{"q{{text}}":"{{TheirWords}}","q{{dinner}}":true,"q{{deletedText}}":"evt-test-e16 coeliac","q{{deletedYesNo}}":false}""",
+            token);
+        await DeleteQuestionsAsync([deletedText, deletedYesNo], token);
         await RegistrationRowAsync(over, OtherVid, $$"""{"q{{text}}":"evt-test-e16 another's words"}""", token);
 
         // A registration the person sent and withdrew before the erasure: no eraser finds it, and its copies in the audit hold their words
@@ -333,7 +356,8 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         Assert.Equal(lines, EventsLines(erased));
         var pseudonym = erased.GetProperty("pseudonym").GetInt32();
 
-        // To come: gone. Over: under the pseudonym, the yes or no counted, their words gone; the other member's as it was.
+        // To come: gone. Over: under the pseudonym, only the yes or no of a question the event has, counted; their words gone, and the
+        // answers to the questions deleted, a text and a yes or no alike; the other member's as it was.
         Assert.Empty(await RegistrationsAsync(toCome, token));
         var stored = (await RegistrationsAsync(over, token)).ToDictionary(row => row.Id);
         Assert.Equal(pseudonym, stored[kept].Vid);
@@ -342,6 +366,7 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
 
         // The registration withdrawn before: nothing of its answers in the audit.
         Assert.False(await AuditMentionsAsync(GoneWords, token));
+        Assert.False(await AuditMentionsAsync("evt-test-e16 coeliac", token));
 
         // Run again: nothing left about the VID.
         Assert.All(
@@ -349,7 +374,150 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             line => Assert.Equal(0, line.Count));
     }
 
+    [Fact]
+    public async Task AKeptRegistrationKeepsNoWordsOfAnEarlierAnswerInTheAudit()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+
+        // The person registers with a text, then saves again without it; the event then ends.
+        var id = await EventRowAsync("erase-history", now.AddDays(5), now.AddDays(5).AddHours(6), token);
+        var (text, dinner) = await QuestionRowsAsync(id, token);
+        using (var person = await SignedInAsync(PersonVid, token))
+        {
+            await CreatedAsync(await person.PutAsJsonAsync(Mine(id), Request((text, EarlierWords), (dinner, true)), token), token);
+            await OkAsync(await person.PutAsJsonAsync(Mine(id), Request((dinner, true)), token), token);
+        }
+
+        await MoveEventAsync(id, now.AddDays(-2), now.AddDays(-2).AddHours(6), token);
+        Assert.True(await AuditMentionsAsync(EarlierWords, token), "Without the earlier answer in the audit, the check below would prove nothing.");
+
+        // Erased: the row stays under the pseudonym with the yes or no, and its earlier copies in the audit lose the words (the review of
+        // #255, point 2: a row whose answers do not change would otherwise count as changed only in its person column).
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var pseudonym = (await OkAsync(await superadmin.PostAsync($"{ErasureEndpoints.Pattern}/{PersonVid}", content: null, token), token))
+            .GetProperty("pseudonym").GetInt32();
+
+        var kept = Assert.Single(await RegistrationsAsync(id, token));
+        Assert.Equal(pseudonym, kept.Vid);
+        Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true}"""), JsonNode.Parse(kept.AnswersJson), JsonNode.DeepEquals);
+        Assert.False(await AuditMentionsAsync(EarlierWords, token));
+    }
+
+    [Fact]
+    public async Task TheSwitchTheVenueAndTheQuestionsKeepTheirRules()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        // An event in person without a venue is not published: the venue is asked in every language.
+        var starts = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(30).AddHours(9), DateTimeKind.Utc);
+        var draft = await CreatedAsync(await coordinator.PostAsJsonAsync(EventEndpoints.Pattern, Payload("rules", starts, inPerson: true, venue: null), token), token);
+        var id = draft.GetProperty("id").GetInt64();
+        Assert.Contains("venue", (await RefusedAsync(
+            await coordinator.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/publish", new EventPublishRequest(default), token),
+            token)).Keys);
+
+        // With a question, the switch is not turned off.
+        await CreatedAsync(await coordinator.PostAsJsonAsync(EventQuestionEndpoints.Pattern, Question(id, 1, QuestionType.YesNo, "Dinner", read: null), token), token);
+        var row = await OkAsync(await coordinator.GetAsync($"{EventEndpoints.Pattern}/{id}", token), token);
+        Assert.Equal(["events:errors.inPersonHasQuestions"], (await RefusedAsync(
+            await coordinator.PutAsJsonAsync($"{EventEndpoints.Pattern}/{id}", Payload("rules", starts, inPerson: false, venue: null) with { RowVersion = row.GetProperty("rowVersion").GetDateTime() }, token),
+            token))["inPerson"]);
+
+        // A member writes no question.
+        using (var member = await SignedInAsync(MemberVid, token))
+        using (var response = await member.PostAsJsonAsync(EventQuestionEndpoints.Pattern, Question(id, 2, QuestionType.YesNo, "Mine", read: null), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        // At most thirty questions.
+        await QuestionRowsAsync(id, EventQuestion.MaxPerEvent - 1, token);
+        Assert.Equal(["events:errors.questionsTooMany"], (await RefusedAsync(
+            await coordinator.PostAsJsonAsync(EventQuestionEndpoints.Pattern, Question(id, 99, QuestionType.YesNo, "One too many", read: null), token),
+            token))["eventId"]);
+
+        // An event not in person takes no question.
+        var online = (await CreatedAsync(await coordinator.PostAsJsonAsync(EventEndpoints.Pattern, Payload("rules-online", starts, inPerson: false, venue: null), token), token))
+            .GetProperty("id").GetInt64();
+        Assert.Equal(["events:errors.questionNotInPerson"], (await RefusedAsync(
+            await coordinator.PostAsJsonAsync(EventQuestionEndpoints.Pattern, Question(online, 1, QuestionType.YesNo, "Dinner", read: null), token),
+            token))["eventId"]);
+    }
+
+    [Fact]
+    public async Task NobodyRegistersWhereTheEventTakesNoRegistration()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        var (starts, ends) = (now.AddDays(5), now.AddDays(5).AddHours(6));
+
+        var notInPerson = await EventRowAsync("not-in-person", starts, ends, token, row => row.InPerson = false);
+        var cancelled = await EventRowAsync("cancelled", starts, ends, token, row => (row.CancelledAt, row.CancelledBy, row.CancellationNote) = (now, CoordinatorVid, Text("evt-test-e16 cancelled")));
+        var draft = await EventRowAsync("draft", starts, ends, token, row => (row.Status, row.PublishedAt) = (PublishStatus.Draft, null));
+        var notSeenYet = await EventRowAsync("not-seen-yet", starts, ends, token, row => row.VisibleFromUtc = now.AddDays(1));
+        using var member = await SignedInAsync(MemberVid, token);
+
+        foreach (var hidden in new[] { notInPerson, draft, notSeenYet })
+        {
+            using var response = await member.PutAsJsonAsync(Mine(hidden), Request(), token);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        Assert.Equal(["events:errors.registrationClosed"], (await RefusedAsync(await member.PutAsJsonAsync(Mine(cancelled), Request(), token), token))["id"]);
+        foreach (var id in new[] { notInPerson, cancelled, draft, notSeenYet })
+        {
+            Assert.Empty(await RegistrationsAsync(id, token));
+        }
+    }
+
+    [Fact]
+    public async Task TheSecondRegistrationOfTheSameInstantIsAChangeOfTheFirst()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        var id = await EventRowAsync("same-instant", now.AddDays(5), now.AddDays(5).AddHours(6), token);
+        var (_, dinner) = await QuestionRowsAsync(id, token);
+        using var member = await SignedInAsync(MemberVid, token);
+
+        // A transaction of the test holds what another window of the member would hold: their registration, inserted, not yet committed.
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            database.Registrations.Add(new EventRegistration
+            {
+                EventId = id,
+                Vid = MemberVid,
+                AnswersJson = $$"""{"q{{dinner}}":false}""",
+                CreatedAt = now,
+                UpdatedAt = now,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            });
+            await database.SaveChangesAsync(token);
+
+            // The request reads no registration — the other is not committed —, inserts its own, and waits on the unique index.
+            var request = member.PutAsJsonAsync(Mine(id), Request((dinner, true)), token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        // The index answered, and the request changed the registration it found: one row, with the answers it sent.
+        await OkAsync(answered, token);
+        var stored = Assert.Single(await RegistrationsAsync(id, token));
+        Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true}"""), JsonNode.Parse(stored.AnswersJson), JsonNode.DeepEquals);
+    }
     // ---- helpers -------------------------------------------------------------------------------------------------------
+
+    /// <summary>The sums of a question in one line, the choices by their keys in order.</summary>
+    private static string Sum(JsonElement sum) =>
+        $"answered {sum.GetProperty("answered").GetInt32()}, yes {sum.GetProperty("yes").GetInt32()}, no {sum.GetProperty("no").GetInt32()}, "
+        + $"total {sum.GetProperty("total").GetInt32()}, choices "
+        + string.Join(' ', sum.GetProperty("choices").EnumerateObject().OrderBy(choice => choice.Name, StringComparer.Ordinal).Select(choice => $"{choice.Name}={choice.Value.GetInt32()}"));
 
     private const string MinePattern = RegistrationEndpoints.MinePattern;
 
@@ -384,26 +552,7 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
     private static async Task<(long Id, Questions Questions)> InPersonEventAsync(HttpClient coordinator, string name, CancellationToken cancellationToken)
     {
         var starts = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(30).AddHours(9), DateTimeKind.Utc);
-        var payload = new EventWriteDto(
-            "rfo",
-            PublicSlots: false,
-            PrivateSlots: false,
-            WholeDivision: false,
-            EventOrganizer.Division,
-            ExternalUrl: null,
-            Text(Slug(name)),
-            Slug(name),
-            Text(Slug(name)),
-            Body: null,
-            BannerMediaId: null,
-            VisibleFromUtc: null,
-            BookingOpensAtUtc: null,
-            starts,
-            starts.AddHours(9),
-            Visibility.Public,
-            default,
-            InPerson: true,
-            Venue: Text("evt-test-e16 venue"));
+        var payload = Payload(name, starts, inPerson: true, venue: Text("evt-test-e16 venue"));
         var id = (await CreatedAsync(await coordinator.PostAsJsonAsync(EventEndpoints.Pattern, payload, cancellationToken), cancellationToken)).GetProperty("id").GetInt64();
 
         async Task<long> AddAsync(int ordinal, QuestionType type, string label, bool required, params (string? Key, string Label)[] choices) =>
@@ -422,8 +571,85 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         return (id, questions);
     }
 
+    /// <summary>An event of the class as its form sends it: from 09:00 to 18:00 of <paramref name="starts"/>'s day, in person or not.</summary>
+    private static EventWriteDto Payload(string name, DateTime starts, bool inPerson, Localized<string>? venue) => new(
+        "rfo",
+        PublicSlots: false,
+        PrivateSlots: false,
+        WholeDivision: false,
+        EventOrganizer.Division,
+        ExternalUrl: null,
+        Text(Slug(name)),
+        Slug(name),
+        Text(Slug(name)),
+        Body: null,
+        BannerMediaId: null,
+        VisibleFromUtc: null,
+        BookingOpensAtUtc: null,
+        starts,
+        starts.AddHours(9),
+        Visibility.Public,
+        default,
+        InPerson: inPerson,
+        Venue: venue);
+
+    /// <summary>Questions of an event written by the installation, yes or no, as many as asked.</summary>
+    private async Task QuestionRowsAsync(long eventId, int count, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        database.Questions.AddRange(Enumerable.Range(1, count).Select(ordinal => new EventQuestion
+        {
+            EventId = eventId,
+            Ordinal = ordinal,
+            Type = QuestionType.YesNo,
+            Label = Text($"evt-test-e16 {ordinal}"),
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        }));
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Questions deleted, as the staff delete them after somebody answered.</summary>
+    private async Task DeleteQuestionsAsync(long[] ids, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Questions.IgnoreQueryFilters()
+            .Where(question => ids.Contains(question.Id))
+            .ExecuteDeleteAsync(cancellationToken);
+    }
+
+    /// <summary>An event moved to other times past every rule: one that has ended could not be made any other way.</summary>
+    private async Task MoveEventAsync(long id, DateTime starts, DateTime ends, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters()
+            .Where(row => row.Id == id)
+            .ExecuteUpdateAsync(set => set.SetProperty(row => row.StartsAtUtc, starts).SetProperty(row => row.EndsAtUtc, ends), cancellationToken);
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms: asked more often, it keeps answering what
+    /// it saw the first time (CONTRIBUTING.md).</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The request never waited for the transaction the test holds.");
+    }
     /// <summary>A published event in person of the class, written by the installation: one that started or ended could not be made any other way.</summary>
-    private async Task<long> EventRowAsync(string name, DateTime starts, DateTime ends, CancellationToken cancellationToken)
+    private async Task<long> EventRowAsync(string name, DateTime starts, DateTime ends, CancellationToken cancellationToken, Action<Event>? write = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
@@ -446,6 +672,7 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
         };
 
+        write?.Invoke(row);
         database.Events.Add(row);
         await database.SaveChangesAsync(cancellationToken);
         return row.Id;

@@ -18,6 +18,7 @@ import {
 } from '../api';
 
 import { MY_EVENTS_PAGE } from './myBookings';
+import { RegistrationAnswers } from './RegistrationAnswers';
 import { registrationDefaults, registrationSchema, type RegistrationValues } from './registrationForm';
 
 /**
@@ -28,7 +29,7 @@ import { registrationDefaults, registrationSchema, type RegistrationValues } fro
  * are right is the server's to say, field by field.
  */
 export function RegistrationSection({ event, signedIn }: { event: PublicEventDto; signedIn: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Read only for an event in person, by a member: no other page asks.
   const mine = useQuery({ ...myRegistrationsQuery(), enabled: signedIn && event.inPerson });
   // The registrations are open or closed from when the page was drawn, as the server's verbs will say again.
@@ -58,6 +59,10 @@ export function RegistrationSection({ event, signedIn }: { event: PublicEventDto
         ) : (
           <Subtle className="text-sm">{t('events:public.registration.closed')}</Subtle>
         )
+      ) : mine.isError ? (
+        // The member's registrations could not be read: said, rather than a section with its title and nothing under it (the review of
+        // #255, point 6).
+        <Notice tone="error" title={describeProblem(mine.error, t, i18n.language) ?? t('errors.unknown')} />
       ) : mine.data === undefined ? null : registration === undefined ? (
         open ? (
           <RegistrationForm event={event} registration={undefined} />
@@ -83,12 +88,8 @@ function Registered({ event, registration }: { event: PublicEventDto; registrati
       <Notice tone="success" title={t('events:public.registration.registered')} />
       {registration.changeable ? (
         <RegistrationForm event={event} registration={registration} />
-      ) : registration.lines.length === 0 ? null : (
-        <ul className="flex flex-col gap-1 text-sm">
-          {registration.lines.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
+      ) : (
+        <RegistrationAnswers registration={registration} />
       )}
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       <div className="flex flex-wrap items-center gap-3">

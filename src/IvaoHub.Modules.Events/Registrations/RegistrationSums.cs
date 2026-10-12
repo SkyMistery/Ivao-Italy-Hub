@@ -1,13 +1,12 @@
-using System.Globalization;
-using IvaoHub.Core.Localization;
+using System.Text.Json.Nodes;
 
 namespace IvaoHub.Modules.Events.Registrations;
 
 /// <summary>
 /// What the registrations of an event answered to one question, summed (design M4 §4-bis.2: «how many at dinner, how many
-/// monitors»): how many answered; for a yes or no, how many of each; for a choice, how many chose each; for a quantity, the total.
-/// Numbers only, by the keys of the question: what the staff read live, and what the statistics keep once the registrations are gone
-/// (<see cref="EventStats.AnswerSumsJson"/>, E17).
+/// monitors»): how many answered; for a yes or no, how many of each; for a choice, how many chose each, by the choice's key; for a
+/// quantity, the total. Numbers only: the staff's list of the questions carries them and the page writes their words in the language
+/// on screen (Carmine's answer 6 on #255); the statistics keep them once the registrations are gone (<see cref="EventStats.AnswerSumsJson"/>, E17).
 /// </summary>
 public sealed record QuestionSum(
     long QuestionId,
@@ -17,74 +16,83 @@ public sealed record QuestionSum(
     int Total,
     IReadOnlyDictionary<string, int> Choices);
 
-/// <summary>The sums of the answers of an event's registrations, and their words.</summary>
+/// <summary>The sums of the answers of an event's registrations.</summary>
 public static class RegistrationSums
 {
-    /// <summary>The sums of every question, over the registrations given: an answer to a question the event no longer has is not counted.</summary>
-    public static IReadOnlyList<QuestionSum> Of(IReadOnlyList<EventQuestion> questions, IReadOnlyList<EventRegistration> registrations)
+    /// <summary>
+    /// The sums of every question, over the registrations given, each registration read once (the review of #255, point 4). An answer
+    /// to a question the event no longer has is not counted, nor one that no longer fits its question (point 3).
+    /// </summary>
+    public static IReadOnlyDictionary<long, QuestionSum> Of(
+        IReadOnlyList<EventQuestion> questions,
+        IReadOnlyList<EventRegistration> registrations)
     {
         ArgumentNullException.ThrowIfNull(questions);
         ArgumentNullException.ThrowIfNull(registrations);
 
-        var answers = registrations.Select(RegistrationAnswers.Of).ToList();
+        var answered = questions.ToDictionary(question => question.Id, _ => 0);
+        var yes = questions.ToDictionary(question => question.Id, _ => 0);
+        var no = questions.ToDictionary(question => question.Id, _ => 0);
+        var total = questions.ToDictionary(question => question.Id, _ => 0);
+        var chosen = questions.ToDictionary(
+            question => question.Id,
+            question => question.Choices.ToDictionary(choice => choice.Key, _ => 0, StringComparer.Ordinal));
 
-        return
-        [
-            .. questions.Select(question =>
+        foreach (var answers in registrations.Select(RegistrationAnswers.Of))
+        {
+            foreach (var question in questions)
             {
-                var given = answers
-                    .Select(answer => answer[EventQuestion.AnswerKey(question.Id)])
-                    .OfType<System.Text.Json.Nodes.JsonNode>()
-                    .ToList();
-
-                var chosen = question.Type switch
+                var answer = answers[EventQuestion.AnswerKey(question.Id)];
+                if (!RegistrationAnswers.Fits(question, answer))
                 {
-                    QuestionType.Choice => given.Select(answer => answer.GetValue<string>()).ToList(),
-                    QuestionType.MultiChoice => given.SelectMany(answer => answer.AsArray().Select(key => key!.GetValue<string>())).ToList(),
-                    _ => [],
-                };
+                    continue;
+                }
 
-                return new QuestionSum(
-                    question.Id,
-                    given.Count,
-                    question.Type == QuestionType.YesNo ? given.Count(answer => answer.GetValue<bool>()) : 0,
-                    question.Type == QuestionType.YesNo ? given.Count(answer => !answer.GetValue<bool>()) : 0,
-                    question.Type == QuestionType.Quantity ? given.Sum(answer => answer.GetValue<int>()) : 0,
-                    question.Choices.ToDictionary(choice => choice.Key, choice => chosen.Count(key => key == choice.Key), StringComparer.Ordinal));
-            }),
-        ];
+                answered[question.Id]++;
+                switch (question.Type)
+                {
+                    case QuestionType.YesNo when answer!.GetValue<bool>():
+                        yes[question.Id]++;
+                        break;
+                    case QuestionType.YesNo:
+                        no[question.Id]++;
+                        break;
+                    case QuestionType.Quantity:
+                        total[question.Id] += answer!.GetValue<int>();
+                        break;
+                    case QuestionType.Choice:
+                        Count(chosen[question.Id], answer!.GetValue<string>());
+                        break;
+                    case QuestionType.MultiChoice:
+                        foreach (var key in answer!.AsArray().OfType<JsonNode>())
+                        {
+                            Count(chosen[question.Id], key.GetValue<string>());
+                        }
+
+                        break;
+                }
+            }
+        }
+
+        return questions.ToDictionary(
+            question => question.Id,
+            question => new QuestionSum(question.Id, answered[question.Id], yes[question.Id], no[question.Id], total[question.Id], chosen[question.Id]));
     }
 
-    public const string AnsweredKey = "events:registrations.sums.answered";
+    /// <summary>A choice the question still has is counted; a key it no longer has is not.</summary>
+    private static void Count(Dictionary<string, int> chosen, string key)
+    {
+        if (chosen.TryGetValue(key, out var count))
+        {
+            chosen[key] = count + 1;
+        }
+    }
 
-    public const string TotalKey = "events:registrations.sums.total";
-
-    /// <summary>
-    /// The sum of one question in words, in this language, one entry each: «Yes 12», «No 3»; «PC 4», «Monitor 6», in the order of the
-    /// choices; «Total 23» of a quantity; and how many answered a question in words.
-    /// </summary>
-    public static IReadOnlyList<string> Words(EventQuestion question, QuestionSum sum, string locale, string fallback, LocaleCatalog catalog)
+    /// <summary>The sums of a question nobody's registrations were read for: a row of the list read alone.</summary>
+    public static QuestionSum None(EventQuestion question)
     {
         ArgumentNullException.ThrowIfNull(question);
-        ArgumentNullException.ThrowIfNull(sum);
-        ArgumentNullException.ThrowIfNull(catalog);
 
-        string Count(string words, int count) => $"{words} {count.ToString(CultureInfo.InvariantCulture)}";
-
-        return question.Type switch
-        {
-            QuestionType.YesNo =>
-            [
-                Count(catalog.Resolve(locale, RegistrationAnswers.YesKey), sum.Yes),
-                Count(catalog.Resolve(locale, RegistrationAnswers.NoKey), sum.No),
-            ],
-            QuestionType.Choice or QuestionType.MultiChoice =>
-            [
-                .. question.Choices.Select(choice =>
-                    Count(choice.Label.Resolve(locale, fallback) ?? choice.Key, sum.Choices.GetValueOrDefault(choice.Key))),
-            ],
-            QuestionType.Quantity => [Count(catalog.Resolve(locale, TotalKey), sum.Total)],
-            _ => [Count(catalog.Resolve(locale, AnsweredKey), sum.Answered)],
-        };
+        return new QuestionSum(question.Id, 0, 0, 0, 0, question.Choices.ToDictionary(choice => choice.Key, _ => 0, StringComparer.Ordinal));
     }
 }

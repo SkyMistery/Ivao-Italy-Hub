@@ -4489,9 +4489,41 @@ dopo il merge):
   `inPersonRetentionMonths` in `schemas.test.ts`, le iscrizioni in `EventsTestRows`.
 - **Gli endpoint scritti a mano** (piano §16.6): quattro, verbi — tre del flusso del membro (leggere le proprie, iscriversi o cambiare,
   ritirarsi) e «togli» dello staff.
-- **Trovato, e scritto per chi viene dopo**: le parole che il server scrive seguono la lingua dell'account, non il cookie `hub.lang`
-  (sul banco, le persone leggono l'italiano anche con la pagina in inglese); la trappola è nell'handoff. **Lo smoke** ha trovato che
-  `/events/mine` restava su «Loading...» quando la lettura delle iscrizioni non rispondeva: ora le prenotazioni non la aspettano.
+- **Trovato, e scritto per chi viene dopo**: **lo smoke** ha trovato che `/events/mine` restava su «Loading...» quando la lettura delle
+  iscrizioni non rispondeva: ora le prenotazioni non la aspettano. (Le parole che il server scriveva per le liste seguivano la lingua
+  dell'account e non quella dello schermo: Carmine ha detto no sulla #255, e la revisione le ha portate nel client — sotto.)
+
+**Dopo la revisione** (12 ottobre 2026, sulla #255 a `78fc9b6`: [i rilievi del revisore][rv255] e [la risposta di Carmine][a255] sulle
+letture che sono scelte; tutto sotto la #255 era unito, `main` a `cea6244`, e la #255 era MERGEABLE, quindi nessun merge di `main`):
+
+1. **Nessuna parola del membro sopravvive alla cancellazione** (punti 1 e 2). `EventsPersonalData` tiene di un'iscrizione a un evento finito
+   **solo le risposte contate** (sì o no, una scelta, più scelte, numeri) **alle domande che l'evento ha ancora**, come tornano con la loro
+   domanda, e toglie ogni altra chiave — un testo, la risposta a una domanda eliminata —; e **marca sempre la colonna come cambiata**,
+   così il nucleo conta la riga come svuotata e ne svuota le copie di prima nell'audit. **Provato al contrario**: senza quella riga il test
+   nuovo `AKeptRegistrationKeepsNoWordsOfAnEarlierAnswerInTheAudit` cade (`Assert.False`, le parole di un cambio di prima restano
+   nell'audit), con la riga passa: il rilievo 2 era giusto.
+2. **Le letture saltano un valore che non torna con la sua domanda** (punto 3): `RegistrationAnswers.Fits`, usato dalle somme, dalle righe
+   della mail e dalla cancellazione; il client ha la sua gemella in `screens/answers.ts`.
+3. **Le somme in un passaggio** (punto 4): `RegistrationSums.Of` legge ogni iscrizione una volta e somma tutte le domande di un evento;
+   la pagina della lista chiama una volta per evento.
+4. **Le liste ricevono dati, e la pagina scrive le parole nella lingua sullo schermo** (no di Carmine, risposta 6): `EventQuestionDto.Sum`
+   sono numeri per chiave (`QuestionSum`), `EventRegistrationDto.Answers` e `MyRegistrationDto.Answers` le risposte com'erano date, e
+   `MyRegistrationDto.Questions` le domande del suo evento (`PublicQuestionDto.Of`, scritto una volta per la pagina e per il membro);
+   `screens/answers.ts` (`answerLines`, `sumWords`, `useAnswerWords`) le scrive nelle due schede e nelle iscrizioni del membro
+   (`RegistrationAnswers.tsx`); le query delle due liste hanno la lingua nella chiave. **Le mail tengono le parole del server**, nella
+   lingua di chi le riceve. Tolta `RegistrationSums.Words`.
+5. **La seconda iscrizione dello stesso istante diventa un cambio della prima** (con il test chiesto al punto 5): prima rispondeva
+   «riprova»; ora, quando l'indice univoco risponde, la richiesta rilegge l'iscrizione e la cambia.
+6. **I test mancanti** (punto 5): `TheSwitchTheVenueAndTheQuestionsKeepTheirRules` (il luogo per pubblicare, l'interruttore con una domanda,
+   un membro che scrive una domanda, la trentunesima, un evento non in presenza), `NobodyRegistersWhereTheEventTakesNoRegistration` (non in
+   presenza, bozza, non ancora visibile: 404; annullato: `registrationClosed`), `TheSecondRegistrationOfTheSameInstantIsAChangeOfTheFirst`
+   (una transazione del test tiene l'iscrizione non confermata, la richiesta aspetta sull'indice in `INNODB_TRX`), e nella cancellazione due
+   domande eliminate dopo la risposta. Vitest `answers.test.ts` (3).
+7. **`Registration.tsx`** (punto 6): un errore della lettura delle iscrizioni si dice nella sezione; le righe hanno per chiave il loro
+   posto.
+
+[rv255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
+[a255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

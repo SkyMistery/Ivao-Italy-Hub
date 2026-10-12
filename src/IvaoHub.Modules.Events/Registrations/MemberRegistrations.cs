@@ -5,6 +5,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Public;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -15,7 +16,8 @@ namespace IvaoHub.Modules.Events.Registrations;
 /// changing them, withdrawing, and reading their own — all of it on <c>/events/mine</c> and on the event's page. Any signed in member,
 /// on an event they see; nobody else's registration, ever: the staff's side is <see cref="RegistrationEndpoints"/>' «take away».
 /// <para>One registration per member per event is the unique index of the database: two requests of the same member in the same
-/// instant meet there, and the second is told to try again. Nothing else is shared between members, so nothing is locked.</para>
+/// instant meet there, and the second becomes a change of the registration the first made. Nothing else is shared between members, so
+/// nothing is locked.</para>
 /// </summary>
 public sealed class MemberRegistrations(
     EventsDbContext database,
@@ -59,9 +61,7 @@ public sealed class MemberRegistrations(
         }
 
         var vid = currentUser.Vid;
-        var registration = await database.Registrations.FirstOrDefaultAsync(
-            candidate => candidate.EventId == row.Id && candidate.Vid == vid,
-            cancellationToken);
+        var registration = await MineAsync(row.Id, cancellationToken);
         var created = registration is null;
 
         if (registration is null)
@@ -87,23 +87,40 @@ public sealed class MemberRegistrations(
         }
         catch (Exception exception) when (DatabaseErrors.Duplicated(exception))
         {
-            // The same member registered from another window an instant before: their registration is there, and this is a change of it.
+            // The same member registered from another window in the same instant, and the unique index answered: their registration is
+            // there now, and this request is a change of it — the last answers sent are the ones kept.
             database.Entry(registration).State = EntityState.Detached;
-            return (BookingResult.Refused, null, false, problems.Add("id", BookingRules.TryAgainKey));
+            registration = await MineAsync(row.Id, cancellationToken);
+            if (registration is null)
+            {
+                return (BookingResult.NotFound, null, false, problems);
+            }
+
+            created = false;
+            registration.AnswersJson = answers.ToJsonString();
+            registration.UpdatedAt = now;
+
+            try
+            {
+                await database.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return (BookingResult.NotFound, null, false, problems);
+            }
         }
         catch (DbUpdateConcurrencyException)
         {
             // Withdrawn from another window, or taken away by the staff, while this change was on its way.
             return (BookingResult.NotFound, null, false, problems);
         }
-
         await mail.RegistrationReceivedAsync(
             row,
             vid,
             locale => RegistrationAnswers.Lines(questions, answers, locale, division.Value.DefaultLocale, catalog),
             cancellationToken);
 
-        return (BookingResult.Done, Mine(registration, row, questions, now), created, problems);
+        return (BookingResult.Done, Mine(registration, row, [.. questions.Select(PublicQuestionDto.Of)], now), created, problems);
     }
 
     /// <summary>
@@ -168,7 +185,7 @@ public sealed class MemberRegistrations(
             .. rows
                 .OrderBy(entry => entry.row.StartsAtUtc)
                 .ThenBy(entry => entry.registration.Id)
-                .Select(entry => Mine(entry.registration, entry.row, [.. questions[entry.row.Id]], now)),
+                .Select(entry => Mine(entry.registration, entry.row, [.. questions[entry.row.Id].Select(PublicQuestionDto.Of)], now)),
         ];
     }
 
@@ -184,11 +201,15 @@ public sealed class MemberRegistrations(
     private Task<Event?> SeenAsync(long eventId, DateTime now, CancellationToken cancellationToken) =>
         database.Events.AsNoTracking().Where(EventState.Seen(now)).FirstOrDefaultAsync(row => row.Id == eventId, cancellationToken);
 
-    private MyRegistrationDto Mine(EventRegistration registration, Event row, IReadOnlyList<EventQuestion> questions, DateTime now)
+    /// <summary>The member's own registration of an event, tracked: the one their change writes, or none.</summary>
+    private Task<EventRegistration?> MineAsync(long eventId, CancellationToken cancellationToken)
     {
-        var answers = RegistrationAnswers.Of(registration);
+        var vid = currentUser.Vid;
+        return database.Registrations.FirstOrDefaultAsync(candidate => candidate.EventId == eventId && candidate.Vid == vid, cancellationToken);
+    }
 
-        return new MyRegistrationDto(
+    private static MyRegistrationDto Mine(EventRegistration registration, Event row, IReadOnlyList<PublicQuestionDto> questions, DateTime now) =>
+        new(
             registration.Id,
             row.Id,
             row.Slug,
@@ -197,11 +218,10 @@ public sealed class MemberRegistrations(
             row.StartsAtUtc,
             row.EndsAtUtc,
             row.Venue,
-            answers,
-            RegistrationAnswers.Lines(questions, answers, currentUser.Locale, division.Value.DefaultLocale, catalog),
+            questions,
+            RegistrationAnswers.Of(registration),
             RegistrationRules.IsOpen(row, now),
             RegistrationRules.IsWithdrawable(row, now),
             registration.CreatedAt,
             registration.UpdatedAt);
-    }
 }

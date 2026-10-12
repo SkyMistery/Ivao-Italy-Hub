@@ -1,42 +1,58 @@
+import { useQuery } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SchemaForm, describeProblem } from '../../../shared/forms';
+import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
 import { ConfirmDialog, Notice } from '../../../shared/ui';
 import {
+  questionsQuery,
   staffRegistrationsQuery,
   useRemoveRegistration,
   type EventDetailDto,
   type EventRegistrationDto,
+  type RegistrationRow,
 } from '../api';
 import { bookingRemovalSchema, type BookingRemovalValues } from '../schemas';
+
+import { answerLines, useAnswerWords } from './answers';
 
 /**
  * The registrations of an event in person in the back office (design M4 §4-bis.2, §7.2, E16): a tab of the event's page with the
  * generated list — the member, named with the core's helper (`col.person`: an erased one is said so, never as a number), their answers
- * in words, one line per question, when they registered and when they last changed them —, the first registered first unless sorted;
- * and «take away» with the reason the member reads in the mail. Whoever reads the bookings of the event has the tab, whoever writes
+ * in words of the language on screen, one line per question (the server sends them as given), when they registered and when they last
+ * changed them —, the first registered first unless sorted; and «take away» with the reason the member reads in the mail. Whoever reads the bookings of the event has the tab, whoever writes
  * them «take away»; the sums are in the tab of the questions.
  */
 
-const columns: readonly ColumnSpec<EventRegistrationDto>[] = [
+const columns: readonly ColumnSpec<RegistrationRow>[] = [
   col.person('member'),
-  col.list('answers'),
+  col.list('lines'),
   col.date('createdAt', { sortable: true }),
   col.date('updatedAt', { sortable: true }),
 ];
 
 export function RegistrationsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
   const { i18n } = useTranslation();
+  const read = useLocalized();
+  const words = useAnswerWords();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
+  // The event's questions, which the answers are written in words with, in the language on screen (Carmine's answer 6 on #255).
+  const questions = useQuery(questionsQuery(event.id)).data?.items;
+
+  if (questions === undefined) {
+    return null;
+  }
 
   return (
     <DataList
       columns={columns}
-      query={staffRegistrationsQuery(event.id, search)}
+      query={staffRegistrationsQuery(event.id, search, i18n.language, (registration) =>
+        answerLines(questions, registration.answers, read, words),
+      )}
       labels="events:registrations"
       locale={i18n.language}
       defaultLocale={bootstrap.division.defaultLocale}
