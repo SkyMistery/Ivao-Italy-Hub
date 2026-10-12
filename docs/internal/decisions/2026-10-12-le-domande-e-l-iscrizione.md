@@ -2,8 +2,10 @@
 
 **Data:** 12 ottobre 2026 — fase E16 di M4 (la prima di M4c: le domande e l'iscrizione)
 **Stato:** **decisa** (Carmine, 12 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione: [le risposte sulla
-#253][a]): **(A) a tutte e due** le domande di [l'issue #253][q], aperta all'inizio della fase perché il codice ne dipende (§5). Le
-letture di §1–§4 sono scritte come le raccomandava la nota.
+#253][a]): **(A) a tutte e due** le domande di [l'issue #253][q], aperta all'inizio della fase perché il codice ne dipende (§5); e
+**le letture che sono scelte**, portate a Carmine dal revisore della #255 ([le risposte sulla #255][b]): **sì** alle letture 15, 20 e 4 e
+alla mail a ogni cambio (12), e alle domande e al luogo dati a chi legge senza accesso; **no** alle parole delle liste scritte dal server
+nella lingua dell'account (§5, «Le risposte sulle letture»). Le altre letture restano come scritte.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §1.10, §8.3, §11.1 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5 — l'unico handler, il guardiano dell'interceptor
 con il ritiro di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il
@@ -12,6 +14,8 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
+[b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
+[rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
 
 ## 1. Le domande (`evt_questions`, design §4-bis.1)
 
@@ -26,8 +30,11 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
    le risposte nominano la chiave, così le scelte si riscrivono e si riordinano senza toccare una risposta. Il form la porta nascosta;
    una scelta senza chiave, o con una chiave che la domanda non ha mai dato, è nuova.
 4. **Una domanda a cui qualcuno ha risposto tiene il suo tipo e ogni sua scelta** (si riscrivono, si riordinano, se ne aggiungono, non
-   se ne tolgono): `events:errors.questionAnsweredType`, `events:errors.questionAnsweredChoices`. **Si elimina**: le sue risposte non si
-   leggono e non si contano più, e spariscono alla prossima modifica del membro.
+   se ne tolgono): `events:errors.questionAnsweredType`, `events:errors.questionAnsweredChoices`. **Si elimina** (sì di Carmine sulla #255):
+   le sue risposte non si leggono e non si contano più, spariscono alla prossima modifica del membro, e **la cancellazione dei dati di una
+   persona non le tiene mai** (lettura 20). Un valore rimasto di un tipo che non torna più con la domanda — un cambio di tipo nell'istante
+   fra il controllo dello staff e il salvataggio di un membro — si salta in ogni lettura invece di far cadere la pagina (`Fits`, il punto 3
+   del [revisore][rv]).
 5. **Solo su un evento in presenza** (`events:errors.questionNotInPerson`); e **l'interruttore «in presenza» non si spegne** finché
    l'evento ha domande o iscrizioni (`events:errors.inPersonHasQuestions`, solo da acceso a spento, come i privati dopo la #246).
 6. **Una domanda obbligatoria aggiunta dopo le prime iscrizioni** non tocca chi è già iscritto: la risposta gli serve alla sua prossima
@@ -55,7 +62,8 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
     o cambiare le risposte (`PUT /{eventId}`: 201 la prima volta, 200 dopo), ritirarsi (`DELETE /{eventId}`). **Fino all'inizio**: ci si
     iscrive e si cambiano le risposte a un evento in presenza visto, non annullato, prima del suo inizio; **ci si ritira fino all'inizio
     anche da un evento annullato**. Dopo: `events:errors.registrationClosed`. Due richieste dello stesso membro nello stesso istante si
-    incontrano sull'indice univoco, e la seconda dice «riprova».
+    incontrano sull'indice univoco, e **la seconda diventa un cambio dell'iscrizione della prima** (le ultime risposte mandate restano;
+    provato con una transazione tenuta dal test, dopo la revisione).
 12. **La mail `registrationReceived`** parte a ogni iscrizione **e a ogni cambio delle risposte**, con il luogo e le risposte come sono in
     quel momento, nella lingua del membro: l'ultima mail dice le risposte vere. Ritirarsi non manda niente.
 13. **Annullare e cambiare gli orari** avvisano anche chi è iscritto: una mail per persona, anche a chi ha prenotato e si è iscritto
@@ -67,10 +75,13 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
     (`EventBookings.View`; «Togli» a chi ha `EventBookings.Edit`).
 15. **Le somme stanno nella lista delle domande**, una colonna per domanda: un sì o no conta i sì e i no, una scelta conta ogni scelta,
     un numero dà il totale, un testo dice quanti hanno risposto. Sono **statistiche dell'evento**, lette con l'evento (§6.1: `Events.View`
-    «e le statistiche»), senza persone. Calcolate dal server a ogni lettura (`RegistrationSums`), dette con le parole della lingua di chi
-    legge. **Nessun endpoint in più.**
+    «e le statistiche»), senza persone (sì di Carmine sulla #255). Calcolate dal server a ogni lettura (`RegistrationSums`: ogni iscrizione
+    letta una volta, ogni domanda sommata in un passaggio), mandate **come numeri** per chiave, e **dette in parole dalla pagina, nella
+    lingua sullo schermo** (il no di Carmine alla lettura di prima, §5). **Nessun endpoint in più.**
 16. **La lista delle iscrizioni** è una risorsa del motore in sola lettura (`/api/events/registrations`, come le prenotazioni di E6b): il
-    membro detto da `col.person`, le risposte in parole (una riga per domanda), quando si è iscritto e quando le ha cambiate.
+    membro detto da `col.person`, le risposte **come sono state date** — la pagina le scrive in parole, una riga per domanda, nella lingua
+    sullo schermo, con le domande dell'evento —, quando si è iscritto e quando le ha cambiate. Così anche le proprie iscrizioni del membro:
+    la sua lettura porta le domande del suo evento e le risposte.
 17. **«Togli» chiede un motivo, e il membro lo legge in una mail nuova, `events.registrationRemoved`** — **la domanda 2**, decisa (A) (§5). Il verbo
     `POST /api/events/registrations/{id}/remove` chiede `EventBookings.Edit` all'unico handler sull'iscrizione con la cura dell'evento
     com'è ora, come «togli» di una prenotazione; il motivo ha le regole di quello di una prenotazione (lo stesso `BookingRemovalRequest`).
@@ -86,10 +97,13 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
 19. **`inPersonRetentionMonths`** (predefinito 3, da 1 a 120) è nelle impostazioni; lo legge `events-retention` di E17.
 20. **La cancellazione dei dati di una persona** (nota `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5: «si trattano come le
     prenotazioni»): l'iscrizione a un evento **non finito** si cancella; quella a un evento **finito** resta con lo pseudonimo che il nucleo
-    scrive in `vid`, **con le risposte che le somme contano** (sì o no, scelte, numeri) **e senza i testi**, che sono parole del membro
-    (come una prenotazione tenuta perde la nota). Due righe dell'anteprima: `events:erasure.registrationsToCome` e `…registrationsOver`.
-    **E10n** (#251, non ancora unita): un'iscrizione ritirata o tolta prima della cancellazione lascia le risposte nelle sue righe
-    d'audit; con E10n unita, `AnswersJson` prende `[ErasedWith(nameof(Vid))]` (lo dice l'handoff).
+    scrive in `vid`, **con le sole risposte che le somme contano** (sì o no, una scelta, più scelte, numeri) **alle domande che l'evento ha
+    ancora**, come tornano con la loro domanda, **e nient'altro**: né i testi, che sono parole del membro (come una prenotazione tenuta perde
+    la nota), né le risposte a domande eliminate (il punto 1 del [revisore][rv]). **E la riga conta sempre come svuotata**, anche quando le
+    risposte non cambiano, così il nucleo svuota le sue copie di prima nell'audit, dove resterebbe una parola tolta da un cambio di prima (il
+    punto 2: provato da un test, che senza questo cade). Due righe dell'anteprima: `events:erasure.registrationsToCome` e
+    `…registrationsOver`. Con **E10n** nella coda, `AnswersJson` porta `[ErasedWith(nameof(Vid))]`: un'iscrizione ritirata o tolta prima
+    della cancellazione non lascia le risposte nell'audit. Sì di Carmine sulla #255, con queste correzioni.
 
 ## 5. Le domande a Carmine
 
@@ -118,6 +132,22 @@ Date in chat alla sessione master e pubblicate su sua istruzione [sulla #253][a]
    dopo la sua PR**; il resto di E16 non aspetta. **Non la (B)**: i file di lingua non sono un posto per tenere righe.
 2. **«Togli» un'iscrizione: (A), come una prenotazione.** Chiede un motivo, e il membro lo legge in una mail nuova,
    `events.registrationRemoved`, che il profilo spegne come ogni mail del modulo. È quello che E16 ha scritto (§3, lettura 17).
+
+### Le risposte sulle letture (12 ottobre 2026, sulla #255)
+
+Il [revisore della #255][rv] ha portato a Carmine le letture che sono scelte, e che la #253 non copriva; Carmine ha risposto in chat alla
+sessione master, che ha pubblicato le risposte [sulla #255][b] su sua istruzione:
+
+1. **Lettura 15, le somme lette con `Events.View`**: sì — statistiche dell'evento, lette dallo staff, senza nomi.
+2. **Lettura 20, l'iscrizione a un evento finito tenuta con lo pseudonimo**, con le risposte che le somme contano e senza i testi: sì,
+   **con il punto 1 del revisore corretto**, così che nessun testo sopravviva.
+3. **Lettura 4, una domanda con risposte si elimina**: sì, con la stessa correzione.
+4. **Lettura 12, una mail a ogni cambio delle risposte**: sì.
+5. **Le domande e il luogo a chi legge la pagina senza accesso**: sì.
+6. **Le parole delle liste scritte dal server nella lingua dell'account**: **no**. Una pagina letta in inglese non mostra celle in
+   italiano. In questa PR le liste — quella delle domande, quella delle iscrizioni, le proprie del membro — ricevono i dati (la domanda,
+   il valore, le chiavi delle scelte, i conti) e il client scrive le parole nella lingua sullo schermo; **le mail tengono le parole del
+   server, nella lingua di chi le riceve**. Fatto sulla #255 (letture 15 e 16).
 
 ## 6. Alternative scartate
 
@@ -152,7 +182,10 @@ impostazioni (`EventHead.test.tsx`, `public.test.tsx`, `schemas.test.ts`, lo smo
   somme nella lista delle domande, con `Events.View`; «togli» con il motivo e la mail (la domanda 2).
 - **Design M4 §1.10**: le colonne di `evt_event_stats` e chi la scrive (E17, E13a).
 - **Design M4 §8.3**: `registrationRemoved` (la domanda 2).
-- **Design M4 §11.1**: che cosa resta di un'iscrizione a un evento finito (lo pseudonimo, le risposte contate, senza i testi).
-- **Design M4 §7.2**: le schede «Domande» e «Iscrizioni».
+- **Design M4 §11.1**: che cosa resta di un'iscrizione a un evento finito (lo pseudonimo, le sole risposte contate alle domande che ci
+  sono, nient'altro, e nessuna storia nell'audit).
+- **Design M4 §7.2**: le schede «Domande» e «Iscrizioni»; **le liste ricevono dati e la pagina scrive le parole nella lingua sullo
+  schermo**, le mail tengono le parole del server nella lingua di chi le riceve (il no di Carmine sulla #255, risposta 6). La regola vale
+  per ogni lista dei moduli che dica un valore in parole: forse una riga di §16 del piano.
 - **Piano §16.6**: il conto degli endpoint a mano di M4 — tre verbi del membro e «togli» di E16.
 - **La domanda 1**: la decide la fase del nucleo E10o, con la sua nota (piano §16, il generatore dei form); qui niente.
