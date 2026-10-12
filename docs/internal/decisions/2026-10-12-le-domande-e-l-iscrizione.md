@@ -1,8 +1,9 @@
 # Le domande e l'iscrizione a un evento in presenza: le letture del design (E16)
 
 **Data:** 12 ottobre 2026 — fase E16 di M4 (la prima di M4c: le domande e l'iscrizione)
-**Stato:** **Proposta** — due domande a Carmine con [l'issue #253][q], aperta all'inizio della fase perché il codice ne dipende (§5).
-E16 scrive le letture come le raccomanda questa nota; una risposta diversa è una correzione sul branch della fase.
+**Stato:** **decisa** (Carmine, 12 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione: [le risposte sulla
+#253][a]): **(A) a tutte e due** le domande di [l'issue #253][q], aperta all'inizio della fase perché il codice ne dipende (§5). Le
+letture di §1–§4 sono scritte come le raccomandava la nota.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §1.10, §8.3, §11.1 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5 — l'unico handler, il guardiano dell'interceptor
 con il ritiro di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il
@@ -10,6 +11,7 @@ motore CRUD, `Refusals`, `IPersonalDataEraser`, il servizio delle notifiche —;
 form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in questa PR.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 
 ## 1. Le domande (`evt_questions`, design §4-bis.1)
 
@@ -69,7 +71,7 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
     legge. **Nessun endpoint in più.**
 16. **La lista delle iscrizioni** è una risorsa del motore in sola lettura (`/api/events/registrations`, come le prenotazioni di E6b): il
     membro detto da `col.person`, le risposte in parole (una riga per domanda), quando si è iscritto e quando le ha cambiate.
-17. **«Togli» chiede un motivo, e il membro lo legge in una mail nuova, `events.registrationRemoved`** — **la domanda 2** (§5). Il verbo
+17. **«Togli» chiede un motivo, e il membro lo legge in una mail nuova, `events.registrationRemoved`** — **la domanda 2**, decisa (A) (§5). Il verbo
     `POST /api/events/registrations/{id}/remove` chiede `EventBookings.Edit` all'unico handler sull'iscrizione con la cura dell'evento
     com'è ora, come «togli» di una prenotazione; il motivo ha le regole di quello di una prenotazione (lo stesso `BookingRemovalRequest`).
 
@@ -105,6 +107,17 @@ Poste in inglese con [l'issue #253][q]; in italiano dicono:
 
 La domanda 1 l'ha voluta dalberone prima di ogni codice del form (12 ottobre 2026, in chat: fra la fase del nucleo subito, la domanda a
 Carmine prima e la strada nel modulo, **la domanda a Carmine prima**).
+
+### Le risposte di Carmine (12 ottobre 2026)
+
+Date in chat alla sessione master e pubblicate su sua istruzione [sulla #253][a]:
+
+1. **Le etichette: (A), prima una fase del nucleo.** Una PR del nucleo a sé, **E10o** (`m4/e10o-field-names-in-schema`), con la sua nota:
+   un campo può portare il suo nome nel suo schema, scritto da chi chiama già nella lingua a schermo, come le etichette di `choices`; un
+   select facoltativo con un nome suo dice «nessuna» con una parola del nucleo. Il form del membro di E16 la usa, ed **E16 si mette in coda
+   dopo la sua PR**; il resto di E16 non aspetta. **Non la (B)**: i file di lingua non sono un posto per tenere righe.
+2. **«Togli» un'iscrizione: (A), come una prenotazione.** Chiede un motivo, e il membro lo legge in una mail nuova,
+   `events.registrationRemoved`, che il profilo spegne come ogni mail del modulo. È quello che E16 ha scritto (§3, lettura 17).
 
 ## 6. Alternative scartate
 
@@ -142,4 +155,4 @@ impostazioni (`EventHead.test.tsx`, `public.test.tsx`, `schemas.test.ts`, lo smo
 - **Design M4 §11.1**: che cosa resta di un'iscrizione a un evento finito (lo pseudonimo, le risposte contate, senza i testi).
 - **Design M4 §7.2**: le schede «Domande» e «Iscrizioni».
 - **Piano §16.6**: il conto degli endpoint a mano di M4 — tre verbi del membro e «togli» di E16.
-- **La domanda 1**: con (A), la fase del nucleo E10o e la sua nota; con (B), niente nel piano.
+- **La domanda 1**: la decide la fase del nucleo E10o, con la sua nota (piano §16, il generatore dei form); qui niente.

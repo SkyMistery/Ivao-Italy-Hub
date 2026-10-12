@@ -42,7 +42,7 @@ public static class EventsNotifications
     public const string RegistrationReceived = "events.registrationReceived";
 
     /// <summary>
-    /// The staff took a member's registration away, with the reason (E16, issue #253, question 2, coded as recommended): to that member,
+    /// The staff took a member's registration away, with the reason (E16; Carmine's answer 2 on issue #253): to that member,
     /// as for a booking.
     /// </summary>
     public const string RegistrationRemoved = "events.registrationRemoved";
