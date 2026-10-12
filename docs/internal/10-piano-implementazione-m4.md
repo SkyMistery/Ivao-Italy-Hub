@@ -2298,6 +2298,30 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
     ha caricato la pagina e i suoi asset e poi, per cinque secondi, non ha chiesto niente (nessuna `/api/me` nel log del server), un
     inceppamento sotto carico —; la spec da sola, `--repeat-each 3`, **3/3**; **la seconda corsa intera 61/61** (11,7 minuti). Le regole di
     `core-guard` dalla base di merge `bea8c0e`: **PASS**, con quattro note nuove.
+- **La seconda lettura e la coda** (12 ottobre 2026): il revisore, [alla seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6119780940),
+  **niente più da correggere**; la #246 di E7 è unita; poi [ha chiesto una coda sola](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/249#issuecomment-6120884494),
+  **#242 → #250 → #252 → #251 → #249 → #239**, perché ogni unione rimetteva in conflitto le altre sulla testa di `HANDOFF-M4.md`. E8b è
+  la quinta, **in coda dopo la #251** di E10n:
+  1. **Il merge della testa di E10n** `b4ea56e` (con E10m, E10l, E4c e `main` ad `a75ed6c`, E7 compresa): in conflitto solo
+     `HANDOFF-M4.md` — il paragrafo e il blocco di E8b in cima, quelli di E10n, E10m, E10l ed E4c sotto —; `public.tsx` ed `events.tsx`
+     si sono uniti da soli, i metadati della pagina di E4c accanto alla testa di E8b.
+  2. **I segni** (`e35e35b`): `[ErasedWith(nameof(BookerVid))]` sulle cinque colonne della prenotazione che `EventsPersonalData`
+     svuota — `Callsign`, `OtherIcao`, `OtherTimeUtc`, `UnflownExcusedNote`, `FlownSessionId` —, la riga che la nota di E10n (§4) chiede
+     agli eventi: una prenotazione ritirata o tolta prima della cancellazione del suo pilota è una riga che nessun eraser trova, e il
+     nucleo le svuota nelle sue copie dell'audit. Nessuna migrazione: il segno non è nel modello di EF.
+  3. **Il test** (`159e635`, in `EventsErasureTests`): un arrivo privato con le cinque colonne scritte, ritirato prima della
+     cancellazione; dopo, le sue due copie dell'audit (`created`, `deleted`) restano, con lo pseudonimo, l'aereo e lo slot, e senza le
+     cinque (le chiavi del JSON sono i nomi delle proprietà); né il nominativo né la nota restano nell'audit. **Al contrario** (rimessi
+     poi, toccati e ricompilati, la classe di nuovo 2/2): senza i cinque segni il test cade, «Callsign is still in the audit: XEJ841».
+     `ErasedAuditTests` di E10n legge i segni di ogni contesto, i nostri compresi: 6/6.
+  4. **Verificato, in locale, sulla testa in coda**: `dotnet build` Debug e Release senza avvisi; `dotnet format --verify-no-changes` sui
+     file C# degli eventi; unità **1237/1237**; **integrazione intera senza filtro 561/561** (8,0 minuti); `ArchitectureTests` 15/15 e
+     `ForkabilityXxDivisionTests` 3/3 dagli assembly di Release; `pnpm gen:api` e `pnpm i18n:sync` senza differenze; `pnpm lint`,
+     `typecheck`, `format:check`, `i18n:check` (838 chiavi) verdi; `pnpm test` **743 in 102 file**; `pnpm build` verde; lo smoke dietro il
+     suo lock **181/181** al primo giro (1,2 minuti); **`pnpm e2e:full` 61/61 al primo giro** (12,4 minuti) sul banco `http://127.0.0.1:5136`, `ivaohub_e2e_e8b`
+     ricreato, dietro il lock di Mailpit. Le regole di `core-guard`: dalla base di merge con `main` `a75ed6c`, **PASS** — i file del
+     nucleo sono delle fasi sotto nella coda (E10l, E10m, E10n), ognuna con la sua nota —; sul solo tratto di E8b, dalla testa di E10n,
+     **PASS** senza nessun file del nucleo, con le due note di E8b.
 - **Non verificato**: la CI della testa (la dice la PR); una cancellazione vera, di una persona con prenotazioni vere, sull'installazione
   di prova; il banner di un evento eliminato davvero dal job `media-expiry` (il test scrive un file con `DeletedAt`, senza file sul
   disco); la copia di una descrizione con immagini eliminate (si copia com'è scritta); la pagina di «Duplica» e la testa della pagina

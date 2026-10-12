@@ -240,7 +240,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     finito si cancellano, e lo slot torna libero; quelle di un evento finito restano con lo pseudonimo, senza `callsign`, `other_icao`,
     `other_time_utc`, `unflown_excused_note` e `flown_session_id`. **«Finito»** si legge in un posto solo, **`EventState.IsOver`** (la fine
     passata, annullato o no: la (i)), che ora usano anche `Of`, `IsSeen` e `Unseen`. Una prenotazione il cui evento non c'è più è lasciata
-    fuori, come dall'anteprima. Che cosa dà l'esportazione dopo una cancellazione lo dice `docs/events-bookings-export.md`.
+    fuori, come dall'anteprima. Che cosa dà l'esportazione dopo una cancellazione lo dice `docs/events-bookings-export.md`. **Le cinque
+    colonne svuotate sono segnate** `[ErasedWith(nameof(BookerVid))]` su `EventBooking` (dopo E10n, la #251): l'audit di una prenotazione
+    ritirata o tolta prima della cancellazione le perde anche lui.
   - **Il giro completo di M4a**: `web/e2e/full/events-round.spec.ts` (slug `evt-test-e2e-e8b-…`, voli `XEE811`–`XEE813`, `XEE821`–`XEE822`,
     `XEP901`), due test — il giro dell'RFO, dall'incolla a «Duplica», e l'RFE del mese scorso, finito, duplicato su una nuova data.
   - **`docs/FORKING.md`**: la sezione «The events module» — il dipartimento di base, i `positionGrants` dell'ED e di chi collabora, le
@@ -254,25 +256,22 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `bookingTimes.ts` (`bookingStage`). E `/events/mine` vuota dice «Nessuna prenotazione».
   - **I test**: unità `EventsDuplicationTests` (7); integrazione `EventsDuplicateTests` (3; VID **761063**, il coordinatore di E6b, e
     **761098** come collaboratore con i grant del test; scali `XEJ1`–`XEJ3`, tipi `XEJA`/`XEJB`, slug `evt-test-e8b-dup-…`) ed
-    `EventsErasureTests` (1; VID **761098**, la persona cancellata, e **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
+    `EventsErasureTests` (2, il secondo una prenotazione ritirata prima della cancellazione; VID **761098**, la persona cancellata, e
+    **761015**, il superadmin; slug `evt-test-e8b-erase-…`); un vitest in
     `schemas.test.ts`; per la testa `EventHead.test.tsx` (7), `public.test.tsx` (l'ordine della pagina) e i dati in `cards.test.ts` e
     `bookingTimes.test.ts`.
 - **Che cosa deve sapere la fase dopo**:
-  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine): una fase **del nucleo** di M4, **E10n**
-    (**#251**, nota `2026-10-11-i-dati-di-una-persona-nell-audit`) — le righe dell'audit di una prenotazione ritirata o tolta prima di una
-    cancellazione perdono il volo privato e le note, come le righe che restano, con `[ErasedWith(nameof(BookerVid))]` su una proprietà —,
-    **unita prima che le prenotazioni si aprano su un'installazione vera**, accanto a E8b. Non è di E8b; **dopo il suo merge**, sulla
-    #249: `main` unito, `[ErasedWith(nameof(BookerVid))]` sulle cinque colonne che l'eraser svuota (`Callsign`, `OtherIcao`,
-    `OtherTimeUtc`, `UnflownExcusedNote`, `FlownSessionId`) e un test in `EventsErasureTests` (una prenotazione privata ritirata prima
-    della cancellazione: le sue righe dell'audit con lo pseudonimo e senza le cinque).
+  - ⚠️ **Il buco dell'audit** (il punto 7 della revisione della #249, la risposta 2 di Carmine) è chiuso da **E10n** (**#251**, del nucleo,
+    sotto nella coda) e dai segni di E8b sulle cinque colonne della prenotazione. **Una colonna nuova della prenotazione** che è un dato del
+    pilota (M4b, M4c) porta lo stesso segno, `[ErasedWith(nameof(BookerVid))]`, e la sua riga nell'eraser se una prenotazione tenuta la
+    deve perdere; `ErasedAuditTests` di E10n cade su un segno che non nomina una colonna di persona, e l'avvio pure.
   - **La risposta di «Duplica»** è `EventDuplicatedDto` (l'evento e `privateSlotsNotGenerated`), non più `EventDetailDto`: un client del
     verbo legge `event`.
   - ⚠️ **`PrivateSlotGeneration.GenerateAsync` dentro una transazione già aperta** (E8b, al merge della testa nuova di E7): blocca e
     scrive in quella, e il commit è di chi lo chiama — «Duplica» lo chiama così, per una copia che nessun altro vede ancora. Da solo
     apre la sua, `READ COMMITTED`, con la riga dell'evento `FOR UPDATE`. Chi lo chiama da dentro una transazione su un evento che altri
     vedono deve pensare al livello d'isolamento della sua.
-  - ⚠️ **La #242 di E4c tocca anche `public.tsx`** (i metadati della pagina): unita prima della #249, `main` si unisce nel branch di E8b e il
-    file si risolve tenendo le due cose.
+  - **E4c (la #242) è sotto nella coda**: `public.tsx` ha i suoi metadati della pagina accanto alla testa di E8b, uniti da soli.
   - **`Hint`** resta un pezzo della pagina di un evento (`EventSlots.tsx`), usato dalla lista degli slot e dalla testa: una **seconda
     schermata** che volesse un tooltip che si apre al tocco porta una decisione a Carmine, mai una copia (la risposta sulla #228, ripetuta
     sulla #249).
