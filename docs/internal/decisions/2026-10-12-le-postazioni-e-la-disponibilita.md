@@ -1,8 +1,8 @@
 # Le postazioni di un evento e la disponibilità dei controllori (E11a)
 
-**Data:** 12 ottobre 2026 — fase E11a di M4 (la prima di M4b), PR #PRNUM
-**Stato:** **Proposta** — la domanda di §5 è sulla PR ([domanda][q]); il codice segue le letture raccomandate, e la PR aspetta la
-risposta.
+**Data:** 12 ottobre 2026 — fase E11a di M4 (la prima di M4b), PR #256
+**Stato:** **Proposta** — la domanda di §5 è il primo commento della PR ([la PR][q]); il codice segue le letture raccomandate, e la PR
+aspetta la risposta.
 **Regola applicata:** `CLAUDE.md` §5. Le tabelle, i permessi, le regole del roster e i predefiniti sono **decisi** (design `09-design-m4.md`
 §1.7, §1.12, §4.1, §4.2, §6; note `2026-09-29-il-roster-atc`, `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`);
 la forma per lo staff di un FIR è quella scritta in E2 («Le due verifiche del design §6.3», `10`, E2). Questa nota registra **le letture**
@@ -10,7 +10,7 @@ che la fase ha dovuto fare dove il design non dice: casi **(a)** e **(b)**, con 
 design §7.2 («nessuna eccezione dichiarata al motore CRUD»), come la lettura dei preset di E3a. Niente del nucleo: si usano `IHasFir`, i
 grant al team di un FIR, `[WithdrawnByStakeholder]`, `IAtcPositionDirectory` e il vocabolario dei rating così come sono.
 
-[q]: #PRQUESTION
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256
 
 ## 1. Che cosa serviva decidere
 
@@ -67,7 +67,8 @@ entrano nella cancellazione dei dati di una persona e in «Duplica».
    disponibilità**: le porta E12 con i turni (§7.1 la vuole lì; E11a la mette sulla pagina dell'evento, dove si dà).
 9. **Le righe nuove nella cancellazione e in «Duplica»**, nella fase che le crea (non in E15b): la disponibilità di un evento **non ancora
    finito si cancella** con le finestre; quella di un evento **finito resta** sotto lo pseudonimo (nella disponibilità e nelle finestre),
-   **senza la nota**, che sono parole sue — la regola delle iscrizioni (E16). «Duplica» copia **le postazioni**, con le ore spostate, e
+   **senza la nota**, che sono parole sue — la regola delle iscrizioni (E16) —; e la nota porta `[ErasedWith(nameof(ControllerVid))]` (E10n),
+   così una disponibilità ritirata prima della cancellazione non la lascia nell'audit. «Duplica» copia **le postazioni**, con le ore spostate, e
    chiede `EventAtc.Edit` per scriverle; mai una disponibilità.
 10. **I limiti delle impostazioni** (§1.12 dà i predefiniti, non i limiti): `shiftMinutes` 15–720; `minimumAtcRating` un rating ATC del
     vocabolario, o nessuno; `maxConsecutiveShifts` 1–96, `breakShifts` 0–96; `applicationsCloseDays` e `rosterPublishDays` 0–60, e

@@ -283,10 +283,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     spegne con postazioni o disponibilità: aggiungere i turni a `EventSaving`.
   - **E12**: le disponibilità in `/events/mine` (lettura 8 della nota); `MemberAvailability.MineAsync` c'è già.
   - **E15b**: la cancellazione delle disponibilità è già in `EventsPersonalData`; restano i turni.
-  - ⚠️ **E10n** (#251) e **E10m** (#252), in coda prima di questa PR, non erano nel branch quando la fase è partita: con E10n unita, la nota
-    di una disponibilità prende `[ErasedWith(nameof(ControllerVid))]` (la cancellazione la svuota per un evento finito), con un test; con
-    E10m, `EventsPeople` passa al lettore dei nomi del nucleo nella piccola fase degli eventi che E10m annuncia — il rating ATC accanto al
-    nome resta del modulo.
+  - **E10n** (#251) ed **E10m** (#252), in coda prima di questa PR, sono entrate con il merge della testa di E16: la nota di una
+    disponibilità porta **`[ErasedWith(nameof(ControllerVid))]`** (una disponibilità ritirata prima della cancellazione non lascia la nota
+    nell'audit; provato in `EventsAtcTests`); `EventsPeople` passa al lettore dei nomi del nucleo nella piccola fase degli eventi che E10m
+    annuncia — il rating ATC accanto al nome (`AtcRatingsAsync`) resta del modulo.
   - ⚠️ **Il banco**: un grant a un VID va solo a chi è già entrato (`errors.grant.notStaff`), e lo fa rientrare. ⚠️ **`api.ts`**: una chiave
     di query uguale a un tipo del calendario del seme (`'event'`) fa cadere `EventsArchitectureTests`.
   - ⚠️ **I VID di prova**: dopo 761101–761105 di E16, E11a ha usato **761106–761113**, dati da dalberone il 12 ottobre.

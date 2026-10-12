@@ -4085,9 +4085,9 @@ del suo FIR**; la disponibilità rifiutata sotto il rating minimo e dopo la chiu
 l'area `IHasFir`. E2e: il pilota del banco (AS3) dà la disponibilità.
 **Fatta quando**: sul banco l'AOD (con un grant) apre due postazioni e il pilota dà la sua disponibilità.
 
-**Com'è andata** (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #PRNUM, la prima fase di **M4b**; nata **in coda dopo la
-PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #251 di E10n né con la #252 di E10m —; **una migrazione**,
-`AddAtcPositionsAndAvailability`):
+**Com'è andata** (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256, la prima fase di **M4b**; nata **in coda dopo la
+#255 di E16**, dal suo branch locale a `dd5b263`, e con la sua testa `78fc9b6` unita prima della PR — tutta la coda del master dentro, E10n
+ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo `AddInPersonRegistration` di E16):
 
 - **Fatto**:
   1. **`evt_atc_positions`** (punto 1): `EventAtcPosition`, una riga dello staff dell'evento (`IEventChild`, `[Audited]`, lo scope
@@ -4098,7 +4098,8 @@ PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #
      finestra, lo stesso nominativo due volte solo in ore che non si sovrappongono, solo su un evento con un roster.
   2. **`evt_atc_availability`** e le sue finestre, **`evt_atc_availability_windows`** (punto 2): `EventAtcAvailability` (univoca su
      `(event_id, controller_vid)`, senza chiave verso l'evento, come l'iscrizione) ed `EventAtcWindow` (le righe figlie, con il controllore e
-     l'evento sulla riga e una chiave verso la disponibilità), tutte e due righe del membro (`ISubmittedByMembers`, `IHasStakeholder`,
+     l'evento sulla riga e una chiave verso la disponibilità; la nota con `[ErasedWith(nameof(ControllerVid))]` di E10n, entrata con il
+     merge), tutte e due righe del membro (`ISubmittedByMembers`, `IHasStakeholder`,
      `IVisible` ai membri, `[Audited]`) con **`[WithdrawnByStakeholder]`**: la decisione del roster è il turno di E11b, la disponibilità non
      ne porta (la regola di Carmine sulla #232, detta nel riassunto dell'entità e nella nota). `ErasureTests` con le quattro colonne di
      persona; `EventsPersonalData` con le due righe dell'anteprima.
@@ -4156,8 +4157,13 @@ PR di E16**, dal suo branch a `dd5b263` — con E10o dentro, non ancora con la #
   `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit (la spec nuova da sola, prima, 1/1 al secondo giro: il primo cadeva sul grant al
   trainer non ancora entrato, corretto nella spec); le regole di `core-guard` rifatte a mano sul diff dal branch di E16: un file del nucleo
   (`ErasureTests.cs`) e la nota nuova, nessun file del maintainer.
-- **Non verificato**: la CI (la dice la PR); la risposta di Carmine alla domanda della nota; E10n e E10m nel branch (non erano nella linea
-  quando la fase è partita: `[ErasedWith]` sulla nota della disponibilità aspetta E10n); una divisione con `firStaffScope: all` sulle
+- **Verificato di nuovo, dopo il merge della testa di E16** (`78fc9b6`, con tutta la coda; il conflitto solo in `HANDOFF-M4.md`, i
+  paragrafi di tutte le fasi tenuti, E11a sopra; la migrazione dopo quella di E16 e lo snapshot senza cambi in sospeso,
+  `dotnet ef migrations has-pending-model-changes`; `atc: null` nella fixture di `titlesAndEmptyLists.test.tsx` di E4c): `dotnet build` senza
+  avvisi; unità **1275/1275**; **integrazione intera senza filtro 590/590** (739 s), il test nuovo di `[ErasedWith]` compreso; `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` (849 chiavi) verdi; `pnpm test` **763**; `gen:api` e `i18n:sync` rifatti; lo smoke **181/181**;
+  **`pnpm e2e:full` 63/63 al primo giro** (13,8 minuti) sul banco 5141, `ivaohub_e2e_e11a` tolto prima; le regole di `core-guard` rifatte da `main` a `a75ed6c`.
+- **Non verificato**: la CI (la dice la PR); la risposta di Carmine alla domanda della nota; una divisione con `firStaffScope: all` sulle
   postazioni (provato con `own`, quello di IT; con `all` vale la regola del nucleo provata da A11a); il form delle finestre a 375 px; la
   migrazione su un'installazione vera (la CI applica la catena su una MariaDB 11.4.10 vera); le postazioni di un evento con migliaia di
   disponibilità (la lettura dei candidati è in memoria, per un evento).
