@@ -449,7 +449,10 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
   `2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo`, piano 1.28).
 - **Il nome di una persona**: dal nucleo, mai copiato; «persona cancellata» con l'helper del nucleo (A12a, #187, unita il 29
   settembre: `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della
-  lista generata).
+  lista generata). **Dall'11 ott 2026** (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`, decisa da Carmine sull'issue
+  #247, piano 1.33): il nucleo ha **un solo lettore dei nomi per VID**, `MemberNames.ReadAsync` (`Core/People/`). **Il modulo
+  non l'ha ancora adottato**: legge i nomi con il suo `EventsPeople.NamesAsync`, che resta finché una piccola fase del modulo
+  non lo fa rispondere con il lettore del nucleo (`EventMemberDto` e `Member` restano come sono).
 
 ---
 
@@ -498,6 +501,32 @@ loro finestre; domande e attività di un evento in presenza; e, **a scelta**, gl
 di un RFE cambiano spesso da un anno all'altro). **Non copia niente dei membri**: prenotazioni, disponibilità, turni,
 iscrizioni, PIREP. Un solo endpoint, una transazione; i privati si rigenerano dalla capacità. Ogni blocco copia le righe che
 esistono nella sua fase (M4a gli scali e gli slot, M4b le postazioni e le regole, M4c domande e attività).
+
+**Deciso con E8b** (#249, nota `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, piano 1.33; le risposte di Carmine
+sull'issue #248):
+
+- **la nuova data d'inizio è un istante**, in UTC, non un giorno, e **ogni orario si sposta della stessa differenza**: l'inizio,
+  la fine, «visibile da» e l'apertura delle prenotazioni quando ci sono, e i due orari di ogni slot pubblico copiato. Un nuovo
+  inizio che sposterebbe un orario dell'evento **fuori dal calendario** è rifiutato sul suo campo;
+- **la copia** è l'evento con tutte le sue impostazioni e **nella stessa cura**, sempre **una bozza** — mai pubblicata, non
+  annullata, senza i segni dei job —, e **ogni evento si duplica, in ogni stato**. **Il banner si copia finché la libreria lo
+  ha** (i file di un evento se ne vanno sette giorni dopo la sua fine, §2.4, e la bozza mostrerebbe un'immagine rotta); **la
+  descrizione si copia com'è scritta**;
+- gli scali con la capacità e le rotte come sono; **gli slot pubblici a scelta**, con le rotazioni, e **non ricontrollati** con
+  gli aeroporti e i tipi che il nucleo conosce oggi: li ricontrolla il form al primo salvataggio;
+- **gli slot privati** (la (A′), decisa da Carmine): la copia li genera **nella sua transazione**, con il generatore di E7,
+  **quando i suoi slot pubblici ci sono già** — li ha copiati, oppure l'evento non ne prende —; **altrimenti li lascia a
+  «Genera»**, premuto dopo che la tabella nuova è caricata: mai oltre la capacità. Quando il generatore li rifiuta (nessuno
+  scalo con una capacità, più di 5.000) la copia è fatta senza privati, e la risposta dice perché;
+- **chi duplica**: `Events.Edit` **sull'evento nuovo** — quindi **un grant su un evento solo non duplica** (E10i: mai un evento
+  nuovo) — e il permesso dell'area di ogni riga che la copia scrive, come per eliminare: `EventRoutes.Edit` quando l'evento ha
+  delle rotte, `EventBookings.Edit` quando la copia porta degli slot. Chiesti all'unico handler **prima di scrivere**: senza uno
+  di loro 403, e niente scritto;
+- **l'indirizzo** ha le regole del form (`mine` riservato) ed è libero, altrimenti è rifiutato, anche quando risponde l'indice
+  univoco; **il tipo non si sceglie di nuovo**: la copia tiene quello dell'evento di partenza anche se la divisione non lo offre
+  più, e lo staff lo cambia nel form;
+- **la pagina**: «Duplica» nella barra di un evento, e una pagina con il form generato — la nuova data d'inizio, il nuovo
+  indirizzo, e «copia gli slot pubblici» su un evento che ne prende —; dopo, l'evento nuovo.
 
 ### 2.4 La fine dell'evento
 
@@ -557,6 +586,34 @@ Per un evento con `private_slots`, lo staff preme **«genera gli slot privati»*
 
 Uno slot privato ha solo scalo, verso e orario. Per un **MSE** (solo privati) la capacità è tutta privata.
 
+**Deciso con E7** (#246, nota `2026-10-11-gli-slot-privati`, piano 1.33; le risposte di Carmine sulla #246):
+
+- **le ore sono quelle dell'evento**, non «della finestra di prenotazione»: dall'inizio, un'ora ciascuna, e l'ultima tagliata
+  alla fine con la sua parte della capacità, arrotondata per difetto. Nessun privato nel margine di sei ore che E5 lascia a
+  uno slot pubblico (§3.1), e un pubblico in quel margine non toglie posto a nessuna ora;
+- **i passi regolari**: un'ora che prende N slot è tagliata in N passi uguali dal suo inizio, al minuto intero; ogni orario che
+  lo scalo tiene già prende **il passo libero più vicino** — a parità, il primo —, e i privati prendono i passi rimasti;
+- **per verso o in movimenti**: con arrivi e partenze ogni verso ha i suoi passi; in movimenti i due versi dividono i passi, e
+  i privati vanno ad arrivi e partenze così che l'ora resti pari quanto può — un arrivo per primo quando sono pari. Un verso
+  senza numero non prende privati, uno scalo senza capacità nessuno;
+- **che cosa tiene un'ora**: ogni volo che resta, in ogni scalo dell'evento che tocca e nel suo verso — un pubblico com'è
+  scritto, un privato prenotato com'è scritto dal suo pilota. **Un volo fra due scali dell'evento conta in tutti e due**, anche
+  se la pagina e l'esportazione lo mettono fra le partenze del primo; e l'altro aeroporto di un privato può essere un altro
+  scalo dell'evento (Carmine, sapendolo: vi prende posto senza tenervi uno slot, finché la generazione dopo non lo conta);
+- **rigenerare** sostituisce i privati liberi; quelli prenotati restano, con la loro prenotazione, e contano come un pubblico.
+  Una generazione prende **la riga dell'evento `FOR UPDATE`**, in una transazione `READ COMMITTED`, e rilegge l'evento sotto
+  il blocco: di due insieme la seconda aspetta, poi sostituisce quello che la prima ha scritto. Un pilota che prenota nello
+  stesso istante uno slot che se ne va, o un deadlock, è un **409** «leggi di nuovo»;
+- **i rifiuti**: un evento senza slot privati; un evento in cui nessuno scalo ha una capacità; e **più di 5.000 privati** per
+  generazione, **contati prima di costruirne uno**. Si genera su una bozza come su un evento pubblicato, e il codice non
+  conosce il tipo dell'evento: legge gli interruttori. **Cambiare la capacità o le date non rigenera da sé**: i privati liberi
+  restano com'erano finché lo staff non preme di nuovo «Genera»;
+- **l'interruttore degli slot privati non passa da acceso a spento finché l'evento ne ha** (la risposta 2 di Carmine, contro
+  la raccomandazione): lo staff elimina prima i liberi e toglie le prenotazioni, come per i pubblici (§3.1). Solo quel
+  passaggio: un evento che non ha mai avuto l'interruttore acceso non è toccato dalla regola. ⚠️ La regola legge i privati
+  quando l'evento si salva: una generazione che si conclude nello stesso istante può lasciarne qualcuno su un evento spento,
+  e lo staff li toglie con «elimina i liberi».
+
 ### 3.3 Prenotare uno slot pubblico
 
 Con il login, da `booking_opens_at_utc` e **finché l'EOBT dello slot è futuro** (c2):
@@ -592,6 +649,29 @@ orario** (c1, c2). Un arrivo può chiedere **la partenza collegata**: il pilota 
 dallo stesso scalo, e le due prenotazioni nascono insieme, collegate (`paired_booking_id`), perché il Gate Manager dia lo
 stesso gate. Nessuna conferma dello staff: la capacità è già decisa dal generatore.
 
+**Deciso con E7** (#246, note `2026-10-11-gli-slot-privati` e `2026-10-10-il-ritiro-di-un-volo-collegato`, piano 1.33; le
+risposte di Carmine sulla #246 e sull'issue #245):
+
+- **il volo**: uno slot privato fra quelli liberi, il nominativo, l'aereo (un tipo che il nucleo conosce), **l'altro
+  aeroporto** — uno che il nucleo conosce, non lo scalo dello slot, anche un altro scalo dell'evento — e **il suo orario**. Un
+  arrivo lascia l'altro aeroporto a quell'orario e arriva allo slot; una partenza lascia lo slot e arriva là a quell'orario.
+  L'orario all'altro aeroporto è libero, come per un pubblico, e va solo in ordine. Il volo sta sulla prenotazione (§1.6), e
+  **lo legge un posto solo, `BookedFlight`**: la lista del pilota, quella dello staff, le mail, il promemoria, l'esportazione;
+- **fino a quando**: si prenota e si ritira **fino all'off block del volo** — per una partenza il suo orario allo scalo, per
+  un arrivo l'orario in cui il pilota lascia l'altro aeroporto —; un privato libero si offre finché il suo orario allo scalo è
+  futuro;
+- **la partenza collegata**: una partenza privata **dallo stesso scalo**, libera, dello stesso evento, che lascia il gate
+  **almeno `bookingGapMinutes` dopo l'on block dell'arrivo**; solo un arrivo ne porta una. **La vola lo stesso aereo**, con un
+  nominativo suo, che la pagina propone uguale a quello dell'arrivo. Le due nascono in una transazione — prima la partenza, poi
+  l'arrivo che la nomina: `paired_booking_id` sta sull'arrivo —, **o nessuna**, anche quando l'indice univoco risponde nello
+  stesso istante;
+- **le risposte**: ogni rifiuto sul suo campo, quelli della partenza sotto `departure.…`; uno slot pubblico mandato al verbo dei
+  privati è rifiutato, come un privato a quello dei pubblici; un deadlock è 409 «riprova»; 404 per un evento che il pilota non
+  vede; **201** con la prenotazione e la partenza collegata;
+- **quando uno dei due voli collegati se ne va** — ritirato dal pilota o tolto dallo staff — **il legame si scioglie e l'altra
+  prenotazione resta** (la strada A, §3.6). Una coppia nasce insieme e non si rifà: chi la rivuole ritira quella rimasta e
+  prenota di nuovo le due.
+
 ### 3.5 La compatibilità
 
 Fra due prenotazioni dello stesso pilota nello stesso evento — intervalli `[EOBT, EIBT]`, per un privato dall'orario allo
@@ -602,7 +682,10 @@ una volta, con le prenotazioni già salvate davanti. **Deciso con E6a** (#233, p
 confermato (**`READ COMMITTED`**) — con l'isolamento predefinito le prime prenotazioni di due piloti bloccherebbero lo stesso
 intervallo dell'indice e andrebbero in deadlock —, e l'evento si rilegge sotto il blocco. ⚠️ Con il log binario in formato
 `STATEMENT` una transazione così non scrive: il formato della MariaDB condivisa **non è verificato**, e si prova con la prima
-prenotazione sull'installazione di prova (piano §2.5).
+prenotazione sull'installazione di prova (piano §2.5). **Deciso con E7** (#246, nota `2026-10-11-gli-slot-privati`, piano
+1.33): per un privato l'intervallo è quello **del volo che il pilota ha scritto**, dall'off block all'on block (`BookedFlight`),
+contro ogni sua prenotazione nell'evento, pubblica o privata, sotto lo stesso blocco; e fra un arrivo e la sua partenza
+collegata lo stesso `bookingGapMinutes` (§3.4).
 
 ### 3.6 Ritirare, togliere
 
@@ -614,6 +697,14 @@ parte dopo la cancellazione. **Uno slot prenotato si corregge ancora**: la preno
 cambia il volo che ha prenotato** — nominativo, orari, aeroporti, tipi ammessi — con `bookingChanged`; lo stand e il numero di
 volo non avvisano nessuno, e la compatibilità con le altre sue prenotazioni non si ricontrolla (un ritocco degli orari di molti
 slot non deve far togliere le prenotazioni una a una).
+
+**Deciso con E7** (#246, nota `2026-10-10-il-ritiro-di-un-volo-collegato`, piano 1.33; la risposta di Carmine sull'issue #245,
+**la strada A**): il ritiro del pilota, o «togli» dello staff, di **uno dei due voli collegati** (§3.4) cancella solo quella
+prenotazione; **il legame si scioglie e l'altra resta**, una prenotazione privata qualunque — se se ne va la partenza, lo
+stesso salvataggio svuota `paired_booking_id` dell'arrivo. Il pilota non perde mai una prenotazione che non ha ritirato, e lo
+staff toglie solo il volo che nomina: la mail `bookingRemoved` parla del volo tolto e di nessun altro. Vale in ogni momento,
+anche quando l'off block dell'arrivo è passato e la partenza si ritira ancora. Un privato si ritira fino all'off block del suo
+volo (§3.4).
 
 ### 3.7 Chi prenota e non vola (M4b)
 
@@ -644,7 +735,9 @@ le tratte di una sera sono una mail, un volo un giorno dopo ha la sua —; `remi
 (`[NotAudited]`: una mail che non entra in coda è un promemoria perso, mai uno mandato due volte); due giri insieme si mettono in
 fila su un `SELECT … FOR UPDATE`; il job decide dai suoi dati, quindi un giro in ritardo ricorda ciò che è ancora dovuto e uno
 ripetuto non trova niente; uno slot spostato dopo il suo promemoria non si ricorda di nuovo (l'ha detto `bookingChanged`); gli
-slot privati aspettano E7.
+slot privati aspettano E7. **Deciso con E7** (#246, nota `2026-10-11-gli-slot-privati`, piano 1.33): il promemoria di uno slot
+privato parte per **l'off block del suo volo** — per un arrivo, l'orario in cui il pilota lascia l'altro aeroporto, quello che
+ha scritto lui —, letto da `BookedFlight` come ogni altro posto che dice il volo di una prenotazione.
 
 ---
 
@@ -731,7 +824,11 @@ Carmine (§17.2 n.6): un evento che non ha un roster può chiedere altro — **s
 monitor…), se partecipi alle cene organizzate, se vuoi prenotare le attività parallele** (per esempio i simulatori di
 volo). È **una funzione del modulo** (`CLAUDE.md` §5, caso c, decisa qui): nessun meccanismo del nucleo la copre, e non
 ne serve uno nuovo — lo staff scrive le domande come righe, e il form del membro è il `SchemaForm` di sempre, con lo schema
-costruito dalle righe.
+costruito dalle righe. **Dal 12 ott 2026** (E10o, #254, nota `2026-10-12-un-campo-dice-il-suo-nome`, decisa da Carmine
+sull'issue #253, piano 1.33): il form del membro **nomina ogni campo con il testo della sua domanda**, nella lingua sullo
+schermo, attraverso l'annotazione del nucleo **`.meta({ label })`** (design M0 §7.5), e la select opzionale di una domanda dice
+«nessuno» con `form.none` del nucleo; mai le parole delle domande caricate nei file di lingua a runtime (i file di lingua non
+sono un posto dove tenere righe). La forma dello schema è di E16, che viene dopo.
 
 ### 4-bis.1 Il modello
 
@@ -847,7 +944,15 @@ Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` pe
 - **Lo staff dei FIR** con `"firTeam": true` (A11a): vale solo su un'area con un'entità `IHasFir`, e `EventAtc` ce l'ha
   (postazioni e turni).
 - HQ (DIR, ADIR) e il web (WM, AWM) tutto per il nucleo; il superadmin tutto. `Awards.Assign` resta del nucleo. Qualcuno
-  fuori da queste posizioni riceve un grant a un VID, anche **su un evento solo** (`resource_scope`).
+  fuori da queste posizioni riceve un grant a un VID, anche **su un evento solo** (`resource_scope`). **Dal 9 ott 2026**
+  (E10i, #237, nota `2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga`, decisa da Carmine sulla #235 e sulla #237, piano
+  1.33): la tabella non cambia, e quel grant ora **scrive davvero l'evento e le sue righe** — prima passava l'autorizzazione
+  dell'endpoint e cadeva al salvataggio, perché il guardiano dell'interceptor chiedeva il permesso senza scope. Ora il guardiano
+  chiede `{Area}.Edit` con lo scope della riga, come l'unico handler — in modifica, all'eliminazione e alla creazione —: il
+  grant scrive l'evento e le righe che rispondono con il suo scope, e **ne crea i figli** — uno slot, una rotta: chi
+  collabora su un evento deve poterne caricare gli slot —, **mai un evento nuovo** (per convenzione: un grant si scrive su
+  una riga che esiste).
+  `EventBookings.Edit` tenuto su un evento solo e la propria prenotazione in quell'evento restano come sono.
 
 ### 6.3 La collaborazione e la cancellazione
 
@@ -882,10 +987,20 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
     raggruppate**: ogni tratta sta nella sua tabella, segnata da un'icona; **una riga apre lo slot in sola lettura**, con tutti i
     tipi ammessi e le tratte della sua rotazione — è lì che E6b mette «Prenota». Un volo fra due scali dell'evento sta fra le
     partenze del primo e non fra gli arrivi del secondo;
-    **Deciso con E6b** (#240, piano 1.32): fra i fatti dell'evento una riga **«Prenotazioni»** — prima «Aprono il», con il
+    **Deciso con E6b** (#240, piano 1.32): ~~fra i fatti dell'evento una riga **«Prenotazioni»** — prima «Aprono il», con il
     momento e **il conto alla rovescia**; poi «Aperte dal»; «Chiuse» per un evento annullato —, e a zero la pagina rilegge
-    l'evento;
+    l'evento;~~ **sostituita con E8b dal badge della testa** (sotto; piano 1.33): il conto alla rovescia resta, e a zero la
+    pagina rilegge l'evento come prima;
   - **slot privati**: per scalo, verso e ora, con il form del volo;
+    **Deciso con E7** (#246, nota `2026-10-11-gli-slot-privati`, piano 1.33): i privati stanno **per scalo, verso e ora
+    dell'evento** (le ore del generatore, §3.2) — una sezione per scalo quando sono più d'uno, partenze e arrivi in due tabelle
+    come per i pubblici —; ogni ora dice quanti dei suoi slot sono liberi, «Pieno», o «Tuo» quando il lettore ne ha uno. Una
+    riga apre l'ora: il form del volo è **quello generato dal suo schema** (`SchemaForm`), così ogni rifiuto del server cade sul
+    suo campo, e un interruttore aggiunge la partenza collegata; dopo un rifiuto la pagina si rilegge, e il form si ridisegna
+    con quello che il pilota ha scritto e il primo slot libero al posto di uno che non è più offerto, e dice perché. I filtri
+    di E6b restano dei pubblici. **Nessuna lettura nuova**: i privati viaggiano nella lettura della pagina, **mai chi li ha
+    presi**, e la lettura **porta ogni slot privato a ogni lettore**, che ne vede solo i conti per ora — al tetto dei 5.000
+    sono circa 0,4 MB, detto dal revisore e lasciato com'è, come per i pubblici;
   - **ATC**: le postazioni e «dai la tua disponibilità» fino alla chiusura; il roster, pubblicato, in
     **`/events/{slug}/roster`**;
   - **in presenza**: luogo, «iscriviti» con le domande, le attività con i turni e i posti liberi (§4-bis);
@@ -900,11 +1015,36 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   altri solo mentre l'evento si vede, e 404 altrimenti. Un evento annullato resta nelle schede di `/events` e nel blocco fino
   alla sua fine, non nel calendario sotto le schede. Il filtro per scalo lascia fuori un evento di tutta la divisione. `/events`
   mostra i cinquanta più vicini.
+  **Deciso con E8b** (#249, nota `2026-10-11-la-testa-della-pagina-di-un-evento`, piano 1.33; la risposta 1 di Carmine sulla
+  #249, la (A) con un cambio, **al posto dell'ordine scritto qui sopra e della riga «Prenotazioni» di E6b**, sapendolo): chi
+  apre la pagina di un evento ci viene per gli slot, e i fatti in righe con l'etichetta li spingevano fuori dal primo schermo di
+  un telefono.
+  - **la testa, due righe corte** sotto titolo e riassunto, che vanno a capo da sole su un telefono: la prima dice **quando** —
+    il giorno una volta, con l'anno, e i due orari in UTC; nell'ora della divisione solo gli orari quando cadono in quello
+    stesso giorno, altrimenti anche il giorno —; la seconda **le prenotazioni, gli scali e chi organizza**;
+  - **le prenotazioni, un badge**: «Prenotazioni aperte»; prima dell'apertura «Prenotazioni dal…» con il momento e il conto
+    alla rovescia di E6b; «Prenotazioni chiuse» per un evento annullato o concluso; **nessun badge** per un evento che non
+    prende prenotazioni;
+  - **il badge del tipo resta, quello dello stato no** (le schede di `/events` li tengono tutti e due): «annullato» lo dice
+    l'avviso sotto la testa, bozza, non ancora visibile e concluso l'avviso dello staff. Che la pagina non dica più «in corso»,
+    né da quando le prenotazioni sono aperte, è accettato da Carmine;
+  - **gli scali come codici**, e il nome di uno che l'hub conosce **leggibile senza mouse** (il cambio chiesto da Carmine): il
+    codice è **`Hint`**, il pezzo della pagina degli slot (E5), esportato da dove sta e **mai copiato**, e il nome si apre al
+    passaggio del mouse, al focus e al tocco; a chi legge lo schermo il bottone si chiama con il codice e il nome. «Tutti gli
+    aeroporti della divisione» per un evento di tutta la divisione;
+  - **chi organizza, solo se non è la divisione**, con accanto il link alla loro pagina; la pagina esterna di un evento della
+    divisione non compare più;
+  - **«ogni slot si prenota fino al suo off block»** sotto il titolo degli slot pubblici, finché l'evento prende prenotazioni e
+    non è annullato; non sopra i privati, che hanno la loro regola (§3.4);
+  - **l'ordine**: il banner, la testa, la striscia di chi è online nel giorno dell'evento, l'avviso di un evento annullato;
+    poi **gli slot pubblici, gli slot privati**, il link alle prenotazioni del lettore; **in fondo la descrizione e le rotte**.
 - **`/events/mine`** (membri): le mie prenotazioni (anche passate), le mie disponibilità e i miei turni, il mio **registro
   ATC**, i miei PIREP di supporto con «manda il PIREP», e la preferenza del §1.11. **Deciso con E6b** (#240, piano 1.32): con
   E6b ha le prenotazioni — **«Da volare»**, finché l'on block è da venire, e **«Passate»** —, sotto i loro eventi, con
   **«Ritira»** finché si può, chiesto una volta di più; il resto arriva con M4b. **L'indirizzo `mine` è riservato**: nessun
-  evento lo prende come slug.
+  evento lo prende come slug. **Deciso con E7** (#246, note `2026-10-11-gli-slot-privati` e
+  `2026-10-10-il-ritiro-di-un-volo-collegato`, piano 1.33): una prenotazione privata dice **il volo a cui è collegata**, finché
+  ci sono tutte e due, e il ritiro di una delle due dice che l'altra resta (§3.6).
 
 ### 7.2 Staff
 
@@ -934,7 +1074,14 @@ eventi deve vedere che cosa preimposta ogni tipo (nota `2026-10-01-la-lettura-de
 a mano di E6a sono verbi — quattro del flusso di un membro sotto `/api/events/mine/bookings`, e «togli» dello staff —; **la scheda
 «Prenotazioni»** è una risorsa del motore in sola lettura (`/api/events/bookings`, `EventBookings.View`), per l'orario del volo
 allo scalo dell'evento, con il pilota detto da `col.person` e **«togli»** nel `ConfirmDialog` del nucleo con il motivo; e **prima
-di «Pubblica» si chiede conferma**, perché un evento pubblicato non torna in bozza.
+di «Pubblica» si chiede conferma**, perché un evento pubblicato non torna in bozza. **Deciso con E7 ed E8b** (#246, #249, note
+`2026-10-11-gli-slot-privati` e `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, piano 1.33): la scheda **«Slot»** ha
+**«Genera gli slot privati»** su un evento con slot privati, chiesto una volta di più (niente di prenotato si perde, §3.2), e la
+sua lista dice se uno slot è pubblico o privato e il suo scalo; la scheda «Prenotazioni» ha una riga per prenotazione, con il
+suo volo, e non mostra il legame fra due voli collegati; **«Duplica»** sta nella barra di un evento, a chi ha `Events.Edit`
+sulla riga, con la sua pagina e il form generato (§2.3-bis). Gli endpoint a mano sono **tre verbi che il design nomina**, e
+nessuna lettura nuova: `POST /api/events/events/{id}/slots/generate` e `POST /api/events/mine/bookings/private` (E7), e
+`POST /api/events/events/{id}/duplicate` (E8b).
 
 ### 7.3 Blocchi Data
 
@@ -973,6 +1120,18 @@ Nell'hub il Gate Manager legge con un **token personale** (`CLAUDE.md` §2), non
   aggiunge. Il contratto per chi scrive il programma è **`docs/events-bookings-export.md`**;
 - l'ordine delle risposte: il token (401 senza token o con il cookie, 403 con un'altra audience), poi la versione (400), poi
   l'evento (404, 403, 409).
+
+**Deciso con E7 ed E8b** (#246, #249, note `2026-10-11-gli-slot-privati`, `2026-10-10-il-ritiro-di-un-volo-collegato` e
+`2026-10-11-duplica-e-la-cancellazione-negli-eventi`, piano 1.33) — **aggiunte alla versione 1**, scritte in
+`docs/events-bookings-export.md`:
+
+- **un privato prenotato porta il volo del suo pilota** — nominativo, aereo, l'altro aeroporto e il suo orario —, con il
+  **gate vuoto**; un privato libero è quello che era, lo scalo e l'orario;
+- **`paired_slot_id` sta sull'arrivo e sulla partenza**, ciascuno con lo slot dell'altro: lo stesso gate da dare ai due. Si
+  legge solo quando ci sono tutte e due le prenotazioni: quando una se ne va (§3.6), quello dell'altra torna `null`;
+- **dopo la cancellazione dei dati di una persona** (§11.1): le sue prenotazioni di un evento non concluso non ci sono più, e
+  quegli slot sono liberi; quelle di un evento concluso restano con `booked_by` negativo, e una privata tiene l'aereo, lo scalo
+  dell'evento con il suo orario e `paired_slot_id`, **senza** il nominativo, l'altro aeroporto e il suo orario.
 
 Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).
 
@@ -1132,6 +1291,34 @@ fa quello che è **sulla** persona:
 `ErasureTests` legge da solo i contesti di ogni modulo abilitato (A12a, #187, l'opzione (c)), quindi vede anche quello degli
 eventi: la fase che crea una tabella con una colonna di persona scrive le sue righe nella lista del test.
 
+**Deciso con E8b** (#249, nota `2026-10-11-duplica-e-la-cancellazione-negli-eventi`, piano 1.33; le risposte di Carmine
+sull'issue #248), per le righe di M4a, le prenotazioni del pilota:
+
+- **un evento è concluso quando la sua fine è passata, annullato o no** (la (i), decisa da Carmine): un orologio solo, lo
+  stesso da cui conta la conservazione. Un evento annullato che non è ancora finito perde le prenotazioni della persona come
+  uno che si farà; dopo la sua fine le tiene, con lo pseudonimo;
+- **le prenotazioni di un evento non concluso si cancellano**: lo slot torna libero, l'audit tiene che una riga è stata
+  cancellata e quando, e il nucleo ne svuota le copie. Nessuna mail;
+- **quelle di un evento concluso restano**, con lo pseudonimo in `booker_vid`, **senza i dati del volo privato** (`callsign`,
+  `other_icao`, `other_time_utc`), **senza la nota** dello staff su un volo non fatto (`unflown_excused_note`) e **senza la
+  sessione della rete** in cui il volo è stato trovato (`flown_session_id`, che lega la riga alla persona sul tracker).
+  Restano quello che le statistiche contano: lo slot, l'aereo, se e quando è stato volato e verificato, il legame di una
+  coppia, quando è stata fatta. Che cosa ne dà l'esportazione è in §7.4;
+- **una coppia** — un arrivo privato con la sua partenza (§3.4) — è di un pilota solo e di un evento solo: **va o resta
+  intera**, e la regola del ritiro (§3.6) qui non serve;
+- **quello che la persona ha fatto come staff resta**, con lo pseudonimo nelle colonne `…By` e con le sue parole, che parlano
+  di altri: la nota di una scusa scritta per un altro pilota resta;
+- l'anteprima della cancellazione dice due righe, le prenotazioni cancellate e quelle tenute; una cancellazione rifatta non
+  trova più niente.
+
+**Dall'11 ott 2026** (E10n, #251, nota `2026-10-11-i-dati-di-una-persona-nell-audit`, decisa da Carmine sulla #249, risposta 2,
+piano 1.33): una prenotazione **ritirata o tolta prima** della cancellazione è una riga che nessun eraser trova, e le sue copie
+nell'audit tenevano i dati del pilota. Le **cinque colonne** che l'eraser svuota su una prenotazione tenuta — `Callsign`,
+`OtherIcao`, `OtherTimeUtc`, `UnflownExcusedNote`, `FlownSessionId` — portano **`[ErasedWith(nameof(BookerVid))]`** (il segno
+l'ha messo E8b, dopo la fase del nucleo): alla cancellazione **il nucleo le svuota nelle righe d'audit** delle prenotazioni
+che nominavano la persona e non ci sono più, e solo nelle copie scritte mentre la riga era sua. Una riga che c'è resta del suo
+eraser. Un segno che la cancellazione non potrebbe onorare ferma l'avvio.
+
 ---
 
 ## 12. Forkabilità
@@ -1162,6 +1349,9 @@ Ognuna è una PR a sé, **prima** del codice del modulo che la usa, con la sua n
 | 7 | ~~Cancellare solo con il permesso sul dipartimento di base~~ **non serve** (§6.3) | — | — |
 | 8 | **VID e slug dei test** di Events in `CONTRIBUTING.md` (per esempio `761001–761099`, `evt-test-`, dopo un grep) | no; lo scrive il master | M4a |
 | 9 | **Il ritiro di chi ha mandato la riga**: `[WithdrawnByStakeholder]`, il membro cancella la riga che lo riguarda (E10h, #232), che E0 non aveva visto | sì (`2026-10-07-il-ritiro-di-chi-ha-mandato-la-riga`) | M4a |
+| 10 | **Il grant su un evento solo nel guardiano**: l'interceptor chiede `{Area}.Edit` con lo scope della riga, come l'unico handler, e un grant su un evento ne scrive e ne crea le righe, mai un evento nuovo (E10i, #237), che E0 non aveva visto | sì (`2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga`) | M4a |
+| 11 | **I dati di una persona nell'audit di una riga che non c'è più**: `[ErasedWith(nameof(…Vid))]`, il nucleo svuota quelle colonne nelle copie d'audit di una riga tolta prima della cancellazione (E10n, #251); lo usano le prenotazioni (§11.1) | sì (`2026-10-11-i-dati-di-una-persona-nell-audit`) | M4a |
+| 12 | **Un campo dice il suo nome**: `.meta({ label })` nello schema di un form costruito da righe, e `form.none` per la sua select opzionale (E10o, #254); lo chiede il form delle domande (§4-bis) | sì (`2026-10-12-un-campo-dice-il-suo-nome`) | M4c |
 
 Il resto c'è: `IProjectable` con più voci, usi dei file e award; i grant `firTeam` (A11a, unita il 29 settembre); lo scope
 di un grant indipendente dal dipartimento della posizione; `TokenAudiences`; `Preferences`; `ModuleSettings`;
