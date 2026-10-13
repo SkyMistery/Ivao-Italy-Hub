@@ -100,12 +100,14 @@ public sealed class EventSaving(
             problems.Add("inPerson", "events:errors.inPersonHasQuestions");
         }
 
-        // The same for the roster (E11a): off with positions or availabilities there, the switch would hide the positions the staff
-        // opened and the hours the controllers gave. The staff delete the positions first; the availabilities stop it for good.
+        // The same for the roster (E11a): off with positions, availabilities or shifts (E11b) there, the switch would hide the positions
+        // the staff opened, the hours the controllers gave and the roster. The staff delete the positions first; the availabilities stop
+        // it for good.
         if (!row.HasRoster && !isNew
             && database.Entry(row).Property(nameof(Event.HasRoster)).OriginalValue is true
             && (await database.AtcPositions.AnyAsync(position => position.EventId == row.Id, cancellationToken)
-                || await CrudSource.BackOffice<EventAtcAvailability>(database).AnyAsync(availability => availability.EventId == row.Id, cancellationToken)))
+                || await CrudSource.BackOffice<EventAtcAvailability>(database).AnyAsync(availability => availability.EventId == row.Id, cancellationToken)
+                || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id, cancellationToken)))
         {
             problems.Add("hasRoster", "events:errors.hasRosterRows");
         }
@@ -183,6 +185,12 @@ public sealed class EventSaving(
         if (await CrudSource.BackOffice<EventAtcAvailability>(database).AnyAsync(availability => availability.EventId == row.Id, cancellationToken))
         {
             throw new DomainRefusalException("id", "events:errors.eventHasAvailabilities");
+        }
+
+        // A shift names a controller (E11b): one written by the staff for somebody who never gave availability is still a member's row.
+        if (await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasShifts");
         }
 
         database.AtcPositions.RemoveRange(await database.AtcPositions.Where(position => position.EventId == row.Id).ToListAsync(cancellationToken));

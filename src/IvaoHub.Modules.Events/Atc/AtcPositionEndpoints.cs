@@ -65,8 +65,8 @@ public sealed record AtcCandidateDto(
 
 /// <summary>
 /// The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
-/// its words, its state, its window, when its availabilities close and how long a shift is — to whoever holds <c>EventAtc.View</c>
-/// somewhere, the staff of a FIR among them, who do not read the event itself.
+/// its words, its state, its window, when its availabilities close, how long a shift is and when its roster was proposed (E11b) — to
+/// whoever holds <c>EventAtc.View</c> somewhere, the staff of a FIR among them, who do not read the event itself.
 /// </summary>
 public sealed record AtcEventDto(
     long Id,
@@ -78,7 +78,8 @@ public sealed record AtcEventDto(
     DateTime EndsAtUtc,
     DateTime ClosesAtUtc,
     int ShiftMinutes,
-    DateTime? CancelledAt);
+    DateTime? CancelledAt,
+    DateTime? RosterProposedAt);
 
 /// <summary>A position of the division as the form of a position offers it: the callsign, its name, its kind and its FIR.</summary>
 public sealed record AtcPositionChoiceDto(string Callsign, string Name, string Type, string? Fir);
@@ -171,6 +172,9 @@ public static class AtcPositionEndpoints
 
     private const string UnknownPositionKey = "events:errors.positionUnknown";
 
+    /// <summary>A position whose shifts a change or a deletion would leave without it (E11b).</summary>
+    private const string PositionHasShiftsKey = "events:errors.positionHasShifts";
+
     public static IEndpointRouteBuilder MapAtcPositionEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -197,6 +201,7 @@ public static class AtcPositionEndpoints
             options.Apply = AtcPositionMapper.Apply;
             options.BeforeAuthorize = AdoptAsync;
             options.BeforeSave = SaveAsync;
+            options.Delete = DeleteAsync;
         });
 
         var atc = app.MapGroup("/api/events/atc").WithTags("EventAtc");
@@ -321,6 +326,27 @@ public static class AtcPositionEndpoints
         }
 
         var database = (EventsDbContext)saving.Database;
+
+        // A position with shifts (E11b, reading 8): its callsign stays, since the shifts copied its FIR, and its hours keep its shifts.
+        if (!saving.IsNew)
+        {
+            var shifts = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
+                .Where(shift => shift.PositionId == position.Id)
+                .ToListAsync(saving.CancellationToken);
+            if (shifts.Count > 0 && !string.Equals(
+                    (string?)database.Entry(position).Property(nameof(EventAtcPosition.Callsign)).OriginalValue,
+                    position.Callsign,
+                    StringComparison.Ordinal))
+            {
+                return EventChildren.Refusal("callsign", PositionHasShiftsKey);
+            }
+
+            if (shifts.Any(shift => shift.FromUtc < position.FromUtc || shift.ToUtc > position.ToUtc))
+            {
+                return EventChildren.Refusal("fromUtc", PositionHasShiftsKey);
+            }
+        }
+
         var twice = await database.AtcPositions.AnyAsync(
             other => other.EventId == position.EventId
                 && other.Callsign == position.Callsign
@@ -330,6 +356,31 @@ public static class AtcPositionEndpoints
             saving.CancellationToken);
 
         return twice ? EventChildren.Refusal("callsign", "events:errors.positionTwice") : null;
+    }
+
+    /// <summary>
+    /// Deleting a position (E11b, reading 8): its shifts go with it, each with its row in the audit, until the event starts; from then on a
+    /// position with shifts stays, since its shifts are the register of reliability (c3).
+    /// </summary>
+    private static async Task DeleteAsync(EventAtcPosition position, IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var database = services.GetRequiredService<EventsDbContext>();
+        var shifts = await CrudSource.BackOffice<EventAtcShift>(database)
+            .Where(shift => shift.PositionId == position.Id)
+            .ToListAsync(cancellationToken);
+
+        if (shifts.Count > 0)
+        {
+            var parent = await services.GetRequiredService<EventChildren>().EventAsync(position.EventId, cancellationToken);
+            if (parent is not null && parent.StartsAtUtc <= services.GetRequiredService<IClock>().UtcNow)
+            {
+                throw new DomainRefusalException("id", PositionHasShiftsKey);
+            }
+
+            database.AtcShifts.RemoveRange(shifts);
+        }
+
+        database.AtcPositions.Remove(position);
     }
 
     /// <summary>
@@ -472,7 +523,8 @@ public static class AtcPositionEndpoints
         row.EndsAtUtc,
         AtcRules.ClosesAt(row, settings),
         row.ShiftMinutes ?? settings.ShiftMinutes,
-        row.CancelledAt);
+        row.CancelledAt,
+        row.RosterProposedAt);
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));
