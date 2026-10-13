@@ -4234,8 +4234,8 @@ determinismo, il perché). Integrazione: il job propone una volta, ripetuto non 
 entrato non si aggiunge. E2e: lo staff sposta un turno.
 **Fatta quando**: sul banco il roster proposto compare alla chiusura, con il perché, e lo staff lo corregge.
 
-**Com'è andata** (13 ottobre 2026, branch `m4/e11b-roster-proposal`, nata `--no-track` dalla testa di E11a `c967bc1` (PR #256, con E16 e
-`main` a `cea6244`), **in coda dopo la #256**; **una migrazione**, `AddAtcShifts`, dopo `AddAtcPositionsAndAvailability` di E11a):
+**Com'è andata** (13 ottobre 2026, branch `m4/e11b-roster-proposal`, nata `--no-track` dalla testa di E11a `c967bc1` (PR #256, con E16;
+`main` a `cea6244` unito dopo, con la testa nuova di E11a: sotto), **PR #262**, **in coda dopo la #256**; **una migrazione**, `AddAtcShifts`, dopo `AddAtcPositionsAndAvailability` di E11a):
 
 - **Fatto**:
   1. **`evt_atc_shifts` intera** (punto 1): `EventAtcShift`, con le colonne del piano più `event_id`, `fir` (copiato dalla postazione in
@@ -4302,7 +4302,7 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   minuti) sul banco `http://127.0.0.1:5143`, `ivaohub_e2e_e11b` tolto prima, dietro il lock di Mailpit (la spec nuova da sola, prima, 1/1 al
   secondo giro: il primo cadeva su `whileWaitingFor`, che vuole una risposta sotto 300, mentre la spec aspetta il 400); le regole di
   `core-guard` rifatte a mano dal merge-base con `main` (`a97a1fd`): un file del nucleo (`ErasureTests.cs`) con le note nuove, nessun file
-  del maintainer. ⚠️ **Il branch non ha `main` a `cea6244`** (il piano 1.33, la #257): il merge-base con `main` è la testa di E10o; letto il
+  del maintainer. ⚠️ **Il branch non aveva `main` a `cea6244`** (il piano 1.33, la #257; unito dopo, sotto): il merge-base con `main` era la testa di E10o; letto il
   piano 1.33 e il design di `main`, niente cambia per il roster.
 - **Il «fatta quando», sul banco** (13 ottobre 2026, 00:29–00:40 UTC, il banco 5143 riavviato con `E2E_SKIP_PUBLISH=1` e
   `E2E_SMTP_PORT=1`): un evento a venti giorni con la torre e il ground di LIRF, la disponibilità del pilota, del trainer e del coordinatore,
@@ -4318,6 +4318,16 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   dopo con uno script Playwright usa e getta sul banco 5143 (su richiesta del coordinatore, che aveva fatto misurare E11a): per un turno alle
   18:00Z l'input vale `2026-11-02T18:00`, l'ora UTC, e sotto il nucleo scrive «19:00 Europe/Rome». Il suggerimento «In UTC» è vero, e torna
   com'era; quello delle postazioni di E11a non aveva niente da correggere.
+- **Verificato di nuovo, dopo il merge della testa di E11a e di `main`** (13 ottobre 2026; la testa di E11a dopo la seconda lettura,
+  `ac52c4b`, con E16 `addf1e1`, unita con un merge — i conflitti nei file di lingua, le parole di E11a e di E11b tenute insieme, e in
+  `screens/atc.tsx`, dove le colonne nuove dei candidati della (B) di Carmine sono passate in `screens/candidates.tsx` e il pannello tiene
+  `isClosed` di E11a, così su un evento annullato o finito né le postazioni né il roster si correggono —; poi **`origin/main` a `cea6244`**,
+  il piano 1.33, che la testa di E11a non portava, unito senza conflitti nello stesso passo; la PR è la **#262**): `dotnet build -c Release`
+  senza avvisi; unità **1285/1285**; **integrazione intera senza filtro 602/602** (10,1 min); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (854 chiavi) verdi; `pnpm test` **770 in 107 file**; `pnpm build`; `gen:api` senza diff; lo smoke **181/181**; **`pnpm
+  e2e:full` 64/64 al primo giro** (13,2 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione e dietro il lock di
+  Mailpit; le regole di `core-guard` da `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`) con le note nuove, nessun file del
+  maintainer.
 - **Non verificato**: la CI (la dice la PR); le risposte di Carmine alle due domande della nota; un roster con l'archivio vero di vIPI (IT ha
   `none`; provato con un doppio); un roster di molte postazioni e molti candidati (il proponente è in memoria, per un evento, e l'esperienza
   fa una domanda all'archivio per candidato); il form del turno a 375 px; la migrazione su un'installazione vera.
