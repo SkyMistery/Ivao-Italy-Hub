@@ -285,7 +285,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     schermo**: `EventQuestionDto.Sum` (numeri per chiave), le risposte com'erano date in `EventRegistrationDto` e in `MyRegistrationDto` (che
     porta anche le domande del suo evento), e `screens/answers.ts` che le scrive; **le mail** tengono le parole del server
     (`RegistrationAnswers.Lines`), nella lingua di chi le riceve. Una fase che mette un valore in parole in una lista fa lo stesso (E17: i
-    posti delle attività). ⚠️ **La cancellazione** tiene di un'iscrizione finita solo le risposte contate alle domande che ci sono, e marca
+    posti delle attività). **Dopo la seconda lettura** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615),
+    [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872): sì alla lettura 11 com'è ora — la seconda
+    iscrizione dello stesso istante diventa un cambio della prima): l'eraser tiene una scelta solo se nomina scelte della domanda
+    (`RegistrationAnswers.Counted`), e la scheda «Iscrizioni» dice l'errore della lettura delle domande. ⚠️ **La cancellazione** tiene di
+    un'iscrizione finita solo le risposte contate alle domande che ci sono, e marca
     sempre la riga come cambiata, così l'audit perde le sue copie di prima: una tabella nuova di E17 (i posti) che tiene righe con lo
     pseudonimo guarda lo stesso caso. ⚠️ **Ogni lettura salta un valore che non torna con la sua domanda** (`RegistrationAnswers.Fits`, e in
     TS `answerLines`).

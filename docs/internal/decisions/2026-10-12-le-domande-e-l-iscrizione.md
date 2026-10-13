@@ -5,7 +5,8 @@
 #253][a]): **(A) a tutte e due** le domande di [l'issue #253][q], aperta all'inizio della fase perché il codice ne dipende (§5); e
 **le letture che sono scelte**, portate a Carmine dal revisore della #255 ([le risposte sulla #255][b]): **sì** alle letture 15, 20 e 4 e
 alla mail a ogni cambio (12), e alle domande e al luogo dati a chi legge senza accesso; **no** alle parole delle liste scritte dal server
-nella lingua dell'account (§5, «Le risposte sulle letture»). Le altre letture restano come scritte.
+nella lingua dell'account (§5, «Le risposte sulle letture»); e **sì alla lettura 11 com'è ora**, dopo la seconda lettura del revisore
+([la risposta][c]). Le altre letture restano come scritte.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §1.10, §8.3, §11.1 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5 — l'unico handler, il guardiano dell'interceptor
 con il ritiro di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il
@@ -16,6 +17,8 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 [b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
 [rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
+[c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872
+[rv2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615
 
 ## 1. Le domande (`evt_questions`, design §4-bis.1)
 
@@ -62,8 +65,9 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
     o cambiare le risposte (`PUT /{eventId}`: 201 la prima volta, 200 dopo), ritirarsi (`DELETE /{eventId}`). **Fino all'inizio**: ci si
     iscrive e si cambiano le risposte a un evento in presenza visto, non annullato, prima del suo inizio; **ci si ritira fino all'inizio
     anche da un evento annullato**. Dopo: `events:errors.registrationClosed`. Due richieste dello stesso membro nello stesso istante si
-    incontrano sull'indice univoco, e **la seconda diventa un cambio dell'iscrizione della prima** (le ultime risposte mandate restano;
-    provato con una transazione tenuta dal test, dopo la revisione).
+    incontrano sull'indice univoco, e **la seconda diventa un cambio dell'iscrizione della prima** (le ultime risposte mandate restano,
+    con la loro mail; provato con una transazione tenuta dal test, dopo la revisione). Prima rispondeva «riprova»: la lettura è cambiata
+    con le correzioni della revisione, e **Carmine ha detto sì com'è ora** ([la risposta sulla #255][c], 13 ottobre 2026).
 12. **La mail `registrationReceived`** parte a ogni iscrizione **e a ogni cambio delle risposte**, con il luogo e le risposte come sono in
     quel momento, nella lingua del membro: l'ultima mail dice le risposte vere. Ritirarsi non manda niente.
 13. **Annullare e cambiare gli orari** avvisano anche chi è iscritto: una mail per persona, anche a chi ha prenotato e si è iscritto
@@ -98,8 +102,9 @@ form del nucleo (`SchemaForm`). Una migrazione del modulo; niente nel nucleo in 
 20. **La cancellazione dei dati di una persona** (nota `2026-09-29-i-dati-dei-membri-negli-eventi` §2.5: «si trattano come le
     prenotazioni»): l'iscrizione a un evento **non finito** si cancella; quella a un evento **finito** resta con lo pseudonimo che il nucleo
     scrive in `vid`, **con le sole risposte che le somme contano** (sì o no, una scelta, più scelte, numeri) **alle domande che l'evento ha
-    ancora**, come tornano con la loro domanda, **e nient'altro**: né i testi, che sono parole del membro (come una prenotazione tenuta perde
-    la nota), né le risposte a domande eliminate (il punto 1 del [revisore][rv]). **E la riga conta sempre come svuotata**, anche quando le
+    ancora**, come tornano con la loro domanda — e una scelta solo se nomina scelte della domanda (la [seconda lettura][rv2], piccolo 1) —,
+    **e nient'altro**: né i testi, che sono parole del membro (come una prenotazione tenuta perde la nota), né le risposte a domande
+    eliminate (il punto 1 del [revisore][rv]). **E la riga conta sempre come svuotata**, anche quando le
     risposte non cambiano, così il nucleo svuota le sue copie di prima nell'audit, dove resterebbe una parola tolta da un cambio di prima (il
     punto 2: provato da un test, che senza questo cade). Due righe dell'anteprima: `events:erasure.registrationsToCome` e
     `…registrationsOver`. Con **E10n** nella coda, `AnswersJson` porta `[ErasedWith(nameof(Vid))]`: un'iscrizione ritirata o tolta prima
@@ -148,6 +153,10 @@ sessione master, che ha pubblicato le risposte [sulla #255][b] su sua istruzione
    italiano. In questa PR le liste — quella delle domande, quella delle iscrizioni, le proprie del membro — ricevono i dati (la domanda,
    il valore, le chiavi delle scelte, i conti) e il client scrive le parole nella lingua sullo schermo; **le mail tengono le parole del
    server, nella lingua di chi le riceve**. Fatto sulla #255 (letture 15 e 16).
+
+E dopo la [seconda lettura del revisore][rv2], che gliel'ha portata perché era cambiata con le correzioni: **lettura 11 com'è ora, sì**
+([la risposta][c], 13 ottobre 2026) — due iscrizioni dello stesso membro allo stesso evento nello stesso istante, la seconda diventa un
+cambio della prima, le ultime risposte mandate restano con la loro mail, e non risponde «riprova».
 
 ## 6. Alternative scartate
 
