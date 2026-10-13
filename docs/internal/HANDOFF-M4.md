@@ -8,7 +8,7 @@
 
 **Ultimo aggiornamento:** 13 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
 staff), sul branch `m4/e11b-roster-proposal`, **in coda dopo la #256** di E11a: nata `--no-track` dalla sua testa `c967bc1` (con E16 e `main` a
-`cea6244`). La nota `2026-10-13-la-proposta-del-roster` è **Proposta**, con due domande a Carmine (⚠️ «`atcData` di IT», raccomandata la
+`cea6244`). La nota `2026-10-13-la-proposta-del-roster` è **Proposta**, con due domande a Carmine nell'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259) (⚠️ «`atcData` di IT», raccomandata la
 (A): IT a `vipi` prima del primo roster vero; e le dieci letture); il codice segue le risposte raccomandate. Da E11b, alla chiusura delle
 disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo staff dell'ATC lo
 **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni («Che cosa ha lasciato E11b»,

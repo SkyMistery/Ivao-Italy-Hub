@@ -2,7 +2,9 @@
 
 **Data:** 13 ottobre 2026 — fase E11b di M4 (M4b), PR in coda dopo la #256 di E11a
 **Stato:** **Proposta**. Le domande a Carmine sono in §5 (la prima è quella che il piano mette in apertura di E11b, «`atcData` di
-IT»); il codice segue le risposte raccomandate, come ha fatto E11a.
+IT»), pubblicate nell'**issue #259** ([domande][q]); il codice segue le risposte raccomandate, come ha fatto E11a.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259
 **Regola applicata:** `CLAUDE.md` §5. La tabella dei turni, le regole della proposta, la correzione, i predefiniti e il permesso negato
 all'interessato sono **decisi** (design `09-design-m4.md` §1.7, §1.12, §4.3, §4.4, §6.1, §8.4; note `2026-09-29-il-roster-atc`,
 `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`). Questa nota registra **le letture** che la fase ha
@@ -129,6 +131,8 @@ per il promemoria di E6b), quindi prova quello che non dipende dall'orologio —
 prima della proposta, i candidati sotto il form —, e «lo staff sposta un turno» lo provano `EventsRosterTests` e il banco della fase.
 
 ## 5. Le domande a Carmine
+
+Pubblicate nell'issue #259 ([domande][q]), con l'assenso di dalberone.
 
 1. **`atcData` di IT** (la domanda in apertura di E11b, `10`, E0, «Trovato», punto 5). Oggi `config/division.json` non ha `atcData`: IT
    gira con `none`, e **la proposta del roster non ha il criterio dell'esperienza** (gli altri valgono uguali, e il perché di ogni turno lo
