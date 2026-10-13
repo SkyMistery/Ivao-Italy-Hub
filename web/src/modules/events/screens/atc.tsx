@@ -27,7 +27,7 @@ import {
 import { EVENT_ATC_EDIT } from '../permissions';
 import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from '../schemas';
 
-import { ATC_SECTION, atcHome } from './atcPaths';
+import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
 import { Candidates } from './candidates';
 import { RosterSection } from './roster';
 
@@ -136,7 +136,8 @@ export function AtcPanel({ eventId }: { eventId: number }) {
   }
 
   const base = `${ATC}/${eventId}/positions`;
-  const editable = holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
+  const closed = isClosed(event);
+  const editable = !closed && holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
   const create = editable ? (
     <Button asChild>
       <RouterAnchor href={`${base}/new`}>
@@ -151,7 +152,11 @@ export function AtcPanel({ eventId }: { eventId: number }) {
       <p className="text-muted-foreground text-sm">
         {t('events:atc.head', { date: moment(event.closesAtUtc), minutes: event.shiftMinutes })}
       </p>
-      {editable ? null : <Notice tone="info" title={t('events:atc.readOnly')} />}
+      {closed ? (
+        <Notice tone="info" title={t('events:atc.closedEvent')} />
+      ) : editable ? null : (
+        <Notice tone="info" title={t('events:atc.readOnly')} />
+      )}
       <DataList
         columns={positionColumns}
         query={atcPositionsQuery(eventId, search)}
@@ -191,7 +196,11 @@ export function AtcPositionForm() {
 
   const event = useQuery(atcEventQuery(eventId)).data;
   const position = useQuery({ ...atcPositionQuery(id ?? 0), enabled: id !== null }).data ?? null;
-  const editable = event !== undefined && holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
+  // An event cancelled or over takes no position (the server refuses it): the page offers no «Save» and says why.
+  const editable =
+    event !== undefined &&
+    !isClosed(event) &&
+    holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
   const positions = useQuery({ ...divisionPositionsQuery(eventId), enabled: editable }).data;
   const save = useSaveAtcPosition(id);
   const remove = useDeleteAtcPosition();
@@ -236,6 +245,7 @@ export function AtcPositionForm() {
       }
     >
       <div className="flex flex-col gap-8">
+        {isClosed(event) ? <Notice tone="info" title={t('events:atc.closedEvent')} /> : null}
         {refusal === null ? null : <Notice tone="error" title={refusal} />}
         <SchemaForm<AtcPositionFormValues>
           schema={atcPositionSchema(choices)}

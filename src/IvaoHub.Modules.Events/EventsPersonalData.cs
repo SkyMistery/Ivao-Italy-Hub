@@ -183,13 +183,14 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         foreach (var registration in over)
         {
             // Only what the sums count, of questions the event still has, as it fits them; every other key goes — a text, an answer to a
-            // question deleted since, a value of another type (the review of #255, point 1).
+            // question deleted since, a value of another type, a «choice» that is none of the question's (the review of #255, point 1, and
+            // small 1 of its second reading).
             var answers = RegistrationAnswers.Of(registration);
             var kept = new JsonObject();
             foreach (var question in counted[registration.EventId])
             {
                 var key = EventQuestion.AnswerKey(question.Id);
-                if (RegistrationAnswers.Fits(question, answers[key]))
+                if (RegistrationAnswers.Counted(question, answers[key]))
                 {
                     kept[key] = answers[key]!.DeepClone();
                 }

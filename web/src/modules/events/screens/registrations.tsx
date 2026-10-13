@@ -35,13 +35,24 @@ const columns: readonly ColumnSpec<RegistrationRow>[] = [
 ];
 
 export function RegistrationsTab({ event, editable }: { event: EventDetailDto; editable: boolean }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const read = useLocalized();
   const words = useAnswerWords();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
   // The event's questions, which the answers are written in words with, in the language on screen (Carmine's answer 6 on #255).
-  const questions = useQuery(questionsQuery(event.id)).data?.items;
+  const questionsRead = useQuery(questionsQuery(event.id));
+  const questions = questionsRead.data?.items;
+
+  if (questionsRead.isError) {
+    // Said, as on the event's page, rather than a tab with nothing in it (the second reading of #255, small 2).
+    return (
+      <Notice
+        tone="error"
+        title={describeProblem(questionsRead.error, t, i18n.language) ?? t('errors.unknown')}
+      />
+    );
+  }
 
   if (questions === undefined) {
     return null;

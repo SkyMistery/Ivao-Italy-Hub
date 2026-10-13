@@ -10,7 +10,9 @@ const candidateColumns: readonly ColumnSpec<AtcCandidateDto>[] = [
   col.person('controller'),
   col.text('rating'),
   col.boolean('wholePosition'),
-  col.list('windows'),
+  col.date('availableFromUtc'),
+  col.date('availableToUtc'),
+  col.number('windows'),
   col.text('note'),
   col.date('createdAt'),
 ];

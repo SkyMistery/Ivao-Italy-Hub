@@ -763,7 +763,9 @@
     "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
     "ratingUnknown": "Scegli un rating dell'elenco.",
     "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
-    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: rileggila e salva di nuovo.",
+    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
+    "positionOnCancelledEvent": "L'evento è annullato: non vi si apre né vi si cambia una postazione.",
+    "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione.",
     "positionUnknownForShift": "Scegli una delle postazioni di questo evento.",
     "positionOfAnotherEvent": "Un turno si sposta solo fra le postazioni del suo evento.",
     "shiftOutsidePosition": "Il turno è fuori dalle ore della sua postazione.",
@@ -882,11 +884,14 @@
         "controller": "Controllore",
         "rating": "Rating",
         "wholePosition": "Per tutto il tempo",
-        "windows": "Disponibile",
+        "windows": "Finestre",
         "note": "Nota",
-        "createdAt": "Data il"
+        "createdAt": "Data il",
+        "availableFromUtc": "Disponibile dalle",
+        "availableToUtc": "Disponibile fino alle"
       }
     },
+    "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano.",
     "roster": {
       "title": "Roster",
       "notYet": "Il roster si propone alla chiusura delle disponibilità, il {{date}}.",

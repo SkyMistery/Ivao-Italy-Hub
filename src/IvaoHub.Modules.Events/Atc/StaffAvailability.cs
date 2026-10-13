@@ -41,7 +41,9 @@ public sealed class StaffAvailability(
 
     /// <summary>
     /// The controllers with a window that meets the hours of <paramref name="position"/>, the first given first: named, with their rating,
-    /// their windows in the event — all of them, so the staff see the evening whole — and whether they cover the position end to end.
+    /// from when to when they are available <b>inside the position</b> — the first of their windows there clipped to its opening, the last
+    /// clipped to its closing, as instants the list draws (Carmine's answer (B) on #256) —, how many of their windows meet it, and whether
+    /// they cover it end to end; a gap between two windows shows only as «not the whole time».
     /// </summary>
     public async Task<IReadOnlyList<AtcCandidateDto>> CandidatesAsync(EventAtcPosition position, CancellationToken cancellationToken)
     {
@@ -67,19 +69,28 @@ public sealed class StaffAvailability(
         [
             .. availabilities.Select(availability =>
             {
-                var own = windows[availability.Id].OrderBy(window => window.FromUtc).Select(window => new AtcWindowDto(window.FromUtc, window.ToUtc)).ToList();
+                var inside = windows[availability.Id]
+                    .Where(window => AtcRules.Meet(window.FromUtc, window.ToUtc, position.FromUtc, position.ToUtc))
+                    .Select(window => new AtcWindowDto(window.FromUtc, window.ToUtc))
+                    .ToList();
 
                 return new AtcCandidateDto(
                     availability.Id,
                     EventsPeople.Member(availability.ControllerVid, names),
                     ratings.TryGetValue(availability.ControllerVid, out var rating) ? vocabulary.Find(RatingKind.Atc, rating)?.ShortName : null,
-                    AtcRules.Cover(own, position.FromUtc, position.ToUtc),
-                    [.. own.Select(window => AtcPositionEndpoints.Written(window.FromUtc, window.ToUtc))],
+                    AtcRules.Cover(inside, position.FromUtc, position.ToUtc),
+                    Max(inside.Min(window => window.FromUtc), position.FromUtc),
+                    Min(inside.Max(window => window.ToUtc), position.ToUtc),
+                    inside.Count,
                     availability.Note,
                     availability.CreatedAt);
             }),
         ];
     }
+
+    private static DateTime Max(DateTime one, DateTime other) => one > other ? one : other;
+
+    private static DateTime Min(DateTime one, DateTime other) => one < other ? one : other;
 
     /// <summary>The windows of these events, read past the members' filter: the staff read every controller's.</summary>
     private Task<List<EventAtcWindow>> WindowsAsync(IEnumerable<long> eventIds, CancellationToken cancellationToken)

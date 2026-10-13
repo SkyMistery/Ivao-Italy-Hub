@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -21,6 +23,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -460,7 +463,13 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // The first covers the position end to end with two windows that touch; the second only from its second hour.
         Assert.Equal([true, false], candidates.Select(row => row.GetProperty("wholePosition").GetBoolean()));
         Assert.Equal(Least.ShortName, candidates[0].GetProperty("rating").GetString());
-        Assert.Equal(2, candidates[0].GetProperty("windows").GetArrayLength());
+        Assert.Equal(2, candidates[0].GetProperty("windows").GetInt32());
+
+        // From when to when inside the position, as instants the list draws (Carmine's answer (B) on #256): the first from its opening to
+        // its closing; the second from their first hour inside it, their window running on past its closing clipped to it.
+        Assert.Equal(
+            [(starts, starts.AddHours(2)), (starts.AddHours(1), starts.AddHours(2))],
+            candidates.Select(row => (row.GetProperty("availableFromUtc").GetDateTime(), row.GetProperty("availableToUtc").GetDateTime())));
         Assert.Equal("evt-test-e11a late", candidates[1].GetProperty("note").GetString());
 
         // The late position meets only the second; the list counts them.
@@ -575,6 +584,16 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.False(await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().AnyAsync(row => row.Slug == Slug("dup-refused"), token));
         }
 
+        // The same member given the ATC too: duplicated — the 403 above was the ATC's, and no other check's.
+        await GrantAsync(TraineeVid, EventsPermissions.AtcEdit, token);
+        using (var writer = await SignedInAsync(TraineeVid, token))
+        {
+            var allowed = (await CreatedAsync(
+                await writer.PostAsJsonAsync($"{EventEndpoints.Pattern}/{id}/duplicate", new EventDuplicateRequest(moved.AddDays(7), Slug("dup-allowed"), PublicSlots: false), token),
+                token)).GetProperty("event").GetProperty("id").GetInt64();
+            Assert.Equal(2, (await PositionsAsync(allowed, token)).Count);
+        }
+
         // The coordinator: the copy has the two positions, a week later.
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         var copy = (await CreatedAsync(
@@ -621,8 +640,8 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
 
         var over = await EventRowAsync("small-over", DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2).AddHours(4), hasRoster: true, token);
-        Assert.Equal(["events:errors.alreadyCancelled"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(cancelled, Tower), token), token))["eventId"]);
-        Assert.Equal(["events:errors.eventOver"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(over, Tower), token), token))["eventId"]);
+        Assert.Equal(["events:errors.positionOnCancelledEvent"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(cancelled, Tower), token), token))["eventId"]);
+        Assert.Equal(["events:errors.positionOnEventOver"], (await RefusedAsync(await aod.PostAsJsonAsync(AtcPositionEndpoints.Pattern, Position(over, Tower), token), token))["eventId"]);
 
         // A position written when the approach was the first FIR's: its chief still deletes it, on the FIR it was written with.
         var id = await EventRowAsync("small", starts, ends, hasRoster: true, token);
@@ -652,6 +671,67 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
+    }
+
+    /// <summary>
+    /// A change of an availability that meets another change of the same member, from another window, answers 409 (the review of #256,
+    /// point 4), never «not found» for an availability that is there. Made deterministic as the races of the bookings are (E6a): a
+    /// transaction of the test takes away the window the request is about to replace and holds it; the request reads the window — not
+    /// committed away yet —, tries to delete it and waits; the test commits; the request's delete finds nothing, and it answers 409.
+    /// </summary>
+    [Fact]
+    public async Task AChangeThatMeetsAnotherChangeOfTheSameMemberIsAConflict()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, ends) = Window(days: 28);
+        var id = await EventRowAsync("conflict", starts, ends, hasRoster: true, token);
+        await PositionRowAsync(id, Tower, starts, ends, token);
+        await AvailabilityRowAsync(id, ControllerVid, starts, ends, note: null, token);
+        var window = Assert.Single(await WindowsAsync(id, token)).Id;
+        using var controller = await SignedInAsync(ControllerVid, token);
+
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            database.AtcWindows.Remove(await database.AtcWindows.IgnoreQueryFilters().SingleAsync(row => row.Id == window, token));
+            await database.SaveChangesAsync(token);
+
+            var request = controller.PutAsJsonAsync(Mine(id), Request((starts.AddHours(1), ends)), token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        using (answered)
+        {
+            Assert.Equal(HttpStatusCode.Conflict, answered.StatusCode);
+        }
+
+        // Nothing of the request written: the availability as the other change left it, with no window.
+        Assert.Single(await AvailabilitiesAsync(id, token));
+        Assert.Empty(await WindowsAsync(id, token));
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms: asked more often, it keeps answering what
+    /// it saw the first time (CONTRIBUTING.md).</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The request never waited for the transaction the test holds.");
     }
 
     /// <summary>The least ATC rating of the settings is one of the core's vocabulary: another number is refused on its field.</summary>

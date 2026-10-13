@@ -3,8 +3,9 @@
 **Data:** 12 ottobre 2026 — fase E11a di M4 (la prima di M4b), PR #256
 **Stato:** **decisa** (Carmine, 12 ottobre 2026, in chat al master, che ha pubblicato la risposta sulla #256 su sua istruzione:
 [risposta][a]): **sì alle dieci letture**, come raccomandate. La domanda era il primo commento della PR ([domanda][q]). Le correzioni della
-revisione ([rilievi][r]), che stanno a parte dalla risposta, sono in §6; **il punto 2 è una seconda domanda, Proposta** ([domanda
-2][q2]), e aspetta la sua risposta.
+revisione ([rilievi][r], [seconda lettura][r2]), che stanno a parte dalla risposta, sono in §6; il punto 2 era **una seconda domanda**
+([domanda 2][q2]), **decisa** da Carmine il 13 ottobre 2026, in chat al master che l'ha pubblicata su sua istruzione ([risposta 2][a2]):
+**la (B)**.
 **Regola applicata:** `CLAUDE.md` §5. Le tabelle, i permessi, le regole del roster e i predefiniti sono **decisi** (design `09-design-m4.md`
 §1.7, §1.12, §4.1, §4.2, §6; note `2026-09-29-il-roster-atc`, `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`);
 la forma per lo staff di un FIR è quella scritta in E2 («Le due verifiche del design §6.3», `10`, E2). Questa nota registra **le letture**
@@ -16,6 +17,8 @@ grant al team di un FIR, `[WithdrawnByStakeholder]`, `IAtcPositionDirectory` e i
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
 [r]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
 [q2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6132606484
+[a2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146395160
+[r2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146431124
 
 ## 1. Che cosa serviva decidere
 
@@ -134,22 +137,29 @@ I rilievi del revisore sulla #256 ([rilievi][r]), che stanno a parte dalla rispo
    il tempo» e il numero delle finestre — i buchi fra una finestra e l'altra non si vedono più, solo «non per tutto il tempo»; **(C)** il
    testo tenuto, scritto dal server in UTC e nell'ora della divisione — parole fatte in C#, la forma che Carmine ha già scartato per le liste
    sulla #255. **Raccomandata la (B)**: ogni orario di quella pagina lo disegna la lista, negli stessi due orologi; la (A) se un giorno lo
-   staff vorrà i buchi (il roster di E11b, per postazione e ora, mostra comunque la copertura). **Il codice resta com'è finché Carmine non
-   risponde.**
+   staff vorrà i buchi (il roster di E11b, per postazione e ora, mostra comunque la copertura). **Decisa la (B)** ([risposta 2][a2]):
+   ogni candidato manda `availableFromUtc` e `availableToUtc` — la prima delle sue finestre dentro la postazione tagliata alla sua
+   apertura, l'ultima tagliata alla sua chiusura —, `wholePosition` e il numero delle finestre che la toccano; due colonne `col.date`, nessun
+   testo fatto in C#. Niente colonna nuova nel nucleo ora; la (A) solo se un giorno lo staff vorrà i buchi; non la (C).
 3. **Le letture del membro attraverso il filtro dell'evento** → la disponibilità **propria** si legge e si ritira con l'evento letto oltre la
    visibilità (un evento che il membro non vede più, perché il suo «visibile dal» è stato spostato, lascia ritirare fino alla chiusura); darla
    chiede ancora un evento che il membro vede.
-4. **Due cambi insieme dello stesso membro** → il secondo riceve **409** («è cambiata in un'altra finestra: rileggila»,
-   `events:errors.availabilityChanged`), non più 404.
+4. **Due cambi insieme dello stesso membro** → il secondo riceve **409** («è cambiata in un'altra finestra: ricarica la pagina per vederla
+   com'è ora», `events:errors.availabilityChanged` — la pagina non la rilegge da sé, e la frase lo dice), non più 404; provato da un test
+   deterministico, con una transazione del test che tiene la finestra che la richiesta sta per sostituire (come le corse di E6a).
 5. **Lo stesso nominativo in ore sovrapposte, due creazioni insieme**: il controllo è una lettura, e due salvataggi nello stesso istante
    passano tutti e due. **Detto e lasciato**: nessun vincolo della MariaDB esprime «intervalli che non si sovrappongono» su una stessa
    chiave senza un blocco sulla riga dell'evento, e per due postazioni uguali aperte nello stesso secondo dallo staff dello stesso FIR non vale
    il prezzo; lo staff ne elimina una, e il roster di E11b le tratta come due postazioni.
-6. **Una postazione su un evento annullato o finito** → rifiutata (`events:errors.alreadyCancelled`, `events:errors.eventOver`); eliminarla
-   resta possibile.
+6. **Una postazione su un evento annullato o finito** → rifiutata, con parole della postazione (`events:errors.positionOnCancelledEvent`,
+   `events:errors.positionOnEventOver`: la seconda lettura, punto 2); **la pagina non offre «Salva», «Elimina» né «Nuova postazione»** su
+   un evento annullato o finito e dice perché (`events:atc.closedEvent`), perché il rifiuto del server sta sul campo nascosto dell'evento e
+   la pagina non lo disegnerebbe (la seconda lettura, punto 1; guardato sullo schermo del banco). Eliminarla dall'API resta possibile.
 7. **Su `DELETE` il FIR riscritto dalla directory** → una postazione il cui nominativo non cambia **tiene il FIR con cui è stata scritta**,
    in modifica e in eliminazione: l'handler e il guardiano lo chiedono sullo stesso FIR. Il FIR si copia quando si scrive il nominativo
-   (lettura 4).
+   (lettura 4). ⚠️ **Che cosa ne segue** (la seconda lettura, punto 4): «Duplica» copia il FIR com'è, quindi una postazione duplicata anno
+   dopo anno **tiene il FIR della sua prima scrittura** anche se la directory ha poi spostato il nominativo in un altro FIR, finché qualcuno
+   non riscrive il nominativo; fino ad allora la vede e la scrive il team del FIR di prima.
 8. **Al capo di un FIR offerte tutte le postazioni** → la lista da cui si sceglie (`/api/events/atc/division-positions?eventId=`) chiede
    l'unico handler su ogni postazione come sarebbe sull'evento, con il suo FIR: al capo di un FIR quelle del suo FIR, allo staff di un
    dipartimento tutte.
@@ -162,5 +172,7 @@ I rilievi del revisore sulla #256 ([rilievi][r]), che stanno a parte dalla rispo
 - **§9.7, collaborazioni ATC↔Events**: una postazione è una postazione della divisione, con il FIR della directory scritto dal server; la
   disponibilità si dà dalla pagina dell'evento fino a inizio − `applicationsCloseDays`, con il rating minimo, si cambia e si ritira fino alla
   chiusura, e lo staff la legge per postazione.
+- **Design §7.2, la scheda «ATC»** (che non si tocca): su una postazione, chi è disponibile con **da quando a quando dentro la postazione**
+  (due istanti che la lista disegna), «per tutto il tempo» e il numero delle finestre — non le finestre una per una (risposta 2, la (B)).
 - **§11, «Privacy dei membri»**: la disponibilità di un evento non ancora finito si cancella con i dati della persona; quella di un evento
   finito resta senza la nota.

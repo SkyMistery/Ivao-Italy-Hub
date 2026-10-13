@@ -51,15 +51,19 @@ public sealed record EventAtcPositionWriteDto(
 
 /// <summary>
 /// A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
-/// position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name), their
-/// windows in UTC, whether they cover the position from its opening to its closing, their note, and when they gave it — the first first.
+/// position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
+/// whether they cover the position from its opening to its closing, from when to when they are available inside it — instants, which the
+/// list draws in UTC and in the division's time as every time of the page (Carmine's answer (B) on #256) —, how many of their windows meet
+/// it, their note, and when they gave it — the first first.
 /// </summary>
 public sealed record AtcCandidateDto(
     long Id,
     EventMemberDto Controller,
     string? Rating,
     bool WholePosition,
-    IReadOnlyList<string> Windows,
+    DateTime AvailableFromUtc,
+    DateTime AvailableToUtc,
+    int Windows,
     string? Note,
     DateTime CreatedAt);
 
@@ -304,15 +308,16 @@ public static class AtcPositionEndpoints
             return EventChildren.Refusal("eventId", "events:errors.eventHasNoRoster");
         }
 
-        // Nothing to open on an event cancelled or over (the review of #256, point 6): its roster will never be proposed.
+        // Nothing to open on an event cancelled or over (the review of #256, point 6): its roster will never be proposed. Said with the
+        // position's own words; the page offers no «Save» on such an event (its second reading, point 1), so this is the API's answer.
         if (parent.CancelledAt is not null)
         {
-            return EventChildren.Refusal("eventId", "events:errors.alreadyCancelled");
+            return EventChildren.Refusal("eventId", "events:errors.positionOnCancelledEvent");
         }
 
         if (EventState.IsOver(parent, saving.Services.GetRequiredService<IClock>().UtcNow))
         {
-            return EventChildren.Refusal("eventId", "events:errors.eventOver");
+            return EventChildren.Refusal("eventId", "events:errors.positionOnEventOver");
         }
 
         if (position.ToUtc <= position.FromUtc)
@@ -528,10 +533,4 @@ public static class AtcPositionEndpoints
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));
-
-    /// <summary>A window as the staff read it in a list: in UTC, the day once when it ends on the day it starts.</summary>
-    public static string Written(DateTime fromUtc, DateTime toUtc) =>
-        fromUtc.Date == toUtc.Date
-            ? string.Create(CultureInfo.InvariantCulture, $"{fromUtc:yyyy-MM-dd HH:mm}–{toUtc:HH:mm} UTC")
-            : string.Create(CultureInfo.InvariantCulture, $"{fromUtc:yyyy-MM-dd HH:mm} – {toUtc:yyyy-MM-dd HH:mm} UTC");
 }

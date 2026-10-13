@@ -4171,9 +4171,9 @@ ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo
   Carmine][a256]: **sì alle dieci letture**, la nota è **decisa**):
   1. **«Duplica» e le postazioni** (punto 1): un test d'integrazione — la copia con le postazioni a ore spostate, il rifiuto a chi scrive gli
      eventi senza `EventAtc.Edit` senza scrivere niente, e un evento eliminato che porta via le sue postazioni con l'audit.
-  2. **Le finestre dei candidati** (punto 2): **una seconda domanda a Carmine**, Proposta ([domanda 2][q256b]; (A) una colonna del nucleo, (B)
-     gli istanti di quello che il candidato copre dentro la postazione, (C) il testo in due orologi; raccomandata la (B)). Il codice resta
-     com'è finché non risponde.
+  2. **Le finestre dei candidati** (punto 2): **una seconda domanda a Carmine** ([domanda 2][q256b]; (A) una colonna del nucleo, (B)
+     gli istanti di quello che il candidato copre dentro la postazione, (C) il testo in due orologi; raccomandata la (B)), **decisa: la (B)**
+     ([risposta 2][a256b]), fatta nella seconda tornata (sotto).
   3. Punti 3–8: la propria disponibilità letta e ritirata oltre la visibilità dell'evento; **409** per un cambio dello stesso membro da
      un'altra finestra (`AvailabilityResult.Changed`); la sovrapposizione di due creazioni nello stesso istante detta nella nota e lasciata;
      nessuna postazione scritta su un evento annullato o finito; **il FIR tenuto** finché il nominativo non cambia (anche in eliminazione);
@@ -4186,9 +4186,33 @@ ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo
     file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141, `ivaohub_e2e_e11a` tolto prima; le regole di `core-guard` da
     `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
 
+- **Dopo la seconda lettura** (13 ottobre 2026; [i rilievi][r256b]: chiusi i punti 1, 3, 4, 5, 7 e 8; [la risposta 2 di Carmine][a256b], la
+  (B)):
+  1. **Il punto 2, la (B)**: `AtcCandidateDto` manda `AvailableFromUtc`, `AvailableToUtc` (le finestre dentro la postazione, tagliate alla
+     sua apertura e alla sua chiusura), `WholePosition` e `Windows` (quante la toccano); la lista li disegna con due `col.date` e un
+     `col.number`; `AtcPositionEndpoints.Written` non c'è più.
+  2. **Il rifiuto su un evento annullato o finito** stava sul campo nascosto dell'evento e la pagina non lo disegnava: **la pagina non offre
+     «Salva», «Elimina» né «Nuova postazione»** su un evento così e lo dice (`events:atc.closedEvent`, `isClosed` in `atcPaths.ts`); il
+     server rifiuta con parole sue, `events:errors.positionOnCancelledEvent` e `positionOnEventOver`. **Guardato sullo schermo** del banco
+     5141 con uno script Playwright usa e getta (valori letti dalle caselle e dai pulsanti): evento aperto, «Save» e «Delete»; annullato,
+     nessuno dei due e l'avviso; la scheda senza «New position».
+  3. **Il 409** ha un test deterministico (`AChangeThatMeetsAnotherChangeOfTheSameMemberIsAConflict`, una transazione del test che tiene la
+     finestra, come E6a), e la sua frase dice di ricaricare la pagina, perché niente la rilegge da sé.
+  4. **Il commento della copia** in `EventDuplication` e una riga nella nota: il FIR di una postazione duplicata resta quello della sua prima
+     scrittura, anno dopo anno, finché il nominativo non si riscrive. **La riga positiva** nel test di «Duplica»: lo stesso membro, con
+     `EventAtc.Edit`, duplica.
+  - **Verificato, in locale**, sul merge della testa di E16 dopo la sua seconda lettura (`addf1e1`, unita pulita; `main` a `cea6244`):
+    `dotnet build` senza avvisi, lo snapshot del contesto senza cambi in sospeso; unità **1275/1275**; **integrazione intera senza filtro
+    597/597** (731 s), `EventsAtcTests` 11/11 da sola prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (851 chiavi) verdi;
+    `pnpm test` **766 in 106 file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141,
+    `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit — l'integrazione e `e2e:full` uno dopo l'altro, mai insieme —; le regole di
+    `core-guard` da `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
+
 [r256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
 [a256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
 [q256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6132606484
+[a256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146395160
+[r256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146431124
 
 ### E11b — La proposta del roster e la correzione
 
@@ -4614,8 +4638,17 @@ letture che sono scelte; tutto sotto la #255 era unito, `main` a `cea6244`, e la
 7. **`Registration.tsx`** (punto 6): un errore della lettura delle iscrizioni si dice nella sezione; le righe hanno per chiave il loro
    posto.
 
+8. **La seconda lettura** (13 ottobre 2026, a `4a31186`: [i rilievi][rv255b], chiusi i sei punti e la risposta 6; [Carmine][a255b] sì alla
+   lettura 11 com'è ora, la seconda iscrizione dello stesso istante che diventa un cambio della prima, e la nota lo collega): **l'eraser tiene
+   una scelta solo se nomina scelte della domanda** (`RegistrationAnswers.Counted`: un testo scritto quando la domanda era un testo, letto
+   dopo che è diventata una scelta, è una stringa e nessuna scelta), con una domanda a scelta e una a più scelte nel test della
+   cancellazione — **provato al contrario**: con il solo `Fits` il test cade sul confronto delle risposte tenute, con `Counted` passa —; e
+   **la scheda «Iscrizioni» dice l'errore** quando la lettura delle domande fallisce, come la pagina dell'evento.
+
 [rv255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
 [a255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
+[rv255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615
+[a255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

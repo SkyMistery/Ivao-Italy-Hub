@@ -3653,8 +3653,10 @@ export interface components {
         };
         /**
          * @description A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
-         *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name), their
-         *     windows in UTC, whether they cover the position from its opening to its closing, their note, and when they gave it — the first first.
+         *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
+         *     whether they cover the position from its opening to its closing, from when to when they are available inside it — instants, which the
+         *     list draws in UTC and in the division's time as every time of the page (Carmine's answer (B) on #256) —, how many of their windows meet
+         *     it, their note, and when they gave it — the first first.
          */
         AtcCandidateDto: {
             /** Format: int64 */
@@ -3662,7 +3664,12 @@ export interface components {
             controller: components["schemas"]["EventMemberDto"];
             rating: null | string;
             wholePosition: boolean;
-            windows: string[];
+            /** Format: date-time */
+            availableFromUtc: string;
+            /** Format: date-time */
+            availableToUtc: string;
+            /** Format: int32 */
+            windows: number;
             note: null | string;
             /** Format: date-time */
             createdAt: string;

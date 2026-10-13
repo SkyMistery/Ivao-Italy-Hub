@@ -116,8 +116,10 @@ public static class EventCopy
 
     /// <summary>
     /// A position of the copy (E11a): its callsign, its FIR and the staff's note as they were, its hours moved by
-    /// <paramref name="difference"/>, in the copy's care. Not checked again against the core's directory: it was accepted, and its form
-    /// checks it at the next save, as a slot's.
+    /// <paramref name="difference"/>, in the copy's care. Not checked again against the core's directory: its next save checks its hours,
+    /// and asks the directory only if its callsign is written again — <b>the FIR stays the one it was first written with</b>, year after
+    /// year of copies, even if the directory has since moved the callsign (the review of #256, point 7: the FIR is copied when the callsign
+    /// is written, never on a save that keeps it).
     /// </summary>
     public static EventAtcPosition AtcPosition(EventAtcPosition source, Event copy, TimeSpan difference)
     {
