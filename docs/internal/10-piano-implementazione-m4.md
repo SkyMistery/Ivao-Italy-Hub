@@ -4210,7 +4210,77 @@ determinismo, il perché). Integrazione: il job propone una volta, ripetuto non 
 entrato non si aggiunge. E2e: lo staff sposta un turno.
 **Fatta quando**: sul banco il roster proposto compare alla chiusura, con il perché, e lo staff lo corregge.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (13 ottobre 2026, branch `m4/e11b-roster-proposal`, nata `--no-track` dalla testa di E11a `c967bc1` (PR #256, con E16 e
+`main` a `cea6244`), **in coda dopo la #256**; **una migrazione**, `AddAtcShifts`, dopo `AddAtcPositionsAndAvailability` di E11a):
+
+- **Fatto**:
+  1. **`evt_atc_shifts` intera** (punto 1): `EventAtcShift`, con le colonne del piano più `event_id`, `fir` (copiato dalla postazione in
+     `BeforeAuthorize`, mai dalla directory), `reason` (il perché, JSON) e i campi di `IAuditable`; `IEventChild`, `IHasFir`, `IHasStakeholder`
+     (il controllore: `EventAtc.Edit` gli è negato, superadmin compreso); `notified_at` è `[NotAudited]` (il segno di E12); `attendance_note` e
+     `reason` portano `[ErasedWith(nameof(ControllerVid))]`. Una chiave verso la postazione, nessuna verso l'evento.
+  2. **Il proponente** (punto 2): `Atc/RosterProposer.cs`, una funzione pura — i pezzi di `shift_minutes` (l'ultimo più corto), chi può
+     (disponibile per tutto il turno, il rating minimo delle impostazioni e quello della postazione per quelle ore, libero, non oltre i turni
+     di fila), chi prima (rating preferito, connessioni sul nominativo e poi sul tipo, penalità, meno turni, disponibilità data prima, VID), i
+     turni con meno candidati per primi —, con il perché di ogni turno (`ShiftReason`: quanti potevano, che cosa ha deciso, i numeri). I dati
+     li legge `Atc/RosterData.cs` (le postazioni con tipo, minimo e preferito dal nucleo; le disponibilità; i rating; le penalità dai turni
+     degli altri eventi; l'esperienza da `IAtcActivitySource.SessionsOfAsync`, un controllore alla volta, con il tipo di ogni nominativo dalla
+     directory). La penalità usa il peso 1 finché E13b non porta `noShowWeight`.
+  3. **`events-roster`, prima metà** (punto 3): `Atc/EventRosterJob.cs` ai minuti 3, 18, 33 e 48 in UTC (il trigger lo dice); propone una
+     volta un evento pubblicato, con un roster, non annullato, non finito, la cui chiusura è passata e che non ha `roster_proposed_at`
+     (`Atc/RosterProposal.cs`: una transazione per evento, la riga `FOR UPDATE` riletta, i turni e il segno insieme; il segno con
+     `row_version = row_version`, così la versione della riga dell'evento non si muove e un editor aperto non riceve un 409). La riga di
+     `hub_jobs_log` con `FinishedAt` a ogni uscita (E10j). **E `events-release` dice UTC** nel suo trigger (l'handoff di E10j).
+  4. **La correzione** (punto 4): i turni come risorsa del motore (`/api/events/atc/shifts`, `Atc/ShiftEndpoints.cs`): aggiungi, sposta (il
+     controllore, le ore, la postazione dello stesso evento), togli, dalla proposta alla fine dell'evento, mai su un evento annullato; rifiutati
+     chi non è mai entrato, le ore fuori dalla postazione, un pezzo già tenuto, il roster non ancora proposto. **Il roster** si legge per
+     postazione e ora (`GET /api/events/atc/events/{id}/roster`, `Atc/StaffRoster.cs`): i turni e i pezzi scoperti insieme, con il perché e gli
+     **avvisi** (`ShiftWarning`: non disponibile, sotto il minimo delle impostazioni, sotto il minimo della postazione con le parole del nucleo,
+     sotto il preferito, un altro turno nelle stesse ore, troppi di fila), l'unico handler chiesto su ogni postazione. Sulle pagine: la sezione
+     «Roster» sotto le postazioni (`screens/roster.tsx`, le parole del perché e degli avvisi in `screens/rosterWords.ts`), «Aggiungi» su uno
+     scoperto, «Sposta» e «Togli» su un turno, e il form generato del turno (`/staff/events/atc/$id/shifts/$shiftId`) con sotto i candidati
+     della postazione (`screens/candidates.tsx`, tolti da `atc.tsx` per non fare un ciclo di import).
+  5. **Le postazioni con turni** (`AtcPositionEndpoints`): il nominativo non cambia, le ore non lasciano fuori un turno, eliminarle porta via i
+     turni fino all'inizio dell'evento e dopo no; **l'evento** con turni non spegne il roster e non si elimina (`EventSaving`).
+  6. **`EventsPersonalData`**: i turni di un evento da venire si cancellano, quelli di un evento finito restano senza la nota della presenza e
+     senza il perché; due righe nuove dell'anteprima.
+  7. **I test**: unità `EventsRosterTests` (10: i pezzi, chi può, il preferito e il ripiego, l'esperienza e il criterio tolto, penalità, meno
+     turni, disponibilità prima, VID, i turni sparsi e i più difficili per primi, la pausa, il determinismo e un turno tenuto, gli avvisi, gli
+     scoperti; su un vocabolario di rating che non è quello di IVAO); integrazione `EventsRosterTests` (5; VID **761114–761121**, dopo quelli
+     di E11a; slug `evt-test-e11b-…`; un archivio delle sessioni doppio): il job propone una volta, con il perché e l'esperienza, senza
+     muovere la versione dell'evento, non una bozza né un evento aperto — e una bozza pubblicata dopo sì —; la correzione con avvisi e
+     rifiuti, chi non è mai entrato non si aggiunge, nessuno sul proprio turno; con `own` il capo di un FIR il roster delle sue postazioni; le
+     postazioni con turni; la cancellazione, anche nell'audit. Il giro `full/events-roster.spec.ts` (slug `evt-test-e2e-e11b-…`).
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-13-la-proposta-del-roster.md`, **Proposta**, con le due domande a Carmine — la
+  prima è ⚠️ «`atcData` di IT», raccomandata la (A): IT a `vipi` prima del primo roster vero —): le dieci letture della nota. ⚠️ **Gli
+  scoperti non sono righe**, si calcolano alla lettura. ⚠️ **Una lettura scritta a mano**, il roster: la sesta dell'ATC, uno scostamento dal
+  design §7.2 come le cinque di E11a; **la correzione è del motore** invece dei verbi a mano che il §7.2 permetteva. ⚠️ **L'e2e non sposta un
+  turno**: il banco non lancia un job a comando (un endpoint del banco è del nucleo, A8a; lo stesso per il promemoria di E6b), quindi la spec
+  prova sul banco quello che non dipende dall'orologio — la sezione del roster che dice quando sarà proposto, un turno rifiutato prima della
+  proposta, i candidati sotto il form — e «lo staff sposta un turno» lo provano `EventsRosterTests` e il banco della fase (la scelta chiesta al
+  coordinatore e a dalberone, con la raccomandazione).
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le quattro colonne di persona dei turni). **Test del modulo di fasi prima,
+  cresciuti con la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16), a zero; i
+  turni in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): uno, la lettura del roster; i verbi sono del motore.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Un turno proposto sotto il preferito ha l'avviso** «sotto il preferito»: il proponente ripiega quando non c'è nessuno, e il roster
+     lo dice lo stesso (con il `division.json` di IT l'avvicinamento vuole APC, e un ADC proposto lì lo mostra).
+  2. ⚠️ **L'ordine delle regole di una postazione**: i turni prima di «lo stesso nominativo due volte», o un cambio di nominativo verso una
+     postazione già aperta direbbe `positionTwice` invece di `positionHasShifts`.
+- **Verificato, in locale** (13 ottobre 2026, sul branch prima del commit dei documenti): `dotnet build -c Release` senza avvisi; `dotnet
+  format --verify-no-changes` sui file C# toccati; `dotnet ef migrations has-pending-model-changes` senza cambi; unità **1285/1285**;
+  **integrazione intera senza filtro 601/601** (13,5 min; al primo giro di `EventsRosterTests`, `ErasureTests`, `EventsAtcTests` 18/21: le
+  due righe nuove dell'anteprima attese da `EventsErasureTests` di E8b, cresciuta con la forma, e due asserzioni del test nuovo); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` (853 chiavi) verdi; `pnpm test` **770 in 107 file**; `pnpm build`; `gen:api` e `i18n:sync`
+  rifatti; lo smoke `pnpm exec playwright test --workers=2` **181/181** dietro il suo lock; **`pnpm e2e:full` 64/64 al primo giro** (13,3
+  minuti) sul banco `http://127.0.0.1:5143`, `ivaohub_e2e_e11b` tolto prima, dietro il lock di Mailpit (la spec nuova da sola, prima, 1/1 al
+  secondo giro: il primo cadeva su `whileWaitingFor`, che vuole una risposta sotto 300, mentre la spec aspetta il 400); le regole di
+  `core-guard` rifatte a mano dal merge-base con `main` (`a97a1fd`): un file del nucleo (`ErasureTests.cs`) con le note nuove, nessun file
+  del maintainer. ⚠️ **Il branch non ha `main` a `cea6244`** (il piano 1.33, la #257): il merge-base con `main` è la testa di E10o; letto il
+  piano 1.33 e il design di `main`, niente cambia per il roster.
+- **Non verificato**: la CI (la dice la PR); le risposte di Carmine alle due domande della nota; un roster con l'archivio vero di vIPI (IT ha
+  `none`; provato con un doppio); un roster di molte postazioni e molti candidati (il proponente è in memoria, per un evento, e l'esperienza
+  fa una domanda all'archivio per candidato); il form del turno a 375 px; la migrazione su un'installazione vera.
 
 ### E12 — Pubblicazione, mail, cessione, `events.atcCoverage`
 
