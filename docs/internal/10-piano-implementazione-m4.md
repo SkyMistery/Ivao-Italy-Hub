@@ -4201,7 +4201,12 @@ ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo
   4. **Il commento della copia** in `EventDuplication` e una riga nella nota: il FIR di una postazione duplicata resta quello della sua prima
      scrittura, anno dopo anno, finché il nominativo non si riscrive. **La riga positiva** nel test di «Duplica»: lo stesso membro, con
      `EventAtc.Edit`, duplica.
-  - **Verificato, in locale**: *(VERIFIED3)*
+  - **Verificato, in locale**, sul merge della testa di E16 dopo la sua seconda lettura (`addf1e1`, unita pulita; `main` a `cea6244`):
+    `dotnet build` senza avvisi, lo snapshot del contesto senza cambi in sospeso; unità **1275/1275**; **integrazione intera senza filtro
+    597/597** (731 s), `EventsAtcTests` 11/11 da sola prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (851 chiavi) verdi;
+    `pnpm test` **766 in 106 file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141,
+    `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit — l'integrazione e `e2e:full` uno dopo l'altro, mai insieme —; le regole di
+    `core-guard` da `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
 
 [r256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
 [a256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
