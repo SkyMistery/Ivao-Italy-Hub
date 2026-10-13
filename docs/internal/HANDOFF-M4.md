@@ -10,8 +10,8 @@
 disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
 E16, l'ultima della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255 → #256**): nata dal branch di E16 a
 `dd5b263`, ha unito la sua testa `78fc9b6`, che porta tutta la coda sotto. La nota `2026-10-12-le-postazioni-e-la-disponibilita` è
-**decisa** da Carmine sulla #256 (sì alle dieci letture, fra loro cinque letture del server scritte a mano); le correzioni della revisione
-sono fatte, **tranne il punto 2** (le finestre dei candidati), una seconda domanda a Carmine, Proposta, che aspetta la risposta. Da E11a un evento con
+**decisa** da Carmine sulla #256 (sì alle dieci letture, fra loro cinque letture del server scritte a mano, e la (B) alla seconda domanda,
+le finestre dei candidati); le correzioni delle due letture del revisore sono fatte. Da E11a un evento con
 un roster apre le sue **postazioni** — lo staff dei FIR quelle del suo FIR, anche dalla sezione «ATC degli eventi» —, e un membro dà la sua
 **disponibilità** dalla pagina dell'evento, con le finestre, fino alla chiusura; lo staff legge chi è disponibile su ogni postazione («Che
 cosa ha lasciato E11a», sotto).
@@ -282,6 +282,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     come la postazione: il FIR **si copia dalla postazione**, non dalla directory. **L'eliminazione di una postazione** oggi è libera: con
     i turni, una postazione con turni non si elimina (o se ne vanno i turni: è una scelta di E11b). L'interruttore del roster già non si
     spegne con postazioni o disponibilità: aggiungere i turni a `EventSaving`.
+  - **I candidati di una postazione** (la risposta 2 di Carmine, la (B)): `AtcCandidateDto` dice da quando a quando il controllore è
+    disponibile **dentro la postazione** (`AvailableFromUtc`, `AvailableToUtc`), `WholePosition` e quante finestre la toccano, non le
+    finestre una per una; un buco fra due finestre si vede solo come «non per tutto il tempo». Il roster di E11b, per postazione e ora,
+    mostra la copertura vera. ⚠️ **Un evento annullato o finito** non prende postazioni: il server le rifiuta e la pagina non offre
+    «Salva» (`isClosed` in `screens/atcPaths.ts`); i turni di E11b faranno lo stesso. ⚠️ **Il FIR di una postazione** resta quello con
+    cui il nominativo è stato scritto, anche dopo «Duplica», finché il nominativo non si riscrive.
   - **E12**: le disponibilità in `/events/mine` (lettura 8 della nota); `MemberAvailability.MineAsync` c'è già.
   - **E15b**: la cancellazione delle disponibilità è già in `EventsPersonalData`; restano i turni.
   - **E10n** (#251) ed **E10m** (#252), in coda prima di questa PR, sono entrate con il merge della testa di E16: la nota di una
