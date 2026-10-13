@@ -4547,8 +4547,17 @@ letture che sono scelte; tutto sotto la #255 era unito, `main` a `cea6244`, e la
 7. **`Registration.tsx`** (punto 6): un errore della lettura delle iscrizioni si dice nella sezione; le righe hanno per chiave il loro
    posto.
 
+8. **La seconda lettura** (13 ottobre 2026, a `4a31186`: [i rilievi][rv255b], chiusi i sei punti e la risposta 6; [Carmine][a255b] sì alla
+   lettura 11 com'è ora, la seconda iscrizione dello stesso istante che diventa un cambio della prima, e la nota lo collega): **l'eraser tiene
+   una scelta solo se nomina scelte della domanda** (`RegistrationAnswers.Counted`: un testo scritto quando la domanda era un testo, letto
+   dopo che è diventata una scelta, è una stringa e nessuna scelta), con una domanda a scelta e una a più scelte nel test della
+   cancellazione — **provato al contrario**: con il solo `Fits` il test cade sul confronto delle risposte tenute, con `Counted` passa —; e
+   **la scheda «Iscrizioni» dice l'errore** quando la lettura delle domande fallisce, come la pagina dell'evento.
+
 [rv255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
 [a255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
+[rv255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615
+[a255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

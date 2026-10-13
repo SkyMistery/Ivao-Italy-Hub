@@ -55,6 +55,9 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
     /// <summary>A text answer the member took out of their registration before it was kept by the erasure (the review of #255, point 2).</summary>
     private const string EarlierWords = "evt-test-e16 earlier words";
 
+    /// <summary>A text stored as the answer to a choice question: no choice of it, so the erasure does not keep it.</summary>
+    private const string TextAsAChoice = "evt-test-e16 a text as a choice";
+
     private static readonly string[] Locales = ["it", "en"];
 
     private static readonly int[] People = [MemberVid, OtherVid, CoordinatorVid, PersonVid, SuperadminVid];
@@ -319,10 +322,15 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         // Two questions the staff deleted after the person answered them — a text and a yes or no —: the answers stay in the row until
         // the member's next change, which never comes once the event is over (the review of #255, point 1).
         var (deletedText, deletedYesNo) = await QuestionRowsAsync(over, token);
+
+        // And a choice holding a text — written while the question was a text, in the instant before it became a choice — beside several
+        // choices that are the question's: the first is no choice and goes, the second is counted and stays (the second reading, small 1).
+        var seat = await ChoiceQuestionRowAsync(over, QuestionType.Choice, token);
+        var gear = await ChoiceQuestionRowAsync(over, QuestionType.MultiChoice, token);
         var kept = await RegistrationRowAsync(
             over,
             PersonVid,
-            $$"""{"q{{text}}":"{{TheirWords}}","q{{dinner}}":true,"q{{deletedText}}":"evt-test-e16 coeliac","q{{deletedYesNo}}":false}""",
+            $$"""{"q{{text}}":"{{TheirWords}}","q{{dinner}}":true,"q{{deletedText}}":"evt-test-e16 coeliac","q{{deletedYesNo}}":false,"q{{seat}}":"{{TextAsAChoice}}","q{{gear}}":["1","2"]}""",
             token);
         await DeleteQuestionsAsync([deletedText, deletedYesNo], token);
         await RegistrationRowAsync(over, OtherVid, $$"""{"q{{text}}":"evt-test-e16 another's words"}""", token);
@@ -357,16 +365,18 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         var pseudonym = erased.GetProperty("pseudonym").GetInt32();
 
         // To come: gone. Over: under the pseudonym, only the yes or no of a question the event has, counted; their words gone, and the
-        // answers to the questions deleted, a text and a yes or no alike; the other member's as it was.
+        // answers to the questions deleted, a text and a yes or no alike, and the text stored as a choice; the choices that are the
+        // question's stay. The other member's as it was.
         Assert.Empty(await RegistrationsAsync(toCome, token));
         var stored = (await RegistrationsAsync(over, token)).ToDictionary(row => row.Id);
         Assert.Equal(pseudonym, stored[kept].Vid);
-        Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true}"""), JsonNode.Parse(stored[kept].AnswersJson), JsonNode.DeepEquals);
+        Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true,"q{{gear}}":["1","2"]}"""), JsonNode.Parse(stored[kept].AnswersJson), JsonNode.DeepEquals);
         Assert.Contains(stored.Values, row => row.Vid == OtherVid && row.AnswersJson.Contains("another's words", StringComparison.Ordinal));
 
         // The registration withdrawn before: nothing of its answers in the audit.
         Assert.False(await AuditMentionsAsync(GoneWords, token));
         Assert.False(await AuditMentionsAsync("evt-test-e16 coeliac", token));
+        Assert.False(await AuditMentionsAsync(TextAsAChoice, token));
 
         // Run again: nothing left about the VID.
         Assert.All(
@@ -609,6 +619,28 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
         }));
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A question of an event with two choices, keys «1» and «2», written by the installation: one choice or several.</summary>
+    private async Task<long> ChoiceQuestionRowAsync(long eventId, QuestionType type, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        var question = new EventQuestion
+        {
+            EventId = eventId,
+            Ordinal = 10,
+            Type = type,
+            Label = Text($"evt-test-e16 {type}"),
+            Choices = [new QuestionChoice("1", Text("evt-test-e16 one")), new QuestionChoice("2", Text("evt-test-e16 two"))],
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+
+        database.Questions.Add(question);
+        await database.SaveChangesAsync(cancellationToken);
+        return question.Id;
     }
 
     /// <summary>Questions deleted, as the staff delete them after somebody answered.</summary>
