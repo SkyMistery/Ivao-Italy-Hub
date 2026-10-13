@@ -102,6 +102,27 @@ public static class RegistrationAnswers
     }
 
     /// <summary>
+    /// Whether a stored answer is one the sums count: it fits its question, and a choice — one or several — names only keys the question
+    /// has. A text written while the question was a text, read after it became a choice, fits as a string and is still no choice (the
+    /// second reading of #255, small 1): the erasure keeps only these.
+    /// </summary>
+    public static bool Counted(EventQuestion question, JsonNode? answer)
+    {
+        if (!Fits(question, answer))
+        {
+            return false;
+        }
+
+        var keys = question.Choices.Select(choice => choice.Key).ToHashSet(StringComparer.Ordinal);
+        return question.Type switch
+        {
+            QuestionType.Choice => keys.Contains(answer!.GetValue<string>()),
+            QuestionType.MultiChoice => answer!.AsArray().All(item => keys.Contains(item!.GetValue<string>())),
+            _ => true,
+        };
+    }
+
+    /// <summary>
     /// The answers in words, one line per question answered, in the order of the form: «the question: the answer», in this language.
     /// What the member reads in the mail (§8.3: «with a summary of the answers»), in the language of who receives it. The pages write
     /// their own words from the answers, in the language on screen (Carmine's answer 6 on #255).
