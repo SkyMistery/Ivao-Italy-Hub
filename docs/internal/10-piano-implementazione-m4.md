@@ -4251,7 +4251,9 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
      rifiuti, chi non è mai entrato non si aggiunge, nessuno sul proprio turno; con `own` il capo di un FIR il roster delle sue postazioni; le
      postazioni con turni; la cancellazione, anche nell'audit. Il giro `full/events-roster.spec.ts` (slug `evt-test-e2e-e11b-…`).
 - **Scelte e scostamenti** (nota nuova `decisions/2026-10-13-la-proposta-del-roster.md`, **Proposta**, con le due domande a Carmine nell'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259) — la
-  prima è ⚠️ «`atcData` di IT», raccomandata la (A): IT a `vipi` prima del primo roster vero —): le dieci letture della nota. ⚠️ **Gli
+  prima è ⚠️ «`atcData` di IT», **decisa (A) da Carmine** ([sull'issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689)):
+  la divisione passa a `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host, e fino ad allora
+  resta `none` —; la seconda, le dieci letture, aspetta la PR e la lettura del revisore): le dieci letture della nota. ⚠️ **Gli
   scoperti non sono righe**, si calcolano alla lettura. ⚠️ **Una lettura scritta a mano**, il roster: la sesta dell'ATC, uno scostamento dal
   design §7.2 come le cinque di E11a; **la correzione è del motore** invece dei verbi a mano che il §7.2 permetteva. ⚠️ **L'e2e non sposta un
   turno**: il banco non lancia un job a comando (un endpoint del banco è del nucleo, A8a; lo stesso per il promemoria di E6b), quindi la spec

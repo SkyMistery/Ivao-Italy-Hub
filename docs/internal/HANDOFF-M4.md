@@ -8,8 +8,8 @@
 
 **Ultimo aggiornamento:** 13 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
 staff), sul branch `m4/e11b-roster-proposal`, **in coda dopo la #256** di E11a: nata `--no-track` dalla sua testa `c967bc1` (con E16 e `main` a
-`cea6244`). La nota `2026-10-13-la-proposta-del-roster` è **Proposta**, con due domande a Carmine nell'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259) (⚠️ «`atcData` di IT», raccomandata la
-(A): IT a `vipi` prima del primo roster vero; e le dieci letture); il codice segue le risposte raccomandate. Da E11b, alla chiusura delle
+`cea6244`). La nota `2026-10-13-la-proposta-del-roster` è **Proposta**, con due domande a Carmine nell'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259) (⚠️ «`atcData` di IT»: **(A), decisa da Carmine** sull'issue #259 — `vipi`
+quando l'utente di sola lettura della vista esiste sull'host —; le dieci letture aspettano la PR); il codice segue le risposte raccomandate. Da E11b, alla chiusura delle
 disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo staff dell'ATC lo
 **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni («Che cosa ha lasciato E11b»,
 sotto).
@@ -290,7 +290,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **E15b**: la cancellazione dei turni è già in `EventsPersonalData`.
   - ⚠️ **Il banco non lancia un job**: una spec non aspetta `events-roster` (come il promemoria di E6b); la proposta si guarda sul banco della
     fase al giro del quarto d'ora.
-  - ⚠️ **`atcData` di IT** resta `none` finché Carmine non risponde alla domanda 1 della nota: il roster si propone senza l'esperienza, e il
+  - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il
     perché di ogni turno lo dice («esperienza non contata»).
   - ⚠️ **I VID di prova**: dopo 761106–761113 di E11a, E11b ha usato **761114–761121** (e **761199** come nessuno che l'hub conosce).
 

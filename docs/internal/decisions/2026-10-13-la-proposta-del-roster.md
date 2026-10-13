@@ -1,10 +1,13 @@
 # La proposta del roster ATC e la correzione dello staff (E11b)
 
 **Data:** 13 ottobre 2026 — fase E11b di M4 (M4b), PR in coda dopo la #256 di E11a
-**Stato:** **Proposta**. Le domande a Carmine sono in §5 (la prima è quella che il piano mette in apertura di E11b, «`atcData` di
-IT»), pubblicate nell'**issue #259** ([domande][q]); il codice segue le risposte raccomandate, come ha fatto E11a.
+**Stato:** **Proposta** per le dieci letture (domanda 2); **decisa la domanda 1**, «`atcData` di IT»: (A), Carmine il 13 ottobre 2026, in
+chat al master, che ha pubblicato la risposta sull'issue #259 su sua istruzione ([risposta][a]). Le domande sono in §5, pubblicate
+nell'**issue #259** ([domande][q]); la risposta alla 2 arriva quando la PR è aperta e il revisore ha letto il codice. Il codice segue le
+risposte raccomandate, come ha fatto E11a.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689
 **Regola applicata:** `CLAUDE.md` §5. La tabella dei turni, le regole della proposta, la correzione, i predefiniti e il permesso negato
 all'interessato sono **decisi** (design `09-design-m4.md` §1.7, §1.12, §4.3, §4.4, §6.1, §8.4; note `2026-09-29-il-roster-atc`,
 `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`). Questa nota registra **le letture** che la fase ha
@@ -154,7 +157,17 @@ Pubblicate nell'issue #259 ([domande][q]), con l'assenso di dalberone.
 
    **Raccomandato: sì a tutte.**
 
+**Risposta di Carmine alla domanda 1** (13 ottobre 2026, [sull'issue #259][a]): **(A)**, come raccomandato. La divisione passa a `vipi`
+prima del primo roster vero, **quando sull'host esiste l'utente di sola lettura della vista**: lo si crea su Plesk, che il maintainer non
+raggiunge da sé, e finché non c'è la divisione resta a `none` e i roster si propongono senza il criterio dell'esperienza. Il codice deve
+funzionare nei due modi, come fa; è configurazione e segreti dell'installazione, niente da cambiare in E11b. **La domanda 2 aspetta**: la
+risposta arriva quando la PR di E11b è aperta e il revisore ha letto il codice.
+
 ## Da portare nel piano
+
+- **§10 / §15** (le integrazioni facoltative e i punti aperti dell'installazione): la divisione passa a `atcData: vipi` prima del primo
+  roster vero, quando l'utente di sola lettura della vista esiste sull'host; fino ad allora `none`, e il roster si propone senza
+  l'esperienza (risposta 1 di Carmine sull'issue #259).
 
 - **§9.2, riga Events** e design **§7.2** (che non si tocca): il roster si legge per postazione e ora con **una lettura scritta a mano**
   (la sesta dell'ATC), accettata come scostamento accanto alle cinque di E11a; la correzione è una risorsa del motore.
