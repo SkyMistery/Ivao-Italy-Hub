@@ -762,7 +762,9 @@
     "eventHasAvailabilities": "Some controllers gave their availability for this event: cancel it instead.",
     "ratingUnknown": "Choose a rating of the list.",
     "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
-    "availabilityChanged": "Your availability changed in another window meanwhile: read it again and save once more."
+    "availabilityChanged": "Your availability changed in another window meanwhile: reload the page to see it as it is now, and change it from there.",
+    "positionOnCancelledEvent": "The event is cancelled: no position is opened or changed on it.",
+    "positionOnEventOver": "The event is over: no position is opened or changed on it."
   },
   "questions": {
     "title": "Questions",
@@ -873,10 +875,13 @@
         "controller": "Controller",
         "rating": "Rating",
         "wholePosition": "The whole time",
-        "windows": "Available",
+        "windows": "Windows",
         "note": "Note",
-        "createdAt": "Given on"
+        "createdAt": "Given on",
+        "availableFromUtc": "Available from",
+        "availableToUtc": "Available until"
       }
-    }
+    },
+    "closedEvent": "The event is cancelled or over: its positions are read, not changed."
   }
 }
