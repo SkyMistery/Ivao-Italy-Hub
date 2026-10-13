@@ -4352,8 +4352,8 @@ nessun file del nucleo, nessuna migrazione, nessuna nota. Una domanda a Carmine,
 ### A13f — Il lettore dei nomi del nucleo e il fuso dei promemoria
 
 Due pezzi che il nucleo ha unito il 12 ottobre 2026 e che chiedono al training una piccola fase. Una PR sola, con il codice del modulo,
-i suoi test e i suoi documenti; **nessuna modifica del nucleo, nessuna migrazione, nessuna decisione nuova** (casi (a)/(b): usa
-meccanismi decisi).
+i suoi test e i suoi documenti; **nessuna modifica del codice del nucleo, nessuna migrazione** (casi (a)/(b): usa meccanismi decisi).
+Le due righe tolte da un test del nucleo hanno la loro nota breve, chiesta da Carmine sulla #258 («Com'è andata», Trovato n.2).
 
 1. **Il lettore unico dei nomi** (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`, decisa da Carmine sull'issue #247;
    «Che cosa ha lasciato E10m» in `HANDOFF-M4.md`, «La fase della formazione»): `TrainingPeople.NamesAsync` risponde con
@@ -4365,8 +4365,11 @@ meccanismi decisi).
 3. **E10l ed E10o** (il `Dialog` del nucleo con il pulsante di chiusura tradotto; `.meta({ label })` e `form.none`): si guarda se il
    training ne ha bisogno, e si prende solo un uso ovvio di una riga.
 
+[a13f-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/258#issuecomment-6146758656
+
 **Com'è andata (A13f)** (12 ottobre 2026, branch `m3/a13f-training-names-reader`, PR #258, da `main` a `cea6244`, con E10m ed E10j).
-**Codice del modulo, un test del modulo nuovo, due righe tolte da un test del nucleo; nessuna migrazione, nessuna nota.**
+**Codice del modulo, un test del modulo nuovo, due righe tolte da un test del nucleo, con la nota
+`2026-10-13-la-formazione-sul-lettore-dei-nomi` (decisa da Carmine sulla #258); nessuna migrazione.**
 
 - **Fatto**:
   - **`TrainingPeople.NamesAsync`** è ora una riga: `MemberNames.ReadAsync(hub, vids, cancellationToken)`. Resta invece di andarsene
@@ -4385,10 +4388,13 @@ meccanismi decisi).
   1. ⚠️ **Il training non nomina più un VID sotto uno**, anche se `hub_users` avesse quella riga: il lettore lo lascia fuori (la decisione
      sulla #247: una persona cancellata non ha nome). È uno stato che l'hub non scrive, quindi nessuna pagina e nessuna mail cambia; lo
      dice la PR.
-  2. ⚠️ **Il core-guard è rosso**: `tests/IvaoHub.IntegrationTests/MemberNamesTests.cs` è un file di test che esiste e non ha «training» nel
-     percorso, quindi per il guard è nucleo, e la PR non aggiunge una nota. Toglierne la riga del training è quello che il blocco di
-     E10m chiede a questa fase. Una nota senza una decisione, solo per far passare il guard, sarebbe un aggiramento: `dalberone` ha scelto
-     di lasciare il check rosso e di dirlo nella PR (il guard è «un segnale per il revisore, non il lucchetto»).
+  2. ⚠️ **Un test del nucleo, anche se lo chiede un handoff, vuole la sua nota**: `tests/IvaoHub.IntegrationTests/MemberNamesTests.cs` è un
+     file di test che esiste e non ha «training» nel percorso, quindi per il guard è nucleo. Il primo push (`e6aeaa6`) non aveva una nota,
+     e `dalberone` aveva scelto di lasciare il guard rosso e di dirlo nella PR, invece di scrivere una nota senza decisione. **La risposta
+     di Carmine sulla #258** ([commento][a13f-answer], 13 ottobre 2026, data in chat al master e pubblicata su sua istruzione): il codice va
+     bene, ma la PR **non si unisce con il guard rosso**; serve la nota breve della fase, che dica che cosa esce dal test e perché, con il
+     collegamento alla nota di E10m e al suo §5. È `decisions/2026-10-13-la-formazione-sul-lettore-dei-nomi.md`, **decisa**; con lei il
+     guard passa per la sua regola.
   3. ⚠️ **La fase degli eventi andrà in conflitto con questa in `MemberNamesTests`**: il blocco di E10m dice che le due fasi «si uniscono
      senza conflitti se ognuna toglie solo la sua», ma le righe sono vicine, e git dà conflitto anche quando due rami tolgono due righe
      vicine diverse (provato in un repository di prova). Si risolve togliendo tutte e due.
@@ -4408,8 +4414,14 @@ meccanismi decisi).
     nello stesso momento dello smoke;
   - le regole di `core-guard` in PowerShell contro `cea6244`: i tre file del modulo e il test nuovo sono del collaboratore;
     `tests/IvaoHub.IntegrationTests/MemberNamesTests.cs` è **nucleo** (Trovato n.2). Nessun file del maintainer.
+- **Verificato, dopo la risposta di Carmine** (13 ottobre 2026; solo documenti, nessun codice: le suite non sono state rifatte):
+  - le regole di `core-guard` in PowerShell contro `cea6244`: `MemberNamesTests.cs` è nucleo, giustificato dalla nota aggiunta
+    `2026-10-13-la-formazione-sul-lettore-dei-nomi.md`; nessun file del maintainer: **PASS**;
+  - `pnpm lint` e `format:check`: puliti.
 - **Non verificato**:
-  - **la CI** della PR, che la dice la PR (il `core-guard` sarà rosso, Trovato n.2);
+  - **la CI** della PR sulla testa nuova, che la dice la PR;
+  - **le suite dopo la risposta**: il giro aggiunge una nota e cambia documenti; build, unità, integrazione, web, smoke e `e2e:full` sono
+    quelli del primo giro, qui sopra;
   - **il trigger su un host vivo**: il test legge il trigger dalle opzioni di Quartz, come i test del nucleo; il giro dei promemoria è
     quello di prima e lo provano le classi d'integrazione del training;
   - **un utente con un VID sotto uno**: il test che lo creava per il training non c'è più, e il lettore lo prova per sé in

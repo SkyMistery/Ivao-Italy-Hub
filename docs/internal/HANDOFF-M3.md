@@ -133,7 +133,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Da dove viene**: due pezzi che il nucleo ha unito il 12 ottobre e che chiedono una piccola fase del training: il lettore unico dei
   nomi (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`; «Che cosa ha lasciato E10m» in `HANDOFF-M4.md`) e il punto 6 della
   revisione di E10j (#239; «I fusi di `events-release` e `training-reminders`» in `HANDOFF-M4.md`). Codice del modulo, un test del
-  modulo nuovo e **due righe tolte da un test del nucleo**. Nessuna migrazione, nessuna nota, nessuno schermo cambia (`08`, A13f).
+  modulo nuovo e **due righe tolte da un test del nucleo**, con la nota `decisions/2026-10-13-la-formazione-sul-lettore-dei-nomi.md`
+  (**decisa**, [Carmine sulla #258][a13f-answer]). Nessuna migrazione, nessuno schermo cambia (`08`, A13f).
 - **Che cosa c'è**:
   - **`TrainingPeople.NamesAsync` risponde con `MemberNames.ReadAsync(hub, vids, ct)`** (`Core/People/`). Resta, perché ha dieci
     chiamanti nel modulo; non legge più `hub_users` da sé. `Member`, `Label` e `IsErased` restano come erano.
@@ -148,10 +149,11 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 - **Che cosa deve sapere chi viene dopo**:
   - ⚠️ **Il training non nomina più un VID sotto uno**, nemmeno se una riga di `hub_users` lo avesse: è uno stato che l'hub non scrive (la
     cancellazione toglie l'utente, e uno pseudonimo non è di nessuno). Prima lo nominava; la PR lo dice.
-  - ⚠️ **Il core-guard della PR è rosso, e lo deve essere**: `MemberNamesTests.cs` è un file di test che esiste già e che non ha
-    «training» nel percorso, quindi per il guard è nucleo, e la PR non aggiunge una nota. Toglierne la riga del training è proprio quello
-    che il blocco di E10m chiede a questa fase; `dalberone` ha scelto di non aggiungere una nota senza decisione solo per farlo passare.
-    La fase degli eventi che fa lo stesso con `EventsPeople` avrà lo stesso rosso.
+  - ⚠️ **Un test del nucleo vuole la sua nota, anche quando un handoff chiede di toccarlo**: `MemberNamesTests.cs` è un file di test che
+    esiste già e che non ha «training» nel percorso, quindi per il guard è nucleo. Il primo push della #258 non aveva una nota e il guard
+    era rosso; Carmine non unisce con il guard rosso ([la sua risposta][a13f-answer]) e ha chiesto la nota breve della fase, con il
+    collegamento alla nota di E10m e al suo §5. Con lei il guard passa. **La fase degli eventi** che fa lo stesso con `EventsPeople`
+    scrive la sua nota dal primo push.
   - ⚠️ **La fase degli eventi va in conflitto con questa in `MemberNamesTests`**, al contrario di quanto dice il blocco di E10m: le righe
     del training e degli eventi sono vicine (`var training`/`var events`, i due `Assert.Equal` del gemello, le due righe sotto
     «What the training's and the events' copies answer»), e git dà conflitto anche quando due rami tolgono due righe vicine diverse
@@ -161,6 +163,8 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     schema così non porta `.meta({ label })` (HANDOFF-M4, E10o), e senza `label` il form generato è com'era.
   - Banco: nessuno schermo cambia. VID: nessuno nuovo (`MemberNamesTests` usa le persone dei fili dei contatti, 670011–670014).
 - **La fase dopo**: nessuna di M3 in `08`. A12c resta una scelta di `dalberone`.
+
+[a13f-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/258#issuecomment-6146758656
 
 ### Che cosa ha lasciato A13d (5–6 ottobre 2026, branch `m3/a13d-cleanup`, PR #220)
 
