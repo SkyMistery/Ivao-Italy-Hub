@@ -19,6 +19,7 @@ import type {
   QuestionFormValues,
   RouteFormValues,
   SettingsFormValues,
+  ShiftFormValues,
   SlotFormValues,
   SlotLoadFormValues,
 } from './schemas';
@@ -36,6 +37,7 @@ import type {
  * changed, withdrawn —; and the staff's list of the registrations of an event with «take away».
  * The ATC (E11a): the positions of an event through the CRUD engine, the controllers available on one, the heads of the events with a
  * roster and the two lists of the core the forms choose from; a member's availability — read, given or changed, withdrawn.
+ * The roster (E11b): read by position and hour, the one hand written read, and corrected through the CRUD engine — add, move, take away.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -1183,6 +1185,103 @@ export function useGiveAvailability(eventId: number) {
       ),
     onSuccess: () => {
       void availabilityChanged(queryClient);
+    },
+  });
+}
+
+// ---- the roster (E11b) --------------------------------------------------------------------------------
+
+export type RosterRowDto = components['schemas']['RosterRowDto'];
+export type EventAtcShiftDto = components['schemas']['EventAtcShiftDto'];
+export type ShiftReason = components['schemas']['ShiftReason'];
+export type ShiftWarning = components['schemas']['ShiftWarning'];
+
+/** A row of the roster with its why and its warnings in words of the language on screen, which the page writes (Carmine on #255). */
+export type RosterRow = RosterRowDto & { readonly why: string[]; readonly alerts: string[] };
+
+/**
+ * The roster of an event as the staff read it (§4.4): its shifts and its uncovered pieces, by position and hour, a page of them; the server
+ * sends the why and the warnings as data, and `words` writes them in the language on screen.
+ */
+export function rosterQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  words: (row: RosterRowDto) => { why: string[]; alerts: string[] },
+) {
+  return queryOptions({
+    queryKey: [...atcKey, 'roster', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/atc/events/{id}/roster', {
+          params: { path: { id: eventId }, query: pageOf(search) },
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): RosterRow => ({ ...row, ...words(row) })) };
+    },
+  });
+}
+
+export function shiftQuery(id: number) {
+  return queryOptions({
+    queryKey: [...atcKey, 'shifts', id] as const,
+    queryFn: async (): Promise<EventAtcShiftDto> =>
+      unwrap(await api.GET('/api/events/atc/shifts/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function shiftToFormValues(shift: EventAtcShiftDto): ShiftFormValues {
+  return {
+    positionId: String(shift.positionId),
+    fromUtc: shift.fromUtc,
+    toUtc: shift.toUtc,
+    controllerVid: shift.controllerVid,
+    rowVersion: shift.rowVersion,
+  };
+}
+
+/** What a shift changes on screen: the roster, and the shifts read on their own. */
+async function rosterChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...atcKey, 'roster'] }),
+    queryClient.invalidateQueries({ queryKey: [...atcKey, 'shifts'] }),
+  ]);
+}
+
+/** «Add» and «Move»: a shift the staff write; what leaves the rules comes back as a warning on the roster. */
+export function useSaveShift(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: ShiftFormValues): Promise<EventAtcShiftDto> => {
+      const body = {
+        positionId: Number(values.positionId),
+        controllerVid: values.controllerVid ?? 0,
+        fromUtc: values.fromUtc ?? '',
+        toUtc: values.toUtc ?? '',
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/atc/shifts', { body }))
+        : unwrap(
+            await api.PUT('/api/events/atc/shifts/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: () => rosterChanged(queryClient),
+  });
+}
+
+/** «Take away»: the piece of the position is uncovered again. */
+export function useDeleteShift() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/atc/shifts/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void rosterChanged(queryClient);
     },
   });
 }

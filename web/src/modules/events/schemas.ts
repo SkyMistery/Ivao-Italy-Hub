@@ -581,3 +581,37 @@ export type AvailabilityFormValues = z.output<typeof availabilitySchema>;
 export function emptyAvailability(startsAtUtc: string, endsAtUtc: string): AvailabilityFormValues {
   return { windows: [{ fromUtc: startsAtUtc, toUtc: endsAtUtc }], note: '' };
 }
+
+/**
+ * A shift of the roster as the staff correct it (design M4 §4.4, E11b), mirroring `EventAtcShiftWriteDto`: the position — one of the
+ * event's, chosen by its callsign —, the hours in UTC, and the controller by VID: anybody who signed in once, available or not. Every rule
+ * is the server's; what leaves the rules of the proposal is a warning on the roster, not a refusal.
+ */
+export function shiftSchema(positions: readonly ChoiceOption[]) {
+  return z.object({
+    positionId: z.string().meta({ choices: positions }),
+    fromUtc: z.string().optional().meta({ datetime: true }),
+    toUtc: z.string().optional().meta({ datetime: true }),
+    controllerVid: z.number().int().optional(),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type ShiftFormValues = z.output<ReturnType<typeof shiftSchema>>;
+
+/** Where «Add» on an uncovered piece opens the form: that position and those hours, nobody on it yet. */
+export const shiftSearchSchema = z.object({
+  positionId: z.coerce.number().int().optional(),
+  fromUtc: z.string().optional(),
+  toUtc: z.string().optional(),
+});
+
+/** A new shift: the piece «Add» was pressed on, when it was, and no controller yet. */
+export function emptyShift(search: z.output<typeof shiftSearchSchema>): ShiftFormValues {
+  return {
+    positionId: search.positionId === undefined ? '' : String(search.positionId),
+    ...(search.fromUtc === undefined ? {} : { fromUtc: search.fromUtc }),
+    ...(search.toUtc === undefined ? {} : { toUtc: search.toUtc }),
+    rowVersion: NEW_ROW_VERSION,
+  };
+}

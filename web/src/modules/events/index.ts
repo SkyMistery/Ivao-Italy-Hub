@@ -14,9 +14,11 @@ import {
   eventPageSearchSchema,
   eventsPublicSearchSchema,
   eventsSearchSchema,
+  shiftSearchSchema,
 } from './schemas';
 import { AirportForm } from './screens/airports';
 import { AtcEventPage, AtcEventsPage, AtcPositionForm } from './screens/atc';
+import { ShiftForm } from './screens/roster';
 import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './screens/events';
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
@@ -35,7 +37,7 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * event onto a new date; E16 the events in person — their questions and their registrations in tabs of the event's page, a question on
  * a page of its own, a member's registrations on `/events/mine`; E11a the ATC of an event with a roster — its positions in a tab of the
  * event's page and in a section of their own for whoever does not read the events, a position with who is available on it, and a member's
- * availability on the event's page.
+ * availability on the event's page; E11b the roster of an event under its positions, and a shift on a page of its own.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -95,6 +97,14 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/atc/$id/positions/$positionId',
       permission: EVENT_ATC_VIEW,
       component: AtcPositionForm,
+    },
+    // A shift of the roster (E11b): «Add» on an uncovered piece opens it with that position and those hours, «Move» on a shift.
+    {
+      area: 'staff',
+      path: '/staff/events/atc/$id/shifts/$shiftId',
+      permission: EVENT_ATC_VIEW,
+      validateSearch: shiftSearchSchema,
+      component: ShiftForm,
     },
     {
       area: 'staff',

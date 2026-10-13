@@ -530,7 +530,9 @@
     "registrationsToCome": "Registrations to events still to end: deleted",
     "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote",
     "availabilitiesToCome": "ATC availabilities for events still to end: deleted",
-    "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note"
+    "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note",
+    "shiftsToCome": "ATC shifts of events still to end: deleted, and uncovered again",
+    "shiftsOver": "ATC shifts of events that ended, kept without the controller, the note of the staff and the why of the proposal"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -762,7 +764,15 @@
     "eventHasAvailabilities": "Some controllers gave their availability for this event: cancel it instead.",
     "ratingUnknown": "Choose a rating of the list.",
     "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
-    "availabilityChanged": "Your availability changed in another window meanwhile: read it again and save once more."
+    "availabilityChanged": "Your availability changed in another window meanwhile: read it again and save once more.",
+    "positionUnknownForShift": "Choose one of the positions of this event.",
+    "positionOfAnotherEvent": "A shift moves only among the positions of its own event.",
+    "shiftOutsidePosition": "The shift is outside the hours of its position.",
+    "shiftTaken": "Another controller holds this position in these hours.",
+    "controllerNeverSignedIn": "This member has never signed in to the hub: they cannot be given a shift.",
+    "rosterNotProposed": "The roster is not proposed yet: it is when the availabilities close.",
+    "positionHasShifts": "The position has shifts in the roster: its callsign and hours stay around them, and once the event has started it is not deleted.",
+    "eventHasShifts": "The event has shifts in its roster: cancel it instead."
   },
   "questions": {
     "title": "Questions",
@@ -876,6 +886,83 @@
         "windows": "Available",
         "note": "Note",
         "createdAt": "Given on"
+      }
+    },
+    "roster": {
+      "title": "Roster",
+      "notYet": "The roster is proposed when the availabilities close, on {{date}}.",
+      "proposed": "Proposed on {{date}}. Correct it until the event ends: a shift outside the rules is a warning, never a refusal.",
+      "empty": "No shift and nothing uncovered: open a position first.",
+      "add": "Add",
+      "move": "Move",
+      "remove": {
+        "trigger": "Take away",
+        "title": "Take this shift away?",
+        "description": "The controller no longer has it, and that piece of the position is uncovered again.",
+        "confirm": "Take away"
+      },
+      "fields": {
+        "callsign": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "state": "Shift",
+        "controller": "Controller",
+        "rating": "Rating",
+        "why": "Why",
+        "alerts": "Warnings"
+      },
+      "options": {
+        "state": {
+          "Uncovered": "Uncovered",
+          "Proposed": "Proposed",
+          "Staff": "By the staff"
+        }
+      },
+      "why": {
+        "decidedBy": {
+          "Only": "The only one who could take it",
+          "Preferred": "Holds the preferred rating for this kind of position",
+          "Experience": "Opened this position, or its kind, more often",
+          "Penalty": "A lower penalty for no-shows",
+          "FewerShifts": "Fewer shifts in this roster",
+          "EarlierAvailability": "Gave their availability earlier",
+          "Vid": "Everything else equal: the lower VID"
+        },
+        "candidates": "Could take it: {{count}}",
+        "connections": "Connections: {{callsign}} on this position, {{type}} on its kind",
+        "noExperience": "Experience not counted: no archive of sessions answered",
+        "penalty": "Penalty: {{value}}",
+        "staff": "Written by the staff",
+        "uncoveredNobody": "Nobody available can take it",
+        "uncoveredBusy": "Could take it: {{count}}, but they are in other shifts or at their most in a row"
+      },
+      "warnings": {
+        "NotAvailable": "Not available for the whole shift",
+        "BelowMinimum": "Rating below the least of the settings",
+        "BelowPreferred": "Rating below the preferred one for this kind of position",
+        "Overlapping": "Another shift of theirs in the same hours",
+        "TooManyInARow": "More shifts in a row than the settings allow"
+      }
+    },
+    "shifts": {
+      "create": "New shift",
+      "edit": "Shift",
+      "fields": {
+        "positionId": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "controllerVid": "Controller's VID"
+      },
+      "hints": {
+        "positionId": "One of the positions of this event.",
+        "fromUtc": "In UTC, inside the hours of the position.",
+        "toUtc": "In UTC, inside the hours of the position.",
+        "controllerVid": "Anybody who signed in to the hub once, whether or not they gave their availability: what leaves the rules is a warning on the roster."
+      },
+      "options": {
+        "positionId": {
+          "none": "Choose a position"
+        }
       }
     }
   }
