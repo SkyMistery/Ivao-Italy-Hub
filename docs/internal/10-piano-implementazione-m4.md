@@ -4284,11 +4284,14 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   shift(s)», `roster_proposed_at` scritto): tre turni del ground al trainer, l'unico con il rating della FRA, ognuno con il perché («L'unico
   che poteva prenderlo», «Esperienza non contata»), la pausa dopo due di fila, e gli scoperti con «ma sono in altri turni o al massimo di
   turni di fila». Dal pannello (lo schermo in italiano) «Aggiungi» sulla torre delle 17 con il pilota: scritto, «Dello staff», con gli avvisi
-  della FRA della postazione (le parole del nucleo) e «sotto il preferito». **Due ritocchi venuti da lì**, in un commit a sé: il criterio del
-  perché salvato come parola nel JSON (era un numero), e il suggerimento delle ore del turno senza «In UTC», perché il form le mostra
-  nell'ora della divisione (⚠️ lo stesso suggerimento «In UTC» c'è sulle ore di una postazione, di E11a: non toccato qui). Dopo i ritocchi:
-  build senza avvisi, unità 1285/1285, `EventsRosterTests`, `EventsAtcTests` ed `ErasedAuditTests` 21/21, `gen:api` senza diff; smoke ed
-  `e2e:full` non rifatti (nessuna spec legge quel suggerimento).
+  della FRA della postazione (le parole del nucleo) e «sotto il preferito». **Un ritocco venuto da lì**, in un commit a sé: il criterio del
+  perché salvato come parola nel JSON (era un numero). Dopo il ritocco: build senza avvisi, unità 1285/1285, `EventsRosterTests`,
+  `EventsAtcTests` ed `ErasedAuditTests` 21/21, `gen:api` senza diff; smoke ed `e2e:full` non rifatti (nessuna spec legge quel JSON).
+  ⚠️ **Un secondo ritocco era sbagliato, e l'ho tolto**: avevo tolto «In UTC» dal suggerimento delle ore del turno, leggendo con
+  `get_page_text` la riga sotto il campo («19:00 Europe/Rome», l'istante del nucleo nell'ora della divisione) come se fosse il valore. Misurato
+  dopo con uno script Playwright usa e getta sul banco 5143 (su richiesta del coordinatore, che aveva fatto misurare E11a): per un turno alle
+  18:00Z l'input vale `2026-11-02T18:00`, l'ora UTC, e sotto il nucleo scrive «19:00 Europe/Rome». Il suggerimento «In UTC» è vero, e torna
+  com'era; quello delle postazioni di E11a non aveva niente da correggere.
 - **Non verificato**: la CI (la dice la PR); le risposte di Carmine alle due domande della nota; un roster con l'archivio vero di vIPI (IT ha
   `none`; provato con un doppio); un roster di molte postazioni e molti candidati (il proponente è in memoria, per un evento, e l'esperienza
   fa una domanda all'archivio per candidato); il form del turno a 375 px; la migrazione su un'installazione vera.
