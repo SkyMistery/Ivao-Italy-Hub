@@ -4278,6 +4278,17 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   `core-guard` rifatte a mano dal merge-base con `main` (`a97a1fd`): un file del nucleo (`ErasureTests.cs`) con le note nuove, nessun file
   del maintainer. ⚠️ **Il branch non ha `main` a `cea6244`** (il piano 1.33, la #257): il merge-base con `main` è la testa di E10o; letto il
   piano 1.33 e il design di `main`, niente cambia per il roster.
+- **Il «fatta quando», sul banco** (13 ottobre 2026, 00:29–00:40 UTC, il banco 5143 riavviato con `E2E_SKIP_PUBLISH=1` e
+  `E2E_SMTP_PORT=1`): un evento a venti giorni con la torre e il ground di LIRF, la disponibilità del pilota, del trainer e del coordinatore,
+  e la chiusura passata alzando `applicationsCloseDays`; **`events-roster` alle 00:33 ha proposto il roster** («1 roster(s) proposed with 3
+  shift(s)», `roster_proposed_at` scritto): tre turni del ground al trainer, l'unico con il rating della FRA, ognuno con il perché («L'unico
+  che poteva prenderlo», «Esperienza non contata»), la pausa dopo due di fila, e gli scoperti con «ma sono in altri turni o al massimo di
+  turni di fila». Dal pannello (lo schermo in italiano) «Aggiungi» sulla torre delle 17 con il pilota: scritto, «Dello staff», con gli avvisi
+  della FRA della postazione (le parole del nucleo) e «sotto il preferito». **Due ritocchi venuti da lì**, in un commit a sé: il criterio del
+  perché salvato come parola nel JSON (era un numero), e il suggerimento delle ore del turno senza «In UTC», perché il form le mostra
+  nell'ora della divisione (⚠️ lo stesso suggerimento «In UTC» c'è sulle ore di una postazione, di E11a: non toccato qui). Dopo i ritocchi:
+  build senza avvisi, unità 1285/1285, `EventsRosterTests`, `EventsAtcTests` ed `ErasedAuditTests` 21/21, `gen:api` senza diff; smoke ed
+  `e2e:full` non rifatti (nessuna spec legge quel suggerimento).
 - **Non verificato**: la CI (la dice la PR); le risposte di Carmine alle due domande della nota; un roster con l'archivio vero di vIPI (IT ha
   `none`; provato con un doppio); un roster di molte postazioni e molti candidati (il proponente è in memoria, per un evento, e l'esperienza
   fa una domanda all'archivio per candidato); il form del turno a 375 px; la migrazione su un'installazione vera.

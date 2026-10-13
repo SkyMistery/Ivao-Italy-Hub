@@ -954,8 +954,8 @@
       },
       "hints": {
         "positionId": "One of the positions of this event.",
-        "fromUtc": "In UTC, inside the hours of the position.",
-        "toUtc": "In UTC, inside the hours of the position.",
+        "fromUtc": "Inside the hours of the position.",
+        "toUtc": "Inside the hours of the position.",
         "controllerVid": "Anybody who signed in to the hub once, whether or not they gave their availability: what leaves the rules is a warning on the roster."
       },
       "options": {

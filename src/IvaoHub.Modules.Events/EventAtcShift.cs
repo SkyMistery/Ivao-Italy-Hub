@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Privacy;
 
@@ -39,7 +40,8 @@ public sealed class EventAtcShift : IEventChild, IAuditable, IHasResourceScope, 
     /// <summary>The longest note of the staff on how a shift went: a sentence or two.</summary>
     public const int MaxNoteLength = 500;
 
-    private static readonly JsonSerializerOptions ReasonJsonOptions = new(JsonSerializerDefaults.Web);
+    /// <summary>The why as the database keeps it: the criterion as its word, readable without the code next to it, like the enums of the rows.</summary>
+    private static readonly JsonSerializerOptions ReasonJsonOptions = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     public long Id { get; set; }
 

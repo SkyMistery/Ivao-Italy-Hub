@@ -158,6 +158,8 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.All(shifts, shift => Assert.Equal(ShiftOrigin.Proposed, shift.Origin));
         Assert.All(shifts, shift => Assert.Equal(shift.PositionId == positions[Tower] ? Fir : OtherFir, shift.Fir));
 
+        // The why as the database keeps it: the criterion as its word.
+        Assert.Contains("\"decidedBy\":\"Experience\"", shifts[0].ReasonJson, StringComparison.Ordinal);
         var tower = shifts[0].Reason!;
         Assert.Equal((2, ShiftCriterion.Experience, 3, 3), (tower.Candidates, tower.DecidedBy, tower.CallsignConnections, tower.TypeConnections));
         var approach = shifts[1].Reason!;

@@ -954,8 +954,8 @@
       },
       "hints": {
         "positionId": "Una delle postazioni di questo evento.",
-        "fromUtc": "In UTC, dentro le ore della postazione.",
-        "toUtc": "In UTC, dentro le ore della postazione.",
+        "fromUtc": "Dentro le ore della postazione.",
+        "toUtc": "Dentro le ore della postazione.",
         "controllerVid": "Chiunque sia entrato nell'hub almeno una volta, che abbia dato la disponibilità o no: quello che esce dalle regole è un avviso sul roster."
       },
       "options": {
