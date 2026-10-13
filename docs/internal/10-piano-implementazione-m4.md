@@ -4063,6 +4063,66 @@ richiesta della sessione che coordina):
 
 [a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 
+### E10p — Nucleo: le ore in 24, in un posto solo
+
+**Da dove viene**: non c'era in E0. Sul banco di E11a (13 ottobre) una posizione alle 18:00Z, letta in inglese, diceva `18:00` nel campo
+e «7:00 PM» sotto, e «6:00 PM UTC» nella lista: tre formattatori del nucleo lasciavano le ore alla lingua, mentre `useMoment` le scrive
+in 24. dalberone l'ha segnalato a Carmine sull'issue #260, e **Carmine ha deciso** ([la sua risposta][a260p], data in chat al master e
+pubblicata su sua istruzione): **sì**, una piccola fase del nucleo con la sua nota, e **la seconda via** — i formattatori usano
+`useMoment` o un formattatore condiviso, così la regola vive in un posto solo. Branch `m4/e10p-times-24-hour`, da `main` a `cea6244`.
+**PR del nucleo** con la sua nota (caso b), senza coda: tocca solo `web/src/shared` e una pagina del nucleo. Niente in C#.
+
+1. Un solo formattatore di istanti, quello di `useMoment`, anche per chi non è un componente.
+2. I formattatori del nucleo che scrivono un'ora ci passano sopra, ognuno con il suo aspetto.
+
+**Test**: vitest del formattatore in inglese (`19:00`) e di ogni posto in inglese, provati sul codice di oggi.
+**Fatta quando**: nessuna ora del nucleo si scrive a 12 ore in inglese, e le 24 ore sono una riga sola.
+
+**Com'è andata** (13 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda):
+
+- **Fatto** (nota nuova `2026-10-13-le-ore-in-24`, **decisa**, con i link alle due risposte di Carmine):
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, invariato, con la lingua
+    passata da chi chiama; `useMoment` lo chiama, e il tipo delle opzioni è `MomentOptions`;
+  - **`localTime`** (`SchemaForm.tsx`) e **`DateCell`** (`DataList.tsx`) con `formatMoment` e `dateStyle: 'short'`; **`MessageThread`**
+    con `useMoment` e il fuso della divisione;
+  - **una quarta pagina**, trovata cercando in tutto `web/src` un `Intl.DateTimeFormat` con `timeStyle` e senza `hour12`: la data di un
+    messaggio in `routes/_staff/staff.$dept.contacts.$id.tsx`, con `useMoment`; Carmine l'ha voluta in E10p ([la seconda
+    risposta][b260p]). Gli altri `Intl.DateTimeFormat` di `web/src` scrivono solo giorni (`CalendarView`, `PublicEntryScreen`,
+    `blocks.tsx`, `bookingTimes.ts` degli eventi): **nessuna fase di modulo dopo questa**;
+  - **i test** (vitest, 6): `web/src/shared/i18n/twentyFourHours.test.tsx`;
+  - `docs/UI-GUIDELINES.md`, «Times»: `formatMoment` è il solo posto, `useMoment` per un componente.
+- **Deviazione, con la risposta di Carmine**: due test suoi fissavano le 12 ore in inglese, e la fase si è fermata prima del codice per
+  chiederglielo ([la domanda][q260p]). Ha risposto che la PR **può cambiarne i valori attesi, e nient'altro** ([la seconda
+  risposta][b260p]): `web/e2e/back-office.spec.ts:281` da `6/1/26, 2:00 PM Europe/Rome` a `6/1/26, 14:00 Europe/Rome`;
+  `web/src/shared/forms/extensions.test.tsx:168–169` da `7:00` / non `6:00` a `19:00` / non `18:00`, con i commenti accanto.
+- **Scelte della fase, scritte nella nota** (§2–3): `formatMoment` nel file di `useMoment` invece di due componenti nuovi; `hour12: false`
+  com'era, non `hourCycle`; `DateCell` non disegna niente per un valore che non è un istante (prima lanciava un `RangeError`).
+- **Verificato, in locale** (13 ottobre 2026, `main` a `cea6244`):
+  - **la prova al contrario**: con i quattro file dei formattatori rimessi come su `main` (il formattatore e il test nuovo tenuti)
+    cadono 3 casi su 6, i tre posti; i tre che passano sono quelli del formattatore; rimessi i file, 6/6;
+  - prima di cambiare i test di Carmine: `pnpm test` 758/759, l'unico rosso `extensions.test.tsx:168`; la smoke 180/181, l'unico rosso
+    `back-office.spec.ts:281`, che riceveva esattamente `6/1/26, 14:00 Europe/Rome`;
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (839 chiavi) verdi; `pnpm test` **759/759** in 104 file
+    (con `--maxWorkers=4`: con i worker di default la macchina, con le altre sessioni, finiva la memoria); `pnpm build` verde; `pnpm
+    gen:api` senza differenze;
+  - `dotnet build IvaoHub.sln -c Release` 0 avvisi; unità **1269/1269**;
+  - la smoke (`playwright test --workers=2`) **181/181** (1,1 minuti), con i valori nuovi;
+  - `pnpm e2e:full` sulla porta 5144 con `ivaohub_e2e_e10p` nuovo: **61/61** al primo giro (11,9 minuti);
+  - le regole di `core-guard` rifatte in PowerShell sul tratto da `cea6244`: nessun file del maintainer; nove del nucleo (i quattro
+    formattatori, la pagina dei contatti compresa, `useMoment.ts`, il test nuovo, i due test di Carmine, `docs/UI-GUIDELINES.md`) con la
+    nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - l'integrazione .NET (nessun file del server cambia);
+  - la data della pagina dei contatti in inglese: la pagina non ha un test vitest suo (è una rotta), passa da `useMoment`, che il test
+    nuovo prova; `full/contacts.spec.ts` (del nucleo) la apre in `e2e:full`, ma non legge la data;
+  - le mail del server scrivono le ore in .NET, fuori da questa fase: quelle lette (`TrainingMail`, `EventsMail`, i ban dei tour)
+    usano già `HH:mm`.
+
+[a260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089
+[q260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146754988
+[b260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b

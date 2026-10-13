@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
+**Ultimo aggiornamento:** 13 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
+`m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
+**decisa** da Carmine sull'issue #260 ([la seconda via](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089),
+e [i tre valori attesi di due test
+suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)). Da E10p ogni ora del nucleo si scrive in 24
+ore anche in inglese, attraverso un solo formattatore («Che cosa ha lasciato E10p», sotto).
+
+**L'aggiornamento di E10o:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
 `m4/e10o-field-names-in-schema`, **PR #254** verso `main`, **in coda dopo la #239**, la settima della coda **#242 → #250 → #252 → #251
 → #249 → #239 → #254**, con E16 dopo: nata da `main` a `a75ed6c`, **decisa** da Carmine sull'issue #253 ([la sua risposta, punto
 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540): A, prima una fase del nucleo), e ha unito la testa
@@ -237,6 +244,24 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10p (13 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`)
+
+- **Che cosa c'è** (nota `decisions/2026-10-13-le-ore-in-24.md`, **decisa** da Carmine sull'issue #260; il dettaglio in `10`, E10p,
+  «Com'è andata»). Tutto nel browser, niente in C#:
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, che ora lo chiama. È
+    **l'unico posto** che scrive un istante, e le 24 ore (`hour12: false`) sono una riga lì.
+  - I quattro formattatori del nucleo che in inglese scrivevano «7:00 PM» ci passano sopra: `localTime` (`SchemaForm.tsx`) e `DateCell`
+    (`DataList.tsx`) con `formatMoment`; `MessageThread.tsx` e `routes/_staff/staff.$dept.contacts.$id.tsx` con `useMoment`. Ognuno
+    tiene il suo aspetto.
+  - **I test**: `web/src/shared/i18n/twentyFourHours.test.tsx` (6). Tre valori attesi di due test di Carmine cambiano con la sua
+    risposta (`back-office.spec.ts:281`, `extensions.test.tsx:168–169`).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Mai un `new Intl.DateTimeFormat` con un `timeStyle` o un `hour` suo**: un componente scrive un istante con `useMoment`, una
+    funzione che riceve la lingua (una cella, un aiuto di una pagina) con `formatMoment`. `docs/UI-GUIDELINES.md`, «Times», lo dice.
+  - I moduli eventi e formazione scrivono già le ore con `useMoment`: nessuna fase di modulo dopo questa.
+  - ⚠️ **Un test che legge un'ora in inglese** scrive `19:00`, mai `7:00 PM`; e attenzione alle sottostringhe: `19:00` non contiene
+    `7:00`, `18:00` contiene `8:00`.
 
 ### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; con la testa di E10j `0963908`)
 
