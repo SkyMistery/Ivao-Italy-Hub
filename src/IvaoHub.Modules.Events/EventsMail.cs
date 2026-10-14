@@ -155,6 +155,93 @@ public sealed class EventsMail(
         return SendAsync(EventsNotifications.RegistrationRemoved, row, [vid], (data, _) => data["reason"] = reason, cancellationToken);
     }
 
+    /// <summary>The page of an event's roster (§4.4, E12), where a mail about a shift points too.</summary>
+    public static string RosterPathOf(Event row) => $"{PathOf(row)}/roster";
+
+    /// <summary>
+    /// One shift as a mail writes it: the callsign and its hours, in UTC — the sentence around it says so —, the day of its end only when it
+    /// is not the day it starts.
+    /// </summary>
+    public static string Shift(string callsign, DateTime fromUtc, DateTime toUtc) =>
+        $"{callsign} {Moment(fromUtc)} – {(toUtc.Date == fromUtc.Date ? toUtc.ToString("HH:mm", CultureInfo.InvariantCulture) : Moment(toUtc))}";
+
+    /// <summary>
+    /// A controller's shifts of a roster (§4.4, E12): at its publication, every shift of theirs not told yet in one mail; after it, a shift
+    /// added or handed to them. One line each, by their start, and the way to the roster and to their own page.
+    /// </summary>
+    public Task AtcShiftAssignedAsync(Event row, int vid, IReadOnlyList<(string Callsign, DateTime FromUtc, DateTime ToUtc)> shifts, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(shifts);
+
+        return SendAsync(EventsNotifications.AtcShiftAssigned, row, [vid], (data, _) =>
+        {
+            data["count"] = shifts.Count.ToString(CultureInfo.InvariantCulture);
+            data["shifts"] = string.Join('\n', shifts.OrderBy(shift => shift.FromUtc).Select(shift => $"- {Shift(shift.Callsign, shift.FromUtc, shift.ToUtc)}"));
+            data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
+            data["mine"] = $"https://{division.Value.Domain}{MinePath}";
+        }, cancellationToken);
+    }
+
+    /// <summary>A shift of a published roster moved to other hours or another position (§4.4, E12): to its controller, as it was and as it is.</summary>
+    public Task AtcShiftChangedAsync(
+        Event row,
+        int vid,
+        (string Callsign, DateTime FromUtc, DateTime ToUtc) before,
+        (string Callsign, DateTime FromUtc, DateTime ToUtc) after,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return SendAsync(EventsNotifications.AtcShiftChanged, row, [vid], (data, _) =>
+        {
+            data["before"] = Shift(before.Callsign, before.FromUtc, before.ToUtc);
+            data["after"] = Shift(after.Callsign, after.FromUtc, after.ToUtc);
+            data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
+        }, cancellationToken);
+    }
+
+    /// <summary>A shift of a published roster taken away from its controller, or given to somebody else (§4.4, E12).</summary>
+    public Task AtcShiftRemovedAsync(Event row, int vid, (string Callsign, DateTime FromUtc, DateTime ToUtc) shift, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return SendAsync(EventsNotifications.AtcShiftRemoved, row, [vid], (data, _) =>
+        {
+            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
+            data["roster"] = $"https://{division.Value.Domain}{RosterPathOf(row)}";
+        }, cancellationToken);
+    }
+
+    /// <summary>The words of a decision on a request to hand a shift over, in the language of whoever asked.</summary>
+    public const string TransferApprovedKey = "events:mail.events.atcShiftTransferDecided.approved";
+
+    /// <summary>The words of a refusal of a request to hand a shift over.</summary>
+    public const string TransferRefusedKey = "events:mail.events.atcShiftTransferDecided.refused";
+
+    /// <summary>
+    /// The staff decided a request to hand a shift over (§4.4-bis, E12): to whoever asked, with the shift, what was decided — in their
+    /// language — and the staff's note, as they wrote it.
+    /// </summary>
+    public Task AtcShiftTransferDecidedAsync(
+        Event row,
+        int vid,
+        (string Callsign, DateTime FromUtc, DateTime ToUtc) shift,
+        bool approved,
+        string? note,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return SendAsync(EventsNotifications.AtcShiftTransferDecided, row, [vid], (data, locale) =>
+        {
+            data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
+            data["decision"] = catalog.Resolve(locale, approved ? TransferApprovedKey : TransferRefusedKey);
+            data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
+            data["mine"] = $"https://{division.Value.Domain}{MinePath}";
+        }, cancellationToken);
+    }
+
     /// <summary>
     /// One intent per language of the people told, each with the event's title in that language and its page: a cancellation of an
     /// event of four hundred slots is one or two intents, not four hundred.

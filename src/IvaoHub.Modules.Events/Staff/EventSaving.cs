@@ -143,8 +143,9 @@ public sealed class EventSaving(
     }
 
     /// <summary>
-    /// Whoever booked a slot of an event or registered to it (E16), each once — one mail per person, whatever they hold: whoever is
-    /// told when it changes or is cancelled (§8.3, §4-bis.2).
+    /// Whoever booked a slot of an event, registered to it (E16) or has a shift of its roster (E12; note
+    /// 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 4 — before the publication too: they gave their availability), each
+    /// once — one mail per person, whatever they hold: whoever is told when it changes or is cancelled (§8.3, §4-bis.2).
     /// </summary>
     public async Task<List<int>> PeopleToTellAsync(long eventId, CancellationToken cancellationToken)
     {
@@ -157,8 +158,13 @@ public sealed class EventSaving(
             .Where(registration => registration.EventId == eventId)
             .Select(registration => registration.Vid)
             .ToListAsync(cancellationToken);
+        var controllers = await CrudSource.BackOffice<EventAtcShift>(database)
+            .Where(shift => shift.EventId == eventId)
+            .Select(shift => shift.ControllerVid)
+            .Distinct()
+            .ToListAsync(cancellationToken);
 
-        return [.. bookers.Union(registered)];
+        return [.. bookers.Union(registered).Union(controllers)];
     }
 
     /// <summary>

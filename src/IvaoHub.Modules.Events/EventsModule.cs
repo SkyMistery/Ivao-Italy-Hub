@@ -65,13 +65,15 @@ public sealed class EventsModule : ModuleBase
     ];
 
     /// <summary>
-    /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; and the reader's bookings still to fly
-    /// (E6b), on <c>/me</c>. Their other halves are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
+    /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; the reader's bookings still to fly
+    /// (E6b) and shifts (E12), on <c>/me</c>; and the coverage of the rosters of the next days (E12), on <c>/staff</c>. Their other halves
+    /// are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
     [
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.atcCoverage", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -160,6 +162,14 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<RosterProposal>();
         services.AddScoped<StaffRoster>();
         services.AddScoped<EventRosterJob>();
+
+        // Its publication at a date and the mails of the shifts (E12), the second half of events-roster; the page of a roster; a controller's
+        // shifts and the requests to hand one over; and the coverage of the rosters of the next days for the staff.
+        services.AddScoped<RosterPublication>();
+        services.AddScoped<PublicRoster>();
+        services.AddScoped<MemberShifts>();
+        services.AddScoped<StaffTransfers>();
+        services.AddScoped<IDataBlockProvider, AtcCoverageProvider>();
         services.AddQuartz(quartz => quartz
             .AddJob<EventRosterJob>(job => job.WithIdentity(EventRosterJob.JobName))
             .AddTrigger(trigger => trigger
@@ -186,5 +196,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapAtcPositionEndpoints();
         endpoints.MapAvailabilityEndpoints();
         endpoints.MapShiftEndpoints();
+        endpoints.MapTransferEndpoints();
+        endpoints.MapPublicRosterEndpoints();
     }
 }
