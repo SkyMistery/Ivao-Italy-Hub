@@ -4348,3 +4348,81 @@ nessun file del nucleo, nessuna migrazione, nessuna nota. Una domanda a Carmine,
   - **i test nuovi sul codice di `main`**: non sono stati fatti girare sul codice di prima. Con il codice di prima il test del percorso
     cadrebbe: sul percorso c'erano i cinque passi dove ora afferma che non c'è niente. Il test del capo FIR prova invece una regola
     che c'era già (A11b), e passerebbe anche lì.
+
+### A13f — Il lettore dei nomi del nucleo e il fuso dei promemoria
+
+Due pezzi che il nucleo ha unito il 12 ottobre 2026 e che chiedono al training una piccola fase. Una PR sola, con il codice del modulo,
+i suoi test e i suoi documenti; **nessuna modifica del codice del nucleo, nessuna migrazione** (casi (a)/(b): usa meccanismi decisi).
+Le due righe tolte da un test del nucleo hanno la loro nota breve, chiesta da Carmine sulla #258 («Com'è andata», Trovato n.2).
+
+1. **Il lettore unico dei nomi** (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`, decisa da Carmine sull'issue #247;
+   «Che cosa ha lasciato E10m» in `HANDOFF-M4.md`, «La fase della formazione»): `TrainingPeople.NamesAsync` risponde con
+   `MemberNames.ReadAsync`; `Member`, `Label` e `IsErased` restano. In `MemberNamesTests` esce **solo** la riga del training, dal test
+   gemello e da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt`. Nessuna pagina cambia.
+2. **Il trigger dice il suo fuso** (E10j, #239, punto 6 della revisione; «I fusi di `events-release` e `training-reminders`» in
+   `HANDOFF-M4.md`; nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`, §7): `training-reminders` prende
+   `.InTimeZone(TimeZoneInfo.Utc)`, come `events-reminders`.
+3. **E10l ed E10o** (il `Dialog` del nucleo con il pulsante di chiusura tradotto; `.meta({ label })` e `form.none`): si guarda se il
+   training ne ha bisogno, e si prende solo un uso ovvio di una riga.
+
+[a13f-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/258#issuecomment-6146758656
+
+**Com'è andata (A13f)** (12 ottobre 2026, branch `m3/a13f-training-names-reader`, PR #258, da `main` a `cea6244`, con E10m ed E10j).
+**Codice del modulo, un test del modulo nuovo, due righe tolte da un test del nucleo, con la nota
+`2026-10-13-la-formazione-sul-lettore-dei-nomi` (decisa da Carmine sulla #258); nessuna migrazione.**
+
+- **Fatto**:
+  - **`TrainingPeople.NamesAsync`** è ora una riga: `MemberNames.ReadAsync(hub, vids, cancellationToken)`. Resta invece di andarsene
+    perché ha dieci chiamanti nel modulo (bans, mail, sessioni pubbliche, date, esami, percorso, training dello staff, sessioni,
+    richieste), che non cambiano. La query su `hub_users` del modulo se n'è andata;
+  - **`MemberNamesTests`**: dal test gemello escono il servizio del training e la sua riga (il test si chiama ora
+    `TheReaderAnswersWhatTheToursAndTheEventsAnswer`); da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` esce la riga che affermava
+    che il training nominava ancora la riga sotto uno. Il riassunto della classe dice che il training è passato sul lettore. Le righe
+    degli eventi e dei tour restano: gli eventi hanno la loro fase, i tour sono di Carmine;
+  - **il trigger** `training-reminders-quarterly` ha `.WithCronSchedule(TrainingRemindersJob.Cron, schedule =>
+    schedule.InTimeZone(TimeZoneInfo.Utc))`; il suo nome è la costante nuova `TrainingRemindersJob.TriggerName`, che il test legge;
+  - **`TrainingJobTriggersTests`** (unità, 2 test, nuovo): costruisce i servizi del modulo come l'host, per una divisione con il fuso
+    di Roma, e legge i due trigger: i promemoria in UTC con il loro cron, la chiusura notturna nel fuso della divisione. Nessun test del
+    training affermava il trigger prima.
+- **Trovato**:
+  1. ⚠️ **Il training non nomina più un VID sotto uno**, anche se `hub_users` avesse quella riga: il lettore lo lascia fuori (la decisione
+     sulla #247: una persona cancellata non ha nome). È uno stato che l'hub non scrive, quindi nessuna pagina e nessuna mail cambia; lo
+     dice la PR.
+  2. ⚠️ **Un test del nucleo, anche se lo chiede un handoff, vuole la sua nota**: `tests/IvaoHub.IntegrationTests/MemberNamesTests.cs` è un
+     file di test che esiste e non ha «training» nel percorso, quindi per il guard è nucleo. Il primo push (`e6aeaa6`) non aveva una nota,
+     e `dalberone` aveva scelto di lasciare il guard rosso e di dirlo nella PR, invece di scrivere una nota senza decisione. **La risposta
+     di Carmine sulla #258** ([commento][a13f-answer], 13 ottobre 2026, data in chat al master e pubblicata su sua istruzione): il codice va
+     bene, ma la PR **non si unisce con il guard rosso**; serve la nota breve della fase, che dica che cosa esce dal test e perché, con il
+     collegamento alla nota di E10m e al suo §5. È `decisions/2026-10-13-la-formazione-sul-lettore-dei-nomi.md`, **decisa**; con lei il
+     guard passa per la sua regola.
+  3. ⚠️ **La fase degli eventi andrà in conflitto con questa in `MemberNamesTests`**: il blocco di E10m dice che le due fasi «si uniscono
+     senza conflitti se ognuna toglie solo la sua», ma le righe sono vicine, e git dà conflitto anche quando due rami tolgono due righe
+     vicine diverse (provato in un repository di prova). Si risolve togliendo tutte e due.
+  4. **E10l ed E10o: niente da prendere**. Il training apre le sue finestre con il `ConfirmDialog` del nucleo e non importa `Dialog`,
+     `DialogTopRightClose`, `Sheet` o `SheetContent` da Atmosphere: la guardia `Dialog.test.tsx` non lo elenca in `NOT_MOVED_YET`. I suoi
+     schemi sono scritti nel codice, e uno schema così non porta `label` (E10o, «Che cosa devono sapere le fasi dopo»): senza, il form
+     generato è com'era. Non resta un seguito da scrivere.
+- **Scostamenti dal design**: nessuno.
+- **Verificato** (12 ottobre 2026, in locale, sulla testa della PR):
+  - `dotnet build IvaoHub.sln -c Release`: **0 avvisi, 0 errori**;
+  - unità: **1271/1271**. `TrainingJobTriggersTests.TheRemindersRunInUtc` **cade sul codice di prima** (la riga del fuso tolta per prova
+    e rimessa): il fuso è `W. Europe Standard Time`, quello della macchina, invece di `UTC`;
+  - **integrazione intera, senza filtro: 577/577**, `MemberNamesTests` compreso;
+  - web: `lint`, `format:check`, `typecheck`, `i18n:check`, `build` puliti; `test` **753/753**; `gen:api` nessuna differenza;
+  - **`pnpm e2e`, sotto il lucchetto di 4173**, `--workers=2`: **181/181** al primo giro (1,1 minuti);
+  - **`pnpm e2e:full`** su 5142, con un `ivaohub_e2e_a13f` nuovo, sotto il lucchetto di Mailpit: **61/61** al primo giro (11,8 minuti),
+    nello stesso momento dello smoke;
+  - le regole di `core-guard` in PowerShell contro `cea6244`: i tre file del modulo e il test nuovo sono del collaboratore;
+    `tests/IvaoHub.IntegrationTests/MemberNamesTests.cs` è **nucleo** (Trovato n.2). Nessun file del maintainer.
+- **Verificato, dopo la risposta di Carmine** (13 ottobre 2026; solo documenti, nessun codice: le suite non sono state rifatte):
+  - le regole di `core-guard` in PowerShell contro `cea6244`: `MemberNamesTests.cs` è nucleo, giustificato dalla nota aggiunta
+    `2026-10-13-la-formazione-sul-lettore-dei-nomi.md`; nessun file del maintainer: **PASS**;
+  - `pnpm lint` e `format:check`: puliti.
+- **Non verificato**:
+  - **la CI** della PR sulla testa nuova, che la dice la PR;
+  - **le suite dopo la risposta**: il giro aggiunge una nota e cambia documenti; build, unità, integrazione, web, smoke e `e2e:full` sono
+    quelli del primo giro, qui sopra;
+  - **il trigger su un host vivo**: il test legge il trigger dalle opzioni di Quartz, come i test del nucleo; il giro dei promemoria è
+    quello di prima e lo provano le classi d'integrazione del training;
+  - **un utente con un VID sotto uno**: il test che lo creava per il training non c'è più, e il lettore lo prova per sé in
+    `MemberNamesTests`.

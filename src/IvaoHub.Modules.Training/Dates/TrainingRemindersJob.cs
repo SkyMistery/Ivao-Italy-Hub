@@ -37,6 +37,9 @@ public sealed class TrainingRemindersJob(
     /// </summary>
     public const string Cron = "0 5/15 * * * ?";
 
+    /// <summary>Its trigger, which says UTC all the same (A13f).</summary>
+    public const string TriggerName = $"{JobName}-quarterly";
+
     private const int MaxMessageLength = 2000;
 
     /// <summary>
