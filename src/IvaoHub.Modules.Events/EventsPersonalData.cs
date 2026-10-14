@@ -11,7 +11,7 @@ namespace IvaoHub.Modules.Events;
 /// <summary>
 /// The events' half of erasing a person's data (design M4 §11.1, E8b; notes 2026-09-29-i-dati-dei-membri-negli-eventi §2.5,
 /// 2026-09-25-la-cancellazione-dei-dati-di-una-persona and 2026-10-11-duplica-e-la-cancellazione-negli-eventi §2), for the rows of M4a:
-/// a pilot's bookings.
+/// a pilot's bookings — and since then a member's registrations (E16) and a controller's availabilities (E11a), by the same rule.
 /// <list type="bullet">
 /// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — Carmine's
 /// answer 2 on issue #248, (i)): its slot is free again, on the page and in the export. Through the change
@@ -38,13 +38,18 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var registered = await Registrations(vid).AsNoTracking()
             .Join(CrudSource.BackOffice<Event>(database), registration => registration.EventId, row => row.Id, (registration, row) => row)
             .ToListAsync(cancellationToken);
+        var available = await Availabilities(vid).AsNoTracking()
+            .Join(CrudSource.BackOffice<Event>(database), availability => availability.EventId, row => row.Id, (availability, row) => row)
+            .ToListAsync(cancellationToken);
         var now = clock.UtcNow;
 
         return Lines(
             toCome: ends.Count(row => !EventState.IsOver(row, now)),
             over: ends.Count(row => EventState.IsOver(row, now)),
             registrationsToCome: registered.Count(row => !EventState.IsOver(row, now)),
-            registrationsOver: registered.Count(row => EventState.IsOver(row, now)));
+            registrationsOver: registered.Count(row => EventState.IsOver(row, now)),
+            availabilitiesToCome: available.Count(row => !EventState.IsOver(row, now)),
+            availabilitiesOver: available.Count(row => EventState.IsOver(row, now)));
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -77,9 +82,40 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         database.Bookings.RemoveRange(toCome);
 
         var (registrationsToCome, registrationsOver) = await EraseRegistrationsAsync(request.Vid, now, cancellationToken);
+        var (availabilitiesToCome, availabilitiesOver) = await EraseAvailabilitiesAsync(request.Vid, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
-        return Lines(toCome: toCome.Count, over: over.Count, registrationsToCome, registrationsOver);
+        return Lines(toCome: toCome.Count, over: over.Count, registrationsToCome, registrationsOver, availabilitiesToCome, availabilitiesOver);
+    }
+
+    /// <summary>
+    /// The person's availabilities as a controller (E11a, treated as the registrations): one of an event still to end goes, with its
+    /// windows — the roster no longer counts on them —; one of an event over stays, under the pseudonym the core writes into
+    /// <c>controller_vid</c> of the availability and of its windows, with its hours and without the note, which is their words.
+    /// </summary>
+    private async Task<(int ToCome, int Over)> EraseAvailabilitiesAsync(int vid, DateTime now, CancellationToken cancellationToken)
+    {
+        var availabilities = await Availabilities(vid).AsTracking().ToListAsync(cancellationToken);
+        var eventIds = availabilities.Select(availability => availability.EventId).Distinct().ToList();
+        var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, cancellationToken);
+
+        var over = availabilities.Where(availability => events.TryGetValue(availability.EventId, out var row) && EventState.IsOver(row, now)).ToList();
+        var toCome = availabilities.Where(availability => events.TryGetValue(availability.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
+
+        foreach (var availability in over)
+        {
+            availability.Note = null;
+        }
+
+        var going = toCome.Select(availability => availability.Id).ToList();
+        database.AtcWindows.RemoveRange(await CrudSource.BackOffice<EventAtcWindow>(database).AsTracking()
+            .Where(window => going.Contains(window.AvailabilityId))
+            .ToListAsync(cancellationToken));
+        database.AtcAvailabilities.RemoveRange(toCome);
+
+        return (toCome.Count, over.Count);
     }
 
     /// <summary>
@@ -138,11 +174,23 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
     private IQueryable<EventRegistration> Registrations(int vid) =>
         CrudSource.BackOffice<EventRegistration>(database).Where(registration => registration.Vid == vid);
 
-    private static IReadOnlyList<ErasureLine> Lines(int toCome, int over, int registrationsToCome, int registrationsOver) =>
+    /// <summary>The person's availabilities as a controller, read past every filter, as their bookings are.</summary>
+    private IQueryable<EventAtcAvailability> Availabilities(int vid) =>
+        CrudSource.BackOffice<EventAtcAvailability>(database).Where(availability => availability.ControllerVid == vid);
+
+    private static IReadOnlyList<ErasureLine> Lines(
+        int toCome,
+        int over,
+        int registrationsToCome,
+        int registrationsOver,
+        int availabilitiesToCome,
+        int availabilitiesOver) =>
     [
         new("events:erasure.bookingsToCome", toCome, ErasureOutcome.Deleted),
         new("events:erasure.bookingsOver", over, ErasureOutcome.Anonymised),
         new("events:erasure.registrationsToCome", registrationsToCome, ErasureOutcome.Deleted),
         new("events:erasure.registrationsOver", registrationsOver, ErasureOutcome.Anonymised),
+        new("events:erasure.availabilitiesToCome", availabilitiesToCome, ErasureOutcome.Deleted),
+        new("events:erasure.availabilitiesOver", availabilitiesOver, ErasureOutcome.Anonymised),
     ];
 }

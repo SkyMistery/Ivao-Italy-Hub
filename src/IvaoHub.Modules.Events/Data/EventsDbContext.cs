@@ -38,6 +38,15 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The numbers of each event (§1.10), born whole with E16.</summary>
     public DbSet<EventStats> Stats => Set<EventStats>();
 
+    /// <summary>The positions the events open (E11a).</summary>
+    public DbSet<EventAtcPosition> AtcPositions => Set<EventAtcPosition>();
+
+    /// <summary>The controllers' availabilities for the events (E11a).</summary>
+    public DbSet<EventAtcAvailability> AtcAvailabilities => Set<EventAtcAvailability>();
+
+    /// <summary>The windows of the availabilities (E11a).</summary>
+    public DbSet<EventAtcWindow> AtcWindows => Set<EventAtcWindow>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -189,6 +198,52 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
             // One row per event, which an event deleted takes with it.
             stats.HasIndex(row => row.EventId).IsUnique();
             stats.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventAtcPosition>(position =>
+        {
+            position.ToTable("evt_atc_positions");
+            position.HasKey(row => row.Id);
+            position.Ignore(row => row.ResourceScope);
+            position.Property(row => row.Callsign).HasMaxLength(EventAtcPosition.MaxCallsignLength).IsRequired();
+            position.Property(row => row.Fir).HasMaxLength(8);
+            position.Property(row => row.Note).HasMaxLength(EventAtcPosition.MaxNoteLength);
+            position.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its positions with it, as it takes its airports. The key is also the index the tab reads by.
+            position.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventAtcAvailability>(availability =>
+        {
+            availability.ToTable("evt_atc_availability");
+            availability.HasKey(row => row.Id);
+            availability.Ignore(row => row.StakeholderVid);
+            availability.Ignore(row => row.ResourceScope);
+            availability.Property(row => row.Note).HasMaxLength(EventAtcAvailability.MaxNoteLength);
+
+            // One availability per controller per event (§1.7): the database says it, so two requests of the same member in the same
+            // instant meet here. It is also the index the staff read an event's by. No key towards the event, as for a registration:
+            // an event with availabilities is not deleted (the save refuses it), it is cancelled.
+            availability.HasIndex(row => new { row.EventId, row.ControllerVid }).IsUnique();
+
+            // A controller's availabilities of every event: their own page.
+            availability.HasIndex(row => row.ControllerVid);
+        });
+
+        modelBuilder.Entity<EventAtcWindow>(window =>
+        {
+            window.ToTable("evt_atc_availability_windows");
+            window.HasKey(row => row.Id);
+            window.Ignore(row => row.StakeholderVid);
+            window.Ignore(row => row.ResourceScope);
+
+            // The windows of an availability go with it: the module deletes them first, each with its row in the audit, and the key
+            // makes sure nobody forgets. It is also the index an availability's windows are read by.
+            window.HasOne<EventAtcAvailability>().WithMany().HasForeignKey(row => row.AvailabilityId).OnDelete(DeleteBehavior.Cascade);
+
+            // The windows of an event, read by the staff per position.
+            window.HasIndex(row => new { row.EventId, row.FromUtc });
         });
     }
 }

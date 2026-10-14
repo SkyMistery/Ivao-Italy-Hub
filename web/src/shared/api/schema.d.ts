@@ -1774,6 +1774,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/atc/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcPositionsList"];
+        put?: never;
+        post: operations["EventAtcPositionsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/positions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcPositionsGet"];
+        put: operations["EventAtcPositionsUpdate"];
+        post?: never;
+        delete: operations["EventAtcPositionsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/positions/{id}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/division-positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcDivisionPositions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsMyAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/availability/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["EventsGiveAvailability"];
+        post?: never;
+        delete: operations["EventsWithdrawAvailability"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/aircraft-profiles": {
         parameters: {
             query?: never;
@@ -3459,6 +3603,29 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /**
+         * @description A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
+         *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
+         *     whether they cover the position from its opening to its closing, from when to when they are available inside it — instants, which the
+         *     list draws in UTC and in the division's time as every time of the page (Carmine's answer (B) on #256) —, how many of their windows meet
+         *     it, their note, and when they gave it — the first first.
+         */
+        AtcCandidateDto: {
+            /** Format: int64 */
+            id: number;
+            controller: components["schemas"]["EventMemberDto"];
+            rating: null | string;
+            wholePosition: boolean;
+            /** Format: date-time */
+            availableFromUtc: string;
+            /** Format: date-time */
+            availableToUtc: string;
+            /** Format: int32 */
+            windows: number;
+            note: null | string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         /** @description A controller on a report, where it came from included. */
         AtcContactDto: {
             callsign: string;
@@ -3475,6 +3642,29 @@ export interface components {
             callsign: string;
             frequency: null | string;
         };
+        /**
+         * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
+         *     its words, its state, its window, when its availabilities close and how long a shift is — to whoever holds `EventAtc.View`
+         *     somewhere, the staff of a FIR among them, who do not read the event itself.
+         */
+        AtcEventDto: {
+            /** Format: int64 */
+            id: number;
+            ownerDepartment: components["schemas"]["Department"];
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            state: components["schemas"]["EventStateKind"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date-time */
+            closesAtUtc: string;
+            /** Format: int32 */
+            shiftMinutes: number;
+            /** Format: date-time */
+            cancelledAt: null | string;
+        };
         /** @description An exemption on a report: with its status at the send, and the checks it softens as they were then. */
         AtcExemptionDto: {
             callsign: string;
@@ -3489,6 +3679,13 @@ export interface components {
             kind: components["schemas"]["ExemptionKind"];
             note: null | string;
         };
+        /** @description A position of the division as the form of a position offers it: the callsign, its name, its kind and its FIR. */
+        AtcPositionChoiceDto: {
+            callsign: string;
+            name: string;
+            type: string;
+            fir: null | string;
+        };
         /**
          * @description What the form shows while the pilot fills it in: the controllers online along the chosen flights, or «not available» —
          *     and the credit the outlines of the regions ask for, next to an answer derived from them.
@@ -3497,6 +3694,19 @@ export interface components {
             available: boolean;
             proposed: components["schemas"]["AtcContactDto"][];
             attribution: string;
+        };
+        /** @description An ATC rating of the core's vocabulary as the settings offer it: the network's number, and the short name the staff say. */
+        AtcRatingChoiceDto: {
+            /** Format: int32 */
+            number: number;
+            shortName: string;
+        };
+        /** @description A window of hours, from when to when, as the payloads and the pages of the ATC carry them. */
+        AtcWindowDto: {
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
         };
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
@@ -3533,6 +3743,11 @@ export interface components {
             ip: null | string;
             /** Format: date-time */
             at: string;
+        };
+        /** @description What a member sends to give their availability for an event, or to change it (design M4 §4.2): the windows, and a note. */
+        AvailabilityRequest: {
+            windows: null | components["schemas"]["AtcWindowDto"][];
+            note: null | string;
         };
         /** @description An assignment as the form loads it. */
         AwardAssignmentDetailDto: {
@@ -4739,6 +4954,47 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
+         *     the staff's note, and how many controllers are available in some of its hours — read with a page of positions; none for a row read alone.
+         */
+        EventAtcPositionDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            callsign: string;
+            name: null | string;
+            fir: null | string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            note: null | string;
+            /** Format: int32 */
+            candidates: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on a position of an event. The event is chosen when it is created and never changes; the care is the event's
+         *     and the FIR the core's directory's, both taken before the permission is asked. No hours is the event's window.
+         */
+        EventAtcPositionWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            callsign: string;
+            /** Format: date-time */
+            fromUtc: null | string;
+            /** Format: date-time */
+            toUtc: null | string;
+            note: null | string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
          * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
          *     core names a person — `{ vid, name }`, so that the list writes a person whose data was erased with the core's word —, the flight of
          *     its slot with the aircraft the pilot chose, when they booked, and when the reminder of the day before left. The flight is read off
@@ -4823,6 +5079,8 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+            /** Format: int32 */
+            shiftMinutes: null | number;
         };
         /**
          * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
@@ -5035,8 +5293,9 @@ export interface components {
         /**
          * @description What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
          *     own (E3b), cancelling another (EventCancelRequest). Its department is the module's base department, which the
-         *     payload does not carry. Of the five switches, the three of M4a and the event in person with its venue (E16): the roster enters
-         *     with its phase. A null `Body` keeps the description as it is; a venue written in no language is none.
+         *     payload does not carry. All five switches: the three of M4a, the event in person with its venue (E16), and the roster with the
+         *     length of its shifts (E11a) — none is the setting's. A null `Body` keeps the description as it is; a venue written in no
+         *     language is none.
          */
         EventWriteDto: {
             kind: string;
@@ -5072,6 +5331,10 @@ export interface components {
             venue?: {
                 [key: string]: string;
             };
+            /** @default false */
+            hasRoster: boolean;
+            /** Format: int32 */
+            shiftMinutes?: null | number;
         };
         /**
          * @description One line of what a check saw. The server writes an i18n key with its values, which the page words in the reader's
@@ -5825,6 +6088,29 @@ export interface components {
             maintenance: boolean;
         };
         /**
+         * @description An availability as its controller reads it, on the event's page: the event, the windows in their order of time and the note — to draw
+         *     the form again for a change —, until when it can be changed or withdrawn (the close, §4.2), and whether it still can: changed until the
+         *     close of an event not cancelled, withdrawn until the close of any.
+         */
+        MyAvailabilityDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            windows: components["schemas"]["AtcWindowDto"][];
+            note: null | string;
+            /** Format: date-time */
+            closesAtUtc: string;
+            changeable: boolean;
+            withdrawable: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
          * @description A booking as its pilot reads it on their own page (design M4 §7.1, E6b): the event — its address, its title, what its dates
          *     say now —, the flight with the aircraft chosen (BookedFlight: a public slot's own, a private one's with the flight its
          *     pilot wrote, E7), and whether it may still be withdrawn: until the off block (§3.6). Past ones too: the page of the member keeps
@@ -6074,6 +6360,52 @@ export interface components {
         PagedResultOfAircraftProfileDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["AircraftProfileDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfAtcCandidateDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AtcCandidateDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfAtcEventDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["AtcEventDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -6350,6 +6682,29 @@ export interface components {
         PagedResultOfEventAirportDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventAirportDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventAtcPositionDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventAtcPositionDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7265,6 +7620,17 @@ export interface components {
             id: number;
             name: components["schemas"]["LocalizedOfstring"];
         };
+        /** @description A position an event opens, as its page shows it: the callsign, the name the core knows — none for one it no longer knows —, the hours. */
+        PublicAtcPositionDto: {
+            /** Format: int64 */
+            id: number;
+            callsign: string;
+            name: null | string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+        };
         /**
          * @description What the public site is given: the published version and nothing about the draft behind it.
          *     There is no row version, no audit trail and no status, because a visitor has nothing to do with
@@ -7330,11 +7696,25 @@ export interface components {
             name: null | string;
         };
         /**
+         * @description The ATC of an event with a roster as its page shows it (design M4 §4.2, §7.1, E11a): the positions it opens — to everybody, with the name
+         *     the core knows and their hours —, until when a controller gives their availability, whether they still can, the least ATC rating it asks
+         *     as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in.
+         */
+        PublicEventAtcDto: {
+            positions: components["schemas"]["PublicAtcPositionDto"][];
+            /** Format: date-time */
+            closesAtUtc: string;
+            open: boolean;
+            minimumRating: null | string;
+            ratedEnough: null | boolean;
+        };
+        /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
          *     kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
          *     cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
          *     the page says and counts down to until then — none for an event without slots; and its private slots (E7), by airport, direction
-         *     and time, free or taken; and for an event in person (E16) its venue and the questions a member answers to register.
+         *     and time, free or taken; and for an event in person (E16) its venue and the questions a member answers to register; and for an event
+         *     with a roster (E11a) its positions and what the reader may do with their availability.
          *     Unseen is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
          *     event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.
          */
@@ -7369,6 +7749,7 @@ export interface components {
             inPerson: boolean;
             venue: null | components["schemas"]["LocalizedOfstring"];
             questions: components["schemas"]["PublicQuestionDto"][];
+            atc: null | components["schemas"]["PublicEventAtcDto"];
         };
         /** @description A route of an event as its page shows it (design M4 §1.4): the two airports, the route to file, the remarks. */
         PublicEventRouteDto: {
@@ -14501,6 +14882,426 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcPositionsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventAtcPositionDto"];
+                };
+            };
+        };
+    };
+    EventAtcPositionsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAtcPositionWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcPositionDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventAtcPositionsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcPositionDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcPositionsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAtcPositionWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcPositionDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcPositionsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcCandidates: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAtcCandidateDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcEvents: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfAtcEventDto"];
+                };
+            };
+        };
+    };
+    EventsAtcEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcEventDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcDivisionPositions: {
+        parameters: {
+            query: {
+                eventId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcPositionChoiceDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtcRatingChoiceDto"][];
+                };
+            };
+        };
+    };
+    EventsMyAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAvailabilityDto"][];
+                };
+            };
+        };
+    };
+    EventsGiveAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvailabilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAvailabilityDto"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAvailabilityDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsWithdrawAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

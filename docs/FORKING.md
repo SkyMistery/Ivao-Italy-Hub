@@ -510,8 +510,13 @@ from its draft to the evening it is flown:
   with the flight they fly — an arrival with its departure from the same gate —, and withdraws it until
   its off block; the staff take a booking away with a reason;
 - a gate manager reads the bookings with a personal token, and every step writes to whoever it concerns;
-- **«Duplicate»** copies an event onto a new date as a draft: last year's RFE, with its airports, routes
-  and, if you choose, its public slots, every time moved by as much.
+- **«Duplicate»** copies an event onto a new date as a draft: last year's RFE, with its airports, routes,
+  ATC positions and, if you choose, its public slots, every time moved by as much.
+
+An event with an **ATC roster** opens its positions — chosen among the positions of your division, each with
+its FIR from IVAO's data — and its controllers give their availability from its page, in windows of hours,
+until a few days before it; the staff read, on each position, who is available. The roster itself is the
+second part of the module.
 
 What a fork decides about it is, again, configuration and data.
 
@@ -531,7 +536,7 @@ advisors —, and `positionGrants` in the example file gives them what the modul
 | `EventRoutes.View`, `.Edit` | the routes of an event | ✓ | ✓ |
 | `EventBookings.View` | the slots and the bookings, with the pilots' VIDs; the export a gate manager reads | ✓ | ✓ |
 | `EventBookings.Edit` | load and correct the slots, generate the private ones, take a booking away | ✓ | ✓ |
-| `EventAtc.View`, `.Edit` | the ATC of an event (with the roster, in the second part) | ✓ | ✓ |
+| `EventAtc.View`, `.Edit` | the ATC of an event: its positions and who is available (and the roster, in the second part) | ✓ | ✓ |
 | `EventReports.View` | the reports of support (in the second part) | ✓ | ✓ |
 
 Other departments collaborate on a part of every event, and the example file gives them that part **on
@@ -559,6 +564,12 @@ division:
 | `bookingGapMinutes` | 10 | the least minutes between two bookings of one pilot in the same event, one way or the other |
 | `reminderLeadHours` | 24 | how long before the off block of a booking its pilot is reminded of it |
 | `pilotRetentionMonths` | 24 | how long after an event the bookings of its pilots are kept, once the second part of the module deletes them |
+| `shiftMinutes` | 60 | the length of a shift of an event's roster, when the event does not say its own |
+| `minimumAtcRating` | none | the least ATC rating a member gives their availability with, chosen among the core's; none, any member |
+| `applicationsCloseDays` | 3 | how many days before an event its controllers' availabilities close |
+| `rosterPublishDays` | 2 | how many days before an event its roster is published — never more than the days of the close |
+| `maxConsecutiveShifts`, `breakShifts` | 2, 1 | at most so many shifts in a row for a controller, then so many of break (read by the roster) |
+| `experienceMonths` | 12 | how far back the positions a controller opened count when the roster is proposed |
 
 **`kindPresets`** is the one to write on day one. The kinds of an event are words of the calendar — the
 seed brings `rfe`, `rfo`, `mse` and `online-day`, which you rename or retire at
@@ -574,8 +585,9 @@ and private slots, an MSE with private slots only, and an online day about the w
 
 - **The pages**: `/events`, public, with the events to come and in progress and the calendar under them;
   `/events/{slug}`, the page of one event, with its slots — free or taken, never by whom —, and, for a
-  member, the bookings; `/events/mine` for a member's own; `/staff/events` and the pages under it for the
-  department. The module reserves the first segment of an address, `events`, and no event takes the
+  member, the bookings and the availability as a controller; `/events/mine` for a member's own; `/staff/events`
+  and the pages under it for the department, and `/staff/events/atc` for whoever works on the ATC of the
+  events without the rest of them — the staff of a FIR. The module reserves the first segment of an address, `events`, and no event takes the
   address `mine`.
 - **Two Data blocks**, placed with the editor like any other: `events.eventList` on a public page, and
   `events.myEvents`, a member's bookings still to fly, on `/me`. The hub places neither for you.
@@ -600,13 +612,15 @@ The events, their airports, routes and slots stay, for the staff. A pilot's book
 too: they are its history. When the super administrator erases the data of a person, their bookings of an
 event still to end are deleted, and the slots are free again; the ones of an event that ended stay under a
 pseudonym, without the flight they wrote for a private slot, the note the staff wrote about it and the
-session of the network it was found in. What they did as staff — an event cancelled, a flight excused —
-stays under the pseudonym.
+session of the network it was found in. Their availability as a controller is treated the same way: deleted
+for an event still to end, kept under the pseudonym and without their note for one that ended. What they did
+as staff — an event cancelled, a flight excused — stays under the pseudonym.
 
 ### What it does not do yet
 
-- **The controllers**: the positions to open, the availability, the roster, the reliability of whoever
-  does not show up, and the reports of support with their awards — the second part of the module.
+- **The roster**: proposing the shifts from the availabilities, correcting and publishing it, the
+  reliability of whoever does not show up, and the reports of support with their awards — the rest of the
+  second part of the module. The positions and the availabilities are there.
 - **The events people come to in person**, with their registration — the third part.
 - **The stands of the private slots**, which the gate manager gives; the hub keeps the pair of an arrival
   and its departure, for one gate.

@@ -5,8 +5,11 @@ import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
 import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from '../../shared/list';
 
+import { settingsFromFormValues } from './schemas';
 import type {
   AirportFormValues,
+  AtcPositionFormValues,
+  AvailabilityFormValues,
   CancelFormValues,
   DuplicateFormValues,
   EventFormValues,
@@ -31,6 +34,8 @@ import type {
  * through the verbs of E6a and E7, and the staff's list of the bookings of an event with «take away».
  * The events in person (E16): the questions of an event through the CRUD engine, with their sums; a member's registration — read, sent or
  * changed, withdrawn —; and the staff's list of the registrations of an event with «take away».
+ * The ATC (E11a): the positions of an event through the CRUD engine, the controllers available on one, the heads of the events with a
+ * roster and the two lists of the core the forms choose from; a member's availability — read, given or changed, withdrawn.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -83,7 +88,7 @@ export function useSaveSettings() {
       unwrap(
         await api.PUT('/api/modules/{key}/settings', {
           params: { path: { key: MODULE_KEY } },
-          body: values,
+          body: settingsFromFormValues(values),
         }),
       ) as EventsSettings,
     onSuccess: async (saved) => {
@@ -136,6 +141,8 @@ export function eventToFormValues(event: EventDetailDto, locales: readonly strin
     kind: event.kind,
     publicSlots: event.publicSlots,
     privateSlots: event.privateSlots,
+    hasRoster: event.hasRoster,
+    ...(event.shiftMinutes === null ? {} : { shiftMinutes: event.shiftMinutes }),
     wholeDivision: event.wholeDivision,
     inPerson: event.inPerson,
     organizer: event.organizer,
@@ -179,6 +186,8 @@ function eventBody(values: EventFormValues, body: Body | null): EventWriteDto {
     visibility: values.visibility,
     rowVersion: values.rowVersion,
     inPerson: values.inPerson,
+    hasRoster: values.hasRoster,
+    shiftMinutes: values.shiftMinutes ?? null,
     // A venue written in no language is none, and left out.
     ...(values.venue === undefined || Object.values(values.venue).every((text) => text.trim() === '')
       ? {}
@@ -983,6 +992,212 @@ export function useWithdrawRegistration() {
       ),
     onSuccess: () => {
       void registrationsChanged(queryClient);
+    },
+  });
+}
+
+// ---- the ATC (E11a) ----------------------------------------------------------------------------------
+
+export type EventAtcPositionDto = components['schemas']['EventAtcPositionDto'];
+export type AtcCandidateDto = components['schemas']['AtcCandidateDto'];
+export type AtcEventDto = components['schemas']['AtcEventDto'];
+export type AtcPositionChoiceDto = components['schemas']['AtcPositionChoiceDto'];
+export type AtcRatingChoiceDto = components['schemas']['AtcRatingChoiceDto'];
+export type MyAvailabilityDto = components['schemas']['MyAvailabilityDto'];
+export type PublicEventAtcDto = components['schemas']['PublicEventAtcDto'];
+
+const atcKey = ['events', 'atc'] as const;
+
+/** A page of a list the server reads by hand: its number, its size and the term of its search box. */
+function pageOf(search: ListSearch): { page: number; pageSize: number; q?: string } {
+  return { page: search.page, pageSize: search.pageSize, ...(search.q === undefined ? {} : { q: search.q }) };
+}
+
+/** The heads of the events with a roster still to end, a page of them: the list of the staff of the ATC (§6.3). */
+export function atcEventsQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'heads', search] as const,
+    queryFn: async () =>
+      unwrap(await api.GET('/api/events/atc/events', { params: { query: pageOf(search) } })),
+  });
+}
+
+/** The head of one event with a roster, as the staff of the ATC read it — the staff of a FIR among them, who do not read the event. */
+export function atcEventQuery(id: number) {
+  return queryOptions({
+    queryKey: [...atcKey, 'head', id] as const,
+    queryFn: async (): Promise<AtcEventDto> =>
+      unwrap(await api.GET('/api/events/atc/events/{id}', { params: { path: { id } } })),
+  });
+}
+
+/** The positions of an event, by the hour they open unless a column is sorted, with how many controllers are available on each. */
+export function atcPositionsQuery(eventId: number, search: ListSearch = allOfAnEvent) {
+  return queryOptions({
+    queryKey: [...atcKey, 'positions', 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/atc/positions', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+export function atcPositionQuery(id: number) {
+  return queryOptions({
+    queryKey: [...atcKey, 'positions', 'detail', id] as const,
+    queryFn: async (): Promise<EventAtcPositionDto> =>
+      unwrap(await api.GET('/api/events/atc/positions/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function atcPositionToFormValues(position: EventAtcPositionDto): AtcPositionFormValues {
+  return {
+    eventId: position.eventId,
+    callsign: position.callsign,
+    fromUtc: position.fromUtc,
+    toUtc: position.toUtc,
+    note: position.note ?? '',
+    rowVersion: position.rowVersion,
+  };
+}
+
+/** What a position changes on screen: the positions of its event, and the page of the event, which lists them. */
+async function atcPositionsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...atcKey, 'positions'] }),
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+  ]);
+}
+
+/** Saves a position; empty hours travel as none, and the server gives the event's. */
+export function useSaveAtcPosition(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: AtcPositionFormValues): Promise<EventAtcPositionDto> => {
+      const text = (value: string | undefined) =>
+        value === undefined || value.trim() === '' ? null : value.trim();
+      const body = {
+        eventId: values.eventId,
+        callsign: values.callsign,
+        fromUtc: text(values.fromUtc),
+        toUtc: text(values.toUtc),
+        note: text(values.note),
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/atc/positions', { body }))
+        : unwrap(
+            await api.PUT('/api/events/atc/positions/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: () => atcPositionsChanged(queryClient),
+  });
+}
+
+export function useDeleteAtcPosition() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(
+        await api.DELETE('/api/events/atc/positions/{id}', { params: { path: { id: String(id) } } }),
+      ),
+    onSuccess: () => {
+      void atcPositionsChanged(queryClient);
+    },
+  });
+}
+
+/** The controllers available in some of the hours of a position, the first given first (§4.2). */
+export function atcCandidatesQuery(positionId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'candidates', positionId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/atc/positions/{id}/candidates', {
+          params: { path: { id: positionId }, query: pageOf(search) },
+        }),
+      ),
+  });
+}
+
+/**
+ * The positions of the division the reader may open on an event, which a position is chosen from: the server asks the one handler of
+ * each, so the chief of a FIR is offered their FIR's (the review of #256, point 8).
+ */
+export function divisionPositionsQuery(eventId: number) {
+  return queryOptions({
+    queryKey: [...atcKey, 'division-positions', eventId] as const,
+    queryFn: async (): Promise<AtcPositionChoiceDto[]> =>
+      unwrap(await api.GET('/api/events/atc/division-positions', { params: { query: { eventId } } })),
+  });
+}
+
+/** The ATC ratings of the core's vocabulary, which the least rating of the settings is chosen from. */
+export function atcRatingsQuery() {
+  return queryOptions({
+    queryKey: [...atcKey, 'ratings'] as const,
+    queryFn: async (): Promise<AtcRatingChoiceDto[]> => unwrap(await api.GET('/api/events/atc/ratings')),
+    staleTime: Infinity,
+  });
+}
+
+/** A member's own availabilities, past ones too, by the start of their events: the page of an event finds its own there. */
+export function myAvailabilityQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'availability'] as const,
+    queryFn: async (): Promise<MyAvailabilityDto[]> => unwrap(await api.GET('/api/events/mine/availability')),
+  });
+}
+
+/** What an availability changes on screen: the member's own list, the candidates of the positions and how many each has. */
+async function availabilityChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'availability'] }),
+    queryClient.invalidateQueries({ queryKey: atcKey }),
+  ]);
+}
+
+/** Gives the member's availability for an event, or changes it: the windows the form holds, and the note. */
+export function useGiveAvailability(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: AvailabilityFormValues): Promise<MyAvailabilityDto> =>
+      unwrap(
+        await api.PUT('/api/events/mine/availability/{eventId}', {
+          params: { path: { eventId } },
+          body: {
+            windows: values.windows.map((window) => ({
+              fromUtc: window.fromUtc ?? '',
+              toUtc: window.toUtc ?? '',
+            })),
+            note: values.note.trim() === '' ? null : values.note.trim(),
+          },
+        }),
+      ),
+    onSuccess: () => {
+      void availabilityChanged(queryClient);
+    },
+  });
+}
+
+/** Withdraws the member's availability for an event, until the close. */
+export function useWithdrawAvailability() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (eventId: number): Promise<void> =>
+      unwrapEmpty(
+        await api.DELETE('/api/events/mine/availability/{eventId}', { params: { path: { eventId } } }),
+      ),
+    onSuccess: () => {
+      void availabilityChanged(queryClient);
     },
   });
 }

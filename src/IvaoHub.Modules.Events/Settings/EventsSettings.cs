@@ -1,5 +1,6 @@
 using FluentValidation;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Ivao;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Settings;
@@ -46,6 +47,30 @@ public sealed record EventsSettings
 
     /// <summary>Hours before the off block time of a booking the pilot's reminder leaves (§3.8).</summary>
     public int ReminderLeadHours { get; init; } = 24;
+
+    /// <summary>The length of a shift of the roster when the event does not say its own (§4.3, E11a).</summary>
+    public int ShiftMinutes { get; init; } = 60;
+
+    /// <summary>
+    /// The least ATC rating a member gives their availability with (§4.2, E11a): the network's number of a rating of the core's vocabulary,
+    /// chosen from it, never written in the code. None by default: any member — the division writes its own.
+    /// </summary>
+    public int? MinimumAtcRating { get; init; }
+
+    /// <summary>The most shifts in a row a controller is proposed for (§4.3, read by E11b).</summary>
+    public int MaxConsecutiveShifts { get; init; } = 2;
+
+    /// <summary>The shifts of break after that many in a row (§4.3, read by E11b).</summary>
+    public int BreakShifts { get; init; } = 1;
+
+    /// <summary>Days before the start of an event its availabilities close, and the roster is proposed (§4.2, §4.3).</summary>
+    public int ApplicationsCloseDays { get; init; } = 3;
+
+    /// <summary>Days before the start of an event its roster is published (§4.4, read by E12): the staff correct it in between.</summary>
+    public int RosterPublishDays { get; init; } = 2;
+
+    /// <summary>How many months back the positions a controller opened count as experience (§4.3, read by E11b).</summary>
+    public int ExperienceMonths { get; init; } = 12;
 }
 
 /// <summary>
@@ -63,6 +88,21 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
     /// <summary>A week, as the reminder of a training.</summary>
     public const int MaxReminderLeadHours = 7 * 24;
+
+    /// <summary>A quarter of an hour: shorter, a controller would hand over the frequency more often than they would control it.</summary>
+    public const int MinShiftMinutes = 15;
+
+    /// <summary>Twelve hours: a shift longer than that is the whole event, not a shift.</summary>
+    public const int MaxShiftMinutes = 12 * 60;
+
+    /// <summary>A day of shifts in a row, at the shortest shift: more is no limit at all.</summary>
+    public const int MaxShiftsInARow = 24 * 60 / MinShiftMinutes;
+
+    /// <summary>Two months: an event whose availabilities close earlier than that has not been announced yet.</summary>
+    public const int MaxDaysBefore = 60;
+
+    /// <summary>Five years of a controller's positions: the archive of the sessions keeps no more than that worth reading.</summary>
+    public const int MaxExperienceMonths = 60;
 
     public EventsSettingsValidator()
     {
@@ -93,21 +133,41 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
         RuleFor(settings => settings.PilotRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
         RuleFor(settings => settings.InPersonRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
         RuleFor(settings => settings.ReminderLeadHours).InclusiveBetween(1, MaxReminderLeadHours).WithMessage("errors.number.range");
+
+        // The ATC (E11a): the numbers of the roster, read by E11b and E12, ranged here once.
+        RuleFor(settings => settings.ShiftMinutes).InclusiveBetween(MinShiftMinutes, MaxShiftMinutes).WithMessage("errors.number.range");
+        RuleFor(settings => settings.MaxConsecutiveShifts).InclusiveBetween(1, MaxShiftsInARow).WithMessage("errors.number.range");
+        RuleFor(settings => settings.BreakShifts).InclusiveBetween(0, MaxShiftsInARow).WithMessage("errors.number.range");
+        RuleFor(settings => settings.ApplicationsCloseDays).InclusiveBetween(0, MaxDaysBefore).WithMessage("errors.number.range");
+        RuleFor(settings => settings.RosterPublishDays).InclusiveBetween(0, MaxDaysBefore).WithMessage("errors.number.range");
+        RuleFor(settings => settings.ExperienceMonths).InclusiveBetween(1, MaxExperienceMonths).WithMessage("errors.number.range");
+
+        // The roster is published after the availabilities close, never before: in between the staff correct it (§4.4, c2).
+        RuleFor(settings => settings.RosterPublishDays)
+            .LessThanOrEqualTo(settings => settings.ApplicationsCloseDays)
+            .When(settings => settings.ApplicationsCloseDays is >= 0 and <= MaxDaysBefore)
+            .WithMessage("events:errors.rosterBeforeClose");
     }
 }
 
 /// <summary>
-/// The rules of a save: those of the values, and the one that reads what the hub knows — a preset is for a kind the calendar has.
-/// A kind the division took off its calendar since is refused on its row, so that the department sees it and takes it out,
-/// rather than finding it gone.
+/// The rules of a save: those of the values, and the two that read what the hub knows — a preset is for a kind the calendar has, and
+/// the least ATC rating is one of the core's vocabulary (E11a). A kind the division took off its calendar since is refused on its row,
+/// so that the department sees it and takes it out, rather than finding it gone.
 /// </summary>
 public sealed class EventsSettingsSaveValidator : AbstractValidator<EventsSettings>
 {
-    public EventsSettingsSaveValidator(HubDbContext hub)
+    public EventsSettingsSaveValidator(HubDbContext hub, RatingVocabulary vocabulary)
     {
         ArgumentNullException.ThrowIfNull(hub);
+        ArgumentNullException.ThrowIfNull(vocabulary);
 
         Include(new EventsSettingsValidator());
+
+        RuleFor(settings => settings.MinimumAtcRating)
+            .Must(rating => vocabulary.Find(RatingKind.Atc, rating) is not null)
+            .When(settings => settings.MinimumAtcRating is not null)
+            .WithMessage("events:errors.ratingUnknown");
 
         RuleFor(settings => settings.KindPresets).CustomAsync(async (presets, context, cancellationToken) =>
         {

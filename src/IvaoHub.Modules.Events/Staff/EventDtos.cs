@@ -4,6 +4,7 @@ using FluentValidation;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events.Settings;
 using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Events.Staff;
@@ -57,13 +58,15 @@ public sealed record EventDetailDto(
     DateTime? CancelledAt,
     Localized<string>? CancellationNote,
     DateTime UpdatedAt,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    int? ShiftMinutes);
 
 /// <summary>
 /// What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
 /// own (E3b), cancelling another (<see cref="EventCancelRequest"/>). Its department is the module's base department, which the
-/// payload does not carry. Of the five switches, the three of M4a and the event in person with its venue (E16): the roster enters
-/// with its phase. A null <c>Body</c> keeps the description as it is; a venue written in no language is none.
+/// payload does not carry. All five switches: the three of M4a, the event in person with its venue (E16), and the roster with the
+/// length of its shifts (E11a) — none is the setting's. A null <c>Body</c> keeps the description as it is; a venue written in no
+/// language is none.
 /// </summary>
 public sealed record EventWriteDto(
     string Kind,
@@ -84,7 +87,9 @@ public sealed record EventWriteDto(
     Visibility Visibility,
     DateTime RowVersion,
     bool InPerson = false,
-    Localized<string>? Venue = null);
+    Localized<string>? Venue = null,
+    bool HasRoster = false,
+    int? ShiftMinutes = null);
 
 /// <summary>"Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read.</summary>
 public sealed record EventCancelRequest(Localized<string> Note, DateTime RowVersion);
@@ -149,7 +154,8 @@ internal static class EventMapper
         row.CancelledAt,
         row.CancellationNote,
         row.UpdatedAt,
-        row.RowVersion);
+        row.RowVersion,
+        row.ShiftMinutes);
 
     /// <summary>
     /// Everything the payload says, and the version the caller edited, so a stale form is answered 409. The address in lower
@@ -162,6 +168,8 @@ internal static class EventMapper
         row.PrivateSlots = payload.PrivateSlots;
         row.WholeDivision = payload.WholeDivision;
         row.InPerson = payload.InPerson;
+        row.HasRoster = payload.HasRoster;
+        row.ShiftMinutes = payload.ShiftMinutes;
         row.Organizer = payload.Organizer;
         row.ExternalUrl = string.IsNullOrWhiteSpace(payload.ExternalUrl) ? null : payload.ExternalUrl.Trim();
         row.Title = payload.Title;
@@ -225,6 +233,12 @@ public sealed class EventWriteDtoValidator : AbstractValidator<EventWriteDto>
         RuleFor(row => row.Venue)
             .Must(venue => venue is null || venue.Values.All(text => (text?.Length ?? 0) <= Event.MaxVenueLength))
             .WithMessage("errors.text.tooLong");
+
+        // The length of a shift of its roster (E11a), in the setting's range; none is the setting's.
+        RuleFor(row => row.ShiftMinutes)
+            .InclusiveBetween(EventsSettingsValidator.MinShiftMinutes, EventsSettingsValidator.MaxShiftMinutes)
+            .When(row => row.ShiftMinutes is not null)
+            .WithMessage("errors.number.range");
 
         RuleFor(row => row.StartsAtUtc).NotNull().WithMessage("errors.required");
         RuleFor(row => row.EndsAtUtc).NotNull().WithMessage("errors.required");

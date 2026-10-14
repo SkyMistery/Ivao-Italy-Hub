@@ -51,6 +51,8 @@ test('the form has a field for everything a client writes on an event but the de
     rowVersion: '0001-01-01T00:00:00',
     inPerson: false,
     venue: { en: 'Where it is' },
+    hasRoster: true,
+    shiftMinutes: 45,
   };
 
   expect(
@@ -75,24 +77,28 @@ test('a kind presets the switches of the form, and a kind without a preset switc
   expect(presetSwitches(presets, 'first')).toEqual({
     publicSlots: true,
     privateSlots: true,
+    hasRoster: true,
     wholeDivision: false,
     inPerson: false,
   });
   expect(presetSwitches(presets, 'second')).toEqual({
     publicSlots: false,
     privateSlots: false,
+    hasRoster: false,
     wholeDivision: true,
     inPerson: true,
   });
   expect(presetSwitches(presets, 'third')).toEqual({
     publicSlots: false,
     privateSlots: false,
+    hasRoster: false,
     wholeDivision: false,
     inPerson: false,
   });
   expect(presetSwitches([], 'first')).toEqual({
     publicSlots: false,
     privateSlots: false,
+    hasRoster: false,
     wholeDivision: false,
     inPerson: false,
   });

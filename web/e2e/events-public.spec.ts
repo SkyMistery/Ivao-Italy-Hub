@@ -188,6 +188,7 @@ function event(overrides: Record<string, unknown> = {}) {
     inPerson: false,
     venue: null,
     questions: [],
+    atc: null,
     ...overrides,
   };
 }

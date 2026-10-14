@@ -3,7 +3,8 @@
   "nav": {
     "section": "Events",
     "events": "Events",
-    "settings": "Events settings"
+    "settings": "Events settings",
+    "atc": "Events ATC"
   },
   "search": {
     "kinds": {
@@ -40,7 +41,8 @@
       "slots": "Slots",
       "bookings": "Bookings",
       "questions": "Questions",
-      "registrations": "Registrations"
+      "registrations": "Registrations",
+      "atc": "ATC"
     },
     "actions": {
       "publish": "Publish",
@@ -83,7 +85,9 @@
       "state": "State",
       "updatedAt": "Last changed",
       "inPerson": "In person",
-      "venue": "Venue"
+      "venue": "Venue",
+      "hasRoster": "ATC roster",
+      "shiftMinutes": "Length of a shift, in minutes"
     },
     "hints": {
       "kind": "A kind of the events, as their settings list them: every kind of the calendar while they list none. Choosing it sets the switches below to what the settings say of that kind; change them as this event needs.",
@@ -95,7 +99,9 @@
       "visibleFromUtc": "Leave it empty to show the event as soon as it is published.",
       "bookingOpensAtUtc": "From when pilots book; each slot closes at its own off block time. Leave it empty for an event without slots.",
       "inPerson": "People come to the event in person: the members register by answering its questions.",
-      "venue": "Where the event takes place: its page and the members' emails say it. Needed to publish an event in person, in every language of the division."
+      "venue": "Where the event takes place: its page and the members' emails say it. Needed to publish an event in person, in every language of the division.",
+      "hasRoster": "The event has an ATC roster: its positions are opened in the tab «ATC», and the controllers give their availability from its page.",
+      "shiftMinutes": "Each position is cut into shifts this long. Leave it empty for the settings' length."
     },
     "options": {
       "state": {
@@ -374,6 +380,35 @@
       "fields": {
         "answers": "Your answers"
       }
+    },
+    "atc": {
+      "title": "ATC",
+      "positions": "The positions the event opens",
+      "noPositions": "The positions are not open yet.",
+      "position": "Position",
+      "from": "Opens (UTC)",
+      "to": "Closes (UTC)",
+      "closesAt": "You can give your availability until {{date}}.",
+      "signIn": "Sign in to give your availability",
+      "closed": "Availabilities are closed.",
+      "ratingTooLow": "Giving your availability takes an ATC rating of at least {{rating}}.",
+      "given": "You have given your availability.",
+      "saved": "Your availability is saved.",
+      "give": "Give your availability",
+      "save": "Save your availability",
+      "yourWindows": "When you can control",
+      "withdrawTitle": "Withdraw your availability for {{title}}?",
+      "withdrawDescription": "The roster will not count on you: you can give it again until availabilities close.",
+      "fields": {
+        "windows": "When you can control",
+        "windows.fromUtc": "From",
+        "windows.toUtc": "To",
+        "note": "Note"
+      },
+      "hints": {
+        "windows": "One window or more, within the hours of the event, in UTC.",
+        "note": "For the staff who make the roster: a position you prefer, a trainee of yours…"
+      }
     }
   },
   "private": {
@@ -493,7 +528,9 @@
     "bookingsToCome": "Bookings of events still to end: deleted, and their slots free again",
     "bookingsOver": "Bookings of events that ended, kept without the pilot and without the flight they wrote",
     "registrationsToCome": "Registrations to events still to end: deleted",
-    "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote"
+    "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote",
+    "availabilitiesToCome": "ATC availabilities for events still to end: deleted",
+    "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -535,14 +572,28 @@
       "bookingGapMinutes": "Minutes between two bookings of the same pilot",
       "pilotRetentionMonths": "Months the pilots' bookings are kept after an event",
       "reminderLeadHours": "Hours before the off block time the reminder is sent",
-      "inPersonRetentionMonths": "Months the registrations to an event in person are kept after it"
+      "inPersonRetentionMonths": "Months the registrations to an event in person are kept after it",
+      "shiftMinutes": "Length of a shift of the roster, in minutes",
+      "minimumAtcRating": "Least ATC rating to give an availability",
+      "maxConsecutiveShifts": "Shifts in a row, at most",
+      "breakShifts": "Shifts of break after them",
+      "applicationsCloseDays": "Days before an event its availabilities close",
+      "rosterPublishDays": "Days before an event its roster is published",
+      "experienceMonths": "Months of positions counted as experience"
     },
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
       "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
       "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
       "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time.",
-      "inPersonRetentionMonths": "After this many months from the end of an event in person, its registrations and the seats of its activities are deleted; the sums stay in its statistics."
+      "inPersonRetentionMonths": "After this many months from the end of an event in person, its registrations and the seats of its activities are deleted; the sums stay in its statistics.",
+      "shiftMinutes": "The length of a shift when the event does not say its own.",
+      "minimumAtcRating": "A member below it does not give their availability. Empty: any member.",
+      "maxConsecutiveShifts": "The roster proposes nobody for more shifts than this one after the other.",
+      "breakShifts": "After that many in a row, a controller rests this many shifts before the next one.",
+      "applicationsCloseDays": "The controllers give and change their availability until this many days before the start; then the roster is proposed.",
+      "rosterPublishDays": "The roster is published this many days before the start: no more than the days of the close, so the staff have time to correct it.",
+      "experienceMonths": "How far back the positions a controller opened count when the roster is proposed."
     }
   },
   "notifications": {
@@ -696,7 +747,24 @@
     "questionAnsweredType": "Somebody already answered this question: its kind of answer stays.",
     "questionAnsweredChoices": "Somebody already answered this question: its choices can be rewritten and added to, not taken away.",
     "questionChoicesCount": "From 2 to 20 choices.",
-    "questionChoicesOnlyForChoice": "Only a question with one choice or several choices has choices."
+    "questionChoicesOnlyForChoice": "Only a question with one choice or several choices has choices.",
+    "availabilityClosed": "This event takes no availability now: it has no position yet, it is cancelled, or availabilities are closed.",
+    "ratingTooLow": "Your ATC rating is below the one this event asks for.",
+    "windowOutsideEvent": "The window is outside the hours of the event.",
+    "windowEndsBeforeItStarts": "It ends before it starts.",
+    "windowsOverlap": "This window meets another one: join them.",
+    "tooManyWindows": "At most 12 windows.",
+    "positionUnknown": "Not a position of the division.",
+    "eventHasNoRoster": "The event has no roster: switch on «ATC roster» in its settings first.",
+    "positionOutsideEvent": "The position opens or closes outside the hours of the event.",
+    "positionTwice": "The event opens this position already in hours that meet these.",
+    "hasRosterRows": "The event still has positions or availabilities: delete its positions first; with availabilities, cancel the event instead.",
+    "eventHasAvailabilities": "Some controllers gave their availability for this event: cancel it instead.",
+    "ratingUnknown": "Choose a rating of the list.",
+    "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
+    "availabilityChanged": "Your availability changed in another window meanwhile: reload the page to see it as it is now, and change it from there.",
+    "positionOnCancelledEvent": "The event is cancelled: no position is opened or changed on it.",
+    "positionOnEventOver": "The event is over: no position is opened or changed on it."
   },
   "questions": {
     "title": "Questions",
@@ -759,5 +827,61 @@
         "reason": "In your own words: the member reads it in the email, and it is kept nowhere else."
       }
     }
+  },
+  "atc": {
+    "title": "Events ATC",
+    "description": "The events with a roster still to end: the positions each one opens, and who is available to control them.",
+    "open": "Open",
+    "empty": "No event with a roster to come.",
+    "head": "Availabilities close on {{date}}. A shift lasts {{minutes}} minutes.",
+    "readOnly": "You read the positions of this event: changing them is for the staff of its ATC.",
+    "events": {
+      "fields": {
+        "title": "Event",
+        "state": "State",
+        "startsAtUtc": "Start",
+        "closesAtUtc": "Availabilities close"
+      }
+    },
+    "positions": {
+      "title": "Positions",
+      "create": "New position",
+      "edit": "Position",
+      "empty": "No position yet: open one, and the controllers can give their availability.",
+      "fields": {
+        "callsign": "Position",
+        "name": "Name",
+        "fir": "FIR",
+        "fromUtc": "Opens",
+        "toUtc": "Closes",
+        "note": "Note",
+        "candidates": "Available"
+      },
+      "hints": {
+        "callsign": "One of the positions of the division.",
+        "fromUtc": "In UTC. Leave it empty for the start of the event.",
+        "toUtc": "In UTC. Leave it empty for the end of the event.",
+        "note": "For the staff: the members do not read it."
+      },
+      "delete": {
+        "title": "Delete this position?",
+        "description": "The position is no longer opened at this event, and nobody is proposed on it."
+      }
+    },
+    "candidates": {
+      "title": "Who is available",
+      "empty": "Nobody has given their availability in these hours yet.",
+      "fields": {
+        "controller": "Controller",
+        "rating": "Rating",
+        "wholePosition": "The whole time",
+        "windows": "Windows",
+        "note": "Note",
+        "createdAt": "Given on",
+        "availableFromUtc": "Available from",
+        "availableToUtc": "Available until"
+      }
+    },
+    "closedEvent": "The event is cancelled or over: its positions are read, not changed."
   }
 }

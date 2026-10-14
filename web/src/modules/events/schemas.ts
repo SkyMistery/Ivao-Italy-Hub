@@ -7,7 +7,7 @@ import { CALENDAR_SCREEN_VIEWS } from '../../shared/ui';
 
 /**
  * The forms of the events (M4: the settings of E2, the event of E3a, its routes and the filters of `/events` of E4, its slots
- * and the table they are loaded from of E5, the flight of a private slot of E7), as zod
+ * and the table they are loaded from of E5, the flight of a private slot of E7, a position and an availability of E11a), as zod
  * schemas: types and what is required. The rules — a kind the calendar has, the ranges, an airport the hub knows — are the
  * server's (design M0 §7.5).
  *
@@ -26,18 +26,30 @@ export interface KindPreset {
   readonly inPerson: boolean;
 }
 
-/** The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, and how long an event in person keeps its registrations (E16). */
+/**
+ * The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, how long an event in person keeps its
+ * registrations (E16), and the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
+ * vocabulary, chosen from it, none for any member.
+ */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
   readonly bookingGapMinutes: number;
   readonly pilotRetentionMonths: number;
   readonly inPersonRetentionMonths: number;
   readonly reminderLeadHours: number;
+  readonly shiftMinutes: number;
+  readonly minimumAtcRating: number | null;
+  readonly maxConsecutiveShifts: number;
+  readonly breakShifts: number;
+  readonly applicationsCloseDays: number;
+  readonly rosterPublishDays: number;
+  readonly experienceMonths: number;
 }
 
-/** What the fields of the settings choose from, already in the language on screen. */
+/** What the fields of the settings choose from, already in the language on screen: the kinds, and the ATC ratings (E11a). */
 export interface SettingsChoices {
   readonly kinds: readonly ChoiceOption[];
+  readonly ratings: readonly ChoiceOption[];
 }
 
 export function settingsSchema(choices: SettingsChoices) {
@@ -57,16 +69,38 @@ export function settingsSchema(choices: SettingsChoices) {
     pilotRetentionMonths: z.number().int(),
     inPersonRetentionMonths: z.number().int(),
     reminderLeadHours: z.number().int(),
+    // The ATC roster (E11a): the rating chosen among the core's, its number travelling as text in the choice; empty, any member.
+    shiftMinutes: z.number().int(),
+    minimumAtcRating: z.string().optional().meta({ choices: choices.ratings }),
+    maxConsecutiveShifts: z.number().int(),
+    breakShifts: z.number().int(),
+    applicationsCloseDays: z.number().int(),
+    rosterPublishDays: z.number().int(),
+    experienceMonths: z.number().int(),
   });
 }
 
-/** The form's values are the settings themselves, the lists copied: what the form sends back is what the server keeps. */
+/** The form's values: the settings themselves, the lists copied and the rating as the text of its choice. */
 export type SettingsFormValues = z.output<ReturnType<typeof settingsSchema>>;
 
 export function settingsToFormValues(settings: EventsSettings): SettingsFormValues {
+  const { minimumAtcRating, ...rest } = settings;
+
   return {
-    ...settings,
+    ...rest,
     kindPresets: settings.kindPresets.map((preset) => ({ ...preset })),
+    ...(minimumAtcRating === null ? {} : { minimumAtcRating: String(minimumAtcRating) }),
+  };
+}
+
+/** The settings as the server takes them back: the rating chosen as its number, none for an empty choice. */
+export function settingsFromFormValues(values: SettingsFormValues): EventsSettings {
+  const { minimumAtcRating, ...rest } = values;
+
+  return {
+    ...rest,
+    minimumAtcRating:
+      minimumAtcRating === undefined || minimumAtcRating === '' ? null : Number(minimumAtcRating),
   };
 }
 
@@ -121,8 +155,8 @@ export const eventsSearchSchema = listSearchSchema.extend({
 export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
 /**
- * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, and for an event in
- * person its questions and its registrations (design M4 §7.2).
+ * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, for an event in
+ * person its questions and its registrations, and for an event with a roster its ATC (design M4 §7.2).
  */
 export const eventEditorSearchSchema = z.object({
   tab: z
@@ -135,6 +169,7 @@ export const eventEditorSearchSchema = z.object({
       'bookings',
       'questions',
       'registrations',
+      'atc',
     ])
     .optional(),
 });
@@ -154,15 +189,17 @@ export interface EventChoices {
 
 /**
  * The form of an event, mirroring `EventWriteDto` (design M4 §1.2, E3a): the kind first, because choosing it presets the
- * switches below it (§1.12); then who organises it, its words, its window, who reads it, its banner. The switches of the ATC
- * roster enters with its phase (M4b); the event in person and its venue are E16's. Every rule is the server's: nothing here refuses a
- * field the server would take, so the form can follow what is written as it is written.
+ * switches below it (§1.12); then who organises it, its words, its window, who reads it, its banner. The ATC roster with the length
+ * of its shifts is E11a's — empty, the settings' —; the event in person and its venue are E16's. Every rule is the server's: nothing
+ * here refuses a field the server would take, so the form can follow what is written as it is written.
  */
 export function eventSchema(choices: EventChoices) {
   return z.object({
     kind: z.string().meta({ choices: choices.kinds }),
     publicSlots: z.boolean(),
     privateSlots: z.boolean(),
+    hasRoster: z.boolean(),
+    shiftMinutes: z.number().int().optional(),
     wholeDivision: z.boolean(),
     inPerson: z.boolean(),
     organizer: z.enum(ORGANIZERS),
@@ -183,8 +220,11 @@ export function eventSchema(choices: EventChoices) {
 
 export type EventFormValues = z.output<ReturnType<typeof eventSchema>>;
 
-/** The switches of the form a kind presets: the three of M4a, and the event in person (E16). */
-type PresetSwitches = Pick<EventFormValues, 'publicSlots' | 'privateSlots' | 'wholeDivision' | 'inPerson'>;
+/** The switches of the form a kind presets: the three of M4a, the event in person (E16) and the roster (E11a). */
+type PresetSwitches = Pick<
+  EventFormValues,
+  'publicSlots' | 'privateSlots' | 'hasRoster' | 'wholeDivision' | 'inPerson'
+>;
 
 /**
  * What a kind switches on (§1.12): its preset, or nothing at all for a kind the division gave no preset to. Never imposed —
@@ -196,6 +236,7 @@ export function presetSwitches(presets: readonly KindPreset[], kind: string): Pr
   return {
     publicSlots: preset?.publicSlots ?? false,
     privateSlots: preset?.privateSlots ?? false,
+    hasRoster: preset?.hasRoster ?? false,
     wholeDivision: preset?.wholeDivision ?? false,
     inPerson: preset?.inPerson ?? false,
   };
@@ -209,6 +250,7 @@ export function emptyEvent(locales: readonly string[]): EventFormValues {
     kind: '',
     publicSlots: false,
     privateSlots: false,
+    hasRoster: false,
     wholeDivision: false,
     inPerson: false,
     organizer: 'Division',
@@ -491,4 +533,51 @@ export function emptyQuestion(
     required: false,
     rowVersion: NEW_ROW_VERSION,
   };
+}
+
+// ---- the ATC (E11a) ----------------------------------------------------------------------------------
+
+/**
+ * A position an event opens (design M4 §4.1), mirroring `EventAtcPositionWriteDto`: the callsign chosen among the positions of the
+ * division — a closed list, as the core's directory gives it —, the hours it is open, and a note for the staff. Empty hours are the
+ * event's; every rule is the server's: a position of the division, inside the event, once at a time.
+ */
+export function atcPositionSchema(positions: readonly ChoiceOption[]) {
+  return z.object({
+    eventId: z.number().int().meta({ hidden: true }),
+    callsign: z.string().meta({ choices: positions }),
+    fromUtc: z.string().optional().meta({ datetime: true }),
+    toUtc: z.string().optional().meta({ datetime: true }),
+    note: z.string().meta({ multiline: true }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type AtcPositionFormValues = z.output<ReturnType<typeof atcPositionSchema>>;
+
+/** A new position of an event: no callsign chosen yet, open the whole event. */
+export function emptyAtcPosition(eventId: number): AtcPositionFormValues {
+  return { eventId, callsign: '', note: '', rowVersion: NEW_ROW_VERSION };
+}
+
+/**
+ * A controller's availability (design M4 §4.2), mirroring `AvailabilityRequest`: their windows, each from when to when — in UTC, as
+ * every hour of an event —, and a note for the staff who make the roster. Every rule is the server's: inside the event, each ending
+ * after it starts, none meeting another.
+ */
+export const availabilitySchema = z.object({
+  windows: z.array(
+    z.object({
+      fromUtc: z.string().optional().meta({ datetime: true }),
+      toUtc: z.string().optional().meta({ datetime: true }),
+    }),
+  ),
+  note: z.string().meta({ multiline: true }),
+});
+
+export type AvailabilityFormValues = z.output<typeof availabilitySchema>;
+
+/** A new availability: one window, the whole event — a controller narrows it to their hours. */
+export function emptyAvailability(startsAtUtc: string, endsAtUtc: string): AvailabilityFormValues {
+  return { windows: [{ fromUtc: startsAtUtc, toUtc: endsAtUtc }], note: '' };
 }

@@ -1,11 +1,15 @@
 using System.Security.Claims;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events.Atc;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -79,7 +83,8 @@ public sealed record PublicEventCardDto(
 /// kind, who organises it, the airports, the routes — in the order the flight operations wrote them — and the description; a
 /// cancelled one with its note; and its public slots (E5), by their off block, free or taken; and when its pilots book from (E6b), which
 /// the page says and counts down to until then — none for an event without slots; and its private slots (E7), by airport, direction
-/// and time, free or taken; and for an event in person (E16) its venue and the questions a member answers to register.
+/// and time, free or taken; and for an event in person (E16) its venue and the questions a member answers to register; and for an event
+/// with a roster (E11a) its positions and what the reader may do with their availability.
 /// <para><c>Unseen</c> is null for whoever the event is for. It says why only to the staff of the events, who read the page of an
 /// event in every state — a draft, one not seen yet, one that is over —, and the page tells them that nobody else does, and why.</para>
 /// </summary>
@@ -107,7 +112,23 @@ public sealed record PublicEventDto(
     Localized<string>? CancellationNote,
     bool InPerson,
     Localized<string>? Venue,
-    IReadOnlyList<PublicQuestionDto> Questions);
+    IReadOnlyList<PublicQuestionDto> Questions,
+    PublicEventAtcDto? Atc);
+
+/// <summary>
+/// The ATC of an event with a roster as its page shows it (design M4 §4.2, §7.1, E11a): the positions it opens — to everybody, with the name
+/// the core knows and their hours —, until when a controller gives their availability, whether they still can, the least ATC rating it asks
+/// as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in.
+/// </summary>
+public sealed record PublicEventAtcDto(
+    IReadOnlyList<PublicAtcPositionDto> Positions,
+    DateTime ClosesAtUtc,
+    bool Open,
+    string? MinimumRating,
+    bool? RatedEnough);
+
+/// <summary>A position an event opens, as its page shows it: the callsign, the name the core knows — none for one it no longer knows —, the hours.</summary>
+public sealed record PublicAtcPositionDto(long Id, string Callsign, string? Name, DateTime FromUtc, DateTime ToUtc);
 
 /// <summary>
 /// A question of an event in person as its page asks it (§4-bis, E16): what the member's form is built from. Read by whoever reads the
@@ -135,7 +156,12 @@ public sealed record PublicQuestionDto(long Id, QuestionType Type, Localized<str
 public sealed class PublicEvents(
     EventsDbContext database,
     IAirportDirectory airports,
+    IAtcPositionDirectory atcPositions,
     IAuthorizationService authorization,
+    ModuleSettingsStore settingsStore,
+    RatingVocabulary vocabulary,
+    EventsPeople people,
+    ICurrentUser currentUser,
     IClock clock)
 {
     /// <summary>Never more cards than this, whatever is asked: the site has no archive, and a list is not an export.</summary>
@@ -328,7 +354,41 @@ public sealed class PublicEvents(
             row.CancellationNote,
             row.InPerson,
             row.Venue,
-            [.. questions.Select(PublicQuestionDto.Of)]);
+            [.. questions.Select(PublicQuestionDto.Of)],
+            row.HasRoster ? await AtcAsync(row, now, cancellationToken) : null);
+    }
+
+    /// <summary>
+    /// The ATC of an event with a roster (E11a): its positions by the hour they open, and what the reader may do with their availability —
+    /// the same rules the member's verbs ask (<see cref="AtcRules"/>), so the page offers only what the server takes.
+    /// </summary>
+    private async Task<PublicEventAtcDto> AtcAsync(Event row, DateTime now, CancellationToken cancellationToken)
+    {
+        var positions = await database.AtcPositions.AsNoTracking()
+            .Where(position => position.EventId == row.Id)
+            .OrderBy(position => position.FromUtc)
+            .ThenBy(position => position.Callsign)
+            .ToListAsync(cancellationToken);
+        var named = await atcPositions.FindAsync([.. positions.Select(position => position.Callsign).Distinct()], cancellationToken);
+        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
+
+        bool? rated = currentUser.IsAuthenticated
+            ? AtcRules.IsRatedEnough(vocabulary, settings, await people.AtcRatingAsync(currentUser.Vid, cancellationToken))
+            : null;
+
+        return new PublicEventAtcDto(
+            [
+                .. positions.Select(position => new PublicAtcPositionDto(
+                    position.Id,
+                    position.Callsign,
+                    named.GetValueOrDefault(position.Callsign)?.Name,
+                    position.FromUtc,
+                    position.ToUtc)),
+            ],
+            AtcRules.ClosesAt(row, settings),
+            AtcRules.IsOpen(row, settings, positions.Count > 0, now),
+            vocabulary.Find(RatingKind.Atc, settings.MinimumAtcRating)?.ShortName,
+            rated);
     }
 
     /// <summary>Every airport named, with the name the core knows, in one question to the core.</summary>
