@@ -109,12 +109,15 @@ public sealed class EventsModule : ModuleBase
         // Its life (E3b): what publishing it asks, and the job that projects it again when it is seen and when it ends.
         services.AddScoped<EventPublishing>();
         services.AddScoped<EventReleaseJob>();
+
+        // Every quarter of an hour, which falls on the same instants in every zone; the zone is said all the same (note
+        // 2026-09-28-i-job-quando-passenger-spegne-l-hub, §7), and it is UTC, as the reminders of the bookings have it.
         services.AddQuartz(quartz => quartz
             .AddJob<EventReleaseJob>(job => job.WithIdentity(EventReleaseJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(EventReleaseJob.JobName)
-                .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
-                .WithCronSchedule(EventReleaseJob.Cron)));
+                .WithIdentity(EventReleaseJob.TriggerName)
+                .WithCronSchedule(EventReleaseJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
         // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.
         services.AddScoped<PublicEvents>();
