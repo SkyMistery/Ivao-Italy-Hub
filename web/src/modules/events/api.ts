@@ -38,6 +38,8 @@ import type {
  * The ATC (E11a): the positions of an event through the CRUD engine, the controllers available on one, the heads of the events with a
  * roster and the two lists of the core the forms choose from; a member's availability — read, given or changed, withdrawn.
  * The roster (E11b): read by position and hour, the one hand written read, and corrected through the CRUD engine — add, move, take away.
+ * Its publication (E12): the page of a published roster, a member's own shifts with handing one over, and the staff's requests with their
+ * two decisions.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -1297,6 +1299,165 @@ export function useWithdrawAvailability() {
       ),
     onSuccess: () => {
       void availabilityChanged(queryClient);
+    },
+  });
+}
+
+// ---- the publication, the shifts and handing one over (E12) ------------------------------------------
+
+export type PublicRosterDto = components['schemas']['PublicRosterDto'];
+export type PublicRosterRowDto = components['schemas']['PublicRosterRowDto'];
+export type MyShiftDto = components['schemas']['MyShiftDto'];
+export type MyTransferDto = components['schemas']['MyTransferDto'];
+export type EventAtcTransferDto = components['schemas']['EventAtcTransferDto'];
+export type TransferStatus = components['schemas']['TransferStatus'];
+
+/** The type of the block of the coverage of the rosters, as `AtcCoverageProvider.BlockType` spells it on the server. */
+export const ATC_COVERAGE_BLOCK = 'events.atcCoverage';
+
+/** A request of the staff's list with the warnings on whoever would take the shift in words of the language on screen. */
+export type TransferRow = EventAtcTransferDto & { readonly alerts: string[] };
+
+/**
+ * The roster of an event as its page shows it (§4.4, E12): before its publication only when it will be; after it, the shifts and the
+ * uncovered pieces by position and hour — the names only to a signed in reader. Null for an event the reader does not see or with no roster.
+ */
+export function publicRosterQuery(slug: string) {
+  return queryOptions({
+    queryKey: [...publicKey, 'roster', slug] as const,
+    queryFn: async (): Promise<PublicRosterDto | null> => {
+      const answer = await api.GET('/api/events/public/{slug}/roster', { params: { path: { slug } } });
+
+      return answer.response.status === 404 ? null : unwrap(answer);
+    },
+  });
+}
+
+/** A member's own shifts of the published rosters, past ones too, by their start: `/events/mine`. */
+export function myShiftsQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'shifts'] as const,
+    queryFn: async (): Promise<MyShiftDto[]> => unwrap(await api.GET('/api/events/mine/shifts')),
+  });
+}
+
+/** What a request changes on screen: the member's shifts, the block of their events, the staff's requests and the roster. */
+async function transfersChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'shifts'] }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, MY_EVENTS_BLOCK] }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, ATC_COVERAGE_BLOCK] }),
+    queryClient.invalidateQueries({ queryKey: atcKey }),
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+  ]);
+}
+
+/** Asks to hand a shift over (§4.4-bis): to a member named by VID, or to nobody, and why. The shift stays theirs until the staff decide. */
+export function useAskTransfer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      shiftId,
+      toVid,
+      note,
+    }: {
+      shiftId: number;
+      toVid: number | null;
+      note: string;
+    }): Promise<MyTransferDto> =>
+      unwrap(
+        await api.POST('/api/events/mine/shifts/{id}/transfer', {
+          params: { path: { id: shiftId } },
+          body: { toVid, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void transfersChanged(queryClient);
+    },
+  });
+}
+
+/** Takes back the request waiting for a shift. */
+export function useWithdrawTransfer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (shiftId: number): Promise<void> =>
+      unwrapEmpty(
+        await api.DELETE('/api/events/mine/shifts/{id}/transfer', { params: { path: { id: shiftId } } }),
+      ),
+    onSuccess: () => {
+      void transfersChanged(queryClient);
+    },
+  });
+}
+
+/**
+ * The requests to hand a shift over of an event, as the staff of the ATC read them (§4.4-bis): a page of them, the first asked first; the
+ * server sends the warnings on whoever would take the shift as data, and `alerts` writes them in the language on screen.
+ */
+export function transfersQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  alerts: (row: EventAtcTransferDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...atcKey, 'transfers', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/atc/transfers', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): TransferRow => ({ ...row, alerts: alerts(row) })) };
+    },
+  });
+}
+
+/** «Approve»: the shift passes to the member named, or to the one the staff choose — needed for a request to nobody. */
+export function useApproveTransfer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      toVid,
+      note,
+    }: {
+      id: number;
+      toVid: number | null;
+      note: string;
+    }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/atc/transfers/{id}/approve', {
+          params: { path: { id } },
+          body: { toVid, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void transfersChanged(queryClient);
+    },
+  });
+}
+
+/** «Refuse», with the note whoever asked reads in the mail: the shift stays theirs. */
+export function useRefuseTransfer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/atc/transfers/{id}/refuse', {
+          params: { path: { id } },
+          body: { note: note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void transfersChanged(queryClient);
     },
   });
 }

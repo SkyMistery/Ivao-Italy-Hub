@@ -103,13 +103,15 @@ const detail = { id: event.id, publicSlots: true, privateSlots: false } as Event
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
 /**
- * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b) and registrations (E16), plain
- * lists.
+ * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b), registrations (E16), shifts and
+ * availabilities (E12), plain lists.
  */
 const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/public/{slug}': event,
   '/api/events/mine/bookings': [],
   '/api/events/mine/registrations': [],
+  '/api/events/mine/shifts': [],
+  '/api/events/mine/availability': [],
 };
 
 afterEach(() => {

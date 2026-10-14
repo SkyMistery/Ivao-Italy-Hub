@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 
-import type { RosterRowDto } from '../api';
+import type { EventAtcTransferDto, RosterRowDto } from '../api';
 
 /**
  * The words of a row of the roster (design M4 §4.3, §4.4, E11b; note 2026-10-13-la-proposta-del-roster, readings 4 and 6), in the
@@ -14,6 +14,17 @@ import type { RosterRowDto } from '../api';
  */
 export function rosterLines(row: RosterRowDto, t: TFunction): { why: string[]; alerts: string[] } {
   return { why: why(row, t), alerts: row.warnings.map((warning) => alert(warning, t)) };
+}
+
+/**
+ * The warnings of a request to hand a shift over (E12, §4.4-bis), in the language on screen: that its shift is no longer theirs, when the
+ * staff gave it to somebody else meanwhile, and the rules of the proposal whoever would take it does not keep — the roster's own words.
+ */
+export function transferLines(row: EventAtcTransferDto, t: TFunction): string[] {
+  return [
+    ...(row.stale ? [t('events:atc.transfers.stale')] : []),
+    ...row.warnings.map((warning) => alert(warning, t)),
+  ];
 }
 
 function why(row: RosterRowDto, t: TFunction): string[] {

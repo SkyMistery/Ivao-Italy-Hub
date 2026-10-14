@@ -65,7 +65,11 @@ export function RosterSection({ event, editable }: { event: AtcEventDto; editabl
       ) : (
         <>
           <p className="text-muted-foreground text-sm">
-            {t('events:atc.roster.proposed', { date: moment(event.rosterProposedAt) })}
+            {t('events:atc.roster.proposed', { date: moment(event.rosterProposedAt) })}{' '}
+            {/* Its publication (E12): the controllers are told then, and of every change after it. */}
+            {event.rosterPublishedAt === null
+              ? t('events:atc.roster.publishesOn', { date: moment(event.publishesAtUtc) })
+              : t('events:atc.roster.published', { date: moment(event.rosterPublishedAt) })}
           </p>
           <DataList
             columns={columns}
