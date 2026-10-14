@@ -3834,6 +3834,93 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #24
     sue PR; da allora gira a ogni unione (sopra);
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
+### E4d — Gli eventi prendono i pezzi del nucleo
+
+**Da dove viene**: non c'era in E0. Tre fasi del nucleo unite fra l'11 e il 12 ottobre lasciavano agli eventi una riga ciascuna, che la
+regola 6 di `CLAUDE.md` §0 teneva fuori dalle loro PR: **E10m** (#252) il lettore dei nomi, `MemberNames.ReadAsync`, al posto della copia
+di `EventsPeople.NamesAsync` (la nota di E10m, §5); **E10l** (#250) il `Dialog` del nucleo, con la «X» tradotta, al posto di quello di
+Atmosphere nei due dialog del modulo (la nota di E10l, §4); **E10j** (#239) il fuso detto da ogni trigger, e `events-release` non lo diceva
+(il punto 6 della revisione della #239). La formazione ha fatto lo stesso in A13f (#258). Branch `m4/e4d-events-adopt-core`, nata
+`--no-track` da `main` a `c232448` (con E16, E11a e A13f), **senza coda**. Fase del modulo: nessuna migrazione, nessuna decisione nuova;
+una nota, perché tocca due test del nucleo (la regola di Carmine sulla #258).
+
+1. **Il lettore dei nomi**: `EventsPeople.NamesAsync` risponde `MemberNames.ReadAsync`; `EventMemberDto` e `Member` restano; in
+   `MemberNamesTests` esce la riga degli eventi.
+2. **Il trigger dice il suo fuso**: `events-release` in UTC, come `events-reminders`; un test unitario legge i trigger del modulo come li
+   costruisce l'host.
+3. **Il `Dialog` del nucleo** in `EventSlots.tsx` e `PrivateSlots.tsx`; i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx`.
+4. **Il resto che le ultime fasi del nucleo chiedono a un modulo**: solo gli usi di una riga, ovvi; gli altri nella PR, per dopo.
+
+**Test**: unità `EventsJobTriggersTests`; vitest le due schede nuove in `titlesAndEmptyLists.test.tsx` e la guardia di `Dialog.test.tsx`
+senza eccezioni; il resto com'era.
+**Fatta quando**: nessuna copia del lettore negli eventi, nessun trigger degli eventi senza fuso, nessun file di `web/src` con il
+`Dialog` di Atmosphere, e `core-guard` verde per la sua regola.
+
+**Com'è andata** (14 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`):
+
+- **Fatto**:
+  - **il lettore dei nomi** (`src/IvaoHub.Modules.Events/EventsPeople.cs`): `NamesAsync(IEnumerable<int> vids, …)` è ora una riga,
+    `MemberNames.ReadAsync(hub, vids, cancellationToken)`; resta, invece di andarsene, perché ha i suoi chiamanti nel modulo (le liste
+    dello staff, la disponibilità di E11a, le iscrizioni di E16), come `TrainingPeople.NamesAsync` in A13f. `AtcRatingsAsync`,
+    `AtcRatingAsync`, `Member` ed `EventMemberDto` restano del modulo. L'unica risposta che cambia è quella per un VID sotto uno, che
+    il lettore non nomina mai: uno stato che l'hub non scrive (la cancellazione toglie l'utente);
+  - **`MemberNamesTests`** (`tests/IvaoHub.IntegrationTests/`, del nucleo): dal test gemello esce il confronto con `EventsPeople` (il
+    test si chiama ora `TheReaderAnswersWhatTheToursAnswer`), da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` la riga degli eventi
+    con il suo commento; il riassunto della classe dice il passaggio. Resta `EventsPeople.Member` in
+    `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay`;
+  - **il fuso di `events-release`** (`EventsModule.cs`): `.WithCronSchedule(EventReleaseJob.Cron, schedule =>
+    schedule.InTimeZone(TimeZoneInfo.Utc))`, con il commento della nota del 28 settembre, §7; il nome del trigger è
+    `EventReleaseJob.TriggerName` (`events-release-quarterly`, lo stesso di prima), come `TrainingRemindersJob.TriggerName` di A13f;
+  - **`tests/IvaoHub.UnitTests/EventsJobTriggersTests.cs`** (2, nuovo): i due trigger del modulo come li costruisce l'host, per una
+    divisione nel fuso di Roma, dicono UTC, il loro cron e il loro job; copiato da `TrainingJobTriggersTests`;
+  - **i due dialog** (`EventSlots.tsx`, il dialog di uno slot; `PrivateSlots.tsx`, quello dell'ora privata): importano `Dialog` da
+    `../../../shared/ui` invece che da Atmosphere; le props sono le stesse, e nessuno dei due passava `topRightCloseButton`;
+  - **`web/src/shared/ui/Dialog.test.tsx`** (del nucleo, di E10l): la lista `NOT_MOVED_YET` se ne va, e la guardia chiede che nessun file
+    di `web/src` importi da Atmosphere `Dialog`, `DialogTopRightClose`, `Sheet` o `SheetContent`;
+  - **le schede «Domande» e «Iscrizioni» di E16** (`screens/questions.tsx`, `screens/registrations.tsx`), vuote, dicevano ancora la frase
+    del nucleo su quello che crea un dipartimento, che E10k ha reso sostituibile ed E4c ha tolto alle altre liste del modulo:
+    `emptyDescription` con due chiavi nuove, parole che descrivono e non invitano, vere anche per chi legge e basta (la prima scelta di
+    dalberone in E4c):
+    - `questions.empty`: «Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.» — «The questions a member
+      answers to register for the event will show up here.»;
+    - `registrations.empty`: «Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.» — «The members'
+      registrations for the event will show up here, with their answers.»;
+  - **i test**: tre in più in `titlesAndEmptyLists.test.tsx` (le due schede nelle due lingue, e chi legge soltanto le domande);
+  - **la nota** `decisions/2026-10-14-gli-eventi-sul-lettore-dei-nomi.md`, **decisa** dalla regola di Carmine sulla #258.
+- **Cercato e lasciato** (il punto 4):
+  - **E10k** (`emptyDescription`, `PageMetadata`): ogni lista generata del modulo ha ora la sua frase (sopra); `/events`, la pagina di un
+    evento e `/events/mine` dicono il loro titolo da E4c, e l'iscrizione di E16 e la disponibilità di E11a stanno dentro la pagina
+    dell'evento; le schermate dello staff non dicono un titolo loro, come quelle del nucleo (nessuna schermata di `/staff` monta
+    `PageMetadata`);
+  - **E10o** (`.meta({ label })`): lo usa già il form del membro di E16 (`registrationForm.ts`), costruito dalle domande; gli altri form
+    del modulo sono fissi e dicono i loro campi con `labels`, come vuole la nota di E10o. Niente da prendere;
+  - **E10p** (#261, le ore a 24, un formatter solo): **non è unita** il 14 ottobre: saltata, come chiedeva il prompt;
+  - per dopo, nella PR: la frase della lista vuota delle postazioni di E11a (`atc.positions.empty`, «Nessuna postazione ancora: aprine
+    una…») invita, e chi tiene l'ATC in sola lettura non ha il bottone (la regola di E4c); da riscrivere con E11b o in una fase sua.
+- **Verificato, in locale** (14 ottobre 2026, sull'albero della PR, `main` a `c232448`):
+  - `dotnet build IvaoHub.sln --configuration Release` 0 avvisi; unità **1279/1279**; la suite di integrazione intera, senza filtro,
+    **597/597** (12,4 minuti), `MemberNamesTests` compresa;
+  - **la prova al contrario** del trigger: con `.WithCronSchedule(EventReleaseJob.Cron)` senza fuso, `TheReleaseRunsInUtc` cade
+    («Expected: "UTC" — Actual: "W. Europe Standard Time"»), l'altro passa; rimesso il fuso, 2/2. ⚠️ Su una macchina il cui fuso locale
+    si chiama `UTC` passerebbe anche senza, come `TrainingJobTriggersTests`;
+  - **la prova al contrario** della guardia: con `EventSlots.tsx` e `PrivateSlots.tsx` di `main`, «no screen draws an «X» of
+    Atmosphere’s» cade e nomina i due file (4 su 5 passano); rimessi i file della fase, 5/5;
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (851 chiavi) verdi; `pnpm i18n:sync` copia le due chiavi in
+    `locales/`; `pnpm test` **769/769** in 106 file; `pnpm build` verde; `pnpm gen:api` senza differenze;
+  - la smoke `pnpm -C web exec playwright test --workers=2` **181/181** al primo giro (1,2 minuti), con il lucchetto della 4173;
+  - `pnpm e2e:full` sulla porta 5145, `ivaohub_e2e_e4d` ricreato, con il lucchetto di Mailpit e dopo l'integrazione: **63/63** al primo
+    giro (13,9 minuti);
+  - **i due dialog sul banco**, con uno spec usa e getta (uno slot pubblico e gli slot privati generati su un RFO del banco, la pagina
+    pubblicata aperta dal pilota del banco nelle due lingue, l'`aria-label` letto dal DOM): la «X» del dialog di uno slot e di quello
+    dell'ora privata dice **«Chiudi»** in italiano e **«Close»** in inglese, li chiude, e nessun «Close» resta nel testo della pagina
+    italiana. Lo spec è uscito dal worktree, l'evento cancellato;
+  - le regole di `core-guard` rifatte in PowerShell (con `-cmatch`) contro `main` dalla base `c232448`: diciotto file, nessuno del
+    maintainer; del nucleo `MemberNamesTests.cs` e `Dialog.test.tsx`, giustificati dalla nota nuova: verde per la sua regola.
+- **Non verificato**:
+  - la CI, che la PR legge una volta dopo il push;
+  - i dialog in un Chrome vero, in un browser diverso da Chromium e con un lettore di schermo (lo spec li ha letti in Chromium);
+  - l'unione con E11b (#262), aperta accanto: è il passo della coda del master.
+
 ### E10m — Nucleo: un solo lettore dei nomi
 
 **Da dove viene**: non c'era in E0. L'ha portata la revisione di E6b (#240): `EventsPeople` era il quarto lettore dei nomi per VID, dopo
