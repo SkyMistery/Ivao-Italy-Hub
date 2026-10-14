@@ -19,7 +19,8 @@ namespace IvaoHub.Modules.Events.Atc;
 /// <para><b>It decides from its data, never from the hour it runs</b> (note 2026-09-28-i-job-quando-passenger-spegne-l-hub §8): every
 /// event due — its close passed, its roster never proposed, <c>roster_proposed_at</c> empty — whenever it runs, so a run lost while the hub
 /// slept is made up by the next, which the core's catch up runs after a start (E10j), and a run done twice finds the rosters proposed. Its
-/// row in <c>hub_jobs_log</c> says when it finished on every way out, as the core's catch up reads it. It never throws.</para>
+/// row in <c>hub_jobs_log</c> says when it finished on every way out, as the core's catch up reads it. It never throws; an event whose
+/// proposal fails is logged, named in the row's message and left for the next run, and the others are proposed.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class EventRosterJob(
@@ -71,18 +72,32 @@ public sealed class EventRosterJob(
 
             var proposed = 0;
             var shifts = 0;
+            var failed = new List<long>();
             foreach (var row in due)
             {
-                if (await proposal.ProposeAsync(row.Id, settings, now, cancellationToken) is { } written)
+                // One event that fails is logged and left for the next run; the others go on (the review of #262, point 2). Its
+                // transaction rolled back, so it is still due.
+                try
                 {
-                    proposed++;
-                    shifts += written;
+                    if (await proposal.ProposeAsync(row.Id, settings, now, cancellationToken) is { } written)
+                    {
+                        proposed++;
+                        shifts += written;
+                    }
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    logger.LogError(exception, "The roster of the event {EventId} could not be proposed.", row.Id);
+                    database.ChangeTracker.Clear();
+                    failed.Add(row.Id);
                 }
             }
 
             entry.FinishedAt = clock.UtcNow;
             entry.Status = "succeeded";
-            entry.Message = string.Create(CultureInfo.InvariantCulture, $"{proposed} roster(s) proposed with {shifts} shift(s)");
+            entry.Message = failed.Count == 0
+                ? string.Create(CultureInfo.InvariantCulture, $"{proposed} roster(s) proposed with {shifts} shift(s)")
+                : string.Create(CultureInfo.InvariantCulture, $"{proposed} roster(s) proposed with {shifts} shift(s); not proposed, left for the next run: {string.Join(", ", failed)}");
             await hub.SaveChangesAsync(cancellationToken);
 
             return proposed;

@@ -159,6 +159,7 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<RosterData>();
         services.AddScoped<RosterProposal>();
         services.AddScoped<StaffRoster>();
+        services.AddScoped<ShiftLock>();
         services.AddScoped<EventRosterJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<EventRosterJob>(job => job.WithIdentity(EventRosterJob.JobName))

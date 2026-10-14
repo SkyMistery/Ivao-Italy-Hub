@@ -5005,7 +5005,8 @@ export interface components {
         };
         /**
          * @description A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-         *     the staff's note, and how many controllers are available in some of its hours — read with a page of positions; none for a row read alone.
+         *     the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
+         *     form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
          */
         EventAtcPositionDto: {
             /** Format: int64 */
@@ -5027,6 +5028,7 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+            editable: boolean;
         };
         /**
          * @description What a client may set on a position of an event. The event is chosen when it is created and never changes; the care is the event's
@@ -8543,7 +8545,9 @@ export interface components {
         /**
          * @description One row of the roster as the staff read it (§4.4, §7.2, E11b), by position and hour: the position, the hours, what the row is, and for a
          *     shift its controller (named by the core's reader), their ATC rating as the staff say it, its why and its warnings; how many could take it
-         *     by the rules that do not depend on the other shifts — for an uncovered piece, the reason it is.
+         *     by the rules that do not depend on the other shifts, and how many of them are free for it — for an uncovered piece, the reason it is (the
+         *     review of #262, point 3); and whether the reader may write it — add on an uncovered piece, move and take away a shift —, as the one
+         *     handler answers on the row (point 5).
          */
         RosterRowDto: {
             /** Format: int64 */
@@ -8563,6 +8567,9 @@ export interface components {
             warnings: components["schemas"]["ShiftWarning"][];
             /** Format: int32 */
             candidates: number;
+            /** Format: int32 */
+            free: number;
+            editable: boolean;
         };
         /**
          * @description What a row of the roster is: a piece nobody holds, a shift the job proposed, or one the staff wrote.
@@ -8782,7 +8789,7 @@ export interface components {
          * @description What a shift does not keep of the rules of the proposal (design M4 §4.3, §4.4: «an assignment outside the rules is a warning, not a
          *     refusal»): not available for the whole of it — or never available —, below the setting's least rating, below the position's minimum for
          *     those hours (the core's words: lift the FRA on the network), below the preferred rating of its kind, in the same hours as another shift
-         *     of the controller, beyond the shifts in a row.
+         *     of the controller — of another event: in one event the correction refuses it (Carmine's answer on #259) —, beyond the shifts in a row.
          * @enum {unknown}
          */
         ShiftWarning: "NotAvailable" | "BelowMinimum" | "BelowPositionMinimum" | "BelowPreferred" | "Overlapping" | "TooManyInARow";
