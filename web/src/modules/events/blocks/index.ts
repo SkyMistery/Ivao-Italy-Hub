@@ -140,7 +140,7 @@ export const myEventsBlock: BlockRegistration = {
         eventSlug: 'gallery-everywhere',
         eventTitle: { en: 'A night everywhere', it: 'Una notte ovunque' },
         eventState: 'Announced',
-        callsign: 'XX01_TWR',
+        callsign: 'XX01_TWX',
         fromUtc: inDays(12),
         toUtc: inDays(12.04),
         transferable: true,
