@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
 
-import { benchUrl, fieldOf, readInEnglish, signIn, test } from './bench';
+import { benchUrl, readInEnglish, signIn, test } from './bench';
 
 /**
  * E11b (M4b) on the bench, through the real screens and the real server, as far as the bench's clock lets it go: the coordinator of the
  * events (`?as=events`) publishes an event with an ATC roster; the bench's trainer (`?as=trainer`), with the ATC of the events granted to
  * their VID as in `events-atc.spec.ts`, opens the tower; the bench's pilot (`?as=pilot`) gives their availability; and the trainer finds,
- * under the positions, the roster still to be proposed with the day it will be — and a shift written before the proposal refused on the
- * form, with the pilot among who is available under it.
+ * under the positions, the roster still to be proposed with the day it will be — and the form of a shift offering no «Save» before the
+ * proposal, which the server refuses as well, with the pilot among who is available under it.
  *
  * ⚠️ The roster itself is not waited for here: `events-roster` runs every quarter of an hour, and the bench has no way of starting a job on
  * demand — an endpoint of the bench is the core's (A8a, «Trovato» 4; E6b's reminder the same). «The staff move a shift» — the proposal once,
@@ -145,7 +145,7 @@ async function removeOurRows(
   }
 }
 
-test('the roster waits under the positions for the close, and nobody writes a shift before it', async ({
+test('the roster waits under the positions for the close, and no shift is written before it', async ({
   browser,
   afterwards,
 }) => {
@@ -193,7 +193,7 @@ test('the roster waits under the positions for the close, and nobody writes a sh
   await expect(roster.getByRole('heading', { name: events.atc.roster.title })).toBeVisible();
   await expect(roster.getByText(events.atc.roster.notYet.split('{{')[0]!.trim())).toBeVisible();
 
-  // ---------------------------------------------------------------- a shift before the proposal: refused on the form
+  // ---------------------------------------------------------------- a shift before the proposal: not offered, and refused
   const query = new URLSearchParams({
     positionId: String(positionId),
     fromUtc: starts,
@@ -201,13 +201,24 @@ test('the roster waits under the positions for the close, and nobody writes a sh
   });
   await staff.goto(`/staff/events/atc/${id}/shifts/new?${query.toString()}`);
   await expect(staff.getByRole('heading', { level: 1, name: events.atc.shifts.create })).toBeVisible();
-  await fieldOf(staff, events.atc.shifts.fields.controllerVid).locator('input').fill(String(pilotVid));
-  const answered = staff.waitForResponse(
-    (response) => response.request().method() === 'POST' && response.url().includes('/api/events/atc/shifts'),
-  );
-  await staff.getByRole('button', { name: 'Save' }).click();
-  expect((await answered).status()).toBe(400);
-  await expect(staff.getByText(events.errors.rosterNotProposed).first()).toBeVisible();
+  await expect(staff.getByText(events.atc.roster.notYet.split('{{')[0]!.trim())).toBeVisible();
+  await expect(staff.getByRole('button', { name: 'Save' })).toHaveCount(0);
+
+  // The page offers what the server takes (the review of #262, point 5): the server refuses it too.
+  const refused = await trainer.request.post('/api/events/atc/shifts', {
+    headers: asTheClientDoes,
+    data: {
+      positionId,
+      controllerVid: pilotVid,
+      fromUtc: starts,
+      toUtc: `${day}T18:00:00Z`,
+      rowVersion: blank,
+    },
+  });
+  expect(refused.status(), await refused.text()).toBe(400);
+  expect(((await refused.json()) as { errors: Record<string, string[]> }).errors.positionId).toEqual([
+    'events:errors.rosterNotProposed',
+  ]);
 
   // Who is available on the tower, under the form: the pilot.
   const candidates = staff.getByRole('region', { name: events.atc.candidates.title });
@@ -222,8 +233,7 @@ function englishEvents() {
     atc: {
       candidates: { title: string };
       roster: { title: string; notYet: string };
-      shifts: { create: string; fields: { controllerVid: string } };
+      shifts: { create: string };
     };
-    errors: { rosterNotProposed: string };
   };
 }

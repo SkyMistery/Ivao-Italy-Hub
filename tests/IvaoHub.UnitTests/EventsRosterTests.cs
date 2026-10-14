@@ -210,6 +210,12 @@ public sealed class EventsRosterTests
         Assert.Equal([ShiftWarning.TooManyInARow], StaffRoster.Warnings(roster[2], 14, Windows((Starts, Starts.AddHours(4))), tower, roster, Rules, Vocabulary));
         var twice = Shift(4, vid: 5, at: 0);
         Assert.Equal([ShiftWarning.Overlapping], StaffRoster.Warnings(twice, 14, Windows((Starts, Starts.AddHours(4))), tower, [first, twice], Rules, Vocabulary));
+
+        // Another event's shift at the same hour is a warning (Carmine's answer on #259); in a row only this event's count.
+        var elsewhere = Shift(5, vid: 5, at: 0, eventId: 2);
+        Assert.Equal([ShiftWarning.Overlapping], StaffRoster.Warnings(first, 14, Windows((Starts, Starts.AddHours(4))), tower, [first, elsewhere], Rules, Vocabulary));
+        var third = Shift(6, vid: 5, at: 2);
+        Assert.Empty(StaffRoster.Warnings(third, 14, Windows((Starts, Starts.AddHours(4))), tower, [Shift(7, vid: 5, at: 1, eventId: 2), Shift(8, vid: 5, at: 0, eventId: 2), third], Rules, Vocabulary));
     }
 
     [Fact]
@@ -238,8 +244,8 @@ public sealed class EventsRosterTests
     private static RosterCandidate Unknown(int vid, int? rating, int since) =>
         new(vid, rating, Windows((Starts, Starts.AddHours(6))), Starts.AddDays(-10).AddMinutes(since), Experience: null, Penalty: 0);
 
-    private static EventAtcShift Shift(long id, int vid, int at) =>
-        new() { Id = id, PositionId = 1, ControllerVid = vid, FromUtc = Starts.AddHours(at), ToUtc = Starts.AddHours(at + 1) };
+    private static EventAtcShift Shift(long id, int vid, int at, long eventId = 1) =>
+        new() { Id = id, EventId = eventId, PositionId = 1, ControllerVid = vid, FromUtc = Starts.AddHours(at), ToUtc = Starts.AddHours(at + 1) };
 
     private static AtcWindowDto[] Windows(params (DateTime From, DateTime To)[] windows) =>
         [.. windows.Select(window => new AtcWindowDto(window.From, window.To))];

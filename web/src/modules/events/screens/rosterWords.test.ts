@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { RosterRowDto } from '../api';
 
+import { isClosed } from './atcPaths';
 import { rosterLines } from './rosterWords';
 
 /** A `t` that writes the key and what it was given, so a test reads which words a row asks for. */
@@ -30,11 +31,13 @@ const base: RosterRowDto = {
   },
   warnings: [],
   candidates: 2,
+  free: 0,
+  editable: true,
 };
 
 describe('the words of a row of the roster', () => {
   it('say what decided a proposed shift, how many could take it and the connections, and the penalty only when there is one', () => {
-    expect(rosterLines(base, t)).toEqual({
+    expect(rosterLines(base, t, 'en')).toEqual({
       why: [
         'events:atc.roster.why.decidedBy.Experience',
         'events:atc.roster.why.candidates {"count":2}',
@@ -43,8 +46,10 @@ describe('the words of a row of the roster', () => {
       alerts: [],
     });
 
+    // The penalty as a number of the language on screen (the review of #262, point 4).
     const penalised = { ...base, reason: { ...base.reason!, penalty: 0.08333 } };
-    expect(rosterLines(penalised, t).why.at(-1)).toBe('events:atc.roster.why.penalty {"value":"0.08"}');
+    expect(rosterLines(penalised, t, 'en').why.at(-1)).toBe('events:atc.roster.why.penalty {"value":"0.08"}');
+    expect(rosterLines(penalised, t, 'it').why.at(-1)).toBe('events:atc.roster.why.penalty {"value":"0,08"}');
   });
 
   it('say the experience was not counted when the archive did not answer', () => {
@@ -53,19 +58,22 @@ describe('the words of a row of the roster', () => {
       reason: { ...base.reason!, callsignConnections: null, typeConnections: null },
     };
 
-    expect(rosterLines(unknown, t).why).toContain('events:atc.roster.why.noExperience');
+    expect(rosterLines(unknown, t, 'en').why).toContain('events:atc.roster.why.noExperience');
   });
 
-  it('say a shift of the staff is theirs, and an uncovered piece whether nobody could take it or those who could are busy', () => {
-    expect(rosterLines({ ...base, state: 'Staff', reason: null }, t).why).toEqual([
+  it('say a shift of the staff is theirs, and of an uncovered piece who is free for it, who is busy, or that nobody could', () => {
+    expect(rosterLines({ ...base, state: 'Staff', reason: null }, t, 'en').why).toEqual([
       'events:atc.roster.why.staff',
     ]);
 
     const uncovered = { ...base, state: 'Uncovered' as const, shiftId: null, controller: null, reason: null };
-    expect(rosterLines({ ...uncovered, candidates: 0 }, t).why).toEqual([
+    expect(rosterLines({ ...uncovered, candidates: 0 }, t, 'en').why).toEqual([
       'events:atc.roster.why.uncoveredNobody',
     ]);
-    expect(rosterLines(uncovered, t).why).toEqual(['events:atc.roster.why.uncoveredBusy {"count":2}']);
+    expect(rosterLines(uncovered, t, 'en').why).toEqual(['events:atc.roster.why.uncoveredBusy {"count":2}']);
+    expect(rosterLines({ ...uncovered, free: 1 }, t, 'en').why).toEqual([
+      'events:atc.roster.why.uncoveredFree {"count":1}',
+    ]);
   });
 
   it("write each warning, the position's minimum in the core's own words", () => {
@@ -74,10 +82,21 @@ describe('the words of a row of the roster', () => {
       warnings: ['NotAvailable', 'BelowPositionMinimum', 'TooManyInARow'] as RosterRowDto['warnings'],
     };
 
-    expect(rosterLines(warned, t).alerts).toEqual([
+    expect(rosterLines(warned, t, 'en').alerts).toEqual([
       'events:atc.roster.warnings.NotAvailable',
       'atcPositions.belowMinimum',
       'events:atc.roster.warnings.TooManyInARow',
     ]);
+  });
+});
+
+describe('an event closed to the ATC', () => {
+  const now = Date.parse('2026-11-22T00:00:00Z');
+
+  it('is cancelled or over, and a draft whose end has passed too (E11a third reading on #256, point 2)', () => {
+    expect(isClosed({ state: 'Cancelled', endsAtUtc: '2026-12-01T00:00:00Z' }, now)).toBe(true);
+    expect(isClosed({ state: 'Ended', endsAtUtc: '2026-11-21T23:00:00Z' }, now)).toBe(true);
+    expect(isClosed({ state: 'Draft', endsAtUtc: '2026-11-21T23:00:00Z' }, now)).toBe(true);
+    expect(isClosed({ state: 'Draft', endsAtUtc: '2026-11-23T23:00:00Z' }, now)).toBe(false);
   });
 });
