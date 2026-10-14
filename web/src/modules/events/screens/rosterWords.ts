@@ -8,20 +8,27 @@ import type { RosterRowDto } from '../api';
  * numbers —, and the page writes them (Carmine's answer 6 on #255). Pure, so that a test reads it without a page.
  *
  * - **The why**: what decided, how many could take the shift, the connections on the position and on its kind — or that the experience was
- *   not counted —, and the penalty when there is one; a shift of the staff says so; an uncovered piece says whether nobody could take it or
- *   those who could were already busy.
+ *   not counted —, and the penalty when there is one, as a number of the language on screen; a shift of the staff says so; an uncovered
+ *   piece says how many are free to take it, or that those who could are in other shifts or at their most in a row, or that nobody could
+ *   (the review of #262, points 3 and 4).
  * - **The warnings**: one line each; the position's minimum on the network in the core's own words, which name the network.
  */
-export function rosterLines(row: RosterRowDto, t: TFunction): { why: string[]; alerts: string[] } {
-  return { why: why(row, t), alerts: row.warnings.map((warning) => alert(warning, t)) };
+export function rosterLines(
+  row: RosterRowDto,
+  t: TFunction,
+  language: string,
+): { why: string[]; alerts: string[] } {
+  return { why: why(row, t, language), alerts: row.warnings.map((warning) => alert(warning, t)) };
 }
 
-function why(row: RosterRowDto, t: TFunction): string[] {
+function why(row: RosterRowDto, t: TFunction, language: string): string[] {
   if (row.state === 'Uncovered') {
     return [
       row.candidates === 0
         ? t('events:atc.roster.why.uncoveredNobody')
-        : t('events:atc.roster.why.uncoveredBusy', { count: row.candidates }),
+        : row.free > 0
+          ? t('events:atc.roster.why.uncoveredFree', { count: row.free })
+          : t('events:atc.roster.why.uncoveredBusy', { count: row.candidates }),
     ];
   }
 
@@ -29,6 +36,8 @@ function why(row: RosterRowDto, t: TFunction): string[] {
   if (row.state === 'Staff' || reason === null) {
     return [t('events:atc.roster.why.staff')];
   }
+
+  const penalty = new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return [
     t(`events:atc.roster.why.decidedBy.${reason.decidedBy}`),
@@ -39,7 +48,9 @@ function why(row: RosterRowDto, t: TFunction): string[] {
           callsign: reason.callsignConnections,
           type: reason.typeConnections,
         }),
-    ...(reason.penalty > 0 ? [t('events:atc.roster.why.penalty', { value: reason.penalty.toFixed(2) })] : []),
+    ...(reason.penalty > 0
+      ? [t('events:atc.roster.why.penalty', { value: penalty.format(reason.penalty) })]
+      : []),
   ];
 }
 
