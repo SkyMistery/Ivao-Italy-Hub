@@ -59,7 +59,7 @@ public sealed class EventAtcShiftWriteDtoValidator : AbstractValidator<EventAtcS
 /// a shift of whoever writes (the permission is denied to the controller of the row, the super administrator included). From the proposal to
 /// the end of the event, never on a cancelled one, under the lock of the event's row; refused only for what cannot be: a controller who never
 /// signed in, hours outside the position, the position held by somebody else in those hours, a controller on another position of the event
-/// at those hours; and from the start a shift is neither taken away nor given to another controller (Carmine's answer on issue #259). Every
+/// at those hours; and from the start a shift is no longer taken away (Carmine's answer on issue #259), though it can still be moved. Every
 /// other rule of the proposal is a warning on the roster.</item>
 /// <item>⚠️ <b>One hand written read</b> (reading 7), the sixth of the ATC: the roster of an event by position and hour, the shifts and the
 /// uncovered pieces together — which are no rows —, with the one handler asked on every position, so the staff of a FIR read the roster of
@@ -166,8 +166,8 @@ public static class ShiftEndpoints
     /// <summary>
     /// What a shift cannot be (reading 6, with Carmine's conditions on issue #259): on a roster not proposed yet, on an event cancelled or
     /// over, outside its position's hours, at the same time as another shift of its position, for a controller who holds another position of
-    /// the event at those hours, for somebody who never signed in; and from the event's start a shift is not given to another controller —
-    /// its controller's attendance is the register of reliability.
+    /// the event at those hours, for somebody who never signed in. Moving a shift — its controller, its hours, its position — stays free after
+    /// the event's start (dalberone's choice (B), note 2026-10-13-la-proposta-del-roster §7): only taking it away is refused then.
     /// <para>Read and checked under the lock of the event's row (<c>FOR UPDATE</c>, the review of #262, point 1), in a transaction that reads
     /// what is committed and that <see cref="CommitAsync"/> ends after the save: two corrections at once of the same piece meet there, and the
     /// second reads the first's shift — as the pilots' bookings, the private slots and the proposal itself are kept.</para>
@@ -186,13 +186,6 @@ public static class ShiftEndpoints
         if (Closed(parent, now) is { } closed)
         {
             return EventChildren.Refusal("positionId", closed);
-        }
-
-        if (!saving.IsNew
-            && parent.StartsAtUtc <= now
-            && (int)database.Entry(shift).Property(nameof(EventAtcShift.ControllerVid)).OriginalValue! != shift.ControllerVid)
-        {
-            return EventChildren.Refusal("controllerVid", AfterStartKey);
         }
 
         var position = await CrudSource.BackOffice<EventAtcPosition>(database).AsNoTracking()
@@ -250,7 +243,7 @@ public static class ShiftEndpoints
         services.GetRequiredService<EventsDbContext>().AtcShifts.Remove(shift);
     }
 
-    /// <summary>A shift taken away, or given to another controller, after the event started.</summary>
+    /// <summary>A shift taken away after the event started.</summary>
     private const string AfterStartKey = "events:errors.shiftAfterStart";
 
     /// <summary>Why the roster of an event takes no correction now, or none: not proposed yet, cancelled, over.</summary>

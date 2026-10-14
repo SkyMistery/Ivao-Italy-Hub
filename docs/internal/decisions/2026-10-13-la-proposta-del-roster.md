@@ -213,9 +213,7 @@ I rilievi del revisore sulla #262 ([rilievi][r]), che stanno a parte dalla rispo
 - **Un controllore su due postazioni dello stesso evento alle stesse ore** è rifiutato (`events:errors.controllerBusy`, sotto lo stesso
   blocco); **i suoi turni in altri eventi alle stesse ore** sono l'avviso «un altro suo turno nelle stesse ore», che il roster ora legge
   anche fuori dall'evento; i turni di fila si contano nell'evento.
-- ⚠️ **Lo «sposta» dall'inizio** (una lettura che la risposta non dice): cambiare il controllore di un turno toglierebbe dal registro il
-  turno di chi l'aveva come lo toglierebbe eliminarlo, quindi dall'inizio **il controllore non cambia** (la (A) chiesta al coordinatore per
-  dalberone e Carmine; la (B), solo l'eliminazione, e la (C), nessun cambio, le alternative). Il codice segue la (A).
+- **Lo «sposta» dall'inizio — la scelta di dalberone, la (B)**: la regola segue la risposta di Carmine com'è scritta, dall'inizio si rifiuta solo di **togliere** un turno; **spostarlo resta libero** (il controllore, le ore, la postazione). Uno spostamento dopo l'inizio che cambia il controllore toglie la riga del primo da quello che E13 legge, anche se l'audit la tiene; dalberone ha scelto la (B) invece di rifiutare anche quello (la (A)). Il revisore e Carmine possono chiedere di più sulla PR.
 
 ## 8. I resti della terza lettura di E11a
 

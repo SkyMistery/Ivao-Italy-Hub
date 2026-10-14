@@ -533,11 +533,11 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
-    /// Carmine's conditions on #259 that follow the clock: from the event's start a shift is no longer taken away nor given to another
-    /// controller — its hours still change —; and once the roster is proposed the availabilities stay closed, even when the start moves later.
+    /// Carmine's conditions on #259 that follow the clock: from the event's start a shift is no longer taken away, though it can still be moved to another
+    /// controller — it is still moved, controller and hours —; and once the roster is proposed the availabilities stay closed, even when the start moves later.
     /// </summary>
     [Fact]
-    public async Task FromTheStartAShiftStaysItsControllersAndAProposedRosterKeepsTheAvailabilitiesClosed()
+    public async Task FromTheStartAShiftIsNotTakenAwayAndAProposedRosterKeepsTheAvailabilitiesClosed()
     {
         var token = TestContext.Current.CancellationToken;
         var now = DateTime.UtcNow;
@@ -553,10 +553,12 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var aod = await SignedInAsync(AodVid, token);
         Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.DeleteAsync($"{ShiftEndpoints.Pattern}/{shift}", token), token))["id"]);
 
+        // Moving it stays free (dalberone's (B), note §7): its hours and its controller.
         var stored = (await ShiftsAsync(running, token)).Single(row => row.Id == shift);
-        var hours = Shift(position, EarlierVid, now.AddHours(-1), 2) with { RowVersion = stored.RowVersion };
-        Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours with { ControllerVid = TraineeVid }, token), token))["controllerVid"]);
-        await OkAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours, token), token);
+        var moved = await OkAsync(
+            await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", Shift(position, TraineeVid, now.AddHours(-1), 2) with { RowVersion = stored.RowVersion }, token),
+            token);
+        Assert.Equal(TraineeVid, moved.GetProperty("controllerVid").GetInt32());
 
         // Proposed, then moved a month later: the close moves with the start, and the availabilities stay closed all the same.
         var (starts, _) = Window(days: 2);

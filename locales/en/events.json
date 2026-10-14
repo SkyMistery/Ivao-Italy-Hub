@@ -774,7 +774,7 @@
     "rosterNotProposed": "The roster is not proposed yet: it is when the availabilities close.",
     "positionHasShifts": "The position has shifts in the roster: its callsign and hours stay around them, and once the event has started it is not deleted.",
     "eventHasShifts": "The event has shifts in its roster: cancel it instead.",
-    "shiftAfterStart": "The event has started: its shifts are the record of who controlled, and no longer go to another controller nor away.",
+    "shiftAfterStart": "The event has started: its shifts are the record of who controlled, and none is taken away any more.",
     "controllerBusy": "This controller already holds another position of the event in these hours."
   },
   "questions": {
