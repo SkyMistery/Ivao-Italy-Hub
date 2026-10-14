@@ -1,13 +1,17 @@
 # La proposta del roster ATC e la correzione dello staff (E11b)
 
 **Data:** 13 ottobre 2026 — fase E11b di M4 (M4b), PR in coda dopo la #256 di E11a
-**Stato:** **Proposta** per le dieci letture (domanda 2); **decisa la domanda 1**, «`atcData` di IT»: (A), Carmine il 13 ottobre 2026, in
-chat al master, che ha pubblicato la risposta sull'issue #259 su sua istruzione ([risposta][a]). Le domande sono in §5, pubblicate
-nell'**issue #259** ([domande][q]); la risposta alla 2 arriva quando la PR è aperta e il revisore ha letto il codice. Il codice segue le
-risposte raccomandate, come ha fatto E11a.
+**Stato:** **decisa**. Carmine, in chat al master, che ha pubblicato le risposte sull'issue #259 su sua istruzione: la **domanda 1**,
+«`atcData` di IT», (A), il 13 ottobre 2026 ([risposta 1][a]); la **domanda 2**, le dieci letture, il 14 ottobre 2026, dopo la revisione
+della #262 ([risposta 2][a2]): **sì alle letture 1, 2, 4, 7, 9 e 10**, sì alla **3** com'è, e la **5**, la **6** e l'**8** con tre
+condizioni, ora nel codice (§7). Le domande sono in §5, pubblicate nell'**issue #259** ([domande][q]); i rilievi del revisore sulla #262
+([rilievi][r]) stanno a parte, in §6.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689
+[a2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6164366206
+[r]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
+[e]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6164279151
 **Regola applicata:** `CLAUDE.md` §5. La tabella dei turni, le regole della proposta, la correzione, i predefiniti e il permesso negato
 all'interessato sono **decisi** (design `09-design-m4.md` §1.7, §1.12, §4.3, §4.4, §6.1, §8.4; note `2026-09-29-il-roster-atc`,
 `2026-09-29-chi-lavora-sugli-eventi`, `2026-09-29-le-impostazioni-degli-eventi`). Questa nota registra **le letture** che la fase ha
@@ -160,8 +164,69 @@ Pubblicate nell'issue #259 ([domande][q]), con l'assenso di dalberone.
 **Risposta di Carmine alla domanda 1** (13 ottobre 2026, [sull'issue #259][a]): **(A)**, come raccomandato. La divisione passa a `vipi`
 prima del primo roster vero, **quando sull'host esiste l'utente di sola lettura della vista**: lo si crea su Plesk, che il maintainer non
 raggiunge da sé, e finché non c'è la divisione resta a `none` e i roster si propongono senza il criterio dell'esperienza. Il codice deve
-funzionare nei due modi, come fa; è configurazione e segreti dell'installazione, niente da cambiare in E11b. **La domanda 2 aspetta**: la
-risposta arriva quando la PR di E11b è aperta e il revisore ha letto il codice.
+funzionare nei due modi, come fa; è configurazione e segreti dell'installazione, niente da cambiare in E11b.
+
+**Risposta di Carmine alla domanda 2** (14 ottobre 2026, [sull'issue #259][a2], dopo la revisione della #262, con le quattro cose che il
+revisore gli ha portato):
+
+- **Letture 1, 2, 4, 7, 9 e 10: sì**, come scritte.
+- **Lettura 3, con una condizione — l'archivio che non risponde alla chiusura**: accettata com'è. Una lettura dell'archivio che fallisce —
+  «nessun archivio» e «non si legge» sono lo stesso `null` di `SessionsOfAsync` — lascia tutto il roster proposto senza il criterio
+  dell'esperienza, ed è proposto una volta: lo staff corregge a mano. Nessun cambio al contratto dell'archivio del nucleo, ora.
+- **Lettura 5, con una condizione — l'evento spostato dopo la proposta**: una volta proposto il roster, **le disponibilità restano chiuse
+  anche se l'inizio dell'evento si sposta più tardi** (la chiusura non segue più l'inizio), e niente propone di nuovo: lo staff corregge a
+  mano. Nessuna proposta nuova sopra le correzioni dello staff.
+- **Letture 6 e 8, con due condizioni**: **dall'inizio dell'evento un turno non si toglie più**, come una postazione con turni non si
+  elimina più: i turni sono il registro di affidabilità, e il turno di un no-show deve esserci quando E13 lo conta; **un controllore su due
+  postazioni alle stesse ore è un rifiuto della correzione**, non un avviso: non può succedere. I turni del controllore in **altri** eventi
+  alle stesse ore restano un avviso, e la proposta non deve guardarli.
+
+## 6. Dopo la revisione
+
+I rilievi del revisore sulla #262 ([rilievi][r]), che stanno a parte dalla risposta, e dove sono entrati:
+
+1. **Due correzioni insieme dello stesso pezzo** potevano mettere due controllori sulla stessa postazione alle stesse ore (il controllo di
+   `shiftTaken` era una lettura senza blocco) → **sotto il blocco della riga dell'evento**, `FOR UPDATE`, come le prenotazioni dei piloti,
+   gli slot privati e la proposta: `Atc/ShiftLock.cs` apre una transazione `READ COMMITTED` nei controlli del salvataggio (`BeforeSave`),
+   il salvataggio del motore scrive il turno e il suo audit dentro di lei, e `AfterSave` la chiude; un rifiuto non scrive niente (la
+   transazione se ne va con il contesto della richiesta). Un test con il blocco tenuto dal test (il modello delle prenotazioni).
+2. **Un evento che fallisce fermava il giro** → il suo fallimento si registra nel log, il giro lo nomina nel suo messaggio e lo lascia al
+   giro dopo (la sua transazione è tornata indietro, quindi è ancora dovuto), e gli altri si propongono.
+3. **La frase di uno scoperto** («potrebbero prenderlo, ma sono in altri turni») poteva dire occupato chi era libero → la riga porta anche
+   **quanti sono liberi** di prenderlo (`Free`: possono, e nessun loro turno lo tocca né supera i turni di fila), e la frase dice i liberi,
+   o gli occupati, o nessuno.
+4. **La penalità** era scritta con il punto anche in italiano → con il formato dei numeri della lingua sullo schermo (`Intl.NumberFormat`).
+5. **La pagina offriva quello che il server rifiuta** → **ogni riga del roster dice se il lettore può scriverla** (`Editable`, l'unico
+   handler chiesto sul turno, o su un turno di quel pezzo per uno scoperto: lo staff di un FIR le sue, nessuno il proprio turno; niente su un
+   roster chiuso), e la lista delle postazioni lo dice per postazione: **il form di un turno** offre le postazioni scrivibili, niente
+   «Salva» su un evento annullato o finito né prima della proposta (con la frase che dice quando arriva), e niente «Togli» dall'inizio.
+6. **I test che mancavano**: lo staff di un FIR che sposta un turno su una postazione di un altro FIR, `positionOfAnotherEvent`,
+   `positionUnknownForShift` e la corsa del punto 1.
+
+## 7. Le condizioni di Carmine nel codice
+
+- **Le disponibilità chiuse per sempre dopo la proposta** (lettura 5): `AtcRules.IsClosedForGood` — passata la chiusura, o proposto il
+  roster —, letto da `IsOpen` e `IsWithdrawable`, quindi dalla pagina, dal dare, dal cambiare e dal ritirare.
+- **Dall'inizio dell'evento** (letture 6 e 8): un turno non si toglie (`events:errors.shiftAfterStart`), e — **lettura dello «sposta»,
+  raccomandata e chiesta, vedi sotto** — non passa a un altro controllore; le ore e la postazione si cambiano ancora. La pagina non offre
+  «Togli» dall'inizio.
+- **Un controllore su due postazioni dello stesso evento alle stesse ore** è rifiutato (`events:errors.controllerBusy`, sotto lo stesso
+  blocco); **i suoi turni in altri eventi alle stesse ore** sono l'avviso «un altro suo turno nelle stesse ore», che il roster ora legge
+  anche fuori dall'evento; i turni di fila si contano nell'evento.
+- ⚠️ **Lo «sposta» dall'inizio** (una lettura che la risposta non dice): cambiare il controllore di un turno toglierebbe dal registro il
+  turno di chi l'aveva come lo toglierebbe eliminarlo, quindi dall'inizio **il controllore non cambia** (la (A) chiesta al coordinatore per
+  dalberone e Carmine; la (B), solo l'eliminazione, e la (C), nessun cambio, le alternative). Il codice segue la (A).
+
+## 8. I resti della terza lettura di E11a
+
+Due punti piccoli della terza lettura della #256 ([rilievi][e]), che con E11a unita toccano a questa fase:
+
+1. **`events:errors.availabilityChanged` non arrivava mai sullo schermo**: un 409 la pagina lo dice con la frase del nucleo
+   (`errors.conflict.title`, in `useProblemDetails`) prima di leggere il titolo del server. **La chiave del modulo è tolta**, e il 409 di una
+   disponibilità porta la frase del nucleo, che è quella che il membro legge; far preferire alla pagina il titolo del server sarebbe un
+   cambio del nucleo.
+2. **Una bozza la cui fine è passata** diceva `Draft` come stato, e la pagina offriva «Salva» che il server rifiuta: **`isClosed` chiede
+   anche la fine**.
 
 ## Da portare nel piano
 
@@ -172,7 +237,10 @@ risposta arriva quando la PR di E11b è aperta e il revisore ha letto il codice.
 - **§9.2, riga Events** e design **§7.2** (che non si tocca): il roster si legge per postazione e ora con **una lettura scritta a mano**
   (la sesta dell'ATC), accettata come scostamento accanto alle cinque di E11a; la correzione è una risorsa del motore.
 - **§9.7, collaborazioni ATC↔Events**: il turno copia il FIR dalla sua postazione; lo staff corregge dalla proposta alla fine dell'evento,
-  mai un turno suo; un'aggiunta fuori dalle regole è un avviso; gli scoperti sono i pezzi delle postazioni che nessun turno tocca.
+  mai un turno suo, sotto il blocco della riga dell'evento; un'aggiunta fuori dalle regole è un avviso, ma un controllore su due postazioni
+  dello stesso evento alle stesse ore è un rifiuto (e in altri eventi un avviso); dall'inizio un turno non si toglie né passa a un altro
+  controllore; proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta, e niente propone di nuovo; un archivio che
+  non risponde alla chiusura lascia il roster senza esperienza; gli scoperti sono i pezzi delle postazioni che nessun turno tocca.
 - **§11, «Privacy dei membri»**: i turni di un evento non ancora finito si cancellano con i dati della persona; quelli di un evento finito
   restano senza la nota della presenza e senza il perché.
 - **§16 (job)**: `events-roster` propone una volta, sotto il blocco della riga dell'evento, e il suo segno non cambia la versione della
