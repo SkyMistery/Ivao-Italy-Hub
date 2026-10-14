@@ -4111,6 +4111,15 @@ pubblicata su sua istruzione): **sì**, una piccola fase del nucleo con la sua n
   - le regole di `core-guard` rifatte in PowerShell sul tratto da `cea6244`: nessun file del maintainer; nove del nucleo (i quattro
     formattatori, la pagina dei contatti compresa, `useMoment.ts`, il test nuovo, i due test di Carmine, `docs/UI-GUIDELINES.md`) con la
     nota nuova — passa.
+- **Rivista** ([approvabile, niente da correggere][r261p], 14 ottobre, con una correzione subito dopo: il test nuovo copre `formatMoment`
+  e tre dei quattro posti, non la pagina dei contatti, che passa da `useMoment`).
+- **Dopo aver unito `main` a `c232448`** (14 ottobre, su richiesta del revisore: A13f, E16, E11a; un solo conflitto, la cima di
+  `HANDOFF-M4.md`, con E10p sopra e E11a, E16 sotto): `git diff origin/main...HEAD` ancora dei soli dodici file della fase; una nuova
+  ricerca in `web/src` e `web/e2e` dopo il codice arrivato non trova un'ora a 12 ore né un test che la legga. Rifatti: `dotnet build
+  IvaoHub.sln -c Release` 0 avvisi, unità **1277/1277**; `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:check` (851
+  chiavi) e `pnpm build` verdi, `pnpm gen:api` senza differenze; `pnpm test` (`--maxWorkers=4`) **772/772** in 107 file; la smoke
+  **181/181** (1,0 minuti); `core-guard` da `c232448`: nove file del nucleo con la nota nuova — passa. `e2e:full` non rifatta: il
+  merge ha toccato solo un documento della fase.
 - **Non verificato**:
   - la CI (la dice la PR);
   - l'integrazione .NET (nessun file del server cambia);
@@ -4122,6 +4131,7 @@ pubblicata su sua istruzione): **sì**, una piccola fase del nucleo con la sua n
 [a260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089
 [q260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146754988
 [b260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613
+[r261p]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668
 
 ### E11a — Postazioni e disponibilità
 
