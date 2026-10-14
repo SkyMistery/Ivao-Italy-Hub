@@ -4351,7 +4351,59 @@ Design §4.4, §4.4-bis, §7.1, §7.3; nota `il-roster-atc`. Branch `m4/e12-rost
 avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pagina del roster senza nomi a un visitatore.
 **Fatta quando**: sul banco, spostando l'orologio, il roster si pubblica e il pilota trova il suo turno e la mail.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (14 ottobre 2026, branch `m4/e12-roster-publication`, nata `--no-track` dalla testa di E11b `973f385` (PR #262), **PR
+#«PR»**, **in coda dopo la #262**; **una migrazione**, `AddRosterPublicationAndTransfers`, dopo `AddAtcShifts` di E11b):
+
+- **Fatto**:
+  1. **La pubblicazione per data** (punto 1): `Event.RosterPublishedAt` (`roster_published_at`) e `Atc/RosterPublication.cs`, la seconda
+     metà di `events-roster`: dopo le proposte, un evento pubblicato, con un roster proposto, non annullato, non finito, il cui momento è
+     passato (inizio − `rosterPublishDays`) si pubblica **una volta**, sotto il blocco della sua riga, con il segno scritto come quello della
+     proposta (`row_version = row_version`, niente audit); **pubblicato resta pubblicato**. Poi ogni turno di un roster pubblicato con
+     `notified_at` vuoto si dice: **una mail per controllore per evento** (`atcShiftAssigned`, con il link al roster e a `/events/mine`), il
+     segno prima della mail, sotto il blocco di quei turni, come il promemoria di E6b. La riga di `hub_jobs_log` dice quanti pubblicati e
+     quanti turni detti.
+  2. **Dopo la pubblicazione** (punto 1): `Atc/ShiftNotices.cs`, dai verbi del motore e nessun verbo a mano — il `BeforeSave` della risorsa
+     dei turni legge com'era il turno, l'`AfterSave` dice: aggiunto → `atcShiftAssigned`; altre ore o altra postazione → `atcShiftChanged`
+     (com'era e com'è) a chi lo sapeva; dato a un altro → `atcShiftRemoved` al vecchio e `atcShiftAssigned` al nuovo; tolto, anche con la sua
+     postazione → `atcShiftRemoved`. Prima della pubblicazione nessuno riceve niente.
+  3. **La pagina del roster** (punto 2): `/events/{slug}/roster` (`screens/RosterPage.tsx`) e la sua lettura, `GET
+     /api/events/public/{slug}/roster` (`Public/PublicRoster.cs`), anonima: prima della pubblicazione il giorno in cui arriva; dopo, i turni e
+     i pezzi scoperti per postazione e ora (la funzione del roster dello staff), **il nome e il rating solo a chi ha fatto il login**. La
+     pagina dell'evento porta il link quando è pubblicato (`PublicEventAtcDto.RosterPublished`, `RosterPublishesAtUtc`), e il pannello
+     dell'ATC dice quando si pubblica e quando è stato pubblicato (`AtcEventDto`).
+  4. **I turni del membro** (punto 2): `GET /api/events/mine/shifts` (`Atc/MemberShifts.cs`), i turni dei roster pubblicati; in
+     `/events/mine` «I miei turni ATC» con «Cedi» e la richiesta sotto il suo turno, e «Le mie disponibilità ATC» (la lettura 8 di E11a)
+     (`screens/myShifts.tsx`); **`events.myEvents`** aggiunge i turni ancora da fare.
+  5. **La cessione** (punto 3): `evt_atc_shift_transfers` (`EventAtcTransfer`): riga del membro, stakeholder chi cede, il FIR copiato dal
+     turno, **non** `[WithdrawnByStakeholder]` (porta la decisione dello staff): il membro la ritira cambiandone lo stato. Il membro chiede e
+     ritira (`POST`/`DELETE /api/events/mine/shifts/{id}/transfer`); lo staff legge la lista (`/api/events/atc/transfers`, una risorsa del
+     motore in sola lettura, con gli avvisi sul nuovo titolare) e decide (`…/{id}/approve`, `…/{id}/refuse`, `Atc/StaffTransfers.cs`),
+     `EventAtc.Edit` chiesto all'unico handler sulla richiesta e sul turno com'è dopo. Approvata: il turno passa (`Origin = Staff`, il perché
+     tolto), `atcShiftTransferDecided` a chi ha ceduto e `atcShiftAssigned` al nuovo; rifiutata con una nota. Nel pannello dell'ATC «Turni
+     da cedere» (`screens/transfers.tsx`).
+  6. **Il blocco `events.atcCoverage`** (punto 4) nelle due metà (`Atc/AtcCoverageProvider.cs`, `blocks/atcCoverage.tsx`), con la proprietà
+     `days`; i conteggi di `uiKit.test.ts` (45) e `DataBlockEndToEndTests` (20) più uno. **Annullare e cambiare gli orari** avvisano anche
+     chi ha un turno (`EventSaving.PeopleToTellAsync`).
+  7. **`EventsPersonalData`**: le richieste di un evento da venire si cancellano, quelle di un evento finito restano senza le due note
+     (`[ErasedWith(nameof(ControllerVid))]`); un turno che se ne va porta via le sue richieste; due righe nuove dell'anteprima.
+  8. **I test**: integrazione `EventsRosterPublicationTests` (8; VID **761122–761128**; slug `evt-test-e12-…`); unità
+     `EventsRosterPublicationTests` (5); vitest `atcCoverage.test.tsx`, `transfers.test.ts` e un caso in `myEvents.test.tsx`; il giro
+     `full/events-publication.spec.ts` (slug `evt-test-e2e-e12-…`).
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-14-la-pubblicazione-del-roster-e-la-cessione.md`, **Proposta**, la domanda a
+  Carmine dove la mettono dalberone e il coordinatore): le dieci letture della nota. ⚠️ **Una lettura scritta a mano**, la pagina pubblica
+  del roster: la settima dell'ATC, uno scostamento dal design §7.2 come le sei di E11a ed E11b. ⚠️ **L'e2e non aspetta la pubblicazione**:
+  il banco non lancia un job a comando (come E11b); la pubblicazione con la mail la provano `EventsRosterPublicationTests` e il banco della
+  fase al quarto d'ora.
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona delle richieste), i conteggi dei blocchi in
+  `uiKit.test.ts` e `DataBlockEndToEndTests` (CONTRIBUTING.md). **Test del modulo di fasi prima, cresciuti con la forma**: le due righe nuove
+  dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16); `RosterPublishedAt` in `EventsDuplicationTests` (E8b,
+  lasciata come una bozza nuova); i due campi nuovi di `PublicEventAtcDto` in `Availability.test.tsx` (E11a); le due risposte nuove di
+  `/events/mine` in `titlesAndEmptyLists.test.tsx` (E4c); le richieste in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): sei — tre verbi del membro (i suoi turni, chiedere, ritirare), due dello staff (approvare,
+  rifiutare) e la lettura pubblica del roster.
+- **Trovato, e scritto per chi viene dopo**: *(da completare)*
+- **Verificato, in locale**: *(da completare)*
+- **Non verificato**: *(da completare)*
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
 
