@@ -37,6 +37,7 @@ import {
 import {
   EVENTS_DELETE,
   EVENTS_EDIT,
+  EVENT_ATC_VIEW,
   EVENT_BOOKINGS_EDIT,
   EVENT_BOOKINGS_VIEW,
   EVENT_ROUTES_EDIT,
@@ -61,15 +62,19 @@ import {
 } from '../schemas';
 
 import { AirportsTab } from './airports';
+import { AtcPanel } from './atc';
 import { BookingsTab } from './bookings';
 import { eventHref } from './cards';
+import { QuestionsTab } from './questions';
+import { RegistrationsTab } from './registrations';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
 
 /**
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
  * upcoming, in progress, ended, cancelled —; the page of one, with its settings as a generated form, its description written
- * with the editor of the content as a tour's briefing is, its airports with their capacity, its routes (E4) and its slots (E5), and the way to
+ * with the editor of the content as a tour's briefing is, its airports with their capacity, its routes (E4) and its slots (E5), the questions and the registrations of an event
+ * in person (E16), the ATC of an event with a roster (E11a), and the way to
  * its page on the site; and what happens to it without its form — publishing it (E3b), cancelling it with a note, duplicating it
  * onto a new date (E8b), deleting one nobody took part in.
  *
@@ -631,6 +636,49 @@ export function EventEditor() {
                             event={event}
                             editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
                           />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // An event in person (§4-bis, E16): its questions, written with the event and read with it, with their sums; and its
+              // registrations, the bookings' area — who registered and what they answered, and «take away» for whoever writes them.
+              ...(event.inPerson
+                ? {
+                    questions: {
+                      trigger: t('events:events.tabs.questions'),
+                      content: (
+                        <div className="pt-4">
+                          <QuestionsTab event={event} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              ...(event.inPerson && holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+                ? {
+                    registrations: {
+                      trigger: t('events:events.tabs.registrations'),
+                      content: (
+                        <div className="pt-4">
+                          <RegistrationsTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // An event with a roster (§4, E11a): its positions and who is available on them, the ATC's area — the ATC operations
+              // and the staff of the FIRs hold it, the latter on their FIR, as the server says.
+              ...(event.hasRoster && holdsPermission(bootstrap, EVENT_ATC_VIEW, event.ownerDepartment)
+                ? {
+                    atc: {
+                      trigger: t('events:events.tabs.atc'),
+                      content: (
+                        <div className="pt-4">
+                          <AtcPanel eventId={event.id} />
                         </div>
                       ),
                     },

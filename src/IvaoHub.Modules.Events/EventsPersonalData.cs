@@ -1,7 +1,9 @@
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Registrations;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events;
@@ -9,7 +11,7 @@ namespace IvaoHub.Modules.Events;
 /// <summary>
 /// The events' half of erasing a person's data (design M4 §11.1, E8b; notes 2026-09-29-i-dati-dei-membri-negli-eventi §2.5,
 /// 2026-09-25-la-cancellazione-dei-dati-di-una-persona and 2026-10-11-duplica-e-la-cancellazione-negli-eventi §2), for the rows of M4a:
-/// a pilot's bookings.
+/// a pilot's bookings — and since then a member's registrations (E16) and a controller's availabilities (E11a), by the same rule.
 /// <list type="bullet">
 /// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — Carmine's
 /// answer 2 on issue #248, (i)): its slot is free again, on the page and in the export. Through the change
@@ -33,9 +35,21 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var ends = await Bookings(vid).AsNoTracking()
             .Join(CrudSource.BackOffice<Event>(database), booking => booking.EventId, row => row.Id, (booking, row) => row)
             .ToListAsync(cancellationToken);
+        var registered = await Registrations(vid).AsNoTracking()
+            .Join(CrudSource.BackOffice<Event>(database), registration => registration.EventId, row => row.Id, (registration, row) => row)
+            .ToListAsync(cancellationToken);
+        var available = await Availabilities(vid).AsNoTracking()
+            .Join(CrudSource.BackOffice<Event>(database), availability => availability.EventId, row => row.Id, (availability, row) => row)
+            .ToListAsync(cancellationToken);
         var now = clock.UtcNow;
 
-        return Lines(toCome: ends.Count(row => !EventState.IsOver(row, now)), over: ends.Count(row => EventState.IsOver(row, now)));
+        return Lines(
+            toCome: ends.Count(row => !EventState.IsOver(row, now)),
+            over: ends.Count(row => EventState.IsOver(row, now)),
+            registrationsToCome: registered.Count(row => !EventState.IsOver(row, now)),
+            registrationsOver: registered.Count(row => EventState.IsOver(row, now)),
+            availabilitiesToCome: available.Count(row => !EventState.IsOver(row, now)),
+            availabilitiesOver: available.Count(row => EventState.IsOver(row, now)));
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -66,18 +80,117 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         }
 
         database.Bookings.RemoveRange(toCome);
+
+        var (registrationsToCome, registrationsOver) = await EraseRegistrationsAsync(request.Vid, now, cancellationToken);
+        var (availabilitiesToCome, availabilitiesOver) = await EraseAvailabilitiesAsync(request.Vid, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
-        return Lines(toCome: toCome.Count, over: over.Count);
+        return Lines(toCome: toCome.Count, over: over.Count, registrationsToCome, registrationsOver, availabilitiesToCome, availabilitiesOver);
+    }
+
+    /// <summary>
+    /// The person's availabilities as a controller (E11a, treated as the registrations): one of an event still to end goes, with its
+    /// windows — the roster no longer counts on them —; one of an event over stays, under the pseudonym the core writes into
+    /// <c>controller_vid</c> of the availability and of its windows, with its hours and without the note, which is their words.
+    /// </summary>
+    private async Task<(int ToCome, int Over)> EraseAvailabilitiesAsync(int vid, DateTime now, CancellationToken cancellationToken)
+    {
+        var availabilities = await Availabilities(vid).AsTracking().ToListAsync(cancellationToken);
+        var eventIds = availabilities.Select(availability => availability.EventId).Distinct().ToList();
+        var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, cancellationToken);
+
+        var over = availabilities.Where(availability => events.TryGetValue(availability.EventId, out var row) && EventState.IsOver(row, now)).ToList();
+        var toCome = availabilities.Where(availability => events.TryGetValue(availability.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
+
+        foreach (var availability in over)
+        {
+            availability.Note = null;
+        }
+
+        var going = toCome.Select(availability => availability.Id).ToList();
+        database.AtcWindows.RemoveRange(await CrudSource.BackOffice<EventAtcWindow>(database).AsTracking()
+            .Where(window => going.Contains(window.AvailabilityId))
+            .ToListAsync(cancellationToken));
+        database.AtcAvailabilities.RemoveRange(toCome);
+
+        return (toCome.Count, over.Count);
+    }
+
+    /// <summary>
+    /// The person's registrations to the events in person (E16; note 2026-09-29-i-dati-dei-membri-negli-eventi §2.5: «treated as the
+    /// bookings»): one of an event still to end goes; one of an event over stays, under the pseudonym, with only the answers the sums count
+    /// — a yes or no, a choice, several choices, a quantity, to questions the event still has — and nothing else: no text, which is their
+    /// words, as a booking kept loses the staff's note (Carmine's answer 2 on #255), and no history in the audit.
+    /// </summary>
+    private async Task<(int ToCome, int Over)> EraseRegistrationsAsync(int vid, DateTime now, CancellationToken cancellationToken)
+    {
+        var registrations = await Registrations(vid).AsTracking().ToListAsync(cancellationToken);
+        var eventIds = registrations.Select(registration => registration.EventId).Distinct().ToList();
+        var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, cancellationToken);
+        var counted = (await database.Questions.AsNoTracking()
+                .Where(question => eventIds.Contains(question.EventId) && question.Type != QuestionType.Text)
+                .ToListAsync(cancellationToken))
+            .ToLookup(question => question.EventId);
+
+        var over = registrations.Where(registration => events.TryGetValue(registration.EventId, out var row) && EventState.IsOver(row, now)).ToList();
+        var toCome = registrations.Where(registration => events.TryGetValue(registration.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
+
+        foreach (var registration in over)
+        {
+            // Only what the sums count, of questions the event still has, as it fits them; every other key goes — a text, an answer to a
+            // question deleted since, a value of another type, a «choice» that is none of the question's (the review of #255, point 1, and
+            // small 1 of its second reading).
+            var answers = RegistrationAnswers.Of(registration);
+            var kept = new JsonObject();
+            foreach (var question in counted[registration.EventId])
+            {
+                var key = EventQuestion.AnswerKey(question.Id);
+                if (RegistrationAnswers.Counted(question, answers[key]))
+                {
+                    kept[key] = answers[key]!.DeepClone();
+                }
+            }
+
+            registration.AnswersJson = kept.ToJsonString();
+
+            // Written even when nothing changed, so the core counts the row as emptied and empties its earlier copies in the audit, which may
+            // still hold words the member took out of an earlier answer (point 2): a row whose only change is the pseudonym keeps its history.
+            database.Entry(registration).Property(row => row.AnswersJson).IsModified = true;
+        }
+        database.Registrations.RemoveRange(toCome);
+
+        return (toCome.Count, over.Count);
     }
 
     /// <summary>The person's bookings, read past every filter: the superadmin erases bookings of events nobody sees any more.</summary>
     private IQueryable<EventBooking> Bookings(int vid) =>
         CrudSource.BackOffice<EventBooking>(database).Where(booking => booking.BookerVid == vid);
 
-    private static IReadOnlyList<ErasureLine> Lines(int toCome, int over) =>
+    /// <summary>The person's registrations, read past every filter, as their bookings are.</summary>
+    private IQueryable<EventRegistration> Registrations(int vid) =>
+        CrudSource.BackOffice<EventRegistration>(database).Where(registration => registration.Vid == vid);
+
+    /// <summary>The person's availabilities as a controller, read past every filter, as their bookings are.</summary>
+    private IQueryable<EventAtcAvailability> Availabilities(int vid) =>
+        CrudSource.BackOffice<EventAtcAvailability>(database).Where(availability => availability.ControllerVid == vid);
+
+    private static IReadOnlyList<ErasureLine> Lines(
+        int toCome,
+        int over,
+        int registrationsToCome,
+        int registrationsOver,
+        int availabilitiesToCome,
+        int availabilitiesOver) =>
     [
         new("events:erasure.bookingsToCome", toCome, ErasureOutcome.Deleted),
         new("events:erasure.bookingsOver", over, ErasureOutcome.Anonymised),
+        new("events:erasure.registrationsToCome", registrationsToCome, ErasureOutcome.Deleted),
+        new("events:erasure.registrationsOver", registrationsOver, ErasureOutcome.Anonymised),
+        new("events:erasure.availabilitiesToCome", availabilitiesToCome, ErasureOutcome.Deleted),
+        new("events:erasure.availabilitiesOver", availabilitiesOver, ErasureOutcome.Anonymised),
     ];
 }

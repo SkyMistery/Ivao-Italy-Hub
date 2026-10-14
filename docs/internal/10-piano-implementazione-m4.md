@@ -4145,7 +4145,134 @@ del suo FIR**; la disponibilità rifiutata sotto il rating minimo e dopo la chiu
 l'area `IHasFir`. E2e: il pilota del banco (AS3) dà la disponibilità.
 **Fatta quando**: sul banco l'AOD (con un grant) apre due postazioni e il pilota dà la sua disponibilità.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256, la prima fase di **M4b**; nata **in coda dopo la
+#255 di E16**, dal suo branch locale a `dd5b263`, e con la sua testa `78fc9b6` unita prima della PR — tutta la coda del master dentro, E10n
+ed E10m comprese —; **una migrazione**, `AddAtcPositionsAndAvailability`, dopo `AddInPersonRegistration` di E16):
+
+- **Fatto**:
+  1. **`evt_atc_positions`** (punto 1): `EventAtcPosition`, una riga dello staff dell'evento (`IEventChild`, `[Audited]`, lo scope
+     dell'evento) nell'area **`EventAtc`** e **`IHasFir`**: il nominativo è una postazione della divisione (`IAtcPositionDirectory.FindAsync`),
+     e **il FIR lo copia il server dalla directory in `BeforeAuthorize`**, prima che l'unico handler e il guardiano lo chiedano. È la prima
+     riga dell'area con un FIR: **all'avvio il catalogo impara `EventAtc` fra le aree con un FIR, e i due grant `firTeam` del seme di E2
+     prendono effetto** (provato togliendoli e rifacendo il seme come un avvio). Le ore vuote sono la finestra dell'evento; dentro la
+     finestra, lo stesso nominativo due volte solo in ore che non si sovrappongono, solo su un evento con un roster.
+  2. **`evt_atc_availability`** e le sue finestre, **`evt_atc_availability_windows`** (punto 2): `EventAtcAvailability` (univoca su
+     `(event_id, controller_vid)`, senza chiave verso l'evento, come l'iscrizione) ed `EventAtcWindow` (le righe figlie, con il controllore e
+     l'evento sulla riga e una chiave verso la disponibilità; la nota con `[ErasedWith(nameof(ControllerVid))]` di E10n, entrata con il
+     merge), tutte e due righe del membro (`ISubmittedByMembers`, `IHasStakeholder`,
+     `IVisible` ai membri, `[Audited]`) con **`[WithdrawnByStakeholder]`**: la decisione del roster è il turno di E11b, la disponibilità non
+     ne porta (la regola di Carmine sulla #232, detta nel riassunto dell'entità e nella nota). `ErasureTests` con le quattro colonne di
+     persona; `EventsPersonalData` con le due righe dell'anteprima.
+  3. **La scheda «ATC»** dello staff (punto 3): le postazioni come lista e form generati (`/api/events/atc/positions`, `EventAtc.View` ed
+     `EventAtc.Edit`), il nominativo scelto fra le postazioni della divisione; sulla pagina di una postazione **chi è disponibile** — la forma
+     decisa in E2, punto 7: l'unico handler chiesto **sulla postazione**, con il suo FIR, e le disponibilità che la toccano, lette dal modulo —,
+     con il rating, le finestre in UTC e «per tutto il tempo»; quanti sono disponibili su ogni postazione. Per chi tiene l'ATC senza gli
+     eventi (lo staff di un FIR) la sezione **«ATC degli eventi»** (`/staff/events/atc`) e la pagina dell'ATC di un evento, con le intestazioni
+     lette dall'area (`/api/events/atc/events`). **`has_roster` e `shift_minutes`** nel form dell'evento (in coda a `EventWriteDto`, con un
+     predefinito, come «In presenza» in E16); l'interruttore non si spegne con postazioni o disponibilità; un evento con disponibilità non si
+     elimina.
+  4. **La disponibilità del membro** (punto 4): `/api/events/mine/availability` (`GET`, `PUT`, `DELETE`), la sezione «ATC» della pagina
+     dell'evento (`screens/Availability.tsx`, `#atc`) con le postazioni a tutti e il form delle finestre; fino a inizio −
+     `applicationsCloseDays`, con un rating almeno `minimumAtcRating` (sotto, la pagina dice quale); si cambia fino alla chiusura e si ritira
+     fino alla chiusura. Le regole in un posto solo, `Atc/AtcRules.cs`.
+  5. **Le impostazioni dell'ATC** (punto 5): `shiftMinutes` 60, `minimumAtcRating` nessuno (scelto fra i rating ATC del vocabolario:
+     `/api/events/atc/ratings`), `maxConsecutiveShifts` 2, `breakShifts` 1, `applicationsCloseDays` 3, `rosterPublishDays` 2,
+     `experienceMonths` 12, con i loro limiti; `rosterPublishDays` non più dei giorni della chiusura.
+  6. **«Duplica»** copia le postazioni (con le ore spostate, chiedendo `EventAtc.Edit`), mai una disponibilità — l'allargamento che l'handoff
+     di E8b chiedeva a ogni fase con righe dello staff.
+  7. **I test**: integrazione `EventsAtcTests` (8; VID **761106–761113**, una fascia nuova data da dalberone il 12 ottobre; slug
+     `evt-test-e11a-…`; due FIR di prova, `XXAA` e `XXBB`, con una directory dei FIR e una delle postazioni che conoscono solo loro, come
+     `TrainingFirHeadsTests`): i grant al team di un FIR applicati da un avvio; AOD e capo FIR scrivono le postazioni e non il testo
+     dell'evento; **con `own` il capo di un FIR solo le postazioni del suo FIR** — creazione, spostamento, eliminazione, lista, candidati, e
+     il guardiano senza endpoint —; una postazione nell'evento; la disponibilità rifiutata **sotto il rating minimo e dopo la chiusura**,
+     cambiata e ritirata, con l'audit; lo staff che la legge per postazione; la cancellazione di un controllore; il rating minimo del
+     vocabolario. Unità `EventsAtcRulesTests` (5) e le impostazioni dell'ATC in `EventsSettingsTests`. Vitest `Availability.test.tsx` (4) e
+     i form in `schemas.test.ts`. Il giro `full/events-atc.spec.ts`: il «fatta quando».
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-postazioni-e-la-disponibilita.md`, **Proposta**, la domanda a Carmine sulla
+  PR): le dieci letture della nota. ⚠️ **Cinque letture scritte a mano** (le intestazioni degli eventi con un roster, due; i candidati di
+  una postazione; le postazioni della divisione e i rating ATC da cui si sceglie): uno scostamento dal design §7.2, come la lettura dei preset
+  di E3a. ⚠️ **Le disponibilità in `/events/mine`** arrivano con i turni, in E12 (il design §7.1 le mette lì). ⚠️ **La cancellazione delle
+  disponibilità** è qui, nella fase che crea la colonna, e non in E15b come diceva l'handoff di E8b.
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le quattro colonne di persona). **Test del modulo di fasi prima, cresciuti
+  con la forma**: **`EventsSkeletonTests`** (E2), che diceva i due grant al team di un FIR né applicati né ricordati in attesa della prima
+  riga con il FIR — ora li trova applicati e ricordati, come il piano prevedeva per E11a (la suite intera era rossa solo lì); le due righe
+  nuove dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16), a zero;
+  `hasRoster` e `shiftMinutes` in `eventForm.test.ts` (E3a); le impostazioni dell'ATC in `schemas.test.ts`, con il rating che torna dalla
+  sua scelta; `atc` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, lo smoke `events-public.spec.ts`); le righe
+  dell'ATC in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): otto — tre verbi del flusso del membro (leggere le proprie, dare o cambiare, ritirare) e
+  cinque letture (le intestazioni, due; i candidati; le due liste da cui si sceglie).
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Il banco**: un grant a un VID va solo a chi è già entrato nell'hub (`errors.grant.notStaff`) — sul banco appena nato il trainer
+     non c'è finché non entra una volta —, e un grant scritto lo fa rientrare. La spec lo fa entrare prima e dopo.
+  2. ⚠️ **Una chiave di query `'event'`** in `api.ts` fa cadere `EventsArchitectureTests`: è un tipo del calendario del seme. Le chiavi
+     dell'ATC sono `head` e `heads`.
+  3. **Un `SchemaForm` con un campo `datetime`** vuole `division.timezone`, o lancia: la sezione del membro aspetta il bootstrap prima del
+     form (trovato dalla prova di componente).
+- **Verificato, in locale** (12 ottobre 2026, sul branch prima del commit dei documenti finali): `dotnet build` senza avvisi; `dotnet format
+  --verify-no-changes` sui file C# toccati; unità **1233/1233**; **integrazione intera senza filtro 560/560** (683 s; al primo giro 559/560,
+  la sola `EventsSkeletonTests` di E2, cresciuta con la forma, sopra); `EventsAtcTests` da sola 8/8; `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (844 chiavi) verdi; `pnpm test` **746 in 103 file**; `pnpm gen:api` e `i18n:sync` rifatti; lo smoke `pnpm exec playwright
+  test --workers=2` **181/181** dietro il suo lock; **`pnpm e2e:full` 63/63 al primo giro** (13,4 minuti) sul banco `http://127.0.0.1:5141`,
+  `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit (la spec nuova da sola, prima, 1/1 al secondo giro: il primo cadeva sul grant al
+  trainer non ancora entrato, corretto nella spec); le regole di `core-guard` rifatte a mano sul diff dal branch di E16: un file del nucleo
+  (`ErasureTests.cs`) e la nota nuova, nessun file del maintainer.
+- **Verificato di nuovo, dopo il merge della testa di E16** (`78fc9b6`, con tutta la coda; il conflitto solo in `HANDOFF-M4.md`, i
+  paragrafi di tutte le fasi tenuti, E11a sopra; la migrazione dopo quella di E16 e lo snapshot senza cambi in sospeso,
+  `dotnet ef migrations has-pending-model-changes`; `atc: null` nella fixture di `titlesAndEmptyLists.test.tsx` di E4c): `dotnet build` senza
+  avvisi; unità **1275/1275**; **integrazione intera senza filtro 590/590** (739 s), il test nuovo di `[ErasedWith]` compreso; `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` (849 chiavi) verdi; `pnpm test` **763**; `gen:api` e `i18n:sync` rifatti; lo smoke **181/181**;
+  **`pnpm e2e:full` 63/63 al primo giro** (13,8 minuti) sul banco 5141, `ivaohub_e2e_e11a` tolto prima; le regole di `core-guard` rifatte da `main` a `a75ed6c`.
+- **Non verificato**: la CI (la dice la PR); la risposta di Carmine alla domanda della nota; una divisione con `firStaffScope: all` sulle
+  postazioni (provato con `own`, quello di IT; con `all` vale la regola del nucleo provata da A11a); il form delle finestre a 375 px; la
+  migrazione su un'installazione vera (la CI applica la catena su una MariaDB 11.4.10 vera); le postazioni di un evento con migliaia di
+  disponibilità (la lettura dei candidati è in memoria, per un evento).
+- **Dopo la revisione** (12 ottobre 2026; [i rilievi del revisore][r256], «nessun difetto che la ferma nel codice»; [la risposta di
+  Carmine][a256]: **sì alle dieci letture**, la nota è **decisa**):
+  1. **«Duplica» e le postazioni** (punto 1): un test d'integrazione — la copia con le postazioni a ore spostate, il rifiuto a chi scrive gli
+     eventi senza `EventAtc.Edit` senza scrivere niente, e un evento eliminato che porta via le sue postazioni con l'audit.
+  2. **Le finestre dei candidati** (punto 2): **una seconda domanda a Carmine** ([domanda 2][q256b]; (A) una colonna del nucleo, (B)
+     gli istanti di quello che il candidato copre dentro la postazione, (C) il testo in due orologi; raccomandata la (B)), **decisa: la (B)**
+     ([risposta 2][a256b]), fatta nella seconda tornata (sotto).
+  3. Punti 3–8: la propria disponibilità letta e ritirata oltre la visibilità dell'evento; **409** per un cambio dello stesso membro da
+     un'altra finestra (`AvailabilityResult.Changed`); la sovrapposizione di due creazioni nello stesso istante detta nella nota e lasciata;
+     nessuna postazione scritta su un evento annullato o finito; **il FIR tenuto** finché il nominativo non cambia (anche in eliminazione);
+     **le postazioni da cui si sceglie filtrate dall'unico handler** sull'evento e sul FIR di ognuna (`division-positions?eventId=`). Un test
+     d'integrazione per 3, 6, 7 e 8; il 409 non è provato da un test (due salvataggi nello stesso istante dello stesso membro).
+  4. **La testa di E16 dopo la sua revisione** (`4a31186`, con la forma nuova dei DTO delle domande) unita con un merge: un conflitto in
+     `PublicEvents.cs`, le domande nella forma di E16 (`PublicQuestionDto.Of`) e l'ATC di E11a tenuti insieme.
+  - **Verificato, in locale, sul merge**: `dotnet build` senza avvisi; unità **1275/1275**; **integrazione intera senza filtro 596/596**
+    (508 s), `EventsAtcTests` 10/10; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (850 chiavi) verdi; `pnpm test` **766 in 106
+    file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141, `ivaohub_e2e_e11a` tolto prima; le regole di `core-guard` da
+    `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
+
+- **Dopo la seconda lettura** (13 ottobre 2026; [i rilievi][r256b]: chiusi i punti 1, 3, 4, 5, 7 e 8; [la risposta 2 di Carmine][a256b], la
+  (B)):
+  1. **Il punto 2, la (B)**: `AtcCandidateDto` manda `AvailableFromUtc`, `AvailableToUtc` (le finestre dentro la postazione, tagliate alla
+     sua apertura e alla sua chiusura), `WholePosition` e `Windows` (quante la toccano); la lista li disegna con due `col.date` e un
+     `col.number`; `AtcPositionEndpoints.Written` non c'è più.
+  2. **Il rifiuto su un evento annullato o finito** stava sul campo nascosto dell'evento e la pagina non lo disegnava: **la pagina non offre
+     «Salva», «Elimina» né «Nuova postazione»** su un evento così e lo dice (`events:atc.closedEvent`, `isClosed` in `atcPaths.ts`); il
+     server rifiuta con parole sue, `events:errors.positionOnCancelledEvent` e `positionOnEventOver`. **Guardato sullo schermo** del banco
+     5141 con uno script Playwright usa e getta (valori letti dalle caselle e dai pulsanti): evento aperto, «Save» e «Delete»; annullato,
+     nessuno dei due e l'avviso; la scheda senza «New position».
+  3. **Il 409** ha un test deterministico (`AChangeThatMeetsAnotherChangeOfTheSameMemberIsAConflict`, una transazione del test che tiene la
+     finestra, come E6a), e la sua frase dice di ricaricare la pagina, perché niente la rilegge da sé.
+  4. **Il commento della copia** in `EventDuplication` e una riga nella nota: il FIR di una postazione duplicata resta quello della sua prima
+     scrittura, anno dopo anno, finché il nominativo non si riscrive. **La riga positiva** nel test di «Duplica»: lo stesso membro, con
+     `EventAtc.Edit`, duplica.
+  - **Verificato, in locale**, sul merge della testa di E16 dopo la sua seconda lettura (`addf1e1`, unita pulita; `main` a `cea6244`):
+    `dotnet build` senza avvisi, lo snapshot del contesto senza cambi in sospeso; unità **1275/1275**; **integrazione intera senza filtro
+    597/597** (731 s), `EventsAtcTests` 11/11 da sola prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (851 chiavi) verdi;
+    `pnpm test` **766 in 106 file**; lo smoke **181/181**; **`pnpm e2e:full` 63/63 al primo giro** (13,6 minuti) sul banco 5141,
+    `ivaohub_e2e_e11a` tolto prima, dietro il lock di Mailpit — l'integrazione e `e2e:full` uno dopo l'altro, mai insieme —; le regole di
+    `core-guard` da `main` a `cea6244`: un file del nucleo (`ErasureTests.cs`), le note nuove, nessun file del maintainer.
+
+[r256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6130536153
+[a256]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6131047046
+[q256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6132606484
+[a256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146395160
+[r256b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6146431124
 
 ### E11b — La proposta del roster e la correzione
 
@@ -4401,7 +4528,101 @@ Design §4-bis.1, §4-bis.2, §11; nota `gli-eventi-in-presenza`. Branch `m4/e16
 rifiutato; la cancellazione di un iscritto. E2e: il pilota si iscrive rispondendo a tre domande.
 **Fatta quando**: sul banco un evento in presenza raccoglie un'iscrizione e lo staff ne vede le somme.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255, la prima fase di **M4c**, scelta da dalberone prima di
+M4b; nata **in coda dopo la #249** di E8b, dal suo branch a `4bc847e`, e con la sua testa nuova `4a2b062` unita prima del codice —
+E7 a `7a847a8` e `main` a `bea8c0e` dentro —; poi **in coda dopo la #254** di E10o, la cui testa `a97a1fd` porta tutta la coda del master
+(E10j, E8b a `889ba1a`, E10n, E10m, E10l, E4c, `main` ad `a75ed6c`); **una migrazione**, `AddInPersonRegistration`, l'ultima del contesto
+dopo il merge):
+
+- **Fatto**:
+  1. **`evt_questions`, `evt_registrations` ed `evt_event_stats`** (punti 1 e 6), una migrazione. `EventQuestion` è una riga dello staff
+     dell'evento (`IEventChild`, area `Events`, `[Audited]`, lo scope dell'evento), con le scelte in una colonna JSON (`choices`) e una
+     chiave per scelta che il server dà e non cambia. `EventRegistration` è una riga del membro (`ISubmittedByMembers`, `IHasStakeholder`,
+     `IVisible` ai membri, area `EventBookings`, `[Audited]`, **`[WithdrawnByStakeholder]`**: la riga non porta decisioni dello staff,
+     detto nella nota e nel suo riassunto), univoca su `(event_id, vid)`, senza chiave verso l'evento. `EventStats` intera, tutte le colonne
+     del design §1.10 (solo numeri, una riga per evento, le somme e i posti in JSON): **E13a non la migra**, e **in E16 nessuno la scrive**.
+  2. **«In presenza» e il luogo nel form** (punto 2): `EventWriteDto` li porta **in coda, con un predefinito** (così i test delle fasi
+     prima che scrivono il DTO per intero restano com'erano), `EventMapper.Apply`, `presetSwitches`; il luogo **serve per pubblicare** un
+     evento in presenza (`EventPublishing`, in ogni lingua); l'interruttore non si spegne con domande o iscrizioni; un evento con iscrizioni
+     non si elimina. **Le domande** (punto 2): una risorsa del motore, `/api/events/questions` (`Events.View`/`Events.Edit`), la scheda
+     «Domande» con lista e form generati.
+  3. **Il form del membro** (punto 3): `screens/registrationForm.ts` costruisce lo schema zod dalle domande — un sì o no è un interruttore,
+     una scelta un select, più scelte una casella per scelta, un numero, un testo —, sotto `answers.q{id}`; **il server valida** in
+     `RegistrationAnswers` (un rifiuto per campo, un'obbligatoria senza risposta `errors.required`); iscriversi o cambiare (`PUT`), ritirarsi
+     (`DELETE`) fino all'inizio, leggere le proprie (`GET`), sotto `/api/events/mine/registrations`; la sezione «Iscrizione» della pagina
+     dell'evento (`screens/Registration.tsx`, `#registration`) e le iscrizioni in `/events/mine`. `registrationReceived` a ogni iscrizione e
+     cambio; annullare e cambiare gli orari avvisano anche gli iscritti, una mail per persona. **Ogni campo si chiama con le parole della
+     sua domanda** (`.meta({ label })`) grazie a **E10o**, la fase del nucleo che Carmine ha voluto prima (risposta 1 sull'issue #253):
+     il branch di E10o è unito in quello di E16 (a `1a8c074`), e la PR di E16 è in coda dopo la sua; una scelta non obbligatoria torna a
+     «nessuna scelta» con la parola del nucleo.
+  4. **Lo staff** (punto 4): la scheda «Iscrizioni» (`EventBookings.View`), una risorsa del motore in sola lettura con le risposte in parole,
+     e «Togli» con il motivo e la mail `registrationRemoved` (`EventBookings.Edit`); **le somme** nella lista delle domande.
+  5. **`EventsPersonalData`** (punto 5): l'iscrizione a un evento non finito si cancella, quella a un evento finito resta con lo pseudonimo,
+     senza i testi; due righe dell'anteprima. `ErasureTests` con `evt_questions.created_by`, `.updated_by`, `evt_registrations.vid`.
+     Con **E10n** nella coda, le risposte portano `[ErasedWith(nameof(Vid))]`: quelle di un'iscrizione ritirata prima della cancellazione
+     escono anche dall'audit (provato in `EventsRegistrationsTests`).
+     **`inPersonRetentionMonths`** (3) nelle impostazioni.
+  6. **I test**: integrazione `EventsRegistrationsTests` (5; VID **761101–761105**, slug `evt-test-e16-…`): le risposte per tipo, una per
+     campo, e un'obbligatoria lasciata fuori, poi l'iscrizione, il cambio, le mail, un altro membro che non vede niente; le somme e la lista
+     dello staff, «Togli» con e senza motivo, un membro che non legge e non toglie; il ritiro prima e dopo l'inizio; la domanda a cui
+     qualcuno ha risposto (il tipo e le scelte), l'evento che non si elimina, l'annullamento che avvisa l'iscritto; la cancellazione di un
+     iscritto, e una sua iscrizione ritirata prima, che esce dall'audit. Vitest `registrationForm.test.ts` (4: i campi per tipo con il nome della domanda, la scelta facoltativa, i valori di partenza). Il giro `full/events-in-person.spec.ts`: il «fatta quando».
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-domande-e-l-iscrizione.md`, **decisa** da Carmine sull'issue #253 — (A) a
+  tutte e due le domande —): le letture 1–20 della nota — le chiavi delle scelte, che cosa tiene una domanda con risposte, i limiti, `updated_at`,
+  fino a quando ci si iscrive e ci si ritira, la mail a ogni cambio, le somme con `Events.View` nella lista delle domande, la riga tenuta
+  di un evento finito senza i testi, le colonne di `evt_event_stats` —; **«Duplica» non copia ancora le domande**: è di E17 (punto 3 di
+  E17).
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti con
+  la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b), `inPerson` e `venue` in `eventForm.test.ts` (E3a: esiste per
+  dire che il form rispecchia `EventWriteDto`), i campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`, `public.test.tsx`,
+  lo smoke `events-public.spec.ts`, e dopo il merge della coda `titlesAndEmptyLists.test.tsx` di E4c, con la risposta vuota delle iscrizioni),
+  `inPersonRetentionMonths` in `schemas.test.ts`, le iscrizioni in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): quattro, verbi — tre del flusso del membro (leggere le proprie, iscriversi o cambiare,
+  ritirarsi) e «togli» dello staff.
+- **Trovato, e scritto per chi viene dopo**: **lo smoke** ha trovato che `/events/mine` restava su «Loading...» quando la lettura delle
+  iscrizioni non rispondeva: ora le prenotazioni non la aspettano. (Le parole che il server scriveva per le liste seguivano la lingua
+  dell'account e non quella dello schermo: Carmine ha detto no sulla #255, e la revisione le ha portate nel client — sotto.)
+
+**Dopo la revisione** (12 ottobre 2026, sulla #255 a `78fc9b6`: [i rilievi del revisore][rv255] e [la risposta di Carmine][a255] sulle
+letture che sono scelte; tutto sotto la #255 era unito, `main` a `cea6244`, e la #255 era MERGEABLE, quindi nessun merge di `main`):
+
+1. **Nessuna parola del membro sopravvive alla cancellazione** (punti 1 e 2). `EventsPersonalData` tiene di un'iscrizione a un evento finito
+   **solo le risposte contate** (sì o no, una scelta, più scelte, numeri) **alle domande che l'evento ha ancora**, come tornano con la loro
+   domanda, e toglie ogni altra chiave — un testo, la risposta a una domanda eliminata —; e **marca sempre la colonna come cambiata**,
+   così il nucleo conta la riga come svuotata e ne svuota le copie di prima nell'audit. **Provato al contrario**: senza quella riga il test
+   nuovo `AKeptRegistrationKeepsNoWordsOfAnEarlierAnswerInTheAudit` cade (`Assert.False`, le parole di un cambio di prima restano
+   nell'audit), con la riga passa: il rilievo 2 era giusto.
+2. **Le letture saltano un valore che non torna con la sua domanda** (punto 3): `RegistrationAnswers.Fits`, usato dalle somme, dalle righe
+   della mail e dalla cancellazione; il client ha la sua gemella in `screens/answers.ts`.
+3. **Le somme in un passaggio** (punto 4): `RegistrationSums.Of` legge ogni iscrizione una volta e somma tutte le domande di un evento;
+   la pagina della lista chiama una volta per evento.
+4. **Le liste ricevono dati, e la pagina scrive le parole nella lingua sullo schermo** (no di Carmine, risposta 6): `EventQuestionDto.Sum`
+   sono numeri per chiave (`QuestionSum`), `EventRegistrationDto.Answers` e `MyRegistrationDto.Answers` le risposte com'erano date, e
+   `MyRegistrationDto.Questions` le domande del suo evento (`PublicQuestionDto.Of`, scritto una volta per la pagina e per il membro);
+   `screens/answers.ts` (`answerLines`, `sumWords`, `useAnswerWords`) le scrive nelle due schede e nelle iscrizioni del membro
+   (`RegistrationAnswers.tsx`); le query delle due liste hanno la lingua nella chiave. **Le mail tengono le parole del server**, nella
+   lingua di chi le riceve. Tolta `RegistrationSums.Words`.
+5. **La seconda iscrizione dello stesso istante diventa un cambio della prima** (con il test chiesto al punto 5): prima rispondeva
+   «riprova»; ora, quando l'indice univoco risponde, la richiesta rilegge l'iscrizione e la cambia.
+6. **I test mancanti** (punto 5): `TheSwitchTheVenueAndTheQuestionsKeepTheirRules` (il luogo per pubblicare, l'interruttore con una domanda,
+   un membro che scrive una domanda, la trentunesima, un evento non in presenza), `NobodyRegistersWhereTheEventTakesNoRegistration` (non in
+   presenza, bozza, non ancora visibile: 404; annullato: `registrationClosed`), `TheSecondRegistrationOfTheSameInstantIsAChangeOfTheFirst`
+   (una transazione del test tiene l'iscrizione non confermata, la richiesta aspetta sull'indice in `INNODB_TRX`), e nella cancellazione due
+   domande eliminate dopo la risposta. Vitest `answers.test.ts` (3).
+7. **`Registration.tsx`** (punto 6): un errore della lettura delle iscrizioni si dice nella sezione; le righe hanno per chiave il loro
+   posto.
+
+8. **La seconda lettura** (13 ottobre 2026, a `4a31186`: [i rilievi][rv255b], chiusi i sei punti e la risposta 6; [Carmine][a255b] sì alla
+   lettura 11 com'è ora, la seconda iscrizione dello stesso istante che diventa un cambio della prima, e la nota lo collega): **l'eraser tiene
+   una scelta solo se nomina scelte della domanda** (`RegistrationAnswers.Counted`: un testo scritto quando la domanda era un testo, letto
+   dopo che è diventata una scelta, è una stringa e nessuna scelta), con una domanda a scelta e una a più scelte nel test della
+   cancellazione — **provato al contrario**: con il solo `Fits` il test cade sul confronto delle risposte tenute, con `Counted` passa —; e
+   **la scheda «Iscrizioni» dice l'errore** quando la lettura delle domande fallisce, come la pagina dell'evento.
+
+[rv255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
+[a255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
+[rv255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615
+[a255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

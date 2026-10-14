@@ -5,6 +5,7 @@ import {
   EVENTS_EDIT,
   EVENTS_MANAGE_SETTINGS,
   EVENTS_VIEW,
+  EVENT_ATC_VIEW,
   EVENT_BOOKINGS_EDIT,
   EVENT_ROUTES_EDIT,
 } from './permissions';
@@ -15,9 +16,11 @@ import {
   eventsSearchSchema,
 } from './schemas';
 import { AirportForm } from './screens/airports';
+import { AtcEventPage, AtcEventsPage, AtcPositionForm } from './screens/atc';
 import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './screens/events';
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
+import { QuestionForm } from './screens/questions';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
 import { SlotForm, SlotLoadPage } from './screens/slots';
@@ -29,7 +32,10 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * block of the list — and the routes of an event, in a tab of its page; E5 its slots, in a tab too, with the page that loads
  * them from a table, and listed on its page; E6b the bookings — booked from the page of an event, a member's own on
  * `/events/mine` and in the block `events.myEvents`, the staff's in a tab of the event's page; E8b the page that duplicates an
- * event onto a new date.
+ * event onto a new date; E16 the events in person — their questions and their registrations in tabs of the event's page, a question on
+ * a page of its own, a member's registrations on `/events/mine`; E11a the ATC of an event with a roster — its positions in a tab of the
+ * event's page and in a section of their own for whoever does not read the events, a position with who is available on it, and a member's
+ * availability on the event's page.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -70,6 +76,26 @@ export const eventsManifest: ModuleManifest = {
       permission: EVENTS_MANAGE_SETTINGS,
       component: EventsSettingsPage,
     },
+    // The ATC of the events with a roster (E11a), for whoever holds the ATC's area — the staff of a FIR, who do not read the events —:
+    // the events, the ATC of one, and a position with who is available on it. Whoever reads the event has the same in a tab of its page.
+    {
+      area: 'staff',
+      path: '/staff/events/atc',
+      permission: EVENT_ATC_VIEW,
+      component: AtcEventsPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/atc/$id',
+      permission: EVENT_ATC_VIEW,
+      component: AtcEventPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/atc/$id/positions/$positionId',
+      permission: EVENT_ATC_VIEW,
+      component: AtcPositionForm,
+    },
     {
       area: 'staff',
       path: '/staff/events/$id',
@@ -89,6 +115,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/duplicate',
       permission: EVENTS_EDIT,
       component: EventDuplicatePage,
+    },
+    // A question of an event in person (E16): written by whoever writes the event.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/questions/$questionId',
+      permission: EVENTS_EDIT,
+      component: QuestionForm,
     },
     {
       area: 'staff',

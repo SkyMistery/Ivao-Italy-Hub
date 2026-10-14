@@ -144,13 +144,16 @@ public sealed class TrainingModule : ModuleBase
 
         services.AddScoped<TrainingExpiryJob>();
         services.AddScoped<TrainingRemindersJob>();
+
+        // The reminders every quarter of an hour, which falls on the same instants in every zone; the zone is said all the same
+        // (note 2026-09-28-i-job-quando-passenger-spegne-l-hub, §7), and it is UTC, as the core's queue of the mail has it.
         services.AddQuartz(quartz => quartz
             .AddJob<TrainingExpiryJob>(job => job.WithIdentity(TrainingExpiryJob.JobName))
             .AddJob<TrainingRemindersJob>(job => job.WithIdentity(TrainingRemindersJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(TrainingRemindersJob.JobName)
-                .WithIdentity($"{TrainingRemindersJob.JobName}-quarterly")
-                .WithCronSchedule(TrainingRemindersJob.Cron)));
+                .WithIdentity(TrainingRemindersJob.TriggerName)
+                .WithCronSchedule(TrainingRemindersJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
         services.AddOptions<QuartzOptions>()
             .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
                 .ForJob(TrainingExpiryJob.JobName)

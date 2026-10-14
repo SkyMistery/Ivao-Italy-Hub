@@ -15,7 +15,7 @@ namespace IvaoHub.Modules.Events.Staff;
 /// row in the settings' presets, or any kind while they have none (note 2026-10-06-i-tipi-che-un-evento-sceglie) —, asked when
 /// it is chosen, as a calendar entry's is, so an event whose kind the division retired or took off its presets since stays
 /// saveable; an event about the whole division with no airports of its own (§1.3); its public slots switched off only once it
-/// has none (E5), and its private slots switched from on to off only once it has none (E7). A published event stays one that
+/// has none (E5), and its private slots switched from on to off only once it has none (E7), as its roster (E11a). A published event stays one that
 /// could be published (E3b): a change that it could not be published with is refused, with the refusals of «Publish».
 /// <para>And what follows a save (E6a): new times of an event somebody booked are told to whoever booked
 /// (<see cref="EventsNotifications.EventChanged"/>), once the save is done.</para>
@@ -90,6 +90,26 @@ public sealed class EventSaving(
             problems.Add("privateSlots", "events:errors.hasPrivateSlots");
         }
 
+        // The same for an event in person (E16): off with questions or registrations there, the switch would hide what the members
+        // answered. The staff take the registrations away and delete the questions first.
+        if (!row.InPerson && !isNew
+            && database.Entry(row).Property(nameof(Event.InPerson)).OriginalValue is true
+            && (await database.Questions.AnyAsync(question => question.EventId == row.Id, cancellationToken)
+                || await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken)))
+        {
+            problems.Add("inPerson", "events:errors.inPersonHasQuestions");
+        }
+
+        // The same for the roster (E11a): off with positions or availabilities there, the switch would hide the positions the staff
+        // opened and the hours the controllers gave. The staff delete the positions first; the availabilities stop it for good.
+        if (!row.HasRoster && !isNew
+            && database.Entry(row).Property(nameof(Event.HasRoster)).OriginalValue is true
+            && (await database.AtcPositions.AnyAsync(position => position.EventId == row.Id, cancellationToken)
+                || await CrudSource.BackOffice<EventAtcAvailability>(database).AnyAsync(availability => availability.EventId == row.Id, cancellationToken)))
+        {
+            problems.Add("hasRoster", "events:errors.hasRosterRows");
+        }
+
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
         if (problems.IsEmpty && row.Status == PublishStatus.Published)
         {
@@ -117,21 +137,32 @@ public sealed class EventSaving(
         }
 
         _timesChanged = false;
-        await mail.EventChangedAsync(row, await BookersAsync(row.Id, cancellationToken), cancellationToken);
+        await mail.EventChangedAsync(row, await PeopleToTellAsync(row.Id, cancellationToken), cancellationToken);
     }
 
-    /// <summary>Whoever booked a slot of an event, each once: whoever is told when it changes or is cancelled (§8.3).</summary>
-    public Task<List<int>> BookersAsync(long eventId, CancellationToken cancellationToken) =>
-        CrudSource.BackOffice<EventBooking>(database)
+    /// <summary>
+    /// Whoever booked a slot of an event or registered to it (E16), each once — one mail per person, whatever they hold: whoever is
+    /// told when it changes or is cancelled (§8.3, §4-bis.2).
+    /// </summary>
+    public async Task<List<int>> PeopleToTellAsync(long eventId, CancellationToken cancellationToken)
+    {
+        var bookers = await CrudSource.BackOffice<EventBooking>(database)
             .Where(booking => booking.EventId == eventId)
             .Select(booking => booking.BookerVid)
             .Distinct()
             .ToListAsync(cancellationToken);
+        var registered = await CrudSource.BackOffice<EventRegistration>(database)
+            .Where(registration => registration.EventId == eventId)
+            .Select(registration => registration.Vid)
+            .ToListAsync(cancellationToken);
+
+        return [.. bookers.Union(registered)];
+    }
 
     /// <summary>
     /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. The bookings (E6a) are the first
     /// table of them and refuse here, and every later one adds its own check, so whoever took part is never deleted with the event:
-    /// it is cancelled instead. Its airports, its routes (E4) and its slots (E5) go with it, through the same unit of work, so each
+    /// it is cancelled instead. Its airports, its routes (E4), its slots (E5) and its ATC positions (E11a) go with it, through the same unit of work, so each
     /// leaves its row in the audit — and each is a write of its own area, which whoever deletes an event holds (§6.2: the coordinator
     /// and the assistant of the base department hold every area of the events).
     /// </summary>
@@ -144,9 +175,21 @@ public sealed class EventSaving(
             throw new DomainRefusalException("id", "events:errors.eventHasBookings");
         }
 
+        if (await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasRegistrations");
+        }
+
+        if (await CrudSource.BackOffice<EventAtcAvailability>(database).AnyAsync(availability => availability.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasAvailabilities");
+        }
+
+        database.AtcPositions.RemoveRange(await database.AtcPositions.Where(position => position.EventId == row.Id).ToListAsync(cancellationToken));
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
+        database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }

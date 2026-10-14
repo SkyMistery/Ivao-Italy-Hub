@@ -1,33 +1,22 @@
 using System.Globalization;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.People;
 using IvaoHub.Modules.Training.Staff;
-using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Training;
 
 /// <summary>
-/// The people of the trainings as the hub knows them (plan §16.13: whoever signed in): their names by VID, read from the core's
-/// members, and how a page or a mail writes one of them. A name is never copied onto a training (design M3 §6).
+/// The people of the trainings as the hub knows them (plan §16.13: whoever signed in): their names by VID, read by the core's
+/// one reader of them, and how a page or a mail writes one of them. A name is never copied onto a training (design M3 §6).
 /// </summary>
 public sealed class TrainingPeople(HubDbContext hub)
 {
-    /// <summary>The names the hub has for these people, by VID; whoever it does not know is left out.</summary>
-    public async Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int?> vids, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(vids);
-
-        var wanted = vids.OfType<int>().Distinct().ToList();
-        if (wanted.Count == 0)
-        {
-            return new Dictionary<int, string>();
-        }
-
-        return (await hub.Users.AsNoTracking()
-                .Where(user => wanted.Contains(user.Vid))
-                .Select(user => new { user.Vid, user.FirstName, user.LastName })
-                .ToListAsync(cancellationToken))
-            .ToDictionary(user => user.Vid, user => $"{user.FirstName} {user.LastName}".Trim());
-    }
+    /// <summary>
+    /// The names the hub has for these people, by VID; whoever it does not know is left out, and so is a VID below one (the core's
+    /// <see cref="MemberNames"/>, note <c>2026-10-11-un-solo-lettore-dei-nomi</c>).
+    /// </summary>
+    public Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int?> vids, CancellationToken cancellationToken) =>
+        MemberNames.ReadAsync(hub, vids, cancellationToken);
 
     /// <summary>A person as a page names them: the VID that always is, and the name the hub has.</summary>
     public static TrainingMemberDto? Member(int? vid, IReadOnlyDictionary<int, string> names)

@@ -89,6 +89,11 @@ const event: PublicEventDto = {
   privateSlots: [],
   cancelledAt: null,
   cancellationNote: null,
+  inPerson: false,
+  venue: null,
+  questions: [],
+  // The ATC of an event with a roster (E11a): none here.
+  atc: null,
 };
 
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
@@ -97,10 +102,14 @@ const detail = { id: event.id, publicSlots: true, privateSlots: false } as Event
 /** What every list and the block of the events answer: nothing at all. */
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
-/** The answers that are not a page of rows: the page of the event, and a member's own bookings, a plain list (E6b). */
+/**
+ * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b) and registrations (E16), plain
+ * lists.
+ */
 const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/public/{slug}': event,
   '/api/events/mine/bookings': [],
+  '/api/events/mine/registrations': [],
 };
 
 afterEach(() => {

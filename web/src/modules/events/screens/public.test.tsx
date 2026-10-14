@@ -98,6 +98,10 @@ const event = {
   privateSlots: [{ id: 21, airportIcao: airportA.icao, isArrival: true, timeUtc: at(17), taken: false }],
   cancelledAt: null,
   cancellationNote: null,
+  inPerson: false,
+  venue: null,
+  questions: [],
+  atc: null,
 } as unknown as PublicEventDto;
 
 const bootstrap = {

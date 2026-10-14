@@ -14,3 +14,10 @@ export const EVENT_ROUTES_EDIT = 'EventRoutes.Edit';
 /** The slots and the bookings of an event (§1.5, E5): who reads them with whoever booked, who loads and corrects them. */
 export const EVENT_BOOKINGS_VIEW = 'EventBookings.View';
 export const EVENT_BOOKINGS_EDIT = 'EventBookings.Edit';
+
+/**
+ * The ATC of an event (§4.1, E11a): who reads its positions and who is available on them, who opens them — the ATC operations and the
+ * staff of the FIRs, each on the FIR the server says.
+ */
+export const EVENT_ATC_VIEW = 'EventAtc.View';
+export const EVENT_ATC_EDIT = 'EventAtc.Edit';

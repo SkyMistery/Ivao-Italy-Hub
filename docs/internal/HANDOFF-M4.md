@@ -6,14 +6,33 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 13 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
+**Ultimo aggiornamento:** 14 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
 `m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
 **decisa** da Carmine sull'issue #260 ([la seconda via](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089),
 e [i tre valori attesi di due test
-suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)). Da E10p ogni ora del nucleo si scrive in 24
-ore anche in inglese, attraverso un solo formattatore («Che cosa ha lasciato E10p», sotto).
+suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)), [approvabile senza niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668), e ha unito `main` a `c232448` (con E16, E11a
+e A13f) su richiesta del revisore. Da E10p ogni ora del nucleo si scrive in 24 ore anche in inglese, attraverso un solo formattatore
+(«Che cosa ha lasciato E10p», sotto).
 
-**L'aggiornamento di E10o:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
+**L'aggiornamento di E11a:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
+disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
+E16, l'ultima della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255 → #256**): nata dal branch di E16 a
+`dd5b263`, ha unito la sua testa `78fc9b6`, che porta tutta la coda sotto. La nota `2026-10-12-le-postazioni-e-la-disponibilita` è
+**decisa** da Carmine sulla #256 (sì alle dieci letture, fra loro cinque letture del server scritte a mano, e la (B) alla seconda domanda,
+le finestre dei candidati); le correzioni delle due letture del revisore sono fatte. Da E11a un evento con
+un roster apre le sue **postazioni** — lo staff dei FIR quelle del suo FIR, anche dalla sezione «ATC degli eventi» —, e un membro dà la sua
+**disponibilità** dalla pagina dell'evento, con le finestre, fino alla chiusura; lo staff legge chi è disponibile su ogni postazione («Che
+cosa ha lasciato E11a», sotto).
+
+**L'aggiornamento di E16:** 12 ottobre 2026 — **fase E16** (modulo, la prima di **M4c**: le domande e l'iscrizione a un evento in
+presenza, ed `evt_event_stats` intera), sul branch `m4/e16-in-person-registration`, **PR #255** verso `main`, **in coda dopo la #254** di
+E10o, l'ottava della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255**, con E11a dopo): nata dal branch di E8b a
+`4bc847e`, ha unito la testa di E10o `a97a1fd`, che porta tutta la coda sotto. La nota `2026-10-12-le-domande-e-l-iscrizione` è
+**decisa** da Carmine sull'issue #253 (A a tutte e due le domande: le etichette del form del membro da E10o; «Togli» un'iscrizione con il
+motivo e una mail). Da E16 un evento può essere **in presenza**, con il luogo: lo staff scrive le sue domande, un membro si iscrive
+rispondendo — il server controlla ogni risposta per tipo — e cambia o si ritira fino all'inizio, lo staff vede le iscrizioni e le somme
+e ne toglie una con un motivo («Che cosa ha lasciato E16», sotto). Prima, **fase E10o** (nucleo: un campo dice il suo nome), sul branch
 `m4/e10o-field-names-in-schema`, **PR #254** verso `main`, **in coda dopo la #239**, la settima della coda **#242 → #250 → #252 → #251
 → #249 → #239 → #254**, con E16 dopo: nata da `main` a `a75ed6c`, **decisa** da Carmine sull'issue #253 ([la sua risposta, punto
 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540): A, prima una fase del nucleo), e ha unito la testa
@@ -245,7 +264,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10p (13 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`)
+### Che cosa ha lasciato E10p (13–14 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`, con `main` a `c232448` unito)
 
 - **Che cosa c'è** (nota `decisions/2026-10-13-le-ore-in-24.md`, **decisa** da Carmine sull'issue #260; il dettaglio in `10`, E10p,
   «Com'è andata»). Tutto nel browser, niente in C#:
@@ -262,6 +281,105 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - I moduli eventi e formazione scrivono già le ore con `useMoment`: nessuna fase di modulo dopo questa.
   - ⚠️ **Un test che legge un'ora in inglese** scrive `19:00`, mai `7:00 PM`; e attenzione alle sottostringhe: `19:00` non contiene
     `7:00`, `18:00` contiene `8:00`.
+
+### Che cosa ha lasciato E11a (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256; in coda dopo la #255 di E16, nata dal suo branch a `dd5b263`, con la sua testa `78fc9b6` unita)
+
+- **Che cosa c'è** (il dettaglio in `10`, E11a, «Com'è andata»; **una migrazione**, `AddAtcPositionsAndAvailability`; niente del nucleo —
+  solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota nuova,
+  `2026-10-12-le-postazioni-e-la-disponibilita`, **Proposta**, con la domanda a Carmine sulla PR): la prima fase di **M4b**.
+  - **Le tabelle**: `evt_atc_positions` (`EventAtcPosition`: `IHasFir`, area `EventAtc`, il FIR copiato dalla directory dal server prima del
+    permesso), `evt_atc_availability` (`EventAtcAvailability`, univoca su `(event_id, controller_vid)`) e `evt_atc_availability_windows`
+    (`EventAtcWindow`, le finestre), tutte e due righe del membro con **`[WithdrawnByStakeholder]`**. **I grant `firTeam` del seme su
+    `EventAtc.*` prendono effetto** all'avvio, ora che l'area ha una riga con il FIR: niente più l'avviso «not applied» a ogni avvio.
+  - **Lo staff**: le postazioni (`/api/events/atc/positions`, lista e form generati) nella scheda «ATC» dell'evento e, per chi tiene l'ATC
+    senza gli eventi, nella sezione **«ATC degli eventi»** (`/staff/events/atc`, `screens/atc.tsx`, `atcPaths.ts`); sulla pagina di una
+    postazione chi è disponibile (`/api/events/atc/positions/{id}/candidates`, `Atc/StaffAvailability.cs`).
+  - **Il membro**: la disponibilità con le finestre e una nota dalla pagina dell'evento (`screens/Availability.tsx`, `Atc/MemberAvailability.cs`,
+    `/api/events/mine/availability`), fino a inizio − `applicationsCloseDays`, con il rating minimo; le regole in `Atc/AtcRules.cs`.
+  - **Il form dell'evento** ha «Roster ATC» (preimpostato dal tipo) e la durata del turno; **le impostazioni** hanno i sette numeri dell'ATC;
+    **«Duplica»** copia le postazioni; **`EventsPersonalData`** cancella o tiene senza nota le disponibilità.
+  - **I test**: integrazione `EventsAtcTests` (8; VID **761106–761113**, una fascia nuova data da dalberone; slug `evt-test-e11a-…`); unità
+    `EventsAtcRulesTests`; vitest `Availability.test.tsx`; il giro `web/e2e/full/events-atc.spec.ts` (slug `evt-test-e2e-e11a-…`, il trainer
+    del banco con un grant a VID sull'ATC al posto dell'AOD).
+- **Che cosa deve sapere la fase dopo**:
+  - **E11b** (il roster): i turni a pezzi di `shift_minutes` dell'evento, o dell'impostazione (`AtcEventDto.ShiftMinutes` lo dice già);
+    «disponibile per tutto il turno» è **`AtcRules.Cover`** sulle finestre del controllore; le ore di una postazione sono `FromUtc`–`ToUtc`, e
+    una postazione può comparire due volte in un evento, in ore che non si sovrappongono. Il rating di un controllore lo dà
+    `EventsPeople.AtcRatingsAsync`; il minimo della postazione è `IAtcPositionDirectory.MinimaAsync` (E10c). `evt_atc_shifts` è `IHasFir`
+    come la postazione: il FIR **si copia dalla postazione**, non dalla directory. **L'eliminazione di una postazione** oggi è libera: con
+    i turni, una postazione con turni non si elimina (o se ne vanno i turni: è una scelta di E11b). L'interruttore del roster già non si
+    spegne con postazioni o disponibilità: aggiungere i turni a `EventSaving`.
+  - **I candidati di una postazione** (la risposta 2 di Carmine, la (B)): `AtcCandidateDto` dice da quando a quando il controllore è
+    disponibile **dentro la postazione** (`AvailableFromUtc`, `AvailableToUtc`), `WholePosition` e quante finestre la toccano, non le
+    finestre una per una; un buco fra due finestre si vede solo come «non per tutto il tempo». Il roster di E11b, per postazione e ora,
+    mostra la copertura vera. ⚠️ **Un evento annullato o finito** non prende postazioni: il server le rifiuta e la pagina non offre
+    «Salva» (`isClosed` in `screens/atcPaths.ts`); i turni di E11b faranno lo stesso. ⚠️ **Il FIR di una postazione** resta quello con
+    cui il nominativo è stato scritto, anche dopo «Duplica», finché il nominativo non si riscrive.
+  - **E12**: le disponibilità in `/events/mine` (lettura 8 della nota); `MemberAvailability.MineAsync` c'è già.
+  - **E15b**: la cancellazione delle disponibilità è già in `EventsPersonalData`; restano i turni.
+  - **E10n** (#251) ed **E10m** (#252), in coda prima di questa PR, sono entrate con il merge della testa di E16: la nota di una
+    disponibilità porta **`[ErasedWith(nameof(ControllerVid))]`** (una disponibilità ritirata prima della cancellazione non lascia la nota
+    nell'audit; provato in `EventsAtcTests`); `EventsPeople` passa al lettore dei nomi del nucleo nella piccola fase degli eventi che E10m
+    annuncia — il rating ATC accanto al nome (`AtcRatingsAsync`) resta del modulo.
+  - ⚠️ **Il banco**: un grant a un VID va solo a chi è già entrato (`errors.grant.notStaff`), e lo fa rientrare. ⚠️ **`api.ts`**: una chiave
+    di query uguale a un tipo del calendario del seme (`'event'`) fa cadere `EventsArchitectureTests`.
+  - ⚠️ **I VID di prova**: dopo 761101–761105 di E16, E11a ha usato **761106–761113**, dati da dalberone il 12 ottobre.
+
+### Che cosa ha lasciato E16 (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255; nata in coda dopo la #249 dal branch di E8b a `4bc847e`, ora in coda dopo la #254 di E10o, con la sua testa `a97a1fd` unita)
+
+- **Che cosa c'è** (il dettaglio in `10`, E16, «Com'è andata»; **una migrazione**, `AddInPersonRegistration`; niente del nucleo — solo
+  `schema.d.ts` generato —; una nota nuova, `2026-10-12-le-domande-e-l-iscrizione`, **decisa** da Carmine sull'**issue #253** — (A) a tutte e due
+  le domande —): la prima fase di **M4c**, scelta da dalberone prima di M4b.
+  - **Le tabelle**: `evt_questions` (`EventQuestion`: ordine, tipo dall'elenco chiuso, domanda e scelte tradotte, obbligatoria; le scelte
+    con una chiave che il server dà e che non cambia), `evt_registrations` (`EventRegistration`: il membro in `vid`, le risposte in JSON per
+    `q{id}`, `created_at`, `updated_at`; univoca su `(event_id, vid)`, `[WithdrawnByStakeholder]`), ed **`evt_event_stats` intera**
+    (`EventStats`, tutte le colonne del design §1.10: **E13a non la migra**; in E16 nessuno la scrive).
+  - **Il form dell'evento** ha «In presenza» e il luogo (`EventWriteDto` in coda, con un predefinito, `presetSwitches`); il luogo serve per
+    pubblicare un evento in presenza, e sta nella testa della pagina (un fatto in più di `EventHead`).
+  - **Le domande**: `/api/events/questions`, una risorsa del motore (`Staff/EventQuestionEndpoints.cs`), la scheda «Domande» con **le
+    somme** nella lista (`Registrations/RegistrationSums.cs`), ogni domanda in un form generato (`screens/questions.tsx`).
+  - **L'iscrizione**: le risposte controllate per tipo in un posto solo (`Registrations/RegistrationAnswers.cs`), i verbi del membro
+    (`Registrations/MemberRegistrations.cs`, `GET`/`PUT`/`DELETE /api/events/mine/registrations…`), la scheda «Iscrizioni» con «Togli» e
+    il motivo (`Registrations/RegistrationEndpoints.cs`, `StaffRegistrations.cs`, `screens/registrations.tsx`), la sezione della pagina
+    dell'evento (`screens/Registration.tsx`, il form costruito dalle domande in `screens/registrationForm.ts`) e `/events/mine`.
+  - **Le mail**: `events.registrationReceived` a ogni iscrizione e cambio, `events.registrationRemoved` con il motivo; annullare e cambiare
+    gli orari avvisano anche gli iscritti (`EventSaving.PeopleToTellAsync`).
+  - **`EventsPersonalData`** per le iscrizioni; **`inPersonRetentionMonths`** nelle impostazioni.
+  - **I test**: integrazione `EventsRegistrationsTests` (9 dopo la revisione; VID **761101–761105**, una fascia nuova data da dalberone;
+    slug `evt-test-e16-…`); vitest `registrationForm.test.ts`, `answers.test.ts`; il giro `web/e2e/full/events-in-person.spec.ts` (slug
+    `evt-test-e2e-e16-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **Le due domande dell'issue #253 sono decise** ([le risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540)):
+    le etichette del form del membro vengono dal nucleo, con la fase **E10o** (un campo porta il suo nome nello schema), e **E16 è in coda
+    dopo la sua PR**; «Togli» un'iscrizione chiede il motivo e manda `events.registrationRemoved`, com'è scritto.
+  - **E17** (le attività, la conservazione, «Duplica»): `RegistrationRules.IsOpen` e `IsWithdrawable` dicono fino a quando; un posto di
+    un'attività lo prende solo chi ha una riga in `evt_registrations`; **`registrationReceived` aspetta i turni** (il design: «con risposte e
+    turni delle attività»), un dato in più di `EventsMail.RegistrationReceivedAsync`; **la conservazione** scrive le somme in
+    `evt_event_stats` (`RegistrationSums.Of`, la colonna `answer_sums`) prima di cancellare le iscrizioni; **«Duplica»** copia le domande
+    (non le iscrizioni) — le chiavi delle scelte com'erano.
+  - **E10n** (#251, nella coda sotto): `EventRegistration.AnswersJson` porta `[ErasedWith(nameof(Vid))]`, così le risposte di un'iscrizione
+    ritirata o tolta prima della cancellazione escono anche dall'audit; `EventsRegistrationsTests` lo prova con un'iscrizione ritirata.
+  - **Dopo la revisione sulla #255** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660),
+    [la risposta di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914): sì alle letture 15, 20, 4 e
+    12, no alle parole delle liste scritte dal server). ⚠️ **Le liste ricevono dati, la pagina scrive le parole nella lingua sullo
+    schermo**: `EventQuestionDto.Sum` (numeri per chiave), le risposte com'erano date in `EventRegistrationDto` e in `MyRegistrationDto` (che
+    porta anche le domande del suo evento), e `screens/answers.ts` che le scrive; **le mail** tengono le parole del server
+    (`RegistrationAnswers.Lines`), nella lingua di chi le riceve. Una fase che mette un valore in parole in una lista fa lo stesso (E17: i
+    posti delle attività). **Dopo la seconda lettura** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615),
+    [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872): sì alla lettura 11 com'è ora — la seconda
+    iscrizione dello stesso istante diventa un cambio della prima): l'eraser tiene una scelta solo se nomina scelte della domanda
+    (`RegistrationAnswers.Counted`), e la scheda «Iscrizioni» dice l'errore della lettura delle domande. ⚠️ **La cancellazione** tiene di
+    un'iscrizione finita solo le risposte contate alle domande che ci sono, e marca
+    sempre la riga come cambiata, così l'audit perde le sue copie di prima: una tabella nuova di E17 (i posti) che tiene righe con lo
+    pseudonimo guarda lo stesso caso. ⚠️ **Ogni lettura salta un valore che non torna con la sua domanda** (`RegistrationAnswers.Fits`, e in
+    TS `answerLines`).
+  - ⚠️ **Sul banco** le persone leggono l'italiano anche con la pagina in inglese (`readInEnglish` mette solo il cookie): le **mail**
+    arrivano in italiano, le pagine no.
+  - ⚠️ **Due test del modulo di fasi prima, cresciuti con la forma** (detto nella PR): due righe dell'anteprima in `EventsErasureTests`
+    (E8b); `inPerson` e `venue` in `eventForm.test.ts` (E3a); i tre campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`,
+    `public.test.tsx`, lo smoke `events-public.spec.ts`) e `inPersonRetentionMonths` in `schemas.test.ts`. Una fase che aggiunge un campo
+    obbligatorio fa lo stesso.
+  - ⚠️ **I VID di prova**: la fascia del modulo è finita; E16 ha usato **761101–761105** (dopo 761100 di E10n), dati da dalberone.
 
 ### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; con la testa di E10j `0963908`)
 

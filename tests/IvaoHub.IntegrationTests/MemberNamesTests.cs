@@ -13,10 +13,10 @@ namespace IvaoHub.IntegrationTests;
 
 /// <summary>
 /// The one reader of names by VID (E10m, note 2026-10-11-un-solo-lettore-dei-nomi): what it answers by itself, the same
-/// answers as the three copies the modules still have — the tours' <see cref="PirepReview"/>, the training's
-/// <see cref="TrainingPeople"/> and the events' <see cref="EventsPeople"/> —, and one test for each way those copies
-/// differ. The core's own copy, in the contact threads, moved onto it in the same phase, and <c>ContactThreadTests</c>
-/// still reads the name it gave.
+/// answers as the two copies the modules still have — the tours' <see cref="PirepReview"/> and the events'
+/// <see cref="EventsPeople"/> —, and one test for each way the copies differed. The core's own copy, in the contact
+/// threads, moved onto it in the same phase, and <c>ContactThreadTests</c> still reads the name it gave; the training's
+/// <see cref="TrainingPeople"/> moved onto it in A13f.
 /// <para>The people are the contact threads' (670011–670014): that class names them again every time it runs. The names
 /// they had are put back at the end all the same.</para>
 /// </summary>
@@ -62,7 +62,7 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TheReaderAnswersWhatTheToursTheTrainingAndTheEventsAnswer()
+    public async Task TheReaderAnswersWhatTheToursAndTheEventsAnswer()
     {
         var token = TestContext.Current.CancellationToken;
 
@@ -70,7 +70,6 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             await using var scope = _factory.Services.CreateAsyncScope();
             var tours = scope.ServiceProvider.GetRequiredService<PirepReview>();
-            var training = scope.ServiceProvider.GetRequiredService<TrainingPeople>();
             var events = scope.ServiceProvider.GetRequiredService<EventsPeople>();
 
             int?[][] asked =
@@ -88,7 +87,6 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 var known = vids.OfType<int>().ToList();
 
                 Assert.Equal(Sorted(await tours.NamesAsync(vids, token)), Sorted(core));
-                Assert.Equal(Sorted(await training.NamesAsync(vids, token)), Sorted(core));
                 Assert.Equal(Sorted(await events.NamesAsync(known, token)), Sorted(core));
                 Assert.Equal(Sorted(await MemberNames.ReadAsync(hub, known, token)), Sorted(core));
             }
@@ -167,8 +165,7 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Empty(await MemberNames.ReadAsync(hub, [BelowOne, 0], token));
             Assert.Empty(await scope.ServiceProvider.GetRequiredService<PirepReview>().NamesAsync([BelowOne, 0], token));
 
-            // What the training's and the events' copies answer until they move onto the reader.
-            Assert.Equal("Nobody Atall", (await scope.ServiceProvider.GetRequiredService<TrainingPeople>().NamesAsync([BelowOne], token))[BelowOne]);
+            // What the events' copy answers until it moves onto the reader.
             Assert.Equal("Nobody Atall", (await scope.ServiceProvider.GetRequiredService<EventsPeople>().NamesAsync([BelowOne], token))[BelowOne]);
         }
         finally

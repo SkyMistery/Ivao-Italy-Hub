@@ -106,9 +106,11 @@ public sealed class EventsSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 EventsPermissions.All.Select(permission => permission.Name).Where(name => name != EventsPermissions.ReportsEdit).Order(StringComparer.Ordinal),
                 events.Where(grant => grant.PositionDepartment == Department.ED).Select(grant => grant.Value).Order(StringComparer.Ordinal));
 
-            // The grants to the team of a FIR wait for the first row of the ATC that says its FIR (E11a): not applied, and not
-            // remembered either, so the start that brings that row applies them.
-            Assert.DoesNotContain(events, grant => grant.PositionFirTeam);
+            // The grants to the team of a FIR waited for the first row of the ATC that says its FIR; with the positions (E11a) the
+            // start applies them, once each, and remembers them.
+            Assert.Equal(
+                [EventsPermissions.AtcEdit, EventsPermissions.AtcView],
+                events.Where(grant => grant.PositionFirTeam).Select(grant => grant.Value).Order(StringComparer.Ordinal));
 
             var remembered = await database.DivisionSettings.AsNoTracking()
                 .Where(row => row.Key == PositionGrantSeeder.AppliedSettingKey)
@@ -120,7 +122,7 @@ public sealed class EventsSkeletonTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 .ToList();
 
             Assert.Equal(2, toTheTeam.Count);
-            Assert.All(toTheTeam, seed => Assert.DoesNotContain(PositionGrantSeeder.Fingerprint(seed), remembered, StringComparison.Ordinal));
+            Assert.All(toTheTeam, seed => Assert.Contains(PositionGrantSeeder.Fingerprint(seed), remembered, StringComparison.Ordinal));
         }
 
         // The coordinator and the assistant everything but validating a report of support; the advisor neither deletes nor
