@@ -93,6 +93,7 @@ public static class ShiftEndpoints
             options.Apply = Apply;
             options.BeforeAuthorize = AdoptAsync;
             options.BeforeSave = SaveAsync;
+            options.AfterSave = TellAsync;
             options.Delete = DeleteAsync;
         });
 
@@ -198,8 +199,22 @@ public static class ShiftEndpoints
         // The roster of the core is whoever signed in once (plan §16.13): somebody who never did is nobody the hub can name or tell.
         var known = await saving.Services.GetRequiredService<HubDbContext>().Users.AsNoTracking()
             .AnyAsync(user => user.Vid == shift.ControllerVid, saving.CancellationToken);
-        return known ? null : EventChildren.Refusal("controllerVid", "events:errors.controllerNeverSignedIn");
+        if (!known)
+        {
+            return EventChildren.Refusal("controllerVid", "events:errors.controllerNeverSignedIn");
+        }
+
+        // What the shift was, for the mails after the save (E12); its mark emptied when it passes to another controller.
+        saving.Services.GetRequiredService<ShiftNotices>().Note(shift, saving.IsNew);
+        return null;
     }
+
+    /// <summary>
+    /// The save is done: after the publication its controllers are told at once (E12; note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione,
+    /// reading 3).
+    /// </summary>
+    private static Task TellAsync(EventAtcShift shift, CrudSaving saving) =>
+        saving.Services.GetRequiredService<ShiftNotices>().TellAsync(shift, saving.CancellationToken);
 
     /// <summary>A shift is taken away from the proposal to the end of the event; after it, it is the register of reliability (c3).</summary>
     private static async Task DeleteAsync(EventAtcShift shift, IServiceProvider services, CancellationToken cancellationToken)
@@ -210,7 +225,8 @@ public static class ShiftEndpoints
             throw new DomainRefusalException("id", closed);
         }
 
-        services.GetRequiredService<EventsDbContext>().AtcShifts.Remove(shift);
+        // With its requests to hand it over, and whoever knew of it told it is gone (E12).
+        await services.GetRequiredService<ShiftNotices>().RemoveAsync([shift], position: null, cancellationToken);
     }
 
     /// <summary>Why the roster of an event takes no correction now, or none: not proposed yet, cancelled, over.</summary>

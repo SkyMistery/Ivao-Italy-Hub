@@ -166,6 +166,7 @@ public sealed class EventsModule : ModuleBase
         // Its publication at a date and the mails of the shifts (E12), the second half of events-roster; the page of a roster; a controller's
         // shifts and the requests to hand one over; and the coverage of the rosters of the next days for the staff.
         services.AddScoped<RosterPublication>();
+        services.AddScoped<ShiftNotices>();
         services.AddScoped<PublicRoster>();
         services.AddScoped<MemberShifts>();
         services.AddScoped<StaffTransfers>();

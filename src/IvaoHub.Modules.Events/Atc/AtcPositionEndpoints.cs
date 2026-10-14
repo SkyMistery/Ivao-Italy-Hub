@@ -385,7 +385,9 @@ public static class AtcPositionEndpoints
                 throw new DomainRefusalException("id", PositionHasShiftsKey);
             }
 
-            database.AtcShifts.RemoveRange(shifts);
+            // With their requests to hand them over, and whoever knew of one told it is gone (E12).
+            await services.GetRequiredService<ShiftNotices>().RemoveAsync(shifts, position, cancellationToken);
+            return;
         }
 
         database.AtcPositions.Remove(position);
