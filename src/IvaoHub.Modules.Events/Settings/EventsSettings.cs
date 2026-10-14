@@ -41,6 +41,9 @@ public sealed record EventsSettings
     /// <summary>Months after an event before the bookings and the reports of its pilots go (§11).</summary>
     public int PilotRetentionMonths { get; init; } = 24;
 
+    /// <summary>Months after an event in person before its registrations and the seats of its activities go; the sums stay (§4-bis, §11).</summary>
+    public int InPersonRetentionMonths { get; init; } = 3;
+
     /// <summary>Hours before the off block time of a booking the pilot's reminder leaves (§3.8).</summary>
     public int ReminderLeadHours { get; init; } = 24;
 }
@@ -88,6 +91,7 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
         RuleFor(settings => settings.BookingGapMinutes).InclusiveBetween(0, MaxBookingGapMinutes).WithMessage("errors.number.range");
         RuleFor(settings => settings.PilotRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
+        RuleFor(settings => settings.InPersonRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
         RuleFor(settings => settings.ReminderLeadHours).InclusiveBetween(1, MaxReminderLeadHours).WithMessage("errors.number.range");
     }
 }

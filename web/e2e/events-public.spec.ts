@@ -185,6 +185,9 @@ function event(overrides: Record<string, unknown> = {}) {
     privateSlots: [],
     cancelledAt: null,
     cancellationNote: null,
+    inPerson: false,
+    venue: null,
+    questions: [],
     ...overrides,
   };
 }

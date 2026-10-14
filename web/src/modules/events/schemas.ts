@@ -26,11 +26,12 @@ export interface KindPreset {
   readonly inPerson: boolean;
 }
 
-/** The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a. */
+/** The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, and how long an event in person keeps its registrations (E16). */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
   readonly bookingGapMinutes: number;
   readonly pilotRetentionMonths: number;
+  readonly inPersonRetentionMonths: number;
   readonly reminderLeadHours: number;
 }
 
@@ -54,6 +55,7 @@ export function settingsSchema(choices: SettingsChoices) {
     ),
     bookingGapMinutes: z.number().int(),
     pilotRetentionMonths: z.number().int(),
+    inPersonRetentionMonths: z.number().int(),
     reminderLeadHours: z.number().int(),
   });
 }
@@ -118,9 +120,23 @@ export const eventsSearchSchema = listSearchSchema.extend({
 
 export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
-/** The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings (design M4 §7.2). */
+/**
+ * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, and for an event in
+ * person its questions and its registrations (design M4 §7.2).
+ */
 export const eventEditorSearchSchema = z.object({
-  tab: z.enum(['settings', 'description', 'airports', 'routes', 'slots', 'bookings']).optional(),
+  tab: z
+    .enum([
+      'settings',
+      'description',
+      'airports',
+      'routes',
+      'slots',
+      'bookings',
+      'questions',
+      'registrations',
+    ])
+    .optional(),
 });
 
 export type EventEditorTab = NonNullable<z.infer<typeof eventEditorSearchSchema>['tab']>;
@@ -139,7 +155,7 @@ export interface EventChoices {
 /**
  * The form of an event, mirroring `EventWriteDto` (design M4 §1.2, E3a): the kind first, because choosing it presets the
  * switches below it (§1.12); then who organises it, its words, its window, who reads it, its banner. The switches of the ATC
- * roster and of an event in person enter with their phases (M4b, M4c). Every rule is the server's: nothing here refuses a
+ * roster enters with its phase (M4b); the event in person and its venue are E16's. Every rule is the server's: nothing here refuses a
  * field the server would take, so the form can follow what is written as it is written.
  */
 export function eventSchema(choices: EventChoices) {
@@ -148,11 +164,13 @@ export function eventSchema(choices: EventChoices) {
     publicSlots: z.boolean(),
     privateSlots: z.boolean(),
     wholeDivision: z.boolean(),
+    inPerson: z.boolean(),
     organizer: z.enum(ORGANIZERS),
     externalUrl: z.string(),
     title: localized(),
     slug: z.string().meta({ slugFrom: 'title' }),
     summary: localized().meta({ localized: true, multiline: true }),
+    venue: localized().optional(),
     startsAtUtc: z.string().optional().meta({ datetime: true }),
     endsAtUtc: z.string().optional().meta({ datetime: true }),
     visibleFromUtc: z.string().optional().meta({ datetime: true }),
@@ -165,8 +183,8 @@ export function eventSchema(choices: EventChoices) {
 
 export type EventFormValues = z.output<ReturnType<typeof eventSchema>>;
 
-/** The switches of the form a kind presets: the three of M4a. */
-type PresetSwitches = Pick<EventFormValues, 'publicSlots' | 'privateSlots' | 'wholeDivision'>;
+/** The switches of the form a kind presets: the three of M4a, and the event in person (E16). */
+type PresetSwitches = Pick<EventFormValues, 'publicSlots' | 'privateSlots' | 'wholeDivision' | 'inPerson'>;
 
 /**
  * What a kind switches on (§1.12): its preset, or nothing at all for a kind the division gave no preset to. Never imposed —
@@ -179,6 +197,7 @@ export function presetSwitches(presets: readonly KindPreset[], kind: string): Pr
     publicSlots: preset?.publicSlots ?? false,
     privateSlots: preset?.privateSlots ?? false,
     wholeDivision: preset?.wholeDivision ?? false,
+    inPerson: preset?.inPerson ?? false,
   };
 }
 
@@ -191,11 +210,13 @@ export function emptyEvent(locales: readonly string[]): EventFormValues {
     publicSlots: false,
     privateSlots: false,
     wholeDivision: false,
+    inPerson: false,
     organizer: 'Division',
     externalUrl: '',
     title: blank,
     slug: '',
     summary: blank,
+    venue: blank,
     visibility: 'Public',
     rowVersion: NEW_ROW_VERSION,
   };
@@ -427,3 +448,47 @@ export const bookingRemovalSchema = z.object({
 });
 
 export type BookingRemovalValues = z.output<typeof bookingRemovalSchema>;
+
+// ---- the events in person (E16) ----------------------------------------------------------------------
+
+/** What a question asks for (`QuestionType`, design M4 §4-bis.1): a closed list, each checked by the server by its type. */
+export const QUESTION_TYPES = ['YesNo', 'Choice', 'MultiChoice', 'Quantity', 'Text'] as const;
+
+/**
+ * A question of an event in person (§4-bis.1), mirroring `EventQuestionWriteDto`: its place in the form, its kind of answer, its words
+ * in every language, its choices — only for one or several choices; a new one has no key, and the server gives it one —, and whether an
+ * answer is required. Every rule is the server's: the languages, how many choices, what an answered question keeps.
+ */
+export const questionSchema = z.object({
+  eventId: z.number().int().meta({ hidden: true }),
+  ordinal: z.number().int(),
+  type: z.enum(QUESTION_TYPES),
+  label: localized(),
+  choices: z.array(
+    z.object({
+      key: z.string().meta({ hidden: true }),
+      label: localized(),
+    }),
+  ),
+  required: z.boolean(),
+  rowVersion: z.string().meta({ hidden: true }),
+});
+
+export type QuestionFormValues = z.output<typeof questionSchema>;
+
+/** A new question of an event: after the others, a yes or no, not required. */
+export function emptyQuestion(
+  eventId: number,
+  ordinal: number,
+  locales: readonly string[],
+): QuestionFormValues {
+  return {
+    eventId,
+    ordinal,
+    type: 'YesNo',
+    label: Object.fromEntries(locales.map((locale) => [locale, ''])),
+    choices: [],
+    required: false,
+    rowVersion: NEW_ROW_VERSION,
+  };
+}

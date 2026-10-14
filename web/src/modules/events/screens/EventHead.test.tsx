@@ -53,6 +53,9 @@ function event(overrides: Partial<PublicEventDto> = {}): PublicEventDto {
     privateSlots: [],
     cancelledAt: null,
     cancellationNote: null,
+    inPerson: false,
+    venue: null,
+    questions: [],
     ...overrides,
   };
 }

@@ -37,7 +37,9 @@
       "airports": "Airports",
       "routes": "Routes",
       "slots": "Slots",
-      "bookings": "Bookings"
+      "bookings": "Bookings",
+      "questions": "Questions",
+      "registrations": "Registrations"
     },
     "actions": {
       "publish": "Publish",
@@ -78,7 +80,9 @@
       "bannerMediaId": "Banner",
       "airports": "Airports",
       "state": "State",
-      "updatedAt": "Last changed"
+      "updatedAt": "Last changed",
+      "inPerson": "In person",
+      "venue": "Venue"
     },
     "hints": {
       "kind": "A kind of the events, as their settings list them: every kind of the calendar while they list none. Choosing it sets the switches below to what the settings say of that kind; change them as this event needs.",
@@ -88,7 +92,9 @@
       "externalUrl": "For an event of the network or of another division: their page about it.",
       "slug": "The address of its page, /events/…",
       "visibleFromUtc": "Leave it empty to show the event as soon as it is published.",
-      "bookingOpensAtUtc": "From when pilots book; each slot closes at its own off block time. Leave it empty for an event without slots."
+      "bookingOpensAtUtc": "From when pilots book; each slot closes at its own off block time. Leave it empty for an event without slots.",
+      "inPerson": "People come to the event in person: the members register by answering its questions.",
+      "venue": "Where the event takes place: its page and the members' emails say it. Needed to publish an event in person, in every language of the division."
     },
     "options": {
       "state": {
@@ -355,6 +361,18 @@
       "arrival": "Arrival",
       "legs": "The legs of rotation {{rotation}}",
       "thisLeg": "this flight"
+    },
+    "registration": {
+      "title": "Registration",
+      "signIn": "Sign in to register",
+      "closed": "Registrations are closed: the event has started, or it is cancelled.",
+      "registered": "You are registered.",
+      "saved": "Your answers are saved.",
+      "register": "Register",
+      "save": "Save your answers",
+      "fields": {
+        "answers": "Your answers"
+      }
     }
   },
   "private": {
@@ -436,7 +454,12 @@
     "withdrawDescription": "The slot is free again, and another pilot may book it.",
     "withdrawPaired": "The slot is free again, and another pilot may book it. {{callsign}}, booked with it, stays yours on its own.",
     "pairedDeparture": "With its departure {{callsign}}, from the same gate.",
-    "pairedArrival": "With its arrival {{callsign}}, at the same gate."
+    "pairedArrival": "With its arrival {{callsign}}, at the same gate.",
+    "registrations": "My registrations",
+    "noAnswers": "No answer given.",
+    "changeAnswers": "Change your answers",
+    "withdrawRegistrationTitle": "Withdraw from {{title}}?",
+    "withdrawRegistrationDescription": "You are no longer registered: you can register again until the event starts."
   },
   "bookings": {
     "empty": "The pilots' bookings of the event's slots will show up here.",
@@ -467,7 +490,9 @@
   },
   "erasure": {
     "bookingsToCome": "Bookings of events still to end: deleted, and their slots free again",
-    "bookingsOver": "Bookings of events that ended, kept without the pilot and without the flight they wrote"
+    "bookingsOver": "Bookings of events that ended, kept without the pilot and without the flight they wrote",
+    "registrationsToCome": "Registrations to events still to end: deleted",
+    "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -508,13 +533,15 @@
       "kindPresets.inPerson": "In person",
       "bookingGapMinutes": "Minutes between two bookings of the same pilot",
       "pilotRetentionMonths": "Months the pilots' bookings are kept after an event",
-      "reminderLeadHours": "Hours before the off block time the reminder is sent"
+      "reminderLeadHours": "Hours before the off block time the reminder is sent",
+      "inPersonRetentionMonths": "Months the registrations to an event in person are kept after it"
     },
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
       "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
       "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
-      "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time."
+      "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time.",
+      "inPersonRetentionMonths": "After this many months from the end of an event in person, its registrations and the seats of its activities are deleted; the sums stay in its statistics."
     }
   },
   "notifications": {
@@ -537,6 +564,14 @@
     "bookingReminder": {
       "title": "Reminders of your flights",
       "description": "An email the day before the flights you booked in an event, with their stands and the routes of the flight operations."
+    },
+    "registrationReceived": {
+      "title": "Your registrations to events in person",
+      "description": "An email when you register to an event in person or change your answers, with what you answered."
+    },
+    "registrationRemoved": {
+      "title": "Registrations taken away",
+      "description": "An email when the staff of the events take a registration of yours away, with the reason."
     }
   },
   "mail": {
@@ -562,6 +597,14 @@
         "body": "Your flights in {{title}} are close. The times are in UTC.\n\n{{flights}}\n\nFly with the callsign of your slot; if it is already in use on the network, connect with another one.\n\nThe event: {{url}}\nYour bookings, which you can withdraw until their off block: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
         "stand": "stand",
         "route": "Route"
+      },
+      "registrationReceived": {
+        "subject": "[Events] You are registered: {{title}}",
+        "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "registrationRemoved": {
+        "subject": "[Events] Registration taken away: {{title}}",
+        "body": "The staff of the events have taken away your registration to {{title}}.\n\nWhy: {{reason}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       }
     }
   },
@@ -639,6 +682,81 @@
     "offBlockPassed": "This off block time has passed: a flight is booked before it leaves.",
     "pairedOnlyForArrival": "Only an arrival books a departure with it.",
     "pairedNotADeparture": "The linked departure is a private departure from the airport the arrival lands at.",
-    "pairedTooSoon": "The departure leaves too soon: after the arrival lands, it leaves at least the minutes between two bookings of a pilot later."
+    "pairedTooSoon": "The departure leaves too soon: after the arrival lands, it leaves at least the minutes between two bookings of a pilot later.",
+    "answerYesNo": "Answer yes or no.",
+    "answerChoice": "Choose among the choices of the question.",
+    "answerQuantity": "A whole number from 0 to 999.",
+    "answerText": "Write the answer as a text.",
+    "registrationClosed": "Registrations to this event are closed: it has started, or it is cancelled.",
+    "inPersonHasQuestions": "The event still has questions or registrations: take the registrations away and delete the questions first.",
+    "eventHasRegistrations": "Somebody registered to this event: cancel it instead.",
+    "questionNotInPerson": "The event is not in person: switch «In person» on in its settings first.",
+    "questionsTooMany": "An event asks at most 30 questions.",
+    "questionAnsweredType": "Somebody already answered this question: its kind of answer stays.",
+    "questionAnsweredChoices": "Somebody already answered this question: its choices can be rewritten and added to, not taken away.",
+    "questionChoicesCount": "From 2 to 20 choices.",
+    "questionChoicesOnlyForChoice": "Only a question with one choice or several choices has choices."
+  },
+  "questions": {
+    "title": "Questions",
+    "create": "New question",
+    "edit": "Question",
+    "fields": {
+      "ordinal": "Order",
+      "type": "Kind of answer",
+      "label": "Question",
+      "choices": "Choices",
+      "choices.label": "Choice",
+      "required": "An answer is required",
+      "sums": "What the registrations answered"
+    },
+    "hints": {
+      "ordinal": "The questions are asked lowest first.",
+      "type": "Once somebody has answered the question, its kind of answer stays.",
+      "label": "The members read it in their language: write it in every language of the division.",
+      "choices": "Only for one choice or several choices, at least two. Once somebody has answered the question, its choices can be rewritten, reordered and added to, not taken away.",
+      "required": "Without an answer the registration is not accepted. A yes or no always has one."
+    },
+    "options": {
+      "type": {
+        "YesNo": "Yes or no",
+        "Choice": "One choice",
+        "MultiChoice": "Several choices",
+        "Quantity": "A number",
+        "Text": "A text"
+      }
+    },
+    "delete": {
+      "title": "Delete this question?",
+      "description": "The question leaves the form. The answers already given to it are no longer shown nor counted."
+    }
+  },
+  "registrations": {
+    "fields": {
+      "member": "Member",
+      "lines": "Answers",
+      "createdAt": "Registered on",
+      "updatedAt": "Answers changed on"
+    },
+    "answers": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "sums": {
+      "answered": "Answered",
+      "total": "Total"
+    },
+    "remove": {
+      "trigger": "Take away",
+      "title": "Take away this registration?",
+      "description": "The member is no longer registered, and receives an email with the reason.",
+      "confirm": "Take it away",
+      "fields": {
+        "reason": "Why"
+      },
+      "hints": {
+        "reason": "In your own words: the member reads it in the email, and it is kept nowhere else."
+      }
+    }
   }
 }

@@ -13,6 +13,7 @@ import type {
   EventsSearch,
   EventsSettings,
   KindPreset,
+  QuestionFormValues,
   RouteFormValues,
   SettingsFormValues,
   SlotFormValues,
@@ -28,6 +29,8 @@ import type {
  * block is read through.
  * The bookings (E6b): a pilot's own — read, made, made for a whole rotation, made for a private slot with its flight (E7), withdrawn —
  * through the verbs of E6a and E7, and the staff's list of the bookings of an event with «take away».
+ * The events in person (E16): the questions of an event through the CRUD engine, with their sums; a member's registration — read, sent or
+ * changed, withdrawn —; and the staff's list of the registrations of an event with «take away».
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -134,11 +137,13 @@ export function eventToFormValues(event: EventDetailDto, locales: readonly strin
     publicSlots: event.publicSlots,
     privateSlots: event.privateSlots,
     wholeDivision: event.wholeDivision,
+    inPerson: event.inPerson,
     organizer: event.organizer,
     externalUrl: event.externalUrl ?? '',
     title: spread(event.title),
     slug: event.slug,
     summary: spread(event.summary),
+    venue: spread(event.venue ?? {}),
     startsAtUtc: event.startsAtUtc,
     endsAtUtc: event.endsAtUtc,
     ...(event.visibleFromUtc === null ? {} : { visibleFromUtc: event.visibleFromUtc }),
@@ -173,6 +178,11 @@ function eventBody(values: EventFormValues, body: Body | null): EventWriteDto {
     endsAtUtc: text(values.endsAtUtc),
     visibility: values.visibility,
     rowVersion: values.rowVersion,
+    inPerson: values.inPerson,
+    // A venue written in no language is none, and left out.
+    ...(values.venue === undefined || Object.values(values.venue).every((text) => text.trim() === '')
+      ? {}
+      : { venue: values.venue }),
   };
 }
 
@@ -743,6 +753,236 @@ export function useRemoveBooking() {
       ),
     onSuccess: () => {
       void bookingsChanged(queryClient);
+    },
+  });
+}
+
+// ---- the events in person (E16) ----------------------------------------------------------------------
+
+export type EventQuestionDto = components['schemas']['EventQuestionDto'];
+export type EventRegistrationDto = components['schemas']['EventRegistrationDto'];
+export type MyRegistrationDto = components['schemas']['MyRegistrationDto'];
+export type PublicQuestionDto = components['schemas']['PublicQuestionDto'];
+
+const questionsKey = ['events', 'questions'] as const;
+const registrationsKey = ['events', 'registrations'] as const;
+
+/** The questions of an event in the order of its form, with the sums of what the registrations answered (§4-bis.2). */
+export function questionsQuery(eventId: number, search: ListSearch = allOfAnEvent) {
+  return queryOptions({
+    queryKey: [...questionsKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/questions', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+export function questionQuery(id: number) {
+  return queryOptions({
+    queryKey: [...questionsKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventQuestionDto> =>
+      unwrap(await api.GET('/api/events/questions/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function questionToFormValues(
+  question: EventQuestionDto,
+  locales: readonly string[],
+): QuestionFormValues {
+  const spread = (value: Record<string, string>) =>
+    Object.fromEntries(locales.map((locale) => [locale, value[locale] ?? '']));
+
+  return {
+    eventId: question.eventId,
+    ordinal: question.ordinal,
+    type: question.type,
+    label: spread(question.label),
+    choices: question.choices.map((choice) => ({ key: choice.key, label: spread(choice.label) })),
+    required: question.required,
+    rowVersion: question.rowVersion,
+  };
+}
+
+/**
+ * What changes when a question changes: its list, the page of its event, which builds the member's form from them, and the staff's list
+ * of the registrations, whose answers are written in words with them.
+ */
+async function questionsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: questionsKey }),
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+    queryClient.invalidateQueries({ queryKey: registrationsKey }),
+  ]);
+}
+
+/** Saves a question; a new choice travels without a key, and the server gives it one. */
+export function useSaveQuestion(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: QuestionFormValues): Promise<EventQuestionDto> => {
+      const body = {
+        ...values,
+        choices: values.choices.map((choice) => ({
+          key: choice.key === '' ? null : choice.key,
+          label: choice.label,
+        })),
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/questions', { body }))
+        : unwrap(await api.PUT('/api/events/questions/{id}', { params: { path: { id: String(id) } }, body }));
+    },
+    onSuccess: () => questionsChanged(queryClient),
+  });
+}
+
+export function useDeleteQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/questions/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void questionsChanged(queryClient);
+    },
+  });
+}
+
+/** A question of the staff's list with its sums in words of the language on screen (Carmine's answer 6 on #255). */
+export type QuestionRow = EventQuestionDto & { readonly sums: string[] };
+
+/**
+ * The questions of an event as the tab «Questions» lists them: each with its sums, which the server sends as numbers and sums writes
+ * in the language on screen — part of the key, so another language reads the page again.
+ */
+export function questionRowsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  sums: (question: EventQuestionDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...questionsKey, 'rows', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/questions', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((question): QuestionRow => ({ ...question, sums: sums(question) })),
+      };
+    },
+  });
+}
+
+/** A registration of the staff's list with its answers in words of the language on screen. */
+export type RegistrationRow = EventRegistrationDto & { readonly lines: string[] };
+
+/**
+ * The registrations of an event as its staff read them (§4-bis.2): a page of them, the first registered first unless sorted, each with
+ * its answers, which the server sends as they were given and lines writes in the language on screen with the event's questions.
+ */
+export function staffRegistrationsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  lines: (registration: EventRegistrationDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...registrationsKey, 'list', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/registrations', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((registration): RegistrationRow => ({
+          ...registration,
+          lines: lines(registration),
+        })),
+      };
+    },
+  });
+}
+
+/** What a registration changes on screen: the member's own list, the staff's, and the sums of the questions. */
+async function registrationsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'registrations'] }),
+    queryClient.invalidateQueries({ queryKey: registrationsKey }),
+    queryClient.invalidateQueries({ queryKey: questionsKey }),
+  ]);
+}
+
+/** «Take away» a registration (§4-bis.2), with the reason the member reads in the mail. */
+export function useRemoveRegistration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/registrations/{id}/remove', {
+          params: { path: { id } },
+          body: { reason },
+        }),
+      ),
+    onSuccess: () => {
+      void registrationsChanged(queryClient);
+    },
+  });
+}
+
+/** A member's own registrations, past ones too, by the start of their events: `/events/mine`, and the page of an event. */
+export function myRegistrationsQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'registrations'] as const,
+    queryFn: async (): Promise<MyRegistrationDto[]> =>
+      unwrap(await api.GET('/api/events/mine/registrations')),
+  });
+}
+
+/** Registers to an event in person, or changes the answers: the answers by question, as the member's form holds them. */
+export function useRegister(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (answers: Record<string, unknown>): Promise<MyRegistrationDto> =>
+      unwrap(
+        await api.PUT('/api/events/mine/registrations/{eventId}', {
+          params: { path: { eventId } },
+          body: { answers: answers as never },
+        }),
+      ),
+    onSuccess: () => {
+      void registrationsChanged(queryClient);
+    },
+  });
+}
+
+/** Withdraws from an event in person, until it starts. */
+export function useWithdrawRegistration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (eventId: number): Promise<void> =>
+      unwrapEmpty(
+        await api.DELETE('/api/events/mine/registrations/{eventId}', { params: { path: { eventId } } }),
+      ),
+    onSuccess: () => {
+      void registrationsChanged(queryClient);
     },
   });
 }

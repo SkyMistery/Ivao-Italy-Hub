@@ -4341,7 +4341,101 @@ Design §4-bis.1, §4-bis.2, §11; nota `gli-eventi-in-presenza`. Branch `m4/e16
 rifiutato; la cancellazione di un iscritto. E2e: il pilota si iscrive rispondendo a tre domande.
 **Fatta quando**: sul banco un evento in presenza raccoglie un'iscrizione e lo staff ne vede le somme.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255, la prima fase di **M4c**, scelta da dalberone prima di
+M4b; nata **in coda dopo la #249** di E8b, dal suo branch a `4bc847e`, e con la sua testa nuova `4a2b062` unita prima del codice —
+E7 a `7a847a8` e `main` a `bea8c0e` dentro —; poi **in coda dopo la #254** di E10o, la cui testa `a97a1fd` porta tutta la coda del master
+(E10j, E8b a `889ba1a`, E10n, E10m, E10l, E4c, `main` ad `a75ed6c`); **una migrazione**, `AddInPersonRegistration`, l'ultima del contesto
+dopo il merge):
+
+- **Fatto**:
+  1. **`evt_questions`, `evt_registrations` ed `evt_event_stats`** (punti 1 e 6), una migrazione. `EventQuestion` è una riga dello staff
+     dell'evento (`IEventChild`, area `Events`, `[Audited]`, lo scope dell'evento), con le scelte in una colonna JSON (`choices`) e una
+     chiave per scelta che il server dà e non cambia. `EventRegistration` è una riga del membro (`ISubmittedByMembers`, `IHasStakeholder`,
+     `IVisible` ai membri, area `EventBookings`, `[Audited]`, **`[WithdrawnByStakeholder]`**: la riga non porta decisioni dello staff,
+     detto nella nota e nel suo riassunto), univoca su `(event_id, vid)`, senza chiave verso l'evento. `EventStats` intera, tutte le colonne
+     del design §1.10 (solo numeri, una riga per evento, le somme e i posti in JSON): **E13a non la migra**, e **in E16 nessuno la scrive**.
+  2. **«In presenza» e il luogo nel form** (punto 2): `EventWriteDto` li porta **in coda, con un predefinito** (così i test delle fasi
+     prima che scrivono il DTO per intero restano com'erano), `EventMapper.Apply`, `presetSwitches`; il luogo **serve per pubblicare** un
+     evento in presenza (`EventPublishing`, in ogni lingua); l'interruttore non si spegne con domande o iscrizioni; un evento con iscrizioni
+     non si elimina. **Le domande** (punto 2): una risorsa del motore, `/api/events/questions` (`Events.View`/`Events.Edit`), la scheda
+     «Domande» con lista e form generati.
+  3. **Il form del membro** (punto 3): `screens/registrationForm.ts` costruisce lo schema zod dalle domande — un sì o no è un interruttore,
+     una scelta un select, più scelte una casella per scelta, un numero, un testo —, sotto `answers.q{id}`; **il server valida** in
+     `RegistrationAnswers` (un rifiuto per campo, un'obbligatoria senza risposta `errors.required`); iscriversi o cambiare (`PUT`), ritirarsi
+     (`DELETE`) fino all'inizio, leggere le proprie (`GET`), sotto `/api/events/mine/registrations`; la sezione «Iscrizione» della pagina
+     dell'evento (`screens/Registration.tsx`, `#registration`) e le iscrizioni in `/events/mine`. `registrationReceived` a ogni iscrizione e
+     cambio; annullare e cambiare gli orari avvisano anche gli iscritti, una mail per persona. **Ogni campo si chiama con le parole della
+     sua domanda** (`.meta({ label })`) grazie a **E10o**, la fase del nucleo che Carmine ha voluto prima (risposta 1 sull'issue #253):
+     il branch di E10o è unito in quello di E16 (a `1a8c074`), e la PR di E16 è in coda dopo la sua; una scelta non obbligatoria torna a
+     «nessuna scelta» con la parola del nucleo.
+  4. **Lo staff** (punto 4): la scheda «Iscrizioni» (`EventBookings.View`), una risorsa del motore in sola lettura con le risposte in parole,
+     e «Togli» con il motivo e la mail `registrationRemoved` (`EventBookings.Edit`); **le somme** nella lista delle domande.
+  5. **`EventsPersonalData`** (punto 5): l'iscrizione a un evento non finito si cancella, quella a un evento finito resta con lo pseudonimo,
+     senza i testi; due righe dell'anteprima. `ErasureTests` con `evt_questions.created_by`, `.updated_by`, `evt_registrations.vid`.
+     Con **E10n** nella coda, le risposte portano `[ErasedWith(nameof(Vid))]`: quelle di un'iscrizione ritirata prima della cancellazione
+     escono anche dall'audit (provato in `EventsRegistrationsTests`).
+     **`inPersonRetentionMonths`** (3) nelle impostazioni.
+  6. **I test**: integrazione `EventsRegistrationsTests` (5; VID **761101–761105**, slug `evt-test-e16-…`): le risposte per tipo, una per
+     campo, e un'obbligatoria lasciata fuori, poi l'iscrizione, il cambio, le mail, un altro membro che non vede niente; le somme e la lista
+     dello staff, «Togli» con e senza motivo, un membro che non legge e non toglie; il ritiro prima e dopo l'inizio; la domanda a cui
+     qualcuno ha risposto (il tipo e le scelte), l'evento che non si elimina, l'annullamento che avvisa l'iscritto; la cancellazione di un
+     iscritto, e una sua iscrizione ritirata prima, che esce dall'audit. Vitest `registrationForm.test.ts` (4: i campi per tipo con il nome della domanda, la scelta facoltativa, i valori di partenza). Il giro `full/events-in-person.spec.ts`: il «fatta quando».
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-12-le-domande-e-l-iscrizione.md`, **decisa** da Carmine sull'issue #253 — (A) a
+  tutte e due le domande —): le letture 1–20 della nota — le chiavi delle scelte, che cosa tiene una domanda con risposte, i limiti, `updated_at`,
+  fino a quando ci si iscrive e ci si ritira, la mail a ogni cambio, le somme con `Events.View` nella lista delle domande, la riga tenuta
+  di un evento finito senza i testi, le colonne di `evt_event_stats` —; **«Duplica» non copia ancora le domande**: è di E17 (punto 3 di
+  E17).
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti con
+  la forma**: le due righe nuove dell'anteprima in `EventsErasureTests` (E8b), `inPerson` e `venue` in `eventForm.test.ts` (E3a: esiste per
+  dire che il form rispecchia `EventWriteDto`), i campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`, `public.test.tsx`,
+  lo smoke `events-public.spec.ts`, e dopo il merge della coda `titlesAndEmptyLists.test.tsx` di E4c, con la risposta vuota delle iscrizioni),
+  `inPersonRetentionMonths` in `schemas.test.ts`, le iscrizioni in `EventsTestRows`.
+- **Gli endpoint scritti a mano** (piano §16.6): quattro, verbi — tre del flusso del membro (leggere le proprie, iscriversi o cambiare,
+  ritirarsi) e «togli» dello staff.
+- **Trovato, e scritto per chi viene dopo**: **lo smoke** ha trovato che `/events/mine` restava su «Loading...» quando la lettura delle
+  iscrizioni non rispondeva: ora le prenotazioni non la aspettano. (Le parole che il server scriveva per le liste seguivano la lingua
+  dell'account e non quella dello schermo: Carmine ha detto no sulla #255, e la revisione le ha portate nel client — sotto.)
+
+**Dopo la revisione** (12 ottobre 2026, sulla #255 a `78fc9b6`: [i rilievi del revisore][rv255] e [la risposta di Carmine][a255] sulle
+letture che sono scelte; tutto sotto la #255 era unito, `main` a `cea6244`, e la #255 era MERGEABLE, quindi nessun merge di `main`):
+
+1. **Nessuna parola del membro sopravvive alla cancellazione** (punti 1 e 2). `EventsPersonalData` tiene di un'iscrizione a un evento finito
+   **solo le risposte contate** (sì o no, una scelta, più scelte, numeri) **alle domande che l'evento ha ancora**, come tornano con la loro
+   domanda, e toglie ogni altra chiave — un testo, la risposta a una domanda eliminata —; e **marca sempre la colonna come cambiata**,
+   così il nucleo conta la riga come svuotata e ne svuota le copie di prima nell'audit. **Provato al contrario**: senza quella riga il test
+   nuovo `AKeptRegistrationKeepsNoWordsOfAnEarlierAnswerInTheAudit` cade (`Assert.False`, le parole di un cambio di prima restano
+   nell'audit), con la riga passa: il rilievo 2 era giusto.
+2. **Le letture saltano un valore che non torna con la sua domanda** (punto 3): `RegistrationAnswers.Fits`, usato dalle somme, dalle righe
+   della mail e dalla cancellazione; il client ha la sua gemella in `screens/answers.ts`.
+3. **Le somme in un passaggio** (punto 4): `RegistrationSums.Of` legge ogni iscrizione una volta e somma tutte le domande di un evento;
+   la pagina della lista chiama una volta per evento.
+4. **Le liste ricevono dati, e la pagina scrive le parole nella lingua sullo schermo** (no di Carmine, risposta 6): `EventQuestionDto.Sum`
+   sono numeri per chiave (`QuestionSum`), `EventRegistrationDto.Answers` e `MyRegistrationDto.Answers` le risposte com'erano date, e
+   `MyRegistrationDto.Questions` le domande del suo evento (`PublicQuestionDto.Of`, scritto una volta per la pagina e per il membro);
+   `screens/answers.ts` (`answerLines`, `sumWords`, `useAnswerWords`) le scrive nelle due schede e nelle iscrizioni del membro
+   (`RegistrationAnswers.tsx`); le query delle due liste hanno la lingua nella chiave. **Le mail tengono le parole del server**, nella
+   lingua di chi le riceve. Tolta `RegistrationSums.Words`.
+5. **La seconda iscrizione dello stesso istante diventa un cambio della prima** (con il test chiesto al punto 5): prima rispondeva
+   «riprova»; ora, quando l'indice univoco risponde, la richiesta rilegge l'iscrizione e la cambia.
+6. **I test mancanti** (punto 5): `TheSwitchTheVenueAndTheQuestionsKeepTheirRules` (il luogo per pubblicare, l'interruttore con una domanda,
+   un membro che scrive una domanda, la trentunesima, un evento non in presenza), `NobodyRegistersWhereTheEventTakesNoRegistration` (non in
+   presenza, bozza, non ancora visibile: 404; annullato: `registrationClosed`), `TheSecondRegistrationOfTheSameInstantIsAChangeOfTheFirst`
+   (una transazione del test tiene l'iscrizione non confermata, la richiesta aspetta sull'indice in `INNODB_TRX`), e nella cancellazione due
+   domande eliminate dopo la risposta. Vitest `answers.test.ts` (3).
+7. **`Registration.tsx`** (punto 6): un errore della lettura delle iscrizioni si dice nella sezione; le righe hanno per chiave il loro
+   posto.
+
+8. **La seconda lettura** (13 ottobre 2026, a `4a31186`: [i rilievi][rv255b], chiusi i sei punti e la risposta 6; [Carmine][a255b] sì alla
+   lettura 11 com'è ora, la seconda iscrizione dello stesso istante che diventa un cambio della prima, e la nota lo collega): **l'eraser tiene
+   una scelta solo se nomina scelte della domanda** (`RegistrationAnswers.Counted`: un testo scritto quando la domanda era un testo, letto
+   dopo che è diventata una scelta, è una stringa e nessuna scelta), con una domanda a scelta e una a più scelte nel test della
+   cancellazione — **provato al contrario**: con il solo `Fits` il test cade sul confronto delle risposte tenute, con `Counted` passa —; e
+   **la scheda «Iscrizioni» dice l'errore** quando la lettura delle domande fallisce, come la pagina dell'evento.
+
+[rv255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660
+[a255]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914
+[rv255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615
+[a255b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872
 
 ### E17 — Attività parallele, e il giro completo di M4c
 

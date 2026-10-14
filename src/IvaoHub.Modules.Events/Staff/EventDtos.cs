@@ -43,6 +43,7 @@ public sealed record EventDetailDto(
     string? ExternalUrl,
     Localized<string> Title,
     Localized<string> Summary,
+    Localized<string>? Venue,
     JsonNode Body,
     long? BannerMediaId,
     DateTime? VisibleFromUtc,
@@ -61,8 +62,8 @@ public sealed record EventDetailDto(
 /// <summary>
 /// What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
 /// own (E3b), cancelling another (<see cref="EventCancelRequest"/>). Its department is the module's base department, which the
-/// payload does not carry. Of the five switches, the three of M4a: the roster and the event in person enter with their phases.
-/// A null <c>Body</c> keeps the description as it is.
+/// payload does not carry. Of the five switches, the three of M4a and the event in person with its venue (E16): the roster enters
+/// with its phase. A null <c>Body</c> keeps the description as it is; a venue written in no language is none.
 /// </summary>
 public sealed record EventWriteDto(
     string Kind,
@@ -81,7 +82,9 @@ public sealed record EventWriteDto(
     DateTime? StartsAtUtc,
     DateTime? EndsAtUtc,
     Visibility Visibility,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    bool InPerson = false,
+    Localized<string>? Venue = null);
 
 /// <summary>"Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read.</summary>
 public sealed record EventCancelRequest(Localized<string> Note, DateTime RowVersion);
@@ -131,6 +134,7 @@ internal static class EventMapper
         row.ExternalUrl,
         row.Title,
         row.Summary,
+        row.Venue,
         // An empty column is an empty document, never a null the editor would trip on.
         JsonNode.Parse(row.BodyJson) ?? JsonNode.Parse(Event.EmptyBody)!,
         row.BannerMediaId,
@@ -157,11 +161,13 @@ internal static class EventMapper
         row.PublicSlots = payload.PublicSlots;
         row.PrivateSlots = payload.PrivateSlots;
         row.WholeDivision = payload.WholeDivision;
+        row.InPerson = payload.InPerson;
         row.Organizer = payload.Organizer;
         row.ExternalUrl = string.IsNullOrWhiteSpace(payload.ExternalUrl) ? null : payload.ExternalUrl.Trim();
         row.Title = payload.Title;
         row.Slug = payload.Slug.Trim().ToLowerInvariant();
         row.Summary = payload.Summary;
+        row.Venue = IsWritten(payload.Venue) ? payload.Venue : null;
         row.BannerMediaId = payload.BannerMediaId;
         row.VisibleFromUtc = payload.VisibleFromUtc;
         row.BookingOpensAtUtc = payload.BookingOpensAtUtc;
@@ -175,6 +181,10 @@ internal static class EventMapper
             row.BodyJson = payload.Body.ToJsonString();
         }
     }
+
+    /// <summary>Whether a translated text says something in some language.</summary>
+    public static bool IsWritten(Localized<string>? text) =>
+        text is not null && text.Values.Any(value => !string.IsNullOrWhiteSpace(value));
 }
 
 /// <summary>
@@ -210,6 +220,11 @@ public sealed class EventWriteDtoValidator : AbstractValidator<EventWriteDto>
                 && (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
             .When(row => !string.IsNullOrWhiteSpace(row.ExternalUrl))
             .WithMessage("errors.url.absolute");
+
+        // Where an event in person takes place (§4-bis): a place, not a description; every language is asked when it is published.
+        RuleFor(row => row.Venue)
+            .Must(venue => venue is null || venue.Values.All(text => (text?.Length ?? 0) <= Event.MaxVenueLength))
+            .WithMessage("errors.text.tooLong");
 
         RuleFor(row => row.StartsAtUtc).NotNull().WithMessage("errors.required");
         RuleFor(row => row.EndsAtUtc).NotNull().WithMessage("errors.required");

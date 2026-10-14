@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E10o** (nucleo: un campo dice il suo nome), sul branch
+**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E16** (modulo, la prima di **M4c**: le domande e l'iscrizione a un evento in
+presenza, ed `evt_event_stats` intera), sul branch `m4/e16-in-person-registration`, **PR #255** verso `main`, **in coda dopo la #254** di
+E10o, l'ottava della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255**, con E11a dopo): nata dal branch di E8b a
+`4bc847e`, ha unito la testa di E10o `a97a1fd`, che porta tutta la coda sotto. La nota `2026-10-12-le-domande-e-l-iscrizione` è
+**decisa** da Carmine sull'issue #253 (A a tutte e due le domande: le etichette del form del membro da E10o; «Togli» un'iscrizione con il
+motivo e una mail). Da E16 un evento può essere **in presenza**, con il luogo: lo staff scrive le sue domande, un membro si iscrive
+rispondendo — il server controlla ogni risposta per tipo — e cambia o si ritira fino all'inizio, lo staff vede le iscrizioni e le somme
+e ne toglie una con un motivo («Che cosa ha lasciato E16», sotto). Prima, **fase E10o** (nucleo: un campo dice il suo nome), sul branch
 `m4/e10o-field-names-in-schema`, **PR #254** verso `main`, **in coda dopo la #239**, la settima della coda **#242 → #250 → #252 → #251
 → #249 → #239 → #254**, con E16 dopo: nata da `main` a `a75ed6c`, **decisa** da Carmine sull'issue #253 ([la sua risposta, punto
 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540): A, prima una fase del nucleo), e ha unito la testa
@@ -237,6 +244,62 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E16 (12 ottobre 2026, branch `m4/e16-in-person-registration`, PR #255; nata in coda dopo la #249 dal branch di E8b a `4bc847e`, ora in coda dopo la #254 di E10o, con la sua testa `a97a1fd` unita)
+
+- **Che cosa c'è** (il dettaglio in `10`, E16, «Com'è andata»; **una migrazione**, `AddInPersonRegistration`; niente del nucleo — solo
+  `schema.d.ts` generato —; una nota nuova, `2026-10-12-le-domande-e-l-iscrizione`, **decisa** da Carmine sull'**issue #253** — (A) a tutte e due
+  le domande —): la prima fase di **M4c**, scelta da dalberone prima di M4b.
+  - **Le tabelle**: `evt_questions` (`EventQuestion`: ordine, tipo dall'elenco chiuso, domanda e scelte tradotte, obbligatoria; le scelte
+    con una chiave che il server dà e che non cambia), `evt_registrations` (`EventRegistration`: il membro in `vid`, le risposte in JSON per
+    `q{id}`, `created_at`, `updated_at`; univoca su `(event_id, vid)`, `[WithdrawnByStakeholder]`), ed **`evt_event_stats` intera**
+    (`EventStats`, tutte le colonne del design §1.10: **E13a non la migra**; in E16 nessuno la scrive).
+  - **Il form dell'evento** ha «In presenza» e il luogo (`EventWriteDto` in coda, con un predefinito, `presetSwitches`); il luogo serve per
+    pubblicare un evento in presenza, e sta nella testa della pagina (un fatto in più di `EventHead`).
+  - **Le domande**: `/api/events/questions`, una risorsa del motore (`Staff/EventQuestionEndpoints.cs`), la scheda «Domande» con **le
+    somme** nella lista (`Registrations/RegistrationSums.cs`), ogni domanda in un form generato (`screens/questions.tsx`).
+  - **L'iscrizione**: le risposte controllate per tipo in un posto solo (`Registrations/RegistrationAnswers.cs`), i verbi del membro
+    (`Registrations/MemberRegistrations.cs`, `GET`/`PUT`/`DELETE /api/events/mine/registrations…`), la scheda «Iscrizioni» con «Togli» e
+    il motivo (`Registrations/RegistrationEndpoints.cs`, `StaffRegistrations.cs`, `screens/registrations.tsx`), la sezione della pagina
+    dell'evento (`screens/Registration.tsx`, il form costruito dalle domande in `screens/registrationForm.ts`) e `/events/mine`.
+  - **Le mail**: `events.registrationReceived` a ogni iscrizione e cambio, `events.registrationRemoved` con il motivo; annullare e cambiare
+    gli orari avvisano anche gli iscritti (`EventSaving.PeopleToTellAsync`).
+  - **`EventsPersonalData`** per le iscrizioni; **`inPersonRetentionMonths`** nelle impostazioni.
+  - **I test**: integrazione `EventsRegistrationsTests` (9 dopo la revisione; VID **761101–761105**, una fascia nuova data da dalberone;
+    slug `evt-test-e16-…`); vitest `registrationForm.test.ts`, `answers.test.ts`; il giro `web/e2e/full/events-in-person.spec.ts` (slug
+    `evt-test-e2e-e16-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **Le due domande dell'issue #253 sono decise** ([le risposte](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540)):
+    le etichette del form del membro vengono dal nucleo, con la fase **E10o** (un campo porta il suo nome nello schema), e **E16 è in coda
+    dopo la sua PR**; «Togli» un'iscrizione chiede il motivo e manda `events.registrationRemoved`, com'è scritto.
+  - **E17** (le attività, la conservazione, «Duplica»): `RegistrationRules.IsOpen` e `IsWithdrawable` dicono fino a quando; un posto di
+    un'attività lo prende solo chi ha una riga in `evt_registrations`; **`registrationReceived` aspetta i turni** (il design: «con risposte e
+    turni delle attività»), un dato in più di `EventsMail.RegistrationReceivedAsync`; **la conservazione** scrive le somme in
+    `evt_event_stats` (`RegistrationSums.Of`, la colonna `answer_sums`) prima di cancellare le iscrizioni; **«Duplica»** copia le domande
+    (non le iscrizioni) — le chiavi delle scelte com'erano.
+  - **E10n** (#251, nella coda sotto): `EventRegistration.AnswersJson` porta `[ErasedWith(nameof(Vid))]`, così le risposte di un'iscrizione
+    ritirata o tolta prima della cancellazione escono anche dall'audit; `EventsRegistrationsTests` lo prova con un'iscrizione ritirata.
+  - **Dopo la revisione sulla #255** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6130535660),
+    [la risposta di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6131119914): sì alle letture 15, 20, 4 e
+    12, no alle parole delle liste scritte dal server). ⚠️ **Le liste ricevono dati, la pagina scrive le parole nella lingua sullo
+    schermo**: `EventQuestionDto.Sum` (numeri per chiave), le risposte com'erano date in `EventRegistrationDto` e in `MyRegistrationDto` (che
+    porta anche le domande del suo evento), e `screens/answers.ts` che le scrive; **le mail** tengono le parole del server
+    (`RegistrationAnswers.Lines`), nella lingua di chi le riceve. Una fase che mette un valore in parole in una lista fa lo stesso (E17: i
+    posti delle attività). **Dopo la seconda lettura** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146420615),
+    [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/255#issuecomment-6146461872): sì alla lettura 11 com'è ora — la seconda
+    iscrizione dello stesso istante diventa un cambio della prima): l'eraser tiene una scelta solo se nomina scelte della domanda
+    (`RegistrationAnswers.Counted`), e la scheda «Iscrizioni» dice l'errore della lettura delle domande. ⚠️ **La cancellazione** tiene di
+    un'iscrizione finita solo le risposte contate alle domande che ci sono, e marca
+    sempre la riga come cambiata, così l'audit perde le sue copie di prima: una tabella nuova di E17 (i posti) che tiene righe con lo
+    pseudonimo guarda lo stesso caso. ⚠️ **Ogni lettura salta un valore che non torna con la sua domanda** (`RegistrationAnswers.Fits`, e in
+    TS `answerLines`).
+  - ⚠️ **Sul banco** le persone leggono l'italiano anche con la pagina in inglese (`readInEnglish` mette solo il cookie): le **mail**
+    arrivano in italiano, le pagine no.
+  - ⚠️ **Due test del modulo di fasi prima, cresciuti con la forma** (detto nella PR): due righe dell'anteprima in `EventsErasureTests`
+    (E8b); `inPerson` e `venue` in `eventForm.test.ts` (E3a); i tre campi nuovi di `PublicEventDto` nelle fixture (`EventHead.test.tsx`,
+    `public.test.tsx`, lo smoke `events-public.spec.ts`) e `inPersonRetentionMonths` in `schemas.test.ts`. Una fase che aggiunge un campo
+    obbligatorio fa lo stesso.
+  - ⚠️ **I VID di prova**: la fascia del modulo è finita; E16 ha usato **761101–761105** (dopo 761100 di E10n), dati da dalberone.
 
 ### Che cosa ha lasciato E10o (12 ottobre 2026, branch `m4/e10o-field-names-in-schema`, PR #254, del nucleo, in coda dopo la #239; con la testa di E10j `0963908`)
 

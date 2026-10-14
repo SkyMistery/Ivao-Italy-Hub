@@ -9,6 +9,7 @@ using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
+using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
@@ -33,7 +34,8 @@ namespace IvaoHub.Modules.Events;
 /// the staff's list of the bookings of an event, the block <c>events.myEvents</c> of a pilot's bookings still to fly — and the
 /// reminder of the day before, <c>events-reminders</c>; E7 its private slots — generated from the capacity of its airports, booked
 /// with the flight the pilot flies and an arrival's linked departure, exported with the slot each is paired with —; E8b «Duplicate», a
-/// draft of an event onto a new date, and the module's half of erasing a person's data.
+/// draft of an event onto a new date, and the module's half of erasing a person's data; E16 the events in person — their questions,
+/// a member's registration with the answers, the sums the staff read — and the statistics of an event, born whole.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -136,6 +138,10 @@ public sealed class EventsModule : ModuleBase
         // «Duplicate» (E8b): a draft of an event onto a new date, with its rows of the staff and nothing of the members.
         services.AddScoped<EventDuplication>();
 
+        // The events in person (E16): a member's registrations with the answers to the event's questions, and the staff's list of them.
+        services.AddScoped<MemberRegistrations>();
+        services.AddScoped<StaffRegistrations>();
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -150,5 +156,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapPublicEventEndpoints();
         endpoints.MapBookingsExport();
         endpoints.MapBookingEndpoints();
+        endpoints.MapEventQuestionEndpoints();
+        endpoints.MapRegistrationEndpoints();
     }
 }

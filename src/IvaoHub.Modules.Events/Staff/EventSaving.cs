@@ -90,6 +90,16 @@ public sealed class EventSaving(
             problems.Add("privateSlots", "events:errors.hasPrivateSlots");
         }
 
+        // The same for an event in person (E16): off with questions or registrations there, the switch would hide what the members
+        // answered. The staff take the registrations away and delete the questions first.
+        if (!row.InPerson && !isNew
+            && database.Entry(row).Property(nameof(Event.InPerson)).OriginalValue is true
+            && (await database.Questions.AnyAsync(question => question.EventId == row.Id, cancellationToken)
+                || await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken)))
+        {
+            problems.Add("inPerson", "events:errors.inPersonHasQuestions");
+        }
+
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
         if (problems.IsEmpty && row.Status == PublishStatus.Published)
         {
@@ -117,16 +127,27 @@ public sealed class EventSaving(
         }
 
         _timesChanged = false;
-        await mail.EventChangedAsync(row, await BookersAsync(row.Id, cancellationToken), cancellationToken);
+        await mail.EventChangedAsync(row, await PeopleToTellAsync(row.Id, cancellationToken), cancellationToken);
     }
 
-    /// <summary>Whoever booked a slot of an event, each once: whoever is told when it changes or is cancelled (§8.3).</summary>
-    public Task<List<int>> BookersAsync(long eventId, CancellationToken cancellationToken) =>
-        CrudSource.BackOffice<EventBooking>(database)
+    /// <summary>
+    /// Whoever booked a slot of an event or registered to it (E16), each once — one mail per person, whatever they hold: whoever is
+    /// told when it changes or is cancelled (§8.3, §4-bis.2).
+    /// </summary>
+    public async Task<List<int>> PeopleToTellAsync(long eventId, CancellationToken cancellationToken)
+    {
+        var bookers = await CrudSource.BackOffice<EventBooking>(database)
             .Where(booking => booking.EventId == eventId)
             .Select(booking => booking.BookerVid)
             .Distinct()
             .ToListAsync(cancellationToken);
+        var registered = await CrudSource.BackOffice<EventRegistration>(database)
+            .Where(registration => registration.EventId == eventId)
+            .Select(registration => registration.Vid)
+            .ToListAsync(cancellationToken);
+
+        return [.. bookers.Union(registered)];
+    }
 
     /// <summary>
     /// Deleting an event (§2.3): only one nobody took part in — no row of a member points at it. The bookings (E6a) are the first
@@ -144,9 +165,15 @@ public sealed class EventSaving(
             throw new DomainRefusalException("id", "events:errors.eventHasBookings");
         }
 
+        if (await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasRegistrations");
+        }
+
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
+        database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }

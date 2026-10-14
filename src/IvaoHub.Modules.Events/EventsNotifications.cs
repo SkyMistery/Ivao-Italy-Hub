@@ -16,7 +16,7 @@ public static class EventsNotifications
 
     /// <summary>
     /// The start or the end of an event changed (§8.3; E3b): the same audience as a cancellation, who arrives with the same rows —
-    /// the pilots who booked since E6a.
+    /// the pilots who booked since E6a, whoever registered since E16.
     /// </summary>
     public const string EventChanged = "events.eventChanged";
 
@@ -35,5 +35,18 @@ public static class EventsNotifications
     /// </summary>
     public const string BookingReminder = "events.bookingReminder";
 
-    public static readonly IReadOnlyList<string> All = [EventCancelled, EventChanged, BookingRemoved, BookingChanged, BookingReminder];
+    /// <summary>
+    /// A member registered to an event in person, or changed their answers (§4-bis.2; E16): to them, with their answers as they are now
+    /// — and the seats of the activities with E17.
+    /// </summary>
+    public const string RegistrationReceived = "events.registrationReceived";
+
+    /// <summary>
+    /// The staff took a member's registration away, with the reason (E16; Carmine's answer 2 on issue #253): to that member,
+    /// as for a booking.
+    /// </summary>
+    public const string RegistrationRemoved = "events.registrationRemoved";
+
+    public static readonly IReadOnlyList<string> All =
+        [EventCancelled, EventChanged, BookingRemoved, BookingChanged, BookingReminder, RegistrationReceived, RegistrationRemoved];
 }
