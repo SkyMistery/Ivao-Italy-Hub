@@ -6,7 +6,13 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
+**Ultimo aggiornamento:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
+#264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
+e non in coda**: nata da `main` a `c232448` (E11a unita). Fissa `System.Security.Cryptography.Pkcs` a **10.0.13** (gli avvisi del 13
+ottobre facevano fallire `dotnet restore`, e con lui `build-test` della #261, #262 e #263) e porta la versione a **0.6.8** («Che cosa ha
+lasciato E10q», sotto). Dopo la sua unione la #261, la #262 e la #263 uniscono `main`; lo coordina la sessione che coordina.
+
+**L'aggiornamento di E11a:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
 disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
 E16, l'ultima della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255 → #256**): nata dal branch di E16 a
 `dd5b263`, ha unito la sua testa `78fc9b6`, che porta tutta la coda sotto. La nota `2026-10-12-le-postazioni-e-la-disponibilita` è
@@ -254,6 +260,22 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10q, «Com'è andata»; nessuna migrazione, nessun codice; una nota nuova,
+  `2026-10-15-il-pkcs-corretto`, **decisa** con l'issue #264): `System.Security.Cryptography.Pkcs` **10.0.13** in
+  `Directory.Packages.props` e un riferimento diretto in `IvaoHub.Core.csproj`, l'unico progetto che lo porta (MailKit → MimeKit 10.0.0);
+  `<Version>` **0.6.8**.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **un `dotnet restore` locale può passare anche quando quello della CI fallisce**: senza modifiche ai progetti il restore è «già
+    aggiornato» e non rilegge gli avvisi. Per vederli: `dotnet restore IvaoHub.sln --force --no-http-cache`, poi
+    `dotnet list IvaoHub.sln package --vulnerable --include-transitive`;
+  - ⚠️ un avviso su un pacchetto **transitivo** si corregge così, con una `PackageVersion` nel gruppo «Security fixes of transitive
+    packages» e un riferimento diretto nel progetto che lo porta (`dotnet nuget why <progetto> <pacchetto>`), **mai** con `NoWarn` o
+    `NuGetAudit=false`; il riferimento a Pkcs se ne va quando MimeKit ne porterà uno corretto da sé;
+  - il runtime incluso nel pacchetto self-contained è quello dell'ultimo SDK 10.0 che `setup-dotnet` installa (oggi 10.0.402, runtime
+    10.0.13); il `Pkcs.dll` pubblicato è comunque quello del pacchetto (nota, §4).
 
 ### Che cosa ha lasciato E11a (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256; in coda dopo la #255 di E16, nata dal suo branch a `dd5b263`, con la sua testa `78fc9b6` unita)
 
