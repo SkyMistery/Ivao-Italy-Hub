@@ -211,6 +211,7 @@ public static class AtcPositionEndpoints
             options.Apply = AtcPositionMapper.Apply;
             options.BeforeAuthorize = AdoptAsync;
             options.BeforeSave = SaveAsync;
+            options.AfterSave = (_, saving) => saving.Services.GetRequiredService<ShiftLock>().CommitAsync(saving.CancellationToken);
             options.Delete = DeleteAsync;
         });
 
@@ -304,6 +305,10 @@ public static class AtcPositionEndpoints
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> SaveAsync(EventAtcPosition position, CrudSaving saving)
     {
+        // Under the lock of the event's row, as a shift is written (the second reading of #262, point 1): a position shortened while a
+        // shift is added in the hours cut reads that shift, and refuses.
+        await saving.Services.GetRequiredService<ShiftLock>().TakeAsync((EventsDbContext)saving.Database, position.EventId, saving.CancellationToken);
+
         if (await saving.Services.GetRequiredService<EventChildren>().EventAsync(position.EventId, saving.CancellationToken) is not { } parent)
         {
             return EventChildren.Refusal("eventId", "events:errors.eventUnknown");
@@ -375,7 +380,10 @@ public static class AtcPositionEndpoints
     /// </summary>
     private static async Task DeleteAsync(EventAtcPosition position, IServiceProvider services, CancellationToken cancellationToken)
     {
+        // Under the lock of the event's row (the second reading of #262, point 1): a shift added meanwhile is read, and goes with its audit.
         var database = services.GetRequiredService<EventsDbContext>();
+        var shiftLock = services.GetRequiredService<ShiftLock>();
+        await shiftLock.TakeAsync(database, position.EventId, cancellationToken);
         var shifts = await CrudSource.BackOffice<EventAtcShift>(database)
             .Where(shift => shift.PositionId == position.Id)
             .ToListAsync(cancellationToken);
@@ -388,12 +396,16 @@ public static class AtcPositionEndpoints
                 throw new DomainRefusalException("id", PositionHasShiftsKey);
             }
 
-            // With their requests to hand them over, and whoever knew of one told it is gone (E12).
-            await services.GetRequiredService<ShiftNotices>().RemoveAsync(shifts, position, cancellationToken);
+            // With their requests to hand them over, saved and committed inside the lock, and then whoever knew of one told it is gone (E12).
+            await services.GetRequiredService<ShiftNotices>().RemoveAsync(shifts, position, shiftLock, cancellationToken);
             return;
         }
 
         database.AtcPositions.Remove(position);
+
+        // The engine saves after this hook and asks nothing after a deletion: the save and the commit are here, inside the lock.
+        await database.SaveChangesAsync(cancellationToken);
+        await shiftLock.CommitAsync(cancellationToken);
     }
 
     /// <summary>

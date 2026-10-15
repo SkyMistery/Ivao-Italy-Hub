@@ -190,11 +190,14 @@ export function ShiftForm() {
     label: `${position.callsign} · ${moment(position.fromUtc)} – ${moment(position.toUtc)}`,
   }));
   const positionId = shift?.positionId ?? search.positionId;
+  // From the start a shift is only cut, to now or later (Carmine's answer on #262): the form says so before the server does.
   const why = closed
     ? t('events:atc.closedEvent')
-    : proposed
-      ? null
-      : t('events:atc.roster.notYet', { date: moment(event.closesAtUtc) });
+    : !proposed
+      ? t('events:atc.roster.notYet', { date: moment(event.closesAtUtc) })
+      : started && shift !== null
+        ? t('events:errors.shiftAfterStart')
+        : null;
 
   return (
     <PageShell

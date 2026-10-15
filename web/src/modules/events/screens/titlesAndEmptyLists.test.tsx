@@ -20,6 +20,7 @@ import { BookingsTab } from './bookings';
 import { EventsPage } from './events';
 import { MyBookingsPage } from './mine';
 import { EventPublicPage, EventsPublicPage } from './public';
+import { RosterSection } from './roster';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
 
@@ -100,7 +101,10 @@ const event: PublicEventDto = {
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
 const detail = { id: event.id, publicSlots: true, privateSlots: false } as EventDetailDto;
 
-/** The same event as the staff of the ATC read its head (E11a): its roster not proposed yet, so the panel shows its positions alone. */
+/**
+ * The head of the same event as the ATC reads it (E11b): its roster proposed, and nothing in it — no position opened —, its publication still
+ * to come (E12).
+ */
 const atcHead: AtcEventDto = {
   id: event.id,
   ownerDepartment: 'ED',
@@ -112,7 +116,7 @@ const atcHead: AtcEventDto = {
   closesAtUtc: '2099-11-18T16:00:00Z',
   shiftMinutes: 60,
   cancelledAt: null,
-  rosterProposedAt: null,
+  rosterProposedAt: '2099-11-18T16:03:00Z',
   publishesAtUtc: '2099-11-19T16:00:00Z',
   rosterPublishedAt: null,
 };
@@ -184,6 +188,11 @@ async function open(
           getParentRoute: () => staff,
           path: '/bookings',
           component: () => <BookingsTab event={detail} editable={editable} />,
+        }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/roster',
+          component: () => <RosterSection event={atcHead} />,
         }),
         createRoute({
           getParentRoute: () => staff,
@@ -368,5 +377,16 @@ describe('the empty lists of the events', () => {
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.events.empty)).toBeInTheDocument();
     expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+  test('an empty roster says what is there — no position opened — to a reader with no button, in both languages', async () => {
+    // The bootstrap of the test holds no permission: the reader corrects nothing, and the sentence orders nothing (E11b).
+    const { i18n } = await open('/roster');
+
+    expect(await screen.findByText(englishEvents.atc.roster.empty)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: englishEvents.atc.roster.add })).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.atc.roster.empty)).toBeInTheDocument();
   });
 });

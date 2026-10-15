@@ -471,6 +471,82 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A position's change and deletion wait on the event's row too (the second reading of #262, point 1): a position shortened while a shift
+    /// is added in the hours it loses reads that shift and refuses; a position deleted while a shift is added takes that shift with it, with its
+    /// row in the audit.
+    /// </summary>
+    [Fact]
+    public async Task APositionChangedOrDeletedWhileAShiftIsAddedMeetsItOnTheEventsRow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, ends) = Window(days: 2);
+        var id = await EventRowAsync("position-race", starts, ends, PublishStatus.Published, token);
+        var shortened = await PositionRowAsync(id, Tower, starts, ends, token);
+        var deleted = await PositionRowAsync(id, Approach, starts, ends, token);
+        using var aod = await SignedInAsync(AodVid, token);
+
+        var stored = (await PositionsAsync(id, token)).Single(position => position.Id == shortened);
+        var change = new EventAtcPositionWriteDto(id, Tower, starts.AddHours(1), ends, null, stored.RowVersion);
+        await HoldWhileAsync(id, () => aod.PutAsJsonAsync($"{AtcPositionEndpoints.Pattern}/{shortened}", change, token), shortened, Fir, starts, token, async request =>
+            Assert.Equal(["events:errors.positionHasShifts"], (await RefusedAsync(await request, token))["fromUtc"]));
+
+        long added = 0;
+        await HoldWhileAsync(id, () => aod.DeleteAsync($"{AtcPositionEndpoints.Pattern}/{deleted}", token), deleted, OtherFir, starts, token, async request =>
+        {
+            using var response = await request;
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }, shift => added = shift);
+
+        Assert.DoesNotContain(await PositionsAsync(id, token), position => position.Id == deleted);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        Assert.True(await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AnyAsync(
+            row => row.Entity == "evt_atc_shifts" && row.Action == "deleted" && row.EntityId == added.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            token));
+    }
+
+    /// <summary>
+    /// A request started while the test holds the event's row: once it waits on the lock, the test writes a shift on the position in its first
+    /// hour and commits, and the request goes on and is judged.
+    /// </summary>
+    private async Task HoldWhileAsync(
+        long eventId,
+        Func<Task<HttpResponseMessage>> start,
+        long positionId,
+        string fir,
+        DateTime from,
+        CancellationToken cancellationToken,
+        Func<Task<HttpResponseMessage>, Task> judge,
+        Action<long>? written = null)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        await using var held = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await database.Database.SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {eventId} FOR UPDATE").ToListAsync(cancellationToken);
+
+        var request = start();
+        await WaitForALockWaitAsync(cancellationToken);
+
+        var shift = new EventAtcShift
+        {
+            EventId = eventId,
+            PositionId = positionId,
+            ControllerVid = CoordinatorVid,
+            Fir = fir,
+            FromUtc = from,
+            ToUtc = from.AddHours(1),
+            Origin = ShiftOrigin.Staff,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        database.AtcShifts.Add(shift);
+        await database.SaveChangesAsync(cancellationToken);
+        await held.CommitAsync(cancellationToken);
+        written?.Invoke(shift.Id);
+
+        await judge(request);
+    }
+
+    /// <summary>
     /// The refusals of the correction the first round did not read (the review of #262, point 6, and Carmine's answer on #259): a position no
     /// event has, a position of another event, a controller holding another position of the event at those hours — and in another event at
     /// the same hours only a warning —; for the chief of a FIR, moving a shift to another FIR's position; and the rows the roster says the
@@ -504,6 +580,13 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         Assert.Equal(["events:errors.controllerBusy"], (await RefusedAsync(await aod.PostAsJsonAsync(ShiftEndpoints.Pattern, Shift(positions[Approach], towerShift.ControllerVid, starts, 1), token), token))["controllerVid"]);
 
+        // The same on a change (the second reading of #262, point 2): the approach at six given to the controller of the tower at six.
+        var approachLater = (await ShiftsAsync(id, token)).Single(shift => shift.PositionId == positions[Approach] && shift.FromUtc == starts.AddHours(1));
+        var towerLater = (await ShiftsAsync(id, token)).Single(shift => shift.PositionId == positions[Tower] && shift.FromUtc == starts.AddHours(1));
+        Assert.Equal(
+            ["events:errors.controllerBusy"],
+            (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{approachLater.Id}", Shift(positions[Approach], towerLater.ControllerVid, approachLater.FromUtc, 1) with { RowVersion = approachLater.RowVersion }, token), token))["controllerVid"]);
+
         // In another event at the same hours the same controller holds the tower too: a warning, never a refusal.
         var roster = await RosterAsync(aod, id, token);
         var row = Assert.Single(roster, entry => entry.GetProperty("shiftId").ValueKind == JsonValueKind.Number && entry.GetProperty("shiftId").GetInt64() == towerShift.Id);
@@ -533,17 +616,20 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
-    /// Carmine's conditions on #259 that follow the clock: from the event's start a shift is no longer taken away nor given to another
-    /// controller — its hours still change —; and once the roster is proposed the availabilities stay closed, even when the start moves later.
+    /// The conditions of the maintainer that follow the clock. From the event's start (Carmine's answer on #262) a shift is not taken away, its
+    /// controller, its position and its start do not change, and its end moves only to now or later: a cut at the present moment passes, an end
+    /// already past is refused, and the absent controller's replacement is a new shift from the cut. Once the roster is proposed (his answer on
+    /// #259) the availabilities stay closed, even when the start moves later.
     /// </summary>
     [Fact]
-    public async Task FromTheStartAShiftStaysItsControllersAndAProposedRosterKeepsTheAvailabilitiesClosed()
+    public async Task FromTheStartAShiftIsOnlyCutAndAProposedRosterKeepsTheAvailabilitiesClosed()
     {
         var token = TestContext.Current.CancellationToken;
         var now = DateTime.UtcNow;
         var running = await EventRowAsync("start-running", now.AddHours(-1), now.AddHours(5), PublishStatus.Published, token);
         var position = await PositionRowAsync(running, Tower, now.AddHours(-1), now.AddHours(5), token);
-        var shift = await ShiftRowAsync(running, position, Fir, EarlierVid, now.AddHours(-1), now, note: null, token);
+        var otherPosition = await PositionRowAsync(running, Approach, now.AddHours(-1), now.AddHours(5), token);
+        var shift = await ShiftRowAsync(running, position, Fir, EarlierVid, now.AddHours(-1), now.AddHours(2), note: null, token);
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == running)
@@ -554,9 +640,24 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.DeleteAsync($"{ShiftEndpoints.Pattern}/{shift}", token), token))["id"]);
 
         var stored = (await ShiftsAsync(running, token)).Single(row => row.Id == shift);
-        var hours = Shift(position, EarlierVid, now.AddHours(-1), 2) with { RowVersion = stored.RowVersion };
-        Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours with { ControllerVid = TraineeVid }, token), token))["controllerVid"]);
-        await OkAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours, token), token);
+        var same = Shift(position, EarlierVid, stored.FromUtc, 3) with { RowVersion = stored.RowVersion };
+        foreach (var (change, field) in new[]
+        {
+            (same with { ControllerVid = TraineeVid }, "controllerVid"),
+            (same with { PositionId = otherPosition }, "positionId"),
+            (same with { FromUtc = stored.FromUtc.AddMinutes(30) }, "fromUtc"),
+            (same with { ToUtc = now.AddMinutes(-10) }, "toUtc"),
+        })
+        {
+            Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", change, token), token))[field]);
+        }
+
+        // Cut at the present moment — a minute from now, which the save still finds to come —, and a replacement from the cut.
+        var soon = DateTime.UtcNow.AddMinutes(1);
+        var cut = new DateTime(soon.Year, soon.Month, soon.Day, soon.Hour, soon.Minute, soon.Second, DateTimeKind.Utc);
+        var kept = await OkAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", same with { ToUtc = cut }, token), token);
+        Assert.Equal((EarlierVid, stored.FromUtc, cut), (kept.GetProperty("controllerVid").GetInt32(), kept.GetProperty("fromUtc").GetDateTime(), kept.GetProperty("toUtc").GetDateTime()));
+        await CreatedAsync(await aod.PostAsJsonAsync(ShiftEndpoints.Pattern, new EventAtcShiftWriteDto(position, TraineeVid, cut, stored.ToUtc, default), token), token);
 
         // Proposed, then moved a month later: the close moves with the start, and the availabilities stay closed all the same.
         var (starts, _) = Window(days: 2);

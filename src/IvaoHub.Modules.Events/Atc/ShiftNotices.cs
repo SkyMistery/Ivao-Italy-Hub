@@ -103,10 +103,15 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
 
     /// <summary>
     /// Takes these shifts away with their requests to hand them over — each with its row in the audit —, saves, and tells whoever knew of one
-    /// that it is gone: «take away» on the roster, and a position deleted with its shifts — the position in the same save. The engine's own
-    /// save after it finds nothing left.
+    /// that it is gone: «take away» on the roster, and a position deleted with its shifts — the position in the same save, under the lock of
+    /// the event's row the deletion holds (<paramref name="held"/>), committed before anybody is told. The engine's own save after it finds
+    /// nothing left.
     /// </summary>
-    public async Task RemoveAsync(IReadOnlyList<EventAtcShift> shifts, EventAtcPosition? position, CancellationToken cancellationToken)
+    public async Task RemoveAsync(
+        IReadOnlyList<EventAtcShift> shifts,
+        EventAtcPosition? position,
+        ShiftLock? held,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(shifts);
 
@@ -136,6 +141,10 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
         }
 
         await database.SaveChangesAsync(cancellationToken);
+        if (held is not null)
+        {
+            await held.CommitAsync(cancellationToken);
+        }
 
         foreach (var (eventId, vid, shift) in described)
         {
