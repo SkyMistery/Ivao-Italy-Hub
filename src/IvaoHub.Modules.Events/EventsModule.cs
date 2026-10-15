@@ -116,7 +116,7 @@ public sealed class EventsModule : ModuleBase
             .AddTrigger(trigger => trigger
                 .ForJob(EventReleaseJob.JobName)
                 .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
-                .WithCronSchedule(EventReleaseJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+                .WithCronSchedule(EventReleaseJob.Cron)));
 
         // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.
         services.AddScoped<PublicEvents>();

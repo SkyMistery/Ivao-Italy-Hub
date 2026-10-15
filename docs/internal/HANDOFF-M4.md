@@ -281,7 +281,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: integrazione `EventsActivitiesTests` (7, la corsa sull'ultimo posto fra loro; VID **761150–761155**); unità
     `EventsActivitiesTests` (7); il giro `web/e2e/full/events-m4c-round.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:
-  - **Le tre domande della nota** aspettano Carmine. ⚠️ **La terza**: oggi la conservazione cancella attraverso l'interceptor, e le copie
+  - **Le tre domande della nota** aspettano Carmine sull'[issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267); se dice (B) alla terza, la fase del nucleo la prende dalberone, ed E17 va in coda anche dopo di lei. ⚠️ **La terza**: oggi la conservazione cancella attraverso l'interceptor, e le copie
     delle iscrizioni nell'audit tengono le risposte (la (A)); la (B) raccomandata è **una fase del nucleo a sé** (svuotare nell'audit le
     colonne `[ErasedWith]` delle righe che una conservazione toglie), e poi una riga in `EventsRetentionJob`. Se Carmine dice (B) per la
     domanda 1, l'area delle attività diventa `Events`: un attributo e le due policy di `EventActivityEndpoints`, le schede, i test.

@@ -4625,12 +4625,12 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
      l'attività con posti che resta, «Duplica», la conservazione, la cancellazione —; unità `EventsActivitiesTests` (7: i turni, la
      conservazione, le statistiche, la copia, la mail, il trigger in UTC). Il giro completo `web/e2e/full/events-m4c-round.spec.ts` (slug
      `evt-test-e2e-e17-…`).
-- **Scelte e scostamenti** (nota nuova `decisions/2026-10-15-le-attivita-e-la-conservazione-breve.md`, **Proposta**, con tre domande a
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-15-le-attivita-e-la-conservazione-breve.md`, **Proposta**, con tre domande poste sull'[issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267) a
   Carmine — l'area delle attività, un'attività con posti, l'audit della conservazione —; il codice segue le raccomandate, tranne la terza:
   la (B) raccomandata è una fase del nucleo a sé, e il codice di oggi è la (A), le copie nell'audit restano): le letture 1–22 della nota.
   **Una lettura in più del design**: le liste dello staff rileggono le somme dalle statistiche (lettura 20), perché «le somme restano»
-  sia vero anche sulla pagina prima della scheda «Statistiche» di E13a. **`events-release` dice UTC** (la riga di E10j): lo fanno anche E11b ed
-  E4d, e al merge resta la loro forma.
+  sia vero anche sulla pagina prima della scheda «Statistiche» di E13a. **`events-release` resta com'è**: il suo fuso (la riga di E10j) lo
+  dice E4d (#263, diretta su `main`, con `EventsJobTriggersTests`), che arriva con `main`.
 - **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti
   con la forma**: le due righe dell'anteprima in `EventsErasureTests` (E8b) ed `EventsRegistrationsTests` (E16), i posti in
   `EventsTestRows`, `activities` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, `titlesAndEmptyLists.test.tsx`,

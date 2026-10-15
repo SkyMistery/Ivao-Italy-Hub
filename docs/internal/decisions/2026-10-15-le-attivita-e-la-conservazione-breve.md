@@ -1,7 +1,7 @@
 # Le attività parallele, i posti e la conservazione breve (E17)
 
 **Data:** 15 ottobre 2026 — fase E17 di M4 (la seconda e ultima di M4c: le attività, i posti, la conservazione breve, «Duplica»)
-**Stato:** **Proposta**. Tre domande a Carmine (§5), il resto letture del design.
+**Stato:** **Proposta**. Tre domande a Carmine ([l'issue #267][q], §6), il resto letture del design.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §2.3-bis, §8.4, §11 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-10-12-le-domande-e-l-iscrizione` — l'unico handler, il guardiano dell'interceptor con il ritiro
 di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il motore CRUD, `Refusals`,
@@ -85,6 +85,12 @@ design unito leggono l'area in due modi; la domanda 3 perché la risposta (B) è
     `evt_activity_bookings.vid`.
 
 ## 6. Le domande a Carmine
+
+Poste in inglese con [l'issue #267][q] (15 ottobre 2026, per scelta di dalberone: chiedere subito); in italiano dicono quello che segue.
+L'issue dice anche che, se Carmine sceglie la (B) alla domanda 3, la fase del nucleo la prende dalberone, ed E17 si mette in coda dopo di
+lei oltre che dopo E12.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267
 
 1. **Chi scrive le attività.** Il design le legge in due modi: §4-bis.1 («righe figlie dell'evento, area `EventBookings`»), il catalogo §6.1
    (`EventBookings.Edit`: «slot, import, generatore, attività»; `EventBookings.View`: «iscrizioni e attività con i VID») e la nota
