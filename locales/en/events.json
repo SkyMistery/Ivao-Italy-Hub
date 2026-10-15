@@ -963,7 +963,7 @@
       "title": "Positions",
       "create": "New position",
       "edit": "Position",
-      "empty": "No position yet: open one, and the controllers can give their availability.",
+      "empty": "The positions the event opens will show up here; once they are open, the controllers give their availability.",
       "fields": {
         "callsign": "Position",
         "name": "Name",

@@ -962,7 +962,7 @@
       "title": "Postazioni",
       "create": "Nuova postazione",
       "edit": "Postazione",
-      "empty": "Nessuna postazione ancora: aprine una, e i controllori potranno dare la loro disponibilità.",
+      "empty": "Qui compariranno le postazioni che l'evento apre; quando sono aperte, i controllori danno la loro disponibilità.",
       "fields": {
         "callsign": "Postazione",
         "name": "Nome",
