@@ -773,7 +773,7 @@
     "rosterNotProposed": "Il roster non è ancora proposto: lo è alla chiusura delle disponibilità.",
     "positionHasShifts": "La postazione ha dei turni nel roster: il nominativo e le ore restano intorno a loro, e dall'inizio dell'evento non si elimina.",
     "eventHasShifts": "L'evento ha dei turni nel suo roster: annullalo, invece.",
-    "shiftAfterStart": "L'evento è iniziato: i suoi turni sono il registro di chi ha controllato, e nessuno si toglie più.",
+    "shiftAfterStart": "L'evento è iniziato: un turno tiene il suo controllore, la sua postazione e le ore già passate, e non si toglie; si può solo tagliarne la fine, ad adesso o più tardi.",
     "controllerBusy": "Questo controllore tiene già un'altra postazione dell'evento in queste ore."
   },
   "questions": {
