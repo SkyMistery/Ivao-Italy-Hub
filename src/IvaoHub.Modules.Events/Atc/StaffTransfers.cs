@@ -12,6 +12,7 @@ using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Atc;
@@ -19,7 +20,8 @@ namespace IvaoHub.Modules.Events.Atc;
 /// <summary>
 /// A request to hand a shift over as the staff of the ATC list it (§4.4-bis, §7.2, E12): the shift — its callsign and hours —, who hands it
 /// over and to whom, named by the core's reader, the note, the state and the decision; for one waiting, whether its shift is still theirs
-/// (<c>Stale</c> when the staff gave it to somebody else meanwhile), and the warnings of the rules of the proposal on whoever would take it.
+/// (<c>Stale</c> when the staff gave it to somebody else meanwhile), the warnings of the rules of the proposal on whoever would take it,
+/// and whether the reader may decide it — the one handler asked on it, so never their own (<c>Decidable</c>, as the roster's <c>Editable</c>).
 /// </summary>
 public sealed record EventAtcTransferDto(
     long Id,
@@ -38,7 +40,8 @@ public sealed record EventAtcTransferDto(
     string? DecisionNote,
     DateTime CreatedAt,
     bool Stale,
-    IReadOnlyList<ShiftWarning> Warnings);
+    IReadOnlyList<ShiftWarning> Warnings,
+    bool Decidable);
 
 /// <summary>What the staff send to approve a request (§4.4-bis): who takes the shift — the one named, when empty — and a note.</summary>
 public sealed record TransferApproval(int? ToVid, string? Note);
@@ -70,6 +73,7 @@ public sealed class StaffTransfers(
     ModuleSettingsStore settingsStore,
     RatingVocabulary vocabulary,
     IAuthorizationService authorization,
+    IHttpContextAccessor http,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -140,7 +144,16 @@ public sealed class StaffTransfers(
             }
         }
 
-        return [.. transfers.Select(transfer => Row(transfer, shifts.GetValueOrDefault(transfer.ShiftId), positions, names, warnings.GetValueOrDefault(transfer.Id) ?? []))];
+        var decidable = new HashSet<long>();
+        foreach (var transfer in transfers.Where(transfer => transfer.Status == TransferStatus.Pending))
+        {
+            if (http.HttpContext is { } context && (await authorization.AuthorizeAsync(context.User, transfer, EventsPermissions.AtcEdit)).Succeeded)
+            {
+                decidable.Add(transfer.Id);
+            }
+        }
+
+        return [.. transfers.Select(transfer => Row(transfer, shifts.GetValueOrDefault(transfer.ShiftId), positions, names, warnings.GetValueOrDefault(transfer.Id) ?? [], decidable.Contains(transfer.Id)))];
     }
 
     /// <summary>One request alone, with no names nor warnings: a row the engine reads by itself.</summary>
@@ -149,7 +162,8 @@ public sealed class StaffTransfers(
         EventAtcShift? shift,
         IReadOnlyDictionary<long, EventAtcPosition> positions,
         IReadOnlyDictionary<int, string> names,
-        IReadOnlyList<ShiftWarning> warnings)
+        IReadOnlyList<ShiftWarning> warnings,
+        bool decidable = false)
     {
         ArgumentNullException.ThrowIfNull(transfer);
         ArgumentNullException.ThrowIfNull(positions);
@@ -171,7 +185,8 @@ public sealed class StaffTransfers(
             transfer.DecisionNote,
             transfer.CreatedAt,
             transfer.Status == TransferStatus.Pending && shift?.ControllerVid != transfer.ControllerVid,
-            warnings);
+            warnings,
+            decidable);
     }
 
     /// <summary>Approves a request (reading 7): the shift passes to the new holder, and whoever asked and whoever takes it are told.</summary>

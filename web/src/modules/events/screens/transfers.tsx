@@ -25,8 +25,8 @@ import { transferLines } from './rosterWords';
 /**
  * The requests to hand a shift over of an event, in the staff's back office (design M4 §4.4-bis, §7.2, E12; note
  * 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 7): a generated list under the roster — the shift, who hands it over and
- * to whom, the state, the note and the warnings on whoever would take it — with «Approve» and «Refuse» on one that waits, for whoever writes
- * the ATC of the event. The server answers who may decide which: nobody their own request, nobody giving a shift to themselves.
+ * to whom, the state, the note and the warnings on whoever would take it — with «Approve» and «Refuse» on one that waits, where the server
+ * says the reader may decide it (`decidable`, the one handler on the request: never one's own), as the roster says `editable`.
  */
 
 const columns: readonly ColumnSpec<TransferRow>[] = [
@@ -41,7 +41,7 @@ const columns: readonly ColumnSpec<TransferRow>[] = [
   col.text('decisionNote'),
 ];
 
-export function TransfersSection({ event, editable }: { event: AtcEventDto; editable: boolean }) {
+export function TransfersSection({ event }: { event: AtcEventDto }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({}));
@@ -63,7 +63,7 @@ export function TransfersSection({ event, editable }: { event: AtcEventDto; edit
         search={search}
         onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
         emptyDescription={t('events:atc.transfers.empty')}
-        actions={(row) => (editable && row.status === 'Pending' ? <Decide row={row} /> : null)}
+        actions={(row) => (row.decidable ? <Decide row={row} /> : null)}
       />
     </section>
   );

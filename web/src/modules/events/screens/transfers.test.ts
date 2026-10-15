@@ -34,6 +34,7 @@ function request(overrides: Partial<EventAtcTransferDto>): EventAtcTransferDto {
     createdAt: '2099-11-20T17:00:00Z',
     stale: false,
     warnings: [],
+    decidable: true,
     ...overrides,
   };
 }

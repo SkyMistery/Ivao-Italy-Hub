@@ -4331,6 +4331,38 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
 - **Non verificato**: la CI (la dice la PR); le risposte di Carmine alle due domande della nota; un roster con l'archivio vero di vIPI (IT ha
   `none`; provato con un doppio); un roster di molte postazioni e molti candidati (il proponente è in memoria, per un evento, e l'esperienza
   fa una domanda all'archivio per candidato); il form del turno a 375 px; la migrazione su un'installazione vera.
+- **Dopo la revisione e la risposta di Carmine** (14 ottobre 2026; [i rilievi del revisore][r262]: un punto da correggere e cinque piccoli;
+  [la risposta di Carmine sull'issue #259][a259b]: sì alle letture 1, 2, 4, 7, 9, 10, la 3 com'è, la 5, la 6 e l'8 con tre condizioni —
+  la nota è **decisa**; `main` a `c232448`, con E16 ed E11a unite, unito con un merge senza conflitti):
+  1. **Da correggere, punto 1**: `shiftTaken` e gli altri controlli del salvataggio di un turno **sotto il blocco della riga dell'evento**
+     (`Atc/ShiftLock.cs`: la transazione `READ COMMITTED` aperta in `BeforeSave` e chiusa in `AfterSave`), con il test del blocco tenuto.
+  2. **Le tre condizioni di Carmine**: proposto il roster, **le disponibilità restano chiuse** anche se l'inizio si sposta
+     (`AtcRules.IsClosedForGood`), e niente propone di nuovo; **dall'inizio un turno non si toglie** — e, lettura chiesta al coordinatore,
+     **non passa a un altro controllore** (`events:errors.shiftAfterStart`) —; **un controllore su due postazioni dello stesso evento alle
+     stesse ore è un rifiuto** (`events:errors.controllerBusy`), i suoi turni in altri eventi alle stesse ore l'avviso. La lettura 3
+     (l'archivio che non risponde) resta com'è, detta nella nota.
+  3. **I piccoli 2–6**: un evento che fallisce è registrato e lasciato al giro dopo, e gli altri si propongono; uno scoperto dice **quanti
+     sono liberi** di prenderlo (`Free`), così la frase è vera; la penalità nel formato dei numeri della lingua; **ogni riga del roster e
+     ogni postazione dicono se il lettore può scriverle** (`Editable`, l'unico handler), e il form di un turno non offre quello che il server
+     rifiuta (un evento chiuso, prima della proposta, «Togli» dall'inizio, le postazioni di un altro FIR); i test che mancavano.
+  4. **I due resti della terza lettura di E11a** ([i rilievi][r256c]): `events:errors.availabilityChanged` tolta (il 409 dice la frase del
+     nucleo, l'unica che la pagina mostra); `isClosed` chiede anche la fine, per una bozza finita.
+  - ⚠️ **La spec** `full/events-roster.spec.ts` cambia con il punto 5: prima della proposta il form del turno non ha «Salva» e dice quando
+    arriva il roster, e il rifiuto del server si prova con una richiesta.
+  - **I test**: integrazione `EventsRosterTests` da 5 a 9 (la corsa con il blocco tenuto; i rifiuti e le righe scrivibili; l'inizio e le
+    disponibilità chiuse dopo la proposta; l'evento che fallisce, con l'archivio doppio che si rompe su **761198**); unità `EventsRosterTests`
+    (un turno di un altro evento è un avviso e non conta nei turni di fila); vitest `rosterWords.test.ts` (la penalità in italiano, i liberi,
+    `isClosed` di una bozza finita).
+  - **Verificato, in locale** (14 ottobre 2026, con `main` a `c232448`): `dotnet build -c Release` senza avvisi; `dotnet format
+    --verify-no-changes` sui file C# toccati; nessun cambio del modello in sospeso; unità **1287/1287**; **integrazione intera senza filtro
+    606/606** (12,9 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (854 chiavi) verdi; `pnpm test` **771 in 107 file**;
+    `pnpm build`; `gen:api` e `i18n:sync` rifatti; lo smoke **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,8 minuti) sul banco
+    5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione e dietro il lock di Mailpit; le regole di `core-guard` da `main` a `c232448`:
+    un file del nucleo (`ErasureTests.cs`) con la nota, nessun file del maintainer.
+
+[r262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
+[a259b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6164366206
+[r256c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6164279151
 
 ### E12 — Pubblicazione, mail, cessione, `events.atcCoverage`
 

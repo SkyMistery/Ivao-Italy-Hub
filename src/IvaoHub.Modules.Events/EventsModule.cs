@@ -161,6 +161,7 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<RosterData>();
         services.AddScoped<RosterProposal>();
         services.AddScoped<StaffRoster>();
+        services.AddScoped<ShiftLock>();
         services.AddScoped<EventRosterJob>();
 
         // Its publication at a date and the mails of the shifts (E12), the second half of events-roster; the page of a roster; a controller's

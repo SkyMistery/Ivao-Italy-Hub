@@ -175,8 +175,8 @@ export function AtcPanel({ eventId }: { eventId: number }) {
           </Button>
         )}
       />
-      <RosterSection event={event} editable={editable} />
-      <TransfersSection event={event} editable={editable} />
+      <RosterSection event={event} />
+      <TransfersSection event={event} />
     </div>
   );
 }

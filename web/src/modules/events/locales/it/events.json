@@ -860,7 +860,6 @@
     "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
     "ratingUnknown": "Scegli un rating dell'elenco.",
     "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
-    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
     "positionOnCancelledEvent": "L'evento è annullato: non vi si apre né vi si cambia una postazione.",
     "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione.",
     "positionUnknownForShift": "Scegli una delle postazioni di questo evento.",
@@ -871,6 +870,9 @@
     "rosterNotProposed": "Il roster non è ancora proposto: lo è alla chiusura delle disponibilità.",
     "positionHasShifts": "La postazione ha dei turni nel roster: il nominativo e le ore restano intorno a loro, e dall'inizio dell'evento non si elimina.",
     "eventHasShifts": "L'evento ha dei turni nel suo roster: annullalo, invece.",
+    "shiftAfterStart": "L'evento è iniziato: i suoi turni sono il registro di chi ha controllato, e non passano più a un altro controllore né si tolgono.",
+    "controllerBusy": "Questo controllore tiene già un'altra postazione dell'evento in queste ore.",
+    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
     "transferClosed": "Un turno si cede fino all'inizio dell'evento, quando il suo roster è pubblicato.",
     "transferPending": "C'è già una richiesta in attesa per questo turno.",
     "transferToYourself": "Il turno è già tuo: indica qualcun altro.",
@@ -1042,7 +1044,8 @@
         "penalty": "Penalità: {{value}}",
         "staff": "Scritto dallo staff",
         "uncoveredNobody": "Nessuno dei disponibili può prenderlo",
-        "uncoveredBusy": "Potrebbero prenderlo: {{count}}, ma sono in altri turni o al massimo di turni di fila"
+        "uncoveredBusy": "Potrebbero prenderlo: {{count}}, ma sono in altri turni o al massimo di turni di fila",
+        "uncoveredFree": "Liberi di prenderlo: {{count}}"
       },
       "warnings": {
         "NotAvailable": "Non disponibile per tutto il turno",

@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -58,6 +60,9 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     /// <summary>A VID nobody of the hub has: the class makes sure of it.</summary>
     private const int NeverVid = 761199;
+
+    /// <summary>A controller whose history the class's archive cannot read: an availability of theirs makes an event's proposal fail.</summary>
+    private const int BrokenVid = 761198;
 
     private static readonly int[] People = [AodVid, ChiefVid, ExperiencedVid, EarlierVid, TraineeVid, CoordinatorVid, PersonVid, SuperadminVid];
 
@@ -135,7 +140,8 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     public async Task TheJobProposesTheRosterOnceAtTheCloseWithTheWhyOfEveryShift()
     {
         var token = TestContext.Current.CancellationToken;
-        var (starts, _) = Window(days: 2);
+        var (starts, _) = Window(days: 1);
+        // A day of its own: the other events of the class, at the same hours with the same controllers, would warn of another shift.
         var id = await ProposableAsync("propose", starts, token);
         var draft = await ProposableAsync("propose-draft", starts, token, status: PublishStatus.Draft);
         var open = await ProposableAsync("propose-open", Window(days: 20).Starts, token);
@@ -417,6 +423,220 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     private const string GoneWords = "evt-test-e11b gone words";
+
+    /// <summary>
+    /// Two corrections of the same uncovered piece at once (the review of #262, point 1): the second waits on the event's row the first holds
+    /// — here a transaction of the test, which writes its shift there and commits —, then reads it and is refused. A request that read before
+    /// the other committed would have passed: the lock is what makes the check true.
+    /// </summary>
+    [Fact]
+    public async Task TwoCorrectionsOfOnePieceAtOnceMeetOnTheEventsRow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, _) = Window(days: 2);
+        var id = await ProposableAsync("race", starts, token);
+        await RunJobAsync(token);
+        var tower = (await PositionIdsAsync(id, token))[Tower];
+        var late = starts.AddHours(2);
+        using var aod = await SignedInAsync(AodVid, token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var held = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            await database.Database.SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE").ToListAsync(token);
+
+            var request = aod.PostAsJsonAsync(ShiftEndpoints.Pattern, Shift(tower, TraineeVid, late, 1), token);
+            await WaitForALockWaitAsync(token);
+
+            database.AtcShifts.Add(new EventAtcShift
+            {
+                EventId = id,
+                PositionId = tower,
+                ControllerVid = CoordinatorVid,
+                Fir = Fir,
+                FromUtc = late,
+                ToUtc = late.AddHours(1),
+                Origin = ShiftOrigin.Staff,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            });
+            await database.SaveChangesAsync(token);
+            await held.CommitAsync(token);
+
+            Assert.Equal(["events:errors.shiftTaken"], (await RefusedAsync(await request, token))["fromUtc"]);
+        }
+
+        Assert.Equal([CoordinatorVid], (await ShiftsAsync(id, token)).Where(shift => shift.FromUtc == late).Select(shift => shift.ControllerVid));
+    }
+
+    /// <summary>
+    /// The refusals of the correction the first round did not read (the review of #262, point 6, and Carmine's answer on #259): a position no
+    /// event has, a position of another event, a controller holding another position of the event at those hours — and in another event at
+    /// the same hours only a warning —; for the chief of a FIR, moving a shift to another FIR's position; and the rows the roster says the
+    /// reader may write — never their own shift.
+    /// </summary>
+    [Fact]
+    public async Task TheCorrectionKeepsAShiftToItsEventItsFirAndOneControllerAtATime()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, _) = Window(days: 2);
+        var id = await ProposableAsync("refusals", starts, token);
+        var other = await ProposableAsync("refusals-other", starts, token);
+        await RunJobAsync(token);
+        var positions = await PositionIdsAsync(id, token);
+        var otherTower = (await PositionIdsAsync(other, token))[Tower];
+        using var aod = await SignedInAsync(AodVid, token);
+
+        Assert.Equal(["events:errors.positionUnknownForShift"], (await RefusedAsync(await aod.PostAsJsonAsync(ShiftEndpoints.Pattern, Shift(long.MaxValue, TraineeVid, starts, 1), token), token))["positionId"]);
+
+        var towerShift = (await ShiftsAsync(id, token)).Single(shift => shift.PositionId == positions[Tower] && shift.FromUtc == starts);
+        Assert.Equal(
+            ["events:errors.positionOfAnotherEvent"],
+            (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{towerShift.Id}", Shift(otherTower, towerShift.ControllerVid, starts, 1) with { RowVersion = towerShift.RowVersion }, token), token))["positionId"]);
+
+        // The approach at five freed, and the controller of the tower at five put there too: one controller, two positions at once.
+        var approachShift = (await ShiftsAsync(id, token)).Single(shift => shift.PositionId == positions[Approach] && shift.FromUtc == starts);
+        using (var response = await aod.DeleteAsync($"{ShiftEndpoints.Pattern}/{approachShift.Id}", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        Assert.Equal(["events:errors.controllerBusy"], (await RefusedAsync(await aod.PostAsJsonAsync(ShiftEndpoints.Pattern, Shift(positions[Approach], towerShift.ControllerVid, starts, 1), token), token))["controllerVid"]);
+
+        // In another event at the same hours the same controller holds the tower too: a warning, never a refusal.
+        var roster = await RosterAsync(aod, id, token);
+        var row = Assert.Single(roster, entry => entry.GetProperty("shiftId").ValueKind == JsonValueKind.Number && entry.GetProperty("shiftId").GetInt64() == towerShift.Id);
+        Assert.Contains(nameof(ShiftWarning.Overlapping), row.GetProperty("warnings").EnumerateArray().Select(warning => warning.GetString()));
+
+        // The piece freed: two could take it, the controller of the tower is busy, the other free — and the roster says one is free.
+        var freed = Assert.Single(roster, entry => entry.GetProperty("state").GetString() == "Uncovered" && entry.GetProperty("callsign").GetString() == Approach && entry.GetProperty("fromUtc").GetDateTime() == starts);
+        Assert.Equal((2, 1, true), (freed.GetProperty("candidates").GetInt32(), freed.GetProperty("free").GetInt32(), freed.GetProperty("editable").GetBoolean()));
+
+        // The chief of the tower's FIR: the tower's shift not moved onto the approach of the other FIR; the rows of the tower theirs to write.
+        using var chief = await SignedInAsync(ChiefVid, token);
+        var current = (await ShiftsAsync(id, token)).Single(shift => shift.Id == towerShift.Id);
+        using (var response = await chief.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{towerShift.Id}", Shift(positions[Approach], current.ControllerVid, starts.AddHours(1), 1) with { RowVersion = current.RowVersion }, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        Assert.All(await RosterAsync(chief, id, token), entry => Assert.True(entry.GetProperty("editable").GetBoolean()));
+        var listed = await OkAsync(await chief.GetAsync($"{AtcPositionEndpoints.Pattern}?filter[eventId]={id}&pageSize=100", token), token);
+        Assert.Equal([(Tower, true)], listed.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("callsign").GetString(), item.GetProperty("editable").GetBoolean())));
+
+        // A shift of the ATC operations themselves: on the roster not theirs to write.
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var theirs = await CreatedAsync(await coordinator.PostAsJsonAsync(ShiftEndpoints.Pattern, Shift(positions[Approach], AodVid, starts, 1), token), token);
+        var own = Assert.Single(await RosterAsync(aod, id, token), entry => entry.GetProperty("shiftId").ValueKind == JsonValueKind.Number && entry.GetProperty("shiftId").GetInt64() == theirs.GetProperty("id").GetInt64());
+        Assert.False(own.GetProperty("editable").GetBoolean());
+    }
+
+    /// <summary>
+    /// Carmine's conditions on #259 that follow the clock: from the event's start a shift is no longer taken away nor given to another
+    /// controller — its hours still change —; and once the roster is proposed the availabilities stay closed, even when the start moves later.
+    /// </summary>
+    [Fact]
+    public async Task FromTheStartAShiftStaysItsControllersAndAProposedRosterKeepsTheAvailabilitiesClosed()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        var running = await EventRowAsync("start-running", now.AddHours(-1), now.AddHours(5), PublishStatus.Published, token);
+        var position = await PositionRowAsync(running, Tower, now.AddHours(-1), now.AddHours(5), token);
+        var shift = await ShiftRowAsync(running, position, Fir, EarlierVid, now.AddHours(-1), now, note: null, token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == running)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.RosterProposedAt, now.AddDays(-3)), token);
+        }
+
+        using var aod = await SignedInAsync(AodVid, token);
+        Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.DeleteAsync($"{ShiftEndpoints.Pattern}/{shift}", token), token))["id"]);
+
+        var stored = (await ShiftsAsync(running, token)).Single(row => row.Id == shift);
+        var hours = Shift(position, EarlierVid, now.AddHours(-1), 2) with { RowVersion = stored.RowVersion };
+        Assert.Equal(["events:errors.shiftAfterStart"], (await RefusedAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours with { ControllerVid = TraineeVid }, token), token))["controllerVid"]);
+        await OkAsync(await aod.PutAsJsonAsync($"{ShiftEndpoints.Pattern}/{shift}", hours, token), token);
+
+        // Proposed, then moved a month later: the close moves with the start, and the availabilities stay closed all the same.
+        var (starts, _) = Window(days: 2);
+        var id = await ProposableAsync("start-moved", starts, token);
+        await RunJobAsync(token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.StartsAtUtc, starts.AddDays(30)).SetProperty(row => row.EndsAtUtc, starts.AddDays(30).AddHours(6)), token);
+        }
+
+        using var earlier = await SignedInAsync(EarlierVid, token);
+        var mine = $"{AvailabilityEndpoints.MinePattern}/{id}";
+        var request = new AvailabilityRequest([new AtcWindowDto(starts.AddDays(30), starts.AddDays(30).AddHours(2))], Note: null);
+        Assert.Equal([AtcRules.ClosedKey], (await RefusedAsync(await earlier.PutAsJsonAsync(mine, request, token), token))["id"]);
+        Assert.Equal([AtcRules.ClosedKey], (await RefusedAsync(await earlier.DeleteAsync(mine, token), token))["id"]);
+
+        // And nothing proposes it again.
+        var proposedAt = (await EventAsync(id, token)).RosterProposedAt;
+        await RunJobAsync(token);
+        Assert.Equal(proposedAt, (await EventAsync(id, token)).RosterProposedAt);
+    }
+
+    /// <summary>
+    /// One event whose proposal fails — here the archive breaks on one of its controllers — is logged, named in the run's row and left for the
+    /// next run; the events after it are proposed (the review of #262, point 2).
+    /// </summary>
+    [Fact]
+    public async Task AnEventWhoseProposalFailsIsLeftForTheNextRunAndTheOthersAreProposed()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var (starts, _) = Window(days: 2);
+        var broken = await ProposableAsync("broken", starts.AddMinutes(-30), token);
+        await AvailabilityRowAsync(broken, BrokenVid, starts, starts.AddHours(6), DateTime.UtcNow.AddDays(-3), token);
+        var fine = await ProposableAsync("broken-not", starts, token);
+
+        try
+        {
+            await RunJobAsync(token);
+
+            Assert.Null((await EventAsync(broken, token)).RosterProposedAt);
+            Assert.Empty(await ShiftsAsync(broken, token));
+            Assert.NotNull((await EventAsync(fine, token)).RosterProposedAt);
+
+            await using var scope = _factory.Services.CreateAsyncScope();
+            var run = await scope.ServiceProvider.GetRequiredService<HubDbContext>().JobsLog.AsNoTracking()
+                .Where(entry => entry.Job == EventRosterJob.JobName)
+                .OrderByDescending(entry => entry.Id)
+                .FirstAsync(token);
+            Assert.Equal("succeeded", run.Status);
+            Assert.NotNull(run.FinishedAt);
+            Assert.Contains(broken.ToString(System.Globalization.CultureInfo.InvariantCulture), run.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            // Not due any more: the other classes' runs do not meet it.
+            await using var scope = _factory.Services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == broken)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.CancelledAt, DateTime.UtcNow), CancellationToken.None);
+        }
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms (CONTRIBUTING.md).</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The request never waited for the transaction the test holds.");
+    }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------
 
@@ -774,7 +994,10 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Task.FromResult<IReadOnlyDictionary<string, AtcPositionMinimum>>(new Dictionary<string, AtcPositionMinimum>());
     }
 
-    /// <summary>An archive of sessions that knows three connections of the experienced controller on the tower, and nothing of anybody else.</summary>
+    /// <summary>
+    /// An archive of sessions that knows three connections of the experienced controller on the tower, nothing of anybody else, and breaks on
+    /// <see cref="BrokenVid"/> — a failure of one event's proposal that the job must survive.
+    /// </summary>
     private sealed class ArchiveOfTheClass : IAtcActivitySource
     {
         public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
@@ -782,6 +1005,11 @@ public sealed class EventsRosterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
         {
+            if (vid == BrokenVid)
+            {
+                throw new InvalidOperationException("evt-test-e11b the archive breaks on this controller");
+            }
+
             IReadOnlyList<AtcPresence> online = vid == ExperiencedVid
                 ?
                 [

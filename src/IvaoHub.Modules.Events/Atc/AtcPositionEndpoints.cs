@@ -21,7 +21,8 @@ namespace IvaoHub.Modules.Events.Atc;
 
 /// <summary>
 /// A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-/// the staff's note, and how many controllers are available in some of its hours — read with a page of positions; none for a row read alone.
+/// the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
+/// form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
 /// </summary>
 public sealed record EventAtcPositionDto(
     long Id,
@@ -35,7 +36,8 @@ public sealed record EventAtcPositionDto(
     string? Note,
     int Candidates,
     DateTime UpdatedAt,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    bool Editable);
 
 /// <summary>
 /// What a client may set on a position of an event. The event is chosen when it is created and never changes; the care is the event's
@@ -114,9 +116,9 @@ public sealed class EventAtcPositionWriteDtoValidator : AbstractValidator<EventA
 /// <summary>Positions to and from their payloads: by hand, the callsign in upper case as the core writes it.</summary>
 internal static class AtcPositionMapper
 {
-    public static EventAtcPositionDto ToDto(EventAtcPosition position) => Row(position, name: null, candidates: 0);
+    public static EventAtcPositionDto ToDto(EventAtcPosition position) => Row(position, name: null, candidates: 0, editable: false);
 
-    public static EventAtcPositionDto Row(EventAtcPosition position, string? name, int candidates) => new(
+    public static EventAtcPositionDto Row(EventAtcPosition position, string? name, int candidates, bool editable) => new(
         position.Id,
         position.EventId,
         position.OwnerDepartment,
@@ -128,7 +130,8 @@ internal static class AtcPositionMapper
         position.Note,
         candidates,
         position.UpdatedAt,
-        position.RowVersion);
+        position.RowVersion,
+        editable);
 
     /// <summary>
     /// The event only on a new row: a position never moves to another event. No hours is none here, and the event's window before the

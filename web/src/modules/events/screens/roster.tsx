@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { holdsPermission } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -22,10 +21,9 @@ import {
   type AtcEventDto,
   type RosterRow,
 } from '../api';
-import { EVENT_ATC_EDIT } from '../permissions';
 import { emptyShift, shiftSchema, shiftSearchSchema, type ShiftFormValues } from '../schemas';
 
-import { ATC_SECTION, atcHome } from './atcPaths';
+import { ATC_SECTION, atcHome, hasStarted, isClosed } from './atcPaths';
 import { Candidates } from './candidates';
 import { rosterLines } from './rosterWords';
 
@@ -48,12 +46,13 @@ const columns: readonly ColumnSpec<RosterRow>[] = [
 ];
 
 /** The roster of the event, under its positions: what the job proposed and the staff corrected, or when it will be proposed. */
-export function RosterSection({ event, editable }: { event: AtcEventDto; editable: boolean }) {
+export function RosterSection({ event }: { event: AtcEventDto }) {
   const { t, i18n } = useTranslation();
   const moment = useMoment();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
   const base = `${ATC_SECTION}/${event.id}/shifts`;
+  const started = hasStarted(event);
 
   return (
     <section className="flex flex-col gap-4" aria-label={t('events:atc.roster.title')}>
@@ -73,7 +72,7 @@ export function RosterSection({ event, editable }: { event: AtcEventDto; editabl
           </p>
           <DataList
             columns={columns}
-            query={rosterQuery(event.id, search, i18n.language, (row) => rosterLines(row, t))}
+            query={rosterQuery(event.id, search, i18n.language, (row) => rosterLines(row, t, i18n.language))}
             labels="events:atc.roster"
             locale={i18n.language}
             defaultLocale={bootstrap.division.defaultLocale}
@@ -81,7 +80,7 @@ export function RosterSection({ event, editable }: { event: AtcEventDto; editabl
             search={search}
             onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
             emptyDescription={t('events:atc.roster.empty')}
-            actions={(row) => (editable ? <RowActions row={row} base={base} /> : null)}
+            actions={(row) => (row.editable ? <RowActions row={row} base={base} started={started} /> : null)}
           />
         </>
       )}
@@ -89,8 +88,11 @@ export function RosterSection({ event, editable }: { event: AtcEventDto; editabl
   );
 }
 
-/** «Add» on an uncovered piece, with its position and its hours; «Move» and «Take away» on a shift. */
-function RowActions({ row, base }: { row: RosterRow; base: string }) {
+/**
+ * «Add» on an uncovered piece, with its position and its hours; «Move» and «Take away» on a shift — for a row the server says the reader may
+ * write (the review of #262, point 5), and «Take away» only before the event starts (Carmine's answer on #259).
+ */
+function RowActions({ row, base, started }: { row: RosterRow; base: string; started: boolean }) {
   const { t, i18n } = useTranslation();
   const remove = useDeleteShift();
   const refusal = describeProblem(remove.error, t, i18n.language);
@@ -117,19 +119,21 @@ function RowActions({ row, base }: { row: RosterRow; base: string }) {
         <Button asChild variant="ghost" size="sm">
           <RouterAnchor href={`${base}/${shiftId}`}>{t('events:atc.roster.move')}</RouterAnchor>
         </Button>
-        <ConfirmDialog
-          triggerText={t('events:atc.roster.remove.trigger')}
-          title={t('events:atc.roster.remove.title')}
-          description={t('events:atc.roster.remove.description')}
-          confirmText={t('events:atc.roster.remove.confirm')}
-          disabled={remove.isPending}
-          onOpenChange={(open) => {
-            if (open) {
-              remove.reset();
-            }
-          }}
-          onConfirm={() => remove.mutate(shiftId)}
-        />
+        {started ? null : (
+          <ConfirmDialog
+            triggerText={t('events:atc.roster.remove.trigger')}
+            title={t('events:atc.roster.remove.title')}
+            description={t('events:atc.roster.remove.description')}
+            confirmText={t('events:atc.roster.remove.confirm')}
+            disabled={remove.isPending}
+            onOpenChange={(open) => {
+              if (open) {
+                remove.reset();
+              }
+            }}
+            onConfirm={() => remove.mutate(shiftId)}
+          />
+        )}
       </div>
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
     </div>
@@ -163,16 +167,34 @@ export function ShiftForm() {
     return null;
   }
 
-  const editable = holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
+  // What the server would take (the review of #262, point 5): a roster proposed, of an event not cancelled nor over, on a position the
+  // reader writes the ATC of — the server says it position by position, a FIR team's their FIR's —, never a shift of the reader's own;
+  // and «Take away» only before the event starts (Carmine's answer on #259).
+  const closed = isClosed(event);
+  const proposed = event.rosterProposedAt !== null;
+  const started = hasStarted(event);
+  const writable = positions.filter((position) => position.editable);
+  const editable =
+    !closed &&
+    proposed &&
+    (shift === null
+      ? writable.length > 0
+      : writable.some((position) => position.id === shift.positionId) &&
+        shift.controllerVid !== bootstrap.user?.vid);
   const back = atcHome(bootstrap, eventId);
   const title = id === null ? t('events:atc.shifts.create') : t('events:atc.shifts.edit');
   const refusal = describeProblem(remove.error, t, i18n.language);
-  // The positions of the event, each with its hours: the same callsign may open twice in an evening.
-  const choices = positions.map((position) => ({
+  // The positions of the event, each with its hours: the same callsign may open twice in an evening. Writing, the reader's own.
+  const choices = (editable ? writable : positions).map((position) => ({
     value: String(position.id),
     label: `${position.callsign} · ${moment(position.fromUtc)} – ${moment(position.toUtc)}`,
   }));
   const positionId = shift?.positionId ?? search.positionId;
+  const why = closed
+    ? t('events:atc.closedEvent')
+    : proposed
+      ? null
+      : t('events:atc.roster.notYet', { date: moment(event.closesAtUtc) });
 
   return (
     <PageShell
@@ -184,7 +206,7 @@ export function ShiftForm() {
         { label: title },
       ]}
       actions={
-        shift === null || !editable ? undefined : (
+        shift === null || !editable || started ? undefined : (
           <ConfirmDialog
             triggerText={t('events:atc.roster.remove.trigger')}
             title={t('events:atc.roster.remove.title')}
@@ -197,6 +219,7 @@ export function ShiftForm() {
       }
     >
       <div className="flex flex-col gap-8">
+        {why === null ? null : <Notice tone="info" title={why} />}
         {refusal === null ? null : <Notice tone="error" title={refusal} />}
         <SchemaForm<ShiftFormValues>
           schema={shiftSchema(choices)}
