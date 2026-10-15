@@ -36,6 +36,9 @@ public sealed class EventsRetentionJob(
 {
     public const string JobName = "events-retention";
 
+    /// <summary>Its trigger, by name: a test reads its zone and its cron.</summary>
+    public const string TriggerName = $"{JobName}-monthly";
+
     /// <summary>The first day of every month at 04:40, in UTC (the trigger says so), after the retention of the tours.</summary>
     public const string Cron = "0 40 4 1 * ?";
 

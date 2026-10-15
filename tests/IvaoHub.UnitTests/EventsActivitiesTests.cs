@@ -3,6 +3,10 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Events;
 using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Staff;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Quartz;
 using Xunit;
 
 namespace IvaoHub.UnitTests;
@@ -115,5 +119,31 @@ public sealed class EventsActivitiesTests
         Assert.Equal(
             ["Simulatore (Hangar 2): 2026-11-14 10:00–10:30 UTC", "Simulatore (Hangar 2): 2026-11-14 10:30–11:00 UTC"],
             EventsMail.SeatLines([(later, activity), (first, activity)], "it", "en"));
+    }
+
+    [Fact]
+    public void TheRetentionRunsOnceAMonthInUtcWhateverTheDivisionsZone()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(Options.Create(new DivisionOptions
+        {
+            Code = "XX",
+            CountryId = "XX",
+            Name = new Dictionary<string, string> { ["en"] = "Example Division" },
+            Domain = "example.org",
+            Locales = ["en"],
+            DefaultLocale = "en",
+            Timezone = "Europe/Rome",
+        }));
+        new EventsModule().ConfigureServices(services, new ConfigurationBuilder().Build());
+
+        using var provider = services.BuildServiceProvider();
+        var trigger = Assert.IsAssignableFrom<ICronTrigger>(Assert.Single(
+            provider.GetRequiredService<IOptions<QuartzOptions>>().Value.Triggers,
+            candidate => candidate.Key.Name == EventsRetentionJob.TriggerName));
+
+        Assert.Equal(TimeZoneInfo.Utc.Id, trigger.TimeZone.Id);
+        Assert.Equal(EventsRetentionJob.Cron, trigger.CronExpressionString);
+        Assert.Equal(EventsRetentionJob.JobName, trigger.JobKey.Name);
     }
 }

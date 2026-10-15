@@ -161,7 +161,7 @@ public sealed class EventsModule : ModuleBase
             .AddJob<EventsRetentionJob>(job => job.WithIdentity(EventsRetentionJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(EventsRetentionJob.JobName)
-                .WithIdentity($"{EventsRetentionJob.JobName}-monthly")
+                .WithIdentity(EventsRetentionJob.TriggerName)
                 .WithCronSchedule(EventsRetentionJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
         // The ATC (E11a): the positions an event opens, read with their candidates by the staff, and a member's availability.
