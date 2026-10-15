@@ -4,7 +4,7 @@
 **Stato:** **decisa**. Carmine, in chat al master, che ha pubblicato le risposte sull'issue #259 su sua istruzione: la **domanda 1**,
 «`atcData` di IT», (A), il 13 ottobre 2026 ([risposta 1][a]); la **domanda 2**, le dieci letture, il 14 ottobre 2026, dopo la revisione
 della #262 ([risposta 2][a2]): **sì alle letture 1, 2, 4, 7, 9 e 10**, sì alla **3** com'è, e la **5**, la **6** e l'**8** con tre
-condizioni, ora nel codice (§7). Le domande sono in §5, pubblicate nell'**issue #259** ([domande][q]); i rilievi del revisore sulla #262
+condizioni, ora nel codice (§7); e la regola di un turno dopo l'inizio dell'evento con la sua risposta sulla #262, il 14 ottobre 2026 ([risposta 3][a3]). Le domande sono in §5, pubblicate nell'**issue #259** ([domande][q]); i rilievi del revisore sulla #262
 ([rilievi][r]) stanno a parte, in §6.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259
@@ -207,13 +207,24 @@ I rilievi del revisore sulla #262 ([rilievi][r]), che stanno a parte dalla rispo
 
 - **Le disponibilità chiuse per sempre dopo la proposta** (lettura 5): `AtcRules.IsClosedForGood` — passata la chiusura, o proposto il
   roster —, letto da `IsOpen` e `IsWithdrawable`, quindi dalla pagina, dal dare, dal cambiare e dal ritirare.
-- **Dall'inizio dell'evento** (letture 6 e 8): un turno non si toglie (`events:errors.shiftAfterStart`), e — **lettura dello «sposta»,
-  raccomandata e chiesta, vedi sotto** — non passa a un altro controllore; le ore e la postazione si cambiano ancora. La pagina non offre
-  «Togli» dall'inizio.
+- **Dall'inizio dell'evento** (letture 6 e 8, e la risposta di Carmine sulla #262, [risposta 3][a3], che sostituisce la lettura della
+  sessione e la (B) scelta da dalberone nel frattempo): un turno **non si toglie**, **il suo controllore non cambia**, **non passa a
+  un'altra postazione**, **il suo inizio resta** e **le sue ore già passate non cambiano**; l'unico cambio è **tagliarne la fine al momento
+  presente o dopo** (fine ≥ adesso, mai prima), così lo staff mette un altro controllore sulla stessa postazione da quel momento: **il
+  sostituto di chi non si è presentato è un turno nuovo**, che comincia non prima del taglio. Così il buco si copre durante l'evento, ed E13
+  trova ancora il turno del controllore assente, dal suo inizio al taglio. Nel codice: `ShiftEndpoints.AfterStart` (il campo che cambia, e
+  la chiave `events:errors.shiftAfterStart` su quel campo), letto sotto il blocco della riga dell'evento; la pagina non offre «Togli»
+  dall'inizio, e il form di un turno iniziato dice la regola.
 - **Un controllore su due postazioni dello stesso evento alle stesse ore** è rifiutato (`events:errors.controllerBusy`, sotto lo stesso
-  blocco); **i suoi turni in altri eventi alle stesse ore** sono l'avviso «un altro suo turno nelle stesse ore», che il roster ora legge
-  anche fuori dall'evento; i turni di fila si contano nell'evento.
-- **Lo «sposta» dall'inizio — la scelta di dalberone, la (B)**: la regola segue la risposta di Carmine com'è scritta, dall'inizio si rifiuta solo di **togliere** un turno; **spostarlo resta libero** (il controllore, le ore, la postazione). Uno spostamento dopo l'inizio che cambia il controllore toglie la riga del primo da quello che E13 legge, anche se l'audit la tiene; dalberone ha scelto la (B) invece di rifiutare anche quello (la (A)). Il revisore e Carmine possono chiedere di più sulla PR.
+  blocco, anche su una modifica); **i suoi turni in altri eventi alle stesse ore** sono l'avviso «un altro suo turno nelle stesse ore», che
+  il roster ora legge anche fuori dall'evento; i turni di fila si contano nell'evento.
+- **Le postazioni sotto lo stesso blocco** (la seconda lettura della #262, [rilievi][r2], punto 1): la modifica di una postazione prende il
+  blocco della riga dell'evento nei suoi controlli, e la sua eliminazione lo prende, salva e chiude dentro di sé (il motore non chiede niente
+  dopo un'eliminazione): una postazione accorciata mentre si aggiunge un turno nelle ore che perde lo legge e rifiuta, una postazione
+  eliminata mentre si aggiunge un turno lo porta via con la sua riga dell'audit.
+
+[a3]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6173401612
+[r2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6172067250
 
 ## 8. I resti della terza lettura di E11a
 
@@ -236,8 +247,8 @@ Due punti piccoli della terza lettura della #256 ([rilievi][e]), che con E11a un
   (la sesta dell'ATC), accettata come scostamento accanto alle cinque di E11a; la correzione è una risorsa del motore.
 - **§9.7, collaborazioni ATC↔Events**: il turno copia il FIR dalla sua postazione; lo staff corregge dalla proposta alla fine dell'evento,
   mai un turno suo, sotto il blocco della riga dell'evento; un'aggiunta fuori dalle regole è un avviso, ma un controllore su due postazioni
-  dello stesso evento alle stesse ore è un rifiuto (e in altri eventi un avviso); dall'inizio un turno non si toglie né passa a un altro
-  controllore; proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta, e niente propone di nuovo; un archivio che
+  dello stesso evento alle stesse ore è un rifiuto (e in altri eventi un avviso); dall'inizio un turno non si toglie, tiene
+  controllore, postazione, inizio e ore passate, e se ne taglia solo la fine, ad adesso o dopo (il sostituto è un turno nuovo dal taglio); proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta, e niente propone di nuovo; un archivio che
   non risponde alla chiusura lascia il roster senza esperienza; gli scoperti sono i pezzi delle postazioni che nessun turno tocca.
 - **§11, «Privacy dei membri»**: i turni di un evento non ancora finito si cancellano con i dati della persona; quelli di un evento finito
   restano senza la nota della presenza e senza il perché.

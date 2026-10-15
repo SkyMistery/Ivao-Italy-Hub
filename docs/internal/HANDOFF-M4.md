@@ -294,8 +294,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il banco non lancia un job**: una spec non aspetta `events-roster` (come il promemoria di E6b); la proposta si guarda sul banco della
     fase al giro del quarto d'ora.
   - **Le condizioni di Carmine sulla #259** (nel codice): proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta
-    (`AtcRules.IsClosedForGood`); dall'inizio un turno non si toglie né passa a un altro controllore (`shiftAfterStart`: la seconda metà è una
-    lettura chiesta, la (A)); un controllore su due postazioni dello stesso evento alle stesse ore è un rifiuto (`controllerBusy`), in altri
+    (`AtcRules.IsClosedForGood`); dall'inizio un turno non si toglie, tiene controllore, postazione, inizio e ore passate, e se ne taglia solo
+    la fine, ad adesso o dopo (`shiftAfterStart`, la risposta di Carmine sulla #262: il sostituto è un turno nuovo dal taglio); un controllore su due postazioni dello stesso evento alle stesse ore è un rifiuto (`controllerBusy`), in altri
     eventi un avviso. **Le righe del roster e le postazioni dicono se il lettore può scriverle** (`Editable`, l'unico handler): una pagina
     nuova dell'ATC chiede quello, non `holdsPermission`. `isClosed` e `hasStarted` in `screens/atcPaths.ts`.
   - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il

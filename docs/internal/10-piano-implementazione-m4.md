@@ -4337,8 +4337,8 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   1. **Da correggere, punto 1**: `shiftTaken` e gli altri controlli del salvataggio di un turno **sotto il blocco della riga dell'evento**
      (`Atc/ShiftLock.cs`: la transazione `READ COMMITTED` aperta in `BeforeSave` e chiusa in `AfterSave`), con il test del blocco tenuto.
   2. **Le tre condizioni di Carmine**: proposto il roster, **le disponibilità restano chiuse** anche se l'inizio si sposta
-     (`AtcRules.IsClosedForGood`), e niente propone di nuovo; **dall'inizio un turno non si toglie** — e, lettura chiesta al coordinatore,
-     **non passa a un altro controllore** (`events:errors.shiftAfterStart`) —; **un controllore su due postazioni dello stesso evento alle
+     (`AtcRules.IsClosedForGood`), e niente propone di nuovo; **dall'inizio un turno non si toglie** (`events:errors.shiftAfterStart`; il
+     resto della regola dopo l'inizio è la risposta di Carmine sulla #262, sotto); **un controllore su due postazioni dello stesso evento alle
      stesse ore è un rifiuto** (`events:errors.controllerBusy`), i suoi turni in altri eventi alle stesse ore l'avviso. La lettura 3
      (l'archivio che non risponde) resta com'è, detta nella nota.
   3. **I piccoli 2–6**: un evento che fallisce è registrato e lasciato al giro dopo, e gli altri si propongono; uno scoperto dice **quanti
@@ -4360,7 +4360,32 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
     5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione e dietro il lock di Mailpit; le regole di `core-guard` da `main` a `c232448`:
     un file del nucleo (`ErasureTests.cs`) con la nota, nessun file del maintainer.
 
+- **Dopo la seconda lettura e la risposta di Carmine sulla regola dopo l'inizio** (15 ottobre 2026; [la seconda lettura][r262b], «chiusi»
+  il punto 1 e i piccoli 2–6, tre piccoli nuovi; [la risposta di Carmine][a262], che sostituisce la lettura della sessione e la (B) che
+  dalberone aveva scelto nel frattempo, mai pubblicata):
+  1. **Dopo l'inizio dell'evento** un turno non si toglie, il suo controllore non cambia, non passa a un'altra postazione, il suo inizio
+     resta e le sue ore già passate non cambiano; **l'unico cambio è tagliarne la fine ad adesso o dopo**, e il sostituto di chi non si è
+     presentato è un turno nuovo dal taglio (`ShiftEndpoints.AfterStart`, sotto il blocco; il form di un turno iniziato dice la regola).
+  2. **I piccoli della seconda lettura**: la modifica e l'eliminazione di una postazione **sotto il blocco della riga dell'evento**, con un
+     test per ognuna (il modello del blocco tenuto); `controllerBusy` su una modifica (`PUT`) ha il suo test; il corpo della PR dice la
+     domanda 2 decisa e che cosa hanno fatto le correzioni.
+  - **I test**: integrazione `EventsRosterTests` da 9 a 10 (le postazioni sotto il blocco); il test dell'inizio rifatto sulla regola di
+    Carmine — niente eliminazione, niente cambio di controllore, di postazione, d'inizio, una fine prima di adesso rifiutata, un taglio ad
+    adesso che passa, un turno nuovo dal taglio che passa.
+  - ⚠️ **`build-test` è rosso su ogni branch** per l'avviso di sicurezza di Pkcs (issue #264): una piccola PR del nucleo lo corregge su
+    `main`, e questo branch unisce `main` quando è unita.
+  - **Verificato, in locale** (15 ottobre 2026, `main` a `c232448`): ⚠️ **`dotnet restore` cade anche in locale** sull'avviso di Pkcs
+    (NU1902 e NU1903 trattati come errori, #264): le suite girano con `-p:NuGetAudit=false` dalla riga di comando (e la variabile
+    `NuGetAudit=false` per la pubblicazione del banco), senza toccare un file; `dotnet build -c Release --no-restore` senza avvisi; nessun
+    cambio del modello in sospeso; `dotnet format --verify-no-changes` sui file toccati; unità **1287/1287**; **integrazione intera senza
+    filtro 607/607** (9,4 min; al primo giro tutta rossa in 0 ms: Docker Desktop era spento, avviato e rifatta); `pnpm lint`, `typecheck`,
+    `format:check`, `i18n:check` (854 chiavi) verdi; `pnpm test` **771 in 107 file**; `pnpm build`; `gen:api` senza diff; lo smoke
+    **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,8 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione
+    e dietro il lock di Mailpit; le regole di `core-guard` da `main` a `c232448`: un file del nucleo (`ErasureTests.cs`) con la nota.
+
 [r262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
+[r262b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6172067250
+[a262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6173401612
 [a259b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6164366206
 [r256c]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/256#issuecomment-6164279151
 
