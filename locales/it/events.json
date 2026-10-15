@@ -898,7 +898,7 @@
       "title": "Roster",
       "notYet": "Il roster si propone alla chiusura delle disponibilità, il {{date}}.",
       "proposed": "Proposto il {{date}}. Correggilo fino alla fine dell'evento: un turno fuori dalle regole è un avviso, mai un rifiuto.",
-      "empty": "Nessun turno e niente di scoperto: apri prima una postazione.",
+      "empty": "Nessun turno e niente di scoperto: l'evento non apre ancora nessuna postazione.",
       "add": "Aggiungi",
       "move": "Sposta",
       "remove": {

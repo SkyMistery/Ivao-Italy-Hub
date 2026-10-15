@@ -4372,6 +4372,10 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   - **I test**: integrazione `EventsRosterTests` da 9 a 10 (le postazioni sotto il blocco); il test dell'inizio rifatto sulla regola di
     Carmine — niente eliminazione, niente cambio di controllore, di postazione, d'inizio, una fine prima di adesso rifiutata, un taglio ad
     adesso che passa, un turno nuovo dal taglio che passa.
+  - **La frase del roster vuoto** (chiesta dal coordinatore, come E12 per la lista vuota delle postazioni di E11a, scelta di dalberone):
+    «Nessun turno e niente di scoperto: apri prima una postazione» dava un ordine a chi non ha un pulsante; ora descrive — «l'evento non
+    apre ancora nessuna postazione» —, vera per ogni lettore, nei quattro file di lingua, con un vitest per chi legge soltanto
+    (`titlesAndEmptyLists.test.tsx`).
   - ⚠️ **`build-test` è rosso su ogni branch** per l'avviso di sicurezza di Pkcs (issue #264): una piccola PR del nucleo lo corregge su
     `main`, e questo branch unisce `main` quando è unita.
   - **Verificato, in locale** (15 ottobre 2026, `main` a `c232448`): ⚠️ **`dotnet restore` cade anche in locale** sull'avviso di Pkcs

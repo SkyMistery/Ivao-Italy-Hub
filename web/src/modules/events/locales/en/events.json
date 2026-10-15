@@ -897,7 +897,7 @@
       "title": "Roster",
       "notYet": "The roster is proposed when the availabilities close, on {{date}}.",
       "proposed": "Proposed on {{date}}. Correct it until the event ends: a shift outside the rules is a warning, never a refusal.",
-      "empty": "No shift and nothing uncovered: open a position first.",
+      "empty": "No shift and nothing uncovered: the event opens no position yet.",
       "add": "Add",
       "move": "Move",
       "remove": {
