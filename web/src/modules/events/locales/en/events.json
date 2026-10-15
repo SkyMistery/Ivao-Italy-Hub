@@ -41,7 +41,9 @@
       "bookings": "Bookings",
       "questions": "Questions",
       "registrations": "Registrations",
-      "atc": "ATC"
+      "atc": "ATC",
+      "activities": "Activities",
+      "seats": "Seats"
     },
     "actions": {
       "publish": "Publish",
@@ -408,6 +410,19 @@
         "windows": "One window or more, within the hours of the event, in UTC.",
         "note": "For the staff who make the roster: a position you prefer, a trainee of yours…"
       }
+    },
+    "activities": {
+      "title": "Parallel activities",
+      "registerFirst": "Register to the event to take a seat in a turn.",
+      "seatsEvery": "Seats per turn: {{seats}} · a turn lasts {{minutes}} minutes",
+      "turn": "Turn",
+      "free": "Free seats",
+      "hours": "{{from}}–{{to}} UTC",
+      "seatsFree": "{{seats}} free",
+      "full": "Full",
+      "yours": "Your seat",
+      "take": "Take a seat",
+      "giveBack": "Give it back"
     }
   },
   "private": {
@@ -494,7 +509,8 @@
     "noAnswers": "No answer given.",
     "changeAnswers": "Change your answers",
     "withdrawRegistrationTitle": "Withdraw from {{title}}?",
-    "withdrawRegistrationDescription": "You are no longer registered: you can register again until the event starts."
+    "withdrawRegistrationDescription": "You are no longer registered: you can register again until the event starts.",
+    "seats": "Your turns"
   },
   "bookings": {
     "empty": "The pilots' bookings of the event's slots will show up here.",
@@ -529,7 +545,9 @@
     "registrationsToCome": "Registrations to events still to end: deleted",
     "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote",
     "availabilitiesToCome": "ATC availabilities for events still to end: deleted",
-    "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note"
+    "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note",
+    "seatsToCome": "Seats in the activities of events still to end: deleted, and their turns free again",
+    "seatsOver": "Seats in the activities of events that ended, kept without the member"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -618,7 +636,7 @@
     },
     "registrationReceived": {
       "title": "Your registrations to events in person",
-      "description": "An email when you register to an event in person or change your answers, with what you answered."
+      "description": "An email when you register to an event in person, change your answers or take or give back a seat in an activity, with your registration as it is."
     },
     "registrationRemoved": {
       "title": "Registrations taken away",
@@ -651,7 +669,8 @@
       },
       "registrationReceived": {
         "subject": "[Events] You are registered: {{title}}",
-        "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}{{seats}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page.",
+        "seats": "Your turns in the activities:"
       },
       "registrationRemoved": {
         "subject": "[Events] Registration taken away: {{title}}",
@@ -739,7 +758,7 @@
     "answerQuantity": "A whole number from 0 to 999.",
     "answerText": "Write the answer as a text.",
     "registrationClosed": "Registrations to this event are closed: it has started, or it is cancelled.",
-    "inPersonHasQuestions": "The event still has questions or registrations: take the registrations away and delete the questions first.",
+    "inPersonHasQuestions": "The event still has questions, activities or registrations: take the registrations away and delete the questions and the activities first.",
     "eventHasRegistrations": "Somebody registered to this event: cancel it instead.",
     "questionNotInPerson": "The event is not in person: switch «In person» on in its settings first.",
     "questionsTooMany": "An event asks at most 30 questions.",
@@ -763,7 +782,19 @@
     "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
     "availabilityChanged": "Your availability changed in another window meanwhile: reload the page to see it as it is now, and change it from there.",
     "positionOnCancelledEvent": "The event is cancelled: no position is opened or changed on it.",
-    "positionOnEventOver": "The event is over: no position is opened or changed on it."
+    "positionOnEventOver": "The event is over: no position is opened or changed on it.",
+    "activityNotInPerson": "The event is not in person: switch «In person» on in its settings first.",
+    "activitiesTooMany": "An event has at most 20 activities.",
+    "activityOutsideEvent": "The activity has to fit inside the event, from its start to its end.",
+    "activityNoTurn": "Not even one turn fits between the first turn and the last one.",
+    "activityTooManyTurns": "An activity has at most 200 turns: make the turns longer or the window shorter.",
+    "activitySeatsTaken": "Members have taken seats in this activity: every seat has to stay on one of its turns, and no turn can offer fewer seats than are taken.",
+    "activityHasSeats": "Members have taken seats in this activity: it is not deleted.",
+    "seatNotRegistered": "Register to the event first.",
+    "seatNoTurn": "This is not a turn of the activity.",
+    "seatFull": "The turn is full.",
+    "seatOverlaps": "You already have a turn at that time.",
+    "seatAlreadyYours": "You already have a seat in this turn."
   },
   "questions": {
     "title": "Questions",
@@ -882,5 +913,43 @@
       }
     },
     "closedEvent": "The event is cancelled or over: its positions are read, not changed."
+  },
+  "activities": {
+    "title": "Activities",
+    "create": "New activity",
+    "edit": "Activity",
+    "empty": "The parallel activities of the event will show up here, each with its turns and its seats.",
+    "fields": {
+      "name": "Activity",
+      "place": "Where",
+      "fromUtc": "First turn from",
+      "toUtc": "Last turn until",
+      "slotMinutes": "Minutes per turn",
+      "seatsPerSlot": "Seats per turn",
+      "turns": "Turns",
+      "seatsTaken": "Seats taken"
+    },
+    "hints": {
+      "name": "The members read it in their language: write it in every language of the division.",
+      "place": "A room, a hangar: written in every language, or in none for the venue of the event.",
+      "fromUtc": "In UTC, inside the event.",
+      "toUtc": "In UTC, inside the event. The turns that fit whole are offered.",
+      "slotMinutes": "From 5 to 480.",
+      "seatsPerSlot": "How many members take a turn together: two simulators are two seats. From 1 to 100."
+    },
+    "delete": {
+      "title": "Delete this activity?",
+      "description": "The activity leaves the event's page. An activity somebody took a seat in is not deleted."
+    }
+  },
+  "seats": {
+    "empty": "The seats the members take in the turns of the activities will show up here.",
+    "fields": {
+      "member": "Member",
+      "activity": "Activity",
+      "startsAtUtc": "Turn from",
+      "endsAtUtc": "Turn until",
+      "createdAt": "Taken on"
+    }
   }
 }

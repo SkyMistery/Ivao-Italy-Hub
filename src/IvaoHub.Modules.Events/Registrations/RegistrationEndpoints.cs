@@ -1,3 +1,4 @@
+using System.Data;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
@@ -32,6 +33,12 @@ public static class RegistrationEndpoints
 
     /// <summary>The registrations as the staff of an event reach them.</summary>
     public const string StaffPattern = "/api/events/registrations";
+
+    /// <summary>The member's own seats in the activities, and the verbs on them (E17).</summary>
+    public const string MySeatsPattern = "/api/events/mine/seats";
+
+    /// <summary>The seats as the staff of an event read them (E17).</summary>
+    public const string SeatsPattern = "/api/events/seats";
 
     public static IEndpointRouteBuilder MapRegistrationEndpoints(this IEndpointRouteBuilder app)
     {
@@ -77,6 +84,47 @@ public static class RegistrationEndpoints
 
         mine.MapDelete("/{eventId:long}", WithdrawAsync)
             .WithName("EventsWithdrawRegistration")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
+
+        // The staff's list of the seats (E17): every seat of an event, with its member, its activity and its turn; filter[eventId] is the
+        // event, filter[activityId] an activity, ?q= a VID. Read only: a seat changes through the member's verbs, and goes with its
+        // registration when the staff take that away.
+        var noSeatNames = new Dictionary<int, string>();
+        app.MapCrud<EventActivitySeat, EventSeatDto, EventSeatDto, EventSeatDto>(SeatsPattern, options =>
+        {
+            options.PermissionArea = EventsPermissions.BookingsArea;
+            options.Name = "EventSeats";
+            options.ReadPolicy = EventsPermissions.BookingsView;
+            options.WritePolicy = EventsPermissions.BookingsEdit;
+            options.ReadOnly = true;
+            options.ContextType = typeof(EventsDbContext);
+
+            // By the turn, as the activities run.
+            options.DefaultOrder = seat => seat.StartsAtUtc;
+            options.Sortable.Add(nameof(EventActivitySeat.StartsAtUtc));
+            options.Sortable.Add(nameof(EventActivitySeat.CreatedAt));
+            options.Filterable.Add(nameof(EventActivitySeat.EventId));
+            options.Filterable.Add(nameof(EventActivitySeat.ActivityId));
+            options.SearchFields.Add(seat => seat.Vid.ToString());
+
+            options.ToList = seat => StaffSeats.Row(seat, activity: null, noSeatNames);
+            options.ToListPage = (seats, services, cancellationToken) =>
+                services.GetRequiredService<StaffSeats>().RowsAsync(seats, cancellationToken);
+            options.ToDetail = seat => StaffSeats.Row(seat, activity: null, noSeatNames);
+        });
+
+        var seats = app.MapGroup(MySeatsPattern).WithTags("EventSeats").RequireAuthorization(HubPolicies.SignedIn);
+
+        seats.MapPost("/", TakeSeatAsync)
+            .WithName("EventsTakeSeat")
+            .Produces<MySeatDto>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound);
+
+        seats.MapDelete("/{id:long}", GiveSeatBackAsync)
+            .WithName("EventsGiveSeatBack")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound);
@@ -130,6 +178,49 @@ public static class RegistrationEndpoints
         };
     }
 
+    /// <summary>Takes a seat in a turn (E17): 201; a refusal lands on the turn.</summary>
+    private static async Task<IResult> TakeSeatAsync(
+        SeatRequest request,
+        MemberSeats seats,
+        IValidator<SeatRequest> validator,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var validation = await validator.ValidateAsync(request, http.RequestAborted);
+        if (!validation.IsValid)
+        {
+            return CrudProblems.Validation(validation, catalog, currentUser.Locale);
+        }
+
+        var (result, seat, problems) = await seats.TakeAsync(request, http.RequestAborted);
+
+        // No address of its own: a seat is read under its registration, and nowhere else.
+        return result switch
+        {
+            BookingResult.Done => Results.Created((string?)null, seat),
+            BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            _ => Results.NotFound(),
+        };
+    }
+
+    private static async Task<IResult> GiveSeatBackAsync(
+        long id,
+        MemberSeats seats,
+        LocaleCatalog catalog,
+        ICurrentUser currentUser,
+        HttpContext http)
+    {
+        var (result, problems) = await seats.GiveBackAsync(id, http.RequestAborted);
+
+        return result switch
+        {
+            BookingResult.Done => Results.NoContent(),
+            BookingResult.Refused => CrudProblems.Validation(problems, catalog, currentUser.Locale),
+            _ => Results.NotFound(),
+        };
+    }
+
     /// <summary>
     /// The staff take a registration away (§4-bis.2): any registration of an event whose bookings they write, with a reason — the audit
     /// keeps who took what away, and the member is told why (<see cref="EventsNotifications.RegistrationRemoved"/>), once the
@@ -164,16 +255,28 @@ public static class RegistrationEndpoints
             return CrudProblems.Validation(validation, catalog, currentUser.Locale);
         }
 
-        database.Registrations.Remove(registration);
+        // With the member's seats (E17), under the registration's lock, as the member's withdrawal takes them.
+        await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, http.RequestAborted))
+        {
+            if (!await RegistrationSeats.LockAsync(database, registration.EventId, registration.Vid, http.RequestAborted))
+            {
+                // Withdrawn by its member, or taken away by somebody else, a moment before.
+                return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+            }
 
-        try
-        {
-            await database.SaveChangesAsync(http.RequestAborted);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Withdrawn by its member, or taken away by somebody else, a moment before.
-            return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+            await RegistrationSeats.RemoveAsync(database, registration.EventId, registration.Vid, http.RequestAborted);
+            database.Registrations.Remove(registration);
+
+            try
+            {
+                await database.SaveChangesAsync(http.RequestAborted);
+                await transaction.CommitAsync(http.RequestAborted);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Withdrawn and registered again a moment before: the row read is not the one there now.
+                return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+            }
         }
 
         await mail.RegistrationRemovedAsync(row, registration.Vid, request.Reason!.Trim(), http.RequestAborted);

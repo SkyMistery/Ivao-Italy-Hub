@@ -11,7 +11,8 @@ namespace IvaoHub.Modules.Events;
 /// <summary>
 /// The events' half of erasing a person's data (design M4 §11.1, E8b; notes 2026-09-29-i-dati-dei-membri-negli-eventi §2.5,
 /// 2026-09-25-la-cancellazione-dei-dati-di-una-persona and 2026-10-11-duplica-e-la-cancellazione-negli-eventi §2), for the rows of M4a:
-/// a pilot's bookings — and since then a member's registrations (E16) and a controller's availabilities (E11a), by the same rule.
+/// a pilot's bookings — and since then a member's registrations (E16), a controller's availabilities (E11a) and a member's seats in the
+/// activities (E17), by the same rule.
 /// <list type="bullet">
 /// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — Carmine's
 /// answer 2 on issue #248, (i)): its slot is free again, on the page and in the export. Through the change
@@ -41,6 +42,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var available = await Availabilities(vid).AsNoTracking()
             .Join(CrudSource.BackOffice<Event>(database), availability => availability.EventId, row => row.Id, (availability, row) => row)
             .ToListAsync(cancellationToken);
+        var seated = await Seats(vid).AsNoTracking()
+            .Join(CrudSource.BackOffice<Event>(database), seat => seat.EventId, row => row.Id, (seat, row) => row)
+            .ToListAsync(cancellationToken);
         var now = clock.UtcNow;
 
         return Lines(
@@ -49,7 +53,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             registrationsToCome: registered.Count(row => !EventState.IsOver(row, now)),
             registrationsOver: registered.Count(row => EventState.IsOver(row, now)),
             availabilitiesToCome: available.Count(row => !EventState.IsOver(row, now)),
-            availabilitiesOver: available.Count(row => EventState.IsOver(row, now)));
+            availabilitiesOver: available.Count(row => EventState.IsOver(row, now)),
+            seatsToCome: seated.Count(row => !EventState.IsOver(row, now)),
+            seatsOver: seated.Count(row => EventState.IsOver(row, now)));
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -83,9 +89,38 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
 
         var (registrationsToCome, registrationsOver) = await EraseRegistrationsAsync(request.Vid, now, cancellationToken);
         var (availabilitiesToCome, availabilitiesOver) = await EraseAvailabilitiesAsync(request.Vid, now, cancellationToken);
+        var (seatsToCome, seatsOver) = await EraseSeatsAsync(request.Vid, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
-        return Lines(toCome: toCome.Count, over: over.Count, registrationsToCome, registrationsOver, availabilitiesToCome, availabilitiesOver);
+        return Lines(
+            toCome: toCome.Count,
+            over: over.Count,
+            registrationsToCome,
+            registrationsOver,
+            availabilitiesToCome,
+            availabilitiesOver,
+            seatsToCome,
+            seatsOver);
+    }
+
+    /// <summary>
+    /// The person's seats in the activities of the events in person (E17), with their registrations: one of an event still to end goes — the
+    /// turn is free again —; one of an event over stays, under the pseudonym the core writes into <c>vid</c>, since the statistics count it.
+    /// A seat has no words of the person to empty.
+    /// </summary>
+    private async Task<(int ToCome, int Over)> EraseSeatsAsync(int vid, DateTime now, CancellationToken cancellationToken)
+    {
+        var seats = await Seats(vid).AsTracking().ToListAsync(cancellationToken);
+        var eventIds = seats.Select(seat => seat.EventId).Distinct().ToList();
+        var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, cancellationToken);
+
+        var over = seats.Count(seat => events.TryGetValue(seat.EventId, out var row) && EventState.IsOver(row, now));
+        var toCome = seats.Where(seat => events.TryGetValue(seat.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
+        database.Seats.RemoveRange(toCome);
+
+        return (toCome.Count, over);
     }
 
     /// <summary>
@@ -174,6 +209,10 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
     private IQueryable<EventRegistration> Registrations(int vid) =>
         CrudSource.BackOffice<EventRegistration>(database).Where(registration => registration.Vid == vid);
 
+    /// <summary>The person's seats in the activities, read past every filter, as their registrations are.</summary>
+    private IQueryable<EventActivitySeat> Seats(int vid) =>
+        CrudSource.BackOffice<EventActivitySeat>(database).Where(seat => seat.Vid == vid);
+
     /// <summary>The person's availabilities as a controller, read past every filter, as their bookings are.</summary>
     private IQueryable<EventAtcAvailability> Availabilities(int vid) =>
         CrudSource.BackOffice<EventAtcAvailability>(database).Where(availability => availability.ControllerVid == vid);
@@ -184,7 +223,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         int registrationsToCome,
         int registrationsOver,
         int availabilitiesToCome,
-        int availabilitiesOver) =>
+        int availabilitiesOver,
+        int seatsToCome,
+        int seatsOver) =>
     [
         new("events:erasure.bookingsToCome", toCome, ErasureOutcome.Deleted),
         new("events:erasure.bookingsOver", over, ErasureOutcome.Anonymised),
@@ -192,5 +233,7 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         new("events:erasure.registrationsOver", registrationsOver, ErasureOutcome.Anonymised),
         new("events:erasure.availabilitiesToCome", availabilitiesToCome, ErasureOutcome.Deleted),
         new("events:erasure.availabilitiesOver", availabilitiesOver, ErasureOutcome.Anonymised),
+        new("events:erasure.seatsToCome", seatsToCome, ErasureOutcome.Deleted),
+        new("events:erasure.seatsOver", seatsOver, ErasureOutcome.Anonymised),
     ];
 }

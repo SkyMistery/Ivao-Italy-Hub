@@ -244,16 +244,26 @@ public static class EventQuestionEndpoints
     {
         var database = services.GetRequiredService<EventsDbContext>();
         var eventIds = questions.Select(question => question.EventId).Distinct().ToList();
+
+        // An event past its retention has no registrations left: its sums are the statistics' (E17, reading 20 of its note).
+        var retired = await services.GetRequiredService<InPersonRetention>().RetiredAsync(eventIds, cancellationToken);
+        var live = eventIds.Where(id => !retired.ContainsKey(id)).ToList();
         var registrations = (await CrudSource.BackOffice<EventRegistration>(database).AsNoTracking()
-                .Where(registration => eventIds.Contains(registration.EventId))
+                .Where(registration => live.Contains(registration.EventId))
                 .ToListAsync(cancellationToken))
             .ToLookup(registration => registration.EventId);
 
         var sums = questions
             .GroupBy(question => question.EventId)
-            .SelectMany(ofEvent => RegistrationSums.Of([.. ofEvent], [.. registrations[ofEvent.Key]]))
+            .SelectMany(ofEvent => retired.TryGetValue(ofEvent.Key, out var stats)
+                ? Kept(ofEvent, InPersonRetention.Sums(stats))
+                : RegistrationSums.Of([.. ofEvent], [.. registrations[ofEvent.Key]]))
             .ToDictionary(sum => sum.Key, sum => sum.Value);
 
         return [.. questions.Select(question => QuestionMapper.ToDto(question, sums[question.Id]))];
     }
+
+    /// <summary>The sums the statistics kept for these questions; zero for a question written after the registrations went.</summary>
+    private static IReadOnlyDictionary<long, QuestionSum> Kept(IEnumerable<EventQuestion> questions, IReadOnlyDictionary<long, QuestionSum> kept) =>
+        questions.ToDictionary(question => question.Id, question => kept.GetValueOrDefault(question.Id) ?? RegistrationSums.None(question));
 }

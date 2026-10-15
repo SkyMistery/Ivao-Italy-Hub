@@ -91,10 +91,11 @@ public sealed class EventSaving(
         }
 
         // The same for an event in person (E16): off with questions or registrations there, the switch would hide what the members
-        // answered. The staff take the registrations away and delete the questions first.
+        // answered. The staff take the registrations away and delete the questions first — and the activities (E17).
         if (!row.InPerson && !isNew
             && database.Entry(row).Property(nameof(Event.InPerson)).OriginalValue is true
             && (await database.Questions.AnyAsync(question => question.EventId == row.Id, cancellationToken)
+                || await database.Activities.AnyAsync(activity => activity.EventId == row.Id, cancellationToken)
                 || await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken)))
         {
             problems.Add("inPerson", "events:errors.inPersonHasQuestions");
@@ -190,6 +191,9 @@ public sealed class EventSaving(
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
         database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
+
+        // Its activities (E17): none has a seat, since a seat needs a registration and an event with one was refused above.
+        database.Activities.RemoveRange(await database.Activities.Where(activity => activity.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }

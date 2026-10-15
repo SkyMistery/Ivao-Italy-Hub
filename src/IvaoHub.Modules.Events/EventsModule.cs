@@ -38,7 +38,9 @@ namespace IvaoHub.Modules.Events;
 /// draft of an event onto a new date, and the module's half of erasing a person's data; E16 the events in person — their questions,
 /// a member's registration with the answers, the sums the staff read — and the statistics of an event, born whole; E11a the ATC of an
 /// event with a roster — the positions it opens, which the staff of a FIR write on their FIR, and a controller's availability with its
-/// windows, given from the event's page and read by the staff per position.
+/// windows, given from the event's page and read by the staff per position; E17 the parallel activities of an event in person — a member's
+/// seat in a turn, counted under a lock —, «Duplicate» for the questions and the activities, and the short retention of the registrations,
+/// <c>events-retention</c>.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -114,7 +116,7 @@ public sealed class EventsModule : ModuleBase
             .AddTrigger(trigger => trigger
                 .ForJob(EventReleaseJob.JobName)
                 .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
-                .WithCronSchedule(EventReleaseJob.Cron)));
+                .WithCronSchedule(EventReleaseJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
         // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.
         services.AddScoped<PublicEvents>();
@@ -149,6 +151,19 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<MemberRegistrations>();
         services.AddScoped<StaffRegistrations>();
 
+        // Their parallel activities (E17): a member's seats in the turns, under the locks of their registration and of the activity, the
+        // staff's list of them, and the short retention — the registrations and the seats go, the sums stay in the statistics.
+        services.AddScoped<MemberSeats>();
+        services.AddScoped<StaffSeats>();
+        services.AddScoped<InPersonRetention>();
+        services.AddScoped<EventsRetentionJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<EventsRetentionJob>(job => job.WithIdentity(EventsRetentionJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(EventsRetentionJob.JobName)
+                .WithIdentity($"{EventsRetentionJob.JobName}-monthly")
+                .WithCronSchedule(EventsRetentionJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
         // The ATC (E11a): the positions an event opens, read with their candidates by the staff, and a member's availability.
         services.AddScoped<StaffAvailability>();
         services.AddScoped<MemberAvailability>();
@@ -168,6 +183,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapBookingsExport();
         endpoints.MapBookingEndpoints();
         endpoints.MapEventQuestionEndpoints();
+        endpoints.MapEventActivityEndpoints();
         endpoints.MapRegistrationEndpoints();
         endpoints.MapAtcPositionEndpoints();
         endpoints.MapAvailabilityEndpoints();

@@ -357,6 +357,8 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
             ("events:erasure.registrationsOver", 1, nameof(ErasureOutcome.Anonymised)),
             ("events:erasure.availabilitiesToCome", 0, nameof(ErasureOutcome.Deleted)),
             ("events:erasure.availabilitiesOver", 0, nameof(ErasureOutcome.Anonymised)),
+            ("events:erasure.seatsToCome", 0, nameof(ErasureOutcome.Deleted)),
+            ("events:erasure.seatsOver", 0, nameof(ErasureOutcome.Anonymised)),
         ];
         Assert.Equal(lines, EventsLines(await OkAsync(await superadmin.GetAsync($"{ErasureEndpoints.Pattern}/{PersonVid}", token), token)));
 

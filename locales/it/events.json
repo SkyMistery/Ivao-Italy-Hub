@@ -42,7 +42,9 @@
       "bookings": "Prenotazioni",
       "questions": "Domande",
       "registrations": "Iscrizioni",
-      "atc": "ATC"
+      "atc": "ATC",
+      "activities": "Attività",
+      "seats": "Posti"
     },
     "actions": {
       "publish": "Pubblica",
@@ -409,6 +411,19 @@
         "windows": "Una finestra o più, dentro l'orario dell'evento, in UTC.",
         "note": "Per lo staff che fa il roster: una postazione che preferisci, un tuo trainee…"
       }
+    },
+    "activities": {
+      "title": "Attività parallele",
+      "registerFirst": "Iscriviti all'evento per prendere un posto in un turno.",
+      "seatsEvery": "Posti per turno: {{seats}} · un turno dura {{minutes}} minuti",
+      "turn": "Turno",
+      "free": "Posti liberi",
+      "hours": "{{from}}–{{to}} UTC",
+      "seatsFree": "{{seats}} liberi",
+      "full": "Pieno",
+      "yours": "Il tuo posto",
+      "take": "Prendi un posto",
+      "giveBack": "Ridallo"
     }
   },
   "private": {
@@ -495,7 +510,8 @@
     "noAnswers": "Nessuna risposta.",
     "changeAnswers": "Cambia le risposte",
     "withdrawRegistrationTitle": "Ritirarti da {{title}}?",
-    "withdrawRegistrationDescription": "Non sei più iscritto: puoi iscriverti di nuovo fino all'inizio dell'evento."
+    "withdrawRegistrationDescription": "Non sei più iscritto: puoi iscriverti di nuovo fino all'inizio dell'evento.",
+    "seats": "I tuoi turni"
   },
   "bookings": {
     "empty": "Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.",
@@ -530,7 +546,9 @@
     "registrationsToCome": "Iscrizioni a eventi non ancora finiti: cancellate",
     "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto",
     "availabilitiesToCome": "Disponibilità ATC per eventi non ancora finiti: cancellate",
-    "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota"
+    "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota",
+    "seatsToCome": "Posti nelle attività di eventi non ancora finiti: cancellati, e i loro turni di nuovo liberi",
+    "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -619,7 +637,7 @@
     },
     "registrationReceived": {
       "title": "Le tue iscrizioni agli eventi in presenza",
-      "description": "Un'email quando ti iscrivi a un evento in presenza o cambi le risposte, con quello che hai risposto."
+      "description": "Un'email quando ti iscrivi a un evento in presenza, cambi le risposte o prendi o ridai un posto in un'attività, con la tua iscrizione com'è."
     },
     "registrationRemoved": {
       "title": "Iscrizioni tolte",
@@ -652,7 +670,8 @@
       },
       "registrationReceived": {
         "subject": "[Eventi] Sei iscritto: {{title}}",
-        "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo."
+        "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}{{seats}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo.",
+        "seats": "I tuoi turni nelle attività:"
       },
       "registrationRemoved": {
         "subject": "[Eventi] Iscrizione tolta: {{title}}",
@@ -740,7 +759,7 @@
     "answerQuantity": "Un numero intero da 0 a 999.",
     "answerText": "Scrivi la risposta come testo.",
     "registrationClosed": "Le iscrizioni a questo evento sono chiuse: è cominciato, o è annullato.",
-    "inPersonHasQuestions": "L'evento ha ancora domande o iscrizioni: togli prima le iscrizioni ed elimina le domande.",
+    "inPersonHasQuestions": "L'evento ha ancora domande, attività o iscrizioni: togli prima le iscrizioni ed elimina le domande e le attività.",
     "eventHasRegistrations": "Qualcuno si è iscritto a questo evento: annullalo invece.",
     "questionNotInPerson": "L'evento non è in presenza: accendi prima «In presenza» nelle sue impostazioni.",
     "questionsTooMany": "Un evento fa al più 30 domande.",
@@ -764,7 +783,19 @@
     "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
     "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
     "positionOnCancelledEvent": "L'evento è annullato: non vi si apre né vi si cambia una postazione.",
-    "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione."
+    "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione.",
+    "activityNotInPerson": "L'evento non è in presenza: accendi prima «In presenza» nelle sue impostazioni.",
+    "activitiesTooMany": "Un evento ha al più 20 attività.",
+    "activityOutsideEvent": "L'attività deve stare dentro l'evento, dal suo inizio alla sua fine.",
+    "activityNoTurn": "Fra il primo turno e l'ultimo non ci sta nemmeno un turno.",
+    "activityTooManyTurns": "Un'attività ha al più 200 turni: allunga i turni o accorcia la finestra.",
+    "activitySeatsTaken": "Dei membri hanno preso posti in questa attività: ogni posto deve restare su un suo turno, e nessun turno può offrire meno posti di quelli presi.",
+    "activityHasSeats": "Dei membri hanno preso posti in questa attività: non si elimina.",
+    "seatNotRegistered": "Iscriviti prima all'evento.",
+    "seatNoTurn": "Questo non è un turno dell'attività.",
+    "seatFull": "Il turno è pieno.",
+    "seatOverlaps": "Hai già un turno a quell'ora.",
+    "seatAlreadyYours": "Hai già un posto in questo turno."
   },
   "questions": {
     "title": "Domande",
@@ -883,5 +914,43 @@
       }
     },
     "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano."
+  },
+  "activities": {
+    "title": "Attività",
+    "create": "Nuova attività",
+    "edit": "Attività",
+    "empty": "Qui compariranno le attività parallele dell'evento, ognuna con i suoi turni e i suoi posti.",
+    "fields": {
+      "name": "Attività",
+      "place": "Dove",
+      "fromUtc": "Primo turno dalle",
+      "toUtc": "Ultimo turno entro le",
+      "slotMinutes": "Minuti per turno",
+      "seatsPerSlot": "Posti per turno",
+      "turns": "Turni",
+      "seatsTaken": "Posti presi"
+    },
+    "hints": {
+      "name": "I membri la leggono nella loro lingua: scrivila in ogni lingua della divisione.",
+      "place": "Una sala, un hangar: scritto in ogni lingua, o in nessuna per il luogo dell'evento.",
+      "fromUtc": "In UTC, dentro l'evento.",
+      "toUtc": "In UTC, dentro l'evento. Si offrono i turni che ci stanno interi.",
+      "slotMinutes": "Da 5 a 480.",
+      "seatsPerSlot": "Quanti membri fanno un turno insieme: due simulatori sono due posti. Da 1 a 100."
+    },
+    "delete": {
+      "title": "Eliminare questa attività?",
+      "description": "L'attività esce dalla pagina dell'evento. Un'attività in cui qualcuno ha preso un posto non si elimina."
+    }
+  },
+  "seats": {
+    "empty": "Qui compariranno i posti che i membri prendono nei turni delle attività.",
+    "fields": {
+      "member": "Membro",
+      "activity": "Attività",
+      "startsAtUtc": "Turno dalle",
+      "endsAtUtc": "Turno fino alle",
+      "createdAt": "Preso il"
+    }
   }
 }
