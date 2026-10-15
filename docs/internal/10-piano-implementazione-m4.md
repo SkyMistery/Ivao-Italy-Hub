@@ -4580,4 +4580,60 @@ Design §4-bis.1, §4-bis.2, §2.3-bis, §11; nota `gli-eventi-in-presenza`. Bra
 cancellati dopo il periodo, le somme restano. Il giro completo verde.
 **Fatta quando**: il giro completo di M4c passa in locale e in CI.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (15 ottobre 2026, branch `m4/e17-in-person-activities`, la seconda e ultima fase di **M4c**; nata da `main` a `c232448`,
+con E16 ed E11a; **una migrazione**, `AddInPersonActivities`, scritta in locale e **rifatta sopra quella di E12** prima del push, come
+chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
+
+- **Fatto**:
+  1. **`evt_activities` ed `evt_activity_bookings`** (punto 1), una migrazione. `EventActivity` è una riga dello staff dell'evento
+     (`IEventChild`, `[Audited]`, lo scope dell'evento) **nell'area `EventBookings`** (la domanda 1 della nota, raccomandata (A): il
+     catalogo §6.1, §4-bis.1 e la nota `gli-eventi-in-presenza` §2.4 contro §4-bis.2 e la stessa nota §2.5): nome e luogo tradotti, la
+     finestra dentro l'evento, la durata del turno (5–480 minuti), i posti per turno (1–100); **i turni sono un calcolo** — quelli che
+     stanno interi nella finestra (`EventActivity.Turns`), al più 200 —, non righe. `EventActivitySeat` è la riga del membro
+     (`ISubmittedByMembers`, `IHasStakeholder`, `IVisible` ai membri, **`[WithdrawnByStakeholder]`**: un posto non porta decisioni dello
+     staff, detto nella nota), con l'attività, l'evento, il membro e l'inizio del turno; nessuna colonna di parole, quindi niente
+     `[ErasedWith]`. Una chiave verso l'attività (`Restrict`) e un indice univoco `(activity_id, starts_at_utc, vid)`.
+  2. **Il posto sotto il blocco** (`Registrations/MemberSeats.cs`): `POST /api/events/mine/seats` e `DELETE /api/events/mine/seats/{id}`,
+     in una transazione `READ COMMITTED`: prima la riga dell'iscrizione del membro `FOR UPDATE` (serializza le richieste dello stesso
+     membro e il suo ritiro), poi **la riga dell'attività `FOR UPDATE`**, sotto cui si contano i posti del turno; nessun turno sovrapposto
+     fra le attività dell'evento (due turni che si toccano no); solo un iscritto (`events:errors.seatNotRegistered`), fino all'inizio.
+     Ritirarsi, «Togli» dello staff e la cancellazione portano via i posti con l'iscrizione (`RegistrationSeats`). **La mail**
+     `registrationReceived` dice anche i turni (`EventsMail.SeatLines`, sotto un titolo che chi non ne ha non legge) e parte a ogni posto
+     preso o ridato (la lettura 12 di E16).
+  3. **Lo staff**: `/api/events/activities` (motore CRUD, `EventBookings.View`/`.Edit`) con i posti presi in numeri, e `/api/events/seats`
+     (sola lettura, il membro da `MemberNames` e `col.person`); le schede «Attività» e «Posti», il form di un'attività su una pagina sua.
+     Un'attività con posti non si elimina (`activityHasSeats`, la domanda 2 raccomandata) e si cambia solo così che ogni posto resti su
+     un suo turno (`activitySeatsTaken`); l'interruttore «in presenza» non si spegne con attività.
+  4. **La pagina dell'evento**: le attività con i turni e i posti liberi a chiunque, mai chi (`PublicEventDto.Activities`, nella lettura
+     della pagina); il membro iscritto prende e ridà i posti nella sezione «Iscrizione» (`screens/ActivityTurns.tsx`), e li ritrova in
+     `/events/mine` con «Ridallo» (`MyRegistrationDto.Seats`). Le liste mandano dati, la pagina scrive le parole (la risposta 6 di
+     Carmine sulla #255).
+  5. **«Duplica»** (punto 3) copia le domande — **con le chiavi delle scelte com'erano** — e le attività spostate della stessa differenza;
+     chi duplica un evento con attività ha anche `EventBookings.Edit` (`EventDuplicatePlan.AreasWritten`).
+  6. **`events-retention`** (punto 2; nasce qui, M4b non c'è ancora): una volta al mese, il primo alle 04:40, **in UTC** (il trigger lo
+     dice, `EventsRetentionJob.TriggerName`), con la riga del giro e `FinishedAt` su ogni uscita (E10j). Decide dalle date
+     (`InPersonRetention.IsDue`: finito, e la fine da almeno `inPersonRetentionMonths` mesi); per ogni evento, in un salvataggio, scrive in
+     `evt_event_stats` gli iscritti, **le somme** (`RegistrationSums.Of`) e i posti per attività, poi cancella posti e iscrizioni
+     attraverso l'interceptor. **Le liste dello staff rileggono le somme e i posti dalle statistiche** per un evento oltre la conservazione.
+  7. **La cancellazione dei dati di una persona**: un posto di un evento non finito si cancella, uno di un evento finito resta con lo
+     pseudonimo; due righe nuove dell'anteprima (`seatsToCome`, `seatsOver`). `ErasureTests` con `evt_activities.created_by`, `.updated_by`,
+     `evt_activity_bookings.vid`.
+  8. **I test**: integrazione `EventsActivitiesTests` (7; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
+     (solo un iscritto, un turno, libero, non sovrapposto, ridato), **l'ultimo posto preso da due membri nello stesso istante** (una
+     transazione del test tiene la riga dell'attività e il posto non confermato, la richiesta aspetta in `INNODB_TRX`, poi legge «turno
+     pieno»; **provato al contrario**: senza il `FOR UPDATE` la richiesta prende il posto, 201), i posti che vanno con l'iscrizione e
+     l'attività con posti che resta, «Duplica», la conservazione, la cancellazione —; unità `EventsActivitiesTests` (7: i turni, la
+     conservazione, le statistiche, la copia, la mail, il trigger in UTC). Il giro completo `web/e2e/full/events-m4c-round.spec.ts` (slug
+     `evt-test-e2e-e17-…`).
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-15-le-attivita-e-la-conservazione-breve.md`, **Proposta**, con tre domande a
+  Carmine — l'area delle attività, un'attività con posti, l'audit della conservazione —; il codice segue le raccomandate, tranne la terza:
+  la (B) raccomandata è una fase del nucleo a sé, e il codice di oggi è la (A), le copie nell'audit restano): le letture 1–22 della nota.
+  **Una lettura in più del design**: le liste dello staff rileggono le somme dalle statistiche (lettura 20), perché «le somme restano»
+  sia vero anche sulla pagina prima della scheda «Statistiche» di E13a. **`events-release` dice UTC** (la riga di E10j): lo fanno anche E11b ed
+  E4d, e al merge resta la loro forma.
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti
+  con la forma**: le due righe dell'anteprima in `EventsErasureTests` (E8b) ed `EventsRegistrationsTests` (E16), i posti in
+  `EventsTestRows`, `activities` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, `titlesAndEmptyLists.test.tsx`,
+  lo smoke `events-public.spec.ts`).
+- **Gli endpoint scritti a mano** (piano §16.6): due verbi del membro, prendere e ridare un posto.
+- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E11b, E12 in corso, E13a–E15b da fare).
