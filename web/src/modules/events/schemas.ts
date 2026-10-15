@@ -7,7 +7,8 @@ import { CALENDAR_SCREEN_VIEWS } from '../../shared/ui';
 
 /**
  * The forms of the events (M4: the settings of E2, the event of E3a, its routes and the filters of `/events` of E4, its slots
- * and the table they are loaded from of E5, the flight of a private slot of E7, a position and an availability of E11a), as zod
+ * and the table they are loaded from of E5, the flight of a private slot of E7, a position and an availability of E11a, an activity of
+ * E17), as zod
  * schemas: types and what is required. The rules — a kind the calendar has, the ranges, an airport the hub knows — are the
  * server's (design M0 §7.5).
  *
@@ -156,7 +157,7 @@ export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
 /**
  * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, for an event in
- * person its questions and its registrations, and for an event with a roster its ATC (design M4 §7.2).
+ * person its questions, its registrations, its activities and their seats (E17), and for an event with a roster its ATC (design M4 §7.2).
  */
 export const eventEditorSearchSchema = z.object({
   tab: z
@@ -169,6 +170,8 @@ export const eventEditorSearchSchema = z.object({
       'bookings',
       'questions',
       'registrations',
+      'activities',
+      'seats',
       'atc',
     ])
     .optional(),
@@ -531,6 +534,46 @@ export function emptyQuestion(
     label: Object.fromEntries(locales.map((locale) => [locale, ''])),
     choices: [],
     required: false,
+    rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+// ---- the parallel activities (E17) -------------------------------------------------------------------
+
+/**
+ * A parallel activity of an event in person (§4-bis.1), mirroring `EventActivityWriteDto`: its name and its place in every language — an
+ * empty place is the event's venue —, its window, how long a turn lasts and how many seats each has. Every rule is the server's: inside
+ * the event, at least one turn, what the seats taken still allow.
+ */
+export const activitySchema = z.object({
+  eventId: z.number().int().meta({ hidden: true }),
+  name: localized(),
+  place: localized(),
+  fromUtc: z.string().optional().meta({ datetime: true }),
+  toUtc: z.string().optional().meta({ datetime: true }),
+  slotMinutes: z.number().int(),
+  seatsPerSlot: z.number().int(),
+  rowVersion: z.string().meta({ hidden: true }),
+});
+
+export type ActivityFormValues = z.output<typeof activitySchema>;
+
+/** A new activity of an event: the event's window, turns of thirty minutes, one seat each — the staff narrow it to theirs. */
+export function emptyActivity(
+  eventId: number,
+  startsAtUtc: string,
+  endsAtUtc: string,
+  locales: readonly string[],
+): ActivityFormValues {
+  const blank = Object.fromEntries(locales.map((locale) => [locale, '']));
+  return {
+    eventId,
+    name: blank,
+    place: { ...blank },
+    fromUtc: startsAtUtc,
+    toUtc: endsAtUtc,
+    slotMinutes: 30,
+    seatsPerSlot: 1,
     rowVersion: NEW_ROW_VERSION,
   };
 }

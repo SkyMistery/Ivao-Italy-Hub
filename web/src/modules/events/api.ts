@@ -7,6 +7,7 @@ import { listQuerySerializer, listSearchSchema, toQuery, type ListSearch } from 
 
 import { settingsFromFormValues } from './schemas';
 import type {
+  ActivityFormValues,
   AirportFormValues,
   AtcPositionFormValues,
   AvailabilityFormValues,
@@ -34,6 +35,8 @@ import type {
  * through the verbs of E6a and E7, and the staff's list of the bookings of an event with «take away».
  * The events in person (E16): the questions of an event through the CRUD engine, with their sums; a member's registration — read, sent or
  * changed, withdrawn —; and the staff's list of the registrations of an event with «take away».
+ * The parallel activities (E17): the activities of an event through the CRUD engine, the staff's list of the seats, and a member's seat
+ * taken in a turn and given back.
  * The ATC (E11a): the positions of an event through the CRUD engine, the controllers available on one, the heads of the events with a
  * roster and the two lists of the core the forms choose from; a member's availability — read, given or changed, withdrawn.
  */
@@ -993,6 +996,143 @@ export function useWithdrawRegistration() {
     onSuccess: () => {
       void registrationsChanged(queryClient);
     },
+  });
+}
+
+// ---- the parallel activities (E17) -------------------------------------------------------------------
+
+export type EventActivityDto = components['schemas']['EventActivityDto'];
+export type EventSeatDto = components['schemas']['EventSeatDto'];
+export type MySeatDto = components['schemas']['MySeatDto'];
+export type PublicActivityDto = components['schemas']['PublicActivityDto'];
+export type PublicTurnDto = components['schemas']['PublicTurnDto'];
+
+const activitiesKey = ['events', 'activities'] as const;
+const seatsKey = ['events', 'seats'] as const;
+
+/** The activities of an event by the hour they start, with the seats taken in each (§4-bis.1). */
+export function activitiesQuery(eventId: number, search: ListSearch = allOfAnEvent) {
+  return queryOptions({
+    queryKey: [...activitiesKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/activities', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+export function activityQuery(id: number) {
+  return queryOptions({
+    queryKey: [...activitiesKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventActivityDto> =>
+      unwrap(await api.GET('/api/events/activities/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+export function activityToFormValues(
+  activity: EventActivityDto,
+  locales: readonly string[],
+): ActivityFormValues {
+  const spread = (value: Record<string, string> | null | undefined) =>
+    Object.fromEntries(locales.map((locale) => [locale, value?.[locale] ?? '']));
+
+  return {
+    eventId: activity.eventId,
+    name: spread(activity.name),
+    place: spread(activity.place),
+    fromUtc: activity.fromUtc,
+    toUtc: activity.toUtc,
+    slotMinutes: activity.slotMinutes,
+    seatsPerSlot: activity.seatsPerSlot,
+    rowVersion: activity.rowVersion,
+  };
+}
+
+/** What changes when an activity changes: its list, and the page of its event, which lists its turns. */
+async function activitiesChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: activitiesKey }),
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+    queryClient.invalidateQueries({ queryKey: seatsKey }),
+  ]);
+}
+
+export function useSaveActivity(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: ActivityFormValues): Promise<EventActivityDto> => {
+      // An hour left empty travels as none, and the server says it is required.
+      const body = { ...values, fromUtc: values.fromUtc ?? null, toUtc: values.toUtc ?? null };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/activities', { body }))
+        : unwrap(
+            await api.PUT('/api/events/activities/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: () => activitiesChanged(queryClient),
+  });
+}
+
+export function useDeleteActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/activities/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void activitiesChanged(queryClient);
+    },
+  });
+}
+
+/** The seats of an event as its staff read them (§7.2): a page of them, by the turn unless sorted. */
+export function staffSeatsQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...seatsKey, 'list', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/seats', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
+  });
+}
+
+/** What a seat changes on screen: the member's registrations, the page of the event with its free seats, and the staff's lists. */
+async function seatsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'registrations'] }),
+    queryClient.invalidateQueries({ queryKey: publicKey }),
+    queryClient.invalidateQueries({ queryKey: seatsKey }),
+    queryClient.invalidateQueries({ queryKey: activitiesKey }),
+  ]);
+}
+
+/** Takes a seat in a turn of an activity (§4-bis.2): the activity and the start of the turn. */
+export function useTakeSeat() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (seat: { activityId: number; startsAtUtc: string }): Promise<MySeatDto> =>
+      unwrap(await api.POST('/api/events/mine/seats', { body: seat })),
+    onSettled: () => seatsChanged(queryClient),
+  });
+}
+
+/** Gives a seat back, until the event starts. */
+export function useGiveSeatBack() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/mine/seats/{id}', { params: { path: { id } } })),
+    onSettled: () => seatsChanged(queryClient),
   });
 }
 

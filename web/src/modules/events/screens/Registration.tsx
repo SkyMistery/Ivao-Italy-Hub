@@ -17,6 +17,7 @@ import {
   type PublicEventDto,
 } from '../api';
 
+import { ActivitiesList } from './ActivityTurns';
 import { MY_EVENTS_PAGE } from './myBookings';
 import { RegistrationAnswers } from './RegistrationAnswers';
 import { registrationDefaults, registrationSchema, type RegistrationValues } from './registrationForm';
@@ -26,7 +27,7 @@ import { registrationDefaults, registrationSchema, type RegistrationValues } fro
  * sends a member to change their answers. A visitor is asked to sign in while the event takes registrations. A member not registered
  * answers the questions and registers; one registered reads that they are, changes their answers while the event takes registrations,
  * and withdraws until it starts. After the start, or on a cancelled event, it says the registrations are closed. Whether the answers
- * are right is the server's to say, field by field.
+ * are right is the server's to say, field by field. Under it the parallel activities with their turns (E17).
  */
 export function RegistrationSection({ event, signedIn }: { event: PublicEventDto; signedIn: boolean }) {
   const { t, i18n } = useTranslation();
@@ -72,6 +73,8 @@ export function RegistrationSection({ event, signedIn }: { event: PublicEventDto
       ) : (
         <Registered event={event} registration={registration} />
       )}
+      {/* The activities and their turns (E17), to everybody; a registered member takes and gives back seats here. */}
+      <ActivitiesList activities={event.activities} registration={registration} />
     </section>
   );
 }

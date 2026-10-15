@@ -57,6 +57,7 @@ function event(overrides: Partial<PublicEventDto> = {}): PublicEventDto {
     venue: null,
     questions: [],
     atc: null,
+    activities: [],
     ...overrides,
   };
 }

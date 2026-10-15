@@ -15,6 +15,7 @@ import {
   eventsPublicSearchSchema,
   eventsSearchSchema,
 } from './schemas';
+import { ActivityForm } from './screens/activities';
 import { AirportForm } from './screens/airports';
 import { AtcEventPage, AtcEventsPage, AtcPositionForm } from './screens/atc';
 import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './screens/events';
@@ -35,7 +36,9 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * event onto a new date; E16 the events in person — their questions and their registrations in tabs of the event's page, a question on
  * a page of its own, a member's registrations on `/events/mine`; E11a the ATC of an event with a roster — its positions in a tab of the
  * event's page and in a section of their own for whoever does not read the events, a position with who is available on it, and a member's
- * availability on the event's page.
+ * availability on the event's page; E17 the parallel activities of an event in person — in a tab of the event's page with their seats,
+ * an activity on a page of its own, the turns with their free seats on the event's page, where a registered member takes and gives back a
+ * seat.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
@@ -122,6 +125,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/questions/$questionId',
       permission: EVENTS_EDIT,
       component: QuestionForm,
+    },
+    // A parallel activity of an event in person (E17): written by whoever writes the bookings of the event, its area.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/activities/$activityId',
+      permission: EVENT_BOOKINGS_EDIT,
+      component: ActivityForm,
     },
     {
       area: 'staff',
