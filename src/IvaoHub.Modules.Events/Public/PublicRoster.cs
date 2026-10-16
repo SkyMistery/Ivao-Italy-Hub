@@ -17,8 +17,9 @@ namespace IvaoHub.Modules.Events.Public;
 
 /// <summary>
 /// One row of a published roster as the site shows it (§4.4, §7.1, E12): the position — callsign and the name the core knows —, the hours,
-/// whether somebody holds them, and who: named, with their ATC rating as the staff say it, <b>only to a signed in reader</b>; a visitor reads
-/// «assigned» or «uncovered». Neither the why nor the warnings: they are the staff's.
+/// whether somebody holds them, and who: their name and their ATC rating as the staff say it, <b>only to a signed in reader, and never the VID</b>
+/// (Carmine's answer on #268, reading 5) — <c>ControllerErased</c> for somebody whose data was erased, whom the page names with the core's word —;
+/// a visitor reads «assigned» or «uncovered». Neither the why nor the warnings: they are the staff's.
 /// </summary>
 public sealed record PublicRosterRowDto(
     long PositionId,
@@ -27,7 +28,8 @@ public sealed record PublicRosterRowDto(
     DateTime FromUtc,
     DateTime ToUtc,
     bool Covered,
-    EventMemberDto? Controller,
+    string? ControllerName,
+    bool ControllerErased,
     string? Rating);
 
 /// <summary>
@@ -93,7 +95,7 @@ public sealed class PublicRoster(
         var shifts = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().Where(shift => shift.EventId == row.Id).ToListAsync(cancellationToken);
         var named = await directory.FindAsync([.. positions.Select(position => position.Callsign).Distinct()], cancellationToken);
 
-        // The people only to a signed in reader (§4.4): a visitor gets no VID, no name, no rating.
+        // The people only to a signed in reader (§4.4), by name and rating and never by VID (Carmine on #268): a visitor gets nothing of them.
         var signedIn = currentUser.IsAuthenticated;
         var names = signedIn ? await MemberNames.ReadAsync(hub, shifts.Select(shift => shift.ControllerVid), cancellationToken) : new Dictionary<int, string>();
         var ratings = signedIn ? await people.AtcRatingsAsync(shifts.Select(shift => shift.ControllerVid), cancellationToken) : new Dictionary<int, int>();
@@ -112,7 +114,8 @@ public sealed class PublicRoster(
                 shift.FromUtc,
                 shift.ToUtc,
                 Covered: true,
-                signedIn ? EventsPeople.Member(shift.ControllerVid, names) : null,
+                signedIn ? names.GetValueOrDefault(shift.ControllerVid) : null,
+                signedIn && shift.ControllerVid < 0,
                 signedIn && ratings.TryGetValue(shift.ControllerVid, out var rating) ? vocabulary.Find(RatingKind.Atc, rating)?.ShortName : null)));
 
             foreach (var (fromUtc, toUtc) in RosterProposer.Pieces(position.FromUtc, position.ToUtc, minutes))
@@ -124,7 +127,8 @@ public sealed class PublicRoster(
                     gap.FromUtc,
                     gap.ToUtc,
                     Covered: false,
-                    Controller: null,
+                    ControllerName: null,
+                    ControllerErased: false,
                     Rating: null)));
             }
         }

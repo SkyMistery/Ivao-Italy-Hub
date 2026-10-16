@@ -755,7 +755,9 @@
       "registrationReceived": {
         "subject": "[Events] You are registered: {{title}}",
         "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}{{seats}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page.",
-        "seats": "Your turns in the activities:"
+        "seats": "Your turns in the activities:",
+        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Events] Registration taken away: {{title}}",
@@ -776,7 +778,7 @@
       "atcShiftTransferDecided": {
         "subject": "[Events] Your request to hand a shift over: {{title}}",
         "body": "{{decision}}\n\nThe shift: {{shift}} UTC, in {{title}}.\nThe staff's note: {{note}}\n\nYour shifts: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
-        "approved": "The staff approved your request: the shift is no longer yours, and whoever takes it has been told.",
+        "approved": "The staff approved your request: the shift is now {{taker}}'s, who has been told.",
         "refused": "The staff refused your request: the shift stays yours."
       }
     }
@@ -915,6 +917,7 @@
     "seatFull": "The turn is full.",
     "seatOverlaps": "You already have a turn at that time.",
     "seatAlreadyYours": "You already have a seat in this turn.",
+    "eventActivitiesOutside": "An activity of the event would be outside it: move the activity first.",
     "statsBeforeEnd": "The statistics of an event are worked out after its end.",
     "statsOfADraft": "A draft has no statistics: it never took place."
   },
@@ -1156,7 +1159,9 @@
           "toVid": "The member named, or another one who signed in to the hub once.",
           "note": "Whoever asked reads it in a mail."
         }
-      }
+      },
+      "approveAnyway": "Approve anyway",
+      "warningsFor": "VID {{vid}} does not keep every rule of the roster for this shift:"
     }
   },
   "roster": {

@@ -755,7 +755,9 @@
       "registrationReceived": {
         "subject": "[Eventi] Sei iscritto: {{title}}",
         "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}{{seats}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo.",
-        "seats": "I tuoi turni nelle attività:"
+        "seats": "I tuoi turni nelle attività:",
+        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Eventi] Iscrizione tolta: {{title}}",
@@ -776,7 +778,7 @@
       "atcShiftTransferDecided": {
         "subject": "[Eventi] La tua richiesta di cedere un turno: {{title}}",
         "body": "{{decision}}\n\nIl turno: {{shift}} UTC, in {{title}}.\nLa nota dello staff: {{note}}\n\nI tuoi turni: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
-        "approved": "Lo staff ha approvato la tua richiesta: il turno non è più tuo, e chi lo prende ha ricevuto una mail.",
+        "approved": "Lo staff ha approvato la tua richiesta: il turno ora è di {{taker}}, che ha ricevuto una mail.",
         "refused": "Lo staff ha rifiutato la tua richiesta: il turno resta tuo."
       }
     }
@@ -915,6 +917,7 @@
     "seatFull": "Il turno è pieno.",
     "seatOverlaps": "Hai già un turno a quell'ora.",
     "seatAlreadyYours": "Hai già un posto in questo turno.",
+    "eventActivitiesOutside": "Un'attività dell'evento ne resterebbe fuori: sposta prima l'attività.",
     "statsBeforeEnd": "Le statistiche di un evento si calcolano dopo la sua fine.",
     "statsOfADraft": "Una bozza non ha statistiche: non si è mai svolta."
   },
@@ -1156,7 +1159,9 @@
           "toVid": "Il membro indicato, o un altro entrato nell'hub almeno una volta.",
           "note": "Chi ha chiesto la legge in una mail."
         }
-      }
+      },
+      "approveAnyway": "Approva lo stesso",
+      "warningsFor": "Il VID {{vid}} non rispetta tutte le regole del roster per questo turno:"
     }
   },
   "roster": {

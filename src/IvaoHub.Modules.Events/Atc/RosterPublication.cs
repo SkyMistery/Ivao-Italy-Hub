@@ -15,7 +15,8 @@ namespace IvaoHub.Modules.Events.Atc;
 /// marked <c>roster_published_at</c>, once — under the lock of its row, read again under it, the mark written as the proposal's is, without the
 /// row version moving and without a row in the audit. Once published it stays published.</item>
 /// <item><b>Telling</b>: every shift of a published roster whose controller was not told yet (<c>notified_at</c> empty) is told, one mail per
-/// controller per event with all of theirs — under the lock of those shifts, the mark first and the mail after it, as the reminder of the
+/// controller per event with all of theirs — under the lock of the event's row, as a correction holds it, and of those shifts, the mark first
+/// and the mail after it, as the reminder of the
 /// bookings: a mail that fails to be queued is lost, never sent twice. A shift the correction failed to tell is told by the next run.</item>
 /// </list>
 /// </summary>
@@ -99,6 +100,12 @@ public sealed class RosterPublication(EventsDbContext database, EventsMail mail)
 
         await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken))
         {
+            // The event's row first, the lock a correction of the roster holds (ShiftLock, E11b): a correction and this mail never cross —
+            // the one that comes second reads what the first committed (the review of #268, point 1).
+            await database.Database
+                .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {eventId} FOR UPDATE")
+                .ToListAsync(cancellationToken);
+
             var locked = await database.Database
                 .SqlQuery<long>($"SELECT id AS `Value` FROM evt_atc_shifts WHERE event_id = {eventId} AND controller_vid = {vid} AND notified_at IS NULL FOR UPDATE")
                 .ToListAsync(cancellationToken);

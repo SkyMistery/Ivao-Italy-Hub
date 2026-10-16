@@ -4845,6 +4845,58 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
 - **Non verificato**: la CI (la dice la PR; **build-test è rossa a «Restore» su ogni branch** per l'avviso Pkcs, issue #264, finché la #265
   non è unita); la risposta di Carmine alla domanda della nota; le pagine a schermo e a 375 px (lette con i test e l'e2e, non guardate); un
   roster con migliaia di turni (le mail sono una per controllore per evento, in un giro); la migrazione su un'installazione vera.
+- **Dopo la revisione** (16 ottobre 2026; [i rilievi del revisore][r268], «tre cose da correggere»; [la risposta di Carmine][a268]: **sì alle
+  dieci letture**, con due condizioni, e la nota è **decisa**):
+  1. **La gara fra il job e una correzione** (punto 1): la mail del job prende anche la riga dell'evento, come la correzione con `ShiftLock`, e
+     `ShiftNotices.NoteAsync` rilegge `notified_at` dal database sotto il lock; un cambio di controllore scrive il segno svuotato qualunque
+     cosa credesse il tracker. Un test deterministico, `AShiftGivenToAnotherAfterThePublicationTellsBothEvenAfterTheJobRaced` (la riga caricata
+     dalla correzione, il job che dice il turno in mezzo, poi la correzione): **cade senza la rilettura** (Expected 2, Actual 1), passa con.
+  2. **Gli avvisi sul titolare che lo staff sceglie** (punto 2, e la condizione di Carmine sulla lettura 7): `GET
+     /api/events/atc/transfers/{id}/warnings?toVid=` — **una lettura scritta a mano in più**, l'ottava dell'ATC, che la condizione chiede —, e
+     «Approva» li mostra prima di approvare, che allora dice «Approva lo stesso»; la mail «decisa» dice nome e VID di chi ha preso il turno
+     (punto 7).
+  3. **I test che mancavano** (punto 3): `ApproveRefusesWhatCannotBeAndNamesWhoTookTheShift`, `AWithdrawnRequestIsNotApprovedAndAnApprovedOneIsNotWithdrawn`,
+     `ARequestIsDecidedByTheTeamOfItsShiftsFirAndFollowsTheShift`, la gara sopra; il turno di un roster non pubblicato era già fuori da `/events/mine`
+     nel primo test.
+  4. **I piccoli**: nessuna approvazione su un evento annullato (4); una richiesta in attesa segue il FIR del suo turno quando lo staff lo sposta
+     (5); `events.atcCoverage` filtra per permesso prima del tetto di cinquanta eventi (`MaxEvents`, letti fino a cinquecento) e conta le
+     disponibilità sulle postazioni del lettore (6); il punto 8, la frase vuota delle postazioni, resta: l'ha chiesta dalberone, presa dai
+     seguiti di E4d (#263), e la PR lo dice.
+  5. **La condizione di Carmine sulla lettura 5**: la pagina pubblica del roster nomina a chi ha fatto il login il controllore e il suo rating,
+     **mai il VID** (`ControllerName`, `ControllerErased`); a un visitatore niente.
+  - **Unite poi le teste di E11b** `a0c8a4f` (con `main` a `e041bb04`, il Pkcs corretto, #265) e `33ed36f` (con E4d `279c8cd` e `main` a
+    `3b8d7d79`, le ore in 24 di E10p): un conflitto in `HANDOFF-M4.md` e uno in `titlesAndEmptyLists.test.tsx` (la scheda «ATC» in sola lettura di
+    E12 accanto alle «Domande» e «Iscrizioni» di E4d), le due parti tenute; gli orari delle pagine di E12 passano da `useMoment`. ⚠️ La
+    rilettura di `notified_at` usava `IgnoreQueryFilters`, che `ArchitectureTests` vieta fuori dal motore: passa da `CrudSource.BackOffice`.
+  - **Verificato, in locale** (16 ottobre 2026, sul merge di `33ed36f`): restore con l'audit (`--force --no-http-cache`) senza avvisi;
+    `dotnet build -c Release` senza avvisi; unità **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (15,1 min); le classi
+    del roster di E12 ed E11b 22/22 prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (864 chiavi) verdi; `pnpm test` da solo
+    **788 in 110 file** (un primo giro con tutti i worker si era fermato per la memoria della macchina: rifatto con `--maxWorkers=4`);
+    `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco 5146, `ivaohub_e2e_e12` tolto prima, dopo l'integrazione e
+    dietro il lock di Mailpit: **65/65 al primo giro** (13,4 min); le regole di `core-guard` contro `3b8d7d79`: nessun file del maintainer, i file del nucleo della coda
+    (i tre di E12 e i due di E4d) con le tre note nuove.
+  - **Unita poi `main` a `4ad747ad`** (E4d #263 ed E11b #262 unite, il piano 1.34 #270, la `0.7.0`): sopra `33ed36f` porta solo la versione e i
+    documenti del maintainer, merge pulito. **Verificato di nuovo**: restore con l'audit senza avvisi; build Release senza avvisi; unità
+    **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (10,9 min; un primo giro era caduto subito con Docker Desktop spento,
+    riacceso, e l'ho fatto partire quando la suite di un'altra sessione era finita); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+    verdi; `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` **non rifatto** (il coordinatore: il
+    65/65 sul merge di `33ed36f` copre il codice, `main` ha portato solo la versione e i documenti); le regole di `core-guard` contro
+    `4ad747ad`: nessun file del maintainer, i tre file del nucleo di E12 con la sua nota nuova.
+- **Dopo la seconda lettura** (16 ottobre 2026; [i rilievi][r268b]: chiusi i punti 1–8 e le due condizioni di Carmine):
+  1. **Togliere un turno mentre il job lo dice** (il punto 1): la `Delete` di `ShiftEndpoints` prende il lock dell'evento come la correzione,
+     e `ShiftNotices.RemoveAsync` rilegge `notified_at` dopo il lock; il salvataggio e il commit nel hook, la mail dopo. Un test deterministico,
+     `AShiftTakenAwayWhileTheJobTellsItStillTellsItsControllerItIsGone`: **cade senza la rilettura** (nessuna mail «tolto»), passa con.
+  2. **I test** (piccolo 2): la gara della correzione chiama ora `NoteAsync` dentro il lock; gli avvisi del rating sul titolare scelto
+     (`TheWarningsOnTheHolderChosenSayTheRatings`); un controllore cancellato sul roster pubblico (`AnErasedControllerOnThePublicRosterIsNamedByNobody`).
+  3. **`RowsAsync`** legge di nuovo i dati degli avvisi una volta per evento (piccolo 3).
+  - **Verificato, in locale** (16 ottobre 2026): build Release senza avvisi; unità **1294/1294**; le classi del roster di E12 ed E11b 25/25
+    prima; **integrazione intera senza filtro, da sola, 622/622** (9,8 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` non rifatto (la correzione tocca un verbo
+    del server e i test, nessuna pagina); le regole di `core-guard` contro `4ad747ad`: invariate.
+
+[r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
+[r268b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6219778760
+[a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
 
@@ -5209,7 +5261,7 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
   7. **La cancellazione dei dati di una persona**: un posto di un evento non finito si cancella, uno di un evento finito resta con lo
      pseudonimo; due righe nuove dell'anteprima (`seatsToCome`, `seatsOver`). `ErasureTests` con `evt_activities.created_by`, `.updated_by`,
      `evt_activity_bookings.vid`.
-  8. **I test**: integrazione `EventsActivitiesTests` (8; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
+  8. **I test**: integrazione `EventsActivitiesTests` (8, 13 dopo la revisione; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
      (solo un iscritto, un turno, libero, non sovrapposto, ridato), **l'ultimo posto preso da due membri nello stesso istante** (una
      transazione del test tiene la riga dell'attività e il posto non confermato, la richiesta aspetta in `INNODB_TRX`, poi legge «turno
      pieno»; **provato al contrario**: senza il `FOR UPDATE` la richiesta prende il posto, 201), i posti che vanno con l'iscrizione e
@@ -5233,4 +5285,28 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
   disegna un istante solo con il fuso della divisione accanto (`division={{ defaultLocale, timezone }}`, come il form delle postazioni), e
   nessun test disegnava il form; ora lo passa, e lo prova il vitest `activityForm.test.tsx`. ⚠️ **Un `e2e:full` che gira mentre si fa un
   merge** cade sulle spec che leggono `locales/<lang>/events.json` con i marcatori di conflitto: un giro va rifatto, a file fermi.
-- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E11b, E12 in corso, E13a–E15b da fare).
+- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E12 in coda, E13a–E15b da fare).
+
+**Dopo la revisione** (16 ottobre 2026, sulla #271: [i rilievi del revisore][rv271] e [la risposta di Carmine][a271] — sì alla lettura 7, sì alla
+11 come limite accettato della risposta 2A, sì alla 13, scritte nella nota):
+
+1. **Le liste leggono le statistiche solo quando la conservazione è girata** (punto 1): oltre la data, con le statistiche **e senza più
+   iscrizioni né posti** (`InPersonRetention.RetiredAsync`); E13a scriverà le statistiche alla fine dell'evento, e fino al giro del mese
+   le righe sono quelle vere. Il test della conservazione scrive prima le statistiche a zero e trova le somme delle righe.
+2. **«Ridai» un posto prende il blocco dell'iscrizione**, come ogni cambio dei posti del membro, e **il ritiro rimette il `catch`** di
+   `DbUpdateConcurrencyException` che `main` aveva (punto 2): due test con una transazione tenuta, `ASeatGivenBackWhileItsMemberWithdrawsIsNotFound`
+   (la richiesta aspetta sul blocco dell'iscrizione) e `AWithdrawalWhileASeatIsGivenBackPastTheLockIsNotFound` (404, non 409).
+3. **Eliminare un'attività** mentre qualcuno prende un posto risponde `activityHasSeats`: la `Delete` salva da sé e traduce il rifiuto della
+   chiave (`DatabaseErrors.StillReferenced`, punto 3).
+4. **Spostare o accorciare l'evento** oltre una sua attività è rifiutato (`events:errors.eventActivitiesOutside`, su `startsAtUtc` o
+   `endsAtUtc`, punto 4); un'attività cambiata così che un posto ne esca è rifiutata sul campo che lo sposta (`fromUtc`, `toUtc`, `slotMinutes`).
+5. **Un istante senza fuso** mandato dal client si legge in UTC (`MemberSeats.Utc`, punto 5).
+6. **Un evento che fallisce nella conservazione** è scritto nel log e lasciato al giro dopo, gli altri vanno avanti (punto 6, come
+   `events-roster`).
+7. **La forma della riga di un turno e «UTC»** stanno nei file di lingua (`mail.events.registrationReceived.seatLine`, `…seatLinePlace`, punto 7).
+8. **I test mancanti** (punto 8): il posto dopo l'inizio e su un evento annullato, ridato dopo l'inizio e da un evento annullato; l'attività
+   cambiata così che un posto ne esca. `EventsActivitiesTests` passa a 13. **Provato al contrario**, ognuno sul codice di prima: i due della
+   corsa, l'eliminazione (500), lo spostamento (200), le statistiche (0 invece di 2).
+
+[rv271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583
+[a271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164

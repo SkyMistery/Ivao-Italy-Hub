@@ -70,7 +70,10 @@ public sealed class AtcCoverageProvider(
     public const int MaxDays = 60;
 
     /// <summary>The events read before the permissions narrow them: a dashboard is not the list.</summary>
-    private const int Window = 50;
+    private const int Window = 500;
+
+    /// <summary>The most events the block shows, once the permissions narrowed them (the review of #268, point 6).</summary>
+    public const int MaxEvents = 50;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -105,6 +108,11 @@ public sealed class AtcCoverageProvider(
         var events = new List<AtcCoverageEventDto>();
         foreach (var row in rows)
         {
+            if (events.Count == MaxEvents)
+            {
+                break;
+            }
+
             if (await CoverageAsync(row, settings, request.User, now, cancellationToken) is { } coverage
                 && (coverage.Uncovered > 0 || coverage.Stage == RosterStage.Open || coverage.Transfers > 0))
             {
@@ -173,7 +181,14 @@ public sealed class AtcCoverageProvider(
             }
         }
 
-        var availabilities = await CrudSource.BackOffice<EventAtcAvailability>(database).CountAsync(availability => availability.EventId == row.Id, cancellationToken);
+        // The availabilities on the positions the reader reads (reading 8): a window that meets one of them.
+        var availabilities = (await CrudSource.BackOffice<EventAtcWindow>(database).AsNoTracking()
+                .Where(window => window.EventId == row.Id)
+                .ToListAsync(cancellationToken))
+            .Where(window => readable.Any(position => AtcRules.Meet(window.FromUtc, window.ToUtc, position.FromUtc, position.ToUtc)))
+            .Select(window => window.AvailabilityId)
+            .Distinct()
+            .Count();
         var closes = AtcRules.ClosesAt(row, settings);
 
         return new AtcCoverageEventDto(

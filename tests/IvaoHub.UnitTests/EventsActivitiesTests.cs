@@ -1,5 +1,6 @@
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events;
 using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Staff;
@@ -116,9 +117,38 @@ public sealed class EventsActivitiesTests
         var later = new EventActivitySeat { ActivityId = 7, StartsAtUtc = Ten.AddMinutes(30) };
         var first = new EventActivitySeat { ActivityId = 7, StartsAtUtc = Ten };
 
+        var catalog = Catalog();
+
+        // The shape is the language file's: with the place, and without it.
         Assert.Equal(
             ["Simulatore (Hangar 2): 2026-11-14 10:00–10:30 UTC", "Simulatore (Hangar 2): 2026-11-14 10:30–11:00 UTC"],
-            EventsMail.SeatLines([(later, activity), (first, activity)], "it", "en"));
+            EventsMail.SeatLines([(later, activity), (first, activity)], "it", "en", catalog));
+
+        activity.Place = null;
+        Assert.Equal(["Simulator: 2026-11-14 10:00–10:30 UTC"], EventsMail.SeatLines([(first, activity)], "en", "en", catalog));
+    }
+
+    /// <summary>The language files of this repository, read the way the server reads them.</summary>
+    private static LocaleCatalog Catalog()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "IvaoHub.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        return new LocaleCatalog(
+            HubPaths.Resolve(directory.FullName),
+            Options.Create(new DivisionOptions
+            {
+                Code = "XX",
+                CountryId = "XX",
+                Domain = "example.org",
+                Locales = ["en", "it"],
+                DefaultLocale = "en",
+                Timezone = "UTC",
+            }));
     }
 
     [Fact]

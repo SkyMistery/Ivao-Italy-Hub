@@ -288,7 +288,20 @@ public static class ShiftEndpoints
         }
 
         // What the shift was, for the mails after the save (E12); its mark emptied when it passes to another controller.
-        saving.Services.GetRequiredService<ShiftNotices>().Note(shift, saving.IsNew);
+        await saving.Services.GetRequiredService<ShiftNotices>().NoteAsync(shift, saving.IsNew, saving.CancellationToken);
+
+        // A request waiting to hand the shift over follows it to the FIR of its new position (the review of #268, point 5): the team of that
+        // FIR decides it, in the same unit of work.
+        if (!saving.IsNew)
+        {
+            foreach (var transfer in await CrudSource.BackOffice<EventAtcTransfer>(database)
+                         .Where(candidate => candidate.ShiftId == shift.Id && candidate.Status == TransferStatus.Pending && candidate.Fir != shift.Fir)
+                         .ToListAsync(saving.CancellationToken))
+            {
+                transfer.Fir = shift.Fir;
+            }
+        }
+
         return null;
     }
 
@@ -305,10 +318,15 @@ public static class ShiftEndpoints
 
     /// <summary>
     /// A shift is taken away from the proposal until the event starts (Carmine's answer on issue #259): from then on it is the register of
-    /// reliability, which the checks after the event read (c3). With its requests to hand it over, and whoever knew of it told it is gone (E12).
+    /// reliability, which the checks after the event read (c3). With its requests to hand it over, and whoever knew of it told it is gone (E12),
+    /// all under the lock of the event's row the correction holds (the second reading of #268, point 1): the save and the commit are in the
+    /// hook, and the mail after them.
     /// </summary>
     private static async Task DeleteAsync(EventAtcShift shift, IServiceProvider services, CancellationToken cancellationToken)
     {
+        var shiftLock = services.GetRequiredService<ShiftLock>();
+        await shiftLock.TakeAsync(services.GetRequiredService<EventsDbContext>(), shift.EventId, cancellationToken);
+
         var parent = await services.GetRequiredService<EventChildren>().EventAsync(shift.EventId, cancellationToken);
         var now = services.GetRequiredService<IClock>().UtcNow;
         if (parent is not null && Closed(parent, now) is { } closed)
@@ -321,7 +339,7 @@ public static class ShiftEndpoints
             throw new DomainRefusalException("id", AfterStartKey);
         }
 
-        await services.GetRequiredService<ShiftNotices>().RemoveAsync([shift], position: null, held: null, cancellationToken);
+        await services.GetRequiredService<ShiftNotices>().RemoveAsync([shift], position: null, shiftLock, cancellationToken);
     }
 
     /// <summary>A shift taken away, or changed in anything but a cut of its end to now or later, after the event started.</summary>

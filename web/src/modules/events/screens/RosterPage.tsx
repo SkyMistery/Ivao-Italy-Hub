@@ -19,12 +19,19 @@ import { eventHref } from './cards';
 /**
  * The page of a roster, `/events/{slug}/roster` (design M4 §4.4, §7.1, E12; note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione,
  * reading 5): before its publication, when it will be; after it, a generated list by position and hour of the shifts and of the pieces
- * nobody holds. **The names only to a signed in reader**: the server sends no person to a visitor, and the page draws neither the
- * controller's column nor the rating's for one, with a line that asks to sign in.
+ * nobody holds. **The names only to a signed in reader, never the VID** (Carmine's answer on #268): the server sends no person to a visitor,
+ * and the page draws neither the controller's column nor the rating's for one, with a line that asks to sign in; a controller whose data was
+ * erased is the core's word for a deleted person.
  */
 
-/** A row with its state as a word of a closed set, which the badge draws: held, or nobody's. */
-type RosterPageRow = PublicRosterRowDto & { readonly state: 'Assigned' | 'Uncovered' };
+/**
+ * A row with its state as a word of a closed set, which the badge draws — held, or nobody's —, and its controller as the page writes them: the
+ * name, or the core's word for somebody whose data was erased.
+ */
+type RosterPageRow = PublicRosterRowDto & {
+  readonly state: 'Assigned' | 'Uncovered';
+  readonly controller: string | null;
+};
 
 const visitorColumns: readonly ColumnSpec<RosterPageRow>[] = [
   col.text('callsign'),
@@ -36,25 +43,28 @@ const visitorColumns: readonly ColumnSpec<RosterPageRow>[] = [
 
 const memberColumns: readonly ColumnSpec<RosterPageRow>[] = [
   ...visitorColumns,
-  col.person('controller'),
+  col.text('controller'),
   col.text('rating'),
 ];
 
 /** The rows of a page of the list, out of the roster read once: the search box narrows them to a callsign, a position or a name. */
-function rowsQuery(roster: PublicRosterDto, search: ListSearch) {
+function rowsQuery(roster: PublicRosterDto, search: ListSearch, deleted: string) {
   return queryOptions({
-    queryKey: ['events', 'public', 'roster', roster.slug, 'rows', search] as const,
+    queryKey: ['events', 'public', 'roster', roster.slug, 'rows', search, deleted] as const,
     queryFn: () => {
       const term = search.q?.trim().toLowerCase() ?? '';
       const all = roster.rows
-        .map((row): RosterPageRow => ({ ...row, state: row.covered ? 'Assigned' : 'Uncovered' }))
+        .map((row): RosterPageRow => ({
+          ...row,
+          state: row.covered ? 'Assigned' : 'Uncovered',
+          controller: row.controllerErased ? deleted : row.controllerName,
+        }))
         .filter(
           (row) =>
             term === '' ||
             row.callsign.toLowerCase().includes(term) ||
             (row.name ?? '').toLowerCase().includes(term) ||
-            (row.controller?.name ?? '').toLowerCase().includes(term) ||
-            String(row.controller?.vid ?? '').includes(term),
+            (row.controller ?? '').toLowerCase().includes(term),
         );
       const start = (search.page - 1) * search.pageSize;
 
@@ -127,7 +137,7 @@ export function RosterPage() {
           )}
           <DataList
             columns={signedIn ? memberColumns : visitorColumns}
-            query={rowsQuery(roster, search)}
+            query={rowsQuery(roster, search, t('people.deleted'))}
             labels="events:roster"
             locale={i18n.language}
             defaultLocale={bootstrap.division.defaultLocale}

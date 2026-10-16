@@ -212,6 +212,17 @@ public static class EventActivityEndpoints
             .Select(seat => seat.StartsAtUtc)
             .ToListAsync(saving.CancellationToken);
 
+        // A seat left before the window, after it, or between two turns: said on the field that moved it off.
+        if (taken.Any(start => start < activity.FromUtc))
+        {
+            return EventChildren.Refusal("fromUtc", "events:errors.activitySeatsTaken");
+        }
+
+        if (taken.Any(start => start.AddMinutes(activity.SlotMinutes) > activity.ToUtc))
+        {
+            return EventChildren.Refusal("toUtc", "events:errors.activitySeatsTaken");
+        }
+
         if (taken.Any(start => !activity.IsTurn(start)))
         {
             return EventChildren.Refusal("slotMinutes", "events:errors.activitySeatsTaken");
@@ -225,6 +236,9 @@ public static class EventActivityEndpoints
     /// <summary>
     /// An activity with seats taken is not deleted (the note's question 2, (A)), as an event with registrations is not: the members hold its
     /// turns. One nobody took a seat in goes, through the unit of work, with its row in the audit.
+    /// <para>The check reads the seats committed; a seat taken in the same instant is stopped by its key, which the save here answers with the
+    /// same refusal rather than a failure of the database (the review of #271, point 3). Saved here so that the refusal is the module's;
+    /// the engine's save after it finds nothing left to write.</para>
     /// </summary>
     private static async Task DeleteAsync(EventActivity activity, IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -232,11 +246,23 @@ public static class EventActivityEndpoints
 
         if (await CrudSource.BackOffice<EventActivitySeat>(database).AnyAsync(seat => seat.ActivityId == activity.Id, cancellationToken))
         {
-            throw new DomainRefusalException("id", "events:errors.activityHasSeats");
+            throw new DomainRefusalException("id", HasSeatsKey);
         }
 
         database.Activities.Remove(activity);
+
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (DatabaseErrors.StillReferenced(exception))
+        {
+            database.Entry(activity).State = EntityState.Unchanged;
+            throw new DomainRefusalException("id", HasSeatsKey);
+        }
     }
+
+    private const string HasSeatsKey = "events:errors.activityHasSeats";
 
     /// <summary>A page of activities with the seats taken in each: one query for the page, or the statistics of an event past its retention.</summary>
     private static async Task<IReadOnlyList<EventActivityDto>> PageAsync(

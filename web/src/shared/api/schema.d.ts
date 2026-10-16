@@ -327,6 +327,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/atc/transfers/{id}/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsTransferWarnings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/atc/transfers/{id}/approve": {
         parameters: {
             query?: never;
@@ -8667,8 +8683,9 @@ export interface components {
         };
         /**
          * @description One row of a published roster as the site shows it (§4.4, §7.1, E12): the position — callsign and the name the core knows —, the hours,
-         *     whether somebody holds them, and who: named, with their ATC rating as the staff say it, <b>only to a signed in reader</b>; a visitor reads
-         *     «assigned» or «uncovered». Neither the why nor the warnings: they are the staff's.
+         *     whether somebody holds them, and who: their name and their ATC rating as the staff say it, <b>only to a signed in reader, and never the VID</b>
+         *     (Carmine's answer on #268, reading 5) — `ControllerErased` for somebody whose data was erased, whom the page names with the core's word —;
+         *     a visitor reads «assigned» or «uncovered». Neither the why nor the warnings: they are the staff's.
          */
         PublicRosterRowDto: {
             /** Format: int64 */
@@ -8680,7 +8697,8 @@ export interface components {
             /** Format: date-time */
             toUtc: string;
             covered: boolean;
-            controller: null | components["schemas"]["EventMemberDto"];
+            controllerName: null | string;
+            controllerErased: boolean;
             rating: null | string;
         };
         /** @description One rotation of a hub tour, so that the page groups the legs the way the tour flies them (design M2 §1.3). */
@@ -11339,6 +11357,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PagedResultOfRosterRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsTransferWarnings: {
+        parameters: {
+            query: {
+                toVid: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftWarning"][];
                 };
             };
             /** @description Not Found */

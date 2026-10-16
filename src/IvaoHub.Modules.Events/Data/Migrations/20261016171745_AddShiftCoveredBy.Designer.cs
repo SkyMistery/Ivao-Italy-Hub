@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IvaoHub.Modules.Events.Data.Migrations
 {
     [DbContext(typeof(EventsDbContext))]
-    [Migration("20261016161523_AddShiftCoveredBy")]
+    [Migration("20261016171745_AddShiftCoveredBy")]
     partial class AddShiftCoveredBy
     {
         /// <inheritdoc />

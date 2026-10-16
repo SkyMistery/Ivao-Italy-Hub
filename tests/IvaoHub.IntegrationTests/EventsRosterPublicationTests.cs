@@ -352,15 +352,18 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
         var rows = page.GetProperty("rows").EnumerateArray().ToList();
         Assert.Contains(rows, row => !row.GetProperty("covered").GetBoolean());
         Assert.Contains(rows, row => row.GetProperty("covered").GetBoolean());
-        Assert.All(rows, row => Assert.Equal(JsonValueKind.Null, row.GetProperty("controller").ValueKind));
+        Assert.All(rows, row => Assert.Equal(JsonValueKind.Null, row.GetProperty("controllerName").ValueKind));
+        Assert.All(rows, row => Assert.False(row.GetProperty("controllerErased").GetBoolean()));
         Assert.All(rows, row => Assert.Equal(JsonValueKind.Null, row.GetProperty("rating").ValueKind));
         Assert.DoesNotContain(ControllerVid.ToString(System.Globalization.CultureInfo.InvariantCulture), page.GetRawText(), StringComparison.Ordinal);
 
         using var member = await SignedInAsync(OtherVid, token);
+        // A signed in member reads the controller's name and rating, and never the VID (Carmine's answer on #268, reading 5).
         var named = await OkAsync(await member.GetAsync(RosterUri("page"), token), token);
         Assert.Contains(
             named.GetProperty("rows").EnumerateArray(),
-            row => row.GetProperty("covered").GetBoolean() && row.GetProperty("controller").GetProperty("vid").GetInt32() == ControllerVid);
+            row => row.GetProperty("covered").GetBoolean() && row.GetProperty("controllerName").GetString() == "Test Publication");
+        Assert.DoesNotContain(ControllerVid.ToString(System.Globalization.CultureInfo.InvariantCulture), named.GetRawText(), StringComparison.Ordinal);
 
         // The event's page links to it.
         var eventPage = await OkAsync(await visitor.GetAsync($"{PublicEventEndpoints.Pattern}/{Slug("page")}", token), token);
@@ -444,6 +447,299 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
         Assert.Empty(await ShiftsAsync(toCome, token));
         var stored = Assert.Single(await TransfersAsync(over, token));
         Assert.Equal((kept, pseudonym, (string?)null, (string?)null), (stored.Id, stored.ControllerVid, stored.Note, stored.DecisionNote));
+    }
+
+    /// <summary>
+    /// The refusals of «Approve» (the review of #268, point 3 and small 4): a member busy on another position of the event at those hours, a
+    /// shift the staff gave to somebody else meanwhile, a member who never signed in, an erased person's pseudonym, a cancelled event; and the
+    /// warnings on the holder the staff choose, before they approve (Carmine's answer on #268), and the «decided» mail naming who took the shift.
+    /// </summary>
+    [Fact]
+    public async Task ApproveRefusesWhatCannotBeAndNamesWhoTookTheShift()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Hour(DateTime.UtcNow.AddHours(30));
+        var id = await ProposableAsync("refusals", starts, token);
+        await RunJobAsync(token);
+        var positions = await PositionIdsAsync(id, token);
+        var shifts = (await ShiftsAsync(id, token)).OrderBy(shift => shift.FromUtc).ToList();
+        using var controller = await SignedInAsync(ControllerVid, token);
+        using var aod = await SignedInAsync(AodVid, token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        var asked = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[0].Id), new TransferRequest(null, null), token), token)).GetProperty("id").GetInt64();
+
+        // Busy: the other controller holds the approach at the same hour.
+        await CreatedAsync(
+            await coordinator.PostAsJsonAsync(ShiftEndpoints.Pattern, new EventAtcShiftWriteDto(positions[Approach], OtherVid, starts, starts.AddHours(1), default), token),
+            token);
+        Assert.Equal(
+            [StaffTransfers.BusyKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(OtherVid, null), token), token))["toVid"]);
+
+        // Never signed in, and an erased person's pseudonym: nobody the hub can tell.
+        Assert.Equal(
+            [MemberShifts.NeverSignedInKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(761199, null), token), token))["toVid"]);
+        Assert.Equal(
+            [MemberShifts.NeverSignedInKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(-761124, null), token), token))["toVid"]);
+
+        // The warnings on the holder the staff choose: the coordinator gave no availability.
+        var warnings = await OkAsync(await aod.GetAsync($"{TransferEndpoints.StaffPattern}/{asked}/warnings?toVid={CoordinatorVid}", token), token);
+        Assert.Contains(nameof(ShiftWarning.NotAvailable), warnings.EnumerateArray().Select(warning => warning.GetString()));
+
+        // Approved towards the coordinator: the mail to whoever asked names who took it.
+        using (var response = await aod.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(CoordinatorVid, null), token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        var decided = Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftTransferDecided, token));
+        Assert.Contains($"Test Publication ({CoordinatorVid})", decided.DataJson, StringComparison.Ordinal);
+
+        // Not theirs any more: the staff moved the second shift to the other controller before deciding.
+        var second = await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[1].Id), new TransferRequest(null, null), token), token);
+        var stored = (await ShiftsAsync(id, token)).Single(shift => shift.Id == shifts[1].Id);
+        await OkAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{ShiftEndpoints.Pattern}/{stored.Id}",
+                new EventAtcShiftWriteDto(stored.PositionId, OtherVid, stored.FromUtc, stored.ToUtc, stored.RowVersion),
+                token),
+            token);
+        Assert.Equal(
+            [StaffTransfers.NotTheirsKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(second.GetProperty("id").GetInt64(), "approve"), new TransferApproval(CoordinatorVid, null), token), token))["id"]);
+
+        // A cancelled event hands nothing over: its request is refused only.
+        var cancelled = await EventRowAsync("refusals-cancelled", starts, starts.AddHours(6), PublishStatus.Published, proposed: true, token);
+        var tower = await PositionRowAsync(cancelled, Tower, starts, starts.AddHours(3), token);
+        var held = await ShiftRowAsync(cancelled, tower, Fir, ControllerVid, starts, starts.AddHours(1), token);
+        var waiting = await TransferRowAsync(cancelled, held, Fir, ControllerVid, OtherVid, token);
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters().Where(row => row.Id == cancelled)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.CancelledAt, DateTime.UtcNow), token);
+        }
+
+        Assert.Equal(
+            [StaffTransfers.CancelledKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(waiting, "approve"), new TransferApproval(null, null), token), token))["id"]);
+    }
+
+    /// <summary>
+    /// Taking a request back (the review of #268, point 3): a waiting one becomes «withdrawn», and approving it after is refused; one approved
+    /// is not taken back.
+    /// </summary>
+    [Fact]
+    public async Task AWithdrawnRequestIsNotApprovedAndAnApprovedOneIsNotWithdrawn()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await ProposableAsync("withdraw", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shifts = (await ShiftsAsync(id, token)).OrderBy(shift => shift.FromUtc).ToList();
+        using var controller = await SignedInAsync(ControllerVid, token);
+        using var aod = await SignedInAsync(AodVid, token);
+
+        var asked = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[0].Id), new TransferRequest(OtherVid, null), token), token)).GetProperty("id").GetInt64();
+        using (var response = await controller.DeleteAsync(TransferUri(shifts[0].Id), token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        Assert.Equal(TransferStatus.Withdrawn, (await TransfersAsync(id, token)).Single(transfer => transfer.Id == asked).Status);
+        Assert.Equal(
+            [StaffTransfers.NotPendingKey],
+            (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(null, null), token), token))["id"]);
+
+        var again = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[0].Id), new TransferRequest(OtherVid, null), token), token)).GetProperty("id").GetInt64();
+        using (var response = await aod.PostAsJsonAsync(DecideUri(again, "approve"), new TransferApproval(null, null), token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        using (var response = await controller.DeleteAsync(TransferUri(shifts[0].Id), token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        Assert.Equal(TransferStatus.Approved, (await TransfersAsync(id, token)).Single(transfer => transfer.Id == again).Status);
+    }
+
+    /// <summary>
+    /// The FIR of a request (the review of #268, point 3 and small 5): the chief of the tower's FIR decides the tower's requests and not the
+    /// approach's; a request follows its shift when the staff move it to the other FIR's position.
+    /// </summary>
+    [Fact]
+    public async Task ARequestIsDecidedByTheTeamOfItsShiftsFirAndFollowsTheShift()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Hour(DateTime.UtcNow.AddHours(30));
+        var id = await ProposableAsync("fir", starts, token);
+        await RunJobAsync(token);
+        var positions = await PositionIdsAsync(id, token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        using var controller = await SignedInAsync(ControllerVid, token);
+        using var chief = await SignedInAsync(ChiefVid, token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        var asked = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shift.Id), new TransferRequest(OtherVid, null), token), token)).GetProperty("id").GetInt64();
+        Assert.Equal(Fir, (await TransfersAsync(id, token)).Single().Fir);
+
+        // The shift moved to the approach, the other FIR's: the request goes with it.
+        await OkAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{ShiftEndpoints.Pattern}/{shift.Id}",
+                new EventAtcShiftWriteDto(positions[Approach], ControllerVid, shift.FromUtc, shift.ToUtc, shift.RowVersion),
+                token),
+            token);
+        Assert.Equal(OtherFir, (await TransfersAsync(id, token)).Single().Fir);
+
+        // The chief of the tower's FIR no longer decides it, nor reads it in the list.
+        using (var response = await chief.PostAsJsonAsync(DecideUri(asked, "approve"), new TransferApproval(null, null), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        Assert.Empty(await PageAsync(chief, $"{TransferEndpoints.StaffPattern}?filter[eventId]={id}", token));
+    }
+
+    /// <summary>
+    /// A shift given to another controller after the publication (reading 3): whoever held it is told it is gone, the new one that it is theirs.
+    /// And the race of the review of #268, point 1, deterministic: the shift loaded by a correction before the job told its controller still
+    /// reads them as told under the lock, so the controller who held it is told it is gone.
+    /// </summary>
+    [Fact]
+    public async Task AShiftGivenToAnotherAfterThePublicationTellsBothEvenAfterTheJobRaced()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await ProposableAsync("handed", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        using var aod = await SignedInAsync(AodVid, token);
+
+        await OkAsync(
+            await aod.PutAsJsonAsync(
+                $"{ShiftEndpoints.Pattern}/{shift.Id}",
+                new EventAtcShiftWriteDto(shift.PositionId, OtherVid, shift.FromUtc, shift.ToUtc, shift.RowVersion),
+                token),
+            token);
+        Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftRemoved, token));
+        Assert.Single(await MailsAsync(OtherVid, EventsNotifications.AtcShiftAssigned, token));
+
+        // The race: a shift added after the publication, not told yet; a correction loads it, the job tells it meanwhile, then the correction
+        // gives it to another controller. Under the lock the correction reads the mark again: whoever held it hears it is gone.
+        var second = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).Skip(1).First();
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().AtcShifts.IgnoreQueryFilters().Where(row => row.Id == second.Id)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.NotifiedAt, (DateTime?)null), token);
+        }
+
+        await using (var correction = _factory.Services.CreateAsyncScope())
+        {
+            var database = correction.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var loaded = await database.AtcShifts.IgnoreQueryFilters().SingleAsync(row => row.Id == second.Id, token);
+            Assert.Null(loaded.NotifiedAt);
+
+            // The job tells the controller while the correction holds its stale row.
+            await RunJobAsync(token);
+            Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftAssigned, token)).Count);
+
+            // Then the correction takes the event's lock, as its save does, and reads the mark again inside it.
+            var notices = correction.ServiceProvider.GetRequiredService<ShiftNotices>();
+            var shiftLock = correction.ServiceProvider.GetRequiredService<ShiftLock>();
+            await shiftLock.TakeAsync(database, loaded.EventId, token);
+            loaded.ControllerVid = OtherVid;
+            await notices.NoteAsync(loaded, isNew: false, token);
+            await database.Database.ExecuteSqlAsync($"UPDATE evt_atc_shifts SET controller_vid = {OtherVid}, notified_at = NULL WHERE id = {loaded.Id}", token);
+            await shiftLock.CommitAsync(token);
+            await notices.TellAsync(loaded, token);
+        }
+
+        Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftRemoved, token)).Count);
+    }
+
+    /// <summary>
+    /// Taking a shift away races the job too (the second reading of #268, point 1): the shift loaded by the deletion before the job told its
+    /// controller is read again under the lock, and its controller is told it is gone.
+    /// </summary>
+    [Fact]
+    public async Task AShiftTakenAwayWhileTheJobTellsItStillTellsItsControllerItIsGone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await ProposableAsync("removed-race", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().AtcShifts.IgnoreQueryFilters().Where(row => row.Id == shift.Id)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.NotifiedAt, (DateTime?)null), token);
+        }
+
+        await using (var deletion = _factory.Services.CreateAsyncScope())
+        {
+            var database = deletion.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var loaded = await database.AtcShifts.IgnoreQueryFilters().SingleAsync(row => row.Id == shift.Id, token);
+            Assert.Null(loaded.NotifiedAt);
+
+            // The job tells the controller while the deletion holds its stale row; then the deletion takes the lock and removes it.
+            await RunJobAsync(token);
+            Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftAssigned, token)).Count);
+
+            var shiftLock = deletion.ServiceProvider.GetRequiredService<ShiftLock>();
+            await shiftLock.TakeAsync(database, loaded.EventId, token);
+            await deletion.ServiceProvider.GetRequiredService<ShiftNotices>().RemoveAsync([loaded], position: null, shiftLock, token);
+        }
+
+        Assert.DoesNotContain(await ShiftsAsync(id, token), candidate => candidate.Id == shift.Id);
+        Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftRemoved, token));
+    }
+
+    /// <summary>
+    /// The rating warnings on the holder the staff choose (the second reading of #268, small 2): a member with no ATC rating is below the
+    /// setting's least and below the tower's preferred one.
+    /// </summary>
+    [Fact]
+    public async Task TheWarningsOnTheHolderChosenSayTheRatings()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var ladder = IvaoRatings.Vocabulary.Ladder(RatingKind.Atc);
+        await WriteSettingsAsync(
+            $$"""{"minimumAtcRating":{{ladder[2].Number}},"applicationsCloseDays":3,"rosterPublishDays":2,"shiftMinutes":60,"maxConsecutiveShifts":2,"breakShifts":1}""",
+            token);
+        var id = await ProposableAsync("ratings", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        using var controller = await SignedInAsync(ControllerVid, token);
+        var asked = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shift.Id), new TransferRequest(null, null), token), token)).GetProperty("id").GetInt64();
+
+        using var aod = await SignedInAsync(AodVid, token);
+        var warnings = (await OkAsync(await aod.GetAsync($"{TransferEndpoints.StaffPattern}/{asked}/warnings?toVid={ChiefVid}", token), token))
+            .EnumerateArray().Select(warning => warning.GetString()).ToList();
+        Assert.Contains(nameof(ShiftWarning.BelowMinimum), warnings);
+        Assert.Contains(nameof(ShiftWarning.BelowPreferred), warnings);
+    }
+
+    /// <summary>
+    /// An erased controller on the public roster (the second reading of #268, small 2): to a signed in reader, marked erased, with no name and
+    /// no VID — the page says the core's word.
+    /// </summary>
+    [Fact]
+    public async Task AnErasedControllerOnThePublicRosterIsNamedByNobody()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Hour(DateTime.UtcNow.AddHours(30));
+        var id = await EventRowAsync("erased-page", starts, starts.AddHours(6), PublishStatus.Published, proposed: true, token);
+        var tower = await PositionRowAsync(id, Tower, starts, starts.AddHours(1), token);
+        await ShiftRowAsync(id, tower, Fir, -761188, starts, starts.AddHours(1), token);
+
+        using var member = await SignedInAsync(OtherVid, token);
+        var page = await OkAsync(await member.GetAsync(RosterUri("erased-page"), token), token);
+        var row = Assert.Single(page.GetProperty("rows").EnumerateArray(), candidate => candidate.GetProperty("covered").GetBoolean());
+        Assert.True(row.GetProperty("controllerErased").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, row.GetProperty("controllerName").ValueKind);
+        Assert.DoesNotContain("761188", page.GetRawText(), StringComparison.Ordinal);
     }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------

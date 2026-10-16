@@ -146,8 +146,17 @@ public sealed class MemberRegistrations(
         await RegistrationSeats.RemoveAsync(database, eventId, vid, cancellationToken);
         database.Registrations.Remove(registration);
 
-        await database.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A row of it gone a moment before, past the lock — the staff's «take away» read it earlier —: there is nothing left to withdraw
+            // (the review of #271, point 2: the catch `main` had stays).
+            return (BookingResult.NotFound, problems);
+        }
 
         return (BookingResult.Done, problems);
     }

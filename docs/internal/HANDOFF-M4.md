@@ -6,20 +6,21 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 15 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
+**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
-M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata `--no-track` da `main` a
-`c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la fila ATC migra lo stesso
-contesto), poi la testa di E10s `4bfda85` (con `main` a `3b8d7d7`: la correzione di Pkcs ed E10p). **Nasce in conflitto con `main`** (dopo l'unione della #262, della #263 e della #270): prende `main` al suo passo della coda, con la testa nuova di E12. La nota
+M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata
+`--no-track` da `main` a `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la
+fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `1887c27` (le correzioni delle due letture del revisore e le due
+condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34). La nota
 `2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
-#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta
-M4b («Che cosa ha lasciato E17», sotto).
+#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed
+E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta M4b («Che cosa ha lasciato E17», sotto).
 
-**L'aggiornamento di E12:** 15 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
-la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, **in coda dopo la
-#262** di E11b: nata `--no-track` dalla sua testa `973f385`, ha unito la sua testa dopo la revisione `12dfb0c` (con `main` a `c232448`).
-La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **Proposta**, con la domanda a Carmine nel [primo commento della PR](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853); il
-codice segue le risposte raccomandate. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
+**L'aggiornamento di E12:** 16 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
+la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, in fondo alla coda #263 → #262 → #268 (E4d ed E11b ora unite): nata `--no-track` dalla testa di E11b `973f385`, ha unito
+le sue teste fino a `33ed36f` (con E4d `279c8cd` e `main` a `3b8d7d79`) e poi **`main` a `4ad747ad`** (il piano 1.34, la `0.7.0`).
+La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **decisa** da Carmine sulla #268 ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241): sì alle dieci letture,
+con due condizioni, ora nel codice), e i rilievi del revisore sono corretti sulla stessa PR. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
 controllore i suoi turni in una mail; dopo, ogni correzione avvisa subito chi sapeva del turno; c'è la pagina `/events/{slug}/roster` (i nomi
 solo a chi ha fatto il login), i turni in `/events/mine` e in `events.myEvents`, la **cessione** di un turno decisa dallo staff, e il blocco
 **`events.atcCoverage`** («Che cosa ha lasciato E12», sotto).
@@ -308,7 +309,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `a44b70f` e `4bfda85` unite)
+### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
   quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota
@@ -325,7 +326,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **«Duplica»**: domande (con le chiavi) e attività (`EventCopy.Question`, `EventCopy.Activity`).
   - **`events-retention`** (`EventsRetentionJob.cs`, una volta al mese in UTC) e `Registrations/InPersonRetention.cs` (quando un evento è
     oltre la conservazione, che cosa tengono le statistiche, come le liste le rileggono).
-  - **I test**: integrazione `EventsActivitiesTests` (8, la corsa sull'ultimo posto e l'audit della conservazione fra loro; VID **761150–761155**); unità
+  - **I test**: integrazione `EventsActivitiesTests` (13 dopo la revisione, la corsa sull'ultimo posto, quelle del ritiro e dell'eliminazione e l'audit della conservazione fra loro; VID **761150–761155**); unità
     `EventsActivitiesTests` (7); il giro `web/e2e/full/events-m4c-round.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:
   - **Le tre domande della nota sono decise** ([la risposta di Carmine sull'issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232)):
@@ -341,17 +342,60 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     secondo passo dello stesso `RunAsync`, con la stessa regola di «finito» (`EventState.IsOver`).
   - ⚠️ **Un membro e i turni**: due turni che si toccano non si sovrappongono; il controllo è fra tutte le attività dell'evento, non fra
     eventi diversi.
-  - ⚠️ **Il limite detto nella nota (lettura 11)**: lo staff che cambia un'attività controlla i posti senza blocco; un posto preso in
+  - **Dopo la revisione sulla #271** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583), [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164):
+    sì alle letture 7, 11 e 13): le liste leggono le statistiche solo quando un evento non ha più iscrizioni né posti — **E13a**, che le
+    scrive alla fine dell'evento, non cambia quello che lo staff legge prima del giro della conservazione —; «ridai» prende il blocco
+    dell'iscrizione; un evento non si sposta oltre le sue attività; la conservazione salta un evento che fallisce.
+  - ⚠️ **Il limite detto nella nota (lettura 11)**, accettato da Carmine come limite della 2A: lo staff che cambia un'attività controlla i posti senza blocco; un posto preso in
     quell'istante può restare su un turno che non c'è più, e ogni lettura lo regge.
   - ⚠️ **Su Windows** `Activities.tsx` e `activities.tsx` sono lo stesso file: il componente della pagina pubblica si chiama
     `ActivityTurns.tsx` per questo.
   - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
 
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, e poi a `4ad747a`, con E4d, E11b e il piano 1.34)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
+  `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
+  - **`AuditRedaction.EmptyDeletedAsync<TEntity, TKey>(DbContext context, IReadOnlyCollection<TKey> keys, CancellationToken)`**
+    (`src/IvaoHub.Core/Privacy/AuditRedaction.cs`), accanto a `EmptyGoneAsync`: delle righe di `TEntity` con quelle chiavi che **non ci
+    sono più**, svuota (diventano `null` nel JSON) le colonne segnate `[ErasedWith]` in **ogni** copia d'audit — `created`, i due lati
+    di un `updated`, `deleted` —, di tutti i segni, chiunque la riga indicasse. Il resto della copia resta. Righe tracciate, **salva il
+    chiamante**.
+  - **Rifiuta** (`InvalidOperationException`; `ArgumentException` per le chiavi) un'entità che il contesto non mappa, una senza colonne
+    segnate, chiavi di un altro tipo della chiave dell'entità, e una cancellazione di `TEntity` ancora da salvare nel contesto.
+  - Un pezzo privato comune, `EmptyGoneCopiesAsync` (le chiavi che una riga ha ancora tolte, poi le copie in ordine), ora usato anche da
+    `EmptyGoneAsync`: `ErasedAuditTests` passa com'era.
+  - **I test**: `RetentionAuditTests` (integrazione, nuova, 3). Persone 780096 e 780097 di `ErasureTests`, solo nominate.
+- **Che cosa deve sapere E17** (che unisce questo branch, poi `main` quando è unita):
+  - **la chiamata**, in `events-retention`, per ogni entità cancellata, **dopo il salvataggio della cancellazione e nella stessa
+    transazione**:
+
+    ```csharp
+    await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+    database.Registrations.RemoveRange(registrations);
+    await database.SaveChangesAsync(cancellationToken);
+    await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(database, [.. registrations.Select(row => row.Id)], cancellationToken);
+    await database.SaveChangesAsync(cancellationToken);
+    await transaction.CommitAsync(cancellationToken);
+    ```
+
+    (i nomi del `DbSet` sono quelli del contesto degli eventi). Così un errore riporta indietro insieme la cancellazione e lo
+    svuotamento, e il giro dopo ritrova le righe; dopo un commit a sé un errore fra le due lascerebbe copie che nessuno cerca più;
+  - ⚠️ **prima del salvataggio la chiamata è rifiutata**: le righe ci sarebbero ancora e non si svuoterebbe niente;
+  - ⚠️ **un'entità senza segni è rifiutata**: `EventRegistration.AnswersJson` ha già `[ErasedWith(nameof(Vid))]` (E16); per i posti
+    delle attività E17 sceglie quali colonne segnare (con la colonna di persona della stessa riga) e lo dice nella sua nota. Il segno
+    vale anche alla cancellazione di una persona (E10n);
+  - una chiave la cui riga c'è ancora è lasciata com'è; la chiamata è idempotente.
+- **I tour** non ne hanno bisogno oggi (nota, §4): la loro conservazione cancella righe audite della forma del tour, e le righe di una
+  persona che tocca non sono `[Audited]`.
+
+[a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
 ### Che cosa ha lasciato E12 (15 ottobre 2026, branch `m4/e12-roster-publication`, PR #268; in coda dopo la #262 di E11b, nata dalla sua testa `973f385`, con la sua testa `12dfb0c` unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E12, «Com'è andata»; **una migrazione**, `AddRosterPublicationAndTransfers`; niente del nucleo —
   solo `schema.d.ts` generato, le colonne di persona in `ErasureTests` e i due conteggi dei blocchi —; una nota nuova,
-  `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, **Proposta**):
+  `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, **decisa** da Carmine sulla #268 con due condizioni):
   - **La pubblicazione**: `Event.RosterPublishedAt` e `Atc/RosterPublication.cs`, la seconda metà di `events-roster`: una volta, a inizio −
     `rosterPublishDays`, e poi pubblicato per sempre; i turni detti con `notified_at`, una mail per controllore per evento.
   - **Le mail della correzione**: `Atc/ShiftNotices.cs`, chiamato dal `BeforeSave`, dall'`AfterSave` (dopo il commit di `ShiftLock`) e
@@ -434,45 +478,6 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il
     perché di ogni turno lo dice («esperienza non contata»).
   - ⚠️ **I VID di prova**: dopo 761106–761113 di E11a, E11b ha usato **761114–761121** (e **761199** come nessuno che l'hub conosce).
-
-### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p)
-
-- **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
-  `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
-  - **`AuditRedaction.EmptyDeletedAsync<TEntity, TKey>(DbContext context, IReadOnlyCollection<TKey> keys, CancellationToken)`**
-    (`src/IvaoHub.Core/Privacy/AuditRedaction.cs`), accanto a `EmptyGoneAsync`: delle righe di `TEntity` con quelle chiavi che **non ci
-    sono più**, svuota (diventano `null` nel JSON) le colonne segnate `[ErasedWith]` in **ogni** copia d'audit — `created`, i due lati
-    di un `updated`, `deleted` —, di tutti i segni, chiunque la riga indicasse. Il resto della copia resta. Righe tracciate, **salva il
-    chiamante**.
-  - **Rifiuta** (`InvalidOperationException`; `ArgumentException` per le chiavi) un'entità che il contesto non mappa, una senza colonne
-    segnate, chiavi di un altro tipo della chiave dell'entità, e una cancellazione di `TEntity` ancora da salvare nel contesto.
-  - Un pezzo privato comune, `EmptyGoneCopiesAsync` (le chiavi che una riga ha ancora tolte, poi le copie in ordine), ora usato anche da
-    `EmptyGoneAsync`: `ErasedAuditTests` passa com'era.
-  - **I test**: `RetentionAuditTests` (integrazione, nuova, 3). Persone 780096 e 780097 di `ErasureTests`, solo nominate.
-- **Che cosa deve sapere E17** (che unisce questo branch, poi `main` quando è unita):
-  - **la chiamata**, in `events-retention`, per ogni entità cancellata, **dopo il salvataggio della cancellazione e nella stessa
-    transazione**:
-
-    ```csharp
-    await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
-    database.Registrations.RemoveRange(registrations);
-    await database.SaveChangesAsync(cancellationToken);
-    await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(database, [.. registrations.Select(row => row.Id)], cancellationToken);
-    await database.SaveChangesAsync(cancellationToken);
-    await transaction.CommitAsync(cancellationToken);
-    ```
-
-    (i nomi del `DbSet` sono quelli del contesto degli eventi). Così un errore riporta indietro insieme la cancellazione e lo
-    svuotamento, e il giro dopo ritrova le righe; dopo un commit a sé un errore fra le due lascerebbe copie che nessuno cerca più;
-  - ⚠️ **prima del salvataggio la chiamata è rifiutata**: le righe ci sarebbero ancora e non si svuoterebbe niente;
-  - ⚠️ **un'entità senza segni è rifiutata**: `EventRegistration.AnswersJson` ha già `[ErasedWith(nameof(Vid))]` (E16); per i posti
-    delle attività E17 sceglie quali colonne segnare (con la colonna di persona della stessa riga) e lo dice nella sua nota. Il segno
-    vale anche alla cancellazione di una persona (E10n);
-  - una chiave la cui riga c'è ancora è lasciata com'è; la chiamata è idempotente.
-- **I tour** non ne hanno bisogno oggi (nota, §4): la loro conservazione cancella righe audite della forma del tour, e le righe di una
-  persona che tocca non sono `[Audited]`.
-
-[a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
 
 ### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, in fondo alla coda #263 → #262 → #268; da `main` a `c232448`, con `main` a `e041bb04` e poi a `3b8d7d79` unito)
 

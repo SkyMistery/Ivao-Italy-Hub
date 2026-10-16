@@ -1,10 +1,12 @@
 # La pubblicazione del roster, le mail dei turni e la cessione di un turno (E12)
 
 **Data:** 14 ottobre 2026 — fase E12 di M4 (M4b), PR in coda dopo la #262 di E11b
-**Stato:** **Proposta**. La domanda è in §5, pubblicata come primo commento della PR #268 ([domanda][q]), scelta di dalberone. Il codice
-segue le risposte raccomandate, come hanno fatto E11a ed E11b.
+**Stato:** **decisa** da Carmine il 16 ottobre 2026, in chat al master, che ha pubblicato la risposta sulla PR #268 su sua istruzione
+([risposta][a]): **sì alle dieci letture**, con due condizioni, ora nel codice (§5, sotto). La domanda era il primo commento della PR
+([domanda][q]), scelta di dalberone.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
 **Regola applicata:** `CLAUDE.md` §5. La pubblicazione per data, le quattro mail, la pagina del roster con i nomi solo a chi ha fatto il
 login, i turni in `/me` e in `/events/mine`, la riga della cessione con chi cede come stakeholder, lo staff che decide e mai la propria
 richiesta, `events.atcCoverage` e chi riceve l'annullamento sono **decisi** (design `09-design-m4.md` §4.4, §4.4-bis, §7.1, §7.3, §8.3,
@@ -156,10 +158,26 @@ Pubblicata come primo commento della PR #268 ([domanda][q]).
 
 **Raccomandato: sì a tutte.**
 
+**Risposta di Carmine** (16 ottobre 2026, [sulla PR #268][a], data in chat al master e pubblicata su sua istruzione): **sì alle dieci
+letture**, con due condizioni:
+
+- **Lettura 5, la pagina pubblica del roster**: a chi ha fatto il login **il nome e il rating ATC** di ogni controllore, **non il VID**; a un
+  visitatore niente della persona, come ora; i pezzi scoperti restano pubblici. Nel codice: `PublicRosterRowDto` porta `ControllerName` e
+  `ControllerErased` (una persona cancellata la pagina la dice con la parola del nucleo) e nessun VID.
+- **Lettura 7, la cessione**: lo staff può approvare verso un membro diverso da quello indicato **purché** veda gli avvisi del §4.3 per il
+  titolare che sceglie, e la mail «decisa» dica chi ha preso il turno. Nel codice: la finestra «Approva» chiede gli avvisi sul VID scelto
+  (`GET /api/events/atc/transfers/{id}/warnings?toVid=`, una lettura in più, che la condizione chiede) e li mostra prima di approvare, che
+  allora dice «Approva lo stesso»; la mail `atcShiftTransferDecided` di un'approvazione dice nome e VID di chi ha preso il turno.
+
+Gli altri rilievi del revisore sulla #268 ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863)) sono
+corretti sulla stessa PR e detti in `10`, E12, «Dopo la revisione».
+
 ## Da portare nel piano
 
 - **§9.2, riga Events** e design **§7.2** (che non si tocca): la pagina pubblica del roster si legge con **una lettura scritta a mano**
-  (la settima dell'ATC), accettata come scostamento accanto alle sei di E11a ed E11b; la cessione si decide con due verbi dello staff.
+  (la settima dell'ATC), accettata come scostamento accanto alle sei di E11a ed E11b, che nomina i controllori senza il VID; la cessione si
+  decide con due verbi dello staff, e gli avvisi sul titolare che lo staff sceglie si leggono con una lettura sua (l'ottava, la condizione di
+  Carmine sulla #268).
 - **§9.7, collaborazioni ATC↔Events**: il roster si pubblica una volta per data e resta pubblicato; dopo, ogni correzione avvisa chi sapeva
   del turno; la cessione è una richiesta del controllore che lo staff decide fino all'inizio, mai la propria, con il sostituto nominato.
 - **§11, «Privacy dei membri»**: le richieste di cessione di un evento non ancora finito si cancellano con i dati della persona; quelle di

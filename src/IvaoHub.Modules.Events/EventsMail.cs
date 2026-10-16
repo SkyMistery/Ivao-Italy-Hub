@@ -159,16 +159,24 @@ public sealed class EventsMail(
     /// <summary>The heading of the turns of the activities in the mail of a registration (E17).</summary>
     public const string SeatsKey = "events:mail.events.registrationReceived.seats";
 
+    /// <summary>The shape of one turn in the mail of a registration, with the activity's place and without (E17).</summary>
+    public const string SeatLineKey = "events:mail.events.registrationReceived.seatLine";
+
+    public const string SeatLinePlaceKey = "events:mail.events.registrationReceived.seatLinePlace";
+
     /// <summary>
-    /// The turns a member holds, one line each, by their start: «the activity (its place): from – to UTC», in this language. What the mail
-    /// of a registration says; the pages write their own words from the seats, in the language on screen.
+    /// The turns a member holds, one line each, by their start, in this language: the shape of the line — and the word for the zone — are
+    /// the language file's (the review of #271, point 7), the activity, its place and the two times fill it. What the mail of a
+    /// registration says; the pages write their own words from the seats, in the language on screen.
     /// </summary>
     public static IReadOnlyList<string> SeatLines(
         IReadOnlyList<(EventActivitySeat Seat, EventActivity Activity)> seats,
         string locale,
-        string fallback)
+        string fallback,
+        LocaleCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(seats);
+        ArgumentNullException.ThrowIfNull(catalog);
 
         return
         [
@@ -177,10 +185,16 @@ public sealed class EventsMail(
                 .ThenBy(entry => entry.Activity.Id)
                 .Select(entry =>
                 {
-                    var name = entry.Activity.Name.Resolve(locale, fallback) ?? string.Empty;
-                    var place = entry.Activity.Place?.Resolve(locale, fallback) is { Length: > 0 } where ? $" ({where})" : string.Empty;
-                    var ends = entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes);
-                    return $"{name}{place}: {Moment(entry.Seat.StartsAtUtc)}–{ends.ToString("HH:mm", CultureInfo.InvariantCulture)} UTC";
+                    var place = entry.Activity.Place?.Resolve(locale, fallback);
+                    var shape = catalog.Resolve(locale, string.IsNullOrEmpty(place) ? SeatLineKey : SeatLinePlaceKey);
+                    return shape
+                        .Replace("{{activity}}", entry.Activity.Name.Resolve(locale, fallback) ?? string.Empty, StringComparison.Ordinal)
+                        .Replace("{{place}}", place ?? string.Empty, StringComparison.Ordinal)
+                        .Replace("{{from}}", Moment(entry.Seat.StartsAtUtc), StringComparison.Ordinal)
+                        .Replace(
+                            "{{to}}",
+                            entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes).ToString("HH:mm", CultureInfo.InvariantCulture),
+                            StringComparison.Ordinal);
                 }),
         ];
     }
@@ -259,13 +273,14 @@ public sealed class EventsMail(
 
     /// <summary>
     /// The staff decided a request to hand a shift over (§4.4-bis, E12): to whoever asked, with the shift, what was decided — in their
-    /// language — and the staff's note, as they wrote it.
+    /// language, and for an approval who took the shift (<paramref name="taker"/>, Carmine's answer on #268: the staff may give it to another
+    /// member than the one asked) — and the staff's note, as they wrote it.
     /// </summary>
     public Task AtcShiftTransferDecidedAsync(
         Event row,
         int vid,
         (string Callsign, DateTime FromUtc, DateTime ToUtc) shift,
-        bool approved,
+        string? taker,
         string? note,
         CancellationToken cancellationToken)
     {
@@ -274,7 +289,9 @@ public sealed class EventsMail(
         return SendAsync(EventsNotifications.AtcShiftTransferDecided, row, [vid], (data, locale) =>
         {
             data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
-            data["decision"] = catalog.Resolve(locale, approved ? TransferApprovedKey : TransferRefusedKey);
+            data["decision"] = taker is null
+                ? catalog.Resolve(locale, TransferRefusedKey)
+                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", taker, StringComparison.Ordinal);
             data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);

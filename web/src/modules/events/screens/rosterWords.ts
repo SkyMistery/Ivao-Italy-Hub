@@ -32,6 +32,11 @@ export function transferLines(row: EventAtcTransferDto, t: TFunction): string[] 
   ];
 }
 
+/** The warnings of the rules of the proposal on a member the staff choose for a request (Carmine on #268), in the roster's words. */
+export function warningLines(warnings: readonly RosterRowDto['warnings'][number][], t: TFunction): string[] {
+  return warnings.map((warning) => alert(warning, t));
+}
+
 function why(row: RosterRowDto, t: TFunction, language: string): string[] {
   if (row.state === 'Uncovered') {
     return [
