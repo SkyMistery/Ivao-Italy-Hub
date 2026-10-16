@@ -1,7 +1,4 @@
-using System.Globalization;
 using IvaoHub.Core.Auth;
-using IvaoHub.Core.Localization;
-using Microsoft.AspNetCore.Http;
 
 namespace IvaoHub.Modules.FlightOps.Agent;
 
@@ -42,33 +39,10 @@ public static class AgentContract
     public const string VersionTitleKey = "flightops:errors.agentContract";
 
     /// <summary>
-    /// The version a request speaks: 400 with the accepted ones when it says none or one the hub does not speak (Carmine, 24
-    /// September 2026) — assuming the current one would move an old agent to version 2 in silence. Every answer says the version
-    /// the hub spoke.
+    /// The version a request speaks, checked by the core (note 2026-10-06-la-versione-di-un-contratto-nel-nucleo): 400 with the
+    /// accepted ones when it says none or one the hub does not speak (Carmine, 24 September 2026) — assuming the current one would
+    /// move an old agent to version 2 in silence. Every answer says the version the hub spoke. <c>/contract</c> is left open and
+    /// writes <see cref="Current"/> itself.
     /// </summary>
-    public static async ValueTask<object?> RequireVersionAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(next);
-
-        var http = context.HttpContext;
-        var said = http.Request.Headers[Header].ToString().Trim();
-        if (!int.TryParse(said, NumberStyles.None, CultureInfo.InvariantCulture, out var version) || !Accepted.Contains(version))
-        {
-            var catalog = http.RequestServices.GetService(typeof(LocaleCatalog)) as LocaleCatalog;
-            var user = http.RequestServices.GetService(typeof(ICurrentUser)) as ICurrentUser;
-            return Results.Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: catalog?.Resolve(user?.Locale ?? string.Empty, VersionTitleKey) ?? VersionTitleKey,
-                extensions: new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["code"] = "agentContract",
-                    ["current"] = Current,
-                    ["accepted"] = Accepted,
-                });
-        }
-
-        http.Response.Headers[Header] = version.ToString(CultureInfo.InvariantCulture);
-        return await next(context);
-    }
+    public static readonly ContractVersion Version = new(Header, Current, Accepted, VersionTitleKey, "agentContract");
 }
