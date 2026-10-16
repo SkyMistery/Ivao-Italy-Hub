@@ -3834,6 +3834,115 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #24
     sue PR; da allora gira a ogni unione (sopra);
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
+### E4d — Gli eventi prendono i pezzi del nucleo
+
+**Da dove viene**: non c'era in E0. Tre fasi del nucleo unite fra l'11 e il 12 ottobre lasciavano agli eventi una riga ciascuna, che la
+regola 6 di `CLAUDE.md` §0 teneva fuori dalle loro PR: **E10m** (#252) il lettore dei nomi, `MemberNames.ReadAsync`, al posto della copia
+di `EventsPeople.NamesAsync` (la nota di E10m, §5); **E10l** (#250) il `Dialog` del nucleo, con la «X» tradotta, al posto di quello di
+Atmosphere nei due dialog del modulo (la nota di E10l, §4); **E10j** (#239) il fuso detto da ogni trigger, e `events-release` non lo diceva
+(il punto 6 della revisione della #239). La formazione ha fatto lo stesso in A13f (#258). Branch `m4/e4d-events-adopt-core`, nata
+`--no-track` da `main` a `c232448` (con E16, E11a e A13f), **senza coda**. Fase del modulo: nessuna migrazione, nessuna decisione nuova;
+una nota, perché tocca due test del nucleo (la regola di Carmine sulla #258).
+
+1. **Il lettore dei nomi**: `EventsPeople.NamesAsync` risponde `MemberNames.ReadAsync`; `EventMemberDto` e `Member` restano; in
+   `MemberNamesTests` esce la riga degli eventi.
+2. **Il trigger dice il suo fuso**: `events-release` in UTC, come `events-reminders`; un test unitario legge i trigger del modulo come li
+   costruisce l'host.
+3. **Il `Dialog` del nucleo** in `EventSlots.tsx` e `PrivateSlots.tsx`; i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx`.
+4. **Il resto che le ultime fasi del nucleo chiedono a un modulo**: solo gli usi di una riga, ovvi; gli altri nella PR, per dopo.
+
+**Test**: unità `EventsJobTriggersTests`; vitest le due schede nuove in `titlesAndEmptyLists.test.tsx` e la guardia di `Dialog.test.tsx`
+senza eccezioni; il resto com'era.
+**Fatta quando**: nessuna copia del lettore negli eventi, nessun trigger degli eventi senza fuso, nessun file di `web/src` con il
+`Dialog` di Atmosphere, e `core-guard` verde per la sua regola.
+
+**Com'è andata** (14 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`):
+
+- **Fatto**:
+  - **il lettore dei nomi** (`src/IvaoHub.Modules.Events/EventsPeople.cs`): `NamesAsync(IEnumerable<int> vids, …)` è ora una riga,
+    `MemberNames.ReadAsync(hub, vids, cancellationToken)`; resta, invece di andarsene, perché ha i suoi chiamanti nel modulo (le liste
+    dello staff, la disponibilità di E11a, le iscrizioni di E16), come `TrainingPeople.NamesAsync` in A13f. `AtcRatingsAsync`,
+    `AtcRatingAsync`, `Member` ed `EventMemberDto` restano del modulo. L'unica risposta che cambia è quella per un VID sotto uno, che
+    il lettore non nomina mai: uno stato che l'hub non scrive (la cancellazione toglie l'utente);
+  - **`MemberNamesTests`** (`tests/IvaoHub.IntegrationTests/`, del nucleo): dal test gemello esce il confronto con `EventsPeople` (il
+    test si chiama ora `TheReaderAnswersWhatTheToursAnswer`), da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` la riga degli eventi
+    con il suo commento; il riassunto della classe dice il passaggio. Resta `EventsPeople.Member` in
+    `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay`;
+  - **il fuso di `events-release`** (`EventsModule.cs`): `.WithCronSchedule(EventReleaseJob.Cron, schedule =>
+    schedule.InTimeZone(TimeZoneInfo.Utc))`, con il commento della nota del 28 settembre, §7; il nome del trigger è
+    `EventReleaseJob.TriggerName` (`events-release-quarterly`, lo stesso di prima), come `TrainingRemindersJob.TriggerName` di A13f;
+  - **`tests/IvaoHub.UnitTests/EventsJobTriggersTests.cs`** (2, nuovo): i due trigger del modulo come li costruisce l'host, per una
+    divisione nel fuso di Roma, dicono UTC, il loro cron e il loro job; copiato da `TrainingJobTriggersTests`;
+  - **i due dialog** (`EventSlots.tsx`, il dialog di uno slot; `PrivateSlots.tsx`, quello dell'ora privata): importano `Dialog` da
+    `../../../shared/ui` invece che da Atmosphere; le props sono le stesse, e nessuno dei due passava `topRightCloseButton`;
+  - **`web/src/shared/ui/Dialog.test.tsx`** (del nucleo, di E10l): la lista `NOT_MOVED_YET` se ne va, e la guardia chiede che nessun file
+    di `web/src` importi da Atmosphere `Dialog`, `DialogTopRightClose`, `Sheet` o `SheetContent`;
+  - **le schede «Domande» e «Iscrizioni» di E16** (`screens/questions.tsx`, `screens/registrations.tsx`), vuote, dicevano ancora la frase
+    del nucleo su quello che crea un dipartimento, che E10k ha reso sostituibile ed E4c ha tolto alle altre liste del modulo:
+    `emptyDescription` con due chiavi nuove, parole che descrivono e non invitano, vere anche per chi legge e basta (la prima scelta di
+    dalberone in E4c):
+    - `questions.empty`: «Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.» — «The questions a member
+      answers to register for the event will show up here.»;
+    - `registrations.empty`: «Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.» — «The members'
+      registrations for the event will show up here, with their answers.»;
+  - **i test**: tre in più in `titlesAndEmptyLists.test.tsx` (le due schede nelle due lingue, e chi legge soltanto le domande);
+  - **la nota** `decisions/2026-10-14-gli-eventi-sul-lettore-dei-nomi.md`, **decisa** dalla regola di Carmine sulla #258.
+- **Cercato e lasciato** (il punto 4):
+  - **E10k** (`emptyDescription`, `PageMetadata`): ogni lista generata del modulo ha ora la sua frase (sopra); `/events`, la pagina di un
+    evento e `/events/mine` dicono il loro titolo da E4c, e l'iscrizione di E16 e la disponibilità di E11a stanno dentro la pagina
+    dell'evento; le schermate dello staff non dicono un titolo loro, come quelle del nucleo (nessuna schermata di `/staff` monta
+    `PageMetadata`);
+  - **E10o** (`.meta({ label })`): lo usa già il form del membro di E16 (`registrationForm.ts`), costruito dalle domande; gli altri form
+    del modulo sono fissi e dicono i loro campi con `labels`, come vuole la nota di E10o. Niente da prendere;
+  - **E10p** (#261, le ore a 24, un formatter solo): **non è unita** il 14 ottobre: saltata, come chiedeva il prompt;
+  - per dopo, nella PR: la frase della lista vuota delle postazioni di E11a (`atc.positions.empty`, «Nessuna postazione ancora: aprine
+    una…») invita, e chi tiene l'ATC in sola lettura non ha il bottone (la regola di E4c); da riscrivere con E11b o in una fase sua.
+- **Dopo l'unione di `main` a `e041bb04`** (16 ottobre 2026, `d7670da`): il revisore ha trovato la PR approvabile e, unita E10q (#265, il
+  Pkcs 10.0.13 e la versione 0.6.8, che rimette in piedi il `dotnet restore` della CI), ha chiesto `main` perché `build-test` giri ([il
+  suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6215578055)). In conflitto solo l'intestazione e la
+  cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10q sotto. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache`
+  pulito e `dotnet list IvaoHub.sln package --vulnerable --include-transitive` senza pacchetti vulnerabili; Release 0 avvisi; unità
+  **1279/1279**; integrazione intera **597/597** (16,2 minuti); `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851 chiavi),
+  `build` e `gen:api` (senza differenze) verdi; `pnpm test` **769/769** al secondo giro — al primo, con l'integrazione accanto,
+  `src/features/content/BodyEditor.test.tsx` («undo gives the body back, and says so», del nucleo) è andato oltre i suoi 5 secondi, poi
+  6/6 da solo e tutto verde da capo; la smoke **181/181** al primo giro (1,5 minuti); `pnpm e2e:full` sulla 5145, `ivaohub_e2e_e4d`
+  ricreato, **63/63** al primo giro (14,5 minuti); le regole di `core-guard` contro `e041bb04`: gli stessi diciotto file, verde per la
+  sua regola.
+- **Dopo l'unione di `main` a `3b8d7d79`** (16 ottobre 2026, `9aa5ec5`): unita E10p (#261, le ore del nucleo in 24 con `formatMoment`),
+  il revisore ha chiesto una coda sola, **#263 → #262 → #268**, con questa PR in fondo ([il suo
+  commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)). In conflitto di nuovo solo l'intestazione e
+  la cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10p sotto. L'unione porta documenti e il formattatore di E10p (`useMoment.ts`,
+  `SchemaForm.tsx`, `DataList.tsx`, `MessageThread.tsx`, una pagina dei contatti), nessun C#: i due dialog scrivono le ore con
+  `useMoment` e le schede con il `DataList` del nucleo, e l'unico `Intl.DateTimeFormat` del modulo (`dayIn` in `bookingTimes.ts`)
+  scrive solo un giorno. Rifatti: Release 0 avvisi, unità **1279/1279**; `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851
+  chiavi), `build` e `gen:api` (senza differenze) verdi; `pnpm test` **775/775** in 107 file, da solo (con i 6 di E10p); la smoke
+  **181/181** al primo giro (1,5 minuti); le regole di `core-guard` contro `3b8d7d79`: verde per la sua regola. **Non rifatte**, come
+  chiesto dalla sessione che coordina perché l'unione non tocca il server: l'integrazione e `e2e:full` (l'ultimo giro, 597/597 e
+  63/63, è quello dopo `e041bb04`, sopra).
+- **Verificato, in locale** (14 ottobre 2026, sull'albero della PR, `main` a `c232448`):
+  - `dotnet build IvaoHub.sln --configuration Release` 0 avvisi; unità **1279/1279**; la suite di integrazione intera, senza filtro,
+    **597/597** (12,4 minuti), `MemberNamesTests` compresa;
+  - **la prova al contrario** del trigger: con `.WithCronSchedule(EventReleaseJob.Cron)` senza fuso, `TheReleaseRunsInUtc` cade
+    («Expected: "UTC" — Actual: "W. Europe Standard Time"»), l'altro passa; rimesso il fuso, 2/2. ⚠️ Su una macchina il cui fuso locale
+    si chiama `UTC` passerebbe anche senza, come `TrainingJobTriggersTests`;
+  - **la prova al contrario** della guardia: con `EventSlots.tsx` e `PrivateSlots.tsx` di `main`, «no screen draws an «X» of
+    Atmosphere’s» cade e nomina i due file (4 su 5 passano); rimessi i file della fase, 5/5;
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (851 chiavi) verdi; `pnpm i18n:sync` copia le due chiavi in
+    `locales/`; `pnpm test` **769/769** in 106 file; `pnpm build` verde; `pnpm gen:api` senza differenze;
+  - la smoke `pnpm -C web exec playwright test --workers=2` **181/181** al primo giro (1,2 minuti), con il lucchetto della 4173;
+  - `pnpm e2e:full` sulla porta 5145, `ivaohub_e2e_e4d` ricreato, con il lucchetto di Mailpit e dopo l'integrazione: **63/63** al primo
+    giro (13,9 minuti);
+  - **i due dialog sul banco**, con uno spec usa e getta (uno slot pubblico e gli slot privati generati su un RFO del banco, la pagina
+    pubblicata aperta dal pilota del banco nelle due lingue, l'`aria-label` letto dal DOM): la «X» del dialog di uno slot e di quello
+    dell'ora privata dice **«Chiudi»** in italiano e **«Close»** in inglese, li chiude, e nessun «Close» resta nel testo della pagina
+    italiana. Lo spec è uscito dal worktree, l'evento cancellato;
+  - le regole di `core-guard` rifatte in PowerShell (con `-cmatch`) contro `main` dalla base `c232448`: diciotto file, nessuno del
+    maintainer; del nucleo `MemberNamesTests.cs` e `Dialog.test.tsx`, giustificati dalla nota nuova: verde per la sua regola.
+- **Non verificato**:
+  - la CI, che la PR legge una volta dopo il push;
+  - i dialog in un Chrome vero, in un browser diverso da Chromium e con un lettore di schermo (lo spec li ha letti in Chromium);
+  - l'unione con E11b (#262), aperta accanto: è il passo della coda del master.
+
 ### E10m — Nucleo: un solo lettore dei nomi
 
 **Da dove viene**: non c'era in E0. L'ha portata la revisione di E6b (#240): `EventsPeople` era il quarto lettore dei nomi per VID, dopo
@@ -4062,6 +4171,84 @@ richiesta della sessione che coordina):
   - l'integrazione .NET prima del merge (nessun file del server cambia): fatta dopo, sul codice unito.
 
 [a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
+
+### E10p — Nucleo: le ore in 24, in un posto solo
+
+**Da dove viene**: non c'era in E0. Sul banco di E11a (13 ottobre) una posizione alle 18:00Z, letta in inglese, diceva `18:00` nel campo
+e «7:00 PM» sotto, e «6:00 PM UTC» nella lista: tre formattatori del nucleo lasciavano le ore alla lingua, mentre `useMoment` le scrive
+in 24. dalberone l'ha segnalato a Carmine sull'issue #260, e **Carmine ha deciso** ([la sua risposta][a260p], data in chat al master e
+pubblicata su sua istruzione): **sì**, una piccola fase del nucleo con la sua nota, e **la seconda via** — i formattatori usano
+`useMoment` o un formattatore condiviso, così la regola vive in un posto solo. Branch `m4/e10p-times-24-hour`, da `main` a `cea6244`.
+**PR del nucleo** con la sua nota (caso b), senza coda: tocca solo `web/src/shared` e una pagina del nucleo. Niente in C#.
+
+1. Un solo formattatore di istanti, quello di `useMoment`, anche per chi non è un componente.
+2. I formattatori del nucleo che scrivono un'ora ci passano sopra, ognuno con il suo aspetto.
+
+**Test**: vitest del formattatore in inglese (`19:00`) e di ogni posto in inglese, provati sul codice di oggi.
+**Fatta quando**: nessuna ora del nucleo si scrive a 12 ore in inglese, e le 24 ore sono una riga sola.
+
+**Com'è andata** (13 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda):
+
+- **Fatto** (nota nuova `2026-10-13-le-ore-in-24`, **decisa**, con i link alle due risposte di Carmine):
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, invariato, con la lingua
+    passata da chi chiama; `useMoment` lo chiama, e il tipo delle opzioni è `MomentOptions`;
+  - **`localTime`** (`SchemaForm.tsx`) e **`DateCell`** (`DataList.tsx`) con `formatMoment` e `dateStyle: 'short'`; **`MessageThread`**
+    con `useMoment` e il fuso della divisione;
+  - **una quarta pagina**, trovata cercando in tutto `web/src` un `Intl.DateTimeFormat` con `timeStyle` e senza `hour12`: la data di un
+    messaggio in `routes/_staff/staff.$dept.contacts.$id.tsx`, con `useMoment`; Carmine l'ha voluta in E10p ([la seconda
+    risposta][b260p]). Gli altri `Intl.DateTimeFormat` di `web/src` scrivono solo giorni (`CalendarView`, `PublicEntryScreen`,
+    `blocks.tsx`, `bookingTimes.ts` degli eventi): **nessuna fase di modulo dopo questa**;
+  - **i test** (vitest, 6): `web/src/shared/i18n/twentyFourHours.test.tsx`;
+  - `docs/UI-GUIDELINES.md`, «Times»: `formatMoment` è il solo posto, `useMoment` per un componente.
+- **Deviazione, con la risposta di Carmine**: due test suoi fissavano le 12 ore in inglese, e la fase si è fermata prima del codice per
+  chiederglielo ([la domanda][q260p]). Ha risposto che la PR **può cambiarne i valori attesi, e nient'altro** ([la seconda
+  risposta][b260p]): `web/e2e/back-office.spec.ts:281` da `6/1/26, 2:00 PM Europe/Rome` a `6/1/26, 14:00 Europe/Rome`;
+  `web/src/shared/forms/extensions.test.tsx:168–169` da `7:00` / non `6:00` a `19:00` / non `18:00`, con i commenti accanto.
+- **Scelte della fase, scritte nella nota** (§2–3): `formatMoment` nel file di `useMoment` invece di due componenti nuovi; `hour12: false`
+  com'era, non `hourCycle`; `DateCell` non disegna niente per un valore che non è un istante (prima lanciava un `RangeError`).
+- **Verificato, in locale** (13 ottobre 2026, `main` a `cea6244`):
+  - **la prova al contrario**: con i quattro file dei formattatori rimessi come su `main` (il formattatore e il test nuovo tenuti)
+    cadono 3 casi su 6, i tre posti; i tre che passano sono quelli del formattatore; rimessi i file, 6/6;
+  - prima di cambiare i test di Carmine: `pnpm test` 758/759, l'unico rosso `extensions.test.tsx:168`; la smoke 180/181, l'unico rosso
+    `back-office.spec.ts:281`, che riceveva esattamente `6/1/26, 14:00 Europe/Rome`;
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (839 chiavi) verdi; `pnpm test` **759/759** in 104 file
+    (con `--maxWorkers=4`: con i worker di default la macchina, con le altre sessioni, finiva la memoria); `pnpm build` verde; `pnpm
+    gen:api` senza differenze;
+  - `dotnet build IvaoHub.sln -c Release` 0 avvisi; unità **1269/1269**;
+  - la smoke (`playwright test --workers=2`) **181/181** (1,1 minuti), con i valori nuovi;
+  - `pnpm e2e:full` sulla porta 5144 con `ivaohub_e2e_e10p` nuovo: **61/61** al primo giro (11,9 minuti);
+  - le regole di `core-guard` rifatte in PowerShell sul tratto da `cea6244`: nessun file del maintainer; nove del nucleo (i quattro
+    formattatori, la pagina dei contatti compresa, `useMoment.ts`, il test nuovo, i due test di Carmine, `docs/UI-GUIDELINES.md`) con la
+    nota nuova — passa.
+- **Rivista** ([approvabile, niente da correggere][r261p], 14 ottobre, con una correzione subito dopo: il test nuovo copre `formatMoment`
+  e tre dei quattro posti, non la pagina dei contatti, che passa da `useMoment`).
+- **Dopo aver unito `main` a `c232448`** (14 ottobre, su richiesta del revisore: A13f, E16, E11a; un solo conflitto, la cima di
+  `HANDOFF-M4.md`, con E10p sopra e E11a, E16 sotto): `git diff origin/main...HEAD` ancora dei soli dodici file della fase; una nuova
+  ricerca in `web/src` e `web/e2e` dopo il codice arrivato non trova un'ora a 12 ore né un test che la legga. Rifatti: `dotnet build
+  IvaoHub.sln -c Release` 0 avvisi, unità **1277/1277**; `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:check` (851
+  chiavi) e `pnpm build` verdi, `pnpm gen:api` senza differenze; `pnpm test` (`--maxWorkers=4`) **772/772** in 107 file; la smoke
+  **181/181** (1,0 minuti); `core-guard` da `c232448`: nove file del nucleo con la nota nuova — passa. `e2e:full` non rifatta: il
+  merge ha toccato solo un documento della fase.
+- **Dopo aver unito `main` a `e041bb0`** (16 ottobre, su richiesta del revisore, perché `build-test` faccia il restore: E10q, il Pkcs
+  10.0.13; due conflitti, solo documenti: la cima di `HANDOFF-M4.md`, con E10p sopra e E10q sotto, e qui, dove E10p e E10q seguono
+  E10o): `git diff origin/main...HEAD` ancora dei soli dodici file della fase. Rifatti: `dotnet restore IvaoHub.sln --force
+  --no-http-cache` verde e `dotnet list … package --vulnerable --include-transitive` senza pacchetti vulnerabili; `dotnet build -c
+  Release` 0 avvisi, unità **1277/1277**; `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:check` e `pnpm build` verdi,
+  `pnpm gen:api` senza differenze; `pnpm test` (`--maxWorkers=4`) prima 769/772 — tre casi di `features/content/BodyEditor.test.tsx`
+  (del nucleo, non toccato dalla fase) oltre i 5 secondi sotto carico —, il file da solo 6/6, poi la suite intera **772/772**; la smoke
+  **181/181** (1,4 minuti); `core-guard` da `e041bb0` — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - l'integrazione .NET (nessun file del server cambia);
+  - la data della pagina dei contatti in inglese: la pagina non ha un test vitest suo (è una rotta), passa da `useMoment`, che il test
+    nuovo prova; `full/contacts.spec.ts` (del nucleo) la apre in `e2e:full`, ma non legge la data;
+  - le mail del server scrivono le ore in .NET, fuori da questa fase: quelle lette (`TrainingMail`, `EventsMail`, i ban dei tour)
+    usano già `HH:mm`.
+
+[a260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089
+[q260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146754988
+[b260p]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613
+[r261p]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668
 
 ### E10q — Nucleo: il Pkcs corretto
 

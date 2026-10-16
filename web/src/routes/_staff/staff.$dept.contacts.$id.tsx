@@ -8,6 +8,7 @@ import { contactQuery, contactThreadQuery, type ContactDetailDto } from '../../f
 import { contactStatusSchema, type ContactStatusFormValues } from '../../features/contacts/schema';
 import { deptParam } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
+import { useMoment } from '../../shared/i18n/useMoment';
 import { MessageThread, PageShell } from '../../shared/ui';
 
 /**
@@ -27,7 +28,7 @@ export const Route = createFileRoute('/_staff/staff/$dept/contacts/$id')({
 });
 
 function ContactDetail() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { bootstrap } = Route.useRouteContext();
   const { dept, id } = Route.useParams();
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ function ContactDetail() {
 
   const update = useUpdateContactStatus(Number(id));
   const reply = useReplyContact(Number(id));
+  const moment = useMoment();
 
   if (message === undefined || thread === undefined) {
     // The loader has already put it in the cache, so this is the compiler asking rather than a
@@ -55,12 +57,7 @@ function ContactDetail() {
     backToList();
   };
 
-  const sentAt = new Date(message.createdAt);
-  const formatted = new Intl.DateTimeFormat(i18n.language, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: bootstrap.division.timezone,
-  }).format(sentAt);
+  const formatted = moment(message.createdAt, { timeZone: bootstrap.division.timezone });
 
   return (
     <PageShell
