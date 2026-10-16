@@ -3,7 +3,6 @@ using System.Security.Claims;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Services;
-using IvaoHub.Modules.Events.After;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Authorization;
@@ -34,8 +33,9 @@ public sealed record UnflownExcuse(string? Note);
 /// <item><b>How a shift went</b>, with <c>EventAtc.Edit</c> on the shift — denied to its controller, the super administrator included
 /// (<c>DeniedToStakeholder</c>), and on its position's FIR for the staff of a FIR —: on an event over and not cancelled, an unknown shift or a
 /// no-show the check proposed becomes attended, a no-show or excused; a no-show becomes excused only, at any time — the no-show taken away
-/// —; attended and excused are final. To excuse, a note. Under the lock of the event's row, the one the check after the event writes the
-/// statistics under, so the decision and the statistics are one save.</item>
+/// —; attended and excused are final. To excuse, a note. Under the lock of the event's row, the one the check after the event takes. The
+/// statistics of the event are not written here: they are a row of the events' area, which the staff of the ATC do not write — whoever
+/// writes the event presses «Recalculate» (E13a).</item>
 /// <item><b>Taking a booking not flown out of its pilot's record</b>, with <c>EventBookings.Edit</c> on the booking: one the check looked at and
 /// found no flight for, once, with a note. The booking carries <c>[WithdrawnByStakeholder]</c> because it carries no decision of the staff
 /// while its pilot may withdraw it (Carmine's rule on #232, point 6): this one falls after the check, which comes after the event's end and
@@ -45,7 +45,6 @@ public sealed record UnflownExcuse(string? Note);
 public sealed class RegisterDecisions(
     EventsDbContext database,
     EventChildren children,
-    EventStatistics statistics,
     IAuthorizationService authorization,
     ICurrentUser currentUser,
     IClock clock)
@@ -160,14 +159,6 @@ public sealed class RegisterDecisions(
         try
         {
             await database.SaveChangesAsync(cancellationToken);
-
-            // The numbers of an event already checked follow its shifts (reading 1): a no-show excused is no longer one.
-            if (row.AfterDoneAt is not null)
-            {
-                await statistics.WriteAsync(row, now, cancellationToken);
-                await database.SaveChangesAsync(cancellationToken);
-            }
-
             await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)

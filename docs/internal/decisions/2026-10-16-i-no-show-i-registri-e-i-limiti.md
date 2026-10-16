@@ -32,9 +32,9 @@ blocco della coda.
    non ne nomina, e il controllore legge il suo registro. **Il permesso** è `EventAtc.Edit` chiesto all'unico handler **sul turno**, nella
    cura dell'evento com'è ora: negato al controllore della riga, il superadmin compreso (`DeniedToStakeholder`, c'è da E2), e con il FIR
    della postazione per lo staff di un FIR. Due decisioni insieme sullo stesso turno, o una decisione e il giro di `events-after`, si
-   incontrano sulla `row_version` del turno: la seconda riceve **409** «leggi di nuovo». **Le statistiche** dell'evento, se le verifiche
-   sono finite (`after_done_at`), si riscrivono nello stesso salvataggio con la funzione di E13a (`EventStatistics`), così no-show e
-   giustificati tornano senza «Ricalcola».
+   incontrano sulla `row_version` del turno: la seconda riceve **409** «leggi di nuovo». **Le statistiche** dell'evento il verbo non le
+   scrive: sono una riga dell'area `Events`, che l'AOD e lo staff dei FIR non scrivono (il guardiano lo rifiuta); dopo una decisione chi
+   scrive l'evento preme «Ricalcola» di E13a, come la sua consegna diceva.
 2. **Togliere un no-show** è la stessa chiamata con `Excused` su un turno `NoShow`, **in qualunque momento** dopo l'evento, con la nota
    obbligatoria; resta tolto (lettura 1: `Excused` è definitivo). Una giustificazione decisa dopo l'evento è il «giustificato» del design
    §4.5; un turno ceduto e approvato prima non è mai un no-show (E12).
@@ -94,6 +94,12 @@ blocco della coda.
     `events.atcCoverage` le conta di E12) — ognuna contata solo se l'unico handler dà al lettore `EventAtc.Edit` sulla riga, quindi mai le
     proprie. Il link porta alla pagina dell'ATC dell'evento. Nessuna proprietà del blocco. Un visitatore riceve `signedIn: false`. I PIREP
     da validare entrano con E14a.
+
+### Che cosa tocca del nucleo
+
+Nessun meccanismo. Due conteggi che un blocco nuovo alza di uno, come ogni fase che ne porta uno (`CONTRIBUTING.md`):
+`web/src/features/admin/uiKit.test.ts` (i blocchi della galleria, 45 → 46) e `tests/IvaoHub.IntegrationTests/DataBlockEndToEndTests.cs`
+(i blocchi Data, 20 → 21); e `web/src/shared/api/schema.d.ts`, generato.
 
 ## 3. Alternative scartate
 

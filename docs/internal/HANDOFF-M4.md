@@ -322,6 +322,38 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E13b (16 ottobre 2026, branch `m4/e13b-registers`; nata dalla testa di E13a `8dd3092f`, in coda dopo la #278 di E13a, con la sua testa nuova `f5333cf` unita)
+
+- **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
+  `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
+  nota nuova, `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta**, con tre scelte):
+  - **Le decisioni dello staff** (`Registers/RegisterDecisions.cs`): l'esito di un turno, `POST /api/events/atc/shifts/{id}/attendance`
+    (`EventAtc.Edit` sul turno, mai sul proprio: `DeniedToStakeholder`), e «togli» di una prenotazione non volata,
+    `POST /api/events/bookings/{id}/excuse` (`EventBookings.Edit` sulla prenotazione). Le transizioni in `RegisterDecisions.Allowed`.
+  - **I registri**: `Registers/ControllerRegister.cs` (i conti per controllore, la stessa funzione che dà la penalità alla proposta del roster)
+    e `Registers/PilotRegister.cs` (le non volate che contano, i limiti di un pilota in un evento, «fino a quando»); tre letture scritte a mano
+    in `Registers/RegisterEndpoints.cs`: `GET /api/events/atc/register`, `GET /api/events/bookings/register`, `GET /api/events/mine/record`.
+  - **I limiti** (`Registers/BookingLimits.cs`, puri) nei tre verbi di `PilotBookings`, sotto il blocco del pilota, dopo la compatibilità.
+  - **Il blocco** `events.staffQueue` (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`); le cinque impostazioni; i tre limiti
+    dell'evento nel suo form.
+  - **Le pagine**: `/staff/events/controllers[/$vid]` e `/staff/events/pilots[/$vid]` (`screens/registers.tsx`), la sezione «Esiti» nell'ATC
+    di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti dove una prenotazione è rifiutata
+    (`screens/limits.ts`).
+  - **I test**: integrazione `EventsRegistersTests` (4; VID **761200–761206**, slug `evt-test-e13b-…`); unità `EventsRegistersTests` (7); il
+    giro `full/events-registers.spec.ts` (slug `evt-test-e2e-e13b-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14a** (i PIREP): `events.staffQueue` conta per evento; i PIREP da validare sono un numero in più di `StaffQueueEventDto` e un ciclo in
+    più di `StaffQueueProvider`, con `EventReports.Edit` chiesto all'unico handler sulla riga, come i turni.
+  - **E15b** (la conservazione dei piloti): il registro dei piloti conta le prenotazioni di eventi finiti negli ultimi `pilotRetentionMonths`;
+    quando la conservazione le cancella escono anche dal registro, nello stesso momento. `UnflownExcusedNote` è già `[ErasedWith]`.
+  - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, raccomandata, aspetta Carmine): lo staff non toglie
+    la propria prenotazione, iscrizione o posto, né la propria voce del registro. Se Carmine sceglie (B), è una riga del catalogo e il caso
+    del test.
+  - ⚠️ **Le statistiche dopo una decisione**: il verbo non le scrive (l'area `Events`, che l'AOD non scrive): «Ricalcola» di E13a.
+  - ⚠️ **Il banco non lancia un job**: un no-show proposto non si fa dall'API; lo provano `EventsRegistersTests` e il banco della fase con
+    righe scritte in SQL.
+  - ⚠️ **I VID di prova**: E13b ha usato **761200–761206** della fascia 761200–761229.
+
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E13a, «Com'è andata»; **una migrazione**, `AddAfterTheEventColumns` (`covered_by_vid` e `flown_unbooked_airports`), l'ultima del contesto dopo
