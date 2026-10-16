@@ -1224,11 +1224,11 @@
       "tourTitle": "Tour",
       "legNumber": "Leg",
       "route": "Route",
-      "pilotName": "Pilot",
+      "pilot": "Pilot",
       "takeoffAt": "Flown",
       "queuedAt": "In the queue since",
       "status": "Status",
-      "assignedToName": "In the hands of",
+      "assignedTo": "In the hands of",
       "checks": "Checks",
       "flightRules": "Flight rules",
       "outcome": "Outcome",
@@ -1417,7 +1417,7 @@
     "fields": {
       "tourTitle": "Tour",
       "leg": "Leg",
-      "pilotName": "Pilot",
+      "pilot": "Pilot",
       "body": "What the pilot wrote",
       "status": "Status",
       "createdAt": "Reported",
@@ -1446,8 +1446,7 @@
     "next": "next: leg {{number}} {{from}} → {{to}}"
   },
   "people": {
-    "year": "Year",
-    "erased": "Deleted person"
+    "year": "Year"
   },
   "erasure": {
     "decided": "Decided reports, kept in the record without the pilot",
@@ -1545,7 +1544,7 @@
     "toPilot": "The pilot",
     "forGood": "for good",
     "fields": {
-      "pilotName": "Pilot",
+      "pilot": "Pilot",
       "vid": "VID",
       "tourTitle": "Tour",
       "tourId": "Tour",

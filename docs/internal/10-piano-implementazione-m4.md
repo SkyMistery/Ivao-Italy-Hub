@@ -4386,6 +4386,13 @@ contrario li fa cadere.
   - la CI (la dice la PR);
   - `e2e:full`: nessuna schermata e nessun chiamante nel modulo;
   - l'uso vero, in `events-after`, e una sera vera sulla rete: sono di E13a.
+- **Dopo la revisione** (16 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r277t]; Carmine ha detto [sì
+  alla riga di `CLAUDE.md` §2][ok277t] che la nota propone, e la scrive il master con il piano 1.35. Il punto piccolo è fatto: il
+  riassunto di `Connection` dice che `null` non chiede nessun tipo, e tornano anche gli osservatori. Unito `main` a `b5d3fb9`
+  (E12, #268), che rendeva la PR in conflitto, con i blocchi di E10t in cima; rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1303/1303**, integrazione intera da sola **621/621** al primo giro (15 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**) verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `b5d3fb9b`: passa.
+
+[r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
+[ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
 ### E11a — Postazioni e disponibilità
 

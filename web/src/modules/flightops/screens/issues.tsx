@@ -9,12 +9,11 @@ import { SchemaForm } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
-import { NotFound, PageShell } from '../../../shared/ui';
+import { NotFound, PageShell, personName } from '../../../shared/ui';
 import {
   legIssueQuery,
   legIssueToFormValues,
   legIssuesListQuery,
-  memberName,
   useSaveLegIssue,
   type LegIssueDto,
   type LegIssueRow,
@@ -35,7 +34,7 @@ export const ISSUES = '/staff/tours/issues';
 const columns: readonly ColumnSpec<LegIssueRow>[] = [
   col.localized('tourTitle'),
   col.text('leg'),
-  col.text('pilotName'),
+  col.person('pilot'),
   col.text('body'),
   col.badge('status', 'flightops:issues'),
   col.date('createdAt', { sortable: true }),
@@ -136,8 +135,8 @@ function LegIssueScreen({ issue }: { issue: LegIssueDto }) {
             </dd>
           </div>
           <div className="flex flex-col">
-            <dt className="text-muted-foreground">{t('flightops:issues.fields.pilotName')}</dt>
-            <dd>{memberName(issue.pilot, t)}</dd>
+            <dt className="text-muted-foreground">{t('flightops:issues.fields.pilot')}</dt>
+            <dd>{personName(issue.pilot, t)}</dd>
           </div>
           <div className="flex flex-col">
             <dt className="text-muted-foreground">{t('flightops:issues.fields.createdAt')}</dt>
