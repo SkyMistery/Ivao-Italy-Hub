@@ -564,7 +564,7 @@
       "limited": "You did not fly {{count}} of the slots you booked: until {{date}} you book at most {{perWindow}} slots every {{hours}} hours of an event, and {{perEvent}} in an event.",
       "toRecord": "Your record",
       "excused": "Taken out",
-      "shifts": "{{attended}} attended, {{noShows}} no-shows, {{excused}} excused. Penalty {{penalty}}."
+      "shifts": "Attended {{attended}} · no-shows {{noShows}} · excused {{excused}} · penalty {{penalty}}"
     }
   },
   "bookings": {
@@ -1349,7 +1349,7 @@
       "description": "Every controller with a shift of an event over: attended, no-shows, excused, still to decide, and the penalty the roster weighs them with. A controller opens on their shifts, where the staff decide them.",
       "empty": "The controllers with a shift of an event over will show up here.",
       "nothing": "No shift of an event over.",
-      "counts": "{{attended}} attended, {{noShows}} no-shows, {{excused}} excused, {{toDecide}} to decide. Penalty {{penalty}}.",
+      "counts": "Attended {{attended}} · no-shows {{noShows}} · excused {{excused}} · to decide {{toDecide}} · penalty {{penalty}}",
       "fields": {
         "controller": "Controller",
         "attended": "Attended",
@@ -1364,8 +1364,8 @@
       "description": "Every pilot with a booking the check after the event found not flown, in the months the bookings are kept: the ones that count, the ones taken out, and whether they book with the limits. A pilot opens on their bookings, where the staff take one out of the record.",
       "empty": "The pilots with a booking not flown will show up here.",
       "nothing": "No booking not flown in the record.",
-      "counts": "{{counted}} not flown count, {{excused}} taken out.",
-      "countsLimited": "{{counted}} not flown count, {{excused}} taken out. Books with the limits until {{date}}.",
+      "counts": "Not flown and counting {{counted}} · taken out {{excused}}",
+      "countsLimited": "Not flown and counting {{counted}} · taken out {{excused}} · books with the limits until {{date}}",
       "fields": {
         "pilot": "Pilot",
         "counted": "Count",

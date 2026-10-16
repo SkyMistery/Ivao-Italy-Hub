@@ -98,32 +98,36 @@ export function ControllerRegisterPage() {
     listSearchSchema.parse({ sort: 'fromUtc', dir: 'desc' }),
   );
 
+  // The counts in plain sight above the shifts: under a breadcrumb the page's description is only the heading's title.
+  const counts =
+    row === undefined
+      ? t('events:registers.controllers.nothing')
+      : t('events:registers.controllers.counts', {
+          attended: row.attended,
+          noShows: row.noShows,
+          excused: row.excused,
+          toDecide: row.toDecide,
+          penalty: row.penalty,
+        });
+
   return (
     <PageShell
       title={name}
-      description={
-        row === undefined
-          ? t('events:registers.controllers.nothing')
-          : t('events:registers.controllers.counts', {
-              attended: row.attended,
-              noShows: row.noShows,
-              excused: row.excused,
-              toDecide: row.toDecide,
-              penalty: row.penalty,
-            })
-      }
       breadcrumb={[
         { label: t('events:nav.section') },
         { label: t('events:registers.controllers.title'), to: CONTROLLERS },
         { label: name },
       ]}
     >
-      <ShiftDecisions
-        query={shiftRowsQuery({ controllerVid: vid }, search)}
-        search={search}
-        onSearchChange={setSearch}
-        withEvent
-      />
+      <div className="flex flex-col gap-4">
+        <p className="text-sm">{counts}</p>
+        <ShiftDecisions
+          query={shiftRowsQuery({ controllerVid: vid }, search)}
+          search={search}
+          onSearchChange={setSearch}
+          withEvent
+        />
+      </div>
     </PageShell>
   );
 }
@@ -193,26 +197,28 @@ export function PilotRegisterPage() {
   const name = row === undefined ? String(vid) : personName(row.pilot, t);
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));
 
+  // The counts in plain sight above the bookings, as the controller's page has them.
+  const counts =
+    row === undefined
+      ? t('events:registers.pilots.nothing')
+      : row.limitedUntil === null
+        ? t('events:registers.pilots.counts', { counted: row.counted, excused: row.excused })
+        : t('events:registers.pilots.countsLimited', {
+            counted: row.counted,
+            excused: row.excused,
+            date: moment(row.limitedUntil),
+          });
+
   return (
     <PageShell
       title={name}
-      description={
-        row === undefined
-          ? t('events:registers.pilots.nothing')
-          : row.limitedUntil === null
-            ? t('events:registers.pilots.counts', { counted: row.counted, excused: row.excused })
-            : t('events:registers.pilots.countsLimited', {
-                counted: row.counted,
-                excused: row.excused,
-                date: moment(row.limitedUntil),
-              })
-      }
       breadcrumb={[
         { label: t('events:nav.section') },
         { label: t('events:registers.pilots.title'), to: PILOTS },
         { label: name },
       ]}
     >
+      <p className="mb-4 text-sm">{counts}</p>
       <DataList
         columns={pilotBookingColumns}
         query={pilotBookingsQuery(vid, search)}

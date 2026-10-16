@@ -564,7 +564,7 @@
       "limited": "Non hai volato {{count}} degli slot che hai prenotato: fino al {{date}} prenoti al massimo {{perWindow}} slot ogni {{hours}} ore di un evento, e {{perEvent}} in un evento.",
       "toRecord": "Il tuo registro",
       "excused": "Tolta",
-      "shifts": "{{attended}} presenti, {{noShows}} no-show, {{excused}} giustificati. Penalità {{penalty}}."
+      "shifts": "Presenti {{attended}} · no-show {{noShows}} · giustificati {{excused}} · penalità {{penalty}}"
     }
   },
   "bookings": {
@@ -1349,7 +1349,7 @@
       "description": "Ogni controllore con un turno di un evento finito: presenti, no-show, giustificati, da decidere, e la penalità con cui lo pesa il roster. Un controllore si apre sui suoi turni, dove lo staff li decide.",
       "empty": "Qui compaiono i controllori con un turno di un evento finito.",
       "nothing": "Nessun turno di un evento finito.",
-      "counts": "{{attended}} presenti, {{noShows}} no-show, {{excused}} giustificati, {{toDecide}} da decidere. Penalità {{penalty}}.",
+      "counts": "Presenti {{attended}} · no-show {{noShows}} · giustificati {{excused}} · da decidere {{toDecide}} · penalità {{penalty}}",
       "fields": {
         "controller": "Controllore",
         "attended": "Presenti",
@@ -1364,8 +1364,8 @@
       "description": "Ogni pilota con una prenotazione che la verifica dopo l'evento ha trovato non volata, nei mesi in cui le prenotazioni si tengono: quelle che contano, quelle tolte, e se prenota con i limiti. Un pilota si apre sulle sue prenotazioni, dove lo staff ne toglie una dal registro.",
       "empty": "Qui compaiono i piloti con una prenotazione non volata.",
       "nothing": "Nessuna prenotazione non volata nel registro.",
-      "counts": "{{counted}} non volate contano, {{excused}} tolte.",
-      "countsLimited": "{{counted}} non volate contano, {{excused}} tolte. Prenota con i limiti fino al {{date}}.",
+      "counts": "Non volate che contano {{counted}} · tolte {{excused}}",
+      "countsLimited": "Non volate che contano {{counted}} · tolte {{excused}} · prenota con i limiti fino al {{date}}",
       "fields": {
         "pilot": "Pilota",
         "counted": "Contano",

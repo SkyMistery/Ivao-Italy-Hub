@@ -96,7 +96,7 @@ test('the coordinator finds the two registers and saves the settings of the regi
   // A person's page of each register opens on the person — the bench's pilot, whatever they hold —, never on the router's error.
   for (const register of ['controllers', 'pilots'] as const) {
     await page.goto(`/staff/events/${register}/${pilotVid}`);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.locator('h1[aria-current="page"]')).toHaveText(/\S/);
   }
 
   // The settings of the registers: the threshold and the weight changed, saved, and read back after a reload.
