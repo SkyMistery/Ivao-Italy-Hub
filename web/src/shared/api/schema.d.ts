@@ -5792,7 +5792,9 @@ export interface components {
          * @description The numbers of an event as the tab «Statistics» reads them (design M4 §1.10, §7.2, E13a): numbers only — the page writes their words in the
          *     language on screen (Carmine's answer 6 on #255). The sums of the answers and the seats by activity stay in their own tabs, which read them
          *     from the statistics once the rows are gone (E17); here, how many registered and how many seats were taken in all. And when the checks after the
-         *     event were done (`after_done_at`): until then who flew without booking is not counted yet.
+         *     event were done (`after_done_at`). <b>Who flew without booking</b> is empty when it was not counted — an event of the whole division, one
+         *     without airports, one closed after thirty days before any count — and says at how many of the event's airports it was counted: «not
+         *     counted» is never a 0 (Carmine's condition on reading 3, #272).
          */
         EventStatsDto: {
             /** Format: int64 */
@@ -5811,7 +5813,11 @@ export interface components {
             /** Format: int32 */
             bookedUnflown: number;
             /** Format: int32 */
-            flownUnbooked: number;
+            flownUnbooked: null | number;
+            /** Format: int32 */
+            flownUnbookedAirports: null | number;
+            /** Format: int32 */
+            airports: number;
             /** Format: int32 */
             atcAvailabilities: number;
             /** Format: int32 */

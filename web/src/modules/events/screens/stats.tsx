@@ -1,5 +1,6 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
+import type { TFunction } from 'i18next';
 import { useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,7 @@ import {
   type CheckedBookingRow,
   type EventAtcShiftRowDto,
   type EventDetailDto,
+  type EventStatsDto,
 } from '../api';
 import { EVENT_ATC_VIEW, EVENT_BOOKINGS_VIEW } from '../permissions';
 import { statsSchema, statsToFormValues } from '../schemas';
@@ -51,13 +53,14 @@ export function StatsTab({ event, editable }: { event: EventDetailDto; editable:
         <Notice
           tone="info"
           title={t('events:stats.computedAt', { date: moment(row.computedAt) })}
-          description={
-            event.wholeDivision
-              ? t('events:stats.wholeDivision')
-              : row.checksDoneAt === null
-                ? t('events:stats.checksPending')
-                : t('events:stats.checksDone', { date: moment(row.checksDoneAt) })
-          }
+          description={[
+            row.checksDoneAt === null
+              ? t('events:stats.checksPending')
+              : t('events:stats.checksDone', { date: moment(row.checksDoneAt) }),
+            unbookedWords(row, event.wholeDivision, t),
+          ]
+            .filter((sentence) => sentence !== '')
+            .join(' ')}
         />
       )}
       {editable ? (
@@ -86,6 +89,24 @@ export function StatsTab({ event, editable }: { event: EventDetailDto; editable:
       ) : null}
     </div>
   );
+}
+
+/**
+ * What the page says of who flew without booking, besides the number (Carmine's condition on reading 3, #272): «not counted» is never a 0 —
+ * an event of the whole division, one without airports, one closed before any count —, and a count at some of the event's airports says so.
+ */
+function unbookedWords(row: EventStatsDto, wholeDivision: boolean, t: TFunction): string {
+  if (wholeDivision) {
+    return t('events:stats.wholeDivision');
+  }
+
+  if (row.flownUnbookedAirports === null) {
+    return row.checksDoneAt === null ? '' : t('events:stats.notCounted');
+  }
+
+  return row.flownUnbookedAirports < row.airports
+    ? t('events:stats.countedAt', { counted: row.flownUnbookedAirports, airports: row.airports })
+    : '';
 }
 
 const bookingColumns: readonly ColumnSpec<CheckedBookingRow>[] = [

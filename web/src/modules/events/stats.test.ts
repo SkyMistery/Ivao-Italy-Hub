@@ -41,6 +41,12 @@ test('the bookings still to check are the ones neither flown nor not flown', () 
   expect(statsToFormValues({ ...numbers, bookedUnflown: 2 }).bookedToCheck).toBe(0);
 });
 
+test('«not counted» is an empty field, never a 0', () => {
+  expect(statsToFormValues(numbers).flownUnbooked).toBe(5);
+  expect(statsToFormValues({ ...numbers, flownUnbooked: 0 }).flownUnbooked).toBe(0);
+  expect('flownUnbooked' in statsToFormValues({ ...numbers, flownUnbooked: null })).toBe(false);
+});
+
 test('every number and every outcome has its word in both languages', () => {
   const fields = readFields(statsSchema).map((field) => field.path);
 

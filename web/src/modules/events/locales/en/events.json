@@ -1288,6 +1288,8 @@
           "Excused": "Excused"
         }
       }
-    }
+    },
+    "notCounted": "Who flew without booking was not counted: the event has no airports, or the network did not answer for thirty days after it.",
+    "countedAt": "Who flew without booking was counted at {{counted}} of its {{airports}} airports: the network did not answer for the others."
   }
 }

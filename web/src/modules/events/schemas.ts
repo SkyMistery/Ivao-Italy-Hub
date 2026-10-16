@@ -694,7 +694,8 @@ export const statsSchema = z.object({
   bookedFlown: z.number().int(),
   bookedUnflown: z.number().int(),
   bookedToCheck: z.number().int(),
-  flownUnbooked: z.number().int(),
+  // Empty when it was not counted (an event of the whole division, one without airports, one closed before any count): never a 0.
+  flownUnbooked: z.number().int().optional(),
   atcAvailabilities: z.number().int(),
   atcShifts: z.number().int(),
   atcAttended: z.number().int(),
@@ -713,7 +714,7 @@ export function statsToFormValues(stats: {
   readonly booked: number;
   readonly bookedFlown: number;
   readonly bookedUnflown: number;
-  readonly flownUnbooked: number;
+  readonly flownUnbooked: number | null;
   readonly atcAvailabilities: number;
   readonly atcShifts: number;
   readonly atcAttended: number;
@@ -729,7 +730,7 @@ export function statsToFormValues(stats: {
     bookedFlown: stats.bookedFlown,
     bookedUnflown: stats.bookedUnflown,
     bookedToCheck: Math.max(0, stats.booked - stats.bookedFlown - stats.bookedUnflown),
-    flownUnbooked: stats.flownUnbooked,
+    ...(stats.flownUnbooked === null ? {} : { flownUnbooked: stats.flownUnbooked }),
     atcAvailabilities: stats.atcAvailabilities,
     atcShifts: stats.atcShifts,
     atcAttended: stats.atcAttended,
