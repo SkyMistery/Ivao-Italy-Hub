@@ -66,6 +66,7 @@ M0 è finito quando, **in locale** (docker-compose + `dotnet run` + `pnpm dev`) 
 | Serilog, Quartz.NET, FluentValidation, Mapperly, Polly (`Microsoft.Extensions.Http.Resilience`) | ultime | |
 | xUnit + Testcontainers.MariaDb | ultime | immagine `mariadb:11.4.10` |
 | Vitest + Testing Library; Playwright (solo smoke) | ultime | |
+| `System.Security.Cryptography.Pkcs` | 10.0.13 | **Dal 15 ott 2026** (E10q, #265, nota `2026-10-15-il-pkcs-corretto`, decisa da Carmine sull'issue #264, piano 1.34): non è una dipendenza nostra — la porta MailKit attraverso MimeKit, alla 10.0.0 —, e i due avvisi del 13 ott 2026 (GHSA-846f-f764-76mx, alto; GHSA-2fmv-rv2c-59x7, moderato) fanno fallire `dotnet restore`. Fissata con una `PackageVersion` in `Directory.Packages.props` e un riferimento diretto nel nucleo, l'unico progetto che la porta, **mai zittendo l'audit**; il riferimento se ne va quando MimeKit dipenderà da sé da un Pkcs corretto |
 
 Tutte le versioni si pinnano nei file di lock; le dipendenze si aggiornano in PR dedicate.
 

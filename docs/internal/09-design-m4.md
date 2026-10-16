@@ -378,6 +378,22 @@ e lo può portare perché **una prenotazione non porta nessuna decisione dello s
   `Excused`), `attendance_by`, `attendance_at`, `attendance_note`. `IHasFir` (quello della postazione), stakeholder il
   controllore. **I turni restano per sempre** (c3): sono il registro di affidabilità.
 
+**Deciso con E11a** (#256, nota `2026-10-12-le-postazioni-e-la-disponibilita`, piano 1.34; le risposte di Carmine sulla #256: sì
+alle dieci letture, e la (B) sulle finestre dei candidati):
+
+- **le postazioni solo su un evento con un roster** (`has_roster`); l'interruttore del roster **non si spegne** mentre l'evento ha
+  postazioni o disponibilità, come gli slot privati (E7) e l'evento in presenza (E16); **un evento con disponibilità non si
+  elimina** (si annulla), e le sue postazioni se ne vanno con lui, ognuna con la sua riga dell'audit;
+- **il `fir` lo copia il server** dalla directory del nucleo (`IAtcPositionDirectory`) quando si scrive il nominativo, **prima di
+  chiedere il permesso**, mai il client: l'unico handler e il guardiano lo chiedono su quel FIR. Una postazione il cui nominativo
+  non cambia **tiene il FIR con cui è stata scritta**, in modifica e in eliminazione, anche se la directory nel frattempo l'ha
+  spostato o non lo elenca più. **La nota della postazione è dello staff**, in una lingua, e non va sulla pagina pubblica;
+- **la disponibilità** porta `[WithdrawnByStakeholder]`: ritirarla cancella la riga con le sue finestre. La regola di Carmine sulla
+  #232 è rispettata, perché **la decisione del roster è il turno**, una riga sua (E11b): sulla disponibilità niente si approva, si
+  rifiuta o si conferma, lo staff la legge. **Le finestre sono righe figlie** del membro come la disponibilità: portano il
+  controllore e l'evento, con gli stessi segni, così il guardiano le legge sulla riga. La nota del membro, in una lingua, al più
+  500 caratteri, porta `[ErasedWith(nameof(ControllerVid))]` (E10n).
+
 ### 1.8 Il PIREP di supporto — `evt_reports`, `evt_report_items`
 
 - **`evt_reports`**: `event_id`, `vid`, `kind` (`Pilot`, `Atc`), `source` (`Manual`, `Auto`), `state` (`Submitted`,
@@ -409,6 +425,14 @@ e non volati, **volati senza prenotare**, disponibilità ATC date, turni, contro
 e accettati, award segnalati; per un evento in presenza, iscritti, le somme delle risposte e i posti presi nelle attività.
 Calcolata dopo l'evento (§5.1), ricalcolabile dallo staff.
 
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; le risposte di Carmine sulla #253 e sulla #255):
+la tabella **nasce intera** con E16 (M4c prima di M4b), una riga per evento — indice univoco, cancellata con l'evento —, **solo
+numeri**: le colonne qui sopra, **le somme delle risposte** (JSON, per domanda: i numeri della lista delle domande, §4-bis.2),
+**i posti presi** (JSON, per attività) e quando sono state calcolate; la cura e lo scope dell'evento, nell'area `Events`. **In
+E16 nessuno la scrive**: le somme dello staff si calcolano dalle iscrizioni. **E17** scrive quelle di un evento in presenza prima
+che la conservazione ne cancelli le iscrizioni (`inPersonRetentionMonths`, letto da `events-retention`), **E13a** il resto dopo
+l'evento.
+
 ### 1.11 Le preferenze del membro
 
 Una preferenza del modulo (`IModule.Preferences`, come M2): **«riporta automaticamente la mia partecipazione agli
@@ -437,6 +461,13 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
 | `unflownThreshold` — prenotazioni non volate da cui il pilota ha i limiti (§3.7) | 3 | §17.3 n.1 |
 | `restrictedWindowHours`, `restrictedMaxPerWindow` — per chi ha i limiti: al massimo K slot ogni H ore della finestra | 2 ore, 1 | §17.3 n.1 |
 | `restrictedMaxPerEvent` — per chi ha i limiti: al massimo M slot nell'evento | 2 | §17.3 n.1 |
+
+**Deciso con E11a** (#256, nota `2026-10-12-le-postazioni-e-la-disponibilita`, piano 1.34; il sì di Carmine alle dieci letture),
+i limiti dell'ATC, che la tabella non diceva: `shiftMinutes` da 15 a 720, e lo stesso intervallo per `shift_minutes` dell'evento
+quando c'è; `minimumAtcRating` un rating ATC del vocabolario, o nessuno (le impostazioni lo scelgono da una lettura dell'area,
+§4.1); `maxConsecutiveShifts` da 1 a 96, `breakShifts` da 0 a 96; `applicationsCloseDays` e `rosterPublishDays` da 0 a 60, e
+**`rosterPublishDays` non più di `applicationsCloseDays`**: il roster si pubblica dopo la chiusura (nota
+`2026-09-29-il-roster-atc` §2.5); `experienceMonths` da 1 a 60.
 
 ### 1.13 Dal nucleo, senza scriverlo nel modulo
 
@@ -749,10 +780,62 @@ L'AOD e lo staff del FIR (`EventAtc.Edit`, §6.2) scelgono le postazioni dall'el
 FIR della postazione viene dal nucleo: con `firStaffScope: own` (IT ci passa con A11b) lo staff di un FIR vede e decide solo
 le postazioni del suo FIR (A11a, nota `2026-09-27-i-capi-fir-sul-loro-fir`).
 
+**Deciso con E11a** (#256, nota `2026-10-12-le-postazioni-e-la-disponibilita`, piano 1.34; le risposte di Carmine sulla #256: sì
+alle dieci letture):
+
+- **una postazione nell'evento**: senza ore, la finestra dell'evento (§1.7); con le ore, **dentro** la finestra; lo stesso
+  nominativo due volte solo in ore che **non si sovrappongono** (due che si toccano sì: la torre fino alle 19 e di nuovo dalle 19).
+  Il nominativo è una postazione della divisione, scritto come lo scrive il nucleo. ⚠️ Il controllo è una lettura: due creazioni
+  nello stesso istante passano tutte e due, detto dal revisore e lasciato (lo staff ne elimina una). Una postazione su un evento
+  **annullato o finito** è rifiutata, e la pagina non offre «Salva», «Elimina» né «Nuova postazione» e dice perché;
+- **le postazioni non si spostano** quando l'evento cambia orari (la lettura 4): lo staff le corregge, e il form dell'evento non
+  rifiuta il cambio. «Duplica» invece le copia **con le ore spostate** (§2.3-bis), chiede `EventAtc.Edit` per scriverle, e non
+  copia mai una disponibilità. ⚠️ Copia il FIR com'è: una postazione duplicata anno dopo anno tiene il FIR della sua prima
+  scrittura anche se la directory ha poi spostato il nominativo, finché qualcuno non lo riscrive (§1.7);
+- **dove lavora chi tiene l'ATC senza gli eventi** (lo staff di un FIR, un grant a un VID su `EventAtc`): una sezione sua, **«ATC
+  degli eventi»** (`/staff/events/atc`, voce di menu con `EventAtc.View`), con gli eventi che hanno un roster e non sono finiti —
+  bozze comprese: le postazioni si aprono prima della pubblicazione —, e la pagina dell'ATC di un evento
+  (`/staff/events/atc/{id}`) con le sue postazioni. Le intestazioni vengono da **due letture dell'area** (`GET
+  /api/events/atc/events` e `/{id}`, con `EventAtc.View` chiesto senza riga: la forma di E2), e chi tiene l'ATC da qualche parte
+  legge così l'intestazione — titolo, stato, date, chiusura, durata del turno — di **ogni evento con un roster**, mai una riga dei
+  membri. Per chi legge gli eventi la stessa lista è la scheda «ATC» della pagina dell'evento;
+- **le liste da cui si sceglie**: le postazioni della divisione (`GET /api/events/atc/division-positions?eventId=`,
+  `EventAtc.Edit`), ognuna chiesta all'unico handler com'è sull'evento, con il suo FIR — al capo di un FIR quelle del suo FIR, allo
+  staff di un dipartimento tutte —, e i rating ATC del vocabolario (`GET /api/events/atc/ratings`, `Events.ManageSettings`) per
+  `minimumAtcRating`, come le due del training: un modulo non ne importa un altro, e il nucleo non ha un endpoint dei rating. Con
+  i candidati di una postazione (§4.2) sono **cinque letture scritte a mano**, accettate da Carmine come scostamenti dal §7.2,
+  accanto alla lettura dei preset (E3a) e alla pagina pubblica (E4); il §7.2 non si tocca, vale la nota.
+
 ### 4.2 La disponibilità
 
 Fino a inizio − `applicationsCloseDays`, un membro con rating almeno `minimumAtcRating` compila **le sue finestre orarie**
 (c1) dalla pagina dell'evento, e una nota. Le cambia o la ritira fino alla chiusura.
+
+**Deciso con E11a** (#256, nota `2026-10-12-le-postazioni-e-la-disponibilita`, piano 1.34; le risposte di Carmine sulla #256: sì
+alle dieci letture, e **la (B)** sulle finestre dei candidati):
+
+- **chi la dà**: un membro con il login, su un evento che vede, con un roster, non annullato, con **almeno una postazione** (senza,
+  non c'è niente per cui essere disponibili), **fino a inizio − `applicationsCloseDays`**, con un rating ATC almeno
+  `minimumAtcRating` — senza un minimo, ogni membro, anche senza rating ATC. La pagina dell'evento mostra **le postazioni a
+  tutti** — nominativo, nome, ore — fino a quando si dà la disponibilità, e il form; sotto il minimo dice **quale rating** serve, a
+  un visitatore «accedi»;
+- **le finestre**: almeno una, al più 12, ognuna che finisce dopo che comincia, dentro l'evento, nessuna sovrapposta a un'altra
+  (due che si toccano sì); ogni rifiuto sul campo della sua finestra. La nota del membro, in una lingua, al più 500 caratteri;
+- **la cambia** fino alla chiusura di un evento non annullato, **la ritira** fino alla chiusura anche di un evento annullato, e
+  **dopo la chiusura niente**: il roster è stato proposto da lì (§4.3), e un controllore che non può più chiede di cedere il turno
+  (§4.4-bis). La propria disponibilità si legge e si ritira anche su un evento che il membro non vede più (il suo «visibile dal»
+  spostato), fino alla chiusura; darla chiede un evento che vede. Di due cambi insieme dello stesso membro il secondo riceve
+  **409**, «ricarica la pagina per vederla com'è ora»;
+- **lo staff la legge per postazione** (la forma di E2): sulla pagina di una postazione, chi ha **una finestra che si sovrappone**
+  alle sue ore — il controllore con `col.person`, il suo rating ATC, se copre la postazione **per tutto il tempo**, la nota, quando
+  l'ha data —, il primo arrivato primo; la lista delle postazioni dice **quanti** sono disponibili su ognuna. L'unico handler
+  chiede `EventAtc.View` **sulla postazione**, con il suo FIR: lo staff di un FIR legge i candidati delle sue. **Le finestre di un
+  candidato** (la (B), decisa da Carmine sulla #256): `availableFromUtc` e `availableToUtc` — la prima delle sue finestre dentro
+  la postazione tagliata alla sua apertura, l'ultima tagliata alla sua chiusura —, in due colonne `col.date`, con «per tutto il
+  tempo» e il numero delle finestre che la toccano. I buchi fra una finestra e l'altra non si vedono; nessun testo fatto in C#, e
+  nessuna colonna nuova nel nucleo (una per più intervalli solo se un giorno lo staff vorrà i buchi). La lista intera delle
+  disponibilità di un evento non c'è ancora: con il roster di E11b si legge per postazione e ora;
+- **`/events/mine` non mostra ancora le disponibilità** (la lettura 8): le porta E12 con i turni (§7.1).
 
 ### 4.3 La proposta del roster
 
@@ -844,6 +927,35 @@ sono un posto dove tenere righe). La forma dello schema è di E16, che viene dop
   I posti si contano con un blocco sulla riga dell'attività (`SELECT … FOR UPDATE`), perché un turno ha più posti e un
   indice univoco non basta; un membro non prende due turni sovrapposti.
 
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; le risposte di Carmine sulla #253 e sulla
+#255):
+
+- **le domande** sono una risorsa del motore (`/api/events/questions`), filtrata per evento, letta con `Events.View` e scritta
+  con `Events.Edit` sulla cura dell'evento: righe figlie con lo scope dell'evento, così un grant su un evento solo ne scrive le
+  domande. **Solo su un evento in presenza**, e l'interruttore «in presenza» **non si spegne** finché l'evento ha domande o
+  iscrizioni (solo da acceso a spento, come gli slot privati);
+- **i limiti**: al più **30 domande** per evento; la domanda e le scelte **in ogni lingua della divisione**, al più **300
+  caratteri** per lingua; **da 2 a 20 scelte** per una domanda a scelta, nessuna per gli altri tipi; l'ordine da 0 a 999, la più
+  bassa prima;
+- **una scelta ha una chiave**, che il server le dà alla creazione (`"1"`, `"2"`, …, il numero dopo il più alto) e che non cambia
+  più: le risposte nominano la chiave, così le scelte si riscrivono e si riordinano senza toccare una risposta. Il form la porta
+  nascosta; una scelta senza chiave, o con una chiave che la domanda non ha mai dato, è nuova;
+- **una domanda a cui qualcuno ha risposto tiene il suo tipo e ogni sua scelta**: si riscrivono, si riordinano, se ne aggiungono,
+  non se ne tolgono. **Si elimina** (il sì di Carmine sulla #255): le sue risposte non si leggono e non si contano più, spariscono
+  alla prossima modifica del membro, e la cancellazione dei dati di una persona non le tiene mai (§11.1). Una domanda
+  obbligatoria aggiunta dopo le prime iscrizioni non tocca chi è già iscritto: la risposta gli serve alla sua prossima modifica.
+  «Duplica» non copia ancora le domande: lo fa E17, con le attività;
+- **l'iscrizione** porta in più **`updated_at`**, quando il membro ha cambiato le risposte l'ultima volta (lo staff lo vede nella
+  lista), e le risposte in una colonna JSON per domanda (`q{id}`), **validate dal server secondo il tipo**: un sì o no è un
+  booleano; una scelta è una chiave della domanda, più scelte chiavi della domanda nel suo ordine; un numero un intero **da 0 a
+  999**; un testo una stringa, tolti gli spazi in testa e in coda, **al più 1000 caratteri**. Una risposta vuota è «nessuna
+  risposta», un'obbligatoria senza è rifiutata, ogni rifiuto sul campo della sua risposta; le risposte a domande che l'evento non
+  ha più non si tengono. **Nessuna chiave verso l'evento**, come la prenotazione: un evento con iscrizioni non si elimina, si
+  annulla;
+- **l'iscrizione porta `[WithdrawnByStakeholder]`** — ritirarsi cancella la riga — perché **non porta decisioni** (la regola di
+  Carmine sulla #232, risposta 3): un'iscrizione non ha nessuno stato che lo staff decida, niente da approvare, rifiutare o
+  confermare; lo staff la legge, la somma e la toglie, e cancellarla cancella solo quello che il membro ha mandato.
+
 ### 4-bis.2 Come va
 
 - **Lo staff** (`Events.Edit` per domande e attività, `EventBookings.Edit` per le iscrizioni) prepara domande e attività,
@@ -856,6 +968,25 @@ sono un posto dove tenere righe). La forma dello schema è di E16, che viene dop
   `inPersonRetentionMonths` (3) dopo l'evento, poi si cancellano; le somme restano nelle statistiche. Visibili solo allo
   staff con `EventBookings.View` e al membro.
 - Un evento in presenza può avere anche slot o roster: gli interruttori sono indipendenti (§1.2).
+
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; le risposte di Carmine sulla #253 e sulla
+#255):
+
+- **fino a quando**: ci si iscrive e si cambiano le risposte a un evento in presenza che si vede, non annullato, **prima del suo
+  inizio**; **ci si ritira fino all'inizio anche da un evento annullato**; dopo, il rifiuto. Sono i verbi del flusso del membro
+  sotto `/api/events/mine/registrations` (§7.2). Due iscrizioni dello stesso membro allo stesso evento nello stesso istante si
+  incontrano sull'indice univoco, e **la seconda diventa un cambio della prima**: le ultime risposte mandate restano, con la loro
+  mail, e nessun «riprova» (il sì di Carmine alla lettura 11 com'è ora, 13 ottobre 2026). Il luogo e le domande si leggono anche
+  senza accesso (il sì di Carmine sulla #255);
+- **la mail `registrationReceived`** parte a ogni iscrizione **e a ogni cambio delle risposte** (il sì di Carmine), con il luogo e
+  le risposte come sono in quel momento: l'ultima mail dice le risposte vere. Ritirarsi non manda niente (§8.3);
+- **le somme stanno nella lista delle domande**, una colonna per domanda — un sì o no conta i sì e i no, una scelta conta ogni
+  scelta, un numero dà il totale, un testo dice quanti hanno risposto —: sono **statistiche dell'evento**, lette con
+  **`Events.View`** (§6.1, «e le statistiche»), senza persone (il sì di Carmine). Calcolate dal server a ogni lettura, mandate
+  **come numeri** per chiave, dette in parole dalla pagina (§7.2); nessun endpoint in più;
+- **«togli» chiede un motivo, e il membro lo legge in una mail nuova, `registrationRemoved`** (la domanda 2 sulla #253, la (A)):
+  `POST /api/events/registrations/{id}/remove` chiede `EventBookings.Edit` all'unico handler sull'iscrizione, con la cura
+  dell'evento com'è ora, come «togli» di una prenotazione, e il motivo ha le regole di quello di una prenotazione.
 
 ---
 
@@ -1057,7 +1188,8 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   - **ATC**: postazioni; disponibilità; il **roster** come lista generata per postazione e ora, con il perché di ogni turno, gli
     avvisi, «aggiungi», «sposta», «togli»; dopo l'evento, i no-show da confermare;
   - **PIREP di supporto**: lista generata con la verifica di ogni voce, «accetta», «rifiuta»;
-  - **In presenza**: domande e attività (liste e form generati), iscrizioni con le somme, turni delle attività;
+  - **In presenza**: domande e attività (liste e form generati), ~~iscrizioni con le somme~~, turni delle attività — **con E16**
+    le domande e le iscrizioni in due schede loro, e le somme nella lista delle domande (sotto);
   - **Statistiche**: i numeri del §1.10.
 - **`/staff/events/controllers`**: il registro di affidabilità di tutti, con «togli il no-show».
 - **`/staff/events/settings`**: impostazioni generate.
@@ -1082,6 +1214,20 @@ suo volo, e non mostra il legame fra due voli collegati; **«Duplica»** sta nel
 sulla riga, con la sua pagina e il form generato (§2.3-bis). Gli endpoint a mano sono **tre verbi che il design nomina**, e
 nessuna lettura nuova: `POST /api/events/events/{id}/slots/generate` e `POST /api/events/mine/bookings/private` (E7), e
 `POST /api/events/events/{id}/duplicate` (E8b).
+
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; le risposte di Carmine sulla #253 e sulla #255):
+un evento in presenza ha la scheda **«Domande»** (`Events.View`, la scrive chi ha `Events.Edit`), lista e form generati, con **le
+somme in una colonna per domanda** (§4-bis.2), e la scheda **«Iscrizioni»** (`EventBookings.View`), una risorsa del motore in sola
+lettura (`/api/events/registrations`, come le prenotazioni): il membro detto da `col.person`, le risposte come sono state date,
+quando si è iscritto e quando le ha cambiate, e **«togli»** con il motivo a chi ha `EventBookings.Edit`. Il form del membro è il
+`SchemaForm` costruito dalle domande (§4-bis). **Le liste ricevono dati, e la pagina scrive le parole nella lingua sullo schermo**
+(la risposta 6 di Carmine sulla #255: no alle parole delle liste scritte dal server nella lingua dell'account, perché una pagina
+letta in inglese non mostra celle in italiano): la lista delle domande, quella delle iscrizioni e le iscrizioni del membro portano
+la domanda, il valore, le chiavi delle scelte e i conti, e la pagina li dice in parole, una riga per domanda, con le domande
+dell'evento; **le mail tengono le parole del server, nella lingua di chi le riceve**. Gli endpoint a mano sono **quattro verbi**:
+i tre del flusso del membro sotto `/api/events/mine/registrations` — la lettura delle proprie (`GET`), iscriversi o cambiare le
+risposte (`PUT /{eventId}`, 201 la prima volta e 200 dopo), ritirarsi (`DELETE /{eventId}`) — e
+`POST /api/events/registrations/{id}/remove`; le domande e la lista delle iscrizioni sono del motore.
 
 ### 7.3 Blocchi Data
 
@@ -1176,6 +1322,13 @@ Tutte disattivabili dal profilo (c1). Modelli in `web/src/modules/events/locales
 **Deciso con E6a** (#233, piano 1.32): **una mail per persona** anche con più prenotazioni; `eventChanged` parte solo quando si
 sposta l'inizio o la fine di un evento pubblicato; e un tipo in più, **`bookingChanged`** — al pilota, quando lo staff corregge il
 volo di uno slot che ha prenotato (§3.6).
+
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; le risposte di Carmine sulla #253 e sulla #255):
+`registrationReceived` parte a ogni iscrizione **e a ogni cambio delle risposte**, con il luogo e le risposte di quel momento,
+nella lingua del membro; ritirarsi non manda niente. Un tipo in più, **`registrationRemoved`** — al membro, quando lo staff toglie
+la sua iscrizione, con il motivo (la domanda 2 sulla #253, la (A)) —, spento dal profilo come ogni mail del modulo. `eventChanged`
+ed `eventCancelled` arrivano anche a chi è iscritto, **una mail per persona** anche a chi ha prenotato e si è iscritto. Le mail
+tengono le parole del server, nella lingua di chi le riceve (§7.2).
 
 ### 8.4 Job del modulo
 
@@ -1318,6 +1471,20 @@ nell'audit tenevano i dati del pilota. Le **cinque colonne** che l'eraser svuota
 l'ha messo E8b, dopo la fase del nucleo): alla cancellazione **il nucleo le svuota nelle righe d'audit** delle prenotazioni
 che nominavano la persona e non ci sono più, e solo nelle copie scritte mentre la riga era sua. Una riga che c'è resta del suo
 eraser. Un segno che la cancellazione non potrebbe onorare ferma l'avvio.
+
+**Deciso con E16** (#255, nota `2026-10-12-le-domande-e-l-iscrizione`, piano 1.34; il sì di Carmine sulla #255, con le correzioni
+del revisore), per le iscrizioni a un evento in presenza, che «si trattano come le prenotazioni» (nota
+`2026-09-29-i-dati-dei-membri-negli-eventi` §2.5):
+
+- l'iscrizione a un evento **non finito si cancella**;
+- quella a un evento **finito resta**, con lo pseudonimo che il nucleo scrive in `vid`, **con le sole risposte che le somme
+  contano** — sì o no, una scelta, più scelte, numeri — **alle domande che l'evento ha ancora**, come tornano con la loro domanda
+  (una scelta solo se nomina scelte della domanda), **e nient'altro**: né i testi, che sono parole del membro (come una
+  prenotazione tenuta perde la nota), né le risposte a domande eliminate;
+- **nessuna storia nell'audit**: la riga conta sempre come svuotata, anche quando le risposte non cambiano, così il nucleo ne
+  svuota le copie di prima, dove resterebbe una parola tolta da un cambio di prima; e `AnswersJson` porta
+  `[ErasedWith(nameof(Vid))]` (E10n): un'iscrizione ritirata o tolta prima della cancellazione non lascia le risposte nell'audit;
+- l'anteprima dice due righe in più, le iscrizioni cancellate e quelle tenute.
 
 ---
 

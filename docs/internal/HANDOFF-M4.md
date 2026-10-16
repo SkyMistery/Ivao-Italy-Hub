@@ -24,14 +24,25 @@ controllore i suoi turni in una mail; dopo, ogni correzione avvisa subito chi sa
 solo a chi ha fatto il login), i turni in `/events/mine` e in `events.myEvents`, la **cessione** di un turno decisa dallo staff, e il blocco
 **`events.atcCoverage`** («Che cosa ha lasciato E12», sotto).
 
-**L'aggiornamento di E11b:** 14 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
-staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`: nata `--no-track` dalla testa di E11a `c967bc1`, ne ha unito la
-testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, e dopo l'unione di E16 (#255) ed E11a (#256) **`main` a
-`c232448`**. La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
+**L'aggiornamento di E11b:** 16 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
+staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`, **in coda dopo la #263** (E4d, la coda #263 → #262 → #268): nata
+`--no-track` dalla testa di E11a `c967bc1`, ne ha unito la testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, dopo
+l'unione di E16 (#255) ed E11a (#256) **`main` a `c232448`**, poi `main` a `e041bb04` (il Pkcs corretto, #265) e infine **la testa di E4d
+`279c8cd`** (con `main` a `3b8d7d79`, E10p #261). La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
 (A) per «`atcData` di IT» (`vipi` quando l'utente di sola lettura della vista esiste sull'host) e le dieci letture, tre con una condizione
 ora nel codice; i rilievi del revisore sulla #262 sono corretti sulla stessa PR («Che cosa ha lasciato E11b», sotto). Da E11b, alla
 chiusura delle disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo
 staff dell'ATC lo **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni.
+
+**L'aggiornamento di E4d:** 16 ottobre 2026 — **fase E4d** (modulo: gli eventi prendono tre pezzi del nucleo uniti negli ultimi giorni),
+sul branch `m4/e4d-events-adopt-core`, **PR #263** verso `main`, **in fondo alla coda #263 → #262 → #268** che il revisore ha chiesto
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)): nata da `main` a `c232448` (con E16
+#255, E11a #256 e A13f #258), approvabile per il revisore, e il 16 ottobre, su sua richiesta, ha unito `main` a `e041bb04` (E10q, #265, il
+Pkcs corretto) perché `build-test` giri, poi `main` a `3b8d7d79` (E10p, #261, le ore in 24). Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
+di Carmine sulla #258, perché la PR toglie dai due test del nucleo le righe che le note di E10m ed E10l lasciavano agli eventi. Da E4d gli
+eventi leggono i nomi con `MemberNames` (E10m), `events-release` dice il suo fuso, UTC (E10j), i dialog di uno slot e dell'ora privata
+chiudono con «Chiudi» (E10l), e le schede «Domande» e «Iscrizioni» di E16, vuote, dicono una frase loro («Che cosa ha lasciato E4d»,
+sotto). **E11b (#262)** unisce questo branch, ed E12 (#268) quello di E11b.
 
 **L'aggiornamento di E10p:** 16 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
 `m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
@@ -359,6 +370,33 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il banco non lancia un job**: la pubblicazione si guarda al quarto d'ora, come la proposta di E11b.
   - ⚠️ **I VID di prova**: dopo 761114–761121 di E11b, E12 ha usato **761122–761128**.
 
+### Che cosa ha lasciato E10t (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277, del nucleo; diretta su `main`, nata a `4ad747ad`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10t, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una
+  nota nuova, `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b)):
+  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`),
+    scoped, accanto a `IAtcBookingSource`: la ricerca del tracker di E10a con nomi che non dicono IVAO. Le sessioni **iniziate** nella
+    finestra (estremi compresi), dalla più recente, una volta per `Id`, al più `Limit`; **`null`** quando la rete non risponde, mai una
+    lista vuota al suo posto.
+  - **`NetworkSessionQuery(int? Vid, DateTime FromUtc, DateTime ToUtc, string? DepartureIcao = null, string? ArrivalIcao = null,
+    NetworkConnection? Connection = null) { Limit }`**: `DefaultLimit` 200 e `MaxLimit` 1000 sono le costanti di `IvaoSessionQuery`;
+    un `Limit` fuori da 1…1000 è un'`ArgumentOutOfRangeException` già nell'`init`.
+  - **`NetworkConnection { Pilot, Atc }`** e **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime
+    EndedAt)`**, con `EndedAt` = inizio + durata dichiarata.
+  - **I test**: `NetworkSessionSourceTests` (unità, nuova, 9 casi), con un client che registra la domanda e con il client delle
+    fixture (la sera di Fiumicino, `tracker-airport-LIRF.json`).
+- **Che cosa deve sapere E13a** (che unisce questo branch, poi `main` quando è unita):
+  - **sposta le chiamate**: `IIvaoApiClient.SearchSessionsAsync(new IvaoSessionQuery(…))` → `INetworkSessionSource.SessionsAsync(new
+    NetworkSessionQuery(…))`, con `Pilot`/`Atc` al posto di `IvaoConnectionType`, e legge `Id`, `Vid`, `Callsign`, `StartedAt`,
+    `EndedAt` di ogni sessione; il `using IvaoHub.Core.Ivao;` resta (il test degli eventi lascia passare lo spazio dei nomi);
+  - le regole del tracker restano quelle di E10a (nota `il-tracker-senza-vid` §3.6): la finestra è sull'**inizio**, partenze e arrivi
+    sono **due domande** e la stessa sessione può tornare da tutte e due (si conta per `Id`), una risposta con esattamente `Limit`
+    sessioni può essere tagliata, mai due domande per scalo insieme;
+  - ⚠️ nei test d'integrazione il client delle fixture risponde anche attraverso la sorgente: una VID senza `tracker-sessions-{vid}.json`
+    non ha sessioni, uno scalo senza `tracker-airport-{icao}.json` nemmeno;
+  - ⚠️ gli scali, le revisioni del piano di volo e il JSON grezzo **non** ci sono: se E13a ne ha bisogno, è un campo in più qui, con una
+    nota (una fase del nucleo), non una lettura del client.
+
 ### Che cosa ha lasciato E11b (13 ottobre 2026, branch `m4/e11b-roster-proposal`, PR #262; in coda dopo la #256 di E11a, nata dalla sua testa `c967bc1`, con la sua testa `ac52c4b` e `main` a `cea6244` uniti)
 
 - **Che cosa c'è** (il dettaglio in `10`, E11b, «Com'è andata»; **una migrazione**, `AddAtcShifts`; niente del nucleo — solo `schema.d.ts`
@@ -435,6 +473,37 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   persona che tocca non sono `[Audited]`.
 
 [a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
+### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, in fondo alla coda #263 → #262 → #268; da `main` a `c232448`, con `main` a `e041bb04` e poi a `3b8d7d79` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4d, «Com'è andata»; nessuna migrazione, nessuna decisione nuova; la nota
+  `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola di Carmine sulla #258, perché la PR tocca due test del nucleo):
+  - **`EventsPeople.NamesAsync`** è una riga, `MemberNames.ReadAsync` del nucleo (E10m); `AtcRatingsAsync`, `Member` ed `EventMemberDto`
+    restano del modulo. In `MemberNamesTests` resta solo la riga dei tour.
+  - **`events-release` dice UTC** (`EventReleaseJob.TriggerName`, lo stesso nome di prima), come `events-reminders`; i due trigger li
+    prova `tests/IvaoHub.UnitTests/EventsJobTriggersTests.cs`.
+  - **I dialog di uno slot e dell'ora privata** (`EventSlots.tsx`, `PrivateSlots.tsx`) sono il `Dialog` del nucleo (E10l): la «X» dice
+    «Chiudi» e «Close». La guardia di `Dialog.test.tsx` non ha più eccezioni.
+  - **Le schede «Domande» e «Iscrizioni»** di E16, vuote, dicono `events:questions.empty` ed `events:registrations.empty`, non più la
+    frase del nucleo su un dipartimento; i test in `titlesAndEmptyLists.test.tsx`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Ogni nome per VID** si legge con `EventsPeople.NamesAsync` o con `MemberNames.ReadAsync`: sono la stessa cosa. Un VID sotto uno
+    non ha mai un nome.
+  - **Un job nuovo degli eventi** (`events-roster`, `events-after`, `events-digest`, `events-retention`) dice il suo fuso nel trigger e
+    aggiunge la sua riga a `EventsJobTriggersTests`. ⚠️ Un trigger senza fuso prende quello della macchina: su una macchina il cui fuso
+    locale si chiama `UTC` il test passerebbe anche senza; la prova al contrario l'ho fatta qui, in un fuso europeo (cade con
+    «Expected: "UTC" — Actual: "W. Europe Standard Time"»), come per `TrainingJobTriggersTests`.
+  - **Un dialog nuovo** è il `Dialog` del nucleo (`../../../shared/ui`); quello di Atmosphere fa cadere la guardia, ora senza lista.
+  - **Una lista generata nuova** dice la sua `emptyDescription`, parole che descrivono (E4c). ⚠️ Quella delle postazioni di E11a
+    (`atc.positions.empty`) invita («aprine una»), e chi legge l'ATC soltanto non ha il bottone: da riscrivere, con E11b o dopo.
+  - **E10p** (#261, le ore a 24 in un formatter solo) non era unita: quando entra, gli eventi la prendono in una fase loro, se la sua
+    nota lo chiede.
+  - ⚠️ **E11b (#262)** è aperta accanto e tocca forse `EventsModule.cs`, `EventsPeople.cs` e i file di lingua: i conflitti all'unione
+    sono il passo della coda del master.
+  - **Con `main` a `e041bb04`** (16 ottobre) entra E10q: il Pkcs 10.0.13 e la versione 0.6.8. Niente degli eventi cambia; i conti
+    dopo l'unione sono in `10`, E4d, «Com'è andata».
+  - **Con `main` a `3b8d7d79`** (16 ottobre) entra E10p: le ore del nucleo in 24 con `formatMoment`. I dialog e le schede di E4d le
+    scrivono con `useMoment` o con il `DataList` del nucleo, e non cambiano; la coda è **#263 → #262 → #268**, E4d in fondo.
 
 ### Che cosa ha lasciato E10p (13–16 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`, con `main` a `c232448` e poi a `e041bb0` unito)
 

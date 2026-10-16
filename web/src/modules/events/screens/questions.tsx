@@ -74,6 +74,8 @@ export function QuestionsTab({ event, editable }: { event: EventDetailDto; edita
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
       {...(create === null ? {} : { toolbar: create })}
+      // The questions are the event's, not a department's: an empty tab says what they will be (#224, E4d).
+      emptyDescription={t('events:questions.empty')}
       actions={(row) =>
         editable ? (
           <Button asChild variant="ghost" size="sm">

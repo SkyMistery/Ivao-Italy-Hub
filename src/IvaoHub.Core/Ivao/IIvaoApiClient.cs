@@ -101,7 +101,8 @@ public interface IIvaoApiClient
     /// The connections of one member in a window, newest first, for a pilot picking the flight they
     /// are reporting (design M2 section 3.2) — or, without a VID, the connections at an airport, for
     /// the events that count who flew (M4, E10a). Read page after page, up to the query's
-    /// <see cref="IvaoSessionQuery.Limit"/>.
+    /// <see cref="IvaoSessionQuery.Limit"/>. A module that may not name the network asks
+    /// <see cref="INetworkSessionSource"/>, which asks this (E10t).
     /// <para><c>null</c> means IVAO could not be asked, and it is not the same answer as an empty
     /// list: "no flight of yours matches" and "we could not look" must never read alike to a pilot
     /// who is sure they flew it.</para>
