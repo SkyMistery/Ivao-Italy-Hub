@@ -4301,6 +4301,51 @@ errori (NU1902/NU1903): `build-test` è rosso sulla #261, la #262 e la #263. Il 
 
 [i264q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264
 
+### E10s — Nucleo: la conservazione nell'audit
+
+**Da dove viene**: non c'era in E0. La chiede E17 ([la domanda 3 della #267][i267s]): `events-retention` cancella iscrizioni e posti
+`inPersonRetentionMonths` dopo l'evento, e l'audit ne terrebbe per sempre le copie, con le risposte. Carmine ha scelto la (B) ([la
+risposta 3][a267s2], 16 ottobre 2026): una piccola fase del nucleo prima, di dalberone, con la sua nota; E17 la usa ed è in coda dopo.
+Branch `m4/e10s-retention-in-the-audit`, da `main` a `e041bb04`. **PR del nucleo**, diretta su `main`, non in coda.
+
+1. Accanto a `AuditRedaction.EmptyGoneAsync`, la chiamata che un modulo fa dopo aver cancellato righe per conservazione: il nucleo
+   svuota, nell'audit, le colonne segnate `[ErasedWith]` di ogni copia di quelle righe.
+2. Le righe d'audit trovate come le trova `EmptyGoneAsync`, con una sola strada per i due e nessuna seconda lettura del JSON.
+3. Sicura nella transazione della cancellazione, o subito dopo: la nota dice quale e perché.
+4. Nessun uso nel modulo (regola 6): un test del nucleo con il modulo di prova; la prova al contrario.
+
+**Fatta quando**: la chiamata svuota ogni copia delle righe cancellate e nient'altro, e senza la chiamata il test trova i dati ancora
+nell'audit.
+
+**Com'è andata** (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269):
+
+- **Fatto** (nota nuova `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267):
+  - **`AuditRedaction.EmptyDeletedAsync<TEntity, TKey>(context, keys, cancellationToken)`**: delle chiavi passate, quelle la cui riga
+    non c'è più perdono le colonne segnate in ogni copia d'audit (`created`, i due lati di un `updated`, `deleted`), di tutti i segni;
+    rifiuta un'entità non mappata o senza segni, chiavi di un altro tipo e una cancellazione ancora da salvare; salva il chiamante;
+  - **un pezzo comune** con `EmptyGoneAsync`, `EmptyGoneCopiesAsync` (le chiavi che una riga ha ancora tolte con `ExistingKeysAsync`,
+    poi le copie di ogni chiave in ordine), e lo stesso `Empty` sul JSON; cambia solo che cosa si svuota di ogni copia;
+  - una frase nel riassunto di `AuditRedaction` e di `ErasedWithAttribute`.
+- **Scelte della fase, scritte nella nota** (§3, §5): una chiamata con i tipi dell'entità e della chiave, non una modalità
+  dell'interceptor; ogni copia e ogni segno, perché la conservazione va per età e non per persona; **nella stessa transazione** della
+  cancellazione, dopo il suo salvataggio (un errore riporta indietro tutte e due); rifiutata prima del salvataggio.
+- **I tour** (nota, §4): non ne hanno bisogno oggi; le loro righe di una persona non sono `[Audited]`. FlightOps non è toccato.
+- **Verificato, in locale** (16 ottobre 2026, `main` a `e041bb04`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi,
+    0 errori; unità **1277/1277**; integrazione intera, senza filtro (Release), **600/600** al primo giro (13 minuti);
+  - `RetentionAuditTests` 3/3 ed `ErasedAuditTests` 6/6 insieme; **la prova al contrario**: con lo svuotamento tolto (un `return`,
+    modifica locale) cadono i test 1 e 2 (il titolo in tutte le copie), il 3 passa; rimesso, toccato e ricompilato, 3 su 3;
+  - `pnpm -C web lint`, `typecheck`, `test` (766/766), `format:check`: verdi; `gen:api` senza differenze;
+  - le regole di `core-guard` rifatte in PowerShell contro `e041bb04`: nessun file del maintainer; due del nucleo
+    (`AuditRedaction.cs`, `ErasedWithAttribute.cs`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: non servono per un servizio del nucleo senza schermate e senza chiamanti nel modulo;
+  - l'uso vero, in `events-retention`: è di E17.
+
+[i267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267
+[a267s2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
 ### E10t — Nucleo: le sessioni della rete con un nome neutro
 
 **Da dove viene**: non c'era in E0. La chiede E13a: `events-after` legge il tracker della rete (le sessioni dei piloti per VID, chi ha
@@ -4345,6 +4390,11 @@ contrario li fa cadere.
   alla riga di `CLAUDE.md` §2][ok277t] che la nota propone, e la scrive il master con il piano 1.35. Il punto piccolo è fatto: il
   riassunto di `Connection` dice che `null` non chiede nessun tipo, e tornano anche gli osservatori. Unito `main` a `b5d3fb9`
   (E12, #268), che rendeva la PR in conflitto, con i blocchi di E10t in cima; rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1303/1303**, integrazione intera da sola **621/621** al primo giro (15 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**) verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `b5d3fb9b`: passa.
+- **Unito `main` a `2938ae8`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t]: E10s, #269, e i tour, #274),
+  di nuovo in conflitto solo nei documenti: qui E10s prima di E10t, in `HANDOFF-M4.md` E10t in cima ed E10s sotto. Il diff della fase
+  fuori dai documenti è lo stesso. RISULTATO-VERIFICA-2
+
+[m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
 
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630

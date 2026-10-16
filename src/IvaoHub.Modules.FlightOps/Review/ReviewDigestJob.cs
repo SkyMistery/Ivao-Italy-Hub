@@ -35,7 +35,7 @@ public sealed class ReviewDigestJob(
 {
     public const string JobName = "flightops-review-digest";
 
-    /// <summary>Every day at 07:00 UTC, the morning in Europe.</summary>
+    /// <summary>Every day at 07:00 in the division's zone, the morning of whoever reads it.</summary>
     public const string Cron = "0 0 7 * * ?";
 
     private const int MaxMessageLength = 2000;
