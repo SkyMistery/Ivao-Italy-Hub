@@ -3908,6 +3908,17 @@ senza eccezioni; il resto com'era.
   6/6 da solo e tutto verde da capo; la smoke **181/181** al primo giro (1,5 minuti); `pnpm e2e:full` sulla 5145, `ivaohub_e2e_e4d`
   ricreato, **63/63** al primo giro (14,5 minuti); le regole di `core-guard` contro `e041bb04`: gli stessi diciotto file, verde per la
   sua regola.
+- **Dopo l'unione di `main` a `3b8d7d79`** (16 ottobre 2026, `9aa5ec5`): unita E10p (#261, le ore del nucleo in 24 con `formatMoment`),
+  il revisore ha chiesto una coda sola, **#263 → #262 → #268**, con questa PR in fondo ([il suo
+  commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)). In conflitto di nuovo solo l'intestazione e
+  la cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10p sotto. L'unione porta documenti e il formattatore di E10p (`useMoment.ts`,
+  `SchemaForm.tsx`, `DataList.tsx`, `MessageThread.tsx`, una pagina dei contatti), nessun C#: i due dialog scrivono le ore con
+  `useMoment` e le schede con il `DataList` del nucleo, e l'unico `Intl.DateTimeFormat` del modulo (`dayIn` in `bookingTimes.ts`)
+  scrive solo un giorno. Rifatti: Release 0 avvisi, unità **1279/1279**; `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851
+  chiavi), `build` e `gen:api` (senza differenze) verdi; `pnpm test` **775/775** in 107 file, da solo (con i 6 di E10p); la smoke
+  **181/181** al primo giro (1,5 minuti); le regole di `core-guard` contro `3b8d7d79`: verde per la sua regola. **Non rifatte**, come
+  chiesto dalla sessione che coordina perché l'unione non tocca il server: l'integrazione e `e2e:full` (l'ultimo giro, 597/597 e
+  63/63, è quello dopo `e041bb04`, sopra).
 - **Verificato, in locale** (14 ottobre 2026, sull'albero della PR, `main` a `c232448`):
   - `dotnet build IvaoHub.sln --configuration Release` 0 avvisi; unità **1279/1279**; la suite di integrazione intera, senza filtro,
     **597/597** (12,4 minuti), `MemberNamesTests` compresa;
