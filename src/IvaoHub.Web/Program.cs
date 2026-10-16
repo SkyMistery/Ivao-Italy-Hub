@@ -379,8 +379,8 @@ app.MapSeoEndpoints();
 app.MapSearchEndpoint();
 
 // The administration of the hub itself: who holds which permission, who administers the system,
-// what happened, which modules are open, and how a request reaches the hub. Three of them are the CRUD
-// engine in global mode; the last is read by a super administrator installing the hub behind its proxies.
+// what happened, which modules are open, how a request reaches the hub, and whether the hub reaches its databases. Three of
+// them are the CRUD engine in global mode; the last two are read by a super administrator installing the hub.
 app.MapGrantEndpoints();
 app.MapPersonalTokenEndpoints();
 app.MapSuperadminEndpoints();
@@ -388,6 +388,7 @@ app.MapErasureEndpoints();
 app.MapAuditEndpoints();
 app.MapModuleAdminEndpoints();
 app.MapRequestDiagnosticsEndpoints(forwardedHeadersInPipeline: trustedProxies.Count > 0);
+app.MapConnectionCheckEndpoints();
 
 // The scheduled task of the host: runs the jobs that are due inside its request, with the installation's token in a
 // header (POST) or, for a panel that can only fetch an address, in the address (GET).

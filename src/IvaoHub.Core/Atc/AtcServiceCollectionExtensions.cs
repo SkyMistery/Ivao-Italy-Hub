@@ -24,7 +24,7 @@ public static class AtcServiceCollectionExtensions
         services.AddScoped<VipiAtcActivitySource>();
 
         services.AddScoped<IAtcActivitySource>(provider =>
-            provider.GetRequiredService<IOptions<DivisionOptions>>().Value.AtcData?.Source == AtcDataOptions.Vipi
+            provider.GetRequiredService<IOptions<DivisionOptions>>().Value.AtcData?.ReadsVipi == true
                 ? provider.GetRequiredService<VipiAtcActivitySource>()
                 : new UnavailableAtcActivitySource());
 
@@ -44,4 +44,7 @@ public sealed class AtcDataOptions
     public static readonly IReadOnlyList<string> KnownSources = [None, Vipi];
 
     public string Source { get; init; } = None;
+
+    /// <summary>Whether the archive is vIPI's view: the source asks it, and so does the connection check of the superadmin.</summary>
+    public bool ReadsVipi => Source == Vipi;
 }

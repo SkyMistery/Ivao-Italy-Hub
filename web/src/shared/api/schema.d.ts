@@ -183,6 +183,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/diagnostics/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConnectionCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/kind-presets": {
         parameters: {
             query?: never;
@@ -3923,6 +3939,22 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /** @description The ATC archive. */
+        ArchiveCheck: {
+            /** @description Reached, not reached, or not configured: the division reads no archive. */
+            outcome: components["schemas"]["ConnectionOutcome"];
+            error: null | components["schemas"]["ConnectionError"];
+            /**
+             * Format: int64
+             * @description How long the check took; `null` when nothing was opened.
+             */
+            milliseconds: null | number;
+            /**
+             * Format: date-time
+             * @description The start of the newest connection in the archive; `null` when it holds none.
+             */
+            latestSessionStart: null | string;
+        };
         /**
          * @description A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
          *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
@@ -4693,6 +4725,18 @@ export interface components {
          * @enum {unknown}
          */
         ConflictPolicy: "Warn" | "Block" | "None";
+        /** @description The two databases, as the check found them. */
+        ConnectionCheckResponse: {
+            database: components["schemas"]["HubDatabaseCheck"];
+            archive: components["schemas"]["ArchiveCheck"];
+        };
+        /** @enum {unknown} */
+        ConnectionError: "AccessDenied" | "UnknownDatabase" | "MissingView" | "Timeout" | "Unreachable" | "NoConnectionString" | "Other" | null;
+        /**
+         * @description What the check found.
+         * @enum {unknown}
+         */
+        ConnectionOutcome: "Ok" | "Failed" | "NotConfigured";
         /**
          * @description A message in full. Everything but the status is read only on the screen and read only on the
          *     server: what the sender wrote is not the department's to edit, which is why the write payload
@@ -6126,6 +6170,21 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @description The hub's own database. */
+        HubDatabaseCheck: {
+            /** @description Reached, or not. */
+            outcome: components["schemas"]["ConnectionOutcome"];
+            error: null | components["schemas"]["ConnectionError"];
+            /**
+             * Format: int64
+             * @description How long the check took, opening, query and migrations together.
+             */
+            milliseconds: number;
+            /** @description The server's own version string; `null` on a failure. */
+            serverVersion: null | string;
+            /** @description One line per context, the core's first; empty on a failure. */
+            migrations: components["schemas"]["MigrationState"][];
+        };
         /** @description A hub as the list and the form show it. */
         HubDto: {
             /** Format: int64 */
@@ -6638,6 +6697,15 @@ export interface components {
          * @enum {unknown}
          */
         MenuScope: "Public" | "Footer";
+        /** @description The migrations of one context. */
+        MigrationState: {
+            /** @description The context's type name, as the log and `startup.txt` name it. */
+            context: string;
+            /** @description The newest migration of the build the database holds; `null` when it holds none. */
+            latest: null | string;
+            /** @description The migrations of the build the database does not hold yet: empty is up to date. */
+            pending: string[];
+        };
         /** @description What an administrator sets on a module. One switch, and that is the whole screen. */
         ModuleMaintenanceRequest: {
             maintenance: boolean;
@@ -10982,6 +11050,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestDiagnosticsResponse"];
+                };
+            };
+        };
+    };
+    ConnectionCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionCheckResponse"];
                 };
             };
         };
