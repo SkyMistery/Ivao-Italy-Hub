@@ -825,6 +825,11 @@ date future** senza `daily_leg_limit`, ed elenca quei tour. Con il limite spento
 - **Precisato in T13a**: la coda è la lista generica, `GET /api/flightops/review/queue`, ordinata su `queued_at`; «per tour» è
   `sort=tourId`, e la lista generica tiene l'ordine per data dentro ogni tour. La preferenza si chiama `flightops.reviewQueueOrder`
   (`date` | `tour`). Il suggerimento dei controlli entra con T17.
+- **Dal 16 ott 2026** (#273, nota `2026-10-16-i-tour-sul-lettore-dei-nomi`, piano 1.35): i nomi del pilota e di chi ha preso il
+  PIREP li legge `MemberNames.ReadAsync` del nucleo — `PirepReview.NamesAsync` resta come una riga che lo chiama, per le sue sette
+  chiamate nel modulo —, e nessuna risposta cambia. La coda, le segnalazioni sulle leg e i ban scrivono la persona con
+  `col.person('pilot')` e `col.person('assignedTo')` del nucleo, sul membro come lo manda il server: una persona cancellata, che in
+  queste liste restava un numero negativo, dice ora «persona cancellata» come nelle liste del nucleo (§10.0).
 
 ### 4.2 La presa in carico
 
@@ -844,6 +849,12 @@ riaperto torna `InReview` **in mano a chi l'ha riaperto**.
 Una mail al giorno a **tutti i validatori** (chi ha `Tours.Validate`), con la coda dei tour che ciascuno può validare: quanti PIREP per
 tour e da quanto aspetta il più vecchio (Carmine, 15 settembre: «magari qualcuno si fa lo scrupolo e butta l'occhio»). Tipo di
 notifica `flightops.reviewDigest`, con la preferenza del membro per spegnerla; non parte se la coda è vuota.
+
+**Dal 16 ott 2026** (#274, nessuna nota: i fusi li aveva scritti la nota `2026-10-09-i-job-che-recuperano` §3, piano 1.35): il
+riepilogo parte alle 07:00 **nel fuso della divisione**, la mattina di chi legge, e non più alle 07:00 UTC; come ogni trigger dei tour,
+il suo dice il fuso. **Dal 16 ott 2026** (#275, nessuna nota, piano 1.35; la risposta di Carmine sulla #275): le mail di un giro e la
+sua fine stanno **in un salvataggio solo**, come `AwardQueueMailJob`: un giro fermato a metà non mette in coda nessuno, e il giro dopo
+scrive una volta a ogni validatore.
 
 ### 4.3 La pagina di validazione (schermata dedicata)
 
@@ -1010,6 +1021,10 @@ dove serve.
   tutti, il resto chiede il token e `Hub-Agent-Contract`; l'agente legge e scrive **solo** i PIREP che il suo validatore decide (la
   pagina ne lascia leggere di più); **un controllo, un esecutore** (Carmine): l'agente non manda le chiavi del server; gli esiti
   **non** vanno nell'audit (Carmine) e portano sulla riga VID, token e versione dell'app, che la pagina mostra.
+- **Dal 16 ott 2026** (#276, nota `2026-10-16-i-tour-sulla-versione-del-contratto`, piano 1.35): la versione del contratto
+  (`Hub-Agent-Contract`) la controlla **`ContractVersion` del nucleo**, dichiarato una volta, `AgentContract.Version`, e messo come
+  filtro sul gruppo `/api/flightops/agent` dopo la policy del token; i tour non hanno più un filtro loro
+  (`AgentContract.RequireVersionAsync` se n'è andato). Nessuna risposta cambia, e `docs/agent-contract.md` resta com'è.
 
 **I costi, detti prima**: ogni validatore che lo vuole ha bisogno di un abbonamento Navigraph e dell'app installata; l'app è un
 secondo prodotto, fuori da questo repository, con il suo rilascio; il contratto API va **versionato** perché l'app e l'hub si
@@ -1245,6 +1260,9 @@ il blocco risponde `signedIn: false`.
   e quegli errori. Gli errori suggeriti e non confermati vanno via con gli esiti dei controlli. **Le note** sono `pilot_remarks`,
   `diversion_note`, `note_to_pilot`, `staff_note`, `override_reason`, `dispute_text`; la storia (`fo_pirep_events`) resta con le sue.
   Le foto le toglie il nucleo (§1.14). Le segnalazioni sulle leg non sono nell'elenco e restano.
+- **Dal 16 ott 2026** (#274, piano 1.35): ogni trigger dei tour dice il suo fuso. `TourRetentionJob` gira il primo del mese alle
+  04:20 **nel fuso della divisione**, dopo il job dei file del nucleo, che gira in quel fuso; `TrackRetentionJob` alle 03:40 **in
+  UTC**.
 
 ### 10.0 La richiesta di cancellazione dei dati
 
@@ -1265,8 +1283,12 @@ si legge «persona cancellata».
 
 **Da A12a di M3** (#187, 29 settembre, nota `2026-09-29-la-persona-cancellata-nel-nucleo`) «persona cancellata» è del nucleo:
 `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della lista generata.
-La copia dei tour (`memberName`, con la parola `flightops:people.erased`) **resta finché una sessione di Carmine non la sostituisce**
-con quella del nucleo; oggi non è ancora sostituita, e `flightops:people.erased` se ne andrà con lei.
+~~La copia dei tour (`memberName`, con la parola `flightops:people.erased`) **resta finché una sessione di Carmine non la sostituisce**
+con quella del nucleo; oggi non è ancora sostituita, e `flightops:people.erased` se ne andrà con lei.~~ **Dal 16 ott 2026** (#273, nota
+`2026-10-16-i-tour-sul-lettore-dei-nomi`, piano 1.35): la copia se n'è andata. Le pagine dei tour (la revisione, una segnalazione, i
+validatori, un pilota) scrivono una persona con `personName` del nucleo, e le liste generate con `col.person` (§4.1); i nomi per VID li
+legge `MemberNames.ReadAsync` del nucleo. **`flightops:people.erased` non c'è più**: la parola è `people.deleted` del nucleo. La
+tabella dei conteggi di un validatore passa sempre da `personName`, anche per chi non è più fra i validatori.
 
 ### 10.1 Il problema: il registro disciplinare punta al tour
 
