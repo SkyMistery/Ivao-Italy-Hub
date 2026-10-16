@@ -146,6 +146,8 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             ("events:erasure.shiftsOver", 0, nameof(ErasureOutcome.Anonymised)),
             ("events:erasure.transfersToCome", 0, nameof(ErasureOutcome.Deleted)),
             ("events:erasure.transfersOver", 0, nameof(ErasureOutcome.Anonymised)),
+            ("events:erasure.seatsToCome", 0, nameof(ErasureOutcome.Deleted)),
+            ("events:erasure.seatsOver", 0, nameof(ErasureOutcome.Anonymised)),
         ];
         Assert.Equal(lines, EventsLines(await superadmin.GetFromJsonAsync<JsonElement>(new Uri($"{ErasureEndpoints.Pattern}/{PersonVid}", UriKind.Relative), token)));
 

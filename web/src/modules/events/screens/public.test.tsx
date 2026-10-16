@@ -102,6 +102,7 @@ const event = {
   venue: null,
   questions: [],
   atc: null,
+  activities: [],
 } as unknown as PublicEventDto;
 
 const bootstrap = {

@@ -14,7 +14,8 @@ public sealed record RegistrationRequest(JsonObject? Answers);
 /// <summary>
 /// A registration as its member reads it, on <c>/events/mine</c> and on the event's page: the event with its questions, the answers as
 /// the form holds them — to draw it again for a change, and for the page to write in words in the language on screen (Carmine's answer 6
-/// on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2).
+/// on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2). And since E17 the seats the member
+/// holds in the activities, by their start.
 /// </summary>
 public sealed record MyRegistrationDto(
     long Id,
@@ -30,7 +31,24 @@ public sealed record MyRegistrationDto(
     bool Changeable,
     bool Withdrawable,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    IReadOnlyList<MySeatDto> Seats);
+
+/// <summary>
+/// A seat as the staff of an event read it in the tab «Seats» of its page (design M4 §7.2, E17): the member, named the way the core names a
+/// person, the activity with its words — which the page writes in the language on screen —, the turn, and when it was taken. The names are
+/// read in the list, one query a page; a row read alone has none.
+/// </summary>
+public sealed record EventSeatDto(
+    long Id,
+    long EventId,
+    Department OwnerDepartment,
+    EventMemberDto Member,
+    long ActivityId,
+    Localized<string> Activity,
+    DateTime StartsAtUtc,
+    DateTime EndsAtUtc,
+    DateTime CreatedAt);
 
 /// <summary>
 /// A registration as the staff of an event read it in the tab «Registrations» of its page (design M4 §7.2, E16): the member, named the

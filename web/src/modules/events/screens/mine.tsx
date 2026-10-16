@@ -24,6 +24,7 @@ import {
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
 import { AvailabilitiesSection, ShiftsSection } from './myShifts';
+import { RegistrationSeats } from './ActivityTurns';
 import { RegistrationAnswers } from './RegistrationAnswers';
 
 /**
@@ -287,6 +288,7 @@ function RegistrationItem({ registration }: { registration: MyRegistrationDto })
         {registration.venue === null ? null : ` · ${read(registration.venue)}`}
       </Subtle>
       <RegistrationAnswers registration={registration} />
+      <RegistrationSeats registration={registration} />
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
       {registration.changeable || registration.withdrawable ? (
         <div className="flex flex-wrap gap-2">

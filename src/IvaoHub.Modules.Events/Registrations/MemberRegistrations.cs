@@ -1,13 +1,11 @@
+using System.Data;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
-using IvaoHub.Core.Division;
-using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Public;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace IvaoHub.Modules.Events.Registrations;
 
@@ -17,13 +15,11 @@ namespace IvaoHub.Modules.Events.Registrations;
 /// on an event they see; nobody else's registration, ever: the staff's side is <see cref="RegistrationEndpoints"/>' «take away».
 /// <para>One registration per member per event is the unique index of the database: two requests of the same member in the same
 /// instant meet there, and the second becomes a change of the registration the first made. Nothing else is shared between members, so
-/// nothing is locked.</para>
+/// nothing is locked — but withdrawing, which takes the member's seats in the activities with it (E17), under the registration's lock.</para>
 /// </summary>
 public sealed class MemberRegistrations(
     EventsDbContext database,
-    EventsMail mail,
-    LocaleCatalog catalog,
-    IOptions<DivisionOptions> division,
+    MemberSeats seats,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -114,47 +110,51 @@ public sealed class MemberRegistrations(
             // Withdrawn from another window, or taken away by the staff, while this change was on its way.
             return (BookingResult.NotFound, null, false, problems);
         }
-        await mail.RegistrationReceivedAsync(
-            row,
-            vid,
-            locale => RegistrationAnswers.Lines(questions, answers, locale, division.Value.DefaultLocale, catalog),
-            cancellationToken);
+        // With the turns the member holds (E17): the mail says the registration as it is now.
+        await seats.TellAsync(row, vid, cancellationToken);
+        var held = await RegistrationSeats.OfAsync(database, [row.Id], vid, cancellationToken);
 
-        return (BookingResult.Done, Mine(registration, row, [.. questions.Select(PublicQuestionDto.Of)], now), created, problems);
+        return (BookingResult.Done, Mine(registration, row, [.. questions.Select(PublicQuestionDto.Of)], held, now), created, problems);
     }
 
     /// <summary>
     /// Withdraws the member from an event (§4-bis.2): until it starts — a cancelled one too. The row is deleted, as the core lets the
     /// member who sent it do (<c>[WithdrawnByStakeholder]</c>, E10h), loaded first so that the guard reads whose it is; the audit
     /// keeps who withdrew. Somebody else's registration is not found.
+    /// <para>The member's seats in the activities go with it (E17): a seat needs a registration. Under the registration's lock
+    /// (<see cref="RegistrationSeats.LockAsync"/>), so that a seat taken in the same instant is either seen here and goes, or refused there.</para>
     /// </summary>
     public async Task<(BookingResult Result, Refusals Problems)> WithdrawAsync(long eventId, CancellationToken cancellationToken)
     {
         var problems = new Refusals();
         var vid = currentUser.Vid;
-        var registration = await database.Registrations.FirstOrDefaultAsync(
-            candidate => candidate.EventId == eventId && candidate.Vid == vid,
-            cancellationToken);
-        if (registration is null)
+
+        var row = await database.Events.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == eventId, cancellationToken);
+
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        if (!await RegistrationSeats.LockAsync(database, eventId, vid, cancellationToken)
+            || await MineAsync(eventId, cancellationToken) is not { } registration)
         {
             return (BookingResult.NotFound, problems);
         }
 
-        var row = await database.Events.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == eventId, cancellationToken);
         if (row is null || !RegistrationRules.IsWithdrawable(row, clock.UtcNow))
         {
             return (BookingResult.Refused, problems.Add("id", RegistrationRules.ClosedKey));
         }
 
+        await RegistrationSeats.RemoveAsync(database, eventId, vid, cancellationToken);
         database.Registrations.Remove(registration);
 
         try
         {
             await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Taken away by the staff a moment before: there is nothing left to withdraw.
+            // A row of it gone a moment before, past the lock — the staff's «take away» read it earlier —: there is nothing left to withdraw
+            // (the review of #271, point 2: the catch `main` had stays).
             return (BookingResult.NotFound, problems);
         }
 
@@ -179,13 +179,19 @@ public sealed class MemberRegistrations(
                 .ThenBy(question => question.Id)
                 .ToListAsync(cancellationToken))
             .ToLookup(question => question.EventId);
+        var seats = (await RegistrationSeats.OfAsync(database, eventIds, vid, cancellationToken)).ToLookup(entry => entry.Seat.EventId);
 
         return
         [
             .. rows
                 .OrderBy(entry => entry.row.StartsAtUtc)
                 .ThenBy(entry => entry.registration.Id)
-                .Select(entry => Mine(entry.registration, entry.row, [.. questions[entry.row.Id].Select(PublicQuestionDto.Of)], now)),
+                .Select(entry => Mine(
+                    entry.registration,
+                    entry.row,
+                    [.. questions[entry.row.Id].Select(PublicQuestionDto.Of)],
+                    [.. seats[entry.row.Id]],
+                    now)),
         ];
     }
 
@@ -208,7 +214,12 @@ public sealed class MemberRegistrations(
         return database.Registrations.FirstOrDefaultAsync(candidate => candidate.EventId == eventId && candidate.Vid == vid, cancellationToken);
     }
 
-    private static MyRegistrationDto Mine(EventRegistration registration, Event row, IReadOnlyList<PublicQuestionDto> questions, DateTime now) =>
+    private static MyRegistrationDto Mine(
+        EventRegistration registration,
+        Event row,
+        IReadOnlyList<PublicQuestionDto> questions,
+        IReadOnlyList<(EventActivitySeat Seat, EventActivity Activity)> seats,
+        DateTime now) =>
         new(
             registration.Id,
             row.Id,
@@ -223,5 +234,6 @@ public sealed class MemberRegistrations(
             RegistrationRules.IsOpen(row, now),
             RegistrationRules.IsWithdrawable(row, now),
             registration.CreatedAt,
-            registration.UpdatedAt);
+            registration.UpdatedAt,
+            [.. seats.Select(entry => MemberSeats.Of(entry.Seat, entry.Activity))]);
 }

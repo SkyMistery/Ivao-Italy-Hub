@@ -30,6 +30,12 @@ internal static class DatabaseErrors
     /// <summary>A slot being deleted that a booking written in the same moment holds: the key of the booking stops it (§1.5).</summary>
     public static bool SlotWasBooked(Exception? exception) => Met(exception, MySqlErrorCode.RowIsReferenced2);
 
+    /// <summary>
+    /// A row being deleted that another row still names through its key: a slot a booking holds (above), an activity a seat taken in the
+    /// same moment holds (E17).
+    /// </summary>
+    public static bool StillReferenced(Exception? exception) => Met(exception, MySqlErrorCode.RowIsReferenced2);
+
     /// <summary>A deadlock: the database rolled the whole transaction back.</summary>
     public static bool Deadlocked(Exception? exception) => Met(exception, MySqlErrorCode.LockDeadlock);
 

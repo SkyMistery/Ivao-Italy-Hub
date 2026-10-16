@@ -52,6 +52,11 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
     /// <summary>The controllers' requests to hand a shift over (E12).</summary>
     public DbSet<EventAtcTransfer> AtcTransfers => Set<EventAtcTransfer>();
+    /// <summary>The parallel activities of the events in person (E17).</summary>
+    public DbSet<EventActivity> Activities => Set<EventActivity>();
+
+    /// <summary>The seats the members took in the activities' turns (E17).</summary>
+    public DbSet<EventActivitySeat> Seats => Set<EventActivitySeat>();
 
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
@@ -299,6 +304,39 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A controller's requests of every event: their own page.
             transfer.HasIndex(row => row.ControllerVid);
+        });
+
+        modelBuilder.Entity<EventActivity>(activity =>
+        {
+            activity.ToTable("evt_activities");
+            activity.HasKey(row => row.Id);
+            activity.Ignore(row => row.ResourceScope);
+            activity.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its activities with it, as it takes its questions. The key is also the index the tab reads by.
+            activity.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventActivitySeat>(seat =>
+        {
+            seat.ToTable("evt_activity_bookings");
+            seat.HasKey(row => row.Id);
+            seat.Ignore(row => row.StakeholderVid);
+            seat.Ignore(row => row.ResourceScope);
+
+            // A turn has several seats, so no unique index can count them: they are counted under a lock on the activity's row. A
+            // member takes a turn once, which the index says too. It is also the index the seats of a turn are counted by.
+            seat.HasIndex(row => new { row.ActivityId, row.StartsAtUtc, row.Vid }).IsUnique();
+
+            // A seat taken stops its activity from going: the server says so first (an activity with seats is not deleted). No key
+            // towards the event, as for a registration.
+            seat.HasOne<EventActivity>().WithMany().HasForeignKey(row => row.ActivityId).OnDelete(DeleteBehavior.Restrict);
+
+            // A member's seats of an event: the ones a new turn is checked against, and the ones that go with their registration.
+            seat.HasIndex(row => new { row.EventId, row.Vid });
+
+            // A member's seats of every event: their own page.
+            seat.HasIndex(row => row.Vid);
         });
     }
 }

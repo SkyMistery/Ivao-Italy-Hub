@@ -522,6 +522,11 @@ archive of ATC sessions), fewer no-shows, fewer shifts —, and the staff correc
 once, move and take away shifts, and a shift outside the rules is a warning, never a refusal. Publishing it, and
 what follows, is the rest of the second part.
 
+An event **in person** — a switch of its own, with a venue — asks its questions to whoever registers (a yes or
+no, one choice or several, a number, a text), and the staff read the registrations and the sums of the
+answers; its **parallel activities** — a flight simulator, a visit of the tower — have turns of a few minutes
+and a few seats each, which a registered member takes from the event's page and gives back until it starts.
+
 What a fork decides about it is, again, configuration and data.
 
 ### Who manages it
@@ -538,8 +543,8 @@ advisors —, and `positionGrants` in the example file gives them what the modul
 | `Events.Delete` | delete an event nobody took part in | ✓ | |
 | `Events.ManageSettings` | the settings below | ✓ | |
 | `EventRoutes.View`, `.Edit` | the routes of an event | ✓ | ✓ |
-| `EventBookings.View` | the slots and the bookings, with the pilots' VIDs; the export a gate manager reads | ✓ | ✓ |
-| `EventBookings.Edit` | load and correct the slots, generate the private ones, take a booking away | ✓ | ✓ |
+| `EventBookings.View` | the slots and the bookings, the registrations of an event in person, its activities and their seats, with the members' VIDs; the export a gate manager reads | ✓ | ✓ |
+| `EventBookings.Edit` | load and correct the slots, generate the private ones, write the activities, take a booking or a registration away | ✓ | ✓ |
 | `EventAtc.View`, `.Edit` | the ATC of an event: its positions, who is available, and correcting the roster | ✓ | ✓ |
 | `EventReports.View` | the reports of support (in the second part) | ✓ | ✓ |
 
@@ -568,6 +573,7 @@ division:
 | `bookingGapMinutes` | 10 | the least minutes between two bookings of one pilot in the same event, one way or the other |
 | `reminderLeadHours` | 24 | how long before the off block of a booking its pilot is reminded of it |
 | `pilotRetentionMonths` | 24 | how long after an event the bookings of its pilots are kept, once the second part of the module deletes them |
+| `inPersonRetentionMonths` | 3 | how long after an event in person its registrations and the seats in its activities are kept; the sums of the answers and the seats taken stay in its statistics |
 | `shiftMinutes` | 60 | the length of a shift of an event's roster, when the event does not say its own |
 | `minimumAtcRating` | none | the least ATC rating a member gives their availability with, chosen among the core's; none, any member |
 | `applicationsCloseDays` | 3 | how many days before an event its controllers' availabilities close |
@@ -601,11 +607,13 @@ and private slots, an MSE with private slots only, and an online day about the w
   staff. The hub places none for you.
 - **The mails**, each of which a member can switch off from their profile: an event they booked, registered
   to or hold a shift in cancelled, or its times changed; a booking taken away by the staff, or its flight
-  corrected; the reminder before a flight; a registration received or taken away; their ATC shifts when the
-  roster is published, and a shift added, moved or taken away after it; a request to hand a shift over
-  decided. The module has three jobs, all every quarter of an hour and in UTC: the one that projects an event
-  again when it is seen and when it ends (`events-release`), the reminders (`events-reminders`), and the one
-  that proposes the roster at the close and publishes it at its date (`events-roster`).
+  corrected; the reminder before a flight; a registration to an event in person received or changed — its
+  answers and the turns of the activities —, or taken away; their ATC shifts when the roster is published,
+  and a shift added, moved or taken away after it; a request to hand a shift over decided. The module has
+  four jobs, all in UTC: three every quarter of an hour — the one that projects an event again when it is
+  seen and when it ends (`events-release`), the reminders (`events-reminders`), and the one that proposes
+  the roster at the close and publishes it at its date (`events-roster`) —, and once a month the retention
+  of the registrations to the events in person (`events-retention`).
 
 ### The gate manager
 
@@ -628,12 +636,16 @@ in a roster, deleted for an event still to end, kept for one that ended without 
 without the reason of the proposal. What they did
 as staff — an event cancelled, a flight excused — stays under the pseudonym.
 
+The registrations to an event in person and the seats in its activities say who comes and with what, so they
+are kept for `inPersonRetentionMonths` after the event and then deleted; the numbers stay in the event's
+statistics. An erasure deletes them for an event still to end, and for one that ended keeps the registration
+under the pseudonym with only the answers the sums count, and the seats under the pseudonym.
+
 ### What it does not do yet
 
 - **The roster**: publishing it with its mails, handing a shift over, the reliability of whoever does not
   show up, and the reports of support with their awards — the rest of the second part of the module. The
   positions, the availabilities, the proposal of the roster and its correction are there.
-- **The events people come to in person**, with their registration — the third part.
 - **The stands of the private slots**, which the gate manager gives; the hub keeps the pair of an arrival
   and its departure, for one gate.
 
