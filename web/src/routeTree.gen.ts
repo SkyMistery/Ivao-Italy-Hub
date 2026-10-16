@@ -38,6 +38,7 @@ import { Route as StaffStaffDeptCategoriesRouteImport } from './routes/_staff/st
 import { Route as StaffStaffDeptContactsRouteImport } from './routes/_staff/staff.$dept.contacts'
 import { Route as StaffStaffDeptMenuRouteImport } from './routes/_staff/staff.$dept.menu'
 import { Route as StaffStaffAdminAuditRouteImport } from './routes/_staff/staff.admin.audit'
+import { Route as StaffStaffAdminConnectionsRouteImport } from './routes/_staff/staff.admin.connections'
 import { Route as StaffStaffAdminModulesRouteImport } from './routes/_staff/staff.admin.modules'
 import { Route as StaffStaffAdminPermissionsRouteImport } from './routes/_staff/staff.admin.permissions'
 import { Route as StaffStaffAdminUiKitRouteImport } from './routes/_staff/staff.admin.ui-kit'
@@ -209,6 +210,12 @@ const StaffStaffAdminAuditRoute = StaffStaffAdminAuditRouteImport.update({
   path: '/staff/admin/audit',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffAdminConnectionsRoute =
+  StaffStaffAdminConnectionsRouteImport.update({
+    id: '/staff/admin/connections',
+    path: '/staff/admin/connections',
+    getParentRoute: () => StaffRoute,
+  } as any)
 const StaffStaffAdminModulesRoute = StaffStaffAdminModulesRouteImport.update({
   id: '/staff/admin/modules',
   path: '/staff/admin/modules',
@@ -384,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
   '/staff/$dept/menu': typeof StaffStaffDeptMenuRouteWithChildren
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
+  '/staff/admin/connections': typeof StaffStaffAdminConnectionsRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
@@ -431,6 +439,7 @@ export interface FileRoutesByTo {
   '/staff': typeof StaffStaffIndexRoute
   '/me/contacts/$id': typeof MemberMeContactsIdRoute
   '/staff/admin/audit': typeof StaffStaffAdminAuditRoute
+  '/staff/admin/connections': typeof StaffStaffAdminConnectionsRoute
   '/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
   '/staff/awards/$id': typeof StaffStaffAwardsIdRoute
@@ -489,6 +498,7 @@ export interface FileRoutesById {
   '/_staff/staff/$dept/contacts': typeof StaffStaffDeptContactsRouteWithChildren
   '/_staff/staff/$dept/menu': typeof StaffStaffDeptMenuRouteWithChildren
   '/_staff/staff/admin/audit': typeof StaffStaffAdminAuditRoute
+  '/_staff/staff/admin/connections': typeof StaffStaffAdminConnectionsRoute
   '/_staff/staff/admin/modules': typeof StaffStaffAdminModulesRoute
   '/_staff/staff/admin/permissions': typeof StaffStaffAdminPermissionsRouteWithChildren
   '/_staff/staff/admin/ui-kit': typeof StaffStaffAdminUiKitRoute
@@ -546,6 +556,7 @@ export interface FileRouteTypes {
     | '/staff/$dept/contacts'
     | '/staff/$dept/menu'
     | '/staff/admin/audit'
+    | '/staff/admin/connections'
     | '/staff/admin/modules'
     | '/staff/admin/permissions'
     | '/staff/admin/ui-kit'
@@ -593,6 +604,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/me/contacts/$id'
     | '/staff/admin/audit'
+    | '/staff/admin/connections'
     | '/staff/admin/modules'
     | '/staff/admin/ui-kit'
     | '/staff/awards/$id'
@@ -650,6 +662,7 @@ export interface FileRouteTypes {
     | '/_staff/staff/$dept/contacts'
     | '/_staff/staff/$dept/menu'
     | '/_staff/staff/admin/audit'
+    | '/_staff/staff/admin/connections'
     | '/_staff/staff/admin/modules'
     | '/_staff/staff/admin/permissions'
     | '/_staff/staff/admin/ui-kit'
@@ -890,6 +903,13 @@ declare module '@tanstack/react-router' {
       path: '/staff/admin/audit'
       fullPath: '/staff/admin/audit'
       preLoaderRoute: typeof StaffStaffAdminAuditRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/_staff/staff/admin/connections': {
+      id: '/_staff/staff/admin/connections'
+      path: '/staff/admin/connections'
+      fullPath: '/staff/admin/connections'
+      preLoaderRoute: typeof StaffStaffAdminConnectionsRouteImport
       parentRoute: typeof StaffRoute
     }
     '/_staff/staff/admin/modules': {
@@ -1280,6 +1300,7 @@ interface StaffRouteChildren {
   StaffStaffDeptContactsRoute: typeof StaffStaffDeptContactsRouteWithChildren
   StaffStaffDeptMenuRoute: typeof StaffStaffDeptMenuRouteWithChildren
   StaffStaffAdminAuditRoute: typeof StaffStaffAdminAuditRoute
+  StaffStaffAdminConnectionsRoute: typeof StaffStaffAdminConnectionsRoute
   StaffStaffAdminModulesRoute: typeof StaffStaffAdminModulesRoute
   StaffStaffAdminPermissionsRoute: typeof StaffStaffAdminPermissionsRouteWithChildren
   StaffStaffAdminUiKitRoute: typeof StaffStaffAdminUiKitRoute
@@ -1300,6 +1321,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffStaffDeptContactsRoute: StaffStaffDeptContactsRouteWithChildren,
   StaffStaffDeptMenuRoute: StaffStaffDeptMenuRouteWithChildren,
   StaffStaffAdminAuditRoute: StaffStaffAdminAuditRoute,
+  StaffStaffAdminConnectionsRoute: StaffStaffAdminConnectionsRoute,
   StaffStaffAdminModulesRoute: StaffStaffAdminModulesRoute,
   StaffStaffAdminPermissionsRoute: StaffStaffAdminPermissionsRouteWithChildren,
   StaffStaffAdminUiKitRoute: StaffStaffAdminUiKitRoute,

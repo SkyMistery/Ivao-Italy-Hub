@@ -5008,6 +5008,10 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
   **793 in 112 file** (`--maxWorkers=2`, la memoria era poca); lo smoke: **180/181 al primo giro** — cadde
   `training-public.spec.ts:232`, della formazione, che E13a non tocca: rifatto da solo con `--repeat-each=3` **3/3**, poi lo smoke intero
   **181/181**; `core-guard.sh` dal merge-base `85d15a7`: passa. e2e:full non rifatto: i due merge non toccano il browser né gli eventi.
+- **Con E10t unita su `main`** (`0ce4802`, con la prova dei collegamenti del master, #281): un ultimo merge di `main`, pulito in locale (GitHub
+  lo dava in conflitto per la storia incrociata); `git diff origin/main...HEAD` ora è solo di E13a (fuori dal modulo `ErasureTests.cs` e
+  `schema.d.ts`); `gen:api` senza diff; nessun cambio pendente del modello; unità **1331/1331**; **integrazione intera 656/656** (14,5 min,
+  da sola); `lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **795 in 113 file** (`--maxWorkers=2`); smoke **183/183**.
 - **Non verificato**: la CI (la dice la PR); un evento vero sulla rete e i tempi veri del tracker (i pesi del lotto sono stime dalla
   misura di E10a); una sera con l'archivio di vIPI (IT è a `none` finché Carmine non lo accende, #259: chi ha coperto resta vuoto); la
   pagina a 375 px (letta con la spec, non guardata).

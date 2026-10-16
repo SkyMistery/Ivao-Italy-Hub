@@ -1507,6 +1507,44 @@
       "description": "This build was compiled without any module."
     }
   },
+  "connections": {
+    "title": "Database connections",
+    "description": "Whether the hub reaches its databases, tested now.",
+    "run": "Test the connections",
+    "running": "Testing…",
+    "failed": "The test could not be run.",
+    "time": "{{ms}} ms",
+    "serverVersion": "Server: {{version}}",
+    "outcomes": {
+      "Ok": "Reached",
+      "Failed": "Not reached",
+      "NotConfigured": "Not configured"
+    },
+    "errors": {
+      "AccessDenied": "Access denied: the user or its password was refused, or it may not read what the hub asks for.",
+      "UnknownDatabase": "The database named in the connection string does not exist.",
+      "MissingView": "The view the hub reads is missing, or its user may not see it.",
+      "Timeout": "No answer within ten seconds.",
+      "Unreachable": "The database server could not be reached.",
+      "NoConnectionString": "The division reads an archive, but its connection string is not in the secrets.",
+      "Other": "Another error: the hub's log has the details."
+    },
+    "database": {
+      "title": "The hub's database"
+    },
+    "migrations": {
+      "upToDate": "Up to date",
+      "pending_one": "{{count}} migration pending: {{names}}",
+      "pending_other": "{{count}} migrations pending: {{names}}",
+      "latest": "latest {{name}}"
+    },
+    "archive": {
+      "title": "The ATC archive",
+      "notConfigured": "This division reads no ATC archive (division.json → atcData), so nothing was opened.",
+      "latest": "Newest connection in the archive: {{at}} UTC",
+      "empty": "The archive answers, and holds no connection yet."
+    }
+  },
   "audit": {
     "title": "Audit log",
     "description": "Every write on a row the hub records, written by the save changes interceptor and by nothing else.",
