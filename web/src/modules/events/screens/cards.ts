@@ -15,6 +15,11 @@ export function eventHref(slug: string): string {
   return `/events/${slug}`;
 }
 
+/** The page of the roster of an event (E12), where its page and the mails of the shifts lead once it is published. */
+export function rosterHref(slug: string): string {
+  return `${eventHref(slug)}/roster`;
+}
+
 /** An airport of an event: its ICAO, and the name the hub knows — none for one it no longer knows. */
 export interface EventAirport {
   readonly icao: string;

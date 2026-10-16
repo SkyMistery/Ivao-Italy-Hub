@@ -60,6 +60,18 @@ export interface BookingGroup<TBooking extends OwnBooking> {
   readonly bookings: TBooking[];
 }
 
+/** A controller's shifts (E12) under their events, each event once, in the order its first shift comes: `/events/mine` and the block. */
+export function shiftsByEvent<TShift extends { readonly eventId: number }>(
+  shifts: readonly TShift[],
+): TShift[][] {
+  const groups = new Map<number, TShift[]>();
+  for (const shift of shifts) {
+    groups.set(shift.eventId, [...(groups.get(shift.eventId) ?? []), shift]);
+  }
+
+  return [...groups.values()];
+}
+
 /** The bookings under their events: each event once, in the order its first booking comes, and its bookings in theirs. */
 export function bookingsByEvent<TBooking extends OwnBooking>(
   bookings: readonly TBooking[],
