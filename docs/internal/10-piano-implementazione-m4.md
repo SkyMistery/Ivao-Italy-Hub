@@ -4392,7 +4392,9 @@ contrario li fa cadere.
   (E12, #268), che rendeva la PR in conflitto, con i blocchi di E10t in cima; rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1303/1303**, integrazione intera da sola **621/621** al primo giro (15 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**) verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `b5d3fb9b`: passa.
 - **Unito `main` a `2938ae8`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t]: E10s, #269, e i tour, #274),
   di nuovo in conflitto solo nei documenti: qui E10s prima di E10t, in `HANDOFF-M4.md` E10t in cima ed E10s sotto. Il diff della fase
-  fuori dai documenti è lo stesso. RISULTATO-VERIFICA-2
+  fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build Release 0 avvisi, unità **1312/1312**,
+  integrazione intera da sola **624/624** al primo giro (12 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**)
+  verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `2938ae80`: passa.
 
 [m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
 
