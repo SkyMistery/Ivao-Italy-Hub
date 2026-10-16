@@ -530,7 +530,9 @@
     "registrationsToCome": "Iscrizioni a eventi non ancora finiti: cancellate",
     "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto",
     "availabilitiesToCome": "Disponibilità ATC per eventi non ancora finiti: cancellate",
-    "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota"
+    "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota",
+    "shiftsToCome": "Turni ATC di eventi non ancora finiti: cancellati, e di nuovo scoperti",
+    "shiftsOver": "Turni ATC di eventi finiti, tenuti senza il controllore, la nota dello staff e il perché della proposta"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -762,12 +764,22 @@
     "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
     "ratingUnknown": "Scegli un rating dell'elenco.",
     "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
-    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
     "positionOnCancelledEvent": "L'evento è annullato: non vi si apre né vi si cambia una postazione.",
-    "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione."
+    "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione.",
+    "positionUnknownForShift": "Scegli una delle postazioni di questo evento.",
+    "positionOfAnotherEvent": "Un turno si sposta solo fra le postazioni del suo evento.",
+    "shiftOutsidePosition": "Il turno è fuori dalle ore della sua postazione.",
+    "shiftTaken": "Un altro controllore tiene questa postazione in queste ore.",
+    "controllerNeverSignedIn": "Questo membro non è mai entrato nell'hub: non gli si può dare un turno.",
+    "rosterNotProposed": "Il roster non è ancora proposto: lo è alla chiusura delle disponibilità.",
+    "positionHasShifts": "La postazione ha dei turni nel roster: il nominativo e le ore restano intorno a loro, e dall'inizio dell'evento non si elimina.",
+    "eventHasShifts": "L'evento ha dei turni nel suo roster: annullalo, invece.",
+    "shiftAfterStart": "L'evento è iniziato: un turno tiene il suo controllore, la sua postazione e le ore già passate, e non si toglie; si può solo tagliarne la fine, ad adesso o più tardi.",
+    "controllerBusy": "Questo controllore tiene già un'altra postazione dell'evento in queste ore."
   },
   "questions": {
     "title": "Domande",
+    "empty": "Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.",
     "create": "Nuova domanda",
     "edit": "Domanda",
     "fields": {
@@ -801,6 +813,7 @@
     }
   },
   "registrations": {
+    "empty": "Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.",
     "fields": {
       "member": "Membro",
       "lines": "Risposte",
@@ -882,6 +895,84 @@
         "availableToUtc": "Disponibile fino alle"
       }
     },
-    "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano."
+    "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano.",
+    "roster": {
+      "title": "Roster",
+      "notYet": "Il roster si propone alla chiusura delle disponibilità, il {{date}}.",
+      "proposed": "Proposto il {{date}}. Correggilo fino alla fine dell'evento: un turno fuori dalle regole è un avviso, mai un rifiuto.",
+      "empty": "Nessun turno e niente di scoperto: l'evento non apre ancora nessuna postazione.",
+      "add": "Aggiungi",
+      "move": "Sposta",
+      "remove": {
+        "trigger": "Togli",
+        "title": "Togliere questo turno?",
+        "description": "Il controllore non lo ha più, e quel pezzo della postazione torna scoperto.",
+        "confirm": "Togli"
+      },
+      "fields": {
+        "callsign": "Postazione",
+        "fromUtc": "Dalle",
+        "toUtc": "Alle",
+        "state": "Turno",
+        "controller": "Controllore",
+        "rating": "Rating",
+        "why": "Perché",
+        "alerts": "Avvisi"
+      },
+      "options": {
+        "state": {
+          "Uncovered": "Scoperto",
+          "Proposed": "Proposto",
+          "Staff": "Dello staff"
+        }
+      },
+      "why": {
+        "decidedBy": {
+          "Only": "L'unico che poteva prenderlo",
+          "Preferred": "Ha il rating preferito per questo tipo di postazione",
+          "Experience": "Ha aperto più spesso questa postazione, o il suo tipo",
+          "Penalty": "Una penalità per i no-show più bassa",
+          "FewerShifts": "Meno turni in questo roster",
+          "EarlierAvailability": "Ha dato prima la sua disponibilità",
+          "Vid": "A parità di tutto il resto: il VID più basso"
+        },
+        "candidates": "Potevano prenderlo: {{count}}",
+        "connections": "Connessioni: {{callsign}} su questa postazione, {{type}} sul suo tipo",
+        "noExperience": "Esperienza non contata: nessun archivio delle sessioni ha risposto",
+        "penalty": "Penalità: {{value}}",
+        "staff": "Scritto dallo staff",
+        "uncoveredNobody": "Nessuno dei disponibili può prenderlo",
+        "uncoveredBusy": "Potrebbero prenderlo: {{count}}, ma sono in altri turni o al massimo di turni di fila",
+        "uncoveredFree": "Liberi di prenderlo: {{count}}"
+      },
+      "warnings": {
+        "NotAvailable": "Non disponibile per tutto il turno",
+        "BelowMinimum": "Rating sotto il minimo delle impostazioni",
+        "BelowPreferred": "Rating sotto quello preferito per questo tipo di postazione",
+        "Overlapping": "Un altro suo turno nelle stesse ore",
+        "TooManyInARow": "Più turni di fila di quanti ne permettono le impostazioni"
+      }
+    },
+    "shifts": {
+      "create": "Nuovo turno",
+      "edit": "Turno",
+      "fields": {
+        "positionId": "Postazione",
+        "fromUtc": "Dalle",
+        "toUtc": "Alle",
+        "controllerVid": "VID del controllore"
+      },
+      "hints": {
+        "positionId": "Una delle postazioni di questo evento.",
+        "fromUtc": "In UTC, dentro le ore della postazione.",
+        "toUtc": "In UTC, dentro le ore della postazione.",
+        "controllerVid": "Chiunque sia entrato nell'hub almeno una volta, che abbia dato la disponibilità o no: quello che esce dalle regole è un avviso sul roster."
+      },
+      "options": {
+        "positionId": {
+          "none": "Scegli una postazione"
+        }
+      }
+    }
   }
 }
