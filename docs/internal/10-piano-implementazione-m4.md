@@ -5086,7 +5086,9 @@ la domanda per Carmine data al coordinatore):
   651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **796 in 113 file** (da solo, con
   `--maxWorkers=4`: un giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api` senza diff; lo smoke `--workers=2` **181/181**;
   `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit: **69/69 al primo giro** (14,9 min; due giri prima avevano 68/69, rossa solo la spec nuova per due asserzioni sue — la descrizione sotto il breadcrumb, due `h1` nella pagina —, corrette e la spec da sola 6/6 con `--repeat-each 3`); `core-guard.sh` con Git Bash dal
-  merge-base con `main` (`2938ae8`): passa, nessun file del maintainer.
+  merge-base con `main` (`2938ae8`): passa, nessun file del maintainer. **Dopo il merge della testa di E13a `c0bc1bd`** (con `main` a
+  `85d15a7` ed E10t `ee9772c`; nessun conflitto, niente del modulo): build senza avvisi, unità **1338/1338**, integrazione intera da sola
+  **654/654** (16,4 min), `gen:api` senza diff, `core-guard.sh` dal merge-base `85d15a7`: passa.
 - **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job); i limiti e il
   registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
   usa la virgola italiana (non toccato).
