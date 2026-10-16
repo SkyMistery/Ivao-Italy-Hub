@@ -8,7 +8,8 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// <summary>
 /// A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
 /// core names a person — `{ vid, name }`, so that the list writes a person whose data was erased with the core's word —, the flight of
-/// its slot with the aircraft the pilot chose, when they booked, and when the reminder of the day before left. The flight is read off
+/// its slot with the aircraft the pilot chose, when they booked, when the reminder of the day before left, and after the event what its check found
+/// (E13a): when the flight started, when it was looked for — looked for and not found is a booking not flown. The flight is read off
 /// the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
 /// <para>The flight is empty only where the engine maps one row with no page around it (<c>GET /api/events/bookings/{id}</c>): the
 /// list reads the slots of a page in one query (<c>StaffBookings.RowsAsync</c>).</para>
@@ -30,7 +31,9 @@ public sealed record EventBookingDto(
     string? Rotation,
     int? Leg,
     DateTime CreatedAt,
-    DateTime? RemindedAt);
+    DateTime? RemindedAt,
+    DateTime? FlownAt,
+    DateTime? FlownCheckedAt);
 
 /// <summary>
 /// The bookings of an event as its staff list them (design M4 §7.2, E6b; the list E6a left to this phase): a resource of the CRUD engine
@@ -94,6 +97,8 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
             slot?.RotationCode,
             slot?.RotationLeg,
             booking.CreatedAt,
-            booking.RemindedAt);
+            booking.RemindedAt,
+            booking.FlownAt,
+            booking.FlownCheckedAt);
     }
 }

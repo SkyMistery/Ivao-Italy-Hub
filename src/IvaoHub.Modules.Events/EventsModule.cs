@@ -5,6 +5,7 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Privacy;
+using IvaoHub.Modules.Events.After;
 using IvaoHub.Modules.Events.Atc;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
@@ -41,7 +42,9 @@ namespace IvaoHub.Modules.Events;
 /// windows, given from the event's page and read by the staff per position; E11b its roster — proposed once at the close by
 /// <c>events-roster</c>, with the why of every shift, and corrected by the staff, with warnings where a shift leaves the rules; E17 the
 /// parallel activities of an event in person — a member's seat in a turn, counted under a lock —, «Duplicate» for the questions and the
-/// activities, and the short retention of the registrations, <c>events-retention</c>.
+/// activities, and the short retention of the registrations, <c>events-retention</c>; E13a the checks after an event — <c>events-after</c>
+/// finds the bookings flown, the shifts attended or a no-show to propose, and counts who flew without booking — and its statistics, with
+/// «Recalculate» for the staff.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -194,6 +197,17 @@ public sealed class EventsModule : ModuleBase
                 .WithIdentity($"{EventRosterJob.JobName}-quarterly")
                 .WithCronSchedule(EventRosterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
+        // After the event (E13a): events-after every hour, in UTC — the bookings flown, the shifts attended, who flew without booking —, and
+        // the statistics, worked out by it and again by the staff.
+        services.AddScoped<EventStatistics>();
+        services.AddScoped<EventsAfterJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<EventsAfterJob>(job => job.WithIdentity(EventsAfterJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(EventsAfterJob.JobName)
+                .WithIdentity(EventsAfterJob.TriggerName)
+                .WithCronSchedule(EventsAfterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -216,5 +230,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapShiftEndpoints();
         endpoints.MapTransferEndpoints();
         endpoints.MapPublicRosterEndpoints();
+        endpoints.MapStatsEndpoints();
     }
 }

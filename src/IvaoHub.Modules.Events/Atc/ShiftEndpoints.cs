@@ -4,6 +4,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.People;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Settings;
@@ -30,6 +31,24 @@ public sealed record EventAtcShiftDto(
     ShiftOrigin Origin,
     DateTime UpdatedAt,
     DateTime RowVersion);
+
+/// <summary>
+/// A shift as the generated list of the shifts reads it (E13a, the tab «Statistics»): its position's callsign, its controller and its hours,
+/// and how it went — with who covered the position next to a no-show the check proposed. Data only: the page writes the words. The callsign
+/// and the names are read for a page at once (<see cref="ShiftEndpoints.RowsAsync"/>); a row alone has neither.
+/// </summary>
+public sealed record EventAtcShiftRowDto(
+    long Id,
+    long EventId,
+    long PositionId,
+    Department OwnerDepartment,
+    string? Callsign,
+    EventMemberDto Controller,
+    DateTime FromUtc,
+    DateTime ToUtc,
+    ShiftOrigin Origin,
+    ShiftAttendance Attendance,
+    EventMemberDto? CoveredBy);
 
 /// <summary>
 /// What the staff may set on a shift (§4.4): the position — of the same event, on a change —, the controller by VID, and the hours. The event,
@@ -78,7 +97,7 @@ public static class ShiftEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapCrud<EventAtcShift, EventAtcShiftDto, EventAtcShiftDto, EventAtcShiftWriteDto>(Pattern, options =>
+        app.MapCrud<EventAtcShift, EventAtcShiftRowDto, EventAtcShiftDto, EventAtcShiftWriteDto>(Pattern, options =>
         {
             options.PermissionArea = EventsPermissions.AtcArea;
             options.Name = "EventAtcShifts";
@@ -90,8 +109,15 @@ public static class ShiftEndpoints
             options.Sortable.Add(nameof(EventAtcShift.FromUtc));
             options.Filterable.Add(nameof(EventAtcShift.EventId));
             options.Filterable.Add(nameof(EventAtcShift.PositionId));
+            options.Filterable.Add(nameof(EventAtcShift.Attendance));
 
-            options.ToList = ToDto;
+            // A page names its controllers and reads its positions in one query each (E13a); a row alone has neither.
+            options.ToList = shift => Row(shift, callsigns: null, new Dictionary<int, string>());
+            options.ToListPage = (shifts, services, cancellationToken) => RowsAsync(
+                services.GetRequiredService<EventsDbContext>(),
+                services.GetRequiredService<HubDbContext>(),
+                shifts,
+                cancellationToken);
             options.ToDetail = ToDto;
             options.Apply = Apply;
             options.BeforeAuthorize = AdoptAsync;
@@ -122,6 +148,38 @@ public static class ShiftEndpoints
         shift.Origin,
         shift.UpdatedAt,
         shift.RowVersion);
+
+    /// <summary>A page of shifts with their positions' callsigns and the names of their controllers and of who covered: one query for each, never one per row.</summary>
+    internal static async Task<IReadOnlyList<EventAtcShiftRowDto>> RowsAsync(
+        EventsDbContext database,
+        HubDbContext hub,
+        IReadOnlyList<EventAtcShift> shifts,
+        CancellationToken cancellationToken)
+    {
+        var positionIds = shifts.Select(shift => shift.PositionId).Distinct().ToList();
+        var callsigns = await database.AtcPositions.AsNoTracking()
+            .Where(position => positionIds.Contains(position.Id))
+            .ToDictionaryAsync(position => position.Id, position => position.Callsign, cancellationToken);
+        var names = await MemberNames.ReadAsync(
+            hub,
+            shifts.Select(shift => shift.ControllerVid).Concat(shifts.Select(shift => shift.CoveredByVid).OfType<int>()),
+            cancellationToken);
+
+        return [.. shifts.Select(shift => Row(shift, callsigns, names))];
+    }
+
+    private static EventAtcShiftRowDto Row(EventAtcShift shift, IReadOnlyDictionary<long, string>? callsigns, IReadOnlyDictionary<int, string> names) => new(
+        shift.Id,
+        shift.EventId,
+        shift.PositionId,
+        shift.OwnerDepartment,
+        callsigns?.GetValueOrDefault(shift.PositionId),
+        EventsPeople.Member(shift.ControllerVid, names),
+        shift.FromUtc,
+        shift.ToUtc,
+        shift.Origin,
+        shift.Attendance,
+        shift.CoveredByVid is { } covered ? EventsPeople.Member(covered, names) : null);
 
     /// <summary>
     /// A write of the staff: the shift is theirs from now on, and the why of a proposal no longer says why it is held — the audit keeps it

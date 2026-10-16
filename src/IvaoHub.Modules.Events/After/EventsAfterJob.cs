@@ -1,0 +1,510 @@
+using System.Data;
+using System.Globalization;
+using IvaoHub.Core.Atc;
+using IvaoHub.Core.Data;
+using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
+using IvaoHub.Core.Modules;
+using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events.Bookings;
+using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Settings;
+using IvaoHub.Modules.Events.Staff;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Quartz;
+
+namespace IvaoHub.Modules.Events.After;
+
+/// <summary>
+/// <c>events-after</c> (design M4 §4.5, §5.1, §8.4, §10.2, E13a; note 2026-10-16-le-verifiche-dopo-l-evento): every hour, the checks after an
+/// event, in batches that end inside one request.
+/// <list type="bullet">
+/// <item><b>The bookings</b>: for each, the pilot's sessions on the tracker between its two airports in the window of the flights; the one
+/// nearest to its departure sets <c>flown_at</c>, the callsign does not count (reading 2). <c>flown_checked_at</c> says it was looked at,
+/// found or not.</item>
+/// <item><b>The shifts</b> still <c>Unknown</c>: the archive of the sessions, or the tracker by VID where the archive cannot say; at least
+/// <c>attendanceMinimumMinutes</c> on the position within the shift is <c>Attended</c>, less a <c>NoShowProposed</c> with who covered the
+/// position when the archive says so (readings 4 and 5).</item>
+/// <item><b>Closing the event</b>, when no row is left to check: who flew without booking — a number of people, whose VIDs live only in
+/// memory while they are counted (reading 3) —, the statistics (<see cref="EventStatistics"/>) and <c>after_done_at</c>, in one step.</item>
+/// </list>
+/// <para><b>A batch</b> (reading 6): a run spends at most <see cref="Budget"/> units, about the seconds of the network's time — a question by
+/// VID costs <see cref="ByVidCost"/>, one about an airport <see cref="ByAirportCost"/> —, and what is left waits for the next run, which
+/// finds it from the rows. <b>A source that does not answer</b> (reading 7) is asked no more in the run, and its rows stay to check; after
+/// <see cref="AfterRules.GiveUpAfter"/> an event is closed with them left as they are, never marked.</para>
+/// <para><b>It decides from its data, never from the hour it runs</b> (note 2026-09-28-i-job-quando-passenger-spegne-l-hub §8): every event
+/// due with <c>after_done_at</c> empty, every row with its check empty, whenever it runs, so a run lost while the hub slept is made up by the
+/// next, which the core's catch up runs after a start (E10j), and a run cut half way kept every row it saved. Its row in
+/// <c>hub_jobs_log</c> says when it finished on every way out. It never throws; an event that fails is logged, named in the row's message and
+/// left for the next run.</para>
+/// </summary>
+[DisallowConcurrentExecution]
+public sealed class EventsAfterJob(
+    EventsDbContext database,
+    HubDbContext hub,
+    ModuleSettingsStore settingsStore,
+    IIvaoApiClient ivao,
+    IAtcActivitySource archive,
+    EventStatistics statistics,
+    IClock clock,
+    ILogger<EventsAfterJob> logger) : IJob
+{
+    public const string JobName = "events-after";
+
+    /// <summary>Its trigger, by name: a test reads its zone and its cron.</summary>
+    public const string TriggerName = $"{JobName}-hourly";
+
+    /// <summary>Every hour at seven minutes past, off the minutes the other jobs of the events run on. In UTC, which the trigger says.</summary>
+    public const string Cron = "0 7 * * * ?";
+
+    /// <summary>What a run spends at most (reading 6): about the seconds of the network's time a run can take inside the 80 the scheduled request waits.</summary>
+    public const int Budget = 60;
+
+    /// <summary>A question about one person — the tracker by VID, the archive of the sessions.</summary>
+    public const int ByVidCost = 1;
+
+    /// <summary>A question about an airport without a VID: the page with its last row takes the network about ten seconds and a half (E10a).</summary>
+    public const int ByAirportCost = 11;
+
+    private const int MaxMessageLength = 2000;
+
+    public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);
+
+    /// <summary>What a run did: the events it looked at, the bookings and the shifts it checked, the events it closed.</summary>
+    public sealed record Outcome(int Events, int Bookings, int Shifts, int Closed);
+
+    public async Task<Outcome> RunAsync(CancellationToken cancellationToken = default)
+    {
+        var entry = new JobLogEntry { Job = JobName, StartedAt = clock.UtcNow, Status = "running" };
+        hub.JobsLog.Add(entry);
+        await hub.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var now = entry.StartedAt;
+            var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
+
+            // The database narrows to the events whose moment passed; the rule itself is read in one place (AfterRules.IsDue).
+            var endedBy = now - SlotWindow.Margin;
+            var due = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
+                    .Where(row => row.Status == PublishStatus.Published
+                        && row.CancelledAt == null
+                        && row.AfterDoneAt == null
+                        && row.EndsAtUtc <= endedBy)
+                    .OrderBy(row => row.EndsAtUtc)
+                    .ThenBy(row => row.Id)
+                    .ToListAsync(cancellationToken))
+                .Where(row => AfterRules.IsDue(row, now))
+                .ToList();
+
+            var run = new Run();
+            var outcome = new Outcome(0, 0, 0, 0);
+            var failed = new List<long>();
+            foreach (var row in due)
+            {
+                try
+                {
+                    var (bookings, shifts, closed) = await CheckAsync(row, settings, run, now, cancellationToken);
+                    outcome = new Outcome(
+                        outcome.Events + 1,
+                        outcome.Bookings + bookings,
+                        outcome.Shifts + shifts,
+                        outcome.Closed + (closed ? 1 : 0));
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    logger.LogError(exception, "The checks after the event {EventId} could not be done.", row.Id);
+                    database.ChangeTracker.Clear();
+                    failed.Add(row.Id);
+                }
+            }
+
+            entry.FinishedAt = clock.UtcNow;
+            entry.Status = "succeeded";
+            var done = string.Create(
+                CultureInfo.InvariantCulture,
+                $"{outcome.Events} event(s) looked at: {outcome.Bookings} booking(s) and {outcome.Shifts} shift(s) checked, {outcome.Closed} closed; {run.Spent} of {Budget} unit(s) spent");
+            if (run.TrackerDown)
+            {
+                done += "; the tracker did not answer";
+            }
+
+            if (run.ArchiveDown)
+            {
+                done += "; the archive of the sessions did not answer";
+            }
+
+            entry.Message = failed.Count == 0
+                ? done
+                : string.Create(CultureInfo.InvariantCulture, $"{done}; not done, left for the next run: {string.Join(", ", failed)}");
+            if (entry.Message.Length > MaxMessageLength)
+            {
+                entry.Message = entry.Message[..MaxMessageLength];
+            }
+
+            await hub.SaveChangesAsync(cancellationToken);
+            return outcome;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "The events after job failed.");
+
+            database.ChangeTracker.Clear();
+            hub.ChangeTracker.Clear();
+            hub.JobsLog.Attach(entry);
+            entry.FinishedAt = clock.UtcNow;
+            entry.Status = "failed";
+            entry.Message = exception.Message.Length <= MaxMessageLength ? exception.Message : exception.Message[..MaxMessageLength];
+            await hub.SaveChangesAsync(cancellationToken);
+
+            return new Outcome(0, 0, 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// One event: its bookings, its shifts, and — no row left to check, or the sources given up — its closing. Returns what it checked and
+    /// whether it closed.
+    /// </summary>
+    private async Task<(int Bookings, int Shifts, bool Closed)> CheckAsync(
+        Event row,
+        EventsSettings settings,
+        Run run,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var givenUp = AfterRules.IsGivenUp(row, now);
+        var bookings = givenUp ? 0 : await BookingsAsync(row, run, now, cancellationToken);
+        var shifts = givenUp ? 0 : await ShiftsAsync(row, settings, run, cancellationToken);
+
+        var left = await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null, cancellationToken)
+            || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown, cancellationToken);
+        if (left && !givenUp)
+        {
+            return (bookings, shifts, false);
+        }
+
+        // Who flew without booking: counted once on closing, or never when the sources are given up (it stays as it is).
+        int? flownUnbooked = null;
+        if (!givenUp)
+        {
+            var counted = await FlownUnbookedAsync(row, run, cancellationToken);
+            if (counted is not { } number)
+            {
+                return (bookings, shifts, false);
+            }
+
+            flownUnbooked = number;
+        }
+
+        // The statistics and the mark in one transaction: a failure takes both back, and the next run closes the event again.
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await statistics.WriteAsync(row, flownUnbooked, now, cancellationToken);
+        await database.SaveChangesAsync(cancellationToken);
+
+        // The job's bookkeeping, as the roster's marks: the row version of the event does not move, and its audit has no row for it.
+        await database.Database.ExecuteSqlAsync(
+            $"UPDATE evt_events SET after_done_at = {now}, row_version = row_version WHERE id = {row.Id} AND after_done_at IS NULL",
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        database.ChangeTracker.Clear();
+
+        return (bookings, shifts, true);
+    }
+
+    /// <summary>
+    /// The bookings of an event not checked yet, by the time of their departure (reading 2): each saved as soon as it is checked, so a run cut
+    /// half way keeps what it did. Two bookings of one pilot on one route share the question, and never the session.
+    /// </summary>
+    private async Task<int> BookingsAsync(Event row, Run run, DateTime now, CancellationToken cancellationToken)
+    {
+        var bookings = await CrudSource.BackOffice<EventBooking>(database)
+            .Where(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null)
+            .ToListAsync(cancellationToken);
+        if (bookings.Count == 0)
+        {
+            return 0;
+        }
+
+        var slotIds = bookings.Select(booking => booking.SlotId).Distinct().ToList();
+        var slots = await database.Slots.AsNoTracking()
+            .Where(slot => slotIds.Contains(slot.Id))
+            .ToDictionaryAsync(slot => slot.Id, cancellationToken);
+        var taken = (await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
+                .Where(booking => booking.EventId == row.Id && booking.FlownSessionId != null)
+                .Select(booking => booking.FlownSessionId!.Value)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+
+        var (fromUtc, toUtc) = AfterRules.FlightWindow(row);
+        var asked = new Dictionary<(int Vid, string Departure, string Arrival), IReadOnlyList<IvaoTrackerSessionDto>>();
+        var checkedCount = 0;
+
+        var ordered = bookings
+            .Select(booking => (Booking: booking, Flight: slots.TryGetValue(booking.SlotId, out var slot) ? BookedFlight.Of(slot, booking) : null))
+            .OrderBy(pair => pair.Flight?.OffBlockUtc ?? pair.Flight?.OnBlockUtc ?? DateTime.MaxValue)
+            .ThenBy(pair => pair.Booking.Id)
+            .ToList();
+
+        foreach (var (booking, flight) in ordered)
+        {
+            if (run.TrackerDown)
+            {
+                break;
+            }
+
+            IvaoTrackerSessionDto? session = null;
+
+            // A flight with both its airports is looked for; one that has not — a private slot whose pilot's half is gone — was never a
+            // flight the network could show, and is checked as not found.
+            if (flight is { DepartureIcao: { Length: > 0 } departure, ArrivalIcao: { Length: > 0 } arrival })
+            {
+                var key = (booking.BookerVid, departure, arrival);
+                if (!asked.TryGetValue(key, out var found))
+                {
+                    if (!run.Take(ByVidCost))
+                    {
+                        break;
+                    }
+
+                    var answer = await ivao.SearchSessionsAsync(
+                        new IvaoSessionQuery(booking.BookerVid, fromUtc, toUtc, departure, arrival, IvaoConnectionType.Pilot),
+                        cancellationToken);
+                    if (answer is null)
+                    {
+                        run.TrackerDown = true;
+                        break;
+                    }
+
+                    found = answer;
+                    asked[key] = found;
+                }
+
+                session = AfterRules.Flown(flight, found, taken);
+            }
+
+            booking.FlownCheckedAt = now;
+            if (session is not null)
+            {
+                booking.FlownAt = session.StartedAt;
+                booking.FlownSessionId = session.Id;
+                taken.Add(session.Id);
+            }
+
+            await database.SaveChangesAsync(cancellationToken);
+            checkedCount++;
+        }
+
+        return checkedCount;
+    }
+
+    /// <summary>
+    /// The shifts of an event still <c>Unknown</c> (readings 4 and 5), each saved as soon as it is decided: the archive first, the tracker by VID
+    /// where the archive does not answer or does not cover the shift. A shift neither source can say stays <c>Unknown</c>.
+    /// </summary>
+    private async Task<int> ShiftsAsync(Event row, EventsSettings settings, Run run, CancellationToken cancellationToken)
+    {
+        var shifts = await CrudSource.BackOffice<EventAtcShift>(database)
+            .Where(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown)
+            .OrderBy(shift => shift.FromUtc)
+            .ThenBy(shift => shift.Id)
+            .ToListAsync(cancellationToken);
+        if (shifts.Count == 0)
+        {
+            return 0;
+        }
+
+        var positionIds = shifts.Select(shift => shift.PositionId).Distinct().ToList();
+        var callsigns = await database.AtcPositions.AsNoTracking()
+            .Where(position => positionIds.Contains(position.Id))
+            .ToDictionaryAsync(position => position.Id, position => position.Callsign, cancellationToken);
+
+        var decided = 0;
+        foreach (var shift in shifts)
+        {
+            if (!callsigns.TryGetValue(shift.PositionId, out var callsign))
+            {
+                continue;
+            }
+
+            if (await AttendanceAsync(shift, callsign, settings, run, cancellationToken) is not { } outcome)
+            {
+                if (run.TrackerDown || run.Spent >= Budget)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            shift.Attendance = outcome.Attendance;
+            shift.CoveredByVid = outcome.CoveredBy;
+            await database.SaveChangesAsync(cancellationToken);
+            decided++;
+        }
+
+        return decided;
+    }
+
+    /// <summary>How one shift went, or null when neither source could say (or the run has nothing left to ask with).</summary>
+    private async Task<(ShiftAttendance Attendance, int? CoveredBy)?> AttendanceAsync(
+        EventAtcShift shift,
+        string callsign,
+        EventsSettings settings,
+        Run run,
+        CancellationToken cancellationToken)
+    {
+        var threshold = AfterRules.Threshold(settings.AttendanceMinimumMinutes, shift.FromUtc, shift.ToUtc);
+
+        if (!run.ArchiveDown)
+        {
+            if (!run.Take(ByVidCost))
+            {
+                return null;
+            }
+
+            var activity = await archive.SessionsOfAsync(shift.ControllerVid, shift.FromUtc, shift.ToUtc, cancellationToken);
+            if (activity is null)
+            {
+                run.ArchiveDown = true;
+            }
+            else
+            {
+                var minutes = AfterRules.MinutesWithin(activity.Of(callsign).Select(AfterRules.Connection), shift.FromUtc, shift.ToUtc);
+                if (minutes >= threshold)
+                {
+                    return (ShiftAttendance.Attended, null);
+                }
+
+                // The archive says «not there» only where it covers the shift (E10b): then whoever covered is asked of it too.
+                if (activity.Covers(callsign, shift.FromUtc))
+                {
+                    if (!run.Take(ByVidCost))
+                    {
+                        return null;
+                    }
+
+                    var online = await archive.OnlineAsync(shift.FromUtc, shift.ToUtc, cancellationToken);
+                    return (ShiftAttendance.NoShowProposed,
+                        online is null ? null : AfterRules.CoveredBy(online.Of(callsign), shift.ControllerVid, shift.FromUtc, shift.ToUtc));
+                }
+            }
+        }
+
+        if (run.TrackerDown || !run.Take(ByVidCost))
+        {
+            return null;
+        }
+
+        var sessions = await ivao.SearchSessionsAsync(
+            new IvaoSessionQuery(shift.ControllerVid, shift.FromUtc - AfterRules.ConnectedBefore, shift.ToUtc, ConnectionType: IvaoConnectionType.Atc),
+            cancellationToken);
+        if (sessions is null)
+        {
+            run.TrackerDown = true;
+            return null;
+        }
+
+        var onThePosition = sessions
+            .Where(session => string.Equals(session.Callsign, callsign, StringComparison.OrdinalIgnoreCase))
+            .Select(AfterRules.Connection);
+
+        // The tracker is not asked by callsign without a VID: who covered stays unknown (reading 5).
+        return AfterRules.MinutesWithin(onThePosition, shift.FromUtc, shift.ToUtc) >= threshold
+            ? (ShiftAttendance.Attended, null)
+            : (ShiftAttendance.NoShowProposed, null);
+    }
+
+    /// <summary>
+    /// Who flew to or from the event's airports in its window without booking it (reading 3): the pilots of the sessions found without a VID,
+    /// counted once each, less whoever booked a slot of the event. <b>No VID and no session is kept</b>: they live in this method alone. Null
+    /// when the tracker did not answer, or the run has not enough left for the event's airports and has spent something already.
+    /// </summary>
+    private async Task<int?> FlownUnbookedAsync(Event row, Run run, CancellationToken cancellationToken)
+    {
+        // An event about the whole division is not looked for at every airport of it (design §5.1); one without airports has nowhere to look.
+        if (row.WholeDivision)
+        {
+            return 0;
+        }
+
+        var airports = await database.Airports.AsNoTracking()
+            .Where(airport => airport.EventId == row.Id)
+            .Select(airport => airport.Icao)
+            .ToListAsync(cancellationToken);
+        if (airports.Count == 0)
+        {
+            return 0;
+        }
+
+        var cost = airports.Count * 2 * ByAirportCost;
+        if (run.TrackerDown || (run.Spent > 0 && Budget - run.Spent < cost))
+        {
+            return null;
+        }
+
+        run.Spend(cost);
+        var (fromUtc, toUtc) = AfterRules.FlightWindow(row);
+        var pilots = new HashSet<int>();
+        var cut = false;
+        foreach (var icao in airports)
+        {
+            foreach (var query in new[]
+            {
+                new IvaoSessionQuery(null, fromUtc, toUtc, DepartureIcao: icao, ConnectionType: IvaoConnectionType.Pilot) { Limit = IvaoSessionQuery.MaxLimit },
+                new IvaoSessionQuery(null, fromUtc, toUtc, ArrivalIcao: icao, ConnectionType: IvaoConnectionType.Pilot) { Limit = IvaoSessionQuery.MaxLimit },
+            })
+            {
+                var found = await ivao.SearchSessionsAsync(query, cancellationToken);
+                if (found is null)
+                {
+                    run.TrackerDown = true;
+                    return null;
+                }
+
+                cut |= found.Count >= IvaoSessionQuery.MaxLimit;
+                pilots.UnionWith(found.Select(session => session.Vid));
+            }
+        }
+
+        var bookers = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
+            .Where(booking => booking.EventId == row.Id)
+            .Select(booking => booking.BookerVid)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        pilots.ExceptWith(bookers);
+
+        if (cut)
+        {
+            logger.LogWarning("The flights without a booking of the event {EventId} reached the most the tracker is read for: the count is a least.", row.Id);
+        }
+
+        return pilots.Count;
+    }
+
+    /// <summary>What a run has spent, and the sources that stopped answering in it.</summary>
+    private sealed class Run
+    {
+        public int Spent { get; private set; }
+
+        public bool TrackerDown { get; set; }
+
+        public bool ArchiveDown { get; set; }
+
+        /// <summary>Takes <paramref name="cost"/> units if the run has them left.</summary>
+        public bool Take(int cost)
+        {
+            if (Spent + cost > Budget)
+            {
+                return false;
+            }
+
+            Spent += cost;
+            return true;
+        }
+
+        /// <summary>Spends <paramref name="cost"/> units whatever is left: the one step that is never split.</summary>
+        public void Spend(int cost) => Spent += cost;
+    }
+}
