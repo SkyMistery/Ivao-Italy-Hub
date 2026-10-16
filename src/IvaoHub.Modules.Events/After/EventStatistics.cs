@@ -90,21 +90,25 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
     }
 
     /// <summary>
-    /// The numbers of an event in person from its rows while they are there; past its retention they are gone, and the numbers
+    /// The numbers of an event in person from its rows while any is there; past its retention with none left they are gone, and the numbers
     /// <c>events-retention</c> kept stay (E17).
     /// </summary>
     private async Task InPersonAsync(Event row, EventStats stats, DateTime now, CancellationToken cancellationToken)
     {
-        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
-        if (InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
-        {
-            return;
-        }
-
         var eventId = row.Id;
         var registrations = await CrudSource.BackOffice<EventRegistration>(database).AsNoTracking()
             .Where(registration => registration.EventId == eventId)
             .ToListAsync(cancellationToken);
+        var anySeat = await CrudSource.BackOffice<EventActivitySeat>(database).AnyAsync(seat => seat.EventId == eventId, cancellationToken);
+
+        // Past its retention with nothing left, the rows are gone and what events-retention kept stays; while any row is there — the run of
+        // the month has not come yet — the numbers are the rows' (reading 8).
+        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
+        if (registrations.Count == 0 && !anySeat && InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
+        {
+            return;
+        }
+
         var questions = await database.Questions.AsNoTracking()
             .Where(question => question.EventId == eventId)
             .OrderBy(question => question.Ordinal)

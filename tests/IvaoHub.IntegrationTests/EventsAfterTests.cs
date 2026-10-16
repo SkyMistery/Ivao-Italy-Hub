@@ -32,7 +32,8 @@ namespace IvaoHub.IntegrationTests;
 /// <item>a batch stops at its budget and the next run goes on from the rows;</item>
 /// <item>a source that does not answer leaves the rows to check, and after thirty days the event is closed with them as they are;</item>
 /// <item>no VID of whoever flew without booking is kept anywhere;</item>
-/// <item>«Recalculate» is for whoever writes the event, after its end.</item>
+/// <item>«Recalculate» is for whoever writes the event, after its end;</item>
+/// <item>an event in person is counted from its rows while any is there, and keeps what the retention wrote once they are gone.</item>
 /// </list>
 /// <para>The job runs as of a day of 2001 (<see cref="RunAtAsync"/>): an event of the fixtures is over long since, and every event of the
 /// other classes is still to come then. ⚠️ The people are 761180–761183: the coordinator of the events, the controller who missed a shift, the
@@ -316,6 +317,51 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         // Recalculated before any check: who flew without booking is not counted yet, and the page says so.
         Assert.Equal(JsonValueKind.Null, written.GetProperty("checksDoneAt").ValueKind);
+    }
+
+    /// <summary>
+    /// An event in person (reading 8, E17's review): its registrations are counted from the rows while any is there, even past its retention
+    /// when the run of the month has not come yet; once they are gone, the number <c>events-retention</c> kept stays.
+    /// </summary>
+    [Fact]
+    public async Task TheNumbersOfAnEventInPersonAreItsRowsWhileAnyIsThere()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("in-person", token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var row = await database.Events.IgnoreQueryFilters().SingleAsync(candidate => candidate.Id == id, token);
+            row.InPerson = true;
+            database.Registrations.AddRange(
+                [.. new[] { AbsentVid, GroundedVid }.Select(vid => new EventRegistration
+                {
+                    EventId = id,
+                    Vid = vid,
+                    CreatedAt = Start.AddDays(-5),
+                    UpdatedAt = Start.AddDays(-5),
+                    OwnerDepartment = Department.ED,
+                    OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+                })]);
+            await database.SaveChangesAsync(token);
+        }
+
+        // Past its retention by years, and the rows still there: they are counted.
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var counted = await OkAsync(await coordinator.PostAsync(RecalculateUri(id), content: null, token), token);
+        Assert.Equal(2, counted.GetProperty("registrations").GetInt32());
+
+        // The retention takes the rows away: what the statistics hold stays.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Registrations.IgnoreQueryFilters()
+                .Where(registration => registration.EventId == id)
+                .ExecuteDeleteAsync(token);
+        }
+
+        var kept = await OkAsync(await coordinator.PostAsync(RecalculateUri(id), content: null, token), token);
+        Assert.Equal(2, kept.GetProperty("registrations").GetInt32());
     }
 
     // ---- the evening ----------------------------------------------------------------------------------------------------------
