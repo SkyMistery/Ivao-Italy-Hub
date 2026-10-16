@@ -13,7 +13,8 @@ public interface IFirBoundarySource
 {
     /// <summary>
     /// The boundaries, or an empty list when they could not be fetched — in which case the caller
-    /// keeps what it already has rather than emptying the table.
+    /// keeps what it already has rather than emptying the table. One per region: the source merges
+    /// a region it receives in several pieces, because only it knows what the pieces are.
     /// </summary>
     Task<IReadOnlyList<FirBoundary>> GetAsync(CancellationToken cancellationToken = default);
 }
@@ -76,13 +77,17 @@ public sealed class VatSpyFirBoundarySource(HttpClient http, ILogger<VatSpyFirBo
             return [];
         }
 
-        var boundaries = new List<FirBoundary>();
+        // The pieces of every region, in the order the regions first appear. The key is the identifier
+        // as the table will hold it: trimmed and upper case, because ref_firs compares under a case
+        // and trailing-space insensitive collation, and two spellings it calls equal are one region.
+        var pieces = new Dictionary<string, List<(JsonElement Properties, JsonElement Geometry)>>(StringComparer.Ordinal);
         foreach (var feature in features.EnumerateArray())
         {
             if (!feature.TryGetProperty("properties", out var properties)
                 || !feature.TryGetProperty("geometry", out var geometry)
                 || properties.TryGetProperty("id", out var idValue) is false
-                || idValue.GetString() is not { Length: > 0 } id)
+                || idValue.ValueKind != JsonValueKind.String
+                || idValue.GetString()?.Trim() is not { Length: > 0 } id)
             {
                 continue;
             }
@@ -93,25 +98,98 @@ public sealed class VatSpyFirBoundarySource(HttpClient http, ILogger<VatSpyFirBo
                 continue;
             }
 
-            if (Box(geometry) is not { } box)
+            if (Box(geometry) is null)
             {
                 continue;
             }
 
-            boundaries.Add(new FirBoundary
+            var key = id.ToUpperInvariant();
+            if (!pieces.TryGetValue(key, out var list))
             {
-                Id = id.ToUpperInvariant(),
-                IsOceanic = Flag(properties, "oceanic"),
-                Region = Text(properties, "region"),
-                GeometryJson = geometry.GetRawText(),
-                MinLatitude = box.MinLat,
-                MaxLatitude = box.MaxLat,
-                MinLongitude = box.MinLon,
-                MaxLongitude = box.MaxLon,
-            });
+                pieces[key] = list = [];
+            }
+
+            list.Add((properties, geometry));
         }
 
-        return boundaries;
+        return [.. pieces.Select(pair => Boundary(pair.Key, pair.Value))];
+    }
+
+    /// <summary>
+    /// One row out of the features that carry the region's identifier. Usually there is one. The dataset
+    /// also draws some regions as several features — measured on 16 October 2026: <c>KZNY</c> and
+    /// <c>SUEO</c> as a continental and an oceanic piece, <c>CZQM</c> and <c>CZQX</c> as two pieces each,
+    /// <c>NZOH</c> as the same polygon twice — and each piece is part of the region: keeping only one
+    /// would place a point of the others in no region at all. So the pieces become one
+    /// <c>MultiPolygon</c>, a polygon repeated word for word is kept once, and the box is the one around
+    /// them all.
+    /// </summary>
+    private static FirBoundary Boundary(string id, List<(JsonElement Properties, JsonElement Geometry)> pieces)
+    {
+        var boxes = pieces.Select(piece => Box(piece.Geometry)!.Value).ToArray();
+        var first = pieces[0].Properties;
+
+        return new FirBoundary
+        {
+            Id = id,
+
+            // Oceanic only when all of it is: KZNY is New York, with an ocean attached.
+            IsOceanic = pieces.All(piece => Flag(piece.Properties, "oceanic")),
+            Region = pieces.Select(piece => Text(piece.Properties, "region")).FirstOrDefault(region => region is not null),
+            GeometryJson = pieces.Count == 1 ? pieces[0].Geometry.GetRawText() : Merge(pieces.Select(piece => piece.Geometry)),
+            MinLatitude = boxes.Min(box => box.MinLat),
+            MaxLatitude = boxes.Max(box => box.MaxLat),
+            MinLongitude = boxes.Min(box => box.MinLon),
+            MaxLongitude = boxes.Max(box => box.MaxLon),
+        };
+    }
+
+    /// <summary>
+    /// The polygons of several <c>Polygon</c> or <c>MultiPolygon</c> geometries, as one <c>MultiPolygon</c>.
+    /// The polygons are copied as they came, so the locator reads them exactly as it would have read
+    /// each piece alone.
+    /// </summary>
+    private static string Merge(IEnumerable<JsonElement> geometries)
+    {
+        var polygons = new List<string>();
+        foreach (var geometry in geometries)
+        {
+            if (!geometry.TryGetProperty("coordinates", out var coordinates)
+                || coordinates.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            var isMulti = geometry.TryGetProperty("type", out var type)
+                && type.ValueKind == JsonValueKind.String
+                && string.Equals(type.GetString(), "MultiPolygon", StringComparison.Ordinal);
+
+            IEnumerable<JsonElement> found = isMulti ? coordinates.EnumerateArray() : [coordinates];
+            foreach (var polygon in found.Select(polygon => polygon.GetRawText()))
+            {
+                if (!polygons.Contains(polygon, StringComparer.Ordinal))
+                {
+                    polygons.Add(polygon);
+                }
+            }
+        }
+
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "MultiPolygon");
+            writer.WriteStartArray("coordinates");
+            foreach (var polygon in polygons)
+            {
+                writer.WriteRawValue(polygon, skipInputValidation: true);
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
     }
 
     /// <summary>The rectangle that contains the shape, computed once so that reading is cheap.</summary>

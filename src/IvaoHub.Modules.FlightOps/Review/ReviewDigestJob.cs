@@ -22,6 +22,9 @@ namespace IvaoHub.Modules.FlightOps.Review;
 /// nothing to do is written to, and a member switches it off from their profile (<c>flightops.reviewDigest</c>).
 /// <para>Who may validate is the core's answer (<see cref="IPermissionHolders"/>), the same a login computes; which tours is
 /// asked of each of them as the handler asks it, department and scope of the report.</para>
+/// <para>Every digest of a run and the run's end are one commit (note 2026-10-09-i-job-che-recuperano §1.7; Carmine, 16 October
+/// 2026, like <c>AwardQueueMailJob</c>): a run stopped half way — Passenger stopping the process, a failure — queues nobody, and the
+/// catch-up sends every digest once. Nothing of its own marks who was written to: the run's row is the mark.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class ReviewDigestJob(
@@ -51,6 +54,10 @@ public sealed class ReviewDigestJob(
 
         try
         {
+            // The core's mail service saves on this same context, the scope's: inside the transaction, so the digests and the run's
+            // end are one commit, or none is.
+            await using var transaction = await hub.Database.BeginTransactionAsync(cancellationToken);
+
             var now = entry.StartedAt;
 
             // Waiting: in the queue, or taken by somebody whose lease has run out (§4.2).
@@ -110,6 +117,7 @@ public sealed class ReviewDigestJob(
             entry.Status = "succeeded";
             entry.Message = string.Create(CultureInfo.InvariantCulture, $"{waiting.Count} report(s) waiting, {sent} digest(s) queued");
             await hub.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return sent;
         }
@@ -117,6 +125,7 @@ public sealed class ReviewDigestJob(
         {
             logger.LogError(exception, "The review digest job failed.");
 
+            // The transaction is gone with the try block, rolled back with every digest of the run; the failure is written alone.
             hub.ChangeTracker.Clear();
             hub.JobsLog.Attach(entry);
             entry.FinishedAt = clock.UtcNow;
