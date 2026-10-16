@@ -355,6 +355,72 @@ public sealed partial class PirepTests
         Assert.False(Assert.Single(page.GetProperty("flights").EnumerateArray()).GetProperty("hasTrack").GetBoolean());
     }
 
+    /// <summary>
+    /// A digest run stopped half way queues nobody, and the next run writes to each validator once (note
+    /// 2026-10-09-i-job-che-recuperano §1.7; Carmine, 16 October 2026: all the mails in one save). Before, the first validator's
+    /// mail was saved alone and the catch-up wrote to them a second time.
+    /// </summary>
+    [Fact]
+    public async Task ADigestStoppedHalfWayQueuesNobodyAndTheNextRunWritesToEachOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 5, token);
+        await GrantValidateAsync(ValidatorVid, tourId, token);
+        await GrantValidateAsync(SecondValidatorVid, tourId, token);
+        Assert.True(Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token)) > 0);
+
+        var since = DateTime.UtcNow.AddSeconds(-1);
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var stopping = new StopsAfterTheFirstMail(scope.ServiceProvider.GetRequiredService<INotificationService>());
+            Assert.Equal(0, await ActivatorUtilities.CreateInstance<ReviewDigestJob>(scope.ServiceProvider, stopping).RunAsync(token));
+            Assert.True(stopping.Stopped);
+        }
+
+        await using (var scope = _host.Services.CreateAsyncScope())
+        {
+            var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            Assert.False(await hub.Notifications.AnyAsync(row => row.Type == FlightOpsNotifications.ReviewDigest && row.CreatedAt >= since, token));
+            var run = await hub.JobsLog.AsNoTracking()
+                .Where(row => row.Job == ReviewDigestJob.JobName && row.StartedAt >= since)
+                .OrderByDescending(row => row.Id)
+                .FirstAsync(token);
+            Assert.Equal("failed", run.Status);
+
+            await scope.ServiceProvider.GetRequiredService<ReviewDigestJob>().RunAsync(token);
+
+            var digests = await hub.Notifications.AsNoTracking()
+                .Where(row => row.Type == FlightOpsNotifications.ReviewDigest && row.CreatedAt >= since)
+                .ToListAsync(token);
+            Assert.Single(digests, row => row.Vid == ValidatorVid);
+            Assert.Single(digests, row => row.Vid == SecondValidatorVid);
+        }
+    }
+
+    /// <summary>The core's mail service until one mail is queued; the next call stops the run, as a process stopped there would.</summary>
+    private sealed class StopsAfterTheFirstMail(INotificationService inner) : INotificationService
+    {
+        private bool _queued;
+
+        public bool Stopped { get; private set; }
+
+        public async Task<int> QueueAsync(NotificationIntent intent, CancellationToken cancellationToken = default)
+        {
+            if (_queued)
+            {
+                Stopped = true;
+                throw new InvalidOperationException("The run stops here.");
+            }
+
+            var queued = await inner.QueueAsync(intent, cancellationToken);
+            _queued = queued > 0;
+            return queued;
+        }
+    }
+
     private static ReviewDecisionDto Decision(PirepStatus outcome, long[] errors, DateTime rowVersion) =>
         new(outcome, errors, NoteToPilot: null, StaffNote: null, OverrideReason: null, rowVersion);
 
