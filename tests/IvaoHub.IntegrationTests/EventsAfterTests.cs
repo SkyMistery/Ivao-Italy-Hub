@@ -76,10 +76,7 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         _factory = _hub.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {
             services.AddSingleton(_sources);
-            services.AddScoped<IIvaoApiClient>(provider => new EveningTracker(
-                provider.GetRequiredService<FixtureIvaoApiClient>(),
-                provider.GetRequiredService<HubPaths>(),
-                _sources));
+            services.AddScoped<INetworkSessionSource>(provider => new EveningTracker(provider.GetRequiredService<HubPaths>(), _sources));
             services.AddScoped<IAtcActivitySource>(provider => new EveningArchive(provider.GetRequiredService<HubPaths>(), _sources));
         }));
         var token = TestContext.Current.CancellationToken;
@@ -761,64 +758,46 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
-    /// The IVAO client of the tests with the tracker answered from the evening of Fiumicino — by VID too, which the fixture client reads from
-    /// a member's own file —, filtered by the tracker's own rule (<see cref="IvaoTrackerReader.Answers"/>); null while it is down.
+    /// The network's sessions answered from the evening of Fiumicino — by VID too, which the fixture client reads from a member's own file —,
+    /// filtered by the tracker's own rule (<see cref="IvaoTrackerReader.Answers"/>) and given as the core's source gives them; null while it is
+    /// down.
     /// </summary>
-    private sealed class EveningTracker(FixtureIvaoApiClient inner, HubPaths paths, Sources sources) : IIvaoApiClient
+    private sealed class EveningTracker(HubPaths paths, Sources sources) : INetworkSessionSource
     {
-        public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(IvaoSessionQuery query, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<IvaoTrackerSessionDto>?>(sources.TrackerAnswers
-                ?
-                [
-                    .. EveningRows(paths)
-                        .Where(row => IvaoTrackerReader.Answers(row, query))
-                        .Select(IvaoTrackerReader.ReadSession)
-                        .OfType<IvaoTrackerSessionDto>()
-                        .OrderByDescending(session => session.StartedAt)
-                        .Take(query.Limit),
-                ]
-                : null);
+        public Task<IReadOnlyList<NetworkSession>?> SessionsAsync(NetworkSessionQuery query, CancellationToken cancellationToken = default)
+        {
+            if (!sources.TrackerAnswers)
+            {
+                return Task.FromResult<IReadOnlyList<NetworkSession>?>(null);
+            }
 
-        public Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(long sessionId, CancellationToken cancellationToken = default) =>
-            inner.GetFlightPlansAsync(sessionId, cancellationToken);
+            var asked = new IvaoSessionQuery(
+                query.Vid,
+                query.FromUtc,
+                query.ToUtc,
+                query.DepartureIcao,
+                query.ArrivalIcao,
+                query.Connection switch
+                {
+                    NetworkConnection.Pilot => IvaoConnectionType.Pilot,
+                    NetworkConnection.Atc => IvaoConnectionType.Atc,
+                    _ => null,
+                })
+            {
+                Limit = query.Limit,
+            };
 
-        public Task<IReadOnlyList<IvaoTrackPointDto>?> GetTracksAsync(long sessionId, CancellationToken cancellationToken = default) =>
-            inner.GetTracksAsync(sessionId, cancellationToken);
-
-        public Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(string countryId, CancellationToken cancellationToken = default) =>
-            inner.GetCentersAsync(countryId, cancellationToken);
-
-        public Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(string? countryId, bool includeRunways = true, CancellationToken cancellationToken = default) =>
-            inner.GetAirportsAsync(countryId, includeRunways, cancellationToken);
-
-        public Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(string icao, CancellationToken cancellationToken = default) =>
-            inner.GetRunwaysAsync(icao, cancellationToken);
-
-        public Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(CancellationToken cancellationToken = default) =>
-            inner.GetAircraftTypesAsync(cancellationToken);
-
-        public Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)> GetFlightPlanVocabulariesAsync(
-            CancellationToken cancellationToken = default) =>
-            inner.GetFlightPlanVocabulariesAsync(cancellationToken);
-
-        public Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)> GetAtcPositionsAsync(
-            CancellationToken cancellationToken = default) =>
-            inner.GetAtcPositionsAsync(cancellationToken);
-
-        public Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default) =>
-            inner.GetFrasAsync(countryId, cancellationToken);
-
-        public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
-            inner.GetMeAsync(accessToken, cancellationToken);
-
-        public Task<IvaoMetarDto?> GetMetarAsync(string icao, CancellationToken cancellationToken = default) =>
-            inner.GetMetarAsync(icao, cancellationToken);
-
-        public Task<IvaoNetworkStatus> GetNetworkStatusAsync(IvaoAirspace airspace, CancellationToken cancellationToken = default) =>
-            inner.GetNetworkStatusAsync(airspace, cancellationToken);
-
-        public Task<IReadOnlyList<AtcBookingDto>?> GetDailyAtcBookingsAsync(DateOnly date, string? position = null, CancellationToken cancellationToken = default) =>
-            inner.GetDailyAtcBookingsAsync(date, position, cancellationToken);
+            return Task.FromResult<IReadOnlyList<NetworkSession>?>(
+            [
+                .. EveningRows(paths)
+                    .Where(row => IvaoTrackerReader.Answers(row, asked))
+                    .Select(IvaoTrackerReader.ReadSession)
+                    .OfType<IvaoTrackerSessionDto>()
+                    .OrderByDescending(session => session.StartedAt)
+                    .Take(query.Limit)
+                    .Select(session => new NetworkSession(session.Id, session.Vid, session.Callsign, session.StartedAt, session.EndedAt)),
+            ]);
+        }
     }
 
     /// <summary>

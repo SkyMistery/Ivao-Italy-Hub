@@ -45,7 +45,7 @@ public sealed class EventsAfterJob(
     EventsDbContext database,
     HubDbContext hub,
     ModuleSettingsStore settingsStore,
-    IIvaoApiClient ivao,
+    INetworkSessionSource network,
     IAtcActivitySource archive,
     EventStatistics statistics,
     IClock clock,
@@ -238,7 +238,7 @@ public sealed class EventsAfterJob(
             .ToHashSet();
 
         var (fromUtc, toUtc) = AfterRules.FlightWindow(row);
-        var asked = new Dictionary<(int Vid, string Departure, string Arrival), IReadOnlyList<IvaoTrackerSessionDto>>();
+        var asked = new Dictionary<(int Vid, string Departure, string Arrival), IReadOnlyList<NetworkSession>>();
         var checkedCount = 0;
 
         var ordered = bookings
@@ -254,7 +254,7 @@ public sealed class EventsAfterJob(
                 break;
             }
 
-            IvaoTrackerSessionDto? session = null;
+            NetworkSession? session = null;
 
             // A flight with both its airports is looked for; one that has not — a private slot whose pilot's half is gone — was never a
             // flight the network could show, and is checked as not found.
@@ -268,8 +268,8 @@ public sealed class EventsAfterJob(
                         break;
                     }
 
-                    var answer = await ivao.SearchSessionsAsync(
-                        new IvaoSessionQuery(booking.BookerVid, fromUtc, toUtc, departure, arrival, IvaoConnectionType.Pilot),
+                    var answer = await network.SessionsAsync(
+                        new NetworkSessionQuery(booking.BookerVid, fromUtc, toUtc, departure, arrival, NetworkConnection.Pilot),
                         cancellationToken);
                     if (answer is null)
                     {
@@ -397,8 +397,8 @@ public sealed class EventsAfterJob(
             return null;
         }
 
-        var sessions = await ivao.SearchSessionsAsync(
-            new IvaoSessionQuery(shift.ControllerVid, shift.FromUtc - AfterRules.ConnectedBefore, shift.ToUtc, ConnectionType: IvaoConnectionType.Atc),
+        var sessions = await network.SessionsAsync(
+            new NetworkSessionQuery(shift.ControllerVid, shift.FromUtc - AfterRules.ConnectedBefore, shift.ToUtc, Connection: NetworkConnection.Atc),
             cancellationToken);
         if (sessions is null)
         {
@@ -452,18 +452,18 @@ public sealed class EventsAfterJob(
         {
             foreach (var query in new[]
             {
-                new IvaoSessionQuery(null, fromUtc, toUtc, DepartureIcao: icao, ConnectionType: IvaoConnectionType.Pilot) { Limit = IvaoSessionQuery.MaxLimit },
-                new IvaoSessionQuery(null, fromUtc, toUtc, ArrivalIcao: icao, ConnectionType: IvaoConnectionType.Pilot) { Limit = IvaoSessionQuery.MaxLimit },
+                new NetworkSessionQuery(null, fromUtc, toUtc, DepartureIcao: icao, Connection: NetworkConnection.Pilot) { Limit = NetworkSessionQuery.MaxLimit },
+                new NetworkSessionQuery(null, fromUtc, toUtc, ArrivalIcao: icao, Connection: NetworkConnection.Pilot) { Limit = NetworkSessionQuery.MaxLimit },
             })
             {
-                var found = await ivao.SearchSessionsAsync(query, cancellationToken);
+                var found = await network.SessionsAsync(query, cancellationToken);
                 if (found is null)
                 {
                     run.TrackerDown = true;
                     return null;
                 }
 
-                cut |= found.Count >= IvaoSessionQuery.MaxLimit;
+                cut |= found.Count >= NetworkSessionQuery.MaxLimit;
                 pilots.UnionWith(found.Select(session => session.Vid));
             }
         }

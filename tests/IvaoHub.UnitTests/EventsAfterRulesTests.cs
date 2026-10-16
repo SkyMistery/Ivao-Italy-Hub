@@ -55,7 +55,7 @@ public sealed class EventsAfterRulesTests
     public void ABookingTakesTheSessionNearestToItsDepartureThatNoOtherBookingTook()
     {
         var flight = new BookedFlight("TST001", "LIRF", Start.AddHours(1), "LIRN", Start.AddHours(2));
-        IvaoTrackerSessionDto[] found = [Session(1, Start.AddMinutes(20)), Session(2, Start.AddMinutes(70)), Session(3, Start.AddMinutes(150))];
+        NetworkSession[] found = [Session(1, Start.AddMinutes(20)), Session(2, Start.AddMinutes(70)), Session(3, Start.AddMinutes(150))];
 
         Assert.Equal(2, AfterRules.Flown(flight, found, new HashSet<long>())?.Id);
         Assert.Equal(1, AfterRules.Flown(flight, found, new HashSet<long> { 2 })?.Id);
@@ -127,6 +127,5 @@ public sealed class EventsAfterRulesTests
     private static PositionConnection Connection(int fromMinutes, int toMinutes) =>
         new(761024, Start.AddMinutes(fromMinutes), Start.AddMinutes(toMinutes));
 
-    private static IvaoTrackerSessionDto Session(long id, DateTime started) =>
-        new(id, 761020, "TST001", started, TimeSpan.FromHours(1), HasFlightPlan: true, "LIRF", "LIRN", "A320", "{}");
+    private static NetworkSession Session(long id, DateTime started) => new(id, 761020, "TST001", started, started.AddHours(1));
 }

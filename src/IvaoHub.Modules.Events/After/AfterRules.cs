@@ -71,7 +71,7 @@ public static class AfterRules
     /// The session a booking flew (reading 2): among the ones found for its pilot between its two airports, the one that started nearest
     /// to its departure time and that no other booking of the event took; none when there is none. The callsign does not count (c1).
     /// </summary>
-    public static IvaoTrackerSessionDto? Flown(BookedFlight flight, IEnumerable<IvaoTrackerSessionDto> found, IReadOnlySet<long> taken)
+    public static NetworkSession? Flown(BookedFlight flight, IEnumerable<NetworkSession> found, IReadOnlySet<long> taken)
     {
         ArgumentNullException.ThrowIfNull(flight);
         ArgumentNullException.ThrowIfNull(found);
@@ -164,8 +164,8 @@ public static class AfterRules
         return new PositionConnection(presence.Vid, presence.StartedAt, presence.EndedAt);
     }
 
-    /// <summary>A session of the tracker, as the minutes are counted: its declared length.</summary>
-    public static PositionConnection Connection(IvaoTrackerSessionDto session)
+    /// <summary>A session of the network, as the minutes are counted: its declared length.</summary>
+    public static PositionConnection Connection(NetworkSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
 
