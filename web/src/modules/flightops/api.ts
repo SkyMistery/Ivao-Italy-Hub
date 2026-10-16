@@ -1,5 +1,4 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TFunction } from 'i18next';
 
 import type { Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
@@ -1562,13 +1561,11 @@ export type MemberDto = components['schemas']['MemberDto'];
 export type ReviewDecisionDto = components['schemas']['ReviewDecisionDto'];
 
 /**
- * A row of the queue as the list draws it: the server's row, with the people and the route written out as the columns of
- * the generic list read them — a cell draws a value, not an object.
+ * A row of the queue as the list draws it: the server's row, with the route written out as the columns of the generic list
+ * read it — a cell draws a value, not an object. The people stay as the server sent them, and `col.person` writes them.
  */
 export interface ReviewQueueRow extends ReviewQueueRowDto {
   readonly route: string;
-  readonly pilotName: string;
-  readonly assignedToName: string | null;
   /** `Open` while the rejection is disputed (T14b): the column draws it as a word, and nothing otherwise. */
   readonly dispute: 'Open' | null;
   /**
@@ -1587,20 +1584,6 @@ export function queueChecks(
   }
 
   return row.failedChecks === 0 ? 'Clean' : row.checkSuggestion === 'Rejected' ? 'Reject' : 'Accept';
-}
-
-/**
- * A member as the staff reads them: the name the hub has, and the VID that always is.
- *
- * A negative VID is not a member: it is a person whose data was erased (T20b, design §10.0), and a page reads it as such.
- * A list computes its names inside the query, where there is no `t`: there the pseudonym stays a number.
- */
-export function memberName(member: MemberDto, t?: TFunction): string {
-  if (member.vid < 0 && t !== undefined) {
-    return t('flightops:people.erased');
-  }
-
-  return member.name === null || member.name === '' ? String(member.vid) : `${member.name} (${member.vid})`;
 }
 
 const reviewKey = ['flightops', 'review'] as const;
@@ -1633,8 +1616,6 @@ export function reviewQueueQuery(
         items: page.items.map((row) => ({
           ...row,
           route: `${row.departureIcao} → ${row.arrivalIcao}`,
-          pilotName: memberName(row.pilot),
-          assignedToName: row.assignedTo === null ? null : memberName(row.assignedTo),
           dispute: row.isDisputed ? ('Open' as const) : null,
           checks: queueChecks(row),
         })),
@@ -1740,9 +1721,8 @@ export function useReviewStep(id: number) {
 export type LegIssueDto = components['schemas']['LegIssueDto'];
 export type LegIssueStatus = components['schemas']['LegIssueStatus'];
 
-/** A row of the issues as the list draws it: the pilot and the leg written out, as a cell draws a value. */
+/** A row of the issues as the list draws it: the leg written out, as a cell draws a value; `col.person` writes the pilot. */
 export interface LegIssueRow extends LegIssueDto {
-  readonly pilotName: string;
   readonly leg: string;
 }
 
@@ -1763,7 +1743,6 @@ export function legIssuesListQuery(search: ListSearch, filters: { open: boolean 
         ...page,
         items: page.items.map((row) => ({
           ...row,
-          pilotName: memberName(row.pilot),
           leg: row.legNumber === null ? (row.route ?? '') : `${row.legNumber} · ${row.route ?? ''}`,
         })),
       };
@@ -1872,9 +1851,8 @@ export function pilotQuery(vid: number, year: number) {
   });
 }
 
-/** A row of the bans as the list draws it: the pilot and the tour written out, as a cell draws a value. */
+/** A row of the bans as the list draws it: the tour written out, as a cell draws a value; `col.person` writes the pilot. */
 export interface BanRow extends BanDto {
-  readonly pilotName: string;
   /** Every tour, or the one the next column names: a cell draws a word, not the absence of a tour. */
   readonly reach: 'All' | 'One';
 }
@@ -1896,7 +1874,6 @@ export function bansListQuery(search: ListSearch, filters: { vid?: number } = {}
         ...page,
         items: page.items.map((row) => ({
           ...row,
-          pilotName: memberName(row.pilot),
           reach: row.tourId === null ? ('All' as const) : ('One' as const),
         })),
       };

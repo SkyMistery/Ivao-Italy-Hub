@@ -6,12 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
-M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata
+M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #269** di E10s (la #268 di E12 è unita), approvabile alla [seconda lettura del
+revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6222329978): nata
 `--no-track` da `main` a `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la
 fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `1887c27` (le correzioni delle due letture del revisore e le due
-condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34). La nota
+condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34); infine la testa di E10s `9e40aff`, con `main` a `b5d3fb9` (E12 unita, la
+#268, e la #273 dei tour). La nota
 `2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
 #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed
 E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta M4b («Che cosa ha lasciato E17», sotto).
@@ -352,7 +354,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `ActivityTurns.tsx` per questo.
   - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
 
-### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, e poi a `4ad747a`, con E4d, E11b e il piano 1.34)
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, poi a `4ad747a`, con E4d, E11b e il piano 1.34, e a `b5d3fb9`, con E12)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
   `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):

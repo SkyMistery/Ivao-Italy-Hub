@@ -23,8 +23,9 @@ export function isErased(vid: number): boolean {
 /**
  * A person as a page or a list writes them: "Deleted person" for a pseudonym, never its number; the name with the VID when the
  * hub has a name; the VID alone when it has none. One sentence for every module, so no page writes its own.
- * <br />The word is `people.deleted`: `people.erased` is the tours' copy (`flightops:people.erased`), and a key the core declares
- * may not be declared again by a module (`LocaleCatalog`).
+ * <br />The word is `people.deleted`: `people.erased` was the tours' copy (`flightops:people.erased`) while the core was born, and
+ * a key the core declares may not be declared again by a module (`LocaleCatalog`). The tours write their people with this since
+ * note `2026-10-16-i-tour-sul-lettore-dei-nomi`.
  */
 export function personName(person: NamedPerson, t: TFunction): string {
   if (isErased(person.vid)) {
