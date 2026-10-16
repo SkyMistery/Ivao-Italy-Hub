@@ -38,6 +38,9 @@ public static class IvaoServiceCollectionExtensions
         // Who has booked a position of the network in a window, which a module asks without knowing how IVAO lists them (M4, E15a).
         services.AddScoped<IAtcBookingSource, AtcBookingSource>();
 
+        // Who connected to the network in a window, which a module asks without naming whose network it is (M4, E10t).
+        services.AddScoped<INetworkSessionSource, NetworkSessionSource>();
+
         // IVAO's ratings and their rules, which a module asks rather than writes (M3, A1), with the division's preferred ratings
         // (M4, E10c). Data, so one instance serves all, built once division.json has been read — and checked: the start refuses
         // a kind of position or a rating the core does not know, with a message that names the file and the key.

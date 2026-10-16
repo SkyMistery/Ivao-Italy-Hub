@@ -4346,6 +4346,67 @@ nell'audit.
 [i267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267
 [a267s2]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
 
+### E10t — Nucleo: le sessioni della rete con un nome neutro
+
+**Da dove viene**: non c'era in E0. La chiede E13a: `events-after` legge il tracker della rete (le sessioni dei piloti per VID, chi ha
+volato senza prenotare negli scali dell'evento, le presenze ATC), e la domanda c'è da E10a (`IIvaoApiClient.SearchSessionsAsync` con
+`IvaoSessionQuery`); ma `EventsArchitectureTests.TheModuleDoesNotNameTheNetwork` (E2) non lascia nominare `Ivao…` al modulo, e
+`CLAUDE.md` §3 vuole che un modulo che nominerebbe IVAO passi dal nucleo. `dalberone` ha scelto una fase del nucleo (16 ottobre 2026),
+sul precedente di `IAtcBookingSource` (E15a). Branch `m4/e10t-network-sessions`, da `main` a `4ad747ad`. **PR del nucleo**, diretta su
+`main`, non in coda; E13a ne unisce il branch.
+
+1. In `Core/Ivao/`, accanto a `IAtcBookingSource`, un'interfaccia dal nome neutro sopra l'unica ricerca del client: la domanda intera
+   (VID o nessuno, finestra, scali, tipo di connessione, limite con il tetto del nucleo), la sessione ridotta a ciò che un modulo legge,
+   `null` quando la rete non risponde.
+2. Nessun nome con «ivao» fuori dallo spazio dei nomi `IvaoHub.Core.Ivao`; registrata come `IAtcBookingSource`.
+3. Nessun uso nel modulo (regola 6), e i tour non cambiano.
+
+**Fatta quando**: un test di unità prova che la domanda arriva intera al client, la mappatura, `null`, il tetto; e la prova al
+contrario li fa cadere.
+
+**Com'è andata** (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277):
+
+- **Fatto** (nota nuova `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b), nessuna domanda per Carmine):
+  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`**, **`NetworkSessionQuery`** (con `Limit`,
+    `DefaultLimit` e `MaxLimit` che sono le costanti di `IvaoSessionQuery`, e il rifiuto nell'`init`), **`NetworkConnection { Pilot,
+    Atc }`**, **`NetworkSession(Id, Vid, Callsign, StartedAt, EndedAt)`**, in `src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`; la
+    sorgente interna scrive la domanda in una `IvaoSessionQuery` e ridice l'ordine (dalla più recente, una volta per `Id`, al più
+    `Limit`); registrata scoped in `IvaoServiceCollectionExtensions`; una frase nel commento di `SearchSessionsAsync`;
+  - la forma è quella su cui E13a già scriveva: **non cambiata**.
+- **Scelte della fase, scritte nella nota** (§3, §4): la sessione senza scali, revisioni né JSON grezzo (un campo si aggiunge con una
+  nota quando serve); solo `Pilot` e `Atc`; «allentare il test degli eventi» scartato.
+- **Verificato, in locale** (16 ottobre 2026, `main` a `4ad747ad`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache`: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1298/1298**, fra cui `NetworkSessionSourceTests` 9/9; integrazione intera, senza filtro (Release), **607/607** al primo giro (9 minuti, da sola);
+  - **la prova al contrario**: con il limite lasciato al predefinito, `null` reso lista vuota e `Atc` scritto `Pilot` (modifica locale)
+    cadono 4 casi su 9 (i tre della domanda con un limite dichiarato, e quello di `null`); rimesso, toccato e ricompilato, 9 su 9;
+  - `pnpm -C web lint`, `typecheck`, `format:check`, `test` (781/781): verdi; `gen:api` senza differenze; la smoke (`pnpm -C web exec playwright test --workers=2`, porta 4173 con il suo lock) **181/181** al primo giro;
+  - le regole di `core-guard` dalla base `4ad747ad`, con Git Bash: nessun file del maintainer; tre del nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full`: nessuna schermata e nessun chiamante nel modulo;
+  - l'uso vero, in `events-after`, e una sera vera sulla rete: sono di E13a.
+- **Dopo la revisione** (16 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r277t]; Carmine ha detto [sì
+  alla riga di `CLAUDE.md` §2][ok277t] che la nota propone, e la scrive il master con il piano 1.35. Il punto piccolo è fatto: il
+  riassunto di `Connection` dice che `null` non chiede nessun tipo, e tornano anche gli osservatori. Unito `main` a `b5d3fb9`
+  (E12, #268), che rendeva la PR in conflitto, con i blocchi di E10t in cima; rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1303/1303**, integrazione intera da sola **621/621** al primo giro (15 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**) verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `b5d3fb9b`: passa.
+- **Unito `main` a `2938ae8`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t]: E10s, #269, e i tour, #274),
+  di nuovo in conflitto solo nei documenti: qui E10s prima di E10t, in `HANDOFF-M4.md` E10t in cima ed E10s sotto. Il diff della fase
+  fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build Release 0 avvisi, unità **1312/1312**,
+  integrazione intera da sola **624/624** al primo giro (12 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**)
+  verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `2938ae80`: passa.
+- **Unito `main` a `eefb24a`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t2]: E17, #271), in conflitto solo in
+  `HANDOFF-M4.md`, con E10t in cima ed E17 sotto. Il diff della fase fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1319/1319**, integrazione intera da sola **638/638** al primo giro (16 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**789/789**; vitest con `--maxWorkers=2`, perché col PC quasi senza memoria il primo giro aveva
+  perso tre worker senza nessun test rosso), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `eefb24a0`: passa.
+
+[m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
+[m277t2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6224649688
+
+[r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
+[ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
