@@ -6,7 +6,16 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
+**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
+`m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
+**decisa** da Carmine sull'issue #260 ([la seconda via](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089),
+e [i tre valori attesi di due test
+suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)), [approvabile senza niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668), e ha unito `main` a `c232448` (con E16, E11a
+e A13f) su richiesta del revisore, poi `main` a `e041bb0` (con E10q, perché `build-test` giri). Da E10p ogni ora del nucleo si scrive in
+24 ore anche in inglese, attraverso un solo formattatore («Che cosa ha lasciato E10p», sotto).
+
+**L'aggiornamento di E10q:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
 #264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
 e non in coda**: nata da `main` a `c232448` (E11a unita). Fissa `System.Security.Cryptography.Pkcs` a **10.0.13** (gli avvisi del 13
 ottobre facevano fallire `dotnet restore`, e con lui `build-test` della #261, #262 e #263) e porta la versione a **0.6.8** («Che cosa ha
@@ -261,7 +270,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`)
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
   `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
@@ -299,6 +308,24 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   persona che tocca non sono `[Audited]`.
 
 [a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
+### Che cosa ha lasciato E10p (13–16 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`, con `main` a `c232448` e poi a `e041bb0` unito)
+
+- **Che cosa c'è** (nota `decisions/2026-10-13-le-ore-in-24.md`, **decisa** da Carmine sull'issue #260; il dettaglio in `10`, E10p,
+  «Com'è andata»). Tutto nel browser, niente in C#:
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, che ora lo chiama. È
+    **l'unico posto** che scrive un istante, e le 24 ore (`hour12: false`) sono una riga lì.
+  - I quattro formattatori del nucleo che in inglese scrivevano «7:00 PM» ci passano sopra: `localTime` (`SchemaForm.tsx`) e `DateCell`
+    (`DataList.tsx`) con `formatMoment`; `MessageThread.tsx` e `routes/_staff/staff.$dept.contacts.$id.tsx` con `useMoment`. Ognuno
+    tiene il suo aspetto.
+  - **I test**: `web/src/shared/i18n/twentyFourHours.test.tsx` (6). Tre valori attesi di due test di Carmine cambiano con la sua
+    risposta (`back-office.spec.ts:281`, `extensions.test.tsx:168–169`).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Mai un `new Intl.DateTimeFormat` con un `timeStyle` o un `hour` suo**: un componente scrive un istante con `useMoment`, una
+    funzione che riceve la lingua (una cella, un aiuto di una pagina) con `formatMoment`. `docs/UI-GUIDELINES.md`, «Times», lo dice.
+  - I moduli eventi e formazione scrivono già le ore con `useMoment`: nessuna fase di modulo dopo questa.
+  - ⚠️ **Un test che legge un'ora in inglese** scrive `19:00`, mai `7:00 PM`; e attenzione alle sottostringhe: `19:00` non contiene
+    `7:00`, `18:00` contiene `8:00`.
 
 ### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
 
