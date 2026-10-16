@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IvaoHub.Modules.Events.Data.Migrations
 {
     [DbContext(typeof(EventsDbContext))]
-    [Migration("20261016184757_AddAfterTheEventColumns")]
+    [Migration("20261016193323_AddAfterTheEventColumns")]
     partial class AddAfterTheEventColumns
     {
         /// <inheritdoc />
