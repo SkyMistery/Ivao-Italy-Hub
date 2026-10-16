@@ -7,6 +7,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace IvaoHub.Core.Privacy;
 
@@ -23,6 +24,8 @@ namespace IvaoHub.Core.Privacy;
 /// <item>Everywhere else, a property of the JSON that names a person (<see cref="PersonColumns.IsVidName"/>) and holds their
 /// VID takes the pseudonym: the history of a page they wrote stays, with somebody nobody can name as its author.</item>
 /// </list>
+/// Outside an erasure, one more: a module that deletes rows for retention has the columns marked as a person's data emptied in
+/// their copies (<see cref="EmptyDeletedAsync"/>, M4, E10s).
 /// Tracked rows, saved by the caller; nothing here goes around the context.
 /// </summary>
 public static class AuditRedaction
@@ -84,33 +87,113 @@ public static class AuditRedaction
                 continue;
             }
 
-            var table = entity.GetTableName()!;
-            var key = entity.FindPrimaryKey()!.Properties[0];
             foreach (var (person, columns) in marks)
             {
-                var gone = await NamedAsync(context, table, person.Name, vid, cancellationToken);
-                if (gone.Count == 0)
-                {
-                    continue;
-                }
-
-                var task = (Task<List<string>>)ExistingKeysMethod.MakeGenericMethod(entity.ClrType, key.ClrType)
-                    .Invoke(null, [context, key.Name, gone, cancellationToken])!;
-                gone.ExceptWith(await task);
-
+                var named = await NamedAsync(context, entity.GetTableName()!, person.Name, vid, cancellationToken);
                 var names = columns.Select(column => column.Name).ToArray();
-                foreach (var keys in gone.Chunk(Page))
-                {
-                    var rows = await context.Set<AuditLogEntry>()
-                        .Where(row => row.Entity == table && keys.Contains(row.EntityId))
-                        .OrderBy(row => row.Id)
-                        .ToListAsync(cancellationToken);
+                await EmptyGoneCopiesAsync(context, entity, named, copies => EmptyWhileHeld(copies, person.Name, names, vid), cancellationToken);
+            }
+        }
+    }
 
-                    foreach (var copies in rows.GroupBy(row => row.EntityId, StringComparer.Ordinal))
-                    {
-                        EmptyWhileHeld([.. copies], person.Name, names, vid);
-                    }
+    /// <summary>
+    /// The columns marked as a person's data (<see cref="ErasedWithAttribute"/>), emptied in every audit row of these rows of one
+    /// entity, which a module has just deleted for retention: a registration whose answers are kept for some months after the
+    /// event leaves no answer in the log either (M4, E10s, note <c>2026-10-16-la-conservazione-nell-audit</c>). Every copy —
+    /// <c>created</c>, both sides of an <c>updated</c>, <c>deleted</c> — and every mark, whoever the row was about: retention goes by
+    /// age, and the time the data was kept for is over for all of it. The rest of each copy stays: the action, who did it, when,
+    /// the other columns, the person column.
+    /// <para>The keys are the rows the module deleted. One whose row is still in the table — whoever it is about — is left as it is,
+    /// as by <see cref="EmptyGoneAsync"/>: the same reading of the table and of the log. So the call comes <b>after the save that
+    /// deleted the rows</b>, best in the same transaction (begin, delete, save, this, save, commit): a failure then takes back the
+    /// delete and the emptying together, and the next run finds the rows again; a call after a commit of its own works too, but a
+    /// failure between the two leaves copies nobody will look for again. Called with the delete not yet saved, it refuses, rather
+    /// than finding every row still there and emptying nothing.</para>
+    /// <para>Refuses an entity the context does not map, one with no marked column (it would empty nothing without a word), and
+    /// keys of another type than the entity's. Tracked rows, saved by the caller.</para>
+    /// </summary>
+    public static async Task EmptyDeletedAsync<TEntity, TKey>(
+        DbContext context,
+        IReadOnlyCollection<TKey> keys,
+        CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(keys);
+
+        var entity = context.Model.FindEntityType(typeof(TEntity))
+            ?? throw new InvalidOperationException($"{context.GetType().Name} does not map {typeof(TEntity).Name}.");
+
+        var marks = PersonColumns.ErasedWith(entity);
+        if (marks.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"{typeof(TEntity).Name} has no column marked as a person's data (ErasedWith): there is nothing to empty in its audit.");
+        }
+
+        var key = entity.FindPrimaryKey()!.Properties[0];
+        if (key.ClrType != typeof(TKey))
+        {
+            throw new ArgumentException($"The key of {typeof(TEntity).Name} is a {key.ClrType.Name}, not a {typeof(TKey).Name}.", nameof(keys));
+        }
+
+        if (context.ChangeTracker.Entries<TEntity>().Any(entry => entry.State == EntityState.Deleted))
+        {
+            throw new InvalidOperationException(
+                $"A delete of {typeof(TEntity).Name} is not saved yet: save it first, so that the rows are gone when the audit is emptied.");
+        }
+
+        var names = marks.SelectMany(mark => mark.Columns).Select(column => column.Name).Distinct(StringComparer.Ordinal).ToArray();
+        var deleted = keys.Select(value => HubSaveChangesInterceptor.FormatKey([value])).ToHashSet(StringComparer.Ordinal);
+
+        await EmptyGoneCopiesAsync(
+            context,
+            entity,
+            deleted,
+            copies =>
+            {
+                foreach (var row in copies)
+                {
+                    row.BeforeJson = Empty(row.BeforeJson, names);
+                    row.AfterJson = Empty(row.AfterJson, names);
                 }
+            },
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// The one way both callers reach the log: of these keys of the entity's table, as the log writes them, the ones no row has any
+    /// more (<see cref="ExistingKeysAsync"/>); then the audit rows of each, in the order they were written, handed to
+    /// <paramref name="empty"/> one row of the table at a time.
+    /// </summary>
+    private static async Task EmptyGoneCopiesAsync(
+        DbContext context,
+        IReadOnlyEntityType entity,
+        HashSet<string> keys,
+        Action<IReadOnlyList<AuditLogEntry>> empty,
+        CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
+        var table = entity.GetTableName()!;
+        var key = entity.FindPrimaryKey()!.Properties[0];
+        var task = (Task<List<string>>)ExistingKeysMethod.MakeGenericMethod(entity.ClrType, key.ClrType)
+            .Invoke(null, [context, key.Name, keys, cancellationToken])!;
+        keys.ExceptWith(await task);
+
+        foreach (var chunk in keys.Chunk(Page))
+        {
+            var rows = await context.Set<AuditLogEntry>()
+                .Where(row => row.Entity == table && chunk.Contains(row.EntityId))
+                .OrderBy(row => row.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var copies in rows.GroupBy(row => row.EntityId, StringComparer.Ordinal))
+            {
+                empty([.. copies]);
             }
         }
     }
