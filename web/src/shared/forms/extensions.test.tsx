@@ -162,11 +162,11 @@ test('an instant shows the time of the division under the UTC one, and stays UTC
   expect(input).toHaveValue('2026-01-15T18:00');
 
   // The input carries the UTC wall clock; underneath it the same instant where the division lives,
-  // named. 18:00 UTC is 7 in the evening in Rome, so a line that quietly showed UTC twice — or the
+  // named. 18:00 UTC is 19:00 in Rome, so a line that quietly showed UTC twice — or the
   // browser's own zone, which in CI is UTC — cannot pass this.
   const local = screen.getByText(/Europe\/Rome/);
-  expect(local).toHaveTextContent('7:00');
-  expect(local).not.toHaveTextContent('6:00');
+  expect(local).toHaveTextContent('19:00');
+  expect(local).not.toHaveTextContent('18:00');
 
   // Typed rather than clicked, and with `fireEvent` rather than `userEvent`: a `datetime-local`
   // input is a row of segments a browser drives, and jsdom does not implement them — typing into

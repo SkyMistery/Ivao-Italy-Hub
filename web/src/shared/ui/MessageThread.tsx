@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import type { components } from '../api/schema';
 import { SchemaForm } from '../forms';
+import { useMoment } from '../i18n/useMoment';
 
 export type MessageThreadValue = components['schemas']['ContactThreadDto'];
 type Reply = components['schemas']['ContactReplyDto'];
@@ -32,16 +33,12 @@ export function MessageThread({
   /** Rejecting with an `ApiError` is how the server's refusal reaches the box. Absent, the thread is read only. */
   onReply?: (body: string) => Promise<unknown>;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   // A new key after each answer: the box comes back empty rather than holding what was just sent.
   const [round, setRound] = useState(0);
 
-  const when = (value: string) =>
-    new Intl.DateTimeFormat(i18n.language, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: timezone,
-    }).format(new Date(value));
+  const moment = useMoment();
+  const when = (value: string) => moment(value, { timeZone: timezone });
 
   const department = t('contacts.thread.department', { department: t(`departments.${thread.department}`) });
 
