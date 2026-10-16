@@ -1,6 +1,6 @@
 import type { ModuleManifest } from '../../shared/modules';
 
-import { eventListBlock, myEventsBlock } from './blocks';
+import { atcCoverageBlock, eventListBlock, myEventsBlock } from './blocks';
 import {
   EVENTS_EDIT,
   EVENTS_MANAGE_SETTINGS,
@@ -23,6 +23,7 @@ import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
 import { QuestionForm } from './screens/questions';
+import { RosterPage } from './screens/RosterPage';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
 import { SlotForm, SlotLoadPage } from './screens/slots';
@@ -37,11 +38,13 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * event onto a new date; E16 the events in person — their questions and their registrations in tabs of the event's page, a question on
  * a page of its own, a member's registrations on `/events/mine`; E11a the ATC of an event with a roster — its positions in a tab of the
  * event's page and in a section of their own for whoever does not read the events, a position with who is available on it, and a member's
- * availability on the event's page; E11b the roster of an event under its positions, and a shift on a page of its own.
+ * availability on the event's page; E11b the roster of an event under its positions, and a shift on a page of its own; E12 the page of a
+ * published roster, a controller's shifts and availabilities on `/events/mine` with «hand over», the staff's requests under the roster, and
+ * the block of the coverage of the rosters.
  */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
-  blocks: [eventListBlock, myEventsBlock],
+  blocks: [eventListBlock, myEventsBlock, atcCoverageBlock],
   routes: [
     // The public side (E4): the events to come and in progress, and one event by its address — where its calendar entry and its
     // line in the search lead. Under `_public`, so they wear the header, the footer and the language switcher of the site. The page
@@ -57,6 +60,12 @@ export const eventsManifest: ModuleManifest = {
       path: '/events/$slug',
       validateSearch: eventPageSearchSchema,
       component: EventPublicPage,
+    },
+    // The roster of an event, once published (E12): every shift and every piece nobody holds, the names to a signed in reader.
+    {
+      area: 'public',
+      path: '/events/$slug/roster',
+      component: RosterPage,
     },
     // A member's own bookings (E6b, design M4 §7.1): under `_member`, whose guard sends a visitor to the login and back. No event
     // takes the address `mine` (the server refuses it).

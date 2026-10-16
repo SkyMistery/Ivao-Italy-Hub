@@ -118,14 +118,17 @@ public sealed record PublicEventDto(
 /// <summary>
 /// The ATC of an event with a roster as its page shows it (design M4 §4.2, §7.1, E11a): the positions it opens — to everybody, with the name
 /// the core knows and their hours —, until when a controller gives their availability, whether they still can, the least ATC rating it asks
-/// as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in.
+/// as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in. And when its
+/// roster is published, and whether it is (E12): the page links to <c>/events/{slug}/roster</c> once it is.
 /// </summary>
 public sealed record PublicEventAtcDto(
     IReadOnlyList<PublicAtcPositionDto> Positions,
     DateTime ClosesAtUtc,
     bool Open,
     string? MinimumRating,
-    bool? RatedEnough);
+    bool? RatedEnough,
+    DateTime RosterPublishesAtUtc,
+    bool RosterPublished);
 
 /// <summary>A position an event opens, as its page shows it: the callsign, the name the core knows — none for one it no longer knows —, the hours.</summary>
 public sealed record PublicAtcPositionDto(long Id, string Callsign, string? Name, DateTime FromUtc, DateTime ToUtc);
@@ -224,28 +227,40 @@ public sealed class PublicEvents(
     /// One event by its address, with everything its page shows; null when <paramref name="reader"/> may not see it — not seen, or
     /// for the members and read by a visitor —, unless they hold <c>Events.View</c> on it.
     /// </summary>
+    /// <summary>
+    /// The event at this address, if <paramref name="reader"/> may see it — seen by them, or read by the staff of the events in every state —,
+    /// and whether it is seen: the page of an event and the page of its roster (E12) ask the same.
+    /// </summary>
+    public async Task<(Event? Row, bool Seen)> FindAsync(string slug, ClaimsPrincipal reader, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        var row = await database.Events.AsNoTracking()
+            .Where(EventState.Seen(clock.UtcNow))
+            .FirstOrDefaultAsync(candidate => candidate.Slug == slug, cancellationToken);
+        if (row is not null)
+        {
+            return (row, true);
+        }
+
+        // Not the reader's to see: the staff of the events read it all the same, a draft or an ended one included.
+        var staff = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .FirstOrDefaultAsync(candidate => candidate.Slug == slug, cancellationToken);
+
+        return staff is not null && (await authorization.AuthorizeAsync(reader, staff, EventsPermissions.View)).Succeeded
+            ? (staff, false)
+            : (null, false);
+    }
+
     public async Task<PublicEventDto?> ReadAsync(string slug, ClaimsPrincipal reader, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reader);
 
         var now = clock.UtcNow;
-        var row = await database.Events.AsNoTracking()
-            .Where(EventState.Seen(now))
-            .FirstOrDefaultAsync(candidate => candidate.Slug == slug, cancellationToken);
-        var seen = row is not null;
-
+        var (row, seen) = await FindAsync(slug, reader, cancellationToken);
         if (row is null)
         {
-            // Not the reader's to see: the staff of the events read it all the same, a draft or an ended one included.
-            var staff = await CrudSource.BackOffice<Event>(database).AsNoTracking()
-                .FirstOrDefaultAsync(candidate => candidate.Slug == slug, cancellationToken);
-
-            if (staff is null || !(await authorization.AuthorizeAsync(reader, staff, EventsPermissions.View)).Succeeded)
-            {
-                return null;
-            }
-
-            row = staff;
+            return null;
         }
 
         var own = await database.Airports.AsNoTracking()
@@ -388,7 +403,9 @@ public sealed class PublicEvents(
             AtcRules.ClosesAt(row, settings),
             AtcRules.IsOpen(row, settings, positions.Count > 0, now),
             vocabulary.Find(RatingKind.Atc, settings.MinimumAtcRating)?.ShortName,
-            rated);
+            rated,
+            RosterPublication.PublishesAt(row, settings),
+            row.RosterPublishedAt is not null);
     }
 
     /// <summary>Every airport named, with the name the core knows, in one question to the core.</summary>

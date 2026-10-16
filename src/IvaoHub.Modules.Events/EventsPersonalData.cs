@@ -11,7 +11,8 @@ namespace IvaoHub.Modules.Events;
 /// <summary>
 /// The events' half of erasing a person's data (design M4 §11.1, E8b; notes 2026-09-29-i-dati-dei-membri-negli-eventi §2.5,
 /// 2026-09-25-la-cancellazione-dei-dati-di-una-persona and 2026-10-11-duplica-e-la-cancellazione-negli-eventi §2), for the rows of M4a:
-/// a pilot's bookings — and since then a member's registrations (E16) and a controller's availabilities (E11a) and shifts (E11b), by the same rule.
+/// a pilot's bookings — and since then a member's registrations (E16), a controller's availabilities (E11a), shifts (E11b) and requests to hand
+/// one over (E12), by the same rule.
 /// <list type="bullet">
 /// <item>A booking of an event <b>still to end</b> goes (<see cref="EventState.IsOver"/>; a cancelled event too, until its end — Carmine's
 /// answer 2 on issue #248, (i)): its slot is free again, on the page and in the export. Through the change
@@ -44,6 +45,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var held = await Shifts(vid).AsNoTracking()
             .Join(CrudSource.BackOffice<Event>(database), shift => shift.EventId, row => row.Id, (shift, row) => row)
             .ToListAsync(cancellationToken);
+        var asked = await Transfers(vid).AsNoTracking()
+            .Join(CrudSource.BackOffice<Event>(database), transfer => transfer.EventId, row => row.Id, (transfer, row) => row)
+            .ToListAsync(cancellationToken);
         var now = clock.UtcNow;
 
         return Lines(
@@ -54,7 +58,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             availabilitiesToCome: available.Count(row => !EventState.IsOver(row, now)),
             availabilitiesOver: available.Count(row => EventState.IsOver(row, now)),
             shiftsToCome: held.Count(row => !EventState.IsOver(row, now)),
-            shiftsOver: held.Count(row => EventState.IsOver(row, now)));
+            shiftsOver: held.Count(row => EventState.IsOver(row, now)),
+            transfersToCome: asked.Count(row => !EventState.IsOver(row, now)),
+            transfersOver: asked.Count(row => EventState.IsOver(row, now)));
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -88,6 +94,7 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
 
         var (registrationsToCome, registrationsOver) = await EraseRegistrationsAsync(request.Vid, now, cancellationToken);
         var (availabilitiesToCome, availabilitiesOver) = await EraseAvailabilitiesAsync(request.Vid, now, cancellationToken);
+        var (transfersToCome, transfersOver) = await EraseTransfersAsync(request.Vid, now, cancellationToken);
         var (shiftsToCome, shiftsOver) = await EraseShiftsAsync(request.Vid, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
@@ -99,7 +106,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             availabilitiesToCome,
             availabilitiesOver,
             shiftsToCome,
-            shiftsOver);
+            shiftsOver,
+            transfersToCome,
+            transfersOver);
     }
 
     /// <summary>
@@ -124,7 +133,41 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             shift.ReasonJson = null;
         }
 
+        // A shift that goes takes its requests to hand it over (E12), each with its row in the audit: one asked by somebody whose shift it was
+        // until the staff gave it to the person, too.
+        var going = toCome.Select(shift => shift.Id).ToList();
+        database.AtcTransfers.RemoveRange(await CrudSource.BackOffice<EventAtcTransfer>(database).AsTracking()
+            .Where(transfer => going.Contains(transfer.ShiftId))
+            .ToListAsync(cancellationToken));
         database.AtcShifts.RemoveRange(toCome);
+
+        return (toCome.Count, over.Count);
+    }
+
+    /// <summary>
+    /// The person's requests to hand a shift over (E12; note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 9, treated as the
+    /// shifts): one of an event still to end goes; one of an event over stays, under the pseudonym the core writes into <c>controller_vid</c>,
+    /// without their note and the staff's answer to them. A request that names the person as whoever takes the shift takes the pseudonym from
+    /// the core in <c>to_vid</c>, and is approved towards nobody.
+    /// </summary>
+    private async Task<(int ToCome, int Over)> EraseTransfersAsync(int vid, DateTime now, CancellationToken cancellationToken)
+    {
+        var transfers = await Transfers(vid).AsTracking().ToListAsync(cancellationToken);
+        var eventIds = transfers.Select(transfer => transfer.EventId).Distinct().ToList();
+        var events = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, cancellationToken);
+
+        var over = transfers.Where(transfer => events.TryGetValue(transfer.EventId, out var row) && EventState.IsOver(row, now)).ToList();
+        var toCome = transfers.Where(transfer => events.TryGetValue(transfer.EventId, out var row) && !EventState.IsOver(row, now)).ToList();
+
+        foreach (var transfer in over)
+        {
+            transfer.Note = null;
+            transfer.DecisionNote = null;
+        }
+
+        database.AtcTransfers.RemoveRange(toCome);
 
         return (toCome.Count, over.Count);
     }
@@ -223,6 +266,10 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
     private IQueryable<EventAtcShift> Shifts(int vid) =>
         CrudSource.BackOffice<EventAtcShift>(database).Where(shift => shift.ControllerVid == vid);
 
+    /// <summary>The person's requests to hand a shift over, read past every filter, as their shifts are.</summary>
+    private IQueryable<EventAtcTransfer> Transfers(int vid) =>
+        CrudSource.BackOffice<EventAtcTransfer>(database).Where(transfer => transfer.ControllerVid == vid);
+
     private static IReadOnlyList<ErasureLine> Lines(
         int toCome,
         int over,
@@ -231,7 +278,9 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         int availabilitiesToCome,
         int availabilitiesOver,
         int shiftsToCome,
-        int shiftsOver) =>
+        int shiftsOver,
+        int transfersToCome,
+        int transfersOver) =>
     [
         new("events:erasure.bookingsToCome", toCome, ErasureOutcome.Deleted),
         new("events:erasure.bookingsOver", over, ErasureOutcome.Anonymised),
@@ -241,5 +290,7 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         new("events:erasure.availabilitiesOver", availabilitiesOver, ErasureOutcome.Anonymised),
         new("events:erasure.shiftsToCome", shiftsToCome, ErasureOutcome.Deleted),
         new("events:erasure.shiftsOver", shiftsOver, ErasureOutcome.Anonymised),
+        new("events:erasure.transfersToCome", transfersToCome, ErasureOutcome.Deleted),
+        new("events:erasure.transfersOver", transfersOver, ErasureOutcome.Anonymised),
     ];
 }

@@ -51,6 +51,7 @@ public sealed class EventsDuplicationTests
             (0L, (DateTime?)null, (DateTime?)null, (int?)null, (Localized<string>?)null, (DateTime?)null, (DateTime?)null),
             (copy.Id, copy.PublishedAt, copy.CancelledAt, copy.CancelledBy, copy.CancellationNote, copy.RosterProposedAt, copy.AfterDoneAt));
         Assert.Equal((default(DateTime), 0, default(DateTime)), (copy.CreatedAt, copy.CreatedBy, copy.RowVersion));
+        Assert.Null(copy.RosterPublishedAt);
     }
 
     [Fact]
@@ -69,8 +70,8 @@ public sealed class EventsDuplicationTests
 
             // Left as a new draft has them.
             nameof(Event.Id), nameof(Event.Status), nameof(Event.PublishedAt), nameof(Event.CancelledAt), nameof(Event.CancelledBy),
-            nameof(Event.CancellationNote), nameof(Event.RosterProposedAt), nameof(Event.AfterDoneAt), nameof(Event.CreatedAt),
-            nameof(Event.CreatedBy), nameof(Event.UpdatedAt), nameof(Event.UpdatedBy), nameof(Event.RowVersion),
+            nameof(Event.CancellationNote), nameof(Event.RosterProposedAt), nameof(Event.RosterPublishedAt), nameof(Event.AfterDoneAt),
+            nameof(Event.CreatedAt), nameof(Event.CreatedBy), nameof(Event.UpdatedAt), nameof(Event.UpdatedBy), nameof(Event.RowVersion),
         ];
 
         var columns = typeof(Event).GetProperties().Where(property => property.CanWrite && property.GetSetMethod() is not null).Select(property => property.Name);
@@ -208,6 +209,7 @@ public sealed class EventsDuplicationTests
         CancelledBy = 1001,
         CancellationNote = new Localized<string>(new Dictionary<string, string> { ["en"] = "Weather", ["it"] = "Meteo" }),
         RosterProposedAt = Start.AddDays(-3),
+        RosterPublishedAt = Start.AddDays(-2),
         AfterDoneAt = Start.AddDays(1),
         RestrictedWindowHours = 3,
         RestrictedMaxPerWindow = 2,

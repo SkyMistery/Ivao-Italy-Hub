@@ -589,17 +589,23 @@ and private slots, an MSE with private slots only, and an online day about the w
 
 - **The pages**: `/events`, public, with the events to come and in progress and the calendar under them;
   `/events/{slug}`, the page of one event, with its slots — free or taken, never by whom —, and, for a
-  member, the bookings and the availability as a controller; `/events/mine` for a member's own; `/staff/events`
+  member, the bookings and the availability as a controller; `/events/{slug}/roster`, the roster once it is
+  published, with the names only to a signed in reader; `/events/mine` for a member's own — bookings,
+  registrations, ATC shifts with «hand over», availabilities; `/staff/events`
   and the pages under it for the department, and `/staff/events/atc` for whoever works on the ATC of the
   events without the rest of them — the staff of a FIR. The module reserves the first segment of an address, `events`, and no event takes the
   address `mine`.
-- **Two Data blocks**, placed with the editor like any other: `events.eventList` on a public page, and
-  `events.myEvents`, a member's bookings still to fly, on `/me`. The hub places neither for you.
-- **The mails**, five kinds, each of which a member can switch off from their profile: an event they
-  booked cancelled, or its times changed; a booking taken away by the staff, or its flight corrected; the
-  reminder before a flight. The module has three jobs, all every quarter of an hour and in UTC: the one that
-  projects an event again when it is seen and when it ends (`events-release`), the reminders
-  (`events-reminders`), and the one that proposes the roster at the close (`events-roster`).
+- **Three Data blocks**, placed with the editor like any other: `events.eventList` on a public page,
+  `events.myEvents`, a member's bookings still to fly and ATC shifts still to come, on `/me`, and
+  `events.atcCoverage`, the rosters of the next days that need somebody, on `/staff` or a dashboard of the
+  staff. The hub places none for you.
+- **The mails**, each of which a member can switch off from their profile: an event they booked, registered
+  to or hold a shift in cancelled, or its times changed; a booking taken away by the staff, or its flight
+  corrected; the reminder before a flight; a registration received or taken away; their ATC shifts when the
+  roster is published, and a shift added, moved or taken away after it; a request to hand a shift over
+  decided. The module has three jobs, all every quarter of an hour and in UTC: the one that projects an event
+  again when it is seen and when it ends (`events-release`), the reminders (`events-reminders`), and the one
+  that proposes the roster at the close and publishes it at its date (`events-roster`).
 
 ### The gate manager
 
