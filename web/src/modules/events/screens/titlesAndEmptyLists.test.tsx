@@ -15,6 +15,7 @@ import englishEvents from '../locales/en/events.json';
 import italianEvents from '../locales/it/events.json';
 
 import { AirportsTab } from './airports';
+import { AtcPanel } from './atc';
 import { BookingsTab } from './bookings';
 import { EventsPage } from './events';
 import { MyBookingsPage } from './mine';
@@ -103,7 +104,10 @@ const event: PublicEventDto = {
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
 const detail = { id: event.id, publicSlots: true, privateSlots: false } as EventDetailDto;
 
-/** The head of the same event as the ATC reads it (E11b): its roster proposed, and nothing in it — no position opened. */
+/**
+ * The head of the same event as the ATC reads it (E11b): its roster proposed, and nothing in it — no position opened —, its publication still
+ * to come (E12).
+ */
 const atcHead: AtcEventDto = {
   id: event.id,
   ownerDepartment: 'ED',
@@ -116,19 +120,24 @@ const atcHead: AtcEventDto = {
   shiftMinutes: 60,
   cancelledAt: null,
   rosterProposedAt: '2099-11-18T16:03:00Z',
+  publishesAtUtc: '2099-11-19T16:00:00Z',
+  rosterPublishedAt: null,
 };
 
 /** What every list and the block of the events answer: nothing at all. */
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
 /**
- * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b) and registrations (E16), plain
- * lists.
+ * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b), registrations (E16), shifts and
+ * availabilities (E12), plain lists.
  */
 const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/public/{slug}': event,
   '/api/events/mine/bookings': [],
   '/api/events/mine/registrations': [],
+  '/api/events/mine/shifts': [],
+  '/api/events/mine/availability': [],
+  '/api/events/atc/events/{id}': atcHead,
 };
 
 afterEach(() => {
@@ -187,6 +196,11 @@ async function open(
           getParentRoute: () => staff,
           path: '/roster',
           component: () => <RosterSection event={atcHead} />,
+        }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/atc',
+          component: () => <AtcPanel eventId={event.id} />,
         }),
         createRoute({
           getParentRoute: () => staff,
@@ -353,6 +367,17 @@ describe('the empty lists of the events', () => {
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.bookings.empty)).toBeInTheDocument();
     expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+
+  test('whoever only reads the ATC of an event, with no «New position», reads that the positions will show up there (#263)', async () => {
+    const { i18n } = await open('/atc');
+
+    expect(await screen.findByText(englishEvents.atc.positions.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishEvents.atc.readOnly)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: englishEvents.atc.positions.create })).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.atc.positions.empty)).toBeInTheDocument();
   });
 
   test('an empty «Questions» tab says what its questions will be, in both languages, and not the core’s sentence (E4d)', async () => {

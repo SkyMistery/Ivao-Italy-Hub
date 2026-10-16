@@ -71,8 +71,9 @@ public sealed record AtcCandidateDto(
 
 /// <summary>
 /// The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
-/// its words, its state, its window, when its availabilities close, how long a shift is and when its roster was proposed (E11b) — to
-/// whoever holds <c>EventAtc.View</c> somewhere, the staff of a FIR among them, who do not read the event itself.
+/// its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
+/// published and whether it was (E12) — to whoever holds <c>EventAtc.View</c> somewhere, the staff of a FIR among them, who do not read the
+/// event itself.
 /// </summary>
 public sealed record AtcEventDto(
     long Id,
@@ -85,7 +86,9 @@ public sealed record AtcEventDto(
     DateTime ClosesAtUtc,
     int ShiftMinutes,
     DateTime? CancelledAt,
-    DateTime? RosterProposedAt);
+    DateTime? RosterProposedAt,
+    DateTime PublishesAtUtc,
+    DateTime? RosterPublishedAt);
 
 /// <summary>A position of the division as the form of a position offers it: the callsign, its name, its kind and its FIR.</summary>
 public sealed record AtcPositionChoiceDto(string Callsign, string Name, string Type, string? Fir);
@@ -393,7 +396,9 @@ public static class AtcPositionEndpoints
                 throw new DomainRefusalException("id", PositionHasShiftsKey);
             }
 
-            database.AtcShifts.RemoveRange(shifts);
+            // With their requests to hand them over, saved and committed inside the lock, and then whoever knew of one told it is gone (E12).
+            await services.GetRequiredService<ShiftNotices>().RemoveAsync(shifts, position, shiftLock, cancellationToken);
+            return;
         }
 
         database.AtcPositions.Remove(position);
@@ -544,7 +549,9 @@ public static class AtcPositionEndpoints
         AtcRules.ClosesAt(row, settings),
         row.ShiftMinutes ?? settings.ShiftMinutes,
         row.CancelledAt,
-        row.RosterProposedAt);
+        row.RosterProposedAt,
+        RosterPublication.PublishesAt(row, settings),
+        row.RosterPublishedAt);
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));
