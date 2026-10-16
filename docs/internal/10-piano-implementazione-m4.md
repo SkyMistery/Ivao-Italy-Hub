@@ -4778,7 +4778,17 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
      seguiti di E4d (#263), e la PR lo dice.
   5. **La condizione di Carmine sulla lettura 5**: la pagina pubblica del roster nomina a chi ha fatto il login il controllore e il suo rating,
      **mai il VID** (`ControllerName`, `ControllerErased`); a un visitatore niente.
-  - **Verificato, in locale**: «AFTERREVIEW».
+  - **Unite poi le teste di E11b** `a0c8a4f` (con `main` a `e041bb04`, il Pkcs corretto, #265) e `33ed36f` (con E4d `279c8cd` e `main` a
+    `3b8d7d79`, le ore in 24 di E10p): un conflitto in `HANDOFF-M4.md` e uno in `titlesAndEmptyLists.test.tsx` (la scheda «ATC» in sola lettura di
+    E12 accanto alle «Domande» e «Iscrizioni» di E4d), le due parti tenute; gli orari delle pagine di E12 passano da `useMoment`. ⚠️ La
+    rilettura di `notified_at` usava `IgnoreQueryFilters`, che `ArchitectureTests` vieta fuori dal motore: passa da `CrudSource.BackOffice`.
+  - **Verificato, in locale** (16 ottobre 2026, sul merge di `33ed36f`): restore con l'audit (`--force --no-http-cache`) senza avvisi;
+    `dotnet build -c Release` senza avvisi; unità **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (15,1 min); le classi
+    del roster di E12 ed E11b 22/22 prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (864 chiavi) verdi; `pnpm test` da solo
+    **788 in 110 file** (un primo giro con tutti i worker si era fermato per la memoria della macchina: rifatto con `--maxWorkers=4`);
+    `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco 5146, `ivaohub_e2e_e12` tolto prima, dopo l'integrazione e
+    dietro il lock di Mailpit: **65/65 al primo giro** (13,4 min); le regole di `core-guard` contro `3b8d7d79`: nessun file del maintainer, i file del nucleo della coda
+    (i tre di E12 e i due di E4d) con le tre note nuove.
 
 [r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
 [a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
