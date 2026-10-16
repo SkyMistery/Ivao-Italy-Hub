@@ -9,7 +9,8 @@
 **Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
-(con E12 `1887c27` ed E10s `00b0609`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **decisa** da Carmine sull'issue #272: (A) e (A)
+(con E12 `1887c27` ed E10s `00b0609`), e dopo la revisione le teste di E10t `e17dd8c` (con `main` a `b5d3fb9`, E12 unita) e `2255412`
+(con `main` a `2938ae8`, E10s unita) e di E17 `02ea4aa` (con E10s `9e40aff`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **decisa** da Carmine sull'issue #272: (A) e (A)
 alle scelte 5 e 7 ([la prima risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876)), e dopo la
 lettura della PR **sì alle dieci letture** con due condizioni, fatte sulla stessa PR — il conto per scalo e «non contato» distinto da 0
 ([la seconda](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300)). Da E13a, sei ore dopo la fine di un evento, `events-after` trova ogni ora, a lotti, le prenotazioni volate, i turni fatti o un

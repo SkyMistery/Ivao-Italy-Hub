@@ -4972,7 +4972,9 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
   nel nucleo la riga `evt_atc_shifts.covered_by_vid` in `ErasureTests`.
 - **I merge** (mai un rebase): la testa di E10t `712bce8` (con `main` a `4ad747a`: conflitti in questo file, in `HANDOFF-M4.md` e in
   `titlesAndEmptyLists.test.tsx`, le due parti tenute) e la testa di E17 `92a7ff7` (con E12 `1887c27` ed E10s `00b0609`: conflitti nei file
-  di lingua e in `HANDOFF-M4.md`, dove il blocco di E10s era doppio e resta quello di E17).
+  di lingua e in `HANDOFF-M4.md`, dove il blocco di E10s era doppio e resta quello di E17). Dopo la revisione: E10t `e17dd8c` (con `main` a
+  `b5d3fb9`, E12 unita), E17 `02ea4aa` (con E10s `9e40aff`; la migrazione rifatta sopra il suo snapshot, che resta l'ultimo degli eventi) ed
+  E10t `2255412` (con `main` a `2938ae8`, E10s unita), conflitti solo in `HANDOFF-M4.md`: i blocchi doppi tenuti una volta.
 - **Dopo la revisione** ([i rilievi sulla #278](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6222330742), [sì alle dieci letture di Carmine, con due condizioni](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300); la nota ora **decisa**):
   1. **Il conto di chi ha volato senza prenotare va a pezzi, per scalo** (lettura 6): ogni giro conta quanti scali stanno nel resto del suo
      conto, al più due in un giro nuovo, e li salva con le statistiche; un giro non spende mai più di 60 unità. Prima uno solo passo per
@@ -4984,6 +4986,12 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
   4. **Senza archivio** (`atcData: none`) il job non lo chiede, non spende unità e non scrive «l'archivio non ha risposto».
   5–7. Nella nota: la lista dei turni con `EventAtcShiftRowDto`, lo slot senza orario di partenza, gli eventi vecchi al primo avvio.
 - **Verificato, in locale, prima della revisione** (16 ottobre 2026, dopo il merge di `92a7ff7`): `dotnet restore --force --no-http-cache` senza avvisi; `dotnet build -c Release` senza avvisi; `dotnet ef migrations has-pending-model-changes` senza cambi; unità **1318/1318**; **integrazione intera senza filtro 645/645** (10,6 min, da sola); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **792 in 112 file** (da solo); `gen:api` senza diff; lo smoke `pnpm exec playwright test --workers=2` **181/181**; **`pnpm e2e:full`** sul banco `http://127.0.0.1:5149`, `ivaohub_e2e_e13a` tolto prima, dietro il lock di Mailpit: **67/67 al primo giro** (14,5 min); `core-guard.sh` con Git Bash dal merge-base con `main` (`4ad747a`): passa, nessun file del maintainer, le note nuove della coda per i file del nucleo (di E13a solo `ErasureTests.cs`).
+- **Verificato, in locale, dopo la revisione** (16 ottobre 2026, dopo il merge di E10t `2255412`): `dotnet restore --force --no-http-cache`
+  senza avvisi; `dotnet build -c Release` senza avvisi; `has-pending-model-changes` senza cambi; unità **1327/1327**; `EventsAfterTests`
+  **10/10**; **integrazione intera senza filtro 647/647** (9,8 min, da sola); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+  `pnpm test` **793 in 112 file** (da solo); `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco
+  `http://127.0.0.1:5149`, `ivaohub_e2e_e13a` tolto prima, dietro il lock di Mailpit: **67/67 al primo giro** (14,6 min); `core-guard.sh` con
+  Git Bash dal merge-base con `main` (`2938ae8`): passa (di E13a nel nucleo solo `ErasureTests.cs`).
 - **Non verificato**: la CI (la dice la PR); un evento vero sulla rete e i tempi veri del tracker (i pesi del lotto sono stime dalla
   misura di E10a); una sera con l'archivio di vIPI (IT è a `none` finché Carmine non lo accende, #259: chi ha coperto resta vuoto); la
   pagina a 375 px (letta con la spec, non guardata).
