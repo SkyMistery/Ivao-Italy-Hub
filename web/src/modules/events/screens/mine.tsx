@@ -11,8 +11,10 @@ import { useMoment } from '../../../shared/i18n/useMoment';
 import { PageMetadata } from '../../../shared/seo/PageMetadata';
 import { ConfirmDialog, EmptyState, Notice } from '../../../shared/ui';
 import {
+  myAvailabilityQuery,
   myBookingsQuery,
   myRegistrationsQuery,
+  myShiftsQuery,
   useWithdrawBooking,
   useWithdrawRegistration,
   type MyBookingDto,
@@ -21,19 +23,23 @@ import {
 
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
+import { AvailabilitiesSection, ShiftsSection } from './myShifts';
 import { RegistrationAnswers } from './RegistrationAnswers';
 
 /**
  * `/events/mine` (design M4 §7.1, E6b), for a signed in member: their bookings, the flights still to fly first — by their off block —,
  * then the past ones, the latest first; each under its event, with the aircraft they chose, and «withdraw» until its off block (§3.6).
- * One answer, `GET /api/events/mine/bookings`, the one the block `events.myEvents` reads too. The shifts of the ATC, the record of the
- * flights not flown and the reports of support join it with their phases (M4b). Above them, the member's registrations to the events in
- * person (E16, §4-bis.2), each with their answers, «change» on the event's page and «withdraw» until the event starts.
+ * One answer, `GET /api/events/mine/bookings`, the one the block `events.myEvents` reads too. The record of the flights not flown and the
+ * reports of support join it with their phases (M4b). Above them, the member's registrations to the events in person (E16, §4-bis.2), each
+ * with their answers, «change» on the event's page and «withdraw» until the event starts; and a controller's shifts of the published
+ * rosters, with «hand over», and their availabilities (E12, `myShifts.tsx`).
  */
 export function MyBookingsPage() {
   const { t, i18n } = useTranslation();
   const mine = useQuery(myBookingsQuery());
   const registrations = useQuery(myRegistrationsQuery());
+  const shifts = useQuery(myShiftsQuery());
+  const availabilities = useQuery(myAvailabilityQuery());
   // The bookings to come and the past ones are told apart from when the page was drawn, and stay so while it is read.
   const [drawnAt] = useState(() => Date.now());
 
@@ -54,9 +60,16 @@ export function MyBookingsPage() {
   }
 
   // The registrations are a section of their own (E16), drawn when they arrive: an answer that failed says so there, and the bookings
-  // are read all the same.
+  // are read all the same. So are the shifts and the availabilities (E12).
   const registered = registrations.data ?? [];
   const registrationsFailed = describeProblem(registrations.error, t, i18n.language);
+  // Nothing at all is said only once every answer is in and empty: a controller with shifts and no booking has something here.
+  const nothingElse =
+    !registrations.isPending &&
+    registered.length === 0 &&
+    registrationsFailed === null &&
+    shifts.data?.length === 0 &&
+    availabilities.data?.length === 0;
 
   const { upcoming, past } = splitBookings(mine.data, drawnAt);
   // A private arrival and its linked departure (E7) may fall one among the flights to come and one among the past ones.
@@ -84,10 +97,10 @@ export function MyBookingsPage() {
         </section>
       )}
 
-      {mine.data.length === 0 &&
-      !registrations.isPending &&
-      registered.length === 0 &&
-      registrationsFailed === null ? (
+      <ShiftsSection />
+      <AvailabilitiesSection />
+
+      {mine.data.length === 0 && nothingElse ? (
         <EmptyState
           title={t('events:mine.none')}
           description={t('events:mine.noneDescription')}

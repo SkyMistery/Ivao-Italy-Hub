@@ -599,6 +599,24 @@ export function shiftSchema(positions: readonly ChoiceOption[]) {
 
 export type ShiftFormValues = z.output<ReturnType<typeof shiftSchema>>;
 
+/**
+ * Handing a shift over (§4.4-bis, E12), mirroring `TransferRequest` and `TransferApproval`: to whom, by VID — none: the controller looks for
+ * a substitute, and the staff name one when they approve — and a note. Every rule is the server's.
+ */
+export const transferSchema = z.object({
+  toVid: z.number().int().optional(),
+  note: z.string().meta({ multiline: true }),
+});
+
+export type TransferFormValues = z.output<typeof transferSchema>;
+
+/** Refusing a request (§4.4-bis), mirroring `TransferRefusal`: why, which whoever asked reads in the mail. */
+export const refuseTransferSchema = z.object({
+  note: z.string().meta({ multiline: true }),
+});
+
+export type RefuseTransferFormValues = z.output<typeof refuseTransferSchema>;
+
 /** Where «Add» on an uncovered piece opens the form: that position and those hours, nobody on it yet. */
 export const shiftSearchSchema = z.object({
   positionId: z.coerce.number().int().optional(),

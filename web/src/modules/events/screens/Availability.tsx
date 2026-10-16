@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
 import { bootstrapQuery } from '../../../features/me/queries';
 import { loginHref } from '../../../shared/api/client';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
@@ -18,6 +19,8 @@ import {
   type PublicEventDto,
 } from '../api';
 import { availabilitySchema, emptyAvailability, type AvailabilityFormValues } from '../schemas';
+
+import { rosterHref } from './cards';
 
 /**
  * The ATC of an event with a roster on its page (design M4 §4.2, §7.1, E11a), under `#atc`: the positions it opens, to everybody, and a
@@ -43,6 +46,18 @@ export function AvailabilitySection({ event, signedIn }: { event: PublicEventDto
     <section id="atc" className="flex flex-col gap-4" aria-label={t('events:public.atc.title')}>
       <H2>{t('events:public.atc.title')}</H2>
       <Positions atc={atc} />
+      {/* The roster, once published (E12): its page, with the names to a signed in reader. Before it, when it will be. */}
+      {atc.rosterPublished ? (
+        <p className="text-sm">
+          <RouterAnchor href={rosterHref(event.slug)} className="underline">
+            {t('events:public.atc.roster')}
+          </RouterAnchor>
+        </p>
+      ) : event.cancelledAt === null && atc.positions.length > 0 ? (
+        <Subtle className="text-sm">
+          {t('events:public.atc.rosterOn', { date: moment(atc.rosterPublishesAtUtc) })}
+        </Subtle>
+      ) : null}
       {atc.open ? (
         <Subtle className="text-sm">
           {t('events:public.atc.closesAt', { date: moment(atc.closesAtUtc) })}

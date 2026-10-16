@@ -14,8 +14,8 @@ namespace IvaoHub.Modules.Events.Atc;
 
 /// <summary>
 /// <c>events-roster</c> (design M4 §4.3, §8.4, E11b; note 2026-10-13-la-proposta-del-roster, reading 5), its first half: at the close of the
-/// availabilities of an event with a roster, the roster is proposed, once (<see cref="RosterProposal"/>). The publication at a date is its
-/// second half, E12's.
+/// availabilities of an event with a roster, the roster is proposed, once (<see cref="RosterProposal"/>). Its second half (E12): at the start
+/// less <c>rosterPublishDays</c> the roster is published, once, and each controller told of their shifts (<see cref="RosterPublication"/>).
 /// <para><b>It decides from its data, never from the hour it runs</b> (note 2026-09-28-i-job-quando-passenger-spegne-l-hub §8): every
 /// event due — its close passed, its roster never proposed, <c>roster_proposed_at</c> empty — whenever it runs, so a run lost while the hub
 /// slept is made up by the next, which the core's catch up runs after a start (E10j), and a run done twice finds the rosters proposed. Its
@@ -28,6 +28,7 @@ public sealed class EventRosterJob(
     HubDbContext hub,
     ModuleSettingsStore settingsStore,
     RosterProposal proposal,
+    RosterPublication publication,
     IClock clock,
     ILogger<EventRosterJob> logger) : IJob
 {
@@ -93,11 +94,16 @@ public sealed class EventRosterJob(
                 }
             }
 
+            var (published, told) = await PublishAsync(settings, now, failed, cancellationToken);
+
             entry.FinishedAt = clock.UtcNow;
             entry.Status = "succeeded";
+            var done = string.Create(
+                CultureInfo.InvariantCulture,
+                $"{proposed} roster(s) proposed with {shifts} shift(s); {published} published; {told} shift(s) told");
             entry.Message = failed.Count == 0
-                ? string.Create(CultureInfo.InvariantCulture, $"{proposed} roster(s) proposed with {shifts} shift(s)")
-                : string.Create(CultureInfo.InvariantCulture, $"{proposed} roster(s) proposed with {shifts} shift(s); not proposed, left for the next run: {string.Join(", ", failed)}");
+                ? done
+                : string.Create(CultureInfo.InvariantCulture, $"{done}; not done, left for the next run: {string.Join(", ", failed)}");
             await hub.SaveChangesAsync(cancellationToken);
 
             return proposed;
@@ -115,5 +121,61 @@ public sealed class EventRosterJob(
 
             return 0;
         }
+    }
+
+    /// <summary>
+    /// The second half (E12; note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, readings 1 and 2): every roster proposed whose date came
+    /// is published, once — after the proposals, so a roster proposed late is published in the same run —, and every controller with a shift
+    /// not told yet of a published roster is told, one mail per event. Decided from the data: a run lost is made up by the next.
+    /// </summary>
+    private async Task<(int Published, int Told)> PublishAsync(EventsSettings settings, DateTime now, List<long> failed, CancellationToken cancellationToken)
+    {
+        var publishedBy = now.AddDays(settings.RosterPublishDays);
+        var due = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
+                .Where(row => row.HasRoster
+                    && row.Status == PublishStatus.Published
+                    && row.CancelledAt == null
+                    && row.RosterProposedAt != null
+                    && row.RosterPublishedAt == null
+                    && row.StartsAtUtc <= publishedBy
+                    && row.EndsAtUtc > now)
+                .OrderBy(row => row.StartsAtUtc)
+                .ThenBy(row => row.Id)
+                .ToListAsync(cancellationToken))
+            .Where(row => RosterPublication.IsDue(row, settings, now))
+            .ToList();
+
+        var published = 0;
+        foreach (var row in due)
+        {
+            // As a proposal that fails: logged and left for the next run, the others go on.
+            try
+            {
+                published += await publication.PublishAsync(row.Id, settings, now, cancellationToken) ? 1 : 0;
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "The roster of the event {EventId} could not be published.", row.Id);
+                database.ChangeTracker.Clear();
+                failed.Add(row.Id);
+            }
+        }
+
+        var told = 0;
+        foreach (var (eventId, vid) in await publication.UntoldAsync(now, cancellationToken))
+        {
+            try
+            {
+                told += await publication.TellAsync(eventId, vid, now, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "The shifts of the event {EventId} could not be told to {Vid}.", eventId, vid);
+                database.ChangeTracker.Clear();
+                failed.Add(eventId);
+            }
+        }
+
+        return (published, told);
     }
 }

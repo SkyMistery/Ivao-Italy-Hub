@@ -224,19 +224,51 @@ public static class ShiftEndpoints
         // The roster of the core is whoever signed in once (plan §16.13): somebody who never did is nobody the hub can name or tell.
         var known = await saving.Services.GetRequiredService<HubDbContext>().Users.AsNoTracking()
             .AnyAsync(user => user.Vid == shift.ControllerVid, saving.CancellationToken);
-        return known ? null : EventChildren.Refusal("controllerVid", "events:errors.controllerNeverSignedIn");
+        if (!known)
+        {
+            return EventChildren.Refusal("controllerVid", "events:errors.controllerNeverSignedIn");
+        }
+
+        // What the shift was, for the mails after the save (E12); its mark emptied when it passes to another controller.
+        await saving.Services.GetRequiredService<ShiftNotices>().NoteAsync(shift, saving.IsNew, saving.CancellationToken);
+
+        // A request waiting to hand the shift over follows it to the FIR of its new position (the review of #268, point 5): the team of that
+        // FIR decides it, in the same unit of work.
+        if (!saving.IsNew)
+        {
+            foreach (var transfer in await CrudSource.BackOffice<EventAtcTransfer>(database)
+                         .Where(candidate => candidate.ShiftId == shift.Id && candidate.Status == TransferStatus.Pending && candidate.Fir != shift.Fir)
+                         .ToListAsync(saving.CancellationToken))
+            {
+                transfer.Fir = shift.Fir;
+            }
+        }
+
+        return null;
     }
 
-    /// <summary>The save is done: the lock of the event's row is released with it.</summary>
-    private static Task CommitAsync(EventAtcShift shift, CrudSaving saving) =>
-        saving.Services.GetRequiredService<ShiftLock>().CommitAsync(saving.CancellationToken);
+    /// <summary>
+    /// The save is done: the lock of the event's row is released with it, and then, after the publication, its controllers are told at once
+    /// (E12; note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 3) — never before the commit, so no mail tells of a change
+    /// that was rolled back.
+    /// </summary>
+    private static async Task CommitAsync(EventAtcShift shift, CrudSaving saving)
+    {
+        await saving.Services.GetRequiredService<ShiftLock>().CommitAsync(saving.CancellationToken);
+        await saving.Services.GetRequiredService<ShiftNotices>().TellAsync(shift, saving.CancellationToken);
+    }
 
     /// <summary>
     /// A shift is taken away from the proposal until the event starts (Carmine's answer on issue #259): from then on it is the register of
-    /// reliability, which the checks after the event read (c3).
+    /// reliability, which the checks after the event read (c3). With its requests to hand it over, and whoever knew of it told it is gone (E12),
+    /// all under the lock of the event's row the correction holds (the second reading of #268, point 1): the save and the commit are in the
+    /// hook, and the mail after them.
     /// </summary>
     private static async Task DeleteAsync(EventAtcShift shift, IServiceProvider services, CancellationToken cancellationToken)
     {
+        var shiftLock = services.GetRequiredService<ShiftLock>();
+        await shiftLock.TakeAsync(services.GetRequiredService<EventsDbContext>(), shift.EventId, cancellationToken);
+
         var parent = await services.GetRequiredService<EventChildren>().EventAsync(shift.EventId, cancellationToken);
         var now = services.GetRequiredService<IClock>().UtcNow;
         if (parent is not null && Closed(parent, now) is { } closed)
@@ -249,7 +281,7 @@ public static class ShiftEndpoints
             throw new DomainRefusalException("id", AfterStartKey);
         }
 
-        services.GetRequiredService<EventsDbContext>().AtcShifts.Remove(shift);
+        await services.GetRequiredService<ShiftNotices>().RemoveAsync([shift], position: null, shiftLock, cancellationToken);
     }
 
     /// <summary>A shift taken away, or changed in anything but a cut of its end to now or later, after the event started.</summary>
