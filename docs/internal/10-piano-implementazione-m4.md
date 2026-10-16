@@ -4978,7 +4978,10 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
 - **Dopo la revisione** ([i rilievi sulla #278](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6222330742), [sì alle dieci letture di Carmine, con due condizioni](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300); la nota ora **decisa**):
   1. **Il conto di chi ha volato senza prenotare va a pezzi, per scalo** (lettura 6): ogni giro conta quanti scali stanno nel resto del suo
      conto, al più due in un giro nuovo, e li salva con le statistiche; un giro non spende mai più di 60 unità. Prima uno solo passo per
-     tutti gli scali poteva costare 220 unità a un evento di dieci. Provato con tre scali in due giri (44 e 22 unità).
+     tutti gli scali poteva costare 220 unità a un evento di dieci. Provato con tre scali in due giri (44 e 22 unità). ⚠️ Un pilota contato
+     in due giri diversi (fra due scali dell'evento) conta due volte, di proposito: i VID non restano fra un giro e l'altro, e con più di due
+     scali il numero può essere più alto delle persone vere ([la seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6224947393),
+     approvabile; detto nella nota, lettura 3).
   2. **«Non contato» non è 0** (lettura 3): `flown_unbooked_airports` vuoto, `flownUnbooked` vuoto nella lettura e in «Ricalcola», e la
      scheda lo dice; il test della chiusura dopo trenta giorni ora lo legge vuoto.
   3. **La prima riga delle statistiche sotto il blocco della riga dell'evento**: senza, «Ricalcola» contro la chiusura rispondeva 500 (provato
