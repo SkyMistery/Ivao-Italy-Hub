@@ -4,6 +4,7 @@ import {
   Boxes,
   CalendarDays,
   ClipboardCheck,
+  Database,
   FileArchive,
   FileText,
   Images,
@@ -349,6 +350,16 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
         description: t('audit.description'),
         Icon: ScrollText,
         href: '/staff/admin/audit',
+      });
+    }
+
+    // The connection check is the super administrator's alone, like the list of super administrators: no permission opens it.
+    if (bootstrap.user?.isSuperadmin === true) {
+      administration.push({
+        title: t('connections.title'),
+        description: t('connections.description'),
+        Icon: Database,
+        href: '/staff/admin/connections',
       });
     }
 
