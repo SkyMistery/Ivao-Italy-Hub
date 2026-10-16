@@ -354,6 +354,34 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     della riga dell'evento**: chi la scrive dopo E13a (E14a, E14b, la conservazione di E15b) passa da `EventStatistics.WriteAsync`, dentro una
     transazione, o prende lo stesso blocco.
   - ⚠️ **I VID di prova**: E13a ha usato **761180–761183** della fascia 761180–761198 data da dalberone.
+
+### Che cosa ha lasciato E10t (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277, del nucleo; diretta su `main`, nata a `4ad747ad`, con `main` a `b5d3fb9` unito, con E12, poi a `2938ae8`, con E10s, e a `eefb24a`, con E17)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10t, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una
+  nota nuova, `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b)):
+  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`),
+    scoped, accanto a `IAtcBookingSource`: la ricerca del tracker di E10a con nomi che non dicono IVAO. Le sessioni **iniziate** nella
+    finestra (estremi compresi), dalla più recente, una volta per `Id`, al più `Limit`; **`null`** quando la rete non risponde, mai una
+    lista vuota al suo posto.
+  - **`NetworkSessionQuery(int? Vid, DateTime FromUtc, DateTime ToUtc, string? DepartureIcao = null, string? ArrivalIcao = null,
+    NetworkConnection? Connection = null) { Limit }`**: `DefaultLimit` 200 e `MaxLimit` 1000 sono le costanti di `IvaoSessionQuery`;
+    un `Limit` fuori da 1…1000 è un'`ArgumentOutOfRangeException` già nell'`init`.
+  - **`NetworkConnection { Pilot, Atc }`** e **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime
+    EndedAt)`**, con `EndedAt` = inizio + durata dichiarata.
+  - **I test**: `NetworkSessionSourceTests` (unità, nuova, 9 casi), con un client che registra la domanda e con il client delle
+    fixture (la sera di Fiumicino, `tracker-airport-LIRF.json`).
+- **Che cosa deve sapere E13a** (che unisce questo branch, poi `main` quando è unita):
+  - **sposta le chiamate**: `IIvaoApiClient.SearchSessionsAsync(new IvaoSessionQuery(…))` → `INetworkSessionSource.SessionsAsync(new
+    NetworkSessionQuery(…))`, con `Pilot`/`Atc` al posto di `IvaoConnectionType`, e legge `Id`, `Vid`, `Callsign`, `StartedAt`,
+    `EndedAt` di ogni sessione; il `using IvaoHub.Core.Ivao;` resta (il test degli eventi lascia passare lo spazio dei nomi);
+  - le regole del tracker restano quelle di E10a (nota `il-tracker-senza-vid` §3.6): la finestra è sull'**inizio**, partenze e arrivi
+    sono **due domande** e la stessa sessione può tornare da tutte e due (si conta per `Id`), una risposta con esattamente `Limit`
+    sessioni può essere tagliata, mai due domande per scalo insieme;
+  - ⚠️ nei test d'integrazione il client delle fixture risponde anche attraverso la sorgente: una VID senza `tracker-sessions-{vid}.json`
+    non ha sessioni, uno scalo senza `tracker-airport-{icao}.json` nemmeno;
+  - ⚠️ gli scali, le revisioni del piano di volo e il JSON grezzo **non** ci sono: se E13a ne ha bisogno, è un campo in più qui, con una
+    nota (una fase del nucleo), non una lettura del client.
+
 ### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
@@ -396,33 +424,6 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Su Windows** `Activities.tsx` e `activities.tsx` sono lo stesso file: il componente della pagina pubblica si chiama
     `ActivityTurns.tsx` per questo.
   - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
-
-### Che cosa ha lasciato E10t (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277, del nucleo; diretta su `main`, nata a `4ad747ad`, con `main` a `b5d3fb9` unito, con E12, e poi a `2938ae8`, con E10s)
-
-- **Che cosa c'è** (il dettaglio in `10`, E10t, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una
-  nota nuova, `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b)):
-  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`),
-    scoped, accanto a `IAtcBookingSource`: la ricerca del tracker di E10a con nomi che non dicono IVAO. Le sessioni **iniziate** nella
-    finestra (estremi compresi), dalla più recente, una volta per `Id`, al più `Limit`; **`null`** quando la rete non risponde, mai una
-    lista vuota al suo posto.
-  - **`NetworkSessionQuery(int? Vid, DateTime FromUtc, DateTime ToUtc, string? DepartureIcao = null, string? ArrivalIcao = null,
-    NetworkConnection? Connection = null) { Limit }`**: `DefaultLimit` 200 e `MaxLimit` 1000 sono le costanti di `IvaoSessionQuery`;
-    un `Limit` fuori da 1…1000 è un'`ArgumentOutOfRangeException` già nell'`init`.
-  - **`NetworkConnection { Pilot, Atc }`** e **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime
-    EndedAt)`**, con `EndedAt` = inizio + durata dichiarata.
-  - **I test**: `NetworkSessionSourceTests` (unità, nuova, 9 casi), con un client che registra la domanda e con il client delle
-    fixture (la sera di Fiumicino, `tracker-airport-LIRF.json`).
-- **Che cosa deve sapere E13a** (che unisce questo branch, poi `main` quando è unita):
-  - **sposta le chiamate**: `IIvaoApiClient.SearchSessionsAsync(new IvaoSessionQuery(…))` → `INetworkSessionSource.SessionsAsync(new
-    NetworkSessionQuery(…))`, con `Pilot`/`Atc` al posto di `IvaoConnectionType`, e legge `Id`, `Vid`, `Callsign`, `StartedAt`,
-    `EndedAt` di ogni sessione; il `using IvaoHub.Core.Ivao;` resta (il test degli eventi lascia passare lo spazio dei nomi);
-  - le regole del tracker restano quelle di E10a (nota `il-tracker-senza-vid` §3.6): la finestra è sull'**inizio**, partenze e arrivi
-    sono **due domande** e la stessa sessione può tornare da tutte e due (si conta per `Id`), una risposta con esattamente `Limit`
-    sessioni può essere tagliata, mai due domande per scalo insieme;
-  - ⚠️ nei test d'integrazione il client delle fixture risponde anche attraverso la sorgente: una VID senza `tracker-sessions-{vid}.json`
-    non ha sessioni, uno scalo senza `tracker-airport-{icao}.json` nemmeno;
-  - ⚠️ gli scali, le revisioni del piano di volo e il JSON grezzo **non** ci sono: se E13a ne ha bisogno, è un campo in più qui, con una
-    nota (una fase del nucleo), non una lettura del client.
 
 ### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, poi a `4ad747a`, con E4d, E11b e il piano 1.34, e a `b5d3fb9`, con E12)
 

@@ -4395,8 +4395,14 @@ contrario li fa cadere.
   fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build Release 0 avvisi, unità **1312/1312**,
   integrazione intera da sola **624/624** al primo giro (12 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**)
   verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `2938ae80`: passa.
+- **Unito `main` a `eefb24a`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t2]: E17, #271), in conflitto solo in
+  `HANDOFF-M4.md`, con E10t in cima ed E17 sotto. Il diff della fase fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1319/1319**, integrazione intera da sola **638/638** al primo giro (16 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**789/789**; vitest con `--maxWorkers=2`, perché col PC quasi senza memoria il primo giro aveva
+  perso tre worker senza nessun test rosso), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `eefb24a0`: passa.
 
 [m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
+[m277t2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6224649688
 
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
