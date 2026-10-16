@@ -50,6 +50,9 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The shifts of the rosters (E11b).</summary>
     public DbSet<EventAtcShift> AtcShifts => Set<EventAtcShift>();
 
+    /// <summary>The controllers' requests to hand a shift over (E12).</summary>
+    public DbSet<EventAtcTransfer> AtcTransfers => Set<EventAtcTransfer>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -60,6 +63,7 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
         configurationBuilder.Properties<QuestionType>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ShiftOrigin>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ShiftAttendance>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<TransferStatus>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -273,6 +277,28 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A controller's shifts of every event: their penalty (§4.5), their own page (E12) and their register (E13b).
             shift.HasIndex(row => row.ControllerVid);
+        });
+
+        modelBuilder.Entity<EventAtcTransfer>(transfer =>
+        {
+            transfer.ToTable("evt_atc_shift_transfers");
+            transfer.HasKey(row => row.Id);
+            transfer.Ignore(row => row.StakeholderVid);
+            transfer.Ignore(row => row.ResourceScope);
+            transfer.Property(row => row.Fir).HasMaxLength(8);
+            transfer.Property(row => row.Note).HasMaxLength(EventAtcTransfer.MaxNoteLength);
+            transfer.Property(row => row.DecisionNote).HasMaxLength(EventAtcTransfer.MaxNoteLength);
+            transfer.HasRowVersion(row => row.RowVersion);
+
+            // A shift taken away takes its requests — the module deletes them first, each with its row in the audit, and the key makes sure
+            // nobody forgets. It is also the index a shift's requests are read by.
+            transfer.HasOne<EventAtcShift>().WithMany().HasForeignKey(row => row.ShiftId).OnDelete(DeleteBehavior.Cascade);
+
+            // The requests of an event by their state: the staff's list and the block of the coverage.
+            transfer.HasIndex(row => new { row.EventId, row.Status });
+
+            // A controller's requests of every event: their own page.
+            transfer.HasIndex(row => row.ControllerVid);
         });
     }
 }

@@ -30,6 +30,7 @@ import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from 
 import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
 import { Candidates } from './candidates';
 import { RosterSection } from './roster';
+import { TransfersSection } from './transfers';
 
 /**
  * The ATC of the events in the staff's back office (design M4 §4.1, §6.3, §7.2, E11a; note 2026-10-12-le-postazioni-e-la-disponibilita):
@@ -175,6 +176,7 @@ export function AtcPanel({ eventId }: { eventId: number }) {
         )}
       />
       <RosterSection event={event} />
+      <TransfersSection event={event} />
     </div>
   );
 }
