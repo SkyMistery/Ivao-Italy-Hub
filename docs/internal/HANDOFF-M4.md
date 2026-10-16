@@ -8,9 +8,9 @@
 
 **Ultimo aggiornamento:** 15 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
-M4c), sul branch `m4/e17-in-person-activities`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata `--no-track` da `main` a
+M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata `--no-track` da `main` a
 `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la fila ATC migra lo stesso
-contesto), poi la testa di E10s `4bfda85` (con `main` a `3b8d7d7`: la correzione di Pkcs ed E10p). La nota
+contesto), poi la testa di E10s `4bfda85` (con `main` a `3b8d7d7`: la correzione di Pkcs ed E10p). **Nasce in conflitto con `main`** (dopo l'unione della #262, della #263 e della #270): prende `main` al suo passo della coda, con la testa nuova di E12. La nota
 `2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
 #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta
 M4b («Che cosa ha lasciato E17», sotto).
@@ -297,7 +297,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `a44b70f` e `4bfda85` unite)
+### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `a44b70f` e `4bfda85` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
   quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota

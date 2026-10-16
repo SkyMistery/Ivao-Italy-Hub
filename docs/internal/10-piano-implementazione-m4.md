@@ -4995,7 +4995,7 @@ Design §4-bis.1, §4-bis.2, §2.3-bis, §11; nota `gli-eventi-in-presenza`. Bra
 cancellati dopo il periodo, le somme restano. Il giro completo verde.
 **Fatta quando**: il giro completo di M4c passa in locale e in CI.
 
-**Com'è andata** (15 ottobre 2026, branch `m4/e17-in-person-activities`, la seconda e ultima fase di **M4c**; nata da `main` a `c232448`,
+**Com'è andata** (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271, la seconda e ultima fase di **M4c**, in coda dopo la #268 di E12 e la #269 di E10s; nata da `main` a `c232448`,
 con E16 ed E11a; **una migrazione**, `AddInPersonActivities`, scritta in locale e **rifatta sopra quella di E12** prima del push, come
 chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
 
