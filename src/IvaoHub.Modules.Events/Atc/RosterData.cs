@@ -2,6 +2,7 @@ using IvaoHub.Core.Atc;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,26 +87,22 @@ public sealed class RosterData(
         people.AtcRatingsAsync(vids, cancellationToken);
 
     /// <summary>
-    /// The penalty of each of these people (§4.5), from their shifts of the other events: attended and confirmed no-shows count; excused
-    /// and proposed ones do not. Nobody has a no-show until E13b confirms them: zero.
+    /// The penalty of each of these people (§4.5), from their shifts of the other events, weighed by <c>noShowWeight</c> (E13b): attended and
+    /// confirmed no-shows count; excused, proposed and unknown ones do not (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 3).
     /// </summary>
-    public async Task<IReadOnlyDictionary<int, double>> PenaltiesAsync(IReadOnlyCollection<int> vids, long eventId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyDictionary<int, double>> PenaltiesAsync(
+        IReadOnlyCollection<int> vids,
+        long eventId,
+        double weight,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(vids);
 
-        var counted = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
-            .Where(shift => vids.Contains(shift.ControllerVid)
-                && shift.EventId != eventId
-                && (shift.Attendance == ShiftAttendance.Attended || shift.Attendance == ShiftAttendance.NoShow))
-            .GroupBy(shift => new { shift.ControllerVid, shift.Attendance })
-            .Select(group => new { group.Key.ControllerVid, group.Key.Attendance, Count = group.Count() })
-            .ToListAsync(cancellationToken);
+        var counted = await ControllerRegister.CountsAsync(database, vids, exceptEventId: eventId, cancellationToken);
 
         return vids.Distinct().ToDictionary(
             vid => vid,
-            vid => RosterProposer.Penalty(
-                counted.Where(row => row.ControllerVid == vid && row.Attendance == ShiftAttendance.NoShow).Sum(row => row.Count),
-                counted.Where(row => row.ControllerVid == vid && row.Attendance == ShiftAttendance.Attended).Sum(row => row.Count)));
+            vid => counted.TryGetValue(vid, out var counts) ? RosterProposer.Penalty(counts.NoShows, counts.Attended, weight) : 0);
     }
 
     /// <summary>

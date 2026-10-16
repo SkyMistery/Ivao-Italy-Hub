@@ -5,6 +5,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,12 +32,16 @@ public enum BookingResult
 /// <para>The transaction reads what is committed (<c>READ COMMITTED</c>): the request that waited for the lock reads the booking the
 /// other one just saved, and a lock on a booking that does not exist yet takes no gap — under the default isolation of the
 /// database the first bookings of two pilots would lock the same gap of the index, and deadlock on the row of the event.</para>
+/// <para><b>The limits of whoever books and does not fly</b> (§3.7, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 7): read
+/// under the same lock, after the compatibility, with the bookings already saved and those of the same request — the legs of a rotation
+/// booked a moment before, a private arrival's linked departure —, so two requests of the same pilot at once never pass them together.</para>
 /// </summary>
 public sealed class PilotBookings(
     EventsDbContext database,
     ModuleSettingsStore settings,
     IAirportDirectory airports,
     IAircraftTypeDirectory aircraftTypes,
+    PilotRegister register,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -106,6 +111,11 @@ public sealed class PilotBookings(
         if (Refusal(slot.Id, BookingInterval.Of(slot), mine, await TakenAsync([slot.Id], cancellationToken), gap) is { } refused)
         {
             return Refused(problems.Add(SlotField, refused));
+        }
+
+        if (LimitRefusal(await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken), current, mine, slot) is { } limited)
+        {
+            return Refused(problems.Add(SlotField, limited));
         }
 
         var booking = NewBooking(row, slot, aircraft, now);
@@ -191,6 +201,7 @@ public sealed class PilotBookings(
 
         var mine = await MineInEventAsync(row.Id, cancellationToken);
         var taken = await TakenAsync([.. legs.Select(leg => leg.Id)], cancellationToken);
+        var limits = await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken);
         var booked = new List<MyBookingDto>();
         var notBooked = new List<RotationLegRefusalDto>();
 
@@ -199,7 +210,7 @@ public sealed class PilotBookings(
             var reason = !BookingRules.IsOpen(leg, now) ? BookingRules.ClosedKey
                 : Refusal(leg.Id, BookingInterval.Of(leg), mine, taken, gap) is { } refused ? refused
                 : !leg.AircraftTypes.Contains(aircraft, StringComparer.Ordinal) ? BookingRules.AircraftKey
-                : null;
+                : LimitRefusal(limits, current, mine, leg);
 
             if (reason is null)
             {
@@ -357,6 +368,21 @@ public sealed class PilotBookings(
         if (departureSlot is not null && Refusal(departureSlot.Id, wantedDeparture, mine, taken, gap) is { } refusedDeparture)
         {
             problems.Add(DepartureSlotField, refusedDeparture);
+        }
+
+        // The linked departure counts with its arrival: two bookings (reading 7). Asked of flights that pass everything else.
+        if (problems.IsEmpty)
+        {
+            var limits = await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken);
+            if (LimitRefusal(limits, current, mine, slot) is { } limited)
+            {
+                problems.Add(SlotField, limited);
+            }
+
+            if (departureSlot is not null && LimitRefusal(limits, current, mine, departureSlot, slot) is { } limitedDeparture)
+            {
+                problems.Add(DepartureSlotField, limitedDeparture);
+            }
         }
 
         if (!problems.IsEmpty)
@@ -605,6 +631,24 @@ public sealed class PilotBookings(
             ? BookingRules.IncompatibleKey
             : null;
     }
+
+    /// <summary>
+    /// Why one more booking of <paramref name="slot"/> passes the limits the pilot has in the event, or none — none when they have no limits:
+    /// counted with the bookings they keep and <paramref name="alsoBooked"/>, booked with it in the same request (§3.7).
+    /// </summary>
+    private static string? LimitRefusal(
+        PilotLimits? limits,
+        Event row,
+        List<(EventBooking Booking, EventSlot Slot)> mine,
+        EventSlot slot,
+        params EventSlot[] alsoBooked) =>
+        limits is null
+            ? null
+            : BookingLimits.Refusal(
+                limits,
+                row.StartsAtUtc,
+                [.. mine.Select(entry => BookingLimits.AtTheEventAirport(entry.Slot)), .. alsoBooked.Select(BookingLimits.AtTheEventAirport)],
+                BookingLimits.AtTheEventAirport(slot));
 
     /// <summary>The pilot's bookings of the event with their slots, as committed now: what a new one is checked against.</summary>
     private async Task<List<(EventBooking Booking, EventSlot Slot)>> MineInEventAsync(long eventId, CancellationToken cancellationToken)

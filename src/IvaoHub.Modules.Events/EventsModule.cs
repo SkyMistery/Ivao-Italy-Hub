@@ -11,6 +11,7 @@ using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
+using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
@@ -71,7 +72,8 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>
     /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; the reader's bookings still to fly
-    /// (E6b) and shifts (E12), on <c>/me</c>; and the coverage of the rosters of the next days (E12), on <c>/staff</c>. Their other halves
+    /// (E6b) and shifts (E12), on <c>/me</c>; the coverage of the rosters of the next days (E12), on <c>/staff</c>; and what waits for a
+    /// decision of the staff (E13b), on their dashboards. Their other halves
     /// are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
@@ -79,6 +81,7 @@ public sealed class EventsModule : ModuleBase
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.atcCoverage", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.staffQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -211,6 +214,13 @@ public sealed class EventsModule : ModuleBase
                 .WithIdentity(EventsAfterJob.TriggerName)
                 .WithCronSchedule(EventsAfterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
+        // The registers (E13b): the controllers' and the pilots', a member's own, the staff's decisions on them, and the block of the staff's
+        // queue.
+        services.AddScoped<ControllerRegister>();
+        services.AddScoped<PilotRegister>();
+        services.AddScoped<RegisterDecisions>();
+        services.AddScoped<IDataBlockProvider, StaffQueueProvider>();
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -234,5 +244,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapTransferEndpoints();
         endpoints.MapPublicRosterEndpoints();
         endpoints.MapStatsEndpoints();
+        endpoints.MapRegisterEndpoints();
     }
 }
