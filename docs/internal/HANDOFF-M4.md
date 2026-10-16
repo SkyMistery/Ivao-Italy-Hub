@@ -9,17 +9,22 @@
 **Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
-(con E12 `1887c27` ed E10s `00b0609`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **Proposta** per le dieci letture, che Carmine
-decide dopo la lettura della PR, con le scelte 5 e 7 **decise** sull'[issue #272](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876):
-(A) e (A). Da E13a, sei ore dopo la fine di un evento, `events-after` trova ogni ora, a lotti, le prenotazioni volate, i turni fatti o un
+(con E12 `1887c27` ed E10s `00b0609`), e dopo la revisione le teste di E10t `e17dd8c` (con `main` a `b5d3fb9`, E12 unita) e `2255412`
+(con `main` a `2938ae8`, E10s unita) e di E17 `02ea4aa` (con E10s `9e40aff`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **decisa** da Carmine sull'issue #272: (A) e (A)
+alle scelte 5 e 7 ([la prima risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876)), e dopo la
+lettura della PR **sì alle dieci letture** con due condizioni, fatte sulla stessa PR — il conto per scalo e «non contato» distinto da 0
+([la seconda](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300)). Da E13a, sei ore dopo la fine di un evento, `events-after` trova ogni ora, a lotti, le prenotazioni volate, i turni fatti o un
 no-show da proporre con chi ha coperto la postazione, conta chi ha volato senza prenotare, e scrive le statistiche, che lo staff legge e
 ricalcola nella scheda «Statistiche» («Che cosa ha lasciato E13a», sotto).
-**L'aggiornamento di E17:** 16 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
+
+**L'aggiornamento di E17:** 17 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
-M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata
+M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #269** di E10s (la #268 di E12 è unita), approvabile alla [seconda lettura del
+revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6222329978): nata
 `--no-track` da `main` a `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la
 fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `1887c27` (le correzioni delle due letture del revisore e le due
-condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34). La nota
+condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34); infine la testa di E10s `9e40aff`, con `main` a `b5d3fb9` (E12 unita, la
+#268, e la #273 dei tour). La nota
 `2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
 #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed
 E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta M4b («Che cosa ha lasciato E17», sotto).
@@ -319,9 +324,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 
-- **Che cosa c'è** (il dettaglio in `10`, E13a, «Com'è andata»; **una migrazione**, `AddShiftCoveredBy`, l'ultima del contesto dopo
+- **Che cosa c'è** (il dettaglio in `10`, E13a, «Com'è andata»; **una migrazione**, `AddAfterTheEventColumns` (`covered_by_vid` e `flown_unbooked_airports`), l'ultima del contesto dopo
   quella di E17; niente del nucleo — `schema.d.ts` generato e la colonna di persona in `ErasureTests` —; il tracker attraverso
-  `INetworkSessionSource` di **E10t**; una nota nuova, `2026-10-16-le-verifiche-dopo-l-evento`, **Proposta**, con le scelte 5 e 7 decise):
+  `INetworkSessionSource` di **E10t**; una nota nuova, `2026-10-16-le-verifiche-dopo-l-evento`, **decisa** da Carmine sulla #272):
   - **Il job** `events-after` (`After/EventsAfterJob.cs`, ogni ora ai 7 minuti UTC), le regole pure (`After/AfterRules.cs`), le statistiche
     (`After/EventStatistics.cs`) e i loro endpoint (`After/StatsEndpoints.cs`: la risorsa `/api/events/stats` e «Ricalcola»,
     `POST /api/events/events/{id}/stats`).
@@ -329,7 +334,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La lista dei turni del motore** con il nominativo, il controllore e chi ha coperto (`EventAtcShiftRowDto`); **`EventBookingDto`** con
     `flownAt` e `flownCheckedAt`.
   - **La scheda «Statistiche»** (`screens/stats.tsx`) su un evento finito; `attendanceMinimumMinutes` nelle impostazioni.
-  - **I test**: integrazione `EventsAfterTests` (7; VID **761180–761183**, slug `evt-test-e13a-…`; le persone della sera di LIRF,
+  - **I test**: integrazione `EventsAfterTests` (10 dopo la revisione; VID **761180–761183**, slug `evt-test-e13a-…`; le persone della sera di LIRF,
     761020–761028, della fixture di E10a); unità `EventsAfterRulesTests` e un caso in `EventsJobTriggersTests`; vitest `stats.test.ts`; il
     giro `full/events-after.spec.ts` (slug `evt-test-e2e-e13a-…`).
 - **Che cosa deve sapere la fase dopo**:
@@ -343,6 +348,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il banco non lancia un job**: la spec prova la scheda con «Ricalcola»; le verifiche si provano con `EventsAfterTests`, che fa
     girare il job a una data del 2001 (`ActivatorUtilities` con un orologio suo).
   - ⚠️ **Chi ha coperto** resta vuoto finché IT è a `atcData: none` (la scelta 5: con il solo tracker non si sa).
+  - **Dopo la revisione della #278** (e il sì di Carmine alle dieci letture, con due condizioni): chi ha volato senza prenotare si conta **a
+    pezzi, per scalo**, al più quanto sta nel lotto di un giro, e `evt_event_stats.flown_unbooked_airports` dice a quanti scali è arrivato;
+    **vuoto vuol dire «non contato»**, mai 0 (`flownUnbooked` vuoto nelle letture). La riga delle statistiche si scrive **sotto il blocco
+    della riga dell'evento**: chi la scrive dopo E13a (E14a, E14b, la conservazione di E15b) passa da `EventStatistics.WriteAsync`, dentro una
+    transazione, o prende lo stesso blocco.
   - ⚠️ **I VID di prova**: E13a ha usato **761180–761183** della fascia 761180–761198 data da dalberone.
 ### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
 
@@ -387,7 +397,34 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `ActivityTurns.tsx` per questo.
   - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
 
-### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, e poi a `4ad747a`, con E4d, E11b e il piano 1.34)
+### Che cosa ha lasciato E10t (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277, del nucleo; diretta su `main`, nata a `4ad747ad`, con `main` a `b5d3fb9` unito, con E12, e poi a `2938ae8`, con E10s)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10t, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una
+  nota nuova, `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b)):
+  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`),
+    scoped, accanto a `IAtcBookingSource`: la ricerca del tracker di E10a con nomi che non dicono IVAO. Le sessioni **iniziate** nella
+    finestra (estremi compresi), dalla più recente, una volta per `Id`, al più `Limit`; **`null`** quando la rete non risponde, mai una
+    lista vuota al suo posto.
+  - **`NetworkSessionQuery(int? Vid, DateTime FromUtc, DateTime ToUtc, string? DepartureIcao = null, string? ArrivalIcao = null,
+    NetworkConnection? Connection = null) { Limit }`**: `DefaultLimit` 200 e `MaxLimit` 1000 sono le costanti di `IvaoSessionQuery`;
+    un `Limit` fuori da 1…1000 è un'`ArgumentOutOfRangeException` già nell'`init`.
+  - **`NetworkConnection { Pilot, Atc }`** e **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime
+    EndedAt)`**, con `EndedAt` = inizio + durata dichiarata.
+  - **I test**: `NetworkSessionSourceTests` (unità, nuova, 9 casi), con un client che registra la domanda e con il client delle
+    fixture (la sera di Fiumicino, `tracker-airport-LIRF.json`).
+- **Che cosa deve sapere E13a** (che unisce questo branch, poi `main` quando è unita):
+  - **sposta le chiamate**: `IIvaoApiClient.SearchSessionsAsync(new IvaoSessionQuery(…))` → `INetworkSessionSource.SessionsAsync(new
+    NetworkSessionQuery(…))`, con `Pilot`/`Atc` al posto di `IvaoConnectionType`, e legge `Id`, `Vid`, `Callsign`, `StartedAt`,
+    `EndedAt` di ogni sessione; il `using IvaoHub.Core.Ivao;` resta (il test degli eventi lascia passare lo spazio dei nomi);
+  - le regole del tracker restano quelle di E10a (nota `il-tracker-senza-vid` §3.6): la finestra è sull'**inizio**, partenze e arrivi
+    sono **due domande** e la stessa sessione può tornare da tutte e due (si conta per `Id`), una risposta con esattamente `Limit`
+    sessioni può essere tagliata, mai due domande per scalo insieme;
+  - ⚠️ nei test d'integrazione il client delle fixture risponde anche attraverso la sorgente: una VID senza `tracker-sessions-{vid}.json`
+    non ha sessioni, uno scalo senza `tracker-airport-{icao}.json` nemmeno;
+  - ⚠️ gli scali, le revisioni del piano di volo e il JSON grezzo **non** ci sono: se E13a ne ha bisogno, è un campo in più qui, con una
+    nota (una fase del nucleo), non una lettura del client.
+
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, poi a `4ad747a`, con E4d, E11b e il piano 1.34, e a `b5d3fb9`, con E12)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
   `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
@@ -448,33 +485,6 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     taglia solo la fine; il taglio è un «cambiato» per `ShiftNotices`, e la mail parte a chi sapeva del turno.
   - ⚠️ **Il banco non lancia un job**: la pubblicazione si guarda al quarto d'ora, come la proposta di E11b.
   - ⚠️ **I VID di prova**: dopo 761114–761121 di E11b, E12 ha usato **761122–761128**.
-
-### Che cosa ha lasciato E10t (16 ottobre 2026, branch `m4/e10t-network-sessions`, PR #277, del nucleo; diretta su `main`, nata a `4ad747ad`)
-
-- **Che cosa c'è** (il dettaglio in `10`, E10t, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una
-  nota nuova, `2026-10-16-le-sessioni-della-rete-nel-nucleo`, scelta tecnica, caso (b)):
-  - **`INetworkSessionSource.SessionsAsync(NetworkSessionQuery, CancellationToken)`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`),
-    scoped, accanto a `IAtcBookingSource`: la ricerca del tracker di E10a con nomi che non dicono IVAO. Le sessioni **iniziate** nella
-    finestra (estremi compresi), dalla più recente, una volta per `Id`, al più `Limit`; **`null`** quando la rete non risponde, mai una
-    lista vuota al suo posto.
-  - **`NetworkSessionQuery(int? Vid, DateTime FromUtc, DateTime ToUtc, string? DepartureIcao = null, string? ArrivalIcao = null,
-    NetworkConnection? Connection = null) { Limit }`**: `DefaultLimit` 200 e `MaxLimit` 1000 sono le costanti di `IvaoSessionQuery`;
-    un `Limit` fuori da 1…1000 è un'`ArgumentOutOfRangeException` già nell'`init`.
-  - **`NetworkConnection { Pilot, Atc }`** e **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime
-    EndedAt)`**, con `EndedAt` = inizio + durata dichiarata.
-  - **I test**: `NetworkSessionSourceTests` (unità, nuova, 9 casi), con un client che registra la domanda e con il client delle
-    fixture (la sera di Fiumicino, `tracker-airport-LIRF.json`).
-- **Che cosa deve sapere E13a** (che unisce questo branch, poi `main` quando è unita):
-  - **sposta le chiamate**: `IIvaoApiClient.SearchSessionsAsync(new IvaoSessionQuery(…))` → `INetworkSessionSource.SessionsAsync(new
-    NetworkSessionQuery(…))`, con `Pilot`/`Atc` al posto di `IvaoConnectionType`, e legge `Id`, `Vid`, `Callsign`, `StartedAt`,
-    `EndedAt` di ogni sessione; il `using IvaoHub.Core.Ivao;` resta (il test degli eventi lascia passare lo spazio dei nomi);
-  - le regole del tracker restano quelle di E10a (nota `il-tracker-senza-vid` §3.6): la finestra è sull'**inizio**, partenze e arrivi
-    sono **due domande** e la stessa sessione può tornare da tutte e due (si conta per `Id`), una risposta con esattamente `Limit`
-    sessioni può essere tagliata, mai due domande per scalo insieme;
-  - ⚠️ nei test d'integrazione il client delle fixture risponde anche attraverso la sorgente: una VID senza `tracker-sessions-{vid}.json`
-    non ha sessioni, uno scalo senza `tracker-airport-{icao}.json` nemmeno;
-  - ⚠️ gli scali, le revisioni del piano di volo e il JSON grezzo **non** ci sono: se E13a ne ha bisogno, è un campo in più qui, con una
-    nota (una fase del nucleo), non una lettura del client.
 
 ### Che cosa ha lasciato E11b (13 ottobre 2026, branch `m4/e11b-roster-proposal`, PR #262; in coda dopo la #256 di E11a, nata dalla sua testa `c967bc1`, con la sua testa `ac52c4b` e `main` a `cea6244` uniti)
 

@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
@@ -24,6 +25,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Quartz;
 
 namespace IvaoHub.Modules.FlightOps;
@@ -176,47 +178,55 @@ public sealed class FlightOpsModule : ModuleBase
         services.AddScoped<WeatherJob>();
         services.AddScoped<WeatherRetentionJob>();
         services.AddScoped<FlightCheckJob>();
+        // Every trigger says its zone (note 2026-09-28-i-job-quando-passenger-spegne-l-hub, §7; note 2026-10-09-i-job-che-recuperano,
+        // §3). UTC for the nightly cleaning, whose hours are the ones of the traffic, and for the METARs, issued at UTC's hours; UTC
+        // for the two with a cadence too, which falls on the same instants in every zone.
         services.AddQuartz(quartz => quartz
             .AddJob<FlightCheckJob>(job => job.WithIdentity(FlightCheckJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(FlightCheckJob.JobName)
                 .WithIdentity($"{FlightCheckJob.JobName}-ten-minutes")
-                .WithCronSchedule(FlightCheckJob.Cron))
+                .WithCronSchedule(FlightCheckJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc)))
             .AddJob<TourReleaseJob>(job => job.WithIdentity(TourReleaseJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(TourReleaseJob.JobName)
                 .WithIdentity($"{TourReleaseJob.JobName}-quarterly")
-                .WithCronSchedule(TourReleaseJob.Cron))
+                .WithCronSchedule(TourReleaseJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc)))
             .AddJob<PirepWithdrawalJob>(job => job.WithIdentity(PirepWithdrawalJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(PirepWithdrawalJob.JobName)
                 .WithIdentity($"{PirepWithdrawalJob.JobName}-daily")
-                .WithCronSchedule(PirepWithdrawalJob.Cron))
+                .WithCronSchedule(PirepWithdrawalJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc)))
             .AddJob<TrackRetentionJob>(job => job.WithIdentity(TrackRetentionJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(TrackRetentionJob.JobName)
                 .WithIdentity($"{TrackRetentionJob.JobName}-daily")
-                .WithCronSchedule(TrackRetentionJob.Cron))
+                .WithCronSchedule(TrackRetentionJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc)))
             .AddJob<TourRetentionJob>(job => job.WithIdentity(TourRetentionJob.JobName))
-            .AddTrigger(trigger => trigger
-                .ForJob(TourRetentionJob.JobName)
-                .WithIdentity($"{TourRetentionJob.JobName}-monthly")
-                .WithCronSchedule(TourRetentionJob.Cron))
             .AddJob<ReviewDigestJob>(job => job.WithIdentity(ReviewDigestJob.JobName))
-            .AddTrigger(trigger => trigger
-                .ForJob(ReviewDigestJob.JobName)
-                .WithIdentity($"{ReviewDigestJob.JobName}-daily")
-                .WithCronSchedule(ReviewDigestJob.Cron))
             .AddJob<WeatherJob>(job => job.WithIdentity(WeatherJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(WeatherJob.JobName)
                 .WithIdentity($"{WeatherJob.JobName}-half-hourly")
-                .WithCronSchedule(WeatherJob.Cron))
+                .WithCronSchedule(WeatherJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc)))
             .AddJob<WeatherRetentionJob>(job => job.WithIdentity(WeatherRetentionJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(WeatherRetentionJob.JobName)
                 .WithIdentity($"{WeatherRetentionJob.JobName}-daily")
-                .WithCronSchedule(WeatherRetentionJob.Cron)));
+                .WithCronSchedule(WeatherRetentionJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
+        // In the division's zone: the digest at seven in the morning of whoever reads it, and the tours' retention after the core's
+        // media job, which runs in that zone too.
+        services.AddOptions<QuartzOptions>()
+            .Configure<IOptions<DivisionOptions>>((options, division) => options
+                .AddTrigger(trigger => trigger
+                    .ForJob(ReviewDigestJob.JobName)
+                    .WithIdentity($"{ReviewDigestJob.JobName}-daily")
+                    .WithCronSchedule(ReviewDigestJob.Cron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone())))
+                .AddTrigger(trigger => trigger
+                    .ForJob(TourRetentionJob.JobName)
+                    .WithIdentity($"{TourRetentionJob.JobName}-monthly")
+                    .WithCronSchedule(TourRetentionJob.Cron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder endpoints)

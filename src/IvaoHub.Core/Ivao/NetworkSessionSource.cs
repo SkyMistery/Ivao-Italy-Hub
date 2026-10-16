@@ -44,7 +44,9 @@ public enum NetworkConnection
 /// <param name="ToUtc">The last instant a session may start at, UTC.</param>
 /// <param name="DepartureIcao">The airport the flight plan leaves from, or none.</param>
 /// <param name="ArrivalIcao">The airport the flight plan goes to, or none.</param>
-/// <param name="Connection">Pilots or controllers only, or both.</param>
+/// <param name="Connection">
+/// Pilots only, or controllers only; <see langword="null"/> asks for no kind, and every kind comes back, observers too.
+/// </param>
 public sealed record NetworkSessionQuery(
     int? Vid,
     DateTime FromUtc,

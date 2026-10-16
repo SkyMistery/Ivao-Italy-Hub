@@ -1224,11 +1224,11 @@
       "tourTitle": "Tour",
       "legNumber": "Leg",
       "route": "Tratta",
-      "pilotName": "Pilota",
+      "pilot": "Pilota",
       "takeoffAt": "Volato",
       "queuedAt": "In coda da",
       "status": "Stato",
-      "assignedToName": "In mano a",
+      "assignedTo": "In mano a",
       "checks": "Controlli",
       "flightRules": "Regole di volo",
       "outcome": "Esito",
@@ -1417,7 +1417,7 @@
     "fields": {
       "tourTitle": "Tour",
       "leg": "Leg",
-      "pilotName": "Pilota",
+      "pilot": "Pilota",
       "body": "Che cosa ha scritto il pilota",
       "status": "Stato",
       "createdAt": "Segnalata",
@@ -1446,8 +1446,7 @@
     "next": "prossima: leg {{number}} {{from}} → {{to}}"
   },
   "people": {
-    "year": "Anno",
-    "erased": "Persona cancellata"
+    "year": "Anno"
   },
   "erasure": {
     "decided": "PIREP decisi, tenuti nel registro senza il pilota",
@@ -1545,7 +1544,7 @@
     "toPilot": "Il pilota",
     "forGood": "per sempre",
     "fields": {
-      "pilotName": "Pilota",
+      "pilot": "Pilota",
       "vid": "VID",
       "tourTitle": "Tour",
       "tourId": "Tour",

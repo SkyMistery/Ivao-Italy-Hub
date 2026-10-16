@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -77,7 +78,9 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             services.AddSingleton(_sources);
             services.AddScoped<INetworkSessionSource>(provider => new EveningTracker(provider.GetRequiredService<HubPaths>(), _sources));
-            services.AddScoped<IAtcActivitySource>(provider => new EveningArchive(provider.GetRequiredService<HubPaths>(), _sources));
+            services.AddScoped<IAtcActivitySource>(provider => _sources.NoArchive
+                ? new UnavailableAtcActivitySource()
+                : new EveningArchive(provider.GetRequiredService<HubPaths>(), _sources));
         }));
         var token = TestContext.Current.CancellationToken;
         _since = DateTime.UtcNow.AddSeconds(-1);
@@ -151,6 +154,7 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var stats = Assert.Single(await PageAsync(coordinator, $"{StatsEndpoints.Pattern}?filter[eventId]={evening.Id}", token));
         Assert.Equal(Numbers(4, 1, 5, 3, 2, 5, 0, 2, 1, 1, 0), Numbers(stats));
         Assert.Equal(Due, stats.GetProperty("checksDoneAt").GetDateTime());
+        Assert.Equal((1, 1), (stats.GetProperty("flownUnbookedAirports").GetInt32(), stats.GetProperty("airports").GetInt32()));
 
         // The lists, with data: a booking's check, and a shift's outcome with who covered.
         var listed = await PageAsync(coordinator, $"/api/events/bookings?filter[eventId]={evening.Id}&pageSize=100", token);
@@ -271,7 +275,8 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     /// <summary>
     /// Thirty days after the end (reading 7) the sources are given up: the event is closed with its rows as they were — never marked — and the
-    /// statistics count the bookings, none of them flown or not flown.
+    /// statistics count the bookings, none of them flown or not flown, and say that who flew without booking was not counted — empty, never 0
+    /// (Carmine's condition on reading 3, #272).
     /// </summary>
     [Fact]
     public async Task ThirtyDaysAfterTheEndTheEventIsClosedWithItsRowsToCheck()
@@ -288,7 +293,8 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         using var coordinator = await SignedInAsync(CoordinatorVid, token);
         var stats = Assert.Single(await PageAsync(coordinator, $"{StatsEndpoints.Pattern}?filter[eventId]={evening.Id}", token));
-        Assert.Equal(Numbers(4, 1, 5, 0, 0, 0, 0, 2, 0, 0, 0), Numbers(stats));
+        Assert.Equal(Numbers(4, 1, 5, 0, 0, null, 0, 2, 0, 0, 0), Numbers(stats));
+        Assert.Equal(JsonValueKind.Null, stats.GetProperty("flownUnbookedAirports").ValueKind);
     }
 
     /// <summary>«Recalculate» is a verb of whoever writes the event, for an event over: a member is refused, and an event still to end too.</summary>
@@ -310,7 +316,7 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var written = await OkAsync(await coordinator.PostAsync(RecalculateUri(over), content: null, token), token);
         Assert.Equal(over, written.GetProperty("eventId").GetInt64());
-        Assert.Equal(0, written.GetProperty("flownUnbooked").GetInt32());
+        Assert.Equal(JsonValueKind.Null, written.GetProperty("flownUnbooked").ValueKind);
 
         // Recalculated before any check: who flew without booking is not counted yet, and the page says so.
         Assert.Equal(JsonValueKind.Null, written.GetProperty("checksDoneAt").ValueKind);
@@ -359,6 +365,92 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var kept = await OkAsync(await coordinator.PostAsync(RecalculateUri(id), content: null, token), token);
         Assert.Equal(2, kept.GetProperty("registrations").GetInt32());
+    }
+
+    /// <summary>
+    /// Who flew without booking is counted a few airports per run (reading 6, Carmine's condition on #272): an evening at three airports
+    /// counts two in the first run — 44 units, inside the budget — and leaves the event open, then the third, and closes it. Nobody booked:
+    /// Fiumicino holds the evening's eight pilots; the other two airports none.
+    /// </summary>
+    [Fact]
+    public async Task WhoFlewWithoutBookingIsCountedAFewAirportsPerRun()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("airports", token, airports: ["LIRF", "LIMC", "LIBD"]);
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 0, 0, 0), await RunAtAsync(Due, token));
+        Assert.Contains($"{2 * 2 * EventsAfterJob.ByAirportCost} of {EventsAfterJob.Budget} unit(s) spent", await LastMessageAsync(token), StringComparison.Ordinal);
+        Assert.Null((await EventAsync(id, token)).AfterDoneAt);
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var first = Assert.Single(await PageAsync(coordinator, $"{StatsEndpoints.Pattern}?filter[eventId]={id}", token));
+        Assert.Equal((8, 2, 3), (first.GetProperty("flownUnbooked").GetInt32(), first.GetProperty("flownUnbookedAirports").GetInt32(), first.GetProperty("airports").GetInt32()));
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("checksDoneAt").ValueKind);
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 0, 0, 1), await RunAtAsync(Due.AddHours(1), token));
+        Assert.Contains($"{2 * EventsAfterJob.ByAirportCost} of {EventsAfterJob.Budget} unit(s) spent", await LastMessageAsync(token), StringComparison.Ordinal);
+
+        var closed = Assert.Single(await PageAsync(coordinator, $"{StatsEndpoints.Pattern}?filter[eventId]={id}", token));
+        Assert.Equal((8, 3), (closed.GetProperty("flownUnbooked").GetInt32(), closed.GetProperty("flownUnbookedAirports").GetInt32()));
+        Assert.Equal(Due.AddHours(1), closed.GetProperty("checksDoneAt").GetDateTime());
+    }
+
+    /// <summary>
+    /// A division without an archive (`atcData: none`, the review of #278, point 4): the archive is not asked, costs nothing, and the run's row
+    /// does not say it «did not answer» — the shifts are read on the tracker by VID.
+    /// </summary>
+    [Fact]
+    public async Task ADivisionWithoutAnArchiveAsksTheTrackerAndSaysNothingOfIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _sources.NoArchive = true;
+        var evening = await EveningAsync("no-archive", token);
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 5, 2, 1), await RunAtAsync(Due, token));
+
+        // Four questions for the bookings, one on the tracker for each shift, two for the airport: none for the archive.
+        var message = await LastMessageAsync(token);
+        Assert.Contains($"{4 + 2 + 2 * EventsAfterJob.ByAirportCost} of {EventsAfterJob.Budget} unit(s) spent", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("archive", message, StringComparison.Ordinal);
+        Assert.Equal(ShiftAttendance.Attended, (await ShiftsAsync(evening.Id, token))[evening.Attended].Attendance);
+    }
+
+    /// <summary>
+    /// «Recalculate» in the instant of the job's close (the review of #278, point 3): the first row of the statistics is written under the lock
+    /// of the event's row, so the request waits for the transaction that holds it, then reads the row it committed and updates it — one row,
+    /// no duplicate key, no 500. The test holds the lock as the job would, and inserts the row before letting go.
+    /// </summary>
+    [Fact]
+    public async Task RecalculateWaitsForTheCloseAndWritesTheSameRow()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("race", token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        await using (var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted, token))
+        {
+            await database.Database.SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {id} FOR UPDATE").ToListAsync(token);
+
+            var request = coordinator.PostAsync(RecalculateUri(id), content: null, token);
+            await WaitForALockWaitAsync(token);
+
+            database.Stats.Add(new EventStats
+            {
+                EventId = id,
+                ComputedAt = Due,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            });
+            await database.SaveChangesAsync(token);
+            await transaction.CommitAsync(token);
+
+            var written = await OkAsync(await request, token);
+            Assert.Equal(id, written.GetProperty("eventId").GetInt64());
+        }
+
+        Assert.Equal(1, await database.Stats.IgnoreQueryFilters().CountAsync(stats => stats.EventId == id, token));
     }
 
     // ---- the evening ----------------------------------------------------------------------------------------------------------
@@ -410,17 +502,17 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     private static string RecalculateUri(long id) => StatsEndpoints.RecalculatePattern.Replace("{id:long}", id.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
 
-    /// <summary>The numbers of the statistics in their order: slots public and private, booked, flown, not flown, flown without booking, availabilities, shifts, attended, no-shows, excused.</summary>
-    private static int[] Numbers(int publicSlots, int privateSlots, int booked, int flown, int unflown, int flownUnbooked, int availabilities, int shifts, int attended, int noShows, int excused) =>
+    /// <summary>The numbers of the statistics in their order: slots public and private, booked, flown, not flown, flown without booking (null: not counted), availabilities, shifts, attended, no-shows, excused.</summary>
+    private static int?[] Numbers(int publicSlots, int privateSlots, int booked, int flown, int unflown, int? flownUnbooked, int availabilities, int shifts, int attended, int noShows, int excused) =>
         [publicSlots, privateSlots, booked, flown, unflown, flownUnbooked, availabilities, shifts, attended, noShows, excused];
 
-    private static int[] Numbers(JsonElement stats) =>
+    private static int?[] Numbers(JsonElement stats) =>
     [
         .. new[]
         {
             "publicSlots", "privateSlots", "booked", "bookedFlown", "bookedUnflown", "flownUnbooked", "atcAvailabilities", "atcShifts",
             "atcAttended", "atcNoShows", "atcExcused",
-        }.Select(name => stats.GetProperty(name).GetInt32()),
+        }.Select(name => stats.GetProperty(name).ValueKind == JsonValueKind.Null ? (int?)null : stats.GetProperty(name).GetInt32()),
     ];
 
     /// <summary>A run of <c>events-after</c> as of <paramref name="now"/>.</summary>
@@ -429,6 +521,25 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         var job = ActivatorUtilities.CreateInstance<EventsAfterJob>(scope.ServiceProvider, new FixedClock(now));
         return await job.RunAsync(cancellationToken);
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms (CONTRIBUTING.md): read every 250 ms.</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("No request waited for the lock of the event's row.");
     }
 
     private async Task<string> LastMessageAsync(CancellationToken cancellationToken)
@@ -484,7 +595,7 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     // ---- rows and people ------------------------------------------------------------------------------------------------------
 
-    private async Task<long> EventRowAsync(string name, CancellationToken cancellationToken, DateTime? starts = null)
+    private async Task<long> EventRowAsync(string name, CancellationToken cancellationToken, DateTime? starts = null, string[]? airports = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
@@ -513,13 +624,16 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         database.Events.Add(row);
         await database.SaveChangesAsync(cancellationToken);
 
-        database.Airports.Add(new EventAirport
-        {
-            EventId = row.Id,
-            Icao = "LIRF",
-            OwnerDepartment = Department.ED,
-            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
-        });
+        // Fiumicino, the evening's airport, first; and the others asked for, in their order.
+        database.Airports.AddRange(
+            [.. (airports ?? ["LIRF"]).Select((icao, index) => new EventAirport
+            {
+                EventId = row.Id,
+                Icao = icao,
+                Ordinal = index + 1,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            })]);
         await database.SaveChangesAsync(cancellationToken);
 
         return row.Id;
@@ -743,6 +857,9 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
         public bool TrackerAnswers { get; set; } = true;
 
         public bool Archive { get; set; }
+
+        /// <summary>No archive at all, as the core registers it for <c>atcData: none</c>.</summary>
+        public bool NoArchive { get; set; }
     }
 
     private sealed class FixedClock(DateTime now) : IClock

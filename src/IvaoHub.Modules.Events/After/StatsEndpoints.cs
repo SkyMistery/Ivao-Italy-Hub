@@ -1,3 +1,4 @@
+using System.Data;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
@@ -18,7 +19,9 @@ namespace IvaoHub.Modules.Events.After;
 /// The numbers of an event as the tab «Statistics» reads them (design M4 §1.10, §7.2, E13a): numbers only — the page writes their words in the
 /// language on screen (Carmine's answer 6 on #255). The sums of the answers and the seats by activity stay in their own tabs, which read them
 /// from the statistics once the rows are gone (E17); here, how many registered and how many seats were taken in all. And when the checks after the
-/// event were done (<c>after_done_at</c>): until then who flew without booking is not counted yet.
+/// event were done (<c>after_done_at</c>). <b>Who flew without booking</b> is empty when it was not counted — an event of the whole division, one
+/// without airports, one closed after thirty days before any count — and says at how many of the event's airports it was counted: «not
+/// counted» is never a 0 (Carmine's condition on reading 3, #272).
 /// </summary>
 public sealed record EventStatsDto(
     long Id,
@@ -29,7 +32,9 @@ public sealed record EventStatsDto(
     int Booked,
     int BookedFlown,
     int BookedUnflown,
-    int FlownUnbooked,
+    int? FlownUnbooked,
+    int? FlownUnbookedAirports,
+    int Airports,
     int AtcAvailabilities,
     int AtcShifts,
     int AtcAttended,
@@ -43,7 +48,7 @@ public sealed record EventStatsDto(
     DateTime ComputedAt,
     DateTime? ChecksDoneAt)
 {
-    public static EventStatsDto Of(EventStats stats, DateTime? checksDoneAt)
+    public static EventStatsDto Of(EventStats stats, DateTime? checksDoneAt, int airports)
     {
         ArgumentNullException.ThrowIfNull(stats);
 
@@ -56,7 +61,9 @@ public sealed record EventStatsDto(
             stats.Booked,
             stats.BookedFlown,
             stats.BookedUnflown,
-            stats.FlownUnbooked,
+            stats.FlownUnbookedAirports is null ? null : stats.FlownUnbooked,
+            stats.FlownUnbookedAirports,
+            airports,
             stats.AtcAvailabilities,
             stats.AtcShifts,
             stats.AtcAttended,
@@ -105,10 +112,10 @@ public static class StatsEndpoints
             options.DefaultOrder = stats => stats.EventId;
             options.Filterable.Add(nameof(EventStats.EventId));
 
-            // A page says when the checks of its events were done, in one query; a row alone does not.
-            options.ToList = stats => EventStatsDto.Of(stats, checksDoneAt: null);
+            // A page says when the checks of its events were done and how many airports they have, in one query each; a row alone does not.
+            options.ToList = stats => EventStatsDto.Of(stats, checksDoneAt: null, airports: 0);
             options.ToListPage = (rows, services, cancellationToken) => PageAsync(services.GetRequiredService<EventsDbContext>(), rows, cancellationToken);
-            options.ToDetail = stats => EventStatsDto.Of(stats, checksDoneAt: null);
+            options.ToDetail = stats => EventStatsDto.Of(stats, checksDoneAt: null, airports: 0);
         });
 
         app.MapPost(RecalculatePattern, RecalculateAsync)
@@ -155,10 +162,17 @@ public static class StatsEndpoints
             return CrudProblems.Validation(new Refusals().Add("id", refusal), catalog, currentUser.Locale);
         }
 
-        var stats = await statistics.WriteAsync(row, flownUnbooked: null, now, http.RequestAborted);
-        await database.SaveChangesAsync(http.RequestAborted);
+        // Under the lock of the event's row, as the job's close: the first row of the statistics is inserted once (the review of #278, point 3).
+        EventStats stats;
+        await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, http.RequestAborted))
+        {
+            stats = await statistics.WriteAsync(row, now, http.RequestAborted);
+            await database.SaveChangesAsync(http.RequestAborted);
+            await transaction.CommitAsync(http.RequestAborted);
+        }
 
-        return Results.Ok(EventStatsDto.Of(stats, row.AfterDoneAt));
+        var airports = await database.Airports.AsNoTracking().CountAsync(airport => airport.EventId == id, http.RequestAborted);
+        return Results.Ok(EventStatsDto.Of(stats, row.AfterDoneAt, airports));
     }
 
     private static async Task<IReadOnlyList<EventStatsDto>> PageAsync(EventsDbContext database, IReadOnlyList<EventStats> rows, CancellationToken cancellationToken)
@@ -168,7 +182,13 @@ public static class StatsEndpoints
             .Where(row => ids.Contains(row.Id))
             .ToDictionaryAsync(row => row.Id, row => row.AfterDoneAt, cancellationToken);
 
-        return [.. rows.Select(stats => EventStatsDto.Of(stats, done.GetValueOrDefault(stats.EventId)))];
+        var airports = await database.Airports.AsNoTracking()
+            .Where(airport => ids.Contains(airport.EventId))
+            .GroupBy(airport => airport.EventId)
+            .Select(group => new { group.Key, Count = group.Count() })
+            .ToDictionaryAsync(group => group.Key, group => group.Count, cancellationToken);
+
+        return [.. rows.Select(stats => EventStatsDto.Of(stats, done.GetValueOrDefault(stats.EventId), airports.GetValueOrDefault(stats.EventId)))];
     }
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>

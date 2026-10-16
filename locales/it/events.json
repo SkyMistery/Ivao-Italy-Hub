@@ -1338,7 +1338,9 @@
           "Excused": "Giustificato"
         }
       }
-    }
+    },
+    "notCounted": "Chi ha volato senza prenotare non è stato contato: l'evento non ha scali, o la rete non ha risposto per trenta giorni dopo l'evento.",
+    "countedAt": "Chi ha volato senza prenotare è stato contato su {{counted}} dei suoi {{airports}} scali: per gli altri la rete non ha risposto."
   },
   "registers": {
     "open": "Apri",

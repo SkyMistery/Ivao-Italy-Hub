@@ -1889,6 +1889,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("flown_unbooked");
 
+                    b.Property<int?>("FlownUnbookedAirports")
+                        .HasColumnType("int")
+                        .HasColumnName("flown_unbooked_airports");
+
                     b.Property<string>("OwnerDepartment")
                         .IsRequired()
                         .HasMaxLength(4)
