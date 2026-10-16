@@ -96,6 +96,71 @@ public sealed class FirBoundaryTests
     }
 
     [Fact]
+    public void ARegionDrawnInSeveralPiecesIsOneRegionWithEveryPiece()
+    {
+        // The dataset draws KZNY as a continental and an oceanic feature with the same id. Two rows with
+        // one key failed the whole synchronisation on a new installation (16 October 2026); one row with
+        // only the last piece would place a point of the first in no region at all.
+        var boundaries = VatSpyFirBoundarySource.Read(Collection(
+            Feature("XXAA", Polygon(0, 0, 10, 10), Extra("oceanic", "0") + Extra("region", "EMEA")),
+            Feature("XXBB", Polygon(20, 20, 30, 30)),
+            Feature("XXAA", Polygon(40, -20, 60, 5), Extra("oceanic", "1") + Extra("region", "EMEA"))));
+
+        Assert.Equal(["XXAA", "XXBB"], boundaries.Select(boundary => boundary.Id));
+
+        var merged = boundaries[0];
+        Assert.False(merged.IsOceanic);
+        Assert.Equal("EMEA", merged.Region);
+        Assert.Equal(-20, merged.MinLatitude);
+        Assert.Equal(10, merged.MaxLatitude);
+        Assert.Equal(0, merged.MinLongitude);
+        Assert.Equal(60, merged.MaxLongitude);
+        Assert.Contains("\"MultiPolygon\"", merged.GeometryJson, StringComparison.Ordinal);
+
+        var shape = FirShape.From(merged);
+        Assert.Equal(2, shape.RingCount);
+        Assert.True(shape.Contains(5, 5));     // the first piece
+        Assert.True(shape.Contains(-10, 50));  // the second piece
+        Assert.False(shape.Contains(5, 30));   // inside the box, between the pieces
+    }
+
+    [Fact]
+    public void APieceRepeatedWordForWordIsKeptOnce()
+    {
+        // NZOH comes twice with the same polygon, and as a MultiPolygon like every feature of the file.
+        var piece = """{"type":"MultiPolygon","coordinates":[[[[0,0],[10,0],[10,10],[0,10],[0,0]]]]}""";
+
+        var boundary = Assert.Single(VatSpyFirBoundarySource.Read(Collection(
+            Feature("XXAA", piece),
+            Feature("XXAA", piece))));
+
+        Assert.Equal(1, FirShape.From(boundary).RingCount);
+    }
+
+    [Fact]
+    public void TwoSpellingsTheDatabaseCallsEqualAreOneRegion()
+    {
+        // ref_firs compares under a case and trailing-space insensitive collation.
+        var boundaries = VatSpyFirBoundarySource.Read(Collection(
+            Feature("xxaa", Polygon(0, 0, 10, 10)),
+            Feature("XXAA ", Polygon(20, 20, 30, 30))));
+
+        var boundary = Assert.Single(boundaries);
+        Assert.Equal("XXAA", boundary.Id);
+        Assert.Equal(2, FirShape.From(boundary).RingCount);
+    }
+
+    [Fact]
+    public void ARegionIsOceanicOnlyWhenEveryPieceIs()
+    {
+        var boundary = Assert.Single(VatSpyFirBoundarySource.Read(Collection(
+            Feature("XXAO", Polygon(0, 0, 10, 10), Extra("oceanic", "1")),
+            Feature("XXAO", Polygon(20, 20, 30, 30), Extra("oceanic", "1")))));
+
+        Assert.True(boundary.IsOceanic);
+    }
+
+    [Fact]
     public void APointIsInsideItsRegionAndOutsideTheOthers()
     {
         var rome = Shape("LIRR", Polygon(8, 36.5, 19, 43.7));

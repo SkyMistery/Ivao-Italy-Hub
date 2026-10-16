@@ -50,17 +50,32 @@ public sealed class FirSyncJob(
                 return await database.Firs.CountAsync(cancellationToken);
             }
 
+            // Case insensitive like the collation of ref_firs, which is what decides whether two
+            // identifiers are one row.
             var existing = await database.Firs.ToDictionaryAsync(
                 fir => fir.Id,
                 StringComparer.OrdinalIgnoreCase,
                 cancellationToken);
 
+            // The source promises one boundary per region and merges the pieces itself. If it ever
+            // names a region twice anyway, the later one wins and the run says so: tracking a second
+            // row with the same key fails the whole run, and on a new installation that is no outline
+            // at all (test installation, 16 October 2026).
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var repeated = new List<string>();
+
             foreach (var boundary in incoming)
             {
+                if (!seen.Add(boundary.Id))
+                {
+                    repeated.Add(boundary.Id);
+                }
+
                 if (!existing.TryGetValue(boundary.Id, out var row))
                 {
                     row = new FirBoundary { Id = boundary.Id };
                     database.Firs.Add(row);
+                    existing[boundary.Id] = row;
                 }
 
                 row.IsOceanic = boundary.IsOceanic;
@@ -75,8 +90,7 @@ public sealed class FirSyncJob(
 
             // What the source no longer lists has been redrawn away; a non empty answer is the
             // whole world, so a row missing from it is gone rather than unmentioned.
-            var keep = incoming.Select(boundary => boundary.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var gone = existing.Where(pair => !keep.Contains(pair.Key)).Select(pair => pair.Value).ToArray();
+            var gone = existing.Where(pair => !seen.Contains(pair.Key)).Select(pair => pair.Value).ToArray();
             if (gone.Length > 0)
             {
                 database.Firs.RemoveRange(gone);
@@ -88,13 +102,25 @@ public sealed class FirSyncJob(
             entry.Status = "succeeded";
             entry.Message = string.Create(
                 CultureInfo.InvariantCulture,
-                $"{incoming.Count} FIR outline(s), {gone.Length} withdrawn");
+                $"{seen.Count} FIR outline(s), {gone.Length} withdrawn");
+
+            if (repeated.Count > 0)
+            {
+                entry.Message += string.Create(
+                    CultureInfo.InvariantCulture,
+                    $", named more than once and kept as the last: {string.Join(' ', repeated.Distinct(StringComparer.OrdinalIgnoreCase))}");
+            }
+
+            if (entry.Message.Length > MaxMessageLength)
+            {
+                entry.Message = entry.Message[..MaxMessageLength];
+            }
 
             await database.SaveChangesAsync(cancellationToken);
             locator.Invalidate();
 
             logger.LogInformation("FIR outlines synchronised: {Message}.", entry.Message);
-            return incoming.Count;
+            return seen.Count;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
