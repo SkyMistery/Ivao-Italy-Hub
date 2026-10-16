@@ -9,9 +9,10 @@
 **Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
-(con E12 `1887c27` ed E10s `00b0609`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **Proposta** per le dieci letture, che Carmine
-decide dopo la lettura della PR, con le scelte 5 e 7 **decise** sull'[issue #272](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876):
-(A) e (A). Da E13a, sei ore dopo la fine di un evento, `events-after` trova ogni ora, a lotti, le prenotazioni volate, i turni fatti o un
+(con E12 `1887c27` ed E10s `00b0609`). La nota `2026-10-16-le-verifiche-dopo-l-evento` è **decisa** da Carmine sull'issue #272: (A) e (A)
+alle scelte 5 e 7 ([la prima risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876)), e dopo la
+lettura della PR **sì alle dieci letture** con due condizioni, fatte sulla stessa PR — il conto per scalo e «non contato» distinto da 0
+([la seconda](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300)). Da E13a, sei ore dopo la fine di un evento, `events-after` trova ogni ora, a lotti, le prenotazioni volate, i turni fatti o un
 no-show da proporre con chi ha coperto la postazione, conta chi ha volato senza prenotare, e scrive le statistiche, che lo staff legge e
 ricalcola nella scheda «Statistiche» («Che cosa ha lasciato E13a», sotto).
 **L'aggiornamento di E17:** 16 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
@@ -319,9 +320,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 
-- **Che cosa c'è** (il dettaglio in `10`, E13a, «Com'è andata»; **una migrazione**, `AddShiftCoveredBy`, l'ultima del contesto dopo
+- **Che cosa c'è** (il dettaglio in `10`, E13a, «Com'è andata»; **una migrazione**, `AddAfterTheEventColumns` (`covered_by_vid` e `flown_unbooked_airports`), l'ultima del contesto dopo
   quella di E17; niente del nucleo — `schema.d.ts` generato e la colonna di persona in `ErasureTests` —; il tracker attraverso
-  `INetworkSessionSource` di **E10t**; una nota nuova, `2026-10-16-le-verifiche-dopo-l-evento`, **Proposta**, con le scelte 5 e 7 decise):
+  `INetworkSessionSource` di **E10t**; una nota nuova, `2026-10-16-le-verifiche-dopo-l-evento`, **decisa** da Carmine sulla #272):
   - **Il job** `events-after` (`After/EventsAfterJob.cs`, ogni ora ai 7 minuti UTC), le regole pure (`After/AfterRules.cs`), le statistiche
     (`After/EventStatistics.cs`) e i loro endpoint (`After/StatsEndpoints.cs`: la risorsa `/api/events/stats` e «Ricalcola»,
     `POST /api/events/events/{id}/stats`).
@@ -329,7 +330,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **La lista dei turni del motore** con il nominativo, il controllore e chi ha coperto (`EventAtcShiftRowDto`); **`EventBookingDto`** con
     `flownAt` e `flownCheckedAt`.
   - **La scheda «Statistiche»** (`screens/stats.tsx`) su un evento finito; `attendanceMinimumMinutes` nelle impostazioni.
-  - **I test**: integrazione `EventsAfterTests` (7; VID **761180–761183**, slug `evt-test-e13a-…`; le persone della sera di LIRF,
+  - **I test**: integrazione `EventsAfterTests` (10 dopo la revisione; VID **761180–761183**, slug `evt-test-e13a-…`; le persone della sera di LIRF,
     761020–761028, della fixture di E10a); unità `EventsAfterRulesTests` e un caso in `EventsJobTriggersTests`; vitest `stats.test.ts`; il
     giro `full/events-after.spec.ts` (slug `evt-test-e2e-e13a-…`).
 - **Che cosa deve sapere la fase dopo**:
@@ -343,6 +344,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il banco non lancia un job**: la spec prova la scheda con «Ricalcola»; le verifiche si provano con `EventsAfterTests`, che fa
     girare il job a una data del 2001 (`ActivatorUtilities` con un orologio suo).
   - ⚠️ **Chi ha coperto** resta vuoto finché IT è a `atcData: none` (la scelta 5: con il solo tracker non si sa).
+  - **Dopo la revisione della #278** (e il sì di Carmine alle dieci letture, con due condizioni): chi ha volato senza prenotare si conta **a
+    pezzi, per scalo**, al più quanto sta nel lotto di un giro, e `evt_event_stats.flown_unbooked_airports` dice a quanti scali è arrivato;
+    **vuoto vuol dire «non contato»**, mai 0 (`flownUnbooked` vuoto nelle letture). La riga delle statistiche si scrive **sotto il blocco
+    della riga dell'evento**: chi la scrive dopo E13a (E14a, E14b, la conservazione di E15b) passa da `EventStatistics.WriteAsync`, dentro una
+    transazione, o prende lo stesso blocco.
   - ⚠️ **I VID di prova**: E13a ha usato **761180–761183** della fascia 761180–761198 data da dalberone.
 ### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
 
