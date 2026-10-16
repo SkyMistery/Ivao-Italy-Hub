@@ -4557,6 +4557,29 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
 - **Non verificato**: la CI (la dice la PR; **build-test è rossa a «Restore» su ogni branch** per l'avviso Pkcs, issue #264, finché la #265
   non è unita); la risposta di Carmine alla domanda della nota; le pagine a schermo e a 375 px (lette con i test e l'e2e, non guardate); un
   roster con migliaia di turni (le mail sono una per controllore per evento, in un giro); la migrazione su un'installazione vera.
+- **Dopo la revisione** (16 ottobre 2026; [i rilievi del revisore][r268], «tre cose da correggere»; [la risposta di Carmine][a268]: **sì alle
+  dieci letture**, con due condizioni, e la nota è **decisa**):
+  1. **La gara fra il job e una correzione** (punto 1): la mail del job prende anche la riga dell'evento, come la correzione con `ShiftLock`, e
+     `ShiftNotices.NoteAsync` rilegge `notified_at` dal database sotto il lock; un cambio di controllore scrive il segno svuotato qualunque
+     cosa credesse il tracker. Un test deterministico, `AShiftGivenToAnotherAfterThePublicationTellsBothEvenAfterTheJobRaced` (la riga caricata
+     dalla correzione, il job che dice il turno in mezzo, poi la correzione): **cade senza la rilettura** (Expected 2, Actual 1), passa con.
+  2. **Gli avvisi sul titolare che lo staff sceglie** (punto 2, e la condizione di Carmine sulla lettura 7): `GET
+     /api/events/atc/transfers/{id}/warnings?toVid=` — **una lettura scritta a mano in più**, l'ottava dell'ATC, che la condizione chiede —, e
+     «Approva» li mostra prima di approvare, che allora dice «Approva lo stesso»; la mail «decisa» dice nome e VID di chi ha preso il turno
+     (punto 7).
+  3. **I test che mancavano** (punto 3): `ApproveRefusesWhatCannotBeAndNamesWhoTookTheShift`, `AWithdrawnRequestIsNotApprovedAndAnApprovedOneIsNotWithdrawn`,
+     `ARequestIsDecidedByTheTeamOfItsShiftsFirAndFollowsTheShift`, la gara sopra; il turno di un roster non pubblicato era già fuori da `/events/mine`
+     nel primo test.
+  4. **I piccoli**: nessuna approvazione su un evento annullato (4); una richiesta in attesa segue il FIR del suo turno quando lo staff lo sposta
+     (5); `events.atcCoverage` filtra per permesso prima del tetto di cinquanta eventi (`MaxEvents`, letti fino a cinquecento) e conta le
+     disponibilità sulle postazioni del lettore (6); il punto 8, la frase vuota delle postazioni, resta: l'ha chiesta dalberone, presa dai
+     seguiti di E4d (#263), e la PR lo dice.
+  5. **La condizione di Carmine sulla lettura 5**: la pagina pubblica del roster nomina a chi ha fatto il login il controllore e il suo rating,
+     **mai il VID** (`ControllerName`, `ControllerErased`); a un visitatore niente.
+  - **Verificato, in locale**: «AFTERREVIEW».
+
+[r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
+[a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
 
