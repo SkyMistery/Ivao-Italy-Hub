@@ -2,6 +2,7 @@ using System.Globalization;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Registrations;
@@ -20,7 +21,9 @@ namespace IvaoHub.Modules.Events;
 /// <c>inPersonRetentionMonths</c> after the event's end (<see cref="InPersonRetention.IsDue"/>). Before they go, in the same save, the event's
 /// statistics (<see cref="EventStats"/>, created when missing, only their own columns written) keep how many registered, the sums of the
 /// answers (<see cref="RegistrationSums"/>) and the seats taken in each activity; the staff's lists read them from there afterwards. One
-/// save per event, through the interceptor like every write (no bulk statement), as the retention of the tours.</para>
+/// transaction per event, through the interceptor like every write (no bulk statement), as the retention of the tours; and since the
+/// audit would keep the answers of every registration deleted, the core empties them there too, in the same transaction
+/// (<see cref="AuditRedaction.EmptyDeletedAsync{TEntity, TKey}"/>, E10s).</para>
 /// <para><b>It decides from its data, never from the hour it runs</b> (note 2026-09-28-i-job-quando-passenger-spegne-l-hub §8): an event past
 /// its retention with registrations or seats left. A run lost while the hub slept is made up by the next, or by the core's catch up (E10j);
 /// a run done twice finds nothing. Past the filter of the members: the job is nobody. It never throws: a failure is a row in
@@ -105,8 +108,9 @@ public sealed class EventsRetentionJob(
     }
 
     /// <summary>
-    /// One event in person, in one save: its statistics written — how many registered, the sums of the answers to the questions it has, the
-    /// seats taken by activity — and then its registrations and seats deleted. Returns how many of each went.
+    /// One event in person, in one transaction: its statistics written — how many registered, the sums of the answers to the questions it
+    /// has, the seats taken by activity —, then its registrations and seats deleted, and the answers emptied in the audit. Returns how many
+    /// of each went.
     /// </summary>
     private async Task<(int Registrations, int Seats)> RetireAsync(Event row, DateTime now, CancellationToken cancellationToken)
     {
@@ -138,10 +142,20 @@ public sealed class EventsRetentionJob(
             seats.GroupBy(seat => seat.ActivityId).ToDictionary(activity => activity.Key, activity => activity.Count()));
         stats.ComputedAt = now;
 
+        // One transaction: the statistics, the rows gone, and the answers emptied in their copies in the audit (E10s, Carmine's answer 3
+        // on issue #267) — a failure takes all of it back, and the next run finds the rows again. The seats have no column marked as the
+        // member's data (reading 7 of the note): there is nothing of theirs to empty, and the core's call refuses such an entity.
+        await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
         database.Seats.RemoveRange(seats);
         database.Registrations.RemoveRange(registrations);
-
         await database.SaveChangesAsync(cancellationToken);
+
+        await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(
+            database,
+            [.. registrations.Select(registration => registration.Id)],
+            cancellationToken);
+        await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         database.ChangeTracker.Clear();
 
         return (registrations.Count, seats.Count);

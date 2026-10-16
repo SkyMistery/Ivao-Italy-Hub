@@ -4951,15 +4951,18 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
      dice, `EventsRetentionJob.TriggerName`), con la riga del giro e `FinishedAt` su ogni uscita (E10j). Decide dalle date
      (`InPersonRetention.IsDue`: finito, e la fine da almeno `inPersonRetentionMonths` mesi); per ogni evento, in un salvataggio, scrive in
      `evt_event_stats` gli iscritti, **le somme** (`RegistrationSums.Of`) e i posti per attività, poi cancella posti e iscrizioni
-     attraverso l'interceptor. **Le liste dello staff rileggono le somme e i posti dalle statistiche** per un evento oltre la conservazione.
+     attraverso l'interceptor e — con **E10s** (#269, la risposta 3 di Carmine sull'issue #267) — **svuota le risposte nelle copie dell'audit**
+     (`AuditRedaction.EmptyDeletedAsync<EventRegistration, long>`), tutto in una transazione; i posti non hanno colonne segnate (lettura 7)
+     e non si chiamano. **Le liste dello staff rileggono le somme e i posti dalle statistiche** per un evento oltre la conservazione.
   7. **La cancellazione dei dati di una persona**: un posto di un evento non finito si cancella, uno di un evento finito resta con lo
      pseudonimo; due righe nuove dell'anteprima (`seatsToCome`, `seatsOver`). `ErasureTests` con `evt_activities.created_by`, `.updated_by`,
      `evt_activity_bookings.vid`.
-  8. **I test**: integrazione `EventsActivitiesTests` (7; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
+  8. **I test**: integrazione `EventsActivitiesTests` (8; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
      (solo un iscritto, un turno, libero, non sovrapposto, ridato), **l'ultimo posto preso da due membri nello stesso istante** (una
      transazione del test tiene la riga dell'attività e il posto non confermato, la richiesta aspetta in `INNODB_TRX`, poi legge «turno
      pieno»; **provato al contrario**: senza il `FOR UPDATE` la richiesta prende il posto, 201), i posti che vanno con l'iscrizione e
-     l'attività con posti che resta, «Duplica», la conservazione, la cancellazione —; unità `EventsActivitiesTests` (7: i turni, la
+     l'attività con posti che resta, «Duplica», la conservazione, **un'iscrizione tolta dalla conservazione che non lascia risposte
+     nell'audit** (provato al contrario: senza la chiamata di E10s il testo resta), la cancellazione —; unità `EventsActivitiesTests` (7: i turni, la
      conservazione, le statistiche, la copia, la mail, il trigger in UTC). Il giro completo `web/e2e/full/events-m4c-round.spec.ts` (slug
      `evt-test-e2e-e17-…`).
 - **Scelte e scostamenti** (nota nuova `decisions/2026-10-15-le-attivita-e-la-conservazione-breve.md`, **decisa** da Carmine sull'[issue

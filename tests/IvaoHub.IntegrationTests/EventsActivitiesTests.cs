@@ -45,6 +45,9 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
     private const string SlugStem = "evt-test-e17";
 
+    /// <summary>A text answer of a registration the retention deletes: its copies in the audit lose it (E10s).</summary>
+    private const string RetiredWords = "evt-test-e17 retired words";
+
     private static readonly string[] Locales = ["it", "en"];
 
     private static readonly int[] People = [MemberVid, OtherVid, ThirdVid, CoordinatorVid, PersonVid, SuperadminVid];
@@ -403,6 +406,34 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
     }
 
     [Fact]
+    public async Task ARegistrationTheRetentionDeletesLeavesNoAnswerInTheAudit()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = Today.AddHours(DateTime.UtcNow.Hour);
+
+        // A registration of an event in person, its answer written and then changed — a created copy and both sides of an updated one
+        // name it in the audit —; the event then ends past its retention.
+        var id = await EventRowAsync("retired-audit", now.AddDays(5), now.AddDays(5).AddHours(6), token);
+        var note = await TextRowAsync(id, token);
+        using (var member = await SignedInAsync(MemberVid, token))
+        {
+            await CreatedAsync(await member.PutAsJsonAsync($"{RegistrationEndpoints.MinePattern}/{id}", Answer(note, RetiredWords), token), token);
+            await OkAsync(await member.PutAsJsonAsync($"{RegistrationEndpoints.MinePattern}/{id}", Answer(note, $"{RetiredWords} again"), token), token);
+        }
+
+        await MoveEventAsync(id, now.AddMonths(-4), now.AddMonths(-4).AddHours(6), token);
+        var registered = Assert.Single(await RegistrationsAsync(id, token)).Id;
+        Assert.True(await AuditMentionsAsync(RetiredWords, token), "Without the answers in the audit, the check below would prove nothing.");
+
+        // Retired: the registration is gone, and its copies in the audit keep that it was — created, changed, deleted, by whom — without the
+        // answers (E10s, Carmine's answer 3 on issue #267).
+        await RunRetentionAsync(token);
+        Assert.Empty(await RegistrationsAsync(id, token));
+        Assert.False(await AuditMentionsAsync(RetiredWords, token));
+        Assert.Equal(["created", "updated", "deleted"], await AuditActionsAsync("evt_registrations", registered, token));
+    }
+
+    [Fact]
     public async Task ErasingAPersonDeletesTheirSeatsToComeAndKeepsTheOnesOver()
     {
         var token = TestContext.Current.CancellationToken;
@@ -638,6 +669,60 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         return await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Seats.IgnoreQueryFilters().AsNoTracking()
             .Where(seat => seat.EventId == eventId)
             .OrderBy(seat => seat.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>A text question of an event, written by the installation.</summary>
+    private async Task<long> TextRowAsync(long eventId, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        var question = new EventQuestion
+        {
+            EventId = eventId,
+            Ordinal = 1,
+            Type = QuestionType.Text,
+            Label = Text("evt-test-e17 anything else"),
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+
+        database.Questions.Add(question);
+        await database.SaveChangesAsync(cancellationToken);
+        return question.Id;
+    }
+
+    /// <summary>One answer as the member's form sends it.</summary>
+    private static RegistrationRequest Answer(long question, string text) =>
+        new(new JsonObject { [EventQuestion.AnswerKey(question)] = text });
+
+    /// <summary>An event moved to other times past every rule: one that has ended could not be made any other way.</summary>
+    private async Task MoveEventAsync(long id, DateTime starts, DateTime ends, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters()
+            .Where(row => row.Id == id)
+            .ExecuteUpdateAsync(set => set.SetProperty(row => row.StartsAtUtc, starts).SetProperty(row => row.EndsAtUtc, ends), cancellationToken);
+    }
+
+    /// <summary>Whether a row of the audit log still copies a text with the marker in it, before or after its change.</summary>
+    private async Task<bool> AuditMentionsAsync(string marker, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
+            .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
+    }
+
+    /// <summary>What the audit log says happened to one row of a table, in order.</summary>
+    private async Task<List<string>> AuditActionsAsync(string table, long key, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var text = key.ToString(CultureInfo.InvariantCulture);
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking()
+            .Where(row => row.Entity == table && row.EntityId == text)
+            .OrderBy(row => row.Id)
+            .Select(row => row.Action)
             .ToListAsync(cancellationToken);
     }
 

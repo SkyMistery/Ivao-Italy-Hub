@@ -34,7 +34,8 @@ design unito leggono l'area in due modi; la domanda 3 perché la risposta (B) è
    finito tiene e le statistiche contano. Quindi **dopo la conservazione l'audit tiene ancora che il membro X ha preso il turno delle Z
    dell'attività Y**, come tiene che si è iscritto: il VID e l'attività sono sulla riga comunque, e la chiamata di E10s svuota solo le colonne
    segnate, cioè i dati che descrivono la persona (le risposte di un'iscrizione). Se il revisore o Carmine vogliono anche il turno fuori
-   dall'audit, è un attributo su `StartsAtUtc`.
+   dall'audit, è un attributo su `StartsAtUtc`. **Per questo `events-retention` chiama E10s solo per le iscrizioni**: un'entità senza colonne
+   segnate la chiamata la rifiuta, e del posto non c'è niente che descriva il membro da svuotare.
 8. **La riga del membro**: `ISubmittedByMembers`, `IHasStakeholder` (il membro), `IVisible` ai soli membri, area `EventBookings` con la cura e
    lo scope dell'evento, `[Audited]`, **`[WithdrawnByStakeholder]`**: **un posto non porta decisioni dello staff** — niente da approvare,
    rifiutare o confermare, lo staff lo legge e lo conta —, come l'iscrizione (la regola di Carmine sulla #232, risposta 3). Ridarlo cancella
@@ -126,7 +127,9 @@ Date in chat alla sessione master e pubblicate su sua istruzione [sull'issue #26
 3. **La conservazione e l'audit: (B)**. Una piccola fase del nucleo prima, di dalberone, con la sua nota, **E10s**
    (`m4/e10s-retention-in-the-audit`): un modulo che cancella righe per conservazione chiede al nucleo di svuotare nell'audit le colonne
    segnate `[ErasedWith]` delle righe che cancella, accanto ad `AuditRedaction.EmptyGoneAsync`. **E17 la usa ed è in coda dopo di lei**:
-   `events-retention` la chiama per le iscrizioni che toglie, le cui risposte (`AnswersJson`) portano già `[ErasedWith(nameof(Vid))]`.
+   `events-retention` la chiama per le iscrizioni che toglie, le cui risposte (`AnswersJson`) portano già `[ErasedWith(nameof(Vid))]`:
+   `AuditRedaction.EmptyDeletedAsync<EventRegistration, long>` nella stessa transazione, dopo il salvataggio che le cancella e prima del
+   commit (E10s, #269, nota `2026-10-16-la-conservazione-nell-audit`).
    Il posto non ha colonne di parole (lettura 7): nell'audit resta che un membro ha preso un turno, come di un'iscrizione resta che si è
    iscritto.
 
