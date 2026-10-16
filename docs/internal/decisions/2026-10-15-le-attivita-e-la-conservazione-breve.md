@@ -30,7 +30,11 @@ design unito leggono l'area in due modi; la domanda 3 perché la risposta (B) è
 ## 2. I posti (`evt_activity_bookings`, design §4-bis.1, §4-bis.2)
 
 7. **Le colonne**: l'attività, l'evento, il membro (`vid`), l'inizio del turno (`starts_at_utc`), `created_at`. Nessuna colonna di parole:
-   niente da segnare con `[ErasedWith]`.
+   niente da segnare con `[ErasedWith]`. **L'inizio del turno non è segnato, di proposito**: è la forma della riga, che un posto di un evento
+   finito tiene e le statistiche contano. Quindi **dopo la conservazione l'audit tiene ancora che il membro X ha preso il turno delle Z
+   dell'attività Y**, come tiene che si è iscritto: il VID e l'attività sono sulla riga comunque, e la chiamata di E10s svuota solo le colonne
+   segnate, cioè i dati che descrivono la persona (le risposte di un'iscrizione). Se il revisore o Carmine vogliono anche il turno fuori
+   dall'audit, è un attributo su `StartsAtUtc`.
 8. **La riga del membro**: `ISubmittedByMembers`, `IHasStakeholder` (il membro), `IVisible` ai soli membri, area `EventBookings` con la cura e
    lo scope dell'evento, `[Audited]`, **`[WithdrawnByStakeholder]`**: **un posto non porta decisioni dello staff** — niente da approvare,
    rifiutare o confermare, lo staff lo legge e lo conta —, come l'iscrizione (la regola di Carmine sulla #232, risposta 3). Ridarlo cancella
