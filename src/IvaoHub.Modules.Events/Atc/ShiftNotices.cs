@@ -123,13 +123,19 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
     {
         ArgumentNullException.ThrowIfNull(shifts);
 
+        // Whose controller knew of it, read again from the database under the lock the deletion holds (the second reading of #268, point 1):
+        // the engine loads the shift before the hook, and the job may have told its controller in between.
+        var ids = shifts.Select(shift => shift.Id).ToList();
+        var marked = (await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
+                .Where(stored => ids.Contains(stored.Id) && stored.NotifiedAt != null)
+                .Select(stored => stored.Id)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+
         var told = new List<(long EventId, int Vid, long PositionId, DateTime FromUtc, DateTime ToUtc)>();
-        foreach (var shift in shifts)
+        foreach (var shift in shifts.Where(shift => marked.Contains(shift.Id)))
         {
-            if (shift.NotifiedAt is not null)
-            {
-                told.Add((shift.EventId, shift.ControllerVid, shift.PositionId, shift.FromUtc, shift.ToUtc));
-            }
+            told.Add((shift.EventId, shift.ControllerVid, shift.PositionId, shift.FromUtc, shift.ToUtc));
         }
 
         var described = new List<(long EventId, int Vid, (string, DateTime, DateTime) Shift)>();
@@ -138,7 +144,6 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
             described.Add((gone.EventId, gone.Vid, await DescribeAsync(gone.PositionId, gone.FromUtc, gone.ToUtc, cancellationToken)));
         }
 
-        var ids = shifts.Select(shift => shift.Id).ToList();
         database.AtcTransfers.RemoveRange(await CrudSource.BackOffice<EventAtcTransfer>(database)
             .Where(transfer => ids.Contains(transfer.ShiftId))
             .ToListAsync(cancellationToken));
