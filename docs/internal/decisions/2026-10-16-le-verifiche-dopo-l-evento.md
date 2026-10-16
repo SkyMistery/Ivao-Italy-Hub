@@ -1,8 +1,13 @@
 # Le verifiche dopo l'evento e le statistiche (E13a)
 
 **Data:** 16 ottobre 2026 — fase E13a di M4 (M4b), PR in coda dopo la #271 di E17
-**Stato:** **Proposta**. La domanda è in §4; dove si pubblica lo decide dalberone. Il codice segue le risposte raccomandate, come hanno
-fatto E11a, E11b ed E12.
+**Stato:** **Proposta** per le dieci letture del §2; **decise** le due scelte del §4. La domanda è l'[issue #272][q], scelta di
+dalberone. Carmine ha risposto ([la risposta][a272], pubblicata su sua istruzione): **(A) alla scelta 5 e (A) alla scelta 7**; le dieci
+letture le decide quando la PR è aperta e il revisore ha letto il codice che c'è dietro, come per E11b. Il codice segue le risposte
+raccomandate.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272
+[a272]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876
 **Regola applicata:** `CLAUDE.md` §5. Il job `events-after` ogni ora a lotti, `flown_at` dalle sessioni del pilota fra partenza e arrivo
 senza il callsign, chi ha volato senza prenotare solo come numero, la presenza nei turni con `attendanceMinimumMinutes` e il no-show
 proposto con chi ha coperto la postazione, le statistiche ricalcolabili dallo staff e la scheda «Statistiche» sono **decisi** (design
@@ -101,6 +106,12 @@ Le dieci letture del §2, con le due in cui il design lascia una scelta vera:
   nominativo nella domanda del tracker senza VID, ed E13a lo legge anche da lì. **Raccomandata (A)**.
 - **la lettura 7** — (A) dopo trenta giorni dalla fine il job chiude l'evento con le righe da verificare; (B) riprova per sempre.
   **Raccomandata (A)**.
+
+**La risposta di Carmine** ([sull'issue #272][a272], 16 ottobre 2026): **(A)** alla lettura 5 — chi ha coperto si legge
+dall'archivio, con il solo tracker resta sconosciuto, nessuna fase del nucleo prima di E13a — e **(A)** alla lettura 7 — trenta giorni
+dopo la fine il job chiude l'evento con quelle righe ancora da verificare, mai segnate, e lo staff le può ancora segnare con E13b. Le
+dieci letture restano **Proposta** fino alla lettura della PR. (La fase del nucleo E10t, `INetworkSessionSource`, è un'altra cosa: il
+nome neutro del tracker che il modulo deve usare, §«Regola applicata», non il nominativo nella domanda della scelta (B).)
 
 ## Da portare nel piano
 
