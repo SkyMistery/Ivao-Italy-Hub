@@ -1134,6 +1134,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("controller_vid");
 
+                    b.Property<int?>("CoveredByVid")
+                        .HasColumnType("int")
+                        .HasColumnName("covered_by_vid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");

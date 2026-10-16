@@ -84,6 +84,13 @@ public sealed class EventAtcShift : IEventChild, IAuditable, IHasResourceScope, 
     [ErasedWith(nameof(ControllerVid))]
     public string? AttendanceNote { get; set; }
 
+    /// <summary>
+    /// Who covered the position in the shift's hours when its controller did not (§4.5, E13a; note 2026-10-16-le-verifiche-dopo-l-evento,
+    /// reading 5): written by <c>events-after</c> next to a no-show it proposes, from the archive of the sessions; empty when nobody did, or
+    /// when only the tracker answered.
+    /// </summary>
+    public int? CoveredByVid { get; set; }
+
     public Department OwnerDepartment { get; set; }
 
     public int OwnerDepartmentMask { get; set; }

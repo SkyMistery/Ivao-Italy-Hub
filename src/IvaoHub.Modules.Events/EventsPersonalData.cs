@@ -25,7 +25,8 @@ namespace IvaoHub.Modules.Events;
 /// link that dissolves when one of a pair goes alone (<c>BookingPairs.LetGoAsync</c>) is not asked for.</item>
 /// </list>
 /// What they did as staff — an event cancelled, a booking not flown excused — stays, under the pseudonym the core writes into every
-/// <c>…By</c> column, with their words, which are about others (answer 4 of the note of T20b). Nothing here writes a VID.
+/// <c>…By</c> column, with their words, which are about others (answer 4 of the note of T20b). Having covered somebody else's position in a shift they missed
+/// (<c>covered_by_vid</c>, E13a) is that shift's history too, and stays under the pseudonym the core writes there. Nothing here writes a VID.
 /// </summary>
 public sealed class EventsPersonalData(EventsDbContext database, IClock clock) : IPersonalDataEraser
 {
