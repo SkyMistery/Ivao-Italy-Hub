@@ -327,7 +327,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 - **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
   `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
-  nota nuova, `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta**, con tre scelte):
+  nota nuova, `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con le tre scelte **decise**, (A),
+  da Carmine sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259)):
   - **Le decisioni dello staff** (`Registers/RegisterDecisions.cs`): l'esito di un turno, `POST /api/events/atc/shifts/{id}/attendance`
     (`EventAtc.Edit` sul turno, mai sul proprio: `DeniedToStakeholder`), e «togli» di una prenotazione non volata,
     `POST /api/events/bookings/{id}/excuse` (`EventBookings.Edit` sulla prenotazione). Le transizioni in `RegisterDecisions.Allowed`.
@@ -347,9 +348,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     più di `StaffQueueProvider`, con `EventReports.Edit` chiesto all'unico handler sulla riga, come i turni.
   - **E15b** (la conservazione dei piloti): il registro dei piloti conta le prenotazioni di eventi finiti negli ultimi `pilotRetentionMonths`;
     quando la conservazione le cancella escono anche dal registro, nello stesso momento. `UnflownExcusedNote` è già `[ErasedWith]`.
-  - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, raccomandata, aspetta Carmine): lo staff non toglie
-    la propria prenotazione, iscrizione o posto, né la propria voce del registro. Se Carmine sceglie (B), è una riga del catalogo e il caso
-    del test.
+  - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, decisa da Carmine sulla #280): lo staff non toglie
+    la propria prenotazione, iscrizione o posto, né la propria voce del registro.
   - ⚠️ **Le statistiche dopo una decisione**: il verbo non le scrive (l'area `Events`, che l'AOD non scrive): «Ricalcola» di E13a.
   - ⚠️ **Il banco non lancia un job**: un no-show proposto non si fa dall'API; lo provano `EventsRegistersTests` e il banco della fase con
     righe scritte in SQL.

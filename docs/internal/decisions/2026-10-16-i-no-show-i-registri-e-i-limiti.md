@@ -1,7 +1,12 @@
 # I no-show, i registri e i limiti di chi prenota e non vola (E13b)
 
 **Data:** 16 ottobre 2026 — fase E13b di M4 (M4b), PR in coda dopo la #278 di E13a
-**Stato:** **Proposta**. Le letture del §2 e le scelte del §4 aspettano Carmine; il codice segue le risposte raccomandate.
+**Stato:** **Proposta** per le undici letture del §2; **decise** le tre scelte del §4. La domanda è l'[issue #280][q], scelta di dalberone.
+Carmine ha risposto ([la risposta][a280], pubblicata su sua istruzione): **(A) a tutte e tre**; le undici letture le decide quando la PR è
+aperta e il revisore ha letto il codice che c'è dietro, come per E11b ed E13a. Il codice segue le risposte raccomandate.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280
+[a280]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259
 **Regola applicata:** `CLAUDE.md` §5. Che lo staff confermi o giustifichi un no-show proposto con `EventAtc.Edit` e mai sul proprio turno,
 che tolga a mano un no-show con una nota anche dopo, il registro dei controllori con la penalità `noShowWeight × no-show ÷ (fatti + no-show
 + 2)`, il registro dei piloti con «togli» e una nota, i limiti di chi supera `unflownThreshold` sotto il blocco del pilota con i limiti
@@ -128,6 +133,12 @@ Le undici letture del §2, con le tre in cui c'è una scelta vera:
   proprie prenotazioni, iscrizioni e posti (togliere la propria prenotazione, iscrizione o posto lo fa già da membro, con il ritiro); (B)
   resta com'è, un limite detto. **Raccomandata (A)**: è la regola «chi ha interesse non decide» (nota
   `2026-09-15-permessi-su-una-riga-e-chi-ha-interesse`), una riga del catalogo e nessun `if` nel modulo.
+
+**La risposta di Carmine** ([sull'issue #280][a280], 16 ottobre 2026): **(A)** alle letture 4, 5 e 8 — tre letture scritte a mano, i
+dettagli nelle liste del motore, la pagina `/staff/events/pilots` —, **(A)** alla lettura 7 — fasce fisse dall'inizio dell'evento, sull'orario
+dello slot allo scalo dell'evento — e **(A)** alla lettura 6 — `EventBookings.Edit` è `DeniedToStakeholder` nel catalogo. Le undici letture
+restano **Proposta** fino alla lettura della PR. (Dopo la pubblicazione l'ultima frase della lettura 1 è stata corretta sull'issue, con una
+riga che lo dice: il verbo non scrive le statistiche.)
 
 ## Da portare nel piano
 

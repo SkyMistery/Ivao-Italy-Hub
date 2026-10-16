@@ -5033,8 +5033,8 @@ resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limi
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
 **Com'è andata** (16 ottobre 2026; branch `m4/e13b-registers`, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo la #278 di
-E13a, con la sua testa nuova `f5333cf` unita; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta**, undici letture e tre scelte,
-la domanda per Carmine data al coordinatore):
+E13a, con la sua testa nuova `f5333cf` unita; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con
+le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259)):
 
 - **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
   limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.
@@ -5053,7 +5053,7 @@ la domanda per Carmine data al coordinatore):
   controllore (`filter[controllerVid]`, nuovo), le prenotazioni per pilota (`filter[bookerVid]`, nuovo). Le righe delle due liste portano ora
   il titolo dell'evento, la nota e se il lettore può decidere (`Decidable`, `Excusable`), in coda ai DTO.
 - **«Togli» di una prenotazione non volata** (`POST /api/events/bookings/{id}/excuse`): verificata, non volata, una volta, con la nota.
-  **`EventBookings.Edit` è diventato `DeniedToStakeholder`** (la scelta (A) della lettura 6, raccomandata, aspetta Carmine).
+  **`EventBookings.Edit` è diventato `DeniedToStakeholder`** (la scelta (A) della lettura 6, decisa da Carmine sulla #280).
 - **I limiti** (`Registers/BookingLimits.cs`, puri; `PilotRegister.LimitsAsync`) nei tre verbi di `PilotBookings`, sotto il blocco del pilota
   dopo la compatibilità: fasce fisse dall'inizio dell'evento sull'orario dello slot allo scalo dell'evento, con le prenotazioni della stessa
   richiesta (tratte di una rotazione, partenza collegata); i limiti dell'evento uno a uno sopra le impostazioni. Il rifiuto ha due chiavi su
