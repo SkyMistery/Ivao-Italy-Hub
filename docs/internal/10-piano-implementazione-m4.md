@@ -3897,6 +3897,17 @@ senza eccezioni; il resto com'era.
   - **E10p** (#261, le ore a 24, un formatter solo): **non è unita** il 14 ottobre: saltata, come chiedeva il prompt;
   - per dopo, nella PR: la frase della lista vuota delle postazioni di E11a (`atc.positions.empty`, «Nessuna postazione ancora: aprine
     una…») invita, e chi tiene l'ATC in sola lettura non ha il bottone (la regola di E4c); da riscrivere con E11b o in una fase sua.
+- **Dopo l'unione di `main` a `e041bb04`** (16 ottobre 2026, `d7670da`): il revisore ha trovato la PR approvabile e, unita E10q (#265, il
+  Pkcs 10.0.13 e la versione 0.6.8, che rimette in piedi il `dotnet restore` della CI), ha chiesto `main` perché `build-test` giri ([il
+  suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6215578055)). In conflitto solo l'intestazione e la
+  cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10q sotto. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache`
+  pulito e `dotnet list IvaoHub.sln package --vulnerable --include-transitive` senza pacchetti vulnerabili; Release 0 avvisi; unità
+  **1279/1279**; integrazione intera **597/597** (16,2 minuti); `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851 chiavi),
+  `build` e `gen:api` (senza differenze) verdi; `pnpm test` **769/769** al secondo giro — al primo, con l'integrazione accanto,
+  `src/features/content/BodyEditor.test.tsx` («undo gives the body back, and says so», del nucleo) è andato oltre i suoi 5 secondi, poi
+  6/6 da solo e tutto verde da capo; la smoke **181/181** al primo giro (1,5 minuti); `pnpm e2e:full` sulla 5145, `ivaohub_e2e_e4d`
+  ricreato, **63/63** al primo giro (14,5 minuti); le regole di `core-guard` contro `e041bb04`: gli stessi diciotto file, verde per la
+  sua regola.
 - **Verificato, in locale** (14 ottobre 2026, sull'albero della PR, `main` a `c232448`):
   - `dotnet build IvaoHub.sln --configuration Release` 0 avvisi; unità **1279/1279**; la suite di integrazione intera, senza filtro,
     **597/597** (12,4 minuti), `MemberNamesTests` compresa;
