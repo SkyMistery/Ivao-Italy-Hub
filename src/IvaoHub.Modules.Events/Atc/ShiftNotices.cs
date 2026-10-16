@@ -39,7 +39,7 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
             return;
         }
 
-        var told = await database.AtcShifts.IgnoreQueryFilters().AsNoTracking()
+        var told = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
             .Where(stored => stored.Id == shift.Id)
             .Select(stored => stored.NotifiedAt)
             .FirstOrDefaultAsync(cancellationToken) is not null;
