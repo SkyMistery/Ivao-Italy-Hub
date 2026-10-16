@@ -4,11 +4,16 @@
 **Stato:** **scelta tecnica**, per dare a E13a la domanda che E10a ha già messo nel client (nota `2026-09-30-il-tracker-senza-vid`,
 decisa da Carmine sulla #180 e sulla #210) senza che il modulo degli eventi nomini IVAO. La fase del nucleo l'ha scelta `dalberone`
 (16 ottobre 2026), fra le strade di §4. **Nessuna domanda per Carmine**: la forma è quella di un pezzo che c'è già (`IAtcBookingSource`,
-E15a), e nessun comportamento cambia.
+E15a), e nessun comportamento cambia. Il revisore l'ha trovata approvabile ([osservazioni][r277]); la riga che «Da portare nel piano»
+propone per `CLAUDE.md` §2, file del maintainer, il revisore l'ha portata a Carmine, e **Carmine ha risposto sì** (16 ottobre 2026, in
+chat al master, che l'ha pubblicato sulla PR su sua istruzione: [risposta][ok277]); la scrive il master con il piano 1.35.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estende la cartella del nucleo che parla con la rete (`Core/Ivao/`) con
 un'interfaccia dal nome neutro sopra l'unico client, come E15a ha fatto per le prenotazioni ATC; `CLAUDE.md` §3: «a module never talks
 to IVAO itself», e un modulo che lo nominerebbe passa dal nucleo. È una PR del nucleo, prima di E13a che la usa (`CLAUDE.md` §0
 regola 6): nessun uso negli eventi qui.
+
+[r277]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
+[ok277]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
 ## 1. Che cosa serve, e perché il modulo non ne fa a meno
 
@@ -97,6 +102,12 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 - `tests/IvaoHub.UnitTests/NetworkSessionSourceTests.cs` (nuovo, unità: la domanda intera in quattro forme, la sessione, l'ordine con un
   doppione e il limite, `null`, il tetto, e il client delle fixture con la sera di Fiumicino). **Nessun test esistente cambiato.**
 - **Nessuna riga** di un modulo; niente nel browser, nessuna migrazione.
+
+## 6. Dopo la revisione (#277)
+
+Le [osservazioni del revisore][r277] (16 ottobre 2026): approvabile, niente da correggere; un punto piccolo, fatto: il riassunto di
+`Connection` diceva «piloti o controllori, o entrambi», ma `null` non chiede nessun tipo e tornano anche gli osservatori; ora lo dice.
+E la riga di `CLAUDE.md` §2 qui sotto ha il sì di Carmine ([risposta][ok277]).
 
 ## Da portare nel piano
 
