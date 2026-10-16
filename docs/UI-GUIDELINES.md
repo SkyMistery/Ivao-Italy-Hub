@@ -846,8 +846,11 @@ disagree with "what this looks like".
 
 **Aviation, not the locale's habit.** Twenty four hours everywhere, `Z` for zulu and `LT` for the
 reader's own zone — `14:00Z (16:00 LT)`. A briefing at 14:00 is written 14:00, and "2:00 PM" is a
-form nobody on the network uses. It is one line in `useMoment`, which is the only place in the client
-that formats an instant, and that is why it is one line.
+form nobody on the network uses. It is one line in `formatMoment` (`web/src/shared/i18n/useMoment.ts`),
+which is the only place in the client that formats an instant, and that is why it is one line: a
+component calls `useMoment`, and what is not a component — a list cell, the line under an instant
+field — calls `formatMoment` with the language it was handed. A `new Intl.DateTimeFormat` with a
+`timeStyle` of its own is how three formatters once wrote "7:00 PM" in English.
 
 **The date goes only where nothing else has said the day.** A square of a calendar grid and the
 heading of a day list have already said it; repeating it is noise on the line a reader actually
@@ -856,8 +859,8 @@ is a whole day keeps its date wherever it is drawn — and takes **no** `Z`, bec
 instant.
 
 Always in UTC, with the time zone of the division next to it — a hub is read by people flying in one
-and organising in the other. `DataList` does that for a `col.date`; anywhere else, use
-`Intl.DateTimeFormat` with `timeZone: 'UTC'` and with `bootstrap.division.timezone`. Never the time
+and organising in the other. `DataList` does that for a `col.date`; anywhere else, use `useMoment`
+(UTC unless told otherwise) and again with `timeZone: bootstrap.division.timezone`. Never the time
 zone of the browser on its own.
 
 ## A page names itself

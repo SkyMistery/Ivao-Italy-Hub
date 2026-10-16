@@ -35,6 +35,9 @@ public sealed class EventReleaseJob(
     /// <summary>Every quarter of an hour: an event enters the calendar at most fifteen minutes after it is seen, and leaves it as late after its end.</summary>
     public const string Cron = "0 0/15 * * * ?";
 
+    /// <summary>Its trigger, which says UTC all the same (E4d).</summary>
+    public const string TriggerName = $"{JobName}-quarterly";
+
     private const int MaxMessageLength = 2000;
 
     public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);

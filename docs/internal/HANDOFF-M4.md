@@ -6,7 +6,36 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
+**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
+staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`, **in coda dopo la #263** (E4d, la coda #263 → #262 → #268): nata
+`--no-track` dalla testa di E11a `c967bc1`, ne ha unito la testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, dopo
+l'unione di E16 (#255) ed E11a (#256) **`main` a `c232448`**, poi `main` a `e041bb04` (il Pkcs corretto, #265) e infine **la testa di E4d
+`279c8cd`** (con `main` a `3b8d7d79`, E10p #261). La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
+(A) per «`atcData` di IT» (`vipi` quando l'utente di sola lettura della vista esiste sull'host) e le dieci letture, tre con una condizione
+ora nel codice; i rilievi del revisore sulla #262 sono corretti sulla stessa PR («Che cosa ha lasciato E11b», sotto). Da E11b, alla
+chiusura delle disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo
+staff dell'ATC lo **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni.
+
+**L'aggiornamento di E4d:** 16 ottobre 2026 — **fase E4d** (modulo: gli eventi prendono tre pezzi del nucleo uniti negli ultimi giorni),
+sul branch `m4/e4d-events-adopt-core`, **PR #263** verso `main`, **in fondo alla coda #263 → #262 → #268** che il revisore ha chiesto
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)): nata da `main` a `c232448` (con E16
+#255, E11a #256 e A13f #258), approvabile per il revisore, e il 16 ottobre, su sua richiesta, ha unito `main` a `e041bb04` (E10q, #265, il
+Pkcs corretto) perché `build-test` giri, poi `main` a `3b8d7d79` (E10p, #261, le ore in 24). Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
+di Carmine sulla #258, perché la PR toglie dai due test del nucleo le righe che le note di E10m ed E10l lasciavano agli eventi. Da E4d gli
+eventi leggono i nomi con `MemberNames` (E10m), `events-release` dice il suo fuso, UTC (E10j), i dialog di uno slot e dell'ora privata
+chiudono con «Chiudi» (E10l), e le schede «Domande» e «Iscrizioni» di E16, vuote, dicono una frase loro («Che cosa ha lasciato E4d»,
+sotto). **E11b (#262)** unisce questo branch, ed E12 (#268) quello di E11b.
+
+**L'aggiornamento di E10p:** 16 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
+`m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
+**decisa** da Carmine sull'issue #260 ([la seconda via](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089),
+e [i tre valori attesi di due test
+suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)), [approvabile senza niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668), e ha unito `main` a `c232448` (con E16, E11a
+e A13f) su richiesta del revisore, poi `main` a `e041bb0` (con E10q, perché `build-test` giri). Da E10p ogni ora del nucleo si scrive in
+24 ore anche in inglese, attraverso un solo formattatore («Che cosa ha lasciato E10p», sotto).
+
+**L'aggiornamento di E10q:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
 #264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
 e non in coda**: nata da `main` a `c232448` (E11a unita). Fissa `System.Security.Cryptography.Pkcs` a **10.0.13** (gli avvisi del 13
 ottobre facevano fallire `dotnet restore`, e con lui `build-test` della #261, #262 e #263) e porta la versione a **0.6.8** («Che cosa ha
@@ -260,6 +289,93 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E11b (13 ottobre 2026, branch `m4/e11b-roster-proposal`, PR #262; in coda dopo la #256 di E11a, nata dalla sua testa `c967bc1`, con la sua testa `ac52c4b` e `main` a `cea6244` uniti)
+
+- **Che cosa c'è** (il dettaglio in `10`, E11b, «Com'è andata»; **una migrazione**, `AddAtcShifts`; niente del nucleo — solo `schema.d.ts`
+  generato e le colonne di persona in `ErasureTests` —; una nota nuova, `2026-10-13-la-proposta-del-roster`, **Proposta**):
+  - **La tabella**: `evt_atc_shifts` (`EventAtcShift`): il controllore su una postazione da quando a quando, `origin` (`Proposed`, `Staff`),
+    il perché in `reason` (JSON, `ShiftReason`), `notified_at` (`[NotAudited]`, per E12), l'esito (`attendance`, `attendance_by`,
+    `attendance_at`, `attendance_note`, per E13); il FIR **copiato dalla postazione**; stakeholder il controllore.
+  - **Il proponente** puro (`Atc/RosterProposer.cs`), i dati (`Atc/RosterData.cs`), la proposta di un evento sotto il blocco della sua riga
+    (`Atc/RosterProposal.cs`) e il job **`events-roster`** (`Atc/EventRosterJob.cs`, ai minuti 3/18/33/48 UTC).
+  - **La correzione**: i turni con il motore (`/api/events/atc/shifts`, `Atc/ShiftEndpoints.cs`) e **il roster** per postazione e ora, con gli
+    scoperti, il perché e gli avvisi (`GET /api/events/atc/events/{id}/roster`, `Atc/StaffRoster.cs`); la sezione «Roster» del pannello
+    dell'ATC e il form del turno (`screens/roster.tsx`, `screens/rosterWords.ts`, `screens/candidates.tsx`).
+  - **I test**: unità e integrazione `EventsRosterTests` (VID **761114–761121**; slug `evt-test-e11b-…`); il giro `full/events-roster.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **E12** (la pubblicazione, la seconda metà di `events-roster`): il job è già registrato e decide dai suoi dati; la pubblicazione è un'altra
+    condizione nello stesso giro (inizio − `rosterPublishDays`, `notified_at` per turno). ⚠️ **Le mail dopo la pubblicazione** partono dai
+    verbi della correzione, che oggi sono del motore: l'`AfterSave` della risorsa dei turni (per «aggiungi» e «sposta») e la `Delete` di
+    `ShiftEndpoints` (per «togli»), mai un verbo nuovo a mano. ⚠️ **L'`AfterSave` dei turni è già `CommitAsync`**, che chiude la transazione
+    del blocco della riga dell'evento (`Atc/ShiftLock.cs`, il punto 1 della revisione della #262): una mail va **dopo** il commit, nello
+    stesso hook, mai prima. **`events.atcCoverage`** conta gli scoperti come li conta il roster:
+    `StaffRoster.Gaps` sui pezzi di `RosterProposer.Pieces`, gli scoperti non sono righe. **La pagina `/events/{slug}/roster`** e i turni in
+    `/events/mine` leggono `evt_atc_shifts` (i nomi con `MemberNames`, come il roster dello staff). La cessione (`evt_atc_shift_transfers`)
+    cambia il titolare di un turno: `ControllerVid` e `Origin = Staff`, come «sposta».
+  - **E13a/E13b**: `attendance` è `Unknown` su ogni turno; **la penalità** si legge già da `Attended` e `NoShow` degli altri eventi
+    (`RosterData.PenaltiesAsync`), con il peso 1: `noShowWeight` di E13b va passato a `RosterProposer.Penalty`. Un turno di un evento finito
+    non si cambia né si toglie dai verbi della correzione: il no-show confermato è un verbo di E13b.
+  - **E15b**: la cancellazione dei turni è già in `EventsPersonalData`.
+  - ⚠️ **Il banco non lancia un job**: una spec non aspetta `events-roster` (come il promemoria di E6b); la proposta si guarda sul banco della
+    fase al giro del quarto d'ora.
+  - **Le condizioni di Carmine sulla #259** (nel codice): proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta
+    (`AtcRules.IsClosedForGood`); dall'inizio un turno non si toglie, tiene controllore, postazione, inizio e ore passate, e se ne taglia solo
+    la fine, ad adesso o dopo (`shiftAfterStart`, la risposta di Carmine sulla #262: il sostituto è un turno nuovo dal taglio); un controllore su due postazioni dello stesso evento alle stesse ore è un rifiuto (`controllerBusy`), in altri
+    eventi un avviso. **Le righe del roster e le postazioni dicono se il lettore può scriverle** (`Editable`, l'unico handler): una pagina
+    nuova dell'ATC chiede quello, non `holdsPermission`. `isClosed` e `hasStarted` in `screens/atcPaths.ts`.
+  - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il
+    perché di ogni turno lo dice («esperienza non contata»).
+  - ⚠️ **I VID di prova**: dopo 761106–761113 di E11a, E11b ha usato **761114–761121** (e **761199** come nessuno che l'hub conosce).
+
+### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, in fondo alla coda #263 → #262 → #268; da `main` a `c232448`, con `main` a `e041bb04` e poi a `3b8d7d79` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E4d, «Com'è andata»; nessuna migrazione, nessuna decisione nuova; la nota
+  `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola di Carmine sulla #258, perché la PR tocca due test del nucleo):
+  - **`EventsPeople.NamesAsync`** è una riga, `MemberNames.ReadAsync` del nucleo (E10m); `AtcRatingsAsync`, `Member` ed `EventMemberDto`
+    restano del modulo. In `MemberNamesTests` resta solo la riga dei tour.
+  - **`events-release` dice UTC** (`EventReleaseJob.TriggerName`, lo stesso nome di prima), come `events-reminders`; i due trigger li
+    prova `tests/IvaoHub.UnitTests/EventsJobTriggersTests.cs`.
+  - **I dialog di uno slot e dell'ora privata** (`EventSlots.tsx`, `PrivateSlots.tsx`) sono il `Dialog` del nucleo (E10l): la «X» dice
+    «Chiudi» e «Close». La guardia di `Dialog.test.tsx` non ha più eccezioni.
+  - **Le schede «Domande» e «Iscrizioni»** di E16, vuote, dicono `events:questions.empty` ed `events:registrations.empty`, non più la
+    frase del nucleo su un dipartimento; i test in `titlesAndEmptyLists.test.tsx`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Ogni nome per VID** si legge con `EventsPeople.NamesAsync` o con `MemberNames.ReadAsync`: sono la stessa cosa. Un VID sotto uno
+    non ha mai un nome.
+  - **Un job nuovo degli eventi** (`events-roster`, `events-after`, `events-digest`, `events-retention`) dice il suo fuso nel trigger e
+    aggiunge la sua riga a `EventsJobTriggersTests`. ⚠️ Un trigger senza fuso prende quello della macchina: su una macchina il cui fuso
+    locale si chiama `UTC` il test passerebbe anche senza; la prova al contrario l'ho fatta qui, in un fuso europeo (cade con
+    «Expected: "UTC" — Actual: "W. Europe Standard Time"»), come per `TrainingJobTriggersTests`.
+  - **Un dialog nuovo** è il `Dialog` del nucleo (`../../../shared/ui`); quello di Atmosphere fa cadere la guardia, ora senza lista.
+  - **Una lista generata nuova** dice la sua `emptyDescription`, parole che descrivono (E4c). ⚠️ Quella delle postazioni di E11a
+    (`atc.positions.empty`) invita («aprine una»), e chi legge l'ATC soltanto non ha il bottone: da riscrivere, con E11b o dopo.
+  - **E10p** (#261, le ore a 24 in un formatter solo) non era unita: quando entra, gli eventi la prendono in una fase loro, se la sua
+    nota lo chiede.
+  - ⚠️ **E11b (#262)** è aperta accanto e tocca forse `EventsModule.cs`, `EventsPeople.cs` e i file di lingua: i conflitti all'unione
+    sono il passo della coda del master.
+  - **Con `main` a `e041bb04`** (16 ottobre) entra E10q: il Pkcs 10.0.13 e la versione 0.6.8. Niente degli eventi cambia; i conti
+    dopo l'unione sono in `10`, E4d, «Com'è andata».
+  - **Con `main` a `3b8d7d79`** (16 ottobre) entra E10p: le ore del nucleo in 24 con `formatMoment`. I dialog e le schede di E4d le
+    scrivono con `useMoment` o con il `DataList` del nucleo, e non cambiano; la coda è **#263 → #262 → #268**, E4d in fondo.
+
+### Che cosa ha lasciato E10p (13–16 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`, con `main` a `c232448` e poi a `e041bb0` unito)
+
+- **Che cosa c'è** (nota `decisions/2026-10-13-le-ore-in-24.md`, **decisa** da Carmine sull'issue #260; il dettaglio in `10`, E10p,
+  «Com'è andata»). Tutto nel browser, niente in C#:
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, che ora lo chiama. È
+    **l'unico posto** che scrive un istante, e le 24 ore (`hour12: false`) sono una riga lì.
+  - I quattro formattatori del nucleo che in inglese scrivevano «7:00 PM» ci passano sopra: `localTime` (`SchemaForm.tsx`) e `DateCell`
+    (`DataList.tsx`) con `formatMoment`; `MessageThread.tsx` e `routes/_staff/staff.$dept.contacts.$id.tsx` con `useMoment`. Ognuno
+    tiene il suo aspetto.
+  - **I test**: `web/src/shared/i18n/twentyFourHours.test.tsx` (6). Tre valori attesi di due test di Carmine cambiano con la sua
+    risposta (`back-office.spec.ts:281`, `extensions.test.tsx:168–169`).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Mai un `new Intl.DateTimeFormat` con un `timeStyle` o un `hour` suo**: un componente scrive un istante con `useMoment`, una
+    funzione che riceve la lingua (una cella, un aiuto di una pagina) con `formatMoment`. `docs/UI-GUIDELINES.md`, «Times», lo dice.
+  - I moduli eventi e formazione scrivono già le ore con `useMoment`: nessuna fase di modulo dopo questa.
+  - ⚠️ **Un test che legge un'ora in inglese** scrive `19:00`, mai `7:00 PM`; e attenzione alle sottostringhe: `19:00` non contiene
+    `7:00`, `18:00` contiene `8:00`.
 
 ### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
 

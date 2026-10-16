@@ -47,6 +47,9 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The windows of the availabilities (E11a).</summary>
     public DbSet<EventAtcWindow> AtcWindows => Set<EventAtcWindow>();
 
+    /// <summary>The shifts of the rosters (E11b).</summary>
+    public DbSet<EventAtcShift> AtcShifts => Set<EventAtcShift>();
+
     /// <summary>The enums of the events are stored as text, like the core's: readable without the code next to them.</summary>
     protected override void ConfigureModuleConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -55,6 +58,8 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
         configurationBuilder.Properties<EventOrganizer>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<SlotKind>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<QuestionType>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ShiftOrigin>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ShiftAttendance>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -244,6 +249,30 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // The windows of an event, read by the staff per position.
             window.HasIndex(row => new { row.EventId, row.FromUtc });
+        });
+
+        modelBuilder.Entity<EventAtcShift>(shift =>
+        {
+            shift.ToTable("evt_atc_shifts");
+            shift.HasKey(row => row.Id);
+            shift.Ignore(row => row.StakeholderVid);
+            shift.Ignore(row => row.ResourceScope);
+            shift.Ignore(row => row.Reason);
+            shift.Property(row => row.Fir).HasMaxLength(8);
+            shift.Property(row => row.ReasonJson).HasColumnName("reason").HasColumnType("json");
+            shift.Property(row => row.AttendanceNote).HasMaxLength(EventAtcShift.MaxNoteLength);
+            shift.HasRowVersion(row => row.RowVersion);
+
+            // A position deleted takes its shifts — the module deletes them first, each with its row in the audit, and the key makes sure
+            // nobody forgets. It is also the index the roster reads a position's shifts by. No key towards the event: an event with
+            // shifts is not deleted (the save refuses it), it is cancelled.
+            shift.HasOne<EventAtcPosition>().WithMany().HasForeignKey(row => row.PositionId).OnDelete(DeleteBehavior.Cascade);
+
+            // The shifts of an event, which the roster reads.
+            shift.HasIndex(row => new { row.EventId, row.FromUtc });
+
+            // A controller's shifts of every event: their penalty (§4.5), their own page (E12) and their register (E13b).
+            shift.HasIndex(row => row.ControllerVid);
         });
     }
 }

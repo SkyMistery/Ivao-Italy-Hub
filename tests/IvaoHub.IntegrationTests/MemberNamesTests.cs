@@ -12,11 +12,11 @@ using Xunit;
 namespace IvaoHub.IntegrationTests;
 
 /// <summary>
-/// The one reader of names by VID (E10m, note 2026-10-11-un-solo-lettore-dei-nomi): what it answers by itself, the same
-/// answers as the one copy a module still has — the events' <see cref="EventsPeople"/> —, and one test for each way the
-/// copies differed. The core's own copy, in the contact threads, moved onto it in the same phase, and
-/// <c>ContactThreadTests</c> still reads the name it gave; the training's <see cref="TrainingPeople"/> moved onto it in A13f,
-/// the tours' <see cref="PirepReview"/> with note 2026-10-16-i-tour-sul-lettore-dei-nomi.
+/// The one reader of names by VID (E10m, note 2026-10-11-un-solo-lettore-dei-nomi): what it answers by itself, and one test
+/// for each way the copies it replaced differed. No copy is left to compare it with: the core's own, in the contact threads,
+/// moved onto it in the same phase, and <c>ContactThreadTests</c> still reads the name it gave; the training's
+/// <see cref="TrainingPeople"/> in A13f, the events' <see cref="EventsPeople"/> in E4d, the tours' <see cref="PirepReview"/>
+/// last (note 2026-10-16-i-tour-sul-lettore-dei-nomi), and the twin test went with it.
 /// <para>The people are the contact threads' (670011–670014): that class names them again every time it runs. The names
 /// they had are put back at the end all the same.</para>
 /// </summary>
@@ -58,36 +58,6 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal("Anna  Maria Bianchi", names[Blanks]);
             Assert.Equal("Luca", names[FirstOnly]);
             Assert.False(names.ContainsKey(Unknown));
-        });
-    }
-
-    [Fact]
-    public async Task TheReaderAnswersWhatTheEventsAnswer()
-    {
-        var token = TestContext.Current.CancellationToken;
-
-        await WithPeopleAsync(token, async hub =>
-        {
-            await using var scope = _factory.Services.CreateAsyncScope();
-            var events = scope.ServiceProvider.GetRequiredService<EventsPeople>();
-
-            int?[][] asked =
-            [
-                [Named, Unnamed, Blanks, FirstOnly, Unknown, null, Named],
-                [Unnamed],
-                [Unknown],
-                [null],
-                [],
-            ];
-
-            foreach (var vids in asked)
-            {
-                var core = await MemberNames.ReadAsync(hub, vids, token);
-                var known = vids.OfType<int>().ToList();
-
-                Assert.Equal(Sorted(await events.NamesAsync(known, token)), Sorted(core));
-                Assert.Equal(Sorted(await MemberNames.ReadAsync(hub, known, token)), Sorted(core));
-            }
         });
     }
 
@@ -161,9 +131,6 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         try
         {
             Assert.Empty(await MemberNames.ReadAsync(hub, [BelowOne, 0], token));
-
-            // What the events' copy answers until it moves onto the reader.
-            Assert.Equal("Nobody Atall", (await scope.ServiceProvider.GetRequiredService<EventsPeople>().NamesAsync([BelowOne], token))[BelowOne]);
         }
         finally
         {
@@ -209,9 +176,6 @@ public sealed class MemberNamesTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal(Named, Assert.Single(names).Key);
         });
     }
-
-    private static List<KeyValuePair<int, string>> Sorted(IReadOnlyDictionary<int, string> names) =>
-        [.. names.OrderBy(pair => pair.Key)];
 
     /// <summary>Gives the four people the names the tests read, runs the test, and puts back the names they had.</summary>
     private async Task WithPeopleAsync(CancellationToken cancellationToken, Func<HubDbContext, Task> test)

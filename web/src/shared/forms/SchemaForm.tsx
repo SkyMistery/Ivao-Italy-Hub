@@ -33,6 +33,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { z } from 'zod';
 
+import { formatMoment } from '../i18n/useMoment';
 import { ICON_NAMES } from '../icons';
 import { iconGlyph } from '../icons/glyphs';
 import { fold } from '../search/highlight';
@@ -1385,18 +1386,12 @@ function Instant({
 
 /** The same instant where the division lives, named, so nobody converts it in their head. */
 function localTime(iso: string, locale: string, timezone: string): string {
-  const instant = new Date(iso.endsWith('Z') ? iso : `${iso}Z`);
-  if (Number.isNaN(instant.getTime())) {
-    return '';
-  }
-
-  const shown = new Intl.DateTimeFormat(locale, {
+  const shown = formatMoment(locale, iso.endsWith('Z') ? iso : `${iso}Z`, {
     dateStyle: 'short',
-    timeStyle: 'short',
     timeZone: timezone,
-  }).format(instant);
+  });
 
-  return `${shown} ${timezone}`;
+  return shown === '' ? '' : `${shown} ${timezone}`;
 }
 
 function Row({

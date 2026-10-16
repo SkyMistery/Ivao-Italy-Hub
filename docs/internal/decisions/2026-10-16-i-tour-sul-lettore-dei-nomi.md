@@ -25,14 +25,13 @@ già vuota.
 
 Ne esce **la riga dei tour**, come la nota di E10m §5 diceva:
 
-- **dal test gemello**: il servizio `PirepReview` e il suo `Assert.Equal`. Dopo il passaggio il confronto proverebbe il lettore con sé
-  stesso. Su `main` di oggi resta la riga degli eventi, e il test si chiama `TheReaderAnswersWhatTheEventsAnswer`. **Con E4d (#263)**,
-  che toglie la riga degli eventi, non resta nessuna copia: chi delle due PR entra per seconda riunisce `main` e **toglie il test
-  gemello** (il riassunto della classe lo dice), e restano i test del lettore da solo. Il conflitto è sulle stesse righe, e si risolve
-  togliendole tutte;
+- **il test gemello, intero**: confrontava il lettore con le copie dei moduli, e quella dei tour era l'ultima. E4d (#263) è entrato
+  prima di questa PR e ha lasciato solo la riga dei tour (`TheReaderAnswersWhatTheToursAnswer`); dopo il passaggio il confronto
+  proverebbe il lettore con sé stesso, e il test se ne va con il suo `Sorted`, come la nota di E10m prevedeva quando non resta nessuna
+  copia. Restano i test del lettore da solo: il nome unito e tagliato, il nome vuoto, il bianco ai bordi, le tre differenze;
 - **da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt`**: la riga che diceva che i tour non nominano un utente sotto uno. È vero ancora,
   ma ora è il lettore che lo dice, e la riga sopra lo prova;
-- il riassunto della classe dice che i tour sono passati sul lettore.
+- il riassunto della classe dice che nessuna copia è rimasta, e chi è passato quando.
 
 Resta `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay`, che legge ancora `PirepReview.Member`.
 
@@ -63,5 +62,5 @@ Il commento di `web/src/shared/ui/people.ts` che nominava la copia dei tour lo d
 - `05-design-m2.md`, la revisione dei PIREP (il nome letto dai membri) e §10.0 (la parola della persona cancellata): **dal 16 ott 2026**
   i tour leggono i nomi con `MemberNames.ReadAsync` del nucleo e scrivono una persona con `personName` / `col.person`;
   `flightops:people.erased` non c'è più.
-- `00-piano-di-progettazione.md` §16, la riga del lettore dei nomi (nota di E10m): i tour sono passati; con E4d, nessun modulo ha più una
-  copia, e il test gemello se ne va. Versione e changelog.
+- `00-piano-di-progettazione.md` §16, la riga del lettore dei nomi (nota di E10m): i tour sono passati, ultimi; nessun modulo ha più una
+  copia, e il test gemello se n'è andato. Versione e changelog.
