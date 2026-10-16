@@ -4413,7 +4413,7 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
 **Fatta quando**: sul banco, spostando l'orologio, il roster si pubblica e il pilota trova il suo turno e la mail.
 
 **Com'è andata** (14 ottobre 2026, branch `m4/e12-roster-publication`, nata `--no-track` dalla testa di E11b `973f385` (PR #262), **PR
-#«PR»**, **in coda dopo la #262**; **una migrazione**, `AddRosterPublicationAndTransfers`, dopo `AddAtcShifts` di E11b):
+#268**, **in coda dopo la #262**; **una migrazione**, `AddRosterPublicationAndTransfers`, dopo `AddAtcShifts` di E11b):
 
 - **Fatto**:
   1. **La pubblicazione per data** (punto 1): `Event.RosterPublishedAt` (`roster_published_at`) e `Atc/RosterPublication.cs`, la seconda
@@ -4459,12 +4459,44 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
   `uiKit.test.ts` e `DataBlockEndToEndTests` (CONTRIBUTING.md). **Test del modulo di fasi prima, cresciuti con la forma**: le due righe nuove
   dell'anteprima in `EventsErasureTests` (E8b) e in `EventsRegistrationsTests` (E16); `RosterPublishedAt` in `EventsDuplicationTests` (E8b,
   lasciata come una bozza nuova); i due campi nuovi di `PublicEventAtcDto` in `Availability.test.tsx` (E11a); le due risposte nuove di
-  `/events/mine` in `titlesAndEmptyLists.test.tsx` (E4c); le richieste in `EventsTestRows`.
+  `/events/mine` e la testa dell'ATC del pannello in `titlesAndEmptyLists.test.tsx` (E4c); le richieste in `EventsTestRows`.
+- **Preso dai seguiti di E4d** (#263, richiesto da dalberone): la frase della lista vuota delle postazioni di E11a diceva «aprine una», che chi
+  legge soltanto l'ATC non può fare; ora dice che cosa comparirà lì, vera per ogni lettore, nei quattro file di lingua, con un caso vitest di
+  un lettore in sola lettura in `titlesAndEmptyLists.test.tsx`. La frase vuota del roster l'ha corretta E11b sulla sua PR.
 - **Gli endpoint scritti a mano** (piano §16.6): sei — tre verbi del membro (i suoi turni, chiedere, ritirare), due dello staff (approvare,
   rifiutare) e la lettura pubblica del roster.
-- **Trovato, e scritto per chi viene dopo**: *(da completare)*
-- **Verificato, in locale**: *(da completare)*
-- **Non verificato**: *(da completare)*
+- **Le teste di E11b unite** (con un merge, mai un rebase): `12dfb0c`, dopo la revisione della #262 — il lock dell'evento sulla correzione
+  (`ShiftLock`, il commit nell'`AfterSave`, **prima** del quale nessuna mail parte), `controllerBusy`, `Editable` sulle righe — e `7149c6a`,
+  la regola di Carmine dopo l'inizio ([sulla #262](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6173401612): un turno
+  non si toglie, non cambia controllore né postazione, se ne taglia solo la fine) e le postazioni sotto il lock. I conflitti nei file di lingua,
+  in `ShiftEndpoints`, `EventRosterJob`, `atc.tsx`, `rosterWords.ts` e `titlesAndEmptyLists.test.tsx`, ognuno con le due parti tenute.
+- **Trovato, e scritto per chi viene dopo**:
+  1. ⚠️ **Una postazione eliminata con i suoi turni** salva e fa il commit **dentro il lock** di E11b prima che `ShiftNotices` dica a
+     qualcuno «tolto»: con il merge di `7149c6a` il ritorno anticipato della mia `RemoveAsync` saltava il commit del lock, e la chiusura è
+     passata dentro (`RemoveAsync(…, held, …)`).
+  2. ⚠️ **Il taglio di un turno dopo l'inizio** (la regola di Carmine) è un «cambiato» per `ShiftNotices`: la mail parte a chi sapeva del
+     turno, con com'era e com'è. La cessione non si approva dall'inizio, come il cambio di controllore della correzione.
+  3. ⚠️ **Sul banco il pilota non prende un turno della torre di LIRF**: il suo AS3 è sotto il minimo della postazione sulla rete (come aveva
+     trovato E11b); il roster si pubblica lo stesso, tutto scoperto, e nessuna mail parte. La prova si fa con il trainer.
+  4. **Una richiesta di cessione dice `Decidable`** dall'unico handler, come le righe del roster dicono `Editable` (E11b): la pagina non legge
+     i permessi del bootstrap per i pulsanti.
+- **Il «fatta quando», sul banco** (15 ottobre 2026, banco 5146 pubblicato dopo il primo merge di E11b, `E2E_SKIP_PUBLISH=1`, dietro il lock
+  di Mailpit): un evento a cinque giorni con la torre di LIRF e la disponibilità del trainer; chiusura e pubblicazione portate a sei giorni
+  nelle impostazioni. **`events-roster` alle 11:03 UTC** ha proposto e pubblicato nello stesso giro («1 roster(s) proposed with 3 shift(s);
+  1 published; 3 shift(s) told»): tre turni del trainer, `notified_at` scritto su tutti e tre, **una mail `atcShiftAssigned`** in coda alle
+  11:03 e mandata a Mailpit alle 11:04 (`Sent`); la pagina pubblica del roster pubblicato non nomina nessuno a un visitatore. Il giro delle
+  10:48, con il pilota come controllore, aveva pubblicato un roster tutto scoperto (il punto 3 sopra). Letto dalla base del banco e dalle
+  letture dell'API, non a schermo.
+- **Verificato, in locale** (15–16 ottobre 2026, dopo il merge di `7149c6a`): `dotnet build -c Release` senza avvisi; `dotnet ef migrations
+  has-pending-model-changes` senza cambi; unità **1292/1292**; **integrazione intera senza filtro 615/615** (9,1 min); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **779 in 109 file**; `gen:api` senza diff; lo smoke `pnpm exec playwright test
+  --workers=2` **181/181** dietro il suo lock (sul merge di `12dfb0c`); **`pnpm e2e:full`** sul banco `http://127.0.0.1:5146`,
+  `ivaohub_e2e_e12` tolto prima, dietro il lock di Mailpit: **65/65 al primo giro** (13,6 min) sul merge di `12dfb0c`, e di nuovo **65/65 al primo giro** (13,9 min) sul merge di `7149c6a`, dopo l'integrazione; le regole
+  di `core-guard` rifatte a mano in PowerShell dal merge-base con `main` (`c232448`): nessun file del maintainer; tre file del nucleo
+  (`ErasureTests.cs`, `DataBlockEndToEndTests.cs`, `uiKit.test.ts`, i casi del piano e di CONTRIBUTING.md) con le note nuove della coda.
+- **Non verificato**: la CI (la dice la PR; **build-test è rossa a «Restore» su ogni branch** per l'avviso Pkcs, issue #264, finché la #265
+  non è unita); la risposta di Carmine alla domanda della nota; le pagine a schermo e a 375 px (lette con i test e l'e2e, non guardate); un
+  roster con migliaia di turni (le mail sono una per controllore per evento, in un giro); la migrazione su un'installazione vera.
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
 

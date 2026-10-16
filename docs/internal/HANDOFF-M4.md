@@ -7,7 +7,7 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 15 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
-la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #«PR»** verso `main`, **in coda dopo la
+la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, **in coda dopo la
 #262** di E11b: nata `--no-track` dalla sua testa `973f385`, ha unito la sua testa dopo la revisione `12dfb0c` (con `main` a `c232448`).
 La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **Proposta**, con la domanda a Carmine nel primo commento della PR; il
 codice segue le risposte raccomandate. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
@@ -273,7 +273,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E12 (15 ottobre 2026, branch `m4/e12-roster-publication`, PR #«PR»; in coda dopo la #262 di E11b, nata dalla sua testa `973f385`, con la sua testa `12dfb0c` unita)
+### Che cosa ha lasciato E12 (15 ottobre 2026, branch `m4/e12-roster-publication`, PR #268; in coda dopo la #262 di E11b, nata dalla sua testa `973f385`, con la sua testa `12dfb0c` unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E12, «Com'è andata»; **una migrazione**, `AddRosterPublicationAndTransfers`; niente del nucleo —
   solo `schema.d.ts` generato, le colonne di persona in `ErasureTests` e i due conteggi dei blocchi —; una nota nuova,

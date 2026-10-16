@@ -81,7 +81,9 @@ persona.
    - **Decidere** (`POST /api/events/atc/transfers/{id}/approve` e `/refuse`, verbi che il design nomina): `EventAtc.Edit` chiesto all'unico
      handler **sulla richiesta** — negato a chi cede, superadmin compreso — e, per approvare, anche **sul turno com'è dopo**: negato al suo
      nuovo controllore, così nessuno dello staff si dà un turno da solo (come nella correzione). **Approvare**: fino all'inizio dell'evento
-     (dall'inizio un turno non va più a un altro controllore, la risposta di Carmine sull'issue #259); il turno deve essere ancora di chi l'ha
+     (dall'inizio un turno non va più a un altro controllore, la risposta di Carmine sull'issue #259, e dopo l'inizio se ne taglia solo la
+     fine, la sua [risposta sulla #262](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6173401612): il taglio è un
+     «cambiato» per le mail della lettura 3); il turno deve essere ancora di chi l'ha
      chiesto; il nuovo titolare è **quello nominato, o un altro che lo staff sceglie** (obbligatorio per una richiesta «a nessuno»), entrato
      nell'hub, **non su un'altra postazione dello stesso evento in quelle ore** (un rifiuto, la stessa regola della correzione); il resto del
      §4.3 sul nuovo titolare — rating, turni di fila, disponibilità — sono **avvisi** sulla lista delle richieste. Il turno passa al nuovo
