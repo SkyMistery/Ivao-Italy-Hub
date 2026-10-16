@@ -185,6 +185,13 @@ interface CommonStrings {
       readonly options: { readonly tone: Readonly<Record<string, string>> };
     };
   };
+  readonly connections: {
+    readonly title: string;
+    readonly run: string;
+    readonly outcomes: { readonly Ok: string; readonly Failed: string };
+    readonly errors: { readonly AccessDenied: string };
+    readonly migrations: { readonly upToDate: string };
+  };
 }
 
 /**

@@ -1509,7 +1509,7 @@
   },
   "connections": {
     "title": "Collegamenti ai database",
-    "description": "Se l'hub raggiunge il suo database e l'archivio ATC, provato adesso. Si leggono solo una versione e un'ora, e non resta niente.",
+    "description": "Se l'hub raggiunge i suoi database, provato adesso.",
     "run": "Prova i collegamenti",
     "running": "Prova in corso…",
     "failed": "Non è stato possibile eseguire la prova.",

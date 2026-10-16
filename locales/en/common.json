@@ -1509,7 +1509,7 @@
   },
   "connections": {
     "title": "Database connections",
-    "description": "Whether the hub reaches its own database and the ATC archive, tested now. Only a version and a time are read, and nothing is kept.",
+    "description": "Whether the hub reaches its databases, tested now.",
     "run": "Test the connections",
     "running": "Testing…",
     "failed": "The test could not be run.",
