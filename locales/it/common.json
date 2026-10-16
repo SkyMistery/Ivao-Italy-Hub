@@ -1507,6 +1507,44 @@
       "description": "Questa installazione è stata compilata senza moduli."
     }
   },
+  "connections": {
+    "title": "Collegamenti ai database",
+    "description": "Se l'hub raggiunge il suo database e l'archivio ATC, provato adesso. Si leggono solo una versione e un'ora, e non resta niente.",
+    "run": "Prova i collegamenti",
+    "running": "Prova in corso…",
+    "failed": "Non è stato possibile eseguire la prova.",
+    "time": "{{ms}} ms",
+    "serverVersion": "Server: {{version}}",
+    "outcomes": {
+      "Ok": "Raggiunto",
+      "Failed": "Non raggiunto",
+      "NotConfigured": "Non configurato"
+    },
+    "errors": {
+      "AccessDenied": "Accesso negato: l'utente o la sua password sono stati rifiutati, oppure non può leggere quello che l'hub chiede.",
+      "UnknownDatabase": "Il database indicato nella stringa di connessione non esiste.",
+      "MissingView": "Manca la vista che l'hub legge, oppure il suo utente non può vederla.",
+      "Timeout": "Nessuna risposta entro dieci secondi.",
+      "Unreachable": "Il server del database non è raggiungibile.",
+      "NoConnectionString": "La divisione legge un archivio, ma la sua stringa di connessione non è nei segreti.",
+      "Other": "Un altro errore: i dettagli sono nel log dell'hub."
+    },
+    "database": {
+      "title": "Il database dell'hub"
+    },
+    "migrations": {
+      "upToDate": "Aggiornato",
+      "pending_one": "{{count}} migrazione in sospeso: {{names}}",
+      "pending_other": "{{count}} migrazioni in sospeso: {{names}}",
+      "latest": "ultima {{name}}"
+    },
+    "archive": {
+      "title": "L'archivio ATC",
+      "notConfigured": "Questa divisione non legge un archivio ATC (division.json → atcData), quindi non si è aperto niente.",
+      "latest": "Connessione più recente nell'archivio: {{at}} UTC",
+      "empty": "L'archivio risponde, e non contiene ancora connessioni."
+    }
+  },
   "audit": {
     "title": "Registro delle modifiche",
     "description": "Ogni scrittura su una riga che l’hub registra, scritta dall’interceptor di salvataggio e da nient’altro.",

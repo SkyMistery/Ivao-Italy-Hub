@@ -47,6 +47,19 @@ public sealed class VipiAtcActivitySource(
     public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
         ReadAsync(vid, fromUtc, toUtc, cancellationToken);
 
+    /// <summary>
+    /// The start of the newest connection in the archive, or <see langword="null"/> when it holds none: the one question of
+    /// the super administrator's connection check (note 2026-10-16-la-prova-dei-collegamenti), read like every other one
+    /// here, through the view. Unlike the two above it lets the failure through, because telling what went wrong is the
+    /// whole point of asking; and it answers a time, never a row: no VID, no callsign.
+    /// </summary>
+    public async Task<DateTime?> LatestStartAsync(CancellationToken cancellationToken = default)
+    {
+        var database = services.GetRequiredService<VipiShareDbContext>();
+        var latest = await database.Sessions.MaxAsync(row => (DateTime?)row.StartUtc, cancellationToken);
+        return latest is { } at ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : null;
+    }
+
     private async Task<AtcActivity?> ReadAsync(int? vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken)
     {
         if (toUtc < fromUtc)
