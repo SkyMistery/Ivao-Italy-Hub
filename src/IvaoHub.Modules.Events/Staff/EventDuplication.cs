@@ -140,6 +140,51 @@ public static class EventCopy
     }
 
     /// <summary>
+    /// A question of the copy (E17): its place, its type, its words, its choices <b>with the keys they had</b> — the copy's registrations
+    /// start from none, so nothing reads them, and the keys stay the question's own —, and whether it is required, in the copy's care.
+    /// </summary>
+    public static EventQuestion Question(EventQuestion source, Event copy)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+
+        return new EventQuestion
+        {
+            EventId = copy.Id,
+            Ordinal = source.Ordinal,
+            Type = source.Type,
+            Label = source.Label,
+            ChoicesJson = source.ChoicesJson,
+            Required = source.Required,
+            OwnerDepartment = copy.OwnerDepartment,
+            OwnerDepartmentMask = copy.OwnerDepartmentMask,
+        };
+    }
+
+    /// <summary>
+    /// A parallel activity of the copy (E17): its words, its turns and its seats as they were, its window moved by
+    /// <paramref name="difference"/>, in the copy's care. Never a seat: they are the members'.
+    /// </summary>
+    public static EventActivity Activity(EventActivity source, Event copy, TimeSpan difference)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+
+        return new EventActivity
+        {
+            EventId = copy.Id,
+            Name = source.Name,
+            Place = source.Place,
+            FromUtc = source.FromUtc + difference,
+            ToUtc = source.ToUtc + difference,
+            SlotMinutes = source.SlotMinutes,
+            SeatsPerSlot = source.SeatsPerSlot,
+            OwnerDepartment = copy.OwnerDepartment,
+            OwnerDepartmentMask = copy.OwnerDepartmentMask,
+        };
+    }
+
+    /// <summary>
     /// A public slot of the copy: its flight and its place in its rotation as they were, its two times moved by
     /// <paramref name="difference"/>, in the copy's care. Not checked again against the airports and the types the core knows today
     /// (reading 5): it was accepted, and its form checks it at the next save.
@@ -173,7 +218,7 @@ public static class EventCopy
 
 /// <summary>
 /// What a copy writes, read before anything is written: the new event, how far its times move, the rows that come with it — its ATC
-/// positions too (E11a) —, and whether its private slots are generated with it.
+/// positions too (E11a), its questions and its activities (E17) —, and whether its private slots are generated with it.
 /// </summary>
 public sealed record EventDuplicatePlan(
     Event Copy,
@@ -182,12 +227,14 @@ public sealed record EventDuplicatePlan(
     IReadOnlyList<EventRoute> Routes,
     IReadOnlyList<EventSlot> PublicSlots,
     bool GeneratesPrivateSlots,
-    IReadOnlyList<EventAtcPosition>? AtcPositions = null)
+    IReadOnlyList<EventAtcPosition>? AtcPositions = null,
+    IReadOnlyList<EventQuestion>? Questions = null,
+    IReadOnlyList<EventActivity>? Activities = null)
 {
     /// <summary>
     /// The permissions a copy asks besides <c>Events.Edit</c> (reading 8): the area of every row it writes, as deleting an event asks
-    /// the routes' (E4) — its routes, its slots when it carries some, the public ones copied or the private ones generated, and its ATC
-    /// positions (E11a).
+    /// the routes' (E4) — its routes, its slots when it carries some, the public ones copied or the private ones generated, its ATC
+    /// positions (E11a), and its activities (E17, the area of the bookings). Its questions are the event's own area.
     /// </summary>
     public IReadOnlyList<string> AreasWritten
     {
@@ -200,7 +247,7 @@ public sealed record EventDuplicatePlan(
                 areas.Add(EventsPermissions.RoutesEdit);
             }
 
-            if (PublicSlots.Count > 0 || GeneratesPrivateSlots)
+            if (PublicSlots.Count > 0 || GeneratesPrivateSlots || Activities is { Count: > 0 })
             {
                 areas.Add(EventsPermissions.BookingsEdit);
             }
@@ -218,8 +265,9 @@ public sealed record EventDuplicatePlan(
 /// <summary>
 /// «Duplicate» (design M4 §2.3-bis, E8b; note 2026-10-11-duplica-e-la-cancellazione-negli-eventi §1): a new start and a new address,
 /// and the hub makes <b>a draft</b> with every time moved by the same difference, copying the event's settings, its description and its
-/// banner, its airports with their capacity, its routes, its ATC positions (E11a) and — if the staff choose — its public slots with their
-/// rotations. <b>Nothing of the members</b>: no booking, no availability. One endpoint, one transaction.
+/// banner, its airports with their capacity, its routes, its ATC positions (E11a), its questions and its activities (E17) and — if the staff
+/// choose — its public slots with their rotations. <b>Nothing of the members</b>: no booking, no availability, no registration, no seat. One
+/// endpoint, one transaction.
 /// <para><b>The private slots are generated again</b>, never copied (Carmine's answer 1 on issue #248, A′): in
 /// the same transaction, by the generator of E7, when the copy's public slots are already there — it copied them, or the event takes
 /// none (an MSE) —; otherwise «Generate the private slots» makes them on the new event once the new table is loaded, since private
@@ -275,7 +323,28 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
             .ThenBy(position => position.Id)
             .ToListAsync(cancellationToken);
 
-        return new EventDuplicatePlan(copy, copy.StartsAtUtc - source.StartsAtUtc, airports, routes, slots, generates, positions);
+        // An event in person (E17): its questions in the order of the form, its activities by the hour they start.
+        var questions = await database.Questions.AsNoTracking()
+            .Where(question => question.EventId == source.Id)
+            .OrderBy(question => question.Ordinal)
+            .ThenBy(question => question.Id)
+            .ToListAsync(cancellationToken);
+        var activities = await database.Activities.AsNoTracking()
+            .Where(activity => activity.EventId == source.Id)
+            .OrderBy(activity => activity.FromUtc)
+            .ThenBy(activity => activity.Id)
+            .ToListAsync(cancellationToken);
+
+        return new EventDuplicatePlan(
+            copy,
+            copy.StartsAtUtc - source.StartsAtUtc,
+            airports,
+            routes,
+            slots,
+            generates,
+            positions,
+            questions,
+            activities);
     }
 
     /// <summary>
@@ -316,6 +385,8 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         database.Routes.AddRange(plan.Routes.Select(route => EventCopy.Route(route, copy)));
         database.Slots.AddRange(plan.PublicSlots.Select(slot => EventCopy.PublicSlot(slot, copy, plan.Difference)));
         database.AtcPositions.AddRange((plan.AtcPositions ?? []).Select(position => EventCopy.AtcPosition(position, copy, plan.Difference)));
+        database.Questions.AddRange((plan.Questions ?? []).Select(question => EventCopy.Question(question, copy)));
+        database.Activities.AddRange((plan.Activities ?? []).Select(activity => EventCopy.Activity(activity, copy, plan.Difference)));
         await database.SaveChangesAsync(cancellationToken);
 
         string? notGenerated = null;

@@ -1790,6 +1790,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventActivitiesList"];
+        put?: never;
+        post: operations["EventActivitiesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/activities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventActivitiesGet"];
+        put: operations["EventActivitiesUpdate"];
+        post?: never;
+        delete: operations["EventActivitiesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/registrations": {
         parameters: {
             query?: never;
@@ -1849,6 +1881,70 @@ export interface paths {
         put: operations["EventsRegister"];
         post?: never;
         delete: operations["EventsWithdrawRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventSeatsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/seats/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventSeatsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsTakeSeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/seats/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["EventsGiveSeatBack"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5095,6 +5191,56 @@ export interface components {
          * @enum {unknown}
          */
         ErrorCategory: "Info" | "Warning" | "Dangerous";
+        /**
+         * @description A parallel activity as its list and its form show it (design M4 §4-bis.1): its words, its window, the length of a turn, the seats of
+         *     each, how many turns it has, and `SeatsTaken` — how many seats the members hold in all its turns, read in the list, the numbers of
+         *     the statistics once the event is past its retention (InPersonRetention); none on a row read alone.
+         */
+        EventActivityDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            name: components["schemas"]["LocalizedOfstring"];
+            place: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            /** Format: int32 */
+            slotMinutes: number;
+            /** Format: int32 */
+            seatsPerSlot: number;
+            /** Format: int32 */
+            turns: number;
+            /** Format: int32 */
+            seatsTaken: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on an activity. The event is chosen when it is created and never changes; the care is the event's, taken before
+         *     the permission is asked. An empty place is none: the event's venue.
+         */
+        EventActivityWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            place: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            fromUtc: null | string;
+            /** Format: date-time */
+            toUtc: null | string;
+            /** Format: int32 */
+            slotMinutes: number;
+            /** Format: int32 */
+            seatsPerSlot: number;
+            /** Format: date-time */
+            rowVersion: string;
+        };
         /** @description An airport of an event as its list and its form show it (design M4 §1.3). */
         EventAirportDto: {
             /** Format: int64 */
@@ -5482,6 +5628,28 @@ export interface components {
             remarks: null | components["schemas"]["LocalizedOfstring"];
             /** Format: date-time */
             rowVersion: string;
+        };
+        /**
+         * @description A seat as the staff of an event read it in the tab «Seats» of its page (design M4 §7.2, E17): the member, named the way the core names a
+         *     person, the activity with its words — which the page writes in the language on screen —, the turn, and when it was taken. The names are
+         *     read in the list, one query a page; a row read alone has none.
+         */
+        EventSeatDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            member: components["schemas"]["EventMemberDto"];
+            /** Format: int64 */
+            activityId: number;
+            activity: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date-time */
+            createdAt: string;
         };
         /** @description A slot of an event as its list and its form show it (design M4 §1.5). */
         EventSlotDto: {
@@ -6412,7 +6580,8 @@ export interface components {
         /**
          * @description A registration as its member reads it, on `/events/mine` and on the event's page: the event with its questions, the answers as
          *     the form holds them — to draw it again for a change, and for the page to write in words in the language on screen (Carmine's answer 6
-         *     on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2).
+         *     on #255) —, and whether it can still be changed or withdrawn: until the event starts (§4-bis.2). And since E17 the seats the member
+         *     holds in the activities, by their start.
          */
         MyRegistrationDto: {
             /** Format: int64 */
@@ -6435,6 +6604,23 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            seats: components["schemas"]["MySeatDto"][];
+        };
+        /**
+         * @description A seat as its member reads it, under their registration on `/events/mine` and on the event's page: the activity with its words —
+         *     which the page writes in the language on screen —, when the turn starts and ends.
+         */
+        MySeatDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            activityId: number;
+            activity: components["schemas"]["LocalizedOfstring"];
+            place: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
         };
         /**
          * @description A shift as its controller reads it on `/events/mine` and in the block `events.myEvents` (§4.4, §7.1, E12): the event, the
@@ -6972,6 +7158,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfEventActivityDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventActivityDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfEventAirportDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventAirportDto"][];
@@ -7159,6 +7368,29 @@ export interface components {
         PagedResultOfEventRouteDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventRouteDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventSeatDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventSeatDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7969,6 +8201,21 @@ export interface components {
             label: components["schemas"]["LocalizedOfstring"];
         };
         /**
+         * @description A parallel activity of an event in person as its page shows it (§4-bis, §7.1, E17): its words, how long a turn lasts and how many seats
+         *     it has, and each turn with the seats still free — to whoever reads the page, never who took them, as a slot is free or taken.
+         */
+        PublicActivityDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+            place: null | components["schemas"]["LocalizedOfstring"];
+            /** Format: int32 */
+            slotMinutes: number;
+            /** Format: int32 */
+            seatsPerSlot: number;
+            turns: components["schemas"]["PublicTurnDto"][];
+        };
+        /**
          * @description The aircraft something admits, as a reader needs them: the types written on it, and the names of the groups — a
          *     visitor has no group list to look an identifier up in. Empty admits every aircraft.
          */
@@ -8116,6 +8363,7 @@ export interface components {
             venue: null | components["schemas"]["LocalizedOfstring"];
             questions: components["schemas"]["PublicQuestionDto"][];
             atc: null | components["schemas"]["PublicEventAtcDto"];
+            activities: components["schemas"]["PublicActivityDto"][];
         };
         /** @description A route of an event as its page shows it (design M4 §1.4): the two airports, the route to file, the remarks. */
         PublicEventRouteDto: {
@@ -8440,6 +8688,15 @@ export interface components {
             parent: null | components["schemas"]["PublicParentDto"];
             subtours: components["schemas"]["PublicSubtourDto"][];
             department: components["schemas"]["Department"];
+        };
+        /** @description A turn of an activity: when it starts and ends, and how many of its seats are free. */
+        PublicTurnDto: {
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: int32 */
+            free: number;
         };
         /**
          * @description Editorial state. The public site only ever reads published rows.
@@ -8949,6 +9206,13 @@ export interface components {
              *     query rather than of the page, and every other list of the hub would have carried a null.
              */
             notice: null | string;
+        };
+        /** @description What a member sends to take a seat (design M4 §4-bis.2, E17): the activity, and the start of the turn they want. */
+        SeatRequest: {
+            /** Format: int64 */
+            activityId: number;
+            /** Format: date-time */
+            startsAtUtc: null | string;
         };
         /**
          * @description How one section of a page changed between what is online and what is ready.
@@ -15427,6 +15691,163 @@ export interface operations {
             };
         };
     };
+    EventActivitiesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventActivityDto"];
+                };
+            };
+        };
+    };
+    EventActivitiesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventActivityWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventActivityDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventActivitiesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventActivityDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventActivitiesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventActivityWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventActivityDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventActivitiesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     EventRegistrationsList: {
         parameters: {
             query?: {
@@ -15559,6 +15980,137 @@ export interface operations {
             header?: never;
             path: {
                 eventId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventSeatsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventSeatDto"];
+                };
+            };
+        };
+    };
+    EventSeatsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSeatDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsTakeSeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeatRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MySeatDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsGiveSeatBack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
             };
             cookie?: never;
         };

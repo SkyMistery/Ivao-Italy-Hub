@@ -39,7 +39,7 @@ public static class AgentEndpoints
         var agent = app.MapGroup(Pattern)
             .WithTags("FlightOpsAgent")
             .RequireAuthorization(PersonalTokenPolicy.For(AgentContract.Audience))
-            .AddEndpointFilter(AgentContract.RequireVersionAsync);
+            .AddEndpointFilter(AgentContract.Version.RequireAsync);
 
         agent.MapGet("/pireps", async (bool? pending, AgentDesk desk, HttpContext http) =>
                 TypedResults.Ok(await desk.QueueAsync(pending ?? false, http.RequestAborted)))

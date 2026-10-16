@@ -4395,8 +4395,11 @@ contrario li fa cadere.
   fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build Release 0 avvisi, unità **1312/1312**,
   integrazione intera da sola **624/624** al primo giro (12 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**)
   verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `2938ae80`: passa.
+- **Unito `main` a `eefb24a`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t2]: E17, #271), in conflitto solo in
+  `HANDOFF-M4.md`, con E10t in cima ed E17 sotto. Il diff della fase fuori dai documenti è lo stesso. RISULTATO-VERIFICA-3
 
 [m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
+[m277t2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6224649688
 
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
@@ -5235,4 +5238,92 @@ Design §4-bis.1, §4-bis.2, §2.3-bis, §11; nota `gli-eventi-in-presenza`. Bra
 cancellati dopo il periodo, le somme restano. Il giro completo verde.
 **Fatta quando**: il giro completo di M4c passa in locale e in CI.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271, la seconda e ultima fase di **M4c**, in coda dopo la #268 di E12 e la #269 di E10s; nata da `main` a `c232448`,
+con E16 ed E11a; **una migrazione**, `AddInPersonActivities`, scritta in locale e **rifatta sopra quella di E12** prima del push, come
+chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
+
+- **Fatto**:
+  1. **`evt_activities` ed `evt_activity_bookings`** (punto 1), una migrazione. `EventActivity` è una riga dello staff dell'evento
+     (`IEventChild`, `[Audited]`, lo scope dell'evento) **nell'area `EventBookings`** (la domanda 1 della nota, raccomandata (A): il
+     catalogo §6.1, §4-bis.1 e la nota `gli-eventi-in-presenza` §2.4 contro §4-bis.2 e la stessa nota §2.5): nome e luogo tradotti, la
+     finestra dentro l'evento, la durata del turno (5–480 minuti), i posti per turno (1–100); **i turni sono un calcolo** — quelli che
+     stanno interi nella finestra (`EventActivity.Turns`), al più 200 —, non righe. `EventActivitySeat` è la riga del membro
+     (`ISubmittedByMembers`, `IHasStakeholder`, `IVisible` ai membri, **`[WithdrawnByStakeholder]`**: un posto non porta decisioni dello
+     staff, detto nella nota), con l'attività, l'evento, il membro e l'inizio del turno; nessuna colonna di parole, quindi niente
+     `[ErasedWith]`. Una chiave verso l'attività (`Restrict`) e un indice univoco `(activity_id, starts_at_utc, vid)`.
+  2. **Il posto sotto il blocco** (`Registrations/MemberSeats.cs`): `POST /api/events/mine/seats` e `DELETE /api/events/mine/seats/{id}`,
+     in una transazione `READ COMMITTED`: prima la riga dell'iscrizione del membro `FOR UPDATE` (serializza le richieste dello stesso
+     membro e il suo ritiro), poi **la riga dell'attività `FOR UPDATE`**, sotto cui si contano i posti del turno; nessun turno sovrapposto
+     fra le attività dell'evento (due turni che si toccano no); solo un iscritto (`events:errors.seatNotRegistered`), fino all'inizio.
+     Ritirarsi, «Togli» dello staff e la cancellazione portano via i posti con l'iscrizione (`RegistrationSeats`). **La mail**
+     `registrationReceived` dice anche i turni (`EventsMail.SeatLines`, sotto un titolo che chi non ne ha non legge) e parte a ogni posto
+     preso o ridato (la lettura 12 di E16).
+  3. **Lo staff**: `/api/events/activities` (motore CRUD, `EventBookings.View`/`.Edit`) con i posti presi in numeri, e `/api/events/seats`
+     (sola lettura, il membro da `MemberNames` e `col.person`); le schede «Attività» e «Posti», il form di un'attività su una pagina sua.
+     Un'attività con posti non si elimina (`activityHasSeats`, la domanda 2 raccomandata) e si cambia solo così che ogni posto resti su
+     un suo turno (`activitySeatsTaken`); l'interruttore «in presenza» non si spegne con attività.
+  4. **La pagina dell'evento**: le attività con i turni e i posti liberi a chiunque, mai chi (`PublicEventDto.Activities`, nella lettura
+     della pagina); il membro iscritto prende e ridà i posti nella sezione «Iscrizione» (`screens/ActivityTurns.tsx`), e li ritrova in
+     `/events/mine` con «Ridallo» (`MyRegistrationDto.Seats`). Le liste mandano dati, la pagina scrive le parole (la risposta 6 di
+     Carmine sulla #255).
+  5. **«Duplica»** (punto 3) copia le domande — **con le chiavi delle scelte com'erano** — e le attività spostate della stessa differenza;
+     chi duplica un evento con attività ha anche `EventBookings.Edit` (`EventDuplicatePlan.AreasWritten`).
+  6. **`events-retention`** (punto 2; nasce qui, M4b non c'è ancora): una volta al mese, il primo alle 04:40, **in UTC** (il trigger lo
+     dice, `EventsRetentionJob.TriggerName`), con la riga del giro e `FinishedAt` su ogni uscita (E10j). Decide dalle date
+     (`InPersonRetention.IsDue`: finito, e la fine da almeno `inPersonRetentionMonths` mesi); per ogni evento, in un salvataggio, scrive in
+     `evt_event_stats` gli iscritti, **le somme** (`RegistrationSums.Of`) e i posti per attività, poi cancella posti e iscrizioni
+     attraverso l'interceptor e — con **E10s** (#269, la risposta 3 di Carmine sull'issue #267) — **svuota le risposte nelle copie dell'audit**
+     (`AuditRedaction.EmptyDeletedAsync<EventRegistration, long>`), tutto in una transazione; i posti non hanno colonne segnate (lettura 7)
+     e non si chiamano. **Le liste dello staff rileggono le somme e i posti dalle statistiche** per un evento oltre la conservazione.
+  7. **La cancellazione dei dati di una persona**: un posto di un evento non finito si cancella, uno di un evento finito resta con lo
+     pseudonimo; due righe nuove dell'anteprima (`seatsToCome`, `seatsOver`). `ErasureTests` con `evt_activities.created_by`, `.updated_by`,
+     `evt_activity_bookings.vid`.
+  8. **I test**: integrazione `EventsActivitiesTests` (8, 13 dopo la revisione; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
+     (solo un iscritto, un turno, libero, non sovrapposto, ridato), **l'ultimo posto preso da due membri nello stesso istante** (una
+     transazione del test tiene la riga dell'attività e il posto non confermato, la richiesta aspetta in `INNODB_TRX`, poi legge «turno
+     pieno»; **provato al contrario**: senza il `FOR UPDATE` la richiesta prende il posto, 201), i posti che vanno con l'iscrizione e
+     l'attività con posti che resta, «Duplica», la conservazione, **un'iscrizione tolta dalla conservazione che non lascia risposte
+     nell'audit** (provato al contrario: senza la chiamata di E10s il testo resta), la cancellazione —; unità `EventsActivitiesTests` (7: i turni, la
+     conservazione, le statistiche, la copia, la mail, il trigger in UTC). Il giro completo `web/e2e/full/events-m4c-round.spec.ts` (slug
+     `evt-test-e2e-e17-…`).
+- **Scelte e scostamenti** (nota nuova `decisions/2026-10-15-le-attivita-e-la-conservazione-breve.md`, **decisa** da Carmine sull'[issue
+  #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A) l'area `EventBookings` delle attività, (A)
+  un'attività con posti non si elimina, (B) l'audit della conservazione con una piccola fase del nucleo prima, **E10s**, dopo la quale E17 si
+  mette in coda e chiama da `events-retention`): le letture 1–22 della nota.
+  **Una lettura in più del design**: le liste dello staff rileggono le somme dalle statistiche (lettura 20), perché «le somme restano»
+  sia vero anche sulla pagina prima della scheda «Statistiche» di E13a. **`events-release` resta com'è**: il suo fuso (la riga di E10j) lo
+  dice E4d (#263, diretta su `main`, con `EventsJobTriggersTests`), che arriva con `main`.
+- **Test condivisi toccati** (i casi del piano): `ErasureTests` (le tre colonne di persona). **Test del modulo di fasi prima, cresciuti
+  con la forma**: le due righe dell'anteprima in `EventsErasureTests` (E8b) ed `EventsRegistrationsTests` (E16), i posti in
+  `EventsTestRows`, `activities` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, `titlesAndEmptyLists.test.tsx`,
+  lo smoke `events-public.spec.ts`).
+- **Gli endpoint scritti a mano** (piano §16.6): due verbi del membro, prendere e ridare un posto.
+- **Trovato dal giro completo, dopo il merge di E12**: la pagina «Nuova attività» si rompeva appena aperta, perché dopo **E10p** `SchemaForm`
+  disegna un istante solo con il fuso della divisione accanto (`division={{ defaultLocale, timezone }}`, come il form delle postazioni), e
+  nessun test disegnava il form; ora lo passa, e lo prova il vitest `activityForm.test.tsx`. ⚠️ **Un `e2e:full` che gira mentre si fa un
+  merge** cade sulle spec che leggono `locales/<lang>/events.json` con i marcatori di conflitto: un giro va rifatto, a file fermi.
+- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E12 in coda, E13a–E15b da fare).
+
+**Dopo la revisione** (16 ottobre 2026, sulla #271: [i rilievi del revisore][rv271] e [la risposta di Carmine][a271] — sì alla lettura 7, sì alla
+11 come limite accettato della risposta 2A, sì alla 13, scritte nella nota):
+
+1. **Le liste leggono le statistiche solo quando la conservazione è girata** (punto 1): oltre la data, con le statistiche **e senza più
+   iscrizioni né posti** (`InPersonRetention.RetiredAsync`); E13a scriverà le statistiche alla fine dell'evento, e fino al giro del mese
+   le righe sono quelle vere. Il test della conservazione scrive prima le statistiche a zero e trova le somme delle righe.
+2. **«Ridai» un posto prende il blocco dell'iscrizione**, come ogni cambio dei posti del membro, e **il ritiro rimette il `catch`** di
+   `DbUpdateConcurrencyException` che `main` aveva (punto 2): due test con una transazione tenuta, `ASeatGivenBackWhileItsMemberWithdrawsIsNotFound`
+   (la richiesta aspetta sul blocco dell'iscrizione) e `AWithdrawalWhileASeatIsGivenBackPastTheLockIsNotFound` (404, non 409).
+3. **Eliminare un'attività** mentre qualcuno prende un posto risponde `activityHasSeats`: la `Delete` salva da sé e traduce il rifiuto della
+   chiave (`DatabaseErrors.StillReferenced`, punto 3).
+4. **Spostare o accorciare l'evento** oltre una sua attività è rifiutato (`events:errors.eventActivitiesOutside`, su `startsAtUtc` o
+   `endsAtUtc`, punto 4); un'attività cambiata così che un posto ne esca è rifiutata sul campo che lo sposta (`fromUtc`, `toUtc`, `slotMinutes`).
+5. **Un istante senza fuso** mandato dal client si legge in UTC (`MemberSeats.Utc`, punto 5).
+6. **Un evento che fallisce nella conservazione** è scritto nel log e lasciato al giro dopo, gli altri vanno avanti (punto 6, come
+   `events-roster`).
+7. **La forma della riga di un turno e «UTC»** stanno nei file di lingua (`mail.events.registrationReceived.seatLine`, `…seatLinePlace`, punto 7).
+8. **I test mancanti** (punto 8): il posto dopo l'inizio e su un evento annullato, ridato dopo l'inizio e da un evento annullato; l'attività
+   cambiata così che un posto ne esca. `EventsActivitiesTests` passa a 13. **Provato al contrario**, ognuno sul codice di prima: i due della
+   corsa, l'eliminazione (500), lo spostamento (200), le statistiche (0 invece di 2).
+
+[rv271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583
+[a271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164
