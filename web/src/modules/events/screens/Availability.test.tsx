@@ -35,6 +35,8 @@ const open: PublicEventAtcDto = {
   open: true,
   minimumRating: 'XR3',
   ratedEnough: null,
+  rosterPublishesAtUtc: '2099-11-19T17:00:00Z',
+  rosterPublished: false,
 };
 
 function eventWith(atc: PublicEventAtcDto): PublicEventDto {

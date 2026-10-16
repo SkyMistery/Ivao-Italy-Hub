@@ -128,6 +128,12 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
     /// <summary>When the roster was proposed, once (§4.3): the job reads it rather than the hour it runs at.</summary>
     public DateTime? RosterProposedAt { get; set; }
 
+    /// <summary>
+    /// When the roster was published, once (§4.4, E12): at the start less <c>rosterPublishDays</c>, by <c>events-roster</c>. Once written it
+    /// stays, whatever the start or the setting say after (note 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 1).
+    /// </summary>
+    public DateTime? RosterPublishedAt { get; set; }
+
     /// <summary>When the checks after the event were done (§5.1): the same rule.</summary>
     public DateTime? AfterDoneAt { get; set; }
 

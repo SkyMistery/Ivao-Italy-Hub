@@ -10,13 +10,13 @@ public static class EventsNotifications
 {
     /// <summary>
     /// An event was cancelled, with its note (§2.3; E3a). Its audience is whoever booked a slot, has a shift or registered: they
-    /// arrive with their rows — the pilots who booked with E6a, the controllers with E12, whoever registered with E16.
+    /// arrive with their rows — the pilots who booked with E6a, whoever registered with E16, the controllers with a shift with E12.
     /// </summary>
     public const string EventCancelled = "events.eventCancelled";
 
     /// <summary>
     /// The start or the end of an event changed (§8.3; E3b): the same audience as a cancellation, who arrives with the same rows —
-    /// the pilots who booked since E6a, whoever registered since E16.
+    /// the pilots who booked since E6a, whoever registered since E16, the controllers with a shift since E12.
     /// </summary>
     public const string EventChanged = "events.eventChanged";
 
@@ -47,6 +47,33 @@ public static class EventsNotifications
     /// </summary>
     public const string RegistrationRemoved = "events.registrationRemoved";
 
+    /// <summary>
+    /// A controller's shifts of a roster (§4.4; E12): at its publication, one mail per controller per event with their shifts, and after it
+    /// each shift added to them or handed over to them, at once.
+    /// </summary>
+    public const string AtcShiftAssigned = "events.atcShiftAssigned";
+
+    /// <summary>A shift of a published roster moved to other hours or another position (§4.4; E12): to its controller, as it was and as it is.</summary>
+    public const string AtcShiftChanged = "events.atcShiftChanged";
+
+    /// <summary>A shift of a published roster taken away, or given to somebody else (§4.4; E12): to whoever held it and knew it.</summary>
+    public const string AtcShiftRemoved = "events.atcShiftRemoved";
+
+    /// <summary>The staff approved or refused a request to hand a shift over (§4.4-bis; E12): to whoever asked, with the staff's note.</summary>
+    public const string AtcShiftTransferDecided = "events.atcShiftTransferDecided";
+
     public static readonly IReadOnlyList<string> All =
-        [EventCancelled, EventChanged, BookingRemoved, BookingChanged, BookingReminder, RegistrationReceived, RegistrationRemoved];
+    [
+        EventCancelled,
+        EventChanged,
+        BookingRemoved,
+        BookingChanged,
+        BookingReminder,
+        RegistrationReceived,
+        RegistrationRemoved,
+        AtcShiftAssigned,
+        AtcShiftChanged,
+        AtcShiftRemoved,
+        AtcShiftTransferDecided,
+    ];
 }
