@@ -38,7 +38,7 @@ public sealed class TourRetentionJob(
 {
     public const string JobName = "flightops-tour-retention";
 
-    /// <summary>The first day of every month at 04:20 on the server's clock (Quartz reads local time), after the core's media job.</summary>
+    /// <summary>The first day of every month at 04:20 in the division's zone, after the core's media job.</summary>
     public const string Cron = "0 20 4 1 * ?";
 
     private const int MaxMessageLength = 2000;
