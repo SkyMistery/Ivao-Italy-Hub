@@ -323,7 +323,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E13b (16 ottobre 2026, branch `m4/e13b-registers`; nata dalla testa di E13a `8dd3092f`, in coda dopo la #278 di E13a, con la sua testa nuova `f5333cf` unita)
+### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, in coda dopo la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, `main` a `0ce4802`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
   `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una

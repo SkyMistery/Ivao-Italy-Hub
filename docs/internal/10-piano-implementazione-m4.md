@@ -5036,8 +5036,8 @@ Design §3.7, §4.5, §7.2 (`/staff/events/controllers`), §7.3; note `il-roster
 resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limiti per fascia e per evento; una voce tolta non conta.
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
-**Com'è andata** (16 ottobre 2026; branch `m4/e13b-registers`, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo la #278 di
-E13a, con la sua testa nuova `f5333cf` unita; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con
+**Com'è andata** (16–17 ottobre 2026; branch `m4/e13b-registers`, PR #283, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo
+la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, `main` a `0ce4802`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con
 le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259)):
 
 - **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
@@ -5092,7 +5092,10 @@ le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/S
   `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit: **69/69 al primo giro** (14,9 min; due giri prima avevano 68/69, rossa solo la spec nuova per due asserzioni sue — la descrizione sotto il breadcrumb, due `h1` nella pagina —, corrette e la spec da sola 6/6 con `--repeat-each 3`); `core-guard.sh` con Git Bash dal
   merge-base con `main` (`2938ae8`): passa, nessun file del maintainer. **Dopo il merge della testa di E13a `c0bc1bd`** (con `main` a
   `85d15a7` ed E10t `ee9772c`; nessun conflitto, niente del modulo): build senza avvisi, unità **1338/1338**, integrazione intera da sola
-  **654/654** (16,4 min), `gen:api` senza diff, `core-guard.sh` dal merge-base `85d15a7`: passa.
+  **654/654** (16,4 min), `gen:api` senza diff, `core-guard.sh` dal merge-base `85d15a7`: passa. **Dopo il merge della testa `e073bff`**
+  (con `main` a `0ce4802`: E10t e la #281; nessun conflitto, niente del modulo): build senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1338/1338**, integrazione intera da sola **660/660** (10 min), `pnpm test` con `--maxWorkers=2` **798 in 114 file**, `gen:api`
+  senza diff, lo smoke **183/183**, `core-guard.sh` dal merge-base `0ce4802`: passa (di E13b solo i due conteggi dei blocchi).
 - **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job); i limiti e il
   registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
   usa la virgola italiana (non toccato).
