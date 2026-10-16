@@ -4120,6 +4120,14 @@ pubblicata su sua istruzione): **sì**, una piccola fase del nucleo con la sua n
   chiavi) e `pnpm build` verdi, `pnpm gen:api` senza differenze; `pnpm test` (`--maxWorkers=4`) **772/772** in 107 file; la smoke
   **181/181** (1,0 minuti); `core-guard` da `c232448`: nove file del nucleo con la nota nuova — passa. `e2e:full` non rifatta: il
   merge ha toccato solo un documento della fase.
+- **Dopo aver unito `main` a `e041bb0`** (16 ottobre, su richiesta del revisore, perché `build-test` faccia il restore: E10q, il Pkcs
+  10.0.13; due conflitti, solo documenti: la cima di `HANDOFF-M4.md`, con E10p sopra e E10q sotto, e qui, dove E10p e E10q seguono
+  E10o): `git diff origin/main...HEAD` ancora dei soli dodici file della fase. Rifatti: `dotnet restore IvaoHub.sln --force
+  --no-http-cache` verde e `dotnet list … package --vulnerable --include-transitive` senza pacchetti vulnerabili; `dotnet build -c
+  Release` 0 avvisi, unità **1277/1277**; `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm i18n:check` e `pnpm build` verdi,
+  `pnpm gen:api` senza differenze; `pnpm test` (`--maxWorkers=4`) prima 769/772 — tre casi di `features/content/BodyEditor.test.tsx`
+  (del nucleo, non toccato dalla fase) oltre i 5 secondi sotto carico —, il file da solo 6/6, poi la suite intera **772/772**; la smoke
+  **181/181** (1,4 minuti); `core-guard` da `e041bb0` — passa.
 - **Non verificato**:
   - la CI (la dice la PR);
   - l'integrazione .NET (nessun file del server cambia);
