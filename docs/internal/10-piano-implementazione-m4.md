@@ -5016,9 +5016,54 @@ Design §3.7, §4.5, §7.2 (`/staff/events/controllers`), §7.3; note `il-roster
 resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limiti per fascia e per evento; una voce tolta non conta.
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (16 ottobre 2026; branch `m4/e13b-registers`, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo la #278 di
+E13a, con la sua testa nuova `f5333cf` unita; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta**, undici letture e tre scelte,
+la domanda per Carmine data al coordinatore):
 
-### E14a — Il PIREP di supporto
+- **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
+  limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.
+- **Le decisioni sui turni** (`Registers/RegisterDecisions.cs`, `POST /api/events/atc/shifts/{id}/attendance`): su un evento finito e non
+  annullato, `Unknown` e `NoShowProposed` → `Attended`, `NoShow` o `Excused`; `NoShow` → solo `Excused` («togli il no-show», anche dopo);
+  `Attended` ed `Excused` definitivi; la nota obbligatoria per giustificare. `EventAtc.Edit` all'unico handler sul turno, quindi mai sul
+  proprio, il superadmin compreso, e lo staff di un FIR sul suo FIR: `DeniedToStakeholder` c'era da E2, nessun `if` del modulo. Sotto il
+  blocco della riga dell'evento; un cambio insieme è un 409.
+- **Scostamento dalla prima stesura della nota (lettura 1)**: il verbo doveva riscrivere le statistiche nello stesso salvataggio; il test
+  d'integrazione ha mostrato che il guardiano lo rifiuta all'AOD, che non scrive l'area `Events`. Le statistiche restano a «Ricalcola» di
+  E13a, come diceva la sua consegna; la nota e la domanda sono corrette (detto al coordinatore).
+- **La penalità** (`RosterData.PenaltiesAsync`) legge i no-show **confermati** degli altri eventi con `noShowWeight`, e i conti vengono da
+  una funzione sola, `ControllerRegister.CountsAsync`, la stessa del registro.
+- **I registri**: tre letture scritte a mano (`Registers/RegisterEndpoints.cs`) — dei controllori (`EventAtc.View`), dei piloti
+  (`EventBookings.View`), il registro del membro (`/api/events/mine/record`) —, con i dettagli nelle liste del motore: i turni filtrati per
+  controllore (`filter[controllerVid]`, nuovo), le prenotazioni per pilota (`filter[bookerVid]`, nuovo). Le righe delle due liste portano ora
+  il titolo dell'evento, la nota e se il lettore può decidere (`Decidable`, `Excusable`), in coda ai DTO.
+- **«Togli» di una prenotazione non volata** (`POST /api/events/bookings/{id}/excuse`): verificata, non volata, una volta, con la nota.
+  **`EventBookings.Edit` è diventato `DeniedToStakeholder`** (la scelta (A) della lettura 6, raccomandata, aspetta Carmine).
+- **I limiti** (`Registers/BookingLimits.cs`, puri; `PilotRegister.LimitsAsync`) nei tre verbi di `PilotBookings`, sotto il blocco del pilota
+  dopo la compatibilità: fasce fisse dall'inizio dell'evento sull'orario dello slot allo scalo dell'evento, con le prenotazioni della stessa
+  richiesta (tratte di una rotazione, partenza collegata); i limiti dell'evento uno a uno sopra le impostazioni. Il rifiuto ha due chiavi su
+  `slotId`; numeri e «fino a quando» li legge la pagina dal registro del membro (`LimitsNotice`), perché `Refusals` porta solo chiavi.
+- **Il blocco `events.staffQueue`** (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`): per evento, no-show da confermare, turni
+  `Unknown` di un evento chiuso, cessioni da decidere, ognuno solo dove l'unico handler dà `EventAtc.Edit` al lettore. I conteggi dei blocchi
+  più uno (`uiKit.test.ts` 46, `DataBlockEndToEndTests` 21).
+- **Le pagine**: `/staff/events/controllers[/$vid]`, `/staff/events/pilots[/$vid]` (`screens/registers.tsx`, voci di menu nuove), la sezione
+  «Esiti» nell'ATC di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti nei dialog di
+  prenotazione (`screens/limits.ts`); le cinque impostazioni nel form generato e i tre limiti nel form dell'evento.
+- **Test di fasi prima cresciuti con la forma**: `EventsSettingsTests` (E2: tre permessi negati all'interessato), `EventsAtcTests` (E11a: il
+  capo di un FIR ha anche il registro dei controllori nel menu), `schemas.test.ts` (E2), `eventForm.test.ts` (E3a),
+  `titlesAndEmptyLists.test.tsx` (E4c: la risposta del registro del membro); nel nucleo i due conteggi dei blocchi.
+- **I test**: integrazione `EventsRegistersTests` (4: nessuno decide il proprio turno, superadmin compreso, e la coda conta solo quelli degli
+  altri; un no-show confermato, poi tolto con la nota, resta tolto, il registro e il registro del controllore lo dicono, l'audit tiene chi;
+  il pilota oltre la soglia non supera i limiti per fascia e per evento, l'evento con i suoi limiti ne prende due in una fascia, «fino a
+  quando»; una voce tolta non conta e nessuno toglie la propria); unità `EventsRegistersTests` (7: la penalità 0,08 e 0,25 e il peso, le
+  transizioni, le fasce, i limiti dell'evento, «fino a quando», le cinque impostazioni); il giro `full/events-registers.spec.ts` (le due
+  pagine dei registri, le impostazioni salvate e rilette, il limite di un evento dal suo form). VID **761200–761206**.
+- **Verificato, in locale** (16 ottobre 2026, dopo il merge di `f5333cf`): `dotnet build -c Release` senza avvisi; unità **1334/1334**;
+  **integrazione intera senza filtro, da sola, 651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm
+  test` **793 in 112 file** (da solo, con `--maxWorkers=4`: un primo giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api`
+  senza diff; lo smoke `--workers=2` **181/181**; `core-guard.sh` con Git Bash dal merge-base con `main` (`2938ae8`): passa, nessun file del
+  maintainer.
+- **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job).
+
 
 Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-support-reports`. Dopo E13b ed E10e.
 

@@ -91,7 +91,7 @@ export function ControllerRegisterPage() {
   const params: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
   const vid = Number(params.vid);
   const row = useQuery(
-    controllersRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 200 })),
+    controllersRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 100 })),
   ).data?.items.find((candidate) => candidate.controller.vid === vid);
   const name = row === undefined ? String(vid) : personName(row.controller, t);
   const [search, setSearch] = useState<ListSearch>(() =>
@@ -188,7 +188,7 @@ export function PilotRegisterPage() {
   const params: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
   const vid = Number(params.vid);
   const row = useQuery(
-    pilotsRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 200 })),
+    pilotsRegisterQuery(listSearchSchema.parse({ q: String(vid), pageSize: 100 })),
   ).data?.items.find((candidate) => candidate.pilot.vid === vid);
   const name = row === undefined ? String(vid) : personName(row.pilot, t);
   const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 100 }));

@@ -28,6 +28,7 @@ const stamp = Date.now().toString(36);
 const slug = `${stem}-${stamp}`;
 const title = { en: `Bench limits ${stamp}`, it: `I limiti del banco ${stamp}` };
 const blank = '0001-01-01T00:00:00';
+const pilotVid = 999002;
 
 /** The day of the event, thirty days from now. */
 const day = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
@@ -81,13 +82,22 @@ test('the coordinator finds the two registers and saves the settings of the regi
     throw new Error(`The page threw: ${error.message}`);
   });
 
-  // The two registers, each a page of the back office with what it is for.
+  // The two registers, each a page of the back office with what it is for — the heading of a page with a breadcrumb says it in its title.
   await page.goto('/staff/events/controllers');
-  await expect(page.getByRole('heading', { name: events.registers.controllers.title })).toBeVisible();
-  await expect(page.getByText(events.registers.controllers.description)).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: events.registers.controllers.title, level: 1 }),
+  ).toHaveAttribute('title', events.registers.controllers.description);
   await page.goto('/staff/events/pilots');
-  await expect(page.getByRole('heading', { name: events.registers.pilots.title })).toBeVisible();
-  await expect(page.getByText(events.registers.pilots.description)).toBeVisible();
+  await expect(page.getByRole('heading', { name: events.registers.pilots.title, level: 1 })).toHaveAttribute(
+    'title',
+    events.registers.pilots.description,
+  );
+
+  // A person's page of each register opens on the person — the bench's pilot, whatever they hold —, never on the router's error.
+  for (const register of ['controllers', 'pilots'] as const) {
+    await page.goto(`/staff/events/${register}/${pilotVid}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  }
 
   // The settings of the registers: the threshold and the weight changed, saved, and read back after a reload.
   await page.goto('/staff/events/settings');
