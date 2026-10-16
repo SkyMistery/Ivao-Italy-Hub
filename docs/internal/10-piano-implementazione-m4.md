@@ -4789,6 +4789,13 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
     `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco 5146, `ivaohub_e2e_e12` tolto prima, dopo l'integrazione e
     dietro il lock di Mailpit: **65/65 al primo giro** (13,4 min); le regole di `core-guard` contro `3b8d7d79`: nessun file del maintainer, i file del nucleo della coda
     (i tre di E12 e i due di E4d) con le tre note nuove.
+  - **Unita poi `main` a `4ad747ad`** (E4d #263 ed E11b #262 unite, il piano 1.34 #270, la `0.7.0`): sopra `33ed36f` porta solo la versione e i
+    documenti del maintainer, merge pulito. **Verificato di nuovo**: restore con l'audit senza avvisi; build Release senza avvisi; unità
+    **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (10,9 min; un primo giro era caduto subito con Docker Desktop spento,
+    riacceso, e l'ho fatto partire quando la suite di un'altra sessione era finita); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+    verdi; `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` **non rifatto** (il coordinatore: il
+    65/65 sul merge di `33ed36f` copre il codice, `main` ha portato solo la versione e i documenti); le regole di `core-guard` contro
+    `4ad747ad`: nessun file del maintainer, i tre file del nucleo di E12 con la sua nota nuova.
 
 [r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
 [a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241

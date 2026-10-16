@@ -7,9 +7,8 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 16 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
-la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, **in coda dopo la
-#262** di E11b (la coda #263 → #262 → #268): nata `--no-track` dalla sua testa `973f385`, ha unito le sue teste fino a `33ed36f` (con E4d
-`279c8cd` e `main` a `3b8d7d79`).
+la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, in fondo alla coda #263 → #262 → #268 (E4d ed E11b ora unite): nata `--no-track` dalla testa di E11b `973f385`, ha unito
+le sue teste fino a `33ed36f` (con E4d `279c8cd` e `main` a `3b8d7d79`) e poi **`main` a `4ad747ad`** (il piano 1.34, la `0.7.0`).
 La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **decisa** da Carmine sulla #268 ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241): sì alle dieci letture,
 con due condizioni, ora nel codice), e i rilievi del revisore sono corretti sulla stessa PR. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
 controllore i suoi turni in una mail; dopo, ogni correzione avvisa subito chi sapeva del turno; c'è la pagina `/events/{slug}/roster` (i nomi
