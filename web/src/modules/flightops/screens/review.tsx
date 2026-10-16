@@ -11,14 +11,21 @@ import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
-import { ConfirmDialog, NotFound, Notice, PageShell, RouteMap, useNotice } from '../../../shared/ui';
+import {
+  ConfirmDialog,
+  NotFound,
+  Notice,
+  PageShell,
+  RouteMap,
+  personName,
+  useNotice,
+} from '../../../shared/ui';
 import {
   reviewQuery,
   reviewQueueQuery,
   reviewSuggestionQuery,
   reviewTracksQuery,
   toursListQuery,
-  memberName,
   useReviewStep,
   type ReviewCheckDto,
   type ReviewDisputeDto,
@@ -76,13 +83,13 @@ const queueColumns: readonly ColumnSpec<ReviewQueueRow>[] = [
   col.localized('tourTitle'),
   col.number('legNumber'),
   col.text('route'),
-  col.text('pilotName'),
+  col.person('pilot'),
   col.date('takeoffAt'),
   col.date('queuedAt'),
   col.badge('status', 'flightops:review'),
   col.badge('dispute', 'flightops:review'),
   col.badge('checks', 'flightops:review'),
-  col.text('assignedToName'),
+  col.person('assignedTo'),
 ];
 
 // ---- the queue --------------------------------------------------------------------------------------
@@ -257,7 +264,7 @@ function ReviewScreen({ review }: { review: ReviewDto }) {
                   to: review.leg.arrivalIcao,
                 })}
             {' · '}
-            {t('flightops:review.pilotLine', { pilot: memberName(review.pilot, t) })}
+            {t('flightops:review.pilotLine', { pilot: personName(review.pilot, t) })}
             {' · '}
             {t('flightops:review.sentOn', { date: moment(review.submittedAt) })}
           </p>
@@ -318,7 +325,7 @@ function ReviewStanding({ review }: { review: ReviewDto }) {
         {review.status === 'InReview' && review.assignedTo !== null ? (
           <span>
             {t('flightops:review.heldBy', {
-              name: memberName(review.assignedTo, t),
+              name: personName(review.assignedTo, t),
               until: moment(review.leaseUntil, { date: false }),
             })}
           </span>
@@ -326,7 +333,7 @@ function ReviewStanding({ review }: { review: ReviewDto }) {
         {review.decidedBy !== null && review.decidedAt !== null ? (
           <span>
             {t('flightops:review.decidedBy', {
-              name: memberName(review.decidedBy, t),
+              name: personName(review.decidedBy, t),
               date: moment(review.decidedAt),
             })}
           </span>
@@ -815,7 +822,7 @@ function Dispute({ review, dispute }: { review: ReviewDto; dispute: ReviewDisput
         {dispute.decidedBy === null || dispute.decidedAt === null ? null : (
           <span>
             {t('flightops:review.disputeDecidedBy', {
-              name: memberName(dispute.decidedBy, t),
+              name: personName(dispute.decidedBy, t),
               date: moment(dispute.decidedAt),
             })}
           </span>
@@ -1152,7 +1159,7 @@ function History({ review }: { review: ReviewDto }) {
           <li key={index} className="flex flex-wrap gap-2">
             <span className="text-muted-foreground tabular-nums">{moment(step.at)}</span>
             <span className="font-medium">{t(`flightops:review.options.status.${step.toStatus}`)}</span>
-            {step.by === null ? null : <span>{memberName(step.by, t)}</span>}
+            {step.by === null ? null : <span>{personName(step.by, t)}</span>}
             {note === null ? null : <span className="text-muted-foreground">— {note}</span>}
           </li>
         );

@@ -10,13 +10,12 @@ import { SchemaForm, type ChoiceOption } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, ListFilter, col, type ColumnSpec } from '../../../shared/list';
-import { ConfirmDialog, NotFound, PageShell, useNotice } from '../../../shared/ui';
+import { ConfirmDialog, NotFound, PageShell, personName, useNotice } from '../../../shared/ui';
 import {
   banQuery,
   banToFormValues,
   bansListQuery,
   emptyBan,
-  memberName,
   pilotQuery,
   toursListQuery,
   useSaveBan,
@@ -205,7 +204,7 @@ function ValidatorTable({ stats, manages }: { stats: ValidatorsDto; manages: boo
       empty={t('flightops:validators.none')}
       rows={stats.validators.map((validator) => [
         <span key="member" className="flex flex-wrap items-center gap-2">
-          {memberName(validator.member, t)}
+          {personName(validator.member, t)}
           {validator.suspended ? (
             <Badge variant="flat" color="gray" text={t('flightops:validators.suspended')} />
           ) : null}
@@ -305,7 +304,7 @@ function ToursOfTheYear({ stats }: { stats: ValidatorsDto }) {
             ]}
             empty=""
             rows={tour.counts.map((count) => [
-              members.has(count.vid) ? memberName(members.get(count.vid) as MemberDto, t) : String(count.vid),
+              personName(members.get(count.vid) ?? { vid: count.vid, name: null }, t),
               <Count key="accepted" value={count.accepted} />,
               <Count key="rejected" value={count.rejected} />,
               <Count key="toModify" value={count.toModify} />,
@@ -420,7 +419,7 @@ function PilotScreen({ page, year }: { page: PilotPageDto; year: ReturnType<type
 
   return (
     <PageShell
-      title={memberName(page.pilot, t)}
+      title={personName(page.pilot, t)}
       breadcrumb={[
         { label: t('flightops:nav.section') },
         { label: t('flightops:pilots.title'), to: PILOTS },
@@ -523,7 +522,7 @@ function PilotScreen({ page, year }: { page: PilotPageDto; year: ReturnType<type
                   </span>
                 )}
               </span>,
-              flight.decidedBy === null ? '—' : memberName(flight.decidedBy, t),
+              flight.decidedBy === null ? '—' : personName(flight.decidedBy, t),
             ])}
           />
         </Section>
@@ -625,7 +624,7 @@ function BanLines({ bans, canBan }: { bans: readonly BanDto[]; canBan: boolean }
 // ---- the bans ---------------------------------------------------------------------------------------
 
 const banColumns: readonly ColumnSpec<BanRow>[] = [
-  col.text('pilotName'),
+  col.person('pilot'),
   col.localized('tourTitle'),
   col.badge('reach', 'flightops:bans'),
   col.date('startsAt', { sortable: true }),
