@@ -57,8 +57,11 @@ public sealed class InPersonRetention(EventsDbContext database, ModuleSettingsSt
     }
 
     /// <summary>
-    /// The statistics of these events that are past their retention: the ones whose numbers the staff's lists read instead of the rows
-    /// (reading 20). An event still within it, or with no statistics yet — the run of the month has not come —, is read from its rows.
+    /// The statistics of these events whose retention has run: the ones whose numbers the staff's lists read instead of the rows (reading
+    /// 20) — past the retention date, with statistics, and <b>no registration and no seat left</b>. A date passed is not enough (the review
+    /// of #271, point 1): §1.10 has the statistics worked out after the event too (E13a), and between the date and the run of the month the
+    /// rows are still there and the statistics may not say their sums. An event still within it, or whose rows the run has not taken yet,
+    /// is read from its rows.
     /// </summary>
     public async Task<IReadOnlyDictionary<long, EventStats>> RetiredAsync(IReadOnlyCollection<long> eventIds, CancellationToken cancellationToken)
     {
@@ -82,8 +85,19 @@ public sealed class InPersonRetention(EventsDbContext database, ModuleSettingsSt
             return new Dictionary<long, EventStats>();
         }
 
+        // The ones still holding a registration or a seat: the run has not taken them yet.
+        var holding = (await CrudSource.BackOffice<EventRegistration>(database).AsNoTracking()
+                .Where(registration => due.Contains(registration.EventId))
+                .Select(registration => registration.EventId)
+                .Union(CrudSource.BackOffice<EventActivitySeat>(database).AsNoTracking()
+                    .Where(seat => due.Contains(seat.EventId))
+                    .Select(seat => seat.EventId))
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+        var retired = due.Where(id => !holding.Contains(id)).ToList();
+
         return await CrudSource.BackOffice<EventStats>(database).AsNoTracking()
-            .Where(stats => due.Contains(stats.EventId))
+            .Where(stats => retired.Contains(stats.EventId))
             .ToDictionaryAsync(stats => stats.EventId, cancellationToken);
     }
 

@@ -751,7 +751,9 @@
       "registrationReceived": {
         "subject": "[Eventi] Sei iscritto: {{title}}",
         "body": "Sei iscritto a {{title}}, che comincia il {{starts}} UTC.\n\nDove: {{venue}}\n\nLe tue risposte:\n{{answers}}{{seats}}\n\nPuoi cambiarle o ritirarti fino all'inizio dell'evento: {{mine}}\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo.",
-        "seats": "I tuoi turni nelle attività:"
+        "seats": "I tuoi turni nelle attività:",
+        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Eventi] Iscrizione tolta: {{title}}",
@@ -910,7 +912,8 @@
     "seatNoTurn": "Questo non è un turno dell'attività.",
     "seatFull": "Il turno è pieno.",
     "seatOverlaps": "Hai già un turno a quell'ora.",
-    "seatAlreadyYours": "Hai già un posto in questo turno."
+    "seatAlreadyYours": "Hai già un posto in questo turno.",
+    "eventActivitiesOutside": "Un'attività dell'evento ne resterebbe fuori: sposta prima l'attività."
   },
   "questions": {
     "title": "Domande",

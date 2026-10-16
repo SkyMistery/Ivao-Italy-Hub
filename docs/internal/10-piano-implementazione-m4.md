@@ -5208,7 +5208,7 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
   7. **La cancellazione dei dati di una persona**: un posto di un evento non finito si cancella, uno di un evento finito resta con lo
      pseudonimo; due righe nuove dell'anteprima (`seatsToCome`, `seatsOver`). `ErasureTests` con `evt_activities.created_by`, `.updated_by`,
      `evt_activity_bookings.vid`.
-  8. **I test**: integrazione `EventsActivitiesTests` (8; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
+  8. **I test**: integrazione `EventsActivitiesTests` (8, 13 dopo la revisione; VID **761150–761155**, slug `evt-test-e17-…`) — le regole dello staff, il posto
      (solo un iscritto, un turno, libero, non sovrapposto, ridato), **l'ultimo posto preso da due membri nello stesso istante** (una
      transazione del test tiene la riga dell'attività e il posto non confermato, la richiesta aspetta in `INNODB_TRX`, poi legge «turno
      pieno»; **provato al contrario**: senza il `FOR UPDATE` la richiesta prende il posto, 201), i posti che vanno con l'iscrizione e
@@ -5232,4 +5232,28 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
   disegna un istante solo con il fuso della divisione accanto (`division={{ defaultLocale, timezone }}`, come il form delle postazioni), e
   nessun test disegnava il form; ora lo passa, e lo prova il vitest `activityForm.test.tsx`. ⚠️ **Un `e2e:full` che gira mentre si fa un
   merge** cade sulle spec che leggono `locales/<lang>/events.json` con i marcatori di conflitto: un giro va rifatto, a file fermi.
-- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E11b, E12 in corso, E13a–E15b da fare).
+- **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E12 in coda, E13a–E15b da fare).
+
+**Dopo la revisione** (16 ottobre 2026, sulla #271: [i rilievi del revisore][rv271] e [la risposta di Carmine][a271] — sì alla lettura 7, sì alla
+11 come limite accettato della risposta 2A, sì alla 13, scritte nella nota):
+
+1. **Le liste leggono le statistiche solo quando la conservazione è girata** (punto 1): oltre la data, con le statistiche **e senza più
+   iscrizioni né posti** (`InPersonRetention.RetiredAsync`); E13a scriverà le statistiche alla fine dell'evento, e fino al giro del mese
+   le righe sono quelle vere. Il test della conservazione scrive prima le statistiche a zero e trova le somme delle righe.
+2. **«Ridai» un posto prende il blocco dell'iscrizione**, come ogni cambio dei posti del membro, e **il ritiro rimette il `catch`** di
+   `DbUpdateConcurrencyException` che `main` aveva (punto 2): due test con una transazione tenuta, `ASeatGivenBackWhileItsMemberWithdrawsIsNotFound`
+   (la richiesta aspetta sul blocco dell'iscrizione) e `AWithdrawalWhileASeatIsGivenBackPastTheLockIsNotFound` (404, non 409).
+3. **Eliminare un'attività** mentre qualcuno prende un posto risponde `activityHasSeats`: la `Delete` salva da sé e traduce il rifiuto della
+   chiave (`DatabaseErrors.StillReferenced`, punto 3).
+4. **Spostare o accorciare l'evento** oltre una sua attività è rifiutato (`events:errors.eventActivitiesOutside`, su `startsAtUtc` o
+   `endsAtUtc`, punto 4); un'attività cambiata così che un posto ne esca è rifiutata sul campo che lo sposta (`fromUtc`, `toUtc`, `slotMinutes`).
+5. **Un istante senza fuso** mandato dal client si legge in UTC (`MemberSeats.Utc`, punto 5).
+6. **Un evento che fallisce nella conservazione** è scritto nel log e lasciato al giro dopo, gli altri vanno avanti (punto 6, come
+   `events-roster`).
+7. **La forma della riga di un turno e «UTC»** stanno nei file di lingua (`mail.events.registrationReceived.seatLine`, `…seatLinePlace`, punto 7).
+8. **I test mancanti** (punto 8): il posto dopo l'inizio e su un evento annullato, ridato dopo l'inizio e da un evento annullato; l'attività
+   cambiata così che un posto ne esca. `EventsActivitiesTests` passa a 13. **Provato al contrario**, ognuno sul codice di prima: i due della
+   corsa, l'eliminazione (500), lo spostamento (200), le statistiche (0 invece di 2).
+
+[rv271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583
+[a271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164

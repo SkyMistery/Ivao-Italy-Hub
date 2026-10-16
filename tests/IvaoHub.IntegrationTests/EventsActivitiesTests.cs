@@ -373,6 +373,15 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await SeatRowAsync(old, activity, OtherVid, now.AddMonths(-4).AddHours(1).AddMinutes(30), token);
         await RegistrationRowAsync(recent, MemberVid, token);
 
+        // Statistics written after the event, before the run (E13a will): past the date, the registrations still there are what the lists
+        // read, not the statistics (the review of #271, point 1).
+        await StatsRowAsync(old, token);
+        using (var staff = await SignedInAsync(CoordinatorVid, token))
+        {
+            var live = Assert.Single((await OkAsync(await staff.GetAsync($"{EventQuestionEndpoints.Pattern}?filter[eventId]={old}", token), token)).GetProperty("items").EnumerateArray());
+            Assert.Equal(2, live.GetProperty("sum").GetProperty("yes").GetInt32());
+        }
+
         // At least this one: the shared database may hold another class's event past its retention.
         var outcome = await RunRetentionAsync(token);
         Assert.True(outcome is { Events: >= 1, Registrations: >= 3, Seats: >= 2 }, $"{outcome}");
@@ -403,6 +412,188 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             .FirstAsync(token);
         Assert.Equal("succeeded", log.Status);
         Assert.NotNull(log.FinishedAt);
+    }
+
+    [Fact]
+    public async Task ASeatIsTakenAndGivenBackOnlyBeforeTheStartAndGivenBackFromACancelledEvent()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = Today.AddHours(DateTime.UtcNow.Hour);
+
+        // Started an hour ago: no seat taken, none given back (the review of #271, point 8).
+        var started = await EventRowAsync("seats-started", now.AddHours(-1), now.AddHours(5), token);
+        var during = await ActivityRowAsync(started, now.AddHours(1), now.AddHours(2), seats: 2, token);
+        await RegistrationRowAsync(started, MemberVid, token);
+        await SeatRowAsync(started, during, MemberVid, now.AddHours(1), token);
+        var held = Assert.Single(await SeatsAsync(started, token)).Id;
+
+        using var member = await SignedInAsync(MemberVid, token);
+        Assert.Equal([RegistrationRules.ClosedKey], (await RefusedAsync(
+            await member.PostAsJsonAsync(SeatsPattern, new SeatRequest(during, now.AddHours(1).AddMinutes(30)), token), token))[MemberSeats.TurnField]);
+        Assert.Equal([RegistrationRules.ClosedKey], (await RefusedAsync(await member.DeleteAsync($"{SeatsPattern}/{held}", token), token))["id"]);
+        Assert.Single(await SeatsAsync(started, token));
+
+        // Cancelled, still to start: no seat taken, and the one held is given back, as a registration is withdrawn.
+        var cancelled = await EventRowAsync(
+            "seats-cancelled",
+            now.AddDays(5),
+            now.AddDays(5).AddHours(6),
+            token,
+            row => (row.CancelledAt, row.CancelledBy, row.CancellationNote) = (now, CoordinatorVid, Text("evt-test-e17 cancelled")));
+        var later = await ActivityRowAsync(cancelled, now.AddDays(5).AddHours(1), now.AddDays(5).AddHours(2), seats: 2, token);
+        await RegistrationRowAsync(cancelled, MemberVid, token);
+        await SeatRowAsync(cancelled, later, MemberVid, now.AddDays(5).AddHours(1), token);
+
+        Assert.Equal([RegistrationRules.ClosedKey], (await RefusedAsync(
+            await member.PostAsJsonAsync(SeatsPattern, new SeatRequest(later, now.AddDays(5).AddHours(1).AddMinutes(30)), token), token))[MemberSeats.TurnField]);
+        using (var response = await member.DeleteAsync($"{SeatsPattern}/{Assert.Single(await SeatsAsync(cancelled, token)).Id}", token))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        Assert.Empty(await SeatsAsync(cancelled, token));
+    }
+
+    [Fact]
+    public async Task ASeatGivenBackWhileItsMemberWithdrawsIsNotFound()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Today.AddDays(5).AddHours(9);
+        var id = await EventRowAsync("give-back-race", starts, starts.AddHours(6), token);
+        var activity = await ActivityRowAsync(id, starts.AddHours(1), starts.AddHours(2), seats: 1, token);
+        await RegistrationRowAsync(id, MemberVid, token);
+        await SeatRowAsync(id, activity, MemberVid, starts.AddHours(1), token);
+        var seat = Assert.Single(await SeatsAsync(id, token)).Id;
+        using var member = await SignedInAsync(MemberVid, token);
+
+        // A transaction of the test does what a withdrawal from another window does: it takes the registration's lock first.
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            await database.Database.SqlQuery<long>($"SELECT id AS `Value` FROM evt_registrations WHERE event_id = {id} AND vid = {MemberVid} FOR UPDATE").ToListAsync(token);
+
+            // The give-back waits on that lock (the review of #271, point 2) — a give-back that took no lock would not wait, and would delete
+            // the seat under the withdrawal's feet. Then the withdrawal deletes the seat and the registration, and commits.
+            var request = member.DeleteAsync($"{SeatsPattern}/{seat}", token);
+            await WaitForALockWaitAsync(token);
+            await database.Seats.IgnoreQueryFilters().Where(row => row.EventId == id).ExecuteDeleteAsync(token);
+            await database.Registrations.IgnoreQueryFilters().Where(row => row.EventId == id).ExecuteDeleteAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        // Withdrawn meanwhile: nothing left to give back — never a 500.
+        using (answered)
+        {
+            Assert.Equal(HttpStatusCode.NotFound, answered.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task AWithdrawalWhileASeatIsGivenBackPastTheLockIsNotFound()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Today.AddDays(5).AddHours(9);
+        var id = await EventRowAsync("withdraw-race", starts, starts.AddHours(6), token);
+        var activity = await ActivityRowAsync(id, starts.AddHours(1), starts.AddHours(2), seats: 1, token);
+        await RegistrationRowAsync(id, MemberVid, token);
+        await SeatRowAsync(id, activity, MemberVid, starts.AddHours(1), token);
+        using var member = await SignedInAsync(MemberVid, token);
+
+        // A transaction of the test deletes the seat without the registration's lock — not committed yet — as a write that went past it would.
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            await database.Seats.IgnoreQueryFilters().Where(row => row.EventId == id).ExecuteDeleteAsync(token);
+
+            // The withdrawal reads the seat still committed, and waits on its row to delete it.
+            var request = member.DeleteAsync($"{RegistrationEndpoints.MinePattern}/{id}", token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        // Its delete found the seat gone: «nothing left to withdraw», never a 500 (the review of #271, point 2, the catch `main` had).
+        using (answered)
+        {
+            Assert.Equal(HttpStatusCode.NotFound, answered.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task AnActivityDeletedWhileASeatIsTakenStaysWithItsRefusal()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Today.AddDays(5).AddHours(9);
+        var id = await EventRowAsync("delete-race", starts, starts.AddHours(6), token);
+        var activity = await ActivityRowAsync(id, starts.AddHours(1), starts.AddHours(2), seats: 1, token);
+        await RegistrationRowAsync(id, MemberVid, token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        // A seat taken in the same instant — not committed yet — holds the activity's row through its key.
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            database.Seats.Add(Seat(id, activity, MemberVid, starts.AddHours(1)));
+            await database.SaveChangesAsync(token);
+
+            // The delete reads no seat, and waits on the activity's row (the review of #271, point 3).
+            var request = coordinator.DeleteAsync($"{EventActivityEndpoints.Pattern}/{activity}", token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        // The key refused it, and the refusal is the module's: the activity stays with its seat.
+        Assert.Equal(["events:errors.activityHasSeats"], (await RefusedAsync(answered, token))["id"]);
+        Assert.Single(await SeatsAsync(id, token));
+    }
+
+    [Fact]
+    public async Task TheEventIsNotMovedNorShortenedPastItsActivitiesNorTheActivityPastItsSeats()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var (id, starts) = await InPersonEventAsync(coordinator, "move", token);
+        var simulator = await ActivityAsync(coordinator, id, "Simulator", starts.AddHours(1), starts.AddHours(3), 30, seats: 1, token);
+
+        // The event moved two hours later, or ending at noon: the activity from ten to noon would be outside it (the review of #271, point 4).
+        var row = await OkAsync(await coordinator.GetAsync($"{EventEndpoints.Pattern}/{id}", token), token);
+        var version = row.GetProperty("rowVersion").GetDateTime();
+        Assert.Equal(["events:errors.eventActivitiesOutside"], (await RefusedAsync(
+            await coordinator.PutAsJsonAsync($"{EventEndpoints.Pattern}/{id}", Payload("move", starts.AddHours(2), inPerson: true) with { RowVersion = version }, token),
+            token))["startsAtUtc"]);
+        Assert.Equal(["events:errors.eventActivitiesOutside"], (await RefusedAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{EventEndpoints.Pattern}/{id}",
+                Payload("move", starts, inPerson: true) with { EndsAtUtc = starts.AddHours(2), RowVersion = version },
+                token),
+            token))["endsAtUtc"]);
+
+        // A seat at half past eleven, the last turn: the window cut at eleven, or started at noon, leaves it off.
+        using var member = await SignedInAsync(MemberVid, token);
+        await CreatedAsync(await member.PutAsJsonAsync($"{RegistrationEndpoints.MinePattern}/{id}", new RegistrationRequest(new JsonObject()), token), token);
+        await CreatedAsync(await member.PostAsJsonAsync(SeatsPattern, new SeatRequest(simulator, starts.AddHours(2).AddMinutes(30)), token), token);
+        var read = await OkAsync(await coordinator.GetAsync($"{EventActivityEndpoints.Pattern}/{simulator}", token), token);
+        var activityVersion = read.GetProperty("rowVersion").GetDateTime();
+        Assert.Equal(["events:errors.activitySeatsTaken"], (await RefusedAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{EventActivityEndpoints.Pattern}/{simulator}",
+                Activity(id, "Simulator", starts.AddHours(1), starts.AddHours(2), 30, 1) with { RowVersion = activityVersion },
+                token),
+            token))["toUtc"]);
+        Assert.Equal(["events:errors.activitySeatsTaken"], (await RefusedAsync(
+            await coordinator.PutAsJsonAsync(
+                $"{EventActivityEndpoints.Pattern}/{simulator}",
+                Activity(id, "Simulator", starts.AddHours(3), starts.AddHours(4), 30, 1) with { RowVersion = activityVersion },
+                token),
+            token))["fromUtc"]);
     }
 
     [Fact]
@@ -670,6 +861,21 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             .Where(seat => seat.EventId == eventId)
             .OrderBy(seat => seat.Id)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>The statistics of an event as a job after it would write them: in its care, every number zero.</summary>
+    private async Task StatsRowAsync(long eventId, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        database.Stats.Add(new EventStats
+        {
+            EventId = eventId,
+            ComputedAt = DateTime.UtcNow,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        });
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>A text question of an event, written by the installation.</summary>

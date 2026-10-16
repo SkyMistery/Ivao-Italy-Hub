@@ -751,7 +751,9 @@
       "registrationReceived": {
         "subject": "[Events] You are registered: {{title}}",
         "body": "You are registered to {{title}}, which starts on {{starts}} UTC.\n\nWhere: {{venue}}\n\nYour answers:\n{{answers}}{{seats}}\n\nYou can change them or withdraw until the event starts: {{mine}}\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page.",
-        "seats": "Your turns in the activities:"
+        "seats": "Your turns in the activities:",
+        "seatLine": "{{activity}}: {{from}}–{{to}} UTC",
+        "seatLinePlace": "{{activity}} ({{place}}): {{from}}–{{to}} UTC"
       },
       "registrationRemoved": {
         "subject": "[Events] Registration taken away: {{title}}",
@@ -910,7 +912,8 @@
     "seatNoTurn": "This is not a turn of the activity.",
     "seatFull": "The turn is full.",
     "seatOverlaps": "You already have a turn at that time.",
-    "seatAlreadyYours": "You already have a seat in this turn."
+    "seatAlreadyYours": "You already have a seat in this turn.",
+    "eventActivitiesOutside": "An activity of the event would be outside it: move the activity first."
   },
   "questions": {
     "title": "Questions",

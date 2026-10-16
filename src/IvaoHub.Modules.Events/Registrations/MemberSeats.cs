@@ -70,6 +70,13 @@ public sealed class MemberSeats(
     public const string AlreadyKey = "events:errors.seatAlreadyYours";
 
     /// <summary>
+    /// An instant the client sent, in UTC: one that says its zone is turned into UTC, one that says none is read as UTC — never as the
+    /// server's time (the review of #271, point 5), as the slots read theirs (<c>SlotRules</c>, <c>AssumeUniversal</c>).
+    /// </summary>
+    public static DateTime Utc(DateTime value) =>
+        value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : value.ToUniversalTime();
+
+    /// <summary>
     /// Takes a seat in a turn of an activity (§4-bis.2): an event in person the member sees, open to registrations (until its start, not
     /// cancelled), which they registered to; a turn of the activity; a seat still free; no other turn of theirs in the event that meets
     /// it. The member is told their registration as it is now (<see cref="EventsNotifications.RegistrationReceived"/>), once it is saved.
@@ -81,7 +88,7 @@ public sealed class MemberSeats(
         var problems = new Refusals();
         var now = clock.UtcNow;
         var vid = currentUser.Vid;
-        var start = DateTime.SpecifyKind(request.StartsAtUtc!.Value.ToUniversalTime(), DateTimeKind.Utc);
+        var start = Utc(request.StartsAtUtc!.Value);
 
         var activity = await database.Activities.AsNoTracking().FirstOrDefaultAsync(row => row.Id == request.ActivityId, cancellationToken);
         if (activity is null || await SeenAsync(activity.EventId, now, cancellationToken) is not { InPerson: true } row)
@@ -167,33 +174,39 @@ public sealed class MemberSeats(
     /// Gives a seat back (§4-bis.2): until the event starts, a cancelled one too, as withdrawing. The row is deleted, as the core lets the member
     /// who took it do (<c>[WithdrawnByStakeholder]</c>, E10h), loaded first so that the guard reads whose it is. Somebody else's seat is not
     /// found. The member is told their registration as it is now.
+    /// <para>Under the registration's lock, as every change of the member's seats (the review of #271, point 2): a withdrawal in the same
+    /// instant takes the seat with the registration, and this one then finds nothing — never a write of a row already gone.</para>
     /// </summary>
     public async Task<(BookingResult Result, Refusals Problems)> GiveBackAsync(long id, CancellationToken cancellationToken)
     {
         var problems = new Refusals();
         var vid = currentUser.Vid;
-        var seat = await database.Seats.FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.Vid == vid, cancellationToken);
-        if (seat is null)
+        var mine = await database.Seats.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.Vid == vid, cancellationToken);
+        if (mine is null)
         {
             return (BookingResult.NotFound, problems);
         }
 
-        var row = await database.Events.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == seat.EventId, cancellationToken);
+        var row = await database.Events.AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == mine.EventId, cancellationToken);
         if (row is null || !RegistrationRules.IsWithdrawable(row, clock.UtcNow))
         {
             return (BookingResult.Refused, problems.Add("id", RegistrationRules.ClosedKey));
         }
 
-        database.Seats.Remove(seat);
+        await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken))
+        {
+            // Read again under the lock: a withdrawal, or the staff's «take away», may have taken it with the registration.
+            var seat = await RegistrationSeats.LockAsync(database, row.Id, vid, cancellationToken)
+                ? await database.Seats.FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.Vid == vid, cancellationToken)
+                : null;
+            if (seat is null)
+            {
+                return (BookingResult.NotFound, problems);
+            }
 
-        try
-        {
+            database.Seats.Remove(seat);
             await database.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Gone with its registration a moment before: there is nothing left to give back.
-            return (BookingResult.NotFound, problems);
+            await transaction.CommitAsync(cancellationToken);
         }
 
         await TellAsync(row, vid, cancellationToken);
@@ -229,7 +242,7 @@ public sealed class MemberSeats(
             row,
             vid,
             locale => RegistrationAnswers.Lines(questions, answers, locale, fallback, catalog),
-            locale => EventsMail.SeatLines(seats, locale, fallback),
+            locale => EventsMail.SeatLines(seats, locale, fallback, catalog),
             cancellationToken);
     }
 

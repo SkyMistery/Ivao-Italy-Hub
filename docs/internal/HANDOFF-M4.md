@@ -326,7 +326,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **«Duplica»**: domande (con le chiavi) e attività (`EventCopy.Question`, `EventCopy.Activity`).
   - **`events-retention`** (`EventsRetentionJob.cs`, una volta al mese in UTC) e `Registrations/InPersonRetention.cs` (quando un evento è
     oltre la conservazione, che cosa tengono le statistiche, come le liste le rileggono).
-  - **I test**: integrazione `EventsActivitiesTests` (8, la corsa sull'ultimo posto e l'audit della conservazione fra loro; VID **761150–761155**); unità
+  - **I test**: integrazione `EventsActivitiesTests` (13 dopo la revisione, la corsa sull'ultimo posto, quelle del ritiro e dell'eliminazione e l'audit della conservazione fra loro; VID **761150–761155**); unità
     `EventsActivitiesTests` (7); il giro `web/e2e/full/events-m4c-round.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:
   - **Le tre domande della nota sono decise** ([la risposta di Carmine sull'issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232)):
@@ -342,7 +342,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     secondo passo dello stesso `RunAsync`, con la stessa regola di «finito» (`EventState.IsOver`).
   - ⚠️ **Un membro e i turni**: due turni che si toccano non si sovrappongono; il controllo è fra tutte le attività dell'evento, non fra
     eventi diversi.
-  - ⚠️ **Il limite detto nella nota (lettura 11)**: lo staff che cambia un'attività controlla i posti senza blocco; un posto preso in
+  - **Dopo la revisione sulla #271** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583), [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164):
+    sì alle letture 7, 11 e 13): le liste leggono le statistiche solo quando un evento non ha più iscrizioni né posti — **E13a**, che le
+    scrive alla fine dell'evento, non cambia quello che lo staff legge prima del giro della conservazione —; «ridai» prende il blocco
+    dell'iscrizione; un evento non si sposta oltre le sue attività; la conservazione salta un evento che fallisce.
+  - ⚠️ **Il limite detto nella nota (lettura 11)**, accettato da Carmine come limite della 2A: lo staff che cambia un'attività controlla i posti senza blocco; un posto preso in
     quell'istante può restare su un turno che non c'è più, e ogni lettura lo regge.
   - ⚠️ **Su Windows** `Activities.tsx` e `activities.tsx` sono lo stesso file: il componente della pagina pubblica si chiama
     `ActivityTurns.tsx` per questo.

@@ -3,7 +3,8 @@
 **Data:** 15 ottobre 2026 — fase E17 di M4 (la seconda e ultima di M4c: le attività, i posti, la conservazione breve, «Duplica»)
 **Stato:** **decisa** (Carmine, 16 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione: [la risposta sull'issue #267][a]):
 **(A)** alla domanda 1, **(A)** alla 2, **(B)** alla 3 — una piccola fase del nucleo prima, **E10s**, ed E17 in coda dopo di lei (§6). Il resto
-sono letture del design.
+sono letture del design; tre di loro, che il revisore della #271 ha portato a Carmine, hanno il suo sì ([la risposta sulla #271][b]): la 7,
+la 11 come limite accettato della risposta 2A, la 13.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §2.3-bis, §8.4, §11 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-10-12-le-domande-e-l-iscrizione` — l'unico handler, il guardiano dell'interceptor con il ritiro
 di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il motore CRUD, `Refusals`,
@@ -48,13 +49,17 @@ design unito leggono l'area in due modi; la domanda 3 perché la risposta (B) è
     dello stesso membro, così il controllo delle sovrapposizioni vede i posti appena presi, e il ritiro dell'iscrizione nello stesso istante
     —, poi **la riga dell'attività** `FOR UPDATE`, sotto cui si contano i posti presi del turno. Due membri sull'ultimo posto nello stesso
     istante: uno vince, l'altro legge «turno pieno» (`events:errors.seatFull`). Sempre in quest'ordine, così nessun ciclo.
-11. **Il limite, detto**: lo staff che cambia un'attività controlla i posti presi senza il blocco (il motore CRUD non apre una transazione
-    attorno a `BeforeSave`); un posto preso nell'istante fra il controllo e il salvataggio può restare su un turno che non c'è più o oltre i
-    posti. Come per le domande di E16 (lettura 4), ogni lettura lo regge: il posto resta del membro, si conta, e la pagina lo mostra con
-    il suo orario.
+11. **Il limite, detto — e accettato da Carmine come limite della risposta 2A** ([la risposta sulla #271][b]): lo staff che cambia
+    un'attività controlla i posti presi senza il blocco (il motore CRUD non apre una transazione attorno a `BeforeSave`); un posto preso
+    nell'istante fra il controllo e il salvataggio può restare su un turno che non c'è più o oltre i posti, cioè può rompere la 2A. Chiuderlo
+    sarebbe un cambio del motore CRUD del nucleo, che oggi non si vuole. Come per le domande di E16 (lettura 4), ogni lettura lo regge: il
+    posto resta del membro, si conta, e la pagina lo mostra con il suo orario. **L'eliminazione invece è chiusa**: un posto preso nello
+    stesso istante è fermato dalla sua chiave, e il rifiuto torna `activityHasSeats` (il punto 3 della revisione della #271).
 12. **Il ritiro dell'iscrizione, «Togli» dello staff e la cancellazione** portano via i posti del membro nello stesso salvataggio.
 13. **La mail**: `registrationReceived` parte anche a ogni posto preso o ridato, con le risposte e **i turni** come sono in quel momento (il
-    design: «con il riepilogo delle risposte e dei turni»; la lettura 12 di E16, «una mail a ogni cambio», decisa da Carmine).
+    design: «con il riepilogo delle risposte e dei turni»; la lettura 12 di E16, «una mail a ogni cambio», decisa da Carmine). **Sì di
+    Carmine sulla #271** ([la risposta][b]). La forma della riga di un turno e la parola del fuso stanno nei file di lingua (il punto 7 della
+    revisione).
 14. **Le pagine**: la pagina dell'evento mostra a chiunque le attività con i turni e **quanti posti liberi**, mai chi (§7.1, come gli slot);
     il membro iscritto prende e ridà i posti dalla sezione «Iscrizione», e li ritrova in `/events/mine` sotto la sua iscrizione
     (`MyRegistrationDto.Seats`). Nessuna lettura nuova: i turni viaggiano nella lettura della pagina, i posti del membro nelle sue
@@ -81,8 +86,10 @@ design unito leggono l'area in due modi; la domanda 3 perché la risposta (B) è
     colonne) gli iscritti, **le somme delle risposte** (`RegistrationSums.Of`, i numeri di `QuestionSum`) e **i posti presi per attività**, e
     `computed_at`; poi cancella posti e iscrizioni, attraverso l'interceptor come ogni scrittura (come la conservazione dei tour). Un giro
     perso o doppio non fa danni: il secondo non trova niente.
-20. **Le somme restano visibili**: per un evento oltre la sua conservazione, la lista delle domande e quella delle attività leggono i numeri
-    da `evt_event_stats` invece che dalle righe che non ci sono più. (La scheda «Statistiche» è di E13a.)
+20. **Le somme restano visibili**: per un evento la cui conservazione **è girata** — oltre la data, con le statistiche, e **senza più iscrizioni
+    né posti** —, la lista delle domande e quella delle attività leggono i numeri da `evt_event_stats` invece che dalle righe che non ci sono
+    più. La data da sola non basta (il punto 1 della revisione della #271): E13a scriverà le statistiche alla fine dell'evento, e fra la data e
+    il giro del mese le righe ci sono ancora. (La scheda «Statistiche» è di E13a.)
 21. Cambiare `inPersonRetentionMonths` vale dal giro dopo, per ogni evento.
 
 ## 5. La cancellazione dei dati di una persona (design §11.1)
@@ -99,6 +106,8 @@ lei oltre che dopo E12.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267
 [a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+[b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164
+[rv]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583
 
 1. **Chi scrive le attività.** Il design le legge in due modi: §4-bis.1 («righe figlie dell'evento, area `EventBookings`»), il catalogo §6.1
    (`EventBookings.Edit`: «slot, import, generatore, attività»; `EventBookings.View`: «iscrizioni e attività con i VID») e la nota
@@ -132,6 +141,19 @@ Date in chat alla sessione master e pubblicate su sua istruzione [sull'issue #26
    commit (E10s, #269, nota `2026-10-16-la-conservazione-nell-audit`).
    Il posto non ha colonne di parole (lettura 7): nell'audit resta che un membro ha preso un turno, come di un'iscrizione resta che si è
    iscritto.
+
+### Le risposte di Carmine sulle letture (16 ottobre 2026, sulla #271)
+
+Il [revisore della #271][rv] ha portato a Carmine tre letture che sono scelte; Carmine ha risposto in chat alla sessione master, che ha
+pubblicato le risposte [sulla #271][b] su sua istruzione:
+
+1. **Lettura 7: sì.** Quando un membro ha preso un posto resta nell'audit, come resta «X si è iscritto»; la conservazione breve svuota le
+   risposte, non la presenza.
+2. **Lettura 11: sì, come limite accettato della risposta 2A.** Una modifica dello staff controlla i posti senza il blocco; un posto preso in
+   quell'istante può rompere la 2A. Scritto così nella nota; chiuderlo sarebbe un cambio del motore CRUD del nucleo, che oggi non si vuole.
+3. **Lettura 13: sì**, una mail a ogni posto preso o ridato, come per le iscrizioni.
+
+Gli altri rilievi del revisore sono corretti sulla #271 (doc 10, E17, «Dopo la revisione»).
 
 ## 7. Alternative scartate
 

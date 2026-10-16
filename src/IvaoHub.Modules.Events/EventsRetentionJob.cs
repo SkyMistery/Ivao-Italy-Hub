@@ -75,18 +75,33 @@ public sealed class EventsRetentionJob(
                 .Where(row => InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
                 .ToList();
 
+            // One event that fails is logged and left for the next run, never a stop for every event after it, month after month (the review
+            // of #271, point 6; as events-roster does): its transaction took everything of it back.
             var outcome = new Outcome(0, 0, 0);
+            var failed = new List<long>();
             foreach (var row in due)
             {
-                var (registrations, seats) = await RetireAsync(row, now, cancellationToken);
-                outcome = new Outcome(outcome.Events + 1, outcome.Registrations + registrations, outcome.Seats + seats);
+                try
+                {
+                    var (registrations, seats) = await RetireAsync(row, now, cancellationToken);
+                    outcome = new Outcome(outcome.Events + 1, outcome.Registrations + registrations, outcome.Seats + seats);
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    logger.LogError(exception, "The registrations of the event {EventId} could not be retired.", row.Id);
+                    database.ChangeTracker.Clear();
+                    failed.Add(row.Id);
+                }
             }
 
             entry.FinishedAt = clock.UtcNow;
             entry.Status = "succeeded";
-            entry.Message = string.Create(
+            var done = string.Create(
                 CultureInfo.InvariantCulture,
                 $"{outcome.Events} event(s) in person retired: {outcome.Registrations} registration(s), {outcome.Seats} seat(s) deleted");
+            entry.Message = failed.Count == 0
+                ? done
+                : string.Create(CultureInfo.InvariantCulture, $"{done}; not done, left for the next run: {string.Join(", ", failed)}");
             await hub.SaveChangesAsync(cancellationToken);
 
             return outcome;

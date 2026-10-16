@@ -27,6 +27,9 @@ public sealed class EventSaving(
     ModuleSettingsStore settings,
     EventsMail mail)
 {
+    /// <summary>The refusal of a move of the event that would leave one of its activities outside it (E17).</summary>
+    public const string ActivitiesOutsideKey = "events:errors.eventActivitiesOutside";
+
     /// <summary>Whether the save being prepared moves the start or the end of a published event: what <see cref="AfterSaveAsync"/> tells.</summary>
     private bool _timesChanged;
 
@@ -111,6 +114,21 @@ public sealed class EventSaving(
                 || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id, cancellationToken)))
         {
             problems.Add("hasRoster", "events:errors.hasRosterRows");
+        }
+
+        // Its parallel activities stay inside it (E17; the review of #271, point 4): an event moved or shortened past one of them would leave
+        // its turns outside the event, still offered. The staff move the activity first.
+        if (!isNew)
+        {
+            if (await database.Activities.AnyAsync(activity => activity.EventId == row.Id && activity.FromUtc < row.StartsAtUtc, cancellationToken))
+            {
+                problems.Add("startsAtUtc", ActivitiesOutsideKey);
+            }
+
+            if (await database.Activities.AnyAsync(activity => activity.EventId == row.Id && activity.ToUtc > row.EndsAtUtc, cancellationToken))
+            {
+                problems.Add("endsAtUtc", ActivitiesOutsideKey);
+            }
         }
 
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
