@@ -43,7 +43,8 @@
       "registrations": "Registrations",
       "atc": "ATC",
       "activities": "Activities",
-      "seats": "Seats"
+      "seats": "Seats",
+      "stats": "Statistics"
     },
     "actions": {
       "publish": "Publish",
@@ -661,7 +662,8 @@
       "breakShifts": "Shifts of break after them",
       "applicationsCloseDays": "Days before an event its availabilities close",
       "rosterPublishDays": "Days before an event its roster is published",
-      "experienceMonths": "Months of positions counted as experience"
+      "experienceMonths": "Months of positions counted as experience",
+      "attendanceMinimumMinutes": "Minutes on the position to have attended a shift"
     },
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
@@ -675,7 +677,8 @@
       "breakShifts": "After that many in a row, a controller rests this many shifts before the next one.",
       "applicationsCloseDays": "The controllers give and change their availability until this many days before the start; then the roster is proposed.",
       "rosterPublishDays": "The roster is published this many days before the start: no more than the days of the close, so the staff have time to correct it.",
-      "experienceMonths": "How far back the positions a controller opened count when the roster is proposed."
+      "experienceMonths": "How far back the positions a controller opened count when the roster is proposed.",
+      "attendanceMinimumMinutes": "After the event, a controller who was on their position at least this many minutes within a shift attended it; less, and the shift is proposed as a no-show. A shorter shift asks its whole length."
     }
   },
   "notifications": {
@@ -910,7 +913,9 @@
     "seatNoTurn": "This is not a turn of the activity.",
     "seatFull": "The turn is full.",
     "seatOverlaps": "You already have a turn at that time.",
-    "seatAlreadyYours": "You already have a seat in this turn."
+    "seatAlreadyYours": "You already have a seat in this turn.",
+    "statsBeforeEnd": "The statistics of an event are worked out after its end.",
+    "statsOfADraft": "A draft has no statistics: it never took place."
   },
   "questions": {
     "title": "Questions",
@@ -1211,6 +1216,71 @@
       "startsAtUtc": "Turn from",
       "endsAtUtc": "Turn until",
       "createdAt": "Taken on"
+    }
+  },
+  "stats": {
+    "none": "No statistics yet: they are worked out by the checks after the event, a few hours after its end.",
+    "computedAt": "Worked out on {{date}}",
+    "checksPending": "The checks after the event are not finished: some bookings and shifts may still be to check, and who flew without booking is not counted yet.",
+    "checksDone": "The checks after the event were done on {{date}}.",
+    "wholeDivision": "An event of the whole division: who flew without booking is not counted.",
+    "recalculate": "Recalculate",
+    "fields": {
+      "publicSlots": "Public slots",
+      "privateSlots": "Private slots",
+      "booked": "Slots booked",
+      "bookedFlown": "Booked and flown",
+      "bookedUnflown": "Booked and not flown",
+      "bookedToCheck": "Bookings still to check",
+      "flownUnbooked": "Pilots who flew without booking",
+      "atcAvailabilities": "Availabilities given",
+      "atcShifts": "Shifts",
+      "atcAttended": "Shifts attended",
+      "atcNoShows": "No-shows, proposed or confirmed",
+      "atcExcused": "No-shows excused",
+      "registrations": "Registered in person",
+      "activitySeats": "Seats taken in the activities"
+    },
+    "bookings": {
+      "title": "Bookings after the event",
+      "empty": "The bookings of the event, with what the checks found, will show up here.",
+      "fields": {
+        "pilot": "Pilot",
+        "callsign": "Callsign",
+        "departureIcao": "From",
+        "offBlockUtc": "Off block",
+        "arrivalIcao": "To",
+        "outcome": "Check",
+        "flownAt": "Flight started"
+      },
+      "options": {
+        "outcome": {
+          "flown": "Flown",
+          "notFlown": "Not flown",
+          "toCheck": "To check"
+        }
+      }
+    },
+    "shifts": {
+      "title": "Shifts after the event",
+      "empty": "The shifts of the roster, with how each went, will show up here.",
+      "fields": {
+        "callsign": "Position",
+        "controller": "Controller",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "attendance": "How it went",
+        "coveredBy": "Covered by"
+      },
+      "options": {
+        "attendance": {
+          "Unknown": "To check",
+          "Attended": "Attended",
+          "NoShowProposed": "No-show proposed",
+          "NoShow": "No-show",
+          "Excused": "Excused"
+        }
+      }
     }
   }
 }

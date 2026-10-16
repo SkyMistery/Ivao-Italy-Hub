@@ -43,6 +43,8 @@ import type {
  * The roster (E11b): read by position and hour, the one hand written read, and corrected through the CRUD engine — add, move, take away.
  * Its publication (E12): the page of a published roster, a member's own shifts with handing one over, and the staff's requests with their
  * two decisions.
+ * After the event (E13a): the statistics of an event through the CRUD engine with «Recalculate», and the lists of its bookings and of its shifts
+ * with what the checks found.
  */
 
 /** The key the module is known by on the server, in `/api/modules/{key}/settings`. */
@@ -1599,5 +1601,83 @@ export function useRefuseTransfer() {
     onSuccess: () => {
       void transfersChanged(queryClient);
     },
+  });
+}
+
+// ---- after the event (E13a) ----------------------------------------------------------------------------------------------------
+
+export type EventStatsDto = components['schemas']['EventStatsDto'];
+export type EventAtcShiftRowDto = components['schemas']['EventAtcShiftRowDto'];
+export type ShiftAttendance = components['schemas']['ShiftAttendance'];
+
+const statsKey = ['events', 'stats'] as const;
+
+/** What the check found of a booking, as the list draws it: flown, looked for and not found, or not looked for yet. */
+export type BookingOutcome = 'flown' | 'notFlown' | 'toCheck';
+
+export type CheckedBookingRow = EventBookingDto & { readonly outcome: BookingOutcome };
+
+export function bookingOutcome(booking: Pick<EventBookingDto, 'flownAt' | 'flownCheckedAt'>): BookingOutcome {
+  return booking.flownAt !== null ? 'flown' : booking.flownCheckedAt !== null ? 'notFlown' : 'toCheck';
+}
+
+/** The statistics of an event (§1.10): one row, or none before the checks after it or a «Recalculate». */
+export function eventStatsQuery(eventId: number) {
+  return queryOptions({
+    queryKey: [...statsKey, eventId] as const,
+    queryFn: async (): Promise<EventStatsDto | null> =>
+      unwrap(
+        await api.GET('/api/events/stats', {
+          params: { query: toQuery(allOfAnEvent) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ).items[0] ?? null,
+  });
+}
+
+/** «Recalculate»: the numbers again from the rows of an event over; who flew without booking as the check counted it. */
+export function useRecalculateStats(eventId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<EventStatsDto> =>
+      unwrap(await api.POST('/api/events/events/{id}/stats', { params: { path: { id: eventId } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [...statsKey, eventId] });
+    },
+  });
+}
+
+/** The bookings of an event with what the check after it found (§5.1): data, and the word of the outcome for the page to write. */
+export function checkedBookingsQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...bookingsKey, 'checked', eventId, search] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/bookings', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row): CheckedBookingRow => ({ ...row, outcome: bookingOutcome(row) })),
+      };
+    },
+  });
+}
+
+/** The shifts of an event with how each went and, next to a no-show proposed, who covered the position (§4.5). */
+export function shiftOutcomesQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'outcomes', eventId, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/atc/shifts', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      ),
   });
 }
