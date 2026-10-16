@@ -299,6 +299,45 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, poi a `4ad747a`, con E4d, E11b e il piano 1.34, e a `b5d3fb9`, con E12)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
+  `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
+  - **`AuditRedaction.EmptyDeletedAsync<TEntity, TKey>(DbContext context, IReadOnlyCollection<TKey> keys, CancellationToken)`**
+    (`src/IvaoHub.Core/Privacy/AuditRedaction.cs`), accanto a `EmptyGoneAsync`: delle righe di `TEntity` con quelle chiavi che **non ci
+    sono più**, svuota (diventano `null` nel JSON) le colonne segnate `[ErasedWith]` in **ogni** copia d'audit — `created`, i due lati
+    di un `updated`, `deleted` —, di tutti i segni, chiunque la riga indicasse. Il resto della copia resta. Righe tracciate, **salva il
+    chiamante**.
+  - **Rifiuta** (`InvalidOperationException`; `ArgumentException` per le chiavi) un'entità che il contesto non mappa, una senza colonne
+    segnate, chiavi di un altro tipo della chiave dell'entità, e una cancellazione di `TEntity` ancora da salvare nel contesto.
+  - Un pezzo privato comune, `EmptyGoneCopiesAsync` (le chiavi che una riga ha ancora tolte, poi le copie in ordine), ora usato anche da
+    `EmptyGoneAsync`: `ErasedAuditTests` passa com'era.
+  - **I test**: `RetentionAuditTests` (integrazione, nuova, 3). Persone 780096 e 780097 di `ErasureTests`, solo nominate.
+- **Che cosa deve sapere E17** (che unisce questo branch, poi `main` quando è unita):
+  - **la chiamata**, in `events-retention`, per ogni entità cancellata, **dopo il salvataggio della cancellazione e nella stessa
+    transazione**:
+
+    ```csharp
+    await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+    database.Registrations.RemoveRange(registrations);
+    await database.SaveChangesAsync(cancellationToken);
+    await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(database, [.. registrations.Select(row => row.Id)], cancellationToken);
+    await database.SaveChangesAsync(cancellationToken);
+    await transaction.CommitAsync(cancellationToken);
+    ```
+
+    (i nomi del `DbSet` sono quelli del contesto degli eventi). Così un errore riporta indietro insieme la cancellazione e lo
+    svuotamento, e il giro dopo ritrova le righe; dopo un commit a sé un errore fra le due lascerebbe copie che nessuno cerca più;
+  - ⚠️ **prima del salvataggio la chiamata è rifiutata**: le righe ci sarebbero ancora e non si svuoterebbe niente;
+  - ⚠️ **un'entità senza segni è rifiutata**: `EventRegistration.AnswersJson` ha già `[ErasedWith(nameof(Vid))]` (E16); per i posti
+    delle attività E17 sceglie quali colonne segnare (con la colonna di persona della stessa riga) e lo dice nella sua nota. Il segno
+    vale anche alla cancellazione di una persona (E10n);
+  - una chiave la cui riga c'è ancora è lasciata com'è; la chiamata è idempotente.
+- **I tour** non ne hanno bisogno oggi (nota, §4): la loro conservazione cancella righe audite della forma del tour, e le righe di una
+  persona che tocca non sono `[Audited]`.
+
+[a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
 ### Che cosa ha lasciato E12 (15 ottobre 2026, branch `m4/e12-roster-publication`, PR #268; in coda dopo la #262 di E11b, nata dalla sua testa `973f385`, con la sua testa `12dfb0c` unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E12, «Com'è andata»; **una migrazione**, `AddRosterPublicationAndTransfers`; niente del nucleo —
