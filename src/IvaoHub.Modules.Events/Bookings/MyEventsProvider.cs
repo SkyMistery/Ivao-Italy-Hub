@@ -5,6 +5,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events.Atc;
 
 namespace IvaoHub.Modules.Events.Bookings;
 
@@ -12,12 +13,12 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// The block <c>events.myEvents</c> (design M4 §7.3, E6b): the reader's bookings still to fly, on <c>/me</c> — where a dashboard
 /// puts it from the back office, as it puts <c>flightops.myTours</c> —, by the time of their flights, and the way to all of them on
 /// <c>/events/mine</c>. «Still to fly» is a flight whose on block is to come: one in the air is still there, one landed is gone. The
-/// bookings are <see cref="PilotBookings.MineAsync"/>'s, the same answer <c>/events/mine</c> reads, in the same shape. The shifts of the
-/// ATC join them with their phase (E12).
+/// bookings are <see cref="PilotBookings.MineAsync"/>'s, the same answer <c>/events/mine</c> reads, in the same shape. With them the reader's
+/// shifts of the published rosters still to end (E12), <see cref="MemberShifts.MineAsync"/>'s, the same answer too.
 /// <para>Always live and without properties: it is the reader's. A visitor gets <c>signedIn: false</c> and nothing else — the block
 /// belongs on <c>/me</c>, and a page that shows it to the public shows a line that asks to sign in.</para>
 /// </summary>
-public sealed class MyEventsProvider(PilotBookings bookings, ICurrentUser currentUser, IClock clock) : IDataBlockProvider
+public sealed class MyEventsProvider(PilotBookings bookings, MemberShifts controllers, ICurrentUser currentUser, IClock clock) : IDataBlockProvider
 {
     public const string BlockType = "events.myEvents";
 
@@ -38,11 +39,13 @@ public sealed class MyEventsProvider(PilotBookings bookings, ICurrentUser curren
 
         var now = clock.UtcNow;
         var upcoming = (await bookings.MineAsync(cancellationToken)).Where(booking => booking.OnBlockUtc > now).ToList();
+        var shifts = (await controllers.MineAsync(cancellationToken)).Where(shift => shift.ToUtc > now).ToList();
 
         return new JsonObject
         {
             ["signedIn"] = true,
             ["bookings"] = JsonSerializer.SerializeToNode(upcoming, Json),
+            ["shifts"] = JsonSerializer.SerializeToNode(shifts, Json),
         };
     }
 }

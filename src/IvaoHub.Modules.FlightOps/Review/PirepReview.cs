@@ -8,6 +8,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.People;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Checks;
 using IvaoHub.Modules.FlightOps.Data;
@@ -519,16 +520,12 @@ public sealed class PirepReview(
         ];
     }
 
-    /// <summary>The names the staff reads next to VIDs; a member who never signed in has none.</summary>
-    public async Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int?> vids, CancellationToken cancellationToken)
-    {
-        var wanted = vids.OfType<int>().Where(vid => vid > 0).Distinct().ToList();
-        return (await hub.Users.AsNoTracking()
-                .Where(user => wanted.Contains(user.Vid))
-                .Select(user => new { user.Vid, user.FirstName, user.LastName })
-                .ToListAsync(cancellationToken))
-            .ToDictionary(user => user.Vid, user => $"{user.FirstName} {user.LastName}".Trim());
-    }
+    /// <summary>
+    /// The names the staff reads next to VIDs, from the core's one reader (note 2026-10-11-un-solo-lettore-dei-nomi): a member who
+    /// never signed in, or whose data was erased, has none. <see cref="Member"/> says what an empty name is for the tours.
+    /// </summary>
+    public Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int?> vids, CancellationToken cancellationToken) =>
+        MemberNames.ReadAsync(hub, vids, cancellationToken);
 
     public static MemberDto? Member(int? vid, IReadOnlyDictionary<int, string> names) =>
         vid is { } known ? new MemberDto(known, names.TryGetValue(known, out var name) && name.Length > 0 ? name : null) : null;

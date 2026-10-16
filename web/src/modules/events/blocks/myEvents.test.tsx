@@ -6,7 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 import { describe, expect, test } from 'vitest';
 
 import { createTestI18n } from '../../../test/harness';
-import type { MyBookingDto } from '../api';
+import type { MyBookingDto, MyShiftDto } from '../api';
 import englishEvents from '../locales/en/events.json';
 
 import { MyEventsBlock } from './myEvents';
@@ -98,5 +98,26 @@ describe('the block of a pilot’s bookings', () => {
       '/events/evt-test-smoke-10',
     );
     expect(screen.getByRole('link', { name: words.all })).toHaveAttribute('href', '/events/mine');
+  });
+
+  test('a controller with shifts and no booking reads their shifts under their events (E12)', async () => {
+    const shift: MyShiftDto = {
+      id: 7,
+      eventId: 12,
+      eventSlug: 'evt-test-smoke-12',
+      eventTitle: { en: 'Smoke event 12', it: 'Evento smoke 12' },
+      eventState: 'Announced',
+      callsign: 'XXAA_TWR',
+      fromUtc: '2099-11-21T17:00:00Z',
+      toUtc: '2099-11-21T18:00:00Z',
+      transferable: true,
+      transfer: null,
+    };
+    await draw(<MyEventsBlock data={{ signedIn: true, bookings: [], shifts: [shift] }} props={{}} />);
+
+    const event = (await screen.findByRole('link', { name: 'Smoke event 12' })).closest('li')!;
+    expect(within(event).getByRole('list', { name: words.shifts })).toBeInTheDocument();
+    expect(within(event).getByText('XXAA_TWR')).toBeInTheDocument();
+    expect(screen.queryByText(words.none, { exact: false })).not.toBeInTheDocument();
   });
 });
