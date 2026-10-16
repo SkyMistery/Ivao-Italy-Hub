@@ -4796,8 +4796,20 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
     verdi; `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` **non rifatto** (il coordinatore: il
     65/65 sul merge di `33ed36f` copre il codice, `main` ha portato solo la versione e i documenti); le regole di `core-guard` contro
     `4ad747ad`: nessun file del maintainer, i tre file del nucleo di E12 con la sua nota nuova.
+- **Dopo la seconda lettura** (16 ottobre 2026; [i rilievi][r268b]: chiusi i punti 1–8 e le due condizioni di Carmine):
+  1. **Togliere un turno mentre il job lo dice** (il punto 1): la `Delete` di `ShiftEndpoints` prende il lock dell'evento come la correzione,
+     e `ShiftNotices.RemoveAsync` rilegge `notified_at` dopo il lock; il salvataggio e il commit nel hook, la mail dopo. Un test deterministico,
+     `AShiftTakenAwayWhileTheJobTellsItStillTellsItsControllerItIsGone`: **cade senza la rilettura** (nessuna mail «tolto»), passa con.
+  2. **I test** (piccolo 2): la gara della correzione chiama ora `NoteAsync` dentro il lock; gli avvisi del rating sul titolare scelto
+     (`TheWarningsOnTheHolderChosenSayTheRatings`); un controllore cancellato sul roster pubblico (`AnErasedControllerOnThePublicRosterIsNamedByNobody`).
+  3. **`RowsAsync`** legge di nuovo i dati degli avvisi una volta per evento (piccolo 3).
+  - **Verificato, in locale** (16 ottobre 2026): build Release senza avvisi; unità **1294/1294**; le classi del roster di E12 ed E11b 25/25
+    prima; **integrazione intera senza filtro, da sola, 622/622** (9,8 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi;
+    `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` non rifatto (la correzione tocca un verbo
+    del server e i test, nessuna pagina); le regole di `core-guard` contro `4ad747ad`: invariate.
 
 [r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
+[r268b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6219778760
 [a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
