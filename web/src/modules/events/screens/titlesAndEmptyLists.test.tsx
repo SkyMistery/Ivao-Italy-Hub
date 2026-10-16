@@ -10,7 +10,7 @@ import { bootstrapKey } from '../../../features/me/queries';
 import { Route as rootRoute } from '../../../routes/__root';
 import type { Bootstrap } from '../../../shared/api/bootstrap';
 import { createTestI18n } from '../../../test/harness';
-import type { EventDetailDto, PublicEventDto } from '../api';
+import type { AtcEventDto, EventDetailDto, PublicEventDto } from '../api';
 import englishEvents from '../locales/en/events.json';
 import italianEvents from '../locales/it/events.json';
 
@@ -21,6 +21,7 @@ import { MyBookingsPage } from './mine';
 import { EventPublicPage, EventsPublicPage } from './public';
 import { QuestionsTab } from './questions';
 import { RegistrationsTab } from './registrations';
+import { RosterSection } from './roster';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
 
@@ -102,6 +103,21 @@ const event: PublicEventDto = {
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
 const detail = { id: event.id, publicSlots: true, privateSlots: false } as EventDetailDto;
 
+/** The head of the same event as the ATC reads it (E11b): its roster proposed, and nothing in it — no position opened. */
+const atcHead: AtcEventDto = {
+  id: event.id,
+  ownerDepartment: 'ED',
+  slug: event.slug,
+  title: event.title,
+  state: 'Announced',
+  startsAtUtc: event.startsAtUtc,
+  endsAtUtc: event.endsAtUtc,
+  closesAtUtc: '2099-11-18T16:00:00Z',
+  shiftMinutes: 60,
+  cancelledAt: null,
+  rosterProposedAt: '2099-11-18T16:03:00Z',
+};
+
 /** What every list and the block of the events answer: nothing at all. */
 const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
@@ -166,6 +182,11 @@ async function open(
           getParentRoute: () => staff,
           path: '/bookings',
           component: () => <BookingsTab event={detail} editable={editable} />,
+        }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/roster',
+          component: () => <RosterSection event={atcHead} />,
         }),
         createRoute({
           getParentRoute: () => staff,
@@ -376,5 +397,16 @@ describe('the empty lists of the events', () => {
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.events.empty)).toBeInTheDocument();
     expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+  test('an empty roster says what is there — no position opened — to a reader with no button, in both languages', async () => {
+    // The bootstrap of the test holds no permission: the reader corrects nothing, and the sentence orders nothing (E11b).
+    const { i18n } = await open('/roster');
+
+    expect(await screen.findByText(englishEvents.atc.roster.empty)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: englishEvents.atc.roster.add })).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.atc.roster.empty)).toBeInTheDocument();
   });
 });

@@ -46,7 +46,19 @@ public static class AtcRules
     {
         ArgumentNullException.ThrowIfNull(row);
 
-        return row.HasRoster && row.CancelledAt is null && hasPositions && now < ClosesAt(row, settings);
+        return row.HasRoster && row.CancelledAt is null && hasPositions && !IsClosedForGood(row, settings, now);
+    }
+
+    /// <summary>
+    /// Whether the availabilities of an event are closed: past the close, or — once its roster is proposed — for good, even if the start
+    /// moves later and the close with it (Carmine's answer on issue #259, reading 5 of note 2026-10-13-la-proposta-del-roster): nothing
+    /// proposes again, and the staff correct by hand.
+    /// </summary>
+    public static bool IsClosedForGood(Event row, EventsSettings settings, DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return row.RosterProposedAt is not null || now >= ClosesAt(row, settings);
     }
 
     /// <summary>
@@ -61,13 +73,11 @@ public static class AtcRules
         return settings.MinimumAtcRating is not { } least || vocabulary.IsAtLeast(RatingKind.Atc, ratingAtc, least);
     }
 
-    /// <summary>Whether a member may withdraw now: until the close, cancelled or not — after it the roster was proposed from it.</summary>
-    public static bool IsWithdrawable(Event row, EventsSettings settings, DateTime now)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-
-        return now < ClosesAt(row, settings);
-    }
+    /// <summary>
+    /// Whether a member may withdraw now: until the close, cancelled or not — after it the roster was proposed from it, and once it is
+    /// proposed never again.
+    /// </summary>
+    public static bool IsWithdrawable(Event row, EventsSettings settings, DateTime now) => !IsClosedForGood(row, settings, now);
 
     /// <summary>
     /// The windows a member sends, in their order of time (§4.2): at least one and at most <see cref="EventAtcAvailability.MaxWindows"/>,

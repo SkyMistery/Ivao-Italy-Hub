@@ -515,8 +515,12 @@ from its draft to the evening it is flown:
 
 An event with an **ATC roster** opens its positions — chosen among the positions of your division, each with
 its FIR from IVAO's data — and its controllers give their availability from its page, in windows of hours,
-until a few days before it; the staff read, on each position, who is available. The roster itself is the
-second part of the module.
+until a few days before it; the staff read, on each position, who is available. When the availabilities close,
+the hub **proposes the roster** once — every position in shifts, each given to a controller with the reason why:
+the preferred rating of your division for its kind of position, the positions they opened most (when you have an
+archive of ATC sessions), fewer no-shows, fewer shifts —, and the staff correct it: they add anybody who signed in
+once, move and take away shifts, and a shift outside the rules is a warning, never a refusal. Publishing it, and
+what follows, is the rest of the second part.
 
 What a fork decides about it is, again, configuration and data.
 
@@ -536,7 +540,7 @@ advisors —, and `positionGrants` in the example file gives them what the modul
 | `EventRoutes.View`, `.Edit` | the routes of an event | ✓ | ✓ |
 | `EventBookings.View` | the slots and the bookings, with the pilots' VIDs; the export a gate manager reads | ✓ | ✓ |
 | `EventBookings.Edit` | load and correct the slots, generate the private ones, take a booking away | ✓ | ✓ |
-| `EventAtc.View`, `.Edit` | the ATC of an event: its positions and who is available (and the roster, in the second part) | ✓ | ✓ |
+| `EventAtc.View`, `.Edit` | the ATC of an event: its positions, who is available, and correcting the roster | ✓ | ✓ |
 | `EventReports.View` | the reports of support (in the second part) | ✓ | ✓ |
 
 Other departments collaborate on a part of every event, and the example file gives them that part **on
@@ -593,9 +597,9 @@ and private slots, an MSE with private slots only, and an online day about the w
   `events.myEvents`, a member's bookings still to fly, on `/me`. The hub places neither for you.
 - **The mails**, five kinds, each of which a member can switch off from their profile: an event they
   booked cancelled, or its times changed; a booking taken away by the staff, or its flight corrected; the
-  reminder before a flight. The module has two jobs, both every quarter of an hour: the one that projects
-  an event again when it is seen and when it ends (`events-release`), and the reminders
-  (`events-reminders`).
+  reminder before a flight. The module has three jobs, all every quarter of an hour and in UTC: the one that
+  projects an event again when it is seen and when it ends (`events-release`), the reminders
+  (`events-reminders`), and the one that proposes the roster at the close (`events-roster`).
 
 ### The gate manager
 
@@ -613,14 +617,16 @@ too: they are its history. When the super administrator erases the data of a per
 event still to end are deleted, and the slots are free again; the ones of an event that ended stay under a
 pseudonym, without the flight they wrote for a private slot, the note the staff wrote about it and the
 session of the network it was found in. Their availability as a controller is treated the same way: deleted
-for an event still to end, kept under the pseudonym and without their note for one that ended. What they did
+for an event still to end, kept under the pseudonym and without their note for one that ended; and their shifts
+in a roster, deleted for an event still to end, kept for one that ended without the staff's note on how it went and
+without the reason of the proposal. What they did
 as staff — an event cancelled, a flight excused — stays under the pseudonym.
 
 ### What it does not do yet
 
-- **The roster**: proposing the shifts from the availabilities, correcting and publishing it, the
-  reliability of whoever does not show up, and the reports of support with their awards — the rest of the
-  second part of the module. The positions and the availabilities are there.
+- **The roster**: publishing it with its mails, handing a shift over, the reliability of whoever does not
+  show up, and the reports of support with their awards — the rest of the second part of the module. The
+  positions, the availabilities, the proposal of the roster and its correction are there.
 - **The events people come to in person**, with their registration — the third part.
 - **The stands of the private slots**, which the gate manager gives; the hub keeps the pair of an arrival
   and its departure, for one gate.

@@ -68,8 +68,12 @@ public static class AvailabilityEndpoints
         };
     }
 
-    /// <summary>The key a 409 of a member's availability says: it changed from another window of theirs, read it again.</summary>
-    public const string ChangedKey = "events:errors.availabilityChanged";
+    /// <summary>
+    /// The key a 409 of a member's availability says: the core's sentence of a change made meanwhile, which the page shows for every 409
+    /// (<c>useProblemDetails</c>) — a module's own sentence there would never reach the screen (E11a's third reading on #256, point 1; note
+    /// 2026-10-13-la-proposta-del-roster).
+    /// </summary>
+    public const string ChangedKey = CrudProblems.ConflictTitleKey;
 
     /// <summary>Changed meanwhile from another window of the member's: a 409 that says to read it again (the review of #256, point 4).</summary>
     private static IResult Changed(LocaleCatalog catalog, ICurrentUser currentUser) =>

@@ -1,6 +1,8 @@
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Events.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Atc;
@@ -14,9 +16,14 @@ public sealed class StaffAvailability(
     EventsDbContext database,
     EventsPeople people,
     IAtcPositionDirectory directory,
-    RatingVocabulary vocabulary)
+    RatingVocabulary vocabulary,
+    IAuthorizationService authorization,
+    IHttpContextAccessor http)
 {
-    /// <summary>A page of positions with the names the core knows and how many controllers are available in some of their hours.</summary>
+    /// <summary>
+    /// A page of positions with the names the core knows, how many controllers are available in some of their hours, and whether the reader
+    /// may write the ATC on each — the one handler asked on the position, its care, scope and FIR (E11b: the shift's form offers those).
+    /// </summary>
     public async Task<IReadOnlyList<EventAtcPositionDto>> PositionsAsync(
         IReadOnlyList<EventAtcPosition> positions,
         CancellationToken cancellationToken)
@@ -25,18 +32,23 @@ public sealed class StaffAvailability(
 
         var named = await directory.FindAsync([.. positions.Select(position => position.Callsign).Distinct()], cancellationToken);
         var windows = await WindowsAsync(positions.Select(position => position.EventId), cancellationToken);
+        var reader = http.HttpContext?.User;
 
-        return
-        [
-            .. positions.Select(position => AtcPositionMapper.Row(
+        var rows = new List<EventAtcPositionDto>();
+        foreach (var position in positions)
+        {
+            rows.Add(AtcPositionMapper.Row(
                 position,
                 named.GetValueOrDefault(position.Callsign)?.Name,
                 windows
                     .Where(window => window.EventId == position.EventId && AtcRules.Meet(window.FromUtc, window.ToUtc, position.FromUtc, position.ToUtc))
                     .Select(window => window.AvailabilityId)
                     .Distinct()
-                    .Count())),
-        ];
+                    .Count(),
+                reader is not null && (await authorization.AuthorizeAsync(reader, position, EventsPermissions.AtcEdit)).Succeeded));
+        }
+
+        return rows;
     }
 
     /// <summary>

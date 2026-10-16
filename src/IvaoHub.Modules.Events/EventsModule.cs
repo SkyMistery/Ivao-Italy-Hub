@@ -38,7 +38,8 @@ namespace IvaoHub.Modules.Events;
 /// draft of an event onto a new date, and the module's half of erasing a person's data; E16 the events in person — their questions,
 /// a member's registration with the answers, the sums the staff read — and the statistics of an event, born whole; E11a the ATC of an
 /// event with a roster — the positions it opens, which the staff of a FIR write on their FIR, and a controller's availability with its
-/// windows, given from the event's page and read by the staff per position.
+/// windows, given from the event's page and read by the staff per position; E11b its roster — proposed once at the close by
+/// <c>events-roster</c>, with the why of every shift, and corrected by the staff, with warnings where a shift leaves the rules.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -106,7 +107,8 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<EventSaving>();
         services.AddScoped<EventChildren>();
 
-        // Its life (E3b): what publishing it asks, and the job that projects it again when it is seen and when it ends.
+        // Its life (E3b): what publishing it asks, and the job that projects it again when it is seen and when it ends — in UTC, which
+        // its trigger says (E10j: a quarter of an hour falls on the same instants in every zone, and the zone is written all the same).
         services.AddScoped<EventPublishing>();
         services.AddScoped<EventReleaseJob>();
 
@@ -156,6 +158,19 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<StaffAvailability>();
         services.AddScoped<MemberAvailability>();
 
+        // The roster (E11b): proposed once at the close of the availabilities by events-roster, in UTC, and corrected by the staff.
+        services.AddScoped<RosterData>();
+        services.AddScoped<RosterProposal>();
+        services.AddScoped<StaffRoster>();
+        services.AddScoped<ShiftLock>();
+        services.AddScoped<EventRosterJob>();
+        services.AddQuartz(quartz => quartz
+            .AddJob<EventRosterJob>(job => job.WithIdentity(EventRosterJob.JobName))
+            .AddTrigger(trigger => trigger
+                .ForJob(EventRosterJob.JobName)
+                .WithIdentity($"{EventRosterJob.JobName}-quarterly")
+                .WithCronSchedule(EventRosterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -174,5 +189,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapRegistrationEndpoints();
         endpoints.MapAtcPositionEndpoints();
         endpoints.MapAvailabilityEndpoints();
+        endpoints.MapShiftEndpoints();
     }
 }
