@@ -5057,13 +5057,25 @@ la domanda per Carmine data al coordinatore):
   quando»; una voce tolta non conta e nessuno toglie la propria); unità `EventsRegistersTests` (7: la penalità 0,08 e 0,25 e il peso, le
   transizioni, le fasce, i limiti dell'evento, «fino a quando», le cinque impostazioni); il giro `full/events-registers.spec.ts` (le due
   pagine dei registri, le impostazioni salvate e rilette, il limite di un evento dal suo form). VID **761200–761206**.
-- **Verificato, in locale** (16 ottobre 2026, dopo il merge di `f5333cf`): `dotnet build -c Release` senza avvisi; unità **1334/1334**;
-  **integrazione intera senza filtro, da sola, 651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm
-  test` **793 in 112 file** (da solo, con `--maxWorkers=4`: un primo giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api`
-  senza diff; lo smoke `--workers=2` **181/181**; `core-guard.sh` con Git Bash dal merge-base con `main` (`2938ae8`): passa, nessun file del
-  maintainer.
-- **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job).
+- **Il «fatta quando» sul banco della fase** (5150, `ivaohub_e2e_e13b`, rifatto con `E2E_SKIP_PUBLISH=1` e Mailpit spento): un evento finito
+  con il roster, e un turno del pilota del banco `NoShowProposed` scritto in SQL (`bench-e13b.ps1` nella scratchpad della sessione: il banco
+  non lancia `events-after`). Il coordinatore degli eventi, nel browser, lo ha confermato dalla sezione «Esiti» dell'ATC dell'evento; il
+  registro dei controllori ha detto 1 no-show e penalità 0,33; «Togli il no-show» senza nota è stato rifiutato sul campo, con la nota è
+  diventato «Giustificato», senza più un'azione, con il registro a 0 no-show e penalità 0; il pilota ha letto in `/events/mine` il turno
+  giustificato con la nota. **Guardare ha trovato due difetti** che i giri non vedevano, corretti: la pagina di una persona chiedeva 200 righe
+  (lo schema delle liste ne ammette 100: l'errore del router), e i conti di una persona stavano solo nel `title` dell'intestazione — ora sono
+  a vista, scritti come etichetta e numero («1 giustificati» non si legge più). Il giro ora apre le due pagine di una persona.
+- **Verificato, in locale** (16–17 ottobre 2026, dopo il merge di `f5333cf`): `dotnet restore --force --no-http-cache` senza avvisi; `dotnet
+  build -c Release` senza avvisi; `has-pending-model-changes` senza cambi; unità **1334/1334**; **integrazione intera senza filtro, da sola,
+  651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **796 in 113 file** (da solo, con
+  `--maxWorkers=4`: un giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api` senza diff; lo smoke `--workers=2` **181/181**;
+  `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit: **69/69 al primo giro** (14,9 min; due giri prima avevano 68/69, rossa solo la spec nuova per due asserzioni sue — la descrizione sotto il breadcrumb, due `h1` nella pagina —, corrette e la spec da sola 6/6 con `--repeat-each 3`); `core-guard.sh` con Git Bash dal
+  merge-base con `main` (`2938ae8`): passa, nessun file del maintainer.
+- **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job); i limiti e il
+  registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
+  usa la virgola italiana (non toccato).
 
+### E14a — Il PIREP di supporto
 
 Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-support-reports`. Dopo E13b ed E10e.
 
