@@ -12,6 +12,7 @@ letture 2, 4, 7, 9 e 10.
 [a272]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6219761876
 [a272b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300
 [r278]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6222330742
+[r278b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6224947393
 **Regola applicata:** `CLAUDE.md` §5. Il job `events-after` ogni ora a lotti, `flown_at` dalle sessioni del pilota fra partenza e arrivo
 senza il callsign, chi ha volato senza prenotare solo come numero, la presenza nei turni con `attendanceMinimumMinutes` e il no-show
 proposto con chi ha coperto la postazione, le statistiche ricalcolabili dallo staff e la scheda «Statistiche» sono **decisi** (design
@@ -54,8 +55,10 @@ quando si richiede a una sorgente che non risponde, come si contano i no-show pr
    arrivato, e **vuoto è «non contato»** — un evento di tutta la divisione, uno senza scali, uno chiuso dopo trenta giorni prima di ogni
    conto —; la lettura e «Ricalcola» rispondono `flownUnbooked` vuoto, con `flownUnbookedAirports` e gli scali dell'evento, e la scheda lo
    dice in parole («non contato»; «contato su 2 dei suoi 3 scali» quando la rete ha smesso di rispondere a metà). Contato a pezzi (lettura 6),
-   un pilota che ha volato senza prenotare in due scali contati in due giri diversi si conta due volte: un evento con uno o due scali si
-   conta in un giro solo, ed esatto.
+   un pilota che ha volato senza prenotare in due scali contati in due giri diversi — per esempio fra due scali dell'evento — si conta due
+   volte, **di proposito**: i VID non si tengono da un giro all'altro. Fra un giro e l'altro il numero può quindi essere **più alto** delle
+   persone vere; dentro un giro, invece, una risposta lunga quanto il tetto (1000) lo fa **almeno** (il log del giro lo dice). Un evento con
+   uno o due scali si conta in un giro solo, ed esatto (la seconda lettura della #278, [il revisore][r278b]).
 4. **La presenza nei turni**, solo per i turni `Unknown`: prima **l'archivio** (`SessionsOfAsync(vid, da, a)`, le connessioni sul
    nominativo della postazione); se l'archivio non risponde (`null`, oggi IT con `atcData: none`) o **non copre** l'inizio del turno
    (`Covers` falso, E10b: «non si sa»), **il tracker per VID**, tipo `ATC`, dall'inizio del turno − 12 ore (chi era già connesso), stesso

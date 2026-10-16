@@ -4395,8 +4395,14 @@ contrario li fa cadere.
   fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build Release 0 avvisi, unità **1312/1312**,
   integrazione intera da sola **624/624** al primo giro (12 minuti), `pnpm -C web` lint, typecheck, format:check e test (**788/788**)
   verdi, `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `2938ae80`: passa.
+- **Unito `main` a `eefb24a`** (16 ottobre 2026, su richiesta del revisore, [il suo commento][m277t2]: E17, #271), in conflitto solo in
+  `HANDOFF-M4.md`, con E10t in cima ed E17 sotto. Il diff della fase fuori dai documenti è lo stesso. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1319/1319**, integrazione intera da sola **638/638** al primo giro (16 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**789/789**; vitest con `--maxWorkers=2`, perché col PC quasi senza memoria il primo giro aveva
+  perso tre worker senza nessun test rosso), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `eefb24a0`: passa.
 
 [m277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6223190083
+[m277t2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6224649688
 
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
@@ -4974,11 +4980,16 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
   `titlesAndEmptyLists.test.tsx`, le due parti tenute) e la testa di E17 `92a7ff7` (con E12 `1887c27` ed E10s `00b0609`: conflitti nei file
   di lingua e in `HANDOFF-M4.md`, dove il blocco di E10s era doppio e resta quello di E17). Dopo la revisione: E10t `e17dd8c` (con `main` a
   `b5d3fb9`, E12 unita), E17 `02ea4aa` (con E10s `9e40aff`; la migrazione rifatta sopra il suo snapshot, che resta l'ultimo degli eventi) ed
-  E10t `2255412` (con `main` a `2938ae8`, E10s unita), conflitti solo in `HANDOFF-M4.md`: i blocchi doppi tenuti una volta.
+  E10t `2255412` (con `main` a `2938ae8`, E10s unita), conflitti solo in `HANDOFF-M4.md`: i blocchi doppi tenuti una volta. Dopo la seconda
+  lettura (approvabile): `main` a `85d15a7` (E17 unita, #271, e i tour #275, #276, #279: niente negli eventi) e la testa di E10t `ee9772c`
+  (con `main` a `eefb24a`), di nuovo solo `HANDOFF-M4.md`.
 - **Dopo la revisione** ([i rilievi sulla #278](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6222330742), [sì alle dieci letture di Carmine, con due condizioni](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/272#issuecomment-6222349300); la nota ora **decisa**):
   1. **Il conto di chi ha volato senza prenotare va a pezzi, per scalo** (lettura 6): ogni giro conta quanti scali stanno nel resto del suo
      conto, al più due in un giro nuovo, e li salva con le statistiche; un giro non spende mai più di 60 unità. Prima uno solo passo per
-     tutti gli scali poteva costare 220 unità a un evento di dieci. Provato con tre scali in due giri (44 e 22 unità).
+     tutti gli scali poteva costare 220 unità a un evento di dieci. Provato con tre scali in due giri (44 e 22 unità). ⚠️ Un pilota contato
+     in due giri diversi (fra due scali dell'evento) conta due volte, di proposito: i VID non restano fra un giro e l'altro, e con più di due
+     scali il numero può essere più alto delle persone vere ([la seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/278#issuecomment-6224947393),
+     approvabile; detto nella nota, lettura 3).
   2. **«Non contato» non è 0** (lettura 3): `flown_unbooked_airports` vuoto, `flownUnbooked` vuoto nella lettura e in «Ricalcola», e la
      scheda lo dice; il test della chiusura dopo trenta giorni ora lo legge vuoto.
   3. **La prima riga delle statistiche sotto il blocco della riga dell'evento**: senza, «Ricalcola» contro la chiusura rispondeva 500 (provato
@@ -4992,6 +5003,11 @@ dieci letture, con le scelte 5 e 7 **decise** da Carmine sull'[issue #272](https
   `pnpm test` **793 in 112 file** (da solo); `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco
   `http://127.0.0.1:5149`, `ivaohub_e2e_e13a` tolto prima, dietro il lock di Mailpit: **67/67 al primo giro** (14,6 min); `core-guard.sh` con
   Git Bash dal merge-base con `main` (`2938ae8`): passa (di E13a nel nucleo solo `ErasureTests.cs`).
+- **Verificato, in locale, dopo `main` a `85d15a7` ed E10t `ee9772c`** (17 ottobre 2026): `dotnet build -c Release` senza avvisi;
+  `has-pending-model-changes` senza cambi; unità **1331/1331**; **integrazione intera senza filtro 650/650** (15,2 min, da sola); `pnpm test`
+  **793 in 112 file** (`--maxWorkers=2`, la memoria era poca); lo smoke: **180/181 al primo giro** — cadde
+  `training-public.spec.ts:232`, della formazione, che E13a non tocca: rifatto da solo con `--repeat-each=3` **3/3**, poi lo smoke intero
+  **181/181**; `core-guard.sh` dal merge-base `85d15a7`: passa. e2e:full non rifatto: i due merge non toccano il browser né gli eventi.
 - **Non verificato**: la CI (la dice la PR); un evento vero sulla rete e i tempi veri del tracker (i pesi del lotto sono stime dalla
   misura di E10a); una sera con l'archivio di vIPI (IT è a `none` finché Carmine non lo accende, #259: chi ha coperto resta vuoto); la
   pagina a 375 px (letta con la spec, non guardata).

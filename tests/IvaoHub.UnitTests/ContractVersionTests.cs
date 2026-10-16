@@ -35,13 +35,8 @@ public sealed class ContractVersionTests
     /// <summary>The same contract at its second version, which still speaks the first for a release.</summary>
     private static readonly ContractVersion Second = new(Header, 2, [1, 2], TitleKey, Code);
 
-    /// <summary>The tours' contract given to the core, as their move onto it will declare it (note §5).</summary>
-    private static readonly ContractVersion ToursInTheCore = new(
-        AgentContract.Header,
-        AgentContract.Current,
-        AgentContract.Accepted,
-        AgentContract.VersionTitleKey,
-        "agentContract");
+    /// <summary>The tours' contract, as the tours declare it since they moved onto the core (note 2026-10-16-i-tour-sulla-versione-del-contratto).</summary>
+    private static readonly ContractVersion ToursInTheCore = AgentContract.Version;
 
     /// <summary>A division whose language is not the first a member may pick, so that falling back to it shows.</summary>
     private static readonly DivisionOptions Division = new()
@@ -195,13 +190,13 @@ public sealed class ContractVersionTests
     }
 
     /// <summary>
-    /// The twin test: the core with the tours' values and the tours' own filter, on the same requests, give the same answer —
-    /// the same status, the same body (title, code, current, accepted), the same header, the endpoint reached or not. It is
-    /// the proof that the tours' move onto the core changes no answer an agent reads, and it goes away with their copy (note
-    /// §5).
+    /// What the tours' agent is answered, now that the core checks it: the twin test that compared the core with the tours' own
+    /// filter on these requests went with that filter (note 2026-10-16-i-tour-sulla-versione-del-contratto), and what it said the
+    /// tours accept is kept here — ASCII digits only, spaces around and zeros in front allowed —, with the refusal in the asker's
+    /// language and the version spoken in the answer.
     /// </summary>
     [Fact]
-    public async Task TheCoreAnswersEveryRequestAsTheToursFilterDoes()
+    public async Task TheToursAgentIsAnsweredAsItsOwnFilterAnsweredIt()
     {
         StringValues[] requests =
         [
@@ -216,19 +211,16 @@ public sealed class ContractVersionTests
             {
                 foreach (var locale in new[] { "en", "it", null })
                 {
-                    var core = await AskAsync(ToursInTheCore.RequireAsync, AgentContract.Header, said, catalog, locale);
-                    var tours = await AskAsync(AgentContract.RequireVersionAsync, AgentContract.Header, said, catalog, locale);
+                    var answer = await AskAsync(ToursInTheCore.RequireAsync, AgentContract.Header, said, catalog, locale);
 
-                    Assert.Equal(tours.Reached, core.Reached);
-                    Assert.Equal(tours.Status, core.Status);
-                    Assert.Equal(tours.Text, core.Text);
-                    Assert.Equal(tours.Spoken, core.Spoken);
-                    answers.Add((said.ToString(), core));
+                    Assert.Equal(answer.Reached ? 200 : 400, answer.Status);
+                    Assert.Equal(answer.Reached ? "1" : null, answer.Spoken);
+                    answers.Add((said.ToString(), answer));
                 }
             }
         }
 
-        // What the tours accept, and so the core: ASCII digits only, spaces around and zeros in front allowed.
+        // What the tours' filter accepted, and so the core: ASCII digits only, spaces around and zeros in front allowed.
         Assert.Equal(["1", " 1 ", "\t1", "01"], answers.Where(entry => entry.Answer.Reached).Select(entry => entry.Said).Distinct());
 
         // The refusals were written in more than one language.
