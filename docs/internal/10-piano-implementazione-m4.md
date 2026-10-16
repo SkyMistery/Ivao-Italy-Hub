@@ -4877,4 +4877,8 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
   `EventsTestRows`, `activities` nelle fixture di `PublicEventDto` (`EventHead.test.tsx`, `public.test.tsx`, `titlesAndEmptyLists.test.tsx`,
   lo smoke `events-public.spec.ts`).
 - **Gli endpoint scritti a mano** (piano §16.6): due verbi del membro, prendere e ridare un posto.
+- **Trovato dal giro completo, dopo il merge di E12**: la pagina «Nuova attività» si rompeva appena aperta, perché dopo **E10p** `SchemaForm`
+  disegna un istante solo con il fuso della divisione accanto (`division={{ defaultLocale, timezone }}`, come il form delle postazioni), e
+  nessun test disegnava il form; ora lo passa, e lo prova il vitest `activityForm.test.tsx`. ⚠️ **Un `e2e:full` che gira mentre si fa un
+  merge** cade sulle spec che leggono `locales/<lang>/events.json` con i marcatori di conflitto: un giro va rifatto, a file fermi.
 - **Non fatto**: **il rapporto di chiusura di M4**: M4b non è chiusa (E11b, E12 in corso, E13a–E15b da fare).
