@@ -53,6 +53,9 @@ test('the form has a field for everything a client writes on an event but the de
     venue: { en: 'Where it is' },
     hasRoster: true,
     shiftMinutes: 45,
+    restrictedWindowHours: 3,
+    restrictedMaxPerWindow: 1,
+    restrictedMaxPerEvent: 2,
   };
 
   expect(

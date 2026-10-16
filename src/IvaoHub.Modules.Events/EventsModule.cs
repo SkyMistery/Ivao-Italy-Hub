@@ -45,7 +45,8 @@ namespace IvaoHub.Modules.Events;
 /// parallel activities of an event in person — a member's seat in a turn, counted under a lock —, «Duplicate» for the questions and the
 /// activities, and the short retention of the registrations, <c>events-retention</c>; E13a the checks after an event — <c>events-after</c>
 /// finds the bookings flown, the shifts attended or a no-show to propose, and counts who flew without booking — and its statistics, with
-/// «Recalculate» for the staff.
+/// «Recalculate» for the staff; E13b the staff's decisions on the no-shows, the registers of the controllers and of the pilots, the limits of
+/// whoever books and does not fly, and the block of the staff's queue.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -61,12 +62,14 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>
     /// The staff's side: the events (E3a), the ATC of the events with a roster (E11a) — for whoever writes the positions without reading
-    /// the events, the staff of a FIR —, and the settings (E2).
+    /// the events, the staff of a FIR —, the registers of the controllers and of the pilots (E13b), and the settings (E2).
     /// </summary>
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
         new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.atc", "/staff/events/atc", EventsPermissions.AtcView),
+        new NavItemDescriptor("events:nav.controllers", "/staff/events/controllers", EventsPermissions.AtcView),
+        new NavItemDescriptor("events:nav.pilots", "/staff/events/pilots", EventsPermissions.BookingsView),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
     ];
 

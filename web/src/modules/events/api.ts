@@ -167,6 +167,11 @@ export function eventToFormValues(event: EventDetailDto, locales: readonly strin
     // The column takes Public and Members only; the server refuses anything else.
     visibility: event.visibility === 'Members' ? 'Members' : 'Public',
     ...(event.bannerMediaId === null ? {} : { bannerMediaId: event.bannerMediaId }),
+    ...(event.restrictedWindowHours === null ? {} : { restrictedWindowHours: event.restrictedWindowHours }),
+    ...(event.restrictedMaxPerWindow === null
+      ? {}
+      : { restrictedMaxPerWindow: event.restrictedMaxPerWindow }),
+    ...(event.restrictedMaxPerEvent === null ? {} : { restrictedMaxPerEvent: event.restrictedMaxPerEvent }),
     rowVersion: event.rowVersion,
   };
 }
@@ -197,6 +202,9 @@ function eventBody(values: EventFormValues, body: Body | null): EventWriteDto {
     inPerson: values.inPerson,
     hasRoster: values.hasRoster,
     shiftMinutes: values.shiftMinutes ?? null,
+    restrictedWindowHours: values.restrictedWindowHours ?? null,
+    restrictedMaxPerWindow: values.restrictedMaxPerWindow ?? null,
+    restrictedMaxPerEvent: values.restrictedMaxPerEvent ?? null,
     // A venue written in no language is none, and left out.
     ...(values.venue === undefined || Object.values(values.venue).every((text) => text.trim() === '')
       ? {}
@@ -1689,5 +1697,162 @@ export function shiftOutcomesQuery(eventId: number, search: ListSearch) {
           querySerializer: listQuerySerializer({ eventId: String(eventId) }),
         }),
       ),
+  });
+}
+
+// ---- the registers (E13b) ------------------------------------------------------------------------------------------------------
+
+export type ControllerRegisterRowDto = components['schemas']['ControllerRegisterRowDto'];
+export type PilotRegisterRowDto = components['schemas']['PilotRegisterRowDto'];
+export type MemberRecordDto = components['schemas']['MemberRecordDto'];
+export type PilotRecordDto = components['schemas']['PilotRecordDto'];
+export type ControllerRecordDto = components['schemas']['ControllerRecordDto'];
+export type MyRegisterShiftDto = components['schemas']['MyRegisterShiftDto'];
+export type MyUnflownDto = components['schemas']['MyUnflownDto'];
+
+/** The type of the block of the staff's queue, as `StaffQueueProvider.BlockType` spells it on the server. */
+export const STAFF_QUEUE_BLOCK = 'events.staffQueue';
+
+const registerKey = ['events', 'register'] as const;
+
+/** The staff's outcomes of a shift (§4.5): what «Confirm», «Attended» and «Excuse» send. */
+export type DecidedAttendance = Extract<ShiftAttendance, 'Attended' | 'NoShow' | 'Excused'>;
+
+/**
+ * The register of the controllers (§4.5, §7.2): one row per controller, the counts and the penalty — a page, by penalty —, the penalty to two
+ * decimals, the figure the why of a proposed shift says.
+ */
+export function controllersRegisterQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'controllers', search] as const,
+    queryFn: async () => {
+      const page = unwrap(await api.GET('/api/events/atc/register', { params: { query: pageOf(search) } }));
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({ ...row, penalty: Math.round(row.penalty * 100) / 100 })),
+      };
+    },
+  });
+}
+
+/** The register of the pilots (§3.7): one row per pilot with a booking not flown, whether they have the limits and until when. */
+export function pilotsRegisterQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'pilots', search] as const,
+    queryFn: async () =>
+      unwrap(await api.GET('/api/events/bookings/register', { params: { query: pageOf(search) } })),
+  });
+}
+
+/**
+ * The shifts with how each went (§4.5), of one event — the section «Outcomes» of its ATC — or of one controller in every event — the detail
+ * of their register, the latest first —, with whether the reader may decide each.
+ */
+export function shiftRowsQuery(filter: { eventId: number } | { controllerVid: number }, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'decisions', filter, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/atc/shifts', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer(
+            'eventId' in filter
+              ? { eventId: String(filter.eventId) }
+              : { controllerVid: String(filter.controllerVid) },
+          ),
+        }),
+      ),
+  });
+}
+
+/** A pilot's bookings of every event, with what the check found: the detail of their register. */
+export function pilotBookingsQuery(vid: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'bookings', vid, search] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/bookings', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ bookerVid: String(vid) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row): CheckedBookingRow => ({ ...row, outcome: bookingOutcome(row) })),
+      };
+    },
+  });
+}
+
+/**
+ * A member's own two registers (§3.7, §4.5): the pilot's — with the limits valid in `eventId` when the page is about an event — and the
+ * controller's. What `/events/mine` shows, and what a refused booking reads to say until when.
+ */
+export function myRecordQuery(eventId?: number) {
+  return queryOptions({
+    queryKey: [...mineKey, 'record', eventId ?? null] as const,
+    queryFn: async (): Promise<MemberRecordDto> =>
+      unwrap(
+        await api.GET('/api/events/mine/record', {
+          params: { query: eventId === undefined ? {} : { eventId } },
+        }),
+      ),
+  });
+}
+
+/** What a decision on a register changes on screen: the registers, the lists of the shifts and the bookings, the statistics, the queue. */
+async function registersChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: registerKey }),
+    queryClient.invalidateQueries({ queryKey: atcKey }),
+    queryClient.invalidateQueries({ queryKey: bookingsKey }),
+    queryClient.invalidateQueries({ queryKey: statsKey }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, STAFF_QUEUE_BLOCK] }),
+  ]);
+}
+
+/** How a shift went, decided by the staff (§4.5): attended, a no-show confirmed, or excused — with a note, required to excuse. */
+export function useDecideAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      attendance,
+      note,
+    }: {
+      id: number;
+      attendance: DecidedAttendance;
+      note: string;
+    }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/atc/shifts/{id}/attendance', {
+          params: { path: { id } },
+          body: { attendance, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void registersChanged(queryClient);
+    },
+  });
+}
+
+/** «Take away»: a booking not flown out of its pilot's record, with the note the audit and the pilot read. */
+export function useExcuseUnflown() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/bookings/{id}/excuse', {
+          params: { path: { id } },
+          body: { note: note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void registersChanged(queryClient);
+    },
   });
 }

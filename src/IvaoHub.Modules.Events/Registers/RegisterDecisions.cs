@@ -164,7 +164,7 @@ public sealed class RegisterDecisions(
             // The numbers of an event already checked follow its shifts (reading 1): a no-show excused is no longer one.
             if (row.AfterDoneAt is not null)
             {
-                await statistics.WriteAsync(row, now, cancellationToken);
+                await statistics.WriteAsync(row, null, now, cancellationToken);
                 await database.SaveChangesAsync(cancellationToken);
             }
 

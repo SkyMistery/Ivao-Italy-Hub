@@ -30,7 +30,8 @@ export interface KindPreset {
 /**
  * The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, how long an event in person keeps its
  * registrations (E16), the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
- * vocabulary, chosen from it, none for any member — and the minutes that make a shift attended (E13a).
+ * vocabulary, chosen from it, none for any member —, the minutes that make a shift attended (E13a), and the weight of the penalty with
+ * the limits of whoever books and does not fly (E13b).
  */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
@@ -46,6 +47,11 @@ export interface EventsSettings {
   readonly rosterPublishDays: number;
   readonly experienceMonths: number;
   readonly attendanceMinimumMinutes: number;
+  readonly noShowWeight: number;
+  readonly unflownThreshold: number;
+  readonly restrictedWindowHours: number;
+  readonly restrictedMaxPerWindow: number;
+  readonly restrictedMaxPerEvent: number;
 }
 
 /** What the fields of the settings choose from, already in the language on screen: the kinds, and the ATC ratings (E11a). */
@@ -81,6 +87,12 @@ export function settingsSchema(choices: SettingsChoices) {
     experienceMonths: z.number().int(),
     // After the event (E13a): the minutes on the position within a shift that make it attended.
     attendanceMinimumMinutes: z.number().int(),
+    // The registers (E13b): the weight of a no-show, and the limits of whoever booked this many slots and did not fly them.
+    noShowWeight: z.number(),
+    unflownThreshold: z.number().int(),
+    restrictedWindowHours: z.number().int(),
+    restrictedMaxPerWindow: z.number().int(),
+    restrictedMaxPerEvent: z.number().int(),
   });
 }
 
@@ -198,7 +210,8 @@ export interface EventChoices {
 /**
  * The form of an event, mirroring `EventWriteDto` (design M4 §1.2, E3a): the kind first, because choosing it presets the
  * switches below it (§1.12); then who organises it, its words, its window, who reads it, its banner. The ATC roster with the length
- * of its shifts is E11a's — empty, the settings' —; the event in person and its venue are E16's. Every rule is the server's: nothing
+ * of its shifts is E11a's — empty, the settings' —; the event in person and its venue are E16's; its own limits of whoever books and does
+ * not fly are E13b's — each empty, the settings'. Every rule is the server's: nothing
  * here refuses a field the server would take, so the form can follow what is written as it is written.
  */
 export function eventSchema(choices: EventChoices) {
@@ -222,6 +235,9 @@ export function eventSchema(choices: EventChoices) {
     bookingOpensAtUtc: z.string().optional().meta({ datetime: true }),
     visibility: z.enum(EVENT_VISIBILITIES),
     bannerMediaId: z.number().int().optional().meta({ media: true }),
+    restrictedWindowHours: z.number().int().optional(),
+    restrictedMaxPerWindow: z.number().int().optional(),
+    restrictedMaxPerEvent: z.number().int().optional(),
     rowVersion: z.string().meta({ hidden: true }),
   });
 }
@@ -739,3 +755,41 @@ export function statsToFormValues(stats: {
     activitySeats: stats.activitySeats,
   };
 }
+
+/** The outcomes the staff give a shift (design M4 §4.5, E13b), in the order the form offers them. */
+export const DECIDED_ATTENDANCES = ['NoShow', 'Excused', 'Attended'] as const;
+
+export type DecidedAttendanceValue = (typeof DECIDED_ATTENDANCES)[number];
+
+/**
+ * The outcomes a shift may still pass to (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 1): an unknown shift or a no-show the
+ * check proposed to any, a no-show to excused alone — the no-show taken away —; none from attended or excused. The server decides again.
+ */
+export function decidableAttendances(current: string): DecidedAttendanceValue[] {
+  return current === 'Unknown' || current === 'NoShowProposed'
+    ? [...DECIDED_ATTENDANCES]
+    : current === 'NoShow'
+      ? ['Excused']
+      : [];
+}
+
+/** Deciding how a shift went, mirroring `AttendanceDecision`: the outcome among those still open, and a note — the server asks one to excuse. */
+export function attendanceSchema(allowed: readonly DecidedAttendanceValue[]) {
+  return z.object({
+    attendance: z.enum(
+      allowed.length === 0
+        ? DECIDED_ATTENDANCES
+        : (allowed as [DecidedAttendanceValue, ...DecidedAttendanceValue[]]),
+    ),
+    note: z.string().meta({ multiline: true }),
+  });
+}
+
+export type AttendanceFormValues = z.output<ReturnType<typeof attendanceSchema>>;
+
+/** Taking a booking not flown out of its pilot's record (§3.7), mirroring `UnflownExcuse`: why. */
+export const unflownExcuseSchema = z.object({
+  note: z.string().meta({ multiline: true }),
+});
+
+export type UnflownExcuseFormValues = z.output<typeof unflownExcuseSchema>;
