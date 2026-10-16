@@ -883,6 +883,7 @@
   },
   "questions": {
     "title": "Domande",
+    "empty": "Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.",
     "create": "Nuova domanda",
     "edit": "Domanda",
     "fields": {
@@ -916,6 +917,7 @@
     }
   },
   "registrations": {
+    "empty": "Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.",
     "fields": {
       "member": "Membro",
       "lines": "Risposte",

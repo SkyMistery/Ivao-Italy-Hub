@@ -884,6 +884,7 @@
   },
   "questions": {
     "title": "Questions",
+    "empty": "The questions a member answers to register for the event will show up here.",
     "create": "New question",
     "edit": "Question",
     "fields": {
@@ -917,6 +918,7 @@
     }
   },
   "registrations": {
+    "empty": "The members' registrations for the event will show up here, with their answers.",
     "fields": {
       "member": "Member",
       "lines": "Answers",

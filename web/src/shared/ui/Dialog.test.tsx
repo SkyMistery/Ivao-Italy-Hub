@@ -72,16 +72,10 @@ test('a dialog without its «X» draws none', async () => {
 const ATMOSPHERE_CLOSE = ['Dialog', 'DialogTopRightClose', 'Sheet', 'SheetContent'];
 
 /**
- * The screens that may still draw Atmosphere's: the events', which move onto the core's `Dialog` in a phase of their own
- * after this one (rule 6: a core change and its uses in a module are two pull requests). The list only shrinks.
- *
- * ⚠️ `PrivateSlots.tsx` is not in `main` yet: it is E7's (#246), open beside this pull request, and draws Atmosphere's
- * `Dialog` too. It is named here so that neither pull request turns the other red, whichever is merged first — which is
- * also why the test asks for no screen outside the list, and not for the list itself.
+ * The events' two dialogs, the last screens that drew Atmosphere's, moved onto the core's `Dialog` in a phase of their own
+ * (E4d, note 2026-10-14-gli-eventi-sul-lettore-dei-nomi): no screen is waiting any more.
  */
-const NOT_MOVED_YET = ['modules/events/screens/EventSlots.tsx', 'modules/events/screens/PrivateSlots.tsx'];
-
-test('no screen draws an «X» of Atmosphere’s, except the ones waiting to move', () => {
+test('no screen draws an «X» of Atmosphere’s', () => {
   const root = resolve(process.cwd(), 'src');
   const importsFromAtmosphere = /import\s*\{([^}]*)\}\s*from\s*'@ivao\/atmosphere-react'/g;
 
@@ -109,5 +103,5 @@ test('no screen draws an «X» of Atmosphere’s, except the ones waiting to mov
         .join('/'),
     );
 
-  expect(offenders.filter((file) => !NOT_MOVED_YET.includes(file))).toEqual([]);
+  expect(offenders).toEqual([]);
 });

@@ -14,32 +14,39 @@ import { useTranslation } from 'react-i18next';
  * in the cockpit uses. Asked for by Carmine running the demo, and it is one line here rather than a
  * choice each caller makes — which is the whole reason this function exists.
  */
-export function useMoment(): (
-  value: unknown,
-  options?: {
-    timeZone?: string;
-    time?: boolean;
-    /** False leaves the date out entirely, for a screen that has already said which day it is. */
-    date?: boolean;
-    dateStyle?: 'medium' | 'short' | 'long';
-  },
-) => string {
+export function useMoment(): (value: unknown, options?: MomentOptions) => string {
   const { i18n } = useTranslation();
 
-  return (value, options = {}) => {
-    if (typeof value !== 'string' || value === '') {
-      return '';
-    }
+  return (value, options) => formatMoment(i18n.language, value, options);
+}
 
-    const moment = new Date(value);
-    if (Number.isNaN(moment.getTime())) {
-      return '';
-    }
+export interface MomentOptions {
+  timeZone?: string;
+  time?: boolean;
+  /** False leaves the date out entirely, for a screen that has already said which day it is. */
+  date?: boolean;
+  dateStyle?: 'medium' | 'short' | 'long';
+}
 
-    return new Intl.DateTimeFormat(i18n.language, {
-      ...(options.date === false ? {} : { dateStyle: options.dateStyle ?? 'medium' }),
-      ...(options.time === false ? {} : { timeStyle: 'short', hour12: false }),
-      timeZone: options.timeZone ?? 'UTC',
-    }).format(moment);
-  };
+/**
+ * `useMoment` for a caller that is not a component — a cell of the generic list, the line under an
+ * instant field — and is handed the language rather than reading it. The one place that says how
+ * the hub writes an instant, the twenty four hours included (note 2026-10-13-le-ore-in-24): a copy
+ * of the options elsewhere is how three formatters came to write "7:00 PM" in English.
+ */
+export function formatMoment(locale: string, value: unknown, options: MomentOptions = {}): string {
+  if (typeof value !== 'string' || value === '') {
+    return '';
+  }
+
+  const moment = new Date(value);
+  if (Number.isNaN(moment.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    ...(options.date === false ? {} : { dateStyle: options.dateStyle ?? 'medium' }),
+    ...(options.time === false ? {} : { timeStyle: 'short', hour12: false }),
+    timeZone: options.timeZone ?? 'UTC',
+  }).format(moment);
 }

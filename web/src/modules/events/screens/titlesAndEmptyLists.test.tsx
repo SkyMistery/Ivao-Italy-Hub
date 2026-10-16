@@ -20,6 +20,8 @@ import { BookingsTab } from './bookings';
 import { EventsPage } from './events';
 import { MyBookingsPage } from './mine';
 import { EventPublicPage, EventsPublicPage } from './public';
+import { QuestionsTab } from './questions';
+import { RegistrationsTab } from './registrations';
 import { RosterSection } from './roster';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
@@ -28,7 +30,8 @@ import { SlotsTab } from './slots';
  * What the events say of themselves with the words the core now takes (#224, E4c): `/events` and a member's `/events/mine` name
  * themselves in the browser tab, as the core's list pages do; the page of an event keeps the tab it had, now that the division's
  * name after its title comes from the root and not from a name the page worked out by hand; and the lists of the events in the back
- * office — the «Slots», «Routes», «Airports» and «Bookings» tabs of an event, and the events themselves —, empty, say what will be
+ * office — the «Slots», «Routes», «Airports» and «Bookings» tabs of an event, its «Questions» and «Registrations» (E16, from E4d),
+ * and the events themselves —, empty, say what will be
  * there instead of the core's sentence about what a department creates: the same words to whoever writes the rows and to whoever only
  * reads them, who has none of the buttons.
  *
@@ -199,6 +202,16 @@ async function open(
           path: '/atc',
           component: () => <AtcPanel eventId={event.id} />,
         }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/questions',
+          component: () => <QuestionsTab event={detail} editable={editable} />,
+        }),
+        createRoute({
+          getParentRoute: () => staff,
+          path: '/registrations',
+          component: () => <RegistrationsTab event={detail} editable={editable} />,
+        }),
         createRoute({ getParentRoute: () => staff, path: '/staff/events', component: EventsPage }),
       ]),
     ]),
@@ -365,6 +378,38 @@ describe('the empty lists of the events', () => {
 
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.atc.positions.empty)).toBeInTheDocument();
+  });
+
+  test('an empty «Questions» tab says what its questions will be, in both languages, and not the core’s sentence (E4d)', async () => {
+    const { i18n } = await open('/questions', { editable: true });
+
+    expect(await screen.findByText(englishEvents.questions.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishCommon.list.empty.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: englishEvents.questions.create })).toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.questions.empty)).toBeInTheDocument();
+    expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
+  });
+
+  test('whoever only reads the questions, with no button to write one, reads the same sentence (E4d)', async () => {
+    await open('/questions');
+
+    expect(await screen.findByText(englishEvents.questions.empty)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: englishEvents.questions.create })).not.toBeInTheDocument();
+  });
+
+  test('an empty «Registrations» tab says what will be there, in both languages, and not the core’s sentence (E4d)', async () => {
+    const { i18n } = await open('/registrations', { editable: true });
+
+    expect(await screen.findByText(englishEvents.registrations.empty)).toBeInTheDocument();
+    expect(screen.getByText(englishCommon.list.empty.title)).toBeInTheDocument();
+    expect(screen.queryByText(englishCommon.list.empty.description)).not.toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage('it'));
+    expect(await screen.findByText(italianEvents.registrations.empty)).toBeInTheDocument();
+    expect(screen.queryByText(italianCommon.list.empty.description)).not.toBeInTheDocument();
   });
 
   test('the events of the back office, none yet, say what will be there, in both languages', async () => {
