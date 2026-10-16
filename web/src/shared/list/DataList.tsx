@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 import { mediaFileUrl } from '../api/mediaUrl';
 import { resolveLocalized } from '../i18n/localized';
+import { formatMoment } from '../i18n/useMoment';
 import { DepartmentBadge, EmptyState, StatusBadge, personName, useNotice, type NamedPerson } from '../ui';
 import type { ColumnSpec } from './columns';
 import type { ListSearch } from './search';
@@ -443,11 +444,10 @@ function Cell<TRow>({
  * organising in the other (docs/UI-GUIDELINES.md).
  */
 function DateCell({ value, locale, timezone }: { value: string; locale: string; timezone: string }) {
-  const instant = new Date(value);
-  const format = (zone: string) =>
-    new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short', timeZone: zone }).format(
-      instant,
-    );
+  const format = (zone: string) => formatMoment(locale, value, { dateStyle: 'short', timeZone: zone });
+  if (format('UTC') === '') {
+    return null;
+  }
 
   return (
     <span className="flex flex-col leading-tight">

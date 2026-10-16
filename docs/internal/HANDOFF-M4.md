@@ -7,13 +7,23 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 16 ottobre 2026 — **fase E4d** (modulo: gli eventi prendono tre pezzi del nucleo uniti negli ultimi giorni),
-sul branch `m4/e4d-events-adopt-core`, **PR #263** verso `main`, **senza coda**: nata da `main` a `c232448` (con E16 #255, E11a #256 e
-A13f #258), approvabile per il revisore, e il 16 ottobre, su sua richiesta, ha unito `main` a `e041bb04` (E10q, #265, il Pkcs corretto)
-perché `build-test` giri. Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
+sul branch `m4/e4d-events-adopt-core`, **PR #263** verso `main`, **in fondo alla coda #263 → #262 → #268** che il revisore ha chiesto
+([il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)): nata da `main` a `c232448` (con E16
+#255, E11a #256 e A13f #258), approvabile per il revisore, e il 16 ottobre, su sua richiesta, ha unito `main` a `e041bb04` (E10q, #265, il
+Pkcs corretto) perché `build-test` giri, poi `main` a `3b8d7d79` (E10p, #261, le ore in 24). Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
 di Carmine sulla #258, perché la PR toglie dai due test del nucleo le righe che le note di E10m ed E10l lasciavano agli eventi. Da E4d gli
 eventi leggono i nomi con `MemberNames` (E10m), `events-release` dice il suo fuso, UTC (E10j), i dialog di uno slot e dell'ora privata
 chiudono con «Chiudi» (E10l), e le schede «Domande» e «Iscrizioni» di E16, vuote, dicono una frase loro («Che cosa ha lasciato E4d»,
-sotto). ⚠️ **E11b (#262) è aperta accanto** e tocca forse gli stessi file: i conflitti all'unione sono il passo della coda del master.
+sotto). **E11b (#262)** unisce questo branch, ed E12 (#268) quello di E11b.
+
+**L'aggiornamento di E10p:** 16 ottobre 2026 — **fase E10p** (nucleo: le ore in 24, in un posto solo), sul branch
+`m4/e10p-times-24-hour`, **PR #261** verso `main`, **senza coda** (tocca solo il nucleo del browser): nata da `main` a `cea6244`,
+**decisa** da Carmine sull'issue #260 ([la seconda via](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146396089),
+e [i tre valori attesi di due test
+suoi](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/260#issuecomment-6146818613)), [approvabile senza niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/261#issuecomment-6164248668), e ha unito `main` a `c232448` (con E16, E11a
+e A13f) su richiesta del revisore, poi `main` a `e041bb0` (con E10q, perché `build-test` giri). Da E10p ogni ora del nucleo si scrive in
+24 ore anche in inglese, attraverso un solo formattatore («Che cosa ha lasciato E10p», sotto).
 
 **L'aggiornamento di E10q:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
 #264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
@@ -270,7 +280,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`, con `main` a `e041bb04` unito)
+### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, in fondo alla coda #263 → #262 → #268; da `main` a `c232448`, con `main` a `e041bb04` e poi a `3b8d7d79` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4d, «Com'è andata»; nessuna migrazione, nessuna decisione nuova; la nota
   `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola di Carmine sulla #258, perché la PR tocca due test del nucleo):
@@ -298,6 +308,26 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     sono il passo della coda del master.
   - **Con `main` a `e041bb04`** (16 ottobre) entra E10q: il Pkcs 10.0.13 e la versione 0.6.8. Niente degli eventi cambia; i conti
     dopo l'unione sono in `10`, E4d, «Com'è andata».
+  - **Con `main` a `3b8d7d79`** (16 ottobre) entra E10p: le ore del nucleo in 24 con `formatMoment`. I dialog e le schede di E4d le
+    scrivono con `useMoment` o con il `DataList` del nucleo, e non cambiano; la coda è **#263 → #262 → #268**, E4d in fondo.
+
+### Che cosa ha lasciato E10p (13–16 ottobre 2026, branch `m4/e10p-times-24-hour`, PR #261, del nucleo, senza coda; da `main` a `cea6244`, con `main` a `c232448` e poi a `e041bb0` unito)
+
+- **Che cosa c'è** (nota `decisions/2026-10-13-le-ore-in-24.md`, **decisa** da Carmine sull'issue #260; il dettaglio in `10`, E10p,
+  «Com'è andata»). Tutto nel browser, niente in C#:
+  - **`formatMoment(locale, value, options)`** in `web/src/shared/i18n/useMoment.ts`: il corpo di `useMoment`, che ora lo chiama. È
+    **l'unico posto** che scrive un istante, e le 24 ore (`hour12: false`) sono una riga lì.
+  - I quattro formattatori del nucleo che in inglese scrivevano «7:00 PM» ci passano sopra: `localTime` (`SchemaForm.tsx`) e `DateCell`
+    (`DataList.tsx`) con `formatMoment`; `MessageThread.tsx` e `routes/_staff/staff.$dept.contacts.$id.tsx` con `useMoment`. Ognuno
+    tiene il suo aspetto.
+  - **I test**: `web/src/shared/i18n/twentyFourHours.test.tsx` (6). Tre valori attesi di due test di Carmine cambiano con la sua
+    risposta (`back-office.spec.ts:281`, `extensions.test.tsx:168–169`).
+- **Che cosa devono sapere le fasi dopo**:
+  - ⚠️ **Mai un `new Intl.DateTimeFormat` con un `timeStyle` o un `hour` suo**: un componente scrive un istante con `useMoment`, una
+    funzione che riceve la lingua (una cella, un aiuto di una pagina) con `formatMoment`. `docs/UI-GUIDELINES.md`, «Times», lo dice.
+  - I moduli eventi e formazione scrivono già le ore con `useMoment`: nessuna fase di modulo dopo questa.
+  - ⚠️ **Un test che legge un'ora in inglese** scrive `19:00`, mai `7:00 PM`; e attenzione alle sottostringhe: `19:00` non contiene
+    `7:00`, `18:00` contiene `8:00`.
 
 ### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
 
