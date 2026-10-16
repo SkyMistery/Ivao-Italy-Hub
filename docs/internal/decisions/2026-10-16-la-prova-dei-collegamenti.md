@@ -61,8 +61,8 @@ pulsante, due riquadri, le parole in `common.json`. È una pagina nuova, quindi 
 
 ## 5. Versione
 
-`0.8.0`: una pagina nuova è una MINOR per la regola di `Directory.Build.props`, nessuna migrazione. La #279 tiene la `0.7.5` (PATCH):
-qualunque delle due si unisca prima, questa resta `0.8.0`; se la #279 arriva dopo, diventa `0.8.1`. Il numero lo coordina il master.
+`0.8.0`: una pagina nuova è una MINOR per la regola di `Directory.Build.props`, nessuna migrazione. Viene dopo la `0.7.5` della
+#279, già unita.
 
 ## 6. Prove
 

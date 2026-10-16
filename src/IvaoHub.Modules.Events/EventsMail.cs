@@ -127,24 +127,76 @@ public sealed class EventsMail(
 
     /// <summary>
     /// A registration to an event in person received or changed (§4-bis.2, E16): to its member, with the venue and their answers as
-    /// they are now, one line each, written in their language.
+    /// they are now, one line each, written in their language — and since E17 the turns of the activities they hold, under their own
+    /// heading, which a member with none does not read (design §4-bis.2: «with a summary of the answers and of the turns»). Sent at every
+    /// change, a seat taken or given back included, so that the last mail says the registration as it is.
     /// </summary>
     public Task RegistrationReceivedAsync(
         Event row,
         int vid,
         Func<string, IReadOnlyList<string>> answers,
+        Func<string, IReadOnlyList<string>> seats,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(answers);
+        ArgumentNullException.ThrowIfNull(seats);
 
         return SendAsync(EventsNotifications.RegistrationReceived, row, [vid], (data, locale) =>
         {
+            var turns = seats(locale);
+
             data["starts"] = Moment(row.StartsAtUtc);
             data["venue"] = row.Venue?.Resolve(locale, division.Value.DefaultLocale) ?? string.Empty;
             data["answers"] = string.Join('\n', answers(locale).Select(line => $"- {line}"));
+            data["seats"] = turns.Count == 0
+                ? string.Empty
+                : $"\n\n{catalog.Resolve(locale, SeatsKey)}\n{string.Join('\n', turns.Select(line => $"- {line}"))}";
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);
+    }
+
+    /// <summary>The heading of the turns of the activities in the mail of a registration (E17).</summary>
+    public const string SeatsKey = "events:mail.events.registrationReceived.seats";
+
+    /// <summary>The shape of one turn in the mail of a registration, with the activity's place and without (E17).</summary>
+    public const string SeatLineKey = "events:mail.events.registrationReceived.seatLine";
+
+    public const string SeatLinePlaceKey = "events:mail.events.registrationReceived.seatLinePlace";
+
+    /// <summary>
+    /// The turns a member holds, one line each, by their start, in this language: the shape of the line — and the word for the zone — are
+    /// the language file's (the review of #271, point 7), the activity, its place and the two times fill it. What the mail of a
+    /// registration says; the pages write their own words from the seats, in the language on screen.
+    /// </summary>
+    public static IReadOnlyList<string> SeatLines(
+        IReadOnlyList<(EventActivitySeat Seat, EventActivity Activity)> seats,
+        string locale,
+        string fallback,
+        LocaleCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(seats);
+        ArgumentNullException.ThrowIfNull(catalog);
+
+        return
+        [
+            .. seats
+                .OrderBy(entry => entry.Seat.StartsAtUtc)
+                .ThenBy(entry => entry.Activity.Id)
+                .Select(entry =>
+                {
+                    var place = entry.Activity.Place?.Resolve(locale, fallback);
+                    var shape = catalog.Resolve(locale, string.IsNullOrEmpty(place) ? SeatLineKey : SeatLinePlaceKey);
+                    return shape
+                        .Replace("{{activity}}", entry.Activity.Name.Resolve(locale, fallback) ?? string.Empty, StringComparison.Ordinal)
+                        .Replace("{{place}}", place ?? string.Empty, StringComparison.Ordinal)
+                        .Replace("{{from}}", Moment(entry.Seat.StartsAtUtc), StringComparison.Ordinal)
+                        .Replace(
+                            "{{to}}",
+                            entry.Seat.StartsAtUtc.AddMinutes(entry.Activity.SlotMinutes).ToString("HH:mm", CultureInfo.InvariantCulture),
+                            StringComparison.Ordinal);
+                }),
+        ];
     }
 
     /// <summary>A registration taken away by the staff (E16): to its member, with the reason, as the staff wrote it.</summary>

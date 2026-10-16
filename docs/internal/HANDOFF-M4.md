@@ -6,7 +6,19 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
+presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
+M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #269** di E10s (la #268 di E12 è unita), approvabile alla [seconda lettura del
+revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6222329978): nata
+`--no-track` da `main` a `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la
+fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `1887c27` (le correzioni delle due letture del revisore e le due
+condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34); infine la testa di E10s `9e40aff`, con `main` a `b5d3fb9` (E12 unita, la
+#268, e la #273 dei tour). La nota
+`2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
+#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed
+E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta M4b («Che cosa ha lasciato E17», sotto).
+
+**L'aggiornamento di E12:** 16 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
 la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, in fondo alla coda #263 → #262 → #268 (E4d ed E11b ora unite): nata `--no-track` dalla testa di E11b `973f385`, ha unito
 le sue teste fino a `33ed36f` (con E4d `279c8cd` e `main` a `3b8d7d79`) e poi **`main` a `4ad747ad`** (il piano 1.34, la `0.7.0`).
 La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **decisa** da Carmine sulla #268 ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241): sì alle dieci letture,
@@ -298,6 +310,49 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
+  quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota
+  nuova, `2026-10-15-le-attivita-e-la-conservazione-breve`, **decisa** da Carmine sull'issue #267): la seconda e ultima fase di **M4c**.
+  - **Le tabelle**: `evt_activities` (`EventActivity`, `EventActivity.cs`: area `EventBookings`, i turni calcolati da finestra e durata,
+    `Turns`, `IsTurn`) ed `evt_activity_bookings` (`EventActivitySeat`, la riga del membro, `[WithdrawnByStakeholder]`).
+  - **Il posto**: `Registrations/MemberSeats.cs` — l'iscrizione e poi l'attività `FOR UPDATE`, in `READ COMMITTED`, i posti contati sotto il
+    secondo blocco —; `RegistrationSeats` (blocca l'iscrizione, legge i posti di un membro, li porta via con l'iscrizione), usato dal ritiro,
+    da «Togli» e dalla cancellazione.
+  - **Lo staff**: `Staff/EventActivityEndpoints.cs` (`/api/events/activities`), la lista dei posti `/api/events/seats`
+    (`Registrations/StaffSeats.cs`, i nomi da `MemberNames`), le schede «Attività» e «Posti» (`screens/activities.tsx`).
+  - **Il membro**: i turni con i posti liberi nella sezione «Iscrizione» della pagina dell'evento, e i suoi turni in `/events/mine`
+    (`screens/ActivityTurns.tsx`); la mail `registrationReceived` con i turni.
+  - **«Duplica»**: domande (con le chiavi) e attività (`EventCopy.Question`, `EventCopy.Activity`).
+  - **`events-retention`** (`EventsRetentionJob.cs`, una volta al mese in UTC) e `Registrations/InPersonRetention.cs` (quando un evento è
+    oltre la conservazione, che cosa tengono le statistiche, come le liste le rileggono).
+  - **I test**: integrazione `EventsActivitiesTests` (13 dopo la revisione, la corsa sull'ultimo posto, quelle del ritiro e dell'eliminazione e l'audit della conservazione fra loro; VID **761150–761155**); unità
+    `EventsActivitiesTests` (7); il giro `web/e2e/full/events-m4c-round.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **Le tre domande della nota sono decise** ([la risposta di Carmine sull'issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232)):
+    (A) l'area `EventBookings`, (A) un'attività con posti non si elimina — com'è nel codice —, e **(B)** per l'audit: la fase del nucleo
+    **E10s** (`m4/e10s-retention-in-the-audit`) dà la chiamata che svuota nell'audit le colonne `[ErasedWith]` delle righe tolte per
+    conservazione; E17 si mette in coda dopo di lei e la chiama da `EventsRetentionJob` per le iscrizioni (`AnswersJson` è già segnata),
+    nella stessa transazione della cancellazione; non per i posti, che non hanno colonne segnate (la chiamata li rifiuterebbe). ⚠️ **E15b**,
+    quando aggiunge le prenotazioni dei piloti alla conservazione, fa lo stesso per `EventBooking` (le sue cinque colonne sono segnate da E8b).
+  - **E13a** (le statistiche): `evt_event_stats` ha già, per un evento in presenza oltre la conservazione, `registrations`, `answer_sums`
+    (i numeri di `QuestionSum`) e `activity_seats` (`{ "<id attività>": posti }`), scritti da `events-retention`; E13a scrive il resto e
+    **non tocca quelle tre colonne** di un evento in presenza (o le ricalcola dalle righe finché ci sono). La scheda «Statistiche» le mostra.
+  - **E15b** (la conservazione di M4b): `events-retention` c'è; le prenotazioni e i PIREP dei piloti dopo `pilotRetentionMonths` sono un
+    secondo passo dello stesso `RunAsync`, con la stessa regola di «finito» (`EventState.IsOver`).
+  - ⚠️ **Un membro e i turni**: due turni che si toccano non si sovrappongono; il controllo è fra tutte le attività dell'evento, non fra
+    eventi diversi.
+  - **Dopo la revisione sulla #271** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583), [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164):
+    sì alle letture 7, 11 e 13): le liste leggono le statistiche solo quando un evento non ha più iscrizioni né posti — **E13a**, che le
+    scrive alla fine dell'evento, non cambia quello che lo staff legge prima del giro della conservazione —; «ridai» prende il blocco
+    dell'iscrizione; un evento non si sposta oltre le sue attività; la conservazione salta un evento che fallisce.
+  - ⚠️ **Il limite detto nella nota (lettura 11)**, accettato da Carmine come limite della 2A: lo staff che cambia un'attività controlla i posti senza blocco; un posto preso in
+    quell'istante può restare su un turno che non c'è più, e ogni lettura lo regge.
+  - ⚠️ **Su Windows** `Activities.tsx` e `activities.tsx` sono lo stesso file: il componente della pagina pubblica si chiama
+    `ActivityTurns.tsx` per questo.
+  - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
 
 ### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`, con `main` a `3b8d7d7` unito, con E10p, poi a `4ad747a`, con E4d, E11b e il piano 1.34, e a `b5d3fb9`, con E12)
 

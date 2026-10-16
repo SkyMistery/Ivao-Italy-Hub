@@ -113,7 +113,23 @@ public sealed record PublicEventDto(
     bool InPerson,
     Localized<string>? Venue,
     IReadOnlyList<PublicQuestionDto> Questions,
-    PublicEventAtcDto? Atc);
+    PublicEventAtcDto? Atc,
+    IReadOnlyList<PublicActivityDto> Activities);
+
+/// <summary>
+/// A parallel activity of an event in person as its page shows it (§4-bis, §7.1, E17): its words, how long a turn lasts and how many seats
+/// it has, and each turn with the seats still free — to whoever reads the page, never who took them, as a slot is free or taken.
+/// </summary>
+public sealed record PublicActivityDto(
+    long Id,
+    Localized<string> Name,
+    Localized<string>? Place,
+    int SlotMinutes,
+    int SeatsPerSlot,
+    IReadOnlyList<PublicTurnDto> Turns);
+
+/// <summary>A turn of an activity: when it starts and ends, and how many of its seats are free.</summary>
+public sealed record PublicTurnDto(DateTime StartsAtUtc, DateTime EndsAtUtc, int Free);
 
 /// <summary>
 /// The ATC of an event with a roster as its page shows it (design M4 §4.2, §7.1, E11a): the positions it opens — to everybody, with the name
@@ -370,7 +386,48 @@ public sealed class PublicEvents(
             row.InPerson,
             row.Venue,
             [.. questions.Select(PublicQuestionDto.Of)],
-            row.HasRoster ? await AtcAsync(row, now, cancellationToken) : null);
+            row.HasRoster ? await AtcAsync(row, now, cancellationToken) : null,
+            row.InPerson ? await ActivitiesAsync(row, cancellationToken) : []);
+    }
+
+    /// <summary>
+    /// The parallel activities of an event in person (E17), by the hour they start, each turn with its free seats: the seats are rows of the
+    /// members, which the global filter hides from a visitor, so they are counted past it, and only the counts leave this query.
+    /// </summary>
+    private async Task<IReadOnlyList<PublicActivityDto>> ActivitiesAsync(Event row, CancellationToken cancellationToken)
+    {
+        var activities = await database.Activities.AsNoTracking()
+            .Where(activity => activity.EventId == row.Id)
+            .OrderBy(activity => activity.FromUtc)
+            .ThenBy(activity => activity.Id)
+            .ToListAsync(cancellationToken);
+        if (activities.Count == 0)
+        {
+            return [];
+        }
+
+        var taken = (await CrudSource.BackOffice<EventActivitySeat>(database).AsNoTracking()
+                .Where(seat => seat.EventId == row.Id)
+                .GroupBy(seat => new { seat.ActivityId, seat.StartsAtUtc })
+                .Select(turn => new { turn.Key.ActivityId, turn.Key.StartsAtUtc, Count = turn.Count() })
+                .ToListAsync(cancellationToken))
+            .ToDictionary(turn => (turn.ActivityId, turn.StartsAtUtc), turn => turn.Count);
+
+        return
+        [
+            .. activities.Select(activity => new PublicActivityDto(
+                activity.Id,
+                activity.Name,
+                activity.Place,
+                activity.SlotMinutes,
+                activity.SeatsPerSlot,
+                [
+                    .. activity.Turns().Take(EventActivity.MaxTurns).Select(start => new PublicTurnDto(
+                        start,
+                        start.AddMinutes(activity.SlotMinutes),
+                        Math.Max(0, activity.SeatsPerSlot - taken.GetValueOrDefault((activity.Id, start))))),
+                ])),
+        ];
     }
 
     /// <summary>

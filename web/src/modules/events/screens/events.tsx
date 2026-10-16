@@ -61,6 +61,7 @@ import {
   type KindPreset,
 } from '../schemas';
 
+import { ActivitiesTab, SeatsTab } from './activities';
 import { AirportsTab } from './airports';
 import { AtcPanel } from './atc';
 import { BookingsTab } from './bookings';
@@ -665,6 +666,31 @@ export function EventEditor() {
                             event={event}
                             editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
                           />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // Its parallel activities and their seats (§4-bis, E17), the bookings' area as its registrations: whoever reads them has
+              // the tabs, whoever writes them the activities.
+              ...(event.inPerson && holdsPermission(bootstrap, EVENT_BOOKINGS_VIEW, event.ownerDepartment)
+                ? {
+                    activities: {
+                      trigger: t('events:events.tabs.activities'),
+                      content: (
+                        <div className="pt-4">
+                          <ActivitiesTab
+                            event={event}
+                            editable={holdsPermission(bootstrap, EVENT_BOOKINGS_EDIT, event.ownerDepartment)}
+                          />
+                        </div>
+                      ),
+                    },
+                    seats: {
+                      trigger: t('events:events.tabs.seats'),
+                      content: (
+                        <div className="pt-4">
+                          <SeatsTab event={event} />
                         </div>
                       ),
                     },

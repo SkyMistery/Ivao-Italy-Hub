@@ -16,6 +16,7 @@ import {
   eventsSearchSchema,
   shiftSearchSchema,
 } from './schemas';
+import { ActivityForm } from './screens/activities';
 import { AirportForm } from './screens/airports';
 import { AtcEventPage, AtcEventsPage, AtcPositionForm } from './screens/atc';
 import { ShiftForm } from './screens/roster';
@@ -40,8 +41,9 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * event's page and in a section of their own for whoever does not read the events, a position with who is available on it, and a member's
  * availability on the event's page; E11b the roster of an event under its positions, and a shift on a page of its own; E12 the page of a
  * published roster, a controller's shifts and availabilities on `/events/mine` with «hand over», the staff's requests under the roster, and
- * the block of the coverage of the rosters.
- */
+ * the block of the coverage of the rosters; E17 the parallel activities of an event in person — in a tab of the event's page with their
+ * seats, an activity on a page of its own, the turns with their free seats on the event's page, where a registered member takes and gives
+ * back a seat. */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
   blocks: [eventListBlock, myEventsBlock, atcCoverageBlock],
@@ -141,6 +143,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/questions/$questionId',
       permission: EVENTS_EDIT,
       component: QuestionForm,
+    },
+    // A parallel activity of an event in person (E17): written by whoever writes the bookings of the event, its area.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/activities/$activityId',
+      permission: EVENT_BOOKINGS_EDIT,
+      component: ActivityForm,
     },
     {
       area: 'staff',

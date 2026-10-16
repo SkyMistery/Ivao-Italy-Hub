@@ -27,6 +27,9 @@ public sealed class EventSaving(
     ModuleSettingsStore settings,
     EventsMail mail)
 {
+    /// <summary>The refusal of a move of the event that would leave one of its activities outside it (E17).</summary>
+    public const string ActivitiesOutsideKey = "events:errors.eventActivitiesOutside";
+
     /// <summary>Whether the save being prepared moves the start or the end of a published event: what <see cref="AfterSaveAsync"/> tells.</summary>
     private bool _timesChanged;
 
@@ -91,10 +94,11 @@ public sealed class EventSaving(
         }
 
         // The same for an event in person (E16): off with questions or registrations there, the switch would hide what the members
-        // answered. The staff take the registrations away and delete the questions first.
+        // answered. The staff take the registrations away and delete the questions first — and the activities (E17).
         if (!row.InPerson && !isNew
             && database.Entry(row).Property(nameof(Event.InPerson)).OriginalValue is true
             && (await database.Questions.AnyAsync(question => question.EventId == row.Id, cancellationToken)
+                || await database.Activities.AnyAsync(activity => activity.EventId == row.Id, cancellationToken)
                 || await CrudSource.BackOffice<EventRegistration>(database).AnyAsync(registration => registration.EventId == row.Id, cancellationToken)))
         {
             problems.Add("inPerson", "events:errors.inPersonHasQuestions");
@@ -110,6 +114,21 @@ public sealed class EventSaving(
                 || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id, cancellationToken)))
         {
             problems.Add("hasRoster", "events:errors.hasRosterRows");
+        }
+
+        // Its parallel activities stay inside it (E17; the review of #271, point 4): an event moved or shortened past one of them would leave
+        // its turns outside the event, still offered. The staff move the activity first.
+        if (!isNew)
+        {
+            if (await database.Activities.AnyAsync(activity => activity.EventId == row.Id && activity.FromUtc < row.StartsAtUtc, cancellationToken))
+            {
+                problems.Add("startsAtUtc", ActivitiesOutsideKey);
+            }
+
+            if (await database.Activities.AnyAsync(activity => activity.EventId == row.Id && activity.ToUtc > row.EndsAtUtc, cancellationToken))
+            {
+                problems.Add("endsAtUtc", ActivitiesOutsideKey);
+            }
         }
 
         // A published event is let out as it is at its release: an edit does not take it back below what «Publish» asked.
@@ -204,6 +223,9 @@ public sealed class EventSaving(
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
         database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
+
+        // Its activities (E17): none has a seat, since a seat needs a registration and an event with one was refused above.
+        database.Activities.RemoveRange(await database.Activities.Where(activity => activity.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);
     }
 }

@@ -99,6 +99,8 @@ const event: PublicEventDto = {
   questions: [],
   // The ATC of an event with a roster (E11a): none here.
   atc: null,
+  // The parallel activities of an event in person (E17): none here.
+  activities: [],
 };
 
 /** The same event as its tabs in the back office read it: by its id, and with public slots alone unless a test says otherwise. */
