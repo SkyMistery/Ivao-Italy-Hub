@@ -8,9 +8,29 @@
 
 **Ultimo aggiornamento:** 15 ottobre 2026 — **fase E17** (modulo, la seconda e ultima di **M4c**: le attività parallele di un evento in
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
-M4c), sul branch `m4/e17-in-person-activities`, in coda dopo la PR di E12 (la fila ATC migra lo stesso contesto: la migrazione di E17 è
-rifatta sopra la sua). La nota `2026-10-15-le-attivita-e-la-conservazione-breve` è **Proposta**, con tre domande a Carmine. Con E17 **M4c è
-finita nel codice**; il rapporto di chiusura di M4 aspetta M4b («Che cosa ha lasciato E17», sotto).
+M4c), sul branch `m4/e17-in-person-activities`, **in coda dopo la #268** di E12: nata `--no-track` da `main` a `c232448`, ha unito la sua
+testa `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la fila ATC migra lo stesso contesto). La nota
+`2026-10-15-le-attivita-e-la-conservazione-breve` è **Proposta**, con tre domande a Carmine sull'[issue
+#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267). Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta
+M4b («Che cosa ha lasciato E17», sotto).
+
+**L'aggiornamento di E12:** 15 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
+la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, **in coda dopo la
+#262** di E11b: nata `--no-track` dalla sua testa `973f385`, ha unito la sua testa dopo la revisione `12dfb0c` (con `main` a `c232448`).
+La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **Proposta**, con la domanda a Carmine nel [primo commento della PR](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853); il
+codice segue le risposte raccomandate. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
+controllore i suoi turni in una mail; dopo, ogni correzione avvisa subito chi sapeva del turno; c'è la pagina `/events/{slug}/roster` (i nomi
+solo a chi ha fatto il login), i turni in `/events/mine` e in `events.myEvents`, la **cessione** di un turno decisa dallo staff, e il blocco
+**`events.atcCoverage`** («Che cosa ha lasciato E12», sotto).
+
+**L'aggiornamento di E11b:** 14 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
+staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`: nata `--no-track` dalla testa di E11a `c967bc1`, ne ha unito la
+testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, e dopo l'unione di E16 (#255) ed E11a (#256) **`main` a
+`c232448`**. La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
+(A) per «`atcData` di IT» (`vipi` quando l'utente di sola lettura della vista esiste sull'host) e le dieci letture, tre con una condizione
+ora nel codice; i rilievi del revisore sulla #262 sono corretti sulla stessa PR («Che cosa ha lasciato E11b», sotto). Da E11b, alla
+chiusura delle disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo
+staff dell'ATC lo **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni.
 
 **L'aggiornamento di E11a:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
 disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
@@ -261,7 +281,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E17 (15 ottobre 2026, branch `m4/e17-in-person-activities`; nata da `main` a `c232448`, in coda dopo la PR di E12, con la sua testa unita)
+### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`; nata da `main` a `c232448`, in coda dopo la #268 di E12, con la sua testa `a44b70f` unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
   quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota
@@ -297,6 +317,67 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Su Windows** `Activities.tsx` e `activities.tsx` sono lo stesso file: il componente della pagina pubblica si chiama
     `ActivityTurns.tsx` per questo.
   - ⚠️ **I VID di prova**: E17 ha usato **761150–761155** della fascia 761150–761179 data da dalberone.
+
+### Che cosa ha lasciato E12 (15 ottobre 2026, branch `m4/e12-roster-publication`, PR #268; in coda dopo la #262 di E11b, nata dalla sua testa `973f385`, con la sua testa `12dfb0c` unita)
+
+- **Che cosa c'è** (il dettaglio in `10`, E12, «Com'è andata»; **una migrazione**, `AddRosterPublicationAndTransfers`; niente del nucleo —
+  solo `schema.d.ts` generato, le colonne di persona in `ErasureTests` e i due conteggi dei blocchi —; una nota nuova,
+  `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, **Proposta**):
+  - **La pubblicazione**: `Event.RosterPublishedAt` e `Atc/RosterPublication.cs`, la seconda metà di `events-roster`: una volta, a inizio −
+    `rosterPublishDays`, e poi pubblicato per sempre; i turni detti con `notified_at`, una mail per controllore per evento.
+  - **Le mail della correzione**: `Atc/ShiftNotices.cs`, chiamato dal `BeforeSave`, dall'`AfterSave` (dopo il commit di `ShiftLock`) e
+    dalla `Delete` dei turni e delle postazioni: assegnato, cambiato, tolto, solo dopo la pubblicazione e solo a chi sapeva del turno.
+  - **La pagina del roster** (`Public/PublicRoster.cs`, `screens/RosterPage.tsx`), **i turni del membro** (`Atc/MemberShifts.cs`,
+    `screens/myShifts.tsx`), **la cessione** (`EventAtcTransfer`, `Atc/StaffTransfers.cs`, `Atc/TransferEndpoints.cs`,
+    `screens/transfers.tsx`) e **il blocco** `events.atcCoverage` (`Atc/AtcCoverageProvider.cs`, `blocks/atcCoverage.tsx`).
+  - **I test**: integrazione e unità `EventsRosterPublicationTests` (VID **761122–761128**; slug `evt-test-e12-…`); il giro
+    `full/events-publication.spec.ts` (slug `evt-test-e2e-e12-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E13a/E13b**: un turno ceduto e approvato è del nuovo titolare (`ControllerVid`), e la presenza si verifica su di lui; l'audit tiene chi
+    l'aveva. **`events.staffQueue`** conta le cessioni da decidere come `events.atcCoverage` (`TransferStatus.Pending`, l'unico handler con
+    `EventAtc.Edit` sulla richiesta). Le richieste in attesa di un evento iniziato si rifiutano soltanto.
+  - **Dopo l'inizio** (la regola di Carmine sulla #262, che E11b scrive): un turno non si toglie, non cambia controllore né postazione, e se ne
+    taglia solo la fine; il taglio è un «cambiato» per `ShiftNotices`, e la mail parte a chi sapeva del turno.
+  - ⚠️ **Il banco non lancia un job**: la pubblicazione si guarda al quarto d'ora, come la proposta di E11b.
+  - ⚠️ **I VID di prova**: dopo 761114–761121 di E11b, E12 ha usato **761122–761128**.
+
+### Che cosa ha lasciato E11b (13 ottobre 2026, branch `m4/e11b-roster-proposal`, PR #262; in coda dopo la #256 di E11a, nata dalla sua testa `c967bc1`, con la sua testa `ac52c4b` e `main` a `cea6244` uniti)
+
+- **Che cosa c'è** (il dettaglio in `10`, E11b, «Com'è andata»; **una migrazione**, `AddAtcShifts`; niente del nucleo — solo `schema.d.ts`
+  generato e le colonne di persona in `ErasureTests` —; una nota nuova, `2026-10-13-la-proposta-del-roster`, **Proposta**):
+  - **La tabella**: `evt_atc_shifts` (`EventAtcShift`): il controllore su una postazione da quando a quando, `origin` (`Proposed`, `Staff`),
+    il perché in `reason` (JSON, `ShiftReason`), `notified_at` (`[NotAudited]`, per E12), l'esito (`attendance`, `attendance_by`,
+    `attendance_at`, `attendance_note`, per E13); il FIR **copiato dalla postazione**; stakeholder il controllore.
+  - **Il proponente** puro (`Atc/RosterProposer.cs`), i dati (`Atc/RosterData.cs`), la proposta di un evento sotto il blocco della sua riga
+    (`Atc/RosterProposal.cs`) e il job **`events-roster`** (`Atc/EventRosterJob.cs`, ai minuti 3/18/33/48 UTC).
+  - **La correzione**: i turni con il motore (`/api/events/atc/shifts`, `Atc/ShiftEndpoints.cs`) e **il roster** per postazione e ora, con gli
+    scoperti, il perché e gli avvisi (`GET /api/events/atc/events/{id}/roster`, `Atc/StaffRoster.cs`); la sezione «Roster» del pannello
+    dell'ATC e il form del turno (`screens/roster.tsx`, `screens/rosterWords.ts`, `screens/candidates.tsx`).
+  - **I test**: unità e integrazione `EventsRosterTests` (VID **761114–761121**; slug `evt-test-e11b-…`); il giro `full/events-roster.spec.ts`.
+- **Che cosa deve sapere la fase dopo**:
+  - **E12** (la pubblicazione, la seconda metà di `events-roster`): il job è già registrato e decide dai suoi dati; la pubblicazione è un'altra
+    condizione nello stesso giro (inizio − `rosterPublishDays`, `notified_at` per turno). ⚠️ **Le mail dopo la pubblicazione** partono dai
+    verbi della correzione, che oggi sono del motore: l'`AfterSave` della risorsa dei turni (per «aggiungi» e «sposta») e la `Delete` di
+    `ShiftEndpoints` (per «togli»), mai un verbo nuovo a mano. ⚠️ **L'`AfterSave` dei turni è già `CommitAsync`**, che chiude la transazione
+    del blocco della riga dell'evento (`Atc/ShiftLock.cs`, il punto 1 della revisione della #262): una mail va **dopo** il commit, nello
+    stesso hook, mai prima. **`events.atcCoverage`** conta gli scoperti come li conta il roster:
+    `StaffRoster.Gaps` sui pezzi di `RosterProposer.Pieces`, gli scoperti non sono righe. **La pagina `/events/{slug}/roster`** e i turni in
+    `/events/mine` leggono `evt_atc_shifts` (i nomi con `MemberNames`, come il roster dello staff). La cessione (`evt_atc_shift_transfers`)
+    cambia il titolare di un turno: `ControllerVid` e `Origin = Staff`, come «sposta».
+  - **E13a/E13b**: `attendance` è `Unknown` su ogni turno; **la penalità** si legge già da `Attended` e `NoShow` degli altri eventi
+    (`RosterData.PenaltiesAsync`), con il peso 1: `noShowWeight` di E13b va passato a `RosterProposer.Penalty`. Un turno di un evento finito
+    non si cambia né si toglie dai verbi della correzione: il no-show confermato è un verbo di E13b.
+  - **E15b**: la cancellazione dei turni è già in `EventsPersonalData`.
+  - ⚠️ **Il banco non lancia un job**: una spec non aspetta `events-roster` (come il promemoria di E6b); la proposta si guarda sul banco della
+    fase al giro del quarto d'ora.
+  - **Le condizioni di Carmine sulla #259** (nel codice): proposto il roster, le disponibilità restano chiuse anche se l'evento si sposta
+    (`AtcRules.IsClosedForGood`); dall'inizio un turno non si toglie, tiene controllore, postazione, inizio e ore passate, e se ne taglia solo
+    la fine, ad adesso o dopo (`shiftAfterStart`, la risposta di Carmine sulla #262: il sostituto è un turno nuovo dal taglio); un controllore su due postazioni dello stesso evento alle stesse ore è un rifiuto (`controllerBusy`), in altri
+    eventi un avviso. **Le righe del roster e le postazioni dicono se il lettore può scriverle** (`Editable`, l'unico handler): una pagina
+    nuova dell'ATC chiede quello, non `holdsPermission`. `isClosed` e `hasStarted` in `screens/atcPaths.ts`.
+  - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il
+    perché di ogni turno lo dice («esperienza non contata»).
+  - ⚠️ **I VID di prova**: dopo 761106–761113 di E11a, E11b ha usato **761114–761121** (e **761199** come nessuno che l'hub conosce).
 
 ### Che cosa ha lasciato E11a (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256; in coda dopo la #255 di E16, nata dal suo branch a `dd5b263`, con la sua testa `78fc9b6` unita)
 

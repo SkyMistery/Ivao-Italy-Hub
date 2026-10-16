@@ -1,4 +1,4 @@
-import { Button, H2 } from '@ivao/atmosphere-react';
+import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useRouteContext } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
@@ -13,7 +13,6 @@ import { useMoment } from '../../../shared/i18n/useMoment';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
 import { ConfirmDialog, Notice, PageShell } from '../../../shared/ui';
 import {
-  atcCandidatesQuery,
   atcEventQuery,
   atcEventsQuery,
   atcPositionQuery,
@@ -22,7 +21,6 @@ import {
   divisionPositionsQuery,
   useDeleteAtcPosition,
   useSaveAtcPosition,
-  type AtcCandidateDto,
   type AtcEventDto,
   type EventAtcPositionDto,
 } from '../api';
@@ -30,6 +28,9 @@ import { EVENT_ATC_EDIT } from '../permissions';
 import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from '../schemas';
 
 import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
+import { Candidates } from './candidates';
+import { RosterSection } from './roster';
+import { TransfersSection } from './transfers';
 
 /**
  * The ATC of the events in the staff's back office (design M4 §4.1, §6.3, §7.2, E11a; note 2026-10-12-le-postazioni-e-la-disponibilita):
@@ -174,42 +175,9 @@ export function AtcPanel({ eventId }: { eventId: number }) {
           </Button>
         )}
       />
+      <RosterSection event={event} />
+      <TransfersSection event={event} />
     </div>
-  );
-}
-
-const candidateColumns: readonly ColumnSpec<AtcCandidateDto>[] = [
-  col.person('controller'),
-  col.text('rating'),
-  col.boolean('wholePosition'),
-  col.date('availableFromUtc'),
-  col.date('availableToUtc'),
-  col.number('windows'),
-  col.text('note'),
-  col.date('createdAt'),
-];
-
-/** Who is available on a position (§4.2, §6.3): the controllers with a window that meets its hours, the first given first. */
-function Candidates({ positionId }: { positionId: number }) {
-  const { t, i18n } = useTranslation();
-  const { bootstrap } = useRouteContext({ from: '/_staff' });
-  const [search, setSearch] = useState<ListSearch>(() => listSearchSchema.parse({ pageSize: 50 }));
-
-  return (
-    <section className="flex flex-col gap-4" aria-label={t('events:atc.candidates.title')}>
-      <H2>{t('events:atc.candidates.title')}</H2>
-      <DataList
-        columns={candidateColumns}
-        query={atcCandidatesQuery(positionId, search)}
-        labels="events:atc.candidates"
-        locale={i18n.language}
-        defaultLocale={bootstrap.division.defaultLocale}
-        timezone={bootstrap.division.timezone}
-        search={search}
-        onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
-        emptyDescription={t('events:atc.candidates.empty')}
-      />
-    </section>
   );
 }
 

@@ -409,7 +409,9 @@
       "hints": {
         "windows": "One window or more, within the hours of the event, in UTC.",
         "note": "For the staff who make the roster: a position you prefer, a trainee of yours…"
-      }
+      },
+      "roster": "The roster",
+      "rosterOn": "The roster is published on {{date}}."
     },
     "activities": {
       "title": "Parallel activities",
@@ -510,6 +512,37 @@
     "changeAnswers": "Change your answers",
     "withdrawRegistrationTitle": "Withdraw from {{title}}?",
     "withdrawRegistrationDescription": "You are no longer registered: you can register again until the event starts.",
+    "shifts": {
+      "title": "My ATC shifts",
+      "roster": "The roster",
+      "pendingTo": "You asked to hand it over to {{name}}: the staff decide.",
+      "pendingNobody": "You asked to hand it over, looking for a substitute: the staff decide.",
+      "refused": "The staff refused to hand it over: {{note}}",
+      "takeBack": "Take the request back",
+      "takeBackTitle": "Take back your request for {{callsign}}?",
+      "takeBackDescription": "The shift stays yours, and the staff no longer decide on it.",
+      "handOver": "Hand over",
+      "handOverTitle": "Hand over {{callsign}}",
+      "handOverDescription": "Name who takes it, a trainee of yours too, or nobody if you are looking for a substitute. The shift stays yours until the staff decide."
+    },
+    "transfer": {
+      "fields": {
+        "toVid": "To (VID)",
+        "note": "Note"
+      },
+      "hints": {
+        "toVid": "Empty: you are looking for a substitute. Whoever takes it must have signed in to the hub once.",
+        "note": "For the staff: why, and anything they should know."
+      }
+    },
+    "availability": {
+      "title": "My ATC availabilities",
+      "until": "You can change it or withdraw it until {{date}}.",
+      "closed": "Availabilities are closed: the roster is made from it.",
+      "change": "Change it",
+      "withdrawTitle": "Withdraw your availability for {{title}}?",
+      "withdrawDescription": "The roster will not count on you: you can give it again until availabilities close."
+    },
     "seats": "Your turns"
   },
   "bookings": {
@@ -546,6 +579,10 @@
     "registrationsOver": "Registrations to events that ended, kept without the member and without the texts they wrote",
     "availabilitiesToCome": "ATC availabilities for events still to end: deleted",
     "availabilitiesOver": "ATC availabilities for events that ended, kept without the controller and without their note",
+    "shiftsToCome": "ATC shifts of events still to end: deleted, and uncovered again",
+    "shiftsOver": "ATC shifts of events that ended, kept without the controller, the note of the staff and the why of the proposal",
+    "transfersToCome": "Requests to hand an ATC shift over, of events still to end: deleted",
+    "transfersOver": "Requests to hand an ATC shift over, of events that ended, kept without the controller and without the notes",
     "seatsToCome": "Seats in the activities of events still to end: deleted, and their turns free again",
     "seatsOver": "Seats in the activities of events that ended, kept without the member"
   },
@@ -571,7 +608,35 @@
       "signIn": "Sign in to see your bookings.",
       "none": "No booking.",
       "toEvents": "Go to the events",
-      "all": "All your bookings"
+      "all": "All your bookings",
+      "shifts": "Your ATC shifts"
+    },
+    "atcCoverage": {
+      "label": "ATC coverage",
+      "signIn": "Sign in to see the rosters.",
+      "none_one": "No roster needs anybody in the next day.",
+      "none_other": "No roster needs anybody in the next {{count}} days.",
+      "open_one": "Availabilities open until {{date}}: {{count}} given",
+      "open_other": "Availabilities open until {{date}}: {{count}} given",
+      "availabilities_one": "{{count}} availability",
+      "availabilities_other": "{{count}} availabilities",
+      "uncovered_one": "{{count}} piece of {{pieces}} uncovered",
+      "uncovered_other": "{{count}} pieces of {{pieces}} uncovered",
+      "transfers_one": "{{count}} request to hand a shift over",
+      "transfers_other": "{{count}} requests to hand a shift over",
+      "publishesOn": "Published on {{date}}",
+      "stage": {
+        "Open": "Availabilities open",
+        "ToPropose": "To be proposed",
+        "Proposed": "Proposed",
+        "Published": "Published"
+      },
+      "fields": {
+        "days": "Days ahead"
+      },
+      "hints": {
+        "days": "The events with a roster that start within these days, from 1 to 60."
+      }
     }
   },
   "settings": {
@@ -641,6 +706,22 @@
     "registrationRemoved": {
       "title": "Registrations taken away",
       "description": "An email when the staff of the events take a registration of yours away, with the reason."
+    },
+    "atcShiftAssigned": {
+      "title": "Your ATC shifts",
+      "description": "An email when the ATC roster of an event is published with your shifts, and when you are given a shift after that."
+    },
+    "atcShiftChanged": {
+      "title": "ATC shifts moved",
+      "description": "An email when the staff move a shift of yours in a published roster to other hours or another position."
+    },
+    "atcShiftRemoved": {
+      "title": "ATC shifts taken away",
+      "description": "An email when the staff take a shift of yours in a published roster away, or give it to somebody else."
+    },
+    "atcShiftTransferDecided": {
+      "title": "Shift handovers decided",
+      "description": "An email when the staff approve or refuse your request to hand a shift over."
     }
   },
   "mail": {
@@ -675,6 +756,24 @@
       "registrationRemoved": {
         "subject": "[Events] Registration taken away: {{title}}",
         "body": "The staff of the events have taken away your registration to {{title}}.\n\nWhy: {{reason}}\n\nThe event: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "atcShiftAssigned": {
+        "subject": "[Events] Your ATC shifts: {{title}}",
+        "body": "The ATC roster of {{title}} gives you these shifts ({{count}}), the hours in UTC:\n\n{{shifts}}\n\nThe roster: {{roster}}\nYour shifts, which you may ask to hand over until the event starts: {{mine}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "atcShiftChanged": {
+        "subject": "[Events] A shift of yours has changed: {{title}}",
+        "body": "The staff of the events have moved a shift of yours in {{title}}. The hours are in UTC.\n\nIt was: {{before}}\nIt is now: {{after}}\n\nThe roster: {{roster}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "atcShiftRemoved": {
+        "subject": "[Events] A shift of yours was taken away: {{title}}",
+        "body": "The staff of the events have taken your shift {{shift}} UTC in {{title}} away.\n\nThe roster: {{roster}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "atcShiftTransferDecided": {
+        "subject": "[Events] Your request to hand a shift over: {{title}}",
+        "body": "{{decision}}\n\nThe shift: {{shift}} UTC, in {{title}}.\nThe staff's note: {{note}}\n\nYour shifts: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
+        "approved": "The staff approved your request: the shift is no longer yours, and whoever takes it has been told.",
+        "refused": "The staff refused your request: the shift stays yours."
       }
     }
   },
@@ -780,9 +879,26 @@
     "eventHasAvailabilities": "Some controllers gave their availability for this event: cancel it instead.",
     "ratingUnknown": "Choose a rating of the list.",
     "rosterBeforeClose": "The roster is published after the availabilities close: no more days than those.",
-    "availabilityChanged": "Your availability changed in another window meanwhile: reload the page to see it as it is now, and change it from there.",
     "positionOnCancelledEvent": "The event is cancelled: no position is opened or changed on it.",
     "positionOnEventOver": "The event is over: no position is opened or changed on it.",
+    "positionUnknownForShift": "Choose one of the positions of this event.",
+    "positionOfAnotherEvent": "A shift moves only among the positions of its own event.",
+    "shiftOutsidePosition": "The shift is outside the hours of its position.",
+    "shiftTaken": "Another controller holds this position in these hours.",
+    "controllerNeverSignedIn": "This member has never signed in to the hub: they cannot be given a shift.",
+    "rosterNotProposed": "The roster is not proposed yet: it is when the availabilities close.",
+    "positionHasShifts": "The position has shifts in the roster: its callsign and hours stay around them, and once the event has started it is not deleted.",
+    "eventHasShifts": "The event has shifts in its roster: cancel it instead.",
+    "shiftAfterStart": "The event has started: a shift keeps its controller, its position and its hours already past, and is not taken away; only its end can be cut, to now or later.",
+    "controllerBusy": "This controller already holds another position of the event in these hours.",
+    "availabilityChanged": "Your availability changed in another window meanwhile: reload the page to see it as it is now, and change it from there.",
+    "transferClosed": "A shift is handed over until the event starts, once its roster is published.",
+    "transferPending": "A request to hand this shift over is waiting already.",
+    "transferToYourself": "The shift is yours already: name somebody else.",
+    "transferNotPending": "This request was decided already, or taken back.",
+    "transferShiftNotTheirs": "The shift is no longer theirs: refuse the request.",
+    "transferNeedsSubstitute": "The request names nobody: choose who takes the shift.",
+    "transferChanged": "The request changed a moment ago: read the page again.",
     "activityNotInPerson": "The event is not in person: switch «In person» on in its settings first.",
     "activitiesTooMany": "An event has at most 20 activities.",
     "activityOutsideEvent": "The activity has to fit inside the event, from its start to its end.",
@@ -877,7 +993,7 @@
       "title": "Positions",
       "create": "New position",
       "edit": "Position",
-      "empty": "No position yet: open one, and the controllers can give their availability.",
+      "empty": "The positions the event opens will show up here; once they are open, the controllers give their availability.",
       "fields": {
         "callsign": "Position",
         "name": "Name",
@@ -912,7 +1028,152 @@
         "availableToUtc": "Available until"
       }
     },
-    "closedEvent": "The event is cancelled or over: its positions are read, not changed."
+    "closedEvent": "The event is cancelled or over: its positions are read, not changed.",
+    "roster": {
+      "title": "Roster",
+      "notYet": "The roster is proposed when the availabilities close, on {{date}}.",
+      "proposed": "Proposed on {{date}}. Correct it until the event ends: a shift outside the rules is a warning, never a refusal.",
+      "empty": "No shift and nothing uncovered: the event opens no position yet.",
+      "add": "Add",
+      "move": "Move",
+      "remove": {
+        "trigger": "Take away",
+        "title": "Take this shift away?",
+        "description": "The controller no longer has it, and that piece of the position is uncovered again.",
+        "confirm": "Take away"
+      },
+      "fields": {
+        "callsign": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "state": "Shift",
+        "controller": "Controller",
+        "rating": "Rating",
+        "why": "Why",
+        "alerts": "Warnings"
+      },
+      "options": {
+        "state": {
+          "Uncovered": "Uncovered",
+          "Proposed": "Proposed",
+          "Staff": "By the staff"
+        }
+      },
+      "why": {
+        "decidedBy": {
+          "Only": "The only one who could take it",
+          "Preferred": "Holds the preferred rating for this kind of position",
+          "Experience": "Opened this position, or its kind, more often",
+          "Penalty": "A lower penalty for no-shows",
+          "FewerShifts": "Fewer shifts in this roster",
+          "EarlierAvailability": "Gave their availability earlier",
+          "Vid": "Everything else equal: the lower VID"
+        },
+        "candidates": "Could take it: {{count}}",
+        "connections": "Connections: {{callsign}} on this position, {{type}} on its kind",
+        "noExperience": "Experience not counted: no archive of sessions answered",
+        "penalty": "Penalty: {{value}}",
+        "staff": "Written by the staff",
+        "uncoveredNobody": "Nobody available can take it",
+        "uncoveredBusy": "Could take it: {{count}}, but they are in other shifts or at their most in a row",
+        "uncoveredFree": "Free to take it: {{count}}"
+      },
+      "warnings": {
+        "NotAvailable": "Not available for the whole shift",
+        "BelowMinimum": "Rating below the least of the settings",
+        "BelowPreferred": "Rating below the preferred one for this kind of position",
+        "Overlapping": "Another shift of theirs in the same hours",
+        "TooManyInARow": "More shifts in a row than the settings allow"
+      },
+      "publishesOn": "It is published on {{date}}: the controllers are told then, and of every change after it.",
+      "published": "Published on {{date}}: every change is told to the controller at once."
+    },
+    "shifts": {
+      "create": "New shift",
+      "edit": "Shift",
+      "fields": {
+        "positionId": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "controllerVid": "Controller's VID"
+      },
+      "hints": {
+        "positionId": "One of the positions of this event.",
+        "fromUtc": "In UTC, inside the hours of the position.",
+        "toUtc": "In UTC, inside the hours of the position.",
+        "controllerVid": "Anybody who signed in to the hub once, whether or not they gave their availability: what leaves the rules is a warning on the roster."
+      },
+      "options": {
+        "positionId": {
+          "none": "Choose a position"
+        }
+      }
+    },
+    "transfers": {
+      "title": "Shifts to hand over",
+      "empty": "Nobody asked to hand a shift over.",
+      "stale": "The shift is no longer theirs",
+      "approve": "Approve",
+      "approveTitle": "Approve handing {{callsign}} over?",
+      "approveDescription": "The shift passes to the member named, or to another one you choose; both are told.",
+      "approveNobody": "Nobody was named: choose who takes the shift. Both are told.",
+      "refuse": "Refuse",
+      "refuseTitle": "Refuse handing {{callsign}} over?",
+      "refuseDescription": "The shift stays theirs. Say why: they read it in a mail.",
+      "fields": {
+        "callsign": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "from": "Hands over",
+        "to": "To",
+        "status": "State",
+        "note": "Their note",
+        "alerts": "Warnings",
+        "decisionNote": "The staff's note"
+      },
+      "options": {
+        "status": {
+          "Pending": "Waiting",
+          "Approved": "Approved",
+          "Refused": "Refused",
+          "Withdrawn": "Taken back"
+        }
+      },
+      "decision": {
+        "fields": {
+          "toVid": "Who takes it (VID)",
+          "note": "Note"
+        },
+        "hints": {
+          "toVid": "The member named, or another one who signed in to the hub once.",
+          "note": "Whoever asked reads it in a mail."
+        }
+      }
+    }
+  },
+  "roster": {
+    "title": "ATC roster: {{title}}",
+    "lead": "Every shift of the evening, position by position, and the hours nobody holds yet. The times are in UTC.",
+    "toEvent": "Back to the event",
+    "cancelled": "This event is cancelled.",
+    "notYet": "The roster is published on {{date}}.",
+    "signIn": "Sign in to see who holds each shift.",
+    "empty": "No position is open.",
+    "fields": {
+      "callsign": "Position",
+      "name": "Name",
+      "fromUtc": "From",
+      "toUtc": "To",
+      "state": "Shift",
+      "controller": "Controller",
+      "rating": "Rating"
+    },
+    "options": {
+      "state": {
+        "Assigned": "Assigned",
+        "Uncovered": "Uncovered"
+      }
+    }
   },
   "activities": {
     "title": "Activities",

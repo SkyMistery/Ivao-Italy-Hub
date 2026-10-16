@@ -665,6 +665,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("roster_proposed_at");
 
+                    b.Property<DateTime?>("RosterPublishedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("roster_published_at");
+
                     b.Property<DateTime>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -1096,6 +1100,221 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasDatabaseName("ix_evt_atc_positions_event_id");
 
                     b.ToTable("evt_atc_positions", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcShift", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Attendance")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("attendance");
+
+                    b.Property<DateTime?>("AttendanceAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("attendance_at");
+
+                    b.Property<int?>("AttendanceBy")
+                        .HasColumnType("int")
+                        .HasColumnName("attendance_by");
+
+                    b.Property<string>("AttendanceNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("attendance_note");
+
+                    b.Property<int>("ControllerVid")
+                        .HasColumnType("int")
+                        .HasColumnName("controller_vid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Fir")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("fir");
+
+                    b.Property<DateTime>("FromUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("from_utc");
+
+                    b.Property<DateTime?>("NotifiedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("notified_at");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("origin");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<long>("PositionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("position_id");
+
+                    b.Property<string>("ReasonJson")
+                        .HasColumnType("json")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<DateTime>("ToUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("to_utc");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evt_atc_shifts");
+
+                    b.HasIndex("ControllerVid")
+                        .HasDatabaseName("ix_evt_atc_shifts_controller_vid");
+
+                    b.HasIndex("PositionId")
+                        .HasDatabaseName("ix_evt_atc_shifts_position_id");
+
+                    b.HasIndex("EventId", "FromUtc")
+                        .HasDatabaseName("ix_evt_atc_shifts_event_id_from_utc");
+
+                    b.ToTable("evt_atc_shifts", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcTransfer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ControllerVid")
+                        .HasColumnType("int")
+                        .HasColumnName("controller_vid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("decided_at");
+
+                    b.Property<int?>("DecidedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("decided_by");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("decision_note");
+
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Fir")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("fir");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<long>("ShiftId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("shift_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("ToVid")
+                        .HasColumnType("int")
+                        .HasColumnName("to_vid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("visibility");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evt_atc_shift_transfers");
+
+                    b.HasIndex("ControllerVid")
+                        .HasDatabaseName("ix_evt_atc_shift_transfers_controller_vid");
+
+                    b.HasIndex("ShiftId")
+                        .HasDatabaseName("ix_evt_atc_shift_transfers_shift_id");
+
+                    b.HasIndex("EventId", "Status")
+                        .HasDatabaseName("ix_evt_atc_shift_transfers_event_id_status");
+
+                    b.ToTable("evt_atc_shift_transfers", (string)null);
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcWindow", b =>
@@ -1756,6 +1975,26 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_evt_atc_positions_evt_events_event_id");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcShift", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.Events.EventAtcPosition", null)
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evt_atc_shifts_evt_atc_positions_position_id");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcTransfer", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.Events.EventAtcShift", null)
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evt_atc_shift_transfers_evt_atc_shifts_shift_id");
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventAtcWindow", b =>

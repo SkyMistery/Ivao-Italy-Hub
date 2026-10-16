@@ -21,7 +21,8 @@ namespace IvaoHub.Modules.Events.Atc;
 
 /// <summary>
 /// A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-/// the staff's note, and how many controllers are available in some of its hours — read with a page of positions; none for a row read alone.
+/// the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
+/// form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
 /// </summary>
 public sealed record EventAtcPositionDto(
     long Id,
@@ -35,7 +36,8 @@ public sealed record EventAtcPositionDto(
     string? Note,
     int Candidates,
     DateTime UpdatedAt,
-    DateTime RowVersion);
+    DateTime RowVersion,
+    bool Editable);
 
 /// <summary>
 /// What a client may set on a position of an event. The event is chosen when it is created and never changes; the care is the event's
@@ -69,8 +71,9 @@ public sealed record AtcCandidateDto(
 
 /// <summary>
 /// The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
-/// its words, its state, its window, when its availabilities close and how long a shift is — to whoever holds <c>EventAtc.View</c>
-/// somewhere, the staff of a FIR among them, who do not read the event itself.
+/// its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
+/// published and whether it was (E12) — to whoever holds <c>EventAtc.View</c> somewhere, the staff of a FIR among them, who do not read the
+/// event itself.
 /// </summary>
 public sealed record AtcEventDto(
     long Id,
@@ -82,7 +85,10 @@ public sealed record AtcEventDto(
     DateTime EndsAtUtc,
     DateTime ClosesAtUtc,
     int ShiftMinutes,
-    DateTime? CancelledAt);
+    DateTime? CancelledAt,
+    DateTime? RosterProposedAt,
+    DateTime PublishesAtUtc,
+    DateTime? RosterPublishedAt);
 
 /// <summary>A position of the division as the form of a position offers it: the callsign, its name, its kind and its FIR.</summary>
 public sealed record AtcPositionChoiceDto(string Callsign, string Name, string Type, string? Fir);
@@ -110,9 +116,9 @@ public sealed class EventAtcPositionWriteDtoValidator : AbstractValidator<EventA
 /// <summary>Positions to and from their payloads: by hand, the callsign in upper case as the core writes it.</summary>
 internal static class AtcPositionMapper
 {
-    public static EventAtcPositionDto ToDto(EventAtcPosition position) => Row(position, name: null, candidates: 0);
+    public static EventAtcPositionDto ToDto(EventAtcPosition position) => Row(position, name: null, candidates: 0, editable: false);
 
-    public static EventAtcPositionDto Row(EventAtcPosition position, string? name, int candidates) => new(
+    public static EventAtcPositionDto Row(EventAtcPosition position, string? name, int candidates, bool editable) => new(
         position.Id,
         position.EventId,
         position.OwnerDepartment,
@@ -124,7 +130,8 @@ internal static class AtcPositionMapper
         position.Note,
         candidates,
         position.UpdatedAt,
-        position.RowVersion);
+        position.RowVersion,
+        editable);
 
     /// <summary>
     /// The event only on a new row: a position never moves to another event. No hours is none here, and the event's window before the
@@ -175,6 +182,9 @@ public static class AtcPositionEndpoints
 
     private const string UnknownPositionKey = "events:errors.positionUnknown";
 
+    /// <summary>A position whose shifts a change or a deletion would leave without it (E11b).</summary>
+    private const string PositionHasShiftsKey = "events:errors.positionHasShifts";
+
     public static IEndpointRouteBuilder MapAtcPositionEndpoints(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -201,6 +211,8 @@ public static class AtcPositionEndpoints
             options.Apply = AtcPositionMapper.Apply;
             options.BeforeAuthorize = AdoptAsync;
             options.BeforeSave = SaveAsync;
+            options.AfterSave = (_, saving) => saving.Services.GetRequiredService<ShiftLock>().CommitAsync(saving.CancellationToken);
+            options.Delete = DeleteAsync;
         });
 
         var atc = app.MapGroup("/api/events/atc").WithTags("EventAtc");
@@ -293,6 +305,10 @@ public static class AtcPositionEndpoints
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> SaveAsync(EventAtcPosition position, CrudSaving saving)
     {
+        // Under the lock of the event's row, as a shift is written (the second reading of #262, point 1): a position shortened while a
+        // shift is added in the hours cut reads that shift, and refuses.
+        await saving.Services.GetRequiredService<ShiftLock>().TakeAsync((EventsDbContext)saving.Database, position.EventId, saving.CancellationToken);
+
         if (await saving.Services.GetRequiredService<EventChildren>().EventAsync(position.EventId, saving.CancellationToken) is not { } parent)
         {
             return EventChildren.Refusal("eventId", "events:errors.eventUnknown");
@@ -326,6 +342,27 @@ public static class AtcPositionEndpoints
         }
 
         var database = (EventsDbContext)saving.Database;
+
+        // A position with shifts (E11b, reading 8): its callsign stays, since the shifts copied its FIR, and its hours keep its shifts.
+        if (!saving.IsNew)
+        {
+            var shifts = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
+                .Where(shift => shift.PositionId == position.Id)
+                .ToListAsync(saving.CancellationToken);
+            if (shifts.Count > 0 && !string.Equals(
+                    (string?)database.Entry(position).Property(nameof(EventAtcPosition.Callsign)).OriginalValue,
+                    position.Callsign,
+                    StringComparison.Ordinal))
+            {
+                return EventChildren.Refusal("callsign", PositionHasShiftsKey);
+            }
+
+            if (shifts.Any(shift => shift.FromUtc < position.FromUtc || shift.ToUtc > position.ToUtc))
+            {
+                return EventChildren.Refusal("fromUtc", PositionHasShiftsKey);
+            }
+        }
+
         var twice = await database.AtcPositions.AnyAsync(
             other => other.EventId == position.EventId
                 && other.Callsign == position.Callsign
@@ -335,6 +372,40 @@ public static class AtcPositionEndpoints
             saving.CancellationToken);
 
         return twice ? EventChildren.Refusal("callsign", "events:errors.positionTwice") : null;
+    }
+
+    /// <summary>
+    /// Deleting a position (E11b, reading 8): its shifts go with it, each with its row in the audit, until the event starts; from then on a
+    /// position with shifts stays, since its shifts are the register of reliability (c3).
+    /// </summary>
+    private static async Task DeleteAsync(EventAtcPosition position, IServiceProvider services, CancellationToken cancellationToken)
+    {
+        // Under the lock of the event's row (the second reading of #262, point 1): a shift added meanwhile is read, and goes with its audit.
+        var database = services.GetRequiredService<EventsDbContext>();
+        var shiftLock = services.GetRequiredService<ShiftLock>();
+        await shiftLock.TakeAsync(database, position.EventId, cancellationToken);
+        var shifts = await CrudSource.BackOffice<EventAtcShift>(database)
+            .Where(shift => shift.PositionId == position.Id)
+            .ToListAsync(cancellationToken);
+
+        if (shifts.Count > 0)
+        {
+            var parent = await services.GetRequiredService<EventChildren>().EventAsync(position.EventId, cancellationToken);
+            if (parent is not null && parent.StartsAtUtc <= services.GetRequiredService<IClock>().UtcNow)
+            {
+                throw new DomainRefusalException("id", PositionHasShiftsKey);
+            }
+
+            // With their requests to hand them over, saved and committed inside the lock, and then whoever knew of one told it is gone (E12).
+            await services.GetRequiredService<ShiftNotices>().RemoveAsync(shifts, position, shiftLock, cancellationToken);
+            return;
+        }
+
+        database.AtcPositions.Remove(position);
+
+        // The engine saves after this hook and asks nothing after a deletion: the save and the commit are here, inside the lock.
+        await database.SaveChangesAsync(cancellationToken);
+        await shiftLock.CommitAsync(cancellationToken);
     }
 
     /// <summary>
@@ -477,7 +548,10 @@ public static class AtcPositionEndpoints
         row.EndsAtUtc,
         AtcRules.ClosesAt(row, settings),
         row.ShiftMinutes ?? settings.ShiftMinutes,
-        row.CancelledAt);
+        row.CancelledAt,
+        row.RosterProposedAt,
+        RosterPublication.PublishesAt(row, settings),
+        row.RosterPublishedAt);
 
     private static IResult Problem(int status, string titleKey, LocaleCatalog catalog, ICurrentUser currentUser) =>
         Results.Problem(statusCode: status, title: catalog.Resolve(currentUser.Locale, titleKey));

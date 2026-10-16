@@ -142,6 +142,10 @@ public sealed class EventsErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             ("events:erasure.registrationsOver", 0, nameof(ErasureOutcome.Anonymised)),
             ("events:erasure.availabilitiesToCome", 0, nameof(ErasureOutcome.Deleted)),
             ("events:erasure.availabilitiesOver", 0, nameof(ErasureOutcome.Anonymised)),
+            ("events:erasure.shiftsToCome", 0, nameof(ErasureOutcome.Deleted)),
+            ("events:erasure.shiftsOver", 0, nameof(ErasureOutcome.Anonymised)),
+            ("events:erasure.transfersToCome", 0, nameof(ErasureOutcome.Deleted)),
+            ("events:erasure.transfersOver", 0, nameof(ErasureOutcome.Anonymised)),
             ("events:erasure.seatsToCome", 0, nameof(ErasureOutcome.Deleted)),
             ("events:erasure.seatsOver", 0, nameof(ErasureOutcome.Anonymised)),
         ];

@@ -410,7 +410,9 @@
       "hints": {
         "windows": "Una finestra o più, dentro l'orario dell'evento, in UTC.",
         "note": "Per lo staff che fa il roster: una postazione che preferisci, un tuo trainee…"
-      }
+      },
+      "roster": "Il roster",
+      "rosterOn": "Il roster si pubblica il {{date}}."
     },
     "activities": {
       "title": "Attività parallele",
@@ -511,6 +513,37 @@
     "changeAnswers": "Cambia le risposte",
     "withdrawRegistrationTitle": "Ritirarti da {{title}}?",
     "withdrawRegistrationDescription": "Non sei più iscritto: puoi iscriverti di nuovo fino all'inizio dell'evento.",
+    "shifts": {
+      "title": "I miei turni ATC",
+      "roster": "Il roster",
+      "pendingTo": "Hai chiesto di cederlo a {{name}}: decide lo staff.",
+      "pendingNobody": "Hai chiesto di cederlo e cerchi un sostituto: decide lo staff.",
+      "refused": "Lo staff ha rifiutato la cessione: {{note}}",
+      "takeBack": "Ritira la richiesta",
+      "takeBackTitle": "Ritirare la richiesta per {{callsign}}?",
+      "takeBackDescription": "Il turno resta tuo, e lo staff non decide più sulla richiesta.",
+      "handOver": "Cedi",
+      "handOverTitle": "Cedi {{callsign}}",
+      "handOverDescription": "Indica chi lo prende, anche un tuo trainee, o nessuno se cerchi un sostituto. Il turno resta tuo finché lo staff non decide."
+    },
+    "transfer": {
+      "fields": {
+        "toVid": "A (VID)",
+        "note": "Nota"
+      },
+      "hints": {
+        "toVid": "Vuoto: cerchi un sostituto. Chi lo prende deve essere entrato nell'hub almeno una volta.",
+        "note": "Per lo staff: perché, e quello che deve sapere."
+      }
+    },
+    "availability": {
+      "title": "Le mie disponibilità ATC",
+      "until": "Puoi cambiarla o ritirarla fino al {{date}}.",
+      "closed": "Le disponibilità sono chiuse: il roster si fa da queste.",
+      "change": "Cambiala",
+      "withdrawTitle": "Ritirare la tua disponibilità per {{title}}?",
+      "withdrawDescription": "Il roster non conterà su di te: puoi ridarla finché le disponibilità sono aperte."
+    },
     "seats": "I tuoi turni"
   },
   "bookings": {
@@ -547,6 +580,10 @@
     "registrationsOver": "Iscrizioni a eventi finiti, tenute senza il membro e senza i testi che ha scritto",
     "availabilitiesToCome": "Disponibilità ATC per eventi non ancora finiti: cancellate",
     "availabilitiesOver": "Disponibilità ATC per eventi finiti, tenute senza il controllore e senza la sua nota",
+    "shiftsToCome": "Turni ATC di eventi non ancora finiti: cancellati, e di nuovo scoperti",
+    "shiftsOver": "Turni ATC di eventi finiti, tenuti senza il controllore, la nota dello staff e il perché della proposta",
+    "transfersToCome": "Richieste di cedere un turno ATC di eventi non ancora finiti: cancellate",
+    "transfersOver": "Richieste di cedere un turno ATC di eventi finiti, tenute senza il controllore e senza le note",
     "seatsToCome": "Posti nelle attività di eventi non ancora finiti: cancellati, e i loro turni di nuovo liberi",
     "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro"
   },
@@ -572,7 +609,35 @@
       "signIn": "Accedi per vedere le tue prenotazioni.",
       "none": "Nessuna prenotazione.",
       "toEvents": "Vai agli eventi",
-      "all": "Tutte le tue prenotazioni"
+      "all": "Tutte le tue prenotazioni",
+      "shifts": "I tuoi turni ATC"
+    },
+    "atcCoverage": {
+      "label": "Copertura ATC",
+      "signIn": "Accedi per vedere i roster.",
+      "none_one": "Nessun roster ha bisogno di qualcuno nel prossimo giorno.",
+      "none_other": "Nessun roster ha bisogno di qualcuno nei prossimi {{count}} giorni.",
+      "open_one": "Disponibilità aperte fino al {{date}}: {{count}} data",
+      "open_other": "Disponibilità aperte fino al {{date}}: {{count}} date",
+      "availabilities_one": "{{count}} disponibilità",
+      "availabilities_other": "{{count}} disponibilità",
+      "uncovered_one": "{{count}} pezzo su {{pieces}} scoperto",
+      "uncovered_other": "{{count}} pezzi su {{pieces}} scoperti",
+      "transfers_one": "{{count}} richiesta di cedere un turno",
+      "transfers_other": "{{count}} richieste di cedere un turno",
+      "publishesOn": "Si pubblica il {{date}}",
+      "stage": {
+        "Open": "Disponibilità aperte",
+        "ToPropose": "Da proporre",
+        "Proposed": "Proposto",
+        "Published": "Pubblicato"
+      },
+      "fields": {
+        "days": "Giorni avanti"
+      },
+      "hints": {
+        "days": "Gli eventi con un roster che cominciano entro questi giorni, da 1 a 60."
+      }
     }
   },
   "settings": {
@@ -642,6 +707,22 @@
     "registrationRemoved": {
       "title": "Iscrizioni tolte",
       "description": "Un'email quando lo staff degli eventi toglie una tua iscrizione, con il motivo."
+    },
+    "atcShiftAssigned": {
+      "title": "I tuoi turni ATC",
+      "description": "Una mail quando il roster ATC di un evento è pubblicato con i tuoi turni, e quando dopo ricevi un turno."
+    },
+    "atcShiftChanged": {
+      "title": "Turni ATC spostati",
+      "description": "Una mail quando lo staff sposta un tuo turno di un roster pubblicato ad altre ore o a un'altra postazione."
+    },
+    "atcShiftRemoved": {
+      "title": "Turni ATC tolti",
+      "description": "Una mail quando lo staff toglie un tuo turno di un roster pubblicato, o lo dà a un altro."
+    },
+    "atcShiftTransferDecided": {
+      "title": "Cessioni dei turni decise",
+      "description": "Una mail quando lo staff approva o rifiuta la tua richiesta di cedere un turno."
     }
   },
   "mail": {
@@ -676,6 +757,24 @@
       "registrationRemoved": {
         "subject": "[Eventi] Iscrizione tolta: {{title}}",
         "body": "Lo staff degli eventi ha tolto la tua iscrizione a {{title}}.\n\nPerché: {{reason}}\n\nL'evento: {{url}}\n\n---\nPuoi disattivare queste email dalla pagina del tuo profilo."
+      },
+      "atcShiftAssigned": {
+        "subject": "[Eventi] I tuoi turni ATC: {{title}}",
+        "body": "Il roster ATC di {{title}} ti dà questi turni ({{count}}), con le ore in UTC:\n\n{{shifts}}\n\nIl roster: {{roster}}\nI tuoi turni, che puoi chiedere di cedere fino all'inizio dell'evento: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "atcShiftChanged": {
+        "subject": "[Eventi] Un tuo turno ATC è cambiato: {{title}}",
+        "body": "Lo staff degli eventi ha spostato un tuo turno di {{title}}. Le ore sono in UTC.\n\nEra: {{before}}\nOra è: {{after}}\n\nIl roster: {{roster}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "atcShiftRemoved": {
+        "subject": "[Eventi] Un tuo turno ATC è stato tolto: {{title}}",
+        "body": "Lo staff degli eventi ti ha tolto il turno {{shift}} UTC di {{title}}.\n\nIl roster: {{roster}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
+      },
+      "atcShiftTransferDecided": {
+        "subject": "[Eventi] La tua richiesta di cedere un turno: {{title}}",
+        "body": "{{decision}}\n\nIl turno: {{shift}} UTC, in {{title}}.\nLa nota dello staff: {{note}}\n\nI tuoi turni: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
+        "approved": "Lo staff ha approvato la tua richiesta: il turno non è più tuo, e chi lo prende ha ricevuto una mail.",
+        "refused": "Lo staff ha rifiutato la tua richiesta: il turno resta tuo."
       }
     }
   },
@@ -781,9 +880,26 @@
     "eventHasAvailabilities": "Alcuni controllori hanno dato la loro disponibilità per questo evento: annullalo invece.",
     "ratingUnknown": "Scegli un rating dell'elenco.",
     "rosterBeforeClose": "Il roster si pubblica dopo la chiusura delle disponibilità: non più giorni di quelli.",
-    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
     "positionOnCancelledEvent": "L'evento è annullato: non vi si apre né vi si cambia una postazione.",
     "positionOnEventOver": "L'evento è finito: non vi si apre né vi si cambia una postazione.",
+    "positionUnknownForShift": "Scegli una delle postazioni di questo evento.",
+    "positionOfAnotherEvent": "Un turno si sposta solo fra le postazioni del suo evento.",
+    "shiftOutsidePosition": "Il turno è fuori dalle ore della sua postazione.",
+    "shiftTaken": "Un altro controllore tiene questa postazione in queste ore.",
+    "controllerNeverSignedIn": "Questo membro non è mai entrato nell'hub: non gli si può dare un turno.",
+    "rosterNotProposed": "Il roster non è ancora proposto: lo è alla chiusura delle disponibilità.",
+    "positionHasShifts": "La postazione ha dei turni nel roster: il nominativo e le ore restano intorno a loro, e dall'inizio dell'evento non si elimina.",
+    "eventHasShifts": "L'evento ha dei turni nel suo roster: annullalo, invece.",
+    "shiftAfterStart": "L'evento è iniziato: un turno tiene il suo controllore, la sua postazione e le ore già passate, e non si toglie; si può solo tagliarne la fine, ad adesso o più tardi.",
+    "controllerBusy": "Questo controllore tiene già un'altra postazione dell'evento in queste ore.",
+    "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
+    "transferClosed": "Un turno si cede fino all'inizio dell'evento, quando il suo roster è pubblicato.",
+    "transferPending": "C'è già una richiesta in attesa per questo turno.",
+    "transferToYourself": "Il turno è già tuo: indica qualcun altro.",
+    "transferNotPending": "Questa richiesta è già stata decisa, o ritirata.",
+    "transferShiftNotTheirs": "Il turno non è più suo: rifiuta la richiesta.",
+    "transferNeedsSubstitute": "La richiesta non indica nessuno: scegli chi prende il turno.",
+    "transferChanged": "La richiesta è cambiata un momento fa: ricarica la pagina.",
     "activityNotInPerson": "L'evento non è in presenza: accendi prima «In presenza» nelle sue impostazioni.",
     "activitiesTooMany": "Un evento ha al più 20 attività.",
     "activityOutsideEvent": "L'attività deve stare dentro l'evento, dal suo inizio alla sua fine.",
@@ -878,7 +994,7 @@
       "title": "Postazioni",
       "create": "Nuova postazione",
       "edit": "Postazione",
-      "empty": "Nessuna postazione ancora: aprine una, e i controllori potranno dare la loro disponibilità.",
+      "empty": "Qui compariranno le postazioni che l'evento apre; quando sono aperte, i controllori danno la loro disponibilità.",
       "fields": {
         "callsign": "Postazione",
         "name": "Nome",
@@ -913,7 +1029,152 @@
         "availableToUtc": "Disponibile fino alle"
       }
     },
-    "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano."
+    "closedEvent": "L'evento è annullato o finito: le sue postazioni si leggono, non si cambiano.",
+    "roster": {
+      "title": "Roster",
+      "notYet": "Il roster si propone alla chiusura delle disponibilità, il {{date}}.",
+      "proposed": "Proposto il {{date}}. Correggilo fino alla fine dell'evento: un turno fuori dalle regole è un avviso, mai un rifiuto.",
+      "empty": "Nessun turno e niente di scoperto: l'evento non apre ancora nessuna postazione.",
+      "add": "Aggiungi",
+      "move": "Sposta",
+      "remove": {
+        "trigger": "Togli",
+        "title": "Togliere questo turno?",
+        "description": "Il controllore non lo ha più, e quel pezzo della postazione torna scoperto.",
+        "confirm": "Togli"
+      },
+      "fields": {
+        "callsign": "Postazione",
+        "fromUtc": "Dalle",
+        "toUtc": "Alle",
+        "state": "Turno",
+        "controller": "Controllore",
+        "rating": "Rating",
+        "why": "Perché",
+        "alerts": "Avvisi"
+      },
+      "options": {
+        "state": {
+          "Uncovered": "Scoperto",
+          "Proposed": "Proposto",
+          "Staff": "Dello staff"
+        }
+      },
+      "why": {
+        "decidedBy": {
+          "Only": "L'unico che poteva prenderlo",
+          "Preferred": "Ha il rating preferito per questo tipo di postazione",
+          "Experience": "Ha aperto più spesso questa postazione, o il suo tipo",
+          "Penalty": "Una penalità per i no-show più bassa",
+          "FewerShifts": "Meno turni in questo roster",
+          "EarlierAvailability": "Ha dato prima la sua disponibilità",
+          "Vid": "A parità di tutto il resto: il VID più basso"
+        },
+        "candidates": "Potevano prenderlo: {{count}}",
+        "connections": "Connessioni: {{callsign}} su questa postazione, {{type}} sul suo tipo",
+        "noExperience": "Esperienza non contata: nessun archivio delle sessioni ha risposto",
+        "penalty": "Penalità: {{value}}",
+        "staff": "Scritto dallo staff",
+        "uncoveredNobody": "Nessuno dei disponibili può prenderlo",
+        "uncoveredBusy": "Potrebbero prenderlo: {{count}}, ma sono in altri turni o al massimo di turni di fila",
+        "uncoveredFree": "Liberi di prenderlo: {{count}}"
+      },
+      "warnings": {
+        "NotAvailable": "Non disponibile per tutto il turno",
+        "BelowMinimum": "Rating sotto il minimo delle impostazioni",
+        "BelowPreferred": "Rating sotto quello preferito per questo tipo di postazione",
+        "Overlapping": "Un altro suo turno nelle stesse ore",
+        "TooManyInARow": "Più turni di fila di quanti ne permettono le impostazioni"
+      },
+      "publishesOn": "Si pubblica il {{date}}: allora i controllori ricevono i turni, e dopo ogni cambio.",
+      "published": "Pubblicato il {{date}}: ogni cambio arriva subito al controllore."
+    },
+    "shifts": {
+      "create": "Nuovo turno",
+      "edit": "Turno",
+      "fields": {
+        "positionId": "Postazione",
+        "fromUtc": "Dalle",
+        "toUtc": "Alle",
+        "controllerVid": "VID del controllore"
+      },
+      "hints": {
+        "positionId": "Una delle postazioni di questo evento.",
+        "fromUtc": "In UTC, dentro le ore della postazione.",
+        "toUtc": "In UTC, dentro le ore della postazione.",
+        "controllerVid": "Chiunque sia entrato nell'hub almeno una volta, che abbia dato la disponibilità o no: quello che esce dalle regole è un avviso sul roster."
+      },
+      "options": {
+        "positionId": {
+          "none": "Scegli una postazione"
+        }
+      }
+    },
+    "transfers": {
+      "title": "Turni da cedere",
+      "empty": "Nessuno ha chiesto di cedere un turno.",
+      "stale": "Il turno non è più suo",
+      "approve": "Approva",
+      "approveTitle": "Approvare la cessione di {{callsign}}?",
+      "approveDescription": "Il turno passa al membro indicato, o a un altro che scegli tu; tutti e due ricevono una mail.",
+      "approveNobody": "Non è indicato nessuno: scegli chi prende il turno. Tutti e due ricevono una mail.",
+      "refuse": "Rifiuta",
+      "refuseTitle": "Rifiutare la cessione di {{callsign}}?",
+      "refuseDescription": "Il turno resta suo. Scrivi perché: lo legge in una mail.",
+      "fields": {
+        "callsign": "Postazione",
+        "fromUtc": "Da",
+        "toUtc": "A",
+        "from": "Cede",
+        "to": "A",
+        "status": "Stato",
+        "note": "La sua nota",
+        "alerts": "Avvisi",
+        "decisionNote": "La nota dello staff"
+      },
+      "options": {
+        "status": {
+          "Pending": "In attesa",
+          "Approved": "Approvata",
+          "Refused": "Rifiutata",
+          "Withdrawn": "Ritirata"
+        }
+      },
+      "decision": {
+        "fields": {
+          "toVid": "Chi lo prende (VID)",
+          "note": "Nota"
+        },
+        "hints": {
+          "toVid": "Il membro indicato, o un altro entrato nell'hub almeno una volta.",
+          "note": "Chi ha chiesto la legge in una mail."
+        }
+      }
+    }
+  },
+  "roster": {
+    "title": "Roster ATC: {{title}}",
+    "lead": "Ogni turno della serata, postazione per postazione, e le ore che nessuno copre ancora. Gli orari sono in UTC.",
+    "toEvent": "Torna all'evento",
+    "cancelled": "Questo evento è annullato.",
+    "notYet": "Il roster si pubblica il {{date}}.",
+    "signIn": "Accedi per vedere chi ha ogni turno.",
+    "empty": "Nessuna postazione aperta.",
+    "fields": {
+      "callsign": "Postazione",
+      "name": "Nome",
+      "fromUtc": "Da",
+      "toUtc": "A",
+      "state": "Turno",
+      "controller": "Controllore",
+      "rating": "Rating"
+    },
+    "options": {
+      "state": {
+        "Assigned": "Assegnato",
+        "Uncovered": "Scoperto"
+      }
+    }
   },
   "activities": {
     "title": "Attività",

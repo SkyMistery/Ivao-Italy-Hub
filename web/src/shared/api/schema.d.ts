@@ -311,6 +311,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/atc/events/{id}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/transfers/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsApproveTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/transfers/{id}/refuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsRefuseTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/public/{slug}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsPublicRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -2009,6 +2073,102 @@ export interface paths {
         put: operations["EventsGiveAvailability"];
         post?: never;
         delete: operations["EventsWithdrawAvailability"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcShiftsList"];
+        put?: never;
+        post: operations["EventAtcShiftsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/shifts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcShiftsGet"];
+        put: operations["EventAtcShiftsUpdate"];
+        post?: never;
+        delete: operations["EventAtcShiftsDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsMyShifts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/shifts/{id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsAskTransfer"];
+        delete: operations["EventsWithdrawTransfer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcTransfersList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/transfers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAtcTransfersGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3740,8 +3900,9 @@ export interface components {
         };
         /**
          * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
-         *     its words, its state, its window, when its availabilities close and how long a shift is — to whoever holds `EventAtc.View`
-         *     somewhere, the staff of a FIR among them, who do not read the event itself.
+         *     its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
+         *     published and whether it was (E12) — to whoever holds `EventAtc.View` somewhere, the staff of a FIR among them, who do not read the
+         *     event itself.
          */
         AtcEventDto: {
             /** Format: int64 */
@@ -3760,6 +3921,12 @@ export interface components {
             shiftMinutes: number;
             /** Format: date-time */
             cancelledAt: null | string;
+            /** Format: date-time */
+            rosterProposedAt: null | string;
+            /** Format: date-time */
+            publishesAtUtc: string;
+            /** Format: date-time */
+            rosterPublishedAt: null | string;
         };
         /** @description An exemption on a report: with its status at the send, and the checks it softens as they were then. */
         AtcExemptionDto: {
@@ -5101,7 +5268,8 @@ export interface components {
         };
         /**
          * @description A position of an event as its list and its form show it (design M4 §1.7): the callsign, the name the core knows and its FIR, the hours,
-         *     the staff's note, and how many controllers are available in some of its hours — read with a page of positions; none for a row read alone.
+         *     the staff's note, how many controllers are available in some of its hours, and whether the reader may write shifts on it (E11b: what the
+         *     form of a shift offers, as the one handler answers) — both read with a page of positions; none for a row read alone.
          */
         EventAtcPositionDto: {
             /** Format: int64 */
@@ -5123,6 +5291,7 @@ export interface components {
             updatedAt: string;
             /** Format: date-time */
             rowVersion: string;
+            editable: boolean;
         };
         /**
          * @description What a client may set on a position of an event. The event is chosen when it is created and never changes; the care is the event's
@@ -5139,6 +5308,77 @@ export interface components {
             note: null | string;
             /** Format: date-time */
             rowVersion: string;
+        };
+        /** @description A shift of the roster as its form loads it (design M4 §1.7): its position, its controller, its hours, where it comes from. */
+        EventAtcShiftDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            /** Format: int64 */
+            positionId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int32 */
+            controllerVid: number;
+            fir: null | string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            origin: components["schemas"]["ShiftOrigin"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What the staff may set on a shift (§4.4): the position — of the same event, on a change —, the controller by VID, and the hours. The event,
+         *     the care and the FIR are the position's, taken before the permission is asked; the origin is the staff's.
+         */
+        EventAtcShiftWriteDto: {
+            /** Format: int64 */
+            positionId: number;
+            /** Format: int32 */
+            controllerVid: number;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A request to hand a shift over as the staff of the ATC list it (§4.4-bis, §7.2, E12): the shift — its callsign and hours —, who hands it
+         *     over and to whom, named by the core's reader, the note, the state and the decision; for one waiting, whether its shift is still theirs
+         *     (`Stale` when the staff gave it to somebody else meanwhile), the warnings of the rules of the proposal on whoever would take it,
+         *     and whether the reader may decide it — the one handler asked on it, so never their own (`Decidable`, as the roster's `Editable`).
+         */
+        EventAtcTransferDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            shiftId: number;
+            callsign: string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            from: components["schemas"]["EventMemberDto"];
+            to: null | components["schemas"]["EventMemberDto"];
+            note: null | string;
+            status: components["schemas"]["TransferStatus"];
+            decidedBy: null | components["schemas"]["EventMemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            decisionNote: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            stale: boolean;
+            warnings: components["schemas"]["ShiftWarning"][];
+            decidable: boolean;
         };
         /**
          * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
@@ -6367,6 +6607,27 @@ export interface components {
             endsAtUtc: string;
         };
         /**
+         * @description A shift as its controller reads it on `/events/mine` and in the block `events.myEvents` (§4.4, §7.1, E12): the event, the
+         *     position's callsign, the hours, whether it may be handed over now — a published roster, before the event's start, not cancelled, no
+         *     request waiting —, and the last request to hand it over that is still about them: waiting, or refused.
+         */
+        MyShiftDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            eventState: components["schemas"]["EventStateKind"];
+            callsign: string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            transferable: boolean;
+            transfer: null | components["schemas"]["MyTransferDto"];
+        };
+        /**
          * @description Where the signed in pilot is in a tour: the colour of each leg, the ones that may be reported now, the next, whether the
          *     tour is done, their reports, and — when they may send none at all — why (a ban, a report to correct, a rating, a tour
          *     that no longer takes reports). On an `Open` tour, how far the goal is.
@@ -6465,6 +6726,22 @@ export interface components {
              * @description The hours the rating proposed needs, when the division set a threshold.
              */
             minimumHours: null | number;
+        };
+        /**
+         * @description A request to hand a shift over, as its controller reads it under the shift (§4.4-bis): to whom — named by the core's reader —, its
+         *     state, the notes, and when it was asked and decided.
+         */
+        MyTransferDto: {
+            /** Format: int64 */
+            id: number;
+            to: null | components["schemas"]["EventMemberDto"];
+            status: components["schemas"]["TransferStatus"];
+            note: null | string;
+            decisionNote: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt: null | string;
         };
         /**
          * @description One entry of a menu. Exactly one of the two names is set: Key is a
@@ -6934,6 +7211,52 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfEventAtcShiftDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventAtcShiftDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventAtcTransferDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventAtcTransferDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfEventBookingDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventBookingDto"][];
@@ -7282,6 +7605,29 @@ export interface components {
         PagedResultOfReviewQueueRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ReviewQueueRowDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfRosterRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["RosterRowDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7945,7 +8291,8 @@ export interface components {
         /**
          * @description The ATC of an event with a roster as its page shows it (design M4 §4.2, §7.1, E11a): the positions it opens — to everybody, with the name
          *     the core knows and their hours —, until when a controller gives their availability, whether they still can, the least ATC rating it asks
-         *     as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in.
+         *     as the staff say it (none, any member), and whether the reader has it: null for a visitor, whom the page asks to sign in. And when its
+         *     roster is published, and whether it is (E12): the page links to `/events/{slug}/roster` once it is.
          */
         PublicEventAtcDto: {
             positions: components["schemas"]["PublicAtcPositionDto"][];
@@ -7954,6 +8301,9 @@ export interface components {
             open: boolean;
             minimumRating: null | string;
             ratedEnough: null | boolean;
+            /** Format: date-time */
+            rosterPublishesAtUtc: string;
+            rosterPublished: boolean;
         };
         /**
          * @description An event as its page shows it (design M4 §7.1, E4): the banner, the title, when — in UTC, as every moment the hub keeps —, the
@@ -8146,6 +8496,44 @@ export interface components {
             label: components["schemas"]["LocalizedOfstring"];
             choices: components["schemas"]["QuestionChoice"][];
             required: boolean;
+        };
+        /**
+         * @description The roster of an event as its page shows it (§4.4, E12): the event's head, when the roster is published, whether it is — before, no row —,
+         *     and the rows by callsign and hour.
+         */
+        PublicRosterDto: {
+            /** Format: int64 */
+            eventId: number;
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date-time */
+            cancelledAt: null | string;
+            /** Format: date-time */
+            publishesAtUtc: string;
+            published: boolean;
+            rows: components["schemas"]["PublicRosterRowDto"][];
+        };
+        /**
+         * @description One row of a published roster as the site shows it (§4.4, §7.1, E12): the position — callsign and the name the core knows —, the hours,
+         *     whether somebody holds them, and who: named, with their ATC rating as the staff say it, <b>only to a signed in reader</b>; a visitor reads
+         *     «assigned» or «uncovered». Neither the why nor the warnings: they are the staff's.
+         */
+        PublicRosterRowDto: {
+            /** Format: int64 */
+            positionId: number;
+            callsign: string;
+            name: null | string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            covered: boolean;
+            controller: null | components["schemas"]["EventMemberDto"];
+            rating: null | string;
         };
         /** @description One rotation of a hub tour, so that the page groups the legs the way the tour flies them (design M2 §1.3). */
         PublicRotationDto: {
@@ -8664,6 +9052,40 @@ export interface components {
             tafs: components["schemas"]["WeatherBulletinDto"][];
         };
         /**
+         * @description One row of the roster as the staff read it (§4.4, §7.2, E11b), by position and hour: the position, the hours, what the row is, and for a
+         *     shift its controller (named by the core's reader), their ATC rating as the staff say it, its why and its warnings; how many could take it
+         *     by the rules that do not depend on the other shifts, and how many of them are free for it — for an uncovered piece, the reason it is (the
+         *     review of #262, point 3); and whether the reader may write it — add on an uncovered piece, move and take away a shift —, as the one
+         *     handler answers on the row (point 5).
+         */
+        RosterRowDto: {
+            /** Format: int64 */
+            positionId: number;
+            callsign: string;
+            fir: null | string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            state: components["schemas"]["RosterRowState"];
+            /** Format: int64 */
+            shiftId: null | number;
+            controller: null | components["schemas"]["EventMemberDto"];
+            rating: null | string;
+            reason: null | components["schemas"]["ShiftReason"];
+            warnings: components["schemas"]["ShiftWarning"][];
+            /** Format: int32 */
+            candidates: number;
+            /** Format: int32 */
+            free: number;
+            editable: boolean;
+        };
+        /**
+         * @description What a row of the roster is: a piece nobody holds, a shift the job proposed, or one the staff wrote.
+         * @enum {unknown}
+         */
+        RosterRowState: "Uncovered" | "Proposed" | "Staff";
+        /**
          * @description What «book the whole rotation» did (§3.3, c3): the legs booked, in one transaction, and the ones that were not — already taken,
          *     the pilot's already, closed, not compatible with their bookings, or not allowing the aircraft — each with its reason.
          */
@@ -8849,6 +9271,44 @@ export interface components {
          * @enum {unknown}
          */
         SheetSection: "Practice" | "Theory";
+        /**
+         * @description What decided who holds a proposed shift (§4.3): the first rule the controller chosen won on, in the design's order.
+         * @enum {unknown}
+         */
+        ShiftCriterion: "Only" | "Preferred" | "Experience" | "Penalty" | "FewerShifts" | "EarlierAvailability" | "Vid";
+        /**
+         * @description Where a shift comes from (design M4 §1.7): proposed by the roster's job, or written by the staff.
+         * @enum {unknown}
+         */
+        ShiftOrigin: "Proposed" | "Staff";
+        /**
+         * @description Why the job gave a shift to its controller (§4.3; note 2026-10-13-la-proposta-del-roster, reading 4): how many could take it, what
+         *     decided, and the controller's numbers — whether they hold the preferred rating of the position's kind, the connections they opened on its
+         *     callsign and on its kind (none when the archive did not answer for everybody: the criterion was left out), their penalty, and the
+         *     shifts they already had in the roster. Numbers and a word of a closed set: the page writes them in the language on screen.
+         */
+        ShiftReason: {
+            /** Format: int32 */
+            candidates: number;
+            decidedBy: components["schemas"]["ShiftCriterion"];
+            preferred: boolean;
+            /** Format: int32 */
+            callsignConnections: null | number;
+            /** Format: int32 */
+            typeConnections: null | number;
+            /** Format: double */
+            penalty: number;
+            /** Format: int32 */
+            shiftsBefore: number;
+        };
+        /**
+         * @description What a shift does not keep of the rules of the proposal (design M4 §4.3, §4.4: «an assignment outside the rules is a warning, not a
+         *     refusal»): not available for the whole of it — or never available —, below the setting's least rating, below the position's minimum for
+         *     those hours (the core's words: lift the FRA on the network), below the preferred rating of its kind, in the same hours as another shift
+         *     of the controller — of another event: in one event the correction refuses it (Carmine's answer on #259) —, beyond the shifts in a row.
+         * @enum {unknown}
+         */
+        ShiftWarning: "NotAvailable" | "BelowMinimum" | "BelowPositionMinimum" | "BelowPreferred" | "Overlapping" | "TooManyInARow";
         /**
          * @description A slot is prepared by the staff with its flight, or generated from the capacity of an airport (design M4 §1.5).
          * @enum {unknown}
@@ -9874,6 +10334,27 @@ export interface components {
          * @enum {unknown}
          */
         TrainingState: "Requested" | "Accepted" | "Assigned" | "Scheduled" | "Completed" | "Rejected" | "Cancelled" | "Closed" | "NoShow";
+        /** @description What the staff send to approve a request (§4.4-bis): who takes the shift — the one named, when empty — and a note. */
+        TransferApproval: {
+            /** Format: int32 */
+            toVid: null | number;
+            note: null | string;
+        };
+        /** @description What the staff send to refuse a request: why, which whoever asked reads in a mail. */
+        TransferRefusal: {
+            note: null | string;
+        };
+        /** @description What a controller sends to hand a shift over (§4.4-bis): to whom — none, they look for a substitute — and why. */
+        TransferRequest: {
+            /** Format: int32 */
+            toVid: null | number;
+            note: null | string;
+        };
+        /**
+         * @description Where a request to hand a shift over stands (design M4 §4.4-bis): waiting for the staff, approved, refused, or withdrawn by its controller.
+         * @enum {unknown}
+         */
+        TransferStatus: "Pending" | "Approved" | "Refused" | "Withdrawn";
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
             key: string;
@@ -10673,6 +11154,176 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcRoster: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfRosterRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsApproveTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferApproval"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsRefuseTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRefusal"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsPublicRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicRosterDto"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -15854,6 +16505,314 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcShiftsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventAtcShiftDto"];
+                };
+            };
+        };
+    };
+    EventAtcShiftsCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAtcShiftWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcShiftDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventAtcShiftsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcShiftDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcShiftsUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAtcShiftWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcShiftDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcShiftsDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsMyShifts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyShiftDto"][];
+                };
+            };
+        };
+    };
+    EventsAskTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTransferDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsWithdrawTransfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAtcTransfersList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventAtcTransferDto"];
+                };
+            };
+        };
+    };
+    EventAtcTransfersGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAtcTransferDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
