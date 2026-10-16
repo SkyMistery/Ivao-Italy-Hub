@@ -6,13 +6,20 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 14 ottobre 2026 — **fase E4d** (modulo: gli eventi prendono tre pezzi del nucleo uniti negli ultimi giorni),
+**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E4d** (modulo: gli eventi prendono tre pezzi del nucleo uniti negli ultimi giorni),
 sul branch `m4/e4d-events-adopt-core`, **PR #263** verso `main`, **senza coda**: nata da `main` a `c232448` (con E16 #255, E11a #256 e
-A13f #258). Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
+A13f #258), approvabile per il revisore, e il 16 ottobre, su sua richiesta, ha unito `main` a `e041bb04` (E10q, #265, il Pkcs corretto)
+perché `build-test` giri. Nessuna migrazione e nessuna decisione nuova; una nota, `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola
 di Carmine sulla #258, perché la PR toglie dai due test del nucleo le righe che le note di E10m ed E10l lasciavano agli eventi. Da E4d gli
 eventi leggono i nomi con `MemberNames` (E10m), `events-release` dice il suo fuso, UTC (E10j), i dialog di uno slot e dell'ora privata
 chiudono con «Chiudi» (E10l), e le schede «Domande» e «Iscrizioni» di E16, vuote, dicono una frase loro («Che cosa ha lasciato E4d»,
 sotto). ⚠️ **E11b (#262) è aperta accanto** e tocca forse gli stessi file: i conflitti all'unione sono il passo della coda del master.
+
+**L'aggiornamento di E10q:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
+#264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
+e non in coda**: nata da `main` a `c232448` (E11a unita). Fissa `System.Security.Cryptography.Pkcs` a **10.0.13** (gli avvisi del 13
+ottobre facevano fallire `dotnet restore`, e con lui `build-test` della #261, #262 e #263) e porta la versione a **0.6.8** («Che cosa ha
+lasciato E10q», sotto). Dopo la sua unione la #261, la #262 e la #263 uniscono `main`; lo coordina la sessione che coordina.
 
 **L'aggiornamento di E11a:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
 disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
@@ -263,7 +270,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E4d (14 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`)
+### Che cosa ha lasciato E4d (14–16 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`, con `main` a `e041bb04` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E4d, «Com'è andata»; nessuna migrazione, nessuna decisione nuova; la nota
   `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, **decisa** dalla regola di Carmine sulla #258, perché la PR tocca due test del nucleo):
@@ -289,6 +296,24 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     nota lo chiede.
   - ⚠️ **E11b (#262)** è aperta accanto e tocca forse `EventsModule.cs`, `EventsPeople.cs` e i file di lingua: i conflitti all'unione
     sono il passo della coda del master.
+  - **Con `main` a `e041bb04`** (16 ottobre) entra E10q: il Pkcs 10.0.13 e la versione 0.6.8. Niente degli eventi cambia; i conti
+    dopo l'unione sono in `10`, E4d, «Com'è andata».
+
+### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10q, «Com'è andata»; nessuna migrazione, nessun codice; una nota nuova,
+  `2026-10-15-il-pkcs-corretto`, **decisa** con l'issue #264): `System.Security.Cryptography.Pkcs` **10.0.13** in
+  `Directory.Packages.props` e un riferimento diretto in `IvaoHub.Core.csproj`, l'unico progetto che lo porta (MailKit → MimeKit 10.0.0);
+  `<Version>` **0.6.8**.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **un `dotnet restore` locale può passare anche quando quello della CI fallisce**: senza modifiche ai progetti il restore è «già
+    aggiornato» e non rilegge gli avvisi. Per vederli: `dotnet restore IvaoHub.sln --force --no-http-cache`, poi
+    `dotnet list IvaoHub.sln package --vulnerable --include-transitive`;
+  - ⚠️ un avviso su un pacchetto **transitivo** si corregge così, con una `PackageVersion` nel gruppo «Security fixes of transitive
+    packages» e un riferimento diretto nel progetto che lo porta (`dotnet nuget why <progetto> <pacchetto>`), **mai** con `NoWarn` o
+    `NuGetAudit=false`; il riferimento a Pkcs se ne va quando MimeKit ne porterà uno corretto da sé;
+  - il runtime incluso nel pacchetto self-contained è quello dell'ultimo SDK 10.0 che `setup-dotnet` installa (oggi 10.0.402, runtime
+    10.0.13); il `Pkcs.dll` pubblicato è comunque quello del pacchetto (nota, §4).
 
 ### Che cosa ha lasciato E11a (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256; in coda dopo la #255 di E16, nata dal suo branch a `dd5b263`, con la sua testa `78fc9b6` unita)
 

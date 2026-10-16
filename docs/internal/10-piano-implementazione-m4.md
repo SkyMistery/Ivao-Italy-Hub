@@ -4150,6 +4150,57 @@ richiesta della sessione che coordina):
 
 [a253o]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/253#issuecomment-6120877540
 
+### E10q — Nucleo: il Pkcs corretto
+
+**Da dove viene**: non c'era in E0. Dal 13 ottobre 2026 due avvisi su `System.Security.Cryptography.Pkcs` 10.0.0
+([GHSA-846f-f764-76mx](https://github.com/advisories/GHSA-846f-f764-76mx), alta, CVE-2026-84008;
+[GHSA-2fmv-rv2c-59x7](https://github.com/advisories/GHSA-2fmv-rv2c-59x7), moderata) fanno fallire `dotnet restore` con gli avvisi come
+errori (NU1902/NU1903): `build-test` è rosso sulla #261, la #262 e la #263. Il maintainer l'ha affidato a dalberone con l'[issue
+#264][i264q] (scritta dal master su sua istruzione, 14 ottobre), che è anche il suo sì a toccare `Directory.Packages.props` e
+`Directory.Build.props`. Branch `m4/e10q-pkcs-advisory`, da `main` a `c232448`. **PR del nucleo**, diretta su `main`, non in coda.
+
+1. Il pacchetto a 10.0.13 con la gestione centrale dei pacchetti, senza zittire l'audit.
+2. `dotnet list package --vulnerable --include-transitive` pulito.
+3. `<Version>` 0.6.7 → 0.6.8 (PATCH).
+4. Dire nella PR se il runtime del pacchetto self-contained deve salire anche lui, senza toccare `.github/` né `global.json`.
+
+**Fatta quando**: il restore con l'audit acceso passa, e la CI va oltre «Restore .NET dependencies».
+
+**Com'è andata** (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265):
+
+- **Fatto** (nota nuova `2026-10-15-il-pkcs-corretto`, **decisa** con l'issue #264):
+  - **riprodotto prima**: un `dotnet restore` locale passava («tutti i progetti sono aggiornati»: senza modifiche non rilegge gli
+    avvisi); con `--force --no-http-cache` falliva con NU1902 e NU1903 su tutti e sette i progetti;
+  - **da dove viene**: `dotnet nuget why` — `MailKit 4.17.0 → MimeKit 4.17.0 → System.Security.Cryptography.Pkcs 10.0.0`, solo nel
+    nucleo; gli altri sei progetti lo ricevono dal nucleo;
+  - **`Directory.Packages.props`**: `PackageVersion` 10.0.13 in un gruppo nuovo, «Security fixes of transitive packages»;
+    **`IvaoHub.Core.csproj`**: il riferimento diretto, con un commento sul perché e su quando se ne va;
+  - **`Directory.Build.props`**: `<Version>` 0.6.8.
+- **Scelte della fase, scritte nella nota** (§3): il riferimento diretto nel progetto che lo porta, e non il pinning transitivo
+  (`CentralPackageTransitivePinningEnabled`), che avrebbe fissato nei grafi transitivi ogni versione del file, non solo questa.
+- **Il runtime** (nota, §4): non serve cambiare `.github/` né `global.json`. `setup-dotnet` con `rollForward: latestFeature` installa
+  l'ultimo SDK 10.0 — l'ultimo `build-test` di `main` (14 ottobre) ha installato l'SDK 10.0.402 con il runtime 10.0.13, quelli corretti —,
+  e il pacchetto si costruisce solo in `release.yml`. In più, una publish self-contained locale con il runtime 10.0.12 mette nel pacchetto
+  il `Pkcs.dll` 10.0.13 del pacchetto NuGet, che vince sul framework condiviso. Alzare `global.json` a 10.0.402 resta una scelta del
+  maintainer.
+- **Verificato, in locale** (15 ottobre 2026, `main` a `c232448`, SDK 10.0.401):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso: verde, nessun NU19xx;
+    `dotnet list IvaoHub.sln package --vulnerable --include-transitive`: nessun pacchetto vulnerabile nei sette progetti;
+  - `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità **1277/1277**; integrazione intera, senza filtro (Release,
+    Docker acceso), **597/597** al primo giro (9,1 minuti);
+  - `pnpm -C web build` verde, e nessun file del browser cambia;
+  - la publish self-contained (`dotnet publish src/IvaoHub.Web -c Release -r linux-x64 --self-contained`, senza la SPA e senza
+    ReadyToRun, in una cartella fuori dal repository): `System.Security.Cryptography.Pkcs.dll` 10.0.1326, il runtime 10.0.12;
+  - le regole di `core-guard` rifatte in PowerShell contro `main` a `c232448`: nessun file del maintainer; tre del nucleo
+    (`Directory.Build.props`, `Directory.Packages.props`, `src/IvaoHub.Core/IvaoHub.Core.csproj`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: non servono per un cambio di versione di un pacchetto che il codice non usa (nessun file del server o del
+    browser cambia);
+  - le installazioni già consegnate: portano Pkcs 10.0.0 finché non ricevono 0.6.8.
+
+[i264q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
