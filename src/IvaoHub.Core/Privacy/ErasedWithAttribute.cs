@@ -7,7 +7,9 @@ namespace IvaoHub.Core.Privacy;
 /// withdrew, or the staff took away, the week before — is a row no module's eraser finds, and its <c>created</c> and
 /// <c>deleted</c> copies in the audit log still hold that data. The erasure empties these columns in every audit row of such a
 /// row (<see cref="AuditRedaction.EmptyGoneAsync"/>), for every module alike, with nothing for the module to write but this
-/// mark. A row that still exists stays its eraser's, as it was.</para>
+/// mark. A row that still exists stays its eraser's, as it was. A module that deletes such rows for retention, by age rather than
+/// by person, has the same columns emptied in every copy of the rows it deleted (<see cref="AuditRedaction.EmptyDeletedAsync"/>,
+/// E10s).</para>
 /// <para>The person column is an integer of the same entity that names a person (<see cref="PersonColumns.IsVid"/>), and only an
 /// audited entity has copies to empty. A column of the person's data named on another row — a session's notes, whose trainee is
 /// named by the training above — is not covered: the mark names a column of the row itself.</para>
