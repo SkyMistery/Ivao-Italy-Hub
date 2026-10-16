@@ -4633,6 +4633,21 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
   modulo in timeout di 5 s — `BodyEditor.test.tsx` e `PrivateSlots.test.tsx`, 14/14 da soli —, poi l'intera 772/772); lo smoke
   **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,9 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo il lock di
   Mailpit che E4d teneva; le regole di `core-guard` da `main` a `e041bb04`: un file del nucleo (`ErasureTests.cs`) con la nota.
+- **Verificato di nuovo, dopo il merge della testa di E4d** (`279c8cd`, con `main` a `3b8d7d79`; 16 ottobre 2026; la coda #263 → #262 →
+  #268 che il revisore ha chiesto, E11b in coda dopo la #263): unita con un merge, senza riscrivere niente (`8e6009d`); i conflitti in
+  `HANDOFF-M4.md` (l'intestazione e il blocco di E11b sopra quelli di E4d), in `EventsModule.cs` (il trigger di `events-release` con il nome
+  di E4d, `EventReleaseJob.TriggerName`, accanto alla zona UTC che i due avevano scritto uguale) e in `titlesAndEmptyLists.test.tsx` (le
+  rotte delle domande e delle iscrizioni di E4d e quella del roster di E11b, tutte e tre). **Le ore delle schermate di E11b** — il roster,
+  il form del turno, i candidati — passano tutte da `useMoment`/`formatMoment` del nucleo, nessuna scritta a mano, quindi le ore in 24 di
+  E10p valgono anche qui. `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso, pulito; `dotnet build -c Release`
+  senza avvisi; unità **1289/1289**; **integrazione intera senza filtro 607/607** (8,7 min; al primo giro il processo dei test è caduto
+  per memoria esaurita, con la suite di un'altra sessione accanto: rifatta da sola); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (854 chiavi), `build` verdi e `gen:api` senza diff; `pnpm test` da solo **781 in 108 file**; lo smoke **181/181**;
+  **`pnpm e2e:full` 64/64 al primo giro** (13,0 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione e dietro il
+  lock di Mailpit che E17 teneva; le regole
+  di `core-guard` da `main` a `3b8d7d79`: tre file del nucleo — `ErasureTests.cs` di E11b con la sua nota, `MemberNamesTests.cs` e
+  `Dialog.test.tsx` di E4d con la sua (`2026-10-14-gli-eventi-sul-lettore-dei-nomi`), che restano nel diff finché la #263 non è unita —,
+  nessun file del maintainer.
 
 [r262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
 [r262b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6172067250

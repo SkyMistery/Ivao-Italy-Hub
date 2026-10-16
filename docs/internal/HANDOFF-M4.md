@@ -6,10 +6,11 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 14 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
-staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`: nata `--no-track` dalla testa di E11a `c967bc1`, ne ha unito la
-testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, e dopo l'unione di E16 (#255) ed E11a (#256) **`main` a
-`c232448`**. La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
+**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E11b** (modulo, la seconda di **M4b**: la proposta del roster ATC e la correzione dello
+staff), sul branch `m4/e11b-roster-proposal`, **PR #262** verso `main`, **in coda dopo la #263** (E4d, la coda #263 → #262 → #268): nata
+`--no-track` dalla testa di E11a `c967bc1`, ne ha unito la testa dopo la seconda lettura `ac52c4b` (con E16) e `main` a `cea6244`, dopo
+l'unione di E16 (#255) ed E11a (#256) **`main` a `c232448`**, poi `main` a `e041bb04` (il Pkcs corretto, #265) e infine **la testa di E4d
+`279c8cd`** (con `main` a `3b8d7d79`, E10p #261). La nota `2026-10-13-la-proposta-del-roster` è **decisa** da Carmine sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259):
 (A) per «`atcData` di IT» (`vipi` quando l'utente di sola lettura della vista esiste sull'host) e le dieci letture, tre con una condizione
 ora nel codice; i rilievi del revisore sulla #262 sono corretti sulla stessa PR («Che cosa ha lasciato E11b», sotto). Da E11b, alla
 chiusura delle disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo
