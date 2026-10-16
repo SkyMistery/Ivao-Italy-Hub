@@ -4437,6 +4437,15 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
     `format:check`, `i18n:check` (854 chiavi) verdi; `pnpm test` **771 in 107 file**; `pnpm build`; `gen:api` senza diff; lo smoke
     **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,8 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione
     e dietro il lock di Mailpit; le regole di `core-guard` da `main` a `c232448`: un file del nucleo (`ErasureTests.cs`) con la nota.
+- **Verificato di nuovo, dopo il merge di `main` a `e041bb04`** (16 ottobre 2026; la correzione di Pkcs, E10q #265, 0.6.8, che il
+  revisore ha chiesto di unire [sulla #262](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6215577618); il conflitto
+  solo in `HANDOFF-M4.md`, l'intestazione e il blocco di E11b sopra quelli di E10q): **`dotnet restore IvaoHub.sln --force
+  --no-http-cache` con l'audit acceso, pulito** — niente più `NuGetAudit=false` —; `dotnet build -c Release` senza avvisi; unità
+  **1287/1287**; **integrazione intera senza filtro 607/607** (16,7 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`, `build`
+  verdi e `gen:api` senza diff; `pnpm test` **772 in 107 file** (al primo giro, accanto all'integrazione, quattro test del nucleo e del
+  modulo in timeout di 5 s — `BodyEditor.test.tsx` e `PrivateSlots.test.tsx`, 14/14 da soli —, poi l'intera 772/772); lo smoke
+  **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,9 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo il lock di
+  Mailpit che E4d teneva; le regole di `core-guard` da `main` a `e041bb04`: un file del nucleo (`ErasureTests.cs`) con la nota.
 
 [r262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
 [r262b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6172067250
