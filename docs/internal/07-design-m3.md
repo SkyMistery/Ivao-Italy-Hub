@@ -658,7 +658,11 @@ Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, 
   decisa: la scelta del trainee, la data a mano, la chiusura — dello staff o della notte — e un trainer cambiato le
   tolgono tutte (A8; verificato e provato in A12b).
 - **Che cosa è personale**: il VID di trainee e trainer, i testi liberi della richiesta, commenti e note. Nome ed email
-  non si copiano: si leggono dal nucleo.
+  non si copiano: si leggono dal nucleo. **Dal 13 ott 2026** (A13f, #258, nota `2026-10-13-la-formazione-sul-lettore-dei-nomi`,
+  piano 1.34; il sì di Carmine sulla #258): la formazione legge i nomi con **`MemberNames.ReadAsync`** del nucleo
+  (`Core/People/`, E10m, nota `2026-10-11-un-solo-lettore-dei-nomi`), il passaggio che quella nota rimandava a quando il modulo
+  l'avesse adottato: `TrainingPeople.NamesAsync` resta, come una riga che chiama il lettore del nucleo, perché ha dieci chiamanti
+  nel modulo. Un VID sotto uno non ha più nome, come vuole la decisione sulla #247.
 
 ### 6.1 La cancellazione dei dati di una persona
 
