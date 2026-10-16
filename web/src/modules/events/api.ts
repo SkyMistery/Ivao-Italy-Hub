@@ -1418,6 +1418,16 @@ export function transfersQuery(
   });
 }
 
+/**
+ * The warnings of the rules of the proposal on the member the staff choose to give a request's shift to (§4.3; Carmine's answer on #268): what
+ * «Approve» shows before it approves.
+ */
+export async function transferWarnings(id: number, toVid: number): Promise<ShiftWarning[]> {
+  return unwrap(
+    await api.GET('/api/events/atc/transfers/{id}/warnings', { params: { path: { id }, query: { toVid } } }),
+  );
+}
+
 /** «Approve»: the shift passes to the member named, or to the one the staff choose — needed for a request to nobody. */
 export function useApproveTransfer() {
   const queryClient = useQueryClient();

@@ -754,7 +754,7 @@
       "atcShiftTransferDecided": {
         "subject": "[Events] Your request to hand a shift over: {{title}}",
         "body": "{{decision}}\n\nThe shift: {{shift}} UTC, in {{title}}.\nThe staff's note: {{note}}\n\nYour shifts: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
-        "approved": "The staff approved your request: the shift is no longer yours, and whoever takes it has been told.",
+        "approved": "The staff approved your request: the shift is now {{taker}}'s, who has been told.",
         "refused": "The staff refused your request: the shift stays yours."
       }
     }
@@ -1118,7 +1118,9 @@
           "toVid": "The member named, or another one who signed in to the hub once.",
           "note": "Whoever asked reads it in a mail."
         }
-      }
+      },
+      "approveAnyway": "Approve anyway",
+      "warningsFor": "VID {{vid}} does not keep every rule of the roster for this shift:"
     }
   },
   "roster": {

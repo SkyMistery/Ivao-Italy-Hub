@@ -18,7 +18,8 @@ namespace IvaoHub.Modules.Events.Atc;
 /// taking the request back. Verbs of a member's flow, written by hand as an availability's are; any signed in member, their own alone.</item>
 /// <item><b>The staff's</b>: the requests as a resource of the engine in read only (<c>/api/events/atc/transfers</c>, <c>EventAtc.View</c>, by
 /// event and state), and the two decisions the design names — approve, refuse —, with <c>EventAtc.Edit</c> asked of the one handler on the
-/// request (<see cref="StaffTransfers"/>).</item>
+/// request (<see cref="StaffTransfers"/>); and the warnings on the member the staff choose before approving, a read Carmine's condition on
+/// #268 asks.</item>
 /// </list>
 /// </summary>
 public static class TransferEndpoints
@@ -76,6 +77,15 @@ public static class TransferEndpoints
                 services.GetRequiredService<StaffTransfers>().RowsAsync(transfers, cancellationToken);
             options.ToDetail = transfer => StaffTransfers.Row(transfer, null, new Dictionary<long, EventAtcPosition>(), new Dictionary<int, string>(), []);
         });
+
+        // The warnings on the member the staff choose before they approve (Carmine's answer on #268, reading 7).
+        app.MapGet($"{StaffPattern}/{{id:long}}/warnings", async (long id, int toVid, StaffTransfers transfers, HttpContext http) =>
+                await transfers.WarningsForAsync(id, toVid, http.User, http.RequestAborted) is { } warnings ? Results.Ok(warnings) : Results.NotFound())
+            .WithName("EventsTransferWarnings")
+            .WithTags("EventAtc")
+            .Produces<IReadOnlyList<ShiftWarning>>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(EventsPermissions.AtcEdit);
 
         app.MapPost($"{StaffPattern}/{{id:long}}/approve", ApproveAsync)
             .WithName("EventsApproveTransfer")

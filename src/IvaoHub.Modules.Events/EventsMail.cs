@@ -221,13 +221,14 @@ public sealed class EventsMail(
 
     /// <summary>
     /// The staff decided a request to hand a shift over (§4.4-bis, E12): to whoever asked, with the shift, what was decided — in their
-    /// language — and the staff's note, as they wrote it.
+    /// language, and for an approval who took the shift (<paramref name="taker"/>, Carmine's answer on #268: the staff may give it to another
+    /// member than the one asked) — and the staff's note, as they wrote it.
     /// </summary>
     public Task AtcShiftTransferDecidedAsync(
         Event row,
         int vid,
         (string Callsign, DateTime FromUtc, DateTime ToUtc) shift,
-        bool approved,
+        string? taker,
         string? note,
         CancellationToken cancellationToken)
     {
@@ -236,7 +237,9 @@ public sealed class EventsMail(
         return SendAsync(EventsNotifications.AtcShiftTransferDecided, row, [vid], (data, locale) =>
         {
             data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
-            data["decision"] = catalog.Resolve(locale, approved ? TransferApprovedKey : TransferRefusedKey);
+            data["decision"] = taker is null
+                ? catalog.Resolve(locale, TransferRefusedKey)
+                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", taker, StringComparison.Ordinal);
             data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);

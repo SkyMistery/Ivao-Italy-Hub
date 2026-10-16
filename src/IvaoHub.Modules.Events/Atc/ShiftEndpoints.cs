@@ -230,7 +230,20 @@ public static class ShiftEndpoints
         }
 
         // What the shift was, for the mails after the save (E12); its mark emptied when it passes to another controller.
-        saving.Services.GetRequiredService<ShiftNotices>().Note(shift, saving.IsNew);
+        await saving.Services.GetRequiredService<ShiftNotices>().NoteAsync(shift, saving.IsNew, saving.CancellationToken);
+
+        // A request waiting to hand the shift over follows it to the FIR of its new position (the review of #268, point 5): the team of that
+        // FIR decides it, in the same unit of work.
+        if (!saving.IsNew)
+        {
+            foreach (var transfer in await CrudSource.BackOffice<EventAtcTransfer>(database)
+                         .Where(candidate => candidate.ShiftId == shift.Id && candidate.Status == TransferStatus.Pending && candidate.Fir != shift.Fir)
+                         .ToListAsync(saving.CancellationToken))
+            {
+                transfer.Fir = shift.Fir;
+            }
+        }
+
         return null;
     }
 

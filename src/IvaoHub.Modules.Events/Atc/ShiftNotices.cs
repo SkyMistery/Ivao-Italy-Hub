@@ -8,7 +8,7 @@ namespace IvaoHub.Modules.Events.Atc;
 /// <summary>
 /// What a correction of a published roster tells its controllers, at once (design M4 §4.4, E12; note
 /// 2026-10-14-la-pubblicazione-del-roster-e-la-cessione, reading 3), from the verbs of the CRUD engine — never a verb of its own: the save
-/// says what the shift was (<see cref="Note"/>, before it is written), and once it is done the controllers are told (<see cref="TellAsync"/>).
+/// says what the shift was (<see cref="NoteAsync"/>, before it is written), and once it is done the controllers are told (<see cref="TellAsync"/>).
 /// <list type="bullet">
 /// <item>added: <c>atcShiftAssigned</c>, and the shift's mark;</item>
 /// <item>other hours or another position, the same controller: <c>atcShiftChanged</c> with how it was and how it is, if they knew of it —
@@ -24,10 +24,12 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
     private Before? _before;
 
     /// <summary>
-    /// What the shift was before this save, read from the tracker; and, when it passes to another controller, its mark emptied, so that the new
-    /// one is told. Nothing for a new shift.
+    /// What the shift was before this save, read from the tracker — and whether its controller knew of it, read <b>again from the database</b>,
+    /// under the lock of the event's row the save holds (the review of #268, point 1): the engine loads the shift before the lock, and the job may
+    /// have told its controller in between, without moving its row version. When it passes to another controller its mark is emptied, written
+    /// whatever the tracker thought it was, so that the new one is told. Nothing for a new shift.
     /// </summary>
-    public void Note(EventAtcShift shift, bool isNew)
+    public async Task NoteAsync(EventAtcShift shift, bool isNew, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(shift);
 
@@ -37,21 +39,27 @@ public sealed class ShiftNotices(EventsDbContext database, RosterPublication pub
             return;
         }
 
+        var told = await database.AtcShifts.IgnoreQueryFilters().AsNoTracking()
+            .Where(stored => stored.Id == shift.Id)
+            .Select(stored => stored.NotifiedAt)
+            .FirstOrDefaultAsync(cancellationToken) is not null;
+
         var entry = database.Entry(shift);
         _before = new Before(
             (int)entry.Property(nameof(EventAtcShift.ControllerVid)).OriginalValue!,
             (long)entry.Property(nameof(EventAtcShift.PositionId)).OriginalValue!,
             (DateTime)entry.Property(nameof(EventAtcShift.FromUtc)).OriginalValue!,
             (DateTime)entry.Property(nameof(EventAtcShift.ToUtc)).OriginalValue!,
-            entry.Property(nameof(EventAtcShift.NotifiedAt)).OriginalValue is not null);
+            told);
 
         if (_before.ControllerVid != shift.ControllerVid)
         {
             shift.NotifiedAt = null;
+            entry.Property(nameof(EventAtcShift.NotifiedAt)).IsModified = true;
         }
     }
 
-    /// <summary>Tells, once the save is done, what <see cref="Note"/> read and the shift is now.</summary>
+    /// <summary>Tells, once the save is done, what <see cref="NoteAsync"/> read and the shift is now.</summary>
     public async Task TellAsync(EventAtcShift shift, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(shift);
