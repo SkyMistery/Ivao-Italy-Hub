@@ -168,6 +168,10 @@ export function ActivityForm() {
           }
           locales={locales}
           labels="events:activities"
+          division={{
+            defaultLocale: bootstrap.division.defaultLocale,
+            timezone: bootstrap.division.timezone,
+          }}
           onSubmit={async (values) => {
             await save.mutateAsync(values);
             void navigate({ href: back });
