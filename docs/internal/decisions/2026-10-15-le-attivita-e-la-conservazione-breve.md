@@ -1,7 +1,9 @@
 # Le attività parallele, i posti e la conservazione breve (E17)
 
 **Data:** 15 ottobre 2026 — fase E17 di M4 (la seconda e ultima di M4c: le attività, i posti, la conservazione breve, «Duplica»)
-**Stato:** **Proposta**. Tre domande a Carmine ([l'issue #267][q], §6), il resto letture del design.
+**Stato:** **decisa** (Carmine, 16 ottobre 2026, in chat alla sessione master e pubblicata su sua istruzione: [la risposta sull'issue #267][a]):
+**(A)** alla domanda 1, **(A)** alla 2, **(B)** alla 3 — una piccola fase del nucleo prima, **E10s**, ed E17 in coda dopo di lei (§6). Il resto
+sono letture del design.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** per le letture del design M4 §4-bis, §2.3-bis, §8.4, §11 e delle note
 `2026-09-29-gli-eventi-in-presenza` e `2026-10-12-le-domande-e-l-iscrizione` — l'unico handler, il guardiano dell'interceptor con il ritiro
 di chi ha mandato la riga (`[WithdrawnByStakeholder]`, E10h), la cura dell'evento sulle sue righe (`IEventChild`), il motore CRUD, `Refusals`,
@@ -91,6 +93,7 @@ L'issue dice anche che, se Carmine sceglie la (B) alla domanda 3, la fase del nu
 lei oltre che dopo E12.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267
+[a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
 
 1. **Chi scrive le attività.** Il design le legge in due modi: §4-bis.1 («righe figlie dell'evento, area `EventBookings`»), il catalogo §6.1
    (`EventBookings.Edit`: «slot, import, generatore, attività»; `EventBookings.View`: «iscrizioni e attività con i VID») e la nota
@@ -107,6 +110,21 @@ lei oltre che dopo E12.
    al nucleo di svuotare nell'audit **le colonne segnate `[ErasedWith]`** delle righe che toglie (un passo accanto a `EmptyGoneAsync`); E17
    la usa e si mette in coda dopo. Le risposte si tengono poco perché dicono chi viene di persona e dove (design §4-bis.2): tenerle
    nell'audit svuota la regola.
+
+### Le risposte di Carmine (16 ottobre 2026)
+
+Date in chat alla sessione master e pubblicate su sua istruzione [sull'issue #267][a]:
+
+1. **Chi scrive le attività: (A)**, area `EventBookings`: le scrive chi ha `EventBookings.Edit`, le legge chi ha `EventBookings.View`, come
+   dice il catalogo §6.1. È quello che il codice fa (lettura 1).
+2. **Un'attività con posti presi: (A)**. Non si elimina (`events:errors.activityHasSeats`), e si cambia solo così che ogni posto preso resti
+   su un suo turno e nessun turno abbia più posti presi di quanti ne offre (lettura 5). È quello che il codice fa.
+3. **La conservazione e l'audit: (B)**. Una piccola fase del nucleo prima, di dalberone, con la sua nota, **E10s**
+   (`m4/e10s-retention-in-the-audit`): un modulo che cancella righe per conservazione chiede al nucleo di svuotare nell'audit le colonne
+   segnate `[ErasedWith]` delle righe che cancella, accanto ad `AuditRedaction.EmptyGoneAsync`. **E17 la usa ed è in coda dopo di lei**:
+   `events-retention` la chiama per le iscrizioni che toglie, le cui risposte (`AnswersJson`) portano già `[ErasedWith(nameof(Vid))]`.
+   Il posto non ha colonne di parole (lettura 7): nell'audit resta che un membro ha preso un turno, come di un'iscrizione resta che si è
+   iscritto.
 
 ## 7. Alternative scartate
 

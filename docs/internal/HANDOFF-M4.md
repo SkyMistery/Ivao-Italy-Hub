@@ -10,8 +10,8 @@
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
 M4c), sul branch `m4/e17-in-person-activities`, **in coda dopo la #268** di E12: nata `--no-track` da `main` a `c232448`, ha unito la sua
 testa `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la fila ATC migra lo stesso contesto). La nota
-`2026-10-15-le-attivita-e-la-conservazione-breve` è **Proposta**, con tre domande a Carmine sull'[issue
-#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267). Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta
+`2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
+#267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed E17 in coda dopo di lei. Con E17 **M4c è finita nel codice**; il rapporto di chiusura di M4 aspetta
 M4b («Che cosa ha lasciato E17», sotto).
 
 **L'aggiornamento di E12:** 15 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
@@ -285,7 +285,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
   quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota
-  nuova, `2026-10-15-le-attivita-e-la-conservazione-breve`, **Proposta**, con tre domande a Carmine): la seconda e ultima fase di **M4c**.
+  nuova, `2026-10-15-le-attivita-e-la-conservazione-breve`, **decisa** da Carmine sull'issue #267): la seconda e ultima fase di **M4c**.
   - **Le tabelle**: `evt_activities` (`EventActivity`, `EventActivity.cs`: area `EventBookings`, i turni calcolati da finestra e durata,
     `Turns`, `IsTurn`) ed `evt_activity_bookings` (`EventActivitySeat`, la riga del membro, `[WithdrawnByStakeholder]`).
   - **Il posto**: `Registrations/MemberSeats.cs` — l'iscrizione e poi l'attività `FOR UPDATE`, in `READ COMMITTED`, i posti contati sotto il
@@ -301,10 +301,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: integrazione `EventsActivitiesTests` (7, la corsa sull'ultimo posto fra loro; VID **761150–761155**); unità
     `EventsActivitiesTests` (7); il giro `web/e2e/full/events-m4c-round.spec.ts`.
 - **Che cosa deve sapere la fase dopo**:
-  - **Le tre domande della nota** aspettano Carmine sull'[issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267); se dice (B) alla terza, la fase del nucleo la prende dalberone, ed E17 va in coda anche dopo di lei. ⚠️ **La terza**: oggi la conservazione cancella attraverso l'interceptor, e le copie
-    delle iscrizioni nell'audit tengono le risposte (la (A)); la (B) raccomandata è **una fase del nucleo a sé** (svuotare nell'audit le
-    colonne `[ErasedWith]` delle righe che una conservazione toglie), e poi una riga in `EventsRetentionJob`. Se Carmine dice (B) per la
-    domanda 1, l'area delle attività diventa `Events`: un attributo e le due policy di `EventActivityEndpoints`, le schede, i test.
+  - **Le tre domande della nota sono decise** ([la risposta di Carmine sull'issue #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232)):
+    (A) l'area `EventBookings`, (A) un'attività con posti non si elimina — com'è nel codice —, e **(B)** per l'audit: la fase del nucleo
+    **E10s** (`m4/e10s-retention-in-the-audit`) dà la chiamata che svuota nell'audit le colonne `[ErasedWith]` delle righe tolte per
+    conservazione; E17 si mette in coda dopo di lei e la chiama da `EventsRetentionJob` per le iscrizioni (`AnswersJson` è già segnata).
   - **E13a** (le statistiche): `evt_event_stats` ha già, per un evento in presenza oltre la conservazione, `registrations`, `answer_sums`
     (i numeri di `QuestionSum`) e `activity_seats` (`{ "<id attività>": posti }`), scritti da `events-retention`; E13a scrive il resto e
     **non tocca quelle tre colonne** di un evento in presenza (o le ricalcola dalle righe finché ci sono). La scheda «Statistiche» le mostra.
