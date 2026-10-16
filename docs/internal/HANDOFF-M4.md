@@ -32,6 +32,12 @@ ora nel codice; i rilievi del revisore sulla #262 sono corretti sulla stessa PR 
 chiusura delle disponibilità di un evento con un roster, `events-roster` **propone il roster una volta**, con il perché di ogni turno, e lo
 staff dell'ATC lo **corregge** — aggiunge, sposta, toglie, con gli avvisi dove un turno esce dalle regole —, sotto le postazioni.
 
+**L'aggiornamento di E10q:** 15 ottobre 2026 — **fase E10q** (nucleo: una correzione di sicurezza, l'[issue
+#264](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264)), sul branch `m4/e10q-pkcs-advisory`, **PR #265** verso `main`, **diretta
+e non in coda**: nata da `main` a `c232448` (E11a unita). Fissa `System.Security.Cryptography.Pkcs` a **10.0.13** (gli avvisi del 13
+ottobre facevano fallire `dotnet restore`, e con lui `build-test` della #261, #262 e #263) e porta la versione a **0.6.8** («Che cosa ha
+lasciato E10q», sotto). Dopo la sua unione la #261, la #262 e la #263 uniscono `main`; lo coordina la sessione che coordina.
+
 **L'aggiornamento di E11a:** 12 ottobre 2026 — **fase E11a** (modulo, la prima di **M4b**: le postazioni ATC di un evento e la
 disponibilità dei controllori), sul branch `m4/e11a-positions-and-availability`, **PR #256** verso `main`, **in coda dopo la #255** di
 E16, l'ultima della coda del master (**#242 → #250 → #252 → #251 → #249 → #239 → #254 → #255 → #256**): nata dal branch di E16 a
@@ -378,6 +384,61 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **`atcData` di IT**: Carmine ha risposto (A) sull'[issue #259](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/259#issuecomment-6146395689) — `vipi` prima del primo roster vero, quando l'utente di sola lettura della vista esiste sull'host —; fino ad allora resta `none`: il roster si propone senza l'esperienza, e il
     perché di ogni turno lo dice («esperienza non contata»).
   - ⚠️ **I VID di prova**: dopo 761106–761113 di E11a, E11b ha usato **761114–761121** (e **761199** come nessuno che l'hub conosce).
+
+### Che cosa ha lasciato E10s (16 ottobre 2026, branch `m4/e10s-retention-in-the-audit`, PR #269, del nucleo; diretta su `main`, nata a `e041bb04`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10s, «Com'è andata»; nessuna migrazione, niente nel browser; una nota nuova,
+  `2026-10-16-la-conservazione-nell-audit`, **decisa** da Carmine sulla #267, [la risposta 3][a267s], la (B)):
+  - **`AuditRedaction.EmptyDeletedAsync<TEntity, TKey>(DbContext context, IReadOnlyCollection<TKey> keys, CancellationToken)`**
+    (`src/IvaoHub.Core/Privacy/AuditRedaction.cs`), accanto a `EmptyGoneAsync`: delle righe di `TEntity` con quelle chiavi che **non ci
+    sono più**, svuota (diventano `null` nel JSON) le colonne segnate `[ErasedWith]` in **ogni** copia d'audit — `created`, i due lati
+    di un `updated`, `deleted` —, di tutti i segni, chiunque la riga indicasse. Il resto della copia resta. Righe tracciate, **salva il
+    chiamante**.
+  - **Rifiuta** (`InvalidOperationException`; `ArgumentException` per le chiavi) un'entità che il contesto non mappa, una senza colonne
+    segnate, chiavi di un altro tipo della chiave dell'entità, e una cancellazione di `TEntity` ancora da salvare nel contesto.
+  - Un pezzo privato comune, `EmptyGoneCopiesAsync` (le chiavi che una riga ha ancora tolte, poi le copie in ordine), ora usato anche da
+    `EmptyGoneAsync`: `ErasedAuditTests` passa com'era.
+  - **I test**: `RetentionAuditTests` (integrazione, nuova, 3). Persone 780096 e 780097 di `ErasureTests`, solo nominate.
+- **Che cosa deve sapere E17** (che unisce questo branch, poi `main` quando è unita):
+  - **la chiamata**, in `events-retention`, per ogni entità cancellata, **dopo il salvataggio della cancellazione e nella stessa
+    transazione**:
+
+    ```csharp
+    await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+    database.Registrations.RemoveRange(registrations);
+    await database.SaveChangesAsync(cancellationToken);
+    await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(database, [.. registrations.Select(row => row.Id)], cancellationToken);
+    await database.SaveChangesAsync(cancellationToken);
+    await transaction.CommitAsync(cancellationToken);
+    ```
+
+    (i nomi del `DbSet` sono quelli del contesto degli eventi). Così un errore riporta indietro insieme la cancellazione e lo
+    svuotamento, e il giro dopo ritrova le righe; dopo un commit a sé un errore fra le due lascerebbe copie che nessuno cerca più;
+  - ⚠️ **prima del salvataggio la chiamata è rifiutata**: le righe ci sarebbero ancora e non si svuoterebbe niente;
+  - ⚠️ **un'entità senza segni è rifiutata**: `EventRegistration.AnswersJson` ha già `[ErasedWith(nameof(Vid))]` (E16); per i posti
+    delle attività E17 sceglie quali colonne segnare (con la colonna di persona della stessa riga) e lo dice nella sua nota. Il segno
+    vale anche alla cancellazione di una persona (E10n);
+  - una chiave la cui riga c'è ancora è lasciata com'è; la chiamata è idempotente.
+- **I tour** non ne hanno bisogno oggi (nota, §4): la loro conservazione cancella righe audite della forma del tour, e le righe di una
+  persona che tocca non sono `[Audited]`.
+
+[a267s]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232
+
+### Che cosa ha lasciato E10q (15 ottobre 2026, branch `m4/e10q-pkcs-advisory`, PR #265; diretta su `main`, nata a `c232448`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10q, «Com'è andata»; nessuna migrazione, nessun codice; una nota nuova,
+  `2026-10-15-il-pkcs-corretto`, **decisa** con l'issue #264): `System.Security.Cryptography.Pkcs` **10.0.13** in
+  `Directory.Packages.props` e un riferimento diretto in `IvaoHub.Core.csproj`, l'unico progetto che lo porta (MailKit → MimeKit 10.0.0);
+  `<Version>` **0.6.8**.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **un `dotnet restore` locale può passare anche quando quello della CI fallisce**: senza modifiche ai progetti il restore è «già
+    aggiornato» e non rilegge gli avvisi. Per vederli: `dotnet restore IvaoHub.sln --force --no-http-cache`, poi
+    `dotnet list IvaoHub.sln package --vulnerable --include-transitive`;
+  - ⚠️ un avviso su un pacchetto **transitivo** si corregge così, con una `PackageVersion` nel gruppo «Security fixes of transitive
+    packages» e un riferimento diretto nel progetto che lo porta (`dotnet nuget why <progetto> <pacchetto>`), **mai** con `NoWarn` o
+    `NuGetAudit=false`; il riferimento a Pkcs se ne va quando MimeKit ne porterà uno corretto da sé;
+  - il runtime incluso nel pacchetto self-contained è quello dell'ultimo SDK 10.0 che `setup-dotnet` installa (oggi 10.0.402, runtime
+    10.0.13); il `Pkcs.dll` pubblicato è comunque quello del pacchetto (nota, §4).
 
 ### Che cosa ha lasciato E11a (12 ottobre 2026, branch `m4/e11a-positions-and-availability`, PR #256; in coda dopo la #255 di E16, nata dal suo branch a `dd5b263`, con la sua testa `78fc9b6` unita)
 
