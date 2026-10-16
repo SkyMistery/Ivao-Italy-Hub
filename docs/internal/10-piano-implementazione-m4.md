@@ -3834,6 +3834,115 @@ in conflitto solo l'intestazione di `HANDOFF-M4.md`. Il 12 ottobre, unita la #24
     sue PR; da allora gira a ogni unione (sopra);
   - le pagine in un Chrome vero e in un browser diverso da Chromium (le guarda la smoke, in Chromium); un lettore di schermo.
 
+### E4d — Gli eventi prendono i pezzi del nucleo
+
+**Da dove viene**: non c'era in E0. Tre fasi del nucleo unite fra l'11 e il 12 ottobre lasciavano agli eventi una riga ciascuna, che la
+regola 6 di `CLAUDE.md` §0 teneva fuori dalle loro PR: **E10m** (#252) il lettore dei nomi, `MemberNames.ReadAsync`, al posto della copia
+di `EventsPeople.NamesAsync` (la nota di E10m, §5); **E10l** (#250) il `Dialog` del nucleo, con la «X» tradotta, al posto di quello di
+Atmosphere nei due dialog del modulo (la nota di E10l, §4); **E10j** (#239) il fuso detto da ogni trigger, e `events-release` non lo diceva
+(il punto 6 della revisione della #239). La formazione ha fatto lo stesso in A13f (#258). Branch `m4/e4d-events-adopt-core`, nata
+`--no-track` da `main` a `c232448` (con E16, E11a e A13f), **senza coda**. Fase del modulo: nessuna migrazione, nessuna decisione nuova;
+una nota, perché tocca due test del nucleo (la regola di Carmine sulla #258).
+
+1. **Il lettore dei nomi**: `EventsPeople.NamesAsync` risponde `MemberNames.ReadAsync`; `EventMemberDto` e `Member` restano; in
+   `MemberNamesTests` esce la riga degli eventi.
+2. **Il trigger dice il suo fuso**: `events-release` in UTC, come `events-reminders`; un test unitario legge i trigger del modulo come li
+   costruisce l'host.
+3. **Il `Dialog` del nucleo** in `EventSlots.tsx` e `PrivateSlots.tsx`; i due file escono da `NOT_MOVED_YET` in `Dialog.test.tsx`.
+4. **Il resto che le ultime fasi del nucleo chiedono a un modulo**: solo gli usi di una riga, ovvi; gli altri nella PR, per dopo.
+
+**Test**: unità `EventsJobTriggersTests`; vitest le due schede nuove in `titlesAndEmptyLists.test.tsx` e la guardia di `Dialog.test.tsx`
+senza eccezioni; il resto com'era.
+**Fatta quando**: nessuna copia del lettore negli eventi, nessun trigger degli eventi senza fuso, nessun file di `web/src` con il
+`Dialog` di Atmosphere, e `core-guard` verde per la sua regola.
+
+**Com'è andata** (14 ottobre 2026, branch `m4/e4d-events-adopt-core`, PR #263, senza coda, da `main` a `c232448`):
+
+- **Fatto**:
+  - **il lettore dei nomi** (`src/IvaoHub.Modules.Events/EventsPeople.cs`): `NamesAsync(IEnumerable<int> vids, …)` è ora una riga,
+    `MemberNames.ReadAsync(hub, vids, cancellationToken)`; resta, invece di andarsene, perché ha i suoi chiamanti nel modulo (le liste
+    dello staff, la disponibilità di E11a, le iscrizioni di E16), come `TrainingPeople.NamesAsync` in A13f. `AtcRatingsAsync`,
+    `AtcRatingAsync`, `Member` ed `EventMemberDto` restano del modulo. L'unica risposta che cambia è quella per un VID sotto uno, che
+    il lettore non nomina mai: uno stato che l'hub non scrive (la cancellazione toglie l'utente);
+  - **`MemberNamesTests`** (`tests/IvaoHub.IntegrationTests/`, del nucleo): dal test gemello esce il confronto con `EventsPeople` (il
+    test si chiama ora `TheReaderAnswersWhatTheToursAnswer`), da `AVidBelowOneIsNeverNamedEvenWhenAUserRowHasIt` la riga degli eventi
+    con il suo commento; il riassunto della classe dice il passaggio. Resta `EventsPeople.Member` in
+    `AnEmptyNameIsKeptAndEachModuleStillReadsItItsOwnWay`;
+  - **il fuso di `events-release`** (`EventsModule.cs`): `.WithCronSchedule(EventReleaseJob.Cron, schedule =>
+    schedule.InTimeZone(TimeZoneInfo.Utc))`, con il commento della nota del 28 settembre, §7; il nome del trigger è
+    `EventReleaseJob.TriggerName` (`events-release-quarterly`, lo stesso di prima), come `TrainingRemindersJob.TriggerName` di A13f;
+  - **`tests/IvaoHub.UnitTests/EventsJobTriggersTests.cs`** (2, nuovo): i due trigger del modulo come li costruisce l'host, per una
+    divisione nel fuso di Roma, dicono UTC, il loro cron e il loro job; copiato da `TrainingJobTriggersTests`;
+  - **i due dialog** (`EventSlots.tsx`, il dialog di uno slot; `PrivateSlots.tsx`, quello dell'ora privata): importano `Dialog` da
+    `../../../shared/ui` invece che da Atmosphere; le props sono le stesse, e nessuno dei due passava `topRightCloseButton`;
+  - **`web/src/shared/ui/Dialog.test.tsx`** (del nucleo, di E10l): la lista `NOT_MOVED_YET` se ne va, e la guardia chiede che nessun file
+    di `web/src` importi da Atmosphere `Dialog`, `DialogTopRightClose`, `Sheet` o `SheetContent`;
+  - **le schede «Domande» e «Iscrizioni» di E16** (`screens/questions.tsx`, `screens/registrations.tsx`), vuote, dicevano ancora la frase
+    del nucleo su quello che crea un dipartimento, che E10k ha reso sostituibile ed E4c ha tolto alle altre liste del modulo:
+    `emptyDescription` con due chiavi nuove, parole che descrivono e non invitano, vere anche per chi legge e basta (la prima scelta di
+    dalberone in E4c):
+    - `questions.empty`: «Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.» — «The questions a member
+      answers to register for the event will show up here.»;
+    - `registrations.empty`: «Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.» — «The members'
+      registrations for the event will show up here, with their answers.»;
+  - **i test**: tre in più in `titlesAndEmptyLists.test.tsx` (le due schede nelle due lingue, e chi legge soltanto le domande);
+  - **la nota** `decisions/2026-10-14-gli-eventi-sul-lettore-dei-nomi.md`, **decisa** dalla regola di Carmine sulla #258.
+- **Cercato e lasciato** (il punto 4):
+  - **E10k** (`emptyDescription`, `PageMetadata`): ogni lista generata del modulo ha ora la sua frase (sopra); `/events`, la pagina di un
+    evento e `/events/mine` dicono il loro titolo da E4c, e l'iscrizione di E16 e la disponibilità di E11a stanno dentro la pagina
+    dell'evento; le schermate dello staff non dicono un titolo loro, come quelle del nucleo (nessuna schermata di `/staff` monta
+    `PageMetadata`);
+  - **E10o** (`.meta({ label })`): lo usa già il form del membro di E16 (`registrationForm.ts`), costruito dalle domande; gli altri form
+    del modulo sono fissi e dicono i loro campi con `labels`, come vuole la nota di E10o. Niente da prendere;
+  - **E10p** (#261, le ore a 24, un formatter solo): **non è unita** il 14 ottobre: saltata, come chiedeva il prompt;
+  - per dopo, nella PR: la frase della lista vuota delle postazioni di E11a (`atc.positions.empty`, «Nessuna postazione ancora: aprine
+    una…») invita, e chi tiene l'ATC in sola lettura non ha il bottone (la regola di E4c); da riscrivere con E11b o in una fase sua.
+- **Dopo l'unione di `main` a `e041bb04`** (16 ottobre 2026, `d7670da`): il revisore ha trovato la PR approvabile e, unita E10q (#265, il
+  Pkcs 10.0.13 e la versione 0.6.8, che rimette in piedi il `dotnet restore` della CI), ha chiesto `main` perché `build-test` giri ([il
+  suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6215578055)). In conflitto solo l'intestazione e la
+  cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10q sotto. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache`
+  pulito e `dotnet list IvaoHub.sln package --vulnerable --include-transitive` senza pacchetti vulnerabili; Release 0 avvisi; unità
+  **1279/1279**; integrazione intera **597/597** (16,2 minuti); `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851 chiavi),
+  `build` e `gen:api` (senza differenze) verdi; `pnpm test` **769/769** al secondo giro — al primo, con l'integrazione accanto,
+  `src/features/content/BodyEditor.test.tsx` («undo gives the body back, and says so», del nucleo) è andato oltre i suoi 5 secondi, poi
+  6/6 da solo e tutto verde da capo; la smoke **181/181** al primo giro (1,5 minuti); `pnpm e2e:full` sulla 5145, `ivaohub_e2e_e4d`
+  ricreato, **63/63** al primo giro (14,5 minuti); le regole di `core-guard` contro `e041bb04`: gli stessi diciotto file, verde per la
+  sua regola.
+- **Dopo l'unione di `main` a `3b8d7d79`** (16 ottobre 2026, `9aa5ec5`): unita E10p (#261, le ore del nucleo in 24 con `formatMoment`),
+  il revisore ha chiesto una coda sola, **#263 → #262 → #268**, con questa PR in fondo ([il suo
+  commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/263#issuecomment-6216628056)). In conflitto di nuovo solo l'intestazione e
+  la cima dei blocchi di `HANDOFF-M4.md`: E4d in cima, E10p sotto. L'unione porta documenti e il formattatore di E10p (`useMoment.ts`,
+  `SchemaForm.tsx`, `DataList.tsx`, `MessageThread.tsx`, una pagina dei contatti), nessun C#: i due dialog scrivono le ore con
+  `useMoment` e le schede con il `DataList` del nucleo, e l'unico `Intl.DateTimeFormat` del modulo (`dayIn` in `bookingTimes.ts`)
+  scrive solo un giorno. Rifatti: Release 0 avvisi, unità **1279/1279**; `pnpm lint`, `format:check`, `typecheck`, `i18n:check` (851
+  chiavi), `build` e `gen:api` (senza differenze) verdi; `pnpm test` **775/775** in 107 file, da solo (con i 6 di E10p); la smoke
+  **181/181** al primo giro (1,5 minuti); le regole di `core-guard` contro `3b8d7d79`: verde per la sua regola. **Non rifatte**, come
+  chiesto dalla sessione che coordina perché l'unione non tocca il server: l'integrazione e `e2e:full` (l'ultimo giro, 597/597 e
+  63/63, è quello dopo `e041bb04`, sopra).
+- **Verificato, in locale** (14 ottobre 2026, sull'albero della PR, `main` a `c232448`):
+  - `dotnet build IvaoHub.sln --configuration Release` 0 avvisi; unità **1279/1279**; la suite di integrazione intera, senza filtro,
+    **597/597** (12,4 minuti), `MemberNamesTests` compresa;
+  - **la prova al contrario** del trigger: con `.WithCronSchedule(EventReleaseJob.Cron)` senza fuso, `TheReleaseRunsInUtc` cade
+    («Expected: "UTC" — Actual: "W. Europe Standard Time"»), l'altro passa; rimesso il fuso, 2/2. ⚠️ Su una macchina il cui fuso locale
+    si chiama `UTC` passerebbe anche senza, come `TrainingJobTriggersTests`;
+  - **la prova al contrario** della guardia: con `EventSlots.tsx` e `PrivateSlots.tsx` di `main`, «no screen draws an «X» of
+    Atmosphere’s» cade e nomina i due file (4 su 5 passano); rimessi i file della fase, 5/5;
+  - `pnpm lint`, `pnpm format:check`, `pnpm typecheck` e `pnpm i18n:check` (851 chiavi) verdi; `pnpm i18n:sync` copia le due chiavi in
+    `locales/`; `pnpm test` **769/769** in 106 file; `pnpm build` verde; `pnpm gen:api` senza differenze;
+  - la smoke `pnpm -C web exec playwright test --workers=2` **181/181** al primo giro (1,2 minuti), con il lucchetto della 4173;
+  - `pnpm e2e:full` sulla porta 5145, `ivaohub_e2e_e4d` ricreato, con il lucchetto di Mailpit e dopo l'integrazione: **63/63** al primo
+    giro (13,9 minuti);
+  - **i due dialog sul banco**, con uno spec usa e getta (uno slot pubblico e gli slot privati generati su un RFO del banco, la pagina
+    pubblicata aperta dal pilota del banco nelle due lingue, l'`aria-label` letto dal DOM): la «X» del dialog di uno slot e di quello
+    dell'ora privata dice **«Chiudi»** in italiano e **«Close»** in inglese, li chiude, e nessun «Close» resta nel testo della pagina
+    italiana. Lo spec è uscito dal worktree, l'evento cancellato;
+  - le regole di `core-guard` rifatte in PowerShell (con `-cmatch`) contro `main` dalla base `c232448`: diciotto file, nessuno del
+    maintainer; del nucleo `MemberNamesTests.cs` e `Dialog.test.tsx`, giustificati dalla nota nuova: verde per la sua regola.
+- **Non verificato**:
+  - la CI, che la PR legge una volta dopo il push;
+  - i dialog in un Chrome vero, in un browser diverso da Chromium e con un lettore di schermo (lo spec li ha letti in Chromium);
+  - l'unione con E11b (#262), aperta accanto: è il passo della coda del master.
+
 ### E10m — Nucleo: un solo lettore dei nomi
 
 **Da dove viene**: non c'era in E0. L'ha portata la revisione di E6b (#240): `EventsPeople` era il quarto lettore dei nomi per VID, dopo
@@ -4560,6 +4669,30 @@ entrato non si aggiunge. E2e: lo staff sposta un turno.
     `format:check`, `i18n:check` (854 chiavi) verdi; `pnpm test` **771 in 107 file**; `pnpm build`; `gen:api` senza diff; lo smoke
     **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,8 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione
     e dietro il lock di Mailpit; le regole di `core-guard` da `main` a `c232448`: un file del nucleo (`ErasureTests.cs`) con la nota.
+- **Verificato di nuovo, dopo il merge di `main` a `e041bb04`** (16 ottobre 2026; la correzione di Pkcs, E10q #265, 0.6.8, che il
+  revisore ha chiesto di unire [sulla #262](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6215577618); il conflitto
+  solo in `HANDOFF-M4.md`, l'intestazione e il blocco di E11b sopra quelli di E10q): **`dotnet restore IvaoHub.sln --force
+  --no-http-cache` con l'audit acceso, pulito** — niente più `NuGetAudit=false` —; `dotnet build -c Release` senza avvisi; unità
+  **1287/1287**; **integrazione intera senza filtro 607/607** (16,7 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`, `build`
+  verdi e `gen:api` senza diff; `pnpm test` **772 in 107 file** (al primo giro, accanto all'integrazione, quattro test del nucleo e del
+  modulo in timeout di 5 s — `BodyEditor.test.tsx` e `PrivateSlots.test.tsx`, 14/14 da soli —, poi l'intera 772/772); lo smoke
+  **181/181**; **`pnpm e2e:full` 64/64 al primo giro** (12,9 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo il lock di
+  Mailpit che E4d teneva; le regole di `core-guard` da `main` a `e041bb04`: un file del nucleo (`ErasureTests.cs`) con la nota.
+- **Verificato di nuovo, dopo il merge della testa di E4d** (`279c8cd`, con `main` a `3b8d7d79`; 16 ottobre 2026; la coda #263 → #262 →
+  #268 che il revisore ha chiesto, E11b in coda dopo la #263): unita con un merge, senza riscrivere niente (`8e6009d`); i conflitti in
+  `HANDOFF-M4.md` (l'intestazione e il blocco di E11b sopra quelli di E4d), in `EventsModule.cs` (il trigger di `events-release` con il nome
+  di E4d, `EventReleaseJob.TriggerName`, accanto alla zona UTC che i due avevano scritto uguale) e in `titlesAndEmptyLists.test.tsx` (le
+  rotte delle domande e delle iscrizioni di E4d e quella del roster di E11b, tutte e tre). **Le ore delle schermate di E11b** — il roster,
+  il form del turno, i candidati — passano tutte da `useMoment`/`formatMoment` del nucleo, nessuna scritta a mano, quindi le ore in 24 di
+  E10p valgono anche qui. `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso, pulito; `dotnet build -c Release`
+  senza avvisi; unità **1289/1289**; **integrazione intera senza filtro 607/607** (8,7 min; al primo giro il processo dei test è caduto
+  per memoria esaurita, con la suite di un'altra sessione accanto: rifatta da sola); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` (854 chiavi), `build` verdi e `gen:api` senza diff; `pnpm test` da solo **781 in 108 file**; lo smoke **181/181**;
+  **`pnpm e2e:full` 64/64 al primo giro** (13,0 minuti) sul banco 5143, `ivaohub_e2e_e11b` tolto prima, dopo l'integrazione e dietro il
+  lock di Mailpit che E17 teneva; le regole
+  di `core-guard` da `main` a `3b8d7d79`: tre file del nucleo — `ErasureTests.cs` di E11b con la sua nota, `MemberNamesTests.cs` e
+  `Dialog.test.tsx` di E4d con la sua (`2026-10-14-gli-eventi-sul-lettore-dei-nomi`), che restano nel diff finché la #263 non è unita —,
+  nessun file del maintainer.
 
 [r262]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6164353974
 [r262b]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6172067250
@@ -4671,6 +4804,46 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
 - **Non verificato**: la CI (la dice la PR; **build-test è rossa a «Restore» su ogni branch** per l'avviso Pkcs, issue #264, finché la #265
   non è unita); la risposta di Carmine alla domanda della nota; le pagine a schermo e a 375 px (lette con i test e l'e2e, non guardate); un
   roster con migliaia di turni (le mail sono una per controllore per evento, in un giro); la migrazione su un'installazione vera.
+- **Dopo la revisione** (16 ottobre 2026; [i rilievi del revisore][r268], «tre cose da correggere»; [la risposta di Carmine][a268]: **sì alle
+  dieci letture**, con due condizioni, e la nota è **decisa**):
+  1. **La gara fra il job e una correzione** (punto 1): la mail del job prende anche la riga dell'evento, come la correzione con `ShiftLock`, e
+     `ShiftNotices.NoteAsync` rilegge `notified_at` dal database sotto il lock; un cambio di controllore scrive il segno svuotato qualunque
+     cosa credesse il tracker. Un test deterministico, `AShiftGivenToAnotherAfterThePublicationTellsBothEvenAfterTheJobRaced` (la riga caricata
+     dalla correzione, il job che dice il turno in mezzo, poi la correzione): **cade senza la rilettura** (Expected 2, Actual 1), passa con.
+  2. **Gli avvisi sul titolare che lo staff sceglie** (punto 2, e la condizione di Carmine sulla lettura 7): `GET
+     /api/events/atc/transfers/{id}/warnings?toVid=` — **una lettura scritta a mano in più**, l'ottava dell'ATC, che la condizione chiede —, e
+     «Approva» li mostra prima di approvare, che allora dice «Approva lo stesso»; la mail «decisa» dice nome e VID di chi ha preso il turno
+     (punto 7).
+  3. **I test che mancavano** (punto 3): `ApproveRefusesWhatCannotBeAndNamesWhoTookTheShift`, `AWithdrawnRequestIsNotApprovedAndAnApprovedOneIsNotWithdrawn`,
+     `ARequestIsDecidedByTheTeamOfItsShiftsFirAndFollowsTheShift`, la gara sopra; il turno di un roster non pubblicato era già fuori da `/events/mine`
+     nel primo test.
+  4. **I piccoli**: nessuna approvazione su un evento annullato (4); una richiesta in attesa segue il FIR del suo turno quando lo staff lo sposta
+     (5); `events.atcCoverage` filtra per permesso prima del tetto di cinquanta eventi (`MaxEvents`, letti fino a cinquecento) e conta le
+     disponibilità sulle postazioni del lettore (6); il punto 8, la frase vuota delle postazioni, resta: l'ha chiesta dalberone, presa dai
+     seguiti di E4d (#263), e la PR lo dice.
+  5. **La condizione di Carmine sulla lettura 5**: la pagina pubblica del roster nomina a chi ha fatto il login il controllore e il suo rating,
+     **mai il VID** (`ControllerName`, `ControllerErased`); a un visitatore niente.
+  - **Unite poi le teste di E11b** `a0c8a4f` (con `main` a `e041bb04`, il Pkcs corretto, #265) e `33ed36f` (con E4d `279c8cd` e `main` a
+    `3b8d7d79`, le ore in 24 di E10p): un conflitto in `HANDOFF-M4.md` e uno in `titlesAndEmptyLists.test.tsx` (la scheda «ATC» in sola lettura di
+    E12 accanto alle «Domande» e «Iscrizioni» di E4d), le due parti tenute; gli orari delle pagine di E12 passano da `useMoment`. ⚠️ La
+    rilettura di `notified_at` usava `IgnoreQueryFilters`, che `ArchitectureTests` vieta fuori dal motore: passa da `CrudSource.BackOffice`.
+  - **Verificato, in locale** (16 ottobre 2026, sul merge di `33ed36f`): restore con l'audit (`--force --no-http-cache`) senza avvisi;
+    `dotnet build -c Release` senza avvisi; unità **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (15,1 min); le classi
+    del roster di E12 ed E11b 22/22 prima; `pnpm lint`, `typecheck`, `format:check`, `i18n:check` (864 chiavi) verdi; `pnpm test` da solo
+    **788 in 110 file** (un primo giro con tutti i worker si era fermato per la memoria della macchina: rifatto con `--maxWorkers=4`);
+    `gen:api` senza diff; lo smoke **181/181**; **`pnpm e2e:full`** sul banco 5146, `ivaohub_e2e_e12` tolto prima, dopo l'integrazione e
+    dietro il lock di Mailpit: **65/65 al primo giro** (13,4 min); le regole di `core-guard` contro `3b8d7d79`: nessun file del maintainer, i file del nucleo della coda
+    (i tre di E12 e i due di E4d) con le tre note nuove.
+  - **Unita poi `main` a `4ad747ad`** (E4d #263 ed E11b #262 unite, il piano 1.34 #270, la `0.7.0`): sopra `33ed36f` porta solo la versione e i
+    documenti del maintainer, merge pulito. **Verificato di nuovo**: restore con l'audit senza avvisi; build Release senza avvisi; unità
+    **1294/1294**; **integrazione intera senza filtro, da sola, 619/619** (10,9 min; un primo giro era caduto subito con Docker Desktop spento,
+    riacceso, e l'ho fatto partire quando la suite di un'altra sessione era finita); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+    verdi; `pnpm test` da solo **788 in 110 file**; `gen:api` senza diff; lo smoke **181/181**; `e2e:full` **non rifatto** (il coordinatore: il
+    65/65 sul merge di `33ed36f` copre il codice, `main` ha portato solo la versione e i documenti); le regole di `core-guard` contro
+    `4ad747ad`: nessun file del maintainer, i tre file del nucleo di E12 con la sua nota nuova.
+
+[r268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216426863
+[a268]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6216437241
 
 ### E13a — Dopo l'evento: le verifiche e le statistiche
 

@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 
 import { SchemaForm } from '../../../shared/forms';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
-import { Dialog } from '../../../shared/ui';
+import { Dialog, Notice } from '../../../shared/ui';
 import {
+  transferWarnings,
   transfersQuery,
   useApproveTransfer,
   useRefuseTransfer,
@@ -20,7 +21,7 @@ import {
   type TransferFormValues,
 } from '../schemas';
 
-import { transferLines } from './rosterWords';
+import { transferLines, warningLines } from './rosterWords';
 
 /**
  * The requests to hand a shift over of an event, in the staff's back office (design M4 §4.4-bis, §7.2, E12; note
@@ -69,13 +70,18 @@ export function TransfersSection({ event }: { event: AtcEventDto }) {
   );
 }
 
-/** «Approve» — with whoever was named, or another member the staff choose — and «Refuse» with a note, each in its generated form. */
+/**
+ * «Approve» — with whoever was named, or another member the staff choose, whose warnings it shows first (Carmine's answer on #268) — and
+ * «Refuse» with a note, each in its generated form.
+ */
 function Decide({ row }: { row: TransferRow }) {
   const { t } = useTranslation();
   const { bootstrap } = useRouteContext({ from: '/_staff' });
   const approve = useApproveTransfer();
   const refuse = useRefuseTransfer();
   const [opened, setOpened] = useState<'approve' | 'refuse' | null>(null);
+  // The warnings read for the member the staff chose, before they approve (Carmine's answer on #268): approving asks again for another one.
+  const [checked, setChecked] = useState<{ vid: number; lines: string[] } | null>(null);
   const division = { defaultLocale: bootstrap.division.defaultLocale, timezone: bootstrap.division.timezone };
 
   return (
@@ -84,6 +90,7 @@ function Decide({ row }: { row: TransferRow }) {
         open={opened === 'approve'}
         onOpenChange={(open) => {
           setOpened(open ? 'approve' : null);
+          setChecked(null);
           approve.reset();
         }}
         trigger={
@@ -96,6 +103,19 @@ function Decide({ row }: { row: TransferRow }) {
           row.to === null ? 'events:atc.transfers.approveNobody' : 'events:atc.transfers.approveDescription',
         )}
       >
+        {checked === null || checked.lines.length === 0 ? null : (
+          <Notice
+            tone="warning"
+            title={t('events:atc.transfers.warningsFor', { vid: checked.vid })}
+            description={
+              <ul className="list-disc pl-5 text-sm">
+                {checked.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            }
+          />
+        )}
         <SchemaForm<TransferFormValues>
           schema={transferSchema}
           defaults={{ ...(row.to === null ? {} : { toVid: row.to.vid }), note: '' }}
@@ -103,10 +123,24 @@ function Decide({ row }: { row: TransferRow }) {
           labels="events:atc.transfers.decision"
           division={division}
           onSubmit={async (values) => {
-            await approve.mutateAsync({ id: row.id, toVid: values.toVid ?? null, note: values.note });
+            const to = values.toVid ?? null;
+            // The first time for a member, the warnings on them; approving goes on once they were shown, or when there are none.
+            if (to !== null && checked?.vid !== to) {
+              const lines = warningLines(await transferWarnings(row.id, to), t);
+              setChecked({ vid: to, lines });
+              if (lines.length > 0) {
+                return;
+              }
+            }
+
+            await approve.mutateAsync({ id: row.id, toVid: to, note: values.note });
             setOpened(null);
           }}
-          submitLabel={t('events:atc.transfers.approve')}
+          submitLabel={t(
+            checked !== null && checked.lines.length > 0
+              ? 'events:atc.transfers.approveAnyway'
+              : 'events:atc.transfers.approve',
+          )}
         />
       </Dialog>
       <Dialog

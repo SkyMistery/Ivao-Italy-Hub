@@ -1,4 +1,5 @@
 using IvaoHub.Core.Data;
+using IvaoHub.Core.People;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events;
@@ -7,29 +8,18 @@ namespace IvaoHub.Modules.Events;
 public sealed record EventMemberDto(int Vid, string? Name);
 
 /// <summary>
-/// The people of the events as the hub knows them (plan §16.13: whoever signed in): their names by VID, read from the core's members,
-/// as the training's and the tours' pages read theirs. A name is never copied onto a row of the module (design M4 §1.13); a person
+/// The people of the events as the hub knows them (plan §16.13: whoever signed in): their names by VID, read by the core's one reader
+/// of them, as the training's pages read theirs. A name is never copied onto a row of the module (design M4 §1.13); a person
 /// whose data was erased is a negative VID with no name, and the page says so with the core's word (<c>personName</c>).
 /// </summary>
 public sealed class EventsPeople(HubDbContext hub)
 {
-    /// <summary>The names the hub has for these people, by VID; whoever it does not know is left out.</summary>
-    public async Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int> vids, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(vids);
-
-        var wanted = vids.Distinct().ToList();
-        if (wanted.Count == 0)
-        {
-            return new Dictionary<int, string>();
-        }
-
-        return (await hub.Users.AsNoTracking()
-                .Where(user => wanted.Contains(user.Vid))
-                .Select(user => new { user.Vid, user.FirstName, user.LastName })
-                .ToListAsync(cancellationToken))
-            .ToDictionary(user => user.Vid, user => $"{user.FirstName} {user.LastName}".Trim());
-    }
+    /// <summary>
+    /// The names the hub has for these people, by VID; whoever it does not know is left out, and so is a VID below one (the core's
+    /// <see cref="MemberNames"/>, note <c>2026-10-11-un-solo-lettore-dei-nomi</c>).
+    /// </summary>
+    public Task<IReadOnlyDictionary<int, string>> NamesAsync(IEnumerable<int> vids, CancellationToken cancellationToken) =>
+        MemberNames.ReadAsync(hub, vids, cancellationToken);
 
     /// <summary>
     /// The ATC ratings the hub has for these people, by VID — the network's numbers, as the last sign in brought them (E11a): what the

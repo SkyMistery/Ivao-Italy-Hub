@@ -1,11 +1,11 @@
-import { Badge, Dialog, H2, H3, Subtle, Tooltip } from '@ivao/atmosphere-react';
+import { Badge, H2, H3, Subtle, Tooltip } from '@ivao/atmosphere-react';
 import { PlaneLanding, PlaneTakeoff, Repeat } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMoment } from '../../../shared/i18n/useMoment';
 import { ListFilter } from '../../../shared/list';
-import { EmptyState } from '../../../shared/ui';
+import { Dialog, EmptyState } from '../../../shared/ui';
 import type { PublicEventAirportDto, PublicEventDto, PublicEventSlotDto } from '../api';
 import { SLOT_DIRECTIONS } from '../schemas';
 

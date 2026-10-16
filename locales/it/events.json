@@ -773,7 +773,7 @@
       "atcShiftTransferDecided": {
         "subject": "[Eventi] La tua richiesta di cedere un turno: {{title}}",
         "body": "{{decision}}\n\nIl turno: {{shift}} UTC, in {{title}}.\nLa nota dello staff: {{note}}\n\nI tuoi turni: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
-        "approved": "Lo staff ha approvato la tua richiesta: il turno non è più tuo, e chi lo prende ha ricevuto una mail.",
+        "approved": "Lo staff ha approvato la tua richiesta: il turno ora è di {{taker}}, che ha ricevuto una mail.",
         "refused": "Lo staff ha rifiutato la tua richiesta: il turno resta tuo."
       }
     }
@@ -915,6 +915,7 @@
   },
   "questions": {
     "title": "Domande",
+    "empty": "Qui compariranno le domande a cui un membro risponde per iscriversi all'evento.",
     "create": "Nuova domanda",
     "edit": "Domanda",
     "fields": {
@@ -948,6 +949,7 @@
     }
   },
   "registrations": {
+    "empty": "Qui compariranno le iscrizioni dei membri all'evento, con le loro risposte.",
     "fields": {
       "member": "Membro",
       "lines": "Risposte",
@@ -1149,7 +1151,9 @@
           "toVid": "Il membro indicato, o un altro entrato nell'hub almeno una volta.",
           "note": "Chi ha chiesto la legge in una mail."
         }
-      }
+      },
+      "approveAnyway": "Approva lo stesso",
+      "warningsFor": "Il VID {{vid}} non rispetta tutte le regole del roster per questo turno:"
     }
   },
   "roster": {

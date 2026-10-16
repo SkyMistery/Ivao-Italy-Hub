@@ -115,11 +115,14 @@ public sealed class EventsModule : ModuleBase
         // its trigger says (E10j: a quarter of an hour falls on the same instants in every zone, and the zone is written all the same).
         services.AddScoped<EventPublishing>();
         services.AddScoped<EventReleaseJob>();
+
+        // Every quarter of an hour, which falls on the same instants in every zone; the zone is said all the same (note
+        // 2026-09-28-i-job-quando-passenger-spegne-l-hub, §7), and it is UTC, as the reminders of the bookings have it.
         services.AddQuartz(quartz => quartz
             .AddJob<EventReleaseJob>(job => job.WithIdentity(EventReleaseJob.JobName))
             .AddTrigger(trigger => trigger
                 .ForJob(EventReleaseJob.JobName)
-                .WithIdentity($"{EventReleaseJob.JobName}-quarterly")
+                .WithIdentity(EventReleaseJob.TriggerName)
                 .WithCronSchedule(EventReleaseJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
         // Its public side (E4): the page of an event and the cards of the events seen, which the block and /events read.

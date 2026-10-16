@@ -1,4 +1,4 @@
-import { Badge, Dialog, H2, H3, Label, Subtle, Switch } from '@ivao/atmosphere-react';
+import { Badge, H2, H3, Label, Subtle, Switch } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { PlaneLanding, PlaneTakeoff } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ import { loginHref } from '../../../shared/api/client';
 import { ApiError } from '../../../shared/api/problem';
 import { SchemaForm, type ChoiceOption } from '../../../shared/forms';
 import { useMoment } from '../../../shared/i18n/useMoment';
-import { Notice } from '../../../shared/ui';
+import { Dialog, Notice } from '../../../shared/ui';
 import {
   useBookPrivate,
   type PrivateBookingDto,

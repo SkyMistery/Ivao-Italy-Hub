@@ -89,6 +89,9 @@ public sealed class StaffTransfers(
     /// <summary>From the event's start a shift is not given to another controller (E11b's word for the correction).</summary>
     public const string AfterStartKey = "events:errors.shiftAfterStart";
 
+    /// <summary>A cancelled event, as the correction says it.</summary>
+    public const string CancelledKey = "events:errors.alreadyCancelled";
+
     /// <summary>A controller who holds another position of the event in those hours (E11b's word for the correction).</summary>
     public const string BusyKey = "events:errors.controllerBusy";
 
@@ -112,35 +115,13 @@ public sealed class StaffTransfers(
 
         var warnings = new Dictionary<long, IReadOnlyList<ShiftWarning>>();
         var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
-        foreach (var group in transfers.Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ToVid is not null).GroupBy(transfer => transfer.EventId))
+        foreach (var transfer in transfers.Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ToVid is not null))
         {
-            if (await children.EventAsync(group.Key, cancellationToken) is not { } row)
+            if (shifts.GetValueOrDefault(transfer.ShiftId) is { } shift
+                && positions.TryGetValue(shift.PositionId, out var position)
+                && await children.EventAsync(transfer.EventId, cancellationToken) is { } row)
             {
-                continue;
-            }
-
-            var roster = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().Where(shift => shift.EventId == row.Id).ToListAsync(cancellationToken);
-            var availabilities = (await data.AvailabilitiesAsync(row.Id, cancellationToken)).ToDictionary(availability => availability.Vid);
-            var ratings = await data.RatingsAsync(group.Select(transfer => transfer.ToVid!.Value), cancellationToken);
-            var rosterPositions = (await data.PositionsAsync([.. group.Select(transfer => shifts.GetValueOrDefault(transfer.ShiftId)?.PositionId).OfType<long>().Distinct().Select(id => positions[id])], cancellationToken))
-                .ToDictionary(position => position.Id);
-
-            foreach (var transfer in group)
-            {
-                if (shifts.GetValueOrDefault(transfer.ShiftId) is not { } shift || !rosterPositions.TryGetValue(shift.PositionId, out var position))
-                {
-                    continue;
-                }
-
-                var to = transfer.ToVid!.Value;
-                warnings[transfer.Id] = StaffRoster.Warnings(
-                    Handed(shift, to),
-                    ratings.TryGetValue(to, out var rating) ? rating : null,
-                    availabilities.GetValueOrDefault(to)?.Windows ?? [],
-                    position,
-                    roster,
-                    RosterData.Rules(row, settings),
-                    vocabulary);
+                warnings[transfer.Id] = await HolderWarningsAsync(row, shift, position, transfer.ToVid!.Value, settings, cancellationToken);
             }
         }
 
@@ -154,6 +135,55 @@ public sealed class StaffTransfers(
         }
 
         return [.. transfers.Select(transfer => Row(transfer, shifts.GetValueOrDefault(transfer.ShiftId), positions, names, warnings.GetValueOrDefault(transfer.Id) ?? [], decidable.Contains(transfer.Id)))];
+    }
+
+    /// <summary>
+    /// The warnings of the rules of the proposal (§4.3) on a member the staff choose to give a request's shift to (Carmine's answer on #268,
+    /// reading 7: approving towards another member than the one asked, provided the warnings are shown for the holder chosen): the approval's
+    /// dialog asks them before it approves. Null when the request is not found, or the reader may not decide it.
+    /// </summary>
+    public async Task<IReadOnlyList<ShiftWarning>?> WarningsForAsync(long id, int toVid, ClaimsPrincipal user, CancellationToken cancellationToken)
+    {
+        var transfer = await CrudSource.BackOffice<EventAtcTransfer>(database).AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
+        if (transfer is null || !(await authorization.AuthorizeAsync(user, transfer, EventsPermissions.AtcEdit)).Succeeded)
+        {
+            return null;
+        }
+
+        var shift = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == transfer.ShiftId, cancellationToken);
+        var position = shift is null
+            ? null
+            : await CrudSource.BackOffice<EventAtcPosition>(database).AsNoTracking().FirstOrDefaultAsync(candidate => candidate.Id == shift.PositionId, cancellationToken);
+        if (shift is null || position is null || await children.EventAsync(transfer.EventId, cancellationToken) is not { } row)
+        {
+            return null;
+        }
+
+        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
+        return await HolderWarningsAsync(row, shift, position, toVid, settings, cancellationToken);
+    }
+
+    /// <summary>What the shift would not keep of the rules of the proposal in the hands of <paramref name="vid"/>: the roster's own warnings.</summary>
+    private async Task<IReadOnlyList<ShiftWarning>> HolderWarningsAsync(
+        Event row,
+        EventAtcShift shift,
+        EventAtcPosition position,
+        int vid,
+        EventsSettings settings,
+        CancellationToken cancellationToken)
+    {
+        var roster = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().Where(other => other.EventId == row.Id).ToListAsync(cancellationToken);
+        var availability = (await data.AvailabilitiesAsync(row.Id, cancellationToken)).FirstOrDefault(candidate => candidate.Vid == vid);
+        var ratings = await data.RatingsAsync([vid], cancellationToken);
+
+        return StaffRoster.Warnings(
+            Handed(shift, vid),
+            ratings.TryGetValue(vid, out var rating) ? rating : null,
+            availability?.Windows ?? [],
+            (await data.PositionsAsync([position], cancellationToken))[0],
+            roster,
+            RosterData.Rules(row, settings),
+            vocabulary);
     }
 
     /// <summary>One request alone, with no names nor warnings: a row the engine reads by itself.</summary>
@@ -216,7 +246,13 @@ public sealed class StaffTransfers(
             return (TransferResult.Refused, problems.Add("id", NotTheirsKey));
         }
 
-        if (now >= row!.StartsAtUtc)
+        // A cancelled event hands nothing over (the review of #268, point 4): its requests are refused only.
+        if (row!.CancelledAt is not null)
+        {
+            return (TransferResult.Refused, problems.Add("id", CancelledKey));
+        }
+
+        if (now >= row.StartsAtUtc)
         {
             return (TransferResult.Refused, problems.Add("id", AfterStartKey));
         }
@@ -270,8 +306,12 @@ public sealed class StaffTransfers(
             return (changed, problems);
         }
 
+        // Who took the shift, named as the hub names them, with the VID (the review of #268, point 7): it may be another than the one asked.
         var callsign = (await publication.ShiftsAsync([shift.Id], cancellationToken))[0].Callsign;
-        await mail.AtcShiftTransferDecidedAsync(row, holder, (callsign, before.FromUtc, before.ToUtc), approved: true, note, cancellationToken);
+        var taker = (await MemberNames.ReadAsync(hub, [to], cancellationToken)).GetValueOrDefault(to) is { Length: > 0 } name
+            ? $"{name} ({to.ToString(System.Globalization.CultureInfo.InvariantCulture)})"
+            : to.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        await mail.AtcShiftTransferDecidedAsync(row, holder, (callsign, before.FromUtc, before.ToUtc), taker, note, cancellationToken);
         await publication.TellOneAsync(row, shift.Id, now, cancellationToken);
 
         return (TransferResult.Done, problems);
@@ -312,7 +352,7 @@ public sealed class StaffTransfers(
         }
 
         var shift = (await publication.ShiftsAsync([transfer!.ShiftId], cancellationToken))[0];
-        await mail.AtcShiftTransferDecidedAsync(row!, transfer.ControllerVid, shift, approved: false, note, cancellationToken);
+        await mail.AtcShiftTransferDecidedAsync(row!, transfer.ControllerVid, shift, taker: null, note, cancellationToken);
 
         return (TransferResult.Done, problems);
     }

@@ -70,6 +70,8 @@ export function RegistrationsTab({ event, editable }: { event: EventDetailDto; e
       timezone={bootstrap.division.timezone}
       search={search}
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
+      // The registrations are the event's, not a department's: an empty tab says what will be there (#224, E4d).
+      emptyDescription={t('events:registrations.empty')}
       actions={(row) => (editable ? <RemoveRegistration registration={row} /> : null)}
     />
   );
