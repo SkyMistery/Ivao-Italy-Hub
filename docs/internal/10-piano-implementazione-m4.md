@@ -4451,7 +4451,7 @@ avvisa; la cessione approvata passa il turno e nessuno approva la propria; la pa
      `EventsRosterPublicationTests` (5); vitest `atcCoverage.test.tsx`, `transfers.test.ts` e un caso in `myEvents.test.tsx`; il giro
      `full/events-publication.spec.ts` (slug `evt-test-e2e-e12-…`).
 - **Scelte e scostamenti** (nota nuova `decisions/2026-10-14-la-pubblicazione-del-roster-e-la-cessione.md`, **Proposta**, la domanda a
-  Carmine dove la mettono dalberone e il coordinatore): le dieci letture della nota. ⚠️ **Una lettura scritta a mano**, la pagina pubblica
+  Carmine nel [primo commento della PR](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853)): le dieci letture della nota. ⚠️ **Una lettura scritta a mano**, la pagina pubblica
   del roster: la settima dell'ATC, uno scostamento dal design §7.2 come le sei di E11a ed E11b. ⚠️ **L'e2e non aspetta la pubblicazione**:
   il banco non lancia un job a comando (come E11b); la pubblicazione con la mail la provano `EventsRosterPublicationTests` e il banco della
   fase al quarto d'ora.

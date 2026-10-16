@@ -9,7 +9,7 @@
 **Ultimo aggiornamento:** 15 ottobre 2026 — **fase E12** (modulo, la terza di **M4b**: la pubblicazione del roster, le mail dei turni,
 la cessione di un turno, `events.atcCoverage`), sul branch `m4/e12-roster-publication`, **PR #268** verso `main`, **in coda dopo la
 #262** di E11b: nata `--no-track` dalla sua testa `973f385`, ha unito la sua testa dopo la revisione `12dfb0c` (con `main` a `c232448`).
-La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **Proposta**, con la domanda a Carmine nel primo commento della PR; il
+La nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione` è **Proposta**, con la domanda a Carmine nel [primo commento della PR](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853); il
 codice segue le risposte raccomandate. Da E12, a inizio − `rosterPublishDays`, `events-roster` **pubblica il roster una volta** e dice a ogni
 controllore i suoi turni in una mail; dopo, ogni correzione avvisa subito chi sapeva del turno; c'è la pagina `/events/{slug}/roster` (i nomi
 solo a chi ha fatto il login), i turni in `/events/mine` e in `events.myEvents`, la **cessione** di un turno decisa dallo staff, e il blocco

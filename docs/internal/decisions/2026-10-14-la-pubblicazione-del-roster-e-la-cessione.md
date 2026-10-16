@@ -1,8 +1,10 @@
 # La pubblicazione del roster, le mail dei turni e la cessione di un turno (E12)
 
 **Data:** 14 ottobre 2026 — fase E12 di M4 (M4b), PR in coda dopo la #262 di E11b
-**Stato:** **Proposta**. La domanda è in §5; dove va (la PR o un'issue) lo decide dalberone con il coordinatore. Il codice segue le
-risposte raccomandate, come hanno fatto E11a ed E11b.
+**Stato:** **Proposta**. La domanda è in §5, pubblicata come primo commento della PR #268 ([domanda][q]), scelta di dalberone. Il codice
+segue le risposte raccomandate, come hanno fatto E11a ed E11b.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/268#issuecomment-6213434853
 **Regola applicata:** `CLAUDE.md` §5. La pubblicazione per data, le quattro mail, la pagina del roster con i nomi solo a chi ha fatto il
 login, i turni in `/me` e in `/events/mine`, la riga della cessione con chi cede come stakeholder, lo staff che decide e mai la propria
 richiesta, `events.atcCoverage` e chi riceve l'annullamento sono **decisi** (design `09-design-m4.md` §4.4, §4.4-bis, §7.1, §7.3, §8.3,
@@ -136,6 +138,8 @@ parole del modulo; `docs/FORKING.md`. Nessun file del nucleo, se non `schema.d.t
 conteggi dei blocchi in `uiKit.test.ts` e `DataBlockEndToEndTests` crescono di uno, come il design §7.3 dice.
 
 ## 5. La domanda a Carmine
+
+Pubblicata come primo commento della PR #268 ([domanda][q]).
 
 **Sì alle dieci letture di §2?** In particolare:
 
