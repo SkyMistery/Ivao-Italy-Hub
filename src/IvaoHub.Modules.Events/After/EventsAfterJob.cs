@@ -28,7 +28,8 @@ namespace IvaoHub.Modules.Events.After;
 /// <c>attendanceMinimumMinutes</c> on the position within the shift is <c>Attended</c>, less a <c>NoShowProposed</c> with who covered the
 /// position when the archive says so (readings 4 and 5).</item>
 /// <item><b>Closing the event</b>, when no row is left to check: who flew without booking — a number of people, whose VIDs live only in
-/// memory while they are counted (reading 3) —, the statistics (<see cref="EventStatistics"/>) and <c>after_done_at</c>, in one step.</item>
+/// memory while they are counted (reading 3) —, as many airports per run as its budget holds, each piece saved with the statistics; once every
+/// airport is counted, the statistics (<see cref="EventStatistics"/>) and <c>after_done_at</c> in one transaction.</item>
 /// </list>
 /// <para><b>A batch</b> (reading 6): a run spends at most <see cref="Budget"/> units, about the seconds of the network's time — a question by
 /// VID costs <see cref="ByVidCost"/>, one about an airport <see cref="ByAirportCost"/> —, and what is left waits for the next run, which
@@ -185,22 +186,17 @@ public sealed class EventsAfterJob(
             return (bookings, shifts, false);
         }
 
-        // Who flew without booking: counted once on closing, or never when the sources are given up (it stays as it is).
-        int? flownUnbooked = null;
-        if (!givenUp)
+        // Who flew without booking (readings 3 and 6, with Carmine's conditions on #272): as many airports as the run has left, in their
+        // order, each run's piece saved with the statistics; the event closes once every airport is counted. Never for an event of the whole
+        // division, nor one without airports, nor once the sources are given up: then it stays «not counted», or counted at the airports done.
+        if (!givenUp && !row.WholeDivision && !await CountUnbookedAsync(row, run, now, cancellationToken))
         {
-            var counted = await FlownUnbookedAsync(row, run, cancellationToken);
-            if (counted is not { } number)
-            {
-                return (bookings, shifts, false);
-            }
-
-            flownUnbooked = number;
+            return (bookings, shifts, false);
         }
 
         // The statistics and the mark in one transaction: a failure takes both back, and the next run closes the event again.
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        await statistics.WriteAsync(row, flownUnbooked, now, cancellationToken);
+        await statistics.WriteAsync(row, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
         // The job's bookkeeping, as the roster's marks: the row version of the event does not move, and its audit has no row for it.
@@ -357,7 +353,9 @@ public sealed class EventsAfterJob(
     {
         var threshold = AfterRules.Threshold(settings.AttendanceMinimumMinutes, shift.FromUtc, shift.ToUtc);
 
-        if (!run.ArchiveDown)
+        // A division with no archive (atcData: none) is not asked at all: «not available» by contract, no unit spent, nothing to report in the
+        // run's row (the review of #278, point 4).
+        if (!run.ArchiveDown && archive is not UnavailableAtcActivitySource)
         {
             if (!run.Take(ByVidCost))
             {
@@ -417,34 +415,12 @@ public sealed class EventsAfterJob(
     }
 
     /// <summary>
-    /// Who flew to or from the event's airports in its window without booking it (reading 3): the pilots of the sessions found without a VID,
-    /// counted once each, less whoever booked a slot of the event. <b>No VID and no session is kept</b>: they live in this method alone. Null
-    /// when the tracker did not answer, or the run has not enough left for the event's airports and has spent something already.
+    /// Who flew to or from some of the event's airports in its window without booking it (reading 3): the pilots of the sessions found without
+    /// a VID at <paramref name="airports"/>, counted once each, less whoever booked a slot of the event. <b>No VID and no session is kept</b>:
+    /// they live in this method alone. Null when the tracker did not answer.
     /// </summary>
-    private async Task<int?> FlownUnbookedAsync(Event row, Run run, CancellationToken cancellationToken)
+    private async Task<int?> FlownUnbookedAsync(Event row, IReadOnlyList<string> airports, Run run, CancellationToken cancellationToken)
     {
-        // An event about the whole division is not looked for at every airport of it (design §5.1); one without airports has nowhere to look.
-        if (row.WholeDivision)
-        {
-            return 0;
-        }
-
-        var airports = await database.Airports.AsNoTracking()
-            .Where(airport => airport.EventId == row.Id)
-            .Select(airport => airport.Icao)
-            .ToListAsync(cancellationToken);
-        if (airports.Count == 0)
-        {
-            return 0;
-        }
-
-        var cost = airports.Count * 2 * ByAirportCost;
-        if (run.TrackerDown || (run.Spent > 0 && Budget - run.Spent < cost))
-        {
-            return null;
-        }
-
-        run.Spend(cost);
         var (fromUtc, toUtc) = AfterRules.FlightWindow(row);
         var pilots = new HashSet<int>();
         var cut = false;
@@ -482,6 +458,49 @@ public sealed class EventsAfterJob(
 
         return pilots.Count;
     }
+    /// <summary>
+    /// Counts who flew without booking at the event's next airports, as many as the run's budget holds (two questions each), and saves the
+    /// piece with the statistics. True when every airport is counted — or there is none —; false when some are left for the next run, or the
+    /// tracker did not answer.
+    /// </summary>
+    private async Task<bool> CountUnbookedAsync(Event row, Run run, DateTime now, CancellationToken cancellationToken)
+    {
+        var airports = await database.Airports.AsNoTracking()
+            .Where(airport => airport.EventId == row.Id)
+            .OrderBy(airport => airport.Ordinal)
+            .ThenBy(airport => airport.Id)
+            .Select(airport => airport.Icao)
+            .ToListAsync(cancellationToken);
+        var done = await CrudSource.BackOffice<EventStats>(database).AsNoTracking()
+            .Where(stats => stats.EventId == row.Id)
+            .Select(stats => stats.FlownUnbookedAirports)
+            .FirstOrDefaultAsync(cancellationToken) ?? 0;
+        if (done >= airports.Count)
+        {
+            return true;
+        }
+
+        var piece = airports.Skip(done).Take((Budget - run.Spent) / (2 * ByAirportCost)).ToList();
+        if (piece.Count == 0 || run.TrackerDown || !run.Take(piece.Count * 2 * ByAirportCost))
+        {
+            return false;
+        }
+
+        if (await FlownUnbookedAsync(row, piece, run, cancellationToken) is not { } pilots)
+        {
+            return false;
+        }
+
+        await using (var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken))
+        {
+            await statistics.WriteAsync(row, now, cancellationToken, (pilots, piece.Count));
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        database.ChangeTracker.Clear();
+        return done + piece.Count >= airports.Count;
+    }
 
     /// <summary>What a run has spent, and the sources that stopped answering in it.</summary>
     private sealed class Run
@@ -492,7 +511,7 @@ public sealed class EventsAfterJob(
 
         public bool ArchiveDown { get; set; }
 
-        /// <summary>Takes <paramref name="cost"/> units if the run has them left.</summary>
+        /// <summary>Takes <paramref name="cost"/> units if the run has them left: a run never spends more than <see cref="Budget"/>.</summary>
         public bool Take(int cost)
         {
             if (Spent + cost > Budget)
@@ -503,8 +522,5 @@ public sealed class EventsAfterJob(
             Spent += cost;
             return true;
         }
-
-        /// <summary>Spends <paramref name="cost"/> units whatever is left: the one step that is never split.</summary>
-        public void Spend(int cost) => Spent += cost;
     }
 }

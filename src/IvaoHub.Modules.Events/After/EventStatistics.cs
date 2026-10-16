@@ -17,21 +17,36 @@ namespace IvaoHub.Modules.Events.After;
 /// <item>the reports of support and the signals of award stay 0 until their tables exist (E14a, E14b);</item>
 /// <item>for an event in person, the registrations, the sums of their answers and the seats by activity <b>from the rows while they are
 /// there</b>; past its retention the ones <c>events-retention</c> kept (E17) stay as they are;</item>
-/// <item><b>who flew without booking</b> comes from the check alone, which counted it on the network: a recalculation keeps it.</item>
+/// <item><b>who flew without booking</b> comes from the check alone, which counts it on the network a few airports per run
+/// (<c>counted</c> of <see cref="WriteAsync"/>): a recalculation keeps it, and «not counted» stays empty, never 0.</item>
 /// </list>
-/// The row is created when missing and left for the caller to save.
+/// <para>The row is created when missing, <b>under the lock of the event's row</b> (<c>FOR UPDATE</c>), so the job's close and a «Recalculate»
+/// in the same instant never both insert it (the review of #278, point 3): the caller holds a transaction, and saves.</para>
 /// </summary>
 public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStore settingsStore)
 {
     /// <summary>
-    /// Writes the numbers of <paramref name="row"/> into its statistics, tracked: <paramref name="flownUnbooked"/> is the count of the check,
-    /// or null to keep the one there is.
+    /// Writes the numbers of <paramref name="row"/> into its statistics, tracked, under the lock of the event's row: <paramref name="counted"/>
+    /// adds the pilots who flew without booking at some more of its airports, and how many airports they were; none keeps what is there.
     /// </summary>
-    public async Task<EventStats> WriteAsync(Event row, int? flownUnbooked, DateTime now, CancellationToken cancellationToken)
+    public async Task<EventStats> WriteAsync(
+        Event row,
+        DateTime now,
+        CancellationToken cancellationToken,
+        (int Pilots, int Airports)? counted = null)
     {
         ArgumentNullException.ThrowIfNull(row);
 
+        if (database.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException("The statistics of an event are written inside a transaction, under the lock of its row.");
+        }
+
         var eventId = row.Id;
+        await database.Database
+            .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {eventId} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
         var stats = await CrudSource.BackOffice<EventStats>(database).FirstOrDefaultAsync(candidate => candidate.EventId == eventId, cancellationToken);
         if (stats is null)
         {
@@ -59,9 +74,10 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
         stats.BookedFlown = bookings.Count(booking => booking.Flown);
         stats.BookedUnflown = bookings.Count(booking => booking.Checked && !booking.Flown);
 
-        if (flownUnbooked is { } counted)
+        if (counted is { } more)
         {
-            stats.FlownUnbooked = counted;
+            stats.FlownUnbooked = (stats.FlownUnbookedAirports is null ? 0 : stats.FlownUnbooked) + more.Pilots;
+            stats.FlownUnbookedAirports = (stats.FlownUnbookedAirports ?? 0) + more.Airports;
         }
 
         stats.AtcAvailabilities = await CrudSource.BackOffice<EventAtcAvailability>(database).AsNoTracking()

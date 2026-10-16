@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IvaoHub.Modules.Events.Data.Migrations
 {
     [DbContext(typeof(EventsDbContext))]
-    [Migration("20261016171745_AddShiftCoveredBy")]
-    partial class AddShiftCoveredBy
+    [Migration("20261016184757_AddAfterTheEventColumns")]
+    partial class AddAfterTheEventColumns
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1891,6 +1891,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     b.Property<int>("FlownUnbooked")
                         .HasColumnType("int")
                         .HasColumnName("flown_unbooked");
+
+                    b.Property<int?>("FlownUnbookedAirports")
+                        .HasColumnType("int")
+                        .HasColumnName("flown_unbooked_airports");
 
                     b.Property<string>("OwnerDepartment")
                         .IsRequired()
