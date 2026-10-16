@@ -115,13 +115,28 @@ public sealed class StaffTransfers(
 
         var warnings = new Dictionary<long, IReadOnlyList<ShiftWarning>>();
         var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
-        foreach (var transfer in transfers.Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ToVid is not null))
+        // Read once per event — its roster, its availabilities, the ratings and the positions of its requests (the second reading of #268,
+        // point 3) —, then the warnings of each request on what was read.
+        foreach (var group in transfers.Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ToVid is not null).GroupBy(transfer => transfer.EventId))
         {
-            if (shifts.GetValueOrDefault(transfer.ShiftId) is { } shift
-                && positions.TryGetValue(shift.PositionId, out var position)
-                && await children.EventAsync(transfer.EventId, cancellationToken) is { } row)
+            if (await children.EventAsync(group.Key, cancellationToken) is not { } row)
             {
-                warnings[transfer.Id] = await HolderWarningsAsync(row, shift, position, transfer.ToVid!.Value, settings, cancellationToken);
+                continue;
+            }
+
+            var read = await ReadForWarningsAsync(
+                row,
+                [.. group.Select(transfer => transfer.ToVid!.Value)],
+                [.. group.Select(transfer => shifts.GetValueOrDefault(transfer.ShiftId)?.PositionId).OfType<long>().Distinct().Select(id => positions[id])],
+                settings,
+                cancellationToken);
+
+            foreach (var transfer in group)
+            {
+                if (shifts.GetValueOrDefault(transfer.ShiftId) is { } shift)
+                {
+                    warnings[transfer.Id] = read.Warnings(shift, transfer.ToVid!.Value, vocabulary);
+                }
             }
         }
 
@@ -160,30 +175,45 @@ public sealed class StaffTransfers(
         }
 
         var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
-        return await HolderWarningsAsync(row, shift, position, toVid, settings, cancellationToken);
+        return (await ReadForWarningsAsync(row, [toVid], [position], settings, cancellationToken)).Warnings(shift, toVid, vocabulary);
     }
 
-    /// <summary>What the shift would not keep of the rules of the proposal in the hands of <paramref name="vid"/>: the roster's own warnings.</summary>
-    private async Task<IReadOnlyList<ShiftWarning>> HolderWarningsAsync(
+    /// <summary>What the warnings of the holders of an event's requests are read from, once for the event.</summary>
+    private async Task<WarningData> ReadForWarningsAsync(
         Event row,
-        EventAtcShift shift,
-        EventAtcPosition position,
-        int vid,
+        IReadOnlyCollection<int> vids,
+        IReadOnlyList<EventAtcPosition> positions,
         EventsSettings settings,
-        CancellationToken cancellationToken)
-    {
-        var roster = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().Where(other => other.EventId == row.Id).ToListAsync(cancellationToken);
-        var availability = (await data.AvailabilitiesAsync(row.Id, cancellationToken)).FirstOrDefault(candidate => candidate.Vid == vid);
-        var ratings = await data.RatingsAsync([vid], cancellationToken);
+        CancellationToken cancellationToken) =>
+        new(
+            await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking().Where(other => other.EventId == row.Id).ToListAsync(cancellationToken),
+            (await data.AvailabilitiesAsync(row.Id, cancellationToken)).ToDictionary(availability => availability.Vid),
+            await data.RatingsAsync(vids, cancellationToken),
+            (await data.PositionsAsync(positions, cancellationToken)).ToDictionary(position => position.Id),
+            RosterData.Rules(row, settings));
 
-        return StaffRoster.Warnings(
-            Handed(shift, vid),
-            ratings.TryGetValue(vid, out var rating) ? rating : null,
-            availability?.Windows ?? [],
-            (await data.PositionsAsync([position], cancellationToken))[0],
-            roster,
-            RosterData.Rules(row, settings),
-            vocabulary);
+    /// <summary>
+    /// An event's roster, availabilities, ratings and positions, read once: what a shift would not keep of the rules of the proposal in the
+    /// hands of a member — the roster's own warnings.
+    /// </summary>
+    private sealed record WarningData(
+        IReadOnlyList<EventAtcShift> Roster,
+        IReadOnlyDictionary<int, RosterAvailability> Availabilities,
+        IReadOnlyDictionary<int, int> Ratings,
+        IReadOnlyDictionary<long, RosterPosition> Positions,
+        RosterRules Rules)
+    {
+        public IReadOnlyList<ShiftWarning> Warnings(EventAtcShift shift, int vid, RatingVocabulary vocabulary) =>
+            Positions.TryGetValue(shift.PositionId, out var position)
+                ? StaffRoster.Warnings(
+                    Handed(shift, vid),
+                    Ratings.TryGetValue(vid, out var rating) ? rating : null,
+                    Availabilities.GetValueOrDefault(vid)?.Windows ?? [],
+                    position,
+                    Roster,
+                    Rules,
+                    vocabulary)
+                : [];
     }
 
     /// <summary>One request alone, with no names nor warnings: a row the engine reads by itself.</summary>

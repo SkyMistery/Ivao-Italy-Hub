@@ -646,14 +646,100 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
             await RunJobAsync(token);
             Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftAssigned, token)).Count);
 
+            // Then the correction takes the event's lock, as its save does, and reads the mark again inside it.
             var notices = correction.ServiceProvider.GetRequiredService<ShiftNotices>();
+            var shiftLock = correction.ServiceProvider.GetRequiredService<ShiftLock>();
+            await shiftLock.TakeAsync(database, loaded.EventId, token);
             loaded.ControllerVid = OtherVid;
             await notices.NoteAsync(loaded, isNew: false, token);
             await database.Database.ExecuteSqlAsync($"UPDATE evt_atc_shifts SET controller_vid = {OtherVid}, notified_at = NULL WHERE id = {loaded.Id}", token);
+            await shiftLock.CommitAsync(token);
             await notices.TellAsync(loaded, token);
         }
 
         Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftRemoved, token)).Count);
+    }
+
+    /// <summary>
+    /// Taking a shift away races the job too (the second reading of #268, point 1): the shift loaded by the deletion before the job told its
+    /// controller is read again under the lock, and its controller is told it is gone.
+    /// </summary>
+    [Fact]
+    public async Task AShiftTakenAwayWhileTheJobTellsItStillTellsItsControllerItIsGone()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await ProposableAsync("removed-race", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().AtcShifts.IgnoreQueryFilters().Where(row => row.Id == shift.Id)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.NotifiedAt, (DateTime?)null), token);
+        }
+
+        await using (var deletion = _factory.Services.CreateAsyncScope())
+        {
+            var database = deletion.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var loaded = await database.AtcShifts.IgnoreQueryFilters().SingleAsync(row => row.Id == shift.Id, token);
+            Assert.Null(loaded.NotifiedAt);
+
+            // The job tells the controller while the deletion holds its stale row; then the deletion takes the lock and removes it.
+            await RunJobAsync(token);
+            Assert.Equal(2, (await MailsAsync(ControllerVid, EventsNotifications.AtcShiftAssigned, token)).Count);
+
+            var shiftLock = deletion.ServiceProvider.GetRequiredService<ShiftLock>();
+            await shiftLock.TakeAsync(database, loaded.EventId, token);
+            await deletion.ServiceProvider.GetRequiredService<ShiftNotices>().RemoveAsync([loaded], position: null, shiftLock, token);
+        }
+
+        Assert.DoesNotContain(await ShiftsAsync(id, token), candidate => candidate.Id == shift.Id);
+        Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftRemoved, token));
+    }
+
+    /// <summary>
+    /// The rating warnings on the holder the staff choose (the second reading of #268, small 2): a member with no ATC rating is below the
+    /// setting's least and below the tower's preferred one.
+    /// </summary>
+    [Fact]
+    public async Task TheWarningsOnTheHolderChosenSayTheRatings()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var ladder = IvaoRatings.Vocabulary.Ladder(RatingKind.Atc);
+        await WriteSettingsAsync(
+            $$"""{"minimumAtcRating":{{ladder[2].Number}},"applicationsCloseDays":3,"rosterPublishDays":2,"shiftMinutes":60,"maxConsecutiveShifts":2,"breakShifts":1}""",
+            token);
+        var id = await ProposableAsync("ratings", Hour(DateTime.UtcNow.AddHours(30)), token);
+        await RunJobAsync(token);
+        var shift = (await ShiftsAsync(id, token)).OrderBy(candidate => candidate.FromUtc).First();
+        using var controller = await SignedInAsync(ControllerVid, token);
+        var asked = (await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shift.Id), new TransferRequest(null, null), token), token)).GetProperty("id").GetInt64();
+
+        using var aod = await SignedInAsync(AodVid, token);
+        var warnings = (await OkAsync(await aod.GetAsync($"{TransferEndpoints.StaffPattern}/{asked}/warnings?toVid={ChiefVid}", token), token))
+            .EnumerateArray().Select(warning => warning.GetString()).ToList();
+        Assert.Contains(nameof(ShiftWarning.BelowMinimum), warnings);
+        Assert.Contains(nameof(ShiftWarning.BelowPreferred), warnings);
+    }
+
+    /// <summary>
+    /// An erased controller on the public roster (the second reading of #268, small 2): to a signed in reader, marked erased, with no name and
+    /// no VID — the page says the core's word.
+    /// </summary>
+    [Fact]
+    public async Task AnErasedControllerOnThePublicRosterIsNamedByNobody()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Hour(DateTime.UtcNow.AddHours(30));
+        var id = await EventRowAsync("erased-page", starts, starts.AddHours(6), PublishStatus.Published, proposed: true, token);
+        var tower = await PositionRowAsync(id, Tower, starts, starts.AddHours(1), token);
+        await ShiftRowAsync(id, tower, Fir, -761188, starts, starts.AddHours(1), token);
+
+        using var member = await SignedInAsync(OtherVid, token);
+        var page = await OkAsync(await member.GetAsync(RosterUri("erased-page"), token), token);
+        var row = Assert.Single(page.GetProperty("rows").EnumerateArray(), candidate => candidate.GetProperty("covered").GetBoolean());
+        Assert.True(row.GetProperty("controllerErased").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, row.GetProperty("controllerName").ValueKind);
+        Assert.DoesNotContain("761188", page.GetRawText(), StringComparison.Ordinal);
     }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------

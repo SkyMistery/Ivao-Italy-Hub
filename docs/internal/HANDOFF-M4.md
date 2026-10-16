@@ -10,7 +10,7 @@
 presenza, i posti sotto un blocco, «Duplica» per domande e attività, la conservazione breve con `events-retention`, il giro completo di
 M4c), sul branch `m4/e17-in-person-activities`, **PR #271** verso `main`, **in coda dopo la #268** di E12 **e la #269** di E10s: nata
 `--no-track` da `main` a `c232448`, ha unito la testa di E12 `a44b70f` (con E11b) e ha **rifatto la sua migrazione sopra quella di E12** (la
-fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `a189185` (le correzioni della revisione e le due
+fila ATC migra lo stesso contesto), poi le teste di E10s; alla fine le teste nuove di E12 `1887c27` (le correzioni delle due letture del revisore e le due
 condizioni di Carmine) e di E10s `00b0609`, tutte e due con `main` a `4ad747a` (E11b, E4d, il piano 1.34). La nota
 `2026-10-15-le-attivita-e-la-conservazione-breve` è **decisa** da Carmine sull'[issue
 #267](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/267#issuecomment-6215521232): (A), (A) e (B) — prima la fase del nucleo E10s, ed
@@ -309,7 +309,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `a189185` e `00b0609` unite, `main` a `4ad747a`)
+### Che cosa ha lasciato E17 (15–16 ottobre 2026, branch `m4/e17-in-person-activities`, PR #271; nata da `main` a `c232448`, in coda dopo la #268 di E12 e la #269 di E10s, con le loro teste `1887c27` e `00b0609` unite, `main` a `4ad747a`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E17, «Com'è andata»; **una migrazione**, `AddInPersonActivities`, l'ultima del contesto dopo
   quella di E12; niente del nucleo — solo `schema.d.ts` generato, `docs/FORKING.md` e le colonne di persona in `ErasureTests` —; una nota
