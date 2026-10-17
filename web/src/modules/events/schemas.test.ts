@@ -55,6 +55,7 @@ const saved: EventsSettings = {
   applicationsCloseDays: 3,
   rosterPublishDays: 2,
   experienceMonths: 12,
+  attendanceMinimumMinutes: 30,
 };
 
 test('the form has a field for every setting, and nothing else', () => {

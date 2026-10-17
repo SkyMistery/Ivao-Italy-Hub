@@ -8,7 +8,7 @@ import { CALENDAR_SCREEN_VIEWS } from '../../shared/ui';
 /**
  * The forms of the events (M4: the settings of E2, the event of E3a, its routes and the filters of `/events` of E4, its slots
  * and the table they are loaded from of E5, the flight of a private slot of E7, a position and an availability of E11a, an activity of
- * E17), as zod
+ * E17), the numbers of the statistics (E13a), as zod
  * schemas: types and what is required. The rules — a kind the calendar has, the ranges, an airport the hub knows — are the
  * server's (design M0 §7.5).
  *
@@ -29,8 +29,8 @@ export interface KindPreset {
 
 /**
  * The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, how long an event in person keeps its
- * registrations (E16), and the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
- * vocabulary, chosen from it, none for any member.
+ * registrations (E16), the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
+ * vocabulary, chosen from it, none for any member — and the minutes that make a shift attended (E13a).
  */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
@@ -45,6 +45,7 @@ export interface EventsSettings {
   readonly applicationsCloseDays: number;
   readonly rosterPublishDays: number;
   readonly experienceMonths: number;
+  readonly attendanceMinimumMinutes: number;
 }
 
 /** What the fields of the settings choose from, already in the language on screen: the kinds, and the ATC ratings (E11a). */
@@ -78,6 +79,8 @@ export function settingsSchema(choices: SettingsChoices) {
     applicationsCloseDays: z.number().int(),
     rosterPublishDays: z.number().int(),
     experienceMonths: z.number().int(),
+    // After the event (E13a): the minutes on the position within a shift that make it attended.
+    attendanceMinimumMinutes: z.number().int(),
   });
 }
 
@@ -157,7 +160,8 @@ export type EventsSearch = z.output<typeof eventsSearchSchema>;
 
 /**
  * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, for an event in
- * person its questions, its registrations, its activities and their seats (E17), and for an event with a roster its ATC (design M4 §7.2).
+ * person its questions, its registrations, its activities and their seats (E17), for an event with a roster its ATC, and for an event over its
+ * statistics (E13a) (design M4 §7.2).
  */
 export const eventEditorSearchSchema = z.object({
   tab: z
@@ -173,6 +177,7 @@ export const eventEditorSearchSchema = z.object({
       'activities',
       'seats',
       'atc',
+      'stats',
     ])
     .optional(),
 });
@@ -674,5 +679,64 @@ export function emptyShift(search: z.output<typeof shiftSearchSchema>): ShiftFor
     ...(search.fromUtc === undefined ? {} : { fromUtc: search.fromUtc }),
     ...(search.toUtc === undefined ? {} : { toUtc: search.toUtc }),
     rowVersion: NEW_ROW_VERSION,
+  };
+}
+
+/**
+ * The numbers of an event as the tab «Statistics» draws them (design M4 §1.10, E13a): a generated form that saves nothing, its words the
+ * page's. The bookings still to check are the ones the check has not found flown nor not flown — the sources did not answer. The reports
+ * of support and the signals of award join with E14a and E14b.
+ */
+export const statsSchema = z.object({
+  publicSlots: z.number().int(),
+  privateSlots: z.number().int(),
+  booked: z.number().int(),
+  bookedFlown: z.number().int(),
+  bookedUnflown: z.number().int(),
+  bookedToCheck: z.number().int(),
+  // Empty when it was not counted (an event of the whole division, one without airports, one closed before any count): never a 0.
+  flownUnbooked: z.number().int().optional(),
+  atcAvailabilities: z.number().int(),
+  atcShifts: z.number().int(),
+  atcAttended: z.number().int(),
+  atcNoShows: z.number().int(),
+  atcExcused: z.number().int(),
+  registrations: z.number().int(),
+  activitySeats: z.number().int(),
+});
+
+export type StatsFormValues = z.output<typeof statsSchema>;
+
+/** The numbers the server sent, with the bookings still to check worked out from them. */
+export function statsToFormValues(stats: {
+  readonly publicSlots: number;
+  readonly privateSlots: number;
+  readonly booked: number;
+  readonly bookedFlown: number;
+  readonly bookedUnflown: number;
+  readonly flownUnbooked: number | null;
+  readonly atcAvailabilities: number;
+  readonly atcShifts: number;
+  readonly atcAttended: number;
+  readonly atcNoShows: number;
+  readonly atcExcused: number;
+  readonly registrations: number;
+  readonly activitySeats: number;
+}): StatsFormValues {
+  return {
+    publicSlots: stats.publicSlots,
+    privateSlots: stats.privateSlots,
+    booked: stats.booked,
+    bookedFlown: stats.bookedFlown,
+    bookedUnflown: stats.bookedUnflown,
+    bookedToCheck: Math.max(0, stats.booked - stats.bookedFlown - stats.bookedUnflown),
+    ...(stats.flownUnbooked === null ? {} : { flownUnbooked: stats.flownUnbooked }),
+    atcAvailabilities: stats.atcAvailabilities,
+    atcShifts: stats.atcShifts,
+    atcAttended: stats.atcAttended,
+    atcNoShows: stats.atcNoShows,
+    atcExcused: stats.atcExcused,
+    registrations: stats.registrations,
+    activitySeats: stats.activitySeats,
   };
 }

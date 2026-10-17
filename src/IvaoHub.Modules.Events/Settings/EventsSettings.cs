@@ -71,6 +71,12 @@ public sealed record EventsSettings
 
     /// <summary>How many months back the positions a controller opened count as experience (§4.3, read by E11b).</summary>
     public int ExperienceMonths { get; init; } = 12;
+
+    /// <summary>
+    /// The minutes a controller must be on the position within a shift to have attended it (§4.5, E13a); a shift shorter than that asks its
+    /// whole length.
+    /// </summary>
+    public int AttendanceMinimumMinutes { get; init; } = 30;
 }
 
 /// <summary>
@@ -141,6 +147,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
         RuleFor(settings => settings.ApplicationsCloseDays).InclusiveBetween(0, MaxDaysBefore).WithMessage("errors.number.range");
         RuleFor(settings => settings.RosterPublishDays).InclusiveBetween(0, MaxDaysBefore).WithMessage("errors.number.range");
         RuleFor(settings => settings.ExperienceMonths).InclusiveBetween(1, MaxExperienceMonths).WithMessage("errors.number.range");
+
+        // After the event (E13a): at least a minute on the position, and never more than the longest shift there is.
+        RuleFor(settings => settings.AttendanceMinimumMinutes).InclusiveBetween(1, MaxShiftMinutes).WithMessage("errors.number.range");
 
         // The roster is published after the availabilities close, never before: in between the staff correct it (§4.4, c2).
         RuleFor(settings => settings.RosterPublishDays)

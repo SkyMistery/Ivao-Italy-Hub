@@ -43,7 +43,8 @@
       "registrations": "Iscrizioni",
       "atc": "ATC",
       "activities": "Attività",
-      "seats": "Posti"
+      "seats": "Posti",
+      "stats": "Statistiche"
     },
     "actions": {
       "publish": "Pubblica",
@@ -661,7 +662,8 @@
       "breakShifts": "Turni di pausa dopo di loro",
       "applicationsCloseDays": "Giorni prima di un evento in cui chiudono le disponibilità",
       "rosterPublishDays": "Giorni prima di un evento in cui si pubblica il roster",
-      "experienceMonths": "Mesi di postazioni contati come esperienza"
+      "experienceMonths": "Mesi di postazioni contati come esperienza",
+      "attendanceMinimumMinutes": "Minuti sulla postazione per aver fatto un turno"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
@@ -675,7 +677,8 @@
       "breakShifts": "Dopo quei turni di fila, un controllore riposa questi turni prima del successivo.",
       "applicationsCloseDays": "I controllori danno e cambiano la loro disponibilità fino a questi giorni prima dell'inizio; poi si propone il roster.",
       "rosterPublishDays": "Il roster si pubblica questi giorni prima dell'inizio: non più dei giorni della chiusura, perché lo staff abbia il tempo di correggerlo.",
-      "experienceMonths": "Quanto indietro contano le postazioni aperte da un controllore quando si propone il roster."
+      "experienceMonths": "Quanto indietro contano le postazioni aperte da un controllore quando si propone il roster.",
+      "attendanceMinimumMinutes": "Dopo l'evento, un controllore che è stato sulla sua postazione almeno questi minuti dentro un turno l'ha fatto; meno, e il turno è proposto come no-show. Un turno più corto chiede tutta la sua durata."
     }
   },
   "notifications": {
@@ -913,7 +916,9 @@
     "seatFull": "Il turno è pieno.",
     "seatOverlaps": "Hai già un turno a quell'ora.",
     "seatAlreadyYours": "Hai già un posto in questo turno.",
-    "eventActivitiesOutside": "Un'attività dell'evento ne resterebbe fuori: sposta prima l'attività."
+    "eventActivitiesOutside": "Un'attività dell'evento ne resterebbe fuori: sposta prima l'attività.",
+    "statsBeforeEnd": "Le statistiche di un evento si calcolano dopo la sua fine.",
+    "statsOfADraft": "Una bozza non ha statistiche: non si è mai svolta."
   },
   "questions": {
     "title": "Domande",
@@ -1219,5 +1224,72 @@
       "endsAtUtc": "Turno fino alle",
       "createdAt": "Preso il"
     }
+  },
+  "stats": {
+    "none": "Ancora nessuna statistica: le calcolano le verifiche dopo l'evento, qualche ora dopo la sua fine.",
+    "computedAt": "Calcolate il {{date}}",
+    "checksPending": "Le verifiche dopo l'evento non sono finite: alcune prenotazioni e alcuni turni possono essere ancora da verificare, e chi ha volato senza prenotare non è ancora contato.",
+    "checksDone": "Le verifiche dopo l'evento sono state fatte il {{date}}.",
+    "wholeDivision": "Un evento di tutta la divisione: chi ha volato senza prenotare non si conta.",
+    "recalculate": "Ricalcola",
+    "fields": {
+      "publicSlots": "Slot pubblici",
+      "privateSlots": "Slot privati",
+      "booked": "Slot prenotati",
+      "bookedFlown": "Prenotati e volati",
+      "bookedUnflown": "Prenotati e non volati",
+      "bookedToCheck": "Prenotazioni ancora da verificare",
+      "flownUnbooked": "Piloti che hanno volato senza prenotare",
+      "atcAvailabilities": "Disponibilità date",
+      "atcShifts": "Turni",
+      "atcAttended": "Turni fatti",
+      "atcNoShows": "No-show, proposti o confermati",
+      "atcExcused": "No-show giustificati",
+      "registrations": "Iscritti in presenza",
+      "activitySeats": "Posti presi nelle attività"
+    },
+    "bookings": {
+      "title": "Prenotazioni dopo l'evento",
+      "empty": "Qui compariranno le prenotazioni dell'evento, con quello che hanno trovato le verifiche.",
+      "fields": {
+        "pilot": "Pilota",
+        "callsign": "Nominativo",
+        "departureIcao": "Da",
+        "offBlockUtc": "Off block",
+        "arrivalIcao": "A",
+        "outcome": "Verifica",
+        "flownAt": "Volo iniziato"
+      },
+      "options": {
+        "outcome": {
+          "flown": "Volato",
+          "notFlown": "Non volato",
+          "toCheck": "Da verificare"
+        }
+      }
+    },
+    "shifts": {
+      "title": "Turni dopo l'evento",
+      "empty": "Qui compariranno i turni del roster, con com'è andato ognuno.",
+      "fields": {
+        "callsign": "Postazione",
+        "controller": "Controllore",
+        "fromUtc": "Da",
+        "toUtc": "A",
+        "attendance": "Com'è andato",
+        "coveredBy": "Coperto da"
+      },
+      "options": {
+        "attendance": {
+          "Unknown": "Da verificare",
+          "Attended": "Fatto",
+          "NoShowProposed": "No-show proposto",
+          "NoShow": "No-show",
+          "Excused": "Giustificato"
+        }
+      }
+    },
+    "notCounted": "Chi ha volato senza prenotare non è stato contato: l'evento non ha scali, o la rete non ha risposto per trenta giorni dopo l'evento.",
+    "countedAt": "Chi ha volato senza prenotare è stato contato su {{counted}} dei suoi {{airports}} scali: per gli altri la rete non ha risposto."
   }
 }

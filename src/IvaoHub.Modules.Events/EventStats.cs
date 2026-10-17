@@ -37,6 +37,14 @@ public sealed class EventStats : IEventChild, IHasResourceScope
     /// <summary>Flights to or from the event's airports in its window without a booking: never stored by VID, only counted (§11).</summary>
     public int FlownUnbooked { get; set; }
 
+    /// <summary>
+    /// At how many of the event's airports, in their order, who flew without booking was counted (E13a; note
+    /// 2026-10-16-le-verifiche-dopo-l-evento, readings 3 and 6, with Carmine's conditions on #272): the count goes a few airports per run of
+    /// <c>events-after</c>, so that every run ends inside the scheduled request. Empty: <b>not counted</b> — an event of the whole division,
+    /// one without airports, one closed after thirty days before any count — never the same as 0.
+    /// </summary>
+    public int? FlownUnbookedAirports { get; set; }
+
     /// <summary>Availabilities the controllers gave (§4.2).</summary>
     public int AtcAvailabilities { get; set; }
 

@@ -183,6 +183,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/diagnostics/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConnectionCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/kind-presets": {
         parameters: {
             query?: never;
@@ -385,6 +401,22 @@ export interface paths {
         get: operations["EventsPublicRoster"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/events/{id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsRecalculateStats"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2190,6 +2222,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventStatsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/stats/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventStatsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/aircraft-profiles": {
         parameters: {
             query?: never;
@@ -3875,6 +3939,22 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /** @description The ATC archive. */
+        ArchiveCheck: {
+            /** @description Reached, not reached, or not configured: the division reads no archive. */
+            outcome: components["schemas"]["ConnectionOutcome"];
+            error: null | components["schemas"]["ConnectionError"];
+            /**
+             * Format: int64
+             * @description How long the check took; `null` when nothing was opened.
+             */
+            milliseconds: null | number;
+            /**
+             * Format: date-time
+             * @description The start of the newest connection in the archive; `null` when it holds none.
+             */
+            latestSessionStart: null | string;
+        };
         /**
          * @description A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
          *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
@@ -4645,6 +4725,18 @@ export interface components {
          * @enum {unknown}
          */
         ConflictPolicy: "Warn" | "Block" | "None";
+        /** @description The two databases, as the check found them. */
+        ConnectionCheckResponse: {
+            database: components["schemas"]["HubDatabaseCheck"];
+            archive: components["schemas"]["ArchiveCheck"];
+        };
+        /** @enum {unknown} */
+        ConnectionError: "AccessDenied" | "UnknownDatabase" | "MissingView" | "Timeout" | "Unreachable" | "NoConnectionString" | "Other" | null;
+        /**
+         * @description What the check found.
+         * @enum {unknown}
+         */
+        ConnectionOutcome: "Ok" | "Failed" | "NotConfigured";
         /**
          * @description A message in full. Everything but the status is read only on the screen and read only on the
          *     server: what the sender wrote is not the department's to edit, which is why the write payload
@@ -5348,6 +5440,29 @@ export interface components {
             rowVersion: string;
         };
         /**
+         * @description A shift as the generated list of the shifts reads it (E13a, the tab «Statistics»): its position's callsign, its controller and its hours,
+         *     and how it went — with who covered the position next to a no-show the check proposed. Data only: the page writes the words. The callsign
+         *     and the names are read for a page at once (<see cref="M:IvaoHub.Modules.Events.Atc.ShiftEndpoints.RowsAsync(IvaoHub.Modules.Events.Data.EventsDbContext,IvaoHub.Core.Data.HubDbContext,System.Collections.Generic.IReadOnlyList{IvaoHub.Modules.Events.EventAtcShift},System.Threading.CancellationToken)" />); a row alone has neither.
+         */
+        EventAtcShiftRowDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            /** Format: int64 */
+            positionId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            callsign: null | string;
+            controller: components["schemas"]["EventMemberDto"];
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            origin: components["schemas"]["ShiftOrigin"];
+            attendance: components["schemas"]["ShiftAttendance"];
+            coveredBy: null | components["schemas"]["EventMemberDto"];
+        };
+        /**
          * @description What the staff may set on a shift (§4.4): the position — of the same event, on a change —, the controller by VID, and the hours. The event,
          *     the care and the FIR are the position's, taken before the permission is asked; the origin is the staff's.
          */
@@ -5399,7 +5514,8 @@ export interface components {
         /**
          * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
          *     core names a person — `{ vid, name }`, so that the list writes a person whose data was erased with the core's word —, the flight of
-         *     its slot with the aircraft the pilot chose, when they booked, and when the reminder of the day before left. The flight is read off
+         *     its slot with the aircraft the pilot chose, when they booked, when the reminder of the day before left, and after the event what its check found
+         *     (E13a): when the flight started, when it was looked for — looked for and not found is a booking not flown. The flight is read off
          *     the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
          *     The flight is empty only where the engine maps one row with no page around it (GET /api/events/bookings/{id}): the
          *     list reads the slots of a page in one query (StaffBookings.RowsAsync).
@@ -5430,6 +5546,10 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             remindedAt: null | string;
+            /** Format: date-time */
+            flownAt: null | string;
+            /** Format: date-time */
+            flownCheckedAt: null | string;
         };
         /** @description "Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read. */
         EventCancelRequest: {
@@ -5712,6 +5832,61 @@ export interface components {
          * @enum {unknown}
          */
         EventStateKind: "Draft" | "Scheduled" | "Announced" | "BookingOpen" | "InProgress" | "Ended" | "Cancelled";
+        /**
+         * @description The numbers of an event as the tab «Statistics» reads them (design M4 §1.10, §7.2, E13a): numbers only — the page writes their words in the
+         *     language on screen (Carmine's answer 6 on #255). The sums of the answers and the seats by activity stay in their own tabs, which read them
+         *     from the statistics once the rows are gone (E17); here, how many registered and how many seats were taken in all. And when the checks after the
+         *     event were done (`after_done_at`). <b>Who flew without booking</b> is empty when it was not counted — an event of the whole division, one
+         *     without airports, one closed after thirty days before any count — and says at how many of the event's airports it was counted: «not
+         *     counted» is never a 0 (Carmine's condition on reading 3, #272).
+         */
+        EventStatsDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int32 */
+            publicSlots: number;
+            /** Format: int32 */
+            privateSlots: number;
+            /** Format: int32 */
+            booked: number;
+            /** Format: int32 */
+            bookedFlown: number;
+            /** Format: int32 */
+            bookedUnflown: number;
+            /** Format: int32 */
+            flownUnbooked: null | number;
+            /** Format: int32 */
+            flownUnbookedAirports: null | number;
+            /** Format: int32 */
+            airports: number;
+            /** Format: int32 */
+            atcAvailabilities: number;
+            /** Format: int32 */
+            atcShifts: number;
+            /** Format: int32 */
+            atcAttended: number;
+            /** Format: int32 */
+            atcNoShows: number;
+            /** Format: int32 */
+            atcExcused: number;
+            /** Format: int32 */
+            reportsSubmitted: number;
+            /** Format: int32 */
+            reportsAccepted: number;
+            /** Format: int32 */
+            awardSignals: number;
+            /** Format: int32 */
+            registrations: number;
+            /** Format: int32 */
+            activitySeats: number;
+            /** Format: date-time */
+            computedAt: string;
+            /** Format: date-time */
+            checksDoneAt: null | string;
+        };
         /** @enum {unknown} */
         EventUnseen: "Draft" | "NotSeenYet" | "Over" | null;
         /**
@@ -5994,6 +6169,21 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
+        };
+        /** @description The hub's own database. */
+        HubDatabaseCheck: {
+            /** @description Reached, or not. */
+            outcome: components["schemas"]["ConnectionOutcome"];
+            error: null | components["schemas"]["ConnectionError"];
+            /**
+             * Format: int64
+             * @description How long the check took, opening, query and migrations together.
+             */
+            milliseconds: number;
+            /** @description The server's own version string; `null` on a failure. */
+            serverVersion: null | string;
+            /** @description One line per context, the core's first; empty on a failure. */
+            migrations: components["schemas"]["MigrationState"][];
         };
         /** @description A hub as the list and the form show it. */
         HubDto: {
@@ -6507,6 +6697,15 @@ export interface components {
          * @enum {unknown}
          */
         MenuScope: "Public" | "Footer";
+        /** @description The migrations of one context. */
+        MigrationState: {
+            /** @description The context's type name, as the log and `startup.txt` name it. */
+            context: string;
+            /** @description The newest migration of the build the database holds; `null` when it holds none. */
+            latest: null | string;
+            /** @description The migrations of the build the database does not hold yet: empty is up to date. */
+            pending: string[];
+        };
         /** @description What an administrator sets on a module. One switch, and that is the whole screen. */
         ModuleMaintenanceRequest: {
             maintenance: boolean;
@@ -7227,9 +7426,9 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
-        PagedResultOfEventAtcShiftDto: {
+        PagedResultOfEventAtcShiftRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
-            items: components["schemas"]["EventAtcShiftDto"][];
+            items: components["schemas"]["EventAtcShiftRowDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7414,6 +7613,29 @@ export interface components {
         PagedResultOfEventSlotDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventSlotDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventStatsDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventStatsDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -9290,6 +9512,11 @@ export interface components {
          */
         SheetSection: "Practice" | "Theory";
         /**
+         * @description How a shift went (design M4 §4.5): not known yet, attended, a no-show the check proposes, confirmed, or excused.
+         * @enum {unknown}
+         */
+        ShiftAttendance: "Unknown" | "Attended" | "NoShowProposed" | "NoShow" | "Excused";
+        /**
          * @description What decided who holds a proposed shift (§4.3): the first rule the controller chosen won on, in the design's order.
          * @enum {unknown}
          */
@@ -10827,6 +11054,26 @@ export interface operations {
             };
         };
     };
+    ConnectionCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionCheckResponse"];
+                };
+            };
+        };
+    };
     EventsKindPresets: {
         parameters: {
             query?: never;
@@ -11373,6 +11620,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PublicRosterDto"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsRecalculateStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventStatsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {
@@ -16582,7 +16874,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedResultOfEventAtcShiftDto"];
+                    "application/json": components["schemas"]["PagedResultOfEventAtcShiftRowDto"];
                 };
             };
         };
@@ -16858,6 +17150,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EventAtcTransferDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventStatsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventStatsDto"];
+                };
+            };
+        };
+    };
+    EventStatsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventStatsDto"];
                 };
             };
             /** @description Not Found */
