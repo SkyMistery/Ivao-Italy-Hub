@@ -30,6 +30,10 @@ export const anonymousBootstrap = {
     // rather than knowing (design M1 §8.1).
     siteDepartment: 'WD',
     contentApproval: ['Page'],
+    // The footer's motto and "Built by" (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito): left empty, as a fork's first
+    // day has them, so the whole suite proves the footer of a division that writes neither.
+    tagline: {},
+    builtBy: [],
   },
   modules: [],
   // Since M1 G8 the public menu is a table: an editorial entry carries its words in every language,

@@ -9,7 +9,7 @@ import {
 } from '@ivao/atmosphere-react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLogout } from '../../features/me/queries';
@@ -253,6 +253,11 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
   const { t, i18n } = useTranslation();
 
   const division = resolveLocalized(bootstrap.division.name, i18n.language, bootstrap.division.defaultLocale);
+  const tagline = resolveLocalized(
+    bootstrap.division.tagline,
+    i18n.language,
+    bootstrap.division.defaultLocale,
+  );
 
   const label = (item: FooterItem) => navLabel(item, t, i18n.language, bootstrap.division.defaultLocale);
 
@@ -293,6 +298,11 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
               <DivisionMark bootstrap={bootstrap} className="h-10" />
               <p className="font-sans text-base font-extrabold text-white">{division}</p>
             </div>
+
+            {/* The division's motto, in italics under its name (Carmine, 17 October 2026, as vIPI writes it). It comes
+                from `division.json` in every language, as the name does; a division without one draws nothing. */}
+            {tagline ? <p className="-mt-2 text-sm text-white/90 italic">{tagline}</p> : null}
+
             <p data-secondary className="text-sm text-white/70">
               {t('footer.about', { division })}
             </p>
@@ -394,9 +404,16 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
             })}
           </p>
 
-          <p data-secondary className="text-sm text-white/60">
-            {t('footer.partOf')}
-          </p>
+          {/* ⚠️ Who built the site, under what it is part of (Carmine, 17 October 2026, as vIPI says it): the one
+              exception to "no links" above, because a name that does not lead to its person is a name nobody can check.
+              The people come from `division.json`, the address of their profile from the core's IVAO half — this screen
+              never writes it. */}
+          <div className="flex flex-col gap-1 md:items-end md:text-right">
+            <p data-secondary className="text-sm text-white/60">
+              {t('footer.partOf')}
+            </p>
+            <BuiltBy builders={bootstrap.division.builtBy} />
+          </div>
         </div>
       </div>
     </footer>
@@ -413,6 +430,38 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
  */
 function buildStamp(bootstrap: Bootstrap): string {
   return bootstrap.commit ? `${bootstrap.version} · ${bootstrap.commit}` : bootstrap.version;
+}
+
+/**
+ * "Built by Andrea (562466) & Carmine (704798)": each person a link to their profile, in a new tab. The words between
+ * the names are the language files', so a language that says "and" says it there.
+ */
+function BuiltBy({ builders }: { builders: Bootstrap['division']['builtBy'] }) {
+  const { t } = useTranslation();
+  if (builders.length === 0) return null;
+
+  return (
+    <p data-secondary className="text-sm text-white/60">
+      {t('footer.builtBy')}{' '}
+      {builders.map((builder, index) => (
+        <Fragment key={builder.vid}>
+          {index === 0
+            ? null
+            : index === builders.length - 1
+              ? t('footer.listLastSeparator')
+              : t('footer.listSeparator')}
+          <a
+            href={builder.profileUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-semibold text-white underline-offset-2 hover:underline"
+          >
+            {`${builder.name} (${builder.vid})`}
+          </a>
+        </Fragment>
+      ))}
+    </p>
+  );
 }
 
 /** One account of the division: a mark, with the words it was given as its name. */

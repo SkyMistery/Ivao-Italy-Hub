@@ -146,4 +146,67 @@ public sealed class DivisionOptionsValidationTests
 
         Assert.Equal("IVAO Example", options.Name[options.DefaultLocale]);
     }
+
+    // The footer's tagline and "Built by" (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito): optional, and once written
+    // written whole — a language left out, a name left out, a VID left out or written twice stop the start.
+
+    [Fact]
+    public void AcceptsATaglineInEveryLanguageAndTheBuilders()
+    {
+        var options = Valid() with
+        {
+            Locales = ["en", "fr"],
+            Name = new Dictionary<string, string> { ["en"] = "IVAO Example", ["fr"] = "IVAO Exemple" },
+            Tagline = new Dictionary<string, string> { ["en"] = "it takes time", ["fr"] = "il faut du temps" },
+            BuiltBy = [new SiteBuilder { Name = "Ada", Vid = 100001 }, new SiteBuilder { Name = "Bo", Vid = 100002 }],
+        };
+
+        Assert.True(Validate(options).Succeeded);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void RejectsATaglineThatLeavesALanguageOut(string? french)
+    {
+        var tagline = new Dictionary<string, string> { ["en"] = "it takes time" };
+        if (french is not null)
+        {
+            tagline["fr"] = french;
+        }
+
+        var result = Validate(Valid() with
+        {
+            Locales = ["en", "fr"],
+            Name = new Dictionary<string, string> { ["en"] = "IVAO Example", ["fr"] = "IVAO Exemple" },
+            Tagline = tagline,
+        });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("'tagline'", StringComparison.Ordinal) && failure.Contains("'fr'", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("", 100001, "'name'")]
+    [InlineData("Ada", 0, "'vid'")]
+    [InlineData("Ada", -5, "'vid'")]
+    public void RejectsABuilderWithoutANameOrAVid(string name, int vid, string field)
+    {
+        var result = Validate(Valid() with { BuiltBy = [new SiteBuilder { Name = name, Vid = vid }] });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("'builtBy[0]'", StringComparison.Ordinal) && failure.Contains(field, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void RejectsTheSameBuilderTwice()
+    {
+        var result = Validate(Valid() with
+        {
+            BuiltBy = [new SiteBuilder { Name = "Ada", Vid = 100001 }, new SiteBuilder { Name = "Ada L.", Vid = 100001 }],
+        });
+
+        Assert.True(result.Failed);
+        Assert.Contains(result.Failures, failure => failure.Contains("100001 twice", StringComparison.Ordinal));
+    }
 }
