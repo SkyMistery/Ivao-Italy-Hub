@@ -77,8 +77,10 @@ public interface ICurrentUser
     bool HasAny(string permission);
 
     /// <summary>
-    /// True when the user holds the permission without a resource scope: on one department, on all of them, on a FIR, from
-    /// outside its department, or as a global permission — anything but a grant on single rows (M4, E10u, note
+    /// True when the user holds the permission without a resource scope (<see cref="EffectivePermission.ResourceScope"/> null; a
+    /// FIR is not a scope here, nor is a department, and what the holder then reads is the caller's to narrow): on one department,
+    /// on all of them, on a FIR, from outside its department, or as a global permission — anything but a grant on single rows
+    /// (M4, E10u, note
     /// 2026-10-17-il-permesso-senza-ambito). It answers what <see cref="HasAny"/> cannot, before a row is in hand: "may they
     /// read across the area", which a register of the whole division asks, and its menu entry. Answered by
     /// <see cref="PermissionSet"/> from <see cref="Permissions"/>, so that every implementation gives the same answer.
