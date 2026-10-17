@@ -75,6 +75,16 @@ public interface ICurrentUser
     /// The department is then checked row by row.
     /// </summary>
     bool HasAny(string permission);
+
+    /// <summary>
+    /// True when the user holds the permission without a resource scope: on one department, on all of them, on a FIR, from
+    /// outside its department, or as a global permission — anything but a grant on single rows (M4, E10u, note
+    /// 2026-10-17-il-permesso-senza-ambito). It answers what <see cref="HasAny"/> cannot, before a row is in hand: "may they
+    /// read across the area", which a register of the whole division asks, and its menu entry. Answered by
+    /// <see cref="PermissionSet"/> from <see cref="Permissions"/>, so that every implementation gives the same answer.
+    /// </summary>
+    bool HasUnscoped(string permission) =>
+        PermissionSet.HasUnscoped(Permissions, IsSuperadmin, permission);
 }
 
 /// <summary>Reads the identity out of the application cookie. No database call per request.</summary>
@@ -138,6 +148,9 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor accessor, IOptio
 
     public bool HasAny(string permission) =>
         PermissionSet.HasAny(Permissions, IsSuperadmin, permission);
+
+    public bool HasUnscoped(string permission) =>
+        PermissionSet.HasUnscoped(Permissions, IsSuperadmin, permission);
 
     private static Snapshot Read(ClaimsPrincipal? principal, DivisionOptions division)
     {
