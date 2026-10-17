@@ -197,6 +197,44 @@ public sealed class EventsAwardRulesTests
         Assert.Equal((int)ReportRules.LongestShift.TotalMinutes, shift.Finding.Minutes);
     }
 
+    [Fact]
+    public void AnAutoReportOfAPilotHasOneFlightPerSessionThatTouchesTheEvent()
+    {
+        var from = Start.AddHours(-6);
+        var to = Start.AddHours(8);
+        var airports = new HashSet<string>(["XEA1"], StringComparer.Ordinal);
+        NetworkSession[] sessions =
+        [
+            // The last revision is the flight: a plan filed from one leg to the next says the second.
+            new(1, 761262, "tst1", Start.AddMinutes(30), Start.AddMinutes(100), "XEA1", "XEA2")
+            {
+                Routes = [new NetworkRoute("XEA3", "XEA1"), new NetworkRoute("XEA1", "XEA2")],
+            },
+            new(2, 761262, "TST1", Start, Start.AddMinutes(25), "XEA3", "XEA1"),
+
+            // Touching none of the event's airports, without a plan, from an airport to itself, and started before the window.
+            new(3, 761262, "TST1", Start.AddHours(2), Start.AddHours(3), "XEA3", "XEA4"),
+            new(4, 761262, "TST1", Start.AddHours(3), Start.AddHours(4)),
+            new(5, 761262, "TST1", Start.AddHours(4), Start.AddHours(5), "XEA1", "XEA1"),
+            new(6, 761262, "TST1", from.AddMinutes(-1), Start, "XEA1", "XEA2"),
+        ];
+
+        var flights = AutoReportRules.Flights(sessions, airports, from, to, (departure, arrival) => departure == "XEA1" ? 300m : null);
+
+        Assert.Equal(
+            [(2L, "TST1", "XEA3", "XEA1"), (1L, "TST1", "XEA1", "XEA2")],
+            flights.Select(flight => (flight.Finding.SessionId!.Value, flight.Draft.Callsign, flight.Draft.DepartureIcao!, flight.Draft.ArrivalIcao!)));
+        Assert.Equal((DateOnly.FromDateTime(Start), 70, 300m, true), (
+            flights[1].Draft.FlightDay!.Value,
+            flights[1].Finding.Minutes!.Value,
+            flights[1].Finding.DistanceNm!.Value,
+            flights[1].Finding.Verified!.Value));
+        Assert.Null(flights[0].Finding.DistanceNm);
+
+        // An event without airports of its own takes any flight with a plan.
+        Assert.Equal(3, AutoReportRules.Flights(sessions, null, from, to, (_, _) => null).Count);
+    }
+
     private static Refusals Check(
         AwardCriterion criterion,
         string? departure = null,

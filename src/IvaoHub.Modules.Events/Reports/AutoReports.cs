@@ -7,10 +7,11 @@ using Microsoft.EntityFrameworkCore;
 namespace IvaoHub.Modules.Events.Reports;
 
 /// <summary>
-/// The positions an event's <c>Auto</c> reports of a controller look at (design M4 §5.1): its own positions and the division's at its airports,
-/// or every position of the division for an event of the whole division. Callsigns upper case.
+/// What an event's <c>Auto</c> reports look at (design M4 §5.1): the airports a flight touches — the event's own, the division's for an event of
+/// the whole division, or <see langword="null"/> for any flight when the event has none —, and the positions a controller's shifts are on —
+/// its own and the division's at its airports, or every position of the division for an event of the whole division. Upper case.
 /// </summary>
-public sealed record AutoReportScope(IReadOnlySet<string> Positions);
+public sealed record AutoReportScope(IReadOnlySet<string>? Airports, IReadOnlySet<string> Positions);
 
 /// <summary>
 /// The reports of support the system writes for a member (design M4 §1.11, §5.1, §5.2, E14b; note 2026-10-17-le-regole-di-award): for whoever
@@ -24,7 +25,9 @@ public sealed class AutoReports(
     EventsDbContext database,
     HubDbContext hub,
     INetworkSessionSource network,
-    IAtcPositionDirectory positions)
+    IAtcPositionDirectory positions,
+    IAirportDirectory airports,
+    IFirDirectory firs)
 {
     /// <summary>The preference, off until the member switches it on (§1.11).</summary>
     public const string PreferenceKey = $"{EventsModule.ModuleKey}.autoReport";
@@ -55,10 +58,14 @@ public sealed class AutoReports(
         var division = await positions.OfDivisionAsync(cancellationToken);
         if (row.WholeDivision)
         {
-            return new AutoReportScope(division.Select(position => position.Callsign.ToUpperInvariant()).ToHashSet(StringComparer.Ordinal));
+            // The division's airports, as the core counts the division's traffic: the airspace of its snapshot.
+            var airspace = await firs.GetAirspaceAsync(cancellationToken);
+            return new AutoReportScope(
+                airspace.Airports.Select(icao => icao.ToUpperInvariant()).ToHashSet(StringComparer.Ordinal),
+                division.Select(position => position.Callsign.ToUpperInvariant()).ToHashSet(StringComparer.Ordinal));
         }
 
-        var airports = (await database.Airports.AsNoTracking()
+        var eventAirports = (await database.Airports.AsNoTracking()
                 .Where(airport => airport.EventId == row.Id)
                 .Select(airport => airport.Icao)
                 .ToListAsync(cancellationToken))
@@ -68,8 +75,10 @@ public sealed class AutoReports(
             .Select(position => position.Callsign)
             .ToListAsync(cancellationToken);
 
-        return new AutoReportScope(own
-            .Concat(division.Where(position => position.AirportIcao is { } icao && airports.Contains(icao)).Select(position => position.Callsign))
+        return new AutoReportScope(
+            eventAirports.Count == 0 ? null : eventAirports.Select(icao => icao.ToUpperInvariant()).ToHashSet(StringComparer.Ordinal),
+            own
+            .Concat(division.Where(position => position.AirportIcao is { } icao && eventAirports.Contains(icao)).Select(position => position.Callsign))
             .Select(callsign => callsign.ToUpperInvariant())
             .ToHashSet(StringComparer.Ordinal));
     }
@@ -98,6 +107,21 @@ public sealed class AutoReports(
         if (controlled is null)
         {
             return false;
+        }
+
+        // A pilot's sessions that started in the window, with the airports of their flight plans (E10v).
+        var flown = await network.SessionsAsync(new NetworkSessionQuery(vid, fromUtc, toUtc, Connection: NetworkConnection.Pilot), cancellationToken);
+        if (flown is null)
+        {
+            return false;
+        }
+
+        var codes = flown.SelectMany(session => new[] { session.DepartureIcao, session.ArrivalIcao }).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+        var known = codes.Count == 0 ? new Dictionary<string, AirportDto>() : await airports.FindAsync(codes, cancellationToken);
+        var flights = AutoReportRules.Flights(flown, scope.Airports, fromUtc, toUtc, (departure, arrival) => ReportCheck.Distance(departure, arrival, known));
+        if (flights.Count > 0)
+        {
+            await WriteAsync(row, vid, ReportKind.Pilot, flights, now, cancellationToken);
         }
 
         var shifts = AutoReportRules.Shifts(controlled, scope.Positions, fromUtc, toUtc, attendanceMinimumMinutes);
@@ -138,6 +162,46 @@ public sealed class AutoReports(
 /// </summary>
 public static class AutoReportRules
 {
+    /// <summary>
+    /// A pilot's flights (reading 8): the sessions that started in the event's window whose flight plan says two different airports (the last
+    /// revision, as the core gives them, E10v) and touches <paramref name="airports"/> — any flight when it is null (an event without airports
+    /// of its own, not of the whole division) —, one item each, the earliest first, at most <see cref="ReportRules.MaxItems"/>; verified, with
+    /// the session, its minutes and the distance between the two airports when the hub knows them.
+    /// </summary>
+    public static IReadOnlyList<(ReportItemDraft Draft, ItemFinding Finding)> Flights(
+        IEnumerable<NetworkSession> sessions,
+        IReadOnlySet<string>? airports,
+        DateTime fromUtc,
+        DateTime toUtc,
+        Func<string, string, decimal?> distance)
+    {
+        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(distance);
+
+        return [.. sessions
+            .Where(session => session is { DepartureIcao: { Length: > 0 }, ArrivalIcao: { Length: > 0 } }
+                && session.DepartureIcao != session.ArrivalIcao
+                && session.StartedAt >= fromUtc
+                && session.StartedAt <= toUtc
+                && (airports is null || airports.Contains(session.DepartureIcao!) || airports.Contains(session.ArrivalIcao!)))
+            .OrderBy(session => session.StartedAt)
+            .ThenBy(session => session.Id)
+            .Take(ReportRules.MaxItems)
+            .Select(session => (
+                Draft: new ReportItemDraft(
+                    session.Callsign.Trim().ToUpperInvariant(),
+                    session.DepartureIcao,
+                    session.ArrivalIcao,
+                    DateOnly.FromDateTime(session.StartedAt),
+                    null,
+                    null),
+                Finding: new ItemFinding(
+                    session.Id,
+                    (int)(session.EndedAt - session.StartedAt).TotalMinutes,
+                    distance(session.DepartureIcao!, session.ArrivalIcao!),
+                    Verified: true)))];
+    }
+
     /// <summary>
     /// A controller's shifts (reading 8): their connections on the positions of <paramref name="positions"/>, cut to the event's window, one
     /// item per position from the first minute to the last — at most <see cref="ReportRules.LongestShift"/>, at most

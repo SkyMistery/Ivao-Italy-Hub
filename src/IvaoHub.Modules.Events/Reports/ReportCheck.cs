@@ -142,7 +142,7 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
     }
 
     /// <summary>The distance between two airports the hub knows with their coordinates, to the tenth; none otherwise.</summary>
-    private static decimal? Distance(string? departure, string? arrival, IReadOnlyDictionary<string, AirportDto> known) =>
+    internal static decimal? Distance(string? departure, string? arrival, IReadOnlyDictionary<string, AirportDto> known) =>
         departure is not null
         && arrival is not null
         && known.GetValueOrDefault(departure) is { Latitude: { } fromLatitude, Longitude: { } fromLongitude }

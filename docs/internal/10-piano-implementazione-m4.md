@@ -5355,8 +5355,9 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 **Fatta quando**: sul banco un PIREP accettato mette un segnale nella coda degli award, e chi assegna riceve la mail (E10d).
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
-E14a; nota `2026-10-17-le-regole-di-award`, **Proposta**, con due domande — §4 della nota — che il codice segue con la risposta raccomandata
-in attesa di quella di Carmine):
+E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
+`2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 aspetta Carmine sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292)
+e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la fase del nucleo E10v):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
   `evt_events.auto_reports_after_vid`.
@@ -5376,7 +5377,9 @@ in attesa di quella di Carmine):
   dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
   sull'evento (`auto_reports_after_vid`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
   dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
-  `attendanceMinimumMinutes` (lettura 8). **La metà pilota** aspetta gli aeroporti di una sessione dal nucleo (la domanda 2). Lo scrittore di
+  `attendanceMinimumMinutes` (lettura 8). **La metà pilota** sulle sessioni con i loro scali di **E10v** (#291): una voce per sessione con
+  l'**ultima rotta** del piano, quando tocca gli scali dell'evento — gli aeroporti della divisione (`IFirDirectory`) per un evento
+  `whole_division`, ogni volo per un evento senza scali —, verificata con i minuti e la distanza (lettura 8). Lo scrittore di
   E14a (`MemberReports.WriteAsync`) ora è condiviso: un PIREP che c'è già non si tocca, e la riga si legge come la legge il back office (il job non
   ha un membro per il filtro delle righe dei membri — trovato con il test: senza, il secondo PIREP urtava l'indice univoco).
 - **`events-digest`** (`Reports/ReportsDigestJob.cs`): alle 07:15 nel fuso della divisione (il trigger lo dice), `events.reportsToValidate` a

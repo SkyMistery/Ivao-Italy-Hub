@@ -340,11 +340,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a, con la sua testa `7c094fd5` unita — E13b `0c8d531`, E10u e `main` a `8bf63ea`)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `7c094fd5` (E13b `0c8d531`, E10u e `main` a `8bf63ea`) e `547d402d` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
   `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le quattro colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-le-regole-di-award`, **Proposta**, con due domande per Carmine nel §4):
+  `2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292),
+  il codice con la (A); la 2 decisa da dalberone, la fase del nucleo E10v):
   - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
     `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
     `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
@@ -352,7 +353,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     nucleo; scritte e tolte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync`. Un award assegnato congela la decisione
     (`events:errors.reportAwardAssigned`, `Decidable` falso).
   - **I PIREP `Auto`**: la preferenza `events.autoReport`, il passo di `events-after` (`Reports/AutoReports.cs`, il segno
-    `evt_events.auto_reports_after_vid`), l'interruttore in `/events/mine`. Solo la metà ATC: la pilota aspetta la domanda 2.
+    `evt_events.auto_reports_after_vid`), l'interruttore in `/events/mine`. Un PIREP ATC (le postazioni dell'evento e della divisione ai suoi
+    scali) e uno pilota (l'ultima rotta di ogni sessione, sugli scali di **E10v**, #291).
   - **`events-digest`** (`Reports/ReportsDigestJob.cs`), alle 07:15 nel fuso della divisione, `events.reportsToValidate`.
   - **I test**: integrazione `EventsAwardRulesTests` (VID **761262–761268**, slug `evt-test-e14b-…`); unità `EventsAwardRulesTests`; vitest
     `awardRuleWords.test.ts`; il giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).

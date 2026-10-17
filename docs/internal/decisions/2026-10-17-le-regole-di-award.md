@@ -1,7 +1,8 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
 **Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR in coda dopo la #289 di E14a
-**Stato:** **Proposta**: la domanda 1 del §4 aspetta Carmine (il codice segue la (A) raccomandata), le letture del §2 la revisione della PR.
+**Stato:** **Proposta**: la domanda 1 del §4 aspetta Carmine sull'[issue #292][q292] (il codice segue la (A) raccomandata), le letture del §2 la
+revisione della PR.
 La domanda 2 è **decisa**: dalberone ha scelto la (A), una fase del nucleo a sé, **E10v** (`m4/e10v-session-airports`, nota
 `2026-10-17-gli-scali-di-una-sessione`), che E14b unisce prima della metà pilota dei PIREP `Auto`.
 **Regola applicata:** `CLAUDE.md` §5. Che un evento abbia regole di award da un **elenco chiuso** di criteri, che accettare un PIREP le
@@ -15,6 +16,7 @@ migrazione `AddAwardRules` dopo `AddSupportReports` di E14a, un job (`events-dig
 quello che il design chiede non entra in quello che il nucleo offre oggi.
 
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
+[q292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292
 
 ## 1. Che cosa serviva decidere
 
@@ -75,7 +77,14 @@ riepilogo.
      divisione per un evento `whole_division`; **una voce per postazione**, dal primo minuto all'ultimo dentro la finestra, al più dodici ore,
      al più venti voci; i minuti come li conta E13a; **verificata con almeno `attendanceMinimumMinutes`** (una connessione di pochi minuti c'è,
      non verificata).
-   - **Pilota**: la domanda 2, decisa (A): sulle sessioni di E10v, scritta dopo averla unita.
+   - **Pilota**: sulle sessioni di E10v (la domanda 2), una domanda per VID, tipo pilota, nella finestra degli slot. **Una voce per sessione,
+     con l'ultima rotta del suo piano** (`DepartureIcao`/`ArrivalIcao` del nucleo, l'ultima revisione): la sessione è dell'evento quando
+     quella rotta tocca uno dei suoi scali, un aeroporto della divisione per un evento `whole_division` (l'aria della divisione del nucleo,
+     `IFirDirectory`), o qualunque volo per un evento senza scali suoi; una sessione senza piano, o da un aeroporto a sé stesso, non è un
+     volo. La voce è verificata (la sessione è quella trovata), con i minuti della sessione e la distanza fra i due aeroporti quando l'hub li
+     conosce; al più venti voci. **Le regole leggono quella voce**: `Route` e `RouteTimes` l'ultima rotta, `RouteTimes` conta le sessioni.
+     Scartato: una voce per ogni revisione di `Routes` (una revisione depositata non è una tratta volata: un pilota che corregge il piano
+     avrebbe due voci per un volo solo).
 9. **`events-digest`** (§5.3, §8.4): ogni giorno alle **07:15 nel fuso della divisione** (il trigger lo dice), dopo il riepilogo dei tour delle
    07:00. A chi tiene `EventReports.Edit` (`IPermissionHolders` del nucleo), i PIREP `Submitted` degli eventi che **lui** può validare
    (dipartimento e scope come l'unico handler), **i suoi esclusi**, una riga per evento con quanti e da quando, e il link alla scheda; nessuna
@@ -99,7 +108,7 @@ riepilogo.
 
 ## 4. Le domande — la 1 per Carmine, la 2 decisa
 
-1. **Un PIREP non può proiettare due segnali per il suo membro.** Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
+1. **Un PIREP non può proiettare due segnali per il suo membro.** (Pubblicata sull'[issue #292][q292].) Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
    `(source_module, source_id, vid)` di `cms_award_signals`, e `ProjectionWriter` riconosce un segnale dal VID). Un PIREP è di un membro: con
    una regola soddisfatta va bene, con **due** il secondo segnale urta l'indice (l'accettazione cade) o, a un'altra proiezione, prende l'award
    del primo.

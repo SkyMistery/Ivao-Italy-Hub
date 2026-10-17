@@ -332,18 +332,29 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         _network.Atc[PilotVid] = [new NetworkSession(9003, PilotVid, Tower, Start, Start.AddHours(1))];
         _network.Atc[SenderVid] = [new NetworkSession(9004, SenderVid, Tower, Start, Start.AddHours(1))];
 
+        // Their flights, with the airports of the plan (E10v): the controller also flew to the event's airport; the one who did not ask flew too.
+        _network.Pilot[ControllerVid] = [new NetworkSession(9005, ControllerVid, "tst14b", Start.AddMinutes(-90), Start.AddMinutes(-20), Away, Home)];
+        _network.Pilot[UnaskedVid] = [new NetworkSession(9006, UnaskedVid, "TST14C", Start, Start.AddHours(1), Home, Away)];
+
         // The member who sent theirs by hand, before the job.
         var sent = await ManualReportAsync(eventId, SenderVid, token);
 
         await RunAfterAsync(Due, token);
 
         var reports = await ReportsOfAsync(eventId, token);
-        var auto = Assert.Single(reports, report => report.Vid == ControllerVid);
+        var auto = Assert.Single(reports, report => report.Vid == ControllerVid && report.Kind == ReportKind.Atc);
         Assert.Equal((ReportKind.Atc, ReportSource.Auto, ReportState.Submitted, ReportVerification.Valid), (auto.Kind, auto.Source, auto.State, auto.Verification));
         var item = Assert.Single(await ItemsAsync(auto.Id, token));
         Assert.Equal(
             (Tower, Start.AddMinutes(-10), Start.AddMinutes(70), (int?)80, (bool?)true),
             (item.Callsign, item.FromUtc!.Value, item.ToUtc!.Value, item.Minutes, item.Verified));
+
+        // The controller's flight: a pilot report of their own, Auto, the flight verified with its session and the distance the core measures.
+        var flight = Assert.Single(reports, report => report.Vid == ControllerVid && report.Kind == ReportKind.Pilot);
+        Assert.Equal((ReportSource.Auto, ReportVerification.Valid), (flight.Source, flight.Verification));
+        var leg = Assert.Single(await ItemsAsync(flight.Id, token));
+        Assert.Equal(("TST14B", Away, Home, (long?)9005, (int?)70, (bool?)true), (leg.Callsign, leg.DepartureIcao, leg.ArrivalIcao, leg.SessionId, leg.Minutes, leg.Verified));
+        Assert.NotNull(leg.DistanceNm);
 
         Assert.DoesNotContain(reports, report => report.Vid is UnaskedVid or PilotVid);
         var mine = Assert.Single(reports, report => report.Vid == SenderVid);
