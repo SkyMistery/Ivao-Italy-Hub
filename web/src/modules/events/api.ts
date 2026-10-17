@@ -1490,6 +1490,44 @@ export function rosterQuery(
   });
 }
 
+// ---- the bookings of the network beside the roster (E15b) ---------------------------------------------
+
+export type NetworkBookingRow = components['schemas']['NetworkBookingRowDto'];
+
+/** What the query of the network's bookings fails with when the server says the network did not answer. */
+export class NetworkBookingsUnavailable extends Error {
+  constructor() {
+    super('The bookings of the network are not available.');
+    this.name = 'NetworkBookingsUnavailable';
+  }
+}
+
+/**
+ * The bookings of the network on the positions of an event (§4.4, §9.1), read fresh every time the page asks — no copy on the server —, in a
+ * query of their own so that a slow network never holds the roster up. The server's `available` false — the network did not answer — fails
+ * the query (`NetworkBookingsUnavailable`), so that it is never drawn as an empty list, «nobody booked». Under the ATC's key: a correction of
+ * the roster reads them again, and with them whether each booker holds the shift.
+ */
+export function networkBookingsQuery(eventId: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'networkBookings', eventId, search] as const,
+    queryFn: async () => {
+      const { available, ...page } = unwrap(
+        await api.GET('/api/events/atc/events/{id}/network-bookings', {
+          params: { path: { id: eventId }, query: pageOf(search) },
+        }),
+      );
+      if (!available) {
+        throw new NetworkBookingsUnavailable();
+      }
+
+      return page;
+    },
+    // The server has already waited on the network with its own retries: asking again would make the page wait twice.
+    retry: false,
+  });
+}
+
 export function shiftQuery(id: number) {
   return queryOptions({
     queryKey: [...atcKey, 'shifts', id] as const,

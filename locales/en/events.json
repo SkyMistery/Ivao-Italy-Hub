@@ -1259,6 +1259,27 @@
       "publishesOn": "It is published on {{date}}: the controllers are told then, and of every change after it.",
       "published": "Published on {{date}}: every change is told to the controller at once."
     },
+    "network": {
+      "title": "Bookings on the network",
+      "intro": "Who booked the positions of the event on the network, read now: whether they hold that shift on the roster, and the positions somebody else took, for a training or an exam too.",
+      "unavailable": "The bookings of the network are not available now: the network did not answer, or the event lasts more than a week. The roster above is unchanged.",
+      "empty": "Nobody booked the positions of the event on the network in its hours.",
+      "fields": {
+        "callsign": "Position",
+        "fromUtc": "From",
+        "toUtc": "To",
+        "booker": "Booked by",
+        "kind": "For",
+        "onRoster": "On the roster"
+      },
+      "options": {
+        "kind": {
+          "Controlling": "Controlling",
+          "Training": "Training",
+          "Exam": "Exam"
+        }
+      }
+    },
     "shifts": {
       "create": "New shift",
       "edit": "Shift",
