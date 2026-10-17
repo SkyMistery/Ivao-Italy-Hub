@@ -4407,6 +4407,50 @@ contrario li fa cadere.
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
+### E10v — Nucleo: gli scali di una sessione della rete
+
+**Da dove viene**: non c'era in E0. La chiede E14b: un PIREP `Auto` scrive una voce di volo (callsign, partenza, arrivo, giorno) da ogni
+sessione di chi ha la preferenza, e le regole `Route`, `RouteTimes` e `MinLegDistance` leggono partenza e arrivo; ma la
+`NetworkSession` di E10t dice solo numero, VID, callsign, inizio e fine, e chiedere per scalo dice la partenza, mai l'arrivo. `dalberone`
+ha scelto una fase del nucleo (17 ottobre 2026), come per E10t. Branch `m4/e10v-session-airports`, `--no-track` da `main` a
+`8bf63ea3`. **PR del nucleo**, diretta su `main`, non in coda; E14b ne unisce il branch.
+
+1. `NetworkSession` dice gli scali del piano di volo, dalla riga che il client ha già: nessuna chiamata nuova alla rete.
+2. Ogni `new NetworkSession(…)` di oggi compila com'è; il DTO del client e i tour non cambiano.
+3. Nessun uso nel modulo (regola 6).
+
+**Fatta quando**: un test di unità prova gli scali in maiuscolo, `null` per un controllore o senza piano, e la prova al contrario li fa
+cadere.
+
+**Com'è andata** (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291):
+
+- **Fatto** (nota nuova `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b), nessuna domanda per Carmine):
+  - **`NetworkSession(…, string? DepartureIcao = null, string? ArrivalIcao = null) { Routes }`** e **`NetworkRoute(DepartureIcao,
+    ArrivalIcao)`** in `src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`: `Routes` ogni revisione dalla più vecchia, i due campi l'ultima,
+    `null` e vuota per un controllore o senza piano; `Equals` e `GetHashCode` scritti nel record, perché la lista si confronti per
+    contenuto;
+  - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** in `IvaoTracker.cs`, accanto a `ReadSession`: le revisioni dal
+    `RawJson`; una frase nel commento del DTO.
+- **Scostamento dalla forma del prompt**: la fase chiedeva solo i due campi, gli scali «del piano di volo». Il codice dice che gli scali
+  del DTO sono quelli della **prima** revisione, e nella sera di Fiumicino la sessione `1000007` va da LIPZ→LIRF a LIRF→LICR: la prima
+  avrebbe detto una rotta diversa da quella che E13a trova volata. Chiesto a `dalberone` (in chat, 17 ottobre 2026), che ha scelto
+  **tutte le revisioni**: da qui `Routes`; i due campi dicono l'ultima, la revisione che la fase raccomandava (nota §2.3, §3.2).
+- **Scelte della fase, scritte nella nota** (§3, §4): il DTO non cambia (la sua uguaglianza resta quella che i tour confrontano); una voce di
+  `Routes` per revisione, anche due uguali; nessuna fixture cambiata, perché la sera di Fiumicino porta già le revisioni.
+- **Verificato, in locale** (17 ottobre 2026, `main` a `8bf63ea3`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache`: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1335/1335**, fra cui `NetworkSessionSourceTests` 13/13; integrazione intera, senza filtro (Release), **656/656** al primo giro (13 minuti, da sola);
+  - **la prova al contrario**, in due giri (modifica locale, poi rimesso, toccato e ricompilato: 13 su 13): con i due campi dalla **prima**
+    revisione, le maiuscole e le revisioni incomplete tolte dal lettore e `Routes` confrontata per riferimento cadono 3 casi (l'ultima
+    revisione a Fiumicino, le maiuscole, l'uguaglianza); con i due campi a stringa vuota invece di `null` cadono 2 (il controllore e le
+    sessioni senza piano, e il caso di E10t con la riga senza piani);
+  - `pnpm -C web gen:api` senza differenze;
+  - le regole di `core-guard` dalla base `8bf63ea3`, con Git Bash: nessun file del maintainer; tre del nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: nessuna schermata e nessun chiamante nel modulo, solo un record del nucleo;
+  - l'uso vero, nei PIREP `Auto` e nelle regole di award, e una sessione vera sulla rete: sono di E14b.
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
