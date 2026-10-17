@@ -48,7 +48,8 @@
       "activities": "Activities",
       "seats": "Seats",
       "stats": "Statistics",
-      "reports": "Reports of support"
+      "reports": "Reports of support",
+      "awards": "Awards"
     },
     "actions": {
       "publish": "Publish",
@@ -617,6 +618,14 @@
         "hints": {
           "items": "One shift or more, within the hours of the event, at most twelve hours each."
         }
+      },
+      "auto": {
+        "fields": {
+          "autoReport": "Report my participation in events automatically"
+        },
+        "hints": {
+          "autoReport": "After each event the hub looks for your flights and your shifts and sends your report of support for you; a validator decides it as any other. One you send yourself stays as it is."
+        }
       }
     }
   },
@@ -829,6 +838,10 @@
     "reportDecided": {
       "title": "Reports of support decided",
       "description": "An email when a validator accepts or rejects your report of support for an event."
+    },
+    "reportsToValidate": {
+      "title": "Reports of support to validate",
+      "description": "An email in the morning with the reports of support waiting for you, if there are some."
     }
   },
   "mail": {
@@ -895,6 +908,10 @@
           "Accepted": "accepted",
           "Rejected": "rejected"
         }
+      },
+      "reportsToValidate": {
+        "subject": "[Events] Reports of support to validate: {{count}}",
+        "body": "Reports of support are waiting for a decision on the events you validate:\n\n{{events}}\n\n---\nYou can switch these emails off from the page of your profile."
       }
     }
   },
@@ -1056,7 +1073,13 @@
     "reportShiftsOverlap": "This shift meets another one of the report.",
     "reportStateNotAllowed": "A report is accepted or rejected.",
     "reportAlreadySo": "The report is already so.",
-    "reportChanged": "The report changed a moment ago: read it again."
+    "reportChanged": "The report changed a moment ago: read it again.",
+    "awardRuleCriterion": "Choose a criterion of the list.",
+    "awardRuleAwardUnknown": "Choose an active award of the catalogue.",
+    "awardRulesTooMany": "An event has at most 50 rules of award.",
+    "awardRuleInPerson": "An event in person takes no report of support, so no rule of award.",
+    "awardRulePositionType": "The division has no position of this kind.",
+    "reportAwardAssigned": "An award has been assigned from this report: its decision no longer changes."
   },
   "questions": {
     "title": "Questions",
@@ -1589,5 +1612,69 @@
         }
       }
     }
+  },
+  "awardRules": {
+    "title": "Rules of award",
+    "create": "New rule",
+    "edit": "Rule of award",
+    "empty": "The rules that point out for an award the members whose report of support is accepted will show up here.",
+    "fields": {
+      "awardName": "Award",
+      "criterion": "Criterion",
+      "parameters": "What it asks",
+      "awardId": "Award",
+      "departureIcao": "From",
+      "arrivalIcao": "To",
+      "count": "Flights",
+      "distanceNm": "Nautical miles",
+      "minutes": "Minutes",
+      "positionType": "Kind of position"
+    },
+    "hints": {
+      "criterion": "What an accepted report has to show. Only the items the check found count.",
+      "awardId": "An active award of the catalogue. Whoever assigns the awards finds the member in their queue and decides.",
+      "departureIcao": "The ICAO code of an airport the hub knows.",
+      "arrivalIcao": "The ICAO code of an airport the hub knows.",
+      "count": "From 1 to 20.",
+      "distanceNm": "Between the two airports of the flight, from 1 to 10800.",
+      "minutes": "On the shifts the check found, all together, from 1 to 1440.",
+      "positionType": "Only the minutes on positions of this kind. Empty: any position."
+    },
+    "options": {
+      "criterion": {
+        "AnyFlight": "A flight",
+        "MinFlights": "Some flights",
+        "Route": "A route",
+        "RouteTimes": "A route, several times",
+        "MinLegDistance": "A long flight",
+        "AnyShift": "A shift",
+        "MinAtcMinutes": "Minutes of control"
+      }
+    },
+    "explain": {
+      "AnyFlight": "A pilot report with at least one flight found.",
+      "MinFlights": "A pilot report with at least as many flights found as the number below.",
+      "Route": "A pilot report with a flight found from one airport to the other.",
+      "RouteTimes": "A pilot report with at least as many flights found from one airport to the other as the number below.",
+      "MinLegDistance": "A pilot report with a flight found between two airports at least that far apart.",
+      "AnyShift": "An ATC report with at least one shift found.",
+      "MinAtcMinutes": "An ATC report with at least that many minutes on the positions, on one kind of position if you choose one."
+    },
+    "parameters": {
+      "flights_one": "at least {{number}} flight",
+      "flights_other": "at least {{number}} flights",
+      "routeTimes_one": "{{route}}, at least {{number}} time",
+      "routeTimes_other": "{{route}}, at least {{number}} times",
+      "distance": "a flight of at least {{number}} NM",
+      "minutes": "at least {{number}} minutes",
+      "minutesOn": "at least {{number}} minutes on {{type}}"
+    },
+    "delete": {
+      "title": "Delete this rule?",
+      "description": "The rule no longer points anybody out. What it already put in the queue of the awards stays there."
+    }
+  },
+  "awards": {
+    "ruleMet": "{{event}}: {{criterion}} {{parameters}}"
   }
 }

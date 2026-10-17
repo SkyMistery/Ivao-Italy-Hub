@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { bootstrapQuery } from '../../../features/me/queries';
+import { bootstrapQuery, preferenceQuery, useSavePreference } from '../../../features/me/queries';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -18,6 +18,7 @@ import {
 } from '../api';
 import {
   atcReportSchema,
+  autoReportSchema,
   atcReportValues,
   emptyAtcReport,
   emptyPilotReport,
@@ -60,14 +61,11 @@ export function ReportsSection() {
   const sent = reports.data?.reports ?? [];
   const open = reports.data?.open ?? [];
 
-  if (sent.length === 0 && open.length === 0 && failed === null) {
-    return null;
-  }
-
   return (
     <section className="flex flex-col gap-4" aria-label={t('events:mine.reports.title')}>
       <H2>{t('events:mine.reports.title')}</H2>
       <Subtle className="text-sm">{t('events:mine.reports.lead')}</Subtle>
+      <AutoReportSwitch />
       {failed === null ? null : <Notice tone="error" title={failed} />}
       {open.length === 0 ? null : (
         <ul className="flex flex-col gap-4" aria-label={t('events:mine.reports.open')}>
@@ -271,5 +269,41 @@ function ReportDialog({
         />
       )}
     </Dialog>
+  );
+}
+
+/** The key of the preference on the server (AutoReports.PreferenceKey, design M4 §1.11). */
+export const AUTO_REPORT_PREFERENCE = 'events.autoReport';
+
+/**
+ * «Report my participation in events automatically» (design M4 §1.11, E14b): off until the member switches it on, kept on their account. Then,
+ * after each event, the system looks for their flights and their shifts and writes their report of support, which a validator decides as any
+ * other; one they sent by hand stays as it is.
+ */
+function AutoReportSwitch() {
+  const { t, i18n } = useTranslation();
+  const preference = useQuery(preferenceQuery(AUTO_REPORT_PREFERENCE));
+  const save = useSavePreference(AUTO_REPORT_PREFERENCE);
+  const failed = describeProblem(save.error, t, i18n.language);
+
+  if (preference.isPending) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <SchemaForm
+        schema={autoReportSchema}
+        defaults={{ autoReport: preference.data === true }}
+        locales={[]}
+        labels="events:mine.reports.auto"
+        onChange={(values) => {
+          if (values.autoReport !== (preference.data === true)) {
+            save.mutate(values.autoReport);
+          }
+        }}
+      />
+      {failed === null ? null : <Notice tone="error" title={failed} />}
+    </div>
   );
 }

@@ -32,6 +32,7 @@ import {
   PilotsRegisterPage,
 } from './screens/registers';
 import { RosterPage } from './screens/RosterPage';
+import { AwardRuleForm } from './screens/awardRules';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
 import { SlotForm, SlotLoadPage } from './screens/slots';
@@ -191,6 +192,13 @@ export const eventsManifest: ModuleManifest = {
       path: '/staff/events/$id/airports/$airportId',
       permission: EVENTS_EDIT,
       component: AirportForm,
+    },
+    // A rule of award of an event (E14b): written by whoever writes the event.
+    {
+      area: 'staff',
+      path: '/staff/events/$id/award-rules/$ruleId',
+      permission: EVENTS_EDIT,
+      component: AwardRuleForm,
     },
     // A route of an event (E4): written by whoever holds the routes' area, the flight operations among them, who do not write
     // the event.

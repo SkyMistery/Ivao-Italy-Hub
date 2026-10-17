@@ -185,6 +185,7 @@ export const eventEditorSearchSchema = z.object({
       'description',
       'airports',
       'routes',
+      'awards',
       'slots',
       'bookings',
       'questions',
@@ -358,6 +359,86 @@ export function emptyRoute(eventId: number, locales: readonly string[]): RouteFo
     remarks: Object.fromEntries(locales.map((locale) => [locale, ''])),
     rowVersion: NEW_ROW_VERSION,
   };
+}
+
+// ---- the rules of award of an event (E14b) -----------------------------------------------------------
+
+/** The closed list of the criteria (design M4 §1.9), as `AwardCriterion` spells them, a pilot's first and a controller's after. */
+export const AWARD_CRITERIA = [
+  'AnyFlight',
+  'MinFlights',
+  'Route',
+  'RouteTimes',
+  'MinLegDistance',
+  'AnyShift',
+  'MinAtcMinutes',
+] as const;
+
+export type AwardCriterionValue = (typeof AWARD_CRITERIA)[number];
+
+/** A parameter of a rule, as `AwardParameters` names them on the server. */
+export type AwardParameter = 'route' | 'count' | 'distance' | 'minutes' | 'positionType';
+
+/** The parameters each criterion takes (`AwardRules.ParametersOf`): the form draws those, the server empties the others. */
+export const AWARD_PARAMETERS: Readonly<Record<AwardCriterionValue, readonly AwardParameter[]>> = {
+  AnyFlight: [],
+  MinFlights: ['count'],
+  Route: ['route'],
+  RouteTimes: ['route', 'count'],
+  MinLegDistance: ['distance'],
+  AnyShift: [],
+  MinAtcMinutes: ['minutes', 'positionType'],
+};
+
+/** The criterion of a rule, chosen above its form: the parameters below are that criterion's. */
+export const awardCriterionSchema = z.object({ criterion: z.enum(AWARD_CRITERIA) });
+
+/** What the fields of a rule choose from, already in the language on screen: the active awards, the kinds of position of the division. */
+export interface AwardRuleChoices {
+  readonly awards: readonly ChoiceOption[];
+  readonly positionTypes: readonly ChoiceOption[];
+}
+
+/**
+ * A rule of award (design M4 §1.9), mirroring `EventAwardRuleWriteDto`: the award and the parameters of the criterion chosen above — the
+ * others hidden, and emptied by the server. Every rule is the server's: an active award, airports the hub knows, numbers in their range.
+ */
+export function awardRuleSchema(criterion: AwardCriterionValue, choices: AwardRuleChoices) {
+  const takes = AWARD_PARAMETERS[criterion];
+
+  return z.object({
+    eventId: z.number().int().meta({ hidden: true }),
+    awardId: z.string().meta({ choices: choices.awards }),
+    departureIcao: z.string().meta({ hidden: !takes.includes('route') }),
+    arrivalIcao: z.string().meta({ hidden: !takes.includes('route') }),
+    count: z
+      .number()
+      .int()
+      .optional()
+      .meta({ hidden: !takes.includes('count') }),
+    distanceNm: z
+      .number()
+      .int()
+      .optional()
+      .meta({ hidden: !takes.includes('distance') }),
+    minutes: z
+      .number()
+      .int()
+      .optional()
+      .meta({ hidden: !takes.includes('minutes') }),
+    positionType: z
+      .string()
+      .optional()
+      .meta({ choices: choices.positionTypes, hidden: !takes.includes('positionType') }),
+    rowVersion: z.string().meta({ hidden: true }),
+  });
+}
+
+export type AwardRuleFormValues = z.output<ReturnType<typeof awardRuleSchema>>;
+
+/** A new rule of an event: no award chosen yet, nothing written. */
+export function emptyAwardRule(eventId: number): AwardRuleFormValues {
+  return { eventId, awardId: '', departureIcao: '', arrivalIcao: '', rowVersion: NEW_ROW_VERSION };
 }
 
 // ---- the slots of an event (E5) ----------------------------------------------------------------------
@@ -801,6 +882,9 @@ export type UnflownExcuseFormValues = z.output<typeof unflownExcuseSchema>;
  * A pilot's report of support (design M4 §5.2), mirroring `ReportRequest`: their flights, each with its callsign, its two airports and the
  * day it flew, in UTC. Every rule is the server's: the airports the hub knows, one of the event's touched, the day within the event.
  */
+/** «Report my participation in events automatically» (design M4 §1.11, E14b): one switch, kept on the member's account. */
+export const autoReportSchema = z.object({ autoReport: z.boolean() });
+
 export const pilotReportSchema = z.object({
   items: z.array(
     z.object({
