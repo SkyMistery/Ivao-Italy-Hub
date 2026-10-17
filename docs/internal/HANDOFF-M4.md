@@ -333,7 +333,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E14a (17 ottobre 2026, branch `m4/e14a-support-reports`; nata dalla testa di E13b `4226b983`, in coda dopo la #283 di E13b, con la sua testa `ecc5a35b` unita — E10u `a2631e6` e `main` a `9a78b2c`)
+### Che cosa ha lasciato E14a (17 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, in coda dopo la #283 di E13b, con la sua testa `ecc5a35b` unita — E10u `a2631e6` e `main` a `9a78b2c`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo
   `AddAfterTheEventColumns`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,

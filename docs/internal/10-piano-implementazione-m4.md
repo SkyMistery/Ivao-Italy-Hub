@@ -5265,8 +5265,15 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **67/70 al primo giro** (la trappola del prefisso, sopra), corretto lo slug e
   rifatto da capo **70/70** (13,5 min); `core-guard.sh` con Git Bash dal merge-base con `main` (`e073bff`): passa, nessun file del
   maintainer, i file del nucleo con le note nuove della coda (di E14a solo `ErasureTests.cs`).
-- **Non verificato**: la CI; un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente sul banco e nei
-  test); la pagina a 375 px; il merge della prossima testa di E13b (con E10u), che cambia `events.staffQueue`.
+- **Dopo il merge della testa di E13b `ecc5a35b`** (la #283 dopo la revisione, con E10u `a2631e6` e `main` a `9a78b2c`; conflitti in
+  `HANDOFF-M4.md` e in `StaffQueueProvider.cs`: i PIREP stanno nella forma nuova della coda — letti solo da chi tiene `EventReports.Edit` da
+  qualche parte, i propri fuori dalla query, i più recenti prima): build Release senza avvisi; `has-pending-model-changes` senza cambi, con
+  `AddSupportReports` ultima; `gen:api` senza diff; unità **1356/1356**; **integrazione intera senza filtro, da sola, 671/671** (10,7 min);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **803 in 115 file**; lo smoke **183/183**;
+  `e2e:full` sul banco 5151, `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **70/70 al primo giro** (14,6 min); `core-guard.sh`
+  dal merge-base `9a78b2c`: passa. PR #289.
+- **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
+  sul banco e nei test); la pagina a 375 px.
 
 
 ### E14b — Regole di award, PIREP automatici, riepilogo
