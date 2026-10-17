@@ -7,7 +7,8 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10u** (del nucleo: il permesso tenuto senza un ambito su una riga), sul branch
-`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`.
+`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`; dopo la revisione, [approvabile, niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666), ha unito `main` a `8bf63ea3` (#285, #286).
 La nota `2026-10-17-il-permesso-senza-ambito` è **decisa** da Carmine: la (b) al punto 1 della revisione della #283 ([la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736)) — i registri di E13b rispondono solo a chi tiene
 il permesso senza un ambito, e un grant su un evento o su una riga non li apre, né le loro voci di menu. Da E10u il nucleo ha
@@ -333,7 +334,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`)
+### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`, con `main` a `8bf63ea3` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10u, «Com'è andata»; nessuna migrazione, niente nel browser, `/api/me` uguale, nessuna riga di
   un modulo; una nota nuova, `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
