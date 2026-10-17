@@ -109,7 +109,8 @@ public static class PermissionSet
     }
 
     /// <summary>
-    /// True when the set holds the permission <b>without a resource scope</b>: on one department, on all of them, on a FIR — a
+    /// True when the set holds the permission <b>without a resource scope</b> — <see cref="EffectivePermission.ResourceScope"/>
+    /// null; a FIR (<see cref="EffectivePermission.Fir"/>) is not a scope here —: on one department, on all of them, on a FIR — a
     /// FIR team's —, from outside its department, or as a global permission; anything but a grant on single rows. It answers
     /// "may they read across the area", which a view that is no row of its own asks — a register of the whole division, and the
     /// menu entry that leads to it (M4, E10u, note 2026-10-17-il-permesso-senza-ambito): a permission held on one event or one
@@ -117,6 +118,8 @@ public static class PermissionSet
     /// <para>Its FIR and the mark of a permission held from outside are not looked at, on purpose: the answer that asked for it
     /// counts a FIR team and a grant to a position among those it opens to, next to a department's staff, the headquarters and
     /// a super administrator (Carmine on #283). Only a scope is a row.</para>
+    /// <para>Nor is the department: held on one department, it is held without a scope. What such a holder then reads — every
+    /// department's rows, or only their own — is the caller's to narrow.</para>
     /// </summary>
     public static bool HasUnscoped(IEnumerable<EffectivePermission> permissions, bool isSuperadmin, string permission)
     {

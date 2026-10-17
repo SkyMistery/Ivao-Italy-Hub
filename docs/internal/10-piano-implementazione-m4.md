@@ -4461,7 +4461,16 @@ oggi restano come sono, e senza il controllo i test cadono.
   - la CI (la dice la PR);
   - `e2e:full`: nessuna schermata cambia, e il bootstrap ha la stessa forma;
   - l'uso vero, nei registri e nelle loro voci: è di E13b.
+- **Dopo la revisione** (17 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r288u], con la CI verde su
+  `a2631e6`. I due punti piccoli, facoltativi, sono fatti nei riassunti di `PermissionSet.HasUnscoped` e `ICurrentUser.HasUnscoped`:
+  l'ambito è `ResourceScope`, un FIR non lo è; e il dipartimento non si guarda, quindi che cosa il titolare legge poi lo restringe chi
+  chiama (E13b). Unito `main` a `8bf63ea3` (il piano 1.36, #285, e i file delle lingue con l'impronta, #286, solo `web/`), senza
+  conflitti, su richiesta del revisore; il diff della fase contro `main` è solo di E10u. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1341/1341**, integrazione intera da sola **657/657** al primo giro (9 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**800/800**, vitest con `--maxWorkers=2`) verdi, `gen:api` senza differenze, `core-guard.sh` con Git
+  Bash dalla base `8bf63ea3`: passa.
 
+[r288u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666
 [a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
 
 ### E11a — Postazioni e disponibilità
@@ -5185,6 +5194,10 @@ unito, con la #278 di E13a, e poi la testa della fase del nucleo **E10u** `a2631
   `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **798 in 114 file**; `gen:api` senza diff; lo smoke
   **183/183**; `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit, **69/69 al primo giro** (14,6 min);
   `core-guard.sh` dal merge-base `9a78b2c`: passa, nessun file del maintainer (i file del nucleo sono quelli di E10u e i due conteggi).
+- **Dopo il merge della testa nuova di E10u `59d544e`** (con `main` a `8bf63ea`: le #285 e #286; conflitto solo nell'HANDOFF, il blocco di
+  E13b in cima): `dotnet restore --force --no-http-cache` senza avvisi, build Release senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1348/1348**, integrazione intera da sola **664/664** (12,5 min), `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+  `pnpm test --maxWorkers=2` **803 in 115 file**, `gen:api` senza diff, lo smoke **184/184**, `core-guard.sh` dal merge-base `8bf63ea`: passa.
 
 ### E14a — Il PIREP di supporto
 

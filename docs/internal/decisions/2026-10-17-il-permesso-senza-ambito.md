@@ -120,6 +120,12 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 - Le due voci: `new NavItemDescriptor("events:nav.…", "/staff/events/…", EventsPermissions.…, Unscoped: true)`.
 - Un test di E13b con un grant su un evento rifiutato su tutti e due i registri, come Carmine chiede.
 
+## 7. Dopo la revisione (#288)
+
+Le [osservazioni del revisore](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666) (17 ottobre 2026):
+approvabile, niente da correggere. I due punti piccoli sono fatti nei riassunti di `HasUnscoped`: l'ambito è `ResourceScope`, un FIR non
+lo è; il dipartimento non si guarda, e che cosa il titolare legge poi lo restringe chi chiama (E13b, come dice il §3.2).
+
 ## Da portare nel piano
 
 - **§16.2** (le colonne trasversali e l'unico handler) e il design M0 **§3.3, §3.7** (`Has`, `HasAny`): accanto a «può farlo, in
