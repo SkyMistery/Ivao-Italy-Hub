@@ -189,7 +189,13 @@ test('the ATC operations open two positions of an event, and a pilot gives their
       await staff.getByRole('button', { name: 'Save' }).click();
     });
     await expect(staff).toHaveURL(new RegExp(`/staff/events/atc/${id}$`));
-    await expect(staff.getByRole('row').filter({ hasText: callsign })).toBeVisible();
+    // The row of the position, with its «Open»: the bookings of the network under the roster (E15b) may name the same callsign.
+    await expect(
+      staff
+        .getByRole('row')
+        .filter({ hasText: callsign })
+        .filter({ has: staff.getByRole('link', { name: events.atc.open }) }),
+    ).toBeVisible();
   }
 
   // ---------------------------------------------------------------- the pilot gives their availability from the page
