@@ -5558,7 +5558,8 @@ export interface components {
          *     and the names are read for a page at once (<see cref="M:IvaoHub.Modules.Events.Atc.ShiftEndpoints.RowsAsync(System.IServiceProvider,System.Collections.Generic.IReadOnlyList{IvaoHub.Modules.Events.EventAtcShift},System.Threading.CancellationToken)" />); a row alone has neither.
          *     With E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 1, 4 and 10) its event's title — the register of a controller
          *     lists the shifts of every event —, the staff's note on how it went, and whether the reader may decide it now: an event over and not
-         *     cancelled, an outcome not final, and EventAtc.Edit from the one handler on the row — never on their own.
+         *     cancelled — no outcome is final (Carmine's answer on #283) — and EventAtc.Edit from the one handler on the row — never on their
+         *     own.
          */
         EventAtcShiftRowDto: {
             /** Format: int64 */
@@ -11954,6 +11955,13 @@ export interface operations {
                     "application/json": components["schemas"]["PagedResultOfControllerRegisterRowDto"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     EventsPilotsRegister: {
@@ -11977,6 +11985,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PagedResultOfPilotRegisterRowDto"];
                 };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -15,7 +15,10 @@ namespace IvaoHub.Modules.Events.Registers;
 /// <list type="bullet">
 /// <item><b>Three reads written by hand</b>, because a register is a count per person that no list of rows gives: the controllers'
 /// (<c>EventAtc.View</c>), the pilots' (<c>EventBookings.View</c>), and a member's own two (any signed in member, their own alone), which the
-/// page that refuses a booking reads to say until when. The rows behind them are the lists of the engine: the shifts, the bookings.</item>
+/// page that refuses a booking reads to say until when. The rows behind them are the lists of the engine: the shifts, the bookings. The two
+/// registers count the whole division, so they answer only whoever holds their permission <b>without a resource scope</b> — a department, a
+/// FIR team, a grant from outside, the super administrator —: a grant on one event or one row reads that event's rows in the lists, never
+/// every person's counts (Carmine's answer (b) on #283, with the core's <c>HasUnscoped</c> of E10u).</item>
 /// <item><b>Two verbs the design names</b> (§7.2: «confermare un no-show»; §3.7: «lo staff toglie una voce solo a mano»): how a shift went, and
 /// a booking not flown taken out of its pilot's record — each asked of the one handler on its row (<see cref="RegisterDecisions"/>).</item>
 /// </list>
@@ -35,18 +38,39 @@ public static class RegisterEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet(ControllersPattern, (int? page, int? pageSize, string? q, ControllerRegister register, HttpContext http) =>
-                register.PageAsync(page ?? 1, pageSize ?? 50, q, http.RequestAborted))
+        app.MapGet(ControllersPattern, async (
+                    int? page,
+                    int? pageSize,
+                    string? q,
+                    ControllerRegister register,
+                    ICurrentUser currentUser,
+                    LocaleCatalog catalog,
+                    HttpContext http) =>
+                currentUser.HasUnscoped(EventsPermissions.AtcView)
+                    ? Results.Ok(await register.PageAsync(page ?? 1, pageSize ?? 50, q, http.RequestAborted))
+                    : Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser))
             .WithName("EventsControllersRegister")
             .WithTags("EventAtc")
             .Produces<PagedResult<ControllerRegisterRowDto>>()
+            .Produces(StatusCodes.Status403Forbidden)
             .RequireAuthorization(EventsPermissions.AtcView);
 
-        app.MapGet(PilotsPattern, (int? page, int? pageSize, string? q, PilotRegister register, IClock clock, HttpContext http) =>
-                register.PageAsync(page ?? 1, pageSize ?? 50, q, clock.UtcNow, http.RequestAborted))
+        app.MapGet(PilotsPattern, async (
+                    int? page,
+                    int? pageSize,
+                    string? q,
+                    PilotRegister register,
+                    ICurrentUser currentUser,
+                    LocaleCatalog catalog,
+                    IClock clock,
+                    HttpContext http) =>
+                currentUser.HasUnscoped(EventsPermissions.BookingsView)
+                    ? Results.Ok(await register.PageAsync(page ?? 1, pageSize ?? 50, q, clock.UtcNow, http.RequestAborted))
+                    : Problem(StatusCodes.Status403Forbidden, CrudProblems.ForbiddenTitleKey, catalog, currentUser))
             .WithName("EventsPilotsRegister")
             .WithTags("EventBookings")
             .Produces<PagedResult<PilotRegisterRowDto>>()
+            .Produces(StatusCodes.Status403Forbidden)
             .RequireAuthorization(EventsPermissions.BookingsView);
 
         app.MapGet(MinePattern, async (
