@@ -6,7 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10u** (del nucleo: il permesso tenuto senza un ambito su una riga), sul branch
+`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`.
+La nota `2026-10-17-il-permesso-senza-ambito` è **decisa** da Carmine: la (b) al punto 1 della revisione della #283 ([la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736)) — i registri di E13b rispondono solo a chi tiene
+il permesso senza un ambito, e un grant su un evento o su una riga non li apre, né le loro voci di menu. Da E10u il nucleo ha
+`ICurrentUser.HasUnscoped` / `PermissionSet.HasUnscoped` e `NavItemDescriptor(…, Unscoped: true)`; E13b (#283) ne unisce il branch e va in
+coda dopo («Che cosa ha lasciato E10u», sotto).
+
+**L'aggiornamento di E13a:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
 (con E12 `1887c27` ed E10s `00b0609`), e dopo la revisione le teste di E10t `e17dd8c` (con `main` a `b5d3fb9`, E12 unita) e `2255412`
@@ -311,7 +319,9 @@ solo che scrive davvero l'evento e le sue righe, che E0 dava per esistente, **po
 riga: sotto, «Che cosa ha lasciato E10i»); i job che recuperano i giri persi mentre Passenger tiene l'hub spento e l'indirizzo
 dell'operazione pianificata, che E0 lasciava alla coda del maintainer, **portati da E10j** (sotto, «Che cosa ha lasciato E10j»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
-1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
+1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`. Chi tiene un permesso senza un ambito su
+una riga, che E0 non prevedeva, **portato da E10u** (`HasUnscoped` e `NavItemDescriptor.Unscoped`, per i registri di E13b: sotto, «Che
+cosa ha lasciato E10u»).
 
 ## Per i test
 
@@ -322,6 +332,32 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10u, «Com'è andata»; nessuna migrazione, niente nel browser, `/api/me` uguale, nessuna riga di
+  un modulo; una nota nuova, `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
+  - **`PermissionSet.HasUnscoped(permissions, isSuperadmin, permission)`** (`Core/Auth/Permissions/EffectivePermissionsCalculator.cs`):
+    vero quando il permesso è tenuto con **`ResourceScope` nullo** — su un dipartimento, su tutti, su un FIR (un team di FIR), da fuori
+    (un grant a una posizione di un altro dipartimento o di tutti), come globale —, o dal super amministratore. Falso per un permesso
+    tenuto **solo** su righe o eventi (`events:event:5`), anche quando `HasAny` dice sì. Il FIR e il segno «da fuori» non si guardano.
+  - **`ICurrentUser.HasUnscoped(string permission)`**, accanto a `HasAny`: un **membro predefinito** dell'interfaccia (come il `Has` con il
+    FIR), che `HttpContextCurrentUser` scrive uguale; `TestCurrentUser` non cambia e risponde con lo stesso codice.
+  - **`NavItemDescriptor(string Key, string Path, string? Permission = null, bool Unscoped = false)`**: con `Unscoped: true`
+    `MeEndpoints.Visible` chiede `HasUnscoped` invece di `HasAny`; il predefinito lascia ogni voce di oggi com'era.
+  - **I test**: `UnscopedPermissionRulesTests` (unità, nuova, 10 casi: ogni titolare, il cookie, il membro predefinito, il lettore
+    vecchio che legge chiuso) e `UnscopedNavigationTests` (integrazione, nuova: un modulo di prova della classe con una voce `Unscoped` e
+    la sua gemella, dietro `Sample.View`; la prima nascosta a un grant su una riga e mostrata a un grant sul dipartimento).
+- **Che cosa chiama E13b** (che unisce questo branch, poi `main` quando è unita):
+  - nei due endpoint dei registri, dopo la loro policy: `if (!currentUser.HasUnscoped(EventsPermissions.AtcView))` (controllori) e
+    `if (!currentUser.HasUnscoped(EventsPermissions.BookingsView))` (piloti) → `Results.StatusCode(StatusCodes.Status403Forbidden)`;
+  - nelle due voci di `EventsModule.StaffNavigation`: `new NavItemDescriptor("events:nav.…", "/staff/events/…", EventsPermissions.…,
+    Unscoped: true)`;
+  - il test che Carmine chiede: un grant su **un evento** rifiutato su tutti e due i registri, e le due voci assenti dal suo `/api/me`;
+  - ⚠️ un team di FIR e un grant a una posizione da fuori **passano** `HasUnscoped` (la risposta di Carmine li conta): che cosa leggano
+    poi nel registro — tutta la divisione o le righe del loro FIR/dipartimento — è delle letture 4 e 5 di E13b, non del nucleo;
+  - ⚠️ l'unico handler non cambia: la policy senza riga resta `HasAny`, quindi il 403 lo dà l'endpoint, con la domanda in più.
+- ⚠️ **I VID di prova**: `UnscopedNavigationTests` usa **761260–761261**, dopo le fasce date a E13b (761200–229) ed E14a (761230–259).
 
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 
