@@ -5037,8 +5037,10 @@ resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limi
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
 **Com'è andata** (16–17 ottobre 2026; branch `m4/e13b-registers`, PR #283, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo
-la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, `main` a `0ce4802`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con
-le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259)):
+la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, poi `main` a `9a78b2c`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), e sulla #283 la lettura 1 cambiata e le
+2–11 accettate, con le 4 e 5 ristrette ([la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820))):
 
 - **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
   limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.

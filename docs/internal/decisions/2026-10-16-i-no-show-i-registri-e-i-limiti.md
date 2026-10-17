@@ -1,12 +1,15 @@
 # I no-show, i registri e i limiti di chi prenota e non vola (E13b)
 
-**Data:** 16 ottobre 2026 — fase E13b di M4 (M4b), PR in coda dopo la #278 di E13a
-**Stato:** **Proposta** per le undici letture del §2; **decise** le tre scelte del §4. La domanda è l'[issue #280][q], scelta di dalberone.
-Carmine ha risposto ([la risposta][a280], pubblicata su sua istruzione): **(A) a tutte e tre**; le undici letture le decide quando la PR è
-aperta e il revisore ha letto il codice che c'è dietro, come per E11b ed E13a. Il codice segue le risposte raccomandate.
+**Data:** 16 ottobre 2026 — fase E13b di M4 (M4b), PR #283
+**Stato:** **decisa**. La domanda è l'[issue #280][q], scelta di dalberone. Carmine ha risposto **(A) alle tre scelte** del §4 ([la
+risposta][a280]) e, letta la PR, **ha cambiato la lettura 1** — un esito non è definitivo — e **accettato le letture 2–11**, con le 4 e 5
+ristrette dalla sua risposta **(b)** al punto 1 della revisione: i registri rispondono solo a chi tiene il permesso **senza uno scope di
+risorsa** ([la revisione][r283], [le letture][a283]; tutte pubblicate su sua istruzione). Il §2 è scritto come deciso.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280
 [a280]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259
+[r283]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
+[a283]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820
 **Regola applicata:** `CLAUDE.md` §5. Che lo staff confermi o giustifichi un no-show proposto con `EventAtc.Edit` e mai sul proprio turno,
 che tolga a mano un no-show con una nota anche dopo, il registro dei controllori con la penalità `noShowWeight × no-show ÷ (fatti + no-show
 + 2)`, il registro dei piloti con «togli» e una nota, i limiti di chi supera `unflownThreshold` sotto il blocco del pilota con i limiti
@@ -30,31 +33,40 @@ blocco della coda.
 
 1. **Gli esiti che lo staff scrive** (`POST /api/events/atc/shifts/{id}/attendance`, con l'esito e una nota): su un turno di un evento
    **finito e non annullato** — anche prima che `events-after` l'abbia guardato, e dopo che l'ha chiuso con le righe da verificare (la
-   risposta di Carmine sulla #272) —, un turno `Unknown` o `NoShowProposed` diventa `Attended`, `NoShow` o `Excused`; un `NoShow` diventa
-   solo `Excused` («togli il no-show», lettura 2); `Attended` ed `Excused` sono **definitivi**. La nota è **obbligatoria per `Excused`**,
-   facoltativa altrimenti, al più 500 caratteri (`EventAtcShift.MaxNoteLength`, di E11b), ed è dei dati del controllore (`[ErasedWith]`,
-   c'è da E11b). Il verbo scrive `attendance_by` e `attendance_at`; l'audit tiene chi e quando, e l'esito di prima. Nessuna mail: il design
+   risposta di Carmine sulla #272) —, un turno diventa `Attended`, `NoShow` o `Excused`, e **nessun esito è definitivo** (Carmine sulla
+   #283, che ha cambiato la prima stesura, in cui `Attended` ed `Excused` lo erano): chi può decidere il turno cambia i tre l'uno nell'altro
+   anche dopo; chiedere l'esito che il turno ha già è rifiutato (`attendanceDecided`). La nota è **obbligatoria per `Excused`**, facoltativa
+   altrimenti — **una decisione senza nota tiene quella che il turno aveva** (il punto 6 della revisione) —, al più 500 caratteri
+   (`EventAtcShift.MaxNoteLength`, di E11b), ed è dei dati del controllore (`[ErasedWith]`, c'è da E11b). Il verbo scrive `attendance_by` e
+   `attendance_at`; l'audit tiene ogni passo, chi e quando, e l'esito di prima. Nessuna mail: il design
    non ne nomina, e il controllore legge il suo registro. **Il permesso** è `EventAtc.Edit` chiesto all'unico handler **sul turno**, nella
    cura dell'evento com'è ora: negato al controllore della riga, il superadmin compreso (`DeniedToStakeholder`, c'è da E2), e con il FIR
-   della postazione per lo staff di un FIR. Due decisioni insieme sullo stesso turno, o una decisione e il giro di `events-after`, si
-   incontrano sulla `row_version` del turno: la seconda riceve **409** «leggi di nuovo». **Le statistiche** dell'evento il verbo non le
+   della postazione per lo staff di un FIR. **Due decisioni insieme** sullo stesso turno si incontrano sul blocco della riga dell'evento
+   (`FOR UPDATE`): la seconda aspetta, legge l'esito della prima e lo cambia, o è rifiutata se chiede quello che il turno ha già. **Il giro di
+   `events-after`** non prende quel blocco per i turni — salva ognuno da solo —: una decisione e il salvataggio del job sullo stesso turno
+   si incontrano sulla `row_version`, e chi perde fallisce — la decisione con **409** «leggi di nuovo», il giro con quell'evento, che il
+   giro dopo riprende (il punto 3 della revisione: la prima stesura diceva che il job prendesse lo stesso blocco). **Le statistiche** dell'evento il verbo non le
    scrive: sono una riga dell'area `Events`, che l'AOD e lo staff dei FIR non scrivono (il guardiano lo rifiuta); dopo una decisione chi
    scrive l'evento preme «Ricalcola» di E13a, come la sua consegna diceva.
 2. **Togliere un no-show** è la stessa chiamata con `Excused` su un turno `NoShow`, **in qualunque momento** dopo l'evento, con la nota
-   obbligatoria; resta tolto (lettura 1: `Excused` è definitivo). Una giustificazione decisa dopo l'evento è il «giustificato» del design
-   §4.5; un turno ceduto e approvato prima non è mai un no-show (E12).
+   obbligatoria; resta tolto finché chi può decidere il turno non lo cambia di nuovo (lettura 1). Una giustificazione decisa dopo l'evento è
+   il «giustificato» del design §4.5; un turno ceduto e approvato prima non è mai un no-show (E12).
 3. **La penalità** (§4.5) conta, degli **altri** eventi, i turni `Attended` e `NoShow` del controllore, con `noShowWeight` dalle
    impostazioni (`RosterData.PenaltiesAsync` di E11b, che già leggeva solo i confermati, ora con il peso): un no-show proposto non pesa
    finché lo staff non lo conferma, un giustificato e un `Unknown` non contano né come fatti né come no-show. Il registro la mostra con due
    decimali, la stessa cifra che il perché di un turno proposto dice.
-4. **Il registro dei controllori**: `/staff/events/controllers`, con `EventAtc.View`. **Una lettura scritta a mano** (`GET
+4. **Il registro dei controllori**: `/staff/events/controllers`, con `EventAtc.View` **tenuto senza uno scope di risorsa** — lo staff di un
+   dipartimento, i grant a una posizione, i team dei FIR, HQ e il superadmin; un grant su un evento o su una riga non lo apre, né la sua
+   voce di menu (la risposta (b) di Carmine al punto 1 della revisione della #283, con `HasUnscoped` e `NavItemDescriptor.Unscoped` della
+   fase del nucleo **E10u**). **Una lettura scritta a mano** (`GET
    /api/events/atc/register`, una pagina di righe, una per controllore con almeno un turno di un evento finito): fatti, no-show, giustificati,
    **da decidere** (proposti e `Unknown` di eventi finiti), la penalità. **Conta tutti i turni del controllore**, di ogni FIR: il registro e la
    penalità sono suoi, e lo staff di un FIR che legge un numero diverso da quello che la proposta usa leggerebbe un altro registro. Sotto, il
    **dettaglio** di un controllore è la lista del motore dei turni (`/api/events/atc/shifts` con `filter[controllerVid]`), che il motore
    restringe già alle righe che il lettore legge — lo staff di un FIR vede i turni dei suoi FIR —, con l'esito, l'evento e i verbi della
    lettura 1 sulle righe che può scrivere (`Editable`, l'unico handler, come il roster di E11b).
-5. **Il registro dei piloti**: `/staff/events/pilots`, con `EventBookings.View` — **una pagina che il design §7.2 non nomina**, accanto a
+5. **Il registro dei piloti**: `/staff/events/pilots`, con `EventBookings.View` **tenuto senza uno scope di risorsa**, come la lettura 4 —
+   **una pagina che il design §7.2 non nomina**, accanto a
    quella dei controllori: il design dice che lo staff lo vede (§3.7), non dove. **Conta** le prenotazioni verificate (`flown_checked_at`)
    senza volo (`flown_at` vuoto) e non tolte (`unflown_excused_by` vuoto) di eventi **finiti negli ultimi `pilotRetentionMonths`** (dalla
    fine dell'evento: oltre, la conservazione di E15b le porta via). **Una lettura scritta a mano** (`GET /api/events/bookings/register`): una
@@ -64,7 +76,9 @@ blocco della coda.
 6. **«Togli» di una prenotazione non volata** (`POST /api/events/bookings/{id}/excuse`, con la nota obbligatoria, al più 1000 caratteri,
    `EventBooking.MaxNoteLength` di E6a): `EventBookings.Edit` chiesto all'unico handler sulla prenotazione, nella cura dell'evento com'è ora
    (come «togli» di E6a); solo su una prenotazione verificata e non volata, una volta (definitivo); scrive `unflown_excused_by` e
-   `unflown_excused_note`, l'audit tiene quando. **La prenotazione tiene `[WithdrawnByStakeholder]`** (la regola di Carmine sulla #232, punto
+   `unflown_excused_note`, l'audit tiene quando. **Sotto un `FOR UPDATE` sulla prenotazione** (il punto 2 della revisione): due «togli»
+   insieme si mettono in fila e il secondo trova la prenotazione già tolta; la cancellazione dei dati del pilota si mette in fila anche lei,
+   e una prenotazione di una persona già cancellata non si trova — nessuna nota torna su una riga pseudonimizzata. **La prenotazione tiene `[WithdrawnByStakeholder]`** (la regola di Carmine sulla #232, punto
    6): la decisione cade dopo il volo, quando il pilota non può più ritirarla — una prenotazione è verificata solo dopo `events-after`, cioè
    dopo la fine dell'evento più sei ore, dopo l'off block di ogni suo slot. Le statistiche non cambiano: un volo tolto dal registro resta
    un volo non volato dell'evento.
@@ -93,18 +107,21 @@ blocco della coda.
     gli eventi), una sezione **«Esiti»** con la lista generata dei turni dell'evento — la lista di E13a con il nominativo, il controllore,
     l'esito e chi ha coperto — e i verbi della lettura 1 nella riga; e nel dettaglio del registro (lettura 4). La scheda «Statistiche» di
     E13a resta in sola lettura.
-11. **Il blocco `events.staffQueue`** (§7.3), sempre dal vivo e del lettore, una riga per evento con qualcosa da decidere, al più 50, dalla
-    fine più vecchia: **no-show da confermare** (`NoShowProposed`), **turni da segnare** (`Unknown` di un evento che `events-after` ha
+11. **Il blocco `events.staffQueue`** (§7.3), sempre dal vivo e del lettore, una riga per evento con qualcosa da decidere, al più 50, **dalla
+    fine più recente**: **no-show da confermare** (`NoShowProposed`), **turni da segnare** (`Unknown` di un evento che `events-after` ha
     chiuso, `after_done_at` scritto: prima il job li sta ancora guardando), **cessioni da decidere** (le richieste in attesa, come
     `events.atcCoverage` le conta di E12) — ognuna contata solo se l'unico handler dà al lettore `EventAtc.Edit` sulla riga, quindi mai le
     proprie. Il link porta alla pagina dell'ATC dell'evento. Nessuna proprietà del blocco. Un visitatore riceve `signedIn: false`. I PIREP
-    da validare entrano con E14a.
+    da validare entrano con E14a. **Quello che legge ha un limite** (il punto 4 della revisione): niente per chi non tiene `EventAtc.Edit`
+    da nessuna parte, le righe del lettore escluse già nella query, e la finestra sono le righe più recenti, così un arretrato di turni mai
+    segnati non nasconde quelli degli ultimi eventi.
 
 ### Che cosa tocca del nucleo
 
-Nessun meccanismo. Due conteggi che un blocco nuovo alza di uno, come ogni fase che ne porta uno (`CONTRIBUTING.md`):
+Nessun meccanismo in questa PR. Due conteggi che un blocco nuovo alza di uno, come ogni fase che ne porta uno (`CONTRIBUTING.md`):
 `web/src/features/admin/uiKit.test.ts` (i blocchi della galleria, 45 → 46) e `tests/IvaoHub.IntegrationTests/DataBlockEndToEndTests.cs`
-(i blocchi Data, 20 → 21); e `web/src/shared/api/schema.d.ts`, generato.
+(i blocchi Data, 20 → 21); e `web/src/shared/api/schema.d.ts`, generato. Il permesso tenuto senza scope (letture 4 e 5) lo porta una fase
+del nucleo a sé, **E10u**, con la sua nota, prima di questa (scelta di dalberone il 17 ottobre 2026: la regola 6 di `CLAUDE.md`).
 
 ## 3. Alternative scartate
 
@@ -115,7 +132,8 @@ Nessun meccanismo. Due conteggi che un blocco nuovo alza di uno, come ogni fase 
 | I limiti dell'evento anche sulla soglia | il registro è del pilota: un evento non decide chi ha prenotato e non volato altrove |
 | Il registro di un controllore contato solo sui FIR del lettore | due numeri per la stessa persona, e la proposta ne usa un terzo |
 | Il registro dei piloti dentro la scheda «Prenotazioni» di ogni evento | il registro attraversa gli eventi; la scheda è di uno |
-| Un no-show confermato che lo staff può riportare a «presente» | lo staff lo toglie con `Excused` e una nota: l'audit racconta che cosa è successo, il registro non torna indietro di nascosto |
+| Esiti definitivi (la prima stesura della lettura 1) | Carmine sulla #283: un errore si corregge; l'audit tiene ogni passo |
+| I registri aperti a chi tiene il permesso da qualche parte, anche su un evento solo (la prima stesura) | Carmine sulla #283, (b): un grant su una riga leggerebbe i conti di tutta la divisione |
 | Una mail al controllore a ogni decisione | il design non ne nomina; si aggiunge con un tipo nuovo se lo staff la vuole |
 
 ## 4. Le domande per Carmine
@@ -137,8 +155,12 @@ Le undici letture del §2, con le tre in cui c'è una scelta vera:
 **La risposta di Carmine** ([sull'issue #280][a280], 16 ottobre 2026): **(A)** alle letture 4, 5 e 8 — tre letture scritte a mano, i
 dettagli nelle liste del motore, la pagina `/staff/events/pilots` —, **(A)** alla lettura 7 — fasce fisse dall'inizio dell'evento, sull'orario
 dello slot allo scalo dell'evento — e **(A)** alla lettura 6 — `EventBookings.Edit` è `DeniedToStakeholder` nel catalogo. Le undici letture
-restano **Proposta** fino alla lettura della PR. (Dopo la pubblicazione l'ultima frase della lettura 1 è stata corretta sull'issue, con una
-riga che lo dice: il verbo non scrive le statistiche.)
+restavano **Proposta** fino alla lettura della PR. (Dopo la pubblicazione l'ultima frase della lettura 1 è stata corretta sull'issue, con
+una riga che lo dice: il verbo non scrive le statistiche.)
+
+**Le risposte di Carmine sulla #283** (17 ottobre 2026, [la revisione][r283] e [le letture][a283]): la lettura 1 **cambiata** — un esito non
+è definitivo —; le letture 2–11 **accettate**, con le 4 e 5 ristrette alla risposta **(b)**: i registri solo a chi tiene il permesso senza
+uno scope di risorsa, voci di menu comprese. Il §2 le riporta.
 
 ## Da portare nel piano
 
