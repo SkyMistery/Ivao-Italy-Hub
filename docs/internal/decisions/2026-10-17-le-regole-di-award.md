@@ -1,16 +1,18 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
 **Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR in coda dopo la #289 di E14a
-**Stato:** **Proposta**: le due domande del §4 aspettano Carmine, le letture del §2 la revisione della PR.
+**Stato:** **Proposta**: la domanda 1 del §4 aspetta Carmine (il codice segue la (A) raccomandata), le letture del §2 la revisione della PR.
+La domanda 2 è **decisa**: dalberone ha scelto la (A), una fase del nucleo a sé, **E10v** (`m4/e10v-session-airports`, nota
+`2026-10-17-gli-scali-di-una-sessione`), che E14b unisce prima della metà pilota dei PIREP `Auto`.
 **Regola applicata:** `CLAUDE.md` §5. Che un evento abbia regole di award da un **elenco chiuso** di criteri, che accettare un PIREP le
 valuti sulle voci **verificate** e proietti un segnale di award per regola soddisfatta **nella stessa transazione**, che chi ha
 `Awards.Assign` assegni a mano dalla coda del nucleo; che la preferenza «riporta automaticamente la mia partecipazione agli eventi» (spenta)
 faccia scrivere a `events-after` i PIREP `Auto`; che i validatori ricevano una volta al giorno `reportsToValidate`, sono **decisi** (design
 `09-design-m4.md` §1.9, §1.11, §5.1, §5.4, §8.3, §8.4; nota `2026-09-29-dopo-l-evento-e-gli-award`, punti 3 e 4; il limite di Carmine
-sull'[issue #287][l287]). Questa nota registra le **letture** che la fase ha dovuto fare dove il design non dice — casi **(a)** e **(b)**: una
-tabella nuova (`evt_award_rules`) e una colonna (`evt_events.auto_reports_after_vid`) nella migrazione `AddAwardRules` dopo `AddSupportReports`
-di E14a, un job (`events-digest`), una preferenza, un tipo di mail — e **due domande** dove quello che il design chiede non entra in quello
-che il nucleo offre oggi.
+sull'[issue #287][l287]). Questa nota registra le **letture** che la fase ha dovuto fare dove il design non dice — casi **(a)** e **(b)**: due
+tabelle nuove (`evt_award_rules`, ed `evt_report_awards` con la (A) della domanda 1) e una colonna (`evt_events.auto_reports_after_vid`) nella
+migrazione `AddAwardRules` dopo `AddSupportReports` di E14a, un job (`events-digest`), una preferenza, un tipo di mail — e **due domande** dove
+quello che il design chiede non entra in quello che il nucleo offre oggi.
 
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
 
@@ -46,9 +48,16 @@ riepilogo.
 5. **Una decisione che cambia** (la scelta 1 di E14a e il limite di Carmine sulla #287): da accettato a rifiutato i segnali ancora **in
    attesa** se ne vanno (il nucleo toglie un segnale `Pending` che la riga non proietta più); uno **scartato** da chi assegna resta com'è nella
    coda; se **un segnale è diventato un award** (`Handled`) il cambio è **rifiutato** con `reportAwardAssigned`, e la scheda non offre più
-   «Cambia la decisione» (`Decidable` falso). La domanda «è diventato un award?» il modulo la legge da `cms_award_signals`, che il suo contesto
-   già mappa (come `TourRetentionJob` dei tour), **sotto il blocco** delle righe dei segnali nella transazione della decisione: un'assegnazione
-   nello stesso istante passa prima o dopo, mai in mezzo. Da rifiutato ad accettato le regole si rivalutano.
+   «Cambia la decisione» (`Decidable` falso). Da rifiutato ad accettato le regole si rivalutano.
+5-bis. ⚠️ **Per il revisore: il modulo legge una tabella del nucleo.** La domanda «è diventato un award?» il modulo la fa a
+   **`cms_award_signals`** (lo stato `Handled`) **dal contesto degli eventi**, che mappa la tabella con la configurazione del nucleo
+   (`ModuleDbContext.MapProjectionTables`, esclusa dalle sue migrazioni: c'è perché l'interceptor scriva i segnali nella transazione della
+   riga), e la legge **sotto `FOR UPDATE`** delle righe dei segnali, nella transazione della decisione: un'assegnazione nello stesso istante
+   passa prima o dopo, mai in mezzo (`ReportAwards.AssignedAsync`); la lista dello staff la legge senza blocco
+   (`ReportAwards.AssignedAmongAsync`). **Il precedente** è `TourRetentionJob` dei tour, che legge la stessa tabella (dal contesto del nucleo,
+   senza blocco) per sapere se un segnale aspetta ancora. Nessun servizio del nucleo risponde oggi a «una riga sorgente ha dato un award?»; se
+   il revisore la vuole letta attraverso il nucleo, è una fase del nucleo a sé (un metodo che risponda per `source_module` + `source_id`,
+   sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query.
 6. **«Duplica» copia le regole** (design §2.3-bis: «ogni blocco copia le righe che esistono nella sua fase»), come E11a ha fatto per le
    postazioni ed E17 per domande e attività: l'award, il criterio e i parametri come sono, nella cura della copia, senza ricontrollarli (un
    award ritirato si rifiuta al prossimo salvataggio della regola). Le regole sono dell'area `Events`: chi duplica non ha bisogno di un
@@ -66,7 +75,7 @@ riepilogo.
      divisione per un evento `whole_division`; **una voce per postazione**, dal primo minuto all'ultimo dentro la finestra, al più dodici ore,
      al più venti voci; i minuti come li conta E13a; **verificata con almeno `attendanceMinimumMinutes`** (una connessione di pochi minuti c'è,
      non verificata).
-   - **Pilota**: la domanda 2.
+   - **Pilota**: la domanda 2, decisa (A): sulle sessioni di E10v, scritta dopo averla unita.
 9. **`events-digest`** (§5.3, §8.4): ogni giorno alle **07:15 nel fuso della divisione** (il trigger lo dice), dopo il riepilogo dei tour delle
    07:00. A chi tiene `EventReports.Edit` (`IPermissionHolders` del nucleo), i PIREP `Submitted` degli eventi che **lui** può validare
    (dipartimento e scope come l'unico handler), **i suoi esclusi**, una riga per evento con quanti e da quando, e il link alla scheda; nessuna
@@ -88,7 +97,7 @@ riepilogo.
 | Il «già mandato oggi» in una tabella | E10j: è la riga del giro |
 | Ripetere la verifica del membro (`ReportCheck`) per le voci `Auto` | le sessioni sono già quelle trovate: una seconda domanda per voce costerebbe il lotto |
 
-## 4. Le domande per Carmine
+## 4. Le domande — la 1 per Carmine, la 2 decisa
 
 1. **Un PIREP non può proiettare due segnali per il suo membro.** Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
    `(source_module, source_id, vid)` di `cms_award_signals`, e `ProjectionWriter` riconosce un segnale dal VID). Un PIREP è di un membro: con
@@ -104,7 +113,8 @@ riepilogo.
      segnale.
 
    **Raccomandata: (A)**: usa il meccanismo com'è (una riga sorgente per segnale, come l'iscrizione a un tour), non tocca i tour, e ogni award
-   ha il suo segnale in coda.
+   ha il suo segnale in coda. Il codice della PR la segue, con la lettura 5-bis per sapere se un segnale è diventato un award; con la (B) o la
+   (C) i segnali si riscrivono, e la (B) passa prima da una fase del nucleo.
 2. **I PIREP pilota `Auto` hanno bisogno degli aeroporti di una sessione, che il nucleo non dà.** `INetworkSessionSource` (E10t) risponde
    `NetworkSession(Id, Vid, Callsign, StartedAt, EndedAt)`: il DTO del tracker dietro ha partenza e arrivo, ma il record neutro li lascia.
    Una voce pilota è callsign, partenza, arrivo e giorno, e tre criteri leggono gli aeroporti; chiedere per aeroporto non basta (con la
@@ -117,7 +127,8 @@ riepilogo.
      `whole_division`, verificati come li ha trovati.
    - (B) **Niente nel nucleo**: E14b scrive solo i PIREP ATC `Auto`, e i voli aspettano una fase dopo.
 
-   **Raccomandata: (A)**: due campi facoltativi di un record del nucleo, letti da un DTO che già li ha.
+   **Raccomandata: (A)**: due campi facoltativi di un record del nucleo, letti da un DTO che già li ha. **Decisa: (A)**, scelta di dalberone:
+   la fase del nucleo **E10v** (`m4/e10v-session-airports`), per la regola 6.
 
 ## Da portare nel piano
 
