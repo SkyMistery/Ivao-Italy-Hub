@@ -5532,7 +5532,78 @@ Design §2.3-bis, §4.4 (le prenotazioni di IVAO), §11, §15; note `i-dati-dei-
 di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. Il giro completo verde.
 **Fatta quando**: il giro completo di M4b passa in locale e in CI.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e15b-retention-and-m4b-round`, nata `--no-track` dalla testa di E14b `b2cd41b9`, in coda dopo la
+#293 di E14b — e sotto di lei E10v #291, E14a #289, E13b #283, E10u #288, `main` a `8bf63ea` —; **nessuna migrazione**; nota nuova
+`2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande a Carmine sull'[issue
+#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294), la (B) raccomandata da dalberone per il giro; il rapporto di chiusura
+`2026-10-17-m4-review`):
+
+- **Ogni voce controllata sul codice prima di scrivere** (come chiedeva il coordinatore): tre delle sei erano già fatte da fasi prima, e
+  questa fase ne ha aggiunto solo i test.
+  1. **`events-retention` allargato** (punto 1): due passi in più dello stesso `RunAsync` di E17, decisi dalle date in un posto solo,
+     `EventRetention.cs`. **I piloti** dopo `pilotRetentionMonths` — le prenotazioni (le coppie di E7 insieme), i PIREP pilota con le loro
+     voci e le righe delle regole soddisfatte di E14b, ognuna cancellata dal modulo così che lasci la sua riga nell'audit; un segnale ancora
+     in attesa se ne va con la sua riga —; **le disponibilità** con le finestre, a evento finito (la domanda 1 della nota, la (A)). Turni,
+     esiti, PIREP ATC e cessioni restano. **Una transazione per evento**: prima le statistiche dalle righe con `EventStatistics.WriteAsync`
+     sotto il blocco della riga (la regola di E13a), poi le cancellazioni attraverso l'interceptor, poi **`AuditRedaction.EmptyDeletedAsync`**
+     (E10s) per iscrizioni, prenotazioni, PIREP, voci e disponibilità — non per posti, finestre e segnali, che non hanno colonne segnate. La
+     parte in presenza di E17 ora scrive le sue statistiche con la stessa funzione.
+  2. **Il registro dei piloti sul confine della conservazione** (`EventRetention.PilotsKeptSince`, lettura 2): prima scriveva
+     `now.AddMonths(-months)` da sé, e la conservazione avrebbe contato in avanti dalla fine; a fine mese le due date non coincidono (il 31
+     agosto più sei mesi è il 28 febbraio, quando il registro conta ancora la prenotazione: provato nel test di unità).
+  3. **Le statistiche dopo** (lettura 3): oltre `pilotRetentionMonths` e senza righe dei piloti, «Ricalcola» tiene prenotati, volati, non
+     volati, PIREP mandati e accettati e segnali; oltre la fine e senza disponibilità, il loro numero. Il limite — i PIREP mandati e accettati
+     sono un numero solo, e un PIREP ATC deciso di nuovo dopo due anni non li sposta più — è scritto nella nota.
+  4. **`EventsPersonalData`** (punto 2): **già completo** per ogni riga di M4b (E11a le disponibilità, E11b i turni, E12 le cessioni, E14a i
+     PIREP; E14b le colonne di `evt_report_awards` in `ErasureTests`). Nessuna colonna nuova, nessuna riga nuova in `ErasureTests`; il test
+     del registro contato uguale è nuovo.
+  5. **«Duplica» per l'ATC** (punto 3): **già fatto** — le postazioni con le loro ore spostate (E11a), le regole di award (E14b) —; il test
+     di questa fase lo prova con tutte le righe dei membri e i segni dei job sulla sorgente, e niente di loro sulla copia.
+  6. **Le prenotazioni della rete accanto al roster** (punto 4, letture 6 e 7): `GET /api/events/atc/events/{id}/network-bookings`
+     (`Atc/NetworkBookings.cs`), l'ottava lettura scritta a mano dell'ATC, l'unico handler su ogni postazione con il suo FIR; una domanda a
+     `IAtcBookingSource` per la finestra dell'evento, tenute le prenotazioni sui nominativi delle postazioni nelle loro ore, con chi (il
+     nome dal lettore del nucleo, o il numero), per che cosa, e **se ha quel turno nel roster**; `available` falso quando la rete non
+     risponde o l'evento tocca più di sette giorni. La sezione «Prenotazioni sulla rete» sotto il roster (`screens/networkBookings.tsx`),
+     una lista generata con **una query sua** (la rete lenta non ferma il roster), `retry` spento; `available` falso è un errore della query
+     (`NetworkBookingsUnavailable`), e la sezione dice «non disponibili». Non su un evento annullato.
+  7. **Il giro completo di M4b** (punto 5): `web/e2e/full/events-m4b-round.spec.ts`, sulla (A) della domanda 2 della nota — le
+     impostazioni a 0 giorni per la durata della spec, un evento di un quarto d'ora che comincia un minuto prima del giro di `events-roster`,
+     e la spec **aspetta il job vero**: disponibilità dalla pagina, roster proposto e pubblicato con la mail, le prenotazioni della rete
+     accanto, la fine tagliata con la mail del cambio, il PIREP ATC dopo la fine, accettato dal web master, con la mail della decisione. **Il
+     segnale di award no**: il banco non ha sessioni dei suoi personaggi (la domanda 2, che propone la (B), una fase del nucleo per il banco).
+  8. **`docs/FORKING.md`** (punto 6): tutta la seconda parte — la pubblicazione e la cessione, il dopo evento, i registri e i limiti, i PIREP
+     e gli award, le prenotazioni della rete, le impostazioni, i blocchi, le mail e i sei job, che cosa tiene e per quanto, che cosa legge
+     dalla rete, che cosa non fa.
+  9. **Il rapporto di chiusura di M4** (punto 6), `decisions/2026-10-17-m4-review.md`, sul modello di quelli di M1 e M3: contato sul codice
+     di questo branch da un agente in sola lettura e ricontrollato a mano sui tre numeri principali (48 endpoint a mano, 19 tabelle, 15
+     risorse `MapCrud`).
+- **I test**: integrazione `EventsRetentionTests` (4; VID **761300–761308**, una fascia nuova, 761300–761329; slug `evt-test-e15b-…`) — la
+  conservazione dei piloti e delle disponibilità con le statistiche, il registro, l'audit e il segnale; il controllore e il pilota cancellati
+  con i registri contati uguali; «Duplica» per l'ATC; le prenotazioni della rete sul giorno registrato di E15a (la torre del controllore nel
+  roster, l'esame sull'avvicinamento, niente fuori dalle ore, la ricerca, 403, 404, «non disponibile» oltre la settimana) —; unità
+  `EventsRetentionRulesTests` (4: il confine anche a fine mese, le disponibilità con l'evento finito, le prenotazioni accanto al roster);
+  vitest `networkBookings.test.tsx` (3); il giro `full/events-m4b-round.spec.ts` (slug `evt-e2e-e15b-…`: un evento con un PIREP resta).
+  **Provato al contrario**, ognuna sul codice di prima e poi rimessa: senza i numeri tenuti delle statistiche il test della conservazione cade
+  al confronto dopo «Ricalcola» (0 prenotati invece di 2); senza le ore delle postazioni entra la torre di Malpensa; senza lo svuotamento
+  delle prenotazioni il volo resta nell'audit.
+- **Gli endpoint scritti a mano** (piano §16.6): uno, la lettura composta delle prenotazioni della rete.
+- **Trovato dal giro**: su `/events/mine` il titolo di un evento è in tre elenchi (il turno, la disponibilità, i PIREP aperti), e un
+  `getByRole('listitem', { name })` senza l'elenco cade in strict mode: la spec cerca nell'elenco «Eventi per cui puoi mandare un PIREP».
+  **E `e2e:full` intero** ha trovato che la sezione nuova mette sulla pagina dell'ATC una riga con lo stesso nominativo di una postazione (la
+  torre di Fiumicino del giorno registrato): `events-atc.spec.ts` di E11a cercava la riga per il solo nominativo, e ora cerca quella con
+  «Apri» — **un test di una fase prima, cresciuto con la forma**.
+- **Verificato, in locale** (17 ottobre 2026, sulla testa di E14b `b2cd41b9` e i commit di E15b): `dotnet build IvaoHub.sln -c Release`
+  **senza avvisi**; `dotnet format --verify-no-changes` sui file C# toccati; `gen:api` senza differenze dopo lo schema rigenerato; unità
+  **1377/1377**; **integrazione intera senza filtro, da sola, 681/681** (11 minuti; la classe nuova 4/4 al primo giro); `pnpm lint`,
+  `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **813 in 118 file**; lo smoke `--workers=2`
+  **184/184**; **il giro completo di M4b da solo** sul banco 5153 (`ivaohub_e2e_e15b` tolto prima, dietro il lock di Mailpit): al primo giro
+  passato fino al PIREP — disponibilità, proposta e pubblicazione dal job vero, mail, correzione — e caduto sul selettore qui sopra; corretto,
+  **1/1 in 29,7 minuti**; **`e2e:full` intero** sul banco ricreato: al primo giro 71/72 (43,8 min; la spec di E11a, qui sopra), corretta e rifatta da sola 1/1,
+poi **72/72 al secondo giro intero** (43,1 min), il giro di M4b compreso; `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa
+  (i file del nucleo sono delle fasi in coda, con le loro note; di E15b nessuno).
+- **Non verificato**: la CI (la dice la PR); il segnale di award sul banco (la domanda 2); un `events-retention` vero sul banco (gira il primo
+  del mese: lo provano `EventsRetentionTests`); IVAO vero dietro le prenotazioni accanto al roster (il client delle fixture; il codice della
+  sorgente è quello che E15a ha provato contro IVAO); la sezione a 375 px.
 
 ### E16 — Domande e iscrizione
 

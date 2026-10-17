@@ -1,8 +1,12 @@
 # La conservazione di M4b, le prenotazioni della rete accanto al roster, il giro completo (E15b)
 
 **Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), in coda dopo la #293 di E14b
-**Stato:** **Proposta**: le due domande del §4 aspettano una risposta (dove andranno lo decide dalberone; il link qui, quando c'è), le
-letture del §2 la revisione della PR. Il codice segue le raccomandazioni.
+**Stato:** **Proposta**: le due domande del §4 aspettano Carmine sull'[issue #294][q294] — la 2 nel testo dell'issue, con la (B)
+raccomandata da dalberone; la 1 in [un suo commento][q294a], con la (A) —, le letture del §2 la revisione della PR. Il codice segue la (A) di
+tutte e due; la spec del giro regge anche con la (B), dove cambia solo come si aspetta il job.
+
+[q294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294
+[q294a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6237599717
 **Regola applicata:** `CLAUDE.md` §5. Che prenotazioni e PIREP dei piloti si cancellino dopo `pilotRetentionMonths`, le disponibilità «a
 roster pubblicato e a evento finito», e turni, esiti, PIREP ATC e cessioni restino per sempre; che lo faccia `events-retention` una volta al
 mese, decidendo dalle date; che le prenotazioni ATC della rete si leggano **accanto al roster, alla richiesta**, senza job e senza cache, al
@@ -70,7 +74,7 @@ migrazione.
 
 ## 4. Le domande
 
-**Domanda 1 — le disponibilità di un evento il cui roster non è mai stato pubblicato.** Il design (§11) dice «cancellate a roster
+**Domanda 1 — le disponibilità di un evento il cui roster non è mai stato pubblicato** ([sull'issue #294][q294a]). Il design (§11) dice «cancellate a roster
 pubblicato + la fine dell'evento». Un evento annullato prima della pubblicazione, o finito senza che il roster sia stato proposto, non ha mai
 il roster pubblicato.
 
@@ -97,8 +101,9 @@ E14a ed E14b l'hanno scritto nel loro handoff.
 - **(C)**: il giro come test d'integrazione (`EventsM4bRoundTests`: i job chiamati nel processo, la sera delle fixture spostata), più una spec
   `e2e:full` delle sole schermate, senza job.
 
-**Raccomandata la (B)** se il «fatta quando» vuole il giro intero sul banco, in CI; altrimenti la (A), che regge con la (B) (cambia solo
-come si aspetta il job). Fino alla risposta la fase è scritta sulla (A).
+**Raccomandata la (B)** (dalberone, che ha portato la domanda a Carmine sull'[issue #294][q294]) se il «fatta quando» vuole il giro intero
+sul banco, in CI; altrimenti la (A), che regge con la (B) (cambia solo come si aspetta il job). Fino alla risposta la fase è scritta sulla (A);
+con la (B) la fase del nucleo del banco viene prima, ed E15b ne unisce il branch.
 
 ## 5. Alternative scartate
 

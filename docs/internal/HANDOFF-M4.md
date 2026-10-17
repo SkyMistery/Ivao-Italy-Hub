@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
+della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
+`m4/e15b-retention-and-m4b-round`, **in coda dopo la #293** di E14b: nata `--no-track` dalla testa di E14b `b2cd41b9`, nessuna migrazione. La
+nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due domande (le disponibilità di un evento mai pubblicato; il giro completo sul
+banco, che non lancia un job e non ha sessioni dei suoi personaggi); il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è
+finita nel codice** («Che cosa ha lasciato E15b», sotto).
+
+**L'aggiornamento di E10v:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
 `m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`. Una nota nuova,
 `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b). Da E10v una `NetworkSession` dice anche gli scali del suo piano di volo:
 `DepartureIcao`/`ArrivalIcao` dell'ultima revisione e `Routes`, ogni revisione dalla più vecchia («Che cosa ha lasciato E10v», sotto).
@@ -339,6 +346,35 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E15b (17 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b)
+
+- **Che cosa c'è** (il dettaglio in `10`, E15b, «Com'è andata»; **nessuna migrazione**; del nucleo solo `schema.d.ts` generato e
+  `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande; il rapporto di chiusura
+  `2026-10-17-m4-review`): l'ultima fase di **M4b**, e con lei **M4 è finita nel codice**.
+  - **La conservazione di M4b**: `EventRetention.cs` (le date in un posto solo, il registro dei piloti compreso) ed `EventsRetentionJob.cs`
+    (piloti dopo `pilotRetentionMonths`, disponibilità a evento finito, in presenza come E17; le statistiche prima, l'audit svuotato dopo);
+    `After/EventStatistics.cs` tiene i numeri quando le righe non ci sono più.
+  - **Le prenotazioni della rete accanto al roster**: `Atc/NetworkBookings.cs` (`GET /api/events/atc/events/{id}/network-bookings`) e
+    `screens/networkBookings.tsx`, sotto il roster nel pannello dell'ATC.
+  - **Il giro completo di M4b**: `web/e2e/full/events-m4b-round.spec.ts`, che aspetta il giro vero di `events-roster`.
+  - **I test**: integrazione `EventsRetentionTests` (VID **761300–761308**, slug `evt-test-e15b-…`); unità `EventsRetentionRulesTests`; vitest
+    `networkBookings.test.tsx`.
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **Le due domande della nota** (§4) aspettano Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 1, le disponibilità di un evento mai pubblicato (il codice con la (A), a evento
+    finito); la 2, il giro sul banco — la (B), una fase del nucleo con `/e2e/jobs/{name}` e le sessioni di un personaggio del banco, renderebbe
+    il giro intero, segnale compreso, e veloce. Il codice è sulla (A).
+  - ⚠️ **Il giro aspetta il job**: dura fino a mezz'ora (un quarto d'ora per il giro di `events-roster`, un quarto d'ora l'evento), cambia
+    `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo. Un `e2e:full` interrotto a metà li lascia a 0: il
+    giro dopo li legge e li rimette come li trova, quindi vanno rimessi a mano sul banco (3 e 2), o il banco ricreato.
+  - ⚠️ **Chi scrive le statistiche dopo questa fase** sa che oltre `pilotRetentionMonths`, senza righe dei piloti, i numeri delle prenotazioni,
+    dei PIREP e dei segnali sono quelli della conservazione, e che `AtcAvailabilities` resta quello che c'era quando le disponibilità se ne
+    sono andate.
+  - ⚠️ **Le prenotazioni della rete** stanno sotto la chiave dell'ATC nel browser: ogni correzione del roster le rilegge da IVAO. Con molte
+    correzioni di fila sono tante chiamate; Carmine ha voluto i dati freschi (#207).
+  - **Il rapporto di chiusura** conta la coda come unita: se la revisione cambia un endpoint o una tabella, il numero si corregge lì, con la
+    colonna «dopo» come per M1.
+  - ⚠️ **I VID di prova**: E15b ha usato **761300–761308** della fascia nuova 761300–761329.
 
 ### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `7c094fd5` (E13b `0c8d531`, E10u e `main` a `8bf63ea`) e `547d402d` unite)
 
