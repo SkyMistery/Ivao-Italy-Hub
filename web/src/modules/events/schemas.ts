@@ -763,15 +763,11 @@ export const DECIDED_ATTENDANCES = ['NoShow', 'Excused', 'Attended'] as const;
 export type DecidedAttendanceValue = (typeof DECIDED_ATTENDANCES)[number];
 
 /**
- * The outcomes a shift may still pass to (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 1): an unknown shift or a no-show the
- * check proposed to any, a no-show to excused alone — the no-show taken away —; none from attended or excused. The server decides again.
+ * The outcomes a shift may pass to (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 1, as Carmine changed it on #283): any of the
+ * three but the one it has — no outcome is final; a no-show is offered excused first, the no-show taken away. The server decides again.
  */
 export function decidableAttendances(current: string): DecidedAttendanceValue[] {
-  return current === 'Unknown' || current === 'NoShowProposed'
-    ? [...DECIDED_ATTENDANCES]
-    : current === 'NoShow'
-      ? ['Excused']
-      : [];
+  return DECIDED_ATTENDANCES.filter((outcome) => outcome !== current);
 }
 
 /** Deciding how a shift went, mirroring `AttendanceDecision`: the outcome among those still open, and a note — the server asks one to excuse. */

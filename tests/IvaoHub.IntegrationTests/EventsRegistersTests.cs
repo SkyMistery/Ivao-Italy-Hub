@@ -149,8 +149,8 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
     /// <summary>
     /// A no-show taken away stays taken away, and the register tells it (§4.5, readings 1–4): confirmed, it counts in the controller's
-    /// register with its penalty; taken away with a note — none is refused —, it is excused for good: the register and the controller's own
-    /// record say so, the audit keeps who took it away, and it does not become a no-show again. The statistics of the event wait for
+    /// register with its penalty; taken away with a note — none is refused —, it is excused, and asked to be excused again it is refused: the
+    /// register and the controller's own record say so, and the audit keeps who took it away. The statistics of the event wait for
     /// «Recalculate» of whoever writes the event: the staff of the ATC do not write them.
     /// </summary>
     [Fact]
@@ -174,8 +174,8 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(["errors.required"], (await RefusedAsync(await DecideAsync(aod, noShow, ShiftAttendance.Excused, note: null, token), token))["note"]);
         await NoContentAsync(await DecideAsync(aod, noShow, ShiftAttendance.Excused, $"{SlugStem} the network fell", token), token);
 
-        // Taken away for good.
-        Assert.Equal([RegisterDecisions.DecidedKey], (await RefusedAsync(await DecideAsync(aod, noShow, ShiftAttendance.NoShow, note: null, token), token))["attendance"]);
+        // Taken away: excused again is the outcome it has.
+        Assert.Equal([RegisterDecisions.DecidedKey], (await RefusedAsync(await DecideAsync(aod, noShow, ShiftAttendance.Excused, "again", token), token))["attendance"]);
 
         var excused = RegisterRow(await PageAsync(aod, $"{RegisterEndpoints.ControllersPattern}?q={ControllerVid}", token), ControllerVid);
         Assert.Equal((1, 0, 1), (excused.GetProperty("attended").GetInt32(), excused.GetProperty("noShows").GetInt32(), excused.GetProperty("excused").GetInt32()));
@@ -207,6 +207,53 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
             .ToListAsync(token);
         Assert.Equal(AodVid, Assert.Single(audit).Vid);
     }
+
+    /// <summary>
+    /// No outcome is final (Carmine's answer on #283, reading 1): an «attended» given by mistake becomes a no-show, the no-show becomes excused
+    /// with a note, and the excuse becomes attended again without one — the shift keeps the note it had —; the register follows every step,
+    /// and the audit keeps each of them, by whom. The controller decides none of them on their own shift.
+    /// </summary>
+    [Fact]
+    public async Task ADecidedOutcomeChangesLaterAndADecisionWithoutANoteKeepsTheOne()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Hour(DateTime.UtcNow.AddDays(-6));
+        var id = await EventRowAsync("changes", starts, starts.AddHours(4), token);
+        var position = await PositionRowAsync(id, starts, starts.AddHours(4), token);
+        var shift = await ShiftRowAsync(id, position, SuperadminVid, starts, starts.AddHours(1), ShiftAttendance.NoShowProposed, token);
+
+        using var aod = await SignedInAsync(AodVid, token);
+        await NoContentAsync(await DecideAsync(aod, shift, ShiftAttendance.Attended, note: null, token), token);
+        await NoContentAsync(await DecideAsync(aod, shift, ShiftAttendance.NoShow, $"{SlugStem} not on the frequency", token), token);
+        Assert.Equal((ShiftAttendance.NoShow, $"{SlugStem} not on the frequency"), Outcome((await ShiftsAsync(id, token))[shift]));
+
+        await NoContentAsync(await DecideAsync(aod, shift, ShiftAttendance.Excused, $"{SlugStem} a power cut", token), token);
+        await NoContentAsync(await DecideAsync(aod, shift, ShiftAttendance.Attended, note: null, token), token);
+
+        // Without a note the shift keeps the one it had.
+        Assert.Equal((ShiftAttendance.Attended, $"{SlugStem} a power cut"), Outcome((await ShiftsAsync(id, token))[shift]));
+        var row = RegisterRow(await PageAsync(aod, $"{RegisterEndpoints.ControllersPattern}?q={SuperadminVid}", token), SuperadminVid);
+        Assert.Equal((0, 0), (row.GetProperty("noShows").GetInt32(), row.GetProperty("excused").GetInt32()));
+
+        // The controller, super administrator as they are, changes nothing on their own shift.
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        using (var own = await DecideAsync(superadmin, shift, ShiftAttendance.Excused, "mine", token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, own.StatusCode);
+        }
+
+        // Four changes in the audit after the row was written, each by the ATC operations.
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var steps = await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking()
+            .Where(entry => entry.Entity == "evt_atc_shifts"
+                && entry.EntityId == shift.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                && entry.BeforeJson != null)
+            .ToListAsync(token);
+        Assert.Equal(4, steps.Count);
+        Assert.All(steps, step => Assert.Equal(AodVid, step.Vid));
+    }
+
+    private static (ShiftAttendance, string?) Outcome(EventAtcShift shift) => (shift.Attendance, shift.AttendanceNote);
 
     /// <summary>
     /// A pilot over the threshold does not pass the limits per band and per event (§3.7, reading 7): with three bookings not flown, the
@@ -301,6 +348,58 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.False(record.GetProperty("limited").GetBoolean());
         var excused = Assert.Single(record.GetProperty("unflown").EnumerateArray(), entry => entry.GetProperty("id").GetInt64() == unflown[0]);
         Assert.Equal((true, $"{SlugStem} the hub was down"), (excused.GetProperty("excused").GetBoolean(), excused.GetProperty("excusedNote").GetString()));
+    }
+
+    /// <summary>
+    /// Two take-outs of the same booking at once (the review of #283, point 2): they meet on the booking's lock, one takes it out and the
+    /// other reads it out already — the first one's VID and note stay, never overwritten. A booking of a pilot whose data was erased is not
+    /// found: no note is written back onto the pseudonymised row.
+    /// </summary>
+    [Fact]
+    public async Task TwoTakeOutsAtOnceTakeItOutOnceAndAnErasedPilotsBookingIsNotFound()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var history = await HistoryAsync("concurrent-history", token);
+        var unflown = await UnflownAsync(history, MemberVid, 2, excused: 0, token);
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var answers = await Task.WhenAll(
+            ExcuseAsync(coordinator, unflown[0], $"{SlugStem} first", token),
+            ExcuseAsync(superadmin, unflown[0], $"{SlugStem} second", token));
+
+        try
+        {
+            Assert.Equal(
+                [HttpStatusCode.NoContent, HttpStatusCode.BadRequest],
+                answers.Select(answer => answer.StatusCode).Order());
+
+            var won = answers[0].StatusCode == HttpStatusCode.NoContent ? (CoordinatorVid, $"{SlugStem} first") : (SuperadminVid, $"{SlugStem} second");
+            var stored = (await BookingsAsync(history, token))[unflown[0]];
+            Assert.Equal(((int?)won.Item1, won.Item2), (stored.UnflownExcusedBy, stored.UnflownExcusedNote));
+        }
+        finally
+        {
+            foreach (var answer in answers)
+            {
+                answer.Dispose();
+            }
+        }
+
+        // The pilot's data erased meanwhile: the core's pseudonym in the VID, the note emptied. Nothing to take out any more.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Bookings.IgnoreQueryFilters()
+                .Where(booking => booking.Id == unflown[1])
+                .ExecuteUpdateAsync(set => set.SetProperty(booking => booking.BookerVid, -761206), token);
+        }
+
+        using (var erased = await ExcuseAsync(coordinator, unflown[1], $"{SlugStem} too late", token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, erased.StatusCode);
+        }
+
+        Assert.Null((await BookingsAsync(history, token))[unflown[1]].UnflownExcusedNote);
     }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------

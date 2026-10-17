@@ -10,12 +10,13 @@ import { ApiError } from '../../shared/api/problem';
  * what it would accept.
  */
 
-test('a shift is offered the outcomes still open to it', () => {
+test('a shift is offered every outcome but the one it has: none is final', () => {
   expect(decidableAttendances('Unknown')).toEqual(['NoShow', 'Excused', 'Attended']);
   expect(decidableAttendances('NoShowProposed')).toEqual(['NoShow', 'Excused', 'Attended']);
-  expect(decidableAttendances('NoShow')).toEqual(['Excused']);
-  expect(decidableAttendances('Attended')).toEqual([]);
-  expect(decidableAttendances('Excused')).toEqual([]);
+  // The no-show taken away first.
+  expect(decidableAttendances('NoShow')).toEqual(['Excused', 'Attended']);
+  expect(decidableAttendances('Attended')).toEqual(['NoShow', 'Excused']);
+  expect(decidableAttendances('Excused')).toEqual(['NoShow', 'Attended']);
 });
 
 test('the form of «Decide» takes only the outcomes it offers, and a note the server asks to excuse', () => {

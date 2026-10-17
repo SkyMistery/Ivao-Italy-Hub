@@ -39,7 +39,8 @@ public sealed record EventAtcShiftDto(
 /// and the names are read for a page at once (<see cref="ShiftEndpoints.RowsAsync"/>); a row alone has neither.
 /// <para>With E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 1, 4 and 10) its event's title — the register of a controller
 /// lists the shifts of every event —, the staff's note on how it went, and whether the reader may decide it now: an event over and not
-/// cancelled, an outcome not final, and <c>EventAtc.Edit</c> from the one handler on the row — never on their own.</para>
+/// cancelled — no outcome is final (Carmine's answer on #283) — and <c>EventAtc.Edit</c> from the one handler on the row — never on their
+/// own.</para>
 /// </summary>
 public sealed record EventAtcShiftRowDto(
     long Id,
@@ -177,9 +178,7 @@ public static class ShiftEndpoints
         {
             if (user is not null
                 && events.TryGetValue(shift.EventId, out var row)
-                && row.CancelledAt is null
-                && EventState.IsOver(row, now)
-                && shift.Attendance is ShiftAttendance.Unknown or ShiftAttendance.NoShowProposed or ShiftAttendance.NoShow
+                && Registers.RegisterDecisions.Decidable(row, now)
                 && (await authorization.AuthorizeAsync(user, shift, EventsPermissions.AtcEdit)).Succeeded)
             {
                 decidable.Add(shift.Id);

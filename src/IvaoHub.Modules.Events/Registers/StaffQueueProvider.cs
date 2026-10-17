@@ -29,10 +29,13 @@ public sealed record StaffQueueEventDto(
 /// <summary>
 /// The block <c>events.staffQueue</c> (design M4 §7.3, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 11): on the dashboards of
 /// the events' and the ATC's staff, what waits for a decision of theirs — a no-show to confirm or excuse, a shift to mark, a request to hand a
-/// shift over —, one row per event, the one ended longest ago first. The reports of support join with E14a.
+/// shift over —, one row per event, the latest first. The reports of support join with E14a.
 /// <para>Always live and the reader's: each row is counted only where the one handler gives them <c>EventAtc.Edit</c> on it — on its event's
 /// care and its position's FIR, and never on a row about themselves, the super administrator included. A visitor gets
 /// <c>signedIn: false</c>.</para>
+/// <para>What it reads is bounded (the review of #283, point 4): nothing at all for a reader who holds <c>EventAtc.Edit</c> nowhere; the
+/// reader's own rows are left out by the query, before the handler; and the window is the latest rows, so that a backlog of shifts nobody
+/// marked, which grows season after season, never hides the rows of the last events.</para>
 /// </summary>
 public sealed class StaffQueueProvider(
     EventsDbContext database,
@@ -63,7 +66,14 @@ public sealed class StaffQueueProvider(
             return new JsonObject { ["signedIn"] = false };
         }
 
+        // Nothing to decide for whoever decides nothing anywhere: no row is read, no handler asked.
+        if (!currentUser.HasAny(EventsPermissions.AtcEdit))
+        {
+            return new JsonObject { ["signedIn"] = true, ["events"] = new JsonArray() };
+        }
+
         var now = clock.UtcNow;
+        var vid = currentUser.Vid;
 
         // The shifts to decide (reading 11): a no-show proposed, or a shift unknown of an event the check closed — before, it is looking at it.
         var shifts = await (
@@ -71,17 +81,18 @@ public sealed class StaffQueueProvider(
                 join row in CrudSource.BackOffice<Event>(database) on shift.EventId equals row.Id
                 where row.CancelledAt == null
                     && row.EndsAtUtc <= now
+                    && shift.ControllerVid != vid
                     && (shift.Attendance == ShiftAttendance.NoShowProposed
                         || (shift.Attendance == ShiftAttendance.Unknown && row.AfterDoneAt != null))
-                orderby row.EndsAtUtc, shift.Id
+                orderby row.EndsAtUtc descending, shift.Id descending
                 select shift)
             .Take(Window)
             .ToListAsync(cancellationToken);
 
         // The requests to hand a shift over, as events.atcCoverage counts them (E12).
         var transfers = await CrudSource.BackOffice<EventAtcTransfer>(database).AsNoTracking()
-            .Where(transfer => transfer.Status == TransferStatus.Pending)
-            .OrderBy(transfer => transfer.Id)
+            .Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ControllerVid != vid)
+            .OrderByDescending(transfer => transfer.Id)
             .Take(Window)
             .ToListAsync(cancellationToken);
 
@@ -110,8 +121,8 @@ public sealed class StaffQueueProvider(
         var events = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
                 .Where(row => ids.Contains(row.Id))
                 .ToListAsync(cancellationToken))
-            .OrderBy(row => row.EndsAtUtc)
-            .ThenBy(row => row.Id)
+            .OrderByDescending(row => row.EndsAtUtc)
+            .ThenByDescending(row => row.Id)
             .Take(MaxEvents)
             .Select(row => new StaffQueueEventDto(
                 row.Id,

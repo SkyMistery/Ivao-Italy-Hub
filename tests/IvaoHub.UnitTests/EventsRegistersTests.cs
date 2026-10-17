@@ -32,25 +32,27 @@ public sealed class EventsRegistersTests
     }
 
     [Fact]
-    public void AnUnknownShiftOrAProposedNoShowGoesAnywhereANoShowOnlyToExcusedTheRestNowhere()
+    public void AShiftGoesToAnyOfTheStaffsThreeOutcomesButTheOneItHasNoneIsFinal()
     {
-        foreach (var from in new[] { ShiftAttendance.Unknown, ShiftAttendance.NoShowProposed })
+        ShiftAttendance[] staffs = [ShiftAttendance.Attended, ShiftAttendance.NoShow, ShiftAttendance.Excused];
+
+        // Carmine's answer on #283, reading 1: whatever a shift is, it becomes another of the three — a decided one too.
+        foreach (var from in Enum.GetValues<ShiftAttendance>())
         {
-            Assert.True(RegisterDecisions.Allowed(from, ShiftAttendance.Attended));
-            Assert.True(RegisterDecisions.Allowed(from, ShiftAttendance.NoShow));
-            Assert.True(RegisterDecisions.Allowed(from, ShiftAttendance.Excused));
-            Assert.False(RegisterDecisions.Allowed(from, ShiftAttendance.Unknown));
-            Assert.False(RegisterDecisions.Allowed(from, ShiftAttendance.NoShowProposed));
+            foreach (var to in Enum.GetValues<ShiftAttendance>())
+            {
+                Assert.Equal(staffs.Contains(to) && to != from, RegisterDecisions.Allowed(from, to));
+            }
         }
 
-        // The no-show taken away, and nothing else.
+        // The no-show taken away is one of those changes; and a mistaken «attended» is corrected.
         Assert.True(RegisterDecisions.Allowed(ShiftAttendance.NoShow, ShiftAttendance.Excused));
-        Assert.False(RegisterDecisions.Allowed(ShiftAttendance.NoShow, ShiftAttendance.Attended));
+        Assert.True(RegisterDecisions.Allowed(ShiftAttendance.Attended, ShiftAttendance.NoShow));
 
-        // Attended and excused stay as they are.
-        Assert.All(
-            Enum.GetValues<ShiftAttendance>(),
-            to => Assert.False(RegisterDecisions.Allowed(ShiftAttendance.Attended, to) || RegisterDecisions.Allowed(ShiftAttendance.Excused, to)));
+        // A shift of an event over and not cancelled may be decided; one still to end, or cancelled, not.
+        Assert.True(RegisterDecisions.Decidable(new Event { EndsAtUtc = Start }, Start));
+        Assert.False(RegisterDecisions.Decidable(new Event { EndsAtUtc = Start.AddMinutes(1) }, Start));
+        Assert.False(RegisterDecisions.Decidable(new Event { EndsAtUtc = Start, CancelledAt = Start.AddDays(-1) }, Start));
     }
 
     [Fact]

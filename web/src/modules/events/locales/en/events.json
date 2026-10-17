@@ -964,7 +964,7 @@
     "bookingRestrictedEvent": "No more slots in this event: you have the limits of whoever books and does not fly.",
     "attendanceNotOver": "The event is not over: how its shifts went is not known yet.",
     "attendanceNotAllowed": "Choose attended, no-show or excused.",
-    "attendanceDecided": "This shift is decided already: an attended or excused shift stays so, and a no-show can only be excused.",
+    "attendanceDecided": "The shift has that outcome already.",
     "bookingNotUnflown": "Only a booking the check after the event found not flown comes out of the record.",
     "bookingAlreadyExcused": "This booking is out of the record already.",
     "registerChanged": "It changed a moment ago: read the page again."
@@ -1403,7 +1403,7 @@
       "takeAway": "Take the no-show away",
       "decideTitle": "{{callsign}}, {{controller}}",
       "decideDescription": "How the shift went: a no-show confirmed weighs on the roster of the next events; attended and excused stay as they are.",
-      "takeAwayDescription": "The no-show becomes excused, for good, and stops weighing on the roster. Say why.",
+      "takeAwayDescription": "The no-show becomes excused — or attended, if it was a mistake — and stops weighing on the roster. To excuse, say why.",
       "save": "Save",
       "fields": {
         "eventTitle": "Event",
@@ -1430,7 +1430,9 @@
             "Attended": "Attended"
           }
         }
-      }
+      },
+      "change": "Change",
+      "changeDescription": "How the shift went, changed: no outcome is final, and the audit keeps every step. To excuse, say why; without a note the shift keeps the one it had."
     },
     "outcomes": {
       "title": "Outcomes",
