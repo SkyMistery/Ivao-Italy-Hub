@@ -4,6 +4,7 @@ using System.Text.Json;
 using IvaoHub.Core.Atc;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Awards;
+using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
@@ -69,6 +70,7 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
     private readonly Network _network = new();
     private readonly List<string> _seededAirports = [];
     private readonly List<long> _awards = [];
+    private readonly HashSet<string> _seenSources = new(StringComparer.Ordinal);
     private HubWebApplicationFactory _hub = null!;
     private WebApplicationFactory<Program> _factory = null!;
     private string? _settingsBefore;
@@ -108,6 +110,7 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
             await database.UserStaffPositions.Where(position => People.Contains(position.Vid)).ExecuteDeleteAsync();
             await database.IvaoAirports.Where(airport => _seededAirports.Contains(airport.Icao)).ExecuteDeleteAsync();
+            await database.AwardAssignments.Where(assignment => _awards.Contains(assignment.AwardId)).ExecuteDeleteAsync();
             await database.Awards.Where(award => _awards.Contains(award.Id)).ExecuteDeleteAsync();
         }
 
@@ -195,6 +198,110 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             [(AwardCriterion.RouteTimes, "XEB1", "XEB2", (int?)2, (int?)null), (AwardCriterion.MinAtcMinutes, null, null, null, 60)],
             copied.Select(rule => (rule.Criterion, rule.DepartureIcao, rule.ArrivalIcao, rule.Count, rule.Minutes)));
         Assert.All(copied, rule => Assert.Equal(award, rule.AwardId));
+    }
+
+    /// <summary>
+    /// The «done when» of E14b on the server (§5.4): the members' coordinator accepts a pilot report, and its verified items meet two of the
+    /// event's five rules — any flight, and the route flown —, not the route twice (one verified flight of it), not the long leg, and not the
+    /// controller's rule; one signal per rule met lands in the core's queue in the same transaction, waiting, with the member, the rule's award and
+    /// the event in its reason; whoever assigns is told by the core's mail (E10d). The statistics count the two.
+    /// </summary>
+    [Fact]
+    public async Task AnAcceptedReportProjectsTheSignalsOfTheRulesItMeetsAndNoOther()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var eventId = await EventRowAsync("signals", inPerson: false, token);
+        var anyFlight = await AwardAsync($"{SlugStem} any flight", active: true, token);
+        var route = await AwardAsync($"{SlugStem} route", active: true, token);
+        var twice = await AwardAsync($"{SlugStem} twice", active: true, token);
+        var far = await AwardAsync($"{SlugStem} far", active: true, token);
+        var shift = await AwardAsync($"{SlugStem} shift", active: true, token);
+        await RuleRowAsync(eventId, anyFlight, AwardCriterion.AnyFlight, token);
+        await RuleRowAsync(eventId, route, AwardCriterion.Route, token, departure: Home, arrival: Away);
+        await RuleRowAsync(eventId, twice, AwardCriterion.RouteTimes, token, departure: Home, arrival: Away, count: 2);
+        await RuleRowAsync(eventId, far, AwardCriterion.MinLegDistance, token, distance: 5000);
+        await RuleRowAsync(eventId, shift, AwardCriterion.AnyShift, token);
+        var reportId = await PilotReportAsync(eventId, PilotVid, token);
+
+        var md = await SignedInAsync(MdVid, token);
+        await NoContentAsync(await DecideAsync(md, reportId, "Accepted", note: null, token), token);
+
+        var signals = await SignalsOfAsync(eventId, token);
+        Assert.Equal([anyFlight, route], signals.Select(signal => signal.AwardId!.Value).Order());
+        Assert.All(signals, signal =>
+        {
+            Assert.Equal((PilotVid, AwardSignalStatus.Pending), (signal.Vid, signal.Status));
+            Assert.StartsWith($"{Slug("signals")}: ", signal.Reason, StringComparison.Ordinal);
+        });
+
+        // Whoever assigns is told by the core (E10d): the members' coordinator holds Awards.Assign.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await ActivatorUtilities.CreateInstance<AwardQueueMailJob>(scope.ServiceProvider).RunAsync(token);
+        }
+
+        Assert.NotEmpty(await MailsAsync(MdVid, NotificationTypes.AwardToAssign, token));
+        Assert.All(await SignalsOfAsync(eventId, token), signal => Assert.NotNull(signal.NotifiedAt));
+
+        // The statistics count them.
+        var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using (var recalculated = await coordinator.PostAsync(new Uri($"{EventEndpoints.Pattern}/{eventId}/stats", UriKind.Relative), content: null, token))
+        {
+            Assert.True(recalculated.IsSuccessStatusCode, await recalculated.Content.ReadAsStringAsync(token));
+        }
+
+        Assert.Equal(2, await StatsAwardSignalsAsync(eventId, token));
+    }
+
+    /// <summary>
+    /// A decision that changes (Carmine's choice 1 and his limit on #287): rejected after being accepted, the report's signals still waiting leave
+    /// the queue and one dismissed by whoever assigns stays as it was; accepted again, the rules are evaluated again. Once an award is assigned
+    /// from a signal of a report, its decision no longer changes — refused with its own key — and the staff's list no longer offers it.
+    /// </summary>
+    [Fact]
+    public async Task RejectingWithdrawsTheWaitingSignalsAndAnAssignedAwardFreezesTheDecision()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var eventId = await EventRowAsync("withdraw", inPerson: false, token);
+        var anyFlight = await AwardAsync($"{SlugStem} any flight", active: true, token);
+        var route = await AwardAsync($"{SlugStem} route", active: true, token);
+        await RuleRowAsync(eventId, anyFlight, AwardCriterion.AnyFlight, token);
+        await RuleRowAsync(eventId, route, AwardCriterion.Route, token, departure: Home, arrival: Away);
+        var withdrawn = await PilotReportAsync(eventId, PilotVid, token);
+        var frozen = await PilotReportAsync(eventId, SenderVid, token);
+        var md = await SignedInAsync(MdVid, token);
+
+        // Accepted, then the route's signal dismissed by whoever assigns, then rejected: the waiting one goes, the dismissed one stays.
+        await NoContentAsync(await DecideAsync(md, withdrawn, "Accepted", note: null, token), token);
+        var dismissed = (await SignalsOfAsync(eventId, token)).Single(signal => signal.Vid == PilotVid && signal.AwardId == route);
+        await SetStatusAsync(dismissed.Id, AwardSignalStatus.Dismissed, token);
+        await NoContentAsync(await DecideAsync(md, withdrawn, "Rejected", note: $"{SlugStem} not this time", token), token);
+        var left = (await SignalsOfAsync(eventId, token)).Where(signal => signal.Vid == PilotVid).ToList();
+        Assert.Equal([(route, AwardSignalStatus.Dismissed)], left.Select(signal => (signal.AwardId!.Value, signal.Status)));
+
+        // Accepted again: evaluated again, a new signal for each rule met.
+        await NoContentAsync(await DecideAsync(md, withdrawn, "Accepted", note: null, token), token);
+        Assert.Equal(2, (await SignalsOfAsync(eventId, token)).Count(signal => signal.Vid == PilotVid && signal.Status == AwardSignalStatus.Pending));
+
+        // An award assigned from a signal of the other report, by whoever assigns, through the core's register.
+        await NoContentAsync(await DecideAsync(md, frozen, "Accepted", note: null, token), token);
+        var signal = (await SignalsOfAsync(eventId, token)).Single(candidate => candidate.Vid == SenderVid && candidate.AwardId == anyFlight);
+        using (var assigned = await md.PostAsJsonAsync(
+                   "/api/award-assignments",
+                   new { awardId = anyFlight, vid = SenderVid, reason = $"{SlugStem} assigned", signalId = signal.Id, rowVersion = DateTime.MinValue },
+                   token))
+        {
+            Assert.True(assigned.StatusCode == HttpStatusCode.Created, await assigned.Content.ReadAsStringAsync(token));
+        }
+
+        Assert.Equal(
+            [ReportAwards.AssignedKey],
+            (await RefusedAsync(await DecideAsync(md, frozen, "Rejected", note: $"{SlugStem} too late", token), token))["state"]);
+        Assert.Equal(ReportState.Accepted, (await ReportsOfAsync(eventId, token)).Single(report => report.Id == frozen).State);
+
+        var rows = await PageAsync(md, $"{ReportEndpoints.Pattern}?filter[eventId]={eventId}", token);
+        Assert.False(rows.Single(row => row.GetProperty("id").GetInt64() == frozen).GetProperty("decidable").GetBoolean());
+        Assert.True(rows.Single(row => row.GetProperty("id").GetInt64() == withdrawn).GetProperty("decidable").GetBoolean());
     }
 
     /// <summary>
@@ -477,6 +584,141 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await database.SaveChangesAsync(cancellationToken);
     }
 
+    private async Task RuleRowAsync(
+        long eventId,
+        long awardId,
+        AwardCriterion criterion,
+        CancellationToken cancellationToken,
+        string? departure = null,
+        string? arrival = null,
+        int? count = null,
+        int? distance = null)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        database.AwardRules.Add(new EventAwardRule
+        {
+            EventId = eventId,
+            AwardId = awardId,
+            Criterion = criterion,
+            Kind = AwardRules.KindOf(criterion),
+            DepartureIcao = departure,
+            ArrivalIcao = arrival,
+            Count = count,
+            DistanceNm = distance,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        });
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A pilot's report sent by hand, waiting for a validator: the route flown and found, and the way back not found.</summary>
+    private async Task<long> PilotReportAsync(long eventId, int vid, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+
+        var report = new EventReport
+        {
+            EventId = eventId,
+            Vid = vid,
+            Kind = ReportKind.Pilot,
+            Source = ReportSource.Manual,
+            State = ReportState.Submitted,
+            Verification = ReportVerification.Partial,
+            SubmittedAt = Start.AddHours(3),
+            CheckedAt = Start.AddHours(3),
+            CreatedAt = Start.AddHours(3),
+            UpdatedAt = Start.AddHours(3),
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        database.Reports.Add(report);
+        await database.SaveChangesAsync(cancellationToken);
+
+        foreach (var (ordinal, from, to, verified) in new[] { (0, Home, Away, true), (1, Away, Home, false) })
+        {
+            database.ReportItems.Add(new EventReportItem
+            {
+                ReportId = report.Id,
+                EventId = eventId,
+                Vid = vid,
+                Ordinal = ordinal,
+                Callsign = "TST1",
+                DepartureIcao = from,
+                ArrivalIcao = to,
+                FlightDay = DateOnly.FromDateTime(Start),
+                SessionId = verified ? 9100 + ordinal : null,
+                Minutes = verified ? 70 : null,
+                DistanceNm = 300m,
+                Verified = verified,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            });
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        return report.Id;
+    }
+
+    private static Task<HttpResponseMessage> DecideAsync(HttpClient client, long reportId, string state, string? note, CancellationToken cancellationToken) =>
+        client.PostAsJsonAsync($"{ReportEndpoints.Pattern}/{reportId}/decision", new { state, note }, cancellationToken);
+
+    private static async Task NoContentAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        using (response)
+        {
+            Assert.True(
+                response.IsSuccessStatusCode,
+                $"{response.RequestMessage?.RequestUri}: {response.StatusCode}: {await response.Content.ReadAsStringAsync(cancellationToken)}");
+        }
+    }
+
+    /// <summary>The signals the reports of an event put in the core's queue, through the rows of the rules they met.</summary>
+    private async Task<List<AwardSignal>> SignalsOfAsync(long eventId, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var awards = (await scope.ServiceProvider.GetRequiredService<EventsDbContext>().ReportAwards.AsNoTracking()
+                .Where(award => award.EventId == eventId)
+                .Select(award => award.Id)
+                .ToListAsync(cancellationToken))
+            .Select(EventReportAward.SourceOf);
+
+        // A dismissed signal stays when its row is gone: it is found by the rows the class saw before.
+        _seenSources.UnionWith(awards);
+        var sources = _seenSources.ToList();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AwardSignals.AsNoTracking()
+            .Where(signal => signal.SourceModule == EventsModule.ModuleKey && sources.Contains(signal.SourceId))
+            .OrderBy(signal => signal.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task SetStatusAsync(long signalId, AwardSignalStatus status, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<HubDbContext>().AwardSignals
+            .Where(signal => signal.Id == signalId)
+            .ExecuteUpdateAsync(set => set.SetProperty(signal => signal.Status, status), cancellationToken);
+    }
+
+    private async Task<int> StatsAwardSignalsAsync(long eventId, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Stats.IgnoreQueryFilters().AsNoTracking()
+            .Where(stats => stats.EventId == eventId)
+            .Select(stats => stats.AwardSignals)
+            .SingleAsync(cancellationToken);
+    }
+
+    private async Task<List<Notification>> MailsAsync(int vid, string type, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().Notifications.AsNoTracking()
+            .Where(row => row.Type == type && row.Vid == vid)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>A controller's report sent by hand, waiting for a validator: one shift on the approach, found.</summary>
     private async Task<long> ManualReportAsync(long eventId, int vid, CancellationToken cancellationToken)
     {
@@ -597,6 +839,14 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             .Where(row => row.Type == EventsNotifications.ReportsToValidate && People.Contains(row.Vid))
             .ExecuteDeleteAsync(cancellationToken);
         await hub.UserPreferences.Where(row => People.Contains(row.Vid)).ExecuteDeleteAsync(cancellationToken);
+
+        // A signal dismissed and left without its row by a rejection (the withdrawal's test).
+        await hub.AwardSignals
+            .Where(row => row.SourceModule == EventsModule.ModuleKey && People.Contains(row.Vid))
+            .ExecuteDeleteAsync(cancellationToken);
+        await hub.Notifications
+            .Where(row => row.Type == NotificationTypes.AwardToAssign && People.Contains(row.Vid))
+            .ExecuteDeleteAsync(cancellationToken);
         await hub.JobsLog
             .Where(entry => entry.Job == ReportsDigestJob.JobName && entry.StartedAt < new DateTime(2002, 1, 1, 0, 0, 0, DateTimeKind.Utc))
             .ExecuteDeleteAsync(cancellationToken);
