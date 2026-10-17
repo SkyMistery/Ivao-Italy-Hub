@@ -176,7 +176,7 @@ public sealed class MemberReports(
         {
             try
             {
-                var (result, report, created) = await WriteAsync(row, kind, drafts, findings, verification, now, cancellationToken);
+                var (result, report, created) = await WriteAsync(database, row, currentUser.Vid, kind, ReportSource.Manual, drafts, findings, verification, now, cancellationToken);
                 if (result is not ReportResult.Done)
                 {
                     return (result, null, false, result == ReportResult.Refused ? problems.Add("id", ReportRules.DecidedKey) : problems);
@@ -263,18 +263,21 @@ public sealed class MemberReports(
 
     /// <summary>
     /// The report and its items written under the lock of its row: created when there is none, refused when it was decided meanwhile, and its
-    /// items replaced — each deleted and added with its row in the audit.
+    /// items replaced — each deleted and added with its row in the audit. A report the system writes for a member (<see cref="ReportSource.Auto"/>,
+    /// E14b) is only ever created: one that is there already — the member's own, or one written before — stays as it is.
     /// </summary>
-    private async Task<(ReportResult Result, EventReport? Report, bool Created)> WriteAsync(
+    internal static async Task<(ReportResult Result, EventReport? Report, bool Created)> WriteAsync(
+        EventsDbContext database,
         Event row,
+        int vid,
         ReportKind kind,
+        ReportSource source,
         IReadOnlyList<ReportItemDraft> drafts,
         IReadOnlyList<ItemFinding> findings,
         ReportVerification verification,
         DateTime now,
         CancellationToken cancellationToken)
     {
-        var vid = currentUser.Vid;
         var word = kind.ToString();
 
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
@@ -294,7 +297,7 @@ public sealed class MemberReports(
                 EventId = row.Id,
                 Vid = vid,
                 Kind = kind,
-                Source = ReportSource.Manual,
+                Source = source,
                 State = ReportState.Submitted,
                 CreatedAt = now,
                 OwnerDepartment = row.OwnerDepartment,
@@ -302,7 +305,7 @@ public sealed class MemberReports(
             };
             database.Reports.Add(report);
         }
-        else if (report.State != ReportState.Submitted)
+        else if (report.State != ReportState.Submitted || source == ReportSource.Auto)
         {
             return (ReportResult.Refused, null, false);
         }

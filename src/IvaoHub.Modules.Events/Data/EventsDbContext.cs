@@ -58,6 +58,10 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
     /// <summary>The items of the reports: the flights and the shifts declared, with what the check found (E14a).</summary>
     public DbSet<EventReportItem> ReportItems => Set<EventReportItem>();
+
+    /// <summary>The rules of award of the events (E14b).</summary>
+    public DbSet<EventAwardRule> AwardRules => Set<EventAwardRule>();
+
     /// <summary>The parallel activities of the events in person (E17).</summary>
     public DbSet<EventActivity> Activities => Set<EventActivity>();
 
@@ -79,6 +83,7 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
         configurationBuilder.Properties<ReportSource>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<ReportState>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ReportVerification>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<AwardCriterion>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -353,6 +358,20 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A member's items of every event: their erasure.
             item.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<EventAwardRule>(rule =>
+        {
+            rule.ToTable("evt_award_rules");
+            rule.HasKey(row => row.Id);
+            rule.Ignore(row => row.ResourceScope);
+            rule.Property(row => row.DepartureIcao).HasMaxLength(4);
+            rule.Property(row => row.ArrivalIcao).HasMaxLength(4);
+            rule.Property(row => row.PositionType).HasMaxLength(EventAwardRule.MaxPositionTypeLength);
+            rule.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its rules with it, as it takes its routes. The key is also the index the tab and an acceptance read by.
+            rule.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<EventActivity>(activity =>

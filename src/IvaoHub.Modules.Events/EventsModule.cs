@@ -1,9 +1,12 @@
+using System.Text.Json;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Events.After;
 using IvaoHub.Modules.Events.Atc;
@@ -19,6 +22,7 @@ using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Quartz;
 
 namespace IvaoHub.Modules.Events;
@@ -96,6 +100,15 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>The mails of the events (design M4 §8.3): each declared by the phase of the change it tells, cancelling first (E3a).</summary>
     public override IReadOnlyList<string> NotificationTypes => EventsNotifications.All;
+
+    /// <summary>
+    /// «Report my participation in events automatically» (design M4 §1.11, E14b): off until the member switches it on — no row is off —, and
+    /// then <c>events-after</c> writes their <c>Auto</c> reports of support.
+    /// </summary>
+    public override IReadOnlyList<PreferenceDescriptor> Preferences =>
+    [
+        new PreferenceDescriptor(AutoReports.PreferenceKey, value => value.ValueKind is JsonValueKind.True or JsonValueKind.False),
+    ];
 
     /// <summary>
     /// The gate manager of the division (design M4 §7.4, E5): its personal tokens open the export of the bookings of an event and
@@ -211,6 +224,7 @@ public sealed class EventsModule : ModuleBase
         // After the event (E13a): events-after every hour, in UTC — the bookings flown, the shifts attended, who flew without booking —, and
         // the statistics, worked out by it and again by the staff.
         services.AddScoped<EventStatistics>();
+        services.AddScoped<AutoReports>();
         services.AddScoped<EventsAfterJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<EventsAfterJob>(job => job.WithIdentity(EventsAfterJob.JobName))
@@ -231,6 +245,17 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<MemberReports>();
         services.AddScoped<ReportDecisions>();
 
+        // The digest of the reports waiting (E14b): events-digest once a day at 07:15 in the division's zone, the morning of whoever reads it,
+        // which the trigger says.
+        services.AddScoped<ReportsDigestJob>();
+        services.AddQuartz(quartz => quartz.AddJob<ReportsDigestJob>(job => job.WithIdentity(ReportsDigestJob.JobName)));
+        services.AddOptions<QuartzOptions>()
+            .Configure<IOptions<DivisionOptions>>((options, division) => options
+                .AddTrigger(trigger => trigger
+                    .ForJob(ReportsDigestJob.JobName)
+                    .WithIdentity(ReportsDigestJob.TriggerName)
+                    .WithCronSchedule(ReportsDigestJob.Cron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -241,6 +266,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventEndpoints();
         endpoints.MapEventAirportEndpoints();
         endpoints.MapEventRouteEndpoints();
+        endpoints.MapEventAwardRuleEndpoints();
         endpoints.MapEventSlotEndpoints();
         endpoints.MapPublicEventEndpoints();
         endpoints.MapBookingsExport();

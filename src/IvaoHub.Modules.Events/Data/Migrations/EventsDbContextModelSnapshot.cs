@@ -565,6 +565,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("after_done_at");
 
+                    b.Property<int?>("AutoReportsAfterVid")
+                        .HasColumnType("int")
+                        .HasColumnName("auto_reports_after_vid");
+
                     b.Property<long?>("BannerMediaId")
                         .HasColumnType("bigint")
                         .HasColumnName("banner_media_id");
@@ -1376,6 +1380,104 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasDatabaseName("ix_evt_atc_availability_windows_event_id_from_utc");
 
                     b.ToTable("evt_atc_availability_windows", (string)null);
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAwardRule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ArrivalIcao")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("arrival_icao");
+
+                    b.Property<long>("AwardId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("award_id");
+
+                    b.Property<int?>("Count")
+                        .HasColumnType("int")
+                        .HasColumnName("count");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Criterion")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("criterion");
+
+                    b.Property<string>("DepartureIcao")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("departure_icao");
+
+                    b.Property<int?>("DistanceNm")
+                        .HasColumnType("int")
+                        .HasColumnName("distance_nm");
+
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)")
+                        .HasColumnName("kind");
+
+                    b.Property<int?>("Minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("minutes");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<string>("PositionType")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("position_type");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evt_award_rules");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_evt_award_rules_event_id");
+
+                    b.ToTable("evt_award_rules", (string)null);
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventBooking", b =>
@@ -2213,6 +2315,16 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_evt_atc_availability_windows_evt_atc_availability_availabili");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventAwardRule", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.Events.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evt_award_rules_evt_events_event_id");
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventBooking", b =>
