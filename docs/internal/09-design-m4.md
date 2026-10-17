@@ -394,6 +394,38 @@ alle dieci letture, e la (B) sulle finestre dei candidati):
   controllore e l'evento, con gli stessi segni, così il guardiano le legge sulla riga. La nota del membro, in una lingua, al più
   500 caratteri, porta `[ErasedWith(nameof(ControllerVid))]` (E10n).
 
+**Deciso con E11b** (#262, nota `2026-10-13-la-proposta-del-roster`, piano 1.35; le risposte di Carmine sull'issue #259 e sulla
+#262):
+
+- **il turno** (`EventAtcShift`) porta in più delle colonne qui sopra quelle che le regole di tutte le righe dell'evento chiedono:
+  **`event_id`** (un `IEventChild`, con la cura e lo scope dell'evento), **il `fir` copiato dalla postazione** prima di chiedere il
+  permesso — mai dalla directory —, **`reason`** (il perché della proposta, §4.3) e i campi di `IAuditable`. **`EventAtc.Edit` è
+  negato all'interessato** (§6.1): nessuno dello staff aggiunge, sposta o toglie un turno suo, il superadmin compreso;
+- **un turno scoperto non è una riga**: è un pezzo di `shift_minutes` di una postazione che nessun turno tocca, **calcolato alla
+  lettura**, così una postazione aperta, spostata o tolta dopo la proposta, una durata del turno cambiata o un turno tolto dicono
+  sempre i loro scoperti; `events.atcCoverage` e la pagina pubblica del roster contano con la stessa funzione (§4.4, §7.3);
+- **le postazioni con dei turni**: il nominativo non cambia e le ore non si stringono lasciando un turno fuori
+  (`events:errors.positionHasShifts`); **eliminare una postazione porta via i suoi turni**, ognuno con la sua riga dell'audit, **fino
+  all'inizio dell'evento**, e dall'inizio una postazione con turni non si elimina. L'interruttore del roster non si spegne con dei
+  turni, e **un evento con turni non si elimina** (si annulla). **«Duplica» non copia i turni** (§2.3-bis).
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla #268):
+
+- **l'evento** ha **`roster_published_at`**, il segno della pubblicazione (§4.4), scritto da `events-roster` come
+  `roster_proposed_at`;
+- **la cessione**, `evt_atc_shift_transfers` (`EventAtcTransfer`): il turno (`shift_id`, con una chiave verso il turno: un turno tolto
+  porta via le sue richieste, ognuna con la sua riga dell'audit), l'evento, **chi cede** (`controller_vid`, lo stakeholder), **a chi**
+  (`to_vid`, vuoto per «cerco un sostituto»), la nota di chi cede, lo stato (`Pending`, `Approved`, `Refused`, `Withdrawn`), chi ha
+  deciso, quando e la sua nota; il `fir` **copiato dal turno** (`IHasFir`), la cura e lo scope dell'evento. `ISubmittedByMembers`,
+  `IHasStakeholder`, `IVisible` ai membri, `[Audited]`, e **non** `[WithdrawnByStakeholder]`: la riga porta la decisione dello staff,
+  e il membro la ritira **cambiandone lo stato** in `Withdrawn` (§4.4-bis).
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272): il turno
+ha in più **`covered_by_vid`** (migrazione `AddAfterTheEventColumns`), **chi ha coperto** la postazione, scritto da `events-after` solo
+accanto a un no-show proposto: **dall'archivio** (`OnlineAsync`, le connessioni sul nominativo con un VID diverso dal titolare, quella con
+più minuti dentro il turno); **con il solo tracker nessuno** (la (A) di Carmine alla lettura 5). È una colonna di persona `…Vid`, con la
+sua riga in `ErasureTests`.
+
 ### 1.8 Il PIREP di supporto — `evt_reports`, `evt_report_items`
 
 - **`evt_reports`**: `event_id`, `vid`, `kind` (`Pilot`, `Atc`), `source` (`Manual`, `Auto`), `state` (`Submitted`,
@@ -432,6 +464,14 @@ numeri**: le colonne qui sopra, **le somme delle risposte** (JSON, per domanda: 
 E16 nessuno la scrive**: le somme dello staff si calcolano dalle iscrizioni. **E17** scrive quelle di un evento in presenza prima
 che la conservazione ne cancelli le iscrizioni (`inPersonRetentionMonths`, letto da `events-retention`), **E13a** il resto dopo
 l'evento.
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; la condizione di Carmine sull'issue #272): **«non
+contato» non è 0**. La riga ha in più **`flown_unbooked_airports`** (migrazione `AddAfterTheEventColumns`): a quanti scali dell'evento,
+nel loro ordine, il conto di chi ha volato senza prenotare è arrivato; **vuoto è «non contato»** — un evento di tutta la divisione, uno
+senza scali, uno chiuso dopo trenta giorni prima di ogni conto —, e la lettura, «Ricalcola» e la scheda lo dicono («non contato»,
+«contato su 2 dei suoi 3 scali»). I no-show nelle statistiche sono **proposti più confermati**; PIREP e segnali di award restano a 0
+finché non ci sono le tabelle di E14a ed E14b; chi ha volato senza prenotare viene solo dalla verifica, e «Ricalcola» lo tiene com'è.
+La riga si scrive sotto il blocco della riga dell'evento (`FOR UPDATE`), dal job e da «Ricalcola».
 
 ### 1.11 Le preferenze del membro
 
@@ -481,9 +521,13 @@ quando c'è; `minimumAtcRating` un rating ATC del vocabolario, o nessuno (le imp
 - **Il nome di una persona**: dal nucleo, mai copiato; «persona cancellata» con l'helper del nucleo (A12a, #187, unita il 29
   settembre: `personName` e `isErased` in `web/src/shared/ui/people.ts`, la parola `people.deleted`, la colonna `col.person` della
   lista generata). **Dall'11 ott 2026** (E10m, #252, nota `2026-10-11-un-solo-lettore-dei-nomi`, decisa da Carmine sull'issue
-  #247, piano 1.33): il nucleo ha **un solo lettore dei nomi per VID**, `MemberNames.ReadAsync` (`Core/People/`). **Il modulo
+  #247, piano 1.33): il nucleo ha **un solo lettore dei nomi per VID**, `MemberNames.ReadAsync` (`Core/People/`). ~~**Il modulo
   non l'ha ancora adottato**: legge i nomi con il suo `EventsPeople.NamesAsync`, che resta finché una piccola fase del modulo
-  non lo fa rispondere con il lettore del nucleo (`EventMemberDto` e `Member` restano come sono).
+  non lo fa rispondere con il lettore del nucleo (`EventMemberDto` e `Member` restano come sono).~~ **Dal 14 ott 2026** (E4d, #263,
+  nota `2026-10-14-gli-eventi-sul-lettore-dei-nomi`, piano 1.35): **gli eventi leggono i nomi con `MemberNames.ReadAsync`** del
+  nucleo; `EventsPeople.NamesAsync` resta come una riga che lo chiama, per i suoi chiamanti nel modulo, e `EventMemberDto` e
+  `Member` restano come sono. Un utente con un VID sotto uno non ha più un nome, come vuole la decisione sulla #247 (una persona
+  cancellata non ha nome).
 
 ---
 
@@ -558,6 +602,12 @@ sull'issue #248):
   più, e lo staff lo cambia nel form;
 - **la pagina**: «Duplica» nella barra di un evento, e una pagina con il form generato — la nuova data d'inizio, il nuovo
   indirizzo, e «copia gli slot pubblici» su un evento che ne prende —; dopo, l'evento nuovo.
+
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue
+#267 e sulla #271): «Duplica» **copia le domande** — il tipo, le parole, le scelte **con le loro chiavi com'erano**, obbligatoria,
+l'ordine — **e le attività**, con la finestra spostata della stessa differenza; mai le iscrizioni né i posti. Chi duplica un evento
+con attività ha anche il permesso della loro area, `EventBookings.Edit` (§4-bis.1), come per le rotte. **Non copia i turni dell'ATC**
+(E11b, nota `2026-10-13-la-proposta-del-roster`, piano 1.35): sono righe di membri, e la copia ha il suo roster alla sua chiusura.
 
 ### 2.4 La fine dell'evento
 
@@ -858,6 +908,35 @@ Alla chiusura delle candidature il job `events-roster` (§8.4) **propone il rost
 
 Un turno senza nessuno resta **scoperto**, in evidenza (blocco `events.atcCoverage`).
 
+**Deciso con E11b** (#262, nota `2026-10-13-la-proposta-del-roster`, piano 1.35; le risposte di Carmine sull'issue #259 e sulla
+#262: sì alle letture 1, 2, 4, 7, 9 e 10, la 3 com'è, la 5, la 6 e l'8 con le sue condizioni):
+
+- **il proponente** è una funzione pura e deterministica (`Atc/RosterProposer.cs`). **I turni**: ogni postazione dalla sua apertura,
+  a pezzi di `shift_minutes` (dell'evento, o dell'impostazione), e **l'ultimo pezzo è più corto** quando la postazione chiude prima.
+  **Chi può**: disponibile per tutto il turno, con un rating almeno `minimumAtcRating` e almeno **il minimo della postazione per quelle
+  ore** (le FRA, `AtcPositionMinimum.Over`), non in un altro turno che lo tocca, non oltre `maxConsecutiveShifts` di fila; **due turni
+  sono «di fila»** quando li separano meno di `breakShifts × shift_minutes`, e con `breakShifts` a 0 non c'è limite;
+- **chi prima**, nell'ordine qui sopra: almeno il rating preferito del tipo della postazione (un tipo senza preferito non mette
+  nessuno prima); **l'esperienza** — quante connessioni ha aperto **su quel nominativo** negli ultimi `experienceMonths`, e a parità
+  **su quel tipo** (il tipo lo dà la directory): sono le volte, non i minuti —; la penalità più bassa (§4.5, dai turni `Attended` e
+  `NoShow` degli **altri** eventi, con il peso 1 finché E13b non porta `noShowWeight`); meno turni in questo roster; chi si è
+  candidato prima; e per ultimo **il VID più basso**, perché l'ordine non resti al database. **L'ordine dei turni**: prima quelli con
+  meno candidati che possono, poi il più presto, poi il nominativo, poi la postazione;
+- **l'esperienza conta solo se l'archivio ha risposto per ogni candidato**: altrimenti — `atcData: none`, o un archivio che non si
+  legge, lo stesso `null` di `SessionsOfAsync` — il criterio non c'è per tutto il roster, e il perché lo dice; mai mezzo roster con
+  l'esperienza. **Un archivio che non risponde alla chiusura** lascia il roster proposto senza esperienza, proposto una volta, e lo staff
+  corregge a mano: **accettato da Carmine**, senza cambiare il contratto dell'archivio del nucleo. IT gira con `none` finché sull'host
+  non c'è l'utente di sola lettura della vista, poi passa a `vipi` prima del primo roster vero (la risposta 1 sull'issue #259, la (A));
+- **il perché sta sul turno** (`reason`, JSON), scritto alla proposta: quanti potevano prendere quel turno, **che cosa ha deciso** e i
+  numeri del controllore scelto. **Dati, non parole**: la pagina li scrive nella lingua sullo schermo. Un turno scritto dallo staff è
+  `Staff` e non ne ha; **un turno proposto che lo staff cambia diventa `Staff` e perde il perché**, che resta nell'audit;
+- **quando**: `events-roster` (§8.4) propone **una volta** un evento **pubblicato**, con un roster, non annullato, non finito, la cui
+  chiusura è passata e che non ha `roster_proposed_at`, in una transazione sua sotto il blocco della riga dell'evento (`FOR UPDATE`).
+  **Una bozza alla chiusura si propone quando la si pubblica**; un evento senza postazioni si propone vuoto, e le postazioni aperte
+  dopo sono scoperte. **Proposto il roster, le disponibilità restano chiuse per sempre** (§4.2), anche se l'inizio dell'evento si sposta
+  più tardi — la chiusura non segue più l'inizio —, e **niente propone di nuovo**: lo staff corregge a mano, e nessuna proposta nuova
+  passa sopra le sue correzioni (la condizione di Carmine sulla lettura 5).
+
 ### 4.4 Correggere, pubblicare, cambiare
 
 - **Fra la chiusura e la pubblicazione** lo staff (`EventAtc.Edit`) corregge: sposta, toglie, **aggiunge anche chi non si è
@@ -868,6 +947,59 @@ Un turno senza nessuno resta **scoperto**, in evidenza (blocco `events.atcCovera
   `/events/{slug}/roster`. Il job `events-roster` manda `atcShiftAssigned` a ognuno (`notified_at`).
 - **Dopo la pubblicazione** il roster si modifica ancora (c1): ogni turno aggiunto, spostato o tolto manda
   `atcShiftAssigned`, `atcShiftChanged` o `atcShiftRemoved` all'interessato, subito.
+
+**Deciso con E11b** (#262, nota `2026-10-13-la-proposta-del-roster`, piano 1.35; le risposte di Carmine sull'issue #259 e sulla
+#262):
+
+- **la correzione è una risorsa del motore CRUD**, `/api/events/atc/shifts` (`EventAtc.Edit`), invece dei verbi a mano: «aggiungi»
+  crea, «sposta» cambia — il controllore, le ore, la postazione dello stesso evento —, «togli» elimina; l'unico handler, il guardiano e
+  l'audit come per le postazioni. **Da quando**: dalla proposta (`roster_proposed_at`) **fino alla fine** dell'evento, mai su un evento
+  annullato; dopo la pubblicazione uguale, con le mail (sotto). **Sotto il blocco della riga dell'evento** (`FOR UPDATE`,
+  `Atc/ShiftLock.cs`), come le prenotazioni e la proposta: due correzioni insieme dello stesso pezzo non mettono due controllori sulla
+  stessa postazione; la modifica e l'eliminazione di una postazione prendono lo stesso blocco;
+- **i rifiuti**: chi non è mai entrato nell'hub, le ore fuori dalla postazione o al contrario, un turno che tocca un altro turno della
+  stessa postazione, una postazione di un altro evento, il roster non ancora proposto, e **un controllore su due postazioni dello
+  stesso evento alle stesse ore** (`events:errors.controllerBusy`, la condizione di Carmine: non può succedere). **Tutto il resto del
+  §4.3 è un avviso**, letto sul roster: non disponibile per tutto il turno o mai candidato, sotto il rating minimo, sotto il minimo
+  della postazione (`atcPositions.belowMinimum` del nucleo), sotto il preferito — anche un turno proposto per cui il proponente ha
+  ripiegato —, oltre i turni di fila, e **un altro suo turno nelle stesse ore in un altro evento** (la proposta non li guarda);
+- **dall'inizio dell'evento** (la condizione di Carmine sulle letture 6 e 8, e [la sua risposta sulla
+  #262](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/262#issuecomment-6173401612)) **un turno non si toglie**, il suo controllore
+  non cambia, non passa a un'altra postazione, il suo inizio e le sue ore già passate restano: **se ne taglia solo la fine, ad adesso o
+  dopo** (`events:errors.shiftAfterStart` sul campo che cambia). **Il sostituto di chi non si è presentato è un turno nuovo**, che
+  comincia non prima del taglio: il buco si copre durante l'evento, ed E13 trova ancora il turno dell'assente. I turni sono il registro
+  di affidabilità (c3), come una postazione con turni che dall'inizio non si elimina (§1.7);
+- **il roster si legge per postazione e ora** con **una lettura scritta a mano**, `GET /api/events/atc/events/{id}/roster`: i turni e
+  i pezzi scoperti insieme, con il controllore (`col.person`), il suo rating, l'origine, il perché, gli avvisi, per uno scoperto quanti
+  potrebbero prenderlo e quanti sono liberi, e **se il lettore può scrivere la riga**. L'unico handler è chiesto su ogni postazione, con
+  il suo FIR. È la **sesta lettura scritta a mano** dell'ATC, uno scostamento accettato come le cinque di E11a (§4.1); i verbi restano
+  del motore, e il §7.2 non si tocca;
+- **sulle pagine**: il roster sta nel pannello dell'ATC (la scheda «ATC» dell'evento e la pagina dell'ATC di un evento), sotto le
+  postazioni; prima della proposta una frase dice quando arriva, dopo la lista generata con «Aggiungi» su uno scoperto e «Sposta» e
+  «Togli» su un turno — niente «Togli» dall'inizio —, a chi scrive l'ATC dell'evento. Il turno ha il suo form generato, con sotto i
+  candidati della postazione (§4.2).
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla
+#268: sì alle dieci letture, con due condizioni):
+
+- **il segno della pubblicazione** è `roster_published_at` sull'evento (§1.7), scritto da `events-roster` sotto il blocco della riga,
+  senza muovere la sua versione e senza una riga dell'audit dell'evento, **una volta**, per un evento pubblicato, con un roster, non
+  annullato, non finito, già proposto, il cui momento (inizio − `rosterPublishDays`) è passato. **Pubblicato resta pubblicato**, anche
+  se l'inizio si sposta dopo o l'impostazione cambia. Un roster proposto dopo il suo momento si pubblica nello stesso giro;
+- **le mail della pubblicazione**: `atcShiftAssigned` **una mail per controllore per evento**, con tutti i suoi turni non ancora detti
+  (nominativo e ore in UTC) e i link al roster e a `/events/mine`; **il segno prima della mail** (`notified_at`, un segno per turno), e
+  ogni giro dice i turni di un roster pubblicato con `notified_at` vuoto;
+- **dopo la pubblicazione** la correzione avvisa **subito**, dopo il salvataggio, **solo chi sapeva del turno** (`notified_at`
+  scritto): un turno aggiunto → `atcShiftAssigned`; altre ore o un'altra postazione → `atcShiftChanged`, con com'era e com'è (il taglio
+  della fine dopo l'inizio è un cambio); un altro controllore → `atcShiftRemoved` al vecchio e `atcShiftAssigned` al nuovo; un turno
+  tolto, anche con la sua postazione eliminata → `atcShiftRemoved`. **Prima della pubblicazione nessuno riceve niente**;
+- **annullare e spostare l'evento** avvisano anche **ogni controllore con un turno**, una mail per persona con chi ha prenotato o si è
+  iscritto, anche prima della pubblicazione; chi ha dato solo la disponibilità no;
+- **la pagina del roster**, `/events/{slug}/roster`, legge `GET /api/events/public/{slug}/roster`, anonima, per un evento che il
+  lettore vede: prima della pubblicazione nessuna riga e il momento in cui sarà pubblicato; dopo, ogni postazione con i suoi turni **e i
+  pezzi scoperti**, con la stessa funzione del roster dello staff. **A chi ha fatto il login il nome e il rating ATC di ogni
+  controllore, non il VID** (la condizione di Carmine sulla lettura 5); a un visitatore «assegnato» o «scoperto»; una persona cancellata
+  con la parola del nucleo; né il perché né gli avvisi. È la **settima lettura scritta a mano** dell'ATC (§7.1).
 
 ### 4.4-bis Cedere un turno
 
@@ -883,6 +1015,30 @@ perché cambiare il titolare di un turno non è una modifica della propria riga.
 - **Un turno ceduto e approvato non è un no-show** di chi l'ha ceduto: la presenza si verifica sul nuovo titolare. È il caso
   del trainer (c1), deciso prima dell'evento invece che giustificato dopo; il «giustificato» del §4.5 resta per l'imprevisto
   dell'ultimo minuto.
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla
+#268, con la sua condizione sulla lettura 7) — la riga è in §1.7:
+
+- **chiedere** (`POST /api/events/mine/shifts/{id}/transfer`, a chi e una nota): il controllore del turno, su un roster pubblicato,
+  prima dell'inizio dell'evento, non annullato; **una richiesta in attesa per turno**; chi riceve è entrato nell'hub e non è chi cede.
+  **Ritirare** (`DELETE` sullo stesso indirizzo): la richiesta in attesa diventa `Withdrawn`;
+- **decidere** (`POST /api/events/atc/transfers/{id}/approve` e `/refuse`): `EventAtc.Edit` chiesto all'unico handler **sulla
+  richiesta** — negato a chi cede, superadmin compreso — e, per approvare, anche **sul turno com'è dopo**, negato al nuovo titolare:
+  nessuno dello staff si dà un turno da solo. **Approvare** fino all'inizio dell'evento (dopo, del turno se ne taglia solo la fine,
+  §4.4), se il turno è ancora di chi l'ha chiesto; il nuovo titolare è **quello nominato, o un altro che lo staff sceglie**
+  (obbligatorio per una richiesta «a nessuno»), entrato nell'hub e **non su un'altra postazione dello stesso evento in quelle ore** (un
+  rifiuto); il resto del §4.3 sul nuovo titolare sono **avvisi**. Il turno passa al nuovo (`Staff`, il perché tolto, l'audit tiene chi
+  l'aveva), e partono `atcShiftTransferDecided` a chi ha ceduto e `atcShiftAssigned` al nuovo. **Rifiutare** con una nota, **anche
+  dopo l'inizio**, così una richiesta rimasta in attesa si chiude;
+- **verso un membro diverso da quello indicato** (la condizione di Carmine): la finestra «Approva» chiede gli avvisi sul VID scelto
+  (`GET /api/events/atc/transfers/{id}/warnings?toVid=`, l'**ottava lettura scritta a mano** dell'ATC, che la condizione chiede) e li
+  mostra prima di approvare, che allora dice «Approva lo stesso»; la mail `atcShiftTransferDecided` di un'approvazione dice **nome e VID
+  di chi ha preso il turno**;
+- **un turno cambiato sotto una richiesta**: dato a un altro o tolto, la richiesta non si approva più e la lista lo dice; lo staff la
+  rifiuta. Un turno tolto porta via le sue richieste;
+- **la lista dello staff** è una risorsa del motore in sola lettura (`/api/events/atc/transfers`, `EventAtc.View`, per evento e
+  stato), con chi cede e chi riceve (`col.person`), il turno, lo stato e gli avvisi; nel pannello dell'ATC sotto il roster, con
+  «Approva» e «Rifiuta». Il membro cede da «I miei turni» in `/events/mine` (§7.1).
 
 ### 4.5 No-show e registro di affidabilità
 
@@ -956,9 +1112,40 @@ sono un posto dove tenere righe). La forma dello schema è di E16, che viene dop
   Carmine sulla #232, risposta 3): un'iscrizione non ha nessuno stato che lo staff decida, niente da approvare, rifiutare o
   confermare; lo staff la legge, la somma e la toglie, e cancellarla cancella solo quello che il membro ha mandato.
 
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue #267
+e sulla #271):
+
+- **le attività** sono una risorsa del motore, `/api/events/activities`, filtrata per evento, righe figlie (`IEventChild`,
+  `[Audited]`, lo scope dell'evento) **nell'area `EventBookings`** (la risposta 1, la (A), come dice il catalogo §6.1): le scrive chi ha
+  `EventBookings.Edit`, le legge chi ha `EventBookings.View`. **Solo su un evento in presenza** (`events:errors.activityNotInPerson`),
+  e l'interruttore «in presenza» non si spegne con attività, come con domande o iscrizioni;
+- **le colonne e i limiti**: il nome tradotto (in ogni lingua della divisione, al più 200 caratteri), il luogo tradotto e facoltativo
+  (200), la finestra (`from_utc`, `to_utc`) **dentro l'evento**, `slot_minutes` da 5 a 480, `seats_per_slot` da 1 a 100; al più **20
+  attività** per evento. **I turni sono quelli che ci stanno interi**: da `from_utc`, uno ogni `slot_minutes`, finché il turno finisce
+  entro `to_utc` (10:00–17:00 a 45 minuti sono nove turni, l'ultimo alle 16:00); una finestra senza nemmeno un turno è rifiutata, al
+  più **200 turni** per attività. I turni non sono righe: sono un calcolo della finestra e della durata;
+- **un'attività con posti presi** (la risposta 2, la (A)) **non si elimina** (`events:errors.activityHasSeats`), come un evento con
+  iscrizioni, e **si cambia solo così che ogni posto preso resti su un suo turno** e nessun turno abbia più posti presi di quanti ne
+  offre (`events:errors.activitySeatsTaken`, sul campo che lo rompe). ⚠️ La modifica dello staff controlla i posti **senza il blocco**
+  (il motore CRUD non apre una transazione attorno a `BeforeSave`): un posto preso in quell'istante può restare su un turno che non c'è
+  più o oltre i posti. **Accettato da Carmine come limite della risposta 2A** (la lettura 11 sulla #271): chiuderlo sarebbe un cambio del
+  motore CRUD del nucleo; il posto resta del membro, si conta e la pagina lo mostra con il suo orario. L'eliminazione invece è chiusa: un
+  posto preso nello stesso istante è fermato dalla sua chiave. Un evento eliminato porta via le sue attività;
+- **il posto** (`evt_activity_bookings`): l'attività, l'evento, il membro (`vid`), l'inizio del turno (`starts_at_utc`), `created_at`;
+  `ISubmittedByMembers`, `IHasStakeholder`, `IVisible` ai soli membri, area `EventBookings` con la cura e lo scope dell'evento,
+  `[Audited]` e **`[WithdrawnByStakeholder]`**: **un posto non porta decisioni dello staff** — lo staff lo legge e lo conta —, come
+  l'iscrizione (la regola di Carmine sulla #232), e ridarlo cancella la riga. Nessuna colonna di parole, quindi niente da segnare con
+  `[ErasedWith]`: **l'inizio del turno non è segnato, di proposito** (la lettura 7, il sì di Carmine sulla #271), e l'audit tiene che un
+  membro ha preso un turno come tiene che si è iscritto;
+- **i due blocchi, sempre in quest'ordine**: in una transazione `READ COMMITTED`, prima **la riga dell'iscrizione del membro** `FOR
+  UPDATE` — due richieste dello stesso membro si mettono in fila, e il controllo delle sovrapposizioni vede i posti appena presi —, poi
+  **la riga dell'attività** `FOR UPDATE`, sotto cui si contano i posti presi del turno. Di due membri sull'ultimo posto uno vince,
+  l'altro legge «turno pieno» (`events:errors.seatFull`).
+
 ### 4-bis.2 Come va
 
-- **Lo staff** (`Events.Edit` per domande e attività, `EventBookings.Edit` per le iscrizioni) prepara domande e attività,
+- **Lo staff** (`Events.Edit` per domande ~~e attività~~, `EventBookings.Edit` per le iscrizioni — **e per le attività, deciso con
+  E17**, §4-bis.1) prepara domande e attività,
   vede le iscrizioni e le **somme** (quanti a cena, quanti monitor), toglie un'iscrizione.
 - **Il membro**, con il login, si iscrive dalla pagina dell'evento rispondendo alle domande, prenota i turni delle attività,
   cambia risposte e turni o si ritira **fino all'inizio dell'evento**; tutto in `/events/mine`.
@@ -988,6 +1175,36 @@ sono un posto dove tenere righe). La forma dello schema è di E16, che viene dop
   `POST /api/events/registrations/{id}/remove` chiede `EventBookings.Edit` all'unico handler sull'iscrizione, con la cura
   dell'evento com'è ora, come «togli» di una prenotazione, e il motivo ha le regole di quello di una prenotazione.
 
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue #267
+e sulla #271):
+
+- **prendere un posto** (`POST /api/events/mine/seats`, l'attività e l'inizio del turno): solo chi è iscritto all'evento, su un turno
+  dell'attività, **fino all'inizio dell'evento** come cambiare le risposte, un posto libero, **nessun turno sovrapposto per lo stesso
+  membro** fra tutte le attività dell'evento (due che si toccano non si sovrappongono). **Ridarlo** (`DELETE
+  /api/events/mine/seats/{id}`) fino all'inizio, anche di un evento annullato, come ritirarsi. Due verbi del flusso del membro in più;
+- **i posti se ne vanno con l'iscrizione**: il ritiro, «togli» dello staff e la cancellazione dei dati della persona portano via i posti
+  del membro nello stesso salvataggio;
+- **la mail**: `registrationReceived` parte anche **a ogni posto preso o ridato**, con le risposte e i turni come sono in quel momento
+  (il sì di Carmine alla lettura 13 sulla #271); la forma della riga di un turno e la parola del fuso stanno nei file di lingua;
+- **le pagine**: la pagina dell'evento mostra a chiunque le attività con i turni e **quanti posti liberi**, mai chi; il membro iscritto
+  prende e ridà i posti dalla sezione «Iscrizione» e li ritrova in `/events/mine` sotto la sua iscrizione. Nessuna lettura nuova: i
+  turni viaggiano nella lettura della pagina, i posti del membro nelle sue iscrizioni. **Lo staff** ha la scheda «Attività» (lista e
+  form generati, con i posti presi in numeri) e la scheda **«Posti»**, una risorsa del motore in sola lettura (`/api/events/seats`,
+  `EventBookings.View`: il membro con `col.person`, l'attività, il turno), **senza un «togli» di un posto solo**: lo staff toglie
+  un'iscrizione, che porta via i suoi posti. Le liste mandano dati, e la pagina scrive le parole nella lingua sullo schermo; i nomi per
+  VID da `MemberNames.ReadAsync` del nucleo;
+- **la conservazione breve** la fa `events-retention` (§8.4, §11): scrive le somme in `evt_event_stats` e poi cancella iscrizioni e
+  posti. **Le somme restano visibili**: per un evento la cui conservazione è girata — oltre la data, con le statistiche, e senza più
+  iscrizioni né posti — la lista delle domande e quella delle attività leggono i numeri dalle statistiche; la data da sola non basta.
+
+**Dal 16 ott 2026** (E10s, #269, nota `2026-10-16-la-conservazione-nell-audit`, decisa da Carmine sull'issue #267, risposta 3, la (B),
+piano 1.35): **le risposte lasciano anche l'audit** alla conservazione. `events-retention`, dopo il salvataggio che cancella le
+iscrizioni e nella stessa transazione, chiama `AuditRedaction.EmptyDeletedAsync<EventRegistration, long>` del nucleo con le chiavi
+cancellate: il nucleo svuota le colonne segnate `[ErasedWith]` — `AnswersJson` — in **ogni** copia d'audit di quelle righe (`created`,
+gli `updated`, `deleted`), di chiunque fossero; restano l'azione, chi, quando e le altre colonne. Un errore riporta indietro insieme la
+cancellazione e lo svuotamento, e il giro dopo rifà tutto. **Il posto non la usa**: non ha colonne segnate (§4-bis.1), e nell'audit
+resta che un membro ha preso un turno, come di un'iscrizione resta che si è iscritto (il sì di Carmine alla lettura 7 sulla #271).
+
 ---
 
 ## 5. Dopo l'evento (M4b)
@@ -1009,6 +1226,43 @@ Il job `events-after` (§8.4), dopo `ends_at_utc`, a lotti:
 
 Per l'online day e gli eventi liberi **si guardano solo i VID con la preferenza** e chi manda un PIREP a mano (c3): nessuna
 ricerca per ogni aeroporto della divisione.
+
+**Deciso con E10t** (#277, nota `2026-10-16-le-sessioni-della-rete-nel-nucleo`, piano 1.36): il modulo non chiama
+`SearchSessionsAsync` né `IIvaoApiClient`, che nominano la rete (`EventsArchitectureTests`, E2; `CLAUDE.md` §3), ma
+**`INetworkSessionSource`** del nucleo (`Core/Ivao/NetworkSessionSource.cs`), la stessa domanda di E10a sotto un nome neutro: VID
+facoltativo, finestra, scali, `Pilot` o `Atc`, `Limit` fino allo stesso tetto; risponde numero, VID, callsign, inizio e fine, dalla più
+recente, una volta per numero; `null` è «la rete non ha risposto», mai «nessuno ha volato». Le regole di E10a (nota
+`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali.
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272, la (A)
+alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
+
+- **quando**: un evento pubblicato, non annullato, con `after_done_at` vuoto, **sei ore dopo la fine** (`SlotWindow.Margin`); una bozza
+  e un annullato non si verificano mai;
+- **la finestra** è quella degli slot: sessioni **iniziate** fra inizio − 6 ore e fine + 6 ore. Per ogni prenotazione il tracker per
+  VID, tipo `PILOT`, con la partenza e l'arrivo del volo prenotato (di uno slot privato lo scalo dell'evento e l'altro aeroporto, nel
+  verso dello slot); va alla prenotazione **la sessione che parte più vicina al suo orario**, se nessun'altra prenotazione dello stesso
+  evento l'ha presa; `flown_at` è l'inizio, `flown_session_id` il numero, `flown_checked_at` si scrive anche quando non si trova niente.
+  Un volo senza orario di partenza si misura dall'orario d'arrivo allo scalo dell'evento;
+- **chi ha volato senza prenotare**: per ogni scalo due domande senza VID (partenza, arrivo), tipo `PILOT`, nella stessa finestra, fino
+  al tetto (1000); si contano **le persone** — i VID distinti meno chi ha prenotato —, che vivono solo in memoria durante il conto, mai
+  nel database né nel log; una risposta lunga quanto il tetto conta come un minimo e il log lo dice. Un evento `whole_division` o senza
+  scali non si cerca, e **«non contato» non è 0** (§1.10). Contato a pezzi, un pilota in due scali contati in due giri diversi si conta
+  due volte, di proposito;
+- **la presenza nei turni**, solo per i turni `Unknown`: prima l'archivio (`SessionsOfAsync`); se non risponde o non copre l'inizio del
+  turno, il tracker per VID, tipo `ATC`, dall'inizio del turno − 12 ore, stesso nominativo. I minuti si contano dentro il turno, con le
+  connessioni sovrapposte unite; almeno `attendanceMinimumMinutes`, **e mai più della durata del turno**, è `Attended`, meno è
+  `NoShowProposed`; il job non scrive mai `NoShow` né `Excused` (E13b). Una divisione senza archivio non lo chiede affatto;
+- **chi ha coperto**: §1.7, solo dall'archivio;
+- **una sorgente che non risponde** (`null`): il giro smette di chiederle, le righe restano da verificare, il giro dopo riprova;
+  **trenta giorni dopo la fine** il job chiude l'evento con le righe ancora da verificare, **mai segnate**, e lo staff le può ancora
+  segnare (E13b). ⚠️ **Al primo avvio** con E13a gli eventi finiti da più di trenta giorni si chiudono subito, senza chiedere niente, con
+  le statistiche dalle righe e chi ha volato senza prenotare «non contato»;
+- **le statistiche** (§1.10) si fanno in un posto solo, dal job e da **«Ricalcola»** — `POST /api/events/events/{id}/stats`, con
+  `Events.Edit` sulla riga, solo per un evento pubblicato, non annullato e finito —; si leggono da `/api/events/stats` con
+  `filter[eventId]`, una risorsa del motore in sola lettura, con `Events.View`. La scheda **«Statistiche»** della pagina dell'evento
+  dello staff mostra i numeri in un form generato in sola lettura e due liste generate, le prenotazioni con il loro esito e i turni con
+  l'esito e chi ha coperto; ⚠️ la lista dei turni del motore (`/api/events/atc/shifts`) risponde ora `EventAtcShiftRowDto`.
 
 ### 5.2 Il PIREP di supporto
 
@@ -1177,6 +1431,18 @@ desse `Events.Delete` a un altro dipartimento lo darebbe davvero; è configurazi
   `2026-10-10-il-ritiro-di-un-volo-collegato`, piano 1.33): una prenotazione privata dice **il volo a cui è collegata**, finché
   ci sono tutte e due, e il ritiro di una delle due dice che l'altra resta (§3.6).
 
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla
+#268):
+
+- **`/events/{slug}/roster`** è una pagina del sito, con la sua lettura scritta a mano (§4.4): i turni e i pezzi scoperti per
+  nominativo e ora, **il nome e il rating ATC solo a chi ha fatto il login, mai il VID**. La pagina dell'evento porta il link quando il
+  roster è pubblicato;
+- **`/events/mine`** ha **«I miei turni»** — quelli dei roster pubblicati, anche passati, sotto il loro evento, con «Cedi» fino
+  all'inizio e lo stato di una richiesta (§4.4-bis) — e **«Le mie disponibilità»**, con «Cambia» sulla pagina dell'evento e «Ritira»
+  fino alla chiusura. `GET /api/events/mine/shifts` è un verbo del flusso del membro come `/mine/bookings`. **Un turno di un roster non
+  ancora pubblicato non si mostra al suo controllore.** Gli endpoint a mano di E12 sono tre verbi del membro (i suoi turni, chiedere,
+  ritirare), due dello staff (approvare, rifiutare), la lettura pubblica del roster e quella degli avvisi di una cessione (§4.4-bis).
+
 ### 7.2 Staff
 
 - **`/staff/events`**: lista generata — **Bozze**, **Prossimi**, **In corso**, **Conclusi**, **Annullati**.
@@ -1242,6 +1508,18 @@ A un visitatore i blocchi personali rispondono `signedIn: false`, come `myTours`
 stessa PR e alza i conteggi di `uiKit.test.ts` e `DataBlockEndToEndTests`. **Deciso con E6b** (#240, piano 1.32):
 `events.myEvents` mostra le prenotazioni **ancora da volare**, sotto i loro eventi, la stessa risposta di `/events/mine`; i turni
 arrivano con E12.
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla
+#268):
+
+- **`events.myEvents`** aggiunge i turni **ancora da fare** (la fine dopo adesso) dei roster pubblicati, nella stessa forma;
+- **`events.atcCoverage`** nasce, nelle due metà, con una proprietà, **`days`** (quanti giorni avanti, 14 predefinito, al più 60): gli
+  eventi con un roster, pubblicati, non annullati, non finiti, che cominciano entro `days` e hanno **pezzi scoperti**, **disponibilità
+  ancora aperte** o **richieste di cessione da decidere**; per ognuno il titolo e il link al suo ATC, l'inizio, il punto del roster
+  (disponibilità aperte fino a…, da proporre, proposto, pubblicato), quante disponibilità, quanti pezzi scoperti su quanti, quante
+  richieste in attesa. Conta **sulle postazioni che il lettore legge** (l'unico handler su ognuna, come il roster) e sulle richieste che
+  può decidere; a chi non legge l'ATC di nessun evento nessun evento, a un visitatore `signedIn: false`. **Dati, non parole**: la
+  pagina le scrive.
 
 ### 7.4 Il Gate Manager
 
@@ -1330,6 +1608,15 @@ la sua iscrizione, con il motivo (la domanda 2 sulla #253, la (A)) —, spento d
 ed `eventCancelled` arrivano anche a chi è iscritto, **una mail per persona** anche a chi ha prenotato e si è iscritto. Le mail
 tengono le parole del server, nella lingua di chi le riceve (§7.2).
 
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla #268):
+le quattro mail dei turni nascono con E12 (§4.4, §4.4-bis). `atcShiftAssigned` alla pubblicazione è **una mail per controllore per
+evento**, con tutti i suoi turni non ancora detti, e il segno `notified_at` di ogni turno si scrive **prima** della mail; dopo la
+pubblicazione `atcShiftAssigned`, `atcShiftChanged` e `atcShiftRemoved` vanno **solo a chi sapeva del turno**, e prima della
+pubblicazione nessuna. `atcShiftTransferDecided` di un'approvazione dice **nome e VID di chi ha preso il turno**. `eventChanged` ed
+`eventCancelled` arrivano anche a **ogni controllore con un turno**, una mail per persona insieme a chi ha prenotato o si è iscritto.
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; il sì di Carmine sulla #271):
+`registrationReceived` parte anche a ogni posto preso o ridato (§4-bis.2).
+
 ### 8.4 Job del modulo
 
 | Job | Ogni | Che cosa | Da che cosa decide |
@@ -1344,6 +1631,36 @@ tengono le parole del server, nella lingua di chi le riceve (§7.2).
 Convenzioni di M2: `[DisallowConcurrentExecution]`, una riga in `hub_jobs_log`, mai un'eccezione, `RunAsync` per i test.
 **Ognuno decide che cosa fare dai suoi dati, non dall'ora in cui gira** (§10.2). **Deciso con E6b** (#240, piano 1.32):
 `events-reminders` gira ai minuti 10, 25, 40 e 55, **in UTC**, e il suo trigger dice il fuso.
+
+**Deciso con E11b** (#262, nota `2026-10-13-la-proposta-del-roster`, piano 1.35; le risposte di Carmine sull'issue #259 e sulla
+#262): `events-roster` gira ai minuti 3, 18, 33 e 48, **in UTC**, e il suo trigger lo dice; **`events-release` dice anche lui UTC**
+nel suo trigger. Propone **una volta** (§4.3): ogni evento in una transazione sua, sotto il blocco della sua riga (`FOR UPDATE`), riletta
+prima di scrivere, e `roster_proposed_at` si scrive **con i turni, nella stessa transazione**, senza toccare la versione della riga
+dell'evento (un editor aperto non riceve un 409) e senza una riga dell'audit dell'evento: è il segno del job. **Un evento che fallisce
+non ferma il giro**: il fallimento va nel log, il giro lo nomina nel suo messaggio e lo lascia al giro dopo (la sua transazione è
+tornata indietro), e gli altri si propongono. La riga di `hub_jobs_log` ha `FinishedAt` a ogni uscita (E10j).
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; la risposta di Carmine sulla
+#268): la seconda metà di `events-roster` **pubblica una volta** (§4.4), sotto il blocco della riga, con il segno
+`roster_published_at` che non cambia la versione della riga, e manda le mail con **un segno per turno** (`notified_at`) scritto
+**prima** della mail; un roster proposto dopo il suo momento si pubblica nello stesso giro.
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272):
+`events-after` gira **ogni ora a lotti**, e ogni giro finisce dentro la richiesta del POST pianificato (§10.2). Un giro ha un **conto di
+60 unità**, circa i secondi di IVAO: una domanda per VID (tracker o archivio) vale 1, una per scalo 11. Gli eventi in ordine di fine; per
+ognuno prima le prenotazioni, poi i turni, poi — quando nessuna riga resta da verificare — chi ha volato senza prenotare **a pezzi, per
+scalo**, quanti ne stanno nel resto del conto, salvando il pezzo con le statistiche (`flown_unbooked_airports`); **un giro non spende mai
+più di 60 unità**. Contato l'ultimo scalo, le statistiche e `after_done_at` in una transazione. Le letture 1–7 sono in §5.1; i numeri
+sono costanti del codice, da rimisurare con i limiti veri (§9.1).
+
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue #267
+e sulla #271): **`events-retention` nasce con E17** (M4c prima di M4b), **il primo giorno del mese alle 04:40, in UTC** (il trigger lo
+dice), dopo il job dei tour, con le convenzioni di E10j. **Decide dalle date**: un evento la cui fine è passata da almeno
+`inPersonRetentionMonths` mesi e che ha ancora iscrizioni o posti. Per ognuno, **in un salvataggio solo**, scrive in `evt_event_stats`
+(la crea se manca, tocca solo le sue colonne) gli iscritti, **le somme delle risposte** e **i posti presi per attività**, con
+`computed_at`, poi cancella posti e iscrizioni attraverso l'interceptor; **dal 16 ott 2026** (E10s, #269) svuota nella stessa
+transazione le risposte nell'audit delle iscrizioni cancellate (§4-bis.2). Un giro perso o doppio non fa danni: il secondo non trova
+niente. Cambiare `inPersonRetentionMonths` vale dal giro dopo, per ogni evento.
 
 ---
 
@@ -1375,7 +1692,9 @@ Solo attraverso `IAtcActivitySource` e la vista `v_share_atc_sessions` (piano 1.
 cose: **le postazioni aperte più spesso** da un controllore (§4.3, c1: «dato estraibile da atc.it.ivao.aero») e **la
 presenza nei turni** (§4.5, §5.3). La vista ha già `vid`; `IAtcActivitySource` oggi non lo espone e non dà una storia per
 VID: estensione n.3. Con `atcData.source: none` il roster perde il criterio dell'esperienza, la presenza ATC si legge dal
-tracker (`connectionType=ATC`, per VID) e il resto funziona uguale.
+tracker (`connectionType=ATC`, per VID) e il resto funziona uguale. **Dal 16 ott 2026** (E10t, #277, piano 1.36) il tracker il
+modulo lo legge con **`INetworkSessionSource`** del nucleo, mai con `IIvaoApiClient` (§5.1); con il solo tracker **chi ha coperto**
+un turno resta sconosciuto (E13a, §1.7).
 
 ---
 
@@ -1428,6 +1747,13 @@ spegnilo»).
 | PIREP di supporto **ATC**, richieste di cessione dei turni | come i turni | c3 |
 | Iscrizioni a un evento in presenza e turni delle attività | `inPersonRetentionMonths` (3) dopo la fine, poi cancellati; le somme restano | §4-bis |
 | Chi ha volato senza prenotare | mai salvato per VID: solo il numero | — |
+
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue #267):
+iscrizioni e posti (i «turni delle attività» della tabella) li cancella `events-retention` il primo del mese (§8.4), **dopo aver scritto
+le somme** in `evt_event_stats`, che le liste rileggono (§4-bis.2). **Dal 16 ott 2026** (E10s, #269, nota
+`2026-10-16-la-conservazione-nell-audit`, decisa da Carmine sull'issue #267, risposta 3, piano 1.35): **le risposte lasciano anche
+l'audit**, con `AuditRedaction.EmptyDeletedAsync` del nucleo nella stessa transazione; di un posto l'audit tiene che il membro ha preso
+un turno, perché il posto non ha colonne segnate (la lettura 7 di E17, il sì di Carmine sulla #271).
 
 ### 11.1 La cancellazione dei dati di una persona
 
@@ -1485,6 +1811,23 @@ del revisore), per le iscrizioni a un evento in presenza, che «si trattano come
   svuota le copie di prima, dove resterebbe una parola tolta da un cambio di prima; e `AnswersJson` porta
   `[ErasedWith(nameof(Vid))]` (E10n): un'iscrizione ritirata o tolta prima della cancellazione non lascia le risposte nell'audit;
 - l'anteprima dice due righe in più, le iscrizioni cancellate e quelle tenute.
+
+**Deciso con E11b** (#262, nota `2026-10-13-la-proposta-del-roster`, piano 1.35; il sì di Carmine alla lettura 9 sull'issue #259),
+per i turni dell'ATC: quelli di un evento **non ancora finito si cancellano** (il pezzo torna scoperto); quelli di un evento **finito
+restano** sotto lo pseudonimo, **senza `attendance_note` e senza `reason`** (parole dello staff sulla persona e numeri suoi), segnati
+`[ErasedWith(nameof(ControllerVid))]`, così un turno tolto prima della cancellazione non li lascia nell'audit. Le quattro colonne di
+persona (`controller_vid`, `attendance_by`, `created_by`, `updated_by`) sono in `ErasureTests`.
+
+**Deciso con E12** (#268, nota `2026-10-14-la-pubblicazione-del-roster-e-la-cessione`, piano 1.35; il sì di Carmine sulla #268), per
+le richieste di cessione: quelle di chi cede di un evento **non ancora finito si cancellano**; quelle di un evento finito restano sotto
+lo pseudonimo, **senza le due note** (`[ErasedWith(nameof(ControllerVid))]`). Una richiesta che nomina la persona come chi riceve prende
+lo pseudonimo in `to_vid` dal nucleo, e non si approva più verso di lei. `controller_vid`, `to_vid` e `decided_by` sono in
+`ErasureTests`.
+
+**Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35), per i posti delle attività: un posto
+di un evento **non finito si cancella**; di un evento finito **resta** con lo pseudonimo, perché le statistiche lo contano. L'anteprima
+dice due righe in più (`events:erasure.seatsToCome`, `events:erasure.seatsOver`); `evt_activities.created_by`, `.updated_by` e
+`evt_activity_bookings.vid` sono in `ErasureTests`.
 
 ---
 
