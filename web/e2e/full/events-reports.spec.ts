@@ -16,12 +16,13 @@ import { benchAirports, benchUrl, readInEnglish, signIn, test, whileWaitingFor }
  * `EventsReportsTests`'s, on the evening of the fixtures moved in time; the phase's bench watched it with a session of its own.
  *
  * ⚠️ An event with a report is kept (`eventHasReports`): this spec's events stay on the bench, which `e2e:full` starts empty. A run deletes the
- * ones it can, and leaves the others under its own stem.
+ * ones it can, and leaves the others under its own stem — not `evt-test-e2e`, which `events-staff.spec.ts` deletes whole.
  */
 
 const events = englishEvents();
 const asTheClientDoes = { 'X-Requested-With': 'hub' };
-const stem = 'evt-test-e2e-e14a';
+// Not under `evt-test-e2e`: `events-staff.spec.ts` deletes every event of that stem, and an event with a report is kept.
+const stem = 'evt-e2e-e14a';
 const stamp = Date.now().toString(36);
 const slug = `${stem}-${stamp}`;
 const title = { en: `Bench evening reported ${stamp}`, it: `La sera raccontata del banco ${stamp}` };

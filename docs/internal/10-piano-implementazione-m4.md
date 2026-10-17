@@ -5117,7 +5117,68 @@ Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-su
 fixture, e `Unavailable` a sorgente spenta; oltre `reportDays` rifiutato.
 **Fatta quando**: sul banco un PIREP pilota verificato viene accettato da chi ha il permesso.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e14a-support-reports`, nata `--no-track` dalla testa di E13b `4226b983`, in coda dopo la #283
+di E13b; nota `2026-10-17-il-pirep-di-supporto`, **Proposta** per le quattordici letture e le tre scelte, chieste a Carmine sull'[issue
+#287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287), scelta di dalberone; le letture dopo la revisione):
+
+- **Una migrazione**, `AddSupportReports`, dopo `AddAfterTheEventColumns` di E13a (E13b non ne ha): `evt_reports` (univoco `(event_id, vid,
+  kind)`, indici su `vid` e `state`) ed `evt_report_items` (la chiave verso il PIREP, `on delete cascade`; indice su `vid`). Le colonne del
+  design, più `checked_at` del PIREP e, della voce, l'evento, **il VID del membro** e l'ordine (letture 1 e 2).
+- **Le entità** (`EventReport.cs`): il PIREP e la voce sono `ISubmittedByMembers`, `IHasStakeholder`, `IEventChild`, area `EventReports`,
+  con lo scope dell'evento. **`[WithdrawnByStakeholder]` solo sulla voce**: il PIREP porta la decisione dello staff (la regola di Carmine sulla
+  #232), la voce no, e la correzione ne sostituisce le voci. `[ErasedWith(nameof(Vid))]` su `DecisionNote`, sul callsign e sulla sessione
+  della voce.
+- **Le regole pure** (`Reports/ReportRules.cs`), **la verifica** (`Reports/ReportCheck.cs`: un volo con `INetworkSessionSource` per VID fra i
+  suoi due scali nel suo giorno dentro la finestra dei voli di E13a, la distanza con `GreatCircle` sulle coordinate di `IAirportDirectory`; un
+  turno come `events-after`, l'archivio poi il tracker, con `attendanceMinimumMinutes`), **l'invio** (`Reports/MemberReports.cs`, la verifica
+  **prima** del blocco, poi `SELECT … FOR UPDATE` sulla riga del PIREP, la correzione rifiutata se nel frattempo è deciso, due primi invii
+  insieme che si incontrano sull'indice univoco) e **la decisione** (`Reports/ReportDecisions.cs`: `EventReports.Edit` chiesto all'unico
+  handler **prima** di scrivere, sotto lo stesso blocco, la nota per rifiutare, la mail `reportDecided` dopo il commit).
+- **Gli endpoint** (`Reports/ReportEndpoints.cs`): la risorsa del motore in sola lettura `/api/events/reports` (`EventReports.View`, i nomi con
+  `MemberNames`, le voci e `Decidable` per pagina), `GET /api/events/mine/reports` (i PIREP del membro e gli eventi aperti),
+  `PUT /api/events/mine/reports/{eventId}/{kind}` e `POST /api/events/reports/{id}/decision`.
+- **Il resto del modulo che cresce**: `reportDays` (14, da 1 a 60) nelle impostazioni e nel form generato; `events.staffQueue` con un numero in
+  più, `Reports`, e il suo collegamento alla scheda; `EventStatistics` conta `reports_submitted` e `reports_accepted`; `EventsPersonalData`
+  tiene i PIREP con lo pseudonimo, senza la nota, i nominativi e le sessioni, e l'anteprima ha una riga in più; **un evento con un PIREP non
+  si elimina** (`eventHasReports`, lettura 13 — trovata scrivendo il giro e2e: senza, l'eliminazione lasciava i PIREP senza evento).
+- **Le pagine**: in `/events/mine` la sezione «PIREP di supporto» (`screens/myReports.tsx`: gli eventi aperti con «Manda il PIREP pilota» e
+  «Manda il PIREP ATC», i PIREP con la verifica di ogni voce e «Correggi» finché si può, in form generati); la scheda «PIREP di supporto» di un
+  evento finito (`screens/reports.tsx`, lista generata con una riga per voce scritta dalla pagina, `screens/reportWords.ts`, e «Decidi»);
+  la riga dei PIREP nel blocco della coda.
+- **Scostamenti e trappole**:
+  - `ReportDecision.State` non è nullable: con `ReportState?` il generatore di OpenAPI marcava **l'enum stesso** nullable, e ogni DTO che lo
+    usa aveva `state: … | null`. Uno stato mancante arriva come `Submitted` ed è rifiutato.
+  - Le chiavi delle parole della mail sono foglie (`…reportDecided.kinds.Pilot`): una chiave che è un oggetto, composta a runtime, fa cadere
+    `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer`.
+  - ⚠️ Le parole dei moduli che il server legge sono la copia della radice (`locales/`): dopo averle cambiate, `pnpm i18n:sync`, o il test dei
+    modelli delle mail non le trova.
+  - ⚠️ **Il giro e2e non usa il prefisso `evt-test-e2e`**: `events-staff.spec.ts` (E3a) elimina ogni evento con quel prefisso, e un evento con un
+    PIREP non si elimina; il primo `e2e:full` è caduto così (67/70, tre test di `events-staff`). Lo slug è `evt-e2e-e14a-…`.
+- **Test di fasi prima cresciuti con la forma**: `schemas.test.ts` (E2, `reportDays`), `titlesAndEmptyLists.test.tsx` (E4c, la risposta dei
+  PIREP del membro), `EventsTestRows` (i PIREP e le voci di un evento di prova), `EventsErasureTests` (E8b) ed `EventsRegistrationsTests` (E16), con la riga
+  dei PIREP nell'anteprima della cancellazione, e nel nucleo le tre colonne di persona in `ErasureTests`.
+- **I test**: integrazione `EventsReportsTests` (7; VID **761230–761236**, slug `evt-test-e14a-…`; la sera di Fiumicino delle fixture spostata a
+  due giorni fa, il pilota come 761023 e il controllore come 761024): il «fatta quando», nessuno valida il proprio (superadmin compreso), chi
+  valida non tocca altro, la verifica sulle fixture e `Unavailable` a sorgente spenta, oltre `reportDays` rifiutato, la correzione che aspetta
+  la decisione sul blocco (**cade senza il blocco**: provato togliendolo, la correzione passava e sostituiva le voci), la cancellazione dei dati di
+  un membro (il PIREP con lo pseudonimo, senza nota, nominativi e sessioni, anche nell'audit di una voce tolta da una correzione); unità `EventsReportsTests`
+  (8); vitest `reportWords.test.ts` (5); il giro `full/events-reports.spec.ts` (slug `evt-e2e-e14a-…`).
+- **Il «fatta quando» sul banco** (5151, `ivaohub_e2e_e14a`): il giro `full/events-reports.spec.ts` — il pilota del banco manda il suo volo di una
+  sera di due giorni fa da `/events/mine`, la verifica lo guarda (`Invalid`: il client delle fixture non ha sessioni del pilota del banco) e il
+  web master, che ha `EventReports.Edit`, lo accetta dalla scheda; il pilota lo legge accettato, senza «Correggi». Un PIREP **trovato**
+  (`Valid`, con la sessione, i minuti e la distanza) lo prova `EventsReportsTests` con le fixture spostate nel tempo.
+- **Verificato, in locale** (17 ottobre 2026, sulla testa di E13b `4226b983`): `dotnet build -c Release` senza avvisi; `gen:api` senza diff;
+  unità **1346/1346**; **integrazione intera senza filtro, da sola, 666 test**: 664 al primo giro, rossi i due elenchi dell'anteprima della
+  cancellazione di E8b ed E16 (la riga nuova), cresciuti con la forma; dopo, con il rifiuto `eventHasReports` e il test della cancellazione
+  dei PIREP, le classi toccate da sole **18/18** (`EventsReportsTests` 7,
+  `EventsErasureTests`, `EventsRegistrationsTests`); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
+  `--maxWorkers=2` **803 in 115 file**; lo smoke `--workers=2` **183/183**; **`pnpm e2e:full`** sul banco `http://127.0.0.1:5151`,
+  `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **67/70 al primo giro** (la trappola del prefisso, sopra), corretto lo slug e
+  rifatto da capo **70/70** (13,5 min); `core-guard.sh` con Git Bash dal merge-base con `main` (`e073bff`): passa, nessun file del
+  maintainer, i file del nucleo con le note nuove della coda (di E14a solo `ErasureTests.cs`).
+- **Non verificato**: la CI; un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente sul banco e nei
+  test); la pagina a 375 px; il merge della prossima testa di E13b (con E10u), che cambia `events.staffQueue`.
+
 
 ### E14b — Regole di award, PIREP automatici, riepilogo
 
