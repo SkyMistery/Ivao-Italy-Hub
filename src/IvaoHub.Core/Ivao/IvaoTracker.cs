@@ -26,7 +26,8 @@ public enum IvaoConnectionType
 /// at tomorrow, which is the same choice the centres and the airports made.</para>
 /// <para>⚠️ The airports here are the first revision's. A search for an airport finds a session whose plan had it in any
 /// revision (measured on 30 September 2026, M4 E10a), so a session found for its departure from one airport can say another
-/// one here: the revisions are in <see cref="RawJson"/>.</para>
+/// one here: the revisions are in <see cref="RawJson"/>, and <see cref="IvaoTrackerReader.ReadPlannedRoutes"/> reads their
+/// airports (E10v).</para>
 /// </summary>
 public sealed record IvaoTrackerSessionDto(
     long Id,
@@ -327,6 +328,37 @@ public static class IvaoTrackerReader
         {
             ConnectionType = ConnectionTypeOf(Text(item, "connectionType")),
         };
+    }
+
+    /// <summary>
+    /// The two airports of every revision of a session's flight plan, oldest first, in capitals, as the row of the tracker carries
+    /// them in <see cref="IvaoTrackerSessionDto.RawJson"/> (M4, E10v): the row lists its plans in the order they were filed, as
+    /// their numbers say on every recorded flight. A revision without one of its airports is left out; a controller, a session
+    /// without a plan, or a row that is not the tracker's, has none.
+    /// </summary>
+    public static IReadOnlyList<(string DepartureIcao, string ArrivalIcao)> ReadPlannedRoutes(IvaoTrackerSessionDto session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        try
+        {
+            using var row = JsonDocument.Parse(session.RawJson);
+            if (row.RootElement.ValueKind != JsonValueKind.Object
+                || !row.RootElement.TryGetProperty("flightPlans", out var plans)
+                || plans.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            return [.. plans.EnumerateArray()
+                .Select(plan => (Departure: Text(plan, "departureId"), Arrival: Text(plan, "arrivalId")))
+                .Where(route => route.Departure is not null && route.Arrival is not null)
+                .Select(route => (route.Departure!.ToUpperInvariant(), route.Arrival!.ToUpperInvariant()))];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     private static IvaoConnectionType? ConnectionTypeOf(string? word)
