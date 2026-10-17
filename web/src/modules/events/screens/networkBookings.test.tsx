@@ -110,11 +110,11 @@ describe('the bookings of the network beside the roster', () => {
     expect(within(approach).getByText(englishEvents.atc.network.options.kind.Exam)).toBeInTheDocument();
     expect(within(approach).getByText(/761399/)).toBeInTheDocument();
 
-    // The server asked once, for the event, with the list's page.
-    expect(api.get).toHaveBeenCalledWith(
-      '/api/events/atc/events/{id}/network-bookings',
-      expect.objectContaining({ params: expect.objectContaining({ path: { id: 7 } }) }),
-    );
+    // The server asked once, for the event.
+    expect(api.get).toHaveBeenCalledTimes(1);
+    const [route, options] = api.get.mock.calls[0] as [string, { params: { path: { id: number } } }];
+    expect(route).toBe('/api/events/atc/events/{id}/network-bookings');
+    expect(options.params.path.id).toBe(7);
   });
 
   test('a network that did not answer is said as such, in both languages, never as an empty list', async () => {
