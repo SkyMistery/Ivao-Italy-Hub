@@ -10,6 +10,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 
 import { BACKEND_PATHS } from './backendPaths';
+import { localesStamp } from './localesStamp';
 
 /** The backend during development; Vite proxies the host endpoints to it. */
 const KESTREL_ORIGIN = 'http://localhost:5000';
@@ -133,6 +134,7 @@ export default defineConfig({
   ],
   define: {
     __HUB_LANGUAGES__: JSON.stringify(SHIPPED_LANGUAGES),
+    __HUB_LOCALES_STAMP__: JSON.stringify(localesStamp(LOCALES_DIR)),
   },
   resolve: {
     alias: {

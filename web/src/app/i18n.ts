@@ -31,11 +31,19 @@ import { FALLBACK_LANGUAGE, spokenLanguage } from '../shared/i18n/language';
  * language before i18next sees it, so `en-GB` becomes `en` and a language with no files becomes
  * the fallback. The division's own list arrives later, with the bootstrap, and narrows it
  * (`useDivisionLanguage`).
+ *
+ * ⚠️ Every file is asked for with the fingerprint of the language files after `?v=`
+ * (`LOCALES_STAMP`): the JS chunks change name with every build, these files do not, and a browser
+ * that had cached the old `common.json` showed the keys of a new page raw after a delivery
+ * (test.it.ivao.aero, 17 October 2026). A release that changes a word changes the address.
  */
 export const LOCALE_COOKIE = 'hub.lang';
 
 /** The languages the build shipped files for: one per directory under `locales/`. */
 export const SHIPPED_LANGUAGES: readonly string[] = __HUB_LANGUAGES__;
+
+/** The fingerprint of the language files the build shipped, the `v` of every address under `/locales/`. */
+export const LOCALES_STAMP: string = __HUB_LOCALES_STAMP__;
 
 export function createI18n(
   namespaces: readonly string[],
@@ -59,7 +67,10 @@ export function createI18n(
       // its own catalogue has none. So everything that is not the default is a fallback, and a key
       // is written the same wherever it lives -- including a module's own `nav.<key>`.
       fallbackNS: namespaces.filter((namespace) => namespace !== 'common'),
-      backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' },
+      backend: {
+        loadPath: '/locales/{{lng}}/{{ns}}.json',
+        queryStringParams: { v: LOCALES_STAMP },
+      },
       detection: {
         order: ['cookie', 'navigator'],
         lookupCookie: LOCALE_COOKIE,
