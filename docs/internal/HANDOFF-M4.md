@@ -333,6 +333,32 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a)
+
+- **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
+  `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le quattro colonne di persona in `ErasureTests`; una nota nuova,
+  `2026-10-17-le-regole-di-award`, **Proposta**, con due domande per Carmine nel §4):
+  - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
+    `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
+    `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
+  - **I segnali**: `evt_report_awards` (`EventReportAward.cs`), una riga per regola soddisfatta, ognuna con il suo segnale nella coda del
+    nucleo; scritte e tolte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync`. Un award assegnato congela la decisione
+    (`events:errors.reportAwardAssigned`, `Decidable` falso).
+  - **I PIREP `Auto`**: la preferenza `events.autoReport`, il passo di `events-after` (`Reports/AutoReports.cs`, il segno
+    `evt_events.auto_reports_after_vid`), l'interruttore in `/events/mine`. Solo la metà ATC: la pilota aspetta la domanda 2.
+  - **`events-digest`** (`Reports/ReportsDigestJob.cs`), alle 07:15 nel fuso della divisione, `events.reportsToValidate`.
+  - **I test**: integrazione `EventsAwardRulesTests` (VID **761262–761268**, slug `evt-test-e14b-…`); unità `EventsAwardRulesTests`; vitest
+    `awardRuleWords.test.ts`; il giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E15b** (la conservazione dei piloti): un PIREP pilota cancellato porta via le sue righe `evt_report_awards` (la chiave è in cascata, ma
+    ognuna ha la sua riga nell'audit solo se le cancella il modulo); i segnali nella coda del nucleo restano finché qualcuno li guarda: una
+    riga sorgente che se ne va toglie solo quelli in attesa. «Duplica» per le regole è fatto qui.
+  - ⚠️ **Il segnale non è più del PIREP**: la riga sorgente è `evt_report_awards` (`report-award:{id}`). Chi chiede «questo PIREP ha dato un
+    award?» passa da `ReportAwards.AssignedAsync`.
+  - ⚠️ **Il banco non trova sessioni del pilota**: un PIREP del banco non ha voci verificate e non soddisfa nessuna regola. Il «fatta quando»
+    sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
+  - ⚠️ **I VID di prova**: E14b ha usato **761262–761268** della fascia 761262–761299.
+
 ### Che cosa ha lasciato E14a (17 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, in coda dopo la #283 di E13b, con la sua testa `ecc5a35b` unita — E10u `a2631e6` e `main` a `9a78b2c`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo

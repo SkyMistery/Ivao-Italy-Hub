@@ -5291,7 +5291,49 @@ E10d.
 automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche con due giri.
 **Fatta quando**: sul banco un PIREP accettato mette un segnale nella coda degli award, e chi assegna riceve la mail (E10d).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
+E14a; nota `2026-10-17-le-regole-di-award`, **Proposta**, con due domande — §4 della nota — che il codice segue con la risposta raccomandata
+in attesa di quella di Carmine):
+
+- **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
+  `evt_events.auto_reports_after_vid`.
+- **Le regole** (`EventAwardRule.cs`, `Reports/AwardRules.cs`, `Staff/EventAwardRuleEndpoints.cs`): righe dell'evento nell'area `Events`, il
+  criterio dall'elenco chiuso e **i parametri come colonne** (lettura 2), la risorsa del motore `/api/events/award-rules` (`Events.View`,
+  `Events.Edit`) con le scelte del form in `/api/events/award-rules/choices` (gli award attivi del catalogo, i tipi delle postazioni della
+  divisione); al più 50 per evento, nessuna su un evento in presenza. Che cosa vuol dire ogni criterio sulle voci verificate è `AwardRules.IsMet`
+  (lettura 3). **«Duplica» le copia** (lettura 6; la riga di E15b per le regole è fatta), ed eliminare un evento le porta via.
+- **I segnali** (`EventReportAward.cs`, `Reports/ReportAwards.cs`, la domanda 1 della nota con la (A) raccomandata): il nucleo tiene **un
+  segnale per membro per riga sorgente**, quindi un PIREP che soddisfa due regole ha bisogno di due righe: `evt_report_awards`, una per regola
+  soddisfatta, ognuna l'`IProjectable` con il suo segnale (`report-award:{id}`), scritte da `ReportDecisions` nello stesso salvataggio
+  dell'accettazione e cancellate da un rifiuto (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
+  con un segnale `Handled` il cambio della decisione è rifiutato (`events:errors.reportAwardAssigned`), letto **sotto il blocco delle righe dei
+  segnali** in `cms_award_signals`, che il contesto del modulo mappa; la lista dello staff dà `Decidable` falso. Le statistiche contano le righe
+  (`award_signals`).
+- **I PIREP `Auto`** (`Reports/AutoReports.cs`; la preferenza `events.autoReport` in `EventsModule.Preferences`): un passo di `events-after`
+  dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
+  sull'evento (`auto_reports_after_vid`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
+  dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
+  `attendanceMinimumMinutes` (lettura 8). **La metà pilota** aspetta gli aeroporti di una sessione dal nucleo (la domanda 2). Lo scrittore di
+  E14a (`MemberReports.WriteAsync`) ora è condiviso: un PIREP che c'è già non si tocca, e la riga si legge come la legge il back office (il job non
+  ha un membro per il filtro delle righe dei membri — trovato con il test: senza, il secondo PIREP urtava l'indice univoco).
+- **`events-digest`** (`Reports/ReportsDigestJob.cs`): alle 07:15 nel fuso della divisione (il trigger lo dice), `events.reportsToValidate` a
+  chi tiene `EventReports.Edit`, i PIREP `Submitted` degli eventi che può validare, i suoi esclusi; «già mandato oggi» è la riga del giro.
+- **Le pagine**: la scheda «Award» dell'editor di un evento non in presenza (`screens/awardRules.tsx`, le parole dei parametri in
+  `screens/awardRuleWords.ts`), il criterio scelto sopra il form come i vincoli dei tour; l'interruttore «Riporta automaticamente la mia
+  partecipazione agli eventi» in cima alla sezione dei PIREP di `/events/mine`, che ora si vede sempre.
+- **Scostamenti e trappole**:
+  - ⚠️ Il form di una regola sceglie l'award da `/api/events/award-rules/choices` e non da `/api/awards`: il catalogo del nucleo si legge con
+    `Awards.View`, che chi scrive gli eventi non ha.
+  - ⚠️ Il motivo del segnale è nella lingua della divisione con le parole del criterio della scheda (`awardRules.options.criterion.*`), una
+    chiave letterale per criterio: una chiave composta a runtime fa cadere `AModuleKeyIsAskedWithItsNamespaceOnTheServer` (la trappola di E14a).
+  - ⚠️ Un test che fa girare i job della classe li mette in pausa nell'host (`award-queue-mail`, `events-digest`, `events-after`).
+- **I test**: unità `EventsAwardRulesTests` (12: ogni criterio, i limiti dei parametri, le voci `Auto` di un controllore); integrazione
+  `EventsAwardRulesTests` (6; VID **761262–761268**, slug `evt-test-e14b-…`): le regole del coordinatore con i rifiuti e «Duplica»; un PIREP
+  accettato proietta i segnali delle regole soddisfatte e nessun altro, chi assegna riceve la mail del nucleo, le statistiche li contano; il
+  rifiuto dopo l'accettazione toglie i segnali in attesa e tiene lo scartato, e un award assegnato congela la decisione (**cade senza il
+  rifiuto**: provato togliendolo); i PIREP `Auto` solo per chi ha la preferenza, mai sopra uno del membro; una rete che non risponde lascia il
+  membro al giro dopo; il riepilogo una volta al giorno anche con due giri, con il fuso del trigger; vitest `awardRuleWords.test.ts` (2); il
+  giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 
