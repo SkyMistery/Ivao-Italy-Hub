@@ -1,14 +1,17 @@
 # Il PIREP di supporto: l'invio, la verifica, la validazione (E14a)
 
 **Data:** 17 ottobre 2026 — fase E14a di M4 (M4b), PR in coda dopo la #283 di E13b
-**Stato:** **Proposta** per le letture del §2 e per le tre scelte del §4. Il codice segue le risposte raccomandate.
+**Stato:** **Proposta** per le letture del §2 e per le tre scelte del §4. La domanda è l'[issue #287][q], scelta di dalberone; le letture
+Carmine le decide dopo la revisione della PR. Il codice segue le risposte raccomandate.
+
+[q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287
 **Regola applicata:** `CLAUDE.md` §5. Che il PIREP di supporto si mandi da `/events/mine` entro `reportDays` dalla fine, pilota con i voli
 e ATC con i turni, uno per tipo per evento, correggibile finché non è deciso; che il sistema lo verifichi a ogni invio con `Valid`,
 `Partial`, `Invalid` o `Unavailable`; che lo validi una persona con `EventReports.Edit`, mai il proprio, accettando o rifiutando con una
 nota e con la mail `reportDecided`; che i PIREP da validare entrino in `events.staffQueue`, sono **decisi** (design `09-design-m4.md` §1.1,
 §1.8, §1.12, §5.2, §5.3, §6.1, §6.2, §7.1, §7.2, §7.3, §8.3, §11; nota `2026-09-29-dopo-l-evento-e-gli-award`, punto 2). Questa nota
 registra **le letture** che la fase ha dovuto fare dove il design non dice: casi **(a)** e **(b)**, **due tabelle nuove** (`evt_reports`,
-`evt_report_items`, la migrazione `AddSupportReports` dopo `AddAfterTheEventColumns` di E13a), **tre verbi** e **una lettura scritta a
+`evt_report_items`, la migrazione `AddSupportReports` dopo `AddAfterTheEventColumns` di E13a), **due verbi** (mandare, decidere) e **una lettura scritta a
 mano**. Si usano così come sono l'unico handler con `DeniedToStakeholder` (c'è da E2 per `EventReports.Edit`), il guardiano delle righe dei
 membri (`ISubmittedByMembers`, `[WithdrawnByStakeholder]` di E10h), il motore CRUD in sola lettura, `Refusals`, `MemberNames`,
 `INetworkSessionSource` di E10t, `IAtcActivitySource` di E10b, `GreatCircle` di E10e con `IAirportDirectory`, le regole dei minuti di E13a
@@ -85,9 +88,11 @@ persona si cancellano.
 9. **La scheda dello staff «PIREP di supporto»** in `/staff/events/{id}`, su un evento finito, a chi ha `EventReports.View` sulla sua cura: la
    lista generata della risorsa del motore **in sola lettura** `/api/events/reports` (`filter[eventId]`, `filter[state]`, `filter[kind]`), con
    il membro (`col.person`), il tipo, lo stato, l'esito della verifica, quando è stato mandato, chi ha deciso e la nota; **le voci con la
-   verifica di ognuna** in un dialog «Voci» (il volo o il turno, la sessione trovata o no, i minuti, la distanza) — dati, che la pagina scrive
-   nella lingua sullo schermo —; «Decidi» dove il server dice che il lettore può (`Decidable`: l'unico handler sulla riga, come `Decidable`
-   dei turni di E13b). Le voci arrivano con la pagina, una query per pagina, mai una per riga.
+   verifica di ognuna** in una cella della lista, una riga per voce (il volo o il turno, la sessione trovata o no, i minuti, la distanza) —
+   dati, che la pagina scrive nella lingua sullo schermo —; «Decidi» («Cambia la decisione» su uno deciso) dove il server dice che il lettore
+   può (`Decidable`: l'unico handler sulla riga, come `Decidable` dei turni di E13b). Le voci arrivano con la pagina, una query per pagina, mai
+   una per riga. La decisione manda `Accepted` o `Rejected`; una decisione senza stato arriva come `Submitted` ed è rifiutata
+   (`reportStateNotAllowed`).
 10. **`events.staffQueue`**: un numero in più per evento, **i PIREP da validare** (`Submitted`), contati solo dove l'unico handler dà al lettore
     `EventReports.Edit` sulla riga — quindi non i propri —, letti già filtrati per stato nella query. Il blocco è nella dashboard dell'MD (§7.3).
 11. **Le statistiche** (`EventStatistics.WriteAsync` di E13a): `reports_submitted` conta i PIREP dell'evento, qualunque stato, e
@@ -99,7 +104,9 @@ persona si cancellano.
     su tutte e tre, così anche un PIREP o una voce che non ci sono più non le lasciano nell'audit (E10n). Restano gli aeroporti, il giorno, le
     ore, i minuti, la distanza, l'esito. L'anteprima dice una riga in più, i PIREP tenuti. **La conservazione** (i PIREP dei piloti dopo
     `pilotRetentionMonths`, §11) è di E15b.
-13. **Che cosa la fase non fa**: i PIREP `Auto`, le regole di award, i segnali e il riepilogo `reportsToValidate` (E14b; `source` nasce con
+13. **Un evento con un PIREP non si elimina** (`eventHasReports`), come uno con prenotazioni, iscrizioni, disponibilità o turni: il PIREP è
+    una riga di un membro con una decisione dello staff sopra, e senza l'evento resterebbe di nessuno. L'evento si tiene (è finito).
+14. **Che cosa la fase non fa**: i PIREP `Auto`, le regole di award, i segnali e il riepilogo `reportsToValidate` (E14b; `source` nasce con
     `Manual` solo); un PIREP per un evento in presenza (lettura 3).
 
 ### Che cosa tocca del nucleo
