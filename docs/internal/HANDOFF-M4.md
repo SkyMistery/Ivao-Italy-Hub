@@ -6,7 +6,13 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
+`m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`. Una nota nuova,
+`2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b). Da E10v una `NetworkSession` dice anche gli scali del suo piano di volo:
+`DepartureIcao`/`ArrivalIcao` dell'ultima revisione e `Routes`, ogni revisione dalla più vecchia («Che cosa ha lasciato E10v», sotto).
+**E14b** (`m4/e14b-award-rules`) unisce questo branch.
+
+**L'aggiornamento di E13a:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
 (con E12 `1887c27` ed E10s `00b0609`), e dopo la revisione le teste di E10t `e17dd8c` (con `main` a `b5d3fb9`, E12 unita) e `2255412`
@@ -322,6 +328,33 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
+  fixture cambiata; una nota nuova, `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b)):
+  - **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt, string? DepartureIcao = null, string?
+    ArrivalIcao = null) { IReadOnlyList<NetworkRoute> Routes }`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`), con
+    **`NetworkRoute(string DepartureIcao, string ArrivalIcao)`**: `Routes` è ogni revisione del piano di volo, dalla più vecchia, in
+    maiuscolo, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
+    l'**ultima** voce di `Routes`; `null` e vuota per un controllore o una sessione senza piano.
+  - **L'uguaglianza è di valore**: due sessioni con le stesse rotte sono uguali (`Equals` e `GetHashCode` scritti nel record).
+  - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** (`IvaoTracker.cs`): le revisioni dal `RawJson` della riga, che il
+    client ha già; nessuna chiamata nuova alla rete. Il DTO e i tour non cambiano.
+  - **I test**: `NetworkSessionSourceTests` (unità, ora 13 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
+    LIRF→LICR).
+- **Che cosa legge E14b** (che unisce questo branch, poi `main` quando è unita):
+  - di ogni sessione di `INetworkSessionSource.SessionsAsync`: **`DepartureIcao`** e **`ArrivalIcao`** per la voce di volo di un PIREP
+    `Auto` (callsign, partenza, arrivo, giorno = `StartedAt`) e per le regole `Route`, `RouteTimes`, `MinLegDistance`; **`Routes`**
+    quando una regola vuole sapere se la sessione ha **mai** detto una rotta (un pilota che in una connessione vola due tratte le ha tutte
+    e due, e l'ultima è nei due campi);
+  - ⚠️ una sessione con `DepartureIcao` `null` non ha piano: non è una voce di volo;
+  - ⚠️ `RouteTimes` conta le **sessioni**, non le voci di `Routes`: due revisioni uguali sono una tratta sola;
+  - ⚠️ il doppio di `INetworkSessionSource` in `EventsAfterTests` (E13a) costruisce le sessioni **senza scali**: un test di E14b che li
+    vuole li scrive nel suo doppio (con il lettore, `IvaoTrackerReader.ReadPlannedRoutes`, sulle righe della fixture), o chiede la
+    sorgente vera con il client delle fixture;
+  - le regole del tracker restano quelle di E10a ed E10t: la domanda con due scali trova una sessione che li ha in **una stessa**
+    revisione, che può non essere l'ultima.
 
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 
