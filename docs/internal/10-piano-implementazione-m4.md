@@ -5399,7 +5399,24 @@ e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la
   rifiuto dopo l'accettazione toglie i segnali in attesa e tiene lo scartato, e un award assegnato congela la decisione (**cade senza il
   rifiuto**: provato togliendolo); i PIREP `Auto` solo per chi ha la preferenza, mai sopra uno del membro; una rete che non risponde lascia il
   membro al giro dopo; il riepilogo una volta al giorno anche con due giri, con il fuso del trigger; vitest `awardRuleWords.test.ts` (2); il
-  giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).
+  giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`). Cresciuto con la forma: `EventsDuplicationTests` (E8b), che decide ogni
+  colonna dell'evento, con `AutoReportsAfterVid` fra quelle che una bozza nuova ha vuote.
+- **Il «fatta quando» sul banco** (5152, `ivaohub_e2e_e14b`, dopo `e2e:full`): il coordinatore degli eventi scrive la regola «Un volo» dalla
+  scheda «Award» di un evento finito alla Roma del banco, con un award del catalogo scritto dal web master; il pilota del banco manda il suo
+  volo, e la verifica lo dice `Invalid` (il banco non ha sessioni del pilota): **la voce resa verificata in SQL**, come E13b per il no-show; il
+  web master lo accetta dalla scheda «PIREP di supporto», e **il segnale è nella coda degli award** (`/staff/awards/queue`: il VID del pilota,
+  «La sera … : Un volo», l'award proposto, da `events`, in attesa). Poi assegnato dalla coda: la scheda non offre più la decisione, e un
+  rifiuto risponde 400 con `events:errors.reportAwardAssigned`. **La mail a chi assegna** non si vede sul banco (il web master non ha
+  casella, la nota di E10d): la prova `EventsAwardRulesTests` con il coordinatore dell'MD, che tiene `Awards.Assign` da `positionGrants`.
+- **Verificato, in locale** (17 ottobre 2026, con E14a `7c094fd5` ed E10v `547d402d` unite): `dotnet build -c Release` senza avvisi;
+  `has-pending-model-changes` senza cambi, con `AddAwardRules` ultima; `gen:api` senza diff; unità **1373/1373**; **integrazione intera senza
+  filtro, da sola, 677/677** (17,3 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2`
+  **810 in 117 file**; lo smoke `--workers=2` **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima, dietro il lock di
+  Mailpit: **71/71 al primo giro** (14,5 min); `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`, con la nota nuova; gli altri file del nucleo sono di E10u, E13b ed E10v, con le loro note).
+- **Non verificato**: la CI; un PIREP `Auto` scritto da un giro vero di `events-after` sul banco (il banco non lancia un job, e la rete del
+  banco non ha sessioni dei suoi membri; lo provano `EventsAwardRulesTests`); il riepilogo dei validatori nella casella di Mailpit (stessa
+  ragione); una sessione vera della rete con più revisioni del piano; la pagina a 375 px.
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 
