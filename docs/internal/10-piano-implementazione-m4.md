@@ -5285,6 +5285,12 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **803 in 115 file**; lo smoke **183/183**;
   `e2e:full` sul banco 5151, `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **70/70 al primo giro** (14,6 min); `core-guard.sh`
   dal merge-base `9a78b2c`: passa. PR #289.
+- **Dopo il merge della testa di E13b `0c8d5313`** (con E10u `59d544e` e `main` a `8bf63ea`: la #285 e la #286, le lingue del browser che
+  seguono la release; conflitto solo in `HANDOFF-M4.md`, niente delle pagine degli eventi): `dotnet restore --force --no-http-cache` senza
+  avvisi; build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api` senza diff; unità **1356/1356**; **integrazione intera
+  senza filtro, da sola, 671/671** (13,4 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
+  `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il merge non tocca le pagine degli eventi: il 70/70 di
+  prima vale); `core-guard.sh` dal merge-base `8bf63ea`: passa.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
