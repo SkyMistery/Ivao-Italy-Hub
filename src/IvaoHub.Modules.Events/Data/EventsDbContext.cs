@@ -52,6 +52,19 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
     /// <summary>The controllers' requests to hand a shift over (E12).</summary>
     public DbSet<EventAtcTransfer> AtcTransfers => Set<EventAtcTransfer>();
+
+    /// <summary>The members' reports of support (E14a).</summary>
+    public DbSet<EventReport> Reports => Set<EventReport>();
+
+    /// <summary>The items of the reports: the flights and the shifts declared, with what the check found (E14a).</summary>
+    public DbSet<EventReportItem> ReportItems => Set<EventReportItem>();
+
+    /// <summary>The rules of award of the events (E14b).</summary>
+    public DbSet<EventAwardRule> AwardRules => Set<EventAwardRule>();
+
+    /// <summary>The rules of award the accepted reports met, each pointing its member out in the core's queue (E14b).</summary>
+    public DbSet<EventReportAward> ReportAwards => Set<EventReportAward>();
+
     /// <summary>The parallel activities of the events in person (E17).</summary>
     public DbSet<EventActivity> Activities => Set<EventActivity>();
 
@@ -69,6 +82,11 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
         configurationBuilder.Properties<ShiftOrigin>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ShiftAttendance>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<TransferStatus>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ReportKind>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<ReportSource>().HaveConversion<string>().HaveMaxLength(8);
+        configurationBuilder.Properties<ReportState>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<ReportVerification>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<AwardCriterion>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -304,6 +322,74 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A controller's requests of every event: their own page.
             transfer.HasIndex(row => row.ControllerVid);
+        });
+
+        modelBuilder.Entity<EventReport>(report =>
+        {
+            report.ToTable("evt_reports");
+            report.HasKey(row => row.Id);
+            report.Ignore(row => row.StakeholderVid);
+            report.Ignore(row => row.ResourceScope);
+            report.Property(row => row.DecisionNote).HasMaxLength(EventReport.MaxNoteLength);
+
+            // One report per member per event per kind (§1.8): the database says it, so two sends of the same member in the same instant
+            // meet here and the second becomes a correction of the first. It is also the index the staff's list reads an event by. No key
+            // towards the event, as for a registration: an event over is not deleted, it is kept.
+            report.HasIndex(row => new { row.EventId, row.Vid, row.Kind }).IsUnique();
+
+            // A member's reports of every event: their own page.
+            report.HasIndex(row => row.Vid);
+
+            // The reports waiting for a validator: the staff's queue.
+            report.HasIndex(row => row.State);
+        });
+
+        modelBuilder.Entity<EventReportItem>(item =>
+        {
+            item.ToTable("evt_report_items");
+            item.HasKey(row => row.Id);
+            item.Ignore(row => row.StakeholderVid);
+            item.Ignore(row => row.ResourceScope);
+            item.Property(row => row.Callsign).HasMaxLength(EventReportItem.MaxCallsignLength).IsRequired();
+            item.Property(row => row.DepartureIcao).HasMaxLength(4);
+            item.Property(row => row.ArrivalIcao).HasMaxLength(4);
+            item.Property(row => row.DistanceNm).HasPrecision(7, 1);
+
+            // The items of a report go with it: the module deletes them first, each with its row in the audit, and the key makes sure nobody
+            // forgets. It is also the index a report's items are read by.
+            item.HasOne<EventReport>().WithMany().HasForeignKey(row => row.ReportId).OnDelete(DeleteBehavior.Cascade);
+
+            // A member's items of every event: their erasure.
+            item.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<EventAwardRule>(rule =>
+        {
+            rule.ToTable("evt_award_rules");
+            rule.HasKey(row => row.Id);
+            rule.Ignore(row => row.ResourceScope);
+            rule.Property(row => row.DepartureIcao).HasMaxLength(4);
+            rule.Property(row => row.ArrivalIcao).HasMaxLength(4);
+            rule.Property(row => row.PositionType).HasMaxLength(EventAwardRule.MaxPositionTypeLength);
+            rule.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its rules with it, as it takes its routes. The key is also the index the tab and an acceptance read by.
+            rule.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventReportAward>(award =>
+        {
+            award.ToTable("evt_report_awards");
+            award.HasKey(row => row.Id);
+            award.Ignore(row => row.ResourceScope);
+            award.Property(row => row.Reason).HasMaxLength(EventReportAward.MaxReasonLength).IsRequired();
+
+            // The rows of a report go with it, as its items do. It is also the index a decision reads them by.
+            award.HasOne<EventReport>().WithMany().HasForeignKey(row => row.ReportId).OnDelete(DeleteBehavior.Cascade);
+
+            // A member's rows of every event: their erasure; and an event's, for its statistics.
+            award.HasIndex(row => row.Vid);
+            award.HasIndex(row => row.EventId);
         });
 
         modelBuilder.Entity<EventActivity>(activity =>

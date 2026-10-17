@@ -11,6 +11,8 @@ import type {
   AirportFormValues,
   AtcPositionFormValues,
   AvailabilityFormValues,
+  AwardCriterionValue,
+  AwardRuleFormValues,
   CancelFormValues,
   DuplicateFormValues,
   EventFormValues,
@@ -54,6 +56,7 @@ const settingsKey = ['events', 'settings'] as const;
 const eventsKey = ['events', 'events'] as const;
 const airportsKey = ['events', 'airports'] as const;
 const routesKey = ['events', 'routes'] as const;
+const awardRulesKey = ['events', 'award-rules'] as const;
 const slotsKey = ['events', 'slots'] as const;
 const publicKey = ['events', 'public'] as const;
 const mineKey = ['events', 'mine'] as const;
@@ -64,6 +67,12 @@ export type EventDetailDto = components['schemas']['EventDetailDto'];
 export type EventDuplicatedDto = components['schemas']['EventDuplicatedDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
 export type EventRouteDto = components['schemas']['EventRouteDto'];
+export type EventAwardRuleDto = components['schemas']['EventAwardRuleDto'];
+export type EventAwardRuleRowDto = components['schemas']['EventAwardRuleRowDto'];
+export type AwardRuleChoicesDto = components['schemas']['AwardRuleChoicesDto'];
+
+/** A rule of award as its list shows it: the server's row, and its parameters in words the page writes (E14b). */
+export type AwardRuleRow = EventAwardRuleRowDto & { parameters: string };
 export type PublicEventDto = components['schemas']['PublicEventDto'];
 export type PublicEventRouteDto = components['schemas']['PublicEventRouteDto'];
 export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto'];
@@ -167,6 +176,11 @@ export function eventToFormValues(event: EventDetailDto, locales: readonly strin
     // The column takes Public and Members only; the server refuses anything else.
     visibility: event.visibility === 'Members' ? 'Members' : 'Public',
     ...(event.bannerMediaId === null ? {} : { bannerMediaId: event.bannerMediaId }),
+    ...(event.restrictedWindowHours === null ? {} : { restrictedWindowHours: event.restrictedWindowHours }),
+    ...(event.restrictedMaxPerWindow === null
+      ? {}
+      : { restrictedMaxPerWindow: event.restrictedMaxPerWindow }),
+    ...(event.restrictedMaxPerEvent === null ? {} : { restrictedMaxPerEvent: event.restrictedMaxPerEvent }),
     rowVersion: event.rowVersion,
   };
 }
@@ -197,6 +211,9 @@ function eventBody(values: EventFormValues, body: Body | null): EventWriteDto {
     inPerson: values.inPerson,
     hasRoster: values.hasRoster,
     shiftMinutes: values.shiftMinutes ?? null,
+    restrictedWindowHours: values.restrictedWindowHours ?? null,
+    restrictedMaxPerWindow: values.restrictedMaxPerWindow ?? null,
+    restrictedMaxPerEvent: values.restrictedMaxPerEvent ?? null,
     // A venue written in no language is none, and left out.
     ...(values.venue === undefined || Object.values(values.venue).every((text) => text.trim() === '')
       ? {}
@@ -459,6 +476,112 @@ export function useDeleteRoute() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: routesKey });
       void queryClient.invalidateQueries({ queryKey: publicKey });
+    },
+  });
+}
+
+// ---- the rules of award of an event (E14b) ---------------------------------------------------------
+
+/** The rules of award of an event, in the order they were written: an event has a handful, never pages of them. */
+export function awardRulesQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  words: (row: EventAwardRuleRowDto) => string,
+) {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'list', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/award-rules', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): AwardRuleRow => ({ ...row, parameters: words(row) })) };
+    },
+  });
+}
+
+export function awardRuleQuery(id: number) {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventAwardRuleDto> =>
+      unwrap(await api.GET('/api/events/award-rules/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/** What a rule's form chooses from: the active awards of the core's catalogue, and the kinds of position of the division. */
+export function awardRuleChoicesQuery() {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'choices'] as const,
+    queryFn: async (): Promise<AwardRuleChoicesDto> =>
+      unwrap(await api.GET('/api/events/award-rules/choices')),
+  });
+}
+
+export function awardRuleToFormValues(rule: EventAwardRuleDto): AwardRuleFormValues {
+  return {
+    eventId: rule.eventId,
+    awardId: String(rule.awardId),
+    departureIcao: rule.departureIcao ?? '',
+    arrivalIcao: rule.arrivalIcao ?? '',
+    ...(rule.count === null ? {} : { count: rule.count }),
+    ...(rule.distanceNm === null ? {} : { distanceNm: rule.distanceNm }),
+    ...(rule.minutes === null ? {} : { minutes: rule.minutes }),
+    ...(rule.positionType === null ? {} : { positionType: rule.positionType }),
+    rowVersion: rule.rowVersion,
+  };
+}
+
+/** Saves a rule with the criterion chosen above its form; what the criterion does not take the server empties. */
+export function useSaveAwardRule(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      criterion,
+      values,
+    }: {
+      criterion: AwardCriterionValue;
+      values: AwardRuleFormValues;
+    }): Promise<EventAwardRuleDto> => {
+      const text = (value: string | undefined) =>
+        value === undefined || value.trim() === '' ? null : value.trim().toUpperCase();
+      const body = {
+        eventId: values.eventId,
+        awardId: Number(values.awardId),
+        criterion,
+        departureIcao: text(values.departureIcao),
+        arrivalIcao: text(values.arrivalIcao),
+        count: values.count ?? null,
+        distanceNm: values.distanceNm ?? null,
+        minutes: values.minutes ?? null,
+        positionType: text(values.positionType),
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/award-rules', { body }))
+        : unwrap(
+            await api.PUT('/api/events/award-rules/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: awardRulesKey });
+    },
+  });
+}
+
+export function useDeleteAwardRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/award-rules/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: awardRulesKey });
     },
   });
 }
@@ -1689,5 +1812,272 @@ export function shiftOutcomesQuery(eventId: number, search: ListSearch) {
           querySerializer: listQuerySerializer({ eventId: String(eventId) }),
         }),
       ),
+  });
+}
+
+// ---- the registers (E13b) ------------------------------------------------------------------------------------------------------
+
+export type ControllerRegisterRowDto = components['schemas']['ControllerRegisterRowDto'];
+export type PilotRegisterRowDto = components['schemas']['PilotRegisterRowDto'];
+export type MemberRecordDto = components['schemas']['MemberRecordDto'];
+export type PilotRecordDto = components['schemas']['PilotRecordDto'];
+export type ControllerRecordDto = components['schemas']['ControllerRecordDto'];
+export type MyRegisterShiftDto = components['schemas']['MyRegisterShiftDto'];
+export type MyUnflownDto = components['schemas']['MyUnflownDto'];
+
+/** The type of the block of the staff's queue, as `StaffQueueProvider.BlockType` spells it on the server. */
+export const STAFF_QUEUE_BLOCK = 'events.staffQueue';
+
+const registerKey = ['events', 'register'] as const;
+
+/** The staff's outcomes of a shift (§4.5): what «Confirm», «Attended» and «Excuse» send. */
+export type DecidedAttendance = Extract<ShiftAttendance, 'Attended' | 'NoShow' | 'Excused'>;
+
+/**
+ * The register of the controllers (§4.5, §7.2): one row per controller, the counts and the penalty — a page, by penalty —, the penalty to two
+ * decimals, the figure the why of a proposed shift says.
+ */
+export function controllersRegisterQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'controllers', search] as const,
+    queryFn: async () => {
+      const page = unwrap(await api.GET('/api/events/atc/register', { params: { query: pageOf(search) } }));
+
+      return {
+        ...page,
+        items: page.items.map((row) => ({ ...row, penalty: Math.round(row.penalty * 100) / 100 })),
+      };
+    },
+  });
+}
+
+/** The register of the pilots (§3.7): one row per pilot with a booking not flown, whether they have the limits and until when. */
+export function pilotsRegisterQuery(search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'pilots', search] as const,
+    queryFn: async () =>
+      unwrap(await api.GET('/api/events/bookings/register', { params: { query: pageOf(search) } })),
+  });
+}
+
+/**
+ * The shifts with how each went (§4.5), of one event — the section «Outcomes» of its ATC — or of one controller in every event — the detail
+ * of their register, the latest first —, with whether the reader may decide each.
+ */
+export function shiftRowsQuery(filter: { eventId: number } | { controllerVid: number }, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...atcKey, 'decisions', filter, search] as const,
+    queryFn: async () =>
+      unwrap(
+        await api.GET('/api/events/atc/shifts', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer(
+            'eventId' in filter
+              ? { eventId: String(filter.eventId) }
+              : { controllerVid: String(filter.controllerVid) },
+          ),
+        }),
+      ),
+  });
+}
+
+/** A pilot's bookings of every event, with what the check found: the detail of their register. */
+export function pilotBookingsQuery(vid: number, search: ListSearch) {
+  return queryOptions({
+    queryKey: [...registerKey, 'bookings', vid, search] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/bookings', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ bookerVid: String(vid) }),
+        }),
+      );
+
+      return {
+        ...page,
+        items: page.items.map((row): CheckedBookingRow => ({ ...row, outcome: bookingOutcome(row) })),
+      };
+    },
+  });
+}
+
+/**
+ * A member's own two registers (§3.7, §4.5): the pilot's — with the limits valid in `eventId` when the page is about an event — and the
+ * controller's. What `/events/mine` shows, and what a refused booking reads to say until when.
+ */
+export function myRecordQuery(eventId?: number) {
+  return queryOptions({
+    queryKey: [...mineKey, 'record', eventId ?? null] as const,
+    queryFn: async (): Promise<MemberRecordDto> =>
+      unwrap(
+        await api.GET('/api/events/mine/record', {
+          params: { query: eventId === undefined ? {} : { eventId } },
+        }),
+      ),
+  });
+}
+
+/** What a decision on a register changes on screen: the registers, the lists of the shifts and the bookings, the statistics, the queue. */
+async function registersChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: registerKey }),
+    queryClient.invalidateQueries({ queryKey: atcKey }),
+    queryClient.invalidateQueries({ queryKey: bookingsKey }),
+    queryClient.invalidateQueries({ queryKey: statsKey }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, STAFF_QUEUE_BLOCK] }),
+  ]);
+}
+
+/** How a shift went, decided by the staff (§4.5): attended, a no-show confirmed, or excused — with a note, required to excuse. */
+export function useDecideAttendance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      attendance,
+      note,
+    }: {
+      id: number;
+      attendance: DecidedAttendance;
+      note: string;
+    }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/atc/shifts/{id}/attendance', {
+          params: { path: { id } },
+          body: { attendance, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void registersChanged(queryClient);
+    },
+  });
+}
+
+/** «Take away»: a booking not flown out of its pilot's record, with the note the audit and the pilot read. */
+export function useExcuseUnflown() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/bookings/{id}/excuse', {
+          params: { path: { id } },
+          body: { note: note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void registersChanged(queryClient);
+    },
+  });
+}
+
+// ---- the reports of support (E14a) ---------------------------------------------------------------------------------------------
+
+export type MyReportsDto = components['schemas']['MyReportsDto'];
+export type MyReportDto = components['schemas']['MyReportDto'];
+export type ReportableEventDto = components['schemas']['ReportableEventDto'];
+export type ReportItemDto = components['schemas']['ReportItemDto'];
+export type EventReportRowDto = components['schemas']['EventReportRowDto'];
+export type ReportKind = components['schemas']['ReportKind'];
+export type ReportState = components['schemas']['ReportState'];
+
+/** One item a member sends (§5.2), as `ReportItemRequest` is: a flight or a shift, the fields of the other left out. */
+export type ReportItemRequest = components['schemas']['ReportItemRequest'];
+
+/** A row of the staff's list of the reports, with the lines of its items the page wrote in the language on screen. */
+export type ReportRow = EventReportRowDto & { readonly lines: string[] };
+
+const reportsKey = ['events', 'reports'] as const;
+
+/** The member's reports and the events still open to one (§5.2, §7.1): `/events/mine`. */
+export function myReportsQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'reports'] as const,
+    queryFn: async (): Promise<MyReportsDto> => unwrap(await api.GET('/api/events/mine/reports')),
+  });
+}
+
+/** What a report changes on screen: the member's reports, the staff's list, the statistics and the staff's queue. */
+async function reportsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'reports'] }),
+    queryClient.invalidateQueries({ queryKey: reportsKey }),
+    queryClient.invalidateQueries({ queryKey: statsKey }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, STAFF_QUEUE_BLOCK] }),
+  ]);
+}
+
+/** Sends a report of an event, or sends it again to correct it while it is not decided: every item, every time, checked again. */
+export function useSendReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      eventId,
+      kind,
+      items,
+    }: {
+      eventId: number;
+      kind: ReportKind;
+      items: ReportItemRequest[];
+    }): Promise<MyReportDto> =>
+      unwrap(
+        await api.PUT('/api/events/mine/reports/{eventId}/{kind}', {
+          params: { path: { eventId, kind } },
+          body: { items },
+        }),
+      ),
+    onSuccess: () => {
+      void reportsChanged(queryClient);
+    },
+  });
+}
+
+/** The reports of an event for the staff (§7.2): data, and the lines of their items for the page to write. */
+export function eventReportsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  lines: (row: EventReportRowDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...reportsKey, eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/reports', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): ReportRow => ({ ...row, lines: lines(row) })) };
+    },
+  });
+}
+
+/** A validator's decision (§5.3): accepted, or rejected with the note the member reads in the mail. */
+export function useDecideReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      state,
+      note,
+    }: {
+      id: number;
+      state: ReportState;
+      note: string;
+    }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/reports/{id}/decision', {
+          params: { path: { id } },
+          body: { state, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void reportsChanged(queryClient);
+    },
   });
 }

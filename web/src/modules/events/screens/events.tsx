@@ -40,6 +40,7 @@ import {
   EVENT_ATC_VIEW,
   EVENT_BOOKINGS_EDIT,
   EVENT_BOOKINGS_VIEW,
+  EVENT_REPORTS_VIEW,
   EVENT_ROUTES_EDIT,
   EVENT_ROUTES_VIEW,
 } from '../permissions';
@@ -68,8 +69,10 @@ import { BookingsTab } from './bookings';
 import { eventHref } from './cards';
 import { QuestionsTab } from './questions';
 import { RegistrationsTab } from './registrations';
+import { AwardRulesTab } from './awardRules';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
+import { ReportsTab } from './reports';
 import { StatsTab } from './stats';
 
 /**
@@ -606,6 +609,20 @@ export function EventEditor() {
                     },
                   }
                 : {}),
+              // The rules of award (§1.9, E14b) are the event's own area: whoever reads the event reads them, whoever writes it writes them. An
+              // event in person takes no report of support, so it has none.
+              ...(event.inPerson
+                ? {}
+                : {
+                    awards: {
+                      trigger: t('events:events.tabs.awards'),
+                      content: (
+                        <div className="pt-4">
+                          <AwardRulesTab event={event} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }),
               // The slots are the bookings' area (§1.5, E5), on an event with slots and airports of its own: whoever reads the
               // bookings has the tab, whoever writes them its buttons.
               ...(!event.wholeDivision &&
@@ -720,6 +737,21 @@ export function EventEditor() {
                       content: (
                         <div className="pt-4">
                           <StatsTab event={event} editable={editable} />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // After the end (§5.3, §7.2, E14a): the members' reports of support with the check of each item, to whoever reads them on the
+              // event's care — the members' department validates them —; «Decide» where the server says the reader may.
+              ...(event.state === 'Ended' &&
+              holdsPermission(bootstrap, EVENT_REPORTS_VIEW, event.ownerDepartment)
+                ? {
+                    reports: {
+                      trigger: t('events:events.tabs.reports'),
+                      content: (
+                        <div className="pt-4">
+                          <ReportsTab event={event} />
                         </div>
                       ),
                     },

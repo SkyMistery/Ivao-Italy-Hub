@@ -18,7 +18,13 @@ namespace IvaoHub.Core.Modules;
 /// The permission the entry is behind, or null when anybody may follow it. A menu entry that leads
 /// to a 403 is a menu entry that teaches people to ignore the menu.
 /// </param>
-public sealed record NavItemDescriptor(string Key, string Path, string? Permission = null);
+/// <param name="Unscoped">
+/// True when the screen behind it answers only whoever holds <paramref name="Permission"/> without a resource scope
+/// (<see cref="ICurrentUser.HasUnscoped"/>): a register of the whole division, which a grant on one event or one row does not
+/// open (M4, E10u, note 2026-10-17-il-permesso-senza-ambito). False, the default, is the entry every module has always had:
+/// shown to whoever holds the permission anywhere.
+/// </param>
+public sealed record NavItemDescriptor(string Key, string Path, string? Permission = null, bool Unscoped = false);
 
 /// <summary>
 /// What a module is, and the whole of what the core knows about one (design M0 section 6.1).

@@ -1,4 +1,4 @@
-import { PlaneTakeoff, RadioTower, Ticket } from 'lucide-react';
+import { ListChecks, PlaneTakeoff, RadioTower, Ticket } from 'lucide-react';
 import { z } from 'zod';
 
 import type { BlockRegistration } from '../../../shared/modules';
@@ -7,11 +7,12 @@ import type { EventListData } from '../screens/cards';
 import { AtcCoverageBlock, type AtcCoverageData } from './atcCoverage';
 import { EventListBlock } from './eventList';
 import { MyEventsBlock, type MyEventsData } from './myEvents';
+import { StaffQueueBlock, type StaffQueueData } from './staffQueue';
 
 /**
  * The blocks of the events (design M4 §7.3), as the manifest lists them. Each has its other half in `EventsModule.Blocks` on the
  * server, and the manifest test compares the two. The first is the list of the events (E4), the second the member's bookings still
- * to fly (E6b) and shifts (E12), the third the coverage of the rosters for the staff (E12); the staff's queue arrives with its phase (E13b).
+ * to fly (E6b) and shifts (E12), the third the coverage of the rosters for the staff (E12), the fourth what waits for the staff's decision (E13b).
  *
  * The example the gallery draws is of its own making — kinds and airports no division has —, and its dates are counted from when
  * the gallery is drawn, so that what is to come stays to come.
@@ -205,4 +206,48 @@ export const atcCoverageBlock: BlockRegistration = {
   propertyLabels: 'events:blocks.atcCoverage',
   group: 'data',
   icon: RadioTower,
+};
+
+/**
+ * What waits for a decision of the staff (§7.3, E13b): on the dashboards of the staff of the events and of the ATC. No property: what each
+ * reader sees of it is the server's answer, on the rows they may decide.
+ */
+export const staffQueueBlock: BlockRegistration = {
+  type: 'events.staffQueue',
+  version: 1,
+  kind: 'Data',
+  alwaysLive: true,
+  schema: z.object({}),
+  component: StaffQueueBlock,
+  example: {},
+  exampleData: {
+    signedIn: true,
+    events: [
+      {
+        id: 1,
+        slug: 'gallery-evening',
+        title: { en: 'An evening at two airports', it: 'Una sera su due scali' },
+        startsAtUtc: inDays(-3),
+        endsAtUtc: inDays(-2.8),
+        noShows: 2,
+        toMark: 0,
+        transfers: 0,
+        reports: 3,
+      },
+      {
+        id: 2,
+        slug: 'gallery-everywhere',
+        title: { en: 'A night everywhere', it: 'Una notte ovunque' },
+        startsAtUtc: inDays(4),
+        endsAtUtc: inDays(4.2),
+        noShows: 0,
+        toMark: 0,
+        transfers: 1,
+        reports: 0,
+      },
+    ],
+  } satisfies StaffQueueData,
+  editorLabelKey: 'events:blocks.staffQueue.label',
+  group: 'data',
+  icon: ListChecks,
 };

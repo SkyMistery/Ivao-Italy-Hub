@@ -4407,6 +4407,116 @@ contrario li fa cadere.
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
+### E10u — Nucleo: il permesso tenuto senza un ambito
+
+**Da dove viene**: non c'era in E0. La chiede E13b: alla revisione della #283, punto 1, i due registri (controllori e piloti) leggevano
+tutta la divisione per chiunque tenesse il permesso **dovunque**, anche su un evento solo; Carmine ha scelto la (b) ([la risposta][a283u],
+17 ottobre 2026): i registri rispondono solo a chi tiene il permesso **senza un ambito** (staff del dipartimento, grant alle posizioni,
+team dei FIR, HQ, super amministratore), e un grant su un evento o su una riga non li apre, né le loro voci di menu. Il nucleo non aveva la
+domanda (`PermissionSet` ha `Has` e `HasAny`) e il menu chiedeva solo `HasAny`; la regola 6 la tiene fuori dalla PR del modulo, e
+`dalberone` ha scelto una fase del nucleo prima (17 ottobre 2026). Branch `m4/e10u-unscoped-permission`, da `main` a `9a78b2c3`. **PR del
+nucleo**, diretta su `main`, non in coda; E13b ne unisce il branch e va in coda dopo.
+
+1. In `PermissionSet`, accanto a `HasAny`, la domanda «tenuto senza un ambito su una riga», e in `ICurrentUser` accanto a `HasAny`, senza
+   rompere i doppioni di test del maintainer.
+2. Un segno sulla voce di menu (`NavItemDescriptor`) che fa chiedere quella domanda a `MeEndpoints.Visible`; il predefinito non cambia
+   nessuna voce di oggi.
+3. Che cosa conta come «senza ambito» per ogni titolare — un grant su un dipartimento, un team di FIR, un grant da fuori, un grant su una
+   riga o su un evento —, detto nella nota.
+4. Nessun uso nel modulo (regola 6): i test del nucleo, di unità per ogni titolare e d'integrazione con un modulo di prova; la prova al
+   contrario.
+
+**Fatta quando**: una voce `Unscoped` è nascosta a un grant su una riga e mostrata a chi tiene il permesso sul dipartimento, le voci di
+oggi restano come sono, e senza il controllo i test cadono.
+
+**Com'è andata** (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288):
+
+- **Fatto** (nota nuova `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
+  - **`PermissionSet.HasUnscoped(permissions, isSuperadmin, permission)`**: il super amministratore, o un permesso con quel nome e
+    **`ResourceScope` nullo**; il FIR e `FromOutside` non si guardano;
+  - **`ICurrentUser.HasUnscoped(string permission)`**, un **membro predefinito** dell'interfaccia che chiama `PermissionSet` (come il
+    `Has` con il FIR), scritto uguale in `HttpContextCurrentUser`; `TestCurrentUser` non è toccato;
+  - **`NavItemDescriptor(…, bool Unscoped = false)`**, e `MeEndpoints.Visible` che con il segno chiede `HasUnscoped`, senza `HasAny`;
+  - la forma è quella proposta da E13b: **non cambiata**.
+- **Le letture, scritte nella nota** (§3.1): un grant su un dipartimento o su tutti, a una persona o a una posizione, **sì**; un team di
+  FIR, sul suo FIR o sul dipartimento, **sì**; un grant a una posizione da fuori (`FromOutside`), **sì**, perché Carmine conta i grant alle
+  posizioni senza distinguere; HQ, globali e super amministratore **sì**; un grant su una riga o su un evento, a chiunque, e la `View` che
+  il suo `Edit` porta sulla stessa riga, **no**. Un lettore che non conosce i segni del FIR e di «da fuori» li legge come un ambito:
+  chiuso. Nessuna lettura era incerta: tutte si decidono dall'ambito, e nessuna è stata portata al coordinatore prima del codice.
+- **Scostamenti dal design**: nessuno. L'unico handler non cambia (la domanda senza riga resta `HasAny`): il 403 dei registri lo daranno
+  gli endpoint di E13b.
+- **Verificato, in locale** (17 ottobre 2026, `main` a `9a78b2c3`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi,
+    0 errori; unità **1341/1341**, fra cui `UnscopedPermissionRulesTests` 10/10; integrazione intera, senza filtro (Release), da sola,
+    **657/657** al primo giro (12 minuti), fra cui `UnscopedNavigationTests` 1/1, anche da sola;
+  - **la prova al contrario**: con `HasUnscoped` senza la condizione sull'ambito e `Visible` che chiede sempre `HasAny` (modifica
+    locale) cadono 3 casi di unità su 10 (il grant su una riga o su un evento, il cookie e il membro predefinito, il lettore vecchio) e
+    `UnscopedNavigationTests` (la voce `Unscoped` trovata nel menu del grant su una riga); rimesso, toccato e ricompilato, 10 su 10 e 1
+    su 1;
+  - `pnpm -C web lint`, `typecheck`, `format:check` e `test` (vitest con `--maxWorkers=2`, **795/795**): verdi; `gen:api` senza
+    differenze; la smoke (`pnpm -C web exec playwright test --workers=2`, porta 4173 con il suo lock) **183/183** al primo giro;
+  - le regole di `core-guard` dalla base `9a78b2c3`, con Git Bash: nessun file del maintainer; quattro del nucleo con la nota nuova —
+    passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full`: nessuna schermata cambia, e il bootstrap ha la stessa forma;
+  - l'uso vero, nei registri e nelle loro voci: è di E13b.
+- **Dopo la revisione** (17 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r288u], con la CI verde su
+  `a2631e6`. I due punti piccoli, facoltativi, sono fatti nei riassunti di `PermissionSet.HasUnscoped` e `ICurrentUser.HasUnscoped`:
+  l'ambito è `ResourceScope`, un FIR non lo è; e il dipartimento non si guarda, quindi che cosa il titolare legge poi lo restringe chi
+  chiama (E13b). Unito `main` a `8bf63ea3` (il piano 1.36, #285, e i file delle lingue con l'impronta, #286, solo `web/`), senza
+  conflitti, su richiesta del revisore; il diff della fase contro `main` è solo di E10u. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1341/1341**, integrazione intera da sola **657/657** al primo giro (9 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**800/800**, vitest con `--maxWorkers=2`) verdi, `gen:api` senza differenze, `core-guard.sh` con Git
+  Bash dalla base `8bf63ea3`: passa.
+
+[r288u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666
+[a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
+
+### E10v — Nucleo: gli scali di una sessione della rete
+
+**Da dove viene**: non c'era in E0. La chiede E14b: un PIREP `Auto` scrive una voce di volo (callsign, partenza, arrivo, giorno) da ogni
+sessione di chi ha la preferenza, e le regole `Route`, `RouteTimes` e `MinLegDistance` leggono partenza e arrivo; ma la
+`NetworkSession` di E10t dice solo numero, VID, callsign, inizio e fine, e chiedere per scalo dice la partenza, mai l'arrivo. `dalberone`
+ha scelto una fase del nucleo (17 ottobre 2026), come per E10t. Branch `m4/e10v-session-airports`, `--no-track` da `main` a
+`8bf63ea3`. **PR del nucleo**, diretta su `main`, non in coda; E14b ne unisce il branch.
+
+1. `NetworkSession` dice gli scali del piano di volo, dalla riga che il client ha già: nessuna chiamata nuova alla rete.
+2. Ogni `new NetworkSession(…)` di oggi compila com'è; il DTO del client e i tour non cambiano.
+3. Nessun uso nel modulo (regola 6).
+
+**Fatta quando**: un test di unità prova gli scali in maiuscolo, `null` per un controllore o senza piano, e la prova al contrario li fa
+cadere.
+
+**Com'è andata** (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291):
+
+- **Fatto** (nota nuova `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b), nessuna domanda per Carmine):
+  - **`NetworkSession(…, string? DepartureIcao = null, string? ArrivalIcao = null) { Routes }`** e **`NetworkRoute(DepartureIcao,
+    ArrivalIcao)`** in `src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`: `Routes` ogni revisione dalla più vecchia, i due campi l'ultima,
+    `null` e vuota per un controllore o senza piano; `Equals` e `GetHashCode` scritti nel record, perché la lista si confronti per
+    contenuto;
+  - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** in `IvaoTracker.cs`, accanto a `ReadSession`: le revisioni dal
+    `RawJson`; una frase nel commento del DTO.
+- **Scostamento dalla forma del prompt**: la fase chiedeva solo i due campi, gli scali «del piano di volo». Il codice dice che gli scali
+  del DTO sono quelli della **prima** revisione, e nella sera di Fiumicino la sessione `1000007` va da LIPZ→LIRF a LIRF→LICR: la prima
+  avrebbe detto una rotta diversa da quella che E13a trova volata. Chiesto a `dalberone` (in chat, 17 ottobre 2026), che ha scelto
+  **tutte le revisioni**: da qui `Routes`; i due campi dicono l'ultima, la revisione che la fase raccomandava (nota §2.3, §3.2).
+- **Scelte della fase, scritte nella nota** (§3, §4): il DTO non cambia (la sua uguaglianza resta quella che i tour confrontano); una voce di
+  `Routes` per revisione, anche due uguali; nessuna fixture cambiata, perché la sera di Fiumicino porta già le revisioni.
+- **Verificato, in locale** (17 ottobre 2026, `main` a `8bf63ea3`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache`: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1335/1335**, fra cui `NetworkSessionSourceTests` 13/13; integrazione intera, senza filtro (Release), **656/656** al primo giro (13 minuti, da sola);
+  - **la prova al contrario**, in due giri (modifica locale, poi rimesso, toccato e ricompilato: 13 su 13): con i due campi dalla **prima**
+    revisione, le maiuscole e le revisioni incomplete tolte dal lettore e `Routes` confrontata per riferimento cadono 3 casi (l'ultima
+    revisione a Fiumicino, le maiuscole, l'uguaglianza); con i due campi a stringa vuota invece di `null` cadono 2 (il controllore e le
+    sessioni senza piano, e il caso di E10t con la riga senza piani);
+  - `pnpm -C web gen:api` senza differenze;
+  - le regole di `core-guard` dalla base `8bf63ea3`, con Git Bash: nessun file del maintainer; tre del nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: nessuna schermata e nessun chiamante nel modulo, solo un record del nucleo;
+  - l'uso vero, nei PIREP `Auto` e nelle regole di award, e una sessione vera sulla rete: sono di E14b.
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
@@ -5036,7 +5146,102 @@ Design §3.7, §4.5, §7.2 (`/staff/events/controllers`), §7.3; note `il-roster
 resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limiti per fascia e per evento; una voce tolta non conta.
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (16–17 ottobre 2026; branch `m4/e13b-registers`, PR #283, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo
+la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, poi `main` a `9a78b2c`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), e sulla #283 la lettura 1 cambiata e le
+2–11 accettate, con le 4 e 5 ristrette ([la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820))):
+
+- **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
+  limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.
+- **Le decisioni sui turni** (`Registers/RegisterDecisions.cs`, `POST /api/events/atc/shifts/{id}/attendance`): su un evento finito e non
+  annullato, `Unknown` e `NoShowProposed` → `Attended`, `NoShow` o `Excused`; `NoShow` → solo `Excused` («togli il no-show», anche dopo);
+  `Attended` ed `Excused` definitivi; la nota obbligatoria per giustificare. `EventAtc.Edit` all'unico handler sul turno, quindi mai sul
+  proprio, il superadmin compreso, e lo staff di un FIR sul suo FIR: `DeniedToStakeholder` c'era da E2, nessun `if` del modulo. Sotto il
+  blocco della riga dell'evento; un cambio insieme è un 409.
+- **Scostamento dalla prima stesura della nota (lettura 1)**: il verbo doveva riscrivere le statistiche nello stesso salvataggio; il test
+  d'integrazione ha mostrato che il guardiano lo rifiuta all'AOD, che non scrive l'area `Events`. Le statistiche restano a «Ricalcola» di
+  E13a, come diceva la sua consegna; la nota e la domanda sono corrette (detto al coordinatore).
+- **La penalità** (`RosterData.PenaltiesAsync`) legge i no-show **confermati** degli altri eventi con `noShowWeight`, e i conti vengono da
+  una funzione sola, `ControllerRegister.CountsAsync`, la stessa del registro.
+- **I registri**: tre letture scritte a mano (`Registers/RegisterEndpoints.cs`) — dei controllori (`EventAtc.View`), dei piloti
+  (`EventBookings.View`), il registro del membro (`/api/events/mine/record`) —, con i dettagli nelle liste del motore: i turni filtrati per
+  controllore (`filter[controllerVid]`, nuovo), le prenotazioni per pilota (`filter[bookerVid]`, nuovo). Le righe delle due liste portano ora
+  il titolo dell'evento, la nota e se il lettore può decidere (`Decidable`, `Excusable`), in coda ai DTO.
+- **«Togli» di una prenotazione non volata** (`POST /api/events/bookings/{id}/excuse`): verificata, non volata, una volta, con la nota.
+  **`EventBookings.Edit` è diventato `DeniedToStakeholder`** (la scelta (A) della lettura 6, decisa da Carmine sulla #280).
+- **I limiti** (`Registers/BookingLimits.cs`, puri; `PilotRegister.LimitsAsync`) nei tre verbi di `PilotBookings`, sotto il blocco del pilota
+  dopo la compatibilità: fasce fisse dall'inizio dell'evento sull'orario dello slot allo scalo dell'evento, con le prenotazioni della stessa
+  richiesta (tratte di una rotazione, partenza collegata); i limiti dell'evento uno a uno sopra le impostazioni. Il rifiuto ha due chiavi su
+  `slotId`; numeri e «fino a quando» li legge la pagina dal registro del membro (`LimitsNotice`), perché `Refusals` porta solo chiavi.
+- **Il blocco `events.staffQueue`** (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`): per evento, no-show da confermare, turni
+  `Unknown` di un evento chiuso, cessioni da decidere, ognuno solo dove l'unico handler dà `EventAtc.Edit` al lettore. I conteggi dei blocchi
+  più uno (`uiKit.test.ts` 46, `DataBlockEndToEndTests` 21).
+- **Le pagine**: `/staff/events/controllers[/$vid]`, `/staff/events/pilots[/$vid]` (`screens/registers.tsx`, voci di menu nuove), la sezione
+  «Esiti» nell'ATC di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti nei dialog di
+  prenotazione (`screens/limits.ts`); le cinque impostazioni nel form generato e i tre limiti nel form dell'evento.
+- **Test di fasi prima cresciuti con la forma**: `EventsSettingsTests` (E2: tre permessi negati all'interessato), `EventsAtcTests` (E11a: il
+  capo di un FIR ha anche il registro dei controllori nel menu), `schemas.test.ts` (E2), `eventForm.test.ts` (E3a),
+  `titlesAndEmptyLists.test.tsx` (E4c: la risposta del registro del membro); nel nucleo i due conteggi dei blocchi.
+- **I test**: integrazione `EventsRegistersTests` (4: nessuno decide il proprio turno, superadmin compreso, e la coda conta solo quelli degli
+  altri; un no-show confermato, poi tolto con la nota, resta tolto, il registro e il registro del controllore lo dicono, l'audit tiene chi;
+  il pilota oltre la soglia non supera i limiti per fascia e per evento, l'evento con i suoi limiti ne prende due in una fascia, «fino a
+  quando»; una voce tolta non conta e nessuno toglie la propria); unità `EventsRegistersTests` (7: la penalità 0,08 e 0,25 e il peso, le
+  transizioni, le fasce, i limiti dell'evento, «fino a quando», le cinque impostazioni); il giro `full/events-registers.spec.ts` (le due
+  pagine dei registri, le impostazioni salvate e rilette, il limite di un evento dal suo form). VID **761200–761206**.
+- **Il «fatta quando» sul banco della fase** (5150, `ivaohub_e2e_e13b`, rifatto con `E2E_SKIP_PUBLISH=1` e Mailpit spento): un evento finito
+  con il roster, e un turno del pilota del banco `NoShowProposed` scritto in SQL (`bench-e13b.ps1` nella scratchpad della sessione: il banco
+  non lancia `events-after`). Il coordinatore degli eventi, nel browser, lo ha confermato dalla sezione «Esiti» dell'ATC dell'evento; il
+  registro dei controllori ha detto 1 no-show e penalità 0,33; «Togli il no-show» senza nota è stato rifiutato sul campo, con la nota è
+  diventato «Giustificato», senza più un'azione, con il registro a 0 no-show e penalità 0; il pilota ha letto in `/events/mine` il turno
+  giustificato con la nota. **Guardare ha trovato due difetti** che i giri non vedevano, corretti: la pagina di una persona chiedeva 200 righe
+  (lo schema delle liste ne ammette 100: l'errore del router), e i conti di una persona stavano solo nel `title` dell'intestazione — ora sono
+  a vista, scritti come etichetta e numero («1 giustificati» non si legge più). Il giro ora apre le due pagine di una persona.
+- **Verificato, in locale** (16–17 ottobre 2026, dopo il merge di `f5333cf`): `dotnet restore --force --no-http-cache` senza avvisi; `dotnet
+  build -c Release` senza avvisi; `has-pending-model-changes` senza cambi; unità **1334/1334**; **integrazione intera senza filtro, da sola,
+  651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **796 in 113 file** (da solo, con
+  `--maxWorkers=4`: un giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api` senza diff; lo smoke `--workers=2` **181/181**;
+  `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit: **69/69 al primo giro** (14,9 min; due giri prima avevano 68/69, rossa solo la spec nuova per due asserzioni sue — la descrizione sotto il breadcrumb, due `h1` nella pagina —, corrette e la spec da sola 6/6 con `--repeat-each 3`); `core-guard.sh` con Git Bash dal
+  merge-base con `main` (`2938ae8`): passa, nessun file del maintainer. **Dopo il merge della testa di E13a `c0bc1bd`** (con `main` a
+  `85d15a7` ed E10t `ee9772c`; nessun conflitto, niente del modulo): build senza avvisi, unità **1338/1338**, integrazione intera da sola
+  **654/654** (16,4 min), `gen:api` senza diff, `core-guard.sh` dal merge-base `85d15a7`: passa. **Dopo il merge della testa `e073bff`**
+  (con `main` a `0ce4802`: E10t e la #281; nessun conflitto, niente del modulo): build senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1338/1338**, integrazione intera da sola **660/660** (10 min), `pnpm test` con `--maxWorkers=2` **798 in 114 file**, `gen:api`
+  senza diff, lo smoke **183/183**, `core-guard.sh` dal merge-base `0ce4802`: passa (di E13b solo i due conteggi dei blocchi).
+- **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job); i limiti e il
+  registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
+  usa la virgola italiana (non toccato).
+
+**Dopo la revisione della #283** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le risposte di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820), 17 ottobre 2026; `main` a `9a78b2c`
+unito, con la #278 di E13a, e poi la testa della fase del nucleo **E10u** `a2631e6`, la #288; la PR ora è in coda dopo la #288):
+
+- **La lettura 1 cambiata da Carmine**: nessun esito è definitivo. `RegisterDecisions.Allowed` lascia passare uno dei tre esiti dello staff
+  in un altro, mai in sé stesso; `RegisterDecisions.Decidable` è l'evento finito e non annullato, e `Decidable` delle righe è quello più
+  l'unico handler. La pagina dice «Decidi», «Togli il no-show» o «Cambia», e offre gli altri due esiti. Il nuovo test
+  `ADecidedOutcomeChangesLaterAndADecisionWithoutANoteKeepsTheOne`, con i quattro passi nell'audit.
+- **Il punto 1, la risposta (b)**: i due registri solo a chi tiene il permesso senza uno scope di risorsa. Il nucleo non sapeva dirlo, e il
+  menu del back office mostra una voce a chi tiene il permesso da qualche parte: **dalberone ha scelto (17 ottobre) una fase del nucleo a sé,
+  E10u** (`PermissionSet.HasUnscoped`, `ICurrentUser.HasUnscoped`, `NavItemDescriptor.Unscoped`), per la regola 6. Qui le due letture
+  rispondono 403 a chi lo tiene solo su righe o eventi, e le due voci di menu portano `Unscoped`. Il test
+  `AGrantOnOneEventOpensNeitherRegisterNorTheirMenuEntries` (VID **761207**).
+- **Il punto 2**: «togli» sotto un `FOR UPDATE` sulla prenotazione, in `READ COMMITTED`; una prenotazione di un pilota cancellato (VID
+  negativo) non si trova. Il test `TwoTakeOutsAtOnceTakeItOutOnceAndAnErasedPilotsBookingIsNotFound`.
+- **Il punto 3**: il commento e la lettura 1 dicono che il job non prende il blocco dell'evento per i turni, e che cosa succede quando una
+  decisione e il job si incontrano (la `row_version`).
+- **Il punto 4**: `events.staffQueue` non legge niente per chi non tiene `EventAtc.Edit` da nessuna parte, esclude le righe del lettore nella
+  query, legge le più recenti e le mostra dalla più recente (la lettura 11).
+- **Il punto 5**: una riga nell'HANDOFF. **Il punto 6**: una decisione senza nota tiene quella di prima.
+- **La nota** è **decisa**, con i link.
+- **Verificato, in locale** (17 ottobre 2026, con `main` a `9a78b2c` ed E10u `a2631e6` uniti): build Release senza avvisi,
+  `has-pending-model-changes` senza cambi; unità **1348/1348**; **integrazione intera da sola 664/664** (16,2 min; `EventsRegistersTests` 7/7);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **798 in 114 file**; `gen:api` senza diff; lo smoke
+  **183/183**; `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit, **69/69 al primo giro** (14,6 min);
+  `core-guard.sh` dal merge-base `9a78b2c`: passa, nessun file del maintainer (i file del nucleo sono quelli di E10u e i due conteggi).
+- **Dopo il merge della testa nuova di E10u `59d544e`** (con `main` a `8bf63ea`: le #285 e #286; conflitto solo nell'HANDOFF, il blocco di
+  E13b in cima): `dotnet restore --force --no-http-cache` senza avvisi, build Release senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1348/1348**, integrazione intera da sola **664/664** (12,5 min), `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+  `pnpm test --maxWorkers=2` **803 in 115 file**, `gen:api` senza diff, lo smoke **184/184**, `core-guard.sh` dal merge-base `8bf63ea`: passa.
 
 ### E14a — Il PIREP di supporto
 
@@ -5055,7 +5260,84 @@ Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-su
 fixture, e `Unavailable` a sorgente spenta; oltre `reportDays` rifiutato.
 **Fatta quando**: sul banco un PIREP pilota verificato viene accettato da chi ha il permesso.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e14a-support-reports`, nata `--no-track` dalla testa di E13b `4226b983`, in coda dopo la #283
+di E13b, con la sua testa `ecc5a35b` unita — E10u `a2631e6` e `main` a `9a78b2c`; nota `2026-10-17-il-pirep-di-supporto`, **Proposta** per
+le quattordici letture, che Carmine decide dopo la revisione; le tre scelte **decise**, (A), da Carmine sull'[issue
+#287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla
+prima](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053) — dopo un award assegnato dal suo segnale la decisione
+di un PIREP non cambia più: il rifiuto lo scrive E14b):
+
+- **Una migrazione**, `AddSupportReports`, dopo `AddAfterTheEventColumns` di E13a (E13b non ne ha): `evt_reports` (univoco `(event_id, vid,
+  kind)`, indici su `vid` e `state`) ed `evt_report_items` (la chiave verso il PIREP, `on delete cascade`; indice su `vid`). Le colonne del
+  design, più `checked_at` del PIREP e, della voce, l'evento, **il VID del membro** e l'ordine (letture 1 e 2).
+- **Le entità** (`EventReport.cs`): il PIREP e la voce sono `ISubmittedByMembers`, `IHasStakeholder`, `IEventChild`, area `EventReports`,
+  con lo scope dell'evento. **`[WithdrawnByStakeholder]` solo sulla voce**: il PIREP porta la decisione dello staff (la regola di Carmine sulla
+  #232), la voce no, e la correzione ne sostituisce le voci. `[ErasedWith(nameof(Vid))]` su `DecisionNote`, sul callsign e sulla sessione
+  della voce.
+- **Le regole pure** (`Reports/ReportRules.cs`), **la verifica** (`Reports/ReportCheck.cs`: un volo con `INetworkSessionSource` per VID fra i
+  suoi due scali nel suo giorno dentro la finestra dei voli di E13a, la distanza con `GreatCircle` sulle coordinate di `IAirportDirectory`; un
+  turno come `events-after`, l'archivio poi il tracker, con `attendanceMinimumMinutes`), **l'invio** (`Reports/MemberReports.cs`, la verifica
+  **prima** del blocco, poi `SELECT … FOR UPDATE` sulla riga del PIREP, la correzione rifiutata se nel frattempo è deciso, due primi invii
+  insieme che si incontrano sull'indice univoco) e **la decisione** (`Reports/ReportDecisions.cs`: `EventReports.Edit` chiesto all'unico
+  handler **prima** di scrivere, sotto lo stesso blocco, la nota per rifiutare, la mail `reportDecided` dopo il commit).
+- **Gli endpoint** (`Reports/ReportEndpoints.cs`): la risorsa del motore in sola lettura `/api/events/reports` (`EventReports.View`, i nomi con
+  `MemberNames`, le voci e `Decidable` per pagina), `GET /api/events/mine/reports` (i PIREP del membro e gli eventi aperti),
+  `PUT /api/events/mine/reports/{eventId}/{kind}` e `POST /api/events/reports/{id}/decision`.
+- **Il resto del modulo che cresce**: `reportDays` (14, da 1 a 60) nelle impostazioni e nel form generato; `events.staffQueue` con un numero in
+  più, `Reports`, e il suo collegamento alla scheda; `EventStatistics` conta `reports_submitted` e `reports_accepted`; `EventsPersonalData`
+  tiene i PIREP con lo pseudonimo, senza la nota, i nominativi e le sessioni, e l'anteprima ha una riga in più; **un evento con un PIREP non
+  si elimina** (`eventHasReports`, lettura 13 — trovata scrivendo il giro e2e: senza, l'eliminazione lasciava i PIREP senza evento).
+- **Le pagine**: in `/events/mine` la sezione «PIREP di supporto» (`screens/myReports.tsx`: gli eventi aperti con «Manda il PIREP pilota» e
+  «Manda il PIREP ATC», i PIREP con la verifica di ogni voce e «Correggi» finché si può, in form generati); la scheda «PIREP di supporto» di un
+  evento finito (`screens/reports.tsx`, lista generata con una riga per voce scritta dalla pagina, `screens/reportWords.ts`, e «Decidi»);
+  la riga dei PIREP nel blocco della coda.
+- **Scostamenti e trappole**:
+  - `ReportDecision.State` non è nullable: con `ReportState?` il generatore di OpenAPI marcava **l'enum stesso** nullable, e ogni DTO che lo
+    usa aveva `state: … | null`. Uno stato mancante arriva come `Submitted` ed è rifiutato.
+  - Le chiavi delle parole della mail sono foglie (`…reportDecided.kinds.Pilot`): una chiave che è un oggetto, composta a runtime, fa cadere
+    `ArchitectureTests.AModuleKeyIsAskedWithItsNamespaceOnTheServer`.
+  - ⚠️ Le parole dei moduli che il server legge sono la copia della radice (`locales/`): dopo averle cambiate, `pnpm i18n:sync`, o il test dei
+    modelli delle mail non le trova.
+  - ⚠️ **Il giro e2e non usa il prefisso `evt-test-e2e`**: `events-staff.spec.ts` (E3a) elimina ogni evento con quel prefisso, e un evento con un
+    PIREP non si elimina; il primo `e2e:full` è caduto così (67/70, tre test di `events-staff`). Lo slug è `evt-e2e-e14a-…`.
+- **Test di fasi prima cresciuti con la forma**: `schemas.test.ts` (E2, `reportDays`), `titlesAndEmptyLists.test.tsx` (E4c, la risposta dei
+  PIREP del membro), `EventsTestRows` (i PIREP e le voci di un evento di prova), `EventsErasureTests` (E8b) ed `EventsRegistrationsTests` (E16), con la riga
+  dei PIREP nell'anteprima della cancellazione, e nel nucleo le tre colonne di persona in `ErasureTests`.
+- **I test**: integrazione `EventsReportsTests` (7; VID **761230–761236**, slug `evt-test-e14a-…`; la sera di Fiumicino delle fixture spostata a
+  due giorni fa, il pilota come 761023 e il controllore come 761024): il «fatta quando», nessuno valida il proprio (superadmin compreso), chi
+  valida non tocca altro, la verifica sulle fixture e `Unavailable` a sorgente spenta, oltre `reportDays` rifiutato, la correzione che aspetta
+  la decisione sul blocco (**cade senza il blocco**: provato togliendolo, la correzione passava e sostituiva le voci), la cancellazione dei dati di
+  un membro (il PIREP con lo pseudonimo, senza nota, nominativi e sessioni, anche nell'audit di una voce tolta da una correzione); unità `EventsReportsTests`
+  (8); vitest `reportWords.test.ts` (5); il giro `full/events-reports.spec.ts` (slug `evt-e2e-e14a-…`).
+- **Il «fatta quando» sul banco** (5151, `ivaohub_e2e_e14a`): il giro `full/events-reports.spec.ts` — il pilota del banco manda il suo volo di una
+  sera di due giorni fa da `/events/mine`, la verifica lo guarda (`Invalid`: il client delle fixture non ha sessioni del pilota del banco) e il
+  web master, che ha `EventReports.Edit`, lo accetta dalla scheda; il pilota lo legge accettato, senza «Correggi». Un PIREP **trovato**
+  (`Valid`, con la sessione, i minuti e la distanza) lo prova `EventsReportsTests` con le fixture spostate nel tempo.
+- **Verificato, in locale** (17 ottobre 2026, sulla testa di E13b `4226b983`): `dotnet build -c Release` senza avvisi; `gen:api` senza diff;
+  unità **1346/1346**; **integrazione intera senza filtro, da sola, 666 test**: 664 al primo giro, rossi i due elenchi dell'anteprima della
+  cancellazione di E8b ed E16 (la riga nuova), cresciuti con la forma; dopo, con il rifiuto `eventHasReports` e il test della cancellazione
+  dei PIREP, le classi toccate da sole **18/18** (`EventsReportsTests` 7,
+  `EventsErasureTests`, `EventsRegistrationsTests`); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
+  `--maxWorkers=2` **803 in 115 file**; lo smoke `--workers=2` **183/183**; **`pnpm e2e:full`** sul banco `http://127.0.0.1:5151`,
+  `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **67/70 al primo giro** (la trappola del prefisso, sopra), corretto lo slug e
+  rifatto da capo **70/70** (13,5 min); `core-guard.sh` con Git Bash dal merge-base con `main` (`e073bff`): passa, nessun file del
+  maintainer, i file del nucleo con le note nuove della coda (di E14a solo `ErasureTests.cs`).
+- **Dopo il merge della testa di E13b `ecc5a35b`** (la #283 dopo la revisione, con E10u `a2631e6` e `main` a `9a78b2c`; conflitti in
+  `HANDOFF-M4.md` e in `StaffQueueProvider.cs`: i PIREP stanno nella forma nuova della coda — letti solo da chi tiene `EventReports.Edit` da
+  qualche parte, i propri fuori dalla query, i più recenti prima): build Release senza avvisi; `has-pending-model-changes` senza cambi, con
+  `AddSupportReports` ultima; `gen:api` senza diff; unità **1356/1356**; **integrazione intera senza filtro, da sola, 671/671** (10,7 min);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **803 in 115 file**; lo smoke **183/183**;
+  `e2e:full` sul banco 5151, `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **70/70 al primo giro** (14,6 min); `core-guard.sh`
+  dal merge-base `9a78b2c`: passa. PR #289.
+- **Dopo il merge della testa di E13b `0c8d5313`** (con E10u `59d544e` e `main` a `8bf63ea`: la #285 e la #286, le lingue del browser che
+  seguono la release; conflitto solo in `HANDOFF-M4.md`, niente delle pagine degli eventi): `dotnet restore --force --no-http-cache` senza
+  avvisi; build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api` senza diff; unità **1356/1356**; **integrazione intera
+  senza filtro, da sola, 671/671** (13,4 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
+  `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il merge non tocca le pagine degli eventi: il 70/70 di
+  prima vale); `core-guard.sh` dal merge-base `8bf63ea`: passa.
+- **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
+  sul banco e nei test); la pagina a 375 px.
+
 
 ### E14b — Regole di award, PIREP automatici, riepilogo
 
@@ -5072,7 +5354,69 @@ E10d.
 automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche con due giri.
 **Fatta quando**: sul banco un PIREP accettato mette un segnale nella coda degli award, e chi assegna riceve la mail (E10d).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
+E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
+`2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 aspetta Carmine sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292)
+e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la fase del nucleo E10v):
+
+- **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
+  `evt_events.auto_reports_after_vid`.
+- **Le regole** (`EventAwardRule.cs`, `Reports/AwardRules.cs`, `Staff/EventAwardRuleEndpoints.cs`): righe dell'evento nell'area `Events`, il
+  criterio dall'elenco chiuso e **i parametri come colonne** (lettura 2), la risorsa del motore `/api/events/award-rules` (`Events.View`,
+  `Events.Edit`) con le scelte del form in `/api/events/award-rules/choices` (gli award attivi del catalogo, i tipi delle postazioni della
+  divisione); al più 50 per evento, nessuna su un evento in presenza. Che cosa vuol dire ogni criterio sulle voci verificate è `AwardRules.IsMet`
+  (lettura 3). **«Duplica» le copia** (lettura 6; la riga di E15b per le regole è fatta), ed eliminare un evento le porta via.
+- **I segnali** (`EventReportAward.cs`, `Reports/ReportAwards.cs`, la domanda 1 della nota con la (A) raccomandata): il nucleo tiene **un
+  segnale per membro per riga sorgente**, quindi un PIREP che soddisfa due regole ha bisogno di due righe: `evt_report_awards`, una per regola
+  soddisfatta, ognuna l'`IProjectable` con il suo segnale (`report-award:{id}`), scritte da `ReportDecisions` nello stesso salvataggio
+  dell'accettazione e cancellate da un rifiuto (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
+  con un segnale `Handled` il cambio della decisione è rifiutato (`events:errors.reportAwardAssigned`), letto **sotto il blocco delle righe dei
+  segnali** in `cms_award_signals`, che il contesto del modulo mappa; la lista dello staff dà `Decidable` falso. Le statistiche contano le righe
+  (`award_signals`).
+- **I PIREP `Auto`** (`Reports/AutoReports.cs`; la preferenza `events.autoReport` in `EventsModule.Preferences`): un passo di `events-after`
+  dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
+  sull'evento (`auto_reports_after_vid`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
+  dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
+  `attendanceMinimumMinutes` (lettura 8). **La metà pilota** sulle sessioni con i loro scali di **E10v** (#291): una voce per sessione con
+  l'**ultima rotta** del piano, quando tocca gli scali dell'evento — gli aeroporti della divisione (`IFirDirectory`) per un evento
+  `whole_division`, ogni volo per un evento senza scali —, verificata con i minuti e la distanza (lettura 8). Lo scrittore di
+  E14a (`MemberReports.WriteAsync`) ora è condiviso: un PIREP che c'è già non si tocca, e la riga si legge come la legge il back office (il job non
+  ha un membro per il filtro delle righe dei membri — trovato con il test: senza, il secondo PIREP urtava l'indice univoco).
+- **`events-digest`** (`Reports/ReportsDigestJob.cs`): alle 07:15 nel fuso della divisione (il trigger lo dice), `events.reportsToValidate` a
+  chi tiene `EventReports.Edit`, i PIREP `Submitted` degli eventi che può validare, i suoi esclusi; «già mandato oggi» è la riga del giro.
+- **Le pagine**: la scheda «Award» dell'editor di un evento non in presenza (`screens/awardRules.tsx`, le parole dei parametri in
+  `screens/awardRuleWords.ts`), il criterio scelto sopra il form come i vincoli dei tour; l'interruttore «Riporta automaticamente la mia
+  partecipazione agli eventi» in cima alla sezione dei PIREP di `/events/mine`, che ora si vede sempre.
+- **Scostamenti e trappole**:
+  - ⚠️ Il form di una regola sceglie l'award da `/api/events/award-rules/choices` e non da `/api/awards`: il catalogo del nucleo si legge con
+    `Awards.View`, che chi scrive gli eventi non ha.
+  - ⚠️ Il motivo del segnale è nella lingua della divisione con le parole del criterio della scheda (`awardRules.options.criterion.*`), una
+    chiave letterale per criterio: una chiave composta a runtime fa cadere `AModuleKeyIsAskedWithItsNamespaceOnTheServer` (la trappola di E14a).
+  - ⚠️ Un test che fa girare i job della classe li mette in pausa nell'host (`award-queue-mail`, `events-digest`, `events-after`).
+- **I test**: unità `EventsAwardRulesTests` (12: ogni criterio, i limiti dei parametri, le voci `Auto` di un controllore); integrazione
+  `EventsAwardRulesTests` (6; VID **761262–761268**, slug `evt-test-e14b-…`): le regole del coordinatore con i rifiuti e «Duplica»; un PIREP
+  accettato proietta i segnali delle regole soddisfatte e nessun altro, chi assegna riceve la mail del nucleo, le statistiche li contano; il
+  rifiuto dopo l'accettazione toglie i segnali in attesa e tiene lo scartato, e un award assegnato congela la decisione (**cade senza il
+  rifiuto**: provato togliendolo); i PIREP `Auto` solo per chi ha la preferenza, mai sopra uno del membro; una rete che non risponde lascia il
+  membro al giro dopo; il riepilogo una volta al giorno anche con due giri, con il fuso del trigger; vitest `awardRuleWords.test.ts` (2); il
+  giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`). Cresciuto con la forma: `EventsDuplicationTests` (E8b), che decide ogni
+  colonna dell'evento, con `AutoReportsAfterVid` fra quelle che una bozza nuova ha vuote.
+- **Il «fatta quando» sul banco** (5152, `ivaohub_e2e_e14b`, dopo `e2e:full`): il coordinatore degli eventi scrive la regola «Un volo» dalla
+  scheda «Award» di un evento finito alla Roma del banco, con un award del catalogo scritto dal web master; il pilota del banco manda il suo
+  volo, e la verifica lo dice `Invalid` (il banco non ha sessioni del pilota): **la voce resa verificata in SQL**, come E13b per il no-show; il
+  web master lo accetta dalla scheda «PIREP di supporto», e **il segnale è nella coda degli award** (`/staff/awards/queue`: il VID del pilota,
+  «La sera … : Un volo», l'award proposto, da `events`, in attesa). Poi assegnato dalla coda: la scheda non offre più la decisione, e un
+  rifiuto risponde 400 con `events:errors.reportAwardAssigned`. **La mail a chi assegna** non si vede sul banco (il web master non ha
+  casella, la nota di E10d): la prova `EventsAwardRulesTests` con il coordinatore dell'MD, che tiene `Awards.Assign` da `positionGrants`.
+- **Verificato, in locale** (17 ottobre 2026, con E14a `7c094fd5` ed E10v `547d402d` unite): `dotnet build -c Release` senza avvisi;
+  `has-pending-model-changes` senza cambi, con `AddAwardRules` ultima; `gen:api` senza diff; unità **1373/1373**; **integrazione intera senza
+  filtro, da sola, 677/677** (17,3 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2`
+  **810 in 117 file**; lo smoke `--workers=2` **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima, dietro il lock di
+  Mailpit: **71/71 al primo giro** (14,5 min); `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`, con la nota nuova; gli altri file del nucleo sono di E10u, E13b ed E10v, con le loro note).
+- **Non verificato**: la CI; un PIREP `Auto` scritto da un giro vero di `events-after` sul banco (il banco non lancia un job, e la rete del
+  banco non ha sessioni dei suoi membri; lo provano `EventsAwardRulesTests`); il riepilogo dei validatori nella casella di Mailpit (stessa
+  ragione); una sessione vera della rete con più revisioni del piano; la pagina a 375 px.
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 

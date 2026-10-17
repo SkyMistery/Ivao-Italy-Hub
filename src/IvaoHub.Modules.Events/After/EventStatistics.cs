@@ -94,10 +94,18 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
         stats.AtcNoShows = Shifts(ShiftAttendance.NoShowProposed, ShiftAttendance.NoShow);
         stats.AtcExcused = Shifts(ShiftAttendance.Excused);
 
-        // The reports of support and the signals of award arrive with E14a and E14b.
-        stats.ReportsSubmitted = 0;
-        stats.ReportsAccepted = 0;
-        stats.AwardSignals = 0;
+        // The reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 11): every one sent, whatever it stands at, and those
+        // accepted.
+        var reports = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
+            .Where(report => report.EventId == row.Id)
+            .GroupBy(report => report.State)
+            .Select(group => new { group.Key, Count = group.Count() })
+            .ToListAsync(cancellationToken);
+        stats.ReportsSubmitted = reports.Sum(group => group.Count);
+        stats.ReportsAccepted = reports.Where(group => group.Key == ReportState.Accepted).Sum(group => group.Count);
+
+        // The awards its accepted reports pointed out (E14b): one row per rule met, each a signal in the core's queue.
+        stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id, cancellationToken);
 
         await InPersonAsync(row, stats, now, cancellationToken);
 

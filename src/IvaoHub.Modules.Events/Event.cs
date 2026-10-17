@@ -137,6 +137,13 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
     /// <summary>When the checks after the event were done (§5.1): the same rule.</summary>
     public DateTime? AfterDoneAt { get; set; }
 
+    /// <summary>
+    /// How far <c>events-after</c> got with the reports written for the members who asked for them (§5.1, E14b): the members with the
+    /// preference are looked at in the order of their VIDs, and this is the last one done — empty, none yet. The job's bookkeeping, written
+    /// as <see cref="AfterDoneAt"/> is: it moves neither the row's version nor its audit.
+    /// </summary>
+    public int? AutoReportsAfterVid { get; set; }
+
     /// <summary>For whoever books and does not fly: the hours of a window of the event (§3.7); empty, the setting's.</summary>
     public int? RestrictedWindowHours { get; set; }
 

@@ -1,9 +1,12 @@
+using System.Text.Json;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Modules.Events.After;
 using IvaoHub.Modules.Events.Atc;
@@ -11,12 +14,15 @@ using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
+using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Registrations;
+using IvaoHub.Modules.Events.Reports;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Quartz;
 
 namespace IvaoHub.Modules.Events;
@@ -44,7 +50,8 @@ namespace IvaoHub.Modules.Events;
 /// parallel activities of an event in person — a member's seat in a turn, counted under a lock —, «Duplicate» for the questions and the
 /// activities, and the short retention of the registrations, <c>events-retention</c>; E13a the checks after an event — <c>events-after</c>
 /// finds the bookings flown, the shifts attended or a no-show to propose, and counts who flew without booking — and its statistics, with
-/// «Recalculate» for the staff.
+/// «Recalculate» for the staff; E13b the staff's decisions on the no-shows, the registers of the controllers and of the pilots, the limits of
+/// whoever books and does not fly, and the block of the staff's queue.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -60,18 +67,22 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>
     /// The staff's side: the events (E3a), the ATC of the events with a roster (E11a) — for whoever writes the positions without reading
-    /// the events, the staff of a FIR —, and the settings (E2).
+    /// the events, the staff of a FIR —, the registers of the controllers and of the pilots (E13b), and the settings (E2).
     /// </summary>
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
         new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.atc", "/staff/events/atc", EventsPermissions.AtcView),
+        // The registers count the whole division: offered only to whoever holds their permission without a resource scope (E10u, #283).
+        new NavItemDescriptor("events:nav.controllers", "/staff/events/controllers", EventsPermissions.AtcView, Unscoped: true),
+        new NavItemDescriptor("events:nav.pilots", "/staff/events/pilots", EventsPermissions.BookingsView, Unscoped: true),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
     ];
 
     /// <summary>
     /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; the reader's bookings still to fly
-    /// (E6b) and shifts (E12), on <c>/me</c>; and the coverage of the rosters of the next days (E12), on <c>/staff</c>. Their other halves
+    /// (E6b) and shifts (E12), on <c>/me</c>; the coverage of the rosters of the next days (E12), on <c>/staff</c>; and what waits for a
+    /// decision of the staff (E13b), on their dashboards. Their other halves
     /// are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
@@ -79,6 +90,7 @@ public sealed class EventsModule : ModuleBase
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.atcCoverage", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.staffQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -88,6 +100,15 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>The mails of the events (design M4 §8.3): each declared by the phase of the change it tells, cancelling first (E3a).</summary>
     public override IReadOnlyList<string> NotificationTypes => EventsNotifications.All;
+
+    /// <summary>
+    /// «Report my participation in events automatically» (design M4 §1.11, E14b): off until the member switches it on — no row is off —, and
+    /// then <c>events-after</c> writes their <c>Auto</c> reports of support.
+    /// </summary>
+    public override IReadOnlyList<PreferenceDescriptor> Preferences =>
+    [
+        new PreferenceDescriptor(AutoReports.PreferenceKey, value => value.ValueKind is JsonValueKind.True or JsonValueKind.False),
+    ];
 
     /// <summary>
     /// The gate manager of the division (design M4 §7.4, E5): its personal tokens open the export of the bookings of an event and
@@ -203,6 +224,7 @@ public sealed class EventsModule : ModuleBase
         // After the event (E13a): events-after every hour, in UTC — the bookings flown, the shifts attended, who flew without booking —, and
         // the statistics, worked out by it and again by the staff.
         services.AddScoped<EventStatistics>();
+        services.AddScoped<AutoReports>();
         services.AddScoped<EventsAfterJob>();
         services.AddQuartz(quartz => quartz
             .AddJob<EventsAfterJob>(job => job.WithIdentity(EventsAfterJob.JobName))
@@ -210,6 +232,30 @@ public sealed class EventsModule : ModuleBase
                 .ForJob(EventsAfterJob.JobName)
                 .WithIdentity(EventsAfterJob.TriggerName)
                 .WithCronSchedule(EventsAfterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
+
+        // The registers (E13b): the controllers' and the pilots', a member's own, the staff's decisions on them, and the block of the staff's
+        // queue.
+        services.AddScoped<ControllerRegister>();
+        services.AddScoped<PilotRegister>();
+        services.AddScoped<RegisterDecisions>();
+        services.AddScoped<IDataBlockProvider, StaffQueueProvider>();
+
+        // The reports of support (E14a): a member's, checked at every send through the core's sources, and the validators' decisions on them.
+        services.AddScoped<ReportCheck>();
+        services.AddScoped<MemberReports>();
+        services.AddScoped<ReportDecisions>();
+        services.AddScoped<ReportAwards>();
+
+        // The digest of the reports waiting (E14b): events-digest once a day at 07:15 in the division's zone, the morning of whoever reads it,
+        // which the trigger says.
+        services.AddScoped<ReportsDigestJob>();
+        services.AddQuartz(quartz => quartz.AddJob<ReportsDigestJob>(job => job.WithIdentity(ReportsDigestJob.JobName)));
+        services.AddOptions<QuartzOptions>()
+            .Configure<IOptions<DivisionOptions>>((options, division) => options
+                .AddTrigger(trigger => trigger
+                    .ForJob(ReportsDigestJob.JobName)
+                    .WithIdentity(ReportsDigestJob.TriggerName)
+                    .WithCronSchedule(ReportsDigestJob.Cron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
 
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
@@ -221,6 +267,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapEventEndpoints();
         endpoints.MapEventAirportEndpoints();
         endpoints.MapEventRouteEndpoints();
+        endpoints.MapEventAwardRuleEndpoints();
         endpoints.MapEventSlotEndpoints();
         endpoints.MapPublicEventEndpoints();
         endpoints.MapBookingsExport();
@@ -234,5 +281,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapTransferEndpoints();
         endpoints.MapPublicRosterEndpoints();
         endpoints.MapStatsEndpoints();
+        endpoints.MapRegisterEndpoints();
+        endpoints.MapReportEndpoints();
     }
 }

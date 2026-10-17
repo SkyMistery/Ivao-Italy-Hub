@@ -77,6 +77,24 @@ public sealed record EventsSettings
     /// whole length.
     /// </summary>
     public int AttendanceMinimumMinutes { get; init; } = 30;
+
+    /// <summary>The days after an event's end a member may send a report of support, and correct it (§5.2, E14a).</summary>
+    public int ReportDays { get; init; } = 14;
+
+    /// <summary>The weight of the penalty of reliability (§4.5, E13b): <c>weight × no-shows ÷ (attended + no-shows + 2)</c>.</summary>
+    public double NoShowWeight { get; init; } = 1;
+
+    /// <summary>The bookings not flown from which a pilot has the limits (§3.7, E13b).</summary>
+    public int UnflownThreshold { get; init; } = 3;
+
+    /// <summary>For whoever has the limits: the hours of each band of an event, from its start (§3.7, E13b).</summary>
+    public int RestrictedWindowHours { get; init; } = 2;
+
+    /// <summary>For whoever has the limits: the most bookings in each band.</summary>
+    public int RestrictedMaxPerWindow { get; init; } = 1;
+
+    /// <summary>For whoever has the limits: the most bookings in the whole event.</summary>
+    public int RestrictedMaxPerEvent { get; init; } = 2;
 }
 
 /// <summary>
@@ -109,6 +127,24 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
     /// <summary>Five years of a controller's positions: the archive of the sessions keeps no more than that worth reading.</summary>
     public const int MaxExperienceMonths = 60;
+
+    /// <summary>Ten times the design's weight: heavier, one no-show would decide every roster by itself.</summary>
+    public const double MaxNoShowWeight = 10;
+
+    /// <summary>A hundred bookings not flown: a threshold higher than that limits nobody.</summary>
+    public const int MaxUnflownThreshold = 100;
+
+    /// <summary>Two days: a band longer than that is the whole event.</summary>
+    public const int MaxRestrictedWindowHours = 48;
+
+    /// <summary>Fifty bookings in a band: more is no limit at all.</summary>
+    public const int MaxRestrictedPerWindow = 50;
+
+    /// <summary>Two months: a report sent later than that tells what nobody can check any more.</summary>
+    public const int MaxReportDays = 60;
+
+    /// <summary>Two hundred bookings in an event: more is no limit at all.</summary>
+    public const int MaxRestrictedPerEvent = 200;
 
     public EventsSettingsValidator()
     {
@@ -150,6 +186,17 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
         // After the event (E13a): at least a minute on the position, and never more than the longest shift there is.
         RuleFor(settings => settings.AttendanceMinimumMinutes).InclusiveBetween(1, MaxShiftMinutes).WithMessage("errors.number.range");
+
+        // The reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 3): at least a day, at most two months.
+        RuleFor(settings => settings.ReportDays).InclusiveBetween(1, MaxReportDays).WithMessage("errors.number.range");
+
+        // The registers and the limits (E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 9): a threshold of nought would limit
+        // everybody, and a limit of nought would close the bookings to whoever has one.
+        RuleFor(settings => settings.NoShowWeight).InclusiveBetween(0, MaxNoShowWeight).WithMessage("errors.number.range");
+        RuleFor(settings => settings.UnflownThreshold).InclusiveBetween(1, MaxUnflownThreshold).WithMessage("errors.number.range");
+        RuleFor(settings => settings.RestrictedWindowHours).InclusiveBetween(1, MaxRestrictedWindowHours).WithMessage("errors.number.range");
+        RuleFor(settings => settings.RestrictedMaxPerWindow).InclusiveBetween(1, MaxRestrictedPerWindow).WithMessage("errors.number.range");
+        RuleFor(settings => settings.RestrictedMaxPerEvent).InclusiveBetween(1, MaxRestrictedPerEvent).WithMessage("errors.number.range");
 
         // The roster is published after the availabilities close, never before: in between the staff correct it (§4.4, c2).
         RuleFor(settings => settings.RosterPublishDays)

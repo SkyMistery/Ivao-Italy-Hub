@@ -218,11 +218,20 @@ public sealed class EventSaving(
             throw new DomainRefusalException("id", "events:errors.eventHasShifts");
         }
 
+        // A report of support (E14a) is a member's row with a decision of the staff on it: an event that has one stays.
+        if (await CrudSource.BackOffice<EventReport>(database).AnyAsync(report => report.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasReports");
+        }
+
         database.AtcPositions.RemoveRange(await database.AtcPositions.Where(position => position.EventId == row.Id).ToListAsync(cancellationToken));
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
         database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
+
+        // Its rules of award (E14b), in the event's own area: an event that reached them has no report, so no signal came from them.
+        database.AwardRules.RemoveRange(await database.AwardRules.Where(rule => rule.EventId == row.Id).ToListAsync(cancellationToken));
 
         // Its activities (E17): none has a seat, since a seat needs a registration and an event with one was refused above.
         database.Activities.RemoveRange(await database.Activities.Where(activity => activity.EventId == row.Id).ToListAsync(cancellationToken));

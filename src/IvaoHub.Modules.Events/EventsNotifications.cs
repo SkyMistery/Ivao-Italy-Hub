@@ -62,6 +62,15 @@ public static class EventsNotifications
     /// <summary>The staff approved or refused a request to hand a shift over (§4.4-bis; E12): to whoever asked, with the staff's note.</summary>
     public const string AtcShiftTransferDecided = "events.atcShiftTransferDecided";
 
+    /// <summary>A report of support accepted or rejected, or its decision changed (§5.3; E14a): to its member, with the validator's note.</summary>
+    public const string ReportDecided = "events.reportDecided";
+
+    /// <summary>
+    /// The daily digest of the reports of support waiting (§5.3; E14b, <c>events-digest</c>): to everybody who may validate them, the ones of the
+    /// events they may validate, their own left out.
+    /// </summary>
+    public const string ReportsToValidate = "events.reportsToValidate";
+
     public static readonly IReadOnlyList<string> All =
     [
         EventCancelled,
@@ -75,5 +84,7 @@ public static class EventsNotifications
         AtcShiftChanged,
         AtcShiftRemoved,
         AtcShiftTransferDecided,
+        ReportDecided,
+        ReportsToValidate,
     ];
 }
