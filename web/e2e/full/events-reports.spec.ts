@@ -194,7 +194,9 @@ function englishEvents() {
         send: { Pilot: string };
         correct: { Pilot: string };
         of: { Pilot: string };
-        pilot: { fields: Record<string, string> };
+        pilot: {
+          fields: { 'items.callsign': string; 'items.departureIcao': string; 'items.arrivalIcao': string };
+        };
       };
     };
     reports: {
