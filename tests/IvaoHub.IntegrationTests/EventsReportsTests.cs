@@ -13,6 +13,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events;
 using IvaoHub.Modules.Events.Data;
@@ -44,8 +45,9 @@ namespace IvaoHub.IntegrationTests;
 /// </list>
 /// <para>The network is a double of the core's source that answers from the fixture's rows, moved in time, for the class's people as the
 /// evening's own: the pilot flies as 761023 (TST004, LIRF–LICR), the controller as 761024 (LIRF_TWR). No archive of the sessions: the shifts
-/// are checked on the tracker, as on a division at <c>atcData: none</c>. ⚠️ The people are 761230–761235 (E14a's range, 761230–761259): two of
-/// the members' department, the super administrator, a pilot, a controller and the coordinator of the events.</para>
+/// are checked on the tracker, as on a division at <c>atcData: none</c>. ⚠️ The people are 761230–761236 (E14a's range, 761230–761259): two of
+/// the members' department, the super administrator, a pilot, a controller, the coordinator of the events, and a pilot whose data is erased —
+/// a new VID at every run would be cleaner, but the erasure leaves a pseudonym and no person, so the next run seeds them again.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
 public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
@@ -56,11 +58,12 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int PilotVid = 761233;
     private const int ControllerVid = 761234;
     private const int CoordinatorVid = 761235;
+    private const int ErasedVid = 761236;
 
-    private static readonly int[] People = [MdVid, OtherMdVid, SuperadminVid, PilotVid, ControllerVid, CoordinatorVid];
+    private static readonly int[] People = [MdVid, OtherMdVid, SuperadminVid, PilotVid, ControllerVid, CoordinatorVid, ErasedVid];
 
     /// <summary>Who the class's people fly and control as, on the evening of the fixtures.</summary>
-    private static readonly Dictionary<int, int> AsTheEvening = new() { [PilotVid] = 761023, [ControllerVid] = 761024 };
+    private static readonly Dictionary<int, int> AsTheEvening = new() { [PilotVid] = 761023, [ControllerVid] = 761024, [ErasedVid] = 761023 };
 
     private const string Home = "LIRF";
     private const string Away = "LICR";
@@ -104,6 +107,7 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await SeedPersonAsync(PilotVid, position: null, superadmin: false, token);
         await SeedPersonAsync(ControllerVid, position: null, superadmin: false, token);
         await SeedPersonAsync(CoordinatorVid, $"{Division().Code}-EC", superadmin: false, token);
+        await SeedPersonAsync(ErasedVid, position: null, superadmin: false, token);
         await SeedAirportsAsync(token);
 
         _settingsBefore = await WriteSettingsAsync("""{"reportDays":14,"attendanceMinimumMinutes":30}""", token);
@@ -193,6 +197,9 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await OkAsync(await coordinator.PostAsync(new Uri($"/api/events/events/{id}/stats", UriKind.Relative), content: null, token), token);
         var stats = await StatsAsync(id, token);
         Assert.Equal((1, 1), (stats.ReportsSubmitted, stats.ReportsAccepted));
+
+        // An event with a report is kept.
+        Assert.Equal(["events:errors.eventHasReports"], (await RefusedAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{id}", UriKind.Relative), token), token))["id"]);
 
         // A decision changes (choice 1): to reject, a note.
         Assert.Equal(["errors.required"], (await RefusedAsync(await DecideAsync(md, reportId, "Rejected", note: null, token), token))["note"]);
@@ -416,6 +423,38 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(itemsBefore, (await ItemsAsync(reportId, token)).Select(item => item.Id));
     }
 
+    /// <summary>
+    /// The erasure of a member's data (§11, reading 12): their report stays with the pseudonym — the statistics and the rules of award count
+    /// its items —, without the validator's note about them, and its items without the callsign and the session; an item a correction took
+    /// away leaves its callsign nowhere in the audit log either (E10n). The preview says the reports kept.
+    /// </summary>
+    [Fact]
+    public async Task AnErasedMemberLeavesTheirReportsWithoutTheirWords()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("erased", Start, Start.AddHours(2), [Home], token);
+        using var erased = await SignedInAsync(ErasedVid, token);
+        using var md = await SignedInAsync(MdVid, token);
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        var reportId = (await CreatedAsync(await SendAsync(erased, id, "pilot", [Flight("XEZ146", Home, Away, Start)], token), token)).GetProperty("id").GetInt64();
+        await OkAsync(await SendAsync(erased, id, "pilot", [Flight("XEZ147", Home, Away, Start)], token), token);
+        await NoContentAsync(await DecideAsync(md, reportId, "Rejected", $"{SlugStem} about the member", token), token);
+        Assert.True(await AuditMentionsAsync("XEZ146", token), "Without the callsign in the audit log, the check below would prove nothing.");
+
+        var preview = await OkAsync(await superadmin.GetAsync($"{ErasureEndpoints.Pattern}/{ErasedVid}", token), token);
+        Assert.Equal(1, Assert.Single(preview.GetProperty("lines").EnumerateArray(), line => line.GetProperty("key").GetString() == "events:erasure.reports").GetProperty("count").GetInt32());
+
+        var pseudonym = (await OkAsync(await superadmin.PostAsync(new Uri($"{ErasureEndpoints.Pattern}/{ErasedVid}", UriKind.Relative), content: null, token), token))
+            .GetProperty("pseudonym").GetInt32();
+
+        var report = await ReportAsync(reportId, token);
+        Assert.Equal((pseudonym, ReportState.Rejected, (string?)null), (report.Vid, report.State, report.DecisionNote));
+        var item = Assert.Single(await ItemsAsync(reportId, token));
+        Assert.Equal((pseudonym, string.Empty, (long?)null, Home, Away, true), (item.Vid, item.Callsign, item.SessionId, item.DepartureIcao, item.ArrivalIcao, item.Verified));
+        Assert.False(await AuditMentionsAsync("XEZ146", token) || await AuditMentionsAsync("XEZ147", token) || await AuditMentionsAsync($"{SlugStem} about the member", token));
+    }
+
     // ---- requests -------------------------------------------------------------------------------------------------------------
 
     private static string Slug(string name) => $"{SlugStem}-{name}";
@@ -611,6 +650,14 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Stats.IgnoreQueryFilters().AsNoTracking()
             .SingleAsync(stats => stats.EventId == eventId, cancellationToken);
+    }
+
+    /// <summary>Whether a row of the audit log still copies a text with the marker in it, before or after its change.</summary>
+    private async Task<bool> AuditMentionsAsync(string marker, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog
+            .AnyAsync(row => row.BeforeJson!.Contains(marker) || row.AfterJson!.Contains(marker), cancellationToken);
     }
 
     /// <summary>The mails «report decided» to one of the class's people.</summary>
