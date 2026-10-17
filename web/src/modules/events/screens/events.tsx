@@ -70,6 +70,7 @@ import { QuestionsTab } from './questions';
 import { RegistrationsTab } from './registrations';
 import { RoutesTab } from './routes';
 import { SlotsTab } from './slots';
+import { StatsTab } from './stats';
 
 /**
  * The events in the staff's back office (design M4 §7.2, E3a): the list of every event with the views of its state — drafts,
@@ -705,6 +706,20 @@ export function EventEditor() {
                       content: (
                         <div className="pt-4">
                           <AtcPanel eventId={event.id} />
+                        </div>
+                      ),
+                    },
+                  }
+                : {}),
+              // After the end (§1.10, §7.2, E13a): what the checks found and the numbers, to whoever reads the event; «Recalculate» to whoever
+              // writes it. A cancelled event has no statistics.
+              ...(event.state === 'Ended'
+                ? {
+                    stats: {
+                      trigger: t('events:events.tabs.stats'),
+                      content: (
+                        <div className="pt-4">
+                          <StatsTab event={event} editable={editable} />
                         </div>
                       ),
                     },

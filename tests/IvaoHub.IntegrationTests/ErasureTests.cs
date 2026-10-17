@@ -266,6 +266,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         "evt_atc_shift_transfers.to_vid",
         "evt_atc_shifts.attendance_by",
         "evt_atc_shifts.controller_vid",
+        "evt_atc_shifts.covered_by_vid",
         "evt_atc_shifts.created_by",
         "evt_atc_shifts.updated_by",
         "evt_bookings.booker_vid",

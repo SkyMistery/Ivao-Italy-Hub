@@ -1134,6 +1134,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("controller_vid");
 
+                    b.Property<int?>("CoveredByVid")
+                        .HasColumnType("int")
+                        .HasColumnName("covered_by_vid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
@@ -1884,6 +1888,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     b.Property<int>("FlownUnbooked")
                         .HasColumnType("int")
                         .HasColumnName("flown_unbooked");
+
+                    b.Property<int?>("FlownUnbookedAirports")
+                        .HasColumnType("int")
+                        .HasColumnName("flown_unbooked_airports");
 
                     b.Property<string>("OwnerDepartment")
                         .IsRequired()
