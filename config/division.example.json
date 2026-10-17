@@ -154,5 +154,15 @@
     "pilot writes it alone. vipi = the read-only view v_share_atc_sessions of a vIPI installation, reached with",
     "ConnectionStrings:AtcData in a file under secrets/ and a database user that can only SELECT on that view."
   ],
-  "atcData": { "source": "none" }
+  "atcData": { "source": "none" },
+
+  "$comment.tagline": "Optional. A short line the footer writes in italics under the division's name, one entry per language listed in locales, like name. Leave it out for no line.",
+  "tagline": {},
+
+  "$comment.builtBy": [
+    "Optional. Who built the site, as the footer credits them: \"Built by Ada (100001) & Bo (100002)\", each name a link",
+    "to the person's profile on the network, in a new tab. The hub builds the address from the VID; write only the name",
+    "and the VID. Leave the list empty for no line."
+  ],
+  "builtBy": []
 }
