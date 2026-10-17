@@ -12,9 +12,9 @@ import { atcHome } from '../screens/atcPaths';
 /**
  * `events.staffQueue` (design M4 §7.3, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 11): on the dashboards of the staff of
  * the events and of the ATC, what waits for a decision of theirs — no-shows the check proposed, shifts it left unknown, requests to hand a
- * shift over —, one event per row with its numbers and the way to its ATC. Always live and the reader's: its other half is
- * `StaffQueueProvider`, which counts only the rows the one handler lets the reader decide, never their own. The reports of support join
- * with E14a. The server sends numbers; the block writes them.
+ * shift over —, and the reports of support to validate (E14a), one event per row with its numbers, the way to its ATC and to its reports.
+ * Always live and the reader's: its other half is `StaffQueueProvider`, which counts only the rows the one handler lets the reader decide,
+ * never their own. The server sends numbers; the block writes them.
  */
 
 /** One event of the block, as `StaffQueueEventDto` is on the server. */
@@ -27,6 +27,12 @@ export interface StaffQueueEvent {
   noShows: number;
   toMark: number;
   transfers: number;
+  reports: number;
+}
+
+/** The tab of an event's reports of support, in the staff's back office. */
+function reportsHref(eventId: number): string {
+  return `/staff/events/${eventId}?tab=reports`;
 }
 
 /** What `StaffQueueProvider` answers with: the events, or `signedIn: false` for a visitor. */
@@ -59,7 +65,15 @@ export function StaffQueueBlock({ data }: BlockComponentProps) {
       {queue.events.map((event) => (
         <li key={event.id} className="flex flex-col gap-1 py-3">
           <H4 className="text-base">
-            <RouterAnchor href={atcHome(bootstrap, event.id)} className="underline">
+            <RouterAnchor
+              // An event with reports alone waiting goes to them: its validators may not read its ATC.
+              href={
+                event.noShows + event.toMark + event.transfers === 0
+                  ? reportsHref(event.id)
+                  : atcHome(bootstrap, event.id)
+              }
+              className="underline"
+            >
               {read(event.title) || event.slug}
             </RouterAnchor>
           </H4>
@@ -75,6 +89,13 @@ export function StaffQueueBlock({ data }: BlockComponentProps) {
             ) : null}
             {event.transfers > 0 ? (
               <li>{t('events:blocks.staffQueue.transfers', { count: event.transfers })}</li>
+            ) : null}
+            {event.reports > 0 ? (
+              <li>
+                <RouterAnchor href={reportsHref(event.id)} className="underline">
+                  {t('events:blocks.staffQueue.reports', { count: event.reports })}
+                </RouterAnchor>
+              </li>
             ) : null}
           </ul>
         </li>

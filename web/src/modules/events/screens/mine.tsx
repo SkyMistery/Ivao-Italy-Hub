@@ -14,6 +14,7 @@ import {
   myAvailabilityQuery,
   myBookingsQuery,
   myRegistrationsQuery,
+  myReportsQuery,
   myShiftsQuery,
   useWithdrawBooking,
   useWithdrawRegistration,
@@ -24,6 +25,7 @@ import {
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
 import { RecordSection } from './myRecord';
+import { ReportsSection } from './myReports';
 import { AvailabilitiesSection, ShiftsSection } from './myShifts';
 import { RegistrationSeats } from './ActivityTurns';
 import { RegistrationAnswers } from './RegistrationAnswers';
@@ -35,7 +37,8 @@ import { RegistrationAnswers } from './RegistrationAnswers';
  * phase (M4b). Above them, the member's registrations to the events in person (E16, §4-bis.2), each
  * with their answers, «change» on the event's page and «withdraw» until the event starts; and a controller's shifts of the published
  * rosters, with «hand over», and their availabilities (E12, `myShifts.tsx`); and their own registers — the bookings not flown with the limits,
- * how their shifts went with the penalty (E13b, `myRecord.tsx`).
+ * how their shifts went with the penalty (E13b, `myRecord.tsx`); and their reports of support with the events still open to one (E14a,
+ * `myReports.tsx`).
  */
 export function MyBookingsPage() {
   const { t, i18n } = useTranslation();
@@ -43,6 +46,7 @@ export function MyBookingsPage() {
   const registrations = useQuery(myRegistrationsQuery());
   const shifts = useQuery(myShiftsQuery());
   const availabilities = useQuery(myAvailabilityQuery());
+  const reports = useQuery(myReportsQuery());
   // The bookings to come and the past ones are told apart from when the page was drawn, and stay so while it is read.
   const [drawnAt] = useState(() => Date.now());
 
@@ -72,7 +76,9 @@ export function MyBookingsPage() {
     registered.length === 0 &&
     registrationsFailed === null &&
     shifts.data?.length === 0 &&
-    availabilities.data?.length === 0;
+    availabilities.data?.length === 0 &&
+    reports.data?.reports.length === 0 &&
+    reports.data.open.length === 0;
 
   const { upcoming, past } = splitBookings(mine.data, drawnAt);
   // A private arrival and its linked departure (E7) may fall one among the flights to come and one among the past ones.
@@ -103,6 +109,7 @@ export function MyBookingsPage() {
       <ShiftsSection />
       <AvailabilitiesSection />
       <RecordSection />
+      <ReportsSection />
 
       {mine.data.length === 0 && nothingElse ? (
         <EmptyState

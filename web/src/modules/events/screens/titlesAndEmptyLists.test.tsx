@@ -139,6 +139,7 @@ const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/mine/registrations': [],
   '/api/events/mine/shifts': [],
   '/api/events/mine/availability': [],
+  '/api/events/mine/reports': { reports: [], open: [] },
   '/api/events/mine/record': {
     pilot: {
       counted: 0,

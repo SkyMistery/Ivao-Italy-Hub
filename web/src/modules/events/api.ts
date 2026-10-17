@@ -1856,3 +1856,113 @@ export function useExcuseUnflown() {
     },
   });
 }
+
+// ---- the reports of support (E14a) ---------------------------------------------------------------------------------------------
+
+export type MyReportsDto = components['schemas']['MyReportsDto'];
+export type MyReportDto = components['schemas']['MyReportDto'];
+export type ReportableEventDto = components['schemas']['ReportableEventDto'];
+export type ReportItemDto = components['schemas']['ReportItemDto'];
+export type EventReportRowDto = components['schemas']['EventReportRowDto'];
+export type ReportKind = components['schemas']['ReportKind'];
+export type ReportState = components['schemas']['ReportState'];
+
+/** One item a member sends (§5.2), as `ReportItemRequest` is: a flight or a shift, the fields of the other left out. */
+export type ReportItemRequest = components['schemas']['ReportItemRequest'];
+
+/** A row of the staff's list of the reports, with the lines of its items the page wrote in the language on screen. */
+export type ReportRow = EventReportRowDto & { readonly lines: string[] };
+
+const reportsKey = ['events', 'reports'] as const;
+
+/** The member's reports and the events still open to one (§5.2, §7.1): `/events/mine`. */
+export function myReportsQuery() {
+  return queryOptions({
+    queryKey: [...mineKey, 'reports'] as const,
+    queryFn: async (): Promise<MyReportsDto> => unwrap(await api.GET('/api/events/mine/reports')),
+  });
+}
+
+/** What a report changes on screen: the member's reports, the staff's list, the statistics and the staff's queue. */
+async function reportsChanged(queryClient: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...mineKey, 'reports'] }),
+    queryClient.invalidateQueries({ queryKey: reportsKey }),
+    queryClient.invalidateQueries({ queryKey: statsKey }),
+    queryClient.invalidateQueries({ queryKey: [...blockDataKey, STAFF_QUEUE_BLOCK] }),
+  ]);
+}
+
+/** Sends a report of an event, or sends it again to correct it while it is not decided: every item, every time, checked again. */
+export function useSendReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      eventId,
+      kind,
+      items,
+    }: {
+      eventId: number;
+      kind: ReportKind;
+      items: ReportItemRequest[];
+    }): Promise<MyReportDto> =>
+      unwrap(
+        await api.PUT('/api/events/mine/reports/{eventId}/{kind}', {
+          params: { path: { eventId, kind } },
+          body: { items },
+        }),
+      ),
+    onSuccess: () => {
+      void reportsChanged(queryClient);
+    },
+  });
+}
+
+/** The reports of an event for the staff (§7.2): data, and the lines of their items for the page to write. */
+export function eventReportsQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  lines: (row: EventReportRowDto) => string[],
+) {
+  return queryOptions({
+    queryKey: [...reportsKey, eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/reports', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): ReportRow => ({ ...row, lines: lines(row) })) };
+    },
+  });
+}
+
+/** A validator's decision (§5.3): accepted, or rejected with the note the member reads in the mail. */
+export function useDecideReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      state,
+      note,
+    }: {
+      id: number;
+      state: ReportState;
+      note: string;
+    }): Promise<void> =>
+      unwrapEmpty(
+        await api.POST('/api/events/reports/{id}/decision', {
+          params: { path: { id } },
+          body: { state, note: note.trim() === '' ? null : note.trim() },
+        }),
+      ),
+    onSuccess: () => {
+      void reportsChanged(queryClient);
+    },
+  });
+}
