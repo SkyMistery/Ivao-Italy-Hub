@@ -3,7 +3,7 @@
 **Data:** 17 ottobre 2026 — PR del nucleo, ramo `feat/footer-tagline-credits`, versione 0.9.0
 **Stato:** **chiesta da Carmine** (17 ottobre 2026, in chat al master, con il footer di vIPI davanti: le due cose sottolineate, il motto
 «it takes time» sotto il marchio e «Built by» con Andrea (562466) e Carmine (704798), ciascuno un link al suo profilo IVAO). Le scelte di
-forma qui sotto sono **tecniche**, prese dalla sessione di lavoro; una sola parola resta da confermare a Carmine (§5).
+forma qui sotto sono **tecniche**, prese dalla sessione di lavoro; l'unica parola chiesta a Carmine l'ha decisa lui (§5).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: nessun meccanismo nuovo. La configurazione della divisione (`division.json`,
 `DivisionOptions` e il suo validatore), l'unico bootstrap (`/api/me`) e il perimetro di IVAO (`Core/Ivao/`) esistono già e coprono il
 caso; si aggiungono due campi al primo, due al secondo e una funzione al terzo. È una PR del nucleo perché il footer, il bootstrap e la
@@ -51,8 +51,10 @@ ogni persona). Lo scrive **una sola funzione**, `IvaoMemberProfile.Url(vid)` in 
 
 ## 5. Una parola per Carmine
 
-`footer.builtBy` in italiano è «Realizzato da». vIPI mostra «Built by» anche nella pagina italiana? Se Carmine lo vuole in inglese in
-entrambe le lingue, si cambia una riga di `locales/it/common.json`.
+`footer.builtBy` in italiano è «Realizzato da», oppure «Built by» anche nella pagina italiana, come vIPI?
+
+**Risposta di Carmine** (17 ottobre 2026, in chat al master, riferita dal master a questa sessione): «va bene realizzato da». Resta
+«Realizzato da» in `locales/it/common.json`.
 
 ## 6. Che cosa non fa
 
