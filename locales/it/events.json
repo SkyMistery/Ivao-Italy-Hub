@@ -1040,7 +1040,7 @@
     "bookingRestrictedEvent": "Niente più slot in questo evento: hai i limiti di chi prenota e non vola.",
     "attendanceNotOver": "L'evento non è finito: com'è andato un turno non si sa ancora.",
     "attendanceNotAllowed": "Scegli presente, no-show o giustificato.",
-    "attendanceDecided": "Questo turno è già deciso: un turno presente o giustificato resta così, e un no-show si può solo giustificare.",
+    "attendanceDecided": "Il turno ha già questo esito.",
     "bookingNotUnflown": "Esce dal registro solo una prenotazione che la verifica dopo l'evento ha trovato non volata.",
     "bookingAlreadyExcused": "Questa prenotazione è già fuori dal registro.",
     "registerChanged": "È cambiato un momento fa: rileggi la pagina.",
@@ -1492,7 +1492,7 @@
       "takeAway": "Togli il no-show",
       "decideTitle": "{{callsign}}, {{controller}}",
       "decideDescription": "Com'è andato il turno: un no-show confermato pesa sul roster dei prossimi eventi; presente e giustificato restano così.",
-      "takeAwayDescription": "Il no-show diventa giustificato, per sempre, e smette di pesare sul roster. Scrivi perché.",
+      "takeAwayDescription": "Il no-show diventa giustificato — o presente, se era un errore — e smette di pesare sul roster. Per giustificare, scrivi perché.",
       "save": "Salva",
       "fields": {
         "eventTitle": "Evento",
@@ -1519,7 +1519,9 @@
             "Attended": "Presente"
           }
         }
-      }
+      },
+      "change": "Cambia",
+      "changeDescription": "Com'è andato il turno, cambiato: nessun esito è definitivo, e l'audit tiene ogni passo. Per giustificare, scrivi perché; senza una nota il turno tiene quella che aveva."
     },
     "outcomes": {
       "title": "Esiti",

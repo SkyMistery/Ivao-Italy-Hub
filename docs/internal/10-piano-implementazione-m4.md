@@ -4407,6 +4407,63 @@ contrario li fa cadere.
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
+### E10u — Nucleo: il permesso tenuto senza un ambito
+
+**Da dove viene**: non c'era in E0. La chiede E13b: alla revisione della #283, punto 1, i due registri (controllori e piloti) leggevano
+tutta la divisione per chiunque tenesse il permesso **dovunque**, anche su un evento solo; Carmine ha scelto la (b) ([la risposta][a283u],
+17 ottobre 2026): i registri rispondono solo a chi tiene il permesso **senza un ambito** (staff del dipartimento, grant alle posizioni,
+team dei FIR, HQ, super amministratore), e un grant su un evento o su una riga non li apre, né le loro voci di menu. Il nucleo non aveva la
+domanda (`PermissionSet` ha `Has` e `HasAny`) e il menu chiedeva solo `HasAny`; la regola 6 la tiene fuori dalla PR del modulo, e
+`dalberone` ha scelto una fase del nucleo prima (17 ottobre 2026). Branch `m4/e10u-unscoped-permission`, da `main` a `9a78b2c3`. **PR del
+nucleo**, diretta su `main`, non in coda; E13b ne unisce il branch e va in coda dopo.
+
+1. In `PermissionSet`, accanto a `HasAny`, la domanda «tenuto senza un ambito su una riga», e in `ICurrentUser` accanto a `HasAny`, senza
+   rompere i doppioni di test del maintainer.
+2. Un segno sulla voce di menu (`NavItemDescriptor`) che fa chiedere quella domanda a `MeEndpoints.Visible`; il predefinito non cambia
+   nessuna voce di oggi.
+3. Che cosa conta come «senza ambito» per ogni titolare — un grant su un dipartimento, un team di FIR, un grant da fuori, un grant su una
+   riga o su un evento —, detto nella nota.
+4. Nessun uso nel modulo (regola 6): i test del nucleo, di unità per ogni titolare e d'integrazione con un modulo di prova; la prova al
+   contrario.
+
+**Fatta quando**: una voce `Unscoped` è nascosta a un grant su una riga e mostrata a chi tiene il permesso sul dipartimento, le voci di
+oggi restano come sono, e senza il controllo i test cadono.
+
+**Com'è andata** (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288):
+
+- **Fatto** (nota nuova `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
+  - **`PermissionSet.HasUnscoped(permissions, isSuperadmin, permission)`**: il super amministratore, o un permesso con quel nome e
+    **`ResourceScope` nullo**; il FIR e `FromOutside` non si guardano;
+  - **`ICurrentUser.HasUnscoped(string permission)`**, un **membro predefinito** dell'interfaccia che chiama `PermissionSet` (come il
+    `Has` con il FIR), scritto uguale in `HttpContextCurrentUser`; `TestCurrentUser` non è toccato;
+  - **`NavItemDescriptor(…, bool Unscoped = false)`**, e `MeEndpoints.Visible` che con il segno chiede `HasUnscoped`, senza `HasAny`;
+  - la forma è quella proposta da E13b: **non cambiata**.
+- **Le letture, scritte nella nota** (§3.1): un grant su un dipartimento o su tutti, a una persona o a una posizione, **sì**; un team di
+  FIR, sul suo FIR o sul dipartimento, **sì**; un grant a una posizione da fuori (`FromOutside`), **sì**, perché Carmine conta i grant alle
+  posizioni senza distinguere; HQ, globali e super amministratore **sì**; un grant su una riga o su un evento, a chiunque, e la `View` che
+  il suo `Edit` porta sulla stessa riga, **no**. Un lettore che non conosce i segni del FIR e di «da fuori» li legge come un ambito:
+  chiuso. Nessuna lettura era incerta: tutte si decidono dall'ambito, e nessuna è stata portata al coordinatore prima del codice.
+- **Scostamenti dal design**: nessuno. L'unico handler non cambia (la domanda senza riga resta `HasAny`): il 403 dei registri lo daranno
+  gli endpoint di E13b.
+- **Verificato, in locale** (17 ottobre 2026, `main` a `9a78b2c3`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi,
+    0 errori; unità **1341/1341**, fra cui `UnscopedPermissionRulesTests` 10/10; integrazione intera, senza filtro (Release), da sola,
+    **657/657** al primo giro (12 minuti), fra cui `UnscopedNavigationTests` 1/1, anche da sola;
+  - **la prova al contrario**: con `HasUnscoped` senza la condizione sull'ambito e `Visible` che chiede sempre `HasAny` (modifica
+    locale) cadono 3 casi di unità su 10 (il grant su una riga o su un evento, il cookie e il membro predefinito, il lettore vecchio) e
+    `UnscopedNavigationTests` (la voce `Unscoped` trovata nel menu del grant su una riga); rimesso, toccato e ricompilato, 10 su 10 e 1
+    su 1;
+  - `pnpm -C web lint`, `typecheck`, `format:check` e `test` (vitest con `--maxWorkers=2`, **795/795**): verdi; `gen:api` senza
+    differenze; la smoke (`pnpm -C web exec playwright test --workers=2`, porta 4173 con il suo lock) **183/183** al primo giro;
+  - le regole di `core-guard` dalla base `9a78b2c3`, con Git Bash: nessun file del maintainer; quattro del nucleo con la nota nuova —
+    passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full`: nessuna schermata cambia, e il bootstrap ha la stessa forma;
+  - l'uso vero, nei registri e nelle loro voci: è di E13b.
+
+[a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
@@ -5037,8 +5094,10 @@ resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limi
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
 **Com'è andata** (16–17 ottobre 2026; branch `m4/e13b-registers`, PR #283, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo
-la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, `main` a `0ce4802`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **Proposta** per le undici letture, con
-le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259)):
+la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, poi `main` a `9a78b2c`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), e sulla #283 la lettura 1 cambiata e le
+2–11 accettate, con le 4 e 5 ristrette ([la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820))):
 
 - **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
   limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.
@@ -5100,6 +5159,33 @@ le tre scelte **decise**, (A), da Carmine sull'[issue #280](https://github.com/S
   registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
   usa la virgola italiana (non toccato).
 
+**Dopo la revisione della #283** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le risposte di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820), 17 ottobre 2026; `main` a `9a78b2c`
+unito, con la #278 di E13a, e poi la testa della fase del nucleo **E10u** `a2631e6`, la #288; la PR ora è in coda dopo la #288):
+
+- **La lettura 1 cambiata da Carmine**: nessun esito è definitivo. `RegisterDecisions.Allowed` lascia passare uno dei tre esiti dello staff
+  in un altro, mai in sé stesso; `RegisterDecisions.Decidable` è l'evento finito e non annullato, e `Decidable` delle righe è quello più
+  l'unico handler. La pagina dice «Decidi», «Togli il no-show» o «Cambia», e offre gli altri due esiti. Il nuovo test
+  `ADecidedOutcomeChangesLaterAndADecisionWithoutANoteKeepsTheOne`, con i quattro passi nell'audit.
+- **Il punto 1, la risposta (b)**: i due registri solo a chi tiene il permesso senza uno scope di risorsa. Il nucleo non sapeva dirlo, e il
+  menu del back office mostra una voce a chi tiene il permesso da qualche parte: **dalberone ha scelto (17 ottobre) una fase del nucleo a sé,
+  E10u** (`PermissionSet.HasUnscoped`, `ICurrentUser.HasUnscoped`, `NavItemDescriptor.Unscoped`), per la regola 6. Qui le due letture
+  rispondono 403 a chi lo tiene solo su righe o eventi, e le due voci di menu portano `Unscoped`. Il test
+  `AGrantOnOneEventOpensNeitherRegisterNorTheirMenuEntries` (VID **761207**).
+- **Il punto 2**: «togli» sotto un `FOR UPDATE` sulla prenotazione, in `READ COMMITTED`; una prenotazione di un pilota cancellato (VID
+  negativo) non si trova. Il test `TwoTakeOutsAtOnceTakeItOutOnceAndAnErasedPilotsBookingIsNotFound`.
+- **Il punto 3**: il commento e la lettura 1 dicono che il job non prende il blocco dell'evento per i turni, e che cosa succede quando una
+  decisione e il job si incontrano (la `row_version`).
+- **Il punto 4**: `events.staffQueue` non legge niente per chi non tiene `EventAtc.Edit` da nessuna parte, esclude le righe del lettore nella
+  query, legge le più recenti e le mostra dalla più recente (la lettura 11).
+- **Il punto 5**: una riga nell'HANDOFF. **Il punto 6**: una decisione senza nota tiene quella di prima.
+- **La nota** è **decisa**, con i link.
+- **Verificato, in locale** (17 ottobre 2026, con `main` a `9a78b2c` ed E10u `a2631e6` uniti): build Release senza avvisi,
+  `has-pending-model-changes` senza cambi; unità **1348/1348**; **integrazione intera da sola 664/664** (16,2 min; `EventsRegistersTests` 7/7);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **798 in 114 file**; `gen:api` senza diff; lo smoke
+  **183/183**; `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit, **69/69 al primo giro** (14,6 min);
+  `core-guard.sh` dal merge-base `9a78b2c`: passa, nessun file del maintainer (i file del nucleo sono quelli di E10u e i due conteggi).
+
 ### E14a — Il PIREP di supporto
 
 Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-support-reports`. Dopo E13b ed E10e.
@@ -5118,8 +5204,11 @@ fixture, e `Unavailable` a sorgente spenta; oltre `reportDays` rifiutato.
 **Fatta quando**: sul banco un PIREP pilota verificato viene accettato da chi ha il permesso.
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14a-support-reports`, nata `--no-track` dalla testa di E13b `4226b983`, in coda dopo la #283
-di E13b; nota `2026-10-17-il-pirep-di-supporto`, **Proposta** per le quattordici letture e le tre scelte, chieste a Carmine sull'[issue
-#287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287), scelta di dalberone; le letture dopo la revisione):
+di E13b, con la sua testa `ecc5a35b` unita — E10u `a2631e6` e `main` a `9a78b2c`; nota `2026-10-17-il-pirep-di-supporto`, **Proposta** per
+le quattordici letture, che Carmine decide dopo la revisione; le tre scelte **decise**, (A), da Carmine sull'[issue
+#287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla
+prima](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053) — dopo un award assegnato dal suo segnale la decisione
+di un PIREP non cambia più: il rifiuto lo scrive E14b):
 
 - **Una migrazione**, `AddSupportReports`, dopo `AddAfterTheEventColumns` di E13a (E13b non ne ha): `evt_reports` (univoco `(event_id, vid,
   kind)`, indici su `vid` e `state`) ed `evt_report_items` (la chiave verso il PIREP, `on delete cascade`; indice su `vid`). Le colonne del

@@ -1,10 +1,15 @@
 # Il PIREP di supporto: l'invio, la verifica, la validazione (E14a)
 
 **Data:** 17 ottobre 2026 — fase E14a di M4 (M4b), PR in coda dopo la #283 di E13b
-**Stato:** **Proposta** per le letture del §2 e per le tre scelte del §4. La domanda è l'[issue #287][q], scelta di dalberone; le letture
-Carmine le decide dopo la revisione della PR. Il codice segue le risposte raccomandate.
+**Stato:** **Proposta** per le quattordici letture del §2, che Carmine decide dopo la revisione della PR; **decise** le tre scelte del §4. La
+domanda è l'[issue #287][q], scelta di dalberone. Carmine ha risposto ([la risposta][a287], pubblicata su sua istruzione): **(A) a tutte e
+tre**; e poi [un limite sulla scelta 1][l287]: **una volta assegnato un award dal segnale di un PIREP, la sua decisione non cambia più** —
+il rifiuto con una chiave sua e la scheda che non lo offre li scrive **E14b**, che proietta i segnali e sa quando uno è diventato un award;
+E14a scrive la decisione cambiabile. Il codice segue le risposte.
 
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287
+[a287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832
+[l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
 **Regola applicata:** `CLAUDE.md` §5. Che il PIREP di supporto si mandi da `/events/mine` entro `reportDays` dalla fine, pilota con i voli
 e ATC con i turni, uno per tipo per evento, correggibile finché non è deciso; che il sistema lo verifichi a ogni invio con `Valid`,
 `Partial`, `Invalid` o `Unavailable`; che lo validi una persona con `EventReports.Edit`, mai il proprio, accettando o rifiutando con una
@@ -127,20 +132,22 @@ Niente di un meccanismo: `ErasureTests` ha le righe delle tre colonne di persona
 | Le postazioni di un turno solo fra quelle dell'evento | un evento senza roster non ne ha |
 | Un controllo nel modulo «non il proprio PIREP» | `DeniedToStakeholder` nel catalogo lo dice per tutti, il superadmin compreso, senza un `if` |
 
-## 4. Le domande per Carmine
+## 4. Le domande per Carmine — decise: (A), (A), (A), con il limite sulla prima
 
 1. **Una decisione si cambia?** (A) **Sì** — chi può decidere il PIREP passa accettato a rifiutato e viceversa, con la nota per rifiutare, e
    il membro riceve di nuovo la mail; la stessa regola che Carmine ha dato agli esiti dei turni sulla #283 (lettura 1 di E13b). E14b, che
    proietta i segnali di award all'accettazione, li toglie se il PIREP passa a rifiutato. (B) No: la prima decisione è definitiva.
-   **Raccomandata: (A)**.
+   **Raccomandata: (A)**. **Decisa: (A)**, [con un limite][l287]: dopo l'assegnazione di un award dal suo segnale, la decisione non
+   cambia più (il rifiuto è di E14b).
 2. **Per quali eventi si manda?** (A) **Ogni evento pubblicato, non annullato, finito, non in presenza**, entro `reportDays`, qualunque membro.
    (B) Solo gli eventi dove il membro ha una prenotazione (pilota) o un turno (ATC). **Raccomandata: (A)** (c2: «chiunque abbia volato o
-   controllato»; l'online day).
+   controllato»; l'online day). **Decisa: (A)**.
 3. **Un volo che non tocca nessuno scalo dell'evento?** (A) **Rifiutato all'invio**, su un evento con i suoi scali e non di tutta la
-   divisione: il membro lo sa subito. (B) Accettato, e lo giudica chi valida. **Raccomandata: (A)**.
+   divisione: il membro lo sa subito. (B) Accettato, e lo giudica chi valida. **Raccomandata: (A)**. **Decisa: (A)**.
 
 ## Da portare nel piano
 
-§9.2 riga Events (il PIREP di supporto: una voce con il suo VID, la verifica prima del blocco, la decisione che si cambia se (A)); il design
+§9.2 riga Events (il PIREP di supporto: una voce con il suo VID, la verifica prima del blocco, la decisione che si cambia finché nessun
+award è stato assegnato dal suo segnale); il design
 `09-design-m4.md` §1.8 (le colonne in più: `checked_at` del PIREP, `event_id`, `vid`, `ordinal` della voce), §5.2 e §5.3 (le letture 3–7),
 §7.2 (la scheda), §7.3 (il numero della coda), §11.1 (che cosa resta di un PIREP).

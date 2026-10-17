@@ -338,8 +338,9 @@ function ShiftDecisions({
 }
 
 /**
- * «Decide»: how a shift went, among the outcomes still open to it — a no-show proposed or a shift unknown to any, a no-show to excused alone
- * (the no-show taken away) — with a note, which excusing asks.
+ * «Decide» on a shift the check left unknown or proposed as a no-show, «Take the no-show away» on a no-show, «Change» on a shift attended or
+ * excused: how it went, among the other outcomes — none is final (Carmine's answer on #283) — with a note, which excusing asks; without one
+ * the shift keeps the note it had.
  */
 function DecideAttendance({ shift }: { shift: EventAtcShiftRowDto }) {
   const { t } = useTranslation();
@@ -362,22 +363,14 @@ function DecideAttendance({ shift }: { shift: EventAtcShiftRowDto }) {
       }}
       trigger={
         <Button variant="ghost" size="sm">
-          {t(
-            shift.attendance === 'NoShow'
-              ? 'events:registers.shifts.takeAway'
-              : 'events:registers.shifts.decide',
-          )}
+          {t(`events:registers.shifts.${verb(shift.attendance)}`)}
         </Button>
       }
       title={t('events:registers.shifts.decideTitle', {
         callsign: shift.callsign ?? '',
         controller: personName(shift.controller, t),
       })}
-      description={t(
-        shift.attendance === 'NoShow'
-          ? 'events:registers.shifts.takeAwayDescription'
-          : 'events:registers.shifts.decideDescription',
-      )}
+      description={t(`events:registers.shifts.${verb(shift.attendance)}Description`)}
     >
       <SchemaForm<AttendanceFormValues>
         schema={attendanceSchema(allowed)}
@@ -393,4 +386,13 @@ function DecideAttendance({ shift }: { shift: EventAtcShiftRowDto }) {
       />
     </Dialog>
   );
+}
+
+/** The word of the verb on a shift: deciding one still open, taking a no-show away, changing an outcome decided. */
+function verb(attendance: string): 'decide' | 'takeAway' | 'change' {
+  return attendance === 'NoShow'
+    ? 'takeAway'
+    : attendance === 'Attended' || attendance === 'Excused'
+      ? 'change'
+      : 'decide';
 }

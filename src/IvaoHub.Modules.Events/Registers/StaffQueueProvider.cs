@@ -31,12 +31,16 @@ public sealed record StaffQueueEventDto(
 /// <summary>
 /// The block <c>events.staffQueue</c> (design M4 §7.3, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 11): on the dashboards of
 /// the events' and the ATC's staff, what waits for a decision of theirs — a no-show to confirm or excuse, a shift to mark, a request to hand a
-/// shift over —, and the reports of support to validate (E14a; note 2026-10-17-il-pirep-di-supporto, reading 10), one row per event, the one
-/// ended longest ago first.
+/// shift over —, and the reports of support to validate (E14a; note 2026-10-17-il-pirep-di-supporto, reading 10), one row per event, the latest
+/// first.
 /// <para>Always live and the reader's: each row is counted only where the one handler gives them <c>EventAtc.Edit</c> on it — on its event's
 /// care and its position's FIR, and never on a row about themselves, the super administrator included —, a report where it gives them
 /// <c>EventReports.Edit</c>, never their own. A visitor gets
 /// <c>signedIn: false</c>.</para>
+/// <para>What it reads is bounded (the review of #283, point 4): nothing of the ATC for a reader who holds <c>EventAtc.Edit</c> nowhere, and no
+/// report for one who holds <c>EventReports.Edit</c> nowhere; the
+/// reader's own rows are left out by the query, before the handler; and the window is the latest rows, so that a backlog of shifts nobody
+/// marked, which grows season after season, never hides the rows of the last events.</para>
 /// </summary>
 public sealed class StaffQueueProvider(
     EventsDbContext database,
@@ -67,36 +71,97 @@ public sealed class StaffQueueProvider(
             return new JsonObject { ["signedIn"] = false };
         }
 
-        var now = clock.UtcNow;
+        // Nothing to decide for whoever decides nothing anywhere: no row is read, no handler asked.
+        var atc = currentUser.HasAny(EventsPermissions.AtcEdit);
+        var reports = currentUser.HasAny(EventsPermissions.ReportsEdit);
+        if (!atc && !reports)
+        {
+            return new JsonObject { ["signedIn"] = true, ["events"] = new JsonArray() };
+        }
 
+        var now = clock.UtcNow;
+        var vid = currentUser.Vid;
+        var counts = new Dictionary<long, (int NoShows, int ToMark, int Transfers, int Reports)>();
+
+        if (atc)
+        {
+            await AtcAsync(request, vid, now, counts, cancellationToken);
+        }
+
+        // The reports of support waiting for a validator (E14a): narrowed in the query to their state, never the reader's own, the latest first.
+        if (reports)
+        {
+            var waiting = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
+                .Where(report => report.State == ReportState.Submitted && report.Vid != vid)
+                .OrderByDescending(report => report.Id)
+                .Take(Window)
+                .ToListAsync(cancellationToken);
+
+            foreach (var report in waiting)
+            {
+                if ((await authorization.AuthorizeAsync(request.User, report, EventsPermissions.ReportsEdit)).Succeeded)
+                {
+                    var count = counts.GetValueOrDefault(report.EventId);
+                    counts[report.EventId] = (count.NoShows, count.ToMark, count.Transfers, count.Reports + 1);
+                }
+            }
+        }
+
+        var ids = counts.Keys.ToList();
+        var events = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
+                .Where(row => ids.Contains(row.Id))
+                .ToListAsync(cancellationToken))
+            .OrderByDescending(row => row.EndsAtUtc)
+            .ThenByDescending(row => row.Id)
+            .Take(MaxEvents)
+            .Select(row => new StaffQueueEventDto(
+                row.Id,
+                row.Slug,
+                row.Title,
+                row.StartsAtUtc,
+                row.EndsAtUtc,
+                counts[row.Id].NoShows,
+                counts[row.Id].ToMark,
+                counts[row.Id].Transfers,
+                counts[row.Id].Reports))
+            .ToList();
+
+        return new JsonObject
+        {
+            ["signedIn"] = true,
+            ["events"] = JsonSerializer.SerializeToNode(events, Json),
+        };
+    }
+
+    /// <summary>The ATC's rows the reader may decide, counted by event: no-shows, shifts to mark, requests to hand a shift over.</summary>
+    private async Task AtcAsync(
+        HttpContext request,
+        int vid,
+        DateTime now,
+        Dictionary<long, (int NoShows, int ToMark, int Transfers, int Reports)> counts,
+        CancellationToken cancellationToken)
+    {
         // The shifts to decide (reading 11): a no-show proposed, or a shift unknown of an event the check closed — before, it is looking at it.
         var shifts = await (
                 from shift in CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
                 join row in CrudSource.BackOffice<Event>(database) on shift.EventId equals row.Id
                 where row.CancelledAt == null
                     && row.EndsAtUtc <= now
+                    && shift.ControllerVid != vid
                     && (shift.Attendance == ShiftAttendance.NoShowProposed
                         || (shift.Attendance == ShiftAttendance.Unknown && row.AfterDoneAt != null))
-                orderby row.EndsAtUtc, shift.Id
+                orderby row.EndsAtUtc descending, shift.Id descending
                 select shift)
             .Take(Window)
             .ToListAsync(cancellationToken);
 
         // The requests to hand a shift over, as events.atcCoverage counts them (E12).
         var transfers = await CrudSource.BackOffice<EventAtcTransfer>(database).AsNoTracking()
-            .Where(transfer => transfer.Status == TransferStatus.Pending)
-            .OrderBy(transfer => transfer.Id)
+            .Where(transfer => transfer.Status == TransferStatus.Pending && transfer.ControllerVid != vid)
+            .OrderByDescending(transfer => transfer.Id)
             .Take(Window)
             .ToListAsync(cancellationToken);
 
-        // The reports of support waiting for a validator (E14a), read already narrowed to their state.
-        var reports = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
-            .Where(report => report.State == ReportState.Submitted)
-            .OrderBy(report => report.Id)
-            .Take(Window)
-            .ToListAsync(cancellationToken);
-
-        var counts = new Dictionary<long, (int NoShows, int ToMark, int Transfers, int Reports)>();
         foreach (var shift in shifts)
         {
             if ((await authorization.AuthorizeAsync(request.User, shift, EventsPermissions.AtcEdit)).Succeeded)
@@ -116,39 +181,5 @@ public sealed class StaffQueueProvider(
                 counts[transfer.EventId] = (count.NoShows, count.ToMark, count.Transfers + 1, count.Reports);
             }
         }
-
-        foreach (var report in reports)
-        {
-            if ((await authorization.AuthorizeAsync(request.User, report, EventsPermissions.ReportsEdit)).Succeeded)
-            {
-                var count = counts.GetValueOrDefault(report.EventId);
-                counts[report.EventId] = (count.NoShows, count.ToMark, count.Transfers, count.Reports + 1);
-            }
-        }
-
-        var ids = counts.Keys.ToList();
-        var events = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
-                .Where(row => ids.Contains(row.Id))
-                .ToListAsync(cancellationToken))
-            .OrderBy(row => row.EndsAtUtc)
-            .ThenBy(row => row.Id)
-            .Take(MaxEvents)
-            .Select(row => new StaffQueueEventDto(
-                row.Id,
-                row.Slug,
-                row.Title,
-                row.StartsAtUtc,
-                row.EndsAtUtc,
-                counts[row.Id].NoShows,
-                counts[row.Id].ToMark,
-                counts[row.Id].Transfers,
-                counts[row.Id].Reports))
-            .ToList();
-
-        return new JsonObject
-        {
-            ["signedIn"] = true,
-            ["events"] = JsonSerializer.SerializeToNode(events, Json),
-        };
     }
 }

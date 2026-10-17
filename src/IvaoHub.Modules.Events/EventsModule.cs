@@ -69,8 +69,9 @@ public sealed class EventsModule : ModuleBase
     [
         new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.atc", "/staff/events/atc", EventsPermissions.AtcView),
-        new NavItemDescriptor("events:nav.controllers", "/staff/events/controllers", EventsPermissions.AtcView),
-        new NavItemDescriptor("events:nav.pilots", "/staff/events/pilots", EventsPermissions.BookingsView),
+        // The registers count the whole division: offered only to whoever holds their permission without a resource scope (E10u, #283).
+        new NavItemDescriptor("events:nav.controllers", "/staff/events/controllers", EventsPermissions.AtcView, Unscoped: true),
+        new NavItemDescriptor("events:nav.pilots", "/staff/events/pilots", EventsPermissions.BookingsView, Unscoped: true),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
     ];
 

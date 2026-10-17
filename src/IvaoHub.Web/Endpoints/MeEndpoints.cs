@@ -183,10 +183,13 @@ internal static class MeEndpoints
     /// The entries this person may actually follow. A menu entry that leads to a 403 is a menu
     /// entry that teaches people to ignore the menu, so the permission a module declares on one is
     /// checked here rather than left to the screen behind it.
+    /// <para>Held anywhere, as a list asks before a row is in hand; or held without a resource scope, for an entry that says so
+    /// (M4, E10u): a register a grant on one row does not open.</para>
     /// </summary>
     private static IEnumerable<NavItem> Visible(IEnumerable<NavItemDescriptor> entries, ICurrentUser user) =>
         entries
-            .Where(entry => entry.Permission is null || user.HasAny(entry.Permission))
+            .Where(entry => entry.Permission is null
+                || (entry.Unscoped ? user.HasUnscoped(entry.Permission) : user.HasAny(entry.Permission)))
             .Select(entry => new NavItem(entry.Key, entry.Path, Label: null, Icon: null, Children: []));
 }
 
