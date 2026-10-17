@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Quartz;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -85,6 +86,12 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             services.AddScoped<IAtcActivitySource>(_ => new UnavailableAtcActivitySource());
         }));
         var token = TestContext.Current.CancellationToken;
+
+        // The host runs the jobs of the class on their own schedule: paused, the only runs are the test's (TourTests, AwardQueueMailTests).
+        var scheduler = await _factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(token);
+        await scheduler.PauseJob(new JobKey(AwardQueueMailJob.JobName), token);
+        await scheduler.PauseJob(new JobKey(ReportsDigestJob.JobName), token);
+        await scheduler.PauseJob(new JobKey(EventsAfterJob.JobName), token);
 
         await ForgetAsync(token);
 
@@ -406,9 +413,9 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await RunDigestAsync(morning.AddDays(1), token);
         Assert.Equal(2, (await DigestsAsync(MdVid, token)).Count);
 
-        var trigger = _factory.Services.GetRequiredService<IOptions<Quartz.QuartzOptions>>().Value.Triggers
+        var trigger = _factory.Services.GetRequiredService<IOptions<QuartzOptions>>().Value.Triggers
             .Single(candidate => candidate.Key.Name == ReportsDigestJob.TriggerName);
-        var cron = Assert.IsAssignableFrom<Quartz.ICronTrigger>(trigger);
+        var cron = Assert.IsAssignableFrom<ICronTrigger>(trigger);
         Assert.Equal((ReportsDigestJob.Cron, Division().ResolveTimeZone().Id), (cron.CronExpressionString, cron.TimeZone.Id));
     }
 
