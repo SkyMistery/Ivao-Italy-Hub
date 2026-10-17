@@ -94,7 +94,7 @@ it. The mechanisms below are **decided** (plan §16): they are not reopened, the
 | The name of a person by VID | The core's `MemberNames.ReadAsync` (`Core/People/`); never a copy (`decisions/2026-10-11-un-solo-lettore-dei-nomi.md`). |
 | The title of a page's tab | `PageMetadata`, with the division's name from the root; never a `<title>` written by hand (`decisions/2026-10-09-le-parole-delle-liste-e-i-titoli-delle-schede.md`). |
 | The distance between two airports | The core's `GreatCircle` (`Core/Airspace/`) with the coordinates of `IAirportDirectory`; never a copy (`decisions/2026-09-30-la-distanza-fra-due-aeroporti-nel-nucleo.md`). |
-| IVAO API | The one typed `IIvaoApiClient`, with cache, Polly retry and circuit breaker. |
+| IVAO API | The one typed `IIvaoApiClient`, with cache, Polly retry and circuit breaker. A module that may not name the network reads its sessions through the core's `INetworkSessionSource` (`Core/Ivao/NetworkSessionSource.cs`) and its ATC bookings through `IAtcBookingSource` (`Core/Ivao/AtcBookingSource.cs`), interfaces of the core over the one client; never from `IIvaoApiClient` by itself (`decisions/2026-09-30-le-prenotazioni-atc-della-rete.md`, `decisions/2026-10-16-le-sessioni-della-rete-nel-nucleo.md`). |
 
 Structural rules:
 

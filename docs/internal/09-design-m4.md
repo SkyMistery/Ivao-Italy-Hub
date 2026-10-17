@@ -420,6 +420,12 @@ alle dieci letture, e la (B) sulle finestre dei candidati):
   `IHasStakeholder`, `IVisible` ai membri, `[Audited]`, e **non** `[WithdrawnByStakeholder]`: la riga porta la decisione dello staff,
   e il membro la ritira **cambiandone lo stato** in `Withdrawn` (§4.4-bis).
 
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272): il turno
+ha in più **`covered_by_vid`** (migrazione `AddAfterTheEventColumns`), **chi ha coperto** la postazione, scritto da `events-after` solo
+accanto a un no-show proposto: **dall'archivio** (`OnlineAsync`, le connessioni sul nominativo con un VID diverso dal titolare, quella con
+più minuti dentro il turno); **con il solo tracker nessuno** (la (A) di Carmine alla lettura 5). È una colonna di persona `…Vid`, con la
+sua riga in `ErasureTests`.
+
 ### 1.8 Il PIREP di supporto — `evt_reports`, `evt_report_items`
 
 - **`evt_reports`**: `event_id`, `vid`, `kind` (`Pilot`, `Atc`), `source` (`Manual`, `Auto`), `state` (`Submitted`,
@@ -458,6 +464,14 @@ numeri**: le colonne qui sopra, **le somme delle risposte** (JSON, per domanda: 
 E16 nessuno la scrive**: le somme dello staff si calcolano dalle iscrizioni. **E17** scrive quelle di un evento in presenza prima
 che la conservazione ne cancelli le iscrizioni (`inPersonRetentionMonths`, letto da `events-retention`), **E13a** il resto dopo
 l'evento.
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; la condizione di Carmine sull'issue #272): **«non
+contato» non è 0**. La riga ha in più **`flown_unbooked_airports`** (migrazione `AddAfterTheEventColumns`): a quanti scali dell'evento,
+nel loro ordine, il conto di chi ha volato senza prenotare è arrivato; **vuoto è «non contato»** — un evento di tutta la divisione, uno
+senza scali, uno chiuso dopo trenta giorni prima di ogni conto —, e la lettura, «Ricalcola» e la scheda lo dicono («non contato»,
+«contato su 2 dei suoi 3 scali»). I no-show nelle statistiche sono **proposti più confermati**; PIREP e segnali di award restano a 0
+finché non ci sono le tabelle di E14a ed E14b; chi ha volato senza prenotare viene solo dalla verifica, e «Ricalcola» lo tiene com'è.
+La riga si scrive sotto il blocco della riga dell'evento (`FOR UPDATE`), dal job e da «Ricalcola».
 
 ### 1.11 Le preferenze del membro
 
@@ -1213,6 +1227,43 @@ Il job `events-after` (§8.4), dopo `ends_at_utc`, a lotti:
 Per l'online day e gli eventi liberi **si guardano solo i VID con la preferenza** e chi manda un PIREP a mano (c3): nessuna
 ricerca per ogni aeroporto della divisione.
 
+**Deciso con E10t** (#277, nota `2026-10-16-le-sessioni-della-rete-nel-nucleo`, piano 1.36): il modulo non chiama
+`SearchSessionsAsync` né `IIvaoApiClient`, che nominano la rete (`EventsArchitectureTests`, E2; `CLAUDE.md` §3), ma
+**`INetworkSessionSource`** del nucleo (`Core/Ivao/NetworkSessionSource.cs`), la stessa domanda di E10a sotto un nome neutro: VID
+facoltativo, finestra, scali, `Pilot` o `Atc`, `Limit` fino allo stesso tetto; risponde numero, VID, callsign, inizio e fine, dalla più
+recente, una volta per numero; `null` è «la rete non ha risposto», mai «nessuno ha volato». Le regole di E10a (nota
+`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali.
+
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272, la (A)
+alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
+
+- **quando**: un evento pubblicato, non annullato, con `after_done_at` vuoto, **sei ore dopo la fine** (`SlotWindow.Margin`); una bozza
+  e un annullato non si verificano mai;
+- **la finestra** è quella degli slot: sessioni **iniziate** fra inizio − 6 ore e fine + 6 ore. Per ogni prenotazione il tracker per
+  VID, tipo `PILOT`, con la partenza e l'arrivo del volo prenotato (di uno slot privato lo scalo dell'evento e l'altro aeroporto, nel
+  verso dello slot); va alla prenotazione **la sessione che parte più vicina al suo orario**, se nessun'altra prenotazione dello stesso
+  evento l'ha presa; `flown_at` è l'inizio, `flown_session_id` il numero, `flown_checked_at` si scrive anche quando non si trova niente.
+  Un volo senza orario di partenza si misura dall'orario d'arrivo allo scalo dell'evento;
+- **chi ha volato senza prenotare**: per ogni scalo due domande senza VID (partenza, arrivo), tipo `PILOT`, nella stessa finestra, fino
+  al tetto (1000); si contano **le persone** — i VID distinti meno chi ha prenotato —, che vivono solo in memoria durante il conto, mai
+  nel database né nel log; una risposta lunga quanto il tetto conta come un minimo e il log lo dice. Un evento `whole_division` o senza
+  scali non si cerca, e **«non contato» non è 0** (§1.10). Contato a pezzi, un pilota in due scali contati in due giri diversi si conta
+  due volte, di proposito;
+- **la presenza nei turni**, solo per i turni `Unknown`: prima l'archivio (`SessionsOfAsync`); se non risponde o non copre l'inizio del
+  turno, il tracker per VID, tipo `ATC`, dall'inizio del turno − 12 ore, stesso nominativo. I minuti si contano dentro il turno, con le
+  connessioni sovrapposte unite; almeno `attendanceMinimumMinutes`, **e mai più della durata del turno**, è `Attended`, meno è
+  `NoShowProposed`; il job non scrive mai `NoShow` né `Excused` (E13b). Una divisione senza archivio non lo chiede affatto;
+- **chi ha coperto**: §1.7, solo dall'archivio;
+- **una sorgente che non risponde** (`null`): il giro smette di chiederle, le righe restano da verificare, il giro dopo riprova;
+  **trenta giorni dopo la fine** il job chiude l'evento con le righe ancora da verificare, **mai segnate**, e lo staff le può ancora
+  segnare (E13b). ⚠️ **Al primo avvio** con E13a gli eventi finiti da più di trenta giorni si chiudono subito, senza chiedere niente, con
+  le statistiche dalle righe e chi ha volato senza prenotare «non contato»;
+- **le statistiche** (§1.10) si fanno in un posto solo, dal job e da **«Ricalcola»** — `POST /api/events/events/{id}/stats`, con
+  `Events.Edit` sulla riga, solo per un evento pubblicato, non annullato e finito —; si leggono da `/api/events/stats` con
+  `filter[eventId]`, una risorsa del motore in sola lettura, con `Events.View`. La scheda **«Statistiche»** della pagina dell'evento
+  dello staff mostra i numeri in un form generato in sola lettura e due liste generate, le prenotazioni con il loro esito e i turni con
+  l'esito e chi ha coperto; ⚠️ la lista dei turni del motore (`/api/events/atc/shifts`) risponde ora `EventAtcShiftRowDto`.
+
 ### 5.2 Il PIREP di supporto
 
 Chiunque abbia volato o controllato (c2) lo manda da `/events/mine`, entro `reportDays` dalla fine: **pilota** con uno o
@@ -1594,6 +1645,14 @@ tornata indietro), e gli altri si propongono. La riga di `hub_jobs_log` ha `Fini
 `roster_published_at` che non cambia la versione della riga, e manda le mail con **un segno per turno** (`notified_at`) scritto
 **prima** della mail; un roster proposto dopo il suo momento si pubblica nello stesso giro.
 
+**Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272):
+`events-after` gira **ogni ora a lotti**, e ogni giro finisce dentro la richiesta del POST pianificato (§10.2). Un giro ha un **conto di
+60 unità**, circa i secondi di IVAO: una domanda per VID (tracker o archivio) vale 1, una per scalo 11. Gli eventi in ordine di fine; per
+ognuno prima le prenotazioni, poi i turni, poi — quando nessuna riga resta da verificare — chi ha volato senza prenotare **a pezzi, per
+scalo**, quanti ne stanno nel resto del conto, salvando il pezzo con le statistiche (`flown_unbooked_airports`); **un giro non spende mai
+più di 60 unità**. Contato l'ultimo scalo, le statistiche e `after_done_at` in una transazione. Le letture 1–7 sono in §5.1; i numeri
+sono costanti del codice, da rimisurare con i limiti veri (§9.1).
+
 **Deciso con E17** (#271, nota `2026-10-15-le-attivita-e-la-conservazione-breve`, piano 1.35; le risposte di Carmine sull'issue #267
 e sulla #271): **`events-retention` nasce con E17** (M4c prima di M4b), **il primo giorno del mese alle 04:40, in UTC** (il trigger lo
 dice), dopo il job dei tour, con le convenzioni di E10j. **Decide dalle date**: un evento la cui fine è passata da almeno
@@ -1633,7 +1692,9 @@ Solo attraverso `IAtcActivitySource` e la vista `v_share_atc_sessions` (piano 1.
 cose: **le postazioni aperte più spesso** da un controllore (§4.3, c1: «dato estraibile da atc.it.ivao.aero») e **la
 presenza nei turni** (§4.5, §5.3). La vista ha già `vid`; `IAtcActivitySource` oggi non lo espone e non dà una storia per
 VID: estensione n.3. Con `atcData.source: none` il roster perde il criterio dell'esperienza, la presenza ATC si legge dal
-tracker (`connectionType=ATC`, per VID) e il resto funziona uguale.
+tracker (`connectionType=ATC`, per VID) e il resto funziona uguale. **Dal 16 ott 2026** (E10t, #277, piano 1.36) il tracker il
+modulo lo legge con **`INetworkSessionSource`** del nucleo, mai con `IIvaoApiClient` (§5.1); con il solo tracker **chi ha coperto**
+un turno resta sconosciuto (E13a, §1.7).
 
 ---
 
