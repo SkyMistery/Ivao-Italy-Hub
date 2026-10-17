@@ -1,7 +1,10 @@
 import type { i18n as I18n } from 'i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createI18n, SHIPPED_LANGUAGES } from './i18n';
+import { resolve } from 'node:path';
+
+import { localesStamp } from '../../localesStamp';
+import { createI18n, LOCALES_STAMP, SHIPPED_LANGUAGES } from './i18n';
 
 /**
  * What the SPA asks `/locales/` for when a browser speaks a regional tag. Before 28 September 2026
@@ -74,5 +77,18 @@ describe('createI18n', () => {
   it('knows the languages of the build from the directories under locales/', () => {
     expect(SHIPPED_LANGUAGES).toContain('en');
     expect(SHIPPED_LANGUAGES.every((language) => !language.includes('-'))).toBe(true);
+  });
+
+  // Before 17 October 2026 the address was the same in every release, and a browser that had cached
+  // the old common.json showed the keys of a new page raw after a delivery.
+  it('asks for every file with the fingerprint of the language files of the build', async () => {
+    withBrowserLanguages(['en']);
+
+    await started(['en', 'xx']);
+
+    expect(LOCALES_STAMP).toMatch(/^[0-9a-f]{12}$/);
+    expect(LOCALES_STAMP).toBe(localesStamp(resolve(process.cwd(), '../locales')));
+    expect(requested.length).toBeGreaterThan(0);
+    expect(requested.every((url) => url.endsWith(`.json?v=${LOCALES_STAMP}`))).toBe(true);
   });
 });
