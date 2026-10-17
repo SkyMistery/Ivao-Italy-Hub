@@ -333,7 +333,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, in coda dopo la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, `main` a `0ce4802`)
+### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con la sua testa `a2631e6` e `main` a `9a78b2c` uniti)
 
 - **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
   `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
@@ -352,7 +352,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Le pagine**: `/staff/events/controllers[/$vid]` e `/staff/events/pilots[/$vid]` (`screens/registers.tsx`), la sezione «Esiti» nell'ATC
     di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti dove una prenotazione è rifiutata
     (`screens/limits.ts`).
-  - **I test**: integrazione `EventsRegistersTests` (4; VID **761200–761206**, slug `evt-test-e13b-…`); unità `EventsRegistersTests` (7); il
+  - **I test**: integrazione `EventsRegistersTests` (7 dopo la revisione; VID **761200–761207**, slug `evt-test-e13b-…`); unità `EventsRegistersTests` (7); il
     giro `full/events-registers.spec.ts` (slug `evt-test-e2e-e13b-…`).
 - **Che cosa deve sapere la fase dopo**:
   - **E14a** (i PIREP): `events.staffQueue` conta per evento; i PIREP da validare sono un numero in più di `StaffQueueEventDto` e un ciclo in
@@ -362,6 +362,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, decisa da Carmine sulla #280): lo staff non toglie
     la propria prenotazione, iscrizione o posto, né la propria voce del registro.
   - ⚠️ **Le statistiche dopo una decisione**: il verbo non le scrive (l'area `Events`, che l'AOD non scrive): «Ricalcola» di E13a.
+  - ⚠️ **I due registri rispondono solo a chi tiene il permesso senza uno scope di risorsa** (Carmine sulla #283, la risposta (b);
+    `HasUnscoped` e `NavItemDescriptor.Unscoped` della fase del nucleo E10u, #288): un grant su un evento non li apre né mostra le loro voci.
   - ⚠️ **Nessun esito di un turno è definitivo** (Carmine sulla #283, lettura 1): chi può decidere il turno cambia presente, no-show e
     giustificato l'uno nell'altro; una decisione senza nota tiene quella che c'era. Una fase che legge l'esito (E14b, i criteri ATC) legge
     quello di adesso.

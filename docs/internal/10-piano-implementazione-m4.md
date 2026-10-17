@@ -5159,6 +5159,33 @@ sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuec
   registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
   usa la virgola italiana (non toccato).
 
+**Dopo la revisione della #283** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le risposte di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820), 17 ottobre 2026; `main` a `9a78b2c`
+unito, con la #278 di E13a, e poi la testa della fase del nucleo **E10u** `a2631e6`, la #288; la PR ora è in coda dopo la #288):
+
+- **La lettura 1 cambiata da Carmine**: nessun esito è definitivo. `RegisterDecisions.Allowed` lascia passare uno dei tre esiti dello staff
+  in un altro, mai in sé stesso; `RegisterDecisions.Decidable` è l'evento finito e non annullato, e `Decidable` delle righe è quello più
+  l'unico handler. La pagina dice «Decidi», «Togli il no-show» o «Cambia», e offre gli altri due esiti. Il nuovo test
+  `ADecidedOutcomeChangesLaterAndADecisionWithoutANoteKeepsTheOne`, con i quattro passi nell'audit.
+- **Il punto 1, la risposta (b)**: i due registri solo a chi tiene il permesso senza uno scope di risorsa. Il nucleo non sapeva dirlo, e il
+  menu del back office mostra una voce a chi tiene il permesso da qualche parte: **dalberone ha scelto (17 ottobre) una fase del nucleo a sé,
+  E10u** (`PermissionSet.HasUnscoped`, `ICurrentUser.HasUnscoped`, `NavItemDescriptor.Unscoped`), per la regola 6. Qui le due letture
+  rispondono 403 a chi lo tiene solo su righe o eventi, e le due voci di menu portano `Unscoped`. Il test
+  `AGrantOnOneEventOpensNeitherRegisterNorTheirMenuEntries` (VID **761207**).
+- **Il punto 2**: «togli» sotto un `FOR UPDATE` sulla prenotazione, in `READ COMMITTED`; una prenotazione di un pilota cancellato (VID
+  negativo) non si trova. Il test `TwoTakeOutsAtOnceTakeItOutOnceAndAnErasedPilotsBookingIsNotFound`.
+- **Il punto 3**: il commento e la lettura 1 dicono che il job non prende il blocco dell'evento per i turni, e che cosa succede quando una
+  decisione e il job si incontrano (la `row_version`).
+- **Il punto 4**: `events.staffQueue` non legge niente per chi non tiene `EventAtc.Edit` da nessuna parte, esclude le righe del lettore nella
+  query, legge le più recenti e le mostra dalla più recente (la lettura 11).
+- **Il punto 5**: una riga nell'HANDOFF. **Il punto 6**: una decisione senza nota tiene quella di prima.
+- **La nota** è **decisa**, con i link.
+- **Verificato, in locale** (17 ottobre 2026, con `main` a `9a78b2c` ed E10u `a2631e6` uniti): build Release senza avvisi,
+  `has-pending-model-changes` senza cambi; unità **1348/1348**; **integrazione intera da sola 664/664** (16,2 min; `EventsRegistersTests` 7/7);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **798 in 114 file**; `gen:api` senza diff; lo smoke
+  **183/183**; `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit, **69/69 al primo giro** (14,6 min);
+  `core-guard.sh` dal merge-base `9a78b2c`: passa, nessun file del maintainer (i file del nucleo sono quelli di E10u e i due conteggi).
+
 ### E14a — Il PIREP di supporto
 
 Design §1.8, §5.2, §5.3; nota `dopo-l-evento-e-gli-award`. Branch `m4/e14a-support-reports`. Dopo E13b ed E10e.
