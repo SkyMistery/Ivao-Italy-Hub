@@ -131,7 +131,7 @@ const EMPTY = { items: [], page: 1, pageSize: 100, total: 0 };
 
 /**
  * The answers that are not a page of rows: the page of the event, and a member's own bookings (E6b), registrations (E16), shifts and
- * availabilities (E12), plain lists.
+ * availabilities (E12), plain lists, and their registers (E13b), with nothing in them.
  */
 const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/public/{slug}': event,
@@ -139,6 +139,20 @@ const ANSWERS: Readonly<Record<string, unknown>> = {
   '/api/events/mine/registrations': [],
   '/api/events/mine/shifts': [],
   '/api/events/mine/availability': [],
+  '/api/events/mine/record': {
+    pilot: {
+      counted: 0,
+      excused: 0,
+      threshold: 3,
+      limited: false,
+      limitedUntil: null,
+      windowHours: 2,
+      maxPerWindow: 1,
+      maxPerEvent: 2,
+      unflown: [],
+    },
+    controller: { attended: 0, noShows: 0, excused: 0, toDecide: 0, penalty: 0, shifts: [] },
+  },
   '/api/events/atc/events/{id}': atcHead,
 };
 

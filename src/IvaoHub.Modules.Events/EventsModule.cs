@@ -11,6 +11,7 @@ using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
+using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
@@ -44,7 +45,8 @@ namespace IvaoHub.Modules.Events;
 /// parallel activities of an event in person — a member's seat in a turn, counted under a lock —, «Duplicate» for the questions and the
 /// activities, and the short retention of the registrations, <c>events-retention</c>; E13a the checks after an event — <c>events-after</c>
 /// finds the bookings flown, the shifts attended or a no-show to propose, and counts who flew without booking — and its statistics, with
-/// «Recalculate» for the staff.
+/// «Recalculate» for the staff; E13b the staff's decisions on the no-shows, the registers of the controllers and of the pilots, the limits of
+/// whoever books and does not fly, and the block of the staff's queue.
 /// <para>It does not belong to a department (note 2026-09-13-moduli-non-subordinati-ai-dipartimenti): every event has a base
 /// department, <c>division.json → modules.events.baseDepartment</c>, and who does what is the grants of <c>positionGrants</c>,
 /// never a rule written here. Nor does it know the network, the kinds of event of a division or its airports: the kinds are
@@ -60,18 +62,22 @@ public sealed class EventsModule : ModuleBase
 
     /// <summary>
     /// The staff's side: the events (E3a), the ATC of the events with a roster (E11a) — for whoever writes the positions without reading
-    /// the events, the staff of a FIR —, and the settings (E2).
+    /// the events, the staff of a FIR —, the registers of the controllers and of the pilots (E13b), and the settings (E2).
     /// </summary>
     public override IReadOnlyList<NavItemDescriptor> StaffNavigation =>
     [
         new NavItemDescriptor("events:nav.events", "/staff/events", EventsPermissions.View),
         new NavItemDescriptor("events:nav.atc", "/staff/events/atc", EventsPermissions.AtcView),
+        // The registers count the whole division: offered only to whoever holds their permission without a resource scope (E10u, #283).
+        new NavItemDescriptor("events:nav.controllers", "/staff/events/controllers", EventsPermissions.AtcView, Unscoped: true),
+        new NavItemDescriptor("events:nav.pilots", "/staff/events/pilots", EventsPermissions.BookingsView, Unscoped: true),
         new NavItemDescriptor("events:nav.settings", "/staff/events/settings", EventsPermissions.ManageSettings),
     ];
 
     /// <summary>
     /// The events to come and in progress (E4), always live: on <c>/events</c> and on any page; the reader's bookings still to fly
-    /// (E6b) and shifts (E12), on <c>/me</c>; and the coverage of the rosters of the next days (E12), on <c>/staff</c>. Their other halves
+    /// (E6b) and shifts (E12), on <c>/me</c>; the coverage of the rosters of the next days (E12), on <c>/staff</c>; and what waits for a
+    /// decision of the staff (E13b), on their dashboards. Their other halves
     /// are in <c>web/src/modules/events/</c>; the manifest test reads these literals.
     /// </summary>
     public override IReadOnlyList<BlockDescriptor> Blocks =>
@@ -79,6 +85,7 @@ public sealed class EventsModule : ModuleBase
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.atcCoverage", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.staffQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 
     /// <summary>
@@ -211,6 +218,13 @@ public sealed class EventsModule : ModuleBase
                 .WithIdentity(EventsAfterJob.TriggerName)
                 .WithCronSchedule(EventsAfterJob.Cron, schedule => schedule.InTimeZone(TimeZoneInfo.Utc))));
 
+        // The registers (E13b): the controllers' and the pilots', a member's own, the staff's decisions on them, and the block of the staff's
+        // queue.
+        services.AddScoped<ControllerRegister>();
+        services.AddScoped<PilotRegister>();
+        services.AddScoped<RegisterDecisions>();
+        services.AddScoped<IDataBlockProvider, StaffQueueProvider>();
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -234,5 +248,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapTransferEndpoints();
         endpoints.MapPublicRosterEndpoints();
         endpoints.MapStatsEndpoints();
+        endpoints.MapRegisterEndpoints();
     }
 }

@@ -18,6 +18,8 @@ import {
 
 import { bookingsOpen, slotOpen } from './bookingTimes';
 import { MY_EVENTS_PAGE, type SlotViewer } from './myBookings';
+import { isLimitKey, isLimitRefusal } from './limits';
+import { LimitsNotice } from './myRecord';
 
 /**
  * «Book» in the dialog of a slot (design M4 §3.3, E6b; note 2026-10-07-gli-slot-sulla-pagina-dell-evento §6): the pilot chooses the
@@ -37,7 +39,7 @@ export function SlotBooking({
   nowMs,
 }: {
   slot: PublicEventSlotDto;
-  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt'>;
+  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt'> & { readonly id?: number };
   viewer: SlotViewer;
   nowMs: number;
 }) {
@@ -61,7 +63,14 @@ export function SlotBooking({
   }
 
   if (rotation.isSuccess) {
-    return <RotationBooked result={rotation.data} />;
+    return (
+      <>
+        <RotationBooked result={rotation.data} />
+        {event.id !== undefined && rotation.data.notBooked.some((leg) => isLimitKey(leg.reason)) ? (
+          <LimitsNotice eventId={event.id} />
+        ) : null}
+      </>
+    );
   }
 
   if (mine !== undefined) {
@@ -124,6 +133,8 @@ export function SlotBooking({
       ) : null}
 
       {refusal === null ? null : <Notice tone="error" title={refusal} />}
+      {/* Refused for the limits of whoever books and does not fly (E13b): the record says the numbers and until when. */}
+      {event.id !== undefined && isLimitRefusal(failure) ? <LimitsNotice eventId={event.id} /> : null}
 
       <div className="flex flex-wrap gap-2">
         <Button

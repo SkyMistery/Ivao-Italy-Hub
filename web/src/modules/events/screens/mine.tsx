@@ -23,6 +23,7 @@ import {
 
 import { STATE_COLOURS, eventHref } from './cards';
 import { bookingsByEvent, splitBookings } from './myBookings';
+import { RecordSection } from './myRecord';
 import { AvailabilitiesSection, ShiftsSection } from './myShifts';
 import { RegistrationSeats } from './ActivityTurns';
 import { RegistrationAnswers } from './RegistrationAnswers';
@@ -30,10 +31,11 @@ import { RegistrationAnswers } from './RegistrationAnswers';
 /**
  * `/events/mine` (design M4 §7.1, E6b), for a signed in member: their bookings, the flights still to fly first — by their off block —,
  * then the past ones, the latest first; each under its event, with the aircraft they chose, and «withdraw» until its off block (§3.6).
- * One answer, `GET /api/events/mine/bookings`, the one the block `events.myEvents` reads too. The record of the flights not flown and the
- * reports of support join it with their phases (M4b). Above them, the member's registrations to the events in person (E16, §4-bis.2), each
+ * One answer, `GET /api/events/mine/bookings`, the one the block `events.myEvents` reads too. The reports of support join it with their
+ * phase (M4b). Above them, the member's registrations to the events in person (E16, §4-bis.2), each
  * with their answers, «change» on the event's page and «withdraw» until the event starts; and a controller's shifts of the published
- * rosters, with «hand over», and their availabilities (E12, `myShifts.tsx`).
+ * rosters, with «hand over», and their availabilities (E12, `myShifts.tsx`); and their own registers — the bookings not flown with the limits,
+ * how their shifts went with the penalty (E13b, `myRecord.tsx`).
  */
 export function MyBookingsPage() {
   const { t, i18n } = useTranslation();
@@ -100,6 +102,7 @@ export function MyBookingsPage() {
 
       <ShiftsSection />
       <AvailabilitiesSection />
+      <RecordSection />
 
       {mine.data.length === 0 && nothingElse ? (
         <EmptyState
