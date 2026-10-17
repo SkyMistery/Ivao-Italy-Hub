@@ -1,6 +1,6 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
-**Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR in coda dopo la #289 di E14a
+**Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR #293, in coda dopo la #289 di E14a e la #291 di E10v
 **Stato:** **Proposta**: la domanda 1 del §4 aspetta Carmine sull'[issue #292][q292] (il codice segue la (A) raccomandata), le letture del §2 la
 revisione della PR.
 La domanda 2 è **decisa**: dalberone ha scelto la (A), una fase del nucleo a sé, **E10v** (`m4/e10v-session-airports`, nota

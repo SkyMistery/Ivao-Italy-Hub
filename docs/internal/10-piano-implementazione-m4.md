@@ -5354,7 +5354,7 @@ E10d.
 automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche con due giri.
 **Fatta quando**: sul banco un PIREP accettato mette un segnale nella coda degli award, e chi assegna riceve la mail (E10d).
 
-**Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
+**Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
 `2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 aspetta Carmine sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292)
 e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la fase del nucleo E10v):
