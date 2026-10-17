@@ -218,6 +218,12 @@ public sealed class EventSaving(
             throw new DomainRefusalException("id", "events:errors.eventHasShifts");
         }
 
+        // A report of support (E14a) is a member's row with a decision of the staff on it: an event that has one stays.
+        if (await CrudSource.BackOffice<EventReport>(database).AnyAsync(report => report.EventId == row.Id, cancellationToken))
+        {
+            throw new DomainRefusalException("id", "events:errors.eventHasReports");
+        }
+
         database.AtcPositions.RemoveRange(await database.AtcPositions.Where(position => position.EventId == row.Id).ToListAsync(cancellationToken));
         database.Airports.RemoveRange(await database.Airports.Where(airport => airport.EventId == row.Id).ToListAsync(cancellationToken));
         database.Routes.RemoveRange(await database.Routes.Where(route => route.EventId == row.Id).ToListAsync(cancellationToken));

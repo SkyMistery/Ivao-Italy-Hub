@@ -30,7 +30,8 @@ export interface KindPreset {
 /**
  * The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, how long an event in person keeps its
  * registrations (E16), the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
- * vocabulary, chosen from it, none for any member — and the minutes that make a shift attended (E13a).
+ * vocabulary, chosen from it, none for any member —, the minutes that make a shift attended (E13a), the weight of the penalty with
+ * the limits of whoever books and does not fly (E13b), and the days a report of support may be sent in (E14a).
  */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
@@ -46,6 +47,12 @@ export interface EventsSettings {
   readonly rosterPublishDays: number;
   readonly experienceMonths: number;
   readonly attendanceMinimumMinutes: number;
+  readonly reportDays: number;
+  readonly noShowWeight: number;
+  readonly unflownThreshold: number;
+  readonly restrictedWindowHours: number;
+  readonly restrictedMaxPerWindow: number;
+  readonly restrictedMaxPerEvent: number;
 }
 
 /** What the fields of the settings choose from, already in the language on screen: the kinds, and the ATC ratings (E11a). */
@@ -81,6 +88,14 @@ export function settingsSchema(choices: SettingsChoices) {
     experienceMonths: z.number().int(),
     // After the event (E13a): the minutes on the position within a shift that make it attended.
     attendanceMinimumMinutes: z.number().int(),
+    // The reports of support (E14a): the days after an event they may be sent in.
+    reportDays: z.number().int(),
+    // The registers (E13b): the weight of a no-show, and the limits of whoever booked this many slots and did not fly them.
+    noShowWeight: z.number(),
+    unflownThreshold: z.number().int(),
+    restrictedWindowHours: z.number().int(),
+    restrictedMaxPerWindow: z.number().int(),
+    restrictedMaxPerEvent: z.number().int(),
   });
 }
 
@@ -161,7 +176,7 @@ export type EventsSearch = z.output<typeof eventsSearchSchema>;
 /**
  * The tabs of an event's page: its settings, its description, its airports, its routes, its slots, its bookings, for an event in
  * person its questions, its registrations, its activities and their seats (E17), for an event with a roster its ATC, and for an event over its
- * statistics (E13a) (design M4 §7.2).
+ * statistics (E13a) and its reports of support (E14a) (design M4 §7.2).
  */
 export const eventEditorSearchSchema = z.object({
   tab: z
@@ -178,6 +193,7 @@ export const eventEditorSearchSchema = z.object({
       'seats',
       'atc',
       'stats',
+      'reports',
     ])
     .optional(),
 });
@@ -198,7 +214,8 @@ export interface EventChoices {
 /**
  * The form of an event, mirroring `EventWriteDto` (design M4 §1.2, E3a): the kind first, because choosing it presets the
  * switches below it (§1.12); then who organises it, its words, its window, who reads it, its banner. The ATC roster with the length
- * of its shifts is E11a's — empty, the settings' —; the event in person and its venue are E16's. Every rule is the server's: nothing
+ * of its shifts is E11a's — empty, the settings' —; the event in person and its venue are E16's; its own limits of whoever books and does
+ * not fly are E13b's — each empty, the settings'. Every rule is the server's: nothing
  * here refuses a field the server would take, so the form can follow what is written as it is written.
  */
 export function eventSchema(choices: EventChoices) {
@@ -222,6 +239,9 @@ export function eventSchema(choices: EventChoices) {
     bookingOpensAtUtc: z.string().optional().meta({ datetime: true }),
     visibility: z.enum(EVENT_VISIBILITIES),
     bannerMediaId: z.number().int().optional().meta({ media: true }),
+    restrictedWindowHours: z.number().int().optional(),
+    restrictedMaxPerWindow: z.number().int().optional(),
+    restrictedMaxPerEvent: z.number().int().optional(),
     rowVersion: z.string().meta({ hidden: true }),
   });
 }
@@ -740,3 +760,141 @@ export function statsToFormValues(stats: {
     activitySeats: stats.activitySeats,
   };
 }
+
+/** The outcomes the staff give a shift (design M4 §4.5, E13b), in the order the form offers them. */
+export const DECIDED_ATTENDANCES = ['NoShow', 'Excused', 'Attended'] as const;
+
+export type DecidedAttendanceValue = (typeof DECIDED_ATTENDANCES)[number];
+
+/**
+ * The outcomes a shift may pass to (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 1, as Carmine changed it on #283): any of the
+ * three but the one it has — no outcome is final; a no-show is offered excused first, the no-show taken away. The server decides again.
+ */
+export function decidableAttendances(current: string): DecidedAttendanceValue[] {
+  return DECIDED_ATTENDANCES.filter((outcome) => outcome !== current);
+}
+
+/** Deciding how a shift went, mirroring `AttendanceDecision`: the outcome among those still open, and a note — the server asks one to excuse. */
+export function attendanceSchema(allowed: readonly DecidedAttendanceValue[]) {
+  return z.object({
+    attendance: z.enum(
+      allowed.length === 0
+        ? DECIDED_ATTENDANCES
+        : (allowed as [DecidedAttendanceValue, ...DecidedAttendanceValue[]]),
+    ),
+    note: z.string().meta({ multiline: true }),
+  });
+}
+
+export type AttendanceFormValues = z.output<ReturnType<typeof attendanceSchema>>;
+
+/** Taking a booking not flown out of its pilot's record (§3.7), mirroring `UnflownExcuse`: why. */
+export const unflownExcuseSchema = z.object({
+  note: z.string().meta({ multiline: true }),
+});
+
+export type UnflownExcuseFormValues = z.output<typeof unflownExcuseSchema>;
+
+// ---- the reports of support (E14a) -------------------------------------------------------------------------------------------
+
+/**
+ * A pilot's report of support (design M4 §5.2), mirroring `ReportRequest`: their flights, each with its callsign, its two airports and the
+ * day it flew, in UTC. Every rule is the server's: the airports the hub knows, one of the event's touched, the day within the event.
+ */
+export const pilotReportSchema = z.object({
+  items: z.array(
+    z.object({
+      callsign: z.string(),
+      departureIcao: z.string(),
+      arrivalIcao: z.string(),
+      flightDay: z.string().optional().meta({ date: true }),
+    }),
+  ),
+});
+
+export type PilotReportFormValues = z.output<typeof pilotReportSchema>;
+
+/**
+ * A controller's report of support (§5.2), mirroring `ReportRequest`: their shifts, each with the position's callsign and its hours in UTC.
+ * Every rule is the server's: within the event, ending after it starts, none over another.
+ */
+export const atcReportSchema = z.object({
+  items: z.array(
+    z.object({
+      callsign: z.string(),
+      fromUtc: z.string().optional().meta({ datetime: true }),
+      toUtc: z.string().optional().meta({ datetime: true }),
+    }),
+  ),
+});
+
+export type AtcReportFormValues = z.output<typeof atcReportSchema>;
+
+/** The midnight UTC of the day an instant falls on, as a date field holds it. */
+function dayOf(instant: string): string {
+  return `${instant.slice(0, 10)}T00:00:00Z`;
+}
+
+/** A new pilot's report: one flight on the day the event starts, nothing else written. */
+export function emptyPilotReport(startsAtUtc: string): PilotReportFormValues {
+  return { items: [{ callsign: '', departureIcao: '', arrivalIcao: '', flightDay: dayOf(startsAtUtc) }] };
+}
+
+/** A new controller's report: one shift, the whole event — they narrow it to their hours. */
+export function emptyAtcReport(startsAtUtc: string, endsAtUtc: string): AtcReportFormValues {
+  return { items: [{ callsign: '', fromUtc: startsAtUtc, toUtc: endsAtUtc }] };
+}
+
+/** A report sent, as its form loads it again to be corrected. */
+export function pilotReportValues(items: readonly ReportItemValues[]): PilotReportFormValues {
+  return {
+    items: items.map((item) => ({
+      callsign: item.callsign,
+      departureIcao: item.departureIcao ?? '',
+      arrivalIcao: item.arrivalIcao ?? '',
+      ...(item.flightDay === null ? {} : { flightDay: item.flightDay }),
+    })),
+  };
+}
+
+export function atcReportValues(items: readonly ReportItemValues[]): AtcReportFormValues {
+  return {
+    items: items.map((item) => ({
+      callsign: item.callsign,
+      ...(item.fromUtc === null ? {} : { fromUtc: item.fromUtc }),
+      ...(item.toUtc === null ? {} : { toUtc: item.toUtc }),
+    })),
+  };
+}
+
+/** What a sent item says, as the server gives it back. */
+export interface ReportItemValues {
+  readonly callsign: string;
+  readonly departureIcao: string | null;
+  readonly arrivalIcao: string | null;
+  readonly flightDay: string | null;
+  readonly fromUtc: string | null;
+  readonly toUtc: string | null;
+}
+
+/** The two decisions on a report (§5.3), as `ReportState` spells them. */
+export const REPORT_DECISIONS = ['Accepted', 'Rejected'] as const;
+
+export type ReportDecisionValue = (typeof REPORT_DECISIONS)[number];
+
+/** The decisions a report may take from where it stands: both while it waits, the other one once decided (choice 1). */
+export function decidableReportStates(current: string): ReportDecisionValue[] {
+  return REPORT_DECISIONS.filter((state) => state !== current);
+}
+
+/** Deciding a report, mirroring `ReportDecision`: accepted or rejected, and a note — the server asks one to reject. */
+export function reportDecisionSchema(allowed: readonly ReportDecisionValue[]) {
+  return z.object({
+    state: z.enum(
+      allowed.length === 0 ? REPORT_DECISIONS : (allowed as [ReportDecisionValue, ...ReportDecisionValue[]]),
+    ),
+    note: z.string().meta({ multiline: true }),
+  });
+}
+
+export type ReportDecisionFormValues = z.output<ReturnType<typeof reportDecisionSchema>>;

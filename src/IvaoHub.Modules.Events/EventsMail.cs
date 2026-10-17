@@ -297,6 +297,33 @@ public sealed class EventsMail(
         }, cancellationToken);
     }
 
+    /// <summary>The words of a report's kind, in the language of its member.</summary>
+    public const string PilotReportKey = "events:mail.events.reportDecided.kinds.Pilot";
+
+    public const string AtcReportKey = "events:mail.events.reportDecided.kinds.Atc";
+
+    /// <summary>The words of a decision on a report.</summary>
+    public const string AcceptedKey = "events:mail.events.reportDecided.states.Accepted";
+
+    public const string RejectedKey = "events:mail.events.reportDecided.states.Rejected";
+
+    /// <summary>
+    /// A report of support decided (§5.3, E14a): to its member, with the event, the kind of the report and the decision — in their language —,
+    /// and the validator's note, as they wrote it.
+    /// </summary>
+    public Task ReportDecidedAsync(Event row, int vid, ReportKind kind, ReportState state, string? note, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return SendAsync(EventsNotifications.ReportDecided, row, [vid], (data, locale) =>
+        {
+            data["kind"] = catalog.Resolve(locale, kind == ReportKind.Pilot ? PilotReportKey : AtcReportKey);
+            data["decision"] = catalog.Resolve(locale, state == ReportState.Accepted ? AcceptedKey : RejectedKey);
+            data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
+            data["mine"] = $"https://{division.Value.Domain}{MinePath}";
+        }, cancellationToken);
+    }
+
     /// <summary>
     /// One intent per language of the people told, each with the event's title in that language and its page: a cancellation of an
     /// event of four hundred slots is one or two intents, not four hundred.

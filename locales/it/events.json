@@ -4,7 +4,9 @@
     "section": "Eventi",
     "events": "Eventi",
     "settings": "Impostazioni degli eventi",
-    "atc": "ATC degli eventi"
+    "atc": "ATC degli eventi",
+    "controllers": "Registro dei controllori",
+    "pilots": "Registro dei piloti"
   },
   "search": {
     "kinds": {
@@ -45,7 +47,8 @@
       "atc": "ATC",
       "activities": "Attività",
       "seats": "Posti",
-      "stats": "Statistiche"
+      "stats": "Statistiche",
+      "reports": "PIREP di supporto"
     },
     "actions": {
       "publish": "Pubblica",
@@ -90,7 +93,10 @@
       "inPerson": "In presenza",
       "venue": "Luogo",
       "hasRoster": "Roster ATC",
-      "shiftMinutes": "Durata di un turno, in minuti"
+      "shiftMinutes": "Durata di un turno, in minuti",
+      "restrictedWindowHours": "Ore di una fascia, per chi prenota e non vola",
+      "restrictedMaxPerWindow": "Slot in ogni fascia, al massimo",
+      "restrictedMaxPerEvent": "Slot nell'evento, al massimo"
     },
     "hints": {
       "kind": "Un tipo degli eventi, come li elencano le loro impostazioni: tutti i tipi del calendario finché non ne elencano nessuno. Sceglierlo imposta gli interruttori qui sotto come dicono le impostazioni per quel tipo; cambiali come serve a questo evento.",
@@ -104,7 +110,10 @@
       "inPerson": "Si viene all'evento di persona: i membri si iscrivono rispondendo alle sue domande.",
       "venue": "Dove si svolge l'evento: lo dicono la sua pagina e le email ai membri. Serve per pubblicare un evento in presenza, in ogni lingua della divisione.",
       "hasRoster": "L'evento ha un roster ATC: le sue postazioni si aprono nella scheda «ATC», e i controllori danno la loro disponibilità dalla sua pagina.",
-      "shiftMinutes": "Ogni postazione si divide in turni di questa durata. Lascialo vuoto per la durata delle impostazioni."
+      "shiftMinutes": "Ogni postazione si divide in turni di questa durata. Lascialo vuoto per la durata delle impostazioni.",
+      "restrictedWindowHours": "Un pilota con i limiti di chi prenota e non vola prenota in fasce lunghe tante ore, dall'inizio dell'evento. Vuoto: le ore delle impostazioni.",
+      "restrictedMaxPerWindow": "Quanti slot prenota un pilota così in ogni fascia. Vuoto: il numero delle impostazioni.",
+      "restrictedMaxPerEvent": "Quanti slot prenota un pilota così in questo evento. Vuoto: il numero delle impostazioni."
     },
     "options": {
       "state": {
@@ -545,7 +554,71 @@
       "withdrawTitle": "Ritirare la tua disponibilità per {{title}}?",
       "withdrawDescription": "Il roster non conterà su di te: puoi ridarla finché le disponibilità sono aperte."
     },
-    "seats": "I tuoi turni"
+    "seats": "I tuoi turni",
+    "record": {
+      "title": "Il tuo registro",
+      "pilot": "Prenotazioni non volate",
+      "controller": "I tuoi turni",
+      "unflown_one": "Conta {{count}} prenotazione che non hai volato; da {{threshold}} prenoti con i limiti.",
+      "unflown_other": "Contano {{count}} prenotazioni che non hai volato; da {{threshold}} prenoti con i limiti.",
+      "limitedTitle": "Prenoti con i limiti",
+      "limited": "Non hai volato {{count}} degli slot che hai prenotato: fino al {{date}} prenoti al massimo {{perWindow}} slot ogni {{hours}} ore di un evento, e {{perEvent}} in un evento.",
+      "toRecord": "Il tuo registro",
+      "excused": "Tolta",
+      "shifts": "Presenti {{attended}} · no-show {{noShows}} · giustificati {{excused}} · penalità {{penalty}}"
+    },
+    "reports": {
+      "title": "PIREP di supporto",
+      "lead": "Nei giorni dopo un evento, racconta i voli che hai volato e i turni che hai controllato: l'hub li verifica sulla rete, e chi valida li accetta.",
+      "open": "Eventi per cui puoi mandare un PIREP",
+      "until": "Puoi mandare e correggere un PIREP fino al {{date}} UTC.",
+      "sent": "Mandato il {{date}} UTC",
+      "unavailable": "La rete non ha risposto quando l'hai mandato: mandalo di nuovo più tardi perché si verifichi.",
+      "note": "La nota di chi valida: {{note}}",
+      "closed": "I giorni per correggerlo sono finiti: chi valida lo deciderà.",
+      "of": {
+        "Pilot": "Il tuo PIREP pilota per {{title}}",
+        "Atc": "Il tuo PIREP ATC per {{title}}"
+      },
+      "send": {
+        "Pilot": "Manda il PIREP pilota",
+        "Atc": "Manda il PIREP ATC"
+      },
+      "correct": {
+        "Pilot": "Correggi il PIREP pilota",
+        "Atc": "Correggi il PIREP ATC"
+      },
+      "dialogTitle": {
+        "Pilot": "I tuoi voli in {{title}}",
+        "Atc": "I tuoi turni in {{title}}"
+      },
+      "pilotDescription": "Ogni volo che hai fatto nell'evento, con il nominativo con cui hai volato. Mandarlo di nuovo li sostituisce tutti.",
+      "pilotDescriptionAirports": "Ogni volo che hai fatto nell'evento, con il nominativo con cui hai volato: ognuno parte da uno dei suoi scali o ci arriva ({{airports}}). Mandarlo di nuovo li sostituisce tutti.",
+      "atcDescription": "Ogni turno che hai controllato nell'evento, con il nominativo della postazione e le ore in UTC. Mandarlo di nuovo li sostituisce tutti.",
+      "pilot": {
+        "fields": {
+          "items": "Voli",
+          "items.callsign": "Nominativo",
+          "items.departureIcao": "Partenza (ICAO)",
+          "items.arrivalIcao": "Arrivo (ICAO)",
+          "items.flightDay": "Giorno (UTC)"
+        },
+        "hints": {
+          "items": "Uno o più voli, al più venti."
+        }
+      },
+      "atc": {
+        "fields": {
+          "items": "Turni",
+          "items.callsign": "Postazione",
+          "items.fromUtc": "Da",
+          "items.toUtc": "A"
+        },
+        "hints": {
+          "items": "Uno o più turni, dentro le ore dell'evento, al più dodici ore ciascuno."
+        }
+      }
+    }
   },
   "bookings": {
     "empty": "Qui compariranno le prenotazioni dei piloti sugli slot dell'evento.",
@@ -586,7 +659,8 @@
     "transfersToCome": "Richieste di cedere un turno ATC di eventi non ancora finiti: cancellate",
     "transfersOver": "Richieste di cedere un turno ATC di eventi finiti, tenute senza il controllore e senza le note",
     "seatsToCome": "Posti nelle attività di eventi non ancora finiti: cancellati, e i loro turni di nuovo liberi",
-    "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro"
+    "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro",
+    "reports": "PIREP di supporto, tenuti senza il membro, senza la nota di chi valida e senza i nominativi"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -639,6 +713,19 @@
       "hints": {
         "days": "Gli eventi con un roster che cominciano entro questi giorni, da 1 a 60."
       }
+    },
+    "staffQueue": {
+      "label": "Coda dello staff degli eventi",
+      "signIn": "Accedi per vedere che cosa ti aspetta.",
+      "none": "Niente aspetta una tua decisione.",
+      "noShows_one": "{{count}} no-show da confermare o giustificare",
+      "noShows_other": "{{count}} no-show da confermare o giustificare",
+      "toMark_one": "{{count}} turno che la verifica non ha saputo dire",
+      "toMark_other": "{{count}} turni che la verifica non ha saputo dire",
+      "transfers_one": "{{count}} richiesta di cedere un turno",
+      "transfers_other": "{{count}} richieste di cedere un turno",
+      "reports_one": "{{count}} PIREP di supporto da validare",
+      "reports_other": "{{count}} PIREP di supporto da validare"
     }
   },
   "settings": {
@@ -664,7 +751,13 @@
       "applicationsCloseDays": "Giorni prima di un evento in cui chiudono le disponibilità",
       "rosterPublishDays": "Giorni prima di un evento in cui si pubblica il roster",
       "experienceMonths": "Mesi di postazioni contati come esperienza",
-      "attendanceMinimumMinutes": "Minuti sulla postazione per aver fatto un turno"
+      "attendanceMinimumMinutes": "Minuti sulla postazione per aver fatto un turno",
+      "noShowWeight": "Peso di un no-show nella penalità",
+      "unflownThreshold": "Prenotazioni non volate da cui un pilota ha i limiti",
+      "restrictedWindowHours": "Ore di una fascia di un evento, per chi ha i limiti",
+      "restrictedMaxPerWindow": "Slot in ogni fascia, al massimo",
+      "restrictedMaxPerEvent": "Slot in un evento, al massimo",
+      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
@@ -679,7 +772,13 @@
       "applicationsCloseDays": "I controllori danno e cambiano la loro disponibilità fino a questi giorni prima dell'inizio; poi si propone il roster.",
       "rosterPublishDays": "Il roster si pubblica questi giorni prima dell'inizio: non più dei giorni della chiusura, perché lo staff abbia il tempo di correggerlo.",
       "experienceMonths": "Quanto indietro contano le postazioni aperte da un controllore quando si propone il roster.",
-      "attendanceMinimumMinutes": "Dopo l'evento, un controllore che è stato sulla sua postazione almeno questi minuti dentro un turno l'ha fatto; meno, e il turno è proposto come no-show. Un turno più corto chiede tutta la sua durata."
+      "attendanceMinimumMinutes": "Dopo l'evento, un controllore che è stato sulla sua postazione almeno questi minuti dentro un turno l'ha fatto; meno, e il turno è proposto come no-show. Un turno più corto chiede tutta la sua durata.",
+      "noShowWeight": "La penalità di un controllore è questo peso per i suoi no-show, diviso i turni fatti più i no-show più due: più è bassa, prima il roster lo propone.",
+      "unflownThreshold": "Un pilota con tante prenotazioni che la verifica ha trovato non volate, nei mesi in cui le prenotazioni si tengono, prenota con i limiti qui sotto. Lo staff toglie a mano una prenotazione dal registro di un pilota.",
+      "restrictedWindowHours": "Le fasce cominciano all'inizio dell'evento, ognuna lunga tante ore. Un evento può dire le sue.",
+      "restrictedMaxPerWindow": "Quanti slot prenota in ogni fascia un pilota con i limiti. Un evento può dire i suoi.",
+      "restrictedMaxPerEvent": "Quanti slot prenota in un evento un pilota con i limiti. Un evento può dire i suoi.",
+      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine."
     }
   },
   "notifications": {
@@ -726,6 +825,10 @@
     "atcShiftTransferDecided": {
       "title": "Cessioni dei turni decise",
       "description": "Una mail quando lo staff approva o rifiuta la tua richiesta di cedere un turno."
+    },
+    "reportDecided": {
+      "title": "PIREP di supporto decisi",
+      "description": "Una mail quando chi valida accetta o rifiuta un tuo PIREP di supporto di un evento."
     }
   },
   "mail": {
@@ -780,6 +883,18 @@
         "body": "{{decision}}\n\nIl turno: {{shift}} UTC, in {{title}}.\nLa nota dello staff: {{note}}\n\nI tuoi turni: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
         "approved": "Lo staff ha approvato la tua richiesta: il turno ora è di {{taker}}, che ha ricevuto una mail.",
         "refused": "Lo staff ha rifiutato la tua richiesta: il turno resta tuo."
+      },
+      "reportDecided": {
+        "subject": "[Eventi] Il tuo PIREP di supporto: {{title}}",
+        "body": "Il tuo {{kind}} per {{title}} è stato {{decision}}.\n\nLa nota di chi valida: {{note}}\n\nI tuoi PIREP: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
+        "kinds": {
+          "Pilot": "PIREP pilota",
+          "Atc": "PIREP ATC"
+        },
+        "states": {
+          "Accepted": "accettato",
+          "Rejected": "rifiutato"
+        }
       }
     }
   },
@@ -895,6 +1010,7 @@
     "rosterNotProposed": "Il roster non è ancora proposto: lo è alla chiusura delle disponibilità.",
     "positionHasShifts": "La postazione ha dei turni nel roster: il nominativo e le ore restano intorno a loro, e dall'inizio dell'evento non si elimina.",
     "eventHasShifts": "L'evento ha dei turni nel suo roster: annullalo, invece.",
+    "eventHasReports": "Questo evento ha dei PIREP di supporto: resta.",
     "shiftAfterStart": "L'evento è iniziato: un turno tiene il suo controllore, la sua postazione e le ore già passate, e non si toglie; si può solo tagliarne la fine, ad adesso o più tardi.",
     "controllerBusy": "Questo controllore tiene già un'altra postazione dell'evento in queste ore.",
     "availabilityChanged": "Nel frattempo la tua disponibilità è cambiata in un'altra finestra: ricarica la pagina per vederla com'è ora, e cambiala da lì.",
@@ -919,7 +1035,28 @@
     "seatAlreadyYours": "Hai già un posto in questo turno.",
     "eventActivitiesOutside": "Un'attività dell'evento ne resterebbe fuori: sposta prima l'attività.",
     "statsBeforeEnd": "Le statistiche di un evento si calcolano dopo la sua fine.",
-    "statsOfADraft": "Una bozza non ha statistiche: non si è mai svolta."
+    "statsOfADraft": "Una bozza non ha statistiche: non si è mai svolta.",
+    "bookingRestrictedWindow": "Niente più slot in queste ore: hai i limiti di chi prenota e non vola.",
+    "bookingRestrictedEvent": "Niente più slot in questo evento: hai i limiti di chi prenota e non vola.",
+    "attendanceNotOver": "L'evento non è finito: com'è andato un turno non si sa ancora.",
+    "attendanceNotAllowed": "Scegli presente, no-show o giustificato.",
+    "attendanceDecided": "Il turno ha già questo esito.",
+    "bookingNotUnflown": "Esce dal registro solo una prenotazione che la verifica dopo l'evento ha trovato non volata.",
+    "bookingAlreadyExcused": "Questa prenotazione è già fuori dal registro.",
+    "registerChanged": "È cambiato un momento fa: rileggi la pagina.",
+    "reportClosed": "Questo evento non prende più PIREP di supporto: si mandano nei giorni dopo la sua fine.",
+    "reportDecided": "Questo PIREP è stato deciso: non si corregge più.",
+    "reportNoItems": "Aggiungi almeno una voce.",
+    "reportTooManyItems": "Un PIREP ha al più 20 voci.",
+    "reportAirportUnknown": "L'hub non conosce questo aeroporto.",
+    "reportSameAirport": "L'arrivo è la partenza.",
+    "reportNotAtTheEvent": "Il volo non tocca nessuno scalo dell'evento.",
+    "reportOutsideTheEvent": "È fuori dalle ore dell'evento.",
+    "reportShiftTooLong": "Un turno dura al più dodici ore.",
+    "reportShiftsOverlap": "Questo turno si sovrappone a un altro del PIREP.",
+    "reportStateNotAllowed": "Un PIREP si accetta o si rifiuta.",
+    "reportAlreadySo": "Il PIREP è già così.",
+    "reportChanged": "Il PIREP è cambiato un momento fa: leggilo di nuovo."
   },
   "questions": {
     "title": "Domande",
@@ -1292,5 +1429,165 @@
     },
     "notCounted": "Chi ha volato senza prenotare non è stato contato: l'evento non ha scali, o la rete non ha risposto per trenta giorni dopo l'evento.",
     "countedAt": "Chi ha volato senza prenotare è stato contato su {{counted}} dei suoi {{airports}} scali: per gli altri la rete non ha risposto."
+  },
+  "registers": {
+    "open": "Apri",
+    "controllers": {
+      "title": "Registro dei controllori",
+      "description": "Ogni controllore con un turno di un evento finito: presenti, no-show, giustificati, da decidere, e la penalità con cui lo pesa il roster. Un controllore si apre sui suoi turni, dove lo staff li decide.",
+      "empty": "Qui compaiono i controllori con un turno di un evento finito.",
+      "nothing": "Nessun turno di un evento finito.",
+      "counts": "Presenti {{attended}} · no-show {{noShows}} · giustificati {{excused}} · da decidere {{toDecide}} · penalità {{penalty}}",
+      "fields": {
+        "controller": "Controllore",
+        "attended": "Presenti",
+        "noShows": "No-show",
+        "excused": "Giustificati",
+        "toDecide": "Da decidere",
+        "penalty": "Penalità"
+      }
+    },
+    "pilots": {
+      "title": "Registro dei piloti",
+      "description": "Ogni pilota con una prenotazione che la verifica dopo l'evento ha trovato non volata, nei mesi in cui le prenotazioni si tengono: quelle che contano, quelle tolte, e se prenota con i limiti. Un pilota si apre sulle sue prenotazioni, dove lo staff ne toglie una dal registro.",
+      "empty": "Qui compaiono i piloti con una prenotazione non volata.",
+      "nothing": "Nessuna prenotazione non volata nel registro.",
+      "counts": "Non volate che contano {{counted}} · tolte {{excused}}",
+      "countsLimited": "Non volate che contano {{counted}} · tolte {{excused}} · prenota con i limiti fino al {{date}}",
+      "fields": {
+        "pilot": "Pilota",
+        "counted": "Contano",
+        "excused": "Tolte",
+        "limited": "Limiti",
+        "limitedUntil": "Fino al"
+      }
+    },
+    "bookings": {
+      "empty": "Qui compaiono le prenotazioni del pilota.",
+      "excuse": "Togli",
+      "excuseTitle": "Togliere {{callsign}} dal registro?",
+      "excuseDescription": "La prenotazione smette di contare fra quelle non volate, per sempre. Scrivi perché: il pilota lo legge nel suo registro.",
+      "fields": {
+        "eventTitle": "Evento",
+        "callsign": "Nominativo",
+        "departureIcao": "Da",
+        "offBlockUtc": "Off block",
+        "arrivalIcao": "A",
+        "outcome": "Verifica",
+        "unflownExcusedBy": "Tolta da",
+        "unflownExcusedNote": "Perché"
+      },
+      "decision": {
+        "fields": {
+          "note": "Perché"
+        },
+        "hints": {
+          "note": "Un guasto della rete, dell'hub: che cosa ha reso impossibile il volo."
+        }
+      }
+    },
+    "shifts": {
+      "empty": "Qui compaiono i turni degli eventi finiti, con com'è andato ognuno.",
+      "decide": "Decidi",
+      "takeAway": "Togli il no-show",
+      "decideTitle": "{{callsign}}, {{controller}}",
+      "decideDescription": "Com'è andato il turno: un no-show confermato pesa sul roster dei prossimi eventi; presente e giustificato restano così.",
+      "takeAwayDescription": "Il no-show diventa giustificato — o presente, se era un errore — e smette di pesare sul roster. Per giustificare, scrivi perché.",
+      "save": "Salva",
+      "fields": {
+        "eventTitle": "Evento",
+        "callsign": "Postazione",
+        "controller": "Controllore",
+        "fromUtc": "Da",
+        "toUtc": "A",
+        "attendance": "Com'è andato",
+        "coveredBy": "Coperto da",
+        "attendanceNote": "Nota"
+      },
+      "decision": {
+        "fields": {
+          "attendance": "Com'è andato",
+          "note": "Nota"
+        },
+        "hints": {
+          "note": "Serve per giustificare: che cosa è successo. Il controllore la legge nel suo registro."
+        },
+        "options": {
+          "attendance": {
+            "NoShow": "No-show",
+            "Excused": "Giustificato",
+            "Attended": "Presente"
+          }
+        }
+      },
+      "change": "Cambia",
+      "changeDescription": "Com'è andato il turno, cambiato: nessun esito è definitivo, e l'audit tiene ogni passo. Per giustificare, scrivi perché; senza una nota il turno tiene quella che aveva."
+    },
+    "outcomes": {
+      "title": "Esiti",
+      "description": "Com'è andato ogni turno, come l'ha trovato la verifica dopo l'evento e come l'ha deciso lo staff. Nessuno decide il proprio turno."
+    }
+  },
+  "reports": {
+    "empty": "Nessuno ha mandato un PIREP di supporto per questo evento.",
+    "fields": {
+      "member": "Membro",
+      "kind": "Tipo",
+      "state": "Stato",
+      "verification": "Verifica",
+      "submittedAt": "Mandato",
+      "lines": "Voci e che cosa ha trovato la verifica",
+      "decidedBy": "Deciso da",
+      "decisionNote": "Nota della decisione"
+    },
+    "options": {
+      "kind": {
+        "Pilot": "Pilota",
+        "Atc": "ATC"
+      },
+      "state": {
+        "Submitted": "Da validare",
+        "Accepted": "Accettato",
+        "Rejected": "Rifiutato"
+      },
+      "verification": {
+        "Valid": "Tutte le voci trovate",
+        "Partial": "Alcune voci trovate",
+        "Invalid": "Nessuna voce trovata",
+        "Unavailable": "Non verificato"
+      }
+    },
+    "flight": "{{callsign}} {{departure}} → {{arrival}}, {{day}}",
+    "shift": "{{callsign}} {{from}} → {{to}} UTC",
+    "check": {
+      "flown": "Volato: una sessione di {{minutes}} minuti",
+      "notFound": "Nessuna sessione trovata",
+      "controlled": "Controllato: {{minutes}} minuti sulla postazione",
+      "tooShort": "Non abbastanza: {{minutes}} minuti sulla postazione",
+      "unavailable": "Non verificato: la rete non ha risposto",
+      "distance": "({{distance}} NM fra gli aeroporti)"
+    },
+    "decide": "Decidi",
+    "change": "Cambia la decisione",
+    "decideTitle": {
+      "Pilot": "Il PIREP pilota di {{name}}",
+      "Atc": "Il PIREP ATC di {{name}}"
+    },
+    "decideDescription": "Accettalo o rifiutalo. Il membro legge la tua nota in una mail; per rifiutare, scrivi perché.",
+    "decision": {
+      "fields": {
+        "state": "Decisione",
+        "note": "Nota"
+      },
+      "hints": {
+        "note": "Il membro la legge in una mail. Obbligatoria per rifiutare."
+      },
+      "options": {
+        "state": {
+          "Accepted": "Accetta",
+          "Rejected": "Rifiuta"
+        }
+      }
+    }
   }
 }

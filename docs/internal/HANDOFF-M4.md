@@ -6,7 +6,16 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
+**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10u** (del nucleo: il permesso tenuto senza un ambito su una riga), sul branch
+`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`; dopo la revisione, [approvabile, niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666), ha unito `main` a `8bf63ea3` (#285, #286).
+La nota `2026-10-17-il-permesso-senza-ambito` è **decisa** da Carmine: la (b) al punto 1 della revisione della #283 ([la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736)) — i registri di E13b rispondono solo a chi tiene
+il permesso senza un ambito, e un grant su un evento o su una riga non li apre, né le loro voci di menu. Da E10u il nucleo ha
+`ICurrentUser.HasUnscoped` / `PermissionSet.HasUnscoped` e `NavItemDescriptor(…, Unscoped: true)`; E13b (#283) ne unisce il branch e va in
+coda dopo («Che cosa ha lasciato E10u», sotto).
+
+**L'aggiornamento di E13a:** 16 ottobre 2026 — **fase E13a** (modulo, la quarta di **M4b**: le verifiche dopo un evento e le statistiche), sul
 branch `m4/e13a-after-checks`, **PR #278** verso `main`, **in coda dopo la #271** di E17 **e la #277** di E10t (del nucleo): nata
 `--no-track` dalla testa di E17 `2aebf704`, ha unito la testa di E10t `712bce8` (con `main` a `4ad747a`) e la testa nuova di E17 `92a7ff7`
 (con E12 `1887c27` ed E10s `00b0609`), e dopo la revisione le teste di E10t `e17dd8c` (con `main` a `b5d3fb9`, E12 unita) e `2255412`
@@ -311,7 +320,9 @@ solo che scrive davvero l'evento e le sue righe, che E0 dava per esistente, **po
 riga: sotto, «Che cosa ha lasciato E10i»); i job che recuperano i giri persi mentre Passenger tiene l'hub spento e l'indirizzo
 dell'operazione pianificata, che E0 lasciava alla coda del maintainer, **portati da E10j** (sotto, «Che cosa ha lasciato E10j»);
 l'helper «persona cancellata» e `ErasureTests` che legge ogni modulo sono già arrivati con A12a di M3 (#187): **E8a è tolta** (piano
-1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`.
+1.25), e da E2 ogni fase che crea una colonna di persona scrive la sua riga in `ErasureTests`. Chi tiene un permesso senza un ambito su
+una riga, che E0 non prevedeva, **portato da E10u** (`HasUnscoped` e `NavItemDescriptor.Unscoped`, per i registri di E13b: sotto, «Che
+cosa ha lasciato E10u»).
 
 ## Per i test
 
@@ -322,6 +333,108 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E14a (17 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, in coda dopo la #283 di E13b, con le sue teste `ecc5a35b` e `0c8d5313` unite — E10u `a2631e6` e `59d544e`, `main` a `8bf63ea`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo
+  `AddAfterTheEventColumns`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
+  `2026-10-17-il-pirep-di-supporto`: le tre scelte **decise**, (A), da Carmine sull'[issue #287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla scelta 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053); le quattordici letture **Proposta** fino alla revisione):
+  - **Le tabelle**: `evt_reports` (`EventReport`) ed `evt_report_items` (`EventReportItem`, con il VID del membro), in `EventReport.cs`.
+  - **Il membro**: `Reports/MemberReports.cs` (mandare e correggere, `PUT /api/events/mine/reports/{eventId}/{kind}`; i suoi e gli eventi
+    aperti, `GET /api/events/mine/reports`), la verifica `Reports/ReportCheck.cs`, le regole pure `Reports/ReportRules.cs`.
+  - **Lo staff**: `Reports/ReportDecisions.cs` (`POST /api/events/reports/{id}/decision`), la lista del motore `/api/events/reports`
+    (`Reports/ReportEndpoints.cs`), la scheda «PIREP di supporto» (`screens/reports.tsx`) e il numero in `events.staffQueue`.
+  - **Le pagine del membro**: la sezione di `/events/mine` (`screens/myReports.tsx`), le parole delle voci in `screens/reportWords.ts`.
+  - **I test**: integrazione `EventsReportsTests` (VID **761230–761236**, slug `evt-test-e14a-…`); unità `EventsReportsTests`; vitest
+    `reportWords.test.ts`; il giro `full/events-reports.spec.ts` (slug `evt-e2e-e14a-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14b** (le regole di award, i PIREP `Auto`, il riepilogo): accettare è `ReportDecisions.DecideAsync`, sotto il blocco della riga del PIREP,
+    con il salvataggio e il commit nello stesso punto: i segnali delle regole soddisfatte si proiettano lì, nella stessa transazione, **sulle voci
+    con `Verified` vero**. ⚠️ **Una decisione si cambia** (scelta 1, (A), decisa da Carmine sulla #287): un PIREP che passa da accettato a
+    rifiutato deve togliere i suoi segnali. ⚠️ **E14b deve il rifiuto** del [limite di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053):
+    **una volta assegnato un award dal segnale di un PIREP, la sua decisione non cambia più** — rifiutata in `ReportDecisions.DecideAsync`
+    con una chiave sua, e la scheda dello staff non offre più «Cambia la decisione» (`Decidable` falso) —, con il suo test. E14a scrive la
+    decisione cambiabile, senza il rifiuto: non sa ancora che cosa è un award. Il PIREP `Auto` è una riga con `Source = Auto`, scritta da `events-after` con la stessa verifica (`ReportCheck`) e lo
+    stesso indice univoco: se il membro ne ha già mandato uno a mano, quello resta. `reportsToValidate` conta i `Submitted` come
+    `StaffQueueProvider`.
+  - **E15b** (la conservazione dei piloti): i PIREP **pilota** dopo `pilotRetentionMonths` si cancellano con le loro voci (la chiave le porta
+    via, ma ognuna ha la sua riga nell'audit solo se le cancella il modulo); quelli ATC restano. `DecisionNote` e il callsign e la sessione delle
+    voci sono già `[ErasedWith]`.
+  - ⚠️ **Un evento con un PIREP non si elimina** (`eventHasReports`): il giro e2e lascia i suoi eventi sul banco, che `e2e:full` comincia vuoto.
+    Per questo il suo slug **non** comincia con `evt-test-e2e`, che `events-staff.spec.ts` elimina tutto: un giro che lascia un evento con un PIREP
+    usa un prefisso suo.
+  - ⚠️ **Il banco non ha sessioni del pilota**: sul banco il PIREP del giro è verificato `Invalid`; trovare un volo e un turno lo provano
+    `EventsReportsTests` con la sera delle fixture spostata nel tempo.
+  - ⚠️ **I VID di prova**: E14a ha usato **761230–761236** della fascia 761230–761259.
+
+### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con le sue teste `a2631e6` e `59d544e` e `main` a `8bf63ea` uniti)
+
+- **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
+  `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
+  nota nuova, `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+  sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), la lettura 1 cambiata e le 2–11
+  accettate sulla [#283](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820)):
+  - **Le decisioni dello staff** (`Registers/RegisterDecisions.cs`): l'esito di un turno, `POST /api/events/atc/shifts/{id}/attendance`
+    (`EventAtc.Edit` sul turno, mai sul proprio: `DeniedToStakeholder`), e «togli» di una prenotazione non volata,
+    `POST /api/events/bookings/{id}/excuse` (`EventBookings.Edit` sulla prenotazione). Le transizioni in `RegisterDecisions.Allowed`.
+  - **I registri**: `Registers/ControllerRegister.cs` (i conti per controllore, la stessa funzione che dà la penalità alla proposta del roster)
+    e `Registers/PilotRegister.cs` (le non volate che contano, i limiti di un pilota in un evento, «fino a quando»); tre letture scritte a mano
+    in `Registers/RegisterEndpoints.cs`: `GET /api/events/atc/register`, `GET /api/events/bookings/register`, `GET /api/events/mine/record`.
+  - **I limiti** (`Registers/BookingLimits.cs`, puri) nei tre verbi di `PilotBookings`, sotto il blocco del pilota, dopo la compatibilità.
+  - **Il blocco** `events.staffQueue` (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`); le cinque impostazioni; i tre limiti
+    dell'evento nel suo form.
+  - **Le pagine**: `/staff/events/controllers[/$vid]` e `/staff/events/pilots[/$vid]` (`screens/registers.tsx`), la sezione «Esiti» nell'ATC
+    di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti dove una prenotazione è rifiutata
+    (`screens/limits.ts`).
+  - **I test**: integrazione `EventsRegistersTests` (7 dopo la revisione; VID **761200–761207**, slug `evt-test-e13b-…`); unità `EventsRegistersTests` (7); il
+    giro `full/events-registers.spec.ts` (slug `evt-test-e2e-e13b-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14a** (i PIREP): `events.staffQueue` conta per evento; i PIREP da validare sono un numero in più di `StaffQueueEventDto` e un ciclo in
+    più di `StaffQueueProvider`, con `EventReports.Edit` chiesto all'unico handler sulla riga, come i turni.
+  - **E15b** (la conservazione dei piloti): il registro dei piloti conta le prenotazioni di eventi finiti negli ultimi `pilotRetentionMonths`;
+    quando la conservazione le cancella escono anche dal registro, nello stesso momento. `UnflownExcusedNote` è già `[ErasedWith]`.
+  - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, decisa da Carmine sulla #280): lo staff non toglie
+    la propria prenotazione, iscrizione o posto, né la propria voce del registro.
+  - ⚠️ **Le statistiche dopo una decisione**: il verbo non le scrive (l'area `Events`, che l'AOD non scrive): «Ricalcola» di E13a.
+  - ⚠️ **I due registri rispondono solo a chi tiene il permesso senza uno scope di risorsa** (Carmine sulla #283, la risposta (b);
+    `HasUnscoped` e `NavItemDescriptor.Unscoped` della fase del nucleo E10u, #288): un grant su un evento non li apre né mostra le loro voci.
+  - ⚠️ **Nessun esito di un turno è definitivo** (Carmine sulla #283, lettura 1): chi può decidere il turno cambia presente, no-show e
+    giustificato l'uno nell'altro; una decisione senza nota tiene quella che c'era. Una fase che legge l'esito (E14b, i criteri ATC) legge
+    quello di adesso.
+  - ⚠️ **`Decidable` ed `Excusable` si chiedono sulla cura salvata nella riga** (`ShiftEndpoints.RowsAsync`, `StaffBookings.RowsAsync`), mentre
+    i verbi adottano prima la cura dell'evento com'è ora: dopo un cambio del «a cura di» un bottone può comparire e poi rispondere 403 (il
+    punto 5 della revisione della #283; lo stesso di `Editable` di E11b, lasciato).
+  - ⚠️ **Il job e una decisione sullo stesso turno** si incontrano solo sulla `row_version` del turno: `events-after` non prende il blocco
+    della riga dell'evento per i turni; se perde, quell'evento salta il giro e il giro dopo lo riprende (il punto 3 della revisione).
+  - ⚠️ **Il banco non lancia un job**: un no-show proposto non si fa dall'API; lo provano `EventsRegistersTests` e il banco della fase con
+    righe scritte in SQL.
+  - ⚠️ **I VID di prova**: E13b ha usato **761200–761207** della fascia 761200–761229.
+
+### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`, con `main` a `8bf63ea3` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10u, «Com'è andata»; nessuna migrazione, niente nel browser, `/api/me` uguale, nessuna riga di
+  un modulo; una nota nuova, `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
+  - **`PermissionSet.HasUnscoped(permissions, isSuperadmin, permission)`** (`Core/Auth/Permissions/EffectivePermissionsCalculator.cs`):
+    vero quando il permesso è tenuto con **`ResourceScope` nullo** — su un dipartimento, su tutti, su un FIR (un team di FIR), da fuori
+    (un grant a una posizione di un altro dipartimento o di tutti), come globale —, o dal super amministratore. Falso per un permesso
+    tenuto **solo** su righe o eventi (`events:event:5`), anche quando `HasAny` dice sì. Il FIR e il segno «da fuori» non si guardano.
+  - **`ICurrentUser.HasUnscoped(string permission)`**, accanto a `HasAny`: un **membro predefinito** dell'interfaccia (come il `Has` con il
+    FIR), che `HttpContextCurrentUser` scrive uguale; `TestCurrentUser` non cambia e risponde con lo stesso codice.
+  - **`NavItemDescriptor(string Key, string Path, string? Permission = null, bool Unscoped = false)`**: con `Unscoped: true`
+    `MeEndpoints.Visible` chiede `HasUnscoped` invece di `HasAny`; il predefinito lascia ogni voce di oggi com'era.
+  - **I test**: `UnscopedPermissionRulesTests` (unità, nuova, 10 casi: ogni titolare, il cookie, il membro predefinito, il lettore
+    vecchio che legge chiuso) e `UnscopedNavigationTests` (integrazione, nuova: un modulo di prova della classe con una voce `Unscoped` e
+    la sua gemella, dietro `Sample.View`; la prima nascosta a un grant su una riga e mostrata a un grant sul dipartimento).
+- **Che cosa chiama E13b** (che unisce questo branch, poi `main` quando è unita):
+  - nei due endpoint dei registri, dopo la loro policy: `if (!currentUser.HasUnscoped(EventsPermissions.AtcView))` (controllori) e
+    `if (!currentUser.HasUnscoped(EventsPermissions.BookingsView))` (piloti) → `Results.StatusCode(StatusCodes.Status403Forbidden)`;
+  - nelle due voci di `EventsModule.StaffNavigation`: `new NavItemDescriptor("events:nav.…", "/staff/events/…", EventsPermissions.…,
+    Unscoped: true)`;
+  - il test che Carmine chiede: un grant su **un evento** rifiutato su tutti e due i registri, e le due voci assenti dal suo `/api/me`;
+  - ⚠️ un team di FIR e un grant a una posizione da fuori **passano** `HasUnscoped` (la risposta di Carmine li conta): che cosa leggano
+    poi nel registro — tutta la divisione o le righe del loro FIR/dipartimento — è delle letture 4 e 5 di E13b, non del nucleo;
+  - ⚠️ l'unico handler non cambia: la policy senza riga resta `HasAny`, quindi il 403 lo dà l'endpoint, con la domanda in più.
+- ⚠️ **I VID di prova**: `UnscopedNavigationTests` usa **761260–761261**, dopo le fasce date a E13b (761200–229) ed E14a (761230–259).
 
 ### Che cosa ha lasciato E13a (16 ottobre 2026, branch `m4/e13a-after-checks`, PR #278; nata dalla testa di E17 `2aebf704`, in coda dopo la #271 di E17 e la #277 di E10t, con le loro teste `92a7ff7` e `712bce8` unite)
 

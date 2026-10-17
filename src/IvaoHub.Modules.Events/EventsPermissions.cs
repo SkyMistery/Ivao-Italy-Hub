@@ -7,8 +7,10 @@ namespace IvaoHub.Modules.Events;
 /// the work that another department does is a row of its own, with an area of its own. All of them are held on a department —
 /// the base department of the module, which every event has — and who holds them is <c>division.json → positionGrants</c>
 /// (§6.2), never this file.
-/// <para>Two are denied to whoever a row is about, the super administrator included: nobody confirms their own no-show nor
-/// approves handing over their own shift (<see cref="AtcEdit"/>), and nobody validates their own report of support
+/// <para>Three are denied to whoever a row is about, the super administrator included: nobody confirms their own no-show nor
+/// approves handing over their own shift (<see cref="AtcEdit"/>), nobody takes their own booking not flown out of their record nor
+/// decides on their own booking, registration or seat (<see cref="BookingsEdit"/>, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti,
+/// reading 6) — taking their own away they do as a member, by withdrawing —, and nobody validates their own report of support
 /// (<see cref="ReportsEdit"/>).</para>
 /// </summary>
 public static class EventsPermissions
@@ -49,7 +51,10 @@ public static class EventsPermissions
     /// <summary>Slots, bookings, registrations and activities with the VIDs in them; the export the gate manager reads.</summary>
     public const string BookingsView = "EventBookings.View";
 
-    /// <summary>Slots, the import, the generator, the activities; taking a booking or a registration away.</summary>
+    /// <summary>
+    /// Slots, the import, the generator, the activities; taking a booking or a registration away, and a booking not flown out of its pilot's
+    /// record: never on a row about the one who holds it.
+    /// </summary>
     public const string BookingsEdit = "EventBookings.Edit";
 
     /// <summary>Positions, availability, the roster and the register of reliability.</summary>
@@ -72,7 +77,7 @@ public static class EventsPermissions
         new(RoutesView, IsGlobal: false),
         new(RoutesEdit, IsGlobal: false),
         new(BookingsView, IsGlobal: false),
-        new(BookingsEdit, IsGlobal: false),
+        new(BookingsEdit, IsGlobal: false, DeniedToStakeholder: true),
         new(AtcView, IsGlobal: false),
         new(AtcEdit, IsGlobal: false, DeniedToStakeholder: true),
         new(ReportsView, IsGlobal: false),

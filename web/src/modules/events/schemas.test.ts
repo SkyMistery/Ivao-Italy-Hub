@@ -56,6 +56,12 @@ const saved: EventsSettings = {
   rosterPublishDays: 2,
   experienceMonths: 12,
   attendanceMinimumMinutes: 30,
+  reportDays: 14,
+  noShowWeight: 1.5,
+  unflownThreshold: 3,
+  restrictedWindowHours: 2,
+  restrictedMaxPerWindow: 1,
+  restrictedMaxPerEvent: 2,
 };
 
 test('the form has a field for every setting, and nothing else', () => {
