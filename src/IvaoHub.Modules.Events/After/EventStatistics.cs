@@ -14,7 +14,9 @@ namespace IvaoHub.Modules.Events.After;
 /// <list type="bullet">
 /// <item>the slots by kind, the bookings, those flown (<c>flown_at</c>) and those checked and not flown; the availabilities, the shifts, those
 /// attended, the no-shows — proposed and confirmed —, those excused;</item>
-/// <item>the reports of support and the signals of award stay 0 until their tables exist (E14a, E14b);</item>
+/// <item>the reports of support and the signals of award (E14a, E14b); past the pilots' retention, with the bookings and the pilots' reports
+/// gone, the numbers of the bookings, the reports and the signals <c>events-retention</c> wrote before it deleted them stay, and so does the
+/// number of the availabilities once they went with the event over (E15b, <see cref="EventRetention"/>);</item>
 /// <item>for an event in person, the registrations, the sums of their answers and the seats by activity <b>from the rows while they are
 /// there</b>; past its retention the ones <c>events-retention</c> kept (E17) stay as they are;</item>
 /// <item><b>who flew without booking</b> comes from the check alone, which counts it on the network a few airports per run
@@ -66,13 +68,25 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
         stats.PublicSlots = slots.Where(group => group.Key == SlotKind.Public).Sum(group => group.Count);
         stats.PrivateSlots = slots.Where(group => group.Key == SlotKind.Private).Sum(group => group.Count);
 
+        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
         var bookings = await CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
             .Where(booking => booking.EventId == eventId)
             .Select(booking => new { Flown = booking.FlownAt != null, Checked = booking.FlownCheckedAt != null })
             .ToListAsync(cancellationToken);
-        stats.Booked = bookings.Count;
-        stats.BookedFlown = bookings.Count(booking => booking.Flown);
-        stats.BookedUnflown = bookings.Count(booking => booking.Checked && !booking.Flown);
+
+        // Past the pilots' retention with their rows gone, the numbers of the bookings, of the reports and of the signals are the ones
+        // events-retention wrote before it deleted them (E15b); while any row is there — the run of the month has not come yet — they are
+        // the rows', as for an event in person (reading 8 of E13a's note).
+        var pilotsRetired = bookings.Count == 0
+            && EventRetention.PilotsDue(row, settings.PilotRetentionMonths, now)
+            && !await CrudSource.BackOffice<EventReport>(database)
+                .AnyAsync(report => report.EventId == eventId && report.Kind == ReportKind.Pilot, cancellationToken);
+        if (!pilotsRetired)
+        {
+            stats.Booked = bookings.Count;
+            stats.BookedFlown = bookings.Count(booking => booking.Flown);
+            stats.BookedUnflown = bookings.Count(booking => booking.Checked && !booking.Flown);
+        }
 
         if (counted is { } more)
         {
@@ -80,8 +94,13 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
             stats.FlownUnbookedAirports = (stats.FlownUnbookedAirports ?? 0) + more.Airports;
         }
 
-        stats.AtcAvailabilities = await CrudSource.BackOffice<EventAtcAvailability>(database).AsNoTracking()
+        // The availabilities go with the event over (E15b): with none left, the number events-retention wrote stays.
+        var availabilities = await CrudSource.BackOffice<EventAtcAvailability>(database).AsNoTracking()
             .CountAsync(availability => availability.EventId == eventId, cancellationToken);
+        if (availabilities > 0 || !EventRetention.AvailabilitiesDue(row, now))
+        {
+            stats.AtcAvailabilities = availabilities;
+        }
 
         var shifts = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
             .Where(shift => shift.EventId == eventId)
@@ -95,19 +114,22 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
         stats.AtcExcused = Shifts(ShiftAttendance.Excused);
 
         // The reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 11): every one sent, whatever it stands at, and those
-        // accepted.
-        var reports = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
-            .Where(report => report.EventId == row.Id)
-            .GroupBy(report => report.State)
-            .Select(group => new { group.Key, Count = group.Count() })
-            .ToListAsync(cancellationToken);
-        stats.ReportsSubmitted = reports.Sum(group => group.Count);
-        stats.ReportsAccepted = reports.Where(group => group.Key == ReportState.Accepted).Sum(group => group.Count);
+        // accepted; and the awards its accepted reports pointed out (E14b): one row per rule met, each a signal in the core's queue. Past the
+        // pilots' retention the pilots' reports and their signals are gone, and the numbers kept stay whole: the controllers' alone would
+        // say less than what happened (reading 3 of the note of E15b).
+        if (!pilotsRetired)
+        {
+            var reports = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
+                .Where(report => report.EventId == row.Id)
+                .GroupBy(report => report.State)
+                .Select(group => new { group.Key, Count = group.Count() })
+                .ToListAsync(cancellationToken);
+            stats.ReportsSubmitted = reports.Sum(group => group.Count);
+            stats.ReportsAccepted = reports.Where(group => group.Key == ReportState.Accepted).Sum(group => group.Count);
+            stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id, cancellationToken);
+        }
 
-        // The awards its accepted reports pointed out (E14b): one row per rule met, each a signal in the core's queue.
-        stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id, cancellationToken);
-
-        await InPersonAsync(row, stats, now, cancellationToken);
+        await InPersonAsync(row, stats, settings, now, cancellationToken);
 
         stats.ComputedAt = now;
         return stats;
@@ -117,7 +139,7 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
     /// The numbers of an event in person from its rows while any is there; past its retention with none left they are gone, and the numbers
     /// <c>events-retention</c> kept stay (E17).
     /// </summary>
-    private async Task InPersonAsync(Event row, EventStats stats, DateTime now, CancellationToken cancellationToken)
+    private async Task InPersonAsync(Event row, EventStats stats, EventsSettings settings, DateTime now, CancellationToken cancellationToken)
     {
         var eventId = row.Id;
         var registrations = await CrudSource.BackOffice<EventRegistration>(database).AsNoTracking()
@@ -127,7 +149,6 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
 
         // Past its retention with nothing left, the rows are gone and what events-retention kept stays; while any row is there — the run of
         // the month has not come yet — the numbers are the rows' (reading 8).
-        var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
         if (registrations.Count == 0 && !anySeat && InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
         {
             return;
