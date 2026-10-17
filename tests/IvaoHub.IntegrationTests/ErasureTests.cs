@@ -282,6 +282,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         "evt_questions.created_by",
         "evt_questions.updated_by",
         "evt_registrations.vid",
+        "evt_report_awards.vid",
         "evt_report_items.vid",
         "evt_reports.decided_by",
         "evt_reports.vid",

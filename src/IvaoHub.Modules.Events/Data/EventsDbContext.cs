@@ -62,6 +62,9 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
     /// <summary>The rules of award of the events (E14b).</summary>
     public DbSet<EventAwardRule> AwardRules => Set<EventAwardRule>();
 
+    /// <summary>The rules of award the accepted reports met, each pointing its member out in the core's queue (E14b).</summary>
+    public DbSet<EventReportAward> ReportAwards => Set<EventReportAward>();
+
     /// <summary>The parallel activities of the events in person (E17).</summary>
     public DbSet<EventActivity> Activities => Set<EventActivity>();
 
@@ -372,6 +375,21 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // An event deleted takes its rules with it, as it takes its routes. The key is also the index the tab and an acceptance read by.
             rule.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventReportAward>(award =>
+        {
+            award.ToTable("evt_report_awards");
+            award.HasKey(row => row.Id);
+            award.Ignore(row => row.ResourceScope);
+            award.Property(row => row.Reason).HasMaxLength(EventReportAward.MaxReasonLength).IsRequired();
+
+            // The rows of a report go with it, as its items do. It is also the index a decision reads them by.
+            award.HasOne<EventReport>().WithMany().HasForeignKey(row => row.ReportId).OnDelete(DeleteBehavior.Cascade);
+
+            // A member's rows of every event: their erasure; and an event's, for its statistics.
+            award.HasIndex(row => row.Vid);
+            award.HasIndex(row => row.EventId);
         });
 
         modelBuilder.Entity<EventActivity>(activity =>

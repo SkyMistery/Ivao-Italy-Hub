@@ -61,10 +61,56 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4")
                 .Annotation("Relational:Collation", "utf8mb4_unicode_ci");
 
+            migrationBuilder.CreateTable(
+                name: "evt_report_awards",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    report_id = table.Column<long>(type: "bigint", nullable: false),
+                    rule_id = table.Column<long>(type: "bigint", nullable: false),
+                    event_id = table.Column<long>(type: "bigint", nullable: false),
+                    vid = table.Column<int>(type: "int", nullable: false),
+                    award_id = table.Column<long>(type: "bigint", nullable: false),
+                    reason = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: false, collation: "utf8mb4_unicode_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    owner_department = table.Column<string>(type: "varchar(4)", maxLength: 4, nullable: false, collation: "utf8mb4_unicode_ci")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    owner_department_mask = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_evt_report_awards", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_evt_report_awards_evt_reports_report_id",
+                        column: x => x.report_id,
+                        principalTable: "evt_reports",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_unicode_ci");
+
             migrationBuilder.CreateIndex(
                 name: "ix_evt_award_rules_event_id",
                 table: "evt_award_rules",
                 column: "event_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_evt_report_awards_event_id",
+                table: "evt_report_awards",
+                column: "event_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_evt_report_awards_report_id",
+                table: "evt_report_awards",
+                column: "report_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_evt_report_awards_vid",
+                table: "evt_report_awards",
+                column: "vid");
         }
 
         /// <inheritdoc />
@@ -72,6 +118,9 @@ namespace IvaoHub.Modules.Events.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "evt_award_rules");
+
+            migrationBuilder.DropTable(
+                name: "evt_report_awards");
 
             migrationBuilder.DropColumn(
                 name: "auto_reports_after_vid",

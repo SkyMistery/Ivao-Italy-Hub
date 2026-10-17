@@ -163,11 +163,16 @@ public static class ReportEndpoints
             .Where(row => eventIds.Contains(row.Id) && row.EndsAtUtc <= now)
             .Select(row => row.Id)
             .ToListAsync(cancellationToken);
+
+        // A report an award was assigned from is decided for good (Carmine's limit on #287, E14b): its decision is not offered.
+        var assigned = await services.GetRequiredService<ReportAwards>()
+            .AssignedAmongAsync([.. reports.Select(report => report.Id)], cancellationToken);
         var decidable = new HashSet<long>();
         foreach (var report in reports)
         {
             if (user is not null
                 && over.Contains(report.EventId)
+                && !assigned.Contains(report.Id)
                 && (await authorization.AuthorizeAsync(user, report, EventsPermissions.ReportsEdit)).Succeeded)
             {
                 decidable.Add(report.Id);

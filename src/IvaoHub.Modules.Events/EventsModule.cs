@@ -244,6 +244,7 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<ReportCheck>();
         services.AddScoped<MemberReports>();
         services.AddScoped<ReportDecisions>();
+        services.AddScoped<ReportAwards>();
 
         // The digest of the reports waiting (E14b): events-digest once a day at 07:15 in the division's zone, the morning of whoever reads it,
         // which the trigger says.

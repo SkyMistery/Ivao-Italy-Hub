@@ -1675,6 +1675,6 @@
     }
   },
   "awards": {
-    "ruleMet": "{{event}}: {{criterion}} {{parameters}}"
+    "ruleMet": "{{event}}: {{criterion}}"
   }
 }

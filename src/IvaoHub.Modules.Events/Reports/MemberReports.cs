@@ -285,7 +285,8 @@ public sealed class MemberReports(
             .SqlQuery<long>($"SELECT id AS `Value` FROM evt_reports WHERE event_id = {row.Id} AND vid = {vid} AND kind = {word} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
-        var report = await database.Reports.FirstOrDefaultAsync(
+        // Read as the back office reads it: the job that writes an Auto report has no member signed in for the filter of the rows of members.
+        var report = await CrudSource.BackOffice<EventReport>(database).FirstOrDefaultAsync(
             candidate => candidate.EventId == row.Id && candidate.Vid == vid && candidate.Kind == kind,
             cancellationToken);
         var created = report is null;

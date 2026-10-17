@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IvaoHub.Modules.Events.Data.Migrations
 {
     [DbContext(typeof(EventsDbContext))]
-    [Migration("20261017150137_AddAwardRules")]
+    [Migration("20261017151044_AddAwardRules")]
     partial class AddAwardRules
     {
         /// <inheritdoc />
@@ -1829,6 +1829,70 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     b.ToTable("evt_reports", (string)null);
                 });
 
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventReportAward", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AwardId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("award_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("EventId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("OwnerDepartment")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("owner_department");
+
+                    b.Property<int>("OwnerDepartmentMask")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_department_mask");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)")
+                        .HasColumnName("reason");
+
+                    b.Property<long>("ReportId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("report_id");
+
+                    b.Property<long>("RuleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rule_id");
+
+                    b.Property<int>("Vid")
+                        .HasColumnType("int")
+                        .HasColumnName("vid");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evt_report_awards");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_evt_report_awards_event_id");
+
+                    b.HasIndex("ReportId")
+                        .HasDatabaseName("ix_evt_report_awards_report_id");
+
+                    b.HasIndex("Vid")
+                        .HasDatabaseName("ix_evt_report_awards_vid");
+
+                    b.ToTable("evt_report_awards", (string)null);
+                });
+
             modelBuilder.Entity("IvaoHub.Modules.Events.EventReportItem", b =>
                 {
                     b.Property<long>("Id")
@@ -2348,6 +2412,16 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_evt_questions_evt_events_event_id");
+                });
+
+            modelBuilder.Entity("IvaoHub.Modules.Events.EventReportAward", b =>
+                {
+                    b.HasOne("IvaoHub.Modules.Events.EventReport", null)
+                        .WithMany()
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_evt_report_awards_evt_reports_report_id");
                 });
 
             modelBuilder.Entity("IvaoHub.Modules.Events.EventReportItem", b =>
