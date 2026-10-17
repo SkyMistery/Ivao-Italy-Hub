@@ -52,6 +52,7 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var seated = await Seats(vid).AsNoTracking()
             .Join(CrudSource.BackOffice<Event>(database), seat => seat.EventId, row => row.Id, (seat, row) => row)
             .ToListAsync(cancellationToken);
+        var reports = await Reports(vid).CountAsync(cancellationToken);
         var now = clock.UtcNow;
 
         return Lines(
@@ -66,7 +67,8 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             transfersToCome: asked.Count(row => !EventState.IsOver(row, now)),
             transfersOver: asked.Count(row => EventState.IsOver(row, now)),
             seatsToCome: seated.Count(row => !EventState.IsOver(row, now)),
-            seatsOver: seated.Count(row => EventState.IsOver(row, now)));
+            seatsOver: seated.Count(row => EventState.IsOver(row, now)),
+            reports);
     }
 
     public async Task<IReadOnlyList<ErasureLine>> EraseAsync(ErasureRequest request, CancellationToken cancellationToken = default)
@@ -103,6 +105,7 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         var (transfersToCome, transfersOver) = await EraseTransfersAsync(request.Vid, now, cancellationToken);
         var (shiftsToCome, shiftsOver) = await EraseShiftsAsync(request.Vid, now, cancellationToken);
         var (seatsToCome, seatsOver) = await EraseSeatsAsync(request.Vid, now, cancellationToken);
+        var reports = await EraseReportsAsync(request.Vid, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
         return Lines(
@@ -117,7 +120,32 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             transfersToCome,
             transfersOver,
             seatsToCome,
-            seatsOver);
+            seatsOver,
+            reports);
+    }
+
+    /// <summary>
+    /// The person's reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 12): all of events over, so all kept, with the
+    /// pseudonym the core writes into <c>vid</c> — the statistics and the rules of award count their items —, without the validator's note
+    /// about them, and their items without the callsign and the session that tie them to the person on the network.
+    /// </summary>
+    private async Task<int> EraseReportsAsync(int vid, CancellationToken cancellationToken)
+    {
+        var reports = await Reports(vid).AsTracking().ToListAsync(cancellationToken);
+        foreach (var report in reports)
+        {
+            report.DecisionNote = null;
+        }
+
+        foreach (var item in await CrudSource.BackOffice<EventReportItem>(database).AsTracking()
+                     .Where(item => item.Vid == vid)
+                     .ToListAsync(cancellationToken))
+        {
+            item.Callsign = string.Empty;
+            item.SessionId = null;
+        }
+
+        return reports.Count;
     }
 
     /// <summary>
@@ -303,6 +331,10 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
     private IQueryable<EventAtcTransfer> Transfers(int vid) =>
         CrudSource.BackOffice<EventAtcTransfer>(database).Where(transfer => transfer.ControllerVid == vid);
 
+    /// <summary>The person's reports of support, read past every filter.</summary>
+    private IQueryable<EventReport> Reports(int vid) =>
+        CrudSource.BackOffice<EventReport>(database).Where(report => report.Vid == vid);
+
     private static IReadOnlyList<ErasureLine> Lines(
         int toCome,
         int over,
@@ -315,7 +347,8 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         int transfersToCome,
         int transfersOver,
         int seatsToCome,
-        int seatsOver) =>
+        int seatsOver,
+        int reports) =>
     [
         new("events:erasure.bookingsToCome", toCome, ErasureOutcome.Deleted),
         new("events:erasure.bookingsOver", over, ErasureOutcome.Anonymised),
@@ -329,5 +362,6 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
         new("events:erasure.transfersOver", transfersOver, ErasureOutcome.Anonymised),
         new("events:erasure.seatsToCome", seatsToCome, ErasureOutcome.Deleted),
         new("events:erasure.seatsOver", seatsOver, ErasureOutcome.Anonymised),
+        new("events:erasure.reports", reports, ErasureOutcome.Anonymised),
     ];
 }

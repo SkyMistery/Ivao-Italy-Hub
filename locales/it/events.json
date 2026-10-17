@@ -47,7 +47,8 @@
       "atc": "ATC",
       "activities": "Attività",
       "seats": "Posti",
-      "stats": "Statistiche"
+      "stats": "Statistiche",
+      "reports": "PIREP di supporto"
     },
     "actions": {
       "publish": "Pubblica",
@@ -565,6 +566,58 @@
       "toRecord": "Il tuo registro",
       "excused": "Tolta",
       "shifts": "Presenti {{attended}} · no-show {{noShows}} · giustificati {{excused}} · penalità {{penalty}}"
+    },
+    "reports": {
+      "title": "PIREP di supporto",
+      "lead": "Nei giorni dopo un evento, racconta i voli che hai volato e i turni che hai controllato: l'hub li verifica sulla rete, e chi valida li accetta.",
+      "open": "Eventi per cui puoi mandare un PIREP",
+      "until": "Puoi mandare e correggere un PIREP fino al {{date}} UTC.",
+      "sent": "Mandato il {{date}} UTC",
+      "unavailable": "La rete non ha risposto quando l'hai mandato: mandalo di nuovo più tardi perché si verifichi.",
+      "note": "La nota di chi valida: {{note}}",
+      "closed": "I giorni per correggerlo sono finiti: chi valida lo deciderà.",
+      "of": {
+        "Pilot": "Il tuo PIREP pilota per {{title}}",
+        "Atc": "Il tuo PIREP ATC per {{title}}"
+      },
+      "send": {
+        "Pilot": "Manda il PIREP pilota",
+        "Atc": "Manda il PIREP ATC"
+      },
+      "correct": {
+        "Pilot": "Correggi il PIREP pilota",
+        "Atc": "Correggi il PIREP ATC"
+      },
+      "dialogTitle": {
+        "Pilot": "I tuoi voli in {{title}}",
+        "Atc": "I tuoi turni in {{title}}"
+      },
+      "pilotDescription": "Ogni volo che hai fatto nell'evento, con il nominativo con cui hai volato. Mandarlo di nuovo li sostituisce tutti.",
+      "pilotDescriptionAirports": "Ogni volo che hai fatto nell'evento, con il nominativo con cui hai volato: ognuno parte da uno dei suoi scali o ci arriva ({{airports}}). Mandarlo di nuovo li sostituisce tutti.",
+      "atcDescription": "Ogni turno che hai controllato nell'evento, con il nominativo della postazione e le ore in UTC. Mandarlo di nuovo li sostituisce tutti.",
+      "pilot": {
+        "fields": {
+          "items": "Voli",
+          "items.callsign": "Nominativo",
+          "items.departureIcao": "Partenza (ICAO)",
+          "items.arrivalIcao": "Arrivo (ICAO)",
+          "items.flightDay": "Giorno (UTC)"
+        },
+        "hints": {
+          "items": "Uno o più voli, al più venti."
+        }
+      },
+      "atc": {
+        "fields": {
+          "items": "Turni",
+          "items.callsign": "Postazione",
+          "items.fromUtc": "Da",
+          "items.toUtc": "A"
+        },
+        "hints": {
+          "items": "Uno o più turni, dentro le ore dell'evento, al più dodici ore ciascuno."
+        }
+      }
     }
   },
   "bookings": {
@@ -606,7 +659,8 @@
     "transfersToCome": "Richieste di cedere un turno ATC di eventi non ancora finiti: cancellate",
     "transfersOver": "Richieste di cedere un turno ATC di eventi finiti, tenute senza il controllore e senza le note",
     "seatsToCome": "Posti nelle attività di eventi non ancora finiti: cancellati, e i loro turni di nuovo liberi",
-    "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro"
+    "seatsOver": "Posti nelle attività di eventi finiti, tenuti senza il membro",
+    "reports": "PIREP di supporto, tenuti senza il membro, senza la nota di chi valida e senza i nominativi"
   },
   "tokenAudiences": {
     "bookings": "Lettura delle prenotazioni degli eventi (un gestore dei gate)"
@@ -669,7 +723,9 @@
       "toMark_one": "{{count}} turno che la verifica non ha saputo dire",
       "toMark_other": "{{count}} turni che la verifica non ha saputo dire",
       "transfers_one": "{{count}} richiesta di cedere un turno",
-      "transfers_other": "{{count}} richieste di cedere un turno"
+      "transfers_other": "{{count}} richieste di cedere un turno",
+      "reports_one": "{{count}} PIREP di supporto da validare",
+      "reports_other": "{{count}} PIREP di supporto da validare"
     }
   },
   "settings": {
@@ -700,7 +756,8 @@
       "unflownThreshold": "Prenotazioni non volate da cui un pilota ha i limiti",
       "restrictedWindowHours": "Ore di una fascia di un evento, per chi ha i limiti",
       "restrictedMaxPerWindow": "Slot in ogni fascia, al massimo",
-      "restrictedMaxPerEvent": "Slot in un evento, al massimo"
+      "restrictedMaxPerEvent": "Slot in un evento, al massimo",
+      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
@@ -720,7 +777,8 @@
       "unflownThreshold": "Un pilota con tante prenotazioni che la verifica ha trovato non volate, nei mesi in cui le prenotazioni si tengono, prenota con i limiti qui sotto. Lo staff toglie a mano una prenotazione dal registro di un pilota.",
       "restrictedWindowHours": "Le fasce cominciano all'inizio dell'evento, ognuna lunga tante ore. Un evento può dire le sue.",
       "restrictedMaxPerWindow": "Quanti slot prenota in ogni fascia un pilota con i limiti. Un evento può dire i suoi.",
-      "restrictedMaxPerEvent": "Quanti slot prenota in un evento un pilota con i limiti. Un evento può dire i suoi."
+      "restrictedMaxPerEvent": "Quanti slot prenota in un evento un pilota con i limiti. Un evento può dire i suoi.",
+      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine."
     }
   },
   "notifications": {
@@ -767,6 +825,10 @@
     "atcShiftTransferDecided": {
       "title": "Cessioni dei turni decise",
       "description": "Una mail quando lo staff approva o rifiuta la tua richiesta di cedere un turno."
+    },
+    "reportDecided": {
+      "title": "PIREP di supporto decisi",
+      "description": "Una mail quando chi valida accetta o rifiuta un tuo PIREP di supporto di un evento."
     }
   },
   "mail": {
@@ -821,6 +883,18 @@
         "body": "{{decision}}\n\nIl turno: {{shift}} UTC, in {{title}}.\nLa nota dello staff: {{note}}\n\nI tuoi turni: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
         "approved": "Lo staff ha approvato la tua richiesta: il turno ora è di {{taker}}, che ha ricevuto una mail.",
         "refused": "Lo staff ha rifiutato la tua richiesta: il turno resta tuo."
+      },
+      "reportDecided": {
+        "subject": "[Eventi] Il tuo PIREP di supporto: {{title}}",
+        "body": "Il tuo {{kind}} per {{title}} è stato {{decision}}.\n\nLa nota di chi valida: {{note}}\n\nI tuoi PIREP: {{mine}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo.",
+        "kinds": {
+          "Pilot": "PIREP pilota",
+          "Atc": "PIREP ATC"
+        },
+        "states": {
+          "Accepted": "accettato",
+          "Rejected": "rifiutato"
+        }
       }
     }
   },
@@ -968,7 +1042,20 @@
     "attendanceDecided": "Questo turno è già deciso: un turno presente o giustificato resta così, e un no-show si può solo giustificare.",
     "bookingNotUnflown": "Esce dal registro solo una prenotazione che la verifica dopo l'evento ha trovato non volata.",
     "bookingAlreadyExcused": "Questa prenotazione è già fuori dal registro.",
-    "registerChanged": "È cambiato un momento fa: rileggi la pagina."
+    "registerChanged": "È cambiato un momento fa: rileggi la pagina.",
+    "reportClosed": "Questo evento non prende più PIREP di supporto: si mandano nei giorni dopo la sua fine.",
+    "reportDecided": "Questo PIREP è stato deciso: non si corregge più.",
+    "reportNoItems": "Aggiungi almeno una voce.",
+    "reportTooManyItems": "Un PIREP ha al più 20 voci.",
+    "reportAirportUnknown": "L'hub non conosce questo aeroporto.",
+    "reportSameAirport": "L'arrivo è la partenza.",
+    "reportNotAtTheEvent": "Il volo non tocca nessuno scalo dell'evento.",
+    "reportOutsideTheEvent": "È fuori dalle ore dell'evento.",
+    "reportShiftTooLong": "Un turno dura al più dodici ore.",
+    "reportShiftsOverlap": "Questo turno si sovrappone a un altro del PIREP.",
+    "reportStateNotAllowed": "Un PIREP si accetta o si rifiuta.",
+    "reportAlreadySo": "Il PIREP è già così.",
+    "reportChanged": "Il PIREP è cambiato un momento fa: leggilo di nuovo."
   },
   "questions": {
     "title": "Domande",
@@ -1436,6 +1523,68 @@
     "outcomes": {
       "title": "Esiti",
       "description": "Com'è andato ogni turno, come l'ha trovato la verifica dopo l'evento e come l'ha deciso lo staff. Nessuno decide il proprio turno."
+    }
+  },
+  "reports": {
+    "empty": "Nessuno ha mandato un PIREP di supporto per questo evento.",
+    "fields": {
+      "member": "Membro",
+      "kind": "Tipo",
+      "state": "Stato",
+      "verification": "Verifica",
+      "submittedAt": "Mandato",
+      "lines": "Voci e che cosa ha trovato la verifica",
+      "decidedBy": "Deciso da",
+      "decisionNote": "Nota della decisione"
+    },
+    "options": {
+      "kind": {
+        "Pilot": "Pilota",
+        "Atc": "ATC"
+      },
+      "state": {
+        "Submitted": "Da validare",
+        "Accepted": "Accettato",
+        "Rejected": "Rifiutato"
+      },
+      "verification": {
+        "Valid": "Tutte le voci trovate",
+        "Partial": "Alcune voci trovate",
+        "Invalid": "Nessuna voce trovata",
+        "Unavailable": "Non verificato"
+      }
+    },
+    "flight": "{{callsign}} {{departure}} → {{arrival}}, {{day}}",
+    "shift": "{{callsign}} {{from}} → {{to}} UTC",
+    "check": {
+      "flown": "Volato: una sessione di {{minutes}} minuti",
+      "notFound": "Nessuna sessione trovata",
+      "controlled": "Controllato: {{minutes}} minuti sulla postazione",
+      "tooShort": "Non abbastanza: {{minutes}} minuti sulla postazione",
+      "unavailable": "Non verificato: la rete non ha risposto",
+      "distance": "({{distance}} NM fra gli aeroporti)"
+    },
+    "decide": "Decidi",
+    "change": "Cambia la decisione",
+    "decideTitle": {
+      "Pilot": "Il PIREP pilota di {{name}}",
+      "Atc": "Il PIREP ATC di {{name}}"
+    },
+    "decideDescription": "Accettalo o rifiutalo. Il membro legge la tua nota in una mail; per rifiutare, scrivi perché.",
+    "decision": {
+      "fields": {
+        "state": "Decisione",
+        "note": "Nota"
+      },
+      "hints": {
+        "note": "Il membro la legge in una mail. Obbligatoria per rifiutare."
+      },
+      "options": {
+        "state": {
+          "Accepted": "Accetta",
+          "Rejected": "Rifiuta"
+        }
+      }
     }
   }
 }

@@ -47,7 +47,8 @@
       "atc": "ATC",
       "activities": "Activities",
       "seats": "Seats",
-      "stats": "Statistics"
+      "stats": "Statistics",
+      "reports": "Reports of support"
     },
     "actions": {
       "publish": "Publish",
@@ -565,6 +566,58 @@
       "toRecord": "Your record",
       "excused": "Taken out",
       "shifts": "Attended {{attended}} · no-shows {{noShows}} · excused {{excused}} · penalty {{penalty}}"
+    },
+    "reports": {
+      "title": "Reports of support",
+      "lead": "In the days after an event, tell the flights you flew and the shifts you controlled in it: the hub checks them on the network, and a validator accepts them.",
+      "open": "Events you can send a report for",
+      "until": "You can send and correct a report until {{date}} UTC.",
+      "sent": "Sent on {{date}} UTC",
+      "unavailable": "The network did not answer when you sent it: send it again later to have it checked.",
+      "note": "The validator's note: {{note}}",
+      "closed": "The days to correct it are over: a validator will decide it.",
+      "of": {
+        "Pilot": "Your pilot report for {{title}}",
+        "Atc": "Your ATC report for {{title}}"
+      },
+      "send": {
+        "Pilot": "Send a pilot report",
+        "Atc": "Send an ATC report"
+      },
+      "correct": {
+        "Pilot": "Correct the pilot report",
+        "Atc": "Correct the ATC report"
+      },
+      "dialogTitle": {
+        "Pilot": "Your flights in {{title}}",
+        "Atc": "Your shifts in {{title}}"
+      },
+      "pilotDescription": "Every flight you flew in the event, with the callsign you flew with. Sending again replaces them all.",
+      "pilotDescriptionAirports": "Every flight you flew in the event, with the callsign you flew with: each leaves from or lands at one of its airports ({{airports}}). Sending again replaces them all.",
+      "atcDescription": "Every shift you controlled in the event, with the position's callsign and its hours in UTC. Sending again replaces them all.",
+      "pilot": {
+        "fields": {
+          "items": "Flights",
+          "items.callsign": "Callsign",
+          "items.departureIcao": "Departure (ICAO)",
+          "items.arrivalIcao": "Arrival (ICAO)",
+          "items.flightDay": "Day (UTC)"
+        },
+        "hints": {
+          "items": "One flight or more, at most twenty."
+        }
+      },
+      "atc": {
+        "fields": {
+          "items": "Shifts",
+          "items.callsign": "Position",
+          "items.fromUtc": "From",
+          "items.toUtc": "To"
+        },
+        "hints": {
+          "items": "One shift or more, within the hours of the event, at most twelve hours each."
+        }
+      }
     }
   },
   "bookings": {
@@ -606,7 +659,8 @@
     "transfersToCome": "Requests to hand an ATC shift over, of events still to end: deleted",
     "transfersOver": "Requests to hand an ATC shift over, of events that ended, kept without the controller and without the notes",
     "seatsToCome": "Seats in the activities of events still to end: deleted, and their turns free again",
-    "seatsOver": "Seats in the activities of events that ended, kept without the member"
+    "seatsOver": "Seats in the activities of events that ended, kept without the member",
+    "reports": "Reports of support, kept without the member, the validator's note and the callsigns"
   },
   "tokenAudiences": {
     "bookings": "Reading the bookings of the events (a gate manager)"
@@ -669,7 +723,9 @@
       "toMark_one": "{{count}} shift the check could not tell",
       "toMark_other": "{{count}} shifts the check could not tell",
       "transfers_one": "{{count}} request to hand a shift over",
-      "transfers_other": "{{count}} requests to hand a shift over"
+      "transfers_other": "{{count}} requests to hand a shift over",
+      "reports_one": "{{count}} report of support to validate",
+      "reports_other": "{{count}} reports of support to validate"
     }
   },
   "settings": {
@@ -700,7 +756,8 @@
       "unflownThreshold": "Bookings not flown from which a pilot has the limits",
       "restrictedWindowHours": "Hours of a band of an event, for whoever has the limits",
       "restrictedMaxPerWindow": "Slots in each band, at most",
-      "restrictedMaxPerEvent": "Slots in an event, at most"
+      "restrictedMaxPerEvent": "Slots in an event, at most",
+      "reportDays": "Days after an event its reports of support may be sent"
     },
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
@@ -720,7 +777,8 @@
       "unflownThreshold": "A pilot with this many bookings the check found not flown, in the months the bookings are kept, books with the limits below. The staff take a booking out of a pilot's record by hand.",
       "restrictedWindowHours": "The bands start at the start of the event, each this many hours long. An event can say its own.",
       "restrictedMaxPerWindow": "How many slots a pilot with the limits books in each band. An event can say its own.",
-      "restrictedMaxPerEvent": "How many slots a pilot with the limits books in an event. An event can say its own."
+      "restrictedMaxPerEvent": "How many slots a pilot with the limits books in an event. An event can say its own.",
+      "reportDays": "After an event, its members send their reports of support — the flights they flew, the shifts they controlled — and correct them until they are decided, for this many days from its end."
     }
   },
   "notifications": {
@@ -767,6 +825,10 @@
     "atcShiftTransferDecided": {
       "title": "Shift handovers decided",
       "description": "An email when the staff approve or refuse your request to hand a shift over."
+    },
+    "reportDecided": {
+      "title": "Reports of support decided",
+      "description": "An email when a validator accepts or rejects your report of support for an event."
     }
   },
   "mail": {
@@ -821,6 +883,18 @@
         "body": "{{decision}}\n\nThe shift: {{shift}} UTC, in {{title}}.\nThe staff's note: {{note}}\n\nYour shifts: {{mine}}\n\n---\nYou can switch these emails off from your profile page.",
         "approved": "The staff approved your request: the shift is now {{taker}}'s, who has been told.",
         "refused": "The staff refused your request: the shift stays yours."
+      },
+      "reportDecided": {
+        "subject": "[Events] Your report of support: {{title}}",
+        "body": "Your {{kind}} for {{title}} has been {{decision}}.\n\nThe validator's note: {{note}}\n\nYour reports: {{mine}}\n\n---\nYou can turn these emails off from your profile page.",
+        "kinds": {
+          "Pilot": "pilot report",
+          "Atc": "ATC report"
+        },
+        "states": {
+          "Accepted": "accepted",
+          "Rejected": "rejected"
+        }
       }
     }
   },
@@ -968,7 +1042,20 @@
     "attendanceDecided": "This shift is decided already: an attended or excused shift stays so, and a no-show can only be excused.",
     "bookingNotUnflown": "Only a booking the check after the event found not flown comes out of the record.",
     "bookingAlreadyExcused": "This booking is out of the record already.",
-    "registerChanged": "It changed a moment ago: read the page again."
+    "registerChanged": "It changed a moment ago: read the page again.",
+    "reportClosed": "This event no longer takes reports of support: they are sent in the days after its end.",
+    "reportDecided": "This report has been decided: it can no longer be corrected.",
+    "reportNoItems": "Add at least one item.",
+    "reportTooManyItems": "A report holds at most 20 items.",
+    "reportAirportUnknown": "The hub does not know this airport.",
+    "reportSameAirport": "The arrival is the departure.",
+    "reportNotAtTheEvent": "The flight touches none of the event's airports.",
+    "reportOutsideTheEvent": "This is outside the hours of the event.",
+    "reportShiftTooLong": "A shift lasts at most twelve hours.",
+    "reportShiftsOverlap": "This shift meets another one of the report.",
+    "reportStateNotAllowed": "A report is accepted or rejected.",
+    "reportAlreadySo": "The report is already so.",
+    "reportChanged": "The report changed a moment ago: read it again."
   },
   "questions": {
     "title": "Questions",
@@ -1436,6 +1523,68 @@
     "outcomes": {
       "title": "Outcomes",
       "description": "How each shift went, as the check after the event found it, and as the staff decided. Nobody decides their own shift."
+    }
+  },
+  "reports": {
+    "empty": "Nobody sent a report of support for this event.",
+    "fields": {
+      "member": "Member",
+      "kind": "Kind",
+      "state": "State",
+      "verification": "Check",
+      "submittedAt": "Sent",
+      "lines": "Items and what the check found",
+      "decidedBy": "Decided by",
+      "decisionNote": "Note of the decision"
+    },
+    "options": {
+      "kind": {
+        "Pilot": "Pilot",
+        "Atc": "ATC"
+      },
+      "state": {
+        "Submitted": "To validate",
+        "Accepted": "Accepted",
+        "Rejected": "Rejected"
+      },
+      "verification": {
+        "Valid": "Every item found",
+        "Partial": "Some items found",
+        "Invalid": "No item found",
+        "Unavailable": "Not checked"
+      }
+    },
+    "flight": "{{callsign}} {{departure}} → {{arrival}}, {{day}}",
+    "shift": "{{callsign}} {{from}} → {{to}} UTC",
+    "check": {
+      "flown": "Flown: a session of {{minutes}} minutes",
+      "notFound": "No session found",
+      "controlled": "Controlled: {{minutes}} minutes on the position",
+      "tooShort": "Not enough: {{minutes}} minutes on the position",
+      "unavailable": "Not checked: the network did not answer",
+      "distance": "({{distance}} NM between the airports)"
+    },
+    "decide": "Decide",
+    "change": "Change the decision",
+    "decideTitle": {
+      "Pilot": "The pilot report of {{name}}",
+      "Atc": "The ATC report of {{name}}"
+    },
+    "decideDescription": "Accept or reject it. The member reads your note in a mail; to reject, say why.",
+    "decision": {
+      "fields": {
+        "state": "Decision",
+        "note": "Note"
+      },
+      "hints": {
+        "note": "The member reads it in a mail. Required to reject."
+      },
+      "options": {
+        "state": {
+          "Accepted": "Accept",
+          "Rejected": "Reject"
+        }
+      }
     }
   }
 }

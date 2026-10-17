@@ -503,6 +503,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/reports/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsDecideReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -2327,6 +2343,70 @@ export interface paths {
         };
         get: operations["EventStatsGet"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventReportsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventReportsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsMyReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/reports/{eventId}/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["EventsSendReport"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5850,6 +5930,34 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /**
+         * @description A report of support as the staff's generated list reads it (§7.2, E14a; note 2026-10-17-il-pirep-di-supporto, reading 9): its member, its
+         *     kind and where it stands, what the check made of it, who decided and their note, its items with what the check found of each, and whether
+         *     the reader may decide it now — an event over and `EventReports.Edit` from the one handler on the row, never on their own. Data only:
+         *     the page writes the words. Names and items are read for a page at once; a row alone has neither.
+         */
+        EventReportRowDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            member: components["schemas"]["EventMemberDto"];
+            kind: components["schemas"]["ReportKind"];
+            source: components["schemas"]["ReportSource"];
+            state: components["schemas"]["ReportState"];
+            verification: components["schemas"]["ReportVerification"];
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            checkedAt: string;
+            decidedBy: null | components["schemas"]["EventMemberDto"];
+            /** Format: date-time */
+            decidedAt: null | string;
+            decisionNote: null | string;
+            items: components["schemas"]["ReportItemDto"][];
+            decidable: boolean;
+        };
         /** @description A route of an event as its list and its form show it (design M4 §1.4). */
         EventRouteDto: {
             /** Format: int64 */
@@ -6964,6 +7072,37 @@ export interface components {
             seats: components["schemas"]["MySeatDto"][];
         };
         /**
+         * @description A member's own report (§5.2, §7.1): its event, its kind, where it stands, what the check made of it, the validator's note, and whether
+         *     they may still correct it — not decided, and until DateTime MyReportDto.ClosesAtUtc.
+         */
+        MyReportDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            kind: components["schemas"]["ReportKind"];
+            state: components["schemas"]["ReportState"];
+            verification: components["schemas"]["ReportVerification"];
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            checkedAt: string;
+            /** Format: date-time */
+            decidedAt: null | string;
+            decisionNote: null | string;
+            /** Format: date-time */
+            closesAtUtc: string;
+            correctable: boolean;
+            items: components["schemas"]["ReportItemDto"][];
+        };
+        /** @description The member's reports, the latest event first, and the events still open to one. */
+        MyReportsDto: {
+            reports: components["schemas"]["MyReportDto"][];
+            open: components["schemas"]["ReportableEventDto"][];
+        };
+        /**
          * @description A seat as its member reads it, under their registration on `/events/mine` and on the event's page: the activity with its words —
          *     which the page writes in the language on screen —, when the turn starts and ends.
          */
@@ -7741,6 +7880,29 @@ export interface components {
         PagedResultOfEventRegistrationDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventRegistrationDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventReportRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventReportRowDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -9231,6 +9393,90 @@ export interface components {
         RegistrationRequest: {
             answers: null | components["schemas"]["JsonObject"];
         };
+        /**
+         * @description An event a member may send a report for now (reading 3): its head, until when, and its airports — a flight touches one of them, unless the
+         *     event is of the whole division.
+         */
+        ReportableEventDto: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date-time */
+            closesAtUtc: string;
+            wholeDivision: boolean;
+            airports: string[];
+        };
+        /**
+         * @description What a validator sends to decide a report (§5.3): accepted or rejected — a decision left out is `Submitted`, and refused —, and a note,
+         *     required to reject.
+         */
+        ReportDecision: {
+            state: components["schemas"]["ReportState"];
+            note: null | string;
+        };
+        /**
+         * @description One item of a report as the member and the staff read it (§1.8): what was declared — a flight's callsign, airports and day, or a shift's
+         *     position and hours — and what the check found: the session, the minutes, the distance, whether it is verified (none: not asked). Data
+         *     only: the page writes the words.
+         */
+        ReportItemDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            ordinal: number;
+            callsign: string;
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: date-time */
+            flightDay: null | string;
+            /** Format: date-time */
+            fromUtc: null | string;
+            /** Format: date-time */
+            toUtc: null | string;
+            /** Format: int64 */
+            sessionId: null | number;
+            /** Format: int32 */
+            minutes: null | number;
+            /** Format: double */
+            distanceNm: null | number;
+            verified: null | boolean;
+        };
+        /** @description One item as a member sends it (§5.2): a flight — callsign, departure, arrival, the day at midnight UTC — or a shift — the position, from, to. */
+        ReportItemRequest: {
+            callsign: null | string;
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: date-time */
+            flightDay: null | string;
+            /** Format: date-time */
+            fromUtc: null | string;
+            /** Format: date-time */
+            toUtc: null | string;
+        };
+        /**
+         * @description What a report of support tells (design M4 §1.8): flights flown, or shifts controlled.
+         * @enum {unknown}
+         */
+        ReportKind: "Pilot" | "Atc";
+        /** @description A report as a member sends it, or sends again to correct it (§5.2): its items, all of them, every time. */
+        ReportRequest: {
+            items: null | components["schemas"]["ReportItemRequest"][];
+        };
+        /**
+         * @description Who wrote a report (§1.8): its member by hand, or the check after the event for a member who asked it to (E14b).
+         * @enum {unknown}
+         */
+        ReportSource: "Manual" | "Auto";
+        /**
+         * @description Where a report stands (§5.3): waiting for a validator, accepted, or rejected.
+         * @enum {unknown}
+         */
+        ReportState: "Submitted" | "Accepted" | "Rejected";
         /** @description A report the validator sent back «to modify», with the address of the form that corrects it. */
         ReportToFixDto: {
             /** Format: int64 */
@@ -9244,6 +9490,12 @@ export interface components {
             /** Format: date-time */
             takeoffAt: string;
         };
+        /**
+         * @description What the check found of a report's items (§5.3): every item found, some, none, or a source that did not answer for some item — never a
+         *     guess.
+         * @enum {unknown}
+         */
+        ReportVerification: "Valid" | "Partial" | "Invalid" | "Unavailable";
         /** @description An address with its family, because `::ffff:127.0.0.1` and `127.0.0.1` are not in the same network. */
         RequestAddress: {
             /** @description As the hub writes it, in the audit log too; `null` when there is none. */
@@ -12068,6 +12320,60 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UnflownExcuse"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsDecideReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportDecision"];
             };
         };
         responses: {
@@ -17640,6 +17946,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EventStatsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventReportsList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventReportRowDto"];
+                };
+            };
+        };
+    };
+    EventReportsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventReportRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsMyReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReportsDto"];
+                };
+            };
+        };
+    };
+    EventsSendReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: number;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReportDto"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
             /** @description Not Found */

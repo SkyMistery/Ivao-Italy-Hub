@@ -14,7 +14,8 @@ namespace IvaoHub.Modules.Events.Registers;
 
 /// <summary>
 /// One event of the block <c>events.staffQueue</c> (§7.3, E13b): its head and link, and how many of its rows wait for the reader — no-shows the
-/// check proposed, shifts it left unknown when it closed the event, requests to hand a shift over. Numbers: the page writes the words.
+/// check proposed, shifts it left unknown when it closed the event, requests to hand a shift over — and, with E14a, reports of support to
+/// validate. Numbers: the page writes the words.
 /// </summary>
 public sealed record StaffQueueEventDto(
     long Id,
@@ -24,14 +25,17 @@ public sealed record StaffQueueEventDto(
     DateTime EndsAtUtc,
     int NoShows,
     int ToMark,
-    int Transfers);
+    int Transfers,
+    int Reports);
 
 /// <summary>
 /// The block <c>events.staffQueue</c> (design M4 §7.3, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 11): on the dashboards of
 /// the events' and the ATC's staff, what waits for a decision of theirs — a no-show to confirm or excuse, a shift to mark, a request to hand a
-/// shift over —, one row per event, the one ended longest ago first. The reports of support join with E14a.
+/// shift over —, and the reports of support to validate (E14a; note 2026-10-17-il-pirep-di-supporto, reading 10), one row per event, the one
+/// ended longest ago first.
 /// <para>Always live and the reader's: each row is counted only where the one handler gives them <c>EventAtc.Edit</c> on it — on its event's
-/// care and its position's FIR, and never on a row about themselves, the super administrator included. A visitor gets
+/// care and its position's FIR, and never on a row about themselves, the super administrator included —, a report where it gives them
+/// <c>EventReports.Edit</c>, never their own. A visitor gets
 /// <c>signedIn: false</c>.</para>
 /// </summary>
 public sealed class StaffQueueProvider(
@@ -85,15 +89,22 @@ public sealed class StaffQueueProvider(
             .Take(Window)
             .ToListAsync(cancellationToken);
 
-        var counts = new Dictionary<long, (int NoShows, int ToMark, int Transfers)>();
+        // The reports of support waiting for a validator (E14a), read already narrowed to their state.
+        var reports = await CrudSource.BackOffice<EventReport>(database).AsNoTracking()
+            .Where(report => report.State == ReportState.Submitted)
+            .OrderBy(report => report.Id)
+            .Take(Window)
+            .ToListAsync(cancellationToken);
+
+        var counts = new Dictionary<long, (int NoShows, int ToMark, int Transfers, int Reports)>();
         foreach (var shift in shifts)
         {
             if ((await authorization.AuthorizeAsync(request.User, shift, EventsPermissions.AtcEdit)).Succeeded)
             {
                 var count = counts.GetValueOrDefault(shift.EventId);
                 counts[shift.EventId] = shift.Attendance == ShiftAttendance.NoShowProposed
-                    ? (count.NoShows + 1, count.ToMark, count.Transfers)
-                    : (count.NoShows, count.ToMark + 1, count.Transfers);
+                    ? (count.NoShows + 1, count.ToMark, count.Transfers, count.Reports)
+                    : (count.NoShows, count.ToMark + 1, count.Transfers, count.Reports);
             }
         }
 
@@ -102,7 +113,16 @@ public sealed class StaffQueueProvider(
             if ((await authorization.AuthorizeAsync(request.User, transfer, EventsPermissions.AtcEdit)).Succeeded)
             {
                 var count = counts.GetValueOrDefault(transfer.EventId);
-                counts[transfer.EventId] = (count.NoShows, count.ToMark, count.Transfers + 1);
+                counts[transfer.EventId] = (count.NoShows, count.ToMark, count.Transfers + 1, count.Reports);
+            }
+        }
+
+        foreach (var report in reports)
+        {
+            if ((await authorization.AuthorizeAsync(request.User, report, EventsPermissions.ReportsEdit)).Succeeded)
+            {
+                var count = counts.GetValueOrDefault(report.EventId);
+                counts[report.EventId] = (count.NoShows, count.ToMark, count.Transfers, count.Reports + 1);
             }
         }
 
@@ -121,7 +141,8 @@ public sealed class StaffQueueProvider(
                 row.EndsAtUtc,
                 counts[row.Id].NoShows,
                 counts[row.Id].ToMark,
-                counts[row.Id].Transfers))
+                counts[row.Id].Transfers,
+                counts[row.Id].Reports))
             .ToList();
 
         return new JsonObject

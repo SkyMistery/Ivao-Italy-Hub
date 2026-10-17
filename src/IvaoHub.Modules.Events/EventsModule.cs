@@ -13,6 +13,7 @@ using IvaoHub.Modules.Events.Export;
 using IvaoHub.Modules.Events.Public;
 using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Registrations;
+using IvaoHub.Modules.Events.Reports;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Routing;
@@ -224,6 +225,11 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<RegisterDecisions>();
         services.AddScoped<IDataBlockProvider, StaffQueueProvider>();
 
+        // The reports of support (E14a): a member's, checked at every send through the core's sources, and the validators' decisions on them.
+        services.AddScoped<ReportCheck>();
+        services.AddScoped<MemberReports>();
+        services.AddScoped<ReportDecisions>();
+
         // The module's half of erasing a person's data (E8b): a booking of an event still to end goes, one of an event over stays
         // without them.
         services.AddScoped<IPersonalDataEraser, EventsPersonalData>();
@@ -248,5 +254,6 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapPublicRosterEndpoints();
         endpoints.MapStatsEndpoints();
         endpoints.MapRegisterEndpoints();
+        endpoints.MapReportEndpoints();
     }
 }
