@@ -7,7 +7,8 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10u** (del nucleo: il permesso tenuto senza un ambito su una riga), sul branch
-`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`.
+`m4/e10u-unscoped-permission`, **PR #288** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main` a `9a78b2c3`; dopo la revisione, [approvabile, niente da
+correggere](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666), ha unito `main` a `8bf63ea3` (#285, #286).
 La nota `2026-10-17-il-permesso-senza-ambito` è **decisa** da Carmine: la (b) al punto 1 della revisione della #283 ([la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736)) — i registri di E13b rispondono solo a chi tiene
 il permesso senza un ambito, e un grant su un evento o su una riga non li apre, né le loro voci di menu. Da E10u il nucleo ha
@@ -333,7 +334,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con la sua testa `a2631e6` e `main` a `9a78b2c` uniti)
+### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con le sue teste `a2631e6` e `59d544e` e `main` a `8bf63ea` uniti)
 
 - **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
   `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
@@ -374,9 +375,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     della riga dell'evento per i turni; se perde, quell'evento salta il giro e il giro dopo lo riprende (il punto 3 della revisione).
   - ⚠️ **Il banco non lancia un job**: un no-show proposto non si fa dall'API; lo provano `EventsRegistersTests` e il banco della fase con
     righe scritte in SQL.
-  - ⚠️ **I VID di prova**: E13b ha usato **761200–761206** della fascia 761200–761229.
+  - ⚠️ **I VID di prova**: E13b ha usato **761200–761207** della fascia 761200–761229.
 
-### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`)
+### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`, con `main` a `8bf63ea3` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10u, «Com'è andata»; nessuna migrazione, niente nel browser, `/api/me` uguale, nessuna riga di
   un modulo; una nota nuova, `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):

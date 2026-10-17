@@ -4461,7 +4461,16 @@ oggi restano come sono, e senza il controllo i test cadono.
   - la CI (la dice la PR);
   - `e2e:full`: nessuna schermata cambia, e il bootstrap ha la stessa forma;
   - l'uso vero, nei registri e nelle loro voci: è di E13b.
+- **Dopo la revisione** (17 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r288u], con la CI verde su
+  `a2631e6`. I due punti piccoli, facoltativi, sono fatti nei riassunti di `PermissionSet.HasUnscoped` e `ICurrentUser.HasUnscoped`:
+  l'ambito è `ResourceScope`, un FIR non lo è; e il dipartimento non si guarda, quindi che cosa il titolare legge poi lo restringe chi
+  chiama (E13b). Unito `main` a `8bf63ea3` (il piano 1.36, #285, e i file delle lingue con l'impronta, #286, solo `web/`), senza
+  conflitti, su richiesta del revisore; il diff della fase contro `main` è solo di E10u. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1341/1341**, integrazione intera da sola **657/657** al primo giro (9 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**800/800**, vitest con `--maxWorkers=2`) verdi, `gen:api` senza differenze, `core-guard.sh` con Git
+  Bash dalla base `8bf63ea3`: passa.
 
+[r288u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666
 [a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
 
 ### E11a — Postazioni e disponibilità
