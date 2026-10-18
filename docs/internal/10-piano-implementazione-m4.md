@@ -5482,6 +5482,29 @@ del nucleo E10v, che il codice segue; la scelta è di Carmine, il punto 3 della 
   dietro il lock di Mailpit, **71/71 al primo giro** (14,2 min); `core-guard.sh` dal merge-base `e7b1331`: passa (di E14b nel nucleo solo
   `ErasureTests.cs`).
 
+**Dopo la revisione della #293** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248457744), [le risposte di
+Carmine ai tre punti](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) e [alle altre
+letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104), 18 ottobre 2026; unita la testa approvabile di E14a
+`77bf5068`, con `main` a `01fdbed` — E10v #291 unita —):
+
+- **Il punto 1**: le righe di `evt_report_awards` **non si cancellano mai**, una per PIREP e regola (univoco `(report_id, rule_id)`); un rifiuto le
+  spegne (`points_out`, la proiezione vuota): il nucleo toglie un segnale in attesa e tiene uno guardato, una nuova accettazione ritrova la riga e
+  il suo segnale (uno scartato resta scartato), e «è diventato un award?» vede ogni segnale che il PIREP ha mai dato — anche uno scartato,
+  riaperto e assegnato dopo un rifiuto. Il test `ADismissedSignalAssignedAfterARejectionStillFreezesTheDecision` (**cade contando solo le righe
+  che segnalano**: provato).
+- **Il punto 2**: `ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused`, una transazione del test tiene la riga del segnale e la marca
+  assegnata, la decisione aspetta al `FOR UPDATE` ed è rifiutata (**cade senza il `FOR UPDATE`**: provato).
+- **Il punto 3**: la domanda 2 resta **Proposta** nella nota. **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
+  `evt_events.auto_reports_cursor`, non una colonna di persona (la sua riga in `ErasureTests` tolta); un `Auto` corretto dal membro diventa
+  `Manual`; un turno `Auto` si verifica con `AfterRules.Threshold`, come uno a mano. `AddAwardRules` rifatta (mai su `main`).
+- **La risposta 1 di Carmine**: l'impostazione **`minimumFlightMinutes`** (10, da 1 a 120, nel form generato delle impostazioni): un volo è
+  verificato solo se la sua sessione è durata almeno tanto, a mano e `Auto` (`ReportRules.LongEnough`), il confine provato dalle unità. **La
+  risposta 2**: un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`. **La risposta 3**: «una riga sorgente ha
+  dato un award?» diventa un metodo del nucleo, nella fase del nucleo **E10x** (`m4/e10x-award-signal-assigned`); E14b ne unisce il branch e lo
+  chiama al posto delle sue due query.
+- ⚠️ **Una trappola di questa macchina**: fermare per nome i processi dei test (`testhost`, `IvaoHub.IntegrationTests`) ha fermato due volte la
+  suite intera di un'altra fase che girava insieme (E10w); si ferma solo il proprio giro.
+
 ### E15a — Nucleo: le prenotazioni ATC della rete
 
 Design §9.1, §13 n.6, §17.2 n.3; nota `il-roster-atc`. Branch `m4/e15a-network-atc-bookings`. **PR del nucleo**, con la sua nota.
