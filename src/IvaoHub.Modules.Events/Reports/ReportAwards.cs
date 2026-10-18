@@ -15,8 +15,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// interceptor puts in the core's queue in the same transaction; rejecting it keeps the rows and makes them point nobody out, and the core
 /// withdraws the signals still waiting. Every signal the report ever produced keeps its row, so «was an award assigned from it?» sees them all.
 /// <para><b>Once an award was assigned from one of them, the report's decision no longer changes</b> (Carmine's limit on #287): whether one was
-/// is the core's queue, which the module's context maps — read under the lock of the signals' rows inside the decision's transaction, so that an
-/// assignment in the same instant passes before or after it, never in between.</para>
+/// is the core's answer (<see cref="AwardSignalQueries"/>, E10x), read under the lock of the signals' rows inside the decision's transaction,
+/// so that an assignment in the same instant passes before or after it, never in between.</para>
 /// </summary>
 public sealed class ReportAwards(
     EventsDbContext database,
@@ -31,10 +31,11 @@ public sealed class ReportAwards(
     public const string ReasonKey = "events:awards.ruleMet";
 
     /// <summary>
-    /// Whether an award was assigned from a signal of the report, taking the lock of those signals' rows when <paramref name="locking"/>: inside
-    /// a transaction, the decision that follows is the last word on them until it commits.
+    /// Whether an award was assigned from a signal the report ever produced — every row of it, pointing out or not —, through the core's one
+    /// read of the queue (<see cref="AwardSignalQueries.AssignedAsync"/>, E10x; Carmine's answer 3 on #293). Called inside the decision's
+    /// transaction, it holds the signals' rows until the decision commits, so that an assignment in the same instant passes before or after it.
     /// </summary>
-    public async Task<bool> AssignedAsync(long reportId, bool locking, CancellationToken cancellationToken)
+    public async Task<bool> AssignedAsync(long reportId, CancellationToken cancellationToken)
     {
         var sources = (await database.ReportAwards.AsNoTracking()
                 .Where(award => award.ReportId == reportId)
@@ -43,24 +44,7 @@ public sealed class ReportAwards(
             .Select(EventReportAward.SourceOf)
             .ToList();
 
-        var module = EventsModule.ModuleKey;
-        var handled = nameof(AwardSignalStatus.Handled);
-        foreach (var source in sources)
-        {
-            var statuses = locking
-                ? await database.Database
-                    .SqlQuery<string>($"SELECT status AS `Value` FROM cms_award_signals WHERE source_module = {module} AND source_id = {source} FOR UPDATE")
-                    .ToListAsync(cancellationToken)
-                : await database.Database
-                    .SqlQuery<string>($"SELECT status AS `Value` FROM cms_award_signals WHERE source_module = {module} AND source_id = {source}")
-                    .ToListAsync(cancellationToken);
-            if (statuses.Contains(handled, StringComparer.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return (await AwardSignalQueries.AssignedAsync(database, EventsModule.ModuleKey, sources, cancellationToken)).Count > 0;
     }
 
     /// <summary>The reports among <paramref name="reportIds"/> an award was assigned from: their decision is not offered any more.</summary>
@@ -70,23 +54,11 @@ public sealed class ReportAwards(
             .Where(award => reportIds.Contains(award.ReportId))
             .Select(award => new { award.Id, award.ReportId })
             .ToListAsync(cancellationToken);
-        if (awards.Count == 0)
-        {
-            return new HashSet<long>();
-        }
+        var assigned = await AwardSignalQueries.AssignedAsync(
+            database, EventsModule.ModuleKey, [.. awards.Select(award => EventReportAward.SourceOf(award.Id))], cancellationToken);
 
-        var sources = awards.Select(award => EventReportAward.SourceOf(award.Id)).ToList();
-        var handled = (await database.Set<AwardSignal>().AsNoTracking()
-                .Where(signal => signal.SourceModule == EventsModule.ModuleKey
-                    && sources.Contains(signal.SourceId)
-                    && signal.Status == AwardSignalStatus.Handled)
-                .Select(signal => signal.SourceId)
-                .ToListAsync(cancellationToken))
-            .ToHashSet(StringComparer.Ordinal);
-
-        return awards.Where(award => handled.Contains(EventReportAward.SourceOf(award.Id))).Select(award => award.ReportId).ToHashSet();
+        return awards.Where(award => assigned.Contains(EventReportAward.SourceOf(award.Id))).Select(award => award.ReportId).ToHashSet();
     }
-
     /// <summary>
     /// Writes what the report's new state points out, into the tracked context, for the save of the decision (the review of #293, point 1).
     /// <b>A row is never deleted</b>: it is the source of a signal the core keeps whatever happens to it once somebody looked at it — dismissed or
