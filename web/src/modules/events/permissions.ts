@@ -21,3 +21,6 @@ export const EVENT_BOOKINGS_EDIT = 'EventBookings.Edit';
  */
 export const EVENT_ATC_VIEW = 'EventAtc.View';
 export const EVENT_ATC_EDIT = 'EventAtc.Edit';
+
+/** The reports of support of the members who took part (§5.3, E14a): read by the events' staff, validated by the members' department. */
+export const EVENT_REPORTS_VIEW = 'EventReports.View';

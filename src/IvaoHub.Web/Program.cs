@@ -218,6 +218,12 @@ builder.Services.AddHsts(options =>
     options.Preload = false;
 });
 
+// Where the time of every request goes, written to diagnostics/requests-YYYYMMDD.txt with a summary for every day that
+// is over; on in the hub's own process, never under a test host unless it asks (note 2026-10-18-i-tempi-delle-richieste).
+builder.Services.AddRequestTimings(
+    builder.Configuration,
+    hubProcess: System.Reflection.Assembly.GetEntryAssembly() == typeof(Program).Assembly);
+
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddSingleton(BuildInfo.FromAssembly(typeof(Program).Assembly));
 
@@ -294,6 +300,9 @@ if (startupWatch is not null)
 // One line per start and per stop in diagnostics/starts.txt, and the requests counted in between: first in the
 // pipeline, so that it counts them all (notes 2026-09-28-i-job-quando-passenger-spegne-l-hub, 2026-09-28-un-avvio-piu-veloce).
 StartsWatch.Arm(app, paths, timings);
+
+// Right after it, so that the time of every middleware below counts in the line of the request.
+app.UseRequestTimings(timings);
 
 // Before the forwarded headers, which rewrite what they read: the diagnostics of the request show it as it arrived
 // (note 2026-09-28-l-indirizzo-del-visitatore-dietro-i-proxy). It copies one address's request and nothing else.

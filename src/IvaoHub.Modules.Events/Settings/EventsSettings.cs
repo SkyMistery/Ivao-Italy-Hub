@@ -78,6 +78,9 @@ public sealed record EventsSettings
     /// </summary>
     public int AttendanceMinimumMinutes { get; init; } = 30;
 
+    /// <summary>The days after an event's end a member may send a report of support, and correct it (§5.2, E14a).</summary>
+    public int ReportDays { get; init; } = 14;
+
     /// <summary>The weight of the penalty of reliability (§4.5, E13b): <c>weight × no-shows ÷ (attended + no-shows + 2)</c>.</summary>
     public double NoShowWeight { get; init; } = 1;
 
@@ -137,6 +140,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
     /// <summary>Fifty bookings in a band: more is no limit at all.</summary>
     public const int MaxRestrictedPerWindow = 50;
 
+    /// <summary>Two months: a report sent later than that tells what nobody can check any more.</summary>
+    public const int MaxReportDays = 60;
+
     /// <summary>Two hundred bookings in an event: more is no limit at all.</summary>
     public const int MaxRestrictedPerEvent = 200;
 
@@ -180,6 +186,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
         // After the event (E13a): at least a minute on the position, and never more than the longest shift there is.
         RuleFor(settings => settings.AttendanceMinimumMinutes).InclusiveBetween(1, MaxShiftMinutes).WithMessage("errors.number.range");
+
+        // The reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 3): at least a day, at most two months.
+        RuleFor(settings => settings.ReportDays).InclusiveBetween(1, MaxReportDays).WithMessage("errors.number.range");
 
         // The registers and the limits (E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 9): a threshold of nought would limit
         // everybody, and a limit of nought would close the bookings to whoever has one.
