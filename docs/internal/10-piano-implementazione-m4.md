@@ -5547,6 +5547,12 @@ letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248
   dato un award?» diventa un metodo del nucleo, nella fase del nucleo **E10x** (`m4/e10x-award-signal-assigned`); E14b ne unisce il branch e lo
   chiama al posto delle sue due query: **fatto**, unita la #299 (testa `34f9a0fa`) e `main` a `3cdacd9`; `ReportAwards` chiede al nucleo
   (`AwardSignalQueries.AssignedAsync`) sulle sorgenti di ogni riga del PIREP, e il test della corsa passa dal blocco del nucleo.
+- **Verificato, in locale** (18 ottobre 2026, con E14a `77bf5068`, E10x `34f9a0fa` e `main` a `3cdacd9` uniti): build Release senza avvisi;
+  `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza diff; unità **1385/1385**; **integrazione intera da sola
+  689/689** (12,4 min); i due test nuovi del punto 1 e 2 **cadono senza la loro correzione** (provato, prima del passaggio al metodo del
+  nucleo); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **812 in 117 file**; lo smoke **184/184**;
+  `core-guard.sh` dal merge-base `3cdacd9`: passa (di E14b nel nucleo solo `ErasureTests.cs`; `AwardSignalQueries.cs` è di E10x, con la sua
+  nota). `e2e:full` non rifatto dopo la revisione: nessuna pagina cambiata oltre al campo nuovo del form delle impostazioni, generato.
 - ⚠️ **Una trappola di questa macchina**: fermare per nome i processi dei test (`testhost`, `IvaoHub.IntegrationTests`) ha fermato due volte la
   suite intera di un'altra fase che girava insieme (E10w); si ferma solo il proprio giro.
 
