@@ -165,6 +165,19 @@ public static class ReportRules
     /// session never twice. Item by item, a flight declared «X» found no «X» and took the «Y» the next item declared, and the two read verified
     /// with each other's minutes. None where nothing is left, or where the source did not answer (no list found).
     /// </summary>
+    /// <summary>
+    /// Whether a session flew a route (E14b; note 2026-10-17-le-regole-di-award, reading 3-bis): the <b>last</b> revision of its flight plan says
+    /// those two airports (E10v). The network finds a session for a route any revision of its plan said; one the pilot only filed and then
+    /// changed is not a leg flown, and a rule of award never counts it. A session without the airports of its plan flew none.
+    /// </summary>
+    public static bool FlewRoute(NetworkSession session, string departure, string arrival)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        return string.Equals(session.DepartureIcao, departure, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(session.ArrivalIcao, arrival, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static NetworkSession?[] Flown(IReadOnlyList<(string Callsign, IReadOnlyList<NetworkSession>? Found)> flights)
     {
         ArgumentNullException.ThrowIfNull(flights);

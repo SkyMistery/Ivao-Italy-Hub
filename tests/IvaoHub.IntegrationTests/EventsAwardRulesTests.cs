@@ -680,8 +680,18 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         return report.Id;
     }
 
-    private static Task<HttpResponseMessage> DecideAsync(HttpClient client, long reportId, string state, string? note, CancellationToken cancellationToken) =>
-        client.PostAsJsonAsync($"{ReportEndpoints.Pattern}/{reportId}/decision", new { state, note }, cancellationToken);
+    /// <summary>A decision on what the validator sees now: the report's state and its last change, as the list gives them (E14a, #289).</summary>
+    private async Task<HttpResponseMessage> DecideAsync(HttpClient client, long reportId, string state, string? note, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var seen = await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Reports.IgnoreQueryFilters().AsNoTracking()
+            .SingleAsync(report => report.Id == reportId, cancellationToken);
+
+        return await client.PostAsJsonAsync(
+            $"{ReportEndpoints.Pattern}/{reportId}/decision",
+            new { state, note, seen = seen.State.ToString(), updatedAt = DateTime.SpecifyKind(seen.UpdatedAt, DateTimeKind.Utc) },
+            cancellationToken);
+    }
 
     private static async Task NoContentAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {

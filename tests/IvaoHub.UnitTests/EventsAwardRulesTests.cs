@@ -235,6 +235,24 @@ public sealed class EventsAwardRulesTests
         Assert.Equal(3, AutoReportRules.Flights(sessions, null, from, to, (_, _) => null).Count);
     }
 
+    [Fact]
+    public void ASessionFliesOnlyTheLastRouteOfItsPlan()
+    {
+        // Filed to one airport, then changed and flown to another: the network finds it for both, and only the second was flown.
+        var changed = new NetworkSession(1, 761262, "TST1", Start, Start.AddHours(1), "XEA1", "XEA3")
+        {
+            Routes = [new NetworkRoute("XEA1", "XEA2"), new NetworkRoute("XEA1", "XEA3")],
+        };
+
+        Assert.True(ReportRules.FlewRoute(changed, "xea1", "XEA3"));
+        Assert.False(ReportRules.FlewRoute(changed, "XEA1", "XEA2"));
+        Assert.False(ReportRules.FlewRoute(new NetworkSession(2, 761262, "TST1", Start, Start.AddHours(1)), "XEA1", "XEA2"));
+
+        // The check gives out only the sessions that flew the item's route.
+        var flown = ReportRules.Flown([("TST1", [.. new[] { changed }.Where(session => ReportRules.FlewRoute(session, "XEA1", "XEA2"))])]);
+        Assert.Null(flown[0]);
+    }
+
     private static Refusals Check(
         AwardCriterion criterion,
         string? departure = null,

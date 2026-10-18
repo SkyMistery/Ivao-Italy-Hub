@@ -11,8 +11,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// sources, never the network's client.
 /// <list type="bullet">
 /// <item><b>A flight</b>: the member's sessions as a pilot (<see cref="INetworkSessionSource"/>) that started on its day within the event's
-/// window of flights, between its two airports; the one <see cref="ReportRules.Flown"/> gives it over the whole report, with its declared
-/// minutes. The distance between
+/// window of flights, between its two airports — <b>the last revision of their plan</b>, never one only filed (E14b, <see cref="ReportRules.FlewRoute"/>);
+/// the one <see cref="ReportRules.Flown"/> gives it over the whole report, with its declared minutes. The distance between
 /// the two airports (<see cref="GreatCircle"/> on <see cref="IAirportDirectory"/>) is written found or not.</item>
 /// <item><b>A shift</b>: as <c>events-after</c> checks a shift of the roster (E13a) — the archive of the sessions first, the tracker by VID where
 /// the archive does not answer or does not cover the hours —, verified when the minutes on the position reach <c>attendanceMinimumMinutes</c>
@@ -64,7 +64,9 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
                 asked[(departure, arrival, day)] = found;
             }
 
-            flights.Add((item.Callsign, found));
+            // Only a session whose plan ended on this route flew it: one found for a revision the pilot filed and then changed did not (E14b,
+            // reading 3-bis of note 2026-10-17-le-regole-di-award).
+            flights.Add((item.Callsign, found?.Where(session => ReportRules.FlewRoute(session, departure, arrival)).ToList()));
         }
 
         var flown = ReportRules.Flown(flights);

@@ -1004,13 +1004,29 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
                     .OfType<IvaoTrackerSessionDto>()
                     .OrderByDescending(session => session.StartedAt)
                     .Take(query.Limit)
-                    .Select(session => new NetworkSession(
-                        session.Id,
-                        query.Vid ?? session.Vid,
-                        session.Callsign,
-                        session.StartedAt + sources.Shift,
-                        session.EndedAt + sources.Shift)),
+                    .Select(session => Moved(session, query.Vid ?? session.Vid, sources.Shift)),
             ]);
+        }
+
+        /// <summary>
+        /// A recorded session moved in time, with the airports of its plan's revisions as the core's source gives them (E10v): the check of a
+        /// flight reads the last one (E14b).
+        /// </summary>
+        private static NetworkSession Moved(IvaoTrackerSessionDto session, int vid, TimeSpan shift)
+        {
+            NetworkRoute[] routes = [.. IvaoTrackerReader.ReadPlannedRoutes(session).Select(route => new NetworkRoute(route.DepartureIcao, route.ArrivalIcao))];
+
+            return new NetworkSession(
+                session.Id,
+                vid,
+                session.Callsign,
+                session.StartedAt + shift,
+                session.EndedAt + shift,
+                routes.LastOrDefault()?.DepartureIcao,
+                routes.LastOrDefault()?.ArrivalIcao)
+            {
+                Routes = routes,
+            };
         }
     }
 }

@@ -5395,8 +5395,9 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
-`2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 aspetta Carmine sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292)
-e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la fase del nucleo E10v):
+`2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 decisa da dalberone, (A), la fase del
+nucleo E10v):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
   `evt_events.auto_reports_after_vid`.

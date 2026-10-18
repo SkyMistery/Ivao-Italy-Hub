@@ -340,12 +340,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `7c094fd5` (E13b `0c8d531`, E10u e `main` a `8bf63ea`) e `547d402d` unite)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `583c54c1` (dopo la revisione della #289, con `main` a `e7b1331`) e `092e0b79` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
   `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le quattro colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292),
-  il codice con la (A); la 2 decisa da dalberone, la fase del nucleo E10v):
+  `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 decisa da dalberone, la fase del nucleo E10v):
   - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
     `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
     `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
@@ -362,7 +361,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **E15b** (la conservazione dei piloti): un PIREP pilota cancellato porta via le sue righe `evt_report_awards` (la chiave è in cascata, ma
     ognuna ha la sua riga nell'audit solo se le cancella il modulo); i segnali nella coda del nucleo restano finché qualcuno li guarda: una
     riga sorgente che se ne va toglie solo quelli in attesa. «Duplica» per le regole è fatto qui.
-  - ⚠️ **Il segnale non è più del PIREP**: la riga sorgente è `evt_report_awards` (`report-award:{id}`). Chi chiede «questo PIREP ha dato un
+  - ⚠️ **Conta solo l'ultima rotta di una sessione** (la lettura 3-bis, il punto 2 del revisore sulla #291): una voce di volo è verificata solo quando la sessione trovata ha come ultima rotta quella della voce (`ReportRules.FlewRoute` in `ReportCheck`), e un PIREP `Auto` scrive l'ultima rotta. Un doppio di `INetworkSessionSource` che costruisce sessioni senza scali non verifica più nessun volo: `EventsReportsTests` dà alle sue gli scali con `IvaoTrackerReader.ReadPlannedRoutes`, come la sorgente vera. la riga sorgente è `evt_report_awards` (`report-award:{id}`). Chi chiede «questo PIREP ha dato un
     award?» passa da `ReportAwards.AssignedAsync`.
   - ⚠️ **Il banco non trova sessioni del pilota**: un PIREP del banco non ha voci verificate e non soddisfa nessuna regola. Il «fatta quando»
     sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
