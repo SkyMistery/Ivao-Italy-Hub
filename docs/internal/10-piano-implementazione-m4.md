@@ -5657,8 +5657,10 @@ di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. 
 **Com'è andata** (17 ottobre 2026; branch `m4/e15b-retention-and-m4b-round`, nata `--no-track` dalla testa di E14b `b2cd41b9`, in coda dopo la
 #293 di E14b — e sotto di lei E10v #291, E14a #289, E13b #283, E10u #288, `main` a `8bf63ea` —; **nessuna migrazione**; nota nuova
 `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande a Carmine sull'[issue
-#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294), la (B) raccomandata da dalberone per il giro; il rapporto di chiusura
-`2026-10-17-m4-review`):
+#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro sul banco, **decisa (B)** il 18 ottobre ([la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1 aperta.
+Poi ha unito la testa di E14b `1cba4907` (con E14a, E10v e `main` a `e7b1331`, E10u ed E13b unite) e la testa di E10w `986c6116` (con `main`
+a `3cdacd97`); il rapporto di chiusura `2026-10-17-m4-review`):
 
 - **Ogni voce controllata sul codice prima di scrivere** (come chiedeva il coordinatore): tre delle sei erano già fatte da fasi prima, e
   questa fase ne ha aggiunto solo i test.
@@ -5688,11 +5690,14 @@ di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. 
      risponde o l'evento tocca più di sette giorni. La sezione «Prenotazioni sulla rete» sotto il roster (`screens/networkBookings.tsx`),
      una lista generata con **una query sua** (la rete lenta non ferma il roster), `retry` spento; `available` falso è un errore della query
      (`NetworkBookingsUnavailable`), e la sezione dice «non disponibili». Non su un evento annullato.
-  7. **Il giro completo di M4b** (punto 5): `web/e2e/full/events-m4b-round.spec.ts`, sulla (A) della domanda 2 della nota — le
-     impostazioni a 0 giorni per la durata della spec, un evento di un quarto d'ora che comincia un minuto prima del giro di `events-roster`,
-     e la spec **aspetta il job vero**: disponibilità dalla pagina, roster proposto e pubblicato con la mail, le prenotazioni della rete
-     accanto, la fine tagliata con la mail del cambio, il PIREP ATC dopo la fine, accettato dal web master, con la mail della decisione. **Il
-     segnale di award no**: il banco non ha sessioni dei suoi personaggi (la domanda 2, che propone la (B), una fase del nucleo per il banco).
+  7. **Il giro completo di M4b** (punto 5): `web/e2e/full/events-m4b-round.spec.ts`. Scritto prima sulla (A) della domanda 2 della nota —
+     la spec aspettava il giro vero di `events-roster` al quarto d'ora, e il segnale mancava —, poi, **con la (B) decisa da Carmine
+     sull'issue #294**, sulla fase del nucleo **E10w** (#300), unita qui: le impostazioni a 0 giorni per la durata della spec, un evento di un
+     quarto d'ora che comincia due minuti dopo, le sessioni del trainer dal suo inizio (`giveSessions`), e **`events-roster` fatto girare
+     subito** all'inizio (`runJob`). Disponibilità dalla pagina, roster proposto e pubblicato con la mail, le prenotazioni della rete accanto,
+     la fine tagliata con la mail del cambio, il PIREP ATC dopo la fine **trovato sulla rete** (`Valid`), accettato dal web master con la mail
+     della decisione, e **il segnale della regola «un turno qualsiasi» nella coda degli award**. Quello che la spec aspetta ancora è
+     l'orologio: l'inizio e la fine dell'evento.
   8. **`docs/FORKING.md`** (punto 6): tutta la seconda parte — la pubblicazione e la cessione, il dopo evento, i registri e i limiti, i PIREP
      e gli award, le prenotazioni della rete, le impostazioni, i blocchi, le mail e i sei job, che cosa tiene e per quanto, che cosa legge
      dalla rete, che cosa non fa.
@@ -5723,7 +5728,8 @@ di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. 
   **1/1 in 29,7 minuti**; **`e2e:full` intero** sul banco ricreato: al primo giro 71/72 (43,8 min; la spec di E11a, qui sopra), corretta e rifatta da sola 1/1,
 poi **72/72 al secondo giro intero** (43,1 min), il giro di M4b compreso; `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa
   (i file del nucleo sono delle fasi in coda, con le loro note; di E15b nessuno).
-- **Non verificato**: la CI (la dice la PR); il segnale di award sul banco (la domanda 2); un `events-retention` vero sul banco (gira il primo
+- **Dopo la (B) e i merge** (18 ottobre 2026): VERIFICATOB.
+- **Non verificato**: la CI (la dice la PR); un `events-retention` vero sul banco (gira il primo
   del mese: lo provano `EventsRetentionTests`); IVAO vero dietro le prenotazioni accanto al roster (il client delle fixture; il codice della
   sorgente è quello che E15a ha provato contro IVAO); la sezione a 375 px.
 

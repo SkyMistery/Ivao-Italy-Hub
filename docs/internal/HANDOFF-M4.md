@@ -8,10 +8,12 @@
 
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
-`m4/e15b-retention-and-m4b-round`, **in coda dopo la #293** di E14b: nata `--no-track` dalla testa di E14b `b2cd41b9`, nessuna migrazione. La
-nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due domande (le disponibilità di un evento mai pubblicato; il giro completo sul
-banco, che non lancia un job e non ha sessioni dei suoi personaggi); il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è
-finita nel codice** («Che cosa ha lasciato E15b», sotto).
+`m4/e15b-retention-and-m4b-round`, **in coda dopo la #293** di E14b: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha unito la testa
+`1cba4907` e la testa di E10w `986c6116` (#300); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due
+domande sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo sul banco, **decisa (B)** da
+Carmine — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento mai
+pubblicato, aperta. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice** («Che cosa ha lasciato
+E15b», sotto).
 
 **L'aggiornamento di E10w:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
 persona), sul branch `m4/e10w-bench-runs-a-job`, **PR #300** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main`
@@ -365,16 +367,17 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     `After/EventStatistics.cs` tiene i numeri quando le righe non ci sono più.
   - **Le prenotazioni della rete accanto al roster**: `Atc/NetworkBookings.cs` (`GET /api/events/atc/events/{id}/network-bookings`) e
     `screens/networkBookings.tsx`, sotto il roster nel pannello dell'ATC.
-  - **Il giro completo di M4b**: `web/e2e/full/events-m4b-round.spec.ts`, che aspetta il giro vero di `events-roster`.
+  - **Il giro completo di M4b**: `web/e2e/full/events-m4b-round.spec.ts`, che fa girare `events-roster` subito e dà al trainer le sessioni
+    di E10w (`runJob`, `giveSessions`): disponibilità, roster proposto e pubblicato, corretto, PIREP trovato sulla rete e validato, segnale.
   - **I test**: integrazione `EventsRetentionTests` (VID **761300–761308**, slug `evt-test-e15b-…`); unità `EventsRetentionRulesTests`; vitest
     `networkBookings.test.tsx`.
 - **Che cosa deve sapere chi viene dopo**:
-  - ⚠️ **Le due domande della nota** (§4) aspettano Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 1, le disponibilità di un evento mai pubblicato (il codice con la (A), a evento
-    finito); la 2, il giro sul banco — la (B), una fase del nucleo con `/e2e/jobs/{name}` e le sessioni di un personaggio del banco, renderebbe
-    il giro intero, segnale compreso, e veloce. Il codice è sulla (A).
-  - ⚠️ **Il giro aspetta il job**: dura fino a mezz'ora (un quarto d'ora per il giro di `events-roster`, un quarto d'ora l'evento), cambia
-    `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo. Un `e2e:full` interrotto a metà li lascia a 0: il
-    giro dopo li legge e li rimette come li trova, quindi vanno rimessi a mano sul banco (3 e 2), o il banco ricreato.
+  - ⚠️ **La domanda 1 della nota** aspetta Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): le
+    disponibilità di un evento mai pubblicato (il codice con la (A), a evento finito). La 2 è decisa, (B).
+  - ⚠️ **Il giro aspetta l'orologio, non più il job**: circa un quarto d'ora (l'inizio a due minuti, poi la fine dell'evento), cambia
+    `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo, e dà le sessioni al trainer (999004) e gliele
+    riprende. Un `e2e:full` ucciso a metà lascia le impostazioni a 0: il giro dopo le rimette come le trova, quindi vanno rimesse a mano sul
+    banco (3 e 2), o il banco ricreato.
   - ⚠️ **Chi scrive le statistiche dopo questa fase** sa che oltre `pilotRetentionMonths`, senza righe dei piloti, i numeri delle prenotazioni,
     dei PIREP e dei segnali sono quelli della conservazione, e che `AtcAvailabilities` resta quello che c'era quando le disponibilità se ne
     sono andate.
