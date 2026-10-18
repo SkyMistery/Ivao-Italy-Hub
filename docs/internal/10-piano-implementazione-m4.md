@@ -4407,6 +4407,72 @@ contrario li fa cadere.
 [r277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222330359
 [ok277t]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/277#issuecomment-6222360630
 
+### E10u — Nucleo: il permesso tenuto senza un ambito
+
+**Da dove viene**: non c'era in E0. La chiede E13b: alla revisione della #283, punto 1, i due registri (controllori e piloti) leggevano
+tutta la divisione per chiunque tenesse il permesso **dovunque**, anche su un evento solo; Carmine ha scelto la (b) ([la risposta][a283u],
+17 ottobre 2026): i registri rispondono solo a chi tiene il permesso **senza un ambito** (staff del dipartimento, grant alle posizioni,
+team dei FIR, HQ, super amministratore), e un grant su un evento o su una riga non li apre, né le loro voci di menu. Il nucleo non aveva la
+domanda (`PermissionSet` ha `Has` e `HasAny`) e il menu chiedeva solo `HasAny`; la regola 6 la tiene fuori dalla PR del modulo, e
+`dalberone` ha scelto una fase del nucleo prima (17 ottobre 2026). Branch `m4/e10u-unscoped-permission`, da `main` a `9a78b2c3`. **PR del
+nucleo**, diretta su `main`, non in coda; E13b ne unisce il branch e va in coda dopo.
+
+1. In `PermissionSet`, accanto a `HasAny`, la domanda «tenuto senza un ambito su una riga», e in `ICurrentUser` accanto a `HasAny`, senza
+   rompere i doppioni di test del maintainer.
+2. Un segno sulla voce di menu (`NavItemDescriptor`) che fa chiedere quella domanda a `MeEndpoints.Visible`; il predefinito non cambia
+   nessuna voce di oggi.
+3. Che cosa conta come «senza ambito» per ogni titolare — un grant su un dipartimento, un team di FIR, un grant da fuori, un grant su una
+   riga o su un evento —, detto nella nota.
+4. Nessun uso nel modulo (regola 6): i test del nucleo, di unità per ogni titolare e d'integrazione con un modulo di prova; la prova al
+   contrario.
+
+**Fatta quando**: una voce `Unscoped` è nascosta a un grant su una riga e mostrata a chi tiene il permesso sul dipartimento, le voci di
+oggi restano come sono, e senza il controllo i test cadono.
+
+**Com'è andata** (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288):
+
+- **Fatto** (nota nuova `2026-10-17-il-permesso-senza-ambito`, caso (b), **decisa** da Carmine sulla #283):
+  - **`PermissionSet.HasUnscoped(permissions, isSuperadmin, permission)`**: il super amministratore, o un permesso con quel nome e
+    **`ResourceScope` nullo**; il FIR e `FromOutside` non si guardano;
+  - **`ICurrentUser.HasUnscoped(string permission)`**, un **membro predefinito** dell'interfaccia che chiama `PermissionSet` (come il
+    `Has` con il FIR), scritto uguale in `HttpContextCurrentUser`; `TestCurrentUser` non è toccato;
+  - **`NavItemDescriptor(…, bool Unscoped = false)`**, e `MeEndpoints.Visible` che con il segno chiede `HasUnscoped`, senza `HasAny`;
+  - la forma è quella proposta da E13b: **non cambiata**.
+- **Le letture, scritte nella nota** (§3.1): un grant su un dipartimento o su tutti, a una persona o a una posizione, **sì**; un team di
+  FIR, sul suo FIR o sul dipartimento, **sì**; un grant a una posizione da fuori (`FromOutside`), **sì**, perché Carmine conta i grant alle
+  posizioni senza distinguere; HQ, globali e super amministratore **sì**; un grant su una riga o su un evento, a chiunque, e la `View` che
+  il suo `Edit` porta sulla stessa riga, **no**. Un lettore che non conosce i segni del FIR e di «da fuori» li legge come un ambito:
+  chiuso. Nessuna lettura era incerta: tutte si decidono dall'ambito, e nessuna è stata portata al coordinatore prima del codice.
+- **Scostamenti dal design**: nessuno. L'unico handler non cambia (la domanda senza riga resta `HasAny`): il 403 dei registri lo daranno
+  gli endpoint di E13b.
+- **Verificato, in locale** (17 ottobre 2026, `main` a `9a78b2c3`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache` con l'audit acceso: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi,
+    0 errori; unità **1341/1341**, fra cui `UnscopedPermissionRulesTests` 10/10; integrazione intera, senza filtro (Release), da sola,
+    **657/657** al primo giro (12 minuti), fra cui `UnscopedNavigationTests` 1/1, anche da sola;
+  - **la prova al contrario**: con `HasUnscoped` senza la condizione sull'ambito e `Visible` che chiede sempre `HasAny` (modifica
+    locale) cadono 3 casi di unità su 10 (il grant su una riga o su un evento, il cookie e il membro predefinito, il lettore vecchio) e
+    `UnscopedNavigationTests` (la voce `Unscoped` trovata nel menu del grant su una riga); rimesso, toccato e ricompilato, 10 su 10 e 1
+    su 1;
+  - `pnpm -C web lint`, `typecheck`, `format:check` e `test` (vitest con `--maxWorkers=2`, **795/795**): verdi; `gen:api` senza
+    differenze; la smoke (`pnpm -C web exec playwright test --workers=2`, porta 4173 con il suo lock) **183/183** al primo giro;
+  - le regole di `core-guard` dalla base `9a78b2c3`, con Git Bash: nessun file del maintainer; quattro del nucleo con la nota nuova —
+    passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full`: nessuna schermata cambia, e il bootstrap ha la stessa forma;
+  - l'uso vero, nei registri e nelle loro voci: è di E13b.
+- **Dopo la revisione** (17 ottobre 2026): il revisore l'ha trovata [approvabile, niente da correggere][r288u], con la CI verde su
+  `a2631e6`. I due punti piccoli, facoltativi, sono fatti nei riassunti di `PermissionSet.HasUnscoped` e `ICurrentUser.HasUnscoped`:
+  l'ambito è `ResourceScope`, un FIR non lo è; e il dipartimento non si guarda, quindi che cosa il titolare legge poi lo restringe chi
+  chiama (E13b). Unito `main` a `8bf63ea3` (il piano 1.36, #285, e i file delle lingue con l'impronta, #286, solo `web/`), senza
+  conflitti, su richiesta del revisore; il diff della fase contro `main` è solo di E10u. Rifatto tutto: restore con l'audit verde, build
+  Release 0 avvisi, unità **1341/1341**, integrazione intera da sola **657/657** al primo giro (9 minuti), `pnpm -C web` lint,
+  typecheck, format:check e test (**800/800**, vitest con `--maxWorkers=2`) verdi, `gen:api` senza differenze, `core-guard.sh` con Git
+  Bash dalla base `8bf63ea3`: passa.
+
+[r288u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666
+[a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
+
 ### E10v — Nucleo: gli scali di una sessione della rete
 
 **Da dove viene**: non c'era in E0. La chiede E14b: un PIREP `Auto` scrive una voce di volo (callsign, partenza, arrivo, giorno) da ogni
