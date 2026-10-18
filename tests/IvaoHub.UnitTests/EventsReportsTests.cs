@@ -4,6 +4,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Events;
 using IvaoHub.Modules.Events.Reports;
 using IvaoHub.Modules.Events.Settings;
+using IvaoHub.Modules.Events.Staff;
 using Xunit;
 
 namespace IvaoHub.UnitTests;
@@ -117,19 +118,45 @@ public sealed class EventsReportsTests
     }
 
     [Fact]
-    public void AFlightFliesTheSessionWithItsCallsignFirstAndNeverOneAnotherItemTook()
+    public void AnInstantSentWithoutItsZoneIsReadAsUtcNeverAsTheServersTime()
     {
-        NetworkSession[] found =
-        [
-            new(1, 7, "OTHER", Start, Start.AddHours(1)),
-            new(2, 7, "TST1", Start.AddHours(1), Start.AddHours(2)),
-            new(3, 7, "OTHER", Start.AddMinutes(30), Start.AddHours(1)),
-        ];
+        // The review of #289, point 2: what the client sends without a zone is UTC, whatever the host's zone.
+        var unspecified = DateTime.SpecifyKind(Start, DateTimeKind.Unspecified);
+        var drafts = ReportRules.Check(
+            ReportKind.Atc,
+            Evening(),
+            [],
+            Known,
+            [new ReportItemRequest("XEA1_TWR", null, null, null, unspecified, unspecified.AddHours(1))],
+            new Refusals());
 
-        Assert.Equal(2, ReportRules.Flown("tst1", found, new HashSet<long>())?.Id);
-        Assert.Equal(1, ReportRules.Flown("TST1", found, new HashSet<long> { 2 })?.Id);
-        Assert.Equal(3, ReportRules.Flown("TST1", found, new HashSet<long> { 1, 2 })?.Id);
-        Assert.Null(ReportRules.Flown("TST1", found, new HashSet<long> { 1, 2, 3 }));
+        Assert.NotNull(drafts);
+        Assert.Equal((Start, DateTimeKind.Utc), (drafts[0].FromUtc!.Value, drafts[0].FromUtc!.Value.Kind));
+
+        var flight = ReportRules.Check(
+            ReportKind.Pilot,
+            Evening(),
+            [],
+            Known,
+            [new ReportItemRequest("T", "XEA1", "XEA2", DateTime.SpecifyKind(Start.Date, DateTimeKind.Unspecified), null, null)],
+            new Refusals());
+        Assert.Equal(DateOnly.FromDateTime(Start), flight![0].FlightDay);
+    }
+
+    [Fact]
+    public void EveryFlightTakesTheSessionWithItsCallsignFirstAndNoSessionTwice()
+    {
+        // The review of #289, point 4: Y at six, Z at eight; items «X» then «Y». Item by item, X took Y and Y got Z.
+        NetworkSession y = new(1, 7, "Y", Start.AddHours(2), Start.AddHours(3));
+        NetworkSession z = new(2, 7, "Z", Start.AddHours(4), Start.AddHours(5));
+        Assert.Equal([2L, 1L], ReportRules.Flown([("X", [y, z]), ("y", [y, z])]).Select(session => session!.Id));
+
+        // Without a callsign of its own a flight takes the first that started; a session is never given twice; none left is none.
+        NetworkSession other = new(3, 7, "OTHER", Start, Start.AddHours(1));
+        Assert.Equal([3L, 1L, null], ReportRules.Flown([("A", [y, other]), ("B", [y, other]), ("C", [y, other])]).Select(session => session?.Id));
+
+        // A source that did not answer gives nothing to its flight, and takes nothing from the others.
+        Assert.Equal([null, 1L], ReportRules.Flown([("Y", null), ("Y", [y])]).Select(session => session?.Id));
     }
 
     [Fact]
@@ -158,6 +185,16 @@ public sealed class EventsReportsTests
         Assert.True(ReportDecisions.Allowed(ReportState.Rejected, ReportState.Accepted));
         Assert.False(ReportDecisions.Allowed(ReportState.Accepted, ReportState.Accepted));
         Assert.All(Enum.GetValues<ReportState>(), from => Assert.False(ReportDecisions.Allowed(from, ReportState.Submitted)));
+    }
+
+    [Fact]
+    public void AnEventStartedMoreThanHalfAnHourAgoIsKept()
+    {
+        // Carmine's answer on reading 13 (#289): half an hour after its start, not a tick more.
+        var row = Evening();
+        Assert.False(EventSaving.StartedTooLongAgo(row, Start.AddMinutes(-5)));
+        Assert.False(EventSaving.StartedTooLongAgo(row, Start.AddMinutes(30)));
+        Assert.True(EventSaving.StartedTooLongAgo(row, Start.AddMinutes(30).AddTicks(1)));
     }
 
     [Fact]

@@ -25,10 +25,28 @@ public sealed class EventSaving(
     HubDbContext hub,
     EventPublishing publishing,
     ModuleSettingsStore settings,
-    EventsMail mail)
+    EventsMail mail,
+    IClock clock)
 {
     /// <summary>The refusal of a move of the event that would leave one of its activities outside it (E17).</summary>
     public const string ActivitiesOutsideKey = "events:errors.eventActivitiesOutside";
+
+    /// <summary>An event started more than <see cref="DeletableAfterStart"/> ago: it is kept, and cancelled if it must go.</summary>
+    public const string StartedKey = "events:errors.eventStarted";
+
+    /// <summary>
+    /// How long after its start an event may still be deleted (Carmine's answer on reading 13 of note 2026-10-17-il-pirep-di-supporto, on
+    /// #289): a mistake caught in its first half hour goes; after that the event is history, kept — cancelled if it must not be seen as held.
+    /// </summary>
+    public static readonly TimeSpan DeletableAfterStart = TimeSpan.FromMinutes(30);
+
+    /// <summary>Whether an event started too long ago to be deleted: more than <see cref="DeletableAfterStart"/> before <paramref name="now"/>.</summary>
+    public static bool StartedTooLongAgo(Event row, DateTime now)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        return now > row.StartsAtUtc + DeletableAfterStart;
+    }
 
     /// <summary>Whether the save being prepared moves the start or the end of a published event: what <see cref="AfterSaveAsync"/> tells.</summary>
     private bool _timesChanged;
@@ -192,10 +210,17 @@ public sealed class EventSaving(
     /// it is cancelled instead. Its airports, its routes (E4), its slots (E5) and its ATC positions (E11a) go with it, through the same unit of work, so each
     /// leaves its row in the audit — and each is a write of its own area, which whoever deletes an event holds (§6.2: the coordinator
     /// and the assistant of the base department hold every area of the events).
+    /// <para>And never an event that started more than half an hour ago, or one with a report of support, whichever comes first, rows or
+    /// none (E14a; Carmine's answer on reading 13, on #289): it is cancelled instead, and stays with its bookings and its data.</para>
     /// </summary>
     public async Task DeleteAsync(Event row, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
+
+        if (StartedTooLongAgo(row, clock.UtcNow))
+        {
+            throw new DomainRefusalException("id", StartedKey);
+        }
 
         if (await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.EventId == row.Id, cancellationToken))
         {

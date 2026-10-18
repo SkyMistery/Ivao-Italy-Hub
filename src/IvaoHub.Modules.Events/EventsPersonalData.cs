@@ -125,9 +125,10 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
     }
 
     /// <summary>
-    /// The person's reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 12): all of events over, so all kept, with the
-    /// pseudonym the core writes into <c>vid</c> — the statistics and the rules of award count their items —, without the validator's note
-    /// about them, and their items without the callsign and the session that tie them to the person on the network.
+    /// The person's reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 12, as Carmine changed it on #289): all of events
+    /// over, so all kept, with the pseudonym the core writes into <c>vid</c> — the statistics and the rules of award count their items —, without
+    /// the validator's note about them, and their items without the session that ties them to the person on the network; a <b>flight's</b>
+    /// callsign goes too, and a <b>shift's</b> stays: it names a position, not the person, and the rules of the minutes read it.
     /// </summary>
     private async Task<int> EraseReportsAsync(int vid, CancellationToken cancellationToken)
     {
@@ -137,11 +138,16 @@ public sealed class EventsPersonalData(EventsDbContext database, IClock clock) :
             report.DecisionNote = null;
         }
 
+        var flights = reports.Where(report => report.Kind == ReportKind.Pilot).Select(report => report.Id).ToHashSet();
         foreach (var item in await CrudSource.BackOffice<EventReportItem>(database).AsTracking()
                      .Where(item => item.Vid == vid)
                      .ToListAsync(cancellationToken))
         {
-            item.Callsign = string.Empty;
+            if (flights.Contains(item.ReportId))
+            {
+                item.Callsign = string.Empty;
+            }
+
             item.SessionId = null;
         }
 

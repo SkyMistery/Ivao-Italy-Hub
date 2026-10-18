@@ -12,13 +12,15 @@ import { benchAirports, benchUrl, readInEnglish, test, whileWaitingFor } from '.
  * sentence. The checks themselves (`events-after`, every hour) are `EventsAfterTests`'s, with the fixtures of the network: the bench does not
  * run a job when a spec wants it.
  *
- * The bench survives between runs: the coordinator deletes this spec's events after the test (`afterwards`), and an interrupted run's
- * leftovers at the start.
+ * The bench survives between runs: the coordinator deletes what it can of this spec's events after the test (`afterwards`), and an
+ * interrupted run's leftovers at the start; an event ten days old is kept (E14a), and stays under this spec's own stem.
  */
 
 const events = englishEvents();
 const asTheClientDoes = { 'X-Requested-With': 'hub' };
-const stem = 'evt-test-e2e-e13a';
+// Not under `evt-test-e2e` (E14a): an event that started more than half an hour ago is kept, and `events-staff.spec.ts` deletes every event of
+// that stem.
+const stem = 'evt-e2e-e13a';
 const stamp = Date.now().toString(36);
 const slug = `${stem}-${stamp}`;
 const title = { en: `Bench evening over ${stamp}`, it: `La sera finita del banco ${stamp}` };
@@ -108,7 +110,8 @@ async function removeOurEvents(coordinator: APIRequestContext): Promise<void> {
   expect(page.status(), await page.text()).toBe(200);
   for (const row of ((await page.json()) as { items: readonly { id: number }[] }).items) {
     const deleted = await coordinator.delete(`/api/events/events/${row.id}`, { headers: asTheClientDoes });
-    expect(deleted.status(), await deleted.text()).toBe(204);
+    // An event that started more than half an hour ago is kept (Carmine's answer on reading 13 of E14a, #289): it stays on the bench.
+    expect([204, 400], await deleted.text()).toContain(deleted.status());
   }
 }
 
