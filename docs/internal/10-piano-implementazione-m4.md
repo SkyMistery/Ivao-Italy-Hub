@@ -4450,6 +4450,10 @@ cadere.
   - la CI (la dice la PR);
   - `e2e:full` e la smoke: nessuna schermata e nessun chiamante nel modulo, solo un record del nucleo;
   - l'uso vero, nei PIREP `Auto` e nelle regole di award, e una sessione vera sulla rete: sono di E14b.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281), con due punti non bloccanti. Il primo è fatto: le
+  revisioni si ordinano per `id` del piano, non per la posizione nell'array (un caso nuovo, che cade togliendo l'ordine;
+  `NetworkSessionSourceTests` 14/14). Il secondo è per E14b: `Routes` sono i piani depositati, non le tratte volate, e la nota di E14b
+  dirà regola per regola quale lettura usa (scritto in `HANDOFF-M4.md` e nella nota, §6). Rifatto: VERIFY.
 
 ### E11a — Postazioni e disponibilità
 
