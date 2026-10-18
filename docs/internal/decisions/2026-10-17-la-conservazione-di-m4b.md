@@ -1,12 +1,15 @@
 # La conservazione di M4b, le prenotazioni della rete accanto al roster, il giro completo (E15b)
 
 **Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), in coda dopo la #293 di E14b
-**Stato:** **Proposta**: le due domande del §4 aspettano Carmine sull'[issue #294][q294] — la 2 nel testo dell'issue, con la (B)
-raccomandata da dalberone; la 1 in [un suo commento][q294a], con la (A) —, le letture del §2 la revisione della PR. Il codice segue la (A) di
-tutte e due; la spec del giro regge anche con la (B), dove cambia solo come si aspetta il job.
+**Stato:** **Proposta**. La domanda 2 è **decisa**: **(B)**, Carmine il 18 ottobre 2026 in chat al master, che [l'ha pubblicata
+sull'issue #294][a294] su sua istruzione — prima una piccola fase del nucleo per il banco, **E10w** (`m4/e10w-bench-runs-a-job`), con
+`/e2e/jobs/{name}` solo sul banco e una fixture di sessioni di un personaggio del banco spostata sul giorno chiesto; poi il giro di E15b è
+intero, segnale compreso. La domanda 1 aspetta ancora Carmine, in [un commento dell'issue][q294a] (il codice con la (A)); le letture del §2
+la revisione della PR.
 
 [q294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294
 [q294a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6237599717
+[a294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
 **Regola applicata:** `CLAUDE.md` §5. Che prenotazioni e PIREP dei piloti si cancellino dopo `pilotRetentionMonths`, le disponibilità «a
 roster pubblicato e a evento finito», e turni, esiti, PIREP ATC e cessioni restino per sempre; che lo faccia `events-retention` una volta al
 mese, decidendo dalle date; che le prenotazioni ATC della rete si leggano **accanto al roster, alla richiesta**, senza job e senza cache, al
@@ -102,8 +105,10 @@ E14a ed E14b l'hanno scritto nel loro handoff.
   `e2e:full` delle sole schermate, senza job.
 
 **Raccomandata la (B)** (dalberone, che ha portato la domanda a Carmine sull'[issue #294][q294]) se il «fatta quando» vuole il giro intero
-sul banco, in CI; altrimenti la (A), che regge con la (B) (cambia solo come si aspetta il job). Fino alla risposta la fase è scritta sulla (A);
-con la (B) la fase del nucleo del banco viene prima, ed E15b ne unisce il branch.
+sul banco, in CI; altrimenti la (A), che regge con la (B) (cambia solo come si aspetta il job).
+
+**Decisa: (B)** ([la risposta di Carmine][a294]). La fase del nucleo del banco, E10w, viene prima; E15b ne unisce il branch, e la spec del
+giro fa girare `events-roster` e `events-after` subito invece di aspettarli, con il segnale di award sulle sessioni della fixture.
 
 ## 5. Alternative scartate
 
