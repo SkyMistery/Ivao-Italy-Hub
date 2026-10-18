@@ -89,7 +89,9 @@ chat, a commit, an issue or a pull request.
     only from the division's position grants.
 
   A spec that proves what a department may do signs in as that department's person, never as the web coordinator, who
-  would pass with any grant. Mail is read from Mailpit on `http://127.0.0.1:8025`.
+  would pass with any grant. Mail is read from Mailpit on `http://127.0.0.1:8025`. The bench can also run a job now
+  (`POST /e2e/jobs/{name}`, `runJob` in `web/e2e/full/bench.ts`) and give one of its people sessions on the network
+  from a moment (`PUT /e2e/sessions/{vid}`, `giveSessions` / `takeSessions`): a spec never waits for a job's hour.
 - **No call to IVAO or any external service in a test**: record fixtures (`tools/record-ivao-fixtures.mjs`) with a
   real token in development, and test against them.
 - `dotnet test` sometimes reports "zero tests ran". Run the test executables directly instead:

@@ -435,6 +435,15 @@ sua riga in `ErasureTests`.
 - **`evt_report_items`**: un volo (callsign, partenza, arrivo, giorno) o un turno (postazione, da, a) dichiarato, con
   quello che la verifica ha trovato: la sessione, i minuti, la distanza in miglia, `verified`.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 1, piano 1.38): il PIREP ha in più `checked_at` (quando la
+verifica ha guardato le voci l'ultima volta), `created_at`, `updated_at` e la cura dell'evento; è un `IEventChild` che adotta la cura
+dell'evento prima che lo staff decida, con lo scope dell'evento (`IHasResourceScope`). La voce porta `event_id`, **il VID del membro**
+(`vid`) e l'ordine (`ordinal`); per un volo `callsign`, `departure_icao`, `arrival_icao`, `flight_day`, per un turno `callsign` (la
+postazione), `from_utc`, `to_utc`; e la verifica, `session_id` (solo un volo), `minutes`, `distance_nm` (solo un volo, al decimo),
+`verified` (vuoto: non chiesto). Anche la voce è `ISubmittedByMembers`, `IHasStakeholder` e `IEventChild`, con il suo VID, perché il
+guardiano legge il membro dalla riga che scrive e `[ErasedWith]` copre solo un dato nominato dalla stessa riga; **`[WithdrawnByStakeholder]`
+sta sulla voce, non sul PIREP**, che porta una decisione dello staff e non si ritira. La migrazione è `AddSupportReports`, additiva.
+
 ### 1.9 Le regole di award — `evt_award_rules`
 
 `event_id`, `award_id`, `kind` (`Pilot`, `Atc`), `criterion` da un **elenco chiuso** (c3), `parameters`:
@@ -566,6 +575,10 @@ Per l'ATC: **candidature aperte** fino a inizio − `applicationsCloseDays`; **r
 - **Elimina** (`Events.Delete`, `DeletePolicy`): solo senza prenotazioni, disponibilità, turni o PIREP; altrimenti si
   annulla. Chi collabora non elimina (§6.3). **Deciso con E4** (piano 1.30): eliminare porta via le rotte nello stesso
   salvataggio, quindi chi elimina deve avere anche `EventRoutes.Edit`.
+- **Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 13 cambiata da Carmine sulla #289, piano 1.38): **un
+  evento non si elimina più da mezz'ora dopo il suo inizio, o da quando ha un PIREP**, quale delle due venga prima, con o senza righe
+  dei membri (`eventStarted`, `EventSaving.StartedTooLongAgo`: dopo inizio + 30 minuti, non un istante prima; `eventHasReports`). Si
+  può sempre **annullare**: resta, mostrato come annullato, con le sue prenotazioni e i suoi dati.
 
 ### 2.3-bis Duplicare un evento
 
@@ -1325,12 +1338,41 @@ corregge finché non è deciso. Il sistema crea lo stesso PIREP da solo per chi 
   proprio. Mail al membro (`reportDecided`). **I validatori ricevono un riepilogo** dei PIREP da validare
   (`reportsToValidate`), come il riepilogo dei validatori dei tour (M2), una volta al giorno.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, letture 3–7, piano 1.38; la (A) di Carmine alle tre scelte
+sull'issue #287, con il limite sulla prima):
+
+- **chi manda**: qualunque membro entrato, su un evento **pubblicato, non annullato, finito, non in presenza**, fino a `reportDays`
+  giorni dopo la fine (14, da 1 a 60); non serve una prenotazione o un turno. Uno per tipo per evento; `/events/mine` elenca gli
+  eventi ancora aperti a un PIREP e i PIREP del membro;
+- **le voci**, da 1 a 20: un volo (callsign, due ICAO diversi che l'hub conosce, il giorno UTC dentro la finestra dei voli di E13a)
+  che **tocca uno scalo dell'evento**, su un evento con i suoi scali e non di tutta la divisione — altrimenti rifiutato all'invio —; un
+  turno (un nominativo qualunque, da e a, al più dodici ore, dentro la stessa finestra, senza sovrapporsi a un altro dello stesso
+  PIREP). I rifiuti campo per campo con `Refusals`;
+- **la verifica**, a ogni invio, **prima** del blocco della riga (la rete può metterci secondi) e scritta sotto il blocco con le voci:
+  un volo cerca fra le sessioni del membro (`INetworkSessionSource`, `Pilot`) del suo giorno, fra partenza e arrivo, una per voce in
+  due passate (prima chi ha il suo callsign); la distanza è sempre quella fra i due aeroporti (`GreatCircle`); un turno come
+  `events-after` (l'archivio, poi il tracker), verificato con `attendanceMinimumMinutes`. Una voce non chiesta dà **`Unavailable`**,
+  mai un'ipotesi, e **nessun job riverifica**: il membro rimanda;
+- **«correggibile finché non è deciso»**: mandare di nuovo sostituisce tutte le voci, solo mentre il PIREP è `Submitted` ed entro
+  `reportDays` (`PUT /api/events/mine/reports/{eventId}/{kind}`, sotto il blocco della riga del PIREP);
+- **la decisione** (`POST /api/events/reports/{id}/decision`): `EventReports.Edit` chiesto all'unico handler **prima** di scrivere,
+  negato al membro della riga, il superadmin compreso (`DeniedToStakeholder`); la nota obbligatoria per rifiutare; porta lo stato e
+  `updatedAt` che chi valida ha visto, e un PIREP cambiato nel frattempo risponde 409 (`reportChanged`). **Una decisione si cambia**
+  (la (A) di Carmine), con la mail di nuovo, **finché nessun award è stato assegnato dal segnale del PIREP** (il limite di Carmine
+  sulla #287, scritto da E14b). L'MD valida e non scrive altro.
+
 ### 5.4 Le regole di award e il segnale
 
 **Accettare** un PIREP valuta le regole di award dell'evento (§1.9) sulle sue voci **verificate**, e per ogni regola
 soddisfatta il PIREP proietta un **`AwardSignalProjection`** (VID, motivo, `award_id`) nella stessa transazione (c3). Chi ha
 `Awards.Assign` (oggi l'MD) lo trova nella coda degli award del nucleo e **assegna a mano** (piano §9.7). Il nucleo oggi
 **non avvisa** chi assegna: la mail «qualcuno deve ricevere un award» (c1) è l'estensione n.5, che vale anche per i tour.
+
+**Dal 18 ott 2026** (E10x, #299, nota `2026-10-18-un-segnale-diventato-award`, decisa da Carmine sulla #293 e sulla #299, piano 1.38):
+**se il segnale di una riga è diventato un award lo dice il nucleo**, `AwardSignalQueries.AssignedAsync` (`Core/Content/`), sul contesto
+di chi chiama, con il lock sulle righe del segnale dentro una sua transazione READ COMMITTED; «diventato award» è `Handled`, anche se
+l'assegnazione è stata poi cancellata dal registro (la (A) di Carmine). La decisione su un PIREP lo chiede al nucleo con le sorgenti di
+**tutte** le righe del PIREP, e un PIREP con un award assegnato non si decide di nuovo; mai una query del modulo su `cms_award_signals`.
 
 ---
 
@@ -1564,6 +1606,14 @@ sull'issue #280):
   `GET /api/events/mine/record`, nel flusso del membro come `/mine/shifts`; e **due verbi**, l'esito di un turno e «togli» di una
   prenotazione non volata.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 9, piano 1.38): la scheda **«PIREP di supporto»**, su un
+evento finito, a chi ha `EventReports.View` sulla sua cura, è la lista generata della risorsa del motore **in sola lettura**
+`/api/events/reports` (`filter[eventId]`, `filter[state]`, `filter[kind]`): il membro (`col.person`), il tipo, lo stato, l'esito della
+verifica, quando è stato mandato, chi ha deciso e la nota, e **le voci con la verifica di ognuna** in una cella, dati che la pagina
+scrive nella lingua sullo schermo, una query per pagina; «Decidi» («Cambia la decisione» su uno deciso) dove il server dice che il
+lettore può (`Decidable`). Gli endpoint a mano sono **due verbi**, mandare e decidere, e **una lettura** del membro,
+`GET /api/events/mine/reports`.
+
 ### 7.3 Blocchi Data
 
 | Blocco | Dove | Che cosa |
@@ -1595,7 +1645,9 @@ dal vivo e del lettore, nessuna proprietà, una riga per evento con qualcosa da 
 da confermare** (`NoShowProposed`), **turni da segnare** (`Unknown` di un evento che `events-after` ha chiuso) e **cessioni da decidere**,
 ognuno contato solo se l'unico handler dà al lettore `EventAtc.Edit` sulla riga, quindi mai le proprie; niente per chi non tiene
 `EventAtc.Edit` da nessuna parte. Il link porta alla pagina dell'ATC dell'evento; un visitatore riceve `signedIn: false`. I PIREP da
-validare entrano con E14a.
+validare entrano con E14a. **Deciso con E14a** (#289, lettura 10, piano 1.38): un numero in più per evento, **i PIREP da validare**
+(`Submitted`), contati solo dove l'unico handler dà al lettore `EventReports.Edit` sulla riga, quindi non i propri, letti già filtrati
+per stato nella query; il blocco è anche nella dashboard dell'MD.
 
 ### 7.4 Il Gate Manager
 
@@ -1633,7 +1685,15 @@ Nell'hub il Gate Manager legge con un **token personale** (`CLAUDE.md` §2), non
   quegli slot sono liberi; quelle di un evento concluso restano con `booked_by` negativo, e una privata tiene l'aereo, lo scalo
   dell'evento con il suo orario e `paired_slot_id`, **senza** il nominativo, l'altro aeroporto e il suo orario.
 
-Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).
+~~Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).~~
+
+**Deciso da Carmine il 18 ott 2026** (in chat al master, nota `2026-10-18-il-gate-manager-nell-hub`, piano 1.38): **il Gate Manager
+non è più un'applicazione esterna che legge l'hub**. Quello di oggi è provvisorio e non si collega all'hub: **si rifà da zero dentro
+l'hub, nel modulo Eventi** (gli slot e le prenotazioni sono già lì), per lo staff eventi e per chi gestisce i gate, per esempio i capi
+dei FIR; **dopo tutte le altre fasi di M4, in parallelo ai test** sull'installazione di prova, dal suo documento di design (permessi,
+chi gestisce quali gate, che cosa vede il pilota), una fase nuova di M4 da numerare quando il design è approvato. **E9 perde il pezzo
+«il Gate Manager legge l'hub»**. L'esportazione qui sopra **resta com'è**: non ha più il suo primo cliente, ma è un contratto pubblico
+che chi forka può usare; che cosa ne fa il Gate Manager nuovo lo dirà il suo design.
 
 ---
 
@@ -1905,6 +1965,15 @@ di un evento **non finito si cancella**; di un evento finito **resta** con lo ps
 dice due righe in più (`events:erasure.seatsToCome`, `events:erasure.seatsOver`); `evt_activities.created_by`, `.updated_by` e
 `evt_activity_bookings.vid` sono in `ErasureTests`.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 12, cambiata da Carmine sulla #289, piano 1.38), per i PIREP
+di supporto: i PIREP e le voci **restano** con lo pseudonimo (in `vid` e in `decided_by`), perché sono di eventi finiti e le statistiche
+e le regole di award contano le voci. Perdono la **nota della decisione** e, di una voce di **volo**, il **callsign** e la **sessione**,
+segnati `[ErasedWith(nameof(Vid))]`; **il nominativo di una voce ATC resta** (nomina una postazione, non la persona, e le regole dei
+minuti lo leggono). ⚠️ Il segno è di una colonna, non di un tipo: nelle copie d'audit di una voce che non c'è più il nucleo svuota il
+nominativo anche di un turno; la riga che resta lo tiene. Restano gli aeroporti, il giorno, le ore, i minuti, la distanza, l'esito.
+L'anteprima dice una riga in più, i PIREP tenuti; `evt_reports.vid`, `evt_reports.decided_by` ed `evt_report_items.vid` sono in
+`ErasureTests`. La conservazione dei PIREP dei piloti dopo `pilotRetentionMonths` è di E15b.
+
 ---
 
 ## 12. Forkabilità
@@ -2095,7 +2164,10 @@ Poste sulla PR ([commento][q2]); Carmine ha risposto in chat (c4) e ha **conferm
    (§4-bis), con le scelte di forma del design (domande da un elenco chiuso di tipi, attività a turni con posti, dati tenuti 3
    mesi).
 7. **Lo spegnimento di `ivao-booking`** (E9). Raccomandato: dopo il primo evento vero fatto sull'hub, con il Gate Manager già
-   passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.**
+   passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.** **Cambiata il 18 ott 2026** (Carmine, in chat al
+   master, nota `2026-10-18-il-gate-manager-nell-hub`, piano 1.38): ~~con il Gate Manager già passato all'hub~~ il Gate Manager di oggi
+   non passa all'hub, **si rifà dentro l'hub** (§7.4); `ivao-booking` si spegne in produzione dopo il primo evento vero fatto sull'hub,
+   con il 301, e prima vengono i test sulla prova.
 
 ### 17.3 I suggerimenti del design — decisi il 29 settembre 2026
 
