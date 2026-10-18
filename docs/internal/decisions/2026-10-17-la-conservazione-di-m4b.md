@@ -62,9 +62,11 @@ due cose che il banco non sa fare.
    `available`: falso quando la rete non ha risposto o l'evento tocca più di sette giorni di UTC — **mai una lista vuota** al suo posto.
 7. **Sulla pagina**: la sezione «Prenotazioni sulla rete» sotto il roster, nel pannello dell'ATC (la scheda dell'evento e la pagina dell'ATC
    dell'evento), una lista generata in sola lettura; **una query sua**, così con la rete lenta aspetta la sezione e il roster no (la
-   risposta di Carmine sulla #207); nessun secondo tentativo dal browser (il nucleo ha già i suoi); `available` falso è un errore della query,
-   e la sezione dice «non disponibili». Sotto la chiave dell'ATC: una correzione del roster la rilegge, e con lei «nel roster». Non su un
-   evento annullato.
+   risposta di Carmine sulla #207); nessun secondo tentativo dal browser (il nucleo ha già i suoi); `available` falso è un errore della query
+   tutto suo (`NetworkBookingsUnavailable`), e la sezione dice «non disponibili»; un errore dell'hub — un 403 dopo un cambio del «a cura di»,
+   un 500 — lo dice con le parole del nucleo (`describeProblem`), mai come la rete giù (il punto 3 della revisione della #301). Sotto la
+   chiave dell'ATC: una correzione del roster la rilegge, e con lei «nel roster». **Non su un evento annullato**: la pagina non mostra la
+   sezione, e la lettura risponde 404 senza chiedere niente alla rete, come per un evento senza roster (il punto 2).
 8. **«Duplica» per l'ATC** c'era già: le postazioni con le loro ore spostate (E11a) e le regole di award (E14b); questa fase aggiunge solo il
    test che il piano chiede (postazioni, regole, e niente dei membri né dei segni dei job). **`EventsPersonalData`** copriva già ogni riga di
    M4b (E11a, E11b, E12, E14a): nessuna colonna nuova, nessuna riga nuova in `ErasureTests`; il test chiesto — il registro contato uguale — è
@@ -112,7 +114,7 @@ E14a ed E14b l'hanno scritto nel loro handoff.
 sul banco, in CI; altrimenti la (A), che regge con la (B) (cambia solo come si aspetta il job).
 
 **Decisa: (B)** ([la risposta di Carmine][a294]). La fase del nucleo del banco, E10w, viene prima; E15b ne unisce il branch, e la spec del
-giro fa girare `events-roster` e `events-after` subito invece di aspettarli, con il segnale di award sulle sessioni della fixture.
+giro fa girare `events-roster` subito invece di aspettarlo, con il segnale di award sulle sessioni del trainer (E10w).
 
 ## 5. Alternative scartate
 

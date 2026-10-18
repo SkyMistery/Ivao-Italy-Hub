@@ -98,7 +98,7 @@ Per non ripeterle trenta volte:
 | E7 | Gli slot privati | E6b | il generatore, la prenotazione del privato, la partenza collegata |
 | ~~E8a~~ | ~~Nucleo: la cancellazione vede gli eventi~~ — **tolta** | — | A12a di M3 (#187) fa leggere a `ErasureTests` ogni modulo; le righe `evt_` le scrive E2 e chi aggiunge una colonna |
 | E8b | «Duplica», la cancellazione, il giro di M4a | E7 | «Duplica» per M4a, `EventsPersonalData` per le righe di M4a, `pnpm e2e:full` di M4a |
-| E9 | Fuori dal repository | E8b, la produzione | il Gate Manager legge l'hub (prove su `prova-ponte-rfo`); il primo evento vero; `ivao-booking` spento (Carmine) |
+| E9 | Fuori dal repository | E8b, la produzione | ~~il Gate Manager legge l'hub (prove su `prova-ponte-rfo`)~~ — **tolto** (nota `2026-10-18-il-gate-manager-nell-hub`: il Gate Manager si rifà nel modulo, sotto); i test sulla prova; il primo evento vero; `ivao-booking` spento (Carmine) |
 
 **M4b — l'ATC e il dopo evento**
 
@@ -125,6 +125,7 @@ Per non ripeterle trenta volte:
 | E14b | Regole di award, PIREP automatici, riepilogo | E14a, E10d | `evt_award_rules`, i segnali, la preferenza, i PIREP `Auto`, `events-digest` |
 | E15a | Nucleo: le prenotazioni ATC della rete | E0 | `/v2/atc/bookings/daily` dietro un'interfaccia del nucleo, in lettura |
 | E15b | Conservazione, «Duplica» per l'ATC, il giro di M4b | E14b, E15a | `events-retention`, la cancellazione per le righe di M4b, le prenotazioni di IVAO accanto al roster, `pnpm e2e:full` di M4b |
+| *(da numerare)* | **Il Gate Manager nell'hub** | tutte le altre fasi di M4; in parallelo ai test sulla prova | una funzione nuova del modulo Eventi, da zero (nota `2026-10-18-il-gate-manager-nell-hub`, decisa da Carmine): lo staff eventi e chi gestisce i gate; **prima il suo documento di design**, da approvare prima del codice |
 
 **M4c — gli eventi in presenza** (non dipende da M4b)
 
@@ -2336,16 +2337,23 @@ a `0d766fe` — E7 non è unita, e il suo branch non si è mosso durante la fase
 
 Design §7.4, §17.2 n.7; nota `i-tre-blocchi…`. Nessuna PR in questo repository.
 
-1. **Il Gate Manager legge l'hub**: il cambio è un lavoro del suo repository, con un token personale `events.bookings` e l'identità
-   `slot_id`; le prove sull'evento **`prova-ponte-rfo`**, mai su un evento vero.
-2. **Il primo evento vero fatto sull'hub**, con il Gate Manager già passato.
-3. **`ivao-booking` spento** e il **301 verso `/events`**: lo fa Carmine.
+**Cambiata il 18 ottobre 2026** (Carmine, in chat al master; nota `2026-10-18-il-gate-manager-nell-hub`, piano 1.38): il Gate Manager di
+oggi è provvisorio e **non si collega all'hub**; si rifà da zero **nel modulo Eventi**, in una fase nuova dopo tutte le altre di M4, in
+parallelo ai test, dal suo design (la riga «Il Gate Manager nell'hub» della tabella). L'esportazione di E5 resta un contratto pubblico,
+senza più il suo primo cliente. Restano a E9:
+
+1. ~~**Il Gate Manager legge l'hub**~~ — **tolto**.
+2. **I test sull'installazione di prova** — la prima prenotazione di prova di Carmine, il giro completo —, dopo che gli eventi sono chiusi
+   (le fasi aperte ed E10r).
+3. **Il primo evento vero fatto sull'hub**, in produzione (nota `2026-10-18-la-produzione`).
+4. **`ivao-booking` spento** e il **301 verso `/events`**: lo fa Carmine.
 
 ⚠️ **Prima di E9**: l'hub **in produzione** (piano §15 punti 2c e 3: il nome e il posto della produzione non sono ancora decisi) e, nel
 nucleo, **il recupero dei giri persi dei job** (nota `2026-09-28-i-job-quando-passenger-spegne-l-hub`): senza, su un Passenger che
 dorme, il promemoria del giorno prima può non partire. **Il recupero lo porta E10j** (sotto); in produzione serve anche l'operazione
 pianificata dell'host che chiama `POST /api/jobs/run` (`docs/DEPLOYING.md`).
-**Fatta quando**: `booking.it.ivao.aero` risponde con il 301 e il Gate Manager legge le prenotazioni dall'hub.
+**Fatta quando**: `booking.it.ivao.aero` risponde con il 301, dopo il primo evento vero sull'hub. ~~e il Gate Manager legge le
+prenotazioni dall'hub~~
 
 **Com'è andata**: *(a fase chiusa)*
 
@@ -5862,6 +5870,28 @@ poi **72/72 al secondo giro intero** (43,1 min), il giro di M4b compreso; `core-
 - **Non verificato**: la CI (la dice la PR); un `events-retention` vero sul banco (gira il primo
   del mese: lo provano `EventsRetentionTests`); IVAO vero dietro le prenotazioni accanto al roster (il client delle fixture; il codice della
   sorgente è quello che E15a ha provato contro IVAO); la sezione a 375 px.
+
+**Dopo la revisione** (19 ottobre 2026, sulla #301 a `607b271`: [i rilievi del revisore][rv301] — il codice approvabile, il rapporto di
+chiusura da correggere —; `main` a `2d8cb334` unito, la #305 e la #306, senza conflitti):
+
+1. **Il rapporto di chiusura** (medio) segue le decisioni del 18 ottobre: il Gate Manager di oggi non si collega all'hub e si rifà nel
+   modulo, in una fase nuova dopo le altre (nota `2026-10-18-il-gate-manager-nell-hub`), quindi **M4 è chiusa nel codice tranne E10r e il
+   Gate Manager nell'hub**; E10r (#266, il toast del nucleo, affidata a dalberone il 18 ottobre) fra i punti aperti; la coda tutta unita;
+   l'esportazione un contratto pubblico senza un primo cliente; il rosso di `ErasureTests` chiuso dal maintainer con la #306. **E9 in questo
+   piano** (la riga della tabella e la sua sezione) senza il vecchio Gate Manager, come chiede la nota, e una riga per il Gate Manager
+   nell'hub, da numerare. L'handoff dice lo stesso.
+2. **Un evento annullato non chiede la rete** (basso): la lettura risponde 404 senza chiamare `IAtcBookingSource`, come per un evento senza
+   roster, e non solo la pagina nasconde la sezione. Nel test d'integrazione; **provato al contrario** (senza la condizione: 200).
+3. **«Non disponibili» solo per la rete** (basso): un errore dell'hub — un 403 dopo un cambio del «a cura di», un 500 — la sezione lo dice con
+   le parole del nucleo (`describeProblem`); «non disponibili» resta per `available` falso (`NetworkBookingsUnavailable`). Vitest nuovo;
+   **provato al contrario** (con la condizione di prima cade).
+4. **Una riga delle prenotazioni della rete nel giro del banco** (facoltativo): non fatta. Il client delle fixture ripete il giorno
+   registrato, con la torre di Fiumicino dalle 18 alle 20 UTC, e l'evento del giro comincia due minuti dopo l'avvio della spec, a qualunque
+   ora: una riga sulla torre ci sarebbe solo se il giro cadesse fra le 18 e le 20. Le righe le prova l'integrazione.
+5. **I nit**: la nota (§4) diceva che il giro fa girare anche `events-after` (solo `events-roster`); il commento di `EventReportAward` diceva
+   «mai cancellata» (lo è con il suo PIREP, dalla conservazione).
+
+[rv301]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6255654355
 
 ### E16 — Domande e iscrizione
 

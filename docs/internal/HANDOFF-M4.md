@@ -13,7 +13,7 @@ unito le teste `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986
 (E14a, E10x, E14b, E10w, il piano 1.38 e la #303); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta** per le letture; le
 sue due domande sono **decise** da Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo
 sul banco, (B) — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento
-mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice** («Che cosa ha lasciato
+mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice tranne E10r e il Gate Manager nell'hub** (nota `2026-10-18-il-gate-manager-nell-hub`) («Che cosa ha lasciato
 E15b», sotto).
 
 **L'aggiornamento di E10x:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
@@ -371,7 +371,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 - **Che cosa c'è** (il dettaglio in `10`, E15b, «Com'è andata»; **nessuna migrazione**; del nucleo solo `schema.d.ts` generato e
   `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande; il rapporto di chiusura
-  `2026-10-17-m4-review`): l'ultima fase di **M4b**, e con lei **M4 è finita nel codice**.
+  `2026-10-17-m4-review`): l'ultima fase di **M4b**, e con lei **M4 è finita nel codice tranne E10r (#266, il toast del nucleo) e il Gate Manager nell'hub**, una fase
+  nuova del modulo dopo le altre, dal suo design (nota `2026-10-18-il-gate-manager-nell-hub`).
   - **La conservazione di M4b**: `EventRetention.cs` (le date in un posto solo, il registro dei piloti compreso) ed `EventsRetentionJob.cs`
     (piloti dopo `pilotRetentionMonths`, disponibilità a evento finito, in presenza come E17; le statistiche prima, l'audit svuotato dopo);
     `After/EventStatistics.cs` tiene i numeri quando le righe non ci sono più.
