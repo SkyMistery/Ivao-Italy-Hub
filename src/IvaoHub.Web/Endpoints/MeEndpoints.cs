@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
@@ -83,7 +84,9 @@ internal static class MeEndpoints
                     options.FaviconUrl,
                     options.FirStaffScope.ToString().ToLowerInvariant(),
                     SiteOwnership.Department.ToString(),
-                    options.ContentApproval),
+                    options.ContentApproval,
+                    options.Tagline,
+                    [.. options.BuiltBy.Select(builder => new BootstrapBuilder(builder.Name, builder.Vid, IvaoMemberProfile.Url(builder.Vid)))]),
                 Modules: moduleStates,
                 Navigation: new BootstrapNavigation(
                     Public: await MenuAsync(database, MenuScope.Public, modules.PublicNavigation, user, cancellationToken),
@@ -271,7 +274,17 @@ internal sealed record BootstrapDivision(
     string SiteDepartment,
     // The kinds a department marks ready and somebody with Content.Approve publishes (G19): the
     // editor offers "mark ready" instead of "publish" for these, and the server decides anyway.
-    IReadOnlyList<string> ContentApproval);
+    IReadOnlyList<string> ContentApproval,
+    // The footer's line under the name and its "Built by" (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito): both empty
+    // for a division that writes neither, and then the footer draws neither.
+    IReadOnlyDictionary<string, string> Tagline,
+    IReadOnlyList<BootstrapBuilder> BuiltBy);
+
+/// <summary>
+/// One person the footer credits. <paramref name="ProfileUrl"/> is built by the core's IVAO half, so the client links to it
+/// without knowing whose network it is.
+/// </summary>
+internal sealed record BootstrapBuilder(string Name, int Vid, string ProfileUrl);
 
 /// <summary>
 /// One module of this build. <paramref name="Enabled"/> is false for an optional module the

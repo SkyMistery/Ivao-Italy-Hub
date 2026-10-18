@@ -13,6 +13,14 @@ nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due domande (le d
 banco, che non lancia un job e non ha sessioni dei suoi personaggi); il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è
 finita nel codice** («Che cosa ha lasciato E15b», sotto).
 
+**L'aggiornamento di E10w:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
+persona), sul branch `m4/e10w-bench-runs-a-job`, **PR #300** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main`
+a `e7b1331c`, con `main` a `3cdacd97` unito (E10v, #291, e la tagline, #290 e #295). La nota `2026-10-18-il-banco-fa-girare-un-job` è **decisa** da Carmine: la (B) sull'[issue
+#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879) — prima una piccola fase del nucleo per il banco,
+poi E15b. Da E10w il banco ha `POST /e2e/jobs/{name}` e `PUT`/`DELETE /e2e/sessions/{vid}`, dietro gli stessi due lucchetti di
+`/e2e/signin`, e `bench.ts` ha `runJob`, `giveSessions` e `takeSessions`: il giro di M4b di E15b non aspetta più i giri veri, e il segnale
+c'è («Che cosa ha lasciato E10w», sotto).
+
 **L'aggiornamento di E10v:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
 `m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`, con `main` a `e7b1331c` unito (E10u, E13b). Una nota nuova,
 `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b). Da E10v una `NetworkSession` dice anche gli scali del suo piano di volo:
@@ -375,6 +383,52 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **Il rapporto di chiusura** conta la coda come unita: se la revisione cambia un endpoint o una tabella, il numero si corregge lì, con la
     colonna «dopo» come per M1.
   - ⚠️ **I VID di prova**: E15b ha usato **761300–761308** della fascia nuova 761300–761329.
+
+### Che cosa ha lasciato E10w (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300, del nucleo; diretta su `main`, nata a `e7b1331c`, con `main` a `3cdacd97` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10w, «Com'è andata»; nessuna migrazione, niente nel browser né in `/api/me`, nessuna riga di
+  un modulo; una nota nuova, `2026-10-18-il-banco-fa-girare-un-job`, caso (b), **decisa** da Carmine sull'issue #294):
+  - **`ScheduledJobs.RunNowAsync(string job)`** (`Core/Jobs/ScheduledJobs.cs`): lancia il job per nome come il passaggio lancia un dovuto,
+    con il segno `hub.jobs.now` nei dati del trigger; la guardia prende il lucchetto come sempre (un giro in un altro processo resta suo:
+    `Skipped`), ma **non chiede se è dovuto**. Aspetta la fine fino a `LongestRun`. `null` per un nome che Quartz non conosce.
+  - **`BenchNetworkSessions`** (`Core/Ivao/`, singleton registrato **solo sul banco**) e **`FixtureIvaoApiClient`** con il parametro
+    facoltativo: per un VID a cui il banco l'ha dato, le righe di **`tests/fixtures/ivao/tracker-sessions-bench.json`** spostate
+    (`MoveBenchTemplate`) — la torre `LIRF_TWR` dal momento chiesto per 40 min 54 s, poi a +50 min 8 s il volo `TST001` da `LIRF` a
+    `LIMC` per 71 min 52 s; il VID della persona; il numero della sessione VID × 1000 + 1 (torre) o + 2 (volo), es. `999004001` —, scelte
+    dalla regola del tracker come le righe registrate. Nel processo, mai in un file.
+  - **`src/IvaoHub.Web/E2E/E2EBenchRuns.cs`**, mappato in `Program.cs` accanto a `MapE2ESignIn`, nello stesso `if` dell'ambiente `E2E` e
+    con lo stesso controllo di `E2E:Enabled`:
+    - `POST /e2e/jobs/{name}` → `200 { job, outcome: "Ran"|"Skipped"|"Running", run: { startedAt, finishedAt, status, message } | null }`
+      quando il giro è finito; 404 per un nome che non c'è;
+    - `PUT /e2e/sessions/{vid}` con `{ "atUtc": "…Z" }` → `200 { vid, sessions: [{ id, callsign, connection, startedAt, endedAt,
+      departureIcao, arrivalIcao }] }`, letto attraverso `IIvaoApiClient`; 400 senza `atUtc`; `DELETE` → 204; 404 per un VID che non è
+      una delle cinque persone del banco (999001–999005).
+  - **`web/e2e/full/bench.ts`**: `runJob(request, name)` (asserisce 200 e `outcome: 'Ran'`; aspetta fino a 11 minuti),
+    `giveSessions(request, vid, at)`, `takeSessions(request, vid)`.
+  - **I test**, tutti nuovi: `BenchNetworkSessionsTests` (unità, 5), `E2EBenchRunsTests` (integrazione, 4: non mappati in Development né
+    sull'ambiente `E2E` senza il flag; un job non dovuto gira due volte con la sua riga; `media-expiry` vero; le sessioni date, lette da
+    `INetworkSessionSource`, riprese), `full/bench-runs.spec.ts` (il banco pubblicato).
+- **Come lo chiama E15b** (`events-m4b-round.spec.ts`, che unisce `main` quando questa è unita):
+  - `import { giveSessions, runJob, takeSessions } from './bench';`
+  - le sessioni del formatore **prima** che servano, dall'inizio del suo turno, e riprese dopo:
+    `afterwards(() => takeSessions(trainer.request, trainerVid)); await giveSessions(trainer.request, trainerVid, starts);` — la torre
+    `LIRF_TWR` copre `starts`…`starts + 40 min 54 s`, quindi il turno di un quarto d'ora (anche tagliato a 10 minuti) è tutto coperto;
+  - al posto dell'attesa del quarto d'ora: dopo la chiusura delle disponibilità `await runJob(coordinator.request, 'events-roster')`
+    (il giro che lo spec aspettava, con le sue impostazioni a 0 giorni; se la pubblicazione chiede un secondo giro, un secondo `runJob`),
+    poi le mail come oggi
+    (`notification-dispatch` gira ogni minuto, o `runJob(…, 'notification-dispatch')`); dopo la fine dell'evento `runJob(…, 'events-after')`
+    se il giro legge le verifiche, e il PIREP ATC del formatore trova i minuti sulla torre;
+  - ⚠️ `runJob` asserisce `Ran`: un `Skipped` vuol dire un altro processo con il lucchetto — sul banco non c'è, quindi è un errore vero;
+  - ⚠️ `run` è la riga del giro, **non** l'esito del lavoro: un job che fallisce risponde `Ran` con `run.status: "failed"`; chi ne dipende
+    lo guardi.
+- **Che cosa deve sapere la fase dopo**:
+  - ⚠️ **Il volo del modello è da `LIRF` a `LIMC`, dopo la torre**: un PIREP di supporto di un pilota lo trova solo in un evento il cui
+    giorno e la cui finestra dei voli lo contengono (`ReportRules.DayWindow`); la persona è una sola, quindi torre e volo sono suoi tutti e due.
+  - ⚠️ **Un giro chiesto adesso conta come ultimo giro**: l'occorrenza di `events-roster` già passata è fatta, e la prossima viene.
+  - ⚠️ **Le sessioni stanno nel processo del banco**: un banco riavviato le dimentica (lo spec le dà di nuovo); due spec che danno sessioni
+    alla stessa persona si spostano a vicenda, ma `e2e:full` ha un worker solo.
+  - ⚠️ **Nessun VID nuovo**: le cinque persone del banco (999001–999005) sono le sole a cui si danno sessioni.
+  - `CONTRIBUTING.md` è di Carmine: la riga proposta è nel §6 della nota.
 
 ### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `583c54c1` (dopo la revisione della #289, con `main` a `e7b1331`) e `092e0b79` unite)
 

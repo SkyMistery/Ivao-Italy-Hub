@@ -4616,6 +4616,16 @@ export interface components {
             alwaysLive: boolean;
         };
         /**
+         * @description One person the footer credits. ProfileUrl is built by the core's IVAO half, so the client links to it
+         *     without knowing whose network it is.
+         */
+        BootstrapBuilder: {
+            name: string;
+            /** Format: int32 */
+            vid: number;
+            profileUrl: string;
+        };
+        /**
          * @description One word of the division's calendar vocabulary, as everybody who draws a chip needs it: the key
          *     an entry carries, what to call it in each language, and the colour somebody chose for it.
          *     It is here rather than behind its own public endpoint because the client needs it before
@@ -4649,6 +4659,10 @@ export interface components {
             firStaffScope: string;
             siteDepartment: string;
             contentApproval: string[];
+            tagline: {
+                [key: string]: string;
+            };
+            builtBy: components["schemas"]["BootstrapBuilder"][];
         };
         /**
          * @description One module of this build. Enabled is false for an optional module the
