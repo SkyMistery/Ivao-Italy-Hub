@@ -8,7 +8,8 @@
 
 **Ultimo aggiornamento:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
 `m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`; dopo la
-revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462), ha unito `main` a `fa9c29b4` (E14a, #289). Una nota
+revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462), ha unito `main` a `fa9c29b4` (E14a, #289); di nuovo
+[approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6252455578), `main` a `11636395` (E10w, #300). Una nota
 nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), **decisa** da Carmine (il punto 3 della [sua
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) sulla #293). Da E10x il nucleo ha
 `AwardSignalQueries.AssignedAsync`: i source id di un modulo di cui un segnale è diventato award, con il lock delle righe dentro una
@@ -356,7 +357,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`, con `main` a `fa9c29b4` unito)
+### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`, con `main` a `fa9c29b4` e poi a `11636395` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10x, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una nota
   nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):

@@ -4653,6 +4653,9 @@ versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa
   punto portato a Carmine, l'assegnazione cancellata che lascia il segnale `Handled`, è **deciso (A)**
   ([risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217), nota §2.4). Unito `main` a `fa9c29b4`
   (E14a, #289), in conflitto solo in `HANDOFF-M4.md`: i due blocchi tenuti, E10x in cima. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1391/1391**, `AwardSignalQueriesTests` 5/5, integrazione intera da sola **683/683** al primo giro (13 minuti), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `fa9c29b4`: passa.
+  Di nuovo [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6252455578); unito `main` a `11636395`
+  (E10w, #300), in conflitto solo in `HANDOFF-M4.md` e in questo file: i blocchi di tutte e due le parti tenuti, E10x in cima all'handoff,
+  E10w prima di E10x qui. Il merge non porta codice di E10x: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1396/1396**, `AwardSignalQueriesTests` 5/5, `core-guard.sh` con Git Bash dalla base `11636395`: passa.
 
 ### E11a — Postazioni e disponibilità
 
