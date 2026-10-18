@@ -232,6 +232,7 @@ export const staffQueueBlock: BlockRegistration = {
         noShows: 2,
         toMark: 0,
         transfers: 0,
+        reports: 3,
       },
       {
         id: 2,
@@ -242,6 +243,7 @@ export const staffQueueBlock: BlockRegistration = {
         noShows: 0,
         toMark: 0,
         transfers: 1,
+        reports: 0,
       },
     ],
   } satisfies StaffQueueData,
