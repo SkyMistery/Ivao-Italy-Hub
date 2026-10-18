@@ -7,7 +7,8 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
-`m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`. Una nota
+`m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`; dopo la
+revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462), ha unito `main` a `fa9c29b4` (E14a, #289). Una nota
 nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), **decisa** da Carmine (il punto 3 della [sua
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) sulla #293). Da E10x il nucleo ha
 `AwardSignalQueries.AssignedAsync`: i source id di un modulo di cui un segnale è diventato award, con il lock delle righe dentro una
@@ -347,7 +348,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`)
+### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`, con `main` a `fa9c29b4` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10x, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una nota
   nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
@@ -357,8 +358,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     **`Handled`** — cioè un'assegnazione l'ha risposto. `Pending`, `Dismissed`, nessun segnale, un altro modulo: non ci sono. Nessun id,
     nessuna query.
   - **Dentro una transazione** del contesto dato (`Database.CurrentTransaction`): una `SELECT … FOR UPDATE` di **tutte** le righe del
-    segnale di quelle sorgenti, in ordine di `id`, che legge l'ultima versione committata e tiene il lock fino alla fine della transazione
-    di chi chiama; **fuori**, una lettura semplice che non aspetta nessuno.
+    segnale di quelle sorgenti, che legge l'ultima versione committata e tiene il lock fino alla fine della transazione di chi chiama;
+    **fuori**, una lettura semplice che non aspetta nessuno.
   - **I test**: `AwardSignalQueriesTests` (integrazione, 5 casi, il modulo di test, le persone 780041 e 780043 di `AwardsTests`).
 - **Che cosa chiama E14b** (che unisce questo branch, poi `main` quando è unita):
   - nella decisione su un PIREP, **dentro** la sua transazione READ COMMITTED: `await AwardSignalQueries.AssignedAsync(database,
@@ -366,12 +367,14 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     un insieme non vuoto, la decisione si rifiuta. Al posto di `ReportAwards.AssignedAsync(reportId, locking: true, …)`;
   - nella lista, **fuori** transazione, la stessa chiamata con le sorgenti della pagina, poi da sorgente a PIREP. Al posto di
     `AssignedAmongAsync`;
-  - ⚠️ il lock c'è **solo** dentro una transazione del contesto che si passa: un contesto diverso da quello della transazione non blocca
-    niente;
+  - ⚠️ il lock c'è **solo** dentro una transazione del contesto che si passa: un contesto diverso da quello della transazione, una
+    `TransactionScope` ambientale o un `BeforeSave` del CRUD (prima della transazione dell'intercettore) non bloccano niente, in silenzio;
+  - ⚠️ **chiamarla sotto READ COMMITTED**: sotto REPEATABLE READ (anche `BeginTransactionAsync()` senza argomenti) prende i lock sui buchi,
+    e due decisioni su sorgenti ancora senza segnale possono andare in deadlock (la revisione della #299, punto 1);
   - ⚠️ perché la domanda veda **ogni** segnale che il PIREP ha mai prodotto (il punto 1 della revisione della #293), le righe di
     `evt_report_awards` restano anche quando il PIREP è rifiutato: è E14b a tenerle, con uno snapshot vuoto finché non è accettato;
-  - ⚠️ «diventato award» è `Handled` **anche se l'assegnazione è stata cancellata** dal registro dopo: il segnale non torna indietro (nota
-    §2.4);
+  - ⚠️ «diventato award» è `Handled` **anche se l'assegnazione è stata cancellata** dal registro dopo: il segnale non torna indietro, e
+    quel PIREP non si decide più — **deciso da Carmine, (A)** ([risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217); nota §2.4);
   - ⚠️ un'assegnazione che arriva mentre chi chiama tiene il lock aspetta; se chi chiama ritira il segnale `Pending` e committa,
     l'assegnazione risponde **409** e non scrive niente (`AnAssignmentWaitsForTheCallerAndFindsTheSignalWithdrawn`).
 

@@ -4545,7 +4545,8 @@ versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa
 - **Fatto** (nota nuova `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
   - **`AwardSignalQueries.AssignedAsync(DbContext, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken = default)`
     → `Task<IReadOnlySet<string>>`** in `src/IvaoHub.Core/Content/AwardSignalQueries.cs`: dentro una transazione una `SELECT source_id,
-    status … ORDER BY id FOR UPDATE` di tutte le righe del segnale di quelle sorgenti; fuori, una lettura LINQ senza tracking.
+    status … FOR UPDATE` di tutte le righe del segnale di quelle sorgenti (da chiamare sotto READ COMMITTED); fuori, una lettura LINQ
+    senza tracking.
   - **`AwardSignalQueriesTests`** (integrazione, 5 casi): `Handled` solo e solo del modulo, dal contesto del hub e da quello del modulo
     di test, con e senza transazione; nessun id; la chiamata aspetta una transazione che tiene la riga e ne legge il `Handled`; al
     contrario, un'assegnazione vera (`POST /api/award-assignments`) aspetta chi chiama e, ritirato il segnale, risponde 409 senza award;
@@ -4568,6 +4569,14 @@ versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa
   - la CI (la dice la PR);
   - `e2e:full` e la smoke: una query del nucleo, nessuna schermata e nessun chiamante nel modulo;
   - l'uso vero, nella decisione e nella lista dei PIREP: è di E14b.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462),
+  con tre commenti, tutti fatti (nota §7): il commento del metodo dice «call it under READ COMMITTED» (sotto REPEATABLE READ i lock sui
+  buchi possono mandare in deadlock due chiamanti su sorgenti senza segnale); l'ordine dei lock è quello dell'indice
+  `(source_module, source_id, vid)`, non dell'`ORDER BY id`, che è **tolto** (ordinava solo un insieme), corretti il commento e la nota
+  §3.3; una riga del commento per la lettura semplice in silenzio sotto una `TransactionScope` ambientale o in un `BeforeSave` del CRUD. Il
+  punto portato a Carmine, l'assegnazione cancellata che lascia il segnale `Handled`, è **deciso (A)**
+  ([risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217), nota §2.4). Unito `main` a `fa9c29b4`
+  (E14a, #289), in conflitto solo in `HANDOFF-M4.md`: i due blocchi tenuti, E10x in cima. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1391/1391**, `AwardSignalQueriesTests` 5/5, integrazione intera da sola **683/683** al primo giro (13 minuti), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `fa9c29b4`: passa.
 
 ### E11a — Postazioni e disponibilità
 
