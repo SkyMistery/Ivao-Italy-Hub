@@ -5150,7 +5150,102 @@ Design §3.7, §4.5, §7.2 (`/staff/events/controllers`), §7.3; note `il-roster
 resta tolto e il registro lo mostra; il pilota oltre la soglia non supera i limiti per fascia e per evento; una voce tolta non conta.
 **Fatta quando**: sul banco un no-show proposto si conferma, si toglie, e il registro lo racconta.
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (16–17 ottobre 2026; branch `m4/e13b-registers`, PR #283, nata `--no-track` dalla testa di E13a `8dd3092f`, in coda dopo
+la #278 di E13a, con le sue teste `f5333cf`, `c0bc1bd` ed `e073bff` unite, poi `main` a `9a78b2c`; nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), e sulla #283 la lettura 1 cambiata e le
+2–11 accettate, con le 4 e 5 ristrette ([la revisione](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820))):
+
+- **Nessuna migrazione**, come il piano diceva: gli esiti dei turni (`attendance_*`) ci sono da E11b, `unflown_excused_*` da E6a, e i tre
+  limiti dell'evento (`restricted_*`) **dallo scheletro** (`Initial`, E2), che nessun form scriveva ancora.
+- **Le decisioni sui turni** (`Registers/RegisterDecisions.cs`, `POST /api/events/atc/shifts/{id}/attendance`): su un evento finito e non
+  annullato, `Unknown` e `NoShowProposed` → `Attended`, `NoShow` o `Excused`; `NoShow` → solo `Excused` («togli il no-show», anche dopo);
+  `Attended` ed `Excused` definitivi; la nota obbligatoria per giustificare. `EventAtc.Edit` all'unico handler sul turno, quindi mai sul
+  proprio, il superadmin compreso, e lo staff di un FIR sul suo FIR: `DeniedToStakeholder` c'era da E2, nessun `if` del modulo. Sotto il
+  blocco della riga dell'evento; un cambio insieme è un 409.
+- **Scostamento dalla prima stesura della nota (lettura 1)**: il verbo doveva riscrivere le statistiche nello stesso salvataggio; il test
+  d'integrazione ha mostrato che il guardiano lo rifiuta all'AOD, che non scrive l'area `Events`. Le statistiche restano a «Ricalcola» di
+  E13a, come diceva la sua consegna; la nota e la domanda sono corrette (detto al coordinatore).
+- **La penalità** (`RosterData.PenaltiesAsync`) legge i no-show **confermati** degli altri eventi con `noShowWeight`, e i conti vengono da
+  una funzione sola, `ControllerRegister.CountsAsync`, la stessa del registro.
+- **I registri**: tre letture scritte a mano (`Registers/RegisterEndpoints.cs`) — dei controllori (`EventAtc.View`), dei piloti
+  (`EventBookings.View`), il registro del membro (`/api/events/mine/record`) —, con i dettagli nelle liste del motore: i turni filtrati per
+  controllore (`filter[controllerVid]`, nuovo), le prenotazioni per pilota (`filter[bookerVid]`, nuovo). Le righe delle due liste portano ora
+  il titolo dell'evento, la nota e se il lettore può decidere (`Decidable`, `Excusable`), in coda ai DTO.
+- **«Togli» di una prenotazione non volata** (`POST /api/events/bookings/{id}/excuse`): verificata, non volata, una volta, con la nota.
+  **`EventBookings.Edit` è diventato `DeniedToStakeholder`** (la scelta (A) della lettura 6, decisa da Carmine sulla #280).
+- **I limiti** (`Registers/BookingLimits.cs`, puri; `PilotRegister.LimitsAsync`) nei tre verbi di `PilotBookings`, sotto il blocco del pilota
+  dopo la compatibilità: fasce fisse dall'inizio dell'evento sull'orario dello slot allo scalo dell'evento, con le prenotazioni della stessa
+  richiesta (tratte di una rotazione, partenza collegata); i limiti dell'evento uno a uno sopra le impostazioni. Il rifiuto ha due chiavi su
+  `slotId`; numeri e «fino a quando» li legge la pagina dal registro del membro (`LimitsNotice`), perché `Refusals` porta solo chiavi.
+- **Il blocco `events.staffQueue`** (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`): per evento, no-show da confermare, turni
+  `Unknown` di un evento chiuso, cessioni da decidere, ognuno solo dove l'unico handler dà `EventAtc.Edit` al lettore. I conteggi dei blocchi
+  più uno (`uiKit.test.ts` 46, `DataBlockEndToEndTests` 21).
+- **Le pagine**: `/staff/events/controllers[/$vid]`, `/staff/events/pilots[/$vid]` (`screens/registers.tsx`, voci di menu nuove), la sezione
+  «Esiti» nell'ATC di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti nei dialog di
+  prenotazione (`screens/limits.ts`); le cinque impostazioni nel form generato e i tre limiti nel form dell'evento.
+- **Test di fasi prima cresciuti con la forma**: `EventsSettingsTests` (E2: tre permessi negati all'interessato), `EventsAtcTests` (E11a: il
+  capo di un FIR ha anche il registro dei controllori nel menu), `schemas.test.ts` (E2), `eventForm.test.ts` (E3a),
+  `titlesAndEmptyLists.test.tsx` (E4c: la risposta del registro del membro); nel nucleo i due conteggi dei blocchi.
+- **I test**: integrazione `EventsRegistersTests` (4: nessuno decide il proprio turno, superadmin compreso, e la coda conta solo quelli degli
+  altri; un no-show confermato, poi tolto con la nota, resta tolto, il registro e il registro del controllore lo dicono, l'audit tiene chi;
+  il pilota oltre la soglia non supera i limiti per fascia e per evento, l'evento con i suoi limiti ne prende due in una fascia, «fino a
+  quando»; una voce tolta non conta e nessuno toglie la propria); unità `EventsRegistersTests` (7: la penalità 0,08 e 0,25 e il peso, le
+  transizioni, le fasce, i limiti dell'evento, «fino a quando», le cinque impostazioni); il giro `full/events-registers.spec.ts` (le due
+  pagine dei registri, le impostazioni salvate e rilette, il limite di un evento dal suo form). VID **761200–761206**.
+- **Il «fatta quando» sul banco della fase** (5150, `ivaohub_e2e_e13b`, rifatto con `E2E_SKIP_PUBLISH=1` e Mailpit spento): un evento finito
+  con il roster, e un turno del pilota del banco `NoShowProposed` scritto in SQL (`bench-e13b.ps1` nella scratchpad della sessione: il banco
+  non lancia `events-after`). Il coordinatore degli eventi, nel browser, lo ha confermato dalla sezione «Esiti» dell'ATC dell'evento; il
+  registro dei controllori ha detto 1 no-show e penalità 0,33; «Togli il no-show» senza nota è stato rifiutato sul campo, con la nota è
+  diventato «Giustificato», senza più un'azione, con il registro a 0 no-show e penalità 0; il pilota ha letto in `/events/mine` il turno
+  giustificato con la nota. **Guardare ha trovato due difetti** che i giri non vedevano, corretti: la pagina di una persona chiedeva 200 righe
+  (lo schema delle liste ne ammette 100: l'errore del router), e i conti di una persona stavano solo nel `title` dell'intestazione — ora sono
+  a vista, scritti come etichetta e numero («1 giustificati» non si legge più). Il giro ora apre le due pagine di una persona.
+- **Verificato, in locale** (16–17 ottobre 2026, dopo il merge di `f5333cf`): `dotnet restore --force --no-http-cache` senza avvisi; `dotnet
+  build -c Release` senza avvisi; `has-pending-model-changes` senza cambi; unità **1334/1334**; **integrazione intera senza filtro, da sola,
+  651/651** (16,1 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` **796 in 113 file** (da solo, con
+  `--maxWorkers=4`: un giro a pieni worker è caduto per memoria, nessun test rosso); `gen:api` senza diff; lo smoke `--workers=2` **181/181**;
+  `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit: **69/69 al primo giro** (14,9 min; due giri prima avevano 68/69, rossa solo la spec nuova per due asserzioni sue — la descrizione sotto il breadcrumb, due `h1` nella pagina —, corrette e la spec da sola 6/6 con `--repeat-each 3`); `core-guard.sh` con Git Bash dal
+  merge-base con `main` (`2938ae8`): passa, nessun file del maintainer. **Dopo il merge della testa di E13a `c0bc1bd`** (con `main` a
+  `85d15a7` ed E10t `ee9772c`; nessun conflitto, niente del modulo): build senza avvisi, unità **1338/1338**, integrazione intera da sola
+  **654/654** (16,4 min), `gen:api` senza diff, `core-guard.sh` dal merge-base `85d15a7`: passa. **Dopo il merge della testa `e073bff`**
+  (con `main` a `0ce4802`: E10t e la #281; nessun conflitto, niente del modulo): build senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1338/1338**, integrazione intera da sola **660/660** (10 min), `pnpm test` con `--maxWorkers=2` **798 in 114 file**, `gen:api`
+  senza diff, lo smoke **183/183**, `core-guard.sh` dal merge-base `0ce4802`: passa (di E13b solo i due conteggi dei blocchi).
+- **Non verificato**: la CI; un no-show proposto da un giro vero di `events-after` sul banco (il banco non lancia un job); i limiti e il
+  registro dei piloti guardati nel browser (provati da `EventsRegistersTests`); la penalità scritta «0.33» da `col.number` del nucleo, che non
+  usa la virgola italiana (non toccato).
+
+**Dopo la revisione della #283** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736),
+[le risposte di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820), 17 ottobre 2026; `main` a `9a78b2c`
+unito, con la #278 di E13a, e poi la testa della fase del nucleo **E10u** `a2631e6`, la #288; la PR ora è in coda dopo la #288):
+
+- **La lettura 1 cambiata da Carmine**: nessun esito è definitivo. `RegisterDecisions.Allowed` lascia passare uno dei tre esiti dello staff
+  in un altro, mai in sé stesso; `RegisterDecisions.Decidable` è l'evento finito e non annullato, e `Decidable` delle righe è quello più
+  l'unico handler. La pagina dice «Decidi», «Togli il no-show» o «Cambia», e offre gli altri due esiti. Il nuovo test
+  `ADecidedOutcomeChangesLaterAndADecisionWithoutANoteKeepsTheOne`, con i quattro passi nell'audit.
+- **Il punto 1, la risposta (b)**: i due registri solo a chi tiene il permesso senza uno scope di risorsa. Il nucleo non sapeva dirlo, e il
+  menu del back office mostra una voce a chi tiene il permesso da qualche parte: **dalberone ha scelto (17 ottobre) una fase del nucleo a sé,
+  E10u** (`PermissionSet.HasUnscoped`, `ICurrentUser.HasUnscoped`, `NavItemDescriptor.Unscoped`), per la regola 6. Qui le due letture
+  rispondono 403 a chi lo tiene solo su righe o eventi, e le due voci di menu portano `Unscoped`. Il test
+  `AGrantOnOneEventOpensNeitherRegisterNorTheirMenuEntries` (VID **761207**).
+- **Il punto 2**: «togli» sotto un `FOR UPDATE` sulla prenotazione, in `READ COMMITTED`; una prenotazione di un pilota cancellato (VID
+  negativo) non si trova. Il test `TwoTakeOutsAtOnceTakeItOutOnceAndAnErasedPilotsBookingIsNotFound`.
+- **Il punto 3**: il commento e la lettura 1 dicono che il job non prende il blocco dell'evento per i turni, e che cosa succede quando una
+  decisione e il job si incontrano (la `row_version`).
+- **Il punto 4**: `events.staffQueue` non legge niente per chi non tiene `EventAtc.Edit` da nessuna parte, esclude le righe del lettore nella
+  query, legge le più recenti e le mostra dalla più recente (la lettura 11).
+- **Il punto 5**: una riga nell'HANDOFF. **Il punto 6**: una decisione senza nota tiene quella di prima.
+- **La nota** è **decisa**, con i link.
+- **Verificato, in locale** (17 ottobre 2026, con `main` a `9a78b2c` ed E10u `a2631e6` uniti): build Release senza avvisi,
+  `has-pending-model-changes` senza cambi; unità **1348/1348**; **integrazione intera da sola 664/664** (16,2 min; `EventsRegistersTests` 7/7);
+  `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **798 in 114 file**; `gen:api` senza diff; lo smoke
+  **183/183**; `e2e:full` sul banco 5150, `ivaohub_e2e_e13b` tolto prima, dietro il lock di Mailpit, **69/69 al primo giro** (14,6 min);
+  `core-guard.sh` dal merge-base `9a78b2c`: passa, nessun file del maintainer (i file del nucleo sono quelli di E10u e i due conteggi).
+- **Dopo il merge della testa nuova di E10u `59d544e`** (con `main` a `8bf63ea`: le #285 e #286; conflitto solo nell'HANDOFF, il blocco di
+  E13b in cima): `dotnet restore --force --no-http-cache` senza avvisi, build Release senza avvisi, `has-pending-model-changes` senza cambi,
+  unità **1348/1348**, integrazione intera da sola **664/664** (12,5 min), `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi,
+  `pnpm test --maxWorkers=2` **803 in 115 file**, `gen:api` senza diff, lo smoke **184/184**, `core-guard.sh` dal merge-base `8bf63ea`: passa.
 
 ### E14a — Il PIREP di supporto
 

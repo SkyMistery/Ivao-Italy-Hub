@@ -1,12 +1,13 @@
 import type { ModuleManifest } from '../../shared/modules';
 
-import { atcCoverageBlock, eventListBlock, myEventsBlock } from './blocks';
+import { atcCoverageBlock, eventListBlock, myEventsBlock, staffQueueBlock } from './blocks';
 import {
   EVENTS_EDIT,
   EVENTS_MANAGE_SETTINGS,
   EVENTS_VIEW,
   EVENT_ATC_VIEW,
   EVENT_BOOKINGS_EDIT,
+  EVENT_BOOKINGS_VIEW,
   EVENT_ROUTES_EDIT,
 } from './permissions';
 import {
@@ -24,6 +25,12 @@ import { EventCancelPage, EventDuplicatePage, EventEditor, EventsPage } from './
 import { MyBookingsPage } from './screens/mine';
 import { EventPublicPage, EventsPublicPage } from './screens/public';
 import { QuestionForm } from './screens/questions';
+import {
+  ControllerRegisterPage,
+  ControllersRegisterPage,
+  PilotRegisterPage,
+  PilotsRegisterPage,
+} from './screens/registers';
 import { RosterPage } from './screens/RosterPage';
 import { RouteForm } from './screens/routes';
 import { EventsSettingsPage } from './screens/settings';
@@ -43,10 +50,12 @@ import { SlotForm, SlotLoadPage } from './screens/slots';
  * published roster, a controller's shifts and availabilities on `/events/mine` with «hand over», the staff's requests under the roster, and
  * the block of the coverage of the rosters; E17 the parallel activities of an event in person — in a tab of the event's page with their
  * seats, an activity on a page of its own, the turns with their free seats on the event's page, where a registered member takes and gives
- * back a seat. */
+ * back a seat; E13b the registers of the controllers and of the pilots, each with a page per person where the staff decide how a shift went
+ * and take a booking not flown out of a record, the outcomes of the shifts under the ATC of an event over, a member's own registers on
+ * `/events/mine`, and the block of the staff's queue. */
 export const eventsManifest: ModuleManifest = {
   key: 'events',
-  blocks: [eventListBlock, myEventsBlock, atcCoverageBlock],
+  blocks: [eventListBlock, myEventsBlock, atcCoverageBlock, staffQueueBlock],
   routes: [
     // The public side (E4): the events to come and in progress, and one event by its address — where its calendar entry and its
     // line in the search lead. Under `_public`, so they wear the header, the footer and the language switcher of the site. The page
@@ -116,6 +125,32 @@ export const eventsManifest: ModuleManifest = {
       permission: EVENT_ATC_VIEW,
       validateSearch: shiftSearchSchema,
       component: ShiftForm,
+    },
+    // The registers (E13b): the controllers' and the pilots', each with a page per person. Above `/staff/events/$id`, which would take
+    // `controllers` and `pilots` as an id.
+    {
+      area: 'staff',
+      path: '/staff/events/controllers',
+      permission: EVENT_ATC_VIEW,
+      component: ControllersRegisterPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/controllers/$vid',
+      permission: EVENT_ATC_VIEW,
+      component: ControllerRegisterPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/pilots',
+      permission: EVENT_BOOKINGS_VIEW,
+      component: PilotsRegisterPage,
+    },
+    {
+      area: 'staff',
+      path: '/staff/events/pilots/$vid',
+      permission: EVENT_BOOKINGS_VIEW,
+      component: PilotRegisterPage,
     },
     {
       area: 'staff',

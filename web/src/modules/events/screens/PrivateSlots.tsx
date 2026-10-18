@@ -30,6 +30,8 @@ import { bookingsOpen } from './bookingTimes';
 import { airportLabel } from './cards';
 import { AirportName } from './EventCards';
 import { MY_EVENTS_PAGE, VISITOR, type SlotViewer } from './myBookings';
+import { isLimitRefusal } from './limits';
+import { LimitsNotice } from './myRecord';
 import {
   bookableIn,
   linkableDepartures,
@@ -329,7 +331,9 @@ export function PrivateBooking({
   viewer,
   nowMs,
 }: {
-  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt' | 'privateSlots'>;
+  event: Pick<PublicEventDto, 'bookingOpensAtUtc' | 'cancelledAt' | 'privateSlots'> & {
+    readonly id?: number;
+  };
   airport: PublicEventAirportDto;
   isArrival: boolean;
   hour: PrivateHour<PublicPrivateSlotDto>;
@@ -342,6 +346,8 @@ export function PrivateBooking({
   const book = useBookPrivate();
   const switchId = useId();
   const [tryAgain, setTryAgain] = useState(false);
+  // Refused for the limits of whoever books and does not fly (E13b): the record says the numbers and until when.
+  const [limited, setLimited] = useState(false);
 
   // The slots as the page reads them now: a booking of another pilot, read again, takes its slot out of the choices.
   const free = bookableIn(hour, nowMs);
@@ -412,9 +418,11 @@ export function PrivateBooking({
 
   const submit = async (values: PrivateFlightValues | PrivatePairValues) => {
     setTryAgain(false);
+    setLimited(false);
     try {
       await book.mutateAsync(privateRequest(values));
     } catch (error) {
+      setLimited(isLimitRefusal(error));
       // A 409 is «try again», nothing booked (E6a): the core's sentence for a 409 is about somebody else's change instead.
       if (error instanceof ApiError && error.status === 409) {
         setTryAgain(true);
@@ -470,6 +478,7 @@ export function PrivateBooking({
 
       {tryAgain ? <Notice tone="error" title={t('events:errors.bookingTryAgain')} /> : null}
       {taken ? <Notice tone="error" title={t('events:errors.slotJustTaken')} /> : null}
+      {limited && event.id !== undefined ? <LimitsNotice eventId={event.id} /> : null}
 
       {drawn.withDeparture ? (
         <SchemaForm
