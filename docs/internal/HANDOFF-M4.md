@@ -7,7 +7,7 @@
 > ripetono qui.
 
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
-`m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`. Una nota nuova,
+`m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`, con `main` a `e7b1331c` unito (E10u, E13b). Una nota nuova,
 `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b). Da E10v una `NetworkSession` dice anche gli scali del suo piano di volo:
 `DepartureIcao`/`ArrivalIcao` dell'ultima revisione e `Routes`, ogni revisione dalla più vecchia («Che cosa ha lasciato E10v», sotto).
 **E14b** (`m4/e14b-award-rules`) unisce questo branch.
@@ -368,19 +368,19 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
   - ⚠️ **I VID di prova**: E14b ha usato **761262–761268** della fascia 761262–761299.
 
-### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`)
+### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`, con `main` a `0bfbdbb3` e poi a `e7b1331c` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
   fixture cambiata; una nota nuova, `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b)):
   - **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt, string? DepartureIcao = null, string?
     ArrivalIcao = null) { IReadOnlyList<NetworkRoute> Routes }`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`), con
     **`NetworkRoute(string DepartureIcao, string ArrivalIcao)`**: `Routes` è ogni revisione del piano di volo, dalla più vecchia, in
-    maiuscolo, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
+    maiuscolo, nell'ordine dell'`id` del piano, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
     l'**ultima** voce di `Routes`; `null` e vuota per un controllore o una sessione senza piano.
   - **L'uguaglianza è di valore**: due sessioni con le stesse rotte sono uguali (`Equals` e `GetHashCode` scritti nel record).
   - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** (`IvaoTracker.cs`): le revisioni dal `RawJson` della riga, che il
     client ha già; nessuna chiamata nuova alla rete. Il DTO e i tour non cambiano.
-  - **I test**: `NetworkSessionSourceTests` (unità, ora 13 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
+  - **I test**: `NetworkSessionSourceTests` (unità, ora 14 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
     LIRF→LICR).
 - **Che cosa legge E14b** (che unisce questo branch, poi `main` quando è unita):
   - di ogni sessione di `INetworkSessionSource.SessionsAsync`: **`DepartureIcao`** e **`ArrivalIcao`** per la voce di volo di un PIREP
@@ -388,6 +388,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     quando una regola vuole sapere se la sessione ha **mai** detto una rotta (un pilota che in una connessione vola due tratte le ha tutte
     e due, e l'ultima è nei due campi);
   - ⚠️ una sessione con `DepartureIcao` `null` non ha piano: non è una voce di volo;
+  - ⚠️ **`Routes` sono i piani depositati, non le tratte volate** (il revisore sulla #291, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281)): chi deposita
+    LIRF→LICR, corregge in LIRF→LIMC e vola quella ha tutte e due in `Routes` e LIRF→LIMC nei due campi. **La nota di E14b dice, regola per
+    regola** (`Route`, `RouteTimes`, `MinLegDistance`, i PIREP `Auto`), quale lettura usa — i due campi, o `Routes` —, perché un award
+    non si dia mai per una rotta solo depositata;
   - ⚠️ `RouteTimes` conta le **sessioni**, non le voci di `Routes`: due revisioni uguali sono una tratta sola;
   - ⚠️ il doppio di `INetworkSessionSource` in `EventsAfterTests` (E13a) costruisce le sessioni **senza scali**: un test di E14b che li
     vuole li scrive nel suo doppio (con il lettore, `IvaoTrackerReader.ReadPlannedRoutes`, sulle righe della fixture), o chiede la
