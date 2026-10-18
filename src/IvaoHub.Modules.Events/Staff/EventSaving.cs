@@ -255,6 +255,9 @@ public sealed class EventSaving(
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.EventId == row.Id).ToListAsync(cancellationToken));
         database.Questions.RemoveRange(await database.Questions.Where(question => question.EventId == row.Id).ToListAsync(cancellationToken));
 
+        // Its rules of award (E14b), in the event's own area: an event that reached them has no report, so no signal came from them.
+        database.AwardRules.RemoveRange(await database.AwardRules.Where(rule => rule.EventId == row.Id).ToListAsync(cancellationToken));
+
         // Its activities (E17): none has a seat, since a seat needs a registration and an event with one was refused above.
         database.Activities.RemoveRange(await database.Activities.Where(activity => activity.EventId == row.Id).ToListAsync(cancellationToken));
         database.Events.Remove(row);

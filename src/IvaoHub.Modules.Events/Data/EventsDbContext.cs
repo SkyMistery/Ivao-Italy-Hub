@@ -58,6 +58,13 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
     /// <summary>The items of the reports: the flights and the shifts declared, with what the check found (E14a).</summary>
     public DbSet<EventReportItem> ReportItems => Set<EventReportItem>();
+
+    /// <summary>The rules of award of the events (E14b).</summary>
+    public DbSet<EventAwardRule> AwardRules => Set<EventAwardRule>();
+
+    /// <summary>The rules of award the accepted reports met, each pointing its member out in the core's queue (E14b).</summary>
+    public DbSet<EventReportAward> ReportAwards => Set<EventReportAward>();
+
     /// <summary>The parallel activities of the events in person (E17).</summary>
     public DbSet<EventActivity> Activities => Set<EventActivity>();
 
@@ -79,6 +86,7 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
         configurationBuilder.Properties<ReportSource>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<ReportState>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<ReportVerification>().HaveConversion<string>().HaveMaxLength(16);
+        configurationBuilder.Properties<AwardCriterion>().HaveConversion<string>().HaveMaxLength(16);
     }
 
     protected override void ConfigureModel(ModelBuilder modelBuilder)
@@ -353,6 +361,39 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
 
             // A member's items of every event: their erasure.
             item.HasIndex(row => row.Vid);
+        });
+
+        modelBuilder.Entity<EventAwardRule>(rule =>
+        {
+            rule.ToTable("evt_award_rules");
+            rule.HasKey(row => row.Id);
+            rule.Ignore(row => row.ResourceScope);
+            rule.Property(row => row.DepartureIcao).HasMaxLength(4);
+            rule.Property(row => row.ArrivalIcao).HasMaxLength(4);
+            rule.Property(row => row.PositionType).HasMaxLength(EventAwardRule.MaxPositionTypeLength);
+            rule.HasRowVersion(row => row.RowVersion);
+
+            // An event deleted takes its rules with it, as it takes its routes. The key is also the index the tab and an acceptance read by.
+            rule.HasOne<Event>().WithMany().HasForeignKey(row => row.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventReportAward>(award =>
+        {
+            award.ToTable("evt_report_awards");
+            award.HasKey(row => row.Id);
+            award.Ignore(row => row.ResourceScope);
+            award.Property(row => row.Reason).HasMaxLength(EventReportAward.MaxReasonLength).IsRequired();
+
+            // The rows of a report go with it, as its items do.
+            award.HasOne<EventReport>().WithMany().HasForeignKey(row => row.ReportId).OnDelete(DeleteBehavior.Cascade);
+
+            // One row per report and rule, never deleted: a rule met again finds its own row and its signal (the review of #293, point 1). It is
+            // also the index a decision reads them by.
+            award.HasIndex(row => new { row.ReportId, row.RuleId }).IsUnique();
+
+            // A member's rows of every event: their erasure; and an event's, for its statistics.
+            award.HasIndex(row => row.Vid);
+            award.HasIndex(row => row.EventId);
         });
 
         modelBuilder.Entity<EventActivity>(activity =>

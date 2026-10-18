@@ -215,6 +215,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/award-rules/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAwardRuleChoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/events/{id}/slots/load": {
         parameters: {
             query?: never;
@@ -1753,6 +1769,38 @@ export interface paths {
         put: operations["EventRoutesUpdate"];
         post?: never;
         delete: operations["EventRoutesDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/award-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAwardRulesList"];
+        put?: never;
+        post: operations["EventAwardRulesCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/award-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventAwardRulesGet"];
+        put: operations["EventAwardRulesUpdate"];
+        post?: never;
+        delete: operations["EventAwardRulesDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4330,6 +4378,18 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description An active award of the core's catalogue a rule may name: its id and its name. */
+        AwardChoiceDto: {
+            /** Format: int64 */
+            id: number;
+            name: components["schemas"]["LocalizedOfstring"];
+        };
+        /**
+         * @description The closed list a rule of award chooses its criterion from (design M4 §1.9): a new one is a line here and in
+         *     `Reports/AwardRules`, never an expression. The first five read a pilot's report, the last two a controller's.
+         * @enum {unknown}
+         */
+        AwardCriterion: "AnyFlight" | "MinFlights" | "Route" | "RouteTimes" | "MinLegDistance" | "AnyShift" | "MinAtcMinutes";
         /** @description An award as the form loads it, with the version to write back. */
         AwardDetailDto: {
             /** Format: int64 */
@@ -4363,6 +4423,11 @@ export interface components {
             isActive: boolean;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @description What a rule's form chooses from: the active awards, and the kinds of position of the division, as the core spells them. */
+        AwardRuleChoicesDto: {
+            awards: components["schemas"]["AwardChoiceDto"][];
+            positionTypes: string[];
         };
         /** @description A signal in full, as the assignment form reads it to fill itself. */
         AwardSignalDetailDto: {
@@ -5724,6 +5789,82 @@ export interface components {
             stale: boolean;
             warnings: components["schemas"]["ShiftWarning"][];
             decidable: boolean;
+        };
+        /** @description A rule of award as its form shows it (design M4 §1.9): the award, the criterion, and the parameters the criterion takes. */
+        EventAwardRuleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            awardId: number;
+            kind: components["schemas"]["ReportKind"];
+            criterion: components["schemas"]["AwardCriterion"];
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: int32 */
+            count: null | number;
+            /** Format: int32 */
+            distanceNm: null | number;
+            /** Format: int32 */
+            minutes: null | number;
+            positionType: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description A rule of award as the event's list shows it: the same, with the award's name from the core's catalogue — none when the award is gone. Data
+         *     only: the page writes the criterion and its parameters in words.
+         */
+        EventAwardRuleRowDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            ownerDepartment: components["schemas"]["Department"];
+            /** Format: int64 */
+            awardId: number;
+            awardName: null | components["schemas"]["LocalizedOfstring"];
+            kind: components["schemas"]["ReportKind"];
+            criterion: components["schemas"]["AwardCriterion"];
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: int32 */
+            count: null | number;
+            /** Format: int32 */
+            distanceNm: null | number;
+            /** Format: int32 */
+            minutes: null | number;
+            positionType: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            rowVersion: string;
+        };
+        /**
+         * @description What a client may set on a rule of award. The event is chosen when it is created and never changes; the kind of report is the criterion's,
+         *     written by the server; a parameter the criterion does not take is emptied.
+         */
+        EventAwardRuleWriteDto: {
+            /** Format: int64 */
+            eventId: number;
+            /** Format: int64 */
+            awardId: number;
+            criterion: components["schemas"]["AwardCriterion"];
+            departureIcao: null | string;
+            arrivalIcao: null | string;
+            /** Format: int32 */
+            count: null | number;
+            /** Format: int32 */
+            distanceNm: null | number;
+            /** Format: int32 */
+            minutes: null | number;
+            positionType: null | string;
+            /** Format: date-time */
+            rowVersion: string;
         };
         /**
          * @description A booking as the staff of an event read it in the tab «Bookings» of its page (design M4 §7.2, E6b): the pilot, named the way the
@@ -7806,6 +7947,29 @@ export interface components {
         PagedResultOfEventAtcTransferDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["EventAtcTransferDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfEventAwardRuleRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["EventAwardRuleRowDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -11621,6 +11785,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KindPreset"][];
+                };
+            };
+        };
+    };
+    EventsAwardRuleChoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardRuleChoicesDto"];
                 };
             };
         };
@@ -16168,6 +16352,163 @@ export interface operations {
         };
     };
     EventRoutesDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAwardRulesList: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                sort?: string;
+                dir?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfEventAwardRuleRowDto"];
+                };
+            };
+        };
+    };
+    EventAwardRulesCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAwardRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAwardRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    EventAwardRulesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAwardRuleDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAwardRulesUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventAwardRuleWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAwardRuleDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventAwardRulesDelete: {
         parameters: {
             query?: never;
             header?: never;

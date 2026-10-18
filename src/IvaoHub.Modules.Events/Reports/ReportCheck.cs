@@ -11,8 +11,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// sources, never the network's client.
 /// <list type="bullet">
 /// <item><b>A flight</b>: the member's sessions as a pilot (<see cref="INetworkSessionSource"/>) that started on its day within the event's
-/// window of flights, between its two airports; the one <see cref="ReportRules.Flown"/> gives it over the whole report, with its declared
-/// minutes. The distance between
+/// window of flights, between its two airports — <b>the last revision of their plan</b>, never one only filed (E14b, <see cref="ReportRules.FlewRoute"/>);
+/// the one <see cref="ReportRules.Flown"/> gives it over the whole report, with its declared minutes. The distance between
 /// the two airports (<see cref="GreatCircle"/> on <see cref="IAirportDirectory"/>) is written found or not.</item>
 /// <item><b>A shift</b>: as <c>events-after</c> checks a shift of the roster (E13a) — the archive of the sessions first, the tracker by VID where
 /// the archive does not answer or does not cover the hours —, verified when the minutes on the position reach <c>attendanceMinimumMinutes</c>
@@ -29,17 +29,23 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
         ReportKind kind,
         IReadOnlyList<ReportItemDraft> items,
         int attendanceMinimumMinutes,
+        int minimumFlightMinutes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(items);
 
         return kind == ReportKind.Pilot
-            ? await FlightsAsync(row, vid, items, cancellationToken)
+            ? await FlightsAsync(row, vid, items, minimumFlightMinutes, cancellationToken)
             : await ShiftsAsync(vid, items, attendanceMinimumMinutes, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<ItemFinding>> FlightsAsync(Event row, int vid, IReadOnlyList<ReportItemDraft> items, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ItemFinding>> FlightsAsync(
+        Event row,
+        int vid,
+        IReadOnlyList<ReportItemDraft> items,
+        int minimumFlightMinutes,
+        CancellationToken cancellationToken)
     {
         var codes = items.SelectMany(item => new[] { item.DepartureIcao, item.ArrivalIcao }).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
         var known = await airports.FindAsync(codes, cancellationToken);
@@ -64,7 +70,10 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
                 asked[(departure, arrival, day)] = found;
             }
 
-            flights.Add((item.Callsign, found));
+            // Only a session whose plan ended on this route flew it: one found for a revision the pilot filed and then changed did not; and one
+            // shorter than minimumFlightMinutes flew nothing (E14b, reading 3-bis of note 2026-10-17-le-regole-di-award; Carmine's answer 1 on #293).
+            flights.Add((item.Callsign, found?.Where(session => ReportRules.FlewRoute(session, departure, arrival)
+                && ReportRules.LongEnough(session, minimumFlightMinutes)).ToList()));
         }
 
         var flown = ReportRules.Flown(flights);
@@ -140,7 +149,7 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
     }
 
     /// <summary>The distance between two airports the hub knows with their coordinates, to the tenth; none otherwise.</summary>
-    private static decimal? Distance(string? departure, string? arrival, IReadOnlyDictionary<string, AirportDto> known) =>
+    internal static decimal? Distance(string? departure, string? arrival, IReadOnlyDictionary<string, AirportDto> known) =>
         departure is not null
         && arrival is not null
         && known.GetValueOrDefault(departure) is { Latitude: { } fromLatitude, Longitude: { } fromLongitude }

@@ -11,6 +11,8 @@ import type {
   AirportFormValues,
   AtcPositionFormValues,
   AvailabilityFormValues,
+  AwardCriterionValue,
+  AwardRuleFormValues,
   CancelFormValues,
   DuplicateFormValues,
   EventFormValues,
@@ -54,6 +56,7 @@ const settingsKey = ['events', 'settings'] as const;
 const eventsKey = ['events', 'events'] as const;
 const airportsKey = ['events', 'airports'] as const;
 const routesKey = ['events', 'routes'] as const;
+const awardRulesKey = ['events', 'award-rules'] as const;
 const slotsKey = ['events', 'slots'] as const;
 const publicKey = ['events', 'public'] as const;
 const mineKey = ['events', 'mine'] as const;
@@ -64,6 +67,12 @@ export type EventDetailDto = components['schemas']['EventDetailDto'];
 export type EventDuplicatedDto = components['schemas']['EventDuplicatedDto'];
 export type EventAirportDto = components['schemas']['EventAirportDto'];
 export type EventRouteDto = components['schemas']['EventRouteDto'];
+export type EventAwardRuleDto = components['schemas']['EventAwardRuleDto'];
+export type EventAwardRuleRowDto = components['schemas']['EventAwardRuleRowDto'];
+export type AwardRuleChoicesDto = components['schemas']['AwardRuleChoicesDto'];
+
+/** A rule of award as its list shows it: the server's row, and its parameters in words the page writes (E14b). */
+export type AwardRuleRow = EventAwardRuleRowDto & { parameters: string };
 export type PublicEventDto = components['schemas']['PublicEventDto'];
 export type PublicEventRouteDto = components['schemas']['PublicEventRouteDto'];
 export type PublicEventAirportDto = components['schemas']['PublicEventAirportDto'];
@@ -467,6 +476,112 @@ export function useDeleteRoute() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: routesKey });
       void queryClient.invalidateQueries({ queryKey: publicKey });
+    },
+  });
+}
+
+// ---- the rules of award of an event (E14b) ---------------------------------------------------------
+
+/** The rules of award of an event, in the order they were written: an event has a handful, never pages of them. */
+export function awardRulesQuery(
+  eventId: number,
+  search: ListSearch,
+  language: string,
+  words: (row: EventAwardRuleRowDto) => string,
+) {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'list', eventId, search, language] as const,
+    queryFn: async () => {
+      const page = unwrap(
+        await api.GET('/api/events/award-rules', {
+          params: { query: toQuery(search) },
+          querySerializer: listQuerySerializer({ eventId: String(eventId) }),
+        }),
+      );
+
+      return { ...page, items: page.items.map((row): AwardRuleRow => ({ ...row, parameters: words(row) })) };
+    },
+  });
+}
+
+export function awardRuleQuery(id: number) {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'detail', id] as const,
+    queryFn: async (): Promise<EventAwardRuleDto> =>
+      unwrap(await api.GET('/api/events/award-rules/{id}', { params: { path: { id: String(id) } } })),
+  });
+}
+
+/** What a rule's form chooses from: the active awards of the core's catalogue, and the kinds of position of the division. */
+export function awardRuleChoicesQuery() {
+  return queryOptions({
+    queryKey: [...awardRulesKey, 'choices'] as const,
+    queryFn: async (): Promise<AwardRuleChoicesDto> =>
+      unwrap(await api.GET('/api/events/award-rules/choices')),
+  });
+}
+
+export function awardRuleToFormValues(rule: EventAwardRuleDto): AwardRuleFormValues {
+  return {
+    eventId: rule.eventId,
+    awardId: String(rule.awardId),
+    departureIcao: rule.departureIcao ?? '',
+    arrivalIcao: rule.arrivalIcao ?? '',
+    ...(rule.count === null ? {} : { count: rule.count }),
+    ...(rule.distanceNm === null ? {} : { distanceNm: rule.distanceNm }),
+    ...(rule.minutes === null ? {} : { minutes: rule.minutes }),
+    ...(rule.positionType === null ? {} : { positionType: rule.positionType }),
+    rowVersion: rule.rowVersion,
+  };
+}
+
+/** Saves a rule with the criterion chosen above its form; what the criterion does not take the server empties. */
+export function useSaveAwardRule(id: number | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      criterion,
+      values,
+    }: {
+      criterion: AwardCriterionValue;
+      values: AwardRuleFormValues;
+    }): Promise<EventAwardRuleDto> => {
+      const text = (value: string | undefined) =>
+        value === undefined || value.trim() === '' ? null : value.trim().toUpperCase();
+      const body = {
+        eventId: values.eventId,
+        awardId: Number(values.awardId),
+        criterion,
+        departureIcao: text(values.departureIcao),
+        arrivalIcao: text(values.arrivalIcao),
+        count: values.count ?? null,
+        distanceNm: values.distanceNm ?? null,
+        minutes: values.minutes ?? null,
+        positionType: text(values.positionType),
+        rowVersion: values.rowVersion,
+      };
+
+      return id === null
+        ? unwrap(await api.POST('/api/events/award-rules', { body }))
+        : unwrap(
+            await api.PUT('/api/events/award-rules/{id}', { params: { path: { id: String(id) } }, body }),
+          );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: awardRulesKey });
+    },
+  });
+}
+
+export function useDeleteAwardRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> =>
+      unwrapEmpty(await api.DELETE('/api/events/award-rules/{id}', { params: { path: { id: String(id) } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: awardRulesKey });
     },
   });
 }

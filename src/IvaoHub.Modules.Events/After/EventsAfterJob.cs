@@ -9,6 +9,7 @@ using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.Events.Reports;
 using IvaoHub.Modules.Events.Settings;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,7 @@ public sealed class EventsAfterJob(
     INetworkSessionSource network,
     IAtcActivitySource archive,
     EventStatistics statistics,
+    AutoReports autoReports,
     IClock clock,
     ILogger<EventsAfterJob> logger) : IJob
 {
@@ -182,6 +184,13 @@ public sealed class EventsAfterJob(
         var left = await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null, cancellationToken)
             || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown, cancellationToken);
         if (left && !givenUp)
+        {
+            return (bookings, shifts, false);
+        }
+
+        // The reports of the members who asked for them (§5.1, E14b), as many members as the run has left, in the order of their VIDs; the event
+        // closes once every one of them is looked at. Never once the sources are given up: whoever asked sends theirs by hand.
+        if (!givenUp && !await AutoReportsAsync(row, settings, run, now, cancellationToken))
         {
             return (bookings, shifts, false);
         }
@@ -500,6 +509,49 @@ public sealed class EventsAfterJob(
 
         database.ChangeTracker.Clear();
         return done + piece.Count >= airports.Count;
+    }
+
+    /// <summary>
+    /// The <c>Auto</c> reports of an event (§5.1, E14b): for each member with the preference not looked at yet, in the order of their VIDs, as many
+    /// as the run's budget holds (<see cref="AutoReports.Cost"/> each), their reports written and the member marked done on the event
+    /// (<see cref="Event.AutoReportsCursor"/>). True when every member is done; false when some are left for the next run, or the tracker did
+    /// not answer. An event in person has no flights nor shifts to report.
+    /// </summary>
+    private async Task<bool> AutoReportsAsync(Event row, EventsSettings settings, Run run, DateTime now, CancellationToken cancellationToken)
+    {
+        if (row.InPerson)
+        {
+            return true;
+        }
+
+        var holders = await autoReports.HoldersAsync(row.AutoReportsCursor, cancellationToken);
+        if (holders.Count == 0)
+        {
+            return true;
+        }
+
+        var scope = await autoReports.ScopeAsync(row, cancellationToken);
+        foreach (var vid in holders)
+        {
+            if (run.TrackerDown || !run.Take(AutoReports.Cost))
+            {
+                return false;
+            }
+
+            if (!await autoReports.WriteAsync(row, vid, scope, settings.AttendanceMinimumMinutes, settings.MinimumFlightMinutes, now, cancellationToken))
+            {
+                run.TrackerDown = true;
+                return false;
+            }
+
+            // The job's bookkeeping, as after_done_at: the row version of the event does not move, and its audit has no row for it.
+            await database.Database.ExecuteSqlAsync(
+                $"UPDATE evt_events SET auto_reports_cursor = {vid}, row_version = row_version WHERE id = {row.Id}",
+                cancellationToken);
+            database.ChangeTracker.Clear();
+        }
+
+        return true;
     }
 
     /// <summary>What a run has spent, and the sources that stopped answering in it.</summary>

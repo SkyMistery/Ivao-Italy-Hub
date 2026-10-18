@@ -25,12 +25,16 @@ public sealed record ReportDecision(ReportState State, string? Note, ReportState
 /// <para>Accepted or rejected — a note to reject —, and changed later by whoever may decide it (choice 1, as the outcomes of the shifts after
 /// Carmine's answer on #283), under the lock of the report's row, so that a correction of its member in the same instant passes before or after,
 /// never in between — and on what the validator saw: a report another validator decided, or its member corrected, since they read it answers
-/// 409 «read it again» (the review of #289, point 1). On an event over, as the list's «decidable» says (point 3). The member is told (<see cref="EventsNotifications.ReportDecided"/>) once the decision is committed. Only the columns of
+/// 409 «read it again» (the review of #289, point 1). On an event over, as the list's «decidable» says (point 3). Until an award is assigned from
+/// one of its signals, after which it no longer changes (Carmine's limit on #287, E14b). Accepting evaluates the rules of award of its event,
+/// rejecting withdraws what they pointed out (<see cref="ReportAwards"/>). The member is told (<see cref="EventsNotifications.ReportDecided"/>) once
+/// the decision is committed. Only the columns of
 /// the decision are written: whoever validates touches nothing else.</para>
 /// </summary>
 public sealed class ReportDecisions(
     EventsDbContext database,
     EventChildren children,
+    ReportAwards awards,
     EventsMail mail,
     IAuthorizationService authorization,
     ICurrentUser currentUser,
@@ -108,6 +112,13 @@ public sealed class ReportDecisions(
             problems.Add("note", "errors.required");
         }
 
+        // Carmine's limit on #287: once an award was assigned from one of its signals, the decision no longer changes. Read under the lock of the
+        // signals' rows, so that an assignment in the same instant passes before or after this decision, never in between.
+        if (problems.IsEmpty && report.State != ReportState.Submitted && await awards.AssignedAsync(report.Id, cancellationToken))
+        {
+            problems.Add("state", ReportAwards.AssignedKey);
+        }
+
         if (!problems.IsEmpty)
         {
             return (ReportResult.Refused, problems);
@@ -118,6 +129,10 @@ public sealed class ReportDecisions(
         report.DecidedAt = now;
         report.DecisionNote = note;
         report.UpdatedAt = now;
+
+        // The rules of award the report meets once accepted, or none once rejected: each row's signal goes into the core's queue — or out of it
+        // while it waits — in this same transaction (E14b).
+        await awards.ApplyAsync(report, row, now, cancellationToken);
 
         await database.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

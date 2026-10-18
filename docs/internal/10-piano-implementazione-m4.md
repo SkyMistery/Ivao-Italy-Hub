@@ -5532,7 +5532,120 @@ E10d.
 automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche con due giri.
 **Fatta quando**: sul banco un PIREP accettato mette un segnale nella coda degli award, e chi assegna riceve la mail (E10d).
 
-**Com'è andata**: *(a fase chiusa)*
+**Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
+E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
+`2026-10-17-le-regole-di-award`, **decisa**: le letture da Carmine sulla #293; la domanda 1 **decisa** da Carmine, (A), sull'[issue
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **decisa** da Carmine, (A), sulla
+[#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103) (la fase del nucleo E10v, la strada di dalberone che il
+codice segue)):
+
+- **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
+  `evt_events.auto_reports_cursor`.
+- **Le regole** (`EventAwardRule.cs`, `Reports/AwardRules.cs`, `Staff/EventAwardRuleEndpoints.cs`): righe dell'evento nell'area `Events`, il
+  criterio dall'elenco chiuso e **i parametri come colonne** (lettura 2), la risorsa del motore `/api/events/award-rules` (`Events.View`,
+  `Events.Edit`) con le scelte del form in `/api/events/award-rules/choices` (gli award attivi del catalogo, i tipi delle postazioni della
+  divisione); al più 50 per evento, nessuna su un evento in presenza. Che cosa vuol dire ogni criterio sulle voci verificate è `AwardRules.IsMet`
+  (lettura 3). **«Duplica» le copia** (lettura 6; la riga di E15b per le regole è fatta), ed eliminare un evento le porta via.
+- **I segnali** (`EventReportAward.cs`, `Reports/ReportAwards.cs`, la domanda 1 della nota con la (A) raccomandata): il nucleo tiene **un
+  segnale per membro per riga sorgente**, quindi un PIREP che soddisfa due regole ha bisogno di due righe: `evt_report_awards`, una per regola
+  soddisfatta, ognuna l'`IProjectable` con il suo segnale (`report-award:{id}`), scritte da `ReportDecisions` nello stesso salvataggio
+  dell'accettazione; un rifiuto le spegne (`points_out`), mai le cancella (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
+  con un segnale `Handled` il cambio della decisione è rifiutato (`events:errors.reportAwardAssigned`), letto **sotto il blocco delle righe dei
+  segnali** in `cms_award_signals`, che il contesto del modulo mappa; la lista dello staff dà `Decidable` falso. Le statistiche contano le righe
+  (`award_signals`).
+- **I PIREP `Auto`** (`Reports/AutoReports.cs`; la preferenza `events.autoReport` in `EventsModule.Preferences`): un passo di `events-after`
+  dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
+  sull'evento (`auto_reports_cursor`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
+  dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
+  `attendanceMinimumMinutes` (lettura 8). **La metà pilota** sulle sessioni con i loro scali di **E10v** (#291): una voce per sessione con
+  l'**ultima rotta** del piano, quando tocca gli scali dell'evento — gli aeroporti della divisione (`IFirDirectory`) per un evento
+  `whole_division`, ogni volo per un evento senza scali —, verificata con i minuti e la distanza (lettura 8). Lo scrittore di
+  E14a (`MemberReports.WriteAsync`) ora è condiviso: un PIREP che c'è già non si tocca, e la riga si legge come la legge il back office (il job non
+  ha un membro per il filtro delle righe dei membri — trovato con il test: senza, il secondo PIREP urtava l'indice univoco).
+- **`events-digest`** (`Reports/ReportsDigestJob.cs`): alle 07:15 nel fuso della divisione (il trigger lo dice), `events.reportsToValidate` a
+  chi tiene `EventReports.Edit`, i PIREP `Submitted` degli eventi che può validare, i suoi esclusi; «già mandato oggi» è la riga del giro.
+- **Le pagine**: la scheda «Award» dell'editor di un evento non in presenza (`screens/awardRules.tsx`, le parole dei parametri in
+  `screens/awardRuleWords.ts`), il criterio scelto sopra il form come i vincoli dei tour; l'interruttore «Riporta automaticamente la mia
+  partecipazione agli eventi» in cima alla sezione dei PIREP di `/events/mine`, che ora si vede sempre.
+- **Scostamenti e trappole**:
+  - ⚠️ Il form di una regola sceglie l'award da `/api/events/award-rules/choices` e non da `/api/awards`: il catalogo del nucleo si legge con
+    `Awards.View`, che chi scrive gli eventi non ha.
+  - ⚠️ Il motivo del segnale è nella lingua della divisione con le parole del criterio della scheda (`awardRules.options.criterion.*`), una
+    chiave letterale per criterio: una chiave composta a runtime fa cadere `AModuleKeyIsAskedWithItsNamespaceOnTheServer` (la trappola di E14a).
+  - ⚠️ Un test che fa girare i job della classe li mette in pausa nell'host (`award-queue-mail`, `events-digest`, `events-after`).
+- **I test**: unità `EventsAwardRulesTests` (12: ogni criterio, i limiti dei parametri, le voci `Auto` di un controllore); integrazione
+  `EventsAwardRulesTests` (6; VID **761262–761268**, slug `evt-test-e14b-…`): le regole del coordinatore con i rifiuti e «Duplica»; un PIREP
+  accettato proietta i segnali delle regole soddisfatte e nessun altro, chi assegna riceve la mail del nucleo, le statistiche li contano; il
+  rifiuto dopo l'accettazione toglie i segnali in attesa e tiene lo scartato, e un award assegnato congela la decisione (**cade senza il
+  rifiuto**: provato togliendolo); i PIREP `Auto` solo per chi ha la preferenza, mai sopra uno del membro; una rete che non risponde lascia il
+  membro al giro dopo; il riepilogo una volta al giorno anche con due giri, con il fuso del trigger; vitest `awardRuleWords.test.ts` (2); il
+  giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`). Cresciuto con la forma: `EventsDuplicationTests` (E8b), che decide ogni
+  colonna dell'evento, con `AutoReportsAfterVid` fra quelle che una bozza nuova ha vuote.
+- **Il «fatta quando» sul banco** (5152, `ivaohub_e2e_e14b`, dopo `e2e:full`): il coordinatore degli eventi scrive la regola «Un volo» dalla
+  scheda «Award» di un evento finito alla Roma del banco, con un award del catalogo scritto dal web master; il pilota del banco manda il suo
+  volo, e la verifica lo dice `Invalid` (il banco non ha sessioni del pilota): **la voce resa verificata in SQL**, come E13b per il no-show; il
+  web master lo accetta dalla scheda «PIREP di supporto», e **il segnale è nella coda degli award** (`/staff/awards/queue`: il VID del pilota,
+  «La sera … : Un volo», l'award proposto, da `events`, in attesa). Poi assegnato dalla coda: la scheda non offre più la decisione, e un
+  rifiuto risponde 400 con `events:errors.reportAwardAssigned`. **La mail a chi assegna** non si vede sul banco (il web master non ha
+  casella, la nota di E10d): la prova `EventsAwardRulesTests` con il coordinatore dell'MD, che tiene `Awards.Assign` da `positionGrants`.
+- **Verificato, in locale** (17 ottobre 2026, con E14a `7c094fd5` ed E10v `547d402d` unite): `dotnet build -c Release` senza avvisi;
+  `has-pending-model-changes` senza cambi, con `AddAwardRules` ultima; `gen:api` senza diff; unità **1373/1373**; **integrazione intera senza
+  filtro, da sola, 677/677** (17,3 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2`
+  **810 in 117 file**; lo smoke `--workers=2` **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima, dietro il lock di
+  Mailpit: **71/71 al primo giro** (14,5 min); `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`, con la nota nuova; gli altri file del nucleo sono di E10u, E13b ed E10v, con le loro note).
+- **Non verificato**: la CI; un PIREP `Auto` scritto da un giro vero di `events-after` sul banco (il banco non lancia un job, e la rete del
+  banco non ha sessioni dei suoi membri; lo provano `EventsAwardRulesTests`); il riepilogo dei validatori nella casella di Mailpit (stessa
+  ragione); una sessione vera della rete con più revisioni del piano; la pagina a 375 px.
+
+**Dopo la risposta di Carmine sulla #292 e le teste nuove di E10v ed E14a** (18 ottobre 2026; unite, sempre con un merge, la testa di E10v
+`092e0b79` — le revisioni ordinate per `id` del piano, `main` a `e7b1331` — e quella di E14a `583c54c1`, dopo la revisione della #289):
+
+- **La domanda 1 decisa**: (A), una riga del modulo per regola soddisfatta, come il codice; la lettura 5-bis la guarda il revisore.
+- **Il punto 2 del revisore sulla #291**: `Routes` sono i piani depositati, non le tratte volate. **Conta solo l'ultima rotta** (lettura 3-bis
+  della nota, regola per regola): `ReportCheck` dà a una voce solo una sessione la cui ultima revisione dice i suoi due scali
+  (`ReportRules.FlewRoute`, sopra la ricerca in due passi di E14a), e i PIREP `Auto` scrivono l'ultima rotta; `Route`, `RouteTimes`,
+  `MinLegDistance`, `AnyFlight` e `MinFlights` leggono solo voci verificate, quindi mai una rotta solo depositata. Il doppio della rete di
+  `EventsReportsTests` (E14a) dà alle sue sessioni gli scali del piano, con il lettore del nucleo, come la sorgente vera da E10v.
+- **La decisione di E14a con lo stato visto**: i segnali si scrivono nello stesso salvataggio, dopo il controllo del 409 `reportChanged`, e il
+  rifiuto `reportAwardAssigned` dopo quello di `reportNotOver`; l'helper della classe di E14b manda lo stato visto, come quello di E14a.
+- **Verificato, in locale**: build Release senza avvisi; `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza
+  diff; unità **1377/1377**; **integrazione intera da sola 681/681** (16,5 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+  verdi; `pnpm test --maxWorkers=2` **810 in 117 file**; lo smoke **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima,
+  dietro il lock di Mailpit, **71/71 al primo giro** (14,2 min); `core-guard.sh` dal merge-base `e7b1331`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`).
+
+**Dopo la revisione della #293** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248457744), [le risposte di
+Carmine ai tre punti](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) e [alle altre
+letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104), 18 ottobre 2026; unita la testa approvabile di E14a
+`77bf5068`, con `main` a `01fdbed` — E10v #291 unita —):
+
+- **Il punto 1**: le righe di `evt_report_awards` **non si cancellano mai**, una per PIREP e regola (univoco `(report_id, rule_id)`); un rifiuto le
+  spegne (`points_out`, la proiezione vuota): il nucleo toglie un segnale in attesa e tiene uno guardato, una nuova accettazione ritrova la riga e
+  il suo segnale (uno scartato resta scartato), e «è diventato un award?» vede ogni segnale che il PIREP ha mai dato — anche uno scartato,
+  riaperto e assegnato dopo un rifiuto. Il test `ADismissedSignalAssignedAfterARejectionStillFreezesTheDecision` (**cade contando solo le righe
+  che segnalano**: provato).
+- **Il punto 2**: `ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused`, una transazione del test tiene la riga del segnale e la marca
+  assegnata, la decisione aspetta al `FOR UPDATE` ed è rifiutata (**cade senza il `FOR UPDATE`**: provato).
+- **Il punto 3**: la domanda 2 è tornata **Proposta** nella nota, poi **decisa** da Carmine, (A), il 18 ottobre 2026
+  ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103), in chat al master, pubblicata su sua
+  istruzione). **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
+  `evt_events.auto_reports_cursor`, non una colonna di persona (la sua riga in `ErasureTests` tolta); un `Auto` corretto dal membro diventa
+  `Manual`; un turno `Auto` si verifica con `AfterRules.Threshold`, come uno a mano. `AddAwardRules` rifatta (mai su `main`).
+- **La risposta 1 di Carmine**: l'impostazione **`minimumFlightMinutes`** (10, da 1 a 120, nel form generato delle impostazioni): un volo è
+  verificato solo se la sua sessione è durata almeno tanto, a mano e `Auto` (`ReportRules.LongEnough`), il confine provato dalle unità. **La
+  risposta 2**: un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`. **La risposta 3**: «una riga sorgente ha
+  dato un award?» diventa un metodo del nucleo, nella fase del nucleo **E10x** (`m4/e10x-award-signal-assigned`); E14b ne unisce il branch e lo
+  chiama al posto delle sue due query: **fatto**, unita la #299 (testa `34f9a0fa`) e `main` a `3cdacd9`; `ReportAwards` chiede al nucleo
+  (`AwardSignalQueries.AssignedAsync`) sulle sorgenti di ogni riga del PIREP, e il test della corsa passa dal blocco del nucleo.
+- **Verificato, in locale** (18 ottobre 2026, con E14a `77bf5068`, E10x `34f9a0fa` e `main` a `3cdacd9` uniti): build Release senza avvisi;
+  `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza diff; unità **1385/1385**; **integrazione intera da sola
+  689/689** (12,4 min); i due test nuovi del punto 1 e 2 **cadono senza la loro correzione** (provato, prima del passaggio al metodo del
+  nucleo); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **812 in 117 file**; lo smoke **184/184**;
+  `core-guard.sh` dal merge-base `3cdacd9`: passa (di E14b nel nucleo solo `ErasureTests.cs`; `AwardSignalQueries.cs` è di E10x, con la sua
+  nota). `e2e:full` non rifatto dopo la revisione: nessuna pagina cambiata oltre al campo nuovo del form delle impostazioni, generato.
+- ⚠️ **Una trappola di questa macchina**: fermare per nome i processi dei test (`testhost`, `IvaoHub.IntegrationTests`) ha fermato due volte la
+  suite intera di un'altra fase che girava insieme (E10w); si ferma solo il proprio giro.
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 

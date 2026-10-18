@@ -52,6 +52,7 @@ public sealed class EventsDuplicationTests
             (copy.Id, copy.PublishedAt, copy.CancelledAt, copy.CancelledBy, copy.CancellationNote, copy.RosterProposedAt, copy.AfterDoneAt));
         Assert.Equal((default(DateTime), 0, default(DateTime)), (copy.CreatedAt, copy.CreatedBy, copy.RowVersion));
         Assert.Null(copy.RosterPublishedAt);
+        Assert.Null(copy.AutoReportsCursor);
     }
 
     [Fact]
@@ -71,6 +72,7 @@ public sealed class EventsDuplicationTests
             // Left as a new draft has them.
             nameof(Event.Id), nameof(Event.Status), nameof(Event.PublishedAt), nameof(Event.CancelledAt), nameof(Event.CancelledBy),
             nameof(Event.CancellationNote), nameof(Event.RosterProposedAt), nameof(Event.RosterPublishedAt), nameof(Event.AfterDoneAt),
+            nameof(Event.AutoReportsCursor),
             nameof(Event.CreatedAt), nameof(Event.CreatedBy), nameof(Event.UpdatedAt), nameof(Event.UpdatedBy), nameof(Event.RowVersion),
         ];
 

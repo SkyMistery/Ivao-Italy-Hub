@@ -97,6 +97,32 @@ public static class EventCopy
     }
 
     /// <summary>A route of the copy, as it was written, in the copy's care.</summary>
+    /// <summary>
+    /// A rule of award of the copy (E14b): its award, its criterion and its parameters as they were, in the copy's care. Not checked again
+    /// against the catalogue, as a copied slot is not: a retired award is refused at the rule's next save.
+    /// </summary>
+    public static EventAwardRule AwardRule(EventAwardRule source, Event copy)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(copy);
+
+        return new EventAwardRule
+        {
+            EventId = copy.Id,
+            AwardId = source.AwardId,
+            Kind = source.Kind,
+            Criterion = source.Criterion,
+            DepartureIcao = source.DepartureIcao,
+            ArrivalIcao = source.ArrivalIcao,
+            Count = source.Count,
+            DistanceNm = source.DistanceNm,
+            Minutes = source.Minutes,
+            PositionType = source.PositionType,
+            OwnerDepartment = copy.OwnerDepartment,
+            OwnerDepartmentMask = copy.OwnerDepartmentMask,
+        };
+    }
+
     public static EventRoute Route(EventRoute source, Event copy)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -229,12 +255,14 @@ public sealed record EventDuplicatePlan(
     bool GeneratesPrivateSlots,
     IReadOnlyList<EventAtcPosition>? AtcPositions = null,
     IReadOnlyList<EventQuestion>? Questions = null,
-    IReadOnlyList<EventActivity>? Activities = null)
+    IReadOnlyList<EventActivity>? Activities = null,
+    IReadOnlyList<EventAwardRule>? AwardRules = null)
 {
     /// <summary>
     /// The permissions a copy asks besides <c>Events.Edit</c> (reading 8): the area of every row it writes, as deleting an event asks
     /// the routes' (E4) — its routes, its slots when it carries some, the public ones copied or the private ones generated, its ATC
-    /// positions (E11a), and its activities (E17, the area of the bookings). Its questions are the event's own area.
+    /// positions (E11a), and its activities (E17, the area of the bookings). Its questions and its rules of award (E14b) are the
+    /// event's own area.
     /// </summary>
     public IReadOnlyList<string> AreasWritten
     {
@@ -335,6 +363,12 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
             .ThenBy(activity => activity.Id)
             .ToListAsync(cancellationToken);
 
+        // Its rules of award (E14b), in the order they were written.
+        var rules = await database.AwardRules.AsNoTracking()
+            .Where(rule => rule.EventId == source.Id)
+            .OrderBy(rule => rule.Id)
+            .ToListAsync(cancellationToken);
+
         return new EventDuplicatePlan(
             copy,
             copy.StartsAtUtc - source.StartsAtUtc,
@@ -344,7 +378,8 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
             generates,
             positions,
             questions,
-            activities);
+            activities,
+            rules);
     }
 
     /// <summary>
@@ -387,6 +422,7 @@ public sealed class EventDuplication(EventsDbContext database, HubDbContext hub,
         database.AtcPositions.AddRange((plan.AtcPositions ?? []).Select(position => EventCopy.AtcPosition(position, copy, plan.Difference)));
         database.Questions.AddRange((plan.Questions ?? []).Select(question => EventCopy.Question(question, copy)));
         database.Activities.AddRange((plan.Activities ?? []).Select(activity => EventCopy.Activity(activity, copy, plan.Difference)));
+        database.AwardRules.AddRange((plan.AwardRules ?? []).Select(rule => EventCopy.AwardRule(rule, copy)));
         await database.SaveChangesAsync(cancellationToken);
 
         string? notGenerated = null;

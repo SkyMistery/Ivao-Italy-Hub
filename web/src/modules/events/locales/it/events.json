@@ -47,7 +47,8 @@
       "activities": "Attività",
       "seats": "Posti",
       "stats": "Statistiche",
-      "reports": "PIREP di supporto"
+      "reports": "PIREP di supporto",
+      "awards": "Award"
     },
     "actions": {
       "publish": "Pubblica",
@@ -616,6 +617,14 @@
         "hints": {
           "items": "Uno o più turni, dentro le ore dell'evento, al più dodici ore ciascuno."
         }
+      },
+      "auto": {
+        "fields": {
+          "autoReport": "Riporta automaticamente la mia partecipazione agli eventi"
+        },
+        "hints": {
+          "autoReport": "Dopo ogni evento l'hub cerca i tuoi voli e i tuoi turni e manda per te il tuo PIREP di supporto; chi valida lo decide come ogni altro. Quello che mandi tu resta com'è."
+        }
       }
     }
   },
@@ -756,7 +765,8 @@
       "restrictedWindowHours": "Ore di una fascia di un evento, per chi ha i limiti",
       "restrictedMaxPerWindow": "Slot in ogni fascia, al massimo",
       "restrictedMaxPerEvent": "Slot in un evento, al massimo",
-      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto"
+      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto",
+      "minimumFlightMinutes": "Minuti minimi di un volo"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
@@ -777,7 +787,8 @@
       "restrictedWindowHours": "Le fasce cominciano all'inizio dell'evento, ognuna lunga tante ore. Un evento può dire le sue.",
       "restrictedMaxPerWindow": "Quanti slot prenota in ogni fascia un pilota con i limiti. Un evento può dire i suoi.",
       "restrictedMaxPerEvent": "Quanti slot prenota in un evento un pilota con i limiti. Un evento può dire i suoi.",
-      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine."
+      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine.",
+      "minimumFlightMinutes": "Un volo di un PIREP di supporto è verificato solo se la sua sessione sulla rete è durata almeno tanti minuti, da 1 a 120: una connessione di pochi minuti non soddisfa nessuna regola di award."
     }
   },
   "notifications": {
@@ -828,6 +839,10 @@
     "reportDecided": {
       "title": "PIREP di supporto decisi",
       "description": "Una mail quando chi valida accetta o rifiuta un tuo PIREP di supporto di un evento."
+    },
+    "reportsToValidate": {
+      "title": "PIREP di supporto da validare",
+      "description": "Una mail al mattino con i PIREP di supporto che aspettano te, se ce ne sono."
     }
   },
   "mail": {
@@ -894,6 +909,10 @@
           "Accepted": "accettato",
           "Rejected": "rifiutato"
         }
+      },
+      "reportsToValidate": {
+        "subject": "[Eventi] PIREP di supporto da validare: {{count}}",
+        "body": "Ci sono PIREP di supporto che aspettano una decisione sugli eventi che validi:\n\n{{events}}\n\n---\nPuoi spegnere queste mail dalla pagina del tuo profilo."
       }
     }
   },
@@ -1057,7 +1076,13 @@
     "reportStateNotAllowed": "Un PIREP si accetta o si rifiuta.",
     "reportAlreadySo": "Il PIREP è già così.",
     "reportNotOver": "Questo evento non è finito: i suoi PIREP si decidono dopo la fine.",
-    "reportChanged": "Il PIREP è cambiato un momento fa: leggilo di nuovo."
+    "reportChanged": "Il PIREP è cambiato un momento fa: leggilo di nuovo.",
+    "awardRuleCriterion": "Scegli un criterio dell'elenco.",
+    "awardRuleAwardUnknown": "Scegli un award attivo del catalogo.",
+    "awardRulesTooMany": "Un evento ha al più 50 regole di award.",
+    "awardRuleInPerson": "Un evento in presenza non prende PIREP di supporto, quindi nemmeno regole di award.",
+    "awardRulePositionType": "La divisione non ha postazioni di questo tipo.",
+    "reportAwardAssigned": "Da questo PIREP è stato assegnato un award: la sua decisione non cambia più."
   },
   "questions": {
     "title": "Domande",
@@ -1590,5 +1615,69 @@
         }
       }
     }
+  },
+  "awardRules": {
+    "title": "Regole di award",
+    "create": "Nuova regola",
+    "edit": "Regola di award",
+    "empty": "Qui compariranno le regole che segnalano per un award i membri il cui PIREP di supporto è accettato.",
+    "fields": {
+      "awardName": "Award",
+      "criterion": "Criterio",
+      "parameters": "Che cosa chiede",
+      "awardId": "Award",
+      "departureIcao": "Da",
+      "arrivalIcao": "A",
+      "count": "Voli",
+      "distanceNm": "Miglia nautiche",
+      "minutes": "Minuti",
+      "positionType": "Tipo di postazione"
+    },
+    "hints": {
+      "criterion": "Che cosa deve mostrare un PIREP accettato. Contano solo le voci che la verifica ha trovato.",
+      "awardId": "Un award attivo del catalogo. Chi assegna gli award trova il membro nella sua coda e decide.",
+      "departureIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "arrivalIcao": "Il codice ICAO di un aeroporto che l'hub conosce.",
+      "count": "Da 1 a 20.",
+      "distanceNm": "Fra i due aeroporti del volo, da 1 a 10800.",
+      "minutes": "Sui turni che la verifica ha trovato, tutti insieme, da 1 a 1440.",
+      "positionType": "Solo i minuti sulle postazioni di questo tipo. Vuoto: qualunque postazione."
+    },
+    "options": {
+      "criterion": {
+        "AnyFlight": "Un volo",
+        "MinFlights": "Alcuni voli",
+        "Route": "Una rotta",
+        "RouteTimes": "Una rotta, più volte",
+        "MinLegDistance": "Un volo lungo",
+        "AnyShift": "Un turno",
+        "MinAtcMinutes": "Minuti di controllo"
+      }
+    },
+    "explain": {
+      "AnyFlight": "Un PIREP pilota con almeno un volo trovato.",
+      "MinFlights": "Un PIREP pilota con almeno tanti voli trovati quanti ne dice il numero qui sotto.",
+      "Route": "Un PIREP pilota con un volo trovato da un aeroporto all'altro.",
+      "RouteTimes": "Un PIREP pilota con almeno tanti voli trovati da un aeroporto all'altro quanti ne dice il numero qui sotto.",
+      "MinLegDistance": "Un PIREP pilota con un volo trovato fra due aeroporti lontani almeno tanto.",
+      "AnyShift": "Un PIREP ATC con almeno un turno trovato.",
+      "MinAtcMinutes": "Un PIREP ATC con almeno tanti minuti sulle postazioni, su un tipo di postazione se ne scegli uno."
+    },
+    "parameters": {
+      "flights_one": "almeno {{number}} volo",
+      "flights_other": "almeno {{number}} voli",
+      "routeTimes_one": "{{route}}, almeno {{number}} volta",
+      "routeTimes_other": "{{route}}, almeno {{number}} volte",
+      "distance": "un volo di almeno {{number}} NM",
+      "minutes": "almeno {{number}} minuti",
+      "minutesOn": "almeno {{number}} minuti su {{type}}"
+    },
+    "delete": {
+      "title": "Eliminare questa regola?",
+      "description": "La regola non segnala più nessuno. Quello che ha già messo nella coda degli award resta lì."
+    }
+  },
+  "awards": {
+    "ruleMet": "{{event}}: {{criterion}}"
   }
 }
