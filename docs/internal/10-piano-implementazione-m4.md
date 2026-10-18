@@ -5739,7 +5739,8 @@ di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. 
 in coda dopo la #293 di E14b e la #300 di E10w — e sotto di lei E10v #291, E14a #289, E13b #283, E10u #288, `main` a `8bf63ea` —; **nessuna migrazione**; nota nuova
 `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande a Carmine sull'[issue
 #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro sul banco, **decisa (B)** il 18 ottobre ([la
-risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1 aperta.
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1, le disponibilità di un evento mai pubblicato, **decisa (A)** lo stesso giorno ([la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)), com'è il codice.
 Poi ha unito la testa di E14b `1cba4907` (con E14a, E10v e `main` a `e7b1331`, E10u ed E13b unite) la testa di E10w `986c6116` (con `main`
 a `3cdacd97`) e la testa di E14b `e5eb1d17` (con E14a `77bf5068` ed E10x, #299); il rapporto di chiusura `2026-10-17-m4-review`):
 

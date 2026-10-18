@@ -1,15 +1,17 @@
 # La conservazione di M4b, le prenotazioni della rete accanto al roster, il giro completo (E15b)
 
 **Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), PR #301, in coda dopo la #293 di E14b e la #300 di E10w
-**Stato:** **Proposta**. La domanda 2 è **decisa**: **(B)**, Carmine il 18 ottobre 2026 in chat al master, che [l'ha pubblicata
-sull'issue #294][a294] su sua istruzione — prima una piccola fase del nucleo per il banco, **E10w** (`m4/e10w-bench-runs-a-job`), con
-`/e2e/jobs/{name}` solo sul banco e una fixture di sessioni di un personaggio del banco spostata sul giorno chiesto; poi il giro di E15b è
-intero, segnale compreso. La domanda 1 aspetta ancora Carmine, in [un commento dell'issue][q294a] (il codice con la (A)); le letture del §2
-la revisione della PR.
+**Stato:** **Proposta** per le letture del §2, che aspettano la revisione della PR. **Le due domande del §4 sono decise** da Carmine il 18
+ottobre 2026, in chat al master, che le ha pubblicate sull'issue #294 su sua istruzione: la 2 **(B)** ([la risposta][a294]) — prima una
+piccola fase del nucleo per il banco, **E10w** (`m4/e10w-bench-runs-a-job`), con `/e2e/jobs/{name}` solo sul banco e una fixture di sessioni
+di un personaggio del banco spostata sul giorno chiesto; poi il giro di E15b è intero, segnale compreso —; la 1 **(A)** ([la
+risposta][a294b]) — le disponibilità se ne vanno con l'evento finito, pubblicato o no il roster (`EventRetention.AvailabilitiesDue`), com'è
+nel codice.
 
 [q294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294
 [q294a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6237599717
 [a294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
+[a294b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817
 **Regola applicata:** `CLAUDE.md` §5. Che prenotazioni e PIREP dei piloti si cancellino dopo `pilotRetentionMonths`, le disponibilità «a
 roster pubblicato e a evento finito», e turni, esiti, PIREP ATC e cessioni restino per sempre; che lo faccia `events-retention` una volta al
 mese, decidendo dalle date; che le prenotazioni ATC della rete si leggano **accanto al roster, alla richiesta**, senza job e senza cache, al
@@ -86,6 +88,8 @@ il roster pubblicato.
 - (B): alla lettera, solo con il roster pubblicato e l'evento finito; quelle di un evento annullato prima restano per sempre — contro il
   minimo necessario (piano §9.7) — o finché la persona non chiede la cancellazione.
 
+**Decisa: (A)** ([la risposta di Carmine][a294b]), com'è il codice.
+
 **Domanda 2 — il giro completo di M4b sul banco.** Il piano (`10`, E15b punto 5) chiede «disponibilità, roster proposto, corretto,
 pubblicato; PIREP di supporto, validato, segnale» in `e2e:full`, e il «fatta quando» che passi in locale e in CI. Il banco non sa farne due
 pezzi: **non lancia un job** (`/e2e/signin` è il suo solo endpoint; `/api/jobs/run` fa i giri già dovuti), e la proposta e la pubblicazione
@@ -123,7 +127,7 @@ giro fa girare `events-roster` e `events-after` subito invece di aspettarli, con
 
 ## Da portare nel piano
 
-- **Design §11**, la riga delle disponibilità: «cancellate con l'evento finito» (domanda 1, secondo la risposta); la conservazione dei
+- **Design §11**, la riga delle disponibilità: «cancellate con l'evento finito», pubblicato o no il roster (domanda 1, decisa (A)); la conservazione dei
   piloti con lo stesso confine del registro (lettura 2); le statistiche tengono i numeri dopo, e il limite della lettura 3; i segnali in
   attesa dei PIREP cancellati se ne vanno (lettura 4).
 - **Design §4.4**: le prenotazioni della rete accanto al roster, l'ottava lettura scritta a mano dell'ATC, `available` (letture 6 e 7).

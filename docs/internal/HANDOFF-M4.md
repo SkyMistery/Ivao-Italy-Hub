@@ -9,10 +9,10 @@
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
 `m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **in coda dopo la #293** di E14b e la #300 di E10w: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha unito le teste
-`1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due
-domande sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo sul banco, **decisa (B)** da
-Carmine — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento mai
-pubblicato, aperta. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice** («Che cosa ha lasciato
+`1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta** per le letture; le
+sue due domande sono **decise** da Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo
+sul banco, (B) — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento
+mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice** («Che cosa ha lasciato
 E15b», sotto).
 
 **L'aggiornamento di E10w:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
@@ -379,8 +379,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **I test**: integrazione `EventsRetentionTests` (VID **761300–761308**, slug `evt-test-e15b-…`); unità `EventsRetentionRulesTests`; vitest
     `networkBookings.test.tsx`.
 - **Che cosa deve sapere chi viene dopo**:
-  - ⚠️ **La domanda 1 della nota** aspetta Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): le
-    disponibilità di un evento mai pubblicato (il codice con la (A), a evento finito). La 2 è decisa, (B).
+  - **Le due domande della nota sono decise** sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 1 (A), le
+    disponibilità di un evento se ne vanno con l'evento finito, pubblicato o no il roster ([la
+    risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)); la 2 (B), E10w prima. Le letture del §2
+    aspettano la revisione della #301.
   - ⚠️ **Il giro aspetta l'orologio, non più il job**: circa un quarto d'ora (l'inizio a due minuti, poi la fine dell'evento), cambia
     `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo, e dà le sessioni al trainer (999004) e gliele
     riprende. Un `e2e:full` ucciso a metà lascia le impostazioni a 0: il giro dopo le rimette come le trova, quindi vanno rimesse a mano sul
