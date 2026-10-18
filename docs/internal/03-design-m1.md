@@ -940,6 +940,13 @@ eseguito in un browser. In M1 è una fase, ed è presto — prima che le scherma
   un contesto **anonimo** → il contenuto è quello pubblicato; modifica la bozza → il pubblico **non**
   cambia.
 
+**Dal 18 ott 2026** (M4, E10w, #300, nota `2026-10-18-il-banco-fa-girare-un-job`, la (B) di Carmine sull'issue #294, piano 1.38):
+dietro **gli stessi due lucchetti** di `/e2e/signin` (l'ambiente `E2E` e `E2E:Enabled`), il banco ha `POST /e2e/jobs/{name}` — un job
+fatto girare adesso, che risponde a giro finito con l'esito e la riga che ha scritto in `hub_jobs_log` (404 per un nome che l'hub non
+ha) — e `PUT`/`DELETE /e2e/sessions/{vid}` — le sessioni del modello spostate al momento chiesto, per una delle cinque persone del
+banco, **nel processo e mai in un file**, lette attraverso `IIvaoApiClient` —; in `web/e2e/full/bench.ts` `runJob`, `giveSessions` e
+`takeSessions`. Uno spec non aspetta più l'ora di un job; fuori dal banco gli indirizzi non ci sono, e l'OpenAPI non li vede.
+
 ### 11.2 Quello che le schermate di M1 aggiungono
 
 - **Geometria, non solo testo** (la lezione di §13): ogni schermata pubblica nuova ha almeno

@@ -394,6 +394,13 @@ All'avvio, se `SELECT COUNT(*) FROM hub_users WHERE is_superadmin = 1` è 0: per
 
 `IvaoApiClient` (typed `HttpClient` + `AddStandardResilienceHandler`): `client_credentials` con cache del token; metodi M0: `GetCentersAsync(countryId)`, `GetAirportsAsync(countryId, includeRunways: true)`, `GetMeAsync(accessToken)`. `RefDataSyncJob` (Quartz, cron giornaliero 03:15 tz divisione + esecuzione all'avvio se le tabelle sono vuote) fa upsert in `ref_ivao_centers`/`ref_ivao_airports` con `raw_json`, scrive `hub_jobs_log`. Se l'API fallisce: log + riga `failed`, mai eccezione all'avvio; se l'API risponde ma senza righe, lo snapshot resta com'era invece di svuotarsi. Gli scope del `client_credentials` stanno in `Ivao:ApiScopes`, separati da quelli del membro: **misurato il 3 set 2026**, `/v2/centers` e `/v2/airports/all` non ne richiedono nessuno (per IT: 7 centri, 221 aeroporti). Con credenziali che non coprono questi endpoint → fixture JSON in `tests/fixtures/ivao/` e `IvaoApiClient` sostituibile con `FixtureIvaoApiClient` via `Ivao:UseFixtures=true` (solo Development, rifiutato sia alla registrazione sia nel costruttore del client). Quale dei due client risponde si decide **quando il client viene costruito**, non quando viene registrato: un test host e un deploy aggiungono sorgenti di configurazione dopo la registrazione.
 
+**Dal 18 ott 2026** (M4, E10w, #300, nota `2026-10-18-il-banco-fa-girare-un-job`, piano 1.38): `tests/fixtures/ivao/tracker-sessions-bench.json`
+è il **modello delle sessioni di una persona del banco** — la torre `LIRF_TWR` e un volo LIRF→LIMC della sera di Fiumicino, sul giorno
+sostitutivo, con il membro `0` e numeri da 1, nessuna chiave con cui l'API di IVAO ritrovi una persona —; `FixtureIvaoApiClient` lo legge
+**solo per una persona a cui il banco l'ha dato** (`BenchNetworkSessions`, `Core/Ivao/`, registrato solo sul banco), con ogni istante
+spostato perché la torre cominci al momento chiesto, il VID della persona al posto dello `0` e il numero della sessione fatto dal VID;
+altrove il client legge i suoi file come prima.
+
 ---
 
 ## 5. Contenuti a sezioni — ciò che M0 costruisce
