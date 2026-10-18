@@ -8,7 +8,7 @@
 
 **Ultimo aggiornamento:** 17 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
-`m4/e15b-retention-and-m4b-round`, **in coda dopo la #293** di E14b: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha unito le teste
+`m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **in coda dopo la #293** di E14b e la #300 di E10w: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha unito le teste
 `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta**, con due
 domande sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo sul banco, **decisa (B)** da
 Carmine — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento mai
@@ -364,7 +364,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E15b (17 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b)
+### Che cosa ha lasciato E15b (17–18 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`, PR #301; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b e la #300 di E10w, con le loro teste `e5eb1d17` e `986c6116` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E15b, «Com'è andata»; **nessuna migrazione**; del nucleo solo `schema.d.ts` generato e
   `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande; il rapporto di chiusura

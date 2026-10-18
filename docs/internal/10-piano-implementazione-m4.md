@@ -5735,8 +5735,8 @@ Design §2.3-bis, §4.4 (le prenotazioni di IVAO), §11, §15; note `i-dati-dei-
 di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. Il giro completo verde.
 **Fatta quando**: il giro completo di M4b passa in locale e in CI.
 
-**Com'è andata** (17 ottobre 2026; branch `m4/e15b-retention-and-m4b-round`, nata `--no-track` dalla testa di E14b `b2cd41b9`, in coda dopo la
-#293 di E14b — e sotto di lei E10v #291, E14a #289, E13b #283, E10u #288, `main` a `8bf63ea` —; **nessuna migrazione**; nota nuova
+**Com'è andata** (17–18 ottobre 2026; branch `m4/e15b-retention-and-m4b-round`, **PR #301**, nata `--no-track` dalla testa di E14b `b2cd41b9`,
+in coda dopo la #293 di E14b e la #300 di E10w — e sotto di lei E10v #291, E14a #289, E13b #283, E10u #288, `main` a `8bf63ea` —; **nessuna migrazione**; nota nuova
 `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande a Carmine sull'[issue
 #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro sul banco, **decisa (B)** il 18 ottobre ([la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1 aperta.

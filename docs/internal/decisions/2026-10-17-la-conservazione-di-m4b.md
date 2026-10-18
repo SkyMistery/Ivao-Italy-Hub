@@ -1,6 +1,6 @@
 # La conservazione di M4b, le prenotazioni della rete accanto al roster, il giro completo (E15b)
 
-**Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), in coda dopo la #293 di E14b
+**Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), PR #301, in coda dopo la #293 di E14b e la #300 di E10w
 **Stato:** **Proposta**. La domanda 2 è **decisa**: **(B)**, Carmine il 18 ottobre 2026 in chat al master, che [l'ha pubblicata
 sull'issue #294][a294] su sua istruzione — prima una piccola fase del nucleo per il banco, **E10w** (`m4/e10w-bench-runs-a-job`), con
 `/e2e/jobs/{name}` solo sul banco e una fixture di sessioni di un personaggio del banco spostata sul giorno chiesto; poi il giro di E15b è
