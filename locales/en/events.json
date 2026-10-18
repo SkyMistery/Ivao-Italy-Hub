@@ -766,7 +766,8 @@
       "restrictedWindowHours": "Hours of a band of an event, for whoever has the limits",
       "restrictedMaxPerWindow": "Slots in each band, at most",
       "restrictedMaxPerEvent": "Slots in an event, at most",
-      "reportDays": "Days after an event its reports of support may be sent"
+      "reportDays": "Days after an event its reports of support may be sent",
+      "minimumFlightMinutes": "Minimum minutes of a flight"
     },
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
@@ -787,7 +788,8 @@
       "restrictedWindowHours": "The bands start at the start of the event, each this many hours long. An event can say its own.",
       "restrictedMaxPerWindow": "How many slots a pilot with the limits books in each band. An event can say its own.",
       "restrictedMaxPerEvent": "How many slots a pilot with the limits books in an event. An event can say its own.",
-      "reportDays": "After an event, its members send their reports of support — the flights they flew, the shifts they controlled — and correct them until they are decided, for this many days from its end."
+      "reportDays": "After an event, its members send their reports of support — the flights they flew, the shifts they controlled — and correct them until they are decided, for this many days from its end.",
+      "minimumFlightMinutes": "A flight of a report of support is verified only if its session on the network lasted at least this many minutes, from 1 to 120: a connection of a few minutes meets no rule of award."
     }
   },
   "notifications": {

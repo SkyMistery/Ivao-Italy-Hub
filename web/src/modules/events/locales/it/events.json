@@ -765,7 +765,8 @@
       "restrictedWindowHours": "Ore di una fascia di un evento, per chi ha i limiti",
       "restrictedMaxPerWindow": "Slot in ogni fascia, al massimo",
       "restrictedMaxPerEvent": "Slot in un evento, al massimo",
-      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto"
+      "reportDays": "Giorni dopo un evento in cui si mandano i PIREP di supporto",
+      "minimumFlightMinutes": "Minuti minimi di un volo"
     },
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
@@ -786,7 +787,8 @@
       "restrictedWindowHours": "Le fasce cominciano all'inizio dell'evento, ognuna lunga tante ore. Un evento può dire le sue.",
       "restrictedMaxPerWindow": "Quanti slot prenota in ogni fascia un pilota con i limiti. Un evento può dire i suoi.",
       "restrictedMaxPerEvent": "Quanti slot prenota in un evento un pilota con i limiti. Un evento può dire i suoi.",
-      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine."
+      "reportDays": "Dopo un evento i suoi membri mandano i PIREP di supporto — i voli che hanno volato, i turni che hanno controllato — e li correggono finché non sono decisi, per questi giorni dalla fine.",
+      "minimumFlightMinutes": "Un volo di un PIREP di supporto è verificato solo se la sua sessione sulla rete è durata almeno tanti minuti, da 1 a 120: una connessione di pochi minuti non soddisfa nessuna regola di award."
     }
   },
   "notifications": {

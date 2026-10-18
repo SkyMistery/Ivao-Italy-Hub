@@ -81,6 +81,12 @@ public sealed record EventsSettings
     /// <summary>The days after an event's end a member may send a report of support, and correct it (§5.2, E14a).</summary>
     public int ReportDays { get; init; } = 14;
 
+    /// <summary>
+    /// The minutes a session must last for a flight of a report of support to be verified (E14b; Carmine's answer 1 on #293): a connection of
+    /// a few minutes with a long plan filed flew nothing, so it meets no rule of award. Manual and <c>Auto</c> reports alike.
+    /// </summary>
+    public int MinimumFlightMinutes { get; init; } = 10;
+
     /// <summary>The weight of the penalty of reliability (§4.5, E13b): <c>weight × no-shows ÷ (attended + no-shows + 2)</c>.</summary>
     public double NoShowWeight { get; init; } = 1;
 
@@ -143,6 +149,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
     /// <summary>Two months: a report sent later than that tells what nobody can check any more.</summary>
     public const int MaxReportDays = 60;
 
+    /// <summary>Two hours: a minimum longer than that would leave out most of the legs of an evening.</summary>
+    public const int MaxMinimumFlightMinutes = 120;
+
     /// <summary>Two hundred bookings in an event: more is no limit at all.</summary>
     public const int MaxRestrictedPerEvent = 200;
 
@@ -189,6 +198,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
 
         // The reports of support (E14a; note 2026-10-17-il-pirep-di-supporto, reading 3): at least a day, at most two months.
         RuleFor(settings => settings.ReportDays).InclusiveBetween(1, MaxReportDays).WithMessage("errors.number.range");
+
+        // The rules of award (E14b; Carmine's answer 1 on #293): at least a minute, at most two hours.
+        RuleFor(settings => settings.MinimumFlightMinutes).InclusiveBetween(1, MaxMinimumFlightMinutes).WithMessage("errors.number.range");
 
         // The registers and the limits (E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 9): a threshold of nought would limit
         // everybody, and a limit of nought would close the bookings to whoever has one.

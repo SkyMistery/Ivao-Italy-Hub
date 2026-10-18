@@ -1,7 +1,10 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
 **Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR #293, in coda dopo la #289 di E14a e la #291 di E10v
-**Stato:** **Proposta** per le letture del §2, che Carmine decide dopo la revisione della PR. La domanda 1 è **decisa**: Carmine ha scelto la
+**Stato:** le letture del §2 **decise** da Carmine sulla #293 ([i tre punti][a293], [le altre letture][b293], 18 ottobre 2026, in chat al
+master e pubblicate su sua istruzione): la 2, 3, 4, 5, 6, 9 e 10 come sono scritte; la 3-bis con **un tempo minimo di volo dalle impostazioni**
+e la 8 con **nessuna voce di volo `Auto` per un evento senza scali suoi**, come scritto qui sotto; la 5-bis con **un metodo piccolo del nucleo**,
+in una fase del nucleo a sé prima che E14b lo usi. La domanda 1 è **decisa**: Carmine ha scelto la
 **(A)** sull'[issue #292][a292] (in chat al master, pubblicata su sua istruzione, 18 ottobre 2026), una riga del modulo per regola
 soddisfatta; il punto in più — leggere `cms_award_signals` dal contesto del modulo, o un metodo piccolo del nucleo (lettura 5-bis) — l'ha
 lasciato al revisore, quando legge la #293.
@@ -21,6 +24,8 @@ quello che il design chiede non entra in quello che il nucleo offre oggi.
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
 [q292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292
 [a292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698
+[a293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376
+[b293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104
 [r291]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281
 
 ## 1. Che cosa serviva decidere
@@ -62,6 +67,11 @@ riepilogo.
    - `AnyFlight`, `MinFlights`: le voci verificate, cioè le sessioni con l'ultima rotta dichiarata;
    - i PIREP `Auto`: una voce per sessione con la sua ultima rotta; le revisioni precedenti non fanno voci.
 
+   **E dura almeno il tempo minimo di un volo** ([la risposta 1 di Carmine][a293]): l'impostazione nuova **`minimumFlightMinutes`** (10 di
+   predefinito, da 1 a 120, nel form delle impostazioni): una voce di volo è verificata solo se la sua sessione è durata almeno tanto, per un
+   PIREP mandato a mano e per uno `Auto` (che sotto la soglia scrive la voce, non verificata); sotto, nessuna regola è soddisfatta — una
+   connessione di due minuti con un piano LIRF→KJFK non vale `MinLegDistance` (`ReportRules.LongEnough`, il confine provato da un test).
+
    ⚠️ **Il prezzo**: un pilota che in una connessione sola vola una tratta e poi deposita la successiva (la sessione `1000007` della sera di
    Fiumicino: LIPZ→LIRF, poi LIRF→LICR) ha verificata solo la seconda; la prima resta «non trovata», e chi valida la vede così. Scartato:
    contare ogni revisione di `Routes`, che darebbe un award per una rotta solo depositata.
@@ -84,7 +94,9 @@ riepilogo.
    (`ReportAwards.AssignedAmongAsync`). **Il precedente** è `TourRetentionJob` dei tour, che legge la stessa tabella (dal contesto del nucleo,
    senza blocco) per sapere se un segnale aspetta ancora. Nessun servizio del nucleo risponde oggi a «una riga sorgente ha dato un award?»; se
    il revisore la vuole letta attraverso il nucleo, è una fase del nucleo a sé (un metodo che risponda per `source_module` + `source_id`,
-   sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query.
+   sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query. **Decisa** ([la risposta 3
+   di Carmine][a293]): **il metodo del nucleo**, in una PR del nucleo a sé con la sua nota, caso (b), prima che E14b lo usi; E14b ne unisce il
+   branch e lo chiama al posto delle sue due query su `cms_award_signals`.
 6. **«Duplica» copia le regole** (design §2.3-bis: «ogni blocco copia le righe che esistono nella sua fase»), come E11a ha fatto per le
    postazioni ed E17 per domande e attività: l'award, il criterio e i parametri come sono, nella cura della copia, senza ricontrollarli (un
    award ritirato si rifiuta al prossimo salvataggio della regola). Le regole sono dell'area `Events`: chi duplica non ha bisogno di un
@@ -107,9 +119,10 @@ riepilogo.
    - **Pilota**: sulle sessioni di E10v (la domanda 2), una domanda per VID, tipo pilota, nella finestra degli slot. **Una voce per sessione,
      con l'ultima rotta del suo piano** (`DepartureIcao`/`ArrivalIcao` del nucleo, l'ultima revisione): la sessione è dell'evento quando
      quella rotta tocca uno dei suoi scali, un aeroporto della divisione per un evento `whole_division` (l'aria della divisione del nucleo,
-     `IFirDirectory`), o qualunque volo per un evento senza scali suoi; una sessione senza piano, o da un aeroporto a sé stesso, non è un
-     volo. La voce è verificata (la sessione è quella trovata), con i minuti della sessione e la distanza fra i due aeroporti quando l'hub li
-     conosce; al più venti voci. **Le regole leggono quella voce**: `Route` e `RouteTimes` l'ultima rotta, `RouteTimes` conta le sessioni.
+     `IFirDirectory`); **un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`** ([la risposta 2 di
+     Carmine][a293]: niente dice quali voli sono suoi; i suoi membri mandano il loro PIREP a mano, e chi valida decide); una sessione senza
+     piano, o da un aeroporto a sé stesso, non è un volo. La voce è verificata quando la sessione è durata almeno `minimumFlightMinutes`
+     (lettura 3-bis), con i minuti della sessione e la distanza fra i due aeroporti quando l'hub li conosce; al più venti voci. **Le regole leggono quella voce**: `Route` e `RouteTimes` l'ultima rotta, `RouteTimes` conta le sessioni.
      Scartato: una voce per ogni revisione di `Routes` (una revisione depositata non è una tratta volata: un pilota che corregge il piano
      avrebbe due voci per un volo solo).
 9. **`events-digest`** (§5.3, §8.4): ogni giorno alle **07:15 nel fuso della divisione** (il trigger lo dice), dopo il riepilogo dei tour delle

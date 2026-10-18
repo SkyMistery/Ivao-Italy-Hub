@@ -169,7 +169,7 @@ public sealed class MemberReports(
             return (ReportResult.Refused, null, false, problems);
         }
 
-        var findings = await check.CheckAsync(row, vid, kind, drafts, settings.AttendanceMinimumMinutes, cancellationToken);
+        var findings = await check.CheckAsync(row, vid, kind, drafts, settings.AttendanceMinimumMinutes, settings.MinimumFlightMinutes, cancellationToken);
         var verification = ReportRules.Verification([.. findings.Select(finding => finding.Verified)]);
 
         for (var attempt = 0; ; attempt++)

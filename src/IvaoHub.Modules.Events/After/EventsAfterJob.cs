@@ -538,7 +538,7 @@ public sealed class EventsAfterJob(
                 return false;
             }
 
-            if (!await autoReports.WriteAsync(row, vid, scope, settings.AttendanceMinimumMinutes, now, cancellationToken))
+            if (!await autoReports.WriteAsync(row, vid, scope, settings.AttendanceMinimumMinutes, settings.MinimumFlightMinutes, now, cancellationToken))
             {
                 run.TrackerDown = true;
                 return false;
