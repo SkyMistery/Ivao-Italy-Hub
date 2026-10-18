@@ -4516,6 +4516,14 @@ cadere.
   - la CI (la dice la PR);
   - `e2e:full` e la smoke: nessuna schermata e nessun chiamante nel modulo, solo un record del nucleo;
   - l'uso vero, nei PIREP `Auto` e nelle regole di award, e una sessione vera sulla rete: sono di E14b.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281), con due punti non bloccanti. Il primo è fatto: le
+  revisioni si ordinano per `id` del piano, non per la posizione nell'array (un caso nuovo, che cade togliendo l'ordine;
+  `NetworkSessionSourceTests` 14/14). Il secondo è per E14b: `Routes` sono i piani depositati, non le tratte volate, e la nota di E14b
+  dirà regola per regola quale lettura usa (scritto in `HANDOFF-M4.md` e nella nota, §6). Uniti, su richiesta del revisore, `main` a `0bfbdbb3` (E10u, #288) e a `e7b1331c` (E13b,
+  #283), in conflitto solo in `HANDOFF-M4.md` e in questo file: i blocchi di tutte e due le parti tenuti, E10v in cima all'handoff, E10u
+  prima di E10v qui. Il diff della fase fuori dai documenti è lo stesso. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache`
+  verde, build Release 0 avvisi, unità **1353/1353**, integrazione intera da sola **664/664** al primo giro (20 minuti), `gen:api` senza
+  differenze, `core-guard.sh` con Git Bash dalla base `e7b1331c`: passa.
 
 ### E11a — Postazioni e disponibilità
 
@@ -5335,6 +5343,37 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   senza filtro, da sola, 671/671** (13,4 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
   `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il merge non tocca le pagine degli eventi: il 70/70 di
   prima vale); `core-guard.sh` dal merge-base `8bf63ea`: passa.
+- **Dopo la revisione** ([i rilievi sulla #289](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246754957), approvabile
+  dopo il punto 1; chiusi tutti e cinque):
+  1. **La decisione su quello che chi valida ha visto**: `ReportDecision` porta `Seen` (lo stato) e `UpdatedAt` della riga della lista
+     (`EventReportRowDto.UpdatedAt`, nuovo); sotto il blocco, se il PIREP è cambiato — un'altra decisione, una correzione del membro —, 409
+     `reportChanged`. Prima `reportChanged` non si raggiungeva (nessuna `row_version`, il `catch` tolto). Il test
+     `ADecisionOnAReportThatMovedSinceItWasReadIsAConflict` (due validatori; una correzione dopo la lettura) **cade senza il controllo** (204
+     invece di 409), provato togliendolo.
+  2. **Gli istanti senza zona** di una voce si leggono in UTC con `MemberSeats.Utc`, mai con l'ora del server; un test d'unità.
+  3. **Il verbo chiede l'evento finito**, come `Decidable` (`reportNotOver`).
+  4. **L'abbinamento delle sessioni in due passate** su tutto il PIREP (`ReportRules.Flown`): prima il callsign esatto, poi il resto; il test
+     d'unità sullo scenario del revisore.
+  5. **I test mancanti**: due primi invii nello stesso istante (`TwoFirstSendsInTheSameInstantMakeOneReport`: la richiesta aspetta il blocco
+     della riga che l'altro scrive e ne diventa la correzione; ⚠️ il ripiego sull'indice univoco copre l'istante fra la lettura e l'inserimento,
+     che un test non raggiunge senza un aggancio nel codice) e un membro rifiutato 403 sulla lista (`AMemberIsRefusedTheList…`).
+- **Le letture decise da Carmine** ([1–11 e 14 accettate](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246961501); [12 e 13 cambiate](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246930196)):
+  - **12**: alla cancellazione dei dati di una persona il nominativo di una voce **ATC** resta (nomina una postazione); quello di un volo si
+    svuota (`EventsPersonalData.EraseReportsAsync`); il test della cancellazione lo dice.
+  - **13**: **un evento non si elimina più dopo mezz'ora dal suo inizio, o quando ha un PIREP**, quale venga prima (`eventStarted`,
+    `EventSaving.StartedTooLongAgo`); si annulla sempre. Test: il confine dei trenta minuti (unità, al tick), un evento iniziato da 29 minuti
+    eliminato, uno da 31 rifiutato, uno di venti minuti finito con un PIREP rifiutato (`AnEventIsKeptOnceItStartedHalfAnHourAgoOrOnceItHasAReport`).
+    ⚠️ **Cresciuti con la forma**: le pulizie dei giri e2e che eliminano eventi — E3a (`events-staff`, che elimina tutto `evt-test-e2e`), E4
+    (`events-public`), E8b (`events-round`), E13a (`events-after`) e E14a — saltano un evento rifiutato con `eventStarted` o `eventHasReports`, e
+    nessun altro 400: il primo `e2e:full` dopo la regola è caduto 65/70 su quelle pulizie. Il giro di E13a ha anche il prefisso suo,
+    `evt-e2e-e13a`, come quello di E14a.
+- **Verificato dopo la revisione** (18 ottobre 2026, con `main` a `e7b1331` unito — la #288 e la #283 unite, nessun file portato: l'albero era
+  già nel branch; il diff contro `main` è solo di E14a): build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api` senza
+  diff; unità **1358/1358**; **integrazione intera senza filtro, da sola, 675/675** (20,5 min; due giri prima si erano fermati a metà senza
+  un rosso né un riepilogo — Docker Desktop riavviato —, il terzo è arrivato in fondo); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` sul banco 5151,
+  `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **65/70** al primo giro (le pulizie sopra), corrette e rifatto da capo
+  **70/70** (13,6 min); `core-guard.sh` dal merge-base `e7b1331`: passa, del nucleo solo `ErasureTests.cs` con la nota.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
@@ -5356,8 +5395,9 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
-`2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 aspetta Carmine sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292)
-e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la fase del nucleo E10v):
+`2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 decisa da dalberone, (A), la fase del
+nucleo E10v):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
   `evt_events.auto_reports_after_vid`.
@@ -5417,6 +5457,23 @@ e il codice segue la (A) raccomandata; la domanda 2 decisa da dalberone, (A), la
 - **Non verificato**: la CI; un PIREP `Auto` scritto da un giro vero di `events-after` sul banco (il banco non lancia un job, e la rete del
   banco non ha sessioni dei suoi membri; lo provano `EventsAwardRulesTests`); il riepilogo dei validatori nella casella di Mailpit (stessa
   ragione); una sessione vera della rete con più revisioni del piano; la pagina a 375 px.
+
+**Dopo la risposta di Carmine sulla #292 e le teste nuove di E10v ed E14a** (18 ottobre 2026; unite, sempre con un merge, la testa di E10v
+`092e0b79` — le revisioni ordinate per `id` del piano, `main` a `e7b1331` — e quella di E14a `583c54c1`, dopo la revisione della #289):
+
+- **La domanda 1 decisa**: (A), una riga del modulo per regola soddisfatta, come il codice; la lettura 5-bis la guarda il revisore.
+- **Il punto 2 del revisore sulla #291**: `Routes` sono i piani depositati, non le tratte volate. **Conta solo l'ultima rotta** (lettura 3-bis
+  della nota, regola per regola): `ReportCheck` dà a una voce solo una sessione la cui ultima revisione dice i suoi due scali
+  (`ReportRules.FlewRoute`, sopra la ricerca in due passi di E14a), e i PIREP `Auto` scrivono l'ultima rotta; `Route`, `RouteTimes`,
+  `MinLegDistance`, `AnyFlight` e `MinFlights` leggono solo voci verificate, quindi mai una rotta solo depositata. Il doppio della rete di
+  `EventsReportsTests` (E14a) dà alle sue sessioni gli scali del piano, con il lettore del nucleo, come la sorgente vera da E10v.
+- **La decisione di E14a con lo stato visto**: i segnali si scrivono nello stesso salvataggio, dopo il controllo del 409 `reportChanged`, e il
+  rifiuto `reportAwardAssigned` dopo quello di `reportNotOver`; l'helper della classe di E14b manda lo stato visto, come quello di E14a.
+- **Verificato, in locale**: build Release senza avvisi; `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza
+  diff; unità **1377/1377**; **integrazione intera da sola 681/681** (16,5 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+  verdi; `pnpm test --maxWorkers=2` **810 in 117 file**; lo smoke **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima,
+  dietro il lock di Mailpit, **71/71 al primo giro** (14,2 min); `core-guard.sh` dal merge-base `e7b1331`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`).
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 

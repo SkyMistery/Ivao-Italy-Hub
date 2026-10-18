@@ -19,6 +19,7 @@ using IvaoHub.Modules.Events;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Registers;
 using IvaoHub.Modules.Events.Reports;
+using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -198,8 +199,8 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var stats = await StatsAsync(id, token);
         Assert.Equal((1, 1), (stats.ReportsSubmitted, stats.ReportsAccepted));
 
-        // An event with a report is kept.
-        Assert.Equal(["events:errors.eventHasReports"], (await RefusedAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{id}", UriKind.Relative), token), token))["id"]);
+        // An event that started two days ago is kept (Carmine's answer on reading 13).
+        Assert.Equal([EventSaving.StartedKey], (await RefusedAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{id}", UriKind.Relative), token), token))["id"]);
 
         // A decision changes (choice 1): to reject, a note.
         Assert.Equal(["errors.required"], (await RefusedAsync(await DecideAsync(md, reportId, "Rejected", note: null, token), token))["note"]);
@@ -439,11 +440,12 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         var reportId = (await CreatedAsync(await SendAsync(erased, id, "pilot", [Flight("XEZ146", Home, Away, Start)], token), token)).GetProperty("id").GetInt64();
         await OkAsync(await SendAsync(erased, id, "pilot", [Flight("XEZ147", Home, Away, Start)], token), token);
+        var shiftsId = (await CreatedAsync(await SendAsync(erased, id, "atc", [Shift("XEZ1_APP", Start, Start.AddHours(1))], token), token)).GetProperty("id").GetInt64();
         await NoContentAsync(await DecideAsync(md, reportId, "Rejected", $"{SlugStem} about the member", token), token);
         Assert.True(await AuditMentionsAsync("XEZ146", token), "Without the callsign in the audit log, the check below would prove nothing.");
 
         var preview = await OkAsync(await superadmin.GetAsync($"{ErasureEndpoints.Pattern}/{ErasedVid}", token), token);
-        Assert.Equal(1, Assert.Single(preview.GetProperty("lines").EnumerateArray(), line => line.GetProperty("key").GetString() == "events:erasure.reports").GetProperty("count").GetInt32());
+        Assert.Equal(2, Assert.Single(preview.GetProperty("lines").EnumerateArray(), line => line.GetProperty("key").GetString() == "events:erasure.reports").GetProperty("count").GetInt32());
 
         var pseudonym = (await OkAsync(await superadmin.PostAsync(new Uri($"{ErasureEndpoints.Pattern}/{ErasedVid}", UriKind.Relative), content: null, token), token))
             .GetProperty("pseudonym").GetInt32();
@@ -453,6 +455,149 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var item = Assert.Single(await ItemsAsync(reportId, token));
         Assert.Equal((pseudonym, string.Empty, (long?)null, Home, Away, true), (item.Vid, item.Callsign, item.SessionId, item.DepartureIcao, item.ArrivalIcao, item.Verified));
         Assert.False(await AuditMentionsAsync("XEZ146", token) || await AuditMentionsAsync("XEZ147", token) || await AuditMentionsAsync($"{SlugStem} about the member", token));
+
+        // A shift's callsign names a position, not the person: it stays (Carmine's answer on reading 12).
+        var shift = Assert.Single(await ItemsAsync(shiftsId, token));
+        Assert.Equal((pseudonym, "XEZ1_APP"), (shift.Vid, shift.Callsign));
+    }
+
+    /// <summary>
+    /// A decision on what the validator saw (the review of #289, point 1): two validators open the same report; one accepts it, and the other's
+    /// rejection, taken on the report as it was, answers 409 and changes nothing — one decision, one mail. And a member's correction after the
+    /// validator read the report: their acceptance, taken on items they never saw, answers 409 too.
+    /// </summary>
+    [Fact]
+    public async Task ADecisionOnAReportThatMovedSinceItWasReadIsAConflict()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("moved", Start, Start.AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+        using var md = await SignedInAsync(MdVid, token);
+        using var otherMd = await SignedInAsync(OtherMdVid, token);
+
+        var reportId = (await CreatedAsync(await SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start)], token), token)).GetProperty("id").GetInt64();
+        var bothSaw = await ReportAsync(reportId, token);
+
+        await NoContentAsync(await DecideAsync(md, reportId, "Accepted", note: null, token, seen: bothSaw), token);
+        using (var late = await DecideAsync(otherMd, reportId, "Rejected", $"{SlugStem} too late", token, seen: bothSaw))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, late.StatusCode);
+        }
+
+        var report = await ReportAsync(reportId, token);
+        Assert.Equal((ReportState.Accepted, (int?)MdVid, (string?)null), (report.State, report.DecidedBy, report.DecisionNote));
+        Assert.Single(await MailsAsync(PilotVid, token));
+
+        // The member corrects a report the validator already read: their acceptance is on items they never saw.
+        var other = await EventRowAsync("moved-again", Start, Start.AddHours(2), [Home], token);
+        var secondId = (await CreatedAsync(await SendAsync(pilot, other, "pilot", [Flight("TST004", Home, Away, Start)], token), token)).GetProperty("id").GetInt64();
+        var read = await ReportAsync(secondId, token);
+        await OkAsync(await SendAsync(pilot, other, "pilot", [Flight("TST004", Away, Home, Start)], token), token);
+        using (var stale = await DecideAsync(md, secondId, "Accepted", note: null, token, seen: read))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        Assert.Equal(ReportState.Submitted, (await ReportAsync(secondId, token)).State);
+    }
+
+    /// <summary>
+    /// Two first sends of the same member in the same instant (reading 6; the review of #289, point 5): a transaction of the test writes the
+    /// report a first send would, and does not commit; the request waits for it in the database — at the lock it takes on the report's row,
+    /// which the other's insert holds —; the test commits, and the request becomes a correction of the report the other wrote: one report, its
+    /// items the request's, answered 200. ⚠️ The retry on the unique index (<c>MemberReports.SendAsync</c>) covers the instant between that
+    /// read and the insert, which no transaction of a test reaches without a hook in the code; it stays as the database's guarantee.
+    /// </summary>
+    [Fact]
+    public async Task TwoFirstSendsInTheSameInstantMakeOneReport()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("twice", Start, Start.AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+        var now = DateTime.UtcNow;
+        var first = new EventReport
+        {
+            EventId = id,
+            Vid = PilotVid,
+            Kind = ReportKind.Pilot,
+            SubmittedAt = now,
+            CheckedAt = now,
+            CreatedAt = now,
+            UpdatedAt = now,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        database.Reports.Add(first);
+        await database.SaveChangesAsync(token);
+
+        var second = SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start)], token);
+        await WaitForALockWaitAsync(token);
+        await transaction.CommitAsync(token);
+
+        var answer = await OkAsync(await second, token);
+        Assert.Equal(first.Id, answer.GetProperty("id").GetInt64());
+        var report = Assert.Single(await ReportsOfAsync(id, token));
+        Assert.Equal(ReportVerification.Valid, report.Verification);
+        Assert.Equal("TST004", Assert.Single(await ItemsAsync(report.Id, token)).Callsign);
+    }
+
+    /// <summary>
+    /// The reports are the staff's (the review of #289, point 5): a member who holds no <c>EventReports.View</c> is refused the list, and reads
+    /// their own on their page alone. And a report of an event whose end was moved later is not decided (point 3).
+    /// </summary>
+    [Fact]
+    public async Task AMemberIsRefusedTheListAndAnEventNotOverTakesNoDecision()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("refused", Start, Start.AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+        using var md = await SignedInAsync(MdVid, token);
+        var reportId = (await CreatedAsync(await SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start)], token), token)).GetProperty("id").GetInt64();
+
+        using (var list = await pilot.GetAsync(ReportsUri(id), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, list.StatusCode);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Events.IgnoreQueryFilters()
+                .Where(row => row.Id == id)
+                .ExecuteUpdateAsync(set => set.SetProperty(row => row.EndsAtUtc, DateTime.UtcNow.AddDays(1)), token);
+        }
+
+        Assert.Equal([ReportDecisions.NotOverKey], (await RefusedAsync(await DecideAsync(md, reportId, "Accepted", note: null, token), token))["id"]);
+        Assert.False(Row(await PageAsync(md, ReportsUri(id), token), reportId).GetProperty("decidable").GetBoolean());
+    }
+
+    /// <summary>
+    /// What may still be deleted (Carmine's answer on reading 13, on #289): an event started twenty-nine minutes ago goes, one started
+    /// thirty-one minutes ago stays, rows or none — whichever comes first —, and an event of twenty minutes, over, with a report sent, stays
+    /// though it started less than half an hour ago.
+    /// </summary>
+    [Fact]
+    public async Task AnEventIsKeptOnceItStartedHalfAnHourAgoOrOnceItHasAReport()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var now = DateTime.UtcNow;
+        var fresh = await EventRowAsync("fresh", now.AddMinutes(-29), now.AddHours(2), [Home], token);
+        var started = await EventRowAsync("started", now.AddMinutes(-31), now.AddHours(2), [Home], token);
+        var brief = await EventRowAsync("brief", now.AddMinutes(-25), now.AddMinutes(-5), [Home], token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        await CreatedAsync(await SendAsync(pilot, brief, "pilot", [Flight("TST004", Home, Away, now.AddMinutes(-25))], token), token);
+
+        Assert.Equal([EventSaving.StartedKey], (await RefusedAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{started}", UriKind.Relative), token), token))["id"]);
+        Assert.Equal(["events:errors.eventHasReports"], (await RefusedAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{brief}", UriKind.Relative), token), token))["id"]);
+        await NoContentAsync(await coordinator.DeleteAsync(new Uri($"/api/events/events/{fresh}", UriKind.Relative), token), token);
+
+        Assert.Empty(await ReportsOfAsync(fresh, token));
+        Assert.Single(await ReportsOfAsync(brief, token));
     }
 
     // ---- requests -------------------------------------------------------------------------------------------------------------
@@ -469,8 +614,24 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, long eventId, string kind, object[] items, CancellationToken cancellationToken) =>
         client.PutAsJsonAsync($"{ReportEndpoints.MinePattern}/{eventId}/{kind}", new { items }, cancellationToken);
 
-    private static Task<HttpResponseMessage> DecideAsync(HttpClient client, long reportId, string state, string? note, CancellationToken cancellationToken) =>
-        client.PostAsJsonAsync($"{ReportEndpoints.Pattern}/{reportId}/decision", new { state, note }, cancellationToken);
+    /// <summary>
+    /// A decision on a report as the staff's page sends it: with what it saw — by default the report as it is now, or <paramref name="seen"/>,
+    /// a row read earlier.
+    /// </summary>
+    private async Task<HttpResponseMessage> DecideAsync(
+        HttpClient client,
+        long reportId,
+        string state,
+        string? note,
+        CancellationToken cancellationToken,
+        EventReport? seen = null)
+    {
+        seen ??= await ReportAsync(reportId, cancellationToken);
+        return await client.PostAsJsonAsync(
+            $"{ReportEndpoints.Pattern}/{reportId}/decision",
+            new { state, note, seen = seen.State.ToString(), updatedAt = DateTime.SpecifyKind(seen.UpdatedAt, DateTimeKind.Utc) },
+            cancellationToken);
+    }
 
     private static string ReportsUri(long eventId) => $"{ReportEndpoints.Pattern}?filter[eventId]={eventId}&pageSize=100";
 
@@ -843,13 +1004,29 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
                     .OfType<IvaoTrackerSessionDto>()
                     .OrderByDescending(session => session.StartedAt)
                     .Take(query.Limit)
-                    .Select(session => new NetworkSession(
-                        session.Id,
-                        query.Vid ?? session.Vid,
-                        session.Callsign,
-                        session.StartedAt + sources.Shift,
-                        session.EndedAt + sources.Shift)),
+                    .Select(session => Moved(session, query.Vid ?? session.Vid, sources.Shift)),
             ]);
+        }
+
+        /// <summary>
+        /// A recorded session moved in time, with the airports of its plan's revisions as the core's source gives them (E10v): the check of a
+        /// flight reads the last one (E14b).
+        /// </summary>
+        private static NetworkSession Moved(IvaoTrackerSessionDto session, int vid, TimeSpan shift)
+        {
+            NetworkRoute[] routes = [.. IvaoTrackerReader.ReadPlannedRoutes(session).Select(route => new NetworkRoute(route.DepartureIcao, route.ArrivalIcao))];
+
+            return new NetworkSession(
+                session.Id,
+                vid,
+                session.Callsign,
+                session.StartedAt + shift,
+                session.EndedAt + shift,
+                routes.LastOrDefault()?.DepartureIcao,
+                routes.LastOrDefault()?.ArrivalIcao)
+            {
+                Routes = routes,
+            };
         }
     }
 }

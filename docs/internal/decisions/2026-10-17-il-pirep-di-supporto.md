@@ -1,7 +1,8 @@
 # Il PIREP di supporto: l'invio, la verifica, la validazione (E14a)
 
 **Data:** 17 ottobre 2026 — fase E14a di M4 (M4b), PR in coda dopo la #283 di E13b
-**Stato:** **Proposta** per le quattordici letture del §2, che Carmine decide dopo la revisione della PR; **decise** le tre scelte del §4. La
+**Stato:** **decisa**. Le quattordici letture del §2: **1–11 e 14 accettate** da Carmine ([la risposta][r289]), **12 e 13 cambiate** ([la
+risposta][a289], qui sotto nelle letture); le tre scelte del §4 decise prima. La
 domanda è l'[issue #287][q], scelta di dalberone. Carmine ha risposto ([la risposta][a287], pubblicata su sua istruzione): **(A) a tutte e
 tre**; e poi [un limite sulla scelta 1][l287]: **una volta assegnato un award dal segnale di un PIREP, la sua decisione non cambia più** —
 il rifiuto con una chiave sua e la scheda che non lo offre li scrive **E14b**, che proietta i segnali e sa quando uno è diventato un award;
@@ -10,6 +11,8 @@ E14a scrive la decisione cambiabile. Il codice segue le risposte.
 [q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287
 [a287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
+[a289]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246930196
+[r289]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246961501
 **Regola applicata:** `CLAUDE.md` §5. Che il PIREP di supporto si mandi da `/events/mine` entro `reportDays` dalla fine, pilota con i voli
 e ATC con i turni, uno per tipo per evento, correggibile finché non è deciso; che il sistema lo verifichi a ogni invio con `Valid`,
 `Partial`, `Invalid` o `Unavailable`; che lo validi una persona con `EventReports.Edit`, mai il proprio, accettando o rifiutando con una
@@ -63,8 +66,8 @@ persona si cancellano.
 5. **La verifica**, a ogni invio, **prima** di prendere il blocco (la rete può metterci secondi; il blocco no) e scritta sotto il blocco
    insieme alle voci:
    - **un volo**: le sessioni del membro (`INetworkSessionSource`, per VID, `Pilot`) iniziate nel suo giorno dentro la finestra dei voli,
-     fra la sua partenza e il suo arrivo; fra quelle che nessun'altra voce dello stesso PIREP ha già preso, prima quella con il callsign
-     dichiarato, poi la prima iniziata. Trovata: `session_id`, i **minuti** (la durata dichiarata della sessione) e `verified`. **La distanza**
+     fra la sua partenza e il suo arrivo; una sessione per voce, mai due volte, **in due passate su tutto il PIREP** (dopo la
+     revisione della #289, punto 4): prima ogni voce che ne trova una con il suo callsign, poi le altre, la prima iniziata. Trovata: `session_id`, i **minuti** (la durata dichiarata della sessione) e `verified`. **La distanza**
      è sempre quella fra i due aeroporti (`GreatCircle.DistanceNmRounded` con le coordinate di `IAirportDirectory`), anche senza sessione:
      è un dato della tratta, non del volo, come `fo_legs.distance_nm`;
    - **un turno**: come `events-after` di E13a — l'archivio delle sessioni ATC prima (`SessionsOfAsync`), il tracker per VID (`Atc`, da dodici
@@ -86,7 +89,10 @@ persona si cancellano.
    `decided_by`, `decided_at`, `decision_note`; poi, dopo il commit, la mail **`reportDecided`** al membro (nella sua lingua, con l'evento,
    il tipo, l'esito e la nota), dalle notifiche del nucleo, spegnibile dal profilo. **Una decisione si cambia** (scelta 1): chi può decidere
    il PIREP passa `Accepted` a `Rejected` e viceversa, con la stessa regola della nota, e il membro riceve di nuovo la mail; l'audit tiene
-   ogni passo. Due decisioni insieme: la seconda aspetta il blocco e decide sul PIREP come l'ha lasciato la prima.
+   ogni passo. **La decisione porta quello che chi valida ha visto** (dopo la revisione della #289, punto 1): lo stato e `updatedAt` del
+   PIREP come la lista li ha dati; sotto il blocco, un PIREP che nel frattempo un altro ha deciso o il membro ha corretto risponde **409**
+   «leggilo di nuovo» (`reportChanged`), mai una decisione su quello che nessuno ha visto. E solo su un evento finito, come `Decidable` dice
+   (punto 3: un evento la cui fine è stata spostata più avanti aspetta).
 8. **L'MD valida e non tocca altro**: i suoi permessi sono `Events.View`, `EventReports.View` ed `EventReports.Edit` con `scope: ED`
    (§6.2, `division.json`); il verbo scrive solo le colonne della decisione del PIREP, e il guardiano chiede `EventReports.Edit` su quella
    riga — un MD che prova a scrivere un evento, una prenotazione o un turno riceve un 403. Un test lo prova.
@@ -109,8 +115,15 @@ persona si cancellano.
     su tutte e tre, così anche un PIREP o una voce che non ci sono più non le lasciano nell'audit (E10n). Restano gli aeroporti, il giorno, le
     ore, i minuti, la distanza, l'esito. L'anteprima dice una riga in più, i PIREP tenuti. **La conservazione** (i PIREP dei piloti dopo
     `pilotRetentionMonths`, §11) è di E15b.
+    **Cambiata da Carmine** ([la risposta][a289]): **il nominativo di una voce ATC resta** — nomina una postazione (`XXXX_APP`), non la
+    persona, e le regole dei minuti di E14b lo leggono —; quello di un **volo** si svuota, come sopra; il resto della lettura resta. ⚠️ Il segno
+    `[ErasedWith]` è di una colonna, non di un tipo: nelle copie d'audit di una voce che **non c'è più** (tolta da una correzione) il nucleo
+    svuota il nominativo anche di un turno; la riga che resta lo tiene.
 13. **Un evento con un PIREP non si elimina** (`eventHasReports`), come uno con prenotazioni, iscrizioni, disponibilità o turni: il PIREP è
     una riga di un membro con una decisione dello staff sopra, e senza l'evento resterebbe di nessuno. L'evento si tiene (è finito).
+    **Cambiata da Carmine** ([la risposta][a289]): **un evento non si elimina più da mezz'ora dopo il suo inizio, o da quando ha un PIREP,
+    quale delle due venga prima** — con o senza righe dei membri (`eventStarted`, `EventSaving.StartedTooLongAgo`: dopo inizio + 30 minuti,
+    non un istante prima). Si può sempre **annullare**: resta, mostrato come annullato, con le sue prenotazioni e i suoi dati.
 14. **Che cosa la fase non fa**: i PIREP `Auto`, le regole di award, i segnali e il riepilogo `reportsToValidate` (E14b; `source` nasce con
     `Manual` solo); un PIREP per un evento in presenza (lettura 3).
 

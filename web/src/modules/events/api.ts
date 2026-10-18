@@ -2094,24 +2094,32 @@ export function eventReportsQuery(
   });
 }
 
-/** A validator's decision (§5.3): accepted, or rejected with the note the member reads in the mail. */
+/**
+ * A validator's decision (§5.3): accepted, or rejected with the note the member reads in the mail — on the report as the list showed it: a
+ * report another validator decided, or its member corrected, since then answers 409, «read it again» (the review of #289, point 1).
+ */
 export function useDecideReport() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
-      id,
+      row,
       state,
       note,
     }: {
-      id: number;
+      row: Pick<EventReportRowDto, 'id' | 'state' | 'updatedAt'>;
       state: ReportState;
       note: string;
     }): Promise<void> =>
       unwrapEmpty(
         await api.POST('/api/events/reports/{id}/decision', {
-          params: { path: { id } },
-          body: { state, note: note.trim() === '' ? null : note.trim() },
+          params: { path: { id: row.id } },
+          body: {
+            state,
+            note: note.trim() === '' ? null : note.trim(),
+            seen: row.state,
+            updatedAt: row.updatedAt,
+          },
         }),
       ),
     onSuccess: () => {

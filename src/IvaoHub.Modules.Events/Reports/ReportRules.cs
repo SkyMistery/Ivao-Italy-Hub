@@ -2,6 +2,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 using IvaoHub.Modules.Events.After;
+using IvaoHub.Modules.Events.Registrations;
 
 namespace IvaoHub.Modules.Events.Reports;
 
@@ -159,20 +160,55 @@ public static class ReportRules
     }
 
     /// <summary>
-    /// The session a flight flew (reading 5): among those found between its two airports on its day that no other item of the report took, the
-    /// one with the callsign declared first, then the first that started; none when there is none.
+    /// The sessions the flights of a report flew (reading 5; the review of #289, point 4), each found among those between its two airports on
+    /// its day: <b>first every item that finds one with its own callsign</b>, then the others, in their order, the first that started — a
+    /// session never twice. Item by item, a flight declared «X» found no «X» and took the «Y» the next item declared, and the two read verified
+    /// with each other's minutes. None where nothing is left, or where the source did not answer (no list found).
     /// </summary>
-    public static NetworkSession? Flown(string callsign, IEnumerable<NetworkSession> found, IReadOnlySet<long> taken)
+    /// <summary>
+    /// Whether a session flew a route (E14b; note 2026-10-17-le-regole-di-award, reading 3-bis): the <b>last</b> revision of its flight plan says
+    /// those two airports (E10v). The network finds a session for a route any revision of its plan said; one the pilot only filed and then
+    /// changed is not a leg flown, and a rule of award never counts it. A session without the airports of its plan flew none.
+    /// </summary>
+    public static bool FlewRoute(NetworkSession session, string departure, string arrival)
     {
-        ArgumentNullException.ThrowIfNull(found);
-        ArgumentNullException.ThrowIfNull(taken);
+        ArgumentNullException.ThrowIfNull(session);
 
-        return found
-            .Where(session => !taken.Contains(session.Id))
-            .OrderBy(session => string.Equals(session.Callsign, callsign, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-            .ThenBy(session => session.StartedAt)
-            .ThenBy(session => session.Id)
-            .FirstOrDefault();
+        return string.Equals(session.DepartureIcao, departure, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(session.ArrivalIcao, arrival, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static NetworkSession?[] Flown(IReadOnlyList<(string Callsign, IReadOnlyList<NetworkSession>? Found)> flights)
+    {
+        ArgumentNullException.ThrowIfNull(flights);
+
+        var taken = new HashSet<long>();
+        var flown = new NetworkSession?[flights.Count];
+
+        foreach (var exact in new[] { true, false })
+        {
+            for (var index = 0; index < flights.Count; index++)
+            {
+                if (flown[index] is not null || flights[index].Found is not { } found)
+                {
+                    continue;
+                }
+
+                var callsign = flights[index].Callsign;
+                flown[index] = found
+                    .Where(session => !taken.Contains(session.Id))
+                    .Where(session => !exact || string.Equals(session.Callsign, callsign, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(session => session.StartedAt)
+                    .ThenBy(session => session.Id)
+                    .FirstOrDefault();
+                if (flown[index] is { } session)
+                {
+                    taken.Add(session.Id);
+                }
+            }
+        }
+
+        return flown;
     }
 
     /// <summary>
@@ -242,7 +278,7 @@ public static class ReportRules
         }
         else
         {
-            day = DateOnly.FromDateTime(at.ToUniversalTime());
+            day = DateOnly.FromDateTime(MemberSeats.Utc(at));
             var start = day.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             if (start.AddDays(1) <= fromUtc || start >= toUtc)
             {
@@ -255,8 +291,9 @@ public static class ReportRules
 
     private static ReportItemDraft Shift(ReportItemRequest item, string field, string? callsign, DateTime fromUtc, DateTime toUtc, Refusals problems)
     {
-        var from = item.FromUtc?.ToUniversalTime();
-        var to = item.ToUtc?.ToUniversalTime();
+        // An instant without its zone is read as UTC, never as the server's time (the review of #289, point 2).
+        var from = item.FromUtc is { } sentFrom ? MemberSeats.Utc(sentFrom) : (DateTime?)null;
+        var to = item.ToUtc is { } sentTo ? MemberSeats.Utc(sentTo) : (DateTime?)null;
         if (from is null)
         {
             problems.Add($"{field}.fromUtc", "errors.required");

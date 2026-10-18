@@ -64,7 +64,7 @@ public sealed record NetworkRoute(string DepartureIcao, string ArrivalIcao);
 4. **L'uguaglianza resta di valore**: un record con una lista confronterebbe la lista per riferimento, e due sessioni con le stesse rotte
    sarebbero diverse; `Equals` e `GetHashCode` sono scritti nel record e confrontano `Routes` voce per voce. Un test lo prova.
 5. **Il lettore resta uno**: le revisioni si leggono con `IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`, accanto a
-   `ReadSession`, dal `RawJson` che il client ha già: il client vero e quello delle fixture rispondono uguale, e non c'è una chiamata nuova.
+   `ReadSession`, dal `RawJson` che il client ha già, **nell'ordine del loro `id`** (§6), che cresce con la revisione (§2.2): il client vero e quello delle fixture rispondono uguale, e non c'è una chiamata nuova.
    Una riga che non è JSON, o senza `flightPlans`, non ha revisioni.
 6. **Il DTO non cambia**: la sua forma, la sua uguaglianza e gli scali della prima revisione restano quelli che i tour leggono; il suo
    commento rimanda al lettore nuovo. FlightOps non è toccato.
@@ -86,11 +86,26 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 
 - `src/IvaoHub.Core/Ivao/NetworkSessionSource.cs` (i due campi, `Routes`, `NetworkRoute`, l'uguaglianza, la sorgente che li riempie);
 - `src/IvaoHub.Core/Ivao/IvaoTracker.cs` (`IvaoTrackerReader.ReadPlannedRoutes`, e una frase nel commento del DTO);
-- `tests/IvaoHub.UnitTests/NetworkSessionSourceTests.cs` (di E10t, di questo contributore): quattro casi nuovi — l'ultima revisione e
-  ogni revisione nella sera di Fiumicino, le maiuscole e la revisione senza arrivo, un controllore e due sessioni senza piano,
+- `tests/IvaoHub.UnitTests/NetworkSessionSourceTests.cs` (di E10t, di questo contributore): cinque casi nuovi (il quinto dopo la revisione, §6) — l'ultima revisione e
+  ogni revisione nella sera di Fiumicino, le maiuscole e la revisione senza arrivo, l'ordine per `id`, un controllore e due sessioni senza piano,
   l'uguaglianza —; e il caso delle fixture di E10t confronta i cinque campi di prima da tutte e due le parti, perché la sorgente ora dice
   anche gli scali. **Nessun test del maintainer cambiato.**
 - **Nessuna fixture**: la sera di Fiumicino porta già le revisioni. **Nessuna riga** di un modulo; niente nel browser, nessuna migrazione.
+
+## 6. Dopo la revisione (#291)
+
+Il revisore l'ha trovata [approvabile][r291], con due punti non bloccanti:
+
+1. **«Dalla più vecchia» era l'ordine dell'array**, misurato sui voli registrati ma non imposto: se la rete un giorno elencasse i piani in
+   un altro ordine, «l'ultima» non sarebbe più la più recente, e le fixture non se ne accorgerebbero. **Fatto**: `ReadPlannedRoutes`
+   ordina le revisioni per `id` (un piano senza `id` resta al suo posto nella riga), e un caso nuovo, con la riga che le elenca dalla più
+   recente, lo prova (cade togliendo l'ordine).
+2. **Per E14b, non qui**: `Routes` sono i piani **depositati**, non le tratte volate; chi deposita LIRF→LICR, corregge in LIRF→LIMC e vola
+   quella ha tutte e due in `Routes` e LIRF→LIMC nei due campi. La nota di E14b dirà, regola per regola (`Route`, `RouteTimes`,
+   `MinLegDistance`, i PIREP `Auto`), quale lettura usa, perché un award non si dia mai per una rotta solo depositata. Scritto in
+   `HANDOFF-M4.md`, «Che cosa ha lasciato E10v».
+
+[r291]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281
 
 ## Da portare nel piano
 

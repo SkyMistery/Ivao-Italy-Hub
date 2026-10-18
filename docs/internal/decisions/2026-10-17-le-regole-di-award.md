@@ -1,8 +1,10 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
 **Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR #293, in coda dopo la #289 di E14a e la #291 di E10v
-**Stato:** **Proposta**: la domanda 1 del §4 aspetta Carmine sull'[issue #292][q292] (il codice segue la (A) raccomandata), le letture del §2 la
-revisione della PR.
+**Stato:** **Proposta** per le letture del §2, che Carmine decide dopo la revisione della PR. La domanda 1 è **decisa**: Carmine ha scelto la
+**(A)** sull'[issue #292][a292] (in chat al master, pubblicata su sua istruzione, 18 ottobre 2026), una riga del modulo per regola
+soddisfatta; il punto in più — leggere `cms_award_signals` dal contesto del modulo, o un metodo piccolo del nucleo (lettura 5-bis) — l'ha
+lasciato al revisore, quando legge la #293.
 La domanda 2 è **decisa**: dalberone ha scelto la (A), una fase del nucleo a sé, **E10v** (`m4/e10v-session-airports`, nota
 `2026-10-17-gli-scali-di-una-sessione`), che E14b unisce prima della metà pilota dei PIREP `Auto`.
 **Regola applicata:** `CLAUDE.md` §5. Che un evento abbia regole di award da un **elenco chiuso** di criteri, che accettare un PIREP le
@@ -17,6 +19,8 @@ quello che il design chiede non entra in quello che il nucleo offre oggi.
 
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
 [q292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292
+[a292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698
+[r291]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281
 
 ## 1. Che cosa serviva decidere
 
@@ -44,9 +48,24 @@ riepilogo.
    scritto, `GreatCircle`) **almeno** `distance_nm` — «più lunga di x» del design letto come «di almeno x», come dice il nome; una distanza non
    nota non basta; `MinAtcMinutes` la **somma** dei minuti delle voci, solo sulle postazioni del tipo scelto quando c'è (il tipo di una
    postazione dal nucleo, `IAtcPositionDirectory`; un nominativo che il nucleo non conosce non ha tipo).
+3-bis. **Quale rotta conta: sempre l'ultima del piano, mai una solo depositata** (il punto 2 del revisore sulla [#291][r291]). La rete non
+   dice dove un volo è atterrato: dice i piani che il pilota ha depositato, revisione dopo revisione (`Routes` di E10v), e l'**ultima** è quella
+   che volava alla fine (`DepartureIcao`/`ArrivalIcao`). Un pilota che deposita LIRF→LICR, corregge in LIRF→LIMC e vola quella ha tutte e due
+   in `Routes`, ma ha volato solo la seconda. Quindi:
+   - **una voce di volo è verificata solo quando la sessione trovata ha come ultima rotta quella della voce** — per un PIREP mandato a mano la
+     verifica (`ReportCheck`) scarta le sessioni che la rete trova per una revisione precedente; per un PIREP `Auto` la voce **è** l'ultima rotta
+     della sessione (lettura 8). Le regole leggono solo le voci verificate (lettura 3), quindi:
+   - `Route`: una voce verificata con quella partenza e quell'arrivo — l'ultima rotta di una sessione;
+   - `RouteTimes`: le voci verificate di quella rotta, **una per sessione** (due revisioni uguali sono una tratta sola);
+   - `MinLegDistance`: la distanza fra i due aeroporti di una voce verificata, cioè dell'ultima rotta;
+   - `AnyFlight`, `MinFlights`: le voci verificate, cioè le sessioni con l'ultima rotta dichiarata;
+   - i PIREP `Auto`: una voce per sessione con la sua ultima rotta; le revisioni precedenti non fanno voci.
+
+   ⚠️ **Il prezzo**: un pilota che in una connessione sola vola una tratta e poi deposita la successiva (la sessione `1000007` della sera di
+   Fiumicino: LIPZ→LIRF, poi LIRF→LICR) ha verificata solo la seconda; la prima resta «non trovata», e chi valida la vede così. Scartato:
+   contare ogni revisione di `Routes`, che darebbe un award per una rotta solo depositata.
 4. **I segnali si calcolano all'accettazione** e restano come sono: cambiare o eliminare una regola dopo non tocca i segnali dei PIREP già
-   accettati (si rivaluta solo una nuova accettazione). Il motivo del segnale è nella lingua della divisione: l'evento, il criterio e i suoi
-   parametri.
+   accettati (si rivaluta solo una nuova accettazione). Il motivo del segnale è nella lingua della divisione: l'evento e il criterio.
 5. **Una decisione che cambia** (la scelta 1 di E14a e il limite di Carmine sulla #287): da accettato a rifiutato i segnali ancora **in
    attesa** se ne vanno (il nucleo toglie un segnale `Pending` che la riga non proietta più); uno **scartato** da chi assegna resta com'è nella
    coda; se **un segnale è diventato un award** (`Handled`) il cambio è **rifiutato** con `reportAwardAssigned`, e la scheda non offre più
@@ -106,7 +125,7 @@ riepilogo.
 | Il «già mandato oggi» in una tabella | E10j: è la riga del giro |
 | Ripetere la verifica del membro (`ReportCheck`) per le voci `Auto` | le sessioni sono già quelle trovate: una seconda domanda per voce costerebbe il lotto |
 
-## 4. Le domande — la 1 per Carmine, la 2 decisa
+## 4. Le domande — decise
 
 1. **Un PIREP non può proiettare due segnali per il suo membro.** (Pubblicata sull'[issue #292][q292].) Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
    `(source_module, source_id, vid)` di `cms_award_signals`, e `ProjectionWriter` riconosce un segnale dal VID). Un PIREP è di un membro: con
@@ -123,7 +142,8 @@ riepilogo.
 
    **Raccomandata: (A)**: usa il meccanismo com'è (una riga sorgente per segnale, come l'iscrizione a un tour), non tocca i tour, e ogni award
    ha il suo segnale in coda. Il codice della PR la segue, con la lettura 5-bis per sapere se un segnale è diventato un award; con la (B) o la
-   (C) i segnali si riscrivono, e la (B) passa prima da una fase del nucleo.
+   (C) i segnali si riscrivono, e la (B) passa prima da una fase del nucleo. **Decisa: (A)**, da Carmine ([la risposta][a292]); la lettura
+   5-bis la guarda il revisore.
 2. **I PIREP pilota `Auto` hanno bisogno degli aeroporti di una sessione, che il nucleo non dà.** `INetworkSessionSource` (E10t) risponde
    `NetworkSession(Id, Vid, Callsign, StartedAt, EndedAt)`: il DTO del tracker dietro ha partenza e arrivo, ma il record neutro li lascia.
    Una voce pilota è callsign, partenza, arrivo e giorno, e tre criteri leggono gli aeroporti; chiedere per aeroporto non basta (con la

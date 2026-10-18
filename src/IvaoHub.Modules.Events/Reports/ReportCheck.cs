@@ -11,7 +11,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// sources, never the network's client.
 /// <list type="bullet">
 /// <item><b>A flight</b>: the member's sessions as a pilot (<see cref="INetworkSessionSource"/>) that started on its day within the event's
-/// window of flights, between its two airports; the one <see cref="ReportRules.Flown"/> picks, with its declared minutes. The distance between
+/// window of flights, between its two airports — <b>the last revision of their plan</b>, never one only filed (E14b, <see cref="ReportRules.FlewRoute"/>);
+/// the one <see cref="ReportRules.Flown"/> gives it over the whole report, with its declared minutes. The distance between
 /// the two airports (<see cref="GreatCircle"/> on <see cref="IAirportDirectory"/>) is written found or not.</item>
 /// <item><b>A shift</b>: as <c>events-after</c> checks a shift of the roster (E13a) — the archive of the sessions first, the tracker by VID where
 /// the archive does not answer or does not cover the hours —, verified when the minutes on the position reach <c>attendanceMinimumMinutes</c>
@@ -43,15 +44,14 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
         var codes = items.SelectMany(item => new[] { item.DepartureIcao, item.ArrivalIcao }).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
         var known = await airports.FindAsync(codes, cancellationToken);
 
-        var findings = new List<ItemFinding>(items.Count);
-        var taken = new HashSet<long>();
+        // What the network answers for each flight, once per pair of airports and day; then the sessions given out over the whole report.
         var asked = new Dictionary<(string, string, DateOnly), IReadOnlyList<NetworkSession>?>();
+        var flights = new List<(string Callsign, IReadOnlyList<NetworkSession>? Found)>(items.Count);
         foreach (var item in items)
         {
-            var distance = Distance(item.DepartureIcao, item.ArrivalIcao, known);
             if (item is not { DepartureIcao: { } departure, ArrivalIcao: { } arrival, FlightDay: { } day })
             {
-                findings.Add(new ItemFinding(null, null, distance, Verified: false));
+                flights.Add((item.Callsign, []));
                 continue;
             }
 
@@ -64,21 +64,21 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
                 asked[(departure, arrival, day)] = found;
             }
 
-            if (found is null)
-            {
-                findings.Add(new ItemFinding(null, null, distance, Verified: null));
-                continue;
-            }
+            // Only a session whose plan ended on this route flew it: one found for a revision the pilot filed and then changed did not (E14b,
+            // reading 3-bis of note 2026-10-17-le-regole-di-award).
+            flights.Add((item.Callsign, found?.Where(session => ReportRules.FlewRoute(session, departure, arrival)).ToList()));
+        }
 
-            var session = ReportRules.Flown(item.Callsign, found, taken);
-            if (session is null)
-            {
-                findings.Add(new ItemFinding(null, null, distance, Verified: false));
-                continue;
-            }
-
-            taken.Add(session.Id);
-            findings.Add(new ItemFinding(session.Id, (int)(session.EndedAt - session.StartedAt).TotalMinutes, distance, Verified: true));
+        var flown = ReportRules.Flown(flights);
+        var findings = new List<ItemFinding>(items.Count);
+        for (var index = 0; index < items.Count; index++)
+        {
+            var distance = Distance(items[index].DepartureIcao, items[index].ArrivalIcao, known);
+            findings.Add(flights[index].Found is null
+                ? new ItemFinding(null, null, distance, Verified: null)
+                : flown[index] is { } session
+                    ? new ItemFinding(session.Id, (int)(session.EndedAt - session.StartedAt).TotalMinutes, distance, Verified: true)
+                    : new ItemFinding(null, null, distance, Verified: false));
         }
 
         return findings;

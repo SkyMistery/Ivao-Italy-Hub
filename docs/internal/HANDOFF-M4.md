@@ -14,7 +14,7 @@ banco, che non lancia un job e non ha sessioni dei suoi personaggi); il rapporto
 finita nel codice** («Che cosa ha lasciato E15b», sotto).
 
 **L'aggiornamento di E10v:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
-`m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`. Una nota nuova,
+`m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`, con `main` a `e7b1331c` unito (E10u, E13b). Una nota nuova,
 `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b). Da E10v una `NetworkSession` dice anche gli scali del suo piano di volo:
 `DepartureIcao`/`ArrivalIcao` dell'ultima revisione e `Routes`, ogni revisione dalla più vecchia («Che cosa ha lasciato E10v», sotto).
 **E14b** (`m4/e14b-award-rules`) unisce questo branch.
@@ -376,12 +376,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     colonna «dopo» come per M1.
   - ⚠️ **I VID di prova**: E15b ha usato **761300–761308** della fascia nuova 761300–761329.
 
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `7c094fd5` (E13b `0c8d531`, E10u e `main` a `8bf63ea`) e `547d402d` unite)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `583c54c1` (dopo la revisione della #289, con `main` a `e7b1331`) e `092e0b79` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
   `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le quattro colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-le-regole-di-award`, **Proposta**: la domanda 1 sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292),
-  il codice con la (A); la 2 decisa da dalberone, la fase del nucleo E10v):
+  `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 decisa da dalberone, la fase del nucleo E10v):
   - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
     `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
     `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
@@ -398,25 +397,25 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - **E15b** (la conservazione dei piloti): un PIREP pilota cancellato porta via le sue righe `evt_report_awards` (la chiave è in cascata, ma
     ognuna ha la sua riga nell'audit solo se le cancella il modulo); i segnali nella coda del nucleo restano finché qualcuno li guarda: una
     riga sorgente che se ne va toglie solo quelli in attesa. «Duplica» per le regole è fatto qui.
-  - ⚠️ **Il segnale non è più del PIREP**: la riga sorgente è `evt_report_awards` (`report-award:{id}`). Chi chiede «questo PIREP ha dato un
+  - ⚠️ **Conta solo l'ultima rotta di una sessione** (la lettura 3-bis, il punto 2 del revisore sulla #291): una voce di volo è verificata solo quando la sessione trovata ha come ultima rotta quella della voce (`ReportRules.FlewRoute` in `ReportCheck`), e un PIREP `Auto` scrive l'ultima rotta. Un doppio di `INetworkSessionSource` che costruisce sessioni senza scali non verifica più nessun volo: `EventsReportsTests` dà alle sue gli scali con `IvaoTrackerReader.ReadPlannedRoutes`, come la sorgente vera. la riga sorgente è `evt_report_awards` (`report-award:{id}`). Chi chiede «questo PIREP ha dato un
     award?» passa da `ReportAwards.AssignedAsync`.
   - ⚠️ **Il banco non trova sessioni del pilota**: un PIREP del banco non ha voci verificate e non soddisfa nessuna regola. Il «fatta quando»
     sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
   - ⚠️ **I VID di prova**: E14b ha usato **761262–761268** della fascia 761262–761299.
 
-### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`)
+### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`, con `main` a `0bfbdbb3` e poi a `e7b1331c` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
   fixture cambiata; una nota nuova, `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b)):
   - **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt, string? DepartureIcao = null, string?
     ArrivalIcao = null) { IReadOnlyList<NetworkRoute> Routes }`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`), con
     **`NetworkRoute(string DepartureIcao, string ArrivalIcao)`**: `Routes` è ogni revisione del piano di volo, dalla più vecchia, in
-    maiuscolo, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
+    maiuscolo, nell'ordine dell'`id` del piano, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
     l'**ultima** voce di `Routes`; `null` e vuota per un controllore o una sessione senza piano.
   - **L'uguaglianza è di valore**: due sessioni con le stesse rotte sono uguali (`Equals` e `GetHashCode` scritti nel record).
   - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** (`IvaoTracker.cs`): le revisioni dal `RawJson` della riga, che il
     client ha già; nessuna chiamata nuova alla rete. Il DTO e i tour non cambiano.
-  - **I test**: `NetworkSessionSourceTests` (unità, ora 13 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
+  - **I test**: `NetworkSessionSourceTests` (unità, ora 14 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
     LIRF→LICR).
 - **Che cosa legge E14b** (che unisce questo branch, poi `main` quando è unita):
   - di ogni sessione di `INetworkSessionSource.SessionsAsync`: **`DepartureIcao`** e **`ArrivalIcao`** per la voce di volo di un PIREP
@@ -424,6 +423,10 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     quando una regola vuole sapere se la sessione ha **mai** detto una rotta (un pilota che in una connessione vola due tratte le ha tutte
     e due, e l'ultima è nei due campi);
   - ⚠️ una sessione con `DepartureIcao` `null` non ha piano: non è una voce di volo;
+  - ⚠️ **`Routes` sono i piani depositati, non le tratte volate** (il revisore sulla #291, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281)): chi deposita
+    LIRF→LICR, corregge in LIRF→LIMC e vola quella ha tutte e due in `Routes` e LIRF→LIMC nei due campi. **La nota di E14b dice, regola per
+    regola** (`Route`, `RouteTimes`, `MinLegDistance`, i PIREP `Auto`), quale lettura usa — i due campi, o `Routes` —, perché un award
+    non si dia mai per una rotta solo depositata;
   - ⚠️ `RouteTimes` conta le **sessioni**, non le voci di `Routes`: due revisioni uguali sono una tratta sola;
   - ⚠️ il doppio di `INetworkSessionSource` in `EventsAfterTests` (E13a) costruisce le sessioni **senza scali**: un test di E14b che li
     vuole li scrive nel suo doppio (con il lettore, `IvaoTrackerReader.ReadPlannedRoutes`, sulle righe della fixture), o chiede la
@@ -435,7 +438,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 - **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo
   `AddAfterTheEventColumns`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-il-pirep-di-supporto`: le tre scelte **decise**, (A), da Carmine sull'[issue #287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla scelta 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053); le quattordici letture **Proposta** fino alla revisione):
+  `2026-10-17-il-pirep-di-supporto`, **decisa**: le letture 1–11 e 14 accettate, 12 e 13 cambiate da Carmine sulla #289; le tre scelte **decise**, (A), da Carmine sull'[issue #287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla scelta 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053); ):
   - **Le tabelle**: `evt_reports` (`EventReport`) ed `evt_report_items` (`EventReportItem`, con il VID del membro), in `EventReport.cs`.
   - **Il membro**: `Reports/MemberReports.cs` (mandare e correggere, `PUT /api/events/mine/reports/{eventId}/{kind}`; i suoi e gli eventi
     aperti, `GET /api/events/mine/reports`), la verifica `Reports/ReportCheck.cs`, le regole pure `Reports/ReportRules.cs`.
@@ -451,13 +454,16 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     rifiutato deve togliere i suoi segnali. ⚠️ **E14b deve il rifiuto** del [limite di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053):
     **una volta assegnato un award dal segnale di un PIREP, la sua decisione non cambia più** — rifiutata in `ReportDecisions.DecideAsync`
     con una chiave sua, e la scheda dello staff non offre più «Cambia la decisione» (`Decidable` falso) —, con il suo test. E14a scrive la
-    decisione cambiabile, senza il rifiuto: non sa ancora che cosa è un award. Il PIREP `Auto` è una riga con `Source = Auto`, scritta da `events-after` con la stessa verifica (`ReportCheck`) e lo
+    decisione cambiabile, senza il rifiuto: non sa ancora che cosa è un award.
+    ⚠️ **La decisione porta quello che chi valida ha visto** (la revisione della #289, punto 1): `ReportDecision.Seen` e `UpdatedAt`, e un PIREP
+    cambiato nel frattempo risponde 409 `reportChanged`. Il rifiuto dopo un award va **dopo** quel controllo, sotto lo stesso blocco. Il PIREP `Auto` è una riga con `Source = Auto`, scritta da `events-after` con la stessa verifica (`ReportCheck`) e lo
     stesso indice univoco: se il membro ne ha già mandato uno a mano, quello resta. `reportsToValidate` conta i `Submitted` come
     `StaffQueueProvider`.
   - **E15b** (la conservazione dei piloti): i PIREP **pilota** dopo `pilotRetentionMonths` si cancellano con le loro voci (la chiave le porta
     via, ma ognuna ha la sua riga nell'audit solo se le cancella il modulo); quelli ATC restano. `DecisionNote` e il callsign e la sessione delle
     voci sono già `[ErasedWith]`.
-  - ⚠️ **Un evento con un PIREP non si elimina** (`eventHasReports`): il giro e2e lascia i suoi eventi sul banco, che `e2e:full` comincia vuoto.
+  - ⚠️ **Un evento non si elimina dopo mezz'ora dal suo inizio, o con un PIREP** (`eventStarted`, `eventHasReports`; la lettura 13 come l'ha
+    cambiata Carmine sulla #289): si annulla. Un giro e2e con un evento passato lo lascia sul banco, che `e2e:full` comincia vuoto.
     Per questo il suo slug **non** comincia con `evt-test-e2e`, che `events-staff.spec.ts` elimina tutto: un giro che lascia un evento con un PIREP
     usa un prefisso suo.
   - ⚠️ **Il banco non ha sessioni del pilota**: sul banco il PIREP del giro è verificato `Invalid`; trovare un volo e un turno lo provano
