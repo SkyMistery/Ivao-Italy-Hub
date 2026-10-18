@@ -43,7 +43,8 @@ should not start and behave like somebody else's.
    publish in, `defaultLocale` is the one a reader gets when theirs is not among them, `timezone`
    decides when the nightly jobs run, `awardDigestTime` (07:00 when left out) is when, in that
    time zone, whoever may assign the awards gets the day's mail about the new signals of the award
-   queue, `icaoPrefixes` is validated at start up so a typo is not
+   queue, `tagline` and `builtBy` (both optional) are the line in italics under your name in the
+   footer and the people the footer credits with a link to their profile, `icaoPrefixes` is validated at start up so a typo is not
    silent, and **`superAdmins` must be your own VIDs** — see the warning further down. Naming an
    optional module you do not have is a warning at every start rather than an error, so you can keep
    the key for a module you have not merged yet.

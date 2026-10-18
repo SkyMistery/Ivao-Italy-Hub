@@ -4,9 +4,12 @@ using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
+using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -83,6 +86,26 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Empty(body.GetProperty("permissions").EnumerateArray());
         Assert.Equal("IT", body.GetProperty("division").GetProperty("code").GetString());
         Assert.NotEmpty(body.GetProperty("navigation").GetProperty("public").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task ApiMeCarriesTheFootersTaglineAndBuildersWithTheProfileTheCoreBuilds()
+    {
+        // Note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito: what division.json says, as it says it, and each builder's
+        // profile from the core's IVAO half — the one place the address is written.
+        var token = TestContext.Current.CancellationToken;
+        var division = _factory.Services.GetRequiredService<IOptions<DivisionOptions>>().Value;
+        using var client = _factory.CreateApiClient();
+
+        var body = (await client.GetFromJsonAsync<JsonElement>("/api/me", token)).GetProperty("division");
+
+        Assert.Equal(division.Tagline, body.GetProperty("tagline").Deserialize<Dictionary<string, string>>());
+        var builders = body.GetProperty("builtBy").EnumerateArray().ToArray();
+        Assert.NotEmpty(builders); // the division this suite runs as writes them: an empty list would prove nothing
+        Assert.Equal(division.BuiltBy.Select(builder => builder.Vid), builders.Select(builder => builder.GetProperty("vid").GetInt32()));
+        Assert.All(builders, builder => Assert.Equal(
+            IvaoMemberProfile.Url(builder.GetProperty("vid").GetInt32()),
+            builder.GetProperty("profileUrl").GetString()));
     }
 
     [Fact]

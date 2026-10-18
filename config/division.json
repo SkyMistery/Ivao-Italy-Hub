@@ -67,5 +67,10 @@
   "firStaffScope": "own",
   "preferredAtcRatings": { "DEL": "AS3", "GND": "ADC", "TWR": "ADC", "FSS": "ADC", "APP": "APC", "DEP": "APC", "CTR": "ACC" },
   "contentApproval": ["Page"],
+  "tagline": { "it": "It takes time", "en": "It takes time" },
+  "builtBy": [
+    { "name": "Andrea", "vid": 562466 },
+    { "name": "Carmine", "vid": 704798 }
+  ],
   "atcData": { "source": "vipi" }
 }
