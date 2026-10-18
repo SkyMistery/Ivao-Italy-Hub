@@ -281,9 +281,13 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
     // ⚠️ No `mt-12` any more. That margin was invisible while the footer stood on the page's own
     // background; the day it was given a ground of its own it became a white strip between the two —
     // and in the back office a gap between the bottom of the sidebar and the top of the footer,
-    // which is where Carmine saw it. The room the footer needs is its own `py-10`, inside its band.
+    // which is where Carmine saw it. The room the footer needs is its own `pt-10`, inside its band.
+    // ⚠️ `pb-4`, not `pb-10`, and `mb-4` under the separator (Carmine, 18 October 2026): the bottom
+    // row is two short lines of small print, and with the band's 40 px under it and the separator's
+    // 32 px over it, it floated in an empty strip that he circled in red. The columns above keep
+    // their room; the small print sits close to its line and to the page's end.
     <footer className="bg-atmos-700 dark:bg-fuselage-800 font-head text-white print:hidden">
-      <div className="mx-auto w-full max-w-6xl px-4 py-10">
+      <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-4">
         {/* ⚠️ Centred rather than pinned to the left edge (Carmine, 10 September 2026), and that is
             why this is a wrapping flex row and not a grid: a grid of four columns holding two leaves
             two empty tracks on the right and the whole band reads as unfinished. A row that centres
@@ -386,7 +390,10 @@ export function AppFooter({ bootstrap }: { bootstrap: Bootstrap }) {
           </nav>
         )}
 
-        <Separator className="my-8 bg-white/20" />
+        {/* ⚠️ `my-0` first, and it is not redundant: Atmosphere's separator carries its own `my-3`, from a stylesheet that
+            comes after ours, and `tailwind-merge` takes it away only for another `my-*`. Without it `mt-8 mb-4` lose to it
+            and the line sits 12 px from the columns above as well. */}
+        <Separator className="my-0 mt-8 mb-4 bg-white/20" />
 
         {/* ⚠️ Two sentences and nothing else (Carmine, 10 September 2026): who this belongs to and
             which release it is, and what it is part of. **No links** — the ones that used to sit

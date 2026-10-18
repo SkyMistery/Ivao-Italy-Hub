@@ -60,6 +60,13 @@ E2E_SKIP_PUBLISH=1 pnpm e2e:full
   also the trainee of the training's round (AS3 and FS3, hours above any threshold), the trainer
   stands above every rating a division trains (SEC and ATP).
 - **No IVAO credentials**: the reference data comes from `tests/fixtures/ivao/`.
+- **Two more addresses behind the same two locks** (M4, E10w): `POST /e2e/jobs/{name}` runs a job of
+  the hub now — the very job Quartz would run, through its lock, without asking whether it is due —
+  and answers when it has ended, with the row it wrote; `PUT /e2e/sessions/{vid}` gives one of the
+  five people sessions on the network from a moment (`{ "atUtc": … }`), a tower and then a flight
+  from `tests/fixtures/ivao/tracker-sessions-bench.json` moved onto it, and `DELETE` takes them back.
+  A spec calls them through `runJob`, `giveSessions` and `takeSessions` in `bench.ts`, never by
+  waiting for a job's hour. The sessions live in the bench's process, never in a file.
 
 What it is not: a `--self-contained --runtime linux-x64` package, which is what a release ships and
 what a developer on Windows cannot run. Same layout, same fallback, same language files; different

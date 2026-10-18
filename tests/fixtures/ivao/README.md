@@ -107,6 +107,19 @@ plan, two airports asked together one same revision; the window holds the sessio
 a page carries at most a hundred rows; and **the page holding the last row of an airport's answer takes IVAO about ten
 seconds**, however small it is.
 
+## The sessions of a person of the bench (M4, E10w)
+
+`tracker-sessions-bench.json` is not a recording of its own: it is two rows of `tracker-airport-LIRF.json` above, already
+without anybody in them and on the stand-in day — the tower (`LIRF_TWR`, 40 minutes and 54 seconds) and, 50 minutes and 8 seconds
+after it opened, one flight from Rome (71 minutes and 52 seconds). Three things are changed: the member is `0`, a placeholder; the
+sessions and their flight plans are numbered from 1; and the flight lands at Milan (`LIMC`) instead of Ajaccio, because the bench
+knows five airports of the world, as `web/e2e/full/replay.ts` does with its flight.
+
+The fixture client answers it only on the end to end bench, and only for a person the bench gave it to (`PUT /e2e/sessions/{vid}`,
+note `docs/internal/decisions/2026-10-18-il-banco-fa-girare-un-job.md`): every instant moved by one offset so that the tower opens at
+the moment asked, the person's VID in place of the `0`, and each session numbered with the VID and its own number (`999004001`).
+Nothing else in the hub reads it.
+
 ## The ATC bookings of a day (M4, E15a)
 
 `atc-bookings-day.json` is what the fixture client answers for the network's ATC bookings, recorded on 30 September 2026 with

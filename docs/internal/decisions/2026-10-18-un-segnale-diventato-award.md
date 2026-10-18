@@ -5,13 +5,16 @@
 ottobre 2026 e pubblicata sulla PR su sua istruzione ([risposta][a293]) — «a small core method, "did this source row give an award?", by
 `source_module` and the source ids, locking the signal rows when called inside a transaction, in its own core pull request with a new
 note (case (b)), before E14b uses it». La forma qui sotto è quella che E14b ha proposto, controllata nel codice; quello che il codice ha
-detto in più (§2.4: «diventato award» è esattamente `Handled`) è una constatazione, non una scelta nuova.
+detto in più (§2.4: «diventato award» è esattamente `Handled`, anche dopo un'assegnazione cancellata) il revisore l'ha portato a
+Carmine, che ha risposto **(A)**, va bene così ([risposta][a299]).
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: la coda degli award è del nucleo (le proiezioni, `IProjectable`, e
 `cms_award_signals`), e la si estende con la sola domanda che un modulo le fa, invece di lasciare al modulo una query sua sulla tabella.
 È una PR del nucleo, prima di E14b che la usa (`CLAUDE.md` §0 regola 6): nessun uso negli eventi qui.
 
 [a293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376
 [r293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248457744
+[r299]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462
+[a299]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217
 
 ## 1. Che cosa serve
 
@@ -42,6 +45,10 @@ detto in più (§2.4: «diventato award» è esattamente `Handled`) è una const
    permette la cancellazione) lascia il segnale `Handled`, e nessun codice lo riporta indietro: la domanda continua a rispondere sì. È
    coerente con la coda, che è «a record of what was decided» (`ProjectionWriter`); se un giorno si volesse che togliere un'assegnazione
    riapra la decisione, sarebbe una modifica della coda (il segnale che torna `Pending`), non di questa lettura.
+   **Decisa da Carmine, (A)** (18 ottobre 2026, in chat al master, «va bene la A», pubblicata sulla PR su sua istruzione:
+   [risposta][a299]): un'assegnazione cancellata dal registro lascia il suo segnale `Handled`, e va bene così — un award dato e poi
+   tolto è comunque una storia chiusa, e il PIREP da cui viene non si decide di nuovo. Il registro non cambia; se mai servirà, si
+   corregge a mano.
 5. **La corsa con un'assegnazione**: l'assegnazione legge il segnale senza lock, poi lo aggiorna; se nel frattempo la riga del segnale è
    sparita, l'`UPDATE` tocca 0 righe, `DbUpdateConcurrencyException`, 409 (`DomainExceptionHandler`). Basta che chi chiede tenga il lock
    sulle righe del segnale fino alla fine della sua transazione.
@@ -66,18 +73,26 @@ public static class AwardSignalQueries
    viva nella **sua** transazione, sulla sua connessione. Un servizio con il contesto del hub avrebbe un'altra connessione, e il lock non
    proteggerebbe niente.
 3. **Dentro una transazione** (`context.Database.CurrentTransaction` non nullo): una sola `SELECT source_id, status FROM cms_award_signals
-   WHERE source_module = … AND source_id IN (…) ORDER BY id FOR UPDATE`, con parametri. Si bloccano **tutte** le righe del segnale di
-   quelle sorgenti, di qualunque stato, perché quella che un'assegnazione sta per toccare è una `Pending`; in ordine di `id`, perché due
-   chiamanti non le prendano incrociate. Una lettura con lock legge l'**ultima versione committata** sotto qualunque isolamento, anche
-   REPEATABLE READ, dove una lettura semplice dopo il lock potrebbe vedere la fotografia vecchia della transazione: per questo stato e id
-   arrivano dalla stessa istruzione. Il lock resta fino alla fine della transazione di chi chiama: un'assegnazione nello stesso istante
+   WHERE source_module = … AND source_id IN (…) FOR UPDATE`, con parametri. Si bloccano **tutte** le righe del segnale di quelle
+   sorgenti, di qualunque stato, perché quella che un'assegnazione sta per toccare è una `Pending`. InnoDB prende i lock **mentre scorre
+   l'indice** `(source_module, source_id, vid)`, nel suo ordine, prima di qualunque ordinamento: due chiamanti li prendono nello stesso
+   ordine. (La prima versione aveva un `ORDER BY id` «perché due chiamanti non le prendano incrociate»: non decideva niente, e la revisione
+   l'ha detto; tolto, §7.) Una lettura con lock legge l'**ultima versione committata** sotto qualunque isolamento, anche REPEATABLE READ,
+   dove una lettura semplice dopo il lock potrebbe vedere la fotografia vecchia della transazione: per questo stato e id arrivano dalla
+   stessa istruzione. **Ciò che blocca, invece, dipende dall'isolamento**: si chiama sotto READ COMMITTED (punto 6). Il lock resta fino alla fine della transazione di chi chiama: un'assegnazione nello stesso istante
    passa prima (e la si legge `Handled`) o dopo (e trova quello che chi chiama ha lasciato), mai in mezzo.
 4. **Fuori da una transazione**: una lettura LINQ semplice, senza tracking, che non aspetta nessuno (una `FOR UPDATE` in autocommit
    aspetterebbe un lock per poi lasciarlo subito).
 5. **Le colonne del tipo non mappato** seguono la convenzione del hub (`source_id`, `status`): la prima prova le aveva con un alias, e EF
    le cercava con il nome della convenzione.
-6. **Sotto READ COMMITTED** (come le transazioni degli eventi) non ci sono lock sui buchi: una sorgente senza segnale non blocca niente, ed
-   è giusto, perché un segnale non ancora committato non si può assegnare.
+6. **Si chiama sotto READ COMMITTED** (come le transazioni degli eventi), e il commento del metodo lo dice: lì non ci sono lock sui buchi,
+   una sorgente senza segnale non blocca niente, ed è giusto, perché un segnale non ancora committato non si può assegnare. Sotto
+   REPEATABLE READ (il predefinito di MariaDB, e `BeginTransactionAsync()` senza argomenti) l'`IN` sul prefisso dell'indice prende anche i
+   lock sui buchi, e due chiamanti su sorgenti ancora senza segnale possono andare in deadlock (1213) quando poi scrivono tutti e due i
+   loro segnali.
+7. **Conta solo la transazione del contesto**: una transazione su un altro contesto, una `TransactionScope` ambientale, o una chiamata da un
+   `BeforeSave` del CRUD generico (che gira prima che l'intercettore apra la sua transazione) ricadono nella lettura semplice, senza lock
+   e senza una parola. Il commento del metodo lo dice.
 
 ## 4. Alternative scartate
 
@@ -112,12 +127,25 @@ Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 - La lista dei PIREP, fuori transazione: la stessa chiamata con le sorgenti della pagina, poi da sorgente a PIREP.
 - Le due query di `ReportAwards` (la `SqlQuery` scritta a mano e la LINQ) se ne vanno.
 
+## 7. Dopo la revisione (#299)
+
+Le [osservazioni del revisore][r299] (18 ottobre 2026): approvabile, tre commenti da correggere, nessuno bloccante, tutti fatti:
+
+1. **L'isolamento**: il commento del metodo diceva «under any isolation level», vero per quello che risponde, non per quello che blocca;
+   ora dice «call it under READ COMMITTED», con il perché (§3.6).
+2. **L'ordine dei lock**: `ORDER BY id` non lo decideva — InnoDB blocca scorrendo l'indice `(source_module, source_id, vid)`, prima di
+   ordinare. Corretti il commento e §3.3; e tolto l'`ORDER BY`, che ordinava solo un insieme.
+3. **La lettura semplice in silenzio**: una riga nel commento del metodo per la `TransactionScope` ambientale e il `BeforeSave` del CRUD
+   (§3.7); il caso dell'altro contesto era già nell'handoff.
+
+E il punto portato a Carmine, l'assegnazione cancellata, è **deciso (A)** (§2.4, [risposta][a299]).
+
 ## Da portare nel piano
 
 - **§9.1** (gli award) e **§16** (la riga delle proiezioni, «award signal»): se un segnale di una riga è diventato award lo dice il
-  nucleo, `AwardSignalQueries.AssignedAsync` (`Core/Content/`), sul contesto di chi chiama, con il lock dentro una transazione; mai una
-  query del modulo su `cms_award_signals`; «diventato award» è `Handled`, anche se l'assegnazione è stata poi cancellata; dal 18 ott 2026
-  (M4, E10x).
+  nucleo, `AwardSignalQueries.AssignedAsync` (`Core/Content/`), sul contesto di chi chiama, con il lock dentro una sua transazione READ
+  COMMITTED; mai una query del modulo su `cms_award_signals`; «diventato award» è `Handled`, anche se l'assegnazione è stata poi
+  cancellata (Carmine, (A), sulla #299); dal 18 ott 2026 (M4, E10x).
 - **`CLAUDE.md` §2**, la riga «Calendar entry, search index row, award signal…» (file del maintainer, la proposta è sua): «whether a
   source row's signal became an award: the core's `AwardSignalQueries.AssignedAsync`, never a query of the module»
   (`decisions/2026-10-18-un-segnale-diventato-award.md`).

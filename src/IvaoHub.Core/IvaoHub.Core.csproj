@@ -12,6 +12,15 @@
   </ItemGroup>
 
   <!--
+    The host sees the core's internals for one thing only: the end to end bench runs a job now
+    (ScheduledJobs.RunNowAsync, note 2026-10-18-il-banco-fa-girare-un-job), which no installation and no module may call,
+    because it skips "once per occurrence".
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="IvaoHub.Web" />
+  </ItemGroup>
+
+  <!--
     The shell of an interactive block's frame, compiled into the assembly rather than shipped as a
     file: there is then no way to deploy the application without it, and no way for an installation
     to hold a shell that does not match the code that fills it in (EmbedEndpoints).

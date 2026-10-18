@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,10 +19,29 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     /// <summary>Where the files live, relative to the root of the repository.</summary>
     public const string Directory = "tests/fixtures/ivao";
 
+    /// <summary>
+    /// The sessions a person of the end to end bench is given (<see cref="BenchNetworkSessions"/>, note
+    /// 2026-10-18-il-banco-fa-girare-un-job): a controller on a tower and, after it, a flight between two of the bench's
+    /// airports, on the stand-in day of the recordings.
+    /// </summary>
+    public const string BenchTemplate = "tracker-sessions-bench.json";
+
+    /// <summary>The ISO instants of the tracker's rows, the way IVAO writes them and the way a moved row keeps them.</summary>
+    private static readonly string[] Instants = ["yyyy-MM-dd'T'HH:mm:ss.fff'Z'", "yyyy-MM-dd'T'HH:mm:ss'Z'"];
+
     private readonly HubPaths _paths;
     private readonly ILogger<FixtureIvaoApiClient> _logger;
+    private readonly BenchNetworkSessions? _bench;
 
-    public FixtureIvaoApiClient(HubPaths paths, IHostEnvironment environment, ILogger<FixtureIvaoApiClient> logger)
+    /// <param name="paths">Where the repository is, and so the files.</param>
+    /// <param name="environment">Development or the end to end bench, and nothing else.</param>
+    /// <param name="logger">Where a missing file is said.</param>
+    /// <param name="bench">The sessions given to the bench's people: registered only on the bench, absent anywhere else.</param>
+    public FixtureIvaoApiClient(
+        HubPaths paths,
+        IHostEnvironment environment,
+        ILogger<FixtureIvaoApiClient> logger,
+        BenchNetworkSessions? bench = null)
     {
         ArgumentNullException.ThrowIfNull(environment);
 
@@ -41,6 +61,7 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
 
         _paths = paths;
         _logger = logger;
+        _bench = bench;
     }
 
     public Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
@@ -196,6 +217,9 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
     /// <para>Without a VID, the sessions at an airport (M4, E10a): <c>tracker-airport-{icao}.json</c>, what happened at
     /// one airport in one evening (<c>--sessions-at</c>), for the departure and the arrival asked. The tracker's own rule
     /// picks the rows (<see cref="IvaoTrackerReader.Answers"/>), newest first as IVAO lists them, up to the limit.</para>
+    /// <para>On the end to end bench, a person given sessions (<see cref="BenchNetworkSessions"/>) has those of
+    /// <see cref="BenchTemplate"/> too, moved onto the moment asked (<see cref="MoveBenchTemplate"/>), and the same rule picks
+    /// among them.</para>
     /// </summary>
     public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
         IvaoSessionQuery query,
@@ -210,8 +234,13 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
                 .Select(airport => $"tracker-airport-{airport!.Trim().ToUpperInvariant()}.json")
                 .Distinct(StringComparer.Ordinal)];
 
-        var sessions = files
-            .SelectMany(Read)
+        var rows = files.SelectMany(Read);
+        if (query.Vid is { } member && _bench?.Of(member) is { } at)
+        {
+            rows = rows.Concat(MoveBenchTemplate(Read(BenchTemplate), member, at));
+        }
+
+        var sessions = rows
             .Where(row => IvaoTrackerReader.Answers(row, query))
             .Select(IvaoTrackerReader.ReadSession)
             .OfType<IvaoTrackerSessionDto>()
@@ -338,6 +367,63 @@ public sealed class FixtureIvaoApiClient : IIvaoApiClient
             .Where(booking => booking.Callsign.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))];
 
         return Task.FromResult<IReadOnlyList<AtcBookingDto>?>(listed);
+    }
+
+    /// <summary>
+    /// The rows of <see cref="BenchTemplate"/> as the person's own: every instant moved by one same offset, so that the first
+    /// session starts at <paramref name="atUtc"/> and the times between them stay; the person's VID in place of the
+    /// template's; and a session's number made of the VID and the template's number (<c>999004</c> and <c>1</c> make
+    /// <c>999004001</c>), so that two people of the bench never share one.
+    /// </summary>
+    public static IReadOnlyList<JsonElement> MoveBenchTemplate(IReadOnlyList<JsonElement> template, int vid, DateTime atUtc)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+
+        var starts = template.Select(IvaoTrackerReader.ReadSession).OfType<IvaoTrackerSessionDto>().ToList();
+        if (starts.Count == 0)
+        {
+            return [];
+        }
+
+        var offset = DateTime.SpecifyKind(atUtc, DateTimeKind.Utc) - starts.Min(session => session.StartedAt);
+
+        return [.. template.Select(row =>
+        {
+            var moved = Moved(JsonNode.Parse(row.GetRawText()), offset)!.AsObject();
+            moved["userId"] = vid;
+            moved["id"] = (vid * 1000L) + (row.TryGetProperty("id", out var id) && id.TryGetInt64(out var number) ? number : 0);
+            return JsonSerializer.SerializeToElement(moved);
+        })];
+    }
+
+    /// <summary>A node with every instant in it moved by the offset, and everything else as it was.</summary>
+    private static JsonNode? Moved(JsonNode? node, TimeSpan offset)
+    {
+        switch (node)
+        {
+            case JsonObject item:
+                foreach (var name in item.Select(property => property.Key).ToList())
+                {
+                    item[name] = Moved(item[name]?.DeepClone(), offset);
+                }
+
+                return item;
+
+            case JsonArray list:
+                return new JsonArray([.. list.Select(inner => Moved(inner?.DeepClone(), offset))]);
+
+            case JsonValue value when value.TryGetValue<string>(out var text)
+                && DateTime.TryParseExact(
+                    text,
+                    Instants,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                    out var instant):
+                return JsonValue.Create((instant + offset).ToString(Instants[0], CultureInfo.InvariantCulture));
+
+            default:
+                return node;
+        }
     }
 
     private JsonElement[] Read(string fileName)
