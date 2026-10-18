@@ -4473,6 +4473,63 @@ oggi restano come sono, e senza il controllo i test cadono.
 [r288u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/288#issuecomment-6234538666
 [a283u]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230728736
 
+### E10w — Nucleo: il banco fa girare un job, e dà sessioni di rete a una sua persona
+
+**Da dove viene**: non c'era in E0. La chiede E15b: il giro intero di M4b sul banco (design §15) aspettava i giri veri di
+`events-roster` (un quarto d'ora, e il giro intero 15–30 minuti), e le persone del banco non avevano sessioni di rete, quindi nessuna voce
+di un PIREP di supporto verificata e nessun segnale di award (issue #294). Carmine ha scelto la (B) ([la risposta][a294w], 18 ottobre
+2026): prima una piccola fase del nucleo per il banco, con la sua nota, poi E15b. Branch `m4/e10w-bench-runs-a-job`, da `main` a
+`e7b1331c`. **PR del nucleo**, diretta su `main`, non in coda; E15b unisce `main` quando è unita.
+
+1. Un indirizzo `/e2e/jobs/{name}` che fa girare un job adesso, mappato **solo sul banco** come `/e2e/signin`, con gli stessi due
+   lucchetti; lo stesso job, con la sua riga e le regole di un giro pianificato.
+2. Le sessioni di una persona del banco spostate al giorno chiesto, attraverso `FixtureIvaoApiClient`; un modello senza nessuna chiave
+   con cui l'API di IVAO ritrovi una persona.
+3. Gli aiuti in `web/e2e/full/bench.ts` e il `README.md` del banco; la riga di `CONTRIBUTING.md` nella nota, per Carmine.
+4. Nessun uso nel modulo (regola 6); nessuno spec del maintainer cambiato.
+
+**Fatta quando**: gli indirizzi non ci sono in un avvio normale; un job gira adesso e scrive la sua riga; la fixture sposta le sue date;
+uno spec piccolo li usa tutti e due sul banco pubblicato; e la prova al contrario li fa cadere.
+
+**Com'è andata** (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300):
+
+- **Fatto** (nota nuova `2026-10-18-il-banco-fa-girare-un-job`, caso (b), **decisa** da Carmine sull'issue #294):
+  - **`ScheduledJobs.RunNowAsync(string job)`**: il job per nome, lanciato come un dovuto del passaggio (`TriggerJob`, la stessa attesa
+    fino a `LongestRun`) con il segno `hub.jobs.now`; la guardia prende il lucchetto e **non chiede se è dovuto**; `null` per un nome che
+    non c'è;
+  - **`BenchNetworkSessions`** (registrato solo sul banco) e **`FixtureIvaoApiClient`** con un parametro facoltativo: per un VID a cui il
+    banco l'ha dato, le due righe di **`tracker-sessions-bench.json`** (la torre di Fiumicino e un volo per Milano, dalla sera di
+    `tracker-airport-LIRF.json`) spostate perché la torre cominci al momento chiesto (`MoveBenchTemplate`), con il VID e numeri propri;
+  - **`E2EBenchRuns`**: `POST /e2e/jobs/{name}`, `PUT`/`DELETE /e2e/sessions/{vid}`, in `Program.cs` accanto a `MapE2ESignIn`;
+  - **`bench.ts`**: `runJob`, `giveSessions`, `takeSessions`; un punto nel `README.md` del banco e una sezione in quello delle fixture.
+- **Scostamenti da Carmine**: uno, di forma. Carmine dice «spostate al **giorno** chiesto»; il giro di E15b ha un evento di un quarto d'ora
+  che comincia fra quattro minuti, a un'ora qualunque, e un giorno con le ore registrate non copre il suo turno: le sessioni si spostano al
+  **momento** chiesto (nota §3.2 e §4). E il momento lo chiede lo spec a un terzo indirizzo del banco, `/e2e/sessions/{vid}`, dietro gli
+  stessi lucchetti: le sessioni restano nel processo, mai in un file.
+- **Verificato, in locale** (18 ottobre 2026, `main` a `e7b1331c`, Docker acceso):
+  - `dotnet restore --force --no-http-cache` con l'audit acceso: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1353/1353**, fra cui `BenchNetworkSessionsTests` 5/5; integrazione intera, senza filtro (Release), da sola, **668/668** (18
+    minuti), fra cui `E2EBenchRunsTests` 4/4. ⚠️ Tre giri prima di quello buono si sono fermati a metà: il primo con
+    `OutOfMemoryException` accanto alla suite di un'altra sessione, gli altri due chiusi da un'altra sessione (E14b) che fermava per nome
+    ogni processo `IvaoHub.IntegrationTests`; avvisata, non lo fa più;
+  - **la prova al contrario**: con la guardia che chiede «è dovuto?» anche a un giro chiesto adesso (modifica locale), il caso del job non
+    dovuto cade (`Skipped` invece di `Ran`); rimesso, 4 su 4;
+  - `pnpm -C web lint`, `typecheck`, `format:check` e `test` (vitest con `--maxWorkers=2`, **803/803**): verdi; `gen:api` senza
+    differenze;
+  - la smoke (`pnpm -C web exec playwright test --workers=2`, porta 4173 con il suo lock): **183/184** due volte, ogni volta uno spec
+    diverso (`back-office.spec.ts:373`, poi `training-report.spec.ts:510`), e ciascuno **5/5** con `--repeat-each=5`; la fase non tocca
+    `web/src`;
+  - `e2e:full` sul banco 5154, db `ivaohub_e2e_e10w` nuovo, dietro il lock di Mailpit: **69/70**, `bench-runs.spec.ts` verde; il rosso è
+    `round.spec.ts:46` con «Target crashed» di Chromium (la memoria della macchina; il primo tentativo, prima, era morto nella
+    pubblicazione per «process out of memory» di Vite); rifatti `round.spec.ts` e `bench-runs.spec.ts` con `--repeat-each=3` sul banco
+    pubblicato e un db nuovo: **18/18**;
+  - le regole di `core-guard` dalla base `e7b1331c`, con Git Bash: nessun file del maintainer; otto del nucleo con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - l'uso vero, nel giro di M4b — `events-roster`, `events-after`, il PIREP ATC del formatore e il segnale: è di E15b.
+
+[a294w]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
@@ -5341,7 +5398,9 @@ Design §2.3-bis, §4.4 (le prenotazioni di IVAO), §11, §15; note `i-dati-dei-
    pseudonimo), e le colonne nuove in `ErasureTests`.
 3. **«Duplica»** copia anche postazioni con le finestre e regole di award.
 4. **Le prenotazioni di IVAO accanto al roster** (E15a), alla richiesta.
-5. **Il giro completo di M4b**: disponibilità, roster proposto, corretto, pubblicato; PIREP di supporto, validato, segnale.
+5. **Il giro completo di M4b**: disponibilità, roster proposto, corretto, pubblicato; PIREP di supporto, validato, segnale. I job li fa
+   girare `runJob` e le sessioni del formatore le dà `giveSessions`, di E10w (`web/e2e/full/bench.ts`; dopo E10w, la (B) di Carmine
+   sull'issue #294).
 6. **`docs/FORKING.md`** per l'ATC; **il rapporto di chiusura di M4** se M4c è già chiusa (come `decisions/2026-09-07-m1-review.md`,
    con gli endpoint scritti a mano contati per famiglia, piano §16 punto 6).
 
