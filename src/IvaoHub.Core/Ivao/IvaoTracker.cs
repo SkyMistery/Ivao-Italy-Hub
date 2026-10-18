@@ -332,9 +332,10 @@ public static class IvaoTrackerReader
 
     /// <summary>
     /// The two airports of every revision of a session's flight plan, oldest first, in capitals, as the row of the tracker carries
-    /// them in <see cref="IvaoTrackerSessionDto.RawJson"/> (M4, E10v): the row lists its plans in the order they were filed, as
-    /// their numbers say on every recorded flight. A revision without one of its airports is left out; a controller, a session
-    /// without a plan, or a row that is not the tracker's, has none.
+    /// them in <see cref="IvaoTrackerSessionDto.RawJson"/> (M4, E10v). They are put in the order of their <c>id</c>, which grows
+    /// with the revision on every recorded flight, so that "the last" is the latest whatever order the row lists them in (it lists
+    /// them oldest first on every recorded flight; plans without an <c>id</c> keep the row's order). A revision without one of its
+    /// airports is left out; a controller, a session without a plan, or a row that is not the tracker's, has none.
     /// </summary>
     public static IReadOnlyList<(string DepartureIcao, string ArrivalIcao)> ReadPlannedRoutes(IvaoTrackerSessionDto session)
     {
@@ -351,6 +352,7 @@ public static class IvaoTrackerReader
             }
 
             return [.. plans.EnumerateArray()
+                .OrderBy(plan => Number(plan, "id") ?? 0)
                 .Select(plan => (Departure: Text(plan, "departureId"), Arrival: Text(plan, "arrivalId")))
                 .Where(route => route.Departure is not null && route.Arrival is not null)
                 .Select(route => (route.Departure!.ToUpperInvariant(), route.Arrival!.ToUpperInvariant()))];

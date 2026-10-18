@@ -180,6 +180,27 @@ public sealed class NetworkSessionSourceTests
     }
 
     [Fact]
+    public async Task TheRevisionsGoInTheOrderOfTheirNumbersWhateverOrderTheRowListsThemIn()
+    {
+        var client = new Client(_ =>
+        [
+            Row("""
+                { "id": 7, "userId": 761073, "callsign": "TST073", "createdAt": "2001-01-01T16:30:00Z", "connectionType": "PILOT",
+                  "flightPlans": [ { "id": 2000007, "departureId": "LIRF", "arrivalId": "LICR" },
+                                   { "id": 2000006, "departureId": "LIPZ", "arrivalId": "LIRF" } ] }
+                """),
+        ]);
+        using var hub = Hub(client);
+        using var scope = hub.CreateScope();
+        var source = scope.ServiceProvider.GetRequiredService<INetworkSessionSource>();
+
+        var session = Assert.Single((await source.SessionsAsync(new NetworkSessionQuery(761073, From, To), TestContext.Current.CancellationToken))!);
+
+        Assert.Equal([new("LIPZ", "LIRF"), new NetworkRoute("LIRF", "LICR")], session.Routes);
+        Assert.Equal(("LIRF", "LICR"), (session.DepartureIcao, session.ArrivalIcao));
+    }
+
+    [Fact]
     public async Task AControllerOrASessionWithoutAPlanSaysNoAirport()
     {
         var tower = IvaoFixtures.Read("tracker-airport-LIRF.json")
