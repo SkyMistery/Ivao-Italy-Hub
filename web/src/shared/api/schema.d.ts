@@ -6075,7 +6075,8 @@ export interface components {
         /**
          * @description A report of support as the staff's generated list reads it (§7.2, E14a; note 2026-10-17-il-pirep-di-supporto, reading 9): its member, its
          *     kind and where it stands, what the check made of it, who decided and their note, its items with what the check found of each, and whether
-         *     the reader may decide it now — an event over and `EventReports.Edit` from the one handler on the row, never on their own. Data only:
+         *     the reader may decide it now — an event over and `EventReports.Edit` from the one handler on the row, never on their own —, and when it
+         *     last changed, which a decision sends back with the state it saw (the review of #289, point 1). Data only:
          *     the page writes the words. Names and items are read for a page at once; a row alone has neither.
          */
         EventReportRowDto: {
@@ -6099,6 +6100,8 @@ export interface components {
             decisionNote: null | string;
             items: components["schemas"]["ReportItemDto"][];
             decidable: boolean;
+            /** Format: date-time */
+            updatedAt: string;
         };
         /** @description A route of an event as its list and its form show it (design M4 §1.4). */
         EventRouteDto: {
@@ -9577,12 +9580,16 @@ export interface components {
             airports: string[];
         };
         /**
-         * @description What a validator sends to decide a report (§5.3): accepted or rejected — a decision left out is `Submitted`, and refused —, and a note,
-         *     required to reject.
+         * @description What a validator sends to decide a report (§5.3): accepted or rejected — a decision left out is `Submitted`, and refused —, a note,
+         *     required to reject, and <b>what they were looking at</b> (the review of #289, point 1): the report's state and its `updatedAt` as the
+         *     list gave them. A report that moved since — another validator decided it, its member corrected it — is not decided on what nobody saw: 409.
          */
         ReportDecision: {
             state: components["schemas"]["ReportState"];
             note: null | string;
+            seen: components["schemas"]["ReportState"];
+            /** Format: date-time */
+            updatedAt: string;
         };
         /**
          * @description One item of a report as the member and the staff read it (§1.8): what was declared — a flight's callsign, airports and day, or a shift's
