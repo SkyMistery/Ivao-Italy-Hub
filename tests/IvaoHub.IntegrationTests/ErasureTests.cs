@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
@@ -38,9 +40,13 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int OtherVid = 780096;
     private const int SuperadminVid = 780097;
 
+    // The person's digits by chance, never the person: inside an instant's decimals, inside a hex stamp, inside a longer number.
+    private const string CoincidenceJson = """{"UpdatedAt":"2026-10-18T18:37:06.7800951Z","SecurityStamp":"0A780095FF","Count":17800950}""";
+
     private HubWebApplicationFactory _factory = null!;
     private readonly List<long> _items = [];
     private readonly List<long> _threads = [];
+    private readonly List<long> _audit = [];
 
     public async ValueTask InitializeAsync()
     {
@@ -63,6 +69,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await database.ContactReplies.Where(row => _threads.Contains(row.MessageId)).ExecuteDeleteAsync(token);
             await database.ContactReferences.Where(row => _threads.Contains(row.MessageId)).ExecuteDeleteAsync(token);
             await database.ContactMessages.IgnoreQueryFilters().Where(row => _threads.Contains(row.Id)).ExecuteDeleteAsync(token);
+            await database.AuditLog.Where(row => _audit.Contains(row.Id)).ExecuteDeleteAsync(token);
         }
 
         await _factory.DisposeAsync();
@@ -95,6 +102,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         }
 
         await SeedAboutThePersonAsync(token);
+        var coincidence = await SeedCoincidenceAsync(token);
         var (forOther, gone, kept) = (_items[0], _items[1], _items[2]);
         var (theirThread, ownThread) = (_threads[0], _threads[1]);
 
@@ -142,7 +150,18 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var audit = database.AuditLog.AsNoTracking();
         Assert.False(await audit.AnyAsync(row => row.Vid == PersonVid, token));
         Assert.False(await audit.AnyAsync(row => row.Entity == "hub_users" && row.EntityId == text, token));
-        Assert.False(await audit.AnyAsync(row => row.BeforeJson!.Contains(text) || row.AfterJson!.Contains(text), token));
+        // The number alone, wherever it stands: the shared database holds thousands of instants with seven decimals and hex
+        // stamps, and its six digits turn up inside one of them by chance (about one six-digit number in sixty, measured on
+        // the whole suite) — the row seeded below is one. Those rows are read past and kept as they were; each row that
+        // names the person is printed.
+        var mentions = await audit
+            .Where(row => row.BeforeJson!.Contains(text) || row.AfterJson!.Contains(text))
+            .Select(row => new { row.Id, row.Entity, row.EntityId, row.BeforeJson, row.AfterJson })
+            .ToListAsync(token);
+        Assert.Empty(mentions
+            .Where(row => NamesTheNumber(row.BeforeJson, text) || NamesTheNumber(row.AfterJson, text))
+            .Select(row => $"{row.Entity} {row.EntityId}: {row.BeforeJson} {row.AfterJson}"));
+        Assert.Contains(mentions, row => row.Id == coincidence && row.AfterJson == CoincidenceJson);
         Assert.False(await audit.AnyAsync(
             row => row.Entity == "smp_items" && row.EntityId == gone.ToString(CultureInfo.InvariantCulture)
                 && (row.BeforeJson != null || row.AfterJson != null),
@@ -155,6 +174,98 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             row => row.Action == PersonalDataErasure.AuditAction && row.EntityId == pseudonym.ToString(CultureInfo.InvariantCulture)
                 && row.Vid == SuperadminVid,
             token));
+    }
+
+    /// <summary>
+    /// What the check of the audit above calls the person: the number alone — a JSON number, a key, a word of a text, an item of
+    /// a list written as a string, a JSON document inside a string — and never its digits inside an instant, a hex stamp or a
+    /// longer number.
+    /// </summary>
+    [Fact]
+    public void TheAuditCheckFindsTheNumberAloneAndNotItsDigitsInsideAnother()
+    {
+        var text = PersonVid.ToString(CultureInfo.InvariantCulture);
+
+        Assert.All(
+            new[]
+            {
+                """{"createdBy":780095}""",
+                """{"vid":"780095"}""",
+                """{"780095":true}""",
+                """{"note":"asked by 780095, twice"}""",
+                """{"participantsJson":"[780001,780095]"}""",
+                """{"DataJson":"{\"vid\":\"780095\"}"}""",
+                """{"ValueJson":""780095""}""",
+                """[780001,{"items":[780095]}]""",
+                "not JSON, 780095",
+            },
+            json => Assert.True(NamesTheNumber(json, text), json));
+
+        Assert.All(
+            new string?[]
+            {
+                CoincidenceJson,
+                """{"At":"2026-10-18T18:37:39.780095Z"}""",
+                """{"Latitude":45.780095}""",
+                """{"Id":-1780095,"Hash":"ab780095cd"}""",
+                null,
+            },
+            json => Assert.False(NamesTheNumber(json, text), json));
+    }
+
+    /// <summary>Whether a JSON document holds this number alone, anywhere: see the test above.</summary>
+    private static bool NamesTheNumber(string? json, string number)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return false;
+        }
+
+        try
+        {
+            return Holds(JsonNode.Parse(json), number);
+        }
+        catch (JsonException)
+        {
+            return Alone(json, number);
+        }
+
+        static bool Holds(JsonNode? node, string number) => node switch
+        {
+            JsonObject item => item.Any(pair => Alone(pair.Key, number) || Holds(pair.Value, number)),
+            JsonArray items => items.Any(child => Holds(child, number)),
+            JsonValue value when value.GetValueKind() == JsonValueKind.String => NamesTheNumber(value.GetValue<string>(), number),
+            JsonValue value => value.ToJsonString() == number,
+            _ => false,
+        };
+
+        // A word of its own: no letter, digit or decimal point against it, so 780095 is found in "by 780095," and not in
+        // ".7800951Z", "ab780095cd" or "45.780095".
+        static bool Alone(string text, string number) =>
+            Regex.IsMatch(text, $"(?<![0-9A-Za-z.]){Regex.Escape(number)}(?![0-9A-Za-z])", RegexOptions.CultureInvariant);
+    }
+
+    /// <summary>An audit row that holds the person's digits only by chance, like the ones the other tests leave behind.</summary>
+    private async Task<long> SeedCoincidenceAsync(CancellationToken cancellationToken)
+    {
+        Assert.Contains(PersonVid.ToString(CultureInfo.InvariantCulture), CoincidenceJson, StringComparison.Ordinal);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var row = new AuditLogEntry
+        {
+            Vid = OtherVid,
+            Action = "updated",
+            Entity = "erasure_coincidences",
+            EntityId = Guid.NewGuid().ToString("N"),
+            AfterJson = CoincidenceJson,
+            At = scope.ServiceProvider.GetRequiredService<IClock>().UtcNow,
+        };
+        database.AuditLog.Add(row);
+        await database.SaveChangesAsync(cancellationToken);
+
+        _audit.Add(row.Id);
+        return row.Id;
     }
 
     [Fact]
