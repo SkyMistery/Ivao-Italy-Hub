@@ -11,10 +11,11 @@ using Microsoft.EntityFrameworkCore;
 namespace IvaoHub.Modules.Events.Reports;
 
 /// <summary>
-/// What a validator sends to decide a report (§5.3): accepted or rejected — a decision left out is <c>Submitted</c>, and refused —, and a note,
-/// required to reject.
+/// What a validator sends to decide a report (§5.3): accepted or rejected — a decision left out is <c>Submitted</c>, and refused —, a note,
+/// required to reject, and <b>what they were looking at</b> (the review of #289, point 1): the report's state and its <c>updatedAt</c> as the
+/// list gave them. A report that moved since — another validator decided it, its member corrected it — is not decided on what nobody saw: 409.
 /// </summary>
-public sealed record ReportDecision(ReportState State, string? Note);
+public sealed record ReportDecision(ReportState State, string? Note, ReportState Seen, DateTime UpdatedAt);
 
 /// <summary>
 /// The validation of a report of support (design M4 §5.3, E14a; note 2026-10-17-il-pirep-di-supporto, readings 7 and 8):
@@ -23,7 +24,8 @@ public sealed record ReportDecision(ReportState State, string? Note);
 /// write their own row (the core's rule of a row a member sent, T11): the handler is asked <b>before</b> anything is written.
 /// <para>Accepted or rejected — a note to reject —, and changed later by whoever may decide it (choice 1, as the outcomes of the shifts after
 /// Carmine's answer on #283), under the lock of the report's row, so that a correction of its member in the same instant passes before or after,
-/// never in between. The member is told (<see cref="EventsNotifications.ReportDecided"/>) once the decision is committed. Only the columns of
+/// never in between — and on what the validator saw: a report another validator decided, or its member corrected, since they read it answers
+/// 409 «read it again» (the review of #289, point 1). On an event over, as the list's «decidable» says (point 3). The member is told (<see cref="EventsNotifications.ReportDecided"/>) once the decision is committed. Only the columns of
 /// the decision are written: whoever validates touches nothing else.</para>
 /// </summary>
 public sealed class ReportDecisions(
@@ -36,6 +38,9 @@ public sealed class ReportDecisions(
 {
     /// <summary>A decision that is neither accepted nor rejected.</summary>
     public const string StateKey = "events:errors.reportStateNotAllowed";
+
+    /// <summary>A report of an event not over: whatever it says, its event is still to end — its end was moved later.</summary>
+    public const string NotOverKey = "events:errors.reportNotOver";
 
     /// <summary>A decision that says what the report already is.</summary>
     public const string SameKey = "events:errors.reportAlreadySo";
@@ -77,6 +82,18 @@ public sealed class ReportDecisions(
             return (ReportResult.Forbidden, problems);
         }
 
+        // Taken on what the validator saw, under the lock (point 1): a decision of somebody else, or a correction of the member, came first.
+        if (report.State != decision.Seen || Microseconds(report.UpdatedAt) != Microseconds(decision.UpdatedAt))
+        {
+            return (ReportResult.Changed, problems);
+        }
+
+        // As the list's «decidable» says (point 3): an event whose end was moved later is not over, and its reports wait.
+        if (!EventState.IsOver(row, now))
+        {
+            return (ReportResult.Refused, problems.Add("id", NotOverKey));
+        }
+
         if (decision.State is not (ReportState.Accepted or ReportState.Rejected))
         {
             problems.Add("state", StateKey);
@@ -102,19 +119,14 @@ public sealed class ReportDecisions(
         report.DecisionNote = note;
         report.UpdatedAt = now;
 
-        try
-        {
-            await database.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            database.ChangeTracker.Clear();
-            return (ReportResult.Changed, problems);
-        }
+        await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         await mail.ReportDecidedAsync(row, report.Vid, report.Kind, report.State, note, cancellationToken);
 
         return (ReportResult.Done, problems);
     }
+
+    /// <summary>An instant as the database keeps it, to the microsecond, whichever side it comes from.</summary>
+    private static long Microseconds(DateTime value) => value.Ticks / 10;
 }

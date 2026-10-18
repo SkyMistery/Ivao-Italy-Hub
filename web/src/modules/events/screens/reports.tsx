@@ -86,7 +86,7 @@ function Decide({ row }: { row: ReportRow }) {
         labels="events:reports.decision"
         division={{ defaultLocale: bootstrap.division.defaultLocale, timezone: bootstrap.division.timezone }}
         onSubmit={async (values) => {
-          await decide.mutateAsync({ id: row.id, state: values.state, note: values.note });
+          await decide.mutateAsync({ row, state: values.state, note: values.note });
           setOpen(false);
         }}
         submitLabel={t('events:reports.decide')}

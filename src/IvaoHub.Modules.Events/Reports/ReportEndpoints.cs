@@ -19,7 +19,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// <summary>
 /// A report of support as the staff's generated list reads it (§7.2, E14a; note 2026-10-17-il-pirep-di-supporto, reading 9): its member, its
 /// kind and where it stands, what the check made of it, who decided and their note, its items with what the check found of each, and whether
-/// the reader may decide it now — an event over and <c>EventReports.Edit</c> from the one handler on the row, never on their own. Data only:
+/// the reader may decide it now — an event over and <c>EventReports.Edit</c> from the one handler on the row, never on their own —, and when it
+/// last changed, which a decision sends back with the state it saw (the review of #289, point 1). Data only:
 /// the page writes the words. Names and items are read for a page at once; a row alone has neither.
 /// </summary>
 public sealed record EventReportRowDto(
@@ -37,7 +38,8 @@ public sealed record EventReportRowDto(
     DateTime? DecidedAt,
     string? DecisionNote,
     IReadOnlyList<ReportItemDto> Items,
-    bool Decidable);
+    bool Decidable,
+    DateTime UpdatedAt);
 
 /// <summary>
 /// The reports of support (design M4 §5.2, §5.3, §7.1, §7.2, E14a; note 2026-10-17-il-pirep-di-supporto, readings 6, 7 and 9).
@@ -208,7 +210,8 @@ public static class ReportEndpoints
         report.DecidedAt,
         report.DecisionNote,
         items,
-        decidable);
+        decidable,
+        report.UpdatedAt);
 
     private static IResult Answer((ReportResult Result, Refusals Problems) outcome, LocaleCatalog catalog, ICurrentUser currentUser) =>
         outcome.Result switch
