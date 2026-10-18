@@ -52,6 +52,8 @@ const bootstrap: Bootstrap = {
     firStaffScope: 'all',
     siteDepartment: 'WD',
     contentApproval: ['Page'],
+    tagline: {},
+    builtBy: [],
   },
   modules: [],
   navigation: { public: [], footer: [], staff: [] },

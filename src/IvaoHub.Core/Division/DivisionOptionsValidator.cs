@@ -164,6 +164,39 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
                 + string.Join(", ", IvaoHub.Core.Atc.AtcDataOptions.KnownSources) + ".");
         }
 
+        // The footer's tagline (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito): optional, but once written it is written
+        // in every language, as the name is, so that no reader gets a footer in a language they did not choose.
+        if (options.Tagline.Count > 0)
+        {
+            foreach (var locale in options.Locales)
+            {
+                if (!options.Tagline.TryGetValue(locale, out var line) || string.IsNullOrWhiteSpace(line))
+                {
+                    failures.Add($"division.json: 'tagline' has no entry for the language '{locale}'. Write one for every language, or leave 'tagline' out.");
+                }
+            }
+        }
+
+        var builders = new HashSet<int>();
+        for (var index = 0; index < options.BuiltBy.Length; index++)
+        {
+            var builder = options.BuiltBy[index];
+            if (string.IsNullOrWhiteSpace(builder.Name))
+            {
+                failures.Add($"division.json: 'builtBy[{index}]' has no 'name'.");
+            }
+
+            // The number is what the link leads to: a missing one would be a link to nobody's profile.
+            if (builder.Vid <= 0)
+            {
+                failures.Add($"division.json: 'builtBy[{index}]' has no 'vid', or one that is not a member number.");
+            }
+            else if (!builders.Add(builder.Vid))
+            {
+                failures.Add($"division.json: 'builtBy' names the VID {builder.Vid} twice.");
+            }
+        }
+
         // Reported, not remembered. This object is a singleton and validation can run more than
         // once, so a property holding the result of the last call is a field that means nothing to
         // whoever reads it and is unsafe for whoever reads it from another thread.

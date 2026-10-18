@@ -165,6 +165,21 @@ public sealed record DivisionOptions
     /// </summary>
     public IvaoHub.Core.Atc.AtcDataOptions? AtcData { get; init; }
 
+    /// <summary>
+    /// The line the footer writes in italics under the division's name, one entry per language in <see cref="Locales"/>, as
+    /// <see cref="Name"/> is (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito). It sits here and not in <c>locales/</c> for
+    /// the reason the name does: it is this installation's, and a fork that copies the language files must not inherit it.
+    /// Empty — the default, and a fork's — draws no line.
+    /// </summary>
+    public Dictionary<string, string> Tagline { get; init; } = [];
+
+    /// <summary>
+    /// Who built the site, in the order the footer names them: "Built by Andrea &amp; Carmine", each name a link to the person's
+    /// profile on the network. The address is the core's (<c>Core/Ivao/</c>), never written here. Empty — the default — draws
+    /// no line.
+    /// </summary>
+    public SiteBuilder[] BuiltBy { get; init; } = [];
+
     // There is deliberately no ResolveName here. Falling back from one language to another is a
     // rule the hub already has, in Localized<T>.Resolve, and a second copy of it on this type had
     // no caller and would have been the copy that drifted.
@@ -195,6 +210,16 @@ public sealed class PositionGrantSeed
 
     /// <summary>True takes the permission away from the position instead of giving it.</summary>
     public bool Deny { get; init; }
+}
+
+/// <summary>One person the footer credits, as <c>division.json → builtBy</c> writes it.</summary>
+public sealed class SiteBuilder
+{
+    /// <summary>The name the footer shows, as the person wants it written.</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>The person's member number, which the footer shows next to the name and links to their profile.</summary>
+    public int Vid { get; init; }
 }
 
 /// <summary>One module, as <c>division.json → modules.{key}</c> writes it.</summary>

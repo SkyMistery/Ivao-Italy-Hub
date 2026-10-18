@@ -88,6 +88,9 @@
   "footer": {
     "rights": "© {{year}} {{division}}. Tutti i diritti riservati. · {{build}}",
     "partOf": "Parte della International Virtual Aviation Organisation",
+    "builtBy": "Realizzato da",
+    "listSeparator": ", ",
+    "listLastSeparator": " & ",
     "legalHeading": "IVAO",
     "about": "Il sito ufficiale di {{division}}: eventi, training, tour e tutto quello che fa la divisione.",
     "legal": [

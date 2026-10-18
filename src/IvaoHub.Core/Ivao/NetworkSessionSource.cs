@@ -78,9 +78,51 @@ public sealed record NetworkSessionQuery(
 
 /// <summary>
 /// One session of the network, as little of it as a module needs: the network's own number for it, the member, the callsign,
-/// and when it started and, as far as its declared length says, ended. Both instants are UTC.
+/// when it started and, as far as its declared length says, ended — both UTC — and the airports its flight plan said (E10v).
 /// </summary>
-public sealed record NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt);
+/// <param name="Id">The network's own number for the session.</param>
+/// <param name="Vid">The member.</param>
+/// <param name="Callsign">The callsign, or the position of a controller.</param>
+/// <param name="StartedAt">When the session started, UTC.</param>
+/// <param name="EndedAt">When it ended as far as its declared length says, UTC.</param>
+/// <param name="DepartureIcao">
+/// The airport the last revision of the flight plan leaves from, in capitals; <see langword="null"/> for a controller or a session
+/// without a plan.
+/// </param>
+/// <param name="ArrivalIcao">The airport the last revision goes to, in capitals; <see langword="null"/> when there is no plan.</param>
+public sealed record NetworkSession(
+    long Id,
+    int Vid,
+    string Callsign,
+    DateTime StartedAt,
+    DateTime EndedAt,
+    string? DepartureIcao = null,
+    string? ArrivalIcao = null)
+{
+    /// <summary>
+    /// The two airports of every revision of the flight plan, oldest first, the last one being <see cref="DepartureIcao"/> and
+    /// <see cref="ArrivalIcao"/>: a pilot who filed one leg and then the next in the same connection has both here. Empty when
+    /// there is no plan. Two sessions with the same routes are equal, as for every other part of the record.
+    /// </summary>
+    public IReadOnlyList<NetworkRoute> Routes { get; init; } = [];
+
+    public bool Equals(NetworkSession? other) =>
+        other is not null
+        && Id == other.Id
+        && Vid == other.Vid
+        && string.Equals(Callsign, other.Callsign, StringComparison.Ordinal)
+        && StartedAt == other.StartedAt
+        && EndedAt == other.EndedAt
+        && string.Equals(DepartureIcao, other.DepartureIcao, StringComparison.Ordinal)
+        && string.Equals(ArrivalIcao, other.ArrivalIcao, StringComparison.Ordinal)
+        && Routes.SequenceEqual(other.Routes);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(Id, Vid, Callsign, StartedAt, EndedAt, DepartureIcao, ArrivalIcao, Routes.Count);
+}
+
+/// <summary>One revision of a session's flight plan, by its two airports, in capitals.</summary>
+public sealed record NetworkRoute(string DepartureIcao, string ArrivalIcao);
 
 internal sealed class NetworkSessionSource(IIvaoApiClient ivao) : INetworkSessionSource
 {
@@ -118,11 +160,28 @@ internal sealed class NetworkSessionSource(IIvaoApiClient ivao) : INetworkSessio
             .OrderByDescending(session => session.StartedAt)
             .ThenByDescending(session => session.Id)
             .Take(query.Limit)
-            .Select(session => new NetworkSession(
-                session.Id,
-                session.Vid,
-                session.Callsign,
-                session.StartedAt,
-                session.EndedAt))];
+            .Select(Session)];
+    }
+
+    /// <summary>
+    /// A session with the airports of its plan's revisions, read from the row the client already has: no second call. The last
+    /// revision says the two airports, not the first one the client's record keeps (note 2026-10-17-gli-scali-di-una-sessione).
+    /// </summary>
+    private static NetworkSession Session(IvaoTrackerSessionDto session)
+    {
+        NetworkRoute[] routes = [.. IvaoTrackerReader.ReadPlannedRoutes(session)
+            .Select(route => new NetworkRoute(route.DepartureIcao, route.ArrivalIcao))];
+
+        return new NetworkSession(
+            session.Id,
+            session.Vid,
+            session.Callsign,
+            session.StartedAt,
+            session.EndedAt,
+            routes.LastOrDefault()?.DepartureIcao,
+            routes.LastOrDefault()?.ArrivalIcao)
+        {
+            Routes = routes,
+        };
     }
 }
