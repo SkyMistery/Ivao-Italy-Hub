@@ -140,9 +140,10 @@ public sealed class Event : IOwnedByDepartment, IVisible, IPublishable, IAuditab
     /// <summary>
     /// How far <c>events-after</c> got with the reports written for the members who asked for them (§5.1, E14b): the members with the
     /// preference are looked at in the order of their VIDs, and this is the last one done — empty, none yet. The job's bookkeeping, written
-    /// as <see cref="AfterDoneAt"/> is: it moves neither the row's version nor its audit.
+    /// as <see cref="AfterDoneAt"/> is: it moves neither the row's version nor its audit. A cursor, not a person: not named <c>…Vid</c>, so the
+    /// erasure of a person's data leaves it (the review of #293, a nit).
     /// </summary>
-    public int? AutoReportsAfterVid { get; set; }
+    public int? AutoReportsCursor { get; set; }
 
     /// <summary>For whoever books and does not fly: the hours of a window of the event (§3.7); empty, the setting's.</summary>
     public int? RestrictedWindowHours { get; set; }

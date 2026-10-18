@@ -8,7 +8,8 @@ namespace IvaoHub.Modules.Events.Reports;
 
 /// <summary>
 /// What an event's <c>Auto</c> reports look at (design M4 §5.1): the airports a flight touches — the event's own, the division's for an event of
-/// the whole division, or <see langword="null"/> for any flight when the event has none —, and the positions a controller's shifts are on —
+/// the whole division, or <see langword="null"/> when the event has none of its own: then no flight is reported (Carmine's answer 2 on #293) —,
+/// and the positions a controller's shifts are on —
 /// its own and the division's at its airports, or every position of the division for an event of the whole division. Upper case.
 /// </summary>
 public sealed record AutoReportScope(IReadOnlySet<string>? Airports, IReadOnlySet<string> Positions);
@@ -92,6 +93,7 @@ public sealed class AutoReports(
         int vid,
         AutoReportScope scope,
         int attendanceMinimumMinutes,
+        int minimumFlightMinutes,
         DateTime now,
         CancellationToken cancellationToken)
     {
@@ -118,7 +120,8 @@ public sealed class AutoReports(
 
         var codes = flown.SelectMany(session => new[] { session.DepartureIcao, session.ArrivalIcao }).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
         var known = codes.Count == 0 ? new Dictionary<string, AirportDto>() : await airports.FindAsync(codes, cancellationToken);
-        var flights = AutoReportRules.Flights(flown, scope.Airports, fromUtc, toUtc, (departure, arrival) => ReportCheck.Distance(departure, arrival, known));
+        var flights = AutoReportRules.Flights(
+            flown, scope.Airports, fromUtc, toUtc, minimumFlightMinutes, (departure, arrival) => ReportCheck.Distance(departure, arrival, known));
         if (flights.Count > 0)
         {
             await WriteAsync(row, vid, ReportKind.Pilot, flights, now, cancellationToken);
@@ -164,26 +167,35 @@ public static class AutoReportRules
 {
     /// <summary>
     /// A pilot's flights (reading 8): the sessions that started in the event's window whose flight plan says two different airports (the last
-    /// revision, as the core gives them, E10v) and touches <paramref name="airports"/> — any flight when it is null (an event without airports
-    /// of its own, not of the whole division) —, one item each, the earliest first, at most <see cref="ReportRules.MaxItems"/>; verified, with
-    /// the session, its minutes and the distance between the two airports when the hub knows them.
+    /// revision, as the core gives them, E10v) and touches <paramref name="airports"/> — none when it is null (an event without airports of its
+    /// own, not of the whole division: Carmine's answer 2 on #293) —, one item each, the earliest first, at most <see cref="ReportRules.MaxItems"/>,
+    /// with the session, its minutes and the distance between the two airports when the hub knows them; verified when the session lasted at least
+    /// <paramref name="minimumFlightMinutes"/>, as a flight sent by hand (Carmine's answer 1 on #293).
     /// </summary>
     public static IReadOnlyList<(ReportItemDraft Draft, ItemFinding Finding)> Flights(
         IEnumerable<NetworkSession> sessions,
         IReadOnlySet<string>? airports,
         DateTime fromUtc,
         DateTime toUtc,
+        int minimumFlightMinutes,
         Func<string, string, decimal?> distance)
     {
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(distance);
+
+        // An event without airports of its own, not of the whole division, reports no flight: nothing says which flights are its (Carmine's
+        // answer 2 on #293). Its members send theirs by hand.
+        if (airports is null)
+        {
+            return [];
+        }
 
         return [.. sessions
             .Where(session => session is { DepartureIcao: { Length: > 0 }, ArrivalIcao: { Length: > 0 } }
                 && session.DepartureIcao != session.ArrivalIcao
                 && session.StartedAt >= fromUtc
                 && session.StartedAt <= toUtc
-                && (airports is null || airports.Contains(session.DepartureIcao!) || airports.Contains(session.ArrivalIcao!)))
+                && (airports.Contains(session.DepartureIcao!) || airports.Contains(session.ArrivalIcao!)))
             .OrderBy(session => session.StartedAt)
             .ThenBy(session => session.Id)
             .Take(ReportRules.MaxItems)
@@ -199,15 +211,15 @@ public static class AutoReportRules
                     session.Id,
                     (int)(session.EndedAt - session.StartedAt).TotalMinutes,
                     distance(session.DepartureIcao!, session.ArrivalIcao!),
-                    Verified: true)))];
+                    Verified: ReportRules.LongEnough(session, minimumFlightMinutes))))];
     }
 
     /// <summary>
     /// A controller's shifts (reading 8): their connections on the positions of <paramref name="positions"/>, cut to the event's window, one
     /// item per position from the first minute to the last — at most <see cref="ReportRules.LongestShift"/>, at most
-    /// <see cref="ReportRules.MaxItems"/> items, the earliest first —, with the minutes on it. Verified with at least
-    /// <paramref name="attendanceMinimumMinutes"/> on it, as a shift of the roster is: a connection of a few minutes is in the report, not
-    /// verified.
+    /// <see cref="ReportRules.MaxItems"/> items, the earliest first —, with the minutes on it. Verified with the threshold of a shift checked by
+    /// hand and of a shift of the roster (<see cref="AfterRules.Threshold"/>: <paramref name="attendanceMinimumMinutes"/>, at most the whole
+    /// item), one rule in one place (the review of #293, a nit).
     /// </summary>
     public static IReadOnlyList<(ReportItemDraft Draft, ItemFinding Finding)> Shifts(
         IEnumerable<NetworkSession> sessions,
@@ -231,7 +243,7 @@ public static class AutoReportRules
                 var to = last - from > ReportRules.LongestShift ? from + ReportRules.LongestShift : last;
                 var minutes = AfterRules.MinutesWithin(position.Select(AfterRules.Connection), from, to);
                 return (Draft: new ReportItemDraft(position.Key, null, null, null, from, to),
-                    Finding: new ItemFinding(null, minutes, null, minutes >= attendanceMinimumMinutes));
+                    Finding: new ItemFinding(null, minutes, null, minutes >= AfterRules.Threshold(attendanceMinimumMinutes, from, to)));
             })
             .Where(item => item.Draft.ToUtc > item.Draft.FromUtc)
             .OrderBy(item => item.Draft.FromUtc)

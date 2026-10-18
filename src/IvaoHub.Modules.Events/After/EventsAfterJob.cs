@@ -514,7 +514,7 @@ public sealed class EventsAfterJob(
     /// <summary>
     /// The <c>Auto</c> reports of an event (§5.1, E14b): for each member with the preference not looked at yet, in the order of their VIDs, as many
     /// as the run's budget holds (<see cref="AutoReports.Cost"/> each), their reports written and the member marked done on the event
-    /// (<see cref="Event.AutoReportsAfterVid"/>). True when every member is done; false when some are left for the next run, or the tracker did
+    /// (<see cref="Event.AutoReportsCursor"/>). True when every member is done; false when some are left for the next run, or the tracker did
     /// not answer. An event in person has no flights nor shifts to report.
     /// </summary>
     private async Task<bool> AutoReportsAsync(Event row, EventsSettings settings, Run run, DateTime now, CancellationToken cancellationToken)
@@ -524,7 +524,7 @@ public sealed class EventsAfterJob(
             return true;
         }
 
-        var holders = await autoReports.HoldersAsync(row.AutoReportsAfterVid, cancellationToken);
+        var holders = await autoReports.HoldersAsync(row.AutoReportsCursor, cancellationToken);
         if (holders.Count == 0)
         {
             return true;
@@ -538,7 +538,7 @@ public sealed class EventsAfterJob(
                 return false;
             }
 
-            if (!await autoReports.WriteAsync(row, vid, scope, settings.AttendanceMinimumMinutes, now, cancellationToken))
+            if (!await autoReports.WriteAsync(row, vid, scope, settings.AttendanceMinimumMinutes, settings.MinimumFlightMinutes, now, cancellationToken))
             {
                 run.TrackerDown = true;
                 return false;
@@ -546,7 +546,7 @@ public sealed class EventsAfterJob(
 
             // The job's bookkeeping, as after_done_at: the row version of the event does not move, and its audit has no row for it.
             await database.Database.ExecuteSqlAsync(
-                $"UPDATE evt_events SET auto_reports_after_vid = {vid}, row_version = row_version WHERE id = {row.Id}",
+                $"UPDATE evt_events SET auto_reports_cursor = {vid}, row_version = row_version WHERE id = {row.Id}",
                 cancellationToken);
             database.ChangeTracker.Clear();
         }

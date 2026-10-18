@@ -302,7 +302,7 @@ public sealed class EventsRetentionTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Equal(PublishStatus.Draft, row.Status);
         Assert.Equal(
             ((DateTime?)null, (DateTime?)null, (DateTime?)null, (int?)null),
-            (row.RosterProposedAt, row.RosterPublishedAt, row.AfterDoneAt, row.AutoReportsAfterVid));
+            (row.RosterProposedAt, row.RosterPublishedAt, row.AfterDoneAt, row.AutoReportsCursor));
 
         var positions = await database.AtcPositions.IgnoreQueryFilters().AsNoTracking()
             .Where(position => position.EventId == copy)
@@ -525,7 +525,7 @@ public sealed class EventsRetentionTests(MariaDbFixture mariaDb) : IAsyncLifetim
             RosterProposedAt = hasRoster ? starts.AddDays(-3) : null,
             RosterPublishedAt = hasRoster ? starts.AddDays(-2) : null,
             AfterDoneAt = checksDone ? ends.AddHours(7) : null,
-            AutoReportsAfterVid = checksDone ? MemberVid : null,
+            AutoReportsCursor = checksDone ? MemberVid : null,
             OwnerDepartment = Department.ED,
             OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
         };

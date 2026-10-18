@@ -1,11 +1,15 @@
 # Le regole di award, i PIREP automatici, il riepilogo dei validatori (E14b)
 
 **Data:** 17 ottobre 2026 — fase E14b di M4 (M4b), PR #293, in coda dopo la #289 di E14a e la #291 di E10v
-**Stato:** **Proposta** per le letture del §2, che Carmine decide dopo la revisione della PR. La domanda 1 è **decisa**: Carmine ha scelto la
+**Stato:** le letture del §2 **decise** da Carmine sulla #293 ([i tre punti][a293], [le altre letture][b293], 18 ottobre 2026, in chat al
+master e pubblicate su sua istruzione): la 2, 3, 4, 5, 6, 9 e 10 come sono scritte; la 3-bis con **un tempo minimo di volo dalle impostazioni**
+e la 8 con **nessuna voce di volo `Auto` per un evento senza scali suoi**, come scritto qui sotto; la 5-bis con **un metodo piccolo del nucleo**,
+in una fase del nucleo a sé prima che E14b lo usi. La domanda 1 è **decisa**: Carmine ha scelto la
 **(A)** sull'[issue #292][a292] (in chat al master, pubblicata su sua istruzione, 18 ottobre 2026), una riga del modulo per regola
 soddisfatta; il punto in più — leggere `cms_award_signals` dal contesto del modulo, o un metodo piccolo del nucleo (lettura 5-bis) — l'ha
 lasciato al revisore, quando legge la #293.
-La domanda 2 è **decisa**: dalberone ha scelto la (A), una fase del nucleo a sé, **E10v** (`m4/e10v-session-airports`, nota
+La domanda 2 resta **Proposta**, con la sua domanda per Carmine (il punto 3 della revisione della #293: una scelta è del maintainer): il
+codice segue la (A) raccomandata — la strada di dalberone, la fase del nucleo **E10v** (#291, `m4/e10v-session-airports`, nota
 `2026-10-17-gli-scali-di-una-sessione`), che E14b unisce prima della metà pilota dei PIREP `Auto`.
 **Regola applicata:** `CLAUDE.md` §5. Che un evento abbia regole di award da un **elenco chiuso** di criteri, che accettare un PIREP le
 valuti sulle voci **verificate** e proietti un segnale di award per regola soddisfatta **nella stessa transazione**, che chi ha
@@ -13,13 +17,15 @@ valuti sulle voci **verificate** e proietti un segnale di award per regola soddi
 faccia scrivere a `events-after` i PIREP `Auto`; che i validatori ricevano una volta al giorno `reportsToValidate`, sono **decisi** (design
 `09-design-m4.md` §1.9, §1.11, §5.1, §5.4, §8.3, §8.4; nota `2026-09-29-dopo-l-evento-e-gli-award`, punti 3 e 4; il limite di Carmine
 sull'[issue #287][l287]). Questa nota registra le **letture** che la fase ha dovuto fare dove il design non dice — casi **(a)** e **(b)**: due
-tabelle nuove (`evt_award_rules`, ed `evt_report_awards` con la (A) della domanda 1) e una colonna (`evt_events.auto_reports_after_vid`) nella
+tabelle nuove (`evt_award_rules`, ed `evt_report_awards` con la (A) della domanda 1) e una colonna (`evt_events.auto_reports_cursor`) nella
 migrazione `AddAwardRules` dopo `AddSupportReports` di E14a, un job (`events-digest`), una preferenza, un tipo di mail — e **due domande** dove
 quello che il design chiede non entra in quello che il nucleo offre oggi.
 
 [l287]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053
 [q292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292
 [a292]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698
+[a293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376
+[b293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104
 [r291]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281
 
 ## 1. Che cosa serviva decidere
@@ -61,15 +67,25 @@ riepilogo.
    - `AnyFlight`, `MinFlights`: le voci verificate, cioè le sessioni con l'ultima rotta dichiarata;
    - i PIREP `Auto`: una voce per sessione con la sua ultima rotta; le revisioni precedenti non fanno voci.
 
+   **E dura almeno il tempo minimo di un volo** ([la risposta 1 di Carmine][a293]): l'impostazione nuova **`minimumFlightMinutes`** (10 di
+   predefinito, da 1 a 120, nel form delle impostazioni): una voce di volo è verificata solo se la sua sessione è durata almeno tanto, per un
+   PIREP mandato a mano e per uno `Auto` (che sotto la soglia scrive la voce, non verificata); sotto, nessuna regola è soddisfatta — una
+   connessione di due minuti con un piano LIRF→KJFK non vale `MinLegDistance` (`ReportRules.LongEnough`, il confine provato da un test).
+
    ⚠️ **Il prezzo**: un pilota che in una connessione sola vola una tratta e poi deposita la successiva (la sessione `1000007` della sera di
    Fiumicino: LIPZ→LIRF, poi LIRF→LICR) ha verificata solo la seconda; la prima resta «non trovata», e chi valida la vede così. Scartato:
    contare ogni revisione di `Routes`, che darebbe un award per una rotta solo depositata.
 4. **I segnali si calcolano all'accettazione** e restano come sono: cambiare o eliminare una regola dopo non tocca i segnali dei PIREP già
    accettati (si rivaluta solo una nuova accettazione). Il motivo del segnale è nella lingua della divisione: l'evento e il criterio.
-5. **Una decisione che cambia** (la scelta 1 di E14a e il limite di Carmine sulla #287): da accettato a rifiutato i segnali ancora **in
-   attesa** se ne vanno (il nucleo toglie un segnale `Pending` che la riga non proietta più); uno **scartato** da chi assegna resta com'è nella
-   coda; se **un segnale è diventato un award** (`Handled`) il cambio è **rifiutato** con `reportAwardAssigned`, e la scheda non offre più
-   «Cambia la decisione» (`Decidable` falso). Da rifiutato ad accettato le regole si rivalutano.
+5. **Una decisione che cambia** (la scelta 1 di E14a e il limite di Carmine sulla #287): **una riga per PIREP e regola, mai cancellata**
+   (univoco `(report_id, rule_id)`; il punto 1 della revisione della #293): da accettato a rifiutato le righe restano e **smettono di
+   segnalare** (`points_out` falso, la proiezione vuota): i segnali ancora **in attesa** se ne vanno (il nucleo toglie un `Pending` che la riga
+   non proietta più), uno **scartato** da chi assegna resta com'è nella coda. Da rifiutato ad accettato le regole si rivalutano: una regola
+   soddisfatta di nuovo ritrova **la sua riga e il suo segnale** — uno scartato resta scartato, nessun segnale nuovo accanto al vecchio —, una
+   che non lo è più smette di segnalare. Il motivo e l'award di una riga sono quelli della prima volta. Se **un segnale è diventato un award**
+   (`Handled`) — anche uno scartato, poi riaperto e assegnato da chi assegna dopo un rifiuto, che il nucleo permette — il cambio è
+   **rifiutato** con `reportAwardAssigned`, e la scheda non offre più «Cambia la decisione» (`Decidable` falso): la domanda guarda **ogni
+   riga** del PIREP, quindi ogni segnale che ha mai dato.
 5-bis. ⚠️ **Per il revisore: il modulo legge una tabella del nucleo.** La domanda «è diventato un award?» il modulo la fa a
    **`cms_award_signals`** (lo stato `Handled`) **dal contesto degli eventi**, che mappa la tabella con la configurazione del nucleo
    (`ModuleDbContext.MapProjectionTables`, esclusa dalle sue migrazioni: c'è perché l'interceptor scriva i segnali nella transazione della
@@ -78,30 +94,38 @@ riepilogo.
    (`ReportAwards.AssignedAmongAsync`). **Il precedente** è `TourRetentionJob` dei tour, che legge la stessa tabella (dal contesto del nucleo,
    senza blocco) per sapere se un segnale aspetta ancora. Nessun servizio del nucleo risponde oggi a «una riga sorgente ha dato un award?»; se
    il revisore la vuole letta attraverso il nucleo, è una fase del nucleo a sé (un metodo che risponda per `source_module` + `source_id`,
-   sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query.
+   sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query. **Decisa** ([la risposta 3
+   di Carmine][a293]): **il metodo del nucleo**, in una PR del nucleo a sé con la sua nota, caso (b), prima che E14b lo usi; E14b ne unisce il
+   branch e lo chiama al posto delle sue due query su `cms_award_signals`. **Fatto**: la fase **E10x** (#299, nota
+   `2026-10-18-un-segnale-diventato-award`) dà `AwardSignalQueries.AssignedAsync(context, sourceModule, sourceIds)`; `ReportAwards` la chiama
+   sulle sorgenti di **ogni** riga del PIREP, nella transazione della decisione (il blocco `FOR UPDATE` lo prende il nucleo) e senza blocco
+   nella lista dello staff.
 6. **«Duplica» copia le regole** (design §2.3-bis: «ogni blocco copia le righe che esistono nella sua fase»), come E11a ha fatto per le
    postazioni ed E17 per domande e attività: l'award, il criterio e i parametri come sono, nella cura della copia, senza ricontrollarli (un
    award ritirato si rifiuta al prossimo salvataggio della regola). Le regole sono dell'area `Events`: chi duplica non ha bisogno di un
    permesso in più. ⚠️ La riga di E15b «Duplica copia anche postazioni e regole di award» è già fatta: le postazioni da E11a, le regole qui.
-7. **Le statistiche** (`award_signals` di `evt_event_stats`, a 0 da E13a): i segnali che i PIREP dell'evento hanno messo nella coda, quanti ce
-   ne sono quando le statistiche si scrivono (la forma dipende dalla domanda 1).
+7. **Le statistiche** (`award_signals` di `evt_event_stats`, a 0 da E13a): le righe dell'evento che segnalano quando le statistiche si
+   scrivono (`points_out`), cioè le regole soddisfatte dai PIREP accettati.
 8. **I PIREP `Auto`** (§5.1): un passo di `events-after` **dopo i turni e prima della chiusura**, con il suo peso nel lotto (**2 unità per
    membro**: i suoi voli, i suoi turni). I membri con la preferenza accesa, **nell'ordine dei VID**; quello fatto per ultimo si scrive
-   sull'evento (`auto_reports_after_vid`, il segno del job come `after_done_at`: non muove la versione della riga né il suo audit), così il giro
-   dopo riprende da lì; l'evento si chiude quando sono fatti tutti. Mai dopo i trenta giorni (le sorgenti abbandonate: chi vuole manda il suo a
-   mano), mai per un evento in presenza; **nessun limite di `reportDays`** (lo scrive il sistema). Un PIREP che c'è già — del membro, o
-   scritto prima — **non si tocca** (lo stesso indice univoco). Un `Auto` non manda mail al membro: aspetta chi valida, nel riepilogo.
+   sull'evento (`auto_reports_cursor`, il segno del job come `after_done_at`: non muove la versione della riga né il suo audit; un cursore, non
+   una colonna di persona, quindi non si chiama `…Vid` e la cancellazione dei dati di una persona non lo tocca), così il giro dopo riprende da
+   lì; l'evento si chiude quando sono fatti tutti. Mai dopo i trenta giorni (le sorgenti abbandonate: chi vuole manda il suo a mano), mai per
+   un evento in presenza; **nessun limite di `reportDays`** (lo scrive il sistema). Un PIREP che c'è già — del membro, o scritto prima — **non
+   si tocca** (lo stesso indice univoco); un `Auto` che il membro corregge diventa suo (`Manual`). Un `Auto` non manda mail al membro: aspetta
+   chi valida, nel riepilogo.
    - **ATC**: le sessioni del membro come controllore **dal tracker** (`INetworkSessionSource`, inizio fino a 12 ore prima della finestra degli
      slot, come un turno di E13a) sulle postazioni dell'evento **e** su quelle della divisione ai suoi scali, o su **tutte** quelle della
      divisione per un evento `whole_division`; **una voce per postazione**, dal primo minuto all'ultimo dentro la finestra, al più dodici ore,
-     al più venti voci; i minuti come li conta E13a; **verificata con almeno `attendanceMinimumMinutes`** (una connessione di pochi minuti c'è,
-     non verificata).
+     al più venti voci; i minuti come li conta E13a; **verificata con la soglia di un turno verificato a mano e di uno del roster**
+     (`AfterRules.Threshold`: `attendanceMinimumMinutes`, al più tutta la voce), una regola in un posto solo (un nit della revisione della #293).
    - **Pilota**: sulle sessioni di E10v (la domanda 2), una domanda per VID, tipo pilota, nella finestra degli slot. **Una voce per sessione,
      con l'ultima rotta del suo piano** (`DepartureIcao`/`ArrivalIcao` del nucleo, l'ultima revisione): la sessione è dell'evento quando
      quella rotta tocca uno dei suoi scali, un aeroporto della divisione per un evento `whole_division` (l'aria della divisione del nucleo,
-     `IFirDirectory`), o qualunque volo per un evento senza scali suoi; una sessione senza piano, o da un aeroporto a sé stesso, non è un
-     volo. La voce è verificata (la sessione è quella trovata), con i minuti della sessione e la distanza fra i due aeroporti quando l'hub li
-     conosce; al più venti voci. **Le regole leggono quella voce**: `Route` e `RouteTimes` l'ultima rotta, `RouteTimes` conta le sessioni.
+     `IFirDirectory`); **un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`** ([la risposta 2 di
+     Carmine][a293]: niente dice quali voli sono suoi; i suoi membri mandano il loro PIREP a mano, e chi valida decide); una sessione senza
+     piano, o da un aeroporto a sé stesso, non è un volo. La voce è verificata quando la sessione è durata almeno `minimumFlightMinutes`
+     (lettura 3-bis), con i minuti della sessione e la distanza fra i due aeroporti quando l'hub li conosce; al più venti voci. **Le regole leggono quella voce**: `Route` e `RouteTimes` l'ultima rotta, `RouteTimes` conta le sessioni.
      Scartato: una voce per ogni revisione di `Routes` (una revisione depositata non è una tratta volata: un pilota che corregge il piano
      avrebbe due voci per un volo solo).
 9. **`events-digest`** (§5.3, §8.4): ogni giorno alle **07:15 nel fuso della divisione** (il trigger lo dice), dopo il riepilogo dei tour delle
@@ -125,7 +149,7 @@ riepilogo.
 | Il «già mandato oggi» in una tabella | E10j: è la riga del giro |
 | Ripetere la verifica del membro (`ReportCheck`) per le voci `Auto` | le sessioni sono già quelle trovate: una seconda domanda per voce costerebbe il lotto |
 
-## 4. Le domande — decise
+## 4. Le domande — la 1 decisa da Carmine, la 2 Proposta
 
 1. **Un PIREP non può proiettare due segnali per il suo membro.** (Pubblicata sull'[issue #292][q292].) Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
    `(source_module, source_id, vid)` di `cms_award_signals`, e `ProjectionWriter` riconosce un segnale dal VID). Un PIREP è di un membro: con
@@ -156,8 +180,9 @@ riepilogo.
      `whole_division`, verificati come li ha trovati.
    - (B) **Niente nel nucleo**: E14b scrive solo i PIREP ATC `Auto`, e i voli aspettano una fase dopo.
 
-   **Raccomandata: (A)**: due campi facoltativi di un record del nucleo, letti da un DTO che già li ha. **Decisa: (A)**, scelta di dalberone:
-   la fase del nucleo **E10v** (`m4/e10v-session-airports`), per la regola 6.
+   **Raccomandata: (A)**: due campi facoltativi di un record del nucleo, letti da un DTO che già li ha. Il codice la segue: dalberone ha
+   scelto la strada, la fase del nucleo **E10v** (#291), per la regola 6; **la scelta resta di Carmine** (Proposta, il punto 3 della revisione
+   della #293).
 
 ## Da portare nel piano
 

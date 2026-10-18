@@ -57,6 +57,7 @@ const saved: EventsSettings = {
   experienceMonths: 12,
   attendanceMinimumMinutes: 30,
   reportDays: 14,
+  minimumFlightMinutes: 10,
   noShowWeight: 1.5,
   unflownThreshold: 3,
   restrictedWindowHours: 2,

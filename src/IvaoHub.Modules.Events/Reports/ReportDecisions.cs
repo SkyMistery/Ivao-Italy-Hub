@@ -114,7 +114,7 @@ public sealed class ReportDecisions(
 
         // Carmine's limit on #287: once an award was assigned from one of its signals, the decision no longer changes. Read under the lock of the
         // signals' rows, so that an assignment in the same instant passes before or after this decision, never in between.
-        if (problems.IsEmpty && report.State != ReportState.Submitted && await awards.AssignedAsync(report.Id, locking: true, cancellationToken))
+        if (problems.IsEmpty && report.State != ReportState.Submitted && await awards.AssignedAsync(report.Id, cancellationToken))
         {
             problems.Add("state", ReportAwards.AssignedKey);
         }

@@ -4588,6 +4588,50 @@ uno spec piccolo li usa tutti e due sul banco pubblicato; e la prova al contrari
 
 [a294w]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
 
+### E10x — Nucleo: «questa riga ha dato un award?»
+
+**Da dove viene**: non c'era in E0. La chiede la revisione della #293 (E14b, le regole di award): la decisione su un PIREP non cambia più
+dopo un award (il limite di Carmine sulla #287), ed E14b lo sapeva con due query sue su `cms_award_signals`. Carmine ha risposto (il punto 3
+della [risposta sulla #293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376)): un piccolo metodo del nucleo,
+per `source_module` e source id, con il lock delle righe dentro una transazione, in una PR del nucleo con una nota nuova, prima che E14b lo
+usi. Branch `m4/e10x-award-signal-assigned`, `--no-track` da `main` a `01fdbed5`. **PR del nucleo**, diretta su `main`, non in coda; E14b
+ne unisce il branch.
+
+1. Una sola domanda, sul contesto di chi chiama: il lock vive nella sua transazione.
+2. Nessun uso nel modulo (regola 6); FlightOps non si tocca.
+
+**Fatta quando**: i test d'integrazione provano `Handled` contro `Pending` e `Dismissed`, nessun id, un altro modulo, il lock nei due
+versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa cadere.
+
+**Com'è andata** (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299):
+
+- **Fatto** (nota nuova `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
+  - **`AwardSignalQueries.AssignedAsync(DbContext, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken = default)`
+    → `Task<IReadOnlySet<string>>`** in `src/IvaoHub.Core/Content/AwardSignalQueries.cs`: dentro una transazione una `SELECT source_id,
+    status … ORDER BY id FOR UPDATE` di tutte le righe del segnale di quelle sorgenti; fuori, una lettura LINQ senza tracking.
+  - **`AwardSignalQueriesTests`** (integrazione, 5 casi): `Handled` solo e solo del modulo, dal contesto del hub e da quello del modulo
+    di test, con e senza transazione; nessun id; la chiamata aspetta una transazione che tiene la riga e ne legge il `Handled`; al
+    contrario, un'assegnazione vera (`POST /api/award-assignments`) aspetta chi chiama e, ritirato il segnale, risponde 409 senza award;
+    fuori transazione nessuna attesa, con la riga tenuta.
+- **Scostamenti dalla forma di E14b**: nessuno nella firma. Il file è nuovo, `AwardSignalQueries.cs`, perché quello della classe si chiama
+  `AwardSignal.cs` (il prompt diceva `AwardSignals.cs`).
+- **Che cosa ha detto il codice** (nota §2.4): «diventato award» è **esattamente** `Status == Handled`, senza il registro: solo
+  un'assegnazione lo scrive, i moduli non mappano `hub_award_assignments`, e un'assegnazione cancellata lascia il segnale `Handled`.
+- **Una trappola trovata**: le colonne del tipo non mappato di `SqlQuery` seguono la convenzione dei nomi del hub — con l'alias
+  `AS SourceId` EF cercava `source_id` e non lo trovava. Scritte senza alias.
+- **Verificato, in locale** (18 ottobre 2026, `main` a `01fdbed5`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache`: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1360/1360**; integrazione intera, senza filtro (Release), da sola: **670/670** al primo giro (16 minuti), fra cui `AwardSignalQueriesTests` 5/5;
+  - **la prova al contrario**, in tre giri (modifica locale, poi rimesso, toccato e ricompilato: 5 su 5): senza `FOR UPDATE` cadono i due
+    casi del lock («Nothing ever waited»); con il lock anche fuori transazione cade la lettura senza attesa (annullata dopo 10 secondi);
+    con `Dismissed` contato come award cade il primo caso;
+  - `pnpm -C web gen:api` senza differenze;
+  - le regole di `core-guard` dalla base `01fdbed5`, con Git Bash: nessun file del maintainer; uno del nucleo (`AwardSignalQueries.cs`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: una query del nucleo, nessuna schermata e nessun chiamante nel modulo;
+  - l'uso vero, nella decisione e nella lista dei PIREP: è di E14b.
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
@@ -5437,6 +5481,13 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` sul banco 5151,
   `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **65/70** al primo giro (le pulizie sopra), corrette e rifatto da capo
   **70/70** (13,6 min); `core-guard.sh` dal merge-base `e7b1331`: passa, del nucleo solo `ErasureTests.cs` con la nota.
+- **Dopo il merge di `main` a `01fdbed`** (approvabile alla [seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6248390775);
+  `main` con la #290, il piè di pagina, e la #291, E10v — `NetworkSession` con gli scali, che E14a non legge; conflitto solo in `HANDOFF-M4.md`,
+  i due blocchi tenuti; delle pagine degli eventi niente, di loro solo `titlesAndEmptyLists.test.tsx`): il diff contro `main` è solo di E14a;
+  `dotnet restore --force --no-http-cache` senza avvisi; build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api`
+  senza diff; unità **1370/1370**; **integrazione intera senza filtro, da sola, 676/676** (16,2 min); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **810 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il
+  merge non tocca le pagine degli eventi: il 70/70 di prima vale); `core-guard.sh` dal merge-base `01fdbed`: passa.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
@@ -5459,11 +5510,11 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
 `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
-#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 decisa da dalberone, (A), la fase del
-nucleo E10v):
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **Proposta** (la strada di dalberone, la fase
+del nucleo E10v, che il codice segue; la scelta è di Carmine, il punto 3 della revisione della #293)):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
-  `evt_events.auto_reports_after_vid`.
+  `evt_events.auto_reports_cursor`.
 - **Le regole** (`EventAwardRule.cs`, `Reports/AwardRules.cs`, `Staff/EventAwardRuleEndpoints.cs`): righe dell'evento nell'area `Events`, il
   criterio dall'elenco chiuso e **i parametri come colonne** (lettura 2), la risorsa del motore `/api/events/award-rules` (`Events.View`,
   `Events.Edit`) con le scelte del form in `/api/events/award-rules/choices` (gli award attivi del catalogo, i tipi delle postazioni della
@@ -5472,13 +5523,13 @@ nucleo E10v):
 - **I segnali** (`EventReportAward.cs`, `Reports/ReportAwards.cs`, la domanda 1 della nota con la (A) raccomandata): il nucleo tiene **un
   segnale per membro per riga sorgente**, quindi un PIREP che soddisfa due regole ha bisogno di due righe: `evt_report_awards`, una per regola
   soddisfatta, ognuna l'`IProjectable` con il suo segnale (`report-award:{id}`), scritte da `ReportDecisions` nello stesso salvataggio
-  dell'accettazione e cancellate da un rifiuto (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
+  dell'accettazione; un rifiuto le spegne (`points_out`), mai le cancella (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
   con un segnale `Handled` il cambio della decisione è rifiutato (`events:errors.reportAwardAssigned`), letto **sotto il blocco delle righe dei
   segnali** in `cms_award_signals`, che il contesto del modulo mappa; la lista dello staff dà `Decidable` falso. Le statistiche contano le righe
   (`award_signals`).
 - **I PIREP `Auto`** (`Reports/AutoReports.cs`; la preferenza `events.autoReport` in `EventsModule.Preferences`): un passo di `events-after`
   dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
-  sull'evento (`auto_reports_after_vid`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
+  sull'evento (`auto_reports_cursor`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
   dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
   `attendanceMinimumMinutes` (lettura 8). **La metà pilota** sulle sessioni con i loro scali di **E10v** (#291): una voce per sessione con
   l'**ultima rotta** del piano, quando tocca gli scali dell'evento — gli aeroporti della divisione (`IFirDirectory`) per un evento
@@ -5537,6 +5588,36 @@ nucleo E10v):
   verdi; `pnpm test --maxWorkers=2` **810 in 117 file**; lo smoke **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima,
   dietro il lock di Mailpit, **71/71 al primo giro** (14,2 min); `core-guard.sh` dal merge-base `e7b1331`: passa (di E14b nel nucleo solo
   `ErasureTests.cs`).
+
+**Dopo la revisione della #293** ([i rilievi](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248457744), [le risposte di
+Carmine ai tre punti](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) e [alle altre
+letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104), 18 ottobre 2026; unita la testa approvabile di E14a
+`77bf5068`, con `main` a `01fdbed` — E10v #291 unita —):
+
+- **Il punto 1**: le righe di `evt_report_awards` **non si cancellano mai**, una per PIREP e regola (univoco `(report_id, rule_id)`); un rifiuto le
+  spegne (`points_out`, la proiezione vuota): il nucleo toglie un segnale in attesa e tiene uno guardato, una nuova accettazione ritrova la riga e
+  il suo segnale (uno scartato resta scartato), e «è diventato un award?» vede ogni segnale che il PIREP ha mai dato — anche uno scartato,
+  riaperto e assegnato dopo un rifiuto. Il test `ADismissedSignalAssignedAfterARejectionStillFreezesTheDecision` (**cade contando solo le righe
+  che segnalano**: provato).
+- **Il punto 2**: `ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused`, una transazione del test tiene la riga del segnale e la marca
+  assegnata, la decisione aspetta al `FOR UPDATE` ed è rifiutata (**cade senza il `FOR UPDATE`**: provato).
+- **Il punto 3**: la domanda 2 resta **Proposta** nella nota. **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
+  `evt_events.auto_reports_cursor`, non una colonna di persona (la sua riga in `ErasureTests` tolta); un `Auto` corretto dal membro diventa
+  `Manual`; un turno `Auto` si verifica con `AfterRules.Threshold`, come uno a mano. `AddAwardRules` rifatta (mai su `main`).
+- **La risposta 1 di Carmine**: l'impostazione **`minimumFlightMinutes`** (10, da 1 a 120, nel form generato delle impostazioni): un volo è
+  verificato solo se la sua sessione è durata almeno tanto, a mano e `Auto` (`ReportRules.LongEnough`), il confine provato dalle unità. **La
+  risposta 2**: un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`. **La risposta 3**: «una riga sorgente ha
+  dato un award?» diventa un metodo del nucleo, nella fase del nucleo **E10x** (`m4/e10x-award-signal-assigned`); E14b ne unisce il branch e lo
+  chiama al posto delle sue due query: **fatto**, unita la #299 (testa `34f9a0fa`) e `main` a `3cdacd9`; `ReportAwards` chiede al nucleo
+  (`AwardSignalQueries.AssignedAsync`) sulle sorgenti di ogni riga del PIREP, e il test della corsa passa dal blocco del nucleo.
+- **Verificato, in locale** (18 ottobre 2026, con E14a `77bf5068`, E10x `34f9a0fa` e `main` a `3cdacd9` uniti): build Release senza avvisi;
+  `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza diff; unità **1385/1385**; **integrazione intera da sola
+  689/689** (12,4 min); i due test nuovi del punto 1 e 2 **cadono senza la loro correzione** (provato, prima del passaggio al metodo del
+  nucleo); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test --maxWorkers=2` **812 in 117 file**; lo smoke **184/184**;
+  `core-guard.sh` dal merge-base `3cdacd9`: passa (di E14b nel nucleo solo `ErasureTests.cs`; `AwardSignalQueries.cs` è di E10x, con la sua
+  nota). `e2e:full` non rifatto dopo la revisione: nessuna pagina cambiata oltre al campo nuovo del form delle impostazioni, generato.
+- ⚠️ **Una trappola di questa macchina**: fermare per nome i processi dei test (`testhost`, `IvaoHub.IntegrationTests`) ha fermato due volte la
+  suite intera di un'altra fase che girava insieme (E10w); si ferma solo il proprio giro.
 
 ### E15a — Nucleo: le prenotazioni ATC della rete
 
@@ -5659,8 +5740,8 @@ di un controllore di prova (il registro contato uguale); «Duplica» per l'ATC. 
 `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande a Carmine sull'[issue
 #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro sul banco, **decisa (B)** il 18 ottobre ([la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1 aperta.
-Poi ha unito la testa di E14b `1cba4907` (con E14a, E10v e `main` a `e7b1331`, E10u ed E13b unite) e la testa di E10w `986c6116` (con `main`
-a `3cdacd97`); il rapporto di chiusura `2026-10-17-m4-review`):
+Poi ha unito la testa di E14b `1cba4907` (con E14a, E10v e `main` a `e7b1331`, E10u ed E13b unite) la testa di E10w `986c6116` (con `main`
+a `3cdacd97`) e la testa di E14b `e5eb1d17` (con E14a `77bf5068` ed E10x, #299); il rapporto di chiusura `2026-10-17-m4-review`):
 
 - **Ogni voce controllata sul codice prima di scrivere** (come chiedeva il coordinatore): tre delle sei erano già fatte da fasi prima, e
   questa fase ne ha aggiunto solo i test.

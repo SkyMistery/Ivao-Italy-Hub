@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Quartz;
 using Xunit;
 
@@ -286,9 +287,13 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var left = (await SignalsOfAsync(eventId, token)).Where(signal => signal.Vid == PilotVid).ToList();
         Assert.Equal([(route, AwardSignalStatus.Dismissed)], left.Select(signal => (signal.AwardId!.Value, signal.Status)));
 
-        // Accepted again: evaluated again, a new signal for each rule met.
+        // Accepted again: evaluated again, each rule on its own row (the review of #293, point 1) — the one withdrawn waits again, and the one
+        // dismissed stays dismissed: no new signal of it next to the old one.
         await NoContentAsync(await DecideAsync(md, withdrawn, "Accepted", note: null, token), token);
-        Assert.Equal(2, (await SignalsOfAsync(eventId, token)).Count(signal => signal.Vid == PilotVid && signal.Status == AwardSignalStatus.Pending));
+        Assert.Equal(
+            [(anyFlight, AwardSignalStatus.Pending), (route, AwardSignalStatus.Dismissed)],
+            (await SignalsOfAsync(eventId, token)).Where(signal => signal.Vid == PilotVid).Select(signal => (signal.AwardId!.Value, signal.Status)).Order());
+        Assert.Equal(2, await RowsOfAsync(withdrawn, token));
 
         // An award assigned from a signal of the other report, by whoever assigns, through the core's register.
         await NoContentAsync(await DecideAsync(md, frozen, "Accepted", note: null, token), token);
@@ -309,6 +314,87 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var rows = await PageAsync(md, $"{ReportEndpoints.Pattern}?filter[eventId]={eventId}", token);
         Assert.False(rows.Single(row => row.GetProperty("id").GetInt64() == frozen).GetProperty("decidable").GetBoolean());
         Assert.True(rows.Single(row => row.GetProperty("id").GetInt64() == withdrawn).GetProperty("decidable").GetBoolean());
+    }
+
+    /// <summary>
+    /// The path of the review of #293, point 1: accepted, its signal dismissed, the report rejected — and whoever assigns opens the dismissed
+    /// signal again and assigns the award from it, which the core allows. The row of the rule is still there, so the award is seen: the report's
+    /// decision no longer changes, whichever it is (Carmine's limit on #287).
+    /// </summary>
+    [Fact]
+    public async Task ADismissedSignalAssignedAfterARejectionStillFreezesTheDecision()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var eventId = await EventRowAsync("reopened", inPerson: false, token);
+        var anyFlight = await AwardAsync($"{SlugStem} any flight", active: true, token);
+        await RuleRowAsync(eventId, anyFlight, AwardCriterion.AnyFlight, token);
+        var reportId = await PilotReportAsync(eventId, PilotVid, token);
+        var md = await SignedInAsync(MdVid, token);
+
+        await NoContentAsync(await DecideAsync(md, reportId, "Accepted", note: null, token), token);
+        var signal = Assert.Single(await SignalsOfAsync(eventId, token));
+        await SetStatusAsync(signal.Id, AwardSignalStatus.Dismissed, token);
+        await NoContentAsync(await DecideAsync(md, reportId, "Rejected", note: $"{SlugStem} not this time", token), token);
+
+        // Whoever assigns opens it again and assigns the award, through the core's queue and register.
+        using (var reopened = await md.PutAsJsonAsync($"/api/award-signals/{signal.Id}", new { status = "Pending" }, token))
+        {
+            Assert.True(reopened.IsSuccessStatusCode, await reopened.Content.ReadAsStringAsync(token));
+        }
+
+        using (var assigned = await md.PostAsJsonAsync(
+                   "/api/award-assignments",
+                   new { awardId = anyFlight, vid = PilotVid, reason = $"{SlugStem} assigned", signalId = signal.Id, rowVersion = DateTime.MinValue },
+                   token))
+        {
+            Assert.True(assigned.StatusCode == HttpStatusCode.Created, await assigned.Content.ReadAsStringAsync(token));
+        }
+
+        Assert.Equal(
+            [ReportAwards.AssignedKey],
+            (await RefusedAsync(await DecideAsync(md, reportId, "Accepted", note: null, token), token))["state"]);
+        Assert.Equal(ReportState.Rejected, (await ReportsOfAsync(eventId, token)).Single().State);
+        Assert.False(Assert.Single(await PageAsync(md, $"{ReportEndpoints.Pattern}?filter[eventId]={eventId}", token)).GetProperty("decidable").GetBoolean());
+    }
+
+    /// <summary>
+    /// A decision and an assignment in the same instant (the review of #293, point 2): a transaction of the test holds the report's signal as an
+    /// assignment does while it marks it assigned; the change of the decision waits for it at the lock of the signals' rows (<c>FOR UPDATE</c>),
+    /// then reads the signal assigned and is refused — never a rejection next to an award.
+    /// </summary>
+    [Fact]
+    public async Task ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var eventId = await EventRowAsync("race", inPerson: false, token);
+        var anyFlight = await AwardAsync($"{SlugStem} any flight", active: true, token);
+        await RuleRowAsync(eventId, anyFlight, AwardCriterion.AnyFlight, token);
+        var reportId = await PilotReportAsync(eventId, PilotVid, token);
+        var md = await SignedInAsync(MdVid, token);
+        await NoContentAsync(await DecideAsync(md, reportId, "Accepted", note: null, token), token);
+        var signal = Assert.Single(await SignalsOfAsync(eventId, token));
+
+        await using var connection = new MySqlConnection(mariaDb.ConnectionString);
+        await connection.OpenAsync(token);
+        await using var transaction = await connection.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted, token);
+        await using (var hold = new MySqlCommand($"SELECT id FROM cms_award_signals WHERE id = {signal.Id} FOR UPDATE", connection, transaction))
+        {
+            await hold.ExecuteScalarAsync(token);
+        }
+
+        // The rejection starts, and waits in the database for the assignment the test is making.
+        var decision = DecideAsync(md, reportId, "Rejected", note: $"{SlugStem} too late", token);
+        await WaitForALockWaitAsync(token);
+
+        await using (var assign = new MySqlCommand($"UPDATE cms_award_signals SET status = 'Handled' WHERE id = {signal.Id}", connection, transaction))
+        {
+            await assign.ExecuteNonQueryAsync(token);
+        }
+
+        await transaction.CommitAsync(token);
+
+        Assert.Equal([ReportAwards.AssignedKey], (await RefusedAsync(await decision, token))["state"]);
+        Assert.Equal(ReportState.Accepted, (await ReportsOfAsync(eventId, token)).Single().State);
     }
 
     /// <summary>
@@ -363,7 +449,7 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
         var row = await EventAsync(eventId, token);
         Assert.Equal(Due, row.AfterDoneAt);
-        Assert.NotNull(row.AutoReportsAfterVid);
+        Assert.NotNull(row.AutoReportsCursor);
 
         // Run again: the event is closed, nothing more.
         await RunAfterAsync(Due.AddHours(1), token);
@@ -720,6 +806,32 @@ public sealed class EventsAwardRulesTests(MariaDbFixture mariaDb) : IAsyncLifeti
             .Where(signal => signal.SourceModule == EventsModule.ModuleKey && sources.Contains(signal.SourceId))
             .OrderBy(signal => signal.Id)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>How many rows of the rules met a report has, pointing out or not: never deleted.</summary>
+    private async Task<int> RowsOfAsync(long reportId, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<EventsDbContext>().ReportAwards.CountAsync(award => award.ReportId == reportId, cancellationToken);
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms (CONTRIBUTING.md): read every 250 ms.</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("No request waited for the lock of the signal's row.");
     }
 
     private async Task SetStatusAsync(long signalId, AwardSignalStatus status, CancellationToken cancellationToken)

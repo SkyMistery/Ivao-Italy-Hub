@@ -172,9 +172,9 @@ public sealed class EventsAwardRulesTests
         Assert.Equal(("XEA1_TWR", Start, Start.AddMinutes(80)), (shifts[0].Draft.Callsign, shifts[0].Draft.FromUtc, shifts[0].Draft.ToUtc));
         Assert.Equal((70, true), (shifts[0].Finding.Minutes, shifts[0].Finding.Verified));
 
-        // Ten minutes on the approach: in the report, not verified.
+        // Ten minutes on the approach, an item of ten minutes: verified with the threshold of a shift checked by hand, at most the whole item.
         Assert.Equal("XEA1_APP", shifts[1].Draft.Callsign);
-        Assert.Equal((10, false), (shifts[1].Finding.Minutes, shifts[1].Finding.Verified));
+        Assert.Equal((10, true), (shifts[1].Finding.Minutes, shifts[1].Finding.Verified));
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class EventsAwardRulesTests
             new(6, 761262, "TST1", from.AddMinutes(-1), Start, "XEA1", "XEA2"),
         ];
 
-        var flights = AutoReportRules.Flights(sessions, airports, from, to, (departure, arrival) => departure == "XEA1" ? 300m : null);
+        var flights = AutoReportRules.Flights(sessions, airports, from, to, 10, (departure, arrival) => departure == "XEA1" ? 300m : null);
 
         Assert.Equal(
             [(2L, "TST1", "XEA3", "XEA1"), (1L, "TST1", "XEA1", "XEA2")],
@@ -231,8 +231,11 @@ public sealed class EventsAwardRulesTests
             flights[1].Finding.Verified!.Value));
         Assert.Null(flights[0].Finding.DistanceNm);
 
-        // An event without airports of its own takes any flight with a plan.
-        Assert.Equal(3, AutoReportRules.Flights(sessions, null, from, to, (_, _) => null).Count);
+        // An event without airports of its own reports no flight (Carmine's answer 2 on #293).
+        Assert.Empty(AutoReportRules.Flights(sessions, null, from, to, 10, (_, _) => null));
+
+        // Under the minimum flight time the flight is in the report, not verified (Carmine's answer 1 on #293): the 25 minutes of session 2.
+        Assert.Equal([false, true], AutoReportRules.Flights(sessions, airports, from, to, 26, (_, _) => null).Select(flight => flight.Finding.Verified!.Value));
     }
 
     [Fact]
@@ -253,6 +256,16 @@ public sealed class EventsAwardRulesTests
         Assert.Null(flown[0]);
     }
 
+    [Fact]
+    public void AFlightLastsAtLeastTheMinimumFlightTime()
+    {
+        var session = new NetworkSession(1, 761262, "TST1", Start, Start.AddMinutes(10), "XEA1", "XEA2");
+
+        // The boundary: exactly the minimum is a flight, a minute more asked is not.
+        Assert.True(ReportRules.LongEnough(session, 10));
+        Assert.False(ReportRules.LongEnough(session, 11));
+        Assert.False(ReportRules.LongEnough(session with { EndedAt = Start.AddMinutes(9).AddSeconds(59) }, 10));
+    }
     private static Refusals Check(
         AwardCriterion criterion,
         string? departure = null,

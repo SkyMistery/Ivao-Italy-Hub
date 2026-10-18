@@ -31,7 +31,8 @@ export interface KindPreset {
  * The settings as the server keeps them (`EventsSettings`, design M4 §1.12): the ones of M4a, how long an event in person keeps its
  * registrations (E16), the numbers of the ATC roster (E11a) — the least rating as the network's number of a rating of the core's
  * vocabulary, chosen from it, none for any member —, the minutes that make a shift attended (E13a), the weight of the penalty with
- * the limits of whoever books and does not fly (E13b), and the days a report of support may be sent in (E14a).
+ * the limits of whoever books and does not fly (E13b), the days a report of support may be sent in (E14a), and the minutes a flight of one lasts
+ * at least to be verified (E14b).
  */
 export interface EventsSettings {
   readonly kindPresets: readonly KindPreset[];
@@ -48,6 +49,7 @@ export interface EventsSettings {
   readonly experienceMonths: number;
   readonly attendanceMinimumMinutes: number;
   readonly reportDays: number;
+  readonly minimumFlightMinutes: number;
   readonly noShowWeight: number;
   readonly unflownThreshold: number;
   readonly restrictedWindowHours: number;
@@ -90,6 +92,8 @@ export function settingsSchema(choices: SettingsChoices) {
     attendanceMinimumMinutes: z.number().int(),
     // The reports of support (E14a): the days after an event they may be sent in.
     reportDays: z.number().int(),
+    // The rules of award (E14b): the minutes a session lasts for a flight of a report to be verified.
+    minimumFlightMinutes: z.number().int(),
     // The registers (E13b): the weight of a no-show, and the limits of whoever booked this many slots and did not fly them.
     noShowWeight: z.number(),
     unflownThreshold: z.number().int(),

@@ -29,17 +29,23 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
         ReportKind kind,
         IReadOnlyList<ReportItemDraft> items,
         int attendanceMinimumMinutes,
+        int minimumFlightMinutes,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(items);
 
         return kind == ReportKind.Pilot
-            ? await FlightsAsync(row, vid, items, cancellationToken)
+            ? await FlightsAsync(row, vid, items, minimumFlightMinutes, cancellationToken)
             : await ShiftsAsync(vid, items, attendanceMinimumMinutes, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<ItemFinding>> FlightsAsync(Event row, int vid, IReadOnlyList<ReportItemDraft> items, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ItemFinding>> FlightsAsync(
+        Event row,
+        int vid,
+        IReadOnlyList<ReportItemDraft> items,
+        int minimumFlightMinutes,
+        CancellationToken cancellationToken)
     {
         var codes = items.SelectMany(item => new[] { item.DepartureIcao, item.ArrivalIcao }).OfType<string>().Distinct(StringComparer.Ordinal).ToList();
         var known = await airports.FindAsync(codes, cancellationToken);
@@ -64,9 +70,10 @@ public sealed class ReportCheck(INetworkSessionSource network, IAtcActivitySourc
                 asked[(departure, arrival, day)] = found;
             }
 
-            // Only a session whose plan ended on this route flew it: one found for a revision the pilot filed and then changed did not (E14b,
-            // reading 3-bis of note 2026-10-17-le-regole-di-award).
-            flights.Add((item.Callsign, found?.Where(session => ReportRules.FlewRoute(session, departure, arrival)).ToList()));
+            // Only a session whose plan ended on this route flew it: one found for a revision the pilot filed and then changed did not; and one
+            // shorter than minimumFlightMinutes flew nothing (E14b, reading 3-bis of note 2026-10-17-le-regole-di-award; Carmine's answer 1 on #293).
+            flights.Add((item.Callsign, found?.Where(session => ReportRules.FlewRoute(session, departure, arrival)
+                && ReportRules.LongEnough(session, minimumFlightMinutes)).ToList()));
         }
 
         var flown = ReportRules.Flown(flights);

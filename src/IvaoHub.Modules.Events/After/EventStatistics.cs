@@ -126,7 +126,8 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
                 .ToListAsync(cancellationToken);
             stats.ReportsSubmitted = reports.Sum(group => group.Count);
             stats.ReportsAccepted = reports.Where(group => group.Key == ReportState.Accepted).Sum(group => group.Count);
-            stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id, cancellationToken);
+            // A row a rejection turned off does not count (E14b).
+            stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id && award.PointsOut, cancellationToken);
         }
 
         await InPersonAsync(row, stats, settings, now, cancellationToken);

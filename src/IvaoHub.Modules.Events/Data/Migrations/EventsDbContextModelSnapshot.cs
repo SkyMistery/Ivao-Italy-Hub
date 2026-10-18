@@ -565,9 +565,9 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("after_done_at");
 
-                    b.Property<int?>("AutoReportsAfterVid")
+                    b.Property<int?>("AutoReportsCursor")
                         .HasColumnType("int")
-                        .HasColumnName("auto_reports_after_vid");
+                        .HasColumnName("auto_reports_cursor");
 
                     b.Property<long?>("BannerMediaId")
                         .HasColumnType("bigint")
@@ -1857,6 +1857,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("owner_department_mask");
 
+                    b.Property<bool>("PointsOut")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("points_out");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -1881,11 +1885,12 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     b.HasIndex("EventId")
                         .HasDatabaseName("ix_evt_report_awards_event_id");
 
-                    b.HasIndex("ReportId")
-                        .HasDatabaseName("ix_evt_report_awards_report_id");
-
                     b.HasIndex("Vid")
                         .HasDatabaseName("ix_evt_report_awards_vid");
+
+                    b.HasIndex("ReportId", "RuleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_evt_report_awards_report_id_rule_id");
 
                     b.ToTable("evt_report_awards", (string)null);
                 });
