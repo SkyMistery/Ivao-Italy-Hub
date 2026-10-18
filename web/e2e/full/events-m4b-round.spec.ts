@@ -76,8 +76,9 @@ async function removeOurEvents(coordinator: APIRequestContext): Promise<void> {
   for (const row of ((await page.json()) as { items: readonly { id: number }[] }).items) {
     const deleted = await coordinator.delete(`/api/events/events/${row.id}`, { headers: asTheClientDoes });
     // An event that started more than half an hour ago, or has a report of support, is kept (E14a; Carmine's answer on reading 13 on
-    // #289): it stays on the bench, which e2e:full starts empty.
-    if (deleted.status() === 400 && /eventStarted|eventHasReports/.test(await deleted.text())) {
+    // #289): it stays on the bench, which e2e:full starts empty. The server says first the other rows that keep it — this round's has an
+    // availability too.
+    if (deleted.status() === 400 && /eventStarted|eventHas[A-Za-z]+/.test(await deleted.text())) {
       continue;
     }
     expect(deleted.status(), await deleted.text()).toBe(204);
