@@ -5311,8 +5311,17 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   - **13**: **un evento non si elimina più dopo mezz'ora dal suo inizio, o quando ha un PIREP**, quale venga prima (`eventStarted`,
     `EventSaving.StartedTooLongAgo`); si annulla sempre. Test: il confine dei trenta minuti (unità, al tick), un evento iniziato da 29 minuti
     eliminato, uno da 31 rifiutato, uno di venti minuti finito con un PIREP rifiutato (`AnEventIsKeptOnceItStartedHalfAnHourAgoOrOnceItHasAReport`).
-    ⚠️ **Cresciuto con la forma**: il giro e2e di E13a (`full/events-after.spec.ts`), il cui evento di dieci giorni fa ora resta, lascia il prefisso
-    `evt-test-e2e` (che `events-staff.spec.ts` elimina tutto) per `evt-e2e-e13a`, come il giro di E14a, e accetta il 400 alla pulizia.
+    ⚠️ **Cresciuti con la forma**: le pulizie dei giri e2e che eliminano eventi — E3a (`events-staff`, che elimina tutto `evt-test-e2e`), E4
+    (`events-public`), E8b (`events-round`), E13a (`events-after`) e E14a — saltano un evento rifiutato con `eventStarted` o `eventHasReports`, e
+    nessun altro 400: il primo `e2e:full` dopo la regola è caduto 65/70 su quelle pulizie. Il giro di E13a ha anche il prefisso suo,
+    `evt-e2e-e13a`, come quello di E14a.
+- **Verificato dopo la revisione** (18 ottobre 2026, con `main` a `e7b1331` unito — la #288 e la #283 unite, nessun file portato: l'albero era
+  già nel branch; il diff contro `main` è solo di E14a): build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api` senza
+  diff; unità **1358/1358**; **integrazione intera senza filtro, da sola, 675/675** (20,5 min; due giri prima si erano fermati a metà senza
+  un rosso né un riepilogo — Docker Desktop riavviato —, il terzo è arrivato in fondo); `pnpm lint`, `typecheck`, `format:check`,
+  `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` sul banco 5151,
+  `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **65/70** al primo giro (le pulizie sopra), corrette e rifatto da capo
+  **70/70** (13,6 min); `core-guard.sh` dal merge-base `e7b1331`: passa, del nucleo solo `ErasureTests.cs` con la nota.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
