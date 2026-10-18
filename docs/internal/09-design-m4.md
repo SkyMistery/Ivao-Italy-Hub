@@ -803,6 +803,27 @@ Con le prenotazioni illimitate, all'apertura qualcuno può prendere molti slot e
 
 Serve la verifica dopo l'evento, quindi la regola vale da M4b (fase E13); prima, nessun pilota ha un registro.
 
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 5–9, piano 1.37; le risposte di Carmine
+sull'issue #280 e sulla #283):
+
+- **il registro** conta le prenotazioni verificate (`flown_checked_at`), senza volo e non tolte (`unflown_excused_by` vuoto) di eventi
+  finiti negli ultimi `pilotRetentionMonths`, dalla fine dell'evento; lo staff lo legge in **`/staff/events/pilots`** (§7.2), una lettura
+  scritta a mano (`GET /api/events/bookings/register`), solo con `EventBookings.View` **senza uno scope di risorsa** (la (b) di Carmine,
+  `HasUnscoped` di E10u, §6.2); il dettaglio è la lista del motore delle prenotazioni con `filter[bookerVid]`;
+- **«togli»** di una prenotazione non volata (`POST /api/events/bookings/{id}/excuse`, nota obbligatoria fino a 1000 caratteri):
+  `EventBookings.Edit` sulla prenotazione, una volta, sotto un `FOR UPDATE` sulla riga; la prenotazione tiene `[WithdrawnByStakeholder]`
+  (la decisione cade dopo il volo). Le statistiche non cambiano;
+- **le fasce** sono fisse, dall'inizio dell'evento, ogni `restrictedWindowHours` ore, e una prenotazione cade in quella del suo orario
+  allo scalo dell'evento (l'off block di una partenza, l'on block di un arrivo); il pilota con i limiti tiene al più K per fascia e M
+  nell'evento, contate con quelle già salvate e con quelle della stessa richiesta (la rotazione, la partenza collegata), sotto il blocco
+  del pilota, dopo la compatibilità. I tre limiti dell'evento sostituiscono uno a uno quelli delle impostazioni; la soglia è solo delle
+  impostazioni;
+- **il rifiuto** porta due chiavi sul campo `slotId` (`bookingRestrictedWindow`, `bookingRestrictedEvent`), e numeri e data la pagina li
+  legge da **`GET /api/events/mine/record?eventId=`**, il registro del membro, che `/events/mine` mostra; **fino a quando** è la fine
+  dell'evento della `(n − s + 1)`-esima prenotazione contata più vecchia più `pilotRetentionMonths`;
+- **le impostazioni**: `noShowWeight` 1 (0–10), `unflownThreshold` 3 (1–100), `restrictedWindowHours` 2 (1–48),
+  `restrictedMaxPerWindow` 1 (1–50), `restrictedMaxPerEvent` 2 (1–200), gli stessi limiti per i tre dell'evento.
+
 ### 3.8 Il promemoria del giorno prima
 
 `reminderLeadHours` (24) prima dell'EOBT di ogni sua prenotazione, il pilota riceve **`bookingReminder`** (§17.3 n.2):
@@ -1055,6 +1076,25 @@ perché cambiare il titolare di un turno non è una modifica della propria riga.
   pesa 0,08; su due, 0,25. Il «+ 2» evita che il primo no-show di un nuovo controllore pesi il massimo. **Conta per sempre**
   (c3): nessuna scadenza.
 
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 1–4, piano 1.37; la (A) di Carmine sull'issue
+#280, e sulla #283 la lettura 1 cambiata e la (b)):
+
+- **gli esiti**: `POST /api/events/atc/shifts/{id}/attendance`, su un turno di un evento finito e non annullato — anche prima che
+  `events-after` l'abbia guardato e dopo che l'ha chiuso —, porta il turno a `Attended`, `NoShow` o `Excused`, e **nessun esito è
+  definitivo** (Carmine sulla #283): chi può decidere il turno li cambia l'uno nell'altro anche dopo; chiedere l'esito che il turno ha già
+  è rifiutato. La nota è obbligatoria per `Excused`, al più 500 caratteri, e una decisione senza nota tiene quella di prima; il verbo
+  scrive `attendance_by` e `attendance_at`, l'audit ogni passo; nessuna mail. `EventAtc.Edit` sul turno, negato al controllore della
+  riga (`DeniedToStakeholder`). Due decisioni insieme si incontrano sul blocco della riga dell'evento; una decisione e il giro di
+  `events-after` sulla `row_version`, e chi perde fallisce (la decisione con 409). Le statistiche le rifà «Ricalcola»;
+- **togliere un no-show** è la stessa chiamata con `Excused`, in qualunque momento, con la nota;
+- **la penalità** conta degli altri eventi i turni `Attended` e `NoShow`, con `noShowWeight`: un proposto non pesa finché non è
+  confermato, un giustificato e un `Unknown` non contano;
+- **il registro** è **`/staff/events/controllers`**, una lettura scritta a mano (`GET /api/events/atc/register`), con `EventAtc.View`
+  **senza uno scope di risorsa** (§6.2): fatti, no-show, giustificati, da decidere, la penalità, **contati su tutti i turni** del
+  controllore, di ogni FIR; il dettaglio è la lista del motore dei turni con `filter[controllerVid]`, che il motore restringe alle righe
+  che il lettore legge, con i verbi sulle righe che può scrivere. Il controllore legge il suo in `/events/mine`
+  (`GET /api/events/mine/record`, §3.7).
+
 ---
 
 ## 4-bis. Gli eventi in presenza (M4c)
@@ -1232,7 +1272,13 @@ ricerca per ogni aeroporto della divisione.
 **`INetworkSessionSource`** del nucleo (`Core/Ivao/NetworkSessionSource.cs`), la stessa domanda di E10a sotto un nome neutro: VID
 facoltativo, finestra, scali, `Pilot` o `Atc`, `Limit` fino allo stesso tetto; risponde numero, VID, callsign, inizio e fine, dalla più
 recente, una volta per numero; `null` è «la rete non ha risposto», mai «nessuno ha volato». Le regole di E10a (nota
-`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali.
+`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali. **Dal 17 ott 2026** (E10v, #291, nota `2026-10-17-gli-scali-di-una-sessione`,
+piano 1.37) la sessione risponde anche **gli scali**: `Routes`, partenza e arrivo di **ogni revisione** del piano di volo, dalla più
+vecchia (ordinate per `id`), e `DepartureIcao`/`ArrivalIcao` dell'**ultima** — per la sessione `1000007` della sera di Fiumicino
+LIRF→LICR, la rotta che E13a trova —; `null` e vuota per un controllore o una sessione senza piano. Li legge dalla riga che il client ha
+già (`IvaoTrackerReader.ReadPlannedRoutes`), senza una chiamata nuova. E14b ne legge la voce di volo di un PIREP `Auto` e le rotte delle
+regole `Route`, `RouteTimes`, `MinLegDistance`. ⚠️ **`Routes` sono i piani depositati, non le tratte volate**: la nota di E14b dice,
+regola per regola, quale lettura usa, perché un award non si dia mai per una rotta solo depositata.
 
 **Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272, la (A)
 alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
@@ -1302,13 +1348,18 @@ Cinque aree, perché ogni capacità che si delega a un altro dipartimento è **u
 | `Events.ManageSettings` | impostazioni del modulo | no |
 | `EventRoutes.View`, `.Edit` | le rotte | no |
 | `EventBookings.View` | slot, prenotazioni, iscrizioni e attività con i VID; l'esportazione per il Gate Manager | no |
-| `EventBookings.Edit` | slot, import, generatore, attività; togliere una prenotazione o un'iscrizione | no |
+| `EventBookings.Edit` | slot, import, generatore, attività; togliere una prenotazione o un'iscrizione | ~~no~~ **sì** (E13b) |
 | `EventAtc.View` | postazioni, disponibilità, roster, registro di affidabilità | no |
 | `EventAtc.Edit` | postazioni, correggere il roster, confermare o giustificare un no-show | **sì** |
 | `EventReports.View` | i PIREP di supporto | no |
 | `EventReports.Edit` | validare un PIREP di supporto | **sì** |
 
 Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` per ogni riga dello staff (trappola di A5).
+
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, la (A) di Carmine alla lettura 6 sull'issue #280,
+piano 1.37): **`EventBookings.Edit` è `DeniedToStakeholder`** nel catalogo — nessuno decide sulle proprie prenotazioni, iscrizioni e
+posti, e chi dello staff ha prenotato e non volato non toglie la propria voce dal registro; ritirare la propria prenotazione, iscrizione o
+posto lo fa già da membro. È la regola «chi ha interesse non decide», una riga del catalogo e nessun `if` nel modulo.
 
 ### 6.2 Chi li ha (`division.json → positionGrants`)
 
@@ -1338,6 +1389,11 @@ Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` pe
   collabora su un evento deve poterne caricare gli slot —, **mai un evento nuovo** (per convenzione: un grant si scrive su
   una riga che esiste).
   `EventBookings.Edit` tenuto su un evento solo e la propria prenotazione in quell'evento restano come sono.
+- **Deciso con E13b ed E10u** (#283, #288, note `2026-10-16-i-no-show-i-registri-e-i-limiti` e `2026-10-17-il-permesso-senza-ambito`,
+  la (b) di Carmine sulla #283, piano 1.37): **un grant su un evento non apre i registri**. `/staff/events/controllers` e
+  `/staff/events/pilots`, e le loro voci di menu (`NavItemDescriptor(…, Unscoped: true)`), chiedono `EventAtc.View` ed
+  `EventBookings.View` **senza un ambito su una riga** (`HasUnscoped`): lo staff dell'ED, i grant alle posizioni della tabella, i team dei
+  FIR, l'HQ e il super amministratore; un grant su un evento o su una riga riceve 403, e la voce non la vede.
 
 ### 6.3 La collaborazione e la cancellazione
 
@@ -1495,6 +1551,19 @@ i tre del flusso del membro sotto `/api/events/mine/registrations` — la lettur
 risposte (`PUT /{eventId}`, 201 la prima volta e 200 dopo), ritirarsi (`DELETE /{eventId}`) — e
 `POST /api/events/registrations/{id}/remove`; le domande e la lista delle iscrizioni sono del motore.
 
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 4, 5, 8 e 10, piano 1.37; la (A) di Carmine
+sull'issue #280):
+
+- **`/staff/events/controllers`** è il registro dei controllori (§4.5), e accanto c'è **`/staff/events/pilots`**, il registro dei piloti
+  (§3.7), **una pagina che questo design non nominava**; tutte e due solo a chi tiene il permesso senza un ambito su una riga (§6.2), con
+  il dettaglio di una persona nella lista del motore;
+- la pagina dell'ATC di un evento finito (`/staff/events/atc/{id}`, la scheda «ATC» per chi legge gli eventi) ha una sezione
+  **«Esiti»**: la lista generata dei turni dell'evento — nominativo, controllore, esito, chi ha coperto — con i verbi di §4.5 nella
+  riga; la scheda «Statistiche» di E13a resta in sola lettura;
+- **tre letture scritte a mano**, scostamenti accettati: `GET /api/events/atc/register`, `GET /api/events/bookings/register` e
+  `GET /api/events/mine/record`, nel flusso del membro come `/mine/shifts`; e **due verbi**, l'esito di un turno e «togli» di una
+  prenotazione non volata.
+
 ### 7.3 Blocchi Data
 
 | Blocco | Dove | Che cosa |
@@ -1520,6 +1589,13 @@ arrivano con E12.
   richieste in attesa. Conta **sulle postazioni che il lettore legge** (l'unico handler su ognuna, come il roster) e sulle richieste che
   può decidere; a chi non legge l'ATC di nessun evento nessun evento, a un visitatore `signedIn: false`. **Dati, non parole**: la
   pagina le scrive.
+
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, lettura 11, piano 1.37): **`events.staffQueue`**, sempre
+dal vivo e del lettore, nessuna proprietà, una riga per evento con qualcosa da decidere, al più 50, **dalla fine più recente**: **no-show
+da confermare** (`NoShowProposed`), **turni da segnare** (`Unknown` di un evento che `events-after` ha chiuso) e **cessioni da decidere**,
+ognuno contato solo se l'unico handler dà al lettore `EventAtc.Edit` sulla riga, quindi mai le proprie; niente per chi non tiene
+`EventAtc.Edit` da nessuna parte. Il link porta alla pagina dell'ATC dell'evento; un visitatore riceve `signedIn: false`. I PIREP da
+validare entrano con E14a.
 
 ### 7.4 Il Gate Manager
 
