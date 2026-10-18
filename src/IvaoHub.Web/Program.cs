@@ -251,6 +251,9 @@ HubConfiguration.RequireE2EEnvironment(builder.Configuration, builder.Environmen
 if (builder.Environment.IsEnvironment(HubEnvironments.E2E))
 {
     builder.Services.AddE2ESignIn(builder.Configuration);
+
+    // And, behind the same locks, a job run now and sessions on the network for its people (E10w).
+    builder.Services.AddE2EBenchRuns();
 }
 
 // Cloudflare and nginx sit in front, so the address of the caller arrives in a header. Which
@@ -412,6 +415,7 @@ app.MapGet("/api/version", (BuildInfo build) => TypedResults.Ok(
 if (app.Environment.IsEnvironment(HubEnvironments.E2E))
 {
     app.MapE2ESignIn();
+    app.MapE2EBenchRuns();
 }
 
 app.MapSpaFallback();
