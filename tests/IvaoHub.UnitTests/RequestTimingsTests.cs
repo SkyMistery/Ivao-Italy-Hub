@@ -201,6 +201,55 @@ public sealed class RequestTimingsTests : IDisposable
         Assert.EndsWith("  jit 4100 ms in all", line, StringComparison.Ordinal);
     }
 
+    // Issue #302: the writer is a singleton and the hosted service, so the provider may dispose it before the host stops it.
+    [Theory]
+    [InlineData("stop", "dispose")]
+    [InlineData("dispose", "stop")]
+    [InlineData("stop", "stop", "dispose", "dispose")]
+    [InlineData("dispose", "dispose", "stop", "stop")]
+    [InlineData("dispose")]
+    public async Task WhateverTheOrderOfStopAndDisposeTheQueuedLinesAreWrittenOnce(params string[] steps)
+    {
+        var log = Log();
+        await log.StartAsync(CancellationToken.None);
+        foreach (var number in new long[] { 1, 2, 3 })
+        {
+            Assert.True(log.TryWrite(Line(Now, number: number)));
+        }
+
+        foreach (var step in steps)
+        {
+            if (step == "stop")
+            {
+                await log.StopAsync(CancellationToken.None);
+            }
+            else
+            {
+                log.Dispose();
+            }
+        }
+
+        Assert.False(log.TryWrite(Line(Now, number: 4)));
+        var written = File.ReadAllLines(Path.Combine(log.Folder, RequestTimingsLog.FileName(DateOnly.FromDateTime(Now))));
+        Assert.Equal([1L, 2L, 3L], written.Select(RequestTimingsLine.Parse).OfType<RequestTimingsLine>().Select(line => line.Number));
+        Assert.Single(written, line => line.StartsWith("# pid, n", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AWriterThatNeverStartedStopsAfterItsDisposeWithNothingWritten()
+    {
+        var log = new RequestTimingsLog(Options.Create(new RequestTimingsOptions { Enabled = false }), _paths);
+        await log.StartAsync(CancellationToken.None);
+
+        log.Dispose();
+        await log.StopAsync(CancellationToken.None);
+        await log.StartAsync(CancellationToken.None);
+        await log.StopAsync(CancellationToken.None);
+        log.Dispose();
+
+        Assert.False(Directory.Exists(log.Folder) && Directory.EnumerateFiles(log.Folder, "requests-*").Any());
+    }
+
     private RequestTimingsLog Log(int retainedDays = 14) =>
         new(Options.Create(new RequestTimingsOptions { Enabled = true, RetainedDays = retainedDays }), _paths);
 
