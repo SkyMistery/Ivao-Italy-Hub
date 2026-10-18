@@ -347,7 +347,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #299 di E10x, con le teste di E10v ed E14a `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita —, poi E10x `34f9a0fa` (#299) e `main` a `3cdacd9`)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
   `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,

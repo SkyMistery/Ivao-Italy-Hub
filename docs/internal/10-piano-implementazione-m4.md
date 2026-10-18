@@ -5545,7 +5545,8 @@ letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248
   verificato solo se la sua sessione è durata almeno tanto, a mano e `Auto` (`ReportRules.LongEnough`), il confine provato dalle unità. **La
   risposta 2**: un evento senza scali suoi, non di tutta la divisione, non scrive voci di volo `Auto`. **La risposta 3**: «una riga sorgente ha
   dato un award?» diventa un metodo del nucleo, nella fase del nucleo **E10x** (`m4/e10x-award-signal-assigned`); E14b ne unisce il branch e lo
-  chiama al posto delle sue due query.
+  chiama al posto delle sue due query: **fatto**, unita la #299 (testa `34f9a0fa`) e `main` a `3cdacd9`; `ReportAwards` chiede al nucleo
+  (`AwardSignalQueries.AssignedAsync`) sulle sorgenti di ogni riga del PIREP, e il test della corsa passa dal blocco del nucleo.
 - ⚠️ **Una trappola di questa macchina**: fermare per nome i processi dei test (`testhost`, `IvaoHub.IntegrationTests`) ha fermato due volte la
   suite intera di un'altra fase che girava insieme (E10w); si ferma solo il proprio giro.
 

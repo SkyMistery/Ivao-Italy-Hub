@@ -96,7 +96,10 @@ riepilogo.
    il revisore la vuole letta attraverso il nucleo, è una fase del nucleo a sé (un metodo che risponda per `source_module` + `source_id`,
    sotto il blocco quando la chiamata è in una transazione), e il modulo lo chiamerebbe al posto delle due query. **Decisa** ([la risposta 3
    di Carmine][a293]): **il metodo del nucleo**, in una PR del nucleo a sé con la sua nota, caso (b), prima che E14b lo usi; E14b ne unisce il
-   branch e lo chiama al posto delle sue due query su `cms_award_signals`.
+   branch e lo chiama al posto delle sue due query su `cms_award_signals`. **Fatto**: la fase **E10x** (#299, nota
+   `2026-10-18-un-segnale-diventato-award`) dà `AwardSignalQueries.AssignedAsync(context, sourceModule, sourceIds)`; `ReportAwards` la chiama
+   sulle sorgenti di **ogni** riga del PIREP, nella transazione della decisione (il blocco `FOR UPDATE` lo prende il nucleo) e senza blocco
+   nella lista dello staff.
 6. **«Duplica» copia le regole** (design §2.3-bis: «ogni blocco copia le righe che esistono nella sua fase»), come E11a ha fatto per le
    postazioni ed E17 per domande e attività: l'award, il criterio e i parametri come sono, nella cura della copia, senza ricontrollarli (un
    award ritirato si rifiuta al prossimo salvataggio della regola). Le regole sono dell'area `Events`: chi duplica non ha bisogno di un
