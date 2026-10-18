@@ -762,6 +762,8 @@ public sealed class EventsRetentionTests(MariaDbFixture mariaDb) : IAsyncLifetim
             Vid = vid,
             AwardId = awardId,
             Reason = $"{SlugStem} the reason",
+            // Pointing the member out, as an accepted report leaves it (E14b): a rejection turns it off.
+            PointsOut = true,
             CreatedAt = DateTime.UtcNow,
             OwnerDepartment = Department.ED,
             OwnerDepartmentMask = DepartmentMask.Of(Department.ED),

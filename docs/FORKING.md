@@ -604,6 +604,7 @@ division:
 | `unflownThreshold` | 3 | the bookings not flown from which a pilot books with the limits below |
 | `restrictedWindowHours`, `restrictedMaxPerWindow`, `restrictedMaxPerEvent` | 2, 1, 2 | the limits: at most so many bookings in each band of so many hours, and in the whole event; an event may say its own |
 | `reportDays` | 14 | how many days after an event a member sends, and corrects, a report of support |
+| `minimumFlightMinutes` | 10 | the least minutes a session of the network must last for a flight of a report of support to be found: a connection of a few minutes meets no rule of award |
 
 **`kindPresets`** is the one to write on day one. The kinds of an event are words of the calendar — the
 seed brings `rfe`, `rfo`, `mse` and `online-day`, which you rename or retire at
