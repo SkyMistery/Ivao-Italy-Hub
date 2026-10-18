@@ -5,7 +5,8 @@ namespace IvaoHub.Modules.Events;
 
 /// <summary>
 /// A rule of award an accepted report met (design M4 §5.4, E14b; note 2026-10-17-le-regole-di-award, question 1), <c>evt_report_awards</c>:
-/// the report, the rule, the member and the award, written in the save that first accepts the report and <b>never deleted</b>: a rejection turns it off (<see cref="PointsOut"/>). It is the
+/// the report, the rule, the member and the award, written in the save that first accepts the report and <b>never deleted by a decision</b>: a
+/// rejection turns it off (<see cref="PointsOut"/>); it goes only with its pilot's report, when <c>events-retention</c> deletes that (E15b). It is the
 /// row that points the member out in the core's queue of awards: one signal of its own (<see cref="IProjectable"/>), since the core keeps one
 /// signal per member per row, and a report that meets two rules points its member out for two awards. A person assigns, never the code
 /// (plan §9.7).

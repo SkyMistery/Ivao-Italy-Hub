@@ -381,6 +381,20 @@ public sealed class EventsRetentionTests(MariaDbFixture mariaDb) : IAsyncLifetim
             Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
         }
 
+        // A cancelled event: not found, and the network not asked (the review of #301, point 2).
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await database.Events.IgnoreQueryFilters().Where(row => row.Id == id).ExecuteUpdateAsync(
+                set => set.SetProperty(row => row.CancelledAt, DateTime.UtcNow).SetProperty(row => row.CancelledBy, CoordinatorVid),
+                token);
+        }
+
+        using (var cancelled = await aod.GetAsync(NetworkUri(id), token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, cancelled.StatusCode);
+        }
+
         // Nine days of UTC: more than the core asks the network for — «not available», never «nobody booked».
         var week = await EventRowAsync("network-week", day, day.AddDays(8).AddHours(1), token, checksDone: false);
         await PositionRowAsync(week, RecordedTower, day, day.AddDays(8), token);

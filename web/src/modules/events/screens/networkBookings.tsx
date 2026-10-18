@@ -4,9 +4,10 @@ import { useRouteContext } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { describeProblem } from '../../../shared/forms';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
 import { Notice } from '../../../shared/ui';
-import { networkBookingsQuery, type NetworkBookingRow } from '../api';
+import { NetworkBookingsUnavailable, networkBookingsQuery, type NetworkBookingRow } from '../api';
 
 /**
  * The bookings of the network beside the roster (design M4 §4.4, §9.1, E15b; note 2026-09-29-il-roster-atc §2.9): who booked a position of
@@ -36,9 +37,12 @@ export function NetworkBookingsSection({ eventId }: { eventId: number }) {
     <section className="flex flex-col gap-4" aria-label={t('events:atc.network.title')}>
       <H2>{t('events:atc.network.title')}</H2>
       <p className="text-muted-foreground text-sm">{t('events:atc.network.intro')}</p>
-      {/* «Not available» from the server, or no answer from it at all: never drawn as an empty list. */}
-      {answer.isError ? (
+      {/* The network did not answer — the server's `available: false` —, or the hub refused or failed (a 403 after a change of
+          «curated by», a 500): two different things, said apart (the review of #301, point 3), and never an empty list. */}
+      {answer.error instanceof NetworkBookingsUnavailable ? (
         <Notice tone="info" title={t('events:atc.network.unavailable')} />
+      ) : answer.isError ? (
+        <Notice tone="error" title={describeProblem(answer.error, t, i18n.language) ?? t('errors.unknown')} />
       ) : (
         <DataList
           columns={columns}

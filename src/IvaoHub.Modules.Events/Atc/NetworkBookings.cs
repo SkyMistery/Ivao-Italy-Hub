@@ -102,8 +102,10 @@ public static class NetworkBookings
         IAuthorizationService authorization,
         HttpContext http)
     {
+        // A cancelled event controls nothing: the network is not asked for it, as an event without a roster (reading 7; the review of #301,
+        // point 2).
         var row = await CrudSource.BackOffice<Event>(database).AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.HasRoster, http.RequestAborted);
+            .FirstOrDefaultAsync(candidate => candidate.Id == id && candidate.HasRoster && candidate.CancelledAt == null, http.RequestAborted);
         if (row is null)
         {
             return Results.NotFound();

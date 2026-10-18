@@ -59,10 +59,15 @@ afterEach(() => {
 });
 
 async function open(answer: { items: NetworkBookingRow[]; available: boolean }) {
-  api.get.mockResolvedValue({
+  return openWith({
     data: { ...answer, page: 1, pageSize: 100, total: answer.items.length },
     response: new Response(null),
   });
+}
+
+/** The section, with the client answering as given: a page, or an error of the hub. */
+async function openWith(result: { data?: unknown; error?: unknown; response: Response }) {
+  api.get.mockResolvedValue(result);
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(bootstrapKey, bootstrap);
@@ -125,6 +130,18 @@ describe('the bookings of the network beside the roster', () => {
 
     await act(() => i18n.changeLanguage('it'));
     expect(await screen.findByText(italianEvents.atc.network.unavailable)).toBeInTheDocument();
+  });
+
+  test('a refusal of the hub is said as such, never as a network that did not answer', async () => {
+    // A 403, as after a change of «curated by» (the review of #301, point 3).
+    const { i18n } = await openWith({
+      error: { status: 403 },
+      response: new Response(null, { status: 403 }),
+    });
+
+    expect(await screen.findByText(i18n.t('errors.forbidden.title'))).toBeInTheDocument();
+    expect(screen.queryByText(englishEvents.atc.network.unavailable)).not.toBeInTheDocument();
+    expect(screen.queryByText(englishEvents.atc.network.empty)).not.toBeInTheDocument();
   });
 
   test('nobody booked: the list says so with its own sentence', async () => {
