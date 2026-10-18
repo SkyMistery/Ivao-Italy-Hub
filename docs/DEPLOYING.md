@@ -40,7 +40,7 @@ What the package brings, and what belongs to the installation and must never be 
 | `hub-keys/` | written at the first start | Data Protection keys. **Persistent: never delete it**, or everybody is signed out and the stored IVAO tokens become unreadable |
 | `media/` | written by uploads | the media library, on disk. **Persistent: never delete it** |
 | `tiles/basemap.pmtiles` | **installation**, optional | the base map of the tours (`docs/FORKING.md`); without it maps draw on a neutral ground |
-| `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed, and `diagnostics/starts.txt`, one line for every start and every stop (below) |
+| `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed, and `diagnostics/starts.txt`, one line for every start and every stop, and `diagnostics/requests-YYYYMMDD.txt`, one line for every request (below) |
 | `tmp/restart.txt` | **installation** | Passenger restarts the application when this file's date changes |
 
 The application finds its folders from `config/division.json`: its own folder (the one holding `IvaoHub.Web.dll`)
@@ -55,7 +55,18 @@ the newest thousand lines past two thousand. A `START` line says how long the st
 process to the moment it accepts requests), where the time went step by step, the memory, and what happened to the
 process before; a `STOP` line how long the process lived, how many requests it answered, when its first answer left
 and the memory; a `SIGNAL` line that the system asked it to stop. A start that says `!!` follows a process that died
-without closing. It holds no secret.
+without closing. It holds no secret. The `START` line also says how much code the runtime compiled before the hub was
+ready (`jit`, and `(jit N)` inside each step) and how many connections and commands it sent to the database (`db`).
+
+`diagnostics/requests-YYYYMMDD.txt` has one tab separated line for every request that reached the hub that UTC day:
+the route pattern the hub declares (never the path that was asked, nor its query), the status, the total time and the
+time to the first byte, whether it was the first request of its process and how long after the process was created it
+arrived, and how long it waited on database commands, on opening connections and on outbound calls. Every day that is
+over gets a `requests-YYYYMMDD-summary.txt` next to it (percentiles by route, cold apart from warm, the slowest ten),
+written by the first process of the next day that lives twenty seconds. Nothing in either names a person: no VID, no
+address, no user agent. Files are kept 14 days and a day stops growing at 20 MB; `Diagnostics:Requests:Enabled`,
+`RetainedDays` and `MaxMegabytesPerDay` change that, and `Enabled: false` turns the file off. Files the web server serves
+from `wwwroot/` by itself never reach the hub and have no line.
 
 A start that finds nothing changed since the last start that initialised the database (the same build, the same
 division options and installation settings, the same `seed/`) skips the migrations, the grants to positions and the

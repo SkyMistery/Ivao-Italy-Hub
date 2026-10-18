@@ -6,29 +6,32 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 17 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
+**Ultimo aggiornamento:** 18 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
-`m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **in coda dopo la #293** di E14b e la #300 di E10w: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha unito le teste
-`1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta** per le letture; le
+`m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **l'ultima della coda**: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha
+unito le teste `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300), e con la #293 unita **`main` a `f436c918`**
+(E14a, E10x, E14b, E10w, il piano 1.38 e la #303); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta** per le letture; le
 sue due domande sono **decise** da Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo
 sul banco, (B) — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento
 mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice** («Che cosa ha lasciato
 E15b», sotto).
 
-**L'aggiornamento di E10w:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
-persona), sul branch `m4/e10w-bench-runs-a-job`, **PR #300** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main`
-a `e7b1331c`, con `main` a `3cdacd97` unito (E10v, #291, e la tagline, #290 e #295). La nota `2026-10-18-il-banco-fa-girare-un-job` è **decisa** da Carmine: la (B) sull'[issue
-#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879) — prima una piccola fase del nucleo per il banco,
-poi E15b. Da E10w il banco ha `POST /e2e/jobs/{name}` e `PUT`/`DELETE /e2e/sessions/{vid}`, dietro gli stessi due lucchetti di
-`/e2e/signin`, e `bench.ts` ha `runJob`, `giveSessions` e `takeSessions`: il giro di M4b di E15b non aspetta più i giri veri, e il segnale
-c'è («Che cosa ha lasciato E10w», sotto).
-
 **L'aggiornamento di E10x:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
-`m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`. Una nota
+`m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`; dopo la
+revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462), ha unito `main` a `fa9c29b4` (E14a, #289); di nuovo
+[approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6252455578), `main` a `11636395` (E10w, #300). Una nota
 nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), **decisa** da Carmine (il punto 3 della [sua
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376) sulla #293). Da E10x il nucleo ha
 `AwardSignalQueries.AssignedAsync`: i source id di un modulo di cui un segnale è diventato award, con il lock delle righe dentro una
 transazione («Che cosa ha lasciato E10x», sotto). **E14b** (`m4/e14b-award-rules`, #293) unisce questo branch e ci sposta le sue due query.
+
+**L'aggiornamento di E10w:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
+persona), sul branch `m4/e10w-bench-runs-a-job`, **PR #300** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main`
+a `e7b1331c`, con `main` a `3cdacd97` unito (E10v, #291, e la tagline, #290 e #295); dopo la revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/300#issuecomment-6251424579), `RunNowAsync` è `internal` e ha unito `main` a `4363c40` (#296–#298). La nota `2026-10-18-il-banco-fa-girare-un-job` è **decisa** da Carmine: la (B) sull'[issue
+#294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879) — prima una piccola fase del nucleo per il banco,
+poi E15b. Da E10w il banco ha `POST /e2e/jobs/{name}` e `PUT`/`DELETE /e2e/sessions/{vid}`, dietro gli stessi due lucchetti di
+`/e2e/signin`, e `bench.ts` ha `runJob`, `giveSessions` e `takeSessions`: il giro di M4b di E15b non aspetta più i giri veri, e il segnale
+c'è («Che cosa ha lasciato E10w», sotto).
 
 **L'aggiornamento di E10v:** 17 ottobre 2026 — **fase E10v** (nucleo: gli scali di una sessione della rete, per E14b), sul branch
 `m4/e10v-session-airports`, **PR #291** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `8bf63ea3`, con `main` a `e7b1331c` unito (E10u, E13b). Una nota nuova,
@@ -396,7 +399,71 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
     colonna «dopo» come per M1.
   - ⚠️ **I VID di prova**: E15b ha usato **761300–761308** della fascia nuova 761300–761329.
 
-### Che cosa ha lasciato E10w (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300, del nucleo; diretta su `main`, nata a `e7b1331c`, con `main` a `3cdacd97` unito)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #299 di E10x, con le teste di E10v ed E14a `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita —, poi E10x `34f9a0fa` (#299) e `main` a `3cdacd9`, e infine `main` a `620aa359` (E14a, E10x ed E10w unite))
+
+- **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
+  `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
+  `2026-10-17-le-regole-di-award`, **decisa**: le letture da Carmine sulla #293; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 **decisa** da Carmine, (A), sulla [#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103), la fase del nucleo E10v; le letture **decise** da Carmine sulla [#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376), con il tempo minimo di volo, nessun volo Auto senza scali e il metodo del nucleo di **E10x**):
+  - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
+    `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
+    `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
+  - **I segnali**: `evt_report_awards` (`EventReportAward.cs`), una riga per regola soddisfatta, ognuna con il suo segnale nella coda del
+    nucleo; scritte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync` e **mai cancellate**: un rifiuto le spegne (`points_out`), una regola soddisfatta di nuovo ritrova la sua riga e il suo segnale. Un award assegnato congela la decisione
+    (`events:errors.reportAwardAssigned`, `Decidable` falso).
+  - **I PIREP `Auto`**: la preferenza `events.autoReport`, il passo di `events-after` (`Reports/AutoReports.cs`, il segno
+    `evt_events.auto_reports_cursor`), l'interruttore in `/events/mine`. Un PIREP ATC (le postazioni dell'evento e della divisione ai suoi
+    scali) e uno pilota (l'ultima rotta di ogni sessione, sugli scali di **E10v**, #291).
+  - **`events-digest`** (`Reports/ReportsDigestJob.cs`), alle 07:15 nel fuso della divisione, `events.reportsToValidate`.
+  - **I test**: integrazione `EventsAwardRulesTests` (VID **761262–761268**, slug `evt-test-e14b-…`); unità `EventsAwardRulesTests`; vitest
+    `awardRuleWords.test.ts`; il giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E15b** (la conservazione dei piloti): un PIREP pilota cancellato porta via le sue righe `evt_report_awards` (la chiave è in cascata, ma
+    ognuna ha la sua riga nell'audit solo se le cancella il modulo); i segnali nella coda del nucleo restano finché qualcuno li guarda: una
+    riga sorgente che se ne va toglie solo quelli in attesa. «Duplica» per le regole è fatto qui.
+  - ⚠️ **Conta solo l'ultima rotta di una sessione, e un volo dura almeno `minimumFlightMinutes`** (la lettura 3-bis; il punto 2 del revisore
+    sulla #291, la risposta 1 di Carmine sulla #293): una voce di volo è verificata solo quando la sessione trovata ha come ultima rotta quella
+    della voce (`ReportRules.FlewRoute`) ed è durata almeno l'impostazione nuova (`ReportRules.LongEnough`, 10 minuti di predefinito); un
+    PIREP `Auto` scrive l'ultima rotta, e **un evento senza scali suoi non ne scrive** (la risposta 2). Un doppio di `INetworkSessionSource`
+    che costruisce sessioni senza scali non verifica più nessun volo: `EventsReportsTests` dà alle sue gli scali con
+    `IvaoTrackerReader.ReadPlannedRoutes`, come la sorgente vera.
+  - ⚠️ **Il segnale non è del PIREP**: la riga sorgente è `evt_report_awards` (`report-award:{id}`), una per PIREP e regola, **mai
+    cancellata** (`points_out`). Chi chiede «questo PIREP ha dato un award?» passa da `ReportAwards.AssignedAsync`, che chiama il metodo del
+    nucleo della fase **E10x** (`AwardSignalQueries.AssignedAsync`).
+  - ⚠️ **Il banco non trova sessioni del pilota**: un PIREP del banco non ha voci verificate e non soddisfa nessuna regola. Il «fatta quando»
+    sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
+  - ⚠️ **I VID di prova**: E14b ha usato **761262–761268** della fascia 761262–761299.
+
+### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`, con `main` a `fa9c29b4` e poi a `11636395` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10x, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una nota
+  nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
+  - **`AwardSignalQueries.AssignedAsync(DbContext context, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken
+    cancellationToken = default)` → `Task<IReadOnlySet<string>>`** (`src/IvaoHub.Core/Content/AwardSignalQueries.cs`, accanto a
+    `AwardSignal.cs`, spazio dei nomi `IvaoHub.Core.Content`): i source id fra quelli chiesti, di quel modulo, di cui un segnale è
+    **`Handled`** — cioè un'assegnazione l'ha risposto. `Pending`, `Dismissed`, nessun segnale, un altro modulo: non ci sono. Nessun id,
+    nessuna query.
+  - **Dentro una transazione** del contesto dato (`Database.CurrentTransaction`): una `SELECT … FOR UPDATE` di **tutte** le righe del
+    segnale di quelle sorgenti, che legge l'ultima versione committata e tiene il lock fino alla fine della transazione di chi chiama;
+    **fuori**, una lettura semplice che non aspetta nessuno.
+  - **I test**: `AwardSignalQueriesTests` (integrazione, 5 casi, il modulo di test, le persone 780041 e 780043 di `AwardsTests`).
+- **Che cosa chiama E14b** (che unisce questo branch, poi `main` quando è unita):
+  - nella decisione su un PIREP, **dentro** la sua transazione READ COMMITTED: `await AwardSignalQueries.AssignedAsync(database,
+    EventsModule.ModuleKey, sources, cancellationToken)`, con `sources` = `EventReportAward.SourceOf(id)` di **tutte** le righe del PIREP;
+    un insieme non vuoto, la decisione si rifiuta. Al posto di `ReportAwards.AssignedAsync(reportId, locking: true, …)`;
+  - nella lista, **fuori** transazione, la stessa chiamata con le sorgenti della pagina, poi da sorgente a PIREP. Al posto di
+    `AssignedAmongAsync`;
+  - ⚠️ il lock c'è **solo** dentro una transazione del contesto che si passa: un contesto diverso da quello della transazione, una
+    `TransactionScope` ambientale o un `BeforeSave` del CRUD (prima della transazione dell'intercettore) non bloccano niente, in silenzio;
+  - ⚠️ **chiamarla sotto READ COMMITTED**: sotto REPEATABLE READ (anche `BeginTransactionAsync()` senza argomenti) prende i lock sui buchi,
+    e due decisioni su sorgenti ancora senza segnale possono andare in deadlock (la revisione della #299, punto 1);
+  - ⚠️ perché la domanda veda **ogni** segnale che il PIREP ha mai prodotto (il punto 1 della revisione della #293), le righe di
+    `evt_report_awards` restano anche quando il PIREP è rifiutato: è E14b a tenerle, con uno snapshot vuoto finché non è accettato;
+  - ⚠️ «diventato award» è `Handled` **anche se l'assegnazione è stata cancellata** dal registro dopo: il segnale non torna indietro, e
+    quel PIREP non si decide più — **deciso da Carmine, (A)** ([risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217); nota §2.4);
+  - ⚠️ un'assegnazione che arriva mentre chi chiama tiene il lock aspetta; se chi chiama ritira il segnale `Pending` e committa,
+    l'assegnazione risponde **409** e non scrive niente (`AnAssignmentWaitsForTheCallerAndFindsTheSignalWithdrawn`).
+
+### Che cosa ha lasciato E10w (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300, del nucleo; diretta su `main`, nata a `e7b1331c`, con `main` a `3cdacd97` e poi a `4363c40` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10w, «Com'è andata»; nessuna migrazione, niente nel browser né in `/api/me`, nessuna riga di
   un modulo; una nota nuova, `2026-10-18-il-banco-fa-girare-un-job`, caso (b), **decisa** da Carmine sull'issue #294):
@@ -437,103 +504,15 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il volo del modello è da `LIRF` a `LIMC`, dopo la torre**: un PIREP di supporto di un pilota lo trova solo in un evento il cui
     giorno e la cui finestra dei voli lo contengono (`ReportRules.DayWindow`); la persona è una sola, quindi torre e volo sono suoi tutti e due.
   - ⚠️ **Un giro chiesto adesso conta come ultimo giro**: l'occorrenza di `events-roster` già passata è fatta, e la prossima viene.
+  - ⚠️ **`Skipped` per un job senza `[DisallowConcurrentExecution]`** (la revisione della #300): Quartz lo lancerebbe mentre il giro di
+    prima corre ancora nello stesso processo, e la guardia, che tiene già il suo lucchetto, lo salta; tutti i job di oggi lo hanno, e un job
+    nuovo che `runJob` chiama deve averlo.
+  - ⚠️ **`RunNowAsync` è `internal`**, e lo vede solo l'host (`InternalsVisibleTo` in `IvaoHub.Core.csproj`): un modulo o un'installazione
+    non salta «una volta per occorrenza».
   - ⚠️ **Le sessioni stanno nel processo del banco**: un banco riavviato le dimentica (lo spec le dà di nuovo); due spec che danno sessioni
     alla stessa persona si spostano a vicenda, ma `e2e:full` ha un worker solo.
   - ⚠️ **Nessun VID nuovo**: le cinque persone del banco (999001–999005) sono le sole a cui si danno sessioni.
   - `CONTRIBUTING.md` è di Carmine: la riga proposta è nel §6 della nota.
-
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #299 di E10x, con le teste di E10v ed E14a `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita —, poi E10x `34f9a0fa` (#299) e `main` a `3cdacd9`)
-
-- **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
-  `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 **Proposta**, il codice sulla fase del nucleo E10v, la strada di dalberone; le letture **decise** da Carmine sulla [#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376), con il tempo minimo di volo, nessun volo Auto senza scali e il metodo del nucleo di **E10x**):
-  - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
-    `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
-    `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
-  - **I segnali**: `evt_report_awards` (`EventReportAward.cs`), una riga per regola soddisfatta, ognuna con il suo segnale nella coda del
-    nucleo; scritte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync` e **mai cancellate**: un rifiuto le spegne (`points_out`), una regola soddisfatta di nuovo ritrova la sua riga e il suo segnale. Un award assegnato congela la decisione
-    (`events:errors.reportAwardAssigned`, `Decidable` falso).
-  - **I PIREP `Auto`**: la preferenza `events.autoReport`, il passo di `events-after` (`Reports/AutoReports.cs`, il segno
-    `evt_events.auto_reports_cursor`), l'interruttore in `/events/mine`. Un PIREP ATC (le postazioni dell'evento e della divisione ai suoi
-    scali) e uno pilota (l'ultima rotta di ogni sessione, sugli scali di **E10v**, #291).
-  - **`events-digest`** (`Reports/ReportsDigestJob.cs`), alle 07:15 nel fuso della divisione, `events.reportsToValidate`.
-  - **I test**: integrazione `EventsAwardRulesTests` (VID **761262–761268**, slug `evt-test-e14b-…`); unità `EventsAwardRulesTests`; vitest
-    `awardRuleWords.test.ts`; il giro `full/events-awards.spec.ts` (slug `evt-test-e2e-e14b-…`).
-- **Che cosa deve sapere la fase dopo**:
-  - **E15b** (la conservazione dei piloti): un PIREP pilota cancellato porta via le sue righe `evt_report_awards` (la chiave è in cascata, ma
-    ognuna ha la sua riga nell'audit solo se le cancella il modulo); i segnali nella coda del nucleo restano finché qualcuno li guarda: una
-    riga sorgente che se ne va toglie solo quelli in attesa. «Duplica» per le regole è fatto qui.
-  - ⚠️ **Conta solo l'ultima rotta di una sessione, e un volo dura almeno `minimumFlightMinutes`** (la lettura 3-bis; il punto 2 del revisore
-    sulla #291, la risposta 1 di Carmine sulla #293): una voce di volo è verificata solo quando la sessione trovata ha come ultima rotta quella
-    della voce (`ReportRules.FlewRoute`) ed è durata almeno l'impostazione nuova (`ReportRules.LongEnough`, 10 minuti di predefinito); un
-    PIREP `Auto` scrive l'ultima rotta, e **un evento senza scali suoi non ne scrive** (la risposta 2). Un doppio di `INetworkSessionSource`
-    che costruisce sessioni senza scali non verifica più nessun volo: `EventsReportsTests` dà alle sue gli scali con
-    `IvaoTrackerReader.ReadPlannedRoutes`, come la sorgente vera.
-  - ⚠️ **Il segnale non è del PIREP**: la riga sorgente è `evt_report_awards` (`report-award:{id}`), una per PIREP e regola, **mai
-    cancellata** (`points_out`). Chi chiede «questo PIREP ha dato un award?» passa da `ReportAwards.AssignedAsync`, che chiama il metodo del
-    nucleo della fase **E10x** (`AwardSignalQueries.AssignedAsync`).
-  - ⚠️ **Il banco non trova sessioni del pilota**: un PIREP del banco non ha voci verificate e non soddisfa nessuna regola. Il «fatta quando»
-    sul banco ha reso verificata la voce in SQL; i segnali li provano `EventsAwardRulesTests`.
-  - ⚠️ **I VID di prova**: E14b ha usato **761262–761268** della fascia 761262–761299.
-
-### Che cosa ha lasciato E10x (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299, del nucleo; diretta su `main`, nata a `01fdbed5`)
-
-- **Che cosa c'è** (il dettaglio in `10`, E10x, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo; una nota
-  nuova, `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
-  - **`AwardSignalQueries.AssignedAsync(DbContext context, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken
-    cancellationToken = default)` → `Task<IReadOnlySet<string>>`** (`src/IvaoHub.Core/Content/AwardSignalQueries.cs`, accanto a
-    `AwardSignal.cs`, spazio dei nomi `IvaoHub.Core.Content`): i source id fra quelli chiesti, di quel modulo, di cui un segnale è
-    **`Handled`** — cioè un'assegnazione l'ha risposto. `Pending`, `Dismissed`, nessun segnale, un altro modulo: non ci sono. Nessun id,
-    nessuna query.
-  - **Dentro una transazione** del contesto dato (`Database.CurrentTransaction`): una `SELECT … FOR UPDATE` di **tutte** le righe del
-    segnale di quelle sorgenti, in ordine di `id`, che legge l'ultima versione committata e tiene il lock fino alla fine della transazione
-    di chi chiama; **fuori**, una lettura semplice che non aspetta nessuno.
-  - **I test**: `AwardSignalQueriesTests` (integrazione, 5 casi, il modulo di test, le persone 780041 e 780043 di `AwardsTests`).
-- **Che cosa chiama E14b** (che unisce questo branch, poi `main` quando è unita):
-  - nella decisione su un PIREP, **dentro** la sua transazione READ COMMITTED: `await AwardSignalQueries.AssignedAsync(database,
-    EventsModule.ModuleKey, sources, cancellationToken)`, con `sources` = `EventReportAward.SourceOf(id)` di **tutte** le righe del PIREP;
-    un insieme non vuoto, la decisione si rifiuta. Al posto di `ReportAwards.AssignedAsync(reportId, locking: true, …)`;
-  - nella lista, **fuori** transazione, la stessa chiamata con le sorgenti della pagina, poi da sorgente a PIREP. Al posto di
-    `AssignedAmongAsync`;
-  - ⚠️ il lock c'è **solo** dentro una transazione del contesto che si passa: un contesto diverso da quello della transazione non blocca
-    niente;
-  - ⚠️ perché la domanda veda **ogni** segnale che il PIREP ha mai prodotto (il punto 1 della revisione della #293), le righe di
-    `evt_report_awards` restano anche quando il PIREP è rifiutato: è E14b a tenerle, con uno snapshot vuoto finché non è accettato;
-  - ⚠️ «diventato award» è `Handled` **anche se l'assegnazione è stata cancellata** dal registro dopo: il segnale non torna indietro (nota
-    §2.4);
-  - ⚠️ un'assegnazione che arriva mentre chi chiama tiene il lock aspetta; se chi chiama ritira il segnale `Pending` e committa,
-    l'assegnazione risponde **409** e non scrive niente (`AnAssignmentWaitsForTheCallerAndFindsTheSignalWithdrawn`).
-
-### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`, con `main` a `0bfbdbb3` e poi a `e7b1331c` unito)
-
-- **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
-  fixture cambiata; una nota nuova, `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b)):
-  - **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt, string? DepartureIcao = null, string?
-    ArrivalIcao = null) { IReadOnlyList<NetworkRoute> Routes }`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`), con
-    **`NetworkRoute(string DepartureIcao, string ArrivalIcao)`**: `Routes` è ogni revisione del piano di volo, dalla più vecchia, in
-    maiuscolo, nell'ordine dell'`id` del piano, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
-    l'**ultima** voce di `Routes`; `null` e vuota per un controllore o una sessione senza piano.
-  - **L'uguaglianza è di valore**: due sessioni con le stesse rotte sono uguali (`Equals` e `GetHashCode` scritti nel record).
-  - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** (`IvaoTracker.cs`): le revisioni dal `RawJson` della riga, che il
-    client ha già; nessuna chiamata nuova alla rete. Il DTO e i tour non cambiano.
-  - **I test**: `NetworkSessionSourceTests` (unità, ora 14 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
-    LIRF→LICR).
-- **Che cosa legge E14b** (che unisce questo branch, poi `main` quando è unita):
-  - di ogni sessione di `INetworkSessionSource.SessionsAsync`: **`DepartureIcao`** e **`ArrivalIcao`** per la voce di volo di un PIREP
-    `Auto` (callsign, partenza, arrivo, giorno = `StartedAt`) e per le regole `Route`, `RouteTimes`, `MinLegDistance`; **`Routes`**
-    quando una regola vuole sapere se la sessione ha **mai** detto una rotta (un pilota che in una connessione vola due tratte le ha tutte
-    e due, e l'ultima è nei due campi);
-  - ⚠️ una sessione con `DepartureIcao` `null` non ha piano: non è una voce di volo;
-  - ⚠️ **`Routes` sono i piani depositati, non le tratte volate** (il revisore sulla #291, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281)): chi deposita
-    LIRF→LICR, corregge in LIRF→LIMC e vola quella ha tutte e due in `Routes` e LIRF→LIMC nei due campi. **La nota di E14b dice, regola per
-    regola** (`Route`, `RouteTimes`, `MinLegDistance`, i PIREP `Auto`), quale lettura usa — i due campi, o `Routes` —, perché un award
-    non si dia mai per una rotta solo depositata;
-  - ⚠️ `RouteTimes` conta le **sessioni**, non le voci di `Routes`: due revisioni uguali sono una tratta sola;
-  - ⚠️ il doppio di `INetworkSessionSource` in `EventsAfterTests` (E13a) costruisce le sessioni **senza scali**: un test di E14b che li
-    vuole li scrive nel suo doppio (con il lettore, `IvaoTrackerReader.ReadPlannedRoutes`, sulle righe della fixture), o chiede la
-    sorgente vera con il client delle fixture;
-  - le regole del tracker restano quelle di E10a ed E10t: la domanda con due scali trova una sessione che li ha in **una stessa**
-    revisione, che può non essere l'ultima.
 
 ### Che cosa ha lasciato E14a (17–18 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, con le sue teste `ecc5a35b` e `0c8d5313` unite, poi `main` a `e7b1331` (E13b ed E10u unite) e a `01fdbed` (la #290 e E10v, #291))
 
@@ -570,6 +549,37 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il banco non ha sessioni del pilota**: sul banco il PIREP del giro è verificato `Invalid`; trovare un volo e un turno lo provano
     `EventsReportsTests` con la sera delle fixture spostata nel tempo.
   - ⚠️ **I VID di prova**: E14a ha usato **761230–761236** della fascia 761230–761259.
+
+### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`, con `main` a `0bfbdbb3` e poi a `e7b1331c` unito)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
+  fixture cambiata; una nota nuova, `2026-10-17-gli-scali-di-una-sessione`, scelta tecnica, caso (b)):
+  - **`NetworkSession(long Id, int Vid, string Callsign, DateTime StartedAt, DateTime EndedAt, string? DepartureIcao = null, string?
+    ArrivalIcao = null) { IReadOnlyList<NetworkRoute> Routes }`** (`src/IvaoHub.Core/Ivao/NetworkSessionSource.cs`), con
+    **`NetworkRoute(string DepartureIcao, string ArrivalIcao)`**: `Routes` è ogni revisione del piano di volo, dalla più vecchia, in
+    maiuscolo, nell'ordine dell'`id` del piano, una per revisione (anche due uguali), senza le revisioni a cui manca uno scalo; `DepartureIcao`/`ArrivalIcao` sono
+    l'**ultima** voce di `Routes`; `null` e vuota per un controllore o una sessione senza piano.
+  - **L'uguaglianza è di valore**: due sessioni con le stesse rotte sono uguali (`Equals` e `GetHashCode` scritti nel record).
+  - **`IvaoTrackerReader.ReadPlannedRoutes(IvaoTrackerSessionDto)`** (`IvaoTracker.cs`): le revisioni dal `RawJson` della riga, che il
+    client ha già; nessuna chiamata nuova alla rete. Il DTO e i tour non cambiano.
+  - **I test**: `NetworkSessionSourceTests` (unità, ora 14 casi), con la sessione `1000007` della sera di Fiumicino (LIPZ→LIRF, poi
+    LIRF→LICR).
+- **Che cosa legge E14b** (che unisce questo branch, poi `main` quando è unita):
+  - di ogni sessione di `INetworkSessionSource.SessionsAsync`: **`DepartureIcao`** e **`ArrivalIcao`** per la voce di volo di un PIREP
+    `Auto` (callsign, partenza, arrivo, giorno = `StartedAt`) e per le regole `Route`, `RouteTimes`, `MinLegDistance`; **`Routes`**
+    quando una regola vuole sapere se la sessione ha **mai** detto una rotta (un pilota che in una connessione vola due tratte le ha tutte
+    e due, e l'ultima è nei due campi);
+  - ⚠️ una sessione con `DepartureIcao` `null` non ha piano: non è una voce di volo;
+  - ⚠️ **`Routes` sono i piani depositati, non le tratte volate** (il revisore sulla #291, [il suo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281)): chi deposita
+    LIRF→LICR, corregge in LIRF→LIMC e vola quella ha tutte e due in `Routes` e LIRF→LIMC nei due campi. **La nota di E14b dice, regola per
+    regola** (`Route`, `RouteTimes`, `MinLegDistance`, i PIREP `Auto`), quale lettura usa — i due campi, o `Routes` —, perché un award
+    non si dia mai per una rotta solo depositata;
+  - ⚠️ `RouteTimes` conta le **sessioni**, non le voci di `Routes`: due revisioni uguali sono una tratta sola;
+  - ⚠️ il doppio di `INetworkSessionSource` in `EventsAfterTests` (E13a) costruisce le sessioni **senza scali**: un test di E14b che li
+    vuole li scrive nel suo doppio (con il lettore, `IvaoTrackerReader.ReadPlannedRoutes`, sulle righe della fixture), o chiede la
+    sorgente vera con il client delle fixture;
+  - le regole del tracker restano quelle di E10a ed E10t: la domanda con due scali trova una sessione che li ha in **una stessa**
+    revisione, che può non essere l'ultima.
 
 ### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con le sue teste `a2631e6` e `59d544e` e `main` a `8bf63ea` uniti)
 

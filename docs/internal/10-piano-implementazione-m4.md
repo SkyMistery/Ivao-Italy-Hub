@@ -4585,8 +4585,21 @@ uno spec piccolo li usa tutti e due sul banco pubblicato; e la prova al contrari
   unità **1365/1365**; integrazione `E2EBenchRunsTests` e `AuthenticationTests` (cambiata da `main`) **30/30** — non l'intera, che
   un'altra sessione stava facendo girare; `pnpm -C web` lint, typecheck, format:check e test (**805/805**, `--maxWorkers=2`) verdi;
   `gen:api` senza differenze; `core-guard.sh` con Git Bash dalla base `3cdacd97`: passa.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile][r300w], con la CI verde su `986c611`. I due punti
+  facoltativi sono fatti: `ScheduledJobs.RunNowAsync` è **`internal`**, e il nucleo mostra i suoi interni solo a `IvaoHub.Web`
+  (`InternalsVisibleTo` in `IvaoHub.Core.csproj`), così un chiamante futuro non salta «una volta per occorrenza»; e una riga ⚠️ in
+  `HANDOFF-M4.md` dice che un job senza `[DisallowConcurrentExecution]` risponderebbe `Skipped`. Unito, su sua richiesta, `main` a
+  `4363c40` (#296, #297 e #298, che tocca anche `Program.cs`), senza conflitti: i blocchi del banco in `Program.cs` restano com'erano.
+  Rifatto tutto: build Release 0 avvisi, unità **1386/1386**, integrazione intera da sola **671/671** al primo giro (12 minuti; prima,
+  un giro tutto rosso con Docker spento, riacceso), `pnpm -C web` lint, typecheck, format:check e test (**805/805**, `--maxWorkers=2`)
+  verdi, `gen:api` senza differenze, sul banco 5154 ripubblicato `bench-runs.spec.ts` e `round.spec.ts` **6/6**, `core-guard.sh` con
+  Git Bash dalla base `4363c403`: passa.
+- **Unito `main` a `fa9c29b4`** (18 ottobre 2026, E14a, #289, che rendeva la PR in conflitto), in conflitto solo in `HANDOFF-M4.md`: E10w
+  in cima ed E14a sotto. Il diff della fase fuori dai documenti è lo stesso. Rifatti: build Release 0 avvisi, unità **1396/1396**,
+  integrazione `E2EBenchRunsTests`, `EventsReportsTests` (di E14a, che legge le sessioni della rete) e `ScheduledJobsTests` **28/28**.
 
 [a294w]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
+[r300w]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/300#issuecomment-6251424579
 
 ### E10x — Nucleo: «questa riga ha dato un award?»
 
@@ -4608,7 +4621,8 @@ versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa
 - **Fatto** (nota nuova `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
   - **`AwardSignalQueries.AssignedAsync(DbContext, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken = default)`
     → `Task<IReadOnlySet<string>>`** in `src/IvaoHub.Core/Content/AwardSignalQueries.cs`: dentro una transazione una `SELECT source_id,
-    status … ORDER BY id FOR UPDATE` di tutte le righe del segnale di quelle sorgenti; fuori, una lettura LINQ senza tracking.
+    status … FOR UPDATE` di tutte le righe del segnale di quelle sorgenti (da chiamare sotto READ COMMITTED); fuori, una lettura LINQ
+    senza tracking.
   - **`AwardSignalQueriesTests`** (integrazione, 5 casi): `Handled` solo e solo del modulo, dal contesto del hub e da quello del modulo
     di test, con e senza transazione; nessun id; la chiamata aspetta una transazione che tiene la riga e ne legge il `Handled`; al
     contrario, un'assegnazione vera (`POST /api/award-assignments`) aspetta chi chiama e, ritirato il segnale, risponde 409 senza award;
@@ -4631,6 +4645,17 @@ versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa
   - la CI (la dice la PR);
   - `e2e:full` e la smoke: una query del nucleo, nessuna schermata e nessun chiamante nel modulo;
   - l'uso vero, nella decisione e nella lista dei PIREP: è di E14b.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462),
+  con tre commenti, tutti fatti (nota §7): il commento del metodo dice «call it under READ COMMITTED» (sotto REPEATABLE READ i lock sui
+  buchi possono mandare in deadlock due chiamanti su sorgenti senza segnale); l'ordine dei lock è quello dell'indice
+  `(source_module, source_id, vid)`, non dell'`ORDER BY id`, che è **tolto** (ordinava solo un insieme), corretti il commento e la nota
+  §3.3; una riga del commento per la lettura semplice in silenzio sotto una `TransactionScope` ambientale o in un `BeforeSave` del CRUD. Il
+  punto portato a Carmine, l'assegnazione cancellata che lascia il segnale `Handled`, è **deciso (A)**
+  ([risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251691217), nota §2.4). Unito `main` a `fa9c29b4`
+  (E14a, #289), in conflitto solo in `HANDOFF-M4.md`: i due blocchi tenuti, E10x in cima. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1391/1391**, `AwardSignalQueriesTests` 5/5, integrazione intera da sola **683/683** al primo giro (13 minuti), `gen:api` senza differenze, `core-guard.sh` con Git Bash dalla base `fa9c29b4`: passa.
+  Di nuovo [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6252455578); unito `main` a `11636395`
+  (E10w, #300), in conflitto solo in `HANDOFF-M4.md` e in questo file: i blocchi di tutte e due le parti tenuti, E10x in cima all'handoff,
+  E10w prima di E10x qui. Il merge non porta codice di E10x: `dotnet restore IvaoHub.sln --force --no-http-cache` verde, build Release 0 avvisi, unità **1396/1396**, `AwardSignalQueriesTests` 5/5, `core-guard.sh` con Git Bash dalla base `11636395`: passa.
 
 ### E11a — Postazioni e disponibilità
 
@@ -5509,9 +5534,10 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
-`2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
-#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **Proposta** (la strada di dalberone, la fase
-del nucleo E10v, che il codice segue; la scelta è di Carmine, il punto 3 della revisione della #293)):
+`2026-10-17-le-regole-di-award`, **decisa**: le letture da Carmine sulla #293; la domanda 1 **decisa** da Carmine, (A), sull'[issue
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **decisa** da Carmine, (A), sulla
+[#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103) (la fase del nucleo E10v, la strada di dalberone che il
+codice segue)):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
   `evt_events.auto_reports_cursor`.
@@ -5601,7 +5627,9 @@ letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248
   che segnalano**: provato).
 - **Il punto 2**: `ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused`, una transazione del test tiene la riga del segnale e la marca
   assegnata, la decisione aspetta al `FOR UPDATE` ed è rifiutata (**cade senza il `FOR UPDATE`**: provato).
-- **Il punto 3**: la domanda 2 resta **Proposta** nella nota. **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
+- **Il punto 3**: la domanda 2 è tornata **Proposta** nella nota, poi **decisa** da Carmine, (A), il 18 ottobre 2026
+  ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103), in chat al master, pubblicata su sua
+  istruzione). **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
   `evt_events.auto_reports_cursor`, non una colonna di persona (la sua riga in `ErasureTests` tolta); un `Auto` corretto dal membro diventa
   `Manual`; un turno `Auto` si verifica con `AfterRules.Threshold`, come uno a mano. `AddAwardRules` rifatta (mai su `main`).
 - **La risposta 1 di Carmine**: l'impostazione **`minimumFlightMinutes`** (10, da 1 a 120, nel form generato delle impostazioni): un volo è
@@ -5742,7 +5770,8 @@ in coda dopo la #293 di E14b e la #300 di E10w — e sotto di lei E10v #291, E14
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879)), con la fase del nucleo E10w (#300) prima; la 1, le disponibilità di un evento mai pubblicato, **decisa (A)** lo stesso giorno ([la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)), com'è il codice.
 Poi ha unito la testa di E14b `1cba4907` (con E14a, E10v e `main` a `e7b1331`, E10u ed E13b unite) la testa di E10w `986c6116` (con `main`
-a `3cdacd97`) e la testa di E14b `e5eb1d17` (con E14a `77bf5068` ed E10x, #299); il rapporto di chiusura `2026-10-17-m4-review`):
+a `3cdacd97`) e la testa di E14b `e5eb1d17` (con E14a `77bf5068` ed E10x, #299); infine, con la #293 unita e **l'ultima della coda**, `main`
+a `f436c918` (E14a, E10x, E14b, E10w, il piano 1.38, #304, e la #303); il rapporto di chiusura `2026-10-17-m4-review`):
 
 - **Ogni voce controllata sul codice prima di scrivere** (come chiedeva il coordinatore): tre delle sei erano già fatte da fasi prima, e
   questa fase ne ha aggiunto solo i test.

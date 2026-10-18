@@ -129,7 +129,8 @@ public sealed class ScheduledJobs(
     /// the job's last run, as any run's does. Waited for until it ends, or as long as a pass waits for one job.
     /// </summary>
     /// <returns>What became of the run; null when the hub has no job of that name.</returns>
-    public async Task<JobRunState?> RunNowAsync(string job, CancellationToken cancellationToken = default)
+    /// <remarks>Internal, and seen only by the host (<c>InternalsVisibleTo</c>): no module and no installation calls it.</remarks>
+    internal async Task<JobRunState?> RunNowAsync(string job, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(job);
 

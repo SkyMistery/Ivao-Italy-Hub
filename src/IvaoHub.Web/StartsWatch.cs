@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using IvaoHub.Core.Services;
 
@@ -75,6 +76,17 @@ internal sealed class StartsWatch
         var pid = Environment.ProcessId;
         var took = _timings.Elapsed;
         var memory = ProcessMemory.Now();
+
+        // What the steps alone do not say: the code compiled and the database reached before ready (note
+        // 2026-10-18-i-tempi-delle-richieste). Nothing has run inside a request yet, so it is all outside one.
+        var before = RequestTiming.Outside;
+        var costs = new StartCosts(
+            JitInfo.GetCompilationTime(),
+            JitInfo.GetCompiledMethodCount(),
+            before.Opens,
+            before.OpenTime,
+            before.Commands,
+            before.CommandTime);
         StartsLog.AppendStart(_paths, lines =>
         {
             var now = DateTime.UtcNow;
@@ -86,7 +98,8 @@ internal sealed class StartsWatch
                 StartsLog.Previous(lines, now, pid, StartsLog.IsHubRunning),
                 memory,
                 _timings.Steps,
-                _timings.Initialisation);
+                _timings.Initialisation,
+                costs);
         });
     }
 
@@ -106,7 +119,8 @@ internal sealed class StartsWatch
             _timings.Elapsed,
             Interlocked.Read(ref _requests),
             first < 0 ? null : TimeSpan.FromTicks(first),
-            ProcessMemory.Now()));
+            ProcessMemory.Now(),
+            JitInfo.GetCompilationTime()));
     }
 
     /// <summary>

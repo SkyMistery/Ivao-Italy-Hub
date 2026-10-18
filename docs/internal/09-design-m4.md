@@ -435,6 +435,15 @@ sua riga in `ErasureTests`.
 - **`evt_report_items`**: un volo (callsign, partenza, arrivo, giorno) o un turno (postazione, da, a) dichiarato, con
   quello che la verifica ha trovato: la sessione, i minuti, la distanza in miglia, `verified`.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 1, piano 1.38): il PIREP ha in più `checked_at` (quando la
+verifica ha guardato le voci l'ultima volta), `created_at`, `updated_at` e la cura dell'evento; è un `IEventChild` che adotta la cura
+dell'evento prima che lo staff decida, con lo scope dell'evento (`IHasResourceScope`). La voce porta `event_id`, **il VID del membro**
+(`vid`) e l'ordine (`ordinal`); per un volo `callsign`, `departure_icao`, `arrival_icao`, `flight_day`, per un turno `callsign` (la
+postazione), `from_utc`, `to_utc`; e la verifica, `session_id` (solo un volo), `minutes`, `distance_nm` (solo un volo, al decimo),
+`verified` (vuoto: non chiesto). Anche la voce è `ISubmittedByMembers`, `IHasStakeholder` e `IEventChild`, con il suo VID, perché il
+guardiano legge il membro dalla riga che scrive e `[ErasedWith]` copre solo un dato nominato dalla stessa riga; **`[WithdrawnByStakeholder]`
+sta sulla voce, non sul PIREP**, che porta una decisione dello staff e non si ritira. La migrazione è `AddSupportReports`, additiva.
+
 ### 1.9 Le regole di award — `evt_award_rules`
 
 `event_id`, `award_id`, `kind` (`Pilot`, `Atc`), `criterion` da un **elenco chiuso** (c3), `parameters`:
@@ -566,6 +575,10 @@ Per l'ATC: **candidature aperte** fino a inizio − `applicationsCloseDays`; **r
 - **Elimina** (`Events.Delete`, `DeletePolicy`): solo senza prenotazioni, disponibilità, turni o PIREP; altrimenti si
   annulla. Chi collabora non elimina (§6.3). **Deciso con E4** (piano 1.30): eliminare porta via le rotte nello stesso
   salvataggio, quindi chi elimina deve avere anche `EventRoutes.Edit`.
+- **Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 13 cambiata da Carmine sulla #289, piano 1.38): **un
+  evento non si elimina più da mezz'ora dopo il suo inizio, o da quando ha un PIREP**, quale delle due venga prima, con o senza righe
+  dei membri (`eventStarted`, `EventSaving.StartedTooLongAgo`: dopo inizio + 30 minuti, non un istante prima; `eventHasReports`). Si
+  può sempre **annullare**: resta, mostrato come annullato, con le sue prenotazioni e i suoi dati.
 
 ### 2.3-bis Duplicare un evento
 
@@ -802,6 +815,27 @@ Con le prenotazioni illimitate, all'apertura qualcuno può prendere molti slot e
 - **lo vedono il pilota** (`/events/mine`) **e lo staff**; lo staff toglie una voce solo a mano, con una nota.
 
 Serve la verifica dopo l'evento, quindi la regola vale da M4b (fase E13); prima, nessun pilota ha un registro.
+
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 5–9, piano 1.37; le risposte di Carmine
+sull'issue #280 e sulla #283):
+
+- **il registro** conta le prenotazioni verificate (`flown_checked_at`), senza volo e non tolte (`unflown_excused_by` vuoto) di eventi
+  finiti negli ultimi `pilotRetentionMonths`, dalla fine dell'evento; lo staff lo legge in **`/staff/events/pilots`** (§7.2), una lettura
+  scritta a mano (`GET /api/events/bookings/register`), solo con `EventBookings.View` **senza uno scope di risorsa** (la (b) di Carmine,
+  `HasUnscoped` di E10u, §6.2); il dettaglio è la lista del motore delle prenotazioni con `filter[bookerVid]`;
+- **«togli»** di una prenotazione non volata (`POST /api/events/bookings/{id}/excuse`, nota obbligatoria fino a 1000 caratteri):
+  `EventBookings.Edit` sulla prenotazione, una volta, sotto un `FOR UPDATE` sulla riga; la prenotazione tiene `[WithdrawnByStakeholder]`
+  (la decisione cade dopo il volo). Le statistiche non cambiano;
+- **le fasce** sono fisse, dall'inizio dell'evento, ogni `restrictedWindowHours` ore, e una prenotazione cade in quella del suo orario
+  allo scalo dell'evento (l'off block di una partenza, l'on block di un arrivo); il pilota con i limiti tiene al più K per fascia e M
+  nell'evento, contate con quelle già salvate e con quelle della stessa richiesta (la rotazione, la partenza collegata), sotto il blocco
+  del pilota, dopo la compatibilità. I tre limiti dell'evento sostituiscono uno a uno quelli delle impostazioni; la soglia è solo delle
+  impostazioni;
+- **il rifiuto** porta due chiavi sul campo `slotId` (`bookingRestrictedWindow`, `bookingRestrictedEvent`), e numeri e data la pagina li
+  legge da **`GET /api/events/mine/record?eventId=`**, il registro del membro, che `/events/mine` mostra; **fino a quando** è la fine
+  dell'evento della `(n − s + 1)`-esima prenotazione contata più vecchia più `pilotRetentionMonths`;
+- **le impostazioni**: `noShowWeight` 1 (0–10), `unflownThreshold` 3 (1–100), `restrictedWindowHours` 2 (1–48),
+  `restrictedMaxPerWindow` 1 (1–50), `restrictedMaxPerEvent` 2 (1–200), gli stessi limiti per i tre dell'evento.
 
 ### 3.8 Il promemoria del giorno prima
 
@@ -1055,6 +1089,25 @@ perché cambiare il titolare di un turno non è una modifica della propria riga.
   pesa 0,08; su due, 0,25. Il «+ 2» evita che il primo no-show di un nuovo controllore pesi il massimo. **Conta per sempre**
   (c3): nessuna scadenza.
 
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 1–4, piano 1.37; la (A) di Carmine sull'issue
+#280, e sulla #283 la lettura 1 cambiata e la (b)):
+
+- **gli esiti**: `POST /api/events/atc/shifts/{id}/attendance`, su un turno di un evento finito e non annullato — anche prima che
+  `events-after` l'abbia guardato e dopo che l'ha chiuso —, porta il turno a `Attended`, `NoShow` o `Excused`, e **nessun esito è
+  definitivo** (Carmine sulla #283): chi può decidere il turno li cambia l'uno nell'altro anche dopo; chiedere l'esito che il turno ha già
+  è rifiutato. La nota è obbligatoria per `Excused`, al più 500 caratteri, e una decisione senza nota tiene quella di prima; il verbo
+  scrive `attendance_by` e `attendance_at`, l'audit ogni passo; nessuna mail. `EventAtc.Edit` sul turno, negato al controllore della
+  riga (`DeniedToStakeholder`). Due decisioni insieme si incontrano sul blocco della riga dell'evento; una decisione e il giro di
+  `events-after` sulla `row_version`, e chi perde fallisce (la decisione con 409). Le statistiche le rifà «Ricalcola»;
+- **togliere un no-show** è la stessa chiamata con `Excused`, in qualunque momento, con la nota;
+- **la penalità** conta degli altri eventi i turni `Attended` e `NoShow`, con `noShowWeight`: un proposto non pesa finché non è
+  confermato, un giustificato e un `Unknown` non contano;
+- **il registro** è **`/staff/events/controllers`**, una lettura scritta a mano (`GET /api/events/atc/register`), con `EventAtc.View`
+  **senza uno scope di risorsa** (§6.2): fatti, no-show, giustificati, da decidere, la penalità, **contati su tutti i turni** del
+  controllore, di ogni FIR; il dettaglio è la lista del motore dei turni con `filter[controllerVid]`, che il motore restringe alle righe
+  che il lettore legge, con i verbi sulle righe che può scrivere. Il controllore legge il suo in `/events/mine`
+  (`GET /api/events/mine/record`, §3.7).
+
 ---
 
 ## 4-bis. Gli eventi in presenza (M4c)
@@ -1232,7 +1285,13 @@ ricerca per ogni aeroporto della divisione.
 **`INetworkSessionSource`** del nucleo (`Core/Ivao/NetworkSessionSource.cs`), la stessa domanda di E10a sotto un nome neutro: VID
 facoltativo, finestra, scali, `Pilot` o `Atc`, `Limit` fino allo stesso tetto; risponde numero, VID, callsign, inizio e fine, dalla più
 recente, una volta per numero; `null` è «la rete non ha risposto», mai «nessuno ha volato». Le regole di E10a (nota
-`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali.
+`2026-09-30-il-tracker-senza-vid` §3.6) valgono uguali. **Dal 17 ott 2026** (E10v, #291, nota `2026-10-17-gli-scali-di-una-sessione`,
+piano 1.37) la sessione risponde anche **gli scali**: `Routes`, partenza e arrivo di **ogni revisione** del piano di volo, dalla più
+vecchia (ordinate per `id`), e `DepartureIcao`/`ArrivalIcao` dell'**ultima** — per la sessione `1000007` della sera di Fiumicino
+LIRF→LICR, la rotta che E13a trova —; `null` e vuota per un controllore o una sessione senza piano. Li legge dalla riga che il client ha
+già (`IvaoTrackerReader.ReadPlannedRoutes`), senza una chiamata nuova. E14b ne legge la voce di volo di un PIREP `Auto` e le rotte delle
+regole `Route`, `RouteTimes`, `MinLegDistance`. ⚠️ **`Routes` sono i piani depositati, non le tratte volate**: la nota di E14b dice,
+regola per regola, quale lettura usa, perché un award non si dia mai per una rotta solo depositata.
 
 **Deciso con E13a** (#278, nota `2026-10-16-le-verifiche-dopo-l-evento`, piano 1.36; le risposte di Carmine sull'issue #272, la (A)
 alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
@@ -1279,12 +1338,41 @@ corregge finché non è deciso. Il sistema crea lo stesso PIREP da solo per chi 
   proprio. Mail al membro (`reportDecided`). **I validatori ricevono un riepilogo** dei PIREP da validare
   (`reportsToValidate`), come il riepilogo dei validatori dei tour (M2), una volta al giorno.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, letture 3–7, piano 1.38; la (A) di Carmine alle tre scelte
+sull'issue #287, con il limite sulla prima):
+
+- **chi manda**: qualunque membro entrato, su un evento **pubblicato, non annullato, finito, non in presenza**, fino a `reportDays`
+  giorni dopo la fine (14, da 1 a 60); non serve una prenotazione o un turno. Uno per tipo per evento; `/events/mine` elenca gli
+  eventi ancora aperti a un PIREP e i PIREP del membro;
+- **le voci**, da 1 a 20: un volo (callsign, due ICAO diversi che l'hub conosce, il giorno UTC dentro la finestra dei voli di E13a)
+  che **tocca uno scalo dell'evento**, su un evento con i suoi scali e non di tutta la divisione — altrimenti rifiutato all'invio —; un
+  turno (un nominativo qualunque, da e a, al più dodici ore, dentro la stessa finestra, senza sovrapporsi a un altro dello stesso
+  PIREP). I rifiuti campo per campo con `Refusals`;
+- **la verifica**, a ogni invio, **prima** del blocco della riga (la rete può metterci secondi) e scritta sotto il blocco con le voci:
+  un volo cerca fra le sessioni del membro (`INetworkSessionSource`, `Pilot`) del suo giorno, fra partenza e arrivo, una per voce in
+  due passate (prima chi ha il suo callsign); la distanza è sempre quella fra i due aeroporti (`GreatCircle`); un turno come
+  `events-after` (l'archivio, poi il tracker), verificato con `attendanceMinimumMinutes`. Una voce non chiesta dà **`Unavailable`**,
+  mai un'ipotesi, e **nessun job riverifica**: il membro rimanda;
+- **«correggibile finché non è deciso»**: mandare di nuovo sostituisce tutte le voci, solo mentre il PIREP è `Submitted` ed entro
+  `reportDays` (`PUT /api/events/mine/reports/{eventId}/{kind}`, sotto il blocco della riga del PIREP);
+- **la decisione** (`POST /api/events/reports/{id}/decision`): `EventReports.Edit` chiesto all'unico handler **prima** di scrivere,
+  negato al membro della riga, il superadmin compreso (`DeniedToStakeholder`); la nota obbligatoria per rifiutare; porta lo stato e
+  `updatedAt` che chi valida ha visto, e un PIREP cambiato nel frattempo risponde 409 (`reportChanged`). **Una decisione si cambia**
+  (la (A) di Carmine), con la mail di nuovo, **finché nessun award è stato assegnato dal segnale del PIREP** (il limite di Carmine
+  sulla #287, scritto da E14b). L'MD valida e non scrive altro.
+
 ### 5.4 Le regole di award e il segnale
 
 **Accettare** un PIREP valuta le regole di award dell'evento (§1.9) sulle sue voci **verificate**, e per ogni regola
 soddisfatta il PIREP proietta un **`AwardSignalProjection`** (VID, motivo, `award_id`) nella stessa transazione (c3). Chi ha
 `Awards.Assign` (oggi l'MD) lo trova nella coda degli award del nucleo e **assegna a mano** (piano §9.7). Il nucleo oggi
 **non avvisa** chi assegna: la mail «qualcuno deve ricevere un award» (c1) è l'estensione n.5, che vale anche per i tour.
+
+**Dal 18 ott 2026** (E10x, #299, nota `2026-10-18-un-segnale-diventato-award`, decisa da Carmine sulla #293 e sulla #299, piano 1.38):
+**se il segnale di una riga è diventato un award lo dice il nucleo**, `AwardSignalQueries.AssignedAsync` (`Core/Content/`), sul contesto
+di chi chiama, con il lock sulle righe del segnale dentro una sua transazione READ COMMITTED; «diventato award» è `Handled`, anche se
+l'assegnazione è stata poi cancellata dal registro (la (A) di Carmine). La decisione su un PIREP lo chiede al nucleo con le sorgenti di
+**tutte** le righe del PIREP, e un PIREP con un award assegnato non si decide di nuovo; mai una query del modulo su `cms_award_signals`.
 
 ---
 
@@ -1302,13 +1390,18 @@ Cinque aree, perché ogni capacità che si delega a un altro dipartimento è **u
 | `Events.ManageSettings` | impostazioni del modulo | no |
 | `EventRoutes.View`, `.Edit` | le rotte | no |
 | `EventBookings.View` | slot, prenotazioni, iscrizioni e attività con i VID; l'esportazione per il Gate Manager | no |
-| `EventBookings.Edit` | slot, import, generatore, attività; togliere una prenotazione o un'iscrizione | no |
+| `EventBookings.Edit` | slot, import, generatore, attività; togliere una prenotazione o un'iscrizione | ~~no~~ **sì** (E13b) |
 | `EventAtc.View` | postazioni, disponibilità, roster, registro di affidabilità | no |
 | `EventAtc.Edit` | postazioni, correggere il roster, confermare o giustificare un no-show | **sì** |
 | `EventReports.View` | i PIREP di supporto | no |
 | `EventReports.Edit` | validare un PIREP di supporto | **sì** |
 
 Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` per ogni riga dello staff (trappola di A5).
+
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, la (A) di Carmine alla lettura 6 sull'issue #280,
+piano 1.37): **`EventBookings.Edit` è `DeniedToStakeholder`** nel catalogo — nessuno decide sulle proprie prenotazioni, iscrizioni e
+posti, e chi dello staff ha prenotato e non volato non toglie la propria voce dal registro; ritirare la propria prenotazione, iscrizione o
+posto lo fa già da membro. È la regola «chi ha interesse non decide», una riga del catalogo e nessun `if` nel modulo.
 
 ### 6.2 Chi li ha (`division.json → positionGrants`)
 
@@ -1338,6 +1431,11 @@ Ogni area ha il suo `View` e il suo `Edit`: il guardiano chiede `{Area}.Edit` pe
   collabora su un evento deve poterne caricare gli slot —, **mai un evento nuovo** (per convenzione: un grant si scrive su
   una riga che esiste).
   `EventBookings.Edit` tenuto su un evento solo e la propria prenotazione in quell'evento restano come sono.
+- **Deciso con E13b ed E10u** (#283, #288, note `2026-10-16-i-no-show-i-registri-e-i-limiti` e `2026-10-17-il-permesso-senza-ambito`,
+  la (b) di Carmine sulla #283, piano 1.37): **un grant su un evento non apre i registri**. `/staff/events/controllers` e
+  `/staff/events/pilots`, e le loro voci di menu (`NavItemDescriptor(…, Unscoped: true)`), chiedono `EventAtc.View` ed
+  `EventBookings.View` **senza un ambito su una riga** (`HasUnscoped`): lo staff dell'ED, i grant alle posizioni della tabella, i team dei
+  FIR, l'HQ e il super amministratore; un grant su un evento o su una riga riceve 403, e la voce non la vede.
 
 ### 6.3 La collaborazione e la cancellazione
 
@@ -1495,6 +1593,27 @@ i tre del flusso del membro sotto `/api/events/mine/registrations` — la lettur
 risposte (`PUT /{eventId}`, 201 la prima volta e 200 dopo), ritirarsi (`DELETE /{eventId}`) — e
 `POST /api/events/registrations/{id}/remove`; le domande e la lista delle iscrizioni sono del motore.
 
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, letture 4, 5, 8 e 10, piano 1.37; la (A) di Carmine
+sull'issue #280):
+
+- **`/staff/events/controllers`** è il registro dei controllori (§4.5), e accanto c'è **`/staff/events/pilots`**, il registro dei piloti
+  (§3.7), **una pagina che questo design non nominava**; tutte e due solo a chi tiene il permesso senza un ambito su una riga (§6.2), con
+  il dettaglio di una persona nella lista del motore;
+- la pagina dell'ATC di un evento finito (`/staff/events/atc/{id}`, la scheda «ATC» per chi legge gli eventi) ha una sezione
+  **«Esiti»**: la lista generata dei turni dell'evento — nominativo, controllore, esito, chi ha coperto — con i verbi di §4.5 nella
+  riga; la scheda «Statistiche» di E13a resta in sola lettura;
+- **tre letture scritte a mano**, scostamenti accettati: `GET /api/events/atc/register`, `GET /api/events/bookings/register` e
+  `GET /api/events/mine/record`, nel flusso del membro come `/mine/shifts`; e **due verbi**, l'esito di un turno e «togli» di una
+  prenotazione non volata.
+
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 9, piano 1.38): la scheda **«PIREP di supporto»**, su un
+evento finito, a chi ha `EventReports.View` sulla sua cura, è la lista generata della risorsa del motore **in sola lettura**
+`/api/events/reports` (`filter[eventId]`, `filter[state]`, `filter[kind]`): il membro (`col.person`), il tipo, lo stato, l'esito della
+verifica, quando è stato mandato, chi ha deciso e la nota, e **le voci con la verifica di ognuna** in una cella, dati che la pagina
+scrive nella lingua sullo schermo, una query per pagina; «Decidi» («Cambia la decisione» su uno deciso) dove il server dice che il
+lettore può (`Decidable`). Gli endpoint a mano sono **due verbi**, mandare e decidere, e **una lettura** del membro,
+`GET /api/events/mine/reports`.
+
 ### 7.3 Blocchi Data
 
 | Blocco | Dove | Che cosa |
@@ -1520,6 +1639,15 @@ arrivano con E12.
   richieste in attesa. Conta **sulle postazioni che il lettore legge** (l'unico handler su ognuna, come il roster) e sulle richieste che
   può decidere; a chi non legge l'ATC di nessun evento nessun evento, a un visitatore `signedIn: false`. **Dati, non parole**: la
   pagina le scrive.
+
+**Deciso con E13b** (#283, nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, lettura 11, piano 1.37): **`events.staffQueue`**, sempre
+dal vivo e del lettore, nessuna proprietà, una riga per evento con qualcosa da decidere, al più 50, **dalla fine più recente**: **no-show
+da confermare** (`NoShowProposed`), **turni da segnare** (`Unknown` di un evento che `events-after` ha chiuso) e **cessioni da decidere**,
+ognuno contato solo se l'unico handler dà al lettore `EventAtc.Edit` sulla riga, quindi mai le proprie; niente per chi non tiene
+`EventAtc.Edit` da nessuna parte. Il link porta alla pagina dell'ATC dell'evento; un visitatore riceve `signedIn: false`. I PIREP da
+validare entrano con E14a. **Deciso con E14a** (#289, lettura 10, piano 1.38): un numero in più per evento, **i PIREP da validare**
+(`Submitted`), contati solo dove l'unico handler dà al lettore `EventReports.Edit` sulla riga, quindi non i propri, letti già filtrati
+per stato nella query; il blocco è anche nella dashboard dell'MD.
 
 ### 7.4 Il Gate Manager
 
@@ -1557,7 +1685,15 @@ Nell'hub il Gate Manager legge con un **token personale** (`CLAUDE.md` §2), non
   quegli slot sono liberi; quelle di un evento concluso restano con `booked_by` negativo, e una privata tiene l'aereo, lo scalo
   dell'evento con il suo orario e `paired_slot_id`, **senza** il nominativo, l'altro aeroporto e il suo orario.
 
-Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).
+~~Il cambio nel Gate Manager è un lavoro del suo repository, provato su `prova-ponte-rfo` (fase E9).~~
+
+**Deciso da Carmine il 18 ott 2026** (in chat al master, nota `2026-10-18-il-gate-manager-nell-hub`, piano 1.38): **il Gate Manager
+non è più un'applicazione esterna che legge l'hub**. Quello di oggi è provvisorio e non si collega all'hub: **si rifà da zero dentro
+l'hub, nel modulo Eventi** (gli slot e le prenotazioni sono già lì), per lo staff eventi e per chi gestisce i gate, per esempio i capi
+dei FIR; **dopo tutte le altre fasi di M4, in parallelo ai test** sull'installazione di prova, dal suo documento di design (permessi,
+chi gestisce quali gate, che cosa vede il pilota), una fase nuova di M4 da numerare quando il design è approvato. **E9 perde il pezzo
+«il Gate Manager legge l'hub»**. L'esportazione qui sopra **resta com'è**: non ha più il suo primo cliente, ma è un contratto pubblico
+che chi forka può usare; che cosa ne fa il Gate Manager nuovo lo dirà il suo design.
 
 ---
 
@@ -1829,6 +1965,15 @@ di un evento **non finito si cancella**; di un evento finito **resta** con lo ps
 dice due righe in più (`events:erasure.seatsToCome`, `events:erasure.seatsOver`); `evt_activities.created_by`, `.updated_by` e
 `evt_activity_bookings.vid` sono in `ErasureTests`.
 
+**Deciso con E14a** (#289, nota `2026-10-17-il-pirep-di-supporto`, lettura 12, cambiata da Carmine sulla #289, piano 1.38), per i PIREP
+di supporto: i PIREP e le voci **restano** con lo pseudonimo (in `vid` e in `decided_by`), perché sono di eventi finiti e le statistiche
+e le regole di award contano le voci. Perdono la **nota della decisione** e, di una voce di **volo**, il **callsign** e la **sessione**,
+segnati `[ErasedWith(nameof(Vid))]`; **il nominativo di una voce ATC resta** (nomina una postazione, non la persona, e le regole dei
+minuti lo leggono). ⚠️ Il segno è di una colonna, non di un tipo: nelle copie d'audit di una voce che non c'è più il nucleo svuota il
+nominativo anche di un turno; la riga che resta lo tiene. Restano gli aeroporti, il giorno, le ore, i minuti, la distanza, l'esito.
+L'anteprima dice una riga in più, i PIREP tenuti; `evt_reports.vid`, `evt_reports.decided_by` ed `evt_report_items.vid` sono in
+`ErasureTests`. La conservazione dei PIREP dei piloti dopo `pilotRetentionMonths` è di E15b.
+
 ---
 
 ## 12. Forkabilità
@@ -2019,7 +2164,10 @@ Poste sulla PR ([commento][q2]); Carmine ha risposto in chat (c4) e ha **conferm
    (§4-bis), con le scelte di forma del design (domande da un elenco chiuso di tipi, attività a turni con posti, dati tenuti 3
    mesi).
 7. **Lo spegnimento di `ivao-booking`** (E9). Raccomandato: dopo il primo evento vero fatto sull'hub, con il Gate Manager già
-   passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.**
+   passato all'hub; poi un 301 verso `/events`. **Deciso: come raccomandato.** **Cambiata il 18 ott 2026** (Carmine, in chat al
+   master, nota `2026-10-18-il-gate-manager-nell-hub`, piano 1.38): ~~con il Gate Manager già passato all'hub~~ il Gate Manager di oggi
+   non passa all'hub, **si rifà dentro l'hub** (§7.4); `ivao-booking` si spegne in produzione dopo il primo evento vero fatto sull'hub,
+   con il 301, e prima vengono i test sulla prova.
 
 ### 17.3 I suggerimenti del design — decisi il 29 settembre 2026
 

@@ -46,12 +46,13 @@ in `e2e:full` (E15b, `events-m4b-round.spec.ts`) inciampa in due cose, misurate 
 
 ```csharp
 // ScheduledJobs (Core/Jobs/ScheduledJobs.cs)
-public async Task<JobRunState?> RunNowAsync(string job, CancellationToken cancellationToken = default);
+internal async Task<JobRunState?> RunNowAsync(string job, CancellationToken cancellationToken = default);
 ```
 
 1. **Lo stesso job, lanciato adesso.** `RunNowAsync` cerca il job per nome fra quelli che Quartz conosce (null se non c'è) e lo lancia
    come il passaggio lancia un dovuto — `TriggerJob`, la stessa attesa fino a `LongestRun` —, con un segno nei dati del trigger
-   (`hub.jobs.now`).
+   (`hub.jobs.now`). È **`internal`**, e lo vede solo l'host (`InternalsVisibleTo` di `IvaoHub.Web` in `IvaoHub.Core.csproj`): un
+   modulo o un chiamante futuro dell'installazione non salta «una volta per occorrenza» (la revisione della #300).
 2. **La guardia vale, la domanda «è dovuto?» no.** Con il segno, la guardia prende il lucchetto come per ogni giro — un giro in un altro
    processo resta suo, e la risposta è `Skipped` — ma non chiede l'ultimo giro: lo spec l'ha chiesto adesso. Senza il segno niente cambia.
 3. **È un giro come gli altri**: il job scrive la sua riga; il suo inizio conta come ultimo giro, quindi l'occorrenza che è già passata
@@ -120,7 +121,8 @@ minuti e la regola di award dia il suo segnale.
 
 Tutto del nucleo, ed è il perché di questa nota (`core-guard`):
 
-- `src/IvaoHub.Core/Jobs/ScheduledJobs.cs` (`RunNowAsync`, il segno `hub.jobs.now` nella guardia);
+- `src/IvaoHub.Core/Jobs/ScheduledJobs.cs` (`RunNowAsync`, il segno `hub.jobs.now` nella guardia) e `src/IvaoHub.Core/IvaoHub.Core.csproj`
+  (`InternalsVisibleTo` di `IvaoHub.Web`, perché `RunNowAsync` resti `internal`);
 - `src/IvaoHub.Core/Ivao/BenchNetworkSessions.cs` (nuovo) e `src/IvaoHub.Core/Ivao/FixtureIvaoApiClient.cs` (`BenchTemplate`,
   `MoveBenchTemplate`, il parametro facoltativo);
 - `src/IvaoHub.Web/E2E/E2EBenchRuns.cs` (nuovo) e `src/IvaoHub.Web/Program.cs` (le due righe nel blocco del banco);
