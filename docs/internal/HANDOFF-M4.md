@@ -334,6 +334,49 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E13b (16–17 ottobre 2026, branch `m4/e13b-registers`, PR #283; nata dalla testa di E13a `8dd3092f`, ora in coda dopo la #288 di E10u, con le sue teste `a2631e6` e `59d544e` e `main` a `8bf63ea` uniti)
+
+- **Che cosa c'è** (il dettaglio in `10`, E13b, «Com'è andata»; **nessuna migrazione**: gli esiti dei turni ci sono da E11b,
+  `unflown_excused_*` da E6a, i limiti dell'evento dallo scheletro; del nucleo solo `schema.d.ts` generato e i due conteggi dei blocchi; una
+  nota nuova, `2026-10-16-i-no-show-i-registri-e-i-limiti`, **decisa**: le tre scelte (A) da Carmine
+  sull'[issue #280](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/280#issuecomment-6224645259), la lettura 1 cambiata e le 2–11
+  accettate sulla [#283](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/283#issuecomment-6230891820)):
+  - **Le decisioni dello staff** (`Registers/RegisterDecisions.cs`): l'esito di un turno, `POST /api/events/atc/shifts/{id}/attendance`
+    (`EventAtc.Edit` sul turno, mai sul proprio: `DeniedToStakeholder`), e «togli» di una prenotazione non volata,
+    `POST /api/events/bookings/{id}/excuse` (`EventBookings.Edit` sulla prenotazione). Le transizioni in `RegisterDecisions.Allowed`.
+  - **I registri**: `Registers/ControllerRegister.cs` (i conti per controllore, la stessa funzione che dà la penalità alla proposta del roster)
+    e `Registers/PilotRegister.cs` (le non volate che contano, i limiti di un pilota in un evento, «fino a quando»); tre letture scritte a mano
+    in `Registers/RegisterEndpoints.cs`: `GET /api/events/atc/register`, `GET /api/events/bookings/register`, `GET /api/events/mine/record`.
+  - **I limiti** (`Registers/BookingLimits.cs`, puri) nei tre verbi di `PilotBookings`, sotto il blocco del pilota, dopo la compatibilità.
+  - **Il blocco** `events.staffQueue` (`Registers/StaffQueueProvider.cs`, `blocks/staffQueue.tsx`); le cinque impostazioni; i tre limiti
+    dell'evento nel suo form.
+  - **Le pagine**: `/staff/events/controllers[/$vid]` e `/staff/events/pilots[/$vid]` (`screens/registers.tsx`), la sezione «Esiti» nell'ATC
+    di un evento finito, «Il tuo registro» in `/events/mine` (`screens/myRecord.tsx`), l'avviso dei limiti dove una prenotazione è rifiutata
+    (`screens/limits.ts`).
+  - **I test**: integrazione `EventsRegistersTests` (7 dopo la revisione; VID **761200–761207**, slug `evt-test-e13b-…`); unità `EventsRegistersTests` (7); il
+    giro `full/events-registers.spec.ts` (slug `evt-test-e2e-e13b-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14a** (i PIREP): `events.staffQueue` conta per evento; i PIREP da validare sono un numero in più di `StaffQueueEventDto` e un ciclo in
+    più di `StaffQueueProvider`, con `EventReports.Edit` chiesto all'unico handler sulla riga, come i turni.
+  - **E15b** (la conservazione dei piloti): il registro dei piloti conta le prenotazioni di eventi finiti negli ultimi `pilotRetentionMonths`;
+    quando la conservazione le cancella escono anche dal registro, nello stesso momento. `UnflownExcusedNote` è già `[ErasedWith]`.
+  - ⚠️ **`EventBookings.Edit` è negato all'interessato** (la scelta (A) della lettura 6, decisa da Carmine sulla #280): lo staff non toglie
+    la propria prenotazione, iscrizione o posto, né la propria voce del registro.
+  - ⚠️ **Le statistiche dopo una decisione**: il verbo non le scrive (l'area `Events`, che l'AOD non scrive): «Ricalcola» di E13a.
+  - ⚠️ **I due registri rispondono solo a chi tiene il permesso senza uno scope di risorsa** (Carmine sulla #283, la risposta (b);
+    `HasUnscoped` e `NavItemDescriptor.Unscoped` della fase del nucleo E10u, #288): un grant su un evento non li apre né mostra le loro voci.
+  - ⚠️ **Nessun esito di un turno è definitivo** (Carmine sulla #283, lettura 1): chi può decidere il turno cambia presente, no-show e
+    giustificato l'uno nell'altro; una decisione senza nota tiene quella che c'era. Una fase che legge l'esito (E14b, i criteri ATC) legge
+    quello di adesso.
+  - ⚠️ **`Decidable` ed `Excusable` si chiedono sulla cura salvata nella riga** (`ShiftEndpoints.RowsAsync`, `StaffBookings.RowsAsync`), mentre
+    i verbi adottano prima la cura dell'evento com'è ora: dopo un cambio del «a cura di» un bottone può comparire e poi rispondere 403 (il
+    punto 5 della revisione della #283; lo stesso di `Editable` di E11b, lasciato).
+  - ⚠️ **Il job e una decisione sullo stesso turno** si incontrano solo sulla `row_version` del turno: `events-after` non prende il blocco
+    della riga dell'evento per i turni; se perde, quell'evento salta il giro e il giro dopo lo riprende (il punto 3 della revisione).
+  - ⚠️ **Il banco non lancia un job**: un no-show proposto non si fa dall'API; lo provano `EventsRegistersTests` e il banco della fase con
+    righe scritte in SQL.
+  - ⚠️ **I VID di prova**: E13b ha usato **761200–761207** della fascia 761200–761229.
+
 ### Che cosa ha lasciato E10u (17 ottobre 2026, branch `m4/e10u-unscoped-permission`, PR #288, del nucleo; diretta su `main`, nata a `9a78b2c3`, con `main` a `8bf63ea3` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10u, «Com'è andata»; nessuna migrazione, niente nel browser, `/api/me` uguale, nessuna riga di

@@ -130,7 +130,7 @@ public sealed class EventsSettingsTests
     }
 
     [Fact]
-    public void FiveAreasAndTwoPermissionsDeniedToWhoeverARowIsAbout()
+    public void FiveAreasAndThreePermissionsDeniedToWhoeverARowIsAbout()
     {
         Assert.Equal(12, EventsPermissions.All.DistinctBy(permission => permission.Name).Count());
 
@@ -149,8 +149,10 @@ public sealed class EventsSettingsTests
             Assert.Contains(EventsPermissions.All, permission => permission.Name == $"{area}.Edit");
         });
 
+        // The bookings' since E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 6): nobody takes their own booking not flown out
+        // of their record.
         Assert.Equal(
-            new[] { EventsPermissions.AtcEdit, EventsPermissions.ReportsEdit }.Order(StringComparer.Ordinal),
+            new[] { EventsPermissions.AtcEdit, EventsPermissions.BookingsEdit, EventsPermissions.ReportsEdit }.Order(StringComparer.Ordinal),
             EventsPermissions.All.Where(permission => permission.DeniedToStakeholder).Select(permission => permission.Name).Order(StringComparer.Ordinal));
     }
 

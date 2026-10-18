@@ -51,6 +51,7 @@ public static class BookingEndpoints
             options.Source = StaffBookings.ByFlightTime;
             options.Sortable.Add(nameof(EventBooking.CreatedAt));
             options.Filterable.Add(nameof(EventBooking.EventId));
+            options.Filterable.Add(nameof(EventBooking.BookerVid));
             options.SearchFields.Add(booking => booking.BookerVid.ToString());
 
             // A page names its pilots and reads its slots in one query each; a row alone has neither.

@@ -29,6 +29,7 @@ import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from 
 
 import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
 import { Candidates } from './candidates';
+import { ShiftOutcomesSection } from './registers';
 import { RosterSection } from './roster';
 import { TransfersSection } from './transfers';
 
@@ -177,6 +178,8 @@ export function AtcPanel({ eventId }: { eventId: number }) {
       />
       <RosterSection event={event} />
       <TransfersSection event={event} />
+      {/* After the event, how its shifts went, decided by the staff (E13b): never on one cancelled, whose shifts nobody held. */}
+      {event.state !== 'Cancelled' && isClosed(event) ? <ShiftOutcomesSection eventId={event.id} /> : null}
     </div>
   );
 }

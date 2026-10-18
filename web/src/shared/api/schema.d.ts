@@ -423,6 +423,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/atc/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsControllersRegister"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/bookings/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsPilotsRegister"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/mine/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsMyRecord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/atc/shifts/{id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsDecideAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/bookings/{id}/excuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EventsExcuseUnflown"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{id}/effective-rules": {
         parameters: {
             query?: never;
@@ -4067,6 +4147,11 @@ export interface components {
             /** Format: date-time */
             toUtc: string;
         };
+        /** @description What the staff send to decide how a shift went (§4.5): the outcome, and a note — required to excuse. */
+        AttendanceDecision: {
+            attendance: null | components["schemas"]["ShiftAttendance"];
+            note: null | string;
+        };
         /**
          * @description One row in full. `BeforeJson` and `AfterJson` are the scalar columns as they were and
          *     as they became, exactly as the interceptor wrote them: they travel as text, because what they
@@ -5132,6 +5217,34 @@ export interface components {
             /** Format: int64 */
             parentId?: null | number;
         };
+        /** @description A controller's own register (§4.5, §7.1): their counts, their penalty, and their shifts of the events over, the latest first. */
+        ControllerRecordDto: {
+            /** Format: int32 */
+            attended: number;
+            /** Format: int32 */
+            noShows: number;
+            /** Format: int32 */
+            excused: number;
+            /** Format: int32 */
+            toDecide: number;
+            /** Format: double */
+            penalty: number;
+            shifts: components["schemas"]["MyRegisterShiftDto"][];
+        };
+        /** @description One controller in the register of the staff (§7.2): their counts and their penalty, named by the core's reader. */
+        ControllerRegisterRowDto: {
+            controller: components["schemas"]["EventMemberDto"];
+            /** Format: int32 */
+            attended: number;
+            /** Format: int32 */
+            noShows: number;
+            /** Format: int32 */
+            excused: number;
+            /** Format: int32 */
+            toDecide: number;
+            /** Format: double */
+            penalty: number;
+        };
         /** @description "Copy the rules of another tour": which one. */
         CopyRulesRequest: {
             /** Format: int64 */
@@ -5442,7 +5555,11 @@ export interface components {
         /**
          * @description A shift as the generated list of the shifts reads it (E13a, the tab «Statistics»): its position's callsign, its controller and its hours,
          *     and how it went — with who covered the position next to a no-show the check proposed. Data only: the page writes the words. The callsign
-         *     and the names are read for a page at once (<see cref="M:IvaoHub.Modules.Events.Atc.ShiftEndpoints.RowsAsync(IvaoHub.Modules.Events.Data.EventsDbContext,IvaoHub.Core.Data.HubDbContext,System.Collections.Generic.IReadOnlyList{IvaoHub.Modules.Events.EventAtcShift},System.Threading.CancellationToken)" />); a row alone has neither.
+         *     and the names are read for a page at once (<see cref="M:IvaoHub.Modules.Events.Atc.ShiftEndpoints.RowsAsync(System.IServiceProvider,System.Collections.Generic.IReadOnlyList{IvaoHub.Modules.Events.EventAtcShift},System.Threading.CancellationToken)" />); a row alone has neither.
+         *     With E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 1, 4 and 10) its event's title — the register of a controller
+         *     lists the shifts of every event —, the staff's note on how it went, and whether the reader may decide it now: an event over and not
+         *     cancelled — no outcome is final (Carmine's answer on #283) — and EventAtc.Edit from the one handler on the row — never on their
+         *     own.
          */
         EventAtcShiftRowDto: {
             /** Format: int64 */
@@ -5461,6 +5578,9 @@ export interface components {
             origin: components["schemas"]["ShiftOrigin"];
             attendance: components["schemas"]["ShiftAttendance"];
             coveredBy: null | components["schemas"]["EventMemberDto"];
+            eventTitle: null | components["schemas"]["LocalizedOfstring"];
+            attendanceNote: null | string;
+            decidable: boolean;
         };
         /**
          * @description What the staff may set on a shift (§4.4): the position — of the same event, on a change —, the controller by VID, and the hours. The event,
@@ -5518,7 +5638,9 @@ export interface components {
          *     (E13a): when the flight started, when it was looked for — looked for and not found is a booking not flown. The flight is read off
          *     the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
          *     The flight is empty only where the engine maps one row with no page around it (GET /api/events/bookings/{id}): the
-         *     list reads the slots of a page in one query (StaffBookings.RowsAsync).
+         *     list reads the slots of a page in one query (StaffBookings.RowsAsync).With E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 5 and 6) its event's title — the register of a pilot lists the
+         *     bookings of every event —, whether the staff took a booking not flown out of the pilot's record, who and why, and whether the reader may
+         *     take it out now: checked, not flown, not out yet, and EventBookings.Edit from the one handler on the row — never on their own.
          */
         EventBookingDto: {
             /** Format: int64 */
@@ -5550,6 +5672,10 @@ export interface components {
             flownAt: null | string;
             /** Format: date-time */
             flownCheckedAt: null | string;
+            eventTitle: null | components["schemas"]["LocalizedOfstring"];
+            unflownExcusedBy: null | components["schemas"]["EventMemberDto"];
+            unflownExcusedNote: null | string;
+            excusable: boolean;
         };
         /** @description "Cancel" (§2.3): why, in every language of the division — the page of the event shows it until its end —, and the version read. */
         EventCancelRequest: {
@@ -5603,6 +5729,12 @@ export interface components {
             rowVersion: string;
             /** Format: int32 */
             shiftMinutes: null | number;
+            /** Format: int32 */
+            restrictedWindowHours: null | number;
+            /** Format: int32 */
+            restrictedMaxPerWindow: null | number;
+            /** Format: int32 */
+            restrictedMaxPerEvent: null | number;
         };
         /**
          * @description What "Duplicate" answers (§2.3-bis, E8b): the new event, and — when its private slots were to be generated with it and the generator
@@ -5893,8 +6025,8 @@ export interface components {
          * @description What a client may set on an event (§1.2, E3a). The status and the cancellation are not here: publishing is a verb of its
          *     own (E3b), cancelling another (EventCancelRequest). Its department is the module's base department, which the
          *     payload does not carry. All five switches: the three of M4a, the event in person with its venue (E16), and the roster with the
-         *     length of its shifts (E11a) — none is the setting's. A null `Body` keeps the description as it is; a venue written in no
-         *     language is none.
+         *     length of its shifts (E11a) — none is the setting's —, and its own limits of whoever books and does not fly (E13b), each empty for the
+         *     setting's. A null `Body` keeps the description as it is; a venue written in no language is none.
          */
         EventWriteDto: {
             kind: string;
@@ -5934,6 +6066,12 @@ export interface components {
             hasRoster: boolean;
             /** Format: int32 */
             shiftMinutes?: null | number;
+            /** Format: int32 */
+            restrictedWindowHours?: null | number;
+            /** Format: int32 */
+            restrictedMaxPerWindow?: null | number;
+            /** Format: int32 */
+            restrictedMaxPerEvent?: null | number;
         };
         /**
          * @description One line of what a check saw. The server writes an i18n key with its values, which the page words in the reader's
@@ -6630,6 +6768,11 @@ export interface components {
             vid: number;
             name: null | string;
         };
+        /** @description A member's two registers, as `/events/mine` reads them and a page that refuses a booking explains it (reading 8). */
+        MemberRecordDto: {
+            pilot: components["schemas"]["PilotRecordDto"];
+            controller: components["schemas"]["ControllerRecordDto"];
+        };
         /** @description The same, as the form loads it, with the version to write back. */
         MenuItemDetailDto: {
             /** Format: int64 */
@@ -6775,6 +6918,22 @@ export interface components {
             /** Format: int64 */
             id: number;
             progress: components["schemas"]["LegProgress"];
+        };
+        /** @description A shift of an event over as its controller reads it in their register: the event, the position, the hours, how it went, and the staff's note. */
+        MyRegisterShiftDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            callsign: string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            attendance: components["schemas"]["ShiftAttendance"];
+            note: null | string;
         };
         /**
          * @description A registration as its member reads it, on `/events/mine` and on the event's page: the event with its questions, the answers as
@@ -6957,6 +7116,22 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             decidedAt: null | string;
+        };
+        /** @description A booking not flown as its pilot reads it in their record: the event, the flight, and whether the staff took it away and why. */
+        MyUnflownDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            eventId: number;
+            eventSlug: string;
+            eventTitle: components["schemas"]["LocalizedOfstring"];
+            callsign: string;
+            departureIcao: string;
+            /** Format: date-time */
+            offBlockUtc: string;
+            arrivalIcao: string;
+            excused: boolean;
+            excusedNote: null | string;
         };
         /**
          * @description One entry of a menu. Exactly one of the two names is set: Key is a
@@ -7337,6 +7512,29 @@ export interface components {
         PagedResultOfContentListDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ContentListDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
+        PagedResultOfControllerRegisterRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["ControllerRegisterRowDto"][];
             /**
              * Format: int32
              * @description One based page number.
@@ -7840,6 +8038,29 @@ export interface components {
          * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
          *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
          */
+        PagedResultOfPilotRegisterRowDto: {
+            /** @description The rows of this page, already mapped to their list shape. */
+            items: components["schemas"]["PilotRegisterRowDto"][];
+            /**
+             * Format: int32
+             * @description One based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description How many rows a page holds.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description How many rows the whole filtered set holds.
+             */
+            total: number;
+        };
+        /**
+         * @description One page of a list, in the shape every list of the hub answers with. Paging is decided in the
+         *     CRUD engine and nowhere else, so a screen never invents its own envelope (design M0 section 3.9).
+         */
         PagedResultOfReviewQueueRowDto: {
             /** @description The rows of this page, already mapped to their list shape. */
             items: components["schemas"]["ReviewQueueRowDto"][];
@@ -8217,6 +8438,39 @@ export interface components {
             /** Format: int32 */
             disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
+        };
+        /**
+         * @description A pilot's own record (§3.7, §7.1): the bookings not flown that count, the threshold, whether they have the limits and until when, the limits
+         *     valid in the event asked about — its own, or the settings' —, and the bookings not flown themselves, the latest first.
+         */
+        PilotRecordDto: {
+            /** Format: int32 */
+            counted: number;
+            /** Format: int32 */
+            excused: number;
+            /** Format: int32 */
+            threshold: number;
+            limited: boolean;
+            /** Format: date-time */
+            limitedUntil: null | string;
+            /** Format: int32 */
+            windowHours: number;
+            /** Format: int32 */
+            maxPerWindow: number;
+            /** Format: int32 */
+            maxPerEvent: number;
+            unflown: components["schemas"]["MyUnflownDto"][];
+        };
+        /** @description One pilot in the register of the staff (§3.7): the bookings not flown counted and taken away, whether they have the limits and until when. */
+        PilotRegisterRowDto: {
+            pilot: components["schemas"]["EventMemberDto"];
+            /** Format: int32 */
+            counted: number;
+            /** Format: int32 */
+            excused: number;
+            limited: boolean;
+            /** Format: date-time */
+            limitedUntil: null | string;
         };
         /**
          * @description Legs accepted, the minutes the tracker recorded from take-off to landing on the accepted reports (Carmine, 23 September
@@ -10600,6 +10854,10 @@ export interface components {
          * @enum {unknown}
          */
         TransferStatus: "Pending" | "Approved" | "Refused" | "Withdrawn";
+        /** @description What the staff send to take a booking not flown out of its pilot's record (§3.7): why. */
+        UnflownExcuse: {
+            note: null | string;
+        };
         /** @description One preference of the member asking; `null` when they never chose. */
         UserPreferenceDto: {
             key: string;
@@ -11668,6 +11926,198 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsControllersRegister: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfControllerRegisterRowDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsPilotsRegister: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResultOfPilotRegisterRowDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsMyRecord: {
+        parameters: {
+            query?: {
+                eventId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRecordDto"];
+                };
+            };
+        };
+    };
+    EventsDecideAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceDecision"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsExcuseUnflown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnflownExcuse"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

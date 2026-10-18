@@ -170,7 +170,8 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         Assert.Equal(atc.Order(StringComparer.Ordinal), await FirTeamGrantsAsync(token));
 
-        // And they reach the chief of a FIR: the section of the ATC is in their back office, and nothing else of the events.
+        // And they reach the chief of a FIR: the section of the ATC is in their back office — with the register of the controllers (E13b),
+        // read with the same permission — and nothing else of the events.
         using var chief = await SignedInAsync(ChiefVid, token);
         var me = await chief.GetFromJsonAsync<JsonElement>("/api/me", token);
         Assert.Equal(
@@ -181,7 +182,7 @@ public sealed class EventsAtcTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 .Distinct()
                 .Order(StringComparer.Ordinal));
         Assert.Equal(
-            ["/staff/events/atc"],
+            ["/staff/events/atc", "/staff/events/controllers"],
             me.GetProperty("navigation").GetProperty("staff").EnumerateArray()
                 .Where(entry => entry.TryGetProperty("module", out var module) && module.GetString() == EventsModule.ModuleKey)
                 .Select(entry => entry.GetProperty("path").GetString()!));
