@@ -5809,7 +5809,18 @@ a `3cdacd97`) e la testa di E14b `e5eb1d17` (con E14a `77bf5068` ed E10x, #299);
   **1/1 in 29,7 minuti**; **`e2e:full` intero** sul banco ricreato: al primo giro 71/72 (43,8 min; la spec di E11a, qui sopra), corretta e rifatta da sola 1/1,
 poi **72/72 al secondo giro intero** (43,1 min), il giro di M4b compreso; `core-guard.sh` con Git Bash dal merge-base `8bf63ea`: passa
   (i file del nucleo sono delle fasi in coda, con le loro note; di E15b nessuno).
-- **Dopo la (B) e i merge** (18 ottobre 2026): VERIFICATOB.
+- **Dopo la (B) e i merge** (18 ottobre 2026, sulla testa con E10w `986c6116` ed E14b `e5eb1d17` unite): `dotnet build -c Release` senza
+  avvisi; `gen:api` e `i18n:sync` senza differenze; unità **1394/1394**; vitest `--maxWorkers=2` **815 in 118 file**; `lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; smoke `--workers=2` **184/184**; **il giro di M4b da solo** sul banco 5153: il corpo passato tutto —
+  disponibilità, `events-roster` lanciato all'inizio, la correzione, il PIREP `Valid` sulle sessioni del trainer, la decisione e il segnale nella
+  coda — e caduto sulla pulizia (l'evento ha anche una disponibilità, e il server dice prima quella: ora la pulizia tiene ogni `eventHas…`);
+  **`e2e:full` intero 73/73** (32,8 min; il giro di M4b 19 min); `core-guard.sh` dal merge-base `3cdacd97`: passa. Con il merge di E14b due
+  righe dei miei test: `Event.AutoReportsCursor` (era `AutoReportsAfterVid`) e `PointsOut` sulla riga di una regola soddisfatta.
+  **L'integrazione intera, da sola**: 697/697 al quarto giro; ai due giri prima **`ErasureTests.WhatIsAboutThePersonGoesAndWhatTheyDidForOthersStaysUnderThePseudonym`
+  (del nucleo) è caduto alla riga 145** — l'audit conteneva il testo «780095», il VID del test —, e passava da solo, insieme a
+  `EventsRetentionTests`, e nel giro intero con una sonda che avrebbe stampato le righe trovate (non ne ha trovate; la sonda è tolta, mai
+  committata). Nessun altro test usa quel VID: probabilmente un istante con le sette cifre dei decimali che le contiene per caso. Detto al
+  coordinatore; il test è del maintainer.
 - **Non verificato**: la CI (la dice la PR); un `events-retention` vero sul banco (gira il primo
   del mese: lo provano `EventsRetentionTests`); IVAO vero dietro le prenotazioni accanto al roster (il client delle fixture; il codice della
   sorgente è quello che E15a ha provato contro IVAO); la sezione a 375 px.
