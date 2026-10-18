@@ -4594,6 +4594,9 @@ uno spec piccolo li usa tutti e due sul banco pubblicato; e la prova al contrari
   un giro tutto rosso con Docker spento, riacceso), `pnpm -C web` lint, typecheck, format:check e test (**805/805**, `--maxWorkers=2`)
   verdi, `gen:api` senza differenze, sul banco 5154 ripubblicato `bench-runs.spec.ts` e `round.spec.ts` **6/6**, `core-guard.sh` con
   Git Bash dalla base `4363c403`: passa.
+- **Unito `main` a `fa9c29b4`** (18 ottobre 2026, E14a, #289, che rendeva la PR in conflitto), in conflitto solo in `HANDOFF-M4.md`: E10w
+  in cima ed E14a sotto. Il diff della fase fuori dai documenti è lo stesso. Rifatti: build Release 0 avvisi, unità **1396/1396**,
+  integrazione `E2EBenchRunsTests`, `EventsReportsTests` (di E14a, che legge le sessioni della rete) e `ScheduledJobsTests` **28/28**.
 
 [a294w]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
 [r300w]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/300#issuecomment-6251424579
