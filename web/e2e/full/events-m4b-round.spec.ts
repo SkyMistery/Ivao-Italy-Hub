@@ -3,24 +3,34 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, type APIRequestContext, type Browser, type BrowserContext } from '@playwright/test';
 
-import { benchUrl, mailFor, readInEnglish, signIn, test, whileWaitingFor } from './bench';
+import {
+  benchUrl,
+  department,
+  giveSessions,
+  mailFor,
+  readInEnglish,
+  runJob,
+  signIn,
+  takeSessions,
+  test,
+  whileWaitingFor,
+} from './bench';
 
 /**
- * The full round of M4b (E15b; design M4 §15: «availabilities, roster proposed, corrected, published; report of support, validated»),
- * through the real screens and the real server, and the real job: the coordinator of the events (`?as=events`) publishes an evening of a
- * quarter of an hour with an ATC roster and opens its tower; the bench's trainer (`?as=trainer`, the highest ATC rating of the bench) gives
- * their availability from the page of the event; **`events-roster` proposes the roster and publishes it** at its run of the quarter, and the
- * trainer is told their shift; the coordinator reads it on the roster, with the bookings of the network beside it, and cuts its end — the one
- * correction once an event has started —, and the trainer is told again; after the end the trainer sends their ATC report from
- * `/events/mine`, the web master — who holds `EventReports.Edit` — accepts it, and the trainer is told.
+ * The full round of M4b (E15b; design M4 §15: «availabilities, roster proposed, corrected, published; report of support, validated,
+ * signal»), through the real screens, the real server and the real jobs: the coordinator of the events (`?as=events`) publishes an
+ * evening of a quarter of an hour with an ATC roster, opens its tower and writes a rule of award, «any shift»; the bench's trainer
+ * (`?as=trainer`, the highest ATC rating of the bench) gives their availability from the page of the event; at the start
+ * **`events-roster` proposes the roster and publishes it** — run at once by the bench (`runJob`, E10w) — and the trainer is told their
+ * shift; the coordinator reads it on the roster, with the bookings of the network beside it, and cuts its end — the one correction once an
+ * event has started —, and the trainer is told again; after the end the trainer sends their ATC report from `/events/mine`, the network
+ * finds their shift on the tower (the bench's sessions of the trainer, `giveSessions`, E10w), the web master — who holds
+ * `EventReports.Edit` and `Awards.Assign` — accepts it, the rule is met and **its signal waits in the core's queue of the awards**, and
+ * the trainer is told.
  *
- * For the job to propose and publish while the spec waits, the settings say 0 days to the close and to the publication for the length of the
- * spec, and are put back after it; the event starts a minute before the next run of `events-roster` (minutes 3, 18, 33 and 48, UTC). The spec
- * waits up to a quarter of an hour for the run, and a quarter of an hour for the end.
- *
- * ⚠️ **The signal of award is not here** (note 2026-10-17-la-conservazione-di-m4b, question 2): the bench's network is the fixture client, with
- * no session of its people, so the check finds no shift and no rule of award is met. The signals of the rules met are
- * `EventsAwardRulesTests`'s.
+ * The settings say 0 days to the close and to the publication for the length of the spec, and are put back after it, so that the close
+ * and the publication are the start; the event starts two minutes after the spec writes it, time to give the availability. What the spec
+ * still waits for is the clock: the start, for the roster, and the end, for the report (a quarter of an hour).
  *
  * ⚠️ An event with a report is kept (`eventHasReports`): this spec's events stay on the bench, under a stem of their own — not `evt-test-e2e`,
  * which `events-staff.spec.ts` deletes whole.
@@ -34,27 +44,11 @@ const stem = 'evt-e2e-e15b';
 const stamp = Date.now().toString(36);
 const slug = `${stem}-${stamp}`;
 const title = { en: `Bench round of the ATC ${stamp}`, it: `Il giro ATC del banco ${stamp}` };
+const award = { en: `Bench round of the ATC ${stamp}`, it: `Il giro ATC del banco ${stamp}` };
 const trainerVid = 999004;
 const trainerMail = 'bench-trainer@bench.test';
 const blank = '0001-01-01T00:00:00';
 const tower = 'LIRF_TWR';
-
-/** The minutes past the hour `events-roster` runs at, in UTC (`EventRosterJob.Cron`). */
-const runMinutes = [3, 18, 33, 48];
-
-/** The next run of `events-roster` at least four minutes away: time enough to write the event and give the availability before it starts. */
-function nextRun(now: Date): Date {
-  const candidate = new Date(now);
-  candidate.setUTCSeconds(0, 0);
-  for (let minutes = 0; minutes < 120; minutes++) {
-    const at = new Date(candidate.getTime() + minutes * 60_000);
-    if (runMinutes.includes(at.getUTCMinutes()) && at.getTime() - now.getTime() >= 4 * 60_000) {
-      return at;
-    }
-  }
-
-  throw new Error('No run of events-roster in the next two hours.');
-}
 
 /** `2026-10-17T18:47:00.000Z` → `2026-10-17T18:47`, the UTC wall clock a `datetime-local` of the form generator holds. */
 function wallClock(instant: Date): string {
@@ -109,18 +103,40 @@ function subjects(key: 'atcShiftAssigned' | 'atcShiftChanged' | 'reportDecided')
   ];
 }
 
-test('the full round of M4b: availability, roster proposed and published, corrected, a report of support validated', async ({
+/** Waits for a mail to the trainer: the queue of the notifications is sent every minute. */
+async function expectMail(
+  request: APIRequestContext,
+  key: 'atcShiftAssigned' | 'atcShiftChanged' | 'reportDecided',
+) {
+  await expect
+    .poll(async () => (await mailToTheTrainer(request, subjects(key))) !== null, {
+      message: key,
+      timeout: 4 * 60_000,
+      intervals: [10_000],
+    })
+    .toBe(true);
+}
+
+/** Waits until the clock passes an instant. */
+async function until(instant: Date): Promise<void> {
+  const left = instant.getTime() - Date.now();
+  if (left > 0) {
+    await new Promise((resolve) => setTimeout(resolve, left));
+  }
+}
+
+test('the full round of M4b: availability, roster proposed and published, corrected, a report validated, a signal', async ({
   browser,
   afterwards,
 }) => {
-  test.setTimeout(40 * 60_000);
+  test.setTimeout(30 * 60_000);
 
   const coordinator = await contextAs(browser, 'events');
   const trainer = await contextAs(browser, 'trainer');
   const master = await contextAs(browser, 'master');
   await removeOurEvents(coordinator.request);
 
-  // The settings of the round: the close and the publication at the start, so the next run of the job does both.
+  // The settings of the round: the close and the publication at the start, so the run of the job at the start does both.
   const before = await coordinator.request.get(settingsUrl);
   expect(before.status(), await before.text()).toBe(200);
   const saved = (await before.json()) as Record<string, unknown>;
@@ -130,17 +146,36 @@ test('the full round of M4b: availability, roster proposed and published, correc
   });
   expect(round.status(), await round.text()).toBe(200);
 
+  // An award of the catalogue, written by the web team, which reaches every department.
+  const createdAward = await master.request.post('/api/awards', {
+    headers: asTheClientDoes,
+    data: {
+      ownerDepartment: department.toUpperCase(),
+      name: award,
+      description: null,
+      criteria: null,
+      imageMediaId: null,
+      isActive: true,
+      rowVersion: blank,
+    },
+  });
+  expect(createdAward.status(), await createdAward.text()).toBe(201);
+  const awardId = ((await createdAward.json()) as { id: number }).id;
+
+  // ---------------------------------------------------------------- the event: a quarter of an hour, two minutes from now
+  const starts = new Date(Math.ceil((Date.now() + 2 * 60_000) / 60_000) * 60_000);
+  const ends = new Date(starts.getTime() + 15 * 60_000);
+
+  // The trainer's sessions on the network from the start: the tower for forty minutes (E10w's template), what the check of the report finds.
+  await giveSessions(trainer.request, trainerVid, starts);
+
   afterwards(async () => {
+    await takeSessions(trainer.request, trainerVid);
     const putBack = await coordinator.request.put(settingsUrl, { headers: asTheClientDoes, data: saved });
     expect(putBack.status(), await putBack.text()).toBe(200);
     await removeOurEvents(coordinator.request);
     await Promise.all([coordinator.close(), trainer.close(), master.close()]);
   });
-
-  // ---------------------------------------------------------------- the event: a quarter of an hour, a minute before the job's run
-  const run = nextRun(new Date());
-  const starts = new Date(run.getTime() - 60_000);
-  const ends = new Date(starts.getTime() + 15 * 60_000);
 
   const created = await coordinator.request.post('/api/events/events', {
     headers: asTheClientDoes,
@@ -181,6 +216,24 @@ test('the full round of M4b: availability, roster proposed and published, correc
   });
   expect(position.status(), await position.text()).toBe(201);
 
+  // The rule of award the report will meet: any shift found on the network.
+  const rule = await coordinator.request.post('/api/events/award-rules', {
+    headers: asTheClientDoes,
+    data: {
+      eventId: id,
+      awardId,
+      criterion: 'AnyShift',
+      departureIcao: null,
+      arrivalIcao: null,
+      count: null,
+      distanceNm: null,
+      minutes: null,
+      positionType: null,
+      rowVersion: blank,
+    },
+  });
+  expect(rule.status(), await rule.text()).toBe(201);
+
   // ---------------------------------------------------------------- the trainer gives their availability, from the page of the event
   const page = await trainer.newPage();
   page.on('pageerror', (error) => {
@@ -194,28 +247,18 @@ test('the full round of M4b: availability, roster proposed and published, correc
   });
   await expect(atc.getByText(events.public.atc.given)).toBeVisible();
 
-  // ---------------------------------------------------------------- events-roster proposes the roster and publishes it, at its run
-  await expect
-    .poll(
-      async () => {
-        const head = await coordinator.request.get(`/api/events/atc/events/${id}`);
-        const read = (await head.json()) as {
-          rosterProposedAt: string | null;
-          rosterPublishedAt: string | null;
-        };
-        return read.rosterProposedAt !== null && read.rosterPublishedAt !== null;
-      },
-      { timeout: 20 * 60_000, intervals: [15_000] },
-    )
-    .toBe(true);
+  // ---------------------------------------------------------------- at the start, events-roster proposes the roster and publishes it
+  await until(new Date(starts.getTime() + 2_000));
+  const proposed = await runJob(coordinator.request, 'events-roster');
+  expect(proposed.run?.status, JSON.stringify(proposed.run)).toBe('succeeded');
+
+  const head = await coordinator.request.get(`/api/events/atc/events/${id}`);
+  const read = (await head.json()) as { rosterProposedAt: string | null; rosterPublishedAt: string | null };
+  expect(read.rosterProposedAt, JSON.stringify(read)).not.toBeNull();
+  expect(read.rosterPublishedAt, JSON.stringify(read)).not.toBeNull();
 
   // The trainer is told their shift: one mail for the event.
-  await expect
-    .poll(async () => (await mailToTheTrainer(trainer.request, subjects('atcShiftAssigned'))) !== null, {
-      timeout: 4 * 60_000,
-      intervals: [10_000],
-    })
-    .toBe(true);
+  await expectMail(trainer.request, 'atcShiftAssigned');
 
   // ---------------------------------------------------------------- the coordinator reads the roster, and the bookings of the network
   const staff = await coordinator.newPage();
@@ -250,18 +293,10 @@ test('the full round of M4b: availability, roster proposed and published, correc
     .getByRole('row')
     .filter({ hasText: `(${trainerVid})` });
   await expect(corrected.getByText(events.atc.roster.options.state.Staff, { exact: true })).toBeVisible();
-  await expect
-    .poll(async () => (await mailToTheTrainer(trainer.request, subjects('atcShiftChanged'))) !== null, {
-      timeout: 4 * 60_000,
-      intervals: [10_000],
-    })
-    .toBe(true);
+  await expectMail(trainer.request, 'atcShiftChanged');
 
-  // ---------------------------------------------------------------- after the end, the trainer's report of support
-  const waitForTheEnd = ends.getTime() + 15_000 - Date.now();
-  if (waitForTheEnd > 0) {
-    await page.waitForTimeout(waitForTheEnd);
-  }
+  // ---------------------------------------------------------------- after the end, the trainer's report of support, found on the network
+  await until(new Date(ends.getTime() + 5_000));
 
   const mine = await trainer.newPage();
   mine.on('pageerror', (error) => {
@@ -284,6 +319,7 @@ test('the full round of M4b: availability, roster proposed and published, correc
     name: events.mine.reports.of.Atc.replace('{{title}}', title.en),
   });
   await expect(report.getByText(events.reports.options.state.Submitted, { exact: true })).toBeVisible();
+  await expect(report.getByText(events.reports.options.verification.Valid, { exact: true })).toBeVisible();
 
   // ---------------------------------------------------------------- validated by whoever holds it, and the trainer told
   const validator = await master.newPage();
@@ -303,12 +339,7 @@ test('the full round of M4b: availability, roster proposed and published, correc
       .getByText(events.reports.options.state.Accepted, { exact: true }),
   ).toBeVisible();
 
-  await expect
-    .poll(async () => (await mailToTheTrainer(trainer.request, subjects('reportDecided'))) !== null, {
-      timeout: 4 * 60_000,
-      intervals: [10_000],
-    })
-    .toBe(true);
+  await expectMail(trainer.request, 'reportDecided');
 
   await mine.reload();
   await expect(
@@ -316,6 +347,11 @@ test('the full round of M4b: availability, roster proposed and published, correc
       .getByRole('listitem', { name: events.mine.reports.of.Atc.replace('{{title}}', title.en) })
       .getByText(events.reports.options.state.Accepted, { exact: true }),
   ).toBeVisible();
+
+  // ---------------------------------------------------------------- the signal of the rule met, in the core's queue of the awards
+  // The award's name carries this run's stamp: one row, the trainer's.
+  await validator.goto('/staff/awards/queue');
+  await expect(validator.getByRole('row').filter({ hasText: award.en })).toHaveCount(1);
 });
 
 interface Words {
@@ -338,7 +374,10 @@ interface Words {
       atc: { fields: { 'items.callsign': string } };
     };
   };
-  reports: { decide: string; options: { state: { Submitted: string; Accepted: string } } };
+  reports: {
+    decide: string;
+    options: { state: { Submitted: string; Accepted: string }; verification: { Valid: string } };
+  };
   mail: {
     events: Record<'atcShiftAssigned' | 'atcShiftChanged' | 'reportDecided', { subject: string }>;
   };
