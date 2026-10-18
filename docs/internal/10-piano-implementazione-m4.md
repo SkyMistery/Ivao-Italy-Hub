@@ -5458,6 +5458,23 @@ nucleo E10v):
   banco non ha sessioni dei suoi membri; lo provano `EventsAwardRulesTests`); il riepilogo dei validatori nella casella di Mailpit (stessa
   ragione); una sessione vera della rete con più revisioni del piano; la pagina a 375 px.
 
+**Dopo la risposta di Carmine sulla #292 e le teste nuove di E10v ed E14a** (18 ottobre 2026; unite, sempre con un merge, la testa di E10v
+`092e0b79` — le revisioni ordinate per `id` del piano, `main` a `e7b1331` — e quella di E14a `583c54c1`, dopo la revisione della #289):
+
+- **La domanda 1 decisa**: (A), una riga del modulo per regola soddisfatta, come il codice; la lettura 5-bis la guarda il revisore.
+- **Il punto 2 del revisore sulla #291**: `Routes` sono i piani depositati, non le tratte volate. **Conta solo l'ultima rotta** (lettura 3-bis
+  della nota, regola per regola): `ReportCheck` dà a una voce solo una sessione la cui ultima revisione dice i suoi due scali
+  (`ReportRules.FlewRoute`, sopra la ricerca in due passi di E14a), e i PIREP `Auto` scrivono l'ultima rotta; `Route`, `RouteTimes`,
+  `MinLegDistance`, `AnyFlight` e `MinFlights` leggono solo voci verificate, quindi mai una rotta solo depositata. Il doppio della rete di
+  `EventsReportsTests` (E14a) dà alle sue sessioni gli scali del piano, con il lettore del nucleo, come la sorgente vera da E10v.
+- **La decisione di E14a con lo stato visto**: i segnali si scrivono nello stesso salvataggio, dopo il controllo del 409 `reportChanged`, e il
+  rifiuto `reportAwardAssigned` dopo quello di `reportNotOver`; l'helper della classe di E14b manda lo stato visto, come quello di E14a.
+- **Verificato, in locale**: build Release senza avvisi; `has-pending-model-changes` senza cambi, `AddAwardRules` ultima; `gen:api` senza
+  diff; unità **1377/1377**; **integrazione intera da sola 681/681** (16,5 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check`
+  verdi; `pnpm test --maxWorkers=2` **810 in 117 file**; lo smoke **184/184**; `e2e:full` sul banco 5152, `ivaohub_e2e_e14b` tolto prima,
+  dietro il lock di Mailpit, **71/71 al primo giro** (14,2 min); `core-guard.sh` dal merge-base `e7b1331`: passa (di E14b nel nucleo solo
+  `ErasureTests.cs`).
+
 ### E15a — Nucleo: le prenotazioni ATC della rete
 
 Design §9.1, §13 n.6, §17.2 n.3; nota `il-roster-atc`. Branch `m4/e15a-network-atc-bookings`. **PR del nucleo**, con la sua nota.
