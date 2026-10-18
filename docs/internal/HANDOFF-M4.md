@@ -340,7 +340,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `583c54c1` (dopo la revisione della #289, con `main` a `e7b1331`) e `092e0b79` unite)
+### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
   `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
@@ -398,7 +398,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - le regole del tracker restano quelle di E10a ed E10t: la domanda con due scali trova una sessione che li ha in **una stessa**
     revisione, che può non essere l'ultima.
 
-### Che cosa ha lasciato E14a (17 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, in coda dopo la #283 di E13b, con le sue teste `ecc5a35b` e `0c8d5313` unite — E10u `a2631e6` e `59d544e`, `main` a `8bf63ea`)
+### Che cosa ha lasciato E14a (17–18 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, con le sue teste `ecc5a35b` e `0c8d5313` unite, poi `main` a `e7b1331` (E13b ed E10u unite) e a `01fdbed` (la #290 e E10v, #291))
 
 - **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo
   `AddAfterTheEventColumns`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
