@@ -389,6 +389,11 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **Il volo del modello è da `LIRF` a `LIMC`, dopo la torre**: un PIREP di supporto di un pilota lo trova solo in un evento il cui
     giorno e la cui finestra dei voli lo contengono (`ReportRules.DayWindow`); la persona è una sola, quindi torre e volo sono suoi tutti e due.
   - ⚠️ **Un giro chiesto adesso conta come ultimo giro**: l'occorrenza di `events-roster` già passata è fatta, e la prossima viene.
+  - ⚠️ **`Skipped` per un job senza `[DisallowConcurrentExecution]`** (la revisione della #300): Quartz lo lancerebbe mentre il giro di
+    prima corre ancora nello stesso processo, e la guardia, che tiene già il suo lucchetto, lo salta; tutti i job di oggi lo hanno, e un job
+    nuovo che `runJob` chiama deve averlo.
+  - ⚠️ **`RunNowAsync` è `internal`**, e lo vede solo l'host (`InternalsVisibleTo` in `IvaoHub.Core.csproj`): un modulo o un'installazione
+    non salta «una volta per occorrenza».
   - ⚠️ **Le sessioni stanno nel processo del banco**: un banco riavviato le dimentica (lo spec le dà di nuovo); due spec che danno sessioni
     alla stessa persona si spostano a vicenda, ma `e2e:full` ha un worker solo.
   - ⚠️ **Nessun VID nuovo**: le cinque persone del banco (999001–999005) sono le sole a cui si danno sessioni.
