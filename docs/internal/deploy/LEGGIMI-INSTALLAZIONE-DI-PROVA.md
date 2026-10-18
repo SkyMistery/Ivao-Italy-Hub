@@ -125,6 +125,25 @@ Dalla 0.2.4 l'avvio è più corto (stima ~5 s, nota `decisions/2026-09-28-un-avv
 sono andati i secondi (`steps ms`), quando è uscita la prima risposta (`first answer at`, nella riga `STOP`). Un `!!` subito
 dopo il caricamento è il processo vecchio sostituito; nei giorni dopo va letto.
 
+### I tempi delle richieste: che cosa copiare, e quando (dalla 0.9.2)
+
+Per capire perché il sito è lento l'hub scrive da sé, in `webapp/diagnostics/` (nota
+`decisions/2026-10-18-i-tempi-delle-richieste.md`):
+
+| File | Che cosa dice |
+|---|---|
+| `requests-AAAAMMGG.txt` | una riga per ogni richiesta arrivata all'hub quel giorno (UTC): la rotta, quanto è durata, se era la prima del processo (l'avvio a freddo), quanto ha aspettato il database e le chiamate a IVAO |
+| `requests-AAAAMMGG-summary.txt` | il riassunto di un giorno finito: quante richieste, mediana e p90/p99 per rotta, fredde e calde separate, le dieci più lente. Lo scrive l'hub il giorno dopo, alla prima visita che dura più di 20 s |
+| `starts.txt` | come prima, e in più il codice compilato (`jit`) e il database (`db`) prima di essere pronto |
+
+Nessuno di questi file nomina una persona: niente VID, niente indirizzi, niente browser, mai l'indirizzo chiesto ma solo
+lo schema della rotta. Restano **14 giorni**, poi l'hub li cancella da sé; un giorno non supera i 20 MB.
+
+**Che cosa fare**: dopo **qualche giorno di uso normale** (tre o quattro, con visite sparse), copiate con FileZilla
+**tutta la cartella `webapp/diagnostics/`** e, se potete, anche `webapp/logs/` degli stessi giorni, e passatele al master
+così come sono. Il giorno di oggi non ha ancora il riassunto: va bene, il master lo calcola dalle righe. I file della
+home, degli script e delle immagini li consegna il server web senza passare dall'hub, quindi non ci sono: è normale.
+
 ## 5. I controlli
 
 Non nel minuto del riavvio: lasciategli il tempo delle migrazioni. `/api/version` e le altre chiamate all'API si
