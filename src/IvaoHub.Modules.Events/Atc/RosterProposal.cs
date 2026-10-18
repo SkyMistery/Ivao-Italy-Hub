@@ -62,7 +62,7 @@ public sealed class RosterProposal(EventsDbContext database, RosterData data, Ra
         var availabilities = await data.AvailabilitiesAsync(eventId, cancellationToken);
         var vids = availabilities.Select(availability => availability.Vid).ToList();
         var ratings = await data.RatingsAsync(vids, cancellationToken);
-        var penalties = await data.PenaltiesAsync(vids, eventId, cancellationToken);
+        var penalties = await data.PenaltiesAsync(vids, eventId, settings.NoShowWeight, cancellationToken);
         var held = await CrudSource.BackOffice<EventAtcShift>(database).AsNoTracking()
             .Where(shift => shift.EventId == eventId)
             .Select(shift => new RosterHeld(shift.PositionId, shift.ControllerVid, shift.FromUtc, shift.ToUtc))

@@ -1,6 +1,9 @@
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Localization;
 using IvaoHub.Modules.Events.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Modules.Events.Bookings;
@@ -13,6 +16,9 @@ namespace IvaoHub.Modules.Events.Bookings;
 /// the slot, never copied onto the booking: a slot corrected after the booking is listed as it is now.
 /// <para>The flight is empty only where the engine maps one row with no page around it (<c>GET /api/events/bookings/{id}</c>): the
 /// list reads the slots of a page in one query (<c>StaffBookings.RowsAsync</c>).</para>
+/// <para>With E13b (note 2026-10-16-i-no-show-i-registri-e-i-limiti, readings 5 and 6) its event's title — the register of a pilot lists the
+/// bookings of every event —, whether the staff took a booking not flown out of the pilot's record, who and why, and whether the reader may
+/// take it out now: checked, not flown, not out yet, and <c>EventBookings.Edit</c> from the one handler on the row — never on their own.</para>
 /// </summary>
 public sealed record EventBookingDto(
     long Id,
@@ -33,7 +39,11 @@ public sealed record EventBookingDto(
     DateTime CreatedAt,
     DateTime? RemindedAt,
     DateTime? FlownAt,
-    DateTime? FlownCheckedAt);
+    DateTime? FlownCheckedAt,
+    Localized<string>? EventTitle,
+    EventMemberDto? UnflownExcusedBy,
+    string? UnflownExcusedNote,
+    bool Excusable);
 
 /// <summary>
 /// The bookings of an event as its staff list them (design M4 §7.2, E6b; the list E6a left to this phase): a resource of the CRUD engine
@@ -42,7 +52,7 @@ public sealed record EventBookingDto(
 /// <para>A booking is a row of a member, which the global filter shows to any member and to no visitor: the staff read it past that
 /// filter, as the engine reads every row of the back office, and the department filter and the policy decide.</para>
 /// </summary>
-public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
+public sealed class StaffBookings(EventsDbContext database, EventsPeople people, IAuthorizationService authorization, IHttpContextAccessor http)
 {
     /// <summary>
     /// The bookings of the back office by the time of their flight at the airport of the event — the off block of a departure, the on
@@ -65,16 +75,36 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
         var slots = await database.Slots.AsNoTracking()
             .Where(slot => slotIds.Contains(slot.Id))
             .ToDictionaryAsync(slot => slot.Id, cancellationToken);
-        var names = await people.NamesAsync(bookings.Select(booking => booking.BookerVid), cancellationToken);
+        var names = await people.NamesAsync(
+            bookings.Select(booking => booking.BookerVid).Concat(bookings.Select(booking => booking.UnflownExcusedBy).OfType<int>()),
+            cancellationToken);
+        var eventIds = bookings.Select(booking => booking.EventId).Distinct().ToList();
+        var titles = await CrudSource.BackOffice<Event>(database).AsNoTracking()
+            .Where(row => eventIds.Contains(row.Id))
+            .ToDictionaryAsync(row => row.Id, row => row.Title, cancellationToken);
 
-        return [.. bookings.Select(booking => Row(booking, slots.GetValueOrDefault(booking.SlotId), names))];
+        var excusable = new HashSet<long>();
+        foreach (var booking in bookings.Where(booking => booking.FlownCheckedAt is not null && booking.FlownAt is null && booking.UnflownExcusedBy is null))
+        {
+            if (http.HttpContext is { } context && (await authorization.AuthorizeAsync(context.User, booking, EventsPermissions.BookingsEdit)).Succeeded)
+            {
+                excusable.Add(booking.Id);
+            }
+        }
+
+        return [.. bookings.Select(booking => Row(booking, slots.GetValueOrDefault(booking.SlotId), names, titles.GetValueOrDefault(booking.EventId), excusable.Contains(booking.Id)))];
     }
 
     /// <summary>
     /// One booking with its flight (<see cref="BookedFlight"/>: a public slot's own, a private one's as its pilot wrote it, E7) — none
     /// known, the slot not read, the flight empty but for a private callsign — and the name of its pilot.
     /// </summary>
-    public static EventBookingDto Row(EventBooking booking, EventSlot? slot, IReadOnlyDictionary<int, string> names)
+    public static EventBookingDto Row(
+        EventBooking booking,
+        EventSlot? slot,
+        IReadOnlyDictionary<int, string> names,
+        Localized<string>? eventTitle = null,
+        bool excusable = false)
     {
         ArgumentNullException.ThrowIfNull(booking);
 
@@ -99,6 +129,10 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people)
             booking.CreatedAt,
             booking.RemindedAt,
             booking.FlownAt,
-            booking.FlownCheckedAt);
+            booking.FlownCheckedAt,
+            eventTitle,
+            booking.UnflownExcusedBy is { } by ? EventsPeople.Member(by, names) : null,
+            booking.UnflownExcusedNote,
+            excusable);
     }
 }
