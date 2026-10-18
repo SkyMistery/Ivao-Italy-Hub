@@ -1,7 +1,9 @@
 # La conservazione di M4b, le prenotazioni della rete accanto al roster, il giro completo (E15b)
 
 **Data:** 17 ottobre 2026 — fase E15b di M4 (M4b, l'ultima), PR #301, in coda dopo la #293 di E14b e la #300 di E10w
-**Stato:** **Proposta** per le letture del §2, che aspettano la revisione della PR. **Le due domande del §4 sono decise** da Carmine il 18
+**Stato:** **decisa**. Le **letture 1–8 del §2 sono accettate come sono scritte** da Carmine il 19 ottobre 2026, in chat al master, che [l'ha
+pubblicato sulla #301][a301] su sua istruzione («sì, per tutte») — la 6 compresa: le prenotazioni ATC della rete accanto al roster,
+l'ottava lettura scritta a mano dell'ATC, accettata come le sette prima di lei. **Le due domande del §4 sono decise** da Carmine il 18
 ottobre 2026, in chat al master, che le ha pubblicate sull'issue #294 su sua istruzione: la 2 **(B)** ([la risposta][a294]) — prima una
 piccola fase del nucleo per il banco, **E10w** (`m4/e10w-bench-runs-a-job`), con `/e2e/jobs/{name}` solo sul banco e una fixture di sessioni
 di un personaggio del banco spostata sul giorno chiesto; poi il giro di E15b è intero, segnale compreso —; la 1 **(A)** ([la
@@ -12,6 +14,7 @@ nel codice.
 [q294a]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6237599717
 [a294]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
 [a294b]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817
+[a301]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322
 **Regola applicata:** `CLAUDE.md` §5. Che prenotazioni e PIREP dei piloti si cancellino dopo `pilotRetentionMonths`, le disponibilità «a
 roster pubblicato e a evento finito», e turni, esiti, PIREP ATC e cessioni restino per sempre; che lo faccia `events-retention` una volta al
 mese, decidendo dalle date; che le prenotazioni ATC della rete si leggano **accanto al roster, alla richiesta**, senza job e senza cache, al

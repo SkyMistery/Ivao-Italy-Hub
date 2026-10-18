@@ -10,7 +10,8 @@
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
 `m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **l'ultima della coda**: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha
 unito le teste `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300), e con la #293 unita **`main` a `f436c918`**
-(E14a, E10x, E14b, E10w, il piano 1.38 e la #303); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **Proposta** per le letture; le
+(E14a, E10x, E14b, E10w, il piano 1.38 e la #303); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **decisa**: le otto letture accettate da Carmine sulla
+[#301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322), la 6 compresa; le
 sue due domande sono **decise** da Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo
 sul banco, (B) — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento
 mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice tranne E10r e il Gate Manager nell'hub** (nota `2026-10-18-il-gate-manager-nell-hub`) («Che cosa ha lasciato
@@ -370,7 +371,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E15b (17–18 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`, PR #301; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b e la #300 di E10w, con le loro teste `e5eb1d17` e `986c6116` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E15b, «Com'è andata»; **nessuna migrazione**; del nucleo solo `schema.d.ts` generato e
-  `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **Proposta**, con due domande; il rapporto di chiusura
+  `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **decisa** (le due domande sull'issue #294, le otto letture sulla #301); il rapporto di chiusura
   `2026-10-17-m4-review`): l'ultima fase di **M4b**, e con lei **M4 è finita nel codice tranne E10r (#266, il toast del nucleo) e il Gate Manager nell'hub**, una fase
   nuova del modulo dopo le altre, dal suo design (nota `2026-10-18-il-gate-manager-nell-hub`).
   - **La conservazione di M4b**: `EventRetention.cs` (le date in un posto solo, il registro dei piloti compreso) ed `EventsRetentionJob.cs`
@@ -385,8 +386,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - **Che cosa deve sapere chi viene dopo**:
   - **Le due domande della nota sono decise** sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 1 (A), le
     disponibilità di un evento se ne vanno con l'evento finito, pubblicato o no il roster ([la
-    risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)); la 2 (B), E10w prima. Le letture del §2
-    aspettano la revisione della #301.
+    risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)); la 2 (B), E10w prima. Le otto letture del §2
+    le ha accettate Carmine sulla [#301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322), la 6 compresa
+    (l'ottava lettura scritta a mano dell'ATC).
   - ⚠️ **Il giro aspetta l'orologio, non più il job**: circa un quarto d'ora (l'inizio a due minuti, poi la fine dell'evento), cambia
     `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo, e dà le sessioni al trainer (999004) e gliele
     riprende. Un `e2e:full` ucciso a metà lascia le impostazioni a 0: il giro dopo le rimette come le trova, quindi vanno rimesse a mano sul
