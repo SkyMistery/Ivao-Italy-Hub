@@ -5291,6 +5291,28 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   senza filtro, da sola, 671/671** (13,4 min); `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` con
   `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il merge non tocca le pagine degli eventi: il 70/70 di
   prima vale); `core-guard.sh` dal merge-base `8bf63ea`: passa.
+- **Dopo la revisione** ([i rilievi sulla #289](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246754957), approvabile
+  dopo il punto 1; chiusi tutti e cinque):
+  1. **La decisione su quello che chi valida ha visto**: `ReportDecision` porta `Seen` (lo stato) e `UpdatedAt` della riga della lista
+     (`EventReportRowDto.UpdatedAt`, nuovo); sotto il blocco, se il PIREP è cambiato — un'altra decisione, una correzione del membro —, 409
+     `reportChanged`. Prima `reportChanged` non si raggiungeva (nessuna `row_version`, il `catch` tolto). Il test
+     `ADecisionOnAReportThatMovedSinceItWasReadIsAConflict` (due validatori; una correzione dopo la lettura) **cade senza il controllo** (204
+     invece di 409), provato togliendolo.
+  2. **Gli istanti senza zona** di una voce si leggono in UTC con `MemberSeats.Utc`, mai con l'ora del server; un test d'unità.
+  3. **Il verbo chiede l'evento finito**, come `Decidable` (`reportNotOver`).
+  4. **L'abbinamento delle sessioni in due passate** su tutto il PIREP (`ReportRules.Flown`): prima il callsign esatto, poi il resto; il test
+     d'unità sullo scenario del revisore.
+  5. **I test mancanti**: due primi invii nello stesso istante (`TwoFirstSendsInTheSameInstantMakeOneReport`: la richiesta aspetta il blocco
+     della riga che l'altro scrive e ne diventa la correzione; ⚠️ il ripiego sull'indice univoco copre l'istante fra la lettura e l'inserimento,
+     che un test non raggiunge senza un aggancio nel codice) e un membro rifiutato 403 sulla lista (`AMemberIsRefusedTheList…`).
+- **Le letture decise da Carmine** ([1–11 e 14 accettate](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246961501); [12 e 13 cambiate](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6246930196)):
+  - **12**: alla cancellazione dei dati di una persona il nominativo di una voce **ATC** resta (nomina una postazione); quello di un volo si
+    svuota (`EventsPersonalData.EraseReportsAsync`); il test della cancellazione lo dice.
+  - **13**: **un evento non si elimina più dopo mezz'ora dal suo inizio, o quando ha un PIREP**, quale venga prima (`eventStarted`,
+    `EventSaving.StartedTooLongAgo`); si annulla sempre. Test: il confine dei trenta minuti (unità, al tick), un evento iniziato da 29 minuti
+    eliminato, uno da 31 rifiutato, uno di venti minuti finito con un PIREP rifiutato (`AnEventIsKeptOnceItStartedHalfAnHourAgoOrOnceItHasAReport`).
+    ⚠️ **Cresciuto con la forma**: il giro e2e di E13a (`full/events-after.spec.ts`), il cui evento di dieci giorni fa ora resta, lascia il prefisso
+    `evt-test-e2e` (che `events-staff.spec.ts` elimina tutto) per `evt-e2e-e13a`, come il giro di E14a, e accetta il 400 alla pulizia.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
