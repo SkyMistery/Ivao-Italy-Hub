@@ -340,6 +340,42 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
+### Che cosa ha lasciato E14a (17–18 ottobre 2026, branch `m4/e14a-support-reports`, PR #289; nata dalla testa di E13b `4226b983`, con le sue teste `ecc5a35b` e `0c8d5313` unite, poi `main` a `e7b1331` (E13b ed E10u unite) e a `01fdbed` (la #290 e E10v, #291))
+
+- **Che cosa c'è** (il dettaglio in `10`, E14a, «Com'è andata»; **una migrazione**, `AddSupportReports`, l'ultima del contesto dopo
+  `AddAfterTheEventColumns`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
+  `2026-10-17-il-pirep-di-supporto`, **decisa**: le letture 1–11 e 14 accettate, 12 e 13 cambiate da Carmine sulla #289; le tre scelte **decise**, (A), da Carmine sull'[issue #287](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234209832), con [un limite sulla scelta 1](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053); ):
+  - **Le tabelle**: `evt_reports` (`EventReport`) ed `evt_report_items` (`EventReportItem`, con il VID del membro), in `EventReport.cs`.
+  - **Il membro**: `Reports/MemberReports.cs` (mandare e correggere, `PUT /api/events/mine/reports/{eventId}/{kind}`; i suoi e gli eventi
+    aperti, `GET /api/events/mine/reports`), la verifica `Reports/ReportCheck.cs`, le regole pure `Reports/ReportRules.cs`.
+  - **Lo staff**: `Reports/ReportDecisions.cs` (`POST /api/events/reports/{id}/decision`), la lista del motore `/api/events/reports`
+    (`Reports/ReportEndpoints.cs`), la scheda «PIREP di supporto» (`screens/reports.tsx`) e il numero in `events.staffQueue`.
+  - **Le pagine del membro**: la sezione di `/events/mine` (`screens/myReports.tsx`), le parole delle voci in `screens/reportWords.ts`.
+  - **I test**: integrazione `EventsReportsTests` (VID **761230–761236**, slug `evt-test-e14a-…`); unità `EventsReportsTests`; vitest
+    `reportWords.test.ts`; il giro `full/events-reports.spec.ts` (slug `evt-e2e-e14a-…`).
+- **Che cosa deve sapere la fase dopo**:
+  - **E14b** (le regole di award, i PIREP `Auto`, il riepilogo): accettare è `ReportDecisions.DecideAsync`, sotto il blocco della riga del PIREP,
+    con il salvataggio e il commit nello stesso punto: i segnali delle regole soddisfatte si proiettano lì, nella stessa transazione, **sulle voci
+    con `Verified` vero**. ⚠️ **Una decisione si cambia** (scelta 1, (A), decisa da Carmine sulla #287): un PIREP che passa da accettato a
+    rifiutato deve togliere i suoi segnali. ⚠️ **E14b deve il rifiuto** del [limite di Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/287#issuecomment-6234287053):
+    **una volta assegnato un award dal segnale di un PIREP, la sua decisione non cambia più** — rifiutata in `ReportDecisions.DecideAsync`
+    con una chiave sua, e la scheda dello staff non offre più «Cambia la decisione» (`Decidable` falso) —, con il suo test. E14a scrive la
+    decisione cambiabile, senza il rifiuto: non sa ancora che cosa è un award.
+    ⚠️ **La decisione porta quello che chi valida ha visto** (la revisione della #289, punto 1): `ReportDecision.Seen` e `UpdatedAt`, e un PIREP
+    cambiato nel frattempo risponde 409 `reportChanged`. Il rifiuto dopo un award va **dopo** quel controllo, sotto lo stesso blocco. Il PIREP `Auto` è una riga con `Source = Auto`, scritta da `events-after` con la stessa verifica (`ReportCheck`) e lo
+    stesso indice univoco: se il membro ne ha già mandato uno a mano, quello resta. `reportsToValidate` conta i `Submitted` come
+    `StaffQueueProvider`.
+  - **E15b** (la conservazione dei piloti): i PIREP **pilota** dopo `pilotRetentionMonths` si cancellano con le loro voci (la chiave le porta
+    via, ma ognuna ha la sua riga nell'audit solo se le cancella il modulo); quelli ATC restano. `DecisionNote` e il callsign e la sessione delle
+    voci sono già `[ErasedWith]`.
+  - ⚠️ **Un evento non si elimina dopo mezz'ora dal suo inizio, o con un PIREP** (`eventStarted`, `eventHasReports`; la lettura 13 come l'ha
+    cambiata Carmine sulla #289): si annulla. Un giro e2e con un evento passato lo lascia sul banco, che `e2e:full` comincia vuoto.
+    Per questo il suo slug **non** comincia con `evt-test-e2e`, che `events-staff.spec.ts` elimina tutto: un giro che lascia un evento con un PIREP
+    usa un prefisso suo.
+  - ⚠️ **Il banco non ha sessioni del pilota**: sul banco il PIREP del giro è verificato `Invalid`; trovare un volo e un turno lo provano
+    `EventsReportsTests` con la sera delle fixture spostata nel tempo.
+  - ⚠️ **I VID di prova**: E14a ha usato **761230–761236** della fascia 761230–761259.
+
 ### Che cosa ha lasciato E10v (17 ottobre 2026, branch `m4/e10v-session-airports`, PR #291, del nucleo; diretta su `main`, nata a `8bf63ea3`, con `main` a `0bfbdbb3` e poi a `e7b1331c` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10v, «Com'è andata»; nessuna migrazione, niente nel browser, nessuna riga di un modulo, nessuna
