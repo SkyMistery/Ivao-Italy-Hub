@@ -56,6 +56,8 @@ const bootstrap: Bootstrap = {
     firStaffScope: 'all',
     siteDepartment: 'WD',
     contentApproval: ['Page'],
+    tagline: {},
+    builtBy: [],
   },
   modules: [],
   // Both kinds of entry, because the header has to draw both: a module's, which carries a
@@ -338,4 +340,51 @@ test('a superadmin who holds no staff position is offered it too', async () => {
   await screen.findByRole('heading', { name: 'A screen' });
 
   expect(screen.getByRole('link', { name: englishCommon.nav.staff })).toHaveAttribute('href', '/staff');
+});
+
+/**
+ * The motto under the name and "Built by" at the bottom (note 2026-10-17-il-motto-e-chi-ha-costruito-il-sito): both from the
+ * division's file through the bootstrap, both absent for a division that writes neither, which is every fork's first day.
+ */
+test('a division without a tagline or builders draws neither', async () => {
+  renderShell();
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(screen.queryByText(englishCommon.footer.builtBy, { exact: false })).not.toBeInTheDocument();
+  expect(document.querySelector('footer p.italic')).toBeNull();
+});
+
+test('the tagline is written in italics under the name, and each builder links to their profile in a new tab', async () => {
+  renderShell({
+    ...bootstrap,
+    division: {
+      ...bootstrap.division,
+      tagline: { en: 'it takes time' },
+      builtBy: [
+        { name: 'Ada', vid: 100001, profileUrl: 'https://profiles.example/100001' },
+        { name: 'Bo', vid: 100002, profileUrl: 'https://profiles.example/100002' },
+      ],
+    },
+  });
+  await screen.findByRole('heading', { name: 'A screen' });
+
+  expect(screen.getByText('it takes time')).toHaveClass('italic');
+
+  // The address is the server's, carried as it came: this screen never writes whose network it is.
+  const ada = screen.getByRole('link', { name: 'Ada (100001)' });
+  const bo = screen.getByRole('link', { name: 'Bo (100002)' });
+  for (const [link, href] of [
+    [ada, 'https://profiles.example/100001'],
+    [bo, 'https://profiles.example/100002'],
+  ] as const) {
+    expect(link).toHaveAttribute('href', href);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+  }
+
+  // The words between the names are the language files': "Built by Ada (100001) & Bo (100002)".
+  expect(ada.parentElement).toHaveTextContent(
+    `${englishCommon.footer.builtBy} Ada (100001)${englishCommon.footer.listLastSeparator}Bo (100002)`,
+    { normalizeWhitespace: false },
+  );
 });
