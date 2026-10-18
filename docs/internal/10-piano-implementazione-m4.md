@@ -4519,7 +4519,11 @@ cadere.
 - **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281), con due punti non bloccanti. Il primo è fatto: le
   revisioni si ordinano per `id` del piano, non per la posizione nell'array (un caso nuovo, che cade togliendo l'ordine;
   `NetworkSessionSourceTests` 14/14). Il secondo è per E14b: `Routes` sono i piani depositati, non le tratte volate, e la nota di E14b
-  dirà regola per regola quale lettura usa (scritto in `HANDOFF-M4.md` e nella nota, §6). Rifatto: VERIFY.
+  dirà regola per regola quale lettura usa (scritto in `HANDOFF-M4.md` e nella nota, §6). Uniti, su richiesta del revisore, `main` a `0bfbdbb3` (E10u, #288) e a `e7b1331c` (E13b,
+  #283), in conflitto solo in `HANDOFF-M4.md` e in questo file: i blocchi di tutte e due le parti tenuti, E10v in cima all'handoff, E10u
+  prima di E10v qui. Il diff della fase fuori dai documenti è lo stesso. Rifatto tutto: `dotnet restore IvaoHub.sln --force --no-http-cache`
+  verde, build Release 0 avvisi, unità **1353/1353**, integrazione intera da sola **664/664** al primo giro (20 minuti), `gen:api` senza
+  differenze, `core-guard.sh` con Git Bash dalla base `e7b1331c`: passa.
 
 ### E11a — Postazioni e disponibilità
 
