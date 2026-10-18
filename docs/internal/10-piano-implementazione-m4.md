@@ -4585,8 +4585,18 @@ uno spec piccolo li usa tutti e due sul banco pubblicato; e la prova al contrari
   unità **1365/1365**; integrazione `E2EBenchRunsTests` e `AuthenticationTests` (cambiata da `main`) **30/30** — non l'intera, che
   un'altra sessione stava facendo girare; `pnpm -C web` lint, typecheck, format:check e test (**805/805**, `--maxWorkers=2`) verdi;
   `gen:api` senza differenze; `core-guard.sh` con Git Bash dalla base `3cdacd97`: passa.
+- **Dopo la revisione** (18 ottobre 2026): il revisore l'ha trovata [approvabile][r300w], con la CI verde su `986c611`. I due punti
+  facoltativi sono fatti: `ScheduledJobs.RunNowAsync` è **`internal`**, e il nucleo mostra i suoi interni solo a `IvaoHub.Web`
+  (`InternalsVisibleTo` in `IvaoHub.Core.csproj`), così un chiamante futuro non salta «una volta per occorrenza»; e una riga ⚠️ in
+  `HANDOFF-M4.md` dice che un job senza `[DisallowConcurrentExecution]` risponderebbe `Skipped`. Unito, su sua richiesta, `main` a
+  `4363c40` (#296, #297 e #298, che tocca anche `Program.cs`), senza conflitti: i blocchi del banco in `Program.cs` restano com'erano.
+  Rifatto tutto: build Release 0 avvisi, unità **1386/1386**, integrazione intera da sola **671/671** al primo giro (12 minuti; prima,
+  un giro tutto rosso con Docker spento, riacceso), `pnpm -C web` lint, typecheck, format:check e test (**805/805**, `--maxWorkers=2`)
+  verdi, `gen:api` senza differenze, sul banco 5154 ripubblicato `bench-runs.spec.ts` e `round.spec.ts` **6/6**, `core-guard.sh` con
+  Git Bash dalla base `4363c403`: passa.
 
 [a294w]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879
+[r300w]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/300#issuecomment-6251424579
 
 ### E11a — Postazioni e disponibilità
 

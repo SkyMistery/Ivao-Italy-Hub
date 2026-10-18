@@ -8,7 +8,7 @@
 
 **Ultimo aggiornamento:** 18 ottobre 2026 — **fase E10w** (del nucleo: il banco fa girare un job adesso, e dà sessioni di rete a una sua
 persona), sul branch `m4/e10w-bench-runs-a-job`, **PR #300** verso `main`, **diretta su `main`, non in coda**: nata `--no-track` da `main`
-a `e7b1331c`, con `main` a `3cdacd97` unito (E10v, #291, e la tagline, #290 e #295). La nota `2026-10-18-il-banco-fa-girare-un-job` è **decisa** da Carmine: la (B) sull'[issue
+a `e7b1331c`, con `main` a `3cdacd97` unito (E10v, #291, e la tagline, #290 e #295); dopo la revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/300#issuecomment-6251424579), `RunNowAsync` è `internal` e ha unito `main` a `4363c40` (#296–#298). La nota `2026-10-18-il-banco-fa-girare-un-job` è **decisa** da Carmine: la (B) sull'[issue
 #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6246961879) — prima una piccola fase del nucleo per il banco,
 poi E15b. Da E10w il banco ha `POST /e2e/jobs/{name}` e `PUT`/`DELETE /e2e/sessions/{vid}`, dietro gli stessi due lucchetti di
 `/e2e/signin`, e `bench.ts` ha `runJob`, `giveSessions` e `takeSessions`: il giro di M4b di E15b non aspetta più i giri veri, e il segnale
@@ -348,7 +348,7 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
 
-### Che cosa ha lasciato E10w (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300, del nucleo; diretta su `main`, nata a `e7b1331c`, con `main` a `3cdacd97` unito)
+### Che cosa ha lasciato E10w (18 ottobre 2026, branch `m4/e10w-bench-runs-a-job`, PR #300, del nucleo; diretta su `main`, nata a `e7b1331c`, con `main` a `3cdacd97` e poi a `4363c40` unito)
 
 - **Che cosa c'è** (il dettaglio in `10`, E10w, «Com'è andata»; nessuna migrazione, niente nel browser né in `/api/me`, nessuna riga di
   un modulo; una nota nuova, `2026-10-18-il-banco-fa-girare-un-job`, caso (b), **decisa** da Carmine sull'issue #294):
