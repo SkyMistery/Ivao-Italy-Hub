@@ -8,9 +8,9 @@ in una fase del nucleo a sé prima che E14b lo usi. La domanda 1 è **decisa**: 
 **(A)** sull'[issue #292][a292] (in chat al master, pubblicata su sua istruzione, 18 ottobre 2026), una riga del modulo per regola
 soddisfatta; il punto in più — leggere `cms_award_signals` dal contesto del modulo, o un metodo piccolo del nucleo (lettura 5-bis) — l'ha
 lasciato al revisore, quando legge la #293.
-La domanda 2 resta **Proposta**, con la sua domanda per Carmine (il punto 3 della revisione della #293: una scelta è del maintainer): il
-codice segue la (A) raccomandata — la strada di dalberone, la fase del nucleo **E10v** (#291, `m4/e10v-session-airports`, nota
-`2026-10-17-gli-scali-di-una-sessione`), che E14b unisce prima della metà pilota dei PIREP `Auto`.
+La domanda 2 è **decisa**: Carmine ha scelto la **(A)** sulla #293 ([la risposta][c293], in chat al master, «andiamo di A», pubblicata su
+sua istruzione, 18 ottobre 2026) — la fase del nucleo **E10v** (#291, `m4/e10v-session-airports`, nota
+`2026-10-17-gli-scali-di-una-sessione`), già in `main`, che E14b usa per la metà pilota dei PIREP `Auto`.
 **Regola applicata:** `CLAUDE.md` §5. Che un evento abbia regole di award da un **elenco chiuso** di criteri, che accettare un PIREP le
 valuti sulle voci **verificate** e proietti un segnale di award per regola soddisfatta **nella stessa transazione**, che chi ha
 `Awards.Assign` assegni a mano dalla coda del nucleo; che la preferenza «riporta automaticamente la mia partecipazione agli eventi» (spenta)
@@ -27,6 +27,7 @@ quello che il design chiede non entra in quello che il nucleo offre oggi.
 [a293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376
 [b293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248633104
 [r291]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/291#issuecomment-6246724281
+[c293]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103
 
 ## 1. Che cosa serviva decidere
 
@@ -149,7 +150,7 @@ riepilogo.
 | Il «già mandato oggi» in una tabella | E10j: è la riga del giro |
 | Ripetere la verifica del membro (`ReportCheck`) per le voci `Auto` | le sessioni sono già quelle trovate: una seconda domanda per voce costerebbe il lotto |
 
-## 4. Le domande — la 1 decisa da Carmine, la 2 Proposta
+## 4. Le domande — decise da Carmine, (A) tutte e due
 
 1. **Un PIREP non può proiettare due segnali per il suo membro.** (Pubblicata sull'[issue #292][q292].) Il nucleo tiene un segnale **per membro per riga sorgente** (l'indice univoco
    `(source_module, source_id, vid)` di `cms_award_signals`, e `ProjectionWriter` riconosce un segnale dal VID). Un PIREP è di un membro: con
@@ -181,8 +182,9 @@ riepilogo.
    - (B) **Niente nel nucleo**: E14b scrive solo i PIREP ATC `Auto`, e i voli aspettano una fase dopo.
 
    **Raccomandata: (A)**: due campi facoltativi di un record del nucleo, letti da un DTO che già li ha. Il codice la segue: dalberone ha
-   scelto la strada, la fase del nucleo **E10v** (#291), per la regola 6; **la scelta resta di Carmine** (Proposta, il punto 3 della revisione
-   della #293).
+   scelto la strada, la fase del nucleo **E10v** (#291), per la regola 6. **Decisa: (A)**, da Carmine ([la risposta][c293], in chat al
+   master il 18 ottobre 2026, «andiamo di A», pubblicata su sua istruzione): la piccola fase del nucleo prima, E10v, già unita, ed E14b la
+   usa.
 
 ## Da portare nel piano
 

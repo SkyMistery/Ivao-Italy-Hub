@@ -5534,9 +5534,10 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
-`2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
-#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **Proposta** (la strada di dalberone, la fase
-del nucleo E10v, che il codice segue; la scelta è di Carmine, il punto 3 della revisione della #293)):
+`2026-10-17-le-regole-di-award`, **decisa**: le letture da Carmine sulla #293; la domanda 1 **decisa** da Carmine, (A), sull'[issue
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **decisa** da Carmine, (A), sulla
+[#293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103) (la fase del nucleo E10v, la strada di dalberone che il
+codice segue)):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
   `evt_events.auto_reports_cursor`.
@@ -5626,7 +5627,9 @@ letture](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248
   che segnalano**: provato).
 - **Il punto 2**: `ADecisionWaitsForAnAssignmentInTheSameInstantAndIsRefused`, una transazione del test tiene la riga del segnale e la marca
   assegnata, la decisione aspetta al `FOR UPDATE` ed è rifiutata (**cade senza il `FOR UPDATE`**: provato).
-- **Il punto 3**: la domanda 2 resta **Proposta** nella nota. **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
+- **Il punto 3**: la domanda 2 è tornata **Proposta** nella nota, poi **decisa** da Carmine, (A), il 18 ottobre 2026
+  ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6253511103), in chat al master, pubblicata su sua
+  istruzione). **I nit**: `FlewRoute` sopra il commento di `Flown`; il cursore del job è
   `evt_events.auto_reports_cursor`, non una colonna di persona (la sua riga in `ErasureTests` tolta); un `Auto` corretto dal membro diventa
   `Manual`; un turno `Auto` si verifica con `AfterRules.Threshold`, come uno a mano. `AddAwardRules` rifatta (mai su `main`).
 - **La risposta 1 di Carmine**: l'impostazione **`minimumFlightMinutes`** (10, da 1 a 120, nel form generato delle impostazioni): un volo è
