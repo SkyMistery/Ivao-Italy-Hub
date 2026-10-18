@@ -12,7 +12,8 @@ namespace IvaoHub.Modules.Events.Reports;
 /// <summary>
 /// The awards a report points its member out for (design M4 §5.4, E14b; note 2026-10-17-le-regole-di-award, readings 3–5): accepting it
 /// evaluates the rules of its event on its verified items and writes a row per rule met (<see cref="EventReportAward"/>), whose signal the
-/// interceptor puts in the core's queue in the same transaction; rejecting it deletes them, and the core withdraws the signals still waiting.
+/// interceptor puts in the core's queue in the same transaction; rejecting it keeps the rows and makes them point nobody out, and the core
+/// withdraws the signals still waiting. Every signal the report ever produced keeps its row, so «was an award assigned from it?» sees them all.
 /// <para><b>Once an award was assigned from one of them, the report's decision no longer changes</b> (Carmine's limit on #287): whether one was
 /// is the core's queue, which the module's context maps — read under the lock of the signals' rows inside the decision's transaction, so that an
 /// assignment in the same instant passes before or after it, never in between.</para>
@@ -87,29 +88,58 @@ public sealed class ReportAwards(
     }
 
     /// <summary>
-    /// Writes what the report's new state points out, into the tracked context, for the save of the decision: accepted, a row per rule of its
-    /// event its verified items meet; rejected, none.
+    /// Writes what the report's new state points out, into the tracked context, for the save of the decision (the review of #293, point 1).
+    /// <b>A row is never deleted</b>: it is the source of a signal the core keeps whatever happens to it once somebody looked at it — dismissed or
+    /// assigned —, so the row stays, and says whether it points its member out (<see cref="EventReportAward.PointsOut"/>). Accepted, the rules of
+    /// its event its verified items meet point out — a rule met again finds its own row, so a signal dismissed stays dismissed —, the others do
+    /// not; rejected, none does, and the core withdraws the signals still waiting.
     /// </summary>
     public async Task ApplyAsync(EventReport report, Event row, DateTime now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(report);
         ArgumentNullException.ThrowIfNull(row);
 
-        database.ReportAwards.RemoveRange(await database.ReportAwards
-            .Where(award => award.ReportId == report.Id)
-            .ToListAsync(cancellationToken));
-        if (report.State != ReportState.Accepted)
+        var rows = await database.ReportAwards.Where(award => award.ReportId == report.Id).ToListAsync(cancellationToken);
+        var met = report.State == ReportState.Accepted ? await MetAsync(report, row, cancellationToken) : [];
+        foreach (var award in rows)
         {
-            return;
+            award.PointsOut = met.Any(rule => rule.Id == award.RuleId);
         }
 
+        var locale = division.Value.DefaultLocale;
+        var title = row.Title.Resolve(locale, locale) ?? string.Empty;
+        foreach (var rule in met.Where(rule => rows.All(award => award.RuleId != rule.Id)))
+        {
+            var reason = catalog.Resolve(locale, ReasonKey)
+                .Replace("{{event}}", title, StringComparison.Ordinal)
+                .Replace("{{criterion}}", catalog.Resolve(locale, CriterionKey(rule.Criterion)), StringComparison.Ordinal);
+
+            database.ReportAwards.Add(new EventReportAward
+            {
+                ReportId = report.Id,
+                RuleId = rule.Id,
+                EventId = row.Id,
+                Vid = report.Vid,
+                AwardId = rule.AwardId,
+                Reason = reason.Length <= EventReportAward.MaxReasonLength ? reason : reason[..EventReportAward.MaxReasonLength],
+                PointsOut = true,
+                CreatedAt = now,
+                OwnerDepartment = report.OwnerDepartment,
+                OwnerDepartmentMask = report.OwnerDepartmentMask,
+            });
+        }
+    }
+
+    /// <summary>The rules of the event the report's verified items meet, of its kind.</summary>
+    private async Task<IReadOnlyList<EventAwardRule>> MetAsync(EventReport report, Event row, CancellationToken cancellationToken)
+    {
         var rules = await database.AwardRules.AsNoTracking()
             .Where(rule => rule.EventId == row.Id && rule.Kind == report.Kind)
             .OrderBy(rule => rule.Id)
             .ToListAsync(cancellationToken);
         if (rules.Count == 0)
         {
-            return;
+            return [];
         }
 
         var items = await CrudSource.BackOffice<EventReportItem>(database).AsNoTracking()
@@ -124,27 +154,7 @@ public sealed class ReportAwards(
             types = found.ToDictionary(pair => pair.Key, pair => pair.Value.Type, StringComparer.OrdinalIgnoreCase);
         }
 
-        var locale = division.Value.DefaultLocale;
-        var title = row.Title.Resolve(locale, locale) ?? string.Empty;
-        foreach (var rule in rules.Where(rule => AwardRules.IsMet(rule, report.Kind, items, types)))
-        {
-            var reason = catalog.Resolve(locale, ReasonKey)
-                .Replace("{{event}}", title, StringComparison.Ordinal)
-                .Replace("{{criterion}}", catalog.Resolve(locale, CriterionKey(rule.Criterion)), StringComparison.Ordinal);
-
-            database.ReportAwards.Add(new EventReportAward
-            {
-                ReportId = report.Id,
-                RuleId = rule.Id,
-                EventId = row.Id,
-                Vid = report.Vid,
-                AwardId = rule.AwardId,
-                Reason = reason.Length <= EventReportAward.MaxReasonLength ? reason : reason[..EventReportAward.MaxReasonLength],
-                CreatedAt = now,
-                OwnerDepartment = report.OwnerDepartment,
-                OwnerDepartmentMask = report.OwnerDepartmentMask,
-            });
-        }
+        return [.. rules.Where(rule => AwardRules.IsMet(rule, report.Kind, items, types))];
     }
 
     /// <summary>The words of a criterion, the ones the tab of the rules shows: a key each, so that the server asks for keys it can name.</summary>

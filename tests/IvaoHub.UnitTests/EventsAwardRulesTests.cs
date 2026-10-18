@@ -172,9 +172,9 @@ public sealed class EventsAwardRulesTests
         Assert.Equal(("XEA1_TWR", Start, Start.AddMinutes(80)), (shifts[0].Draft.Callsign, shifts[0].Draft.FromUtc, shifts[0].Draft.ToUtc));
         Assert.Equal((70, true), (shifts[0].Finding.Minutes, shifts[0].Finding.Verified));
 
-        // Ten minutes on the approach: in the report, not verified.
+        // Ten minutes on the approach, an item of ten minutes: verified with the threshold of a shift checked by hand, at most the whole item.
         Assert.Equal("XEA1_APP", shifts[1].Draft.Callsign);
-        Assert.Equal((10, false), (shifts[1].Finding.Minutes, shifts[1].Finding.Verified));
+        Assert.Equal((10, true), (shifts[1].Finding.Minutes, shifts[1].Finding.Verified));
     }
 
     [Fact]

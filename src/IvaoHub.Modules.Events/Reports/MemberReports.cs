@@ -317,6 +317,8 @@ public sealed class MemberReports(
                 .ToListAsync(cancellationToken));
         }
 
+        // A member who corrects a report the system wrote for them makes it theirs (the review of #293, a nit).
+        report.Source = source;
         report.Verification = verification;
         report.SubmittedAt = now;
         report.CheckedAt = now;

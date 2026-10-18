@@ -13,7 +13,7 @@ namespace IvaoHub.Modules.Events.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
-                name: "auto_reports_after_vid",
+                name: "auto_reports_cursor",
                 table: "evt_events",
                 type: "int",
                 nullable: true);
@@ -74,6 +74,7 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                     award_id = table.Column<long>(type: "bigint", nullable: false),
                     reason = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    points_out = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     owner_department = table.Column<string>(type: "varchar(4)", maxLength: 4, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -103,9 +104,10 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                 column: "event_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_evt_report_awards_report_id",
+                name: "ix_evt_report_awards_report_id_rule_id",
                 table: "evt_report_awards",
-                column: "report_id");
+                columns: new[] { "report_id", "rule_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_evt_report_awards_vid",
@@ -123,7 +125,7 @@ namespace IvaoHub.Modules.Events.Data.Migrations
                 name: "evt_report_awards");
 
             migrationBuilder.DropColumn(
-                name: "auto_reports_after_vid",
+                name: "auto_reports_cursor",
                 table: "evt_events");
         }
     }

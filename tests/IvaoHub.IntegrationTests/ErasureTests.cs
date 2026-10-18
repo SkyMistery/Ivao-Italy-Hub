@@ -275,7 +275,6 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         "evt_bookings.unflown_excused_by",
         "evt_event_airports.created_by",
         "evt_event_airports.updated_by",
-        "evt_events.auto_reports_after_vid",
         "evt_events.cancelled_by",
         "evt_events.created_by",
         "evt_events.updated_by",

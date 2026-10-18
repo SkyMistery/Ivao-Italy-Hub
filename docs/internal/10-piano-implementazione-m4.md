@@ -5396,11 +5396,11 @@ automatici solo per chi ha la preferenza; il riepilogo una volta al giorno anche
 **Com'è andata** (17 ottobre 2026; branch `m4/e14b-award-rules`, PR #293, nata `--no-track` dalla testa di E14a `08508e9e`, in coda dopo la #289 di
 E14a e la #291 della fase del nucleo **E10v**, con le loro teste `7c094fd5` — E13b, E10u e `main` a `8bf63ea` — e `547d402d` unite; nota
 `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue
-#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 decisa da dalberone, (A), la fase del
-nucleo E10v):
+#292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la domanda 2 **Proposta** (la strada di dalberone, la fase
+del nucleo E10v, che il codice segue; la scelta è di Carmine, il punto 3 della revisione della #293)):
 
 - **Una migrazione**, `AddAwardRules`, dopo `AddSupportReports` di E14a: `evt_award_rules`, `evt_report_awards` e la colonna
-  `evt_events.auto_reports_after_vid`.
+  `evt_events.auto_reports_cursor`.
 - **Le regole** (`EventAwardRule.cs`, `Reports/AwardRules.cs`, `Staff/EventAwardRuleEndpoints.cs`): righe dell'evento nell'area `Events`, il
   criterio dall'elenco chiuso e **i parametri come colonne** (lettura 2), la risorsa del motore `/api/events/award-rules` (`Events.View`,
   `Events.Edit`) con le scelte del form in `/api/events/award-rules/choices` (gli award attivi del catalogo, i tipi delle postazioni della
@@ -5409,13 +5409,13 @@ nucleo E10v):
 - **I segnali** (`EventReportAward.cs`, `Reports/ReportAwards.cs`, la domanda 1 della nota con la (A) raccomandata): il nucleo tiene **un
   segnale per membro per riga sorgente**, quindi un PIREP che soddisfa due regole ha bisogno di due righe: `evt_report_awards`, una per regola
   soddisfatta, ognuna l'`IProjectable` con il suo segnale (`report-award:{id}`), scritte da `ReportDecisions` nello stesso salvataggio
-  dell'accettazione e cancellate da un rifiuto (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
+  dell'accettazione; un rifiuto le spegne (`points_out`), mai le cancella (il nucleo toglie i segnali in attesa; uno scartato resta). **Il limite di Carmine sulla #287**:
   con un segnale `Handled` il cambio della decisione è rifiutato (`events:errors.reportAwardAssigned`), letto **sotto il blocco delle righe dei
   segnali** in `cms_award_signals`, che il contesto del modulo mappa; la lista dello staff dà `Decidable` falso. Le statistiche contano le righe
   (`award_signals`).
 - **I PIREP `Auto`** (`Reports/AutoReports.cs`; la preferenza `events.autoReport` in `EventsModule.Preferences`): un passo di `events-after`
   dopo i turni e prima della chiusura, 2 unità per membro, i membri con la preferenza nell'ordine dei VID, l'ultimo fatto scritto
-  sull'evento (`auto_reports_after_vid`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
+  sull'evento (`auto_reports_cursor`, come `after_done_at`: niente versione, niente audit). **La metà ATC** dal tracker sulle postazioni
   dell'evento e su quelle della divisione ai suoi scali (tutte per un evento `whole_division`), una voce per postazione, verificata con almeno
   `attendanceMinimumMinutes` (lettura 8). **La metà pilota** sulle sessioni con i loro scali di **E10v** (#291): una voce per sessione con
   l'**ultima rotta** del piano, quando tocca gli scali dell'evento — gli aeroporti della divisione (`IFirDirectory`) per un evento

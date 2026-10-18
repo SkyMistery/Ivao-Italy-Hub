@@ -384,8 +384,12 @@ public sealed class EventsDbContext(DbContextOptions<EventsDbContext> options, I
             award.Ignore(row => row.ResourceScope);
             award.Property(row => row.Reason).HasMaxLength(EventReportAward.MaxReasonLength).IsRequired();
 
-            // The rows of a report go with it, as its items do. It is also the index a decision reads them by.
+            // The rows of a report go with it, as its items do.
             award.HasOne<EventReport>().WithMany().HasForeignKey(row => row.ReportId).OnDelete(DeleteBehavior.Cascade);
+
+            // One row per report and rule, never deleted: a rule met again finds its own row and its signal (the review of #293, point 1). It is
+            // also the index a decision reads them by.
+            award.HasIndex(row => new { row.ReportId, row.RuleId }).IsUnique();
 
             // A member's rows of every event: their erasure; and an event's, for its statistics.
             award.HasIndex(row => row.Vid);

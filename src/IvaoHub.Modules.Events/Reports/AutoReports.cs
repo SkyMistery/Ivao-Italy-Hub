@@ -205,9 +205,9 @@ public static class AutoReportRules
     /// <summary>
     /// A controller's shifts (reading 8): their connections on the positions of <paramref name="positions"/>, cut to the event's window, one
     /// item per position from the first minute to the last — at most <see cref="ReportRules.LongestShift"/>, at most
-    /// <see cref="ReportRules.MaxItems"/> items, the earliest first —, with the minutes on it. Verified with at least
-    /// <paramref name="attendanceMinimumMinutes"/> on it, as a shift of the roster is: a connection of a few minutes is in the report, not
-    /// verified.
+    /// <see cref="ReportRules.MaxItems"/> items, the earliest first —, with the minutes on it. Verified with the threshold of a shift checked by
+    /// hand and of a shift of the roster (<see cref="AfterRules.Threshold"/>: <paramref name="attendanceMinimumMinutes"/>, at most the whole
+    /// item), one rule in one place (the review of #293, a nit).
     /// </summary>
     public static IReadOnlyList<(ReportItemDraft Draft, ItemFinding Finding)> Shifts(
         IEnumerable<NetworkSession> sessions,
@@ -231,7 +231,7 @@ public static class AutoReportRules
                 var to = last - from > ReportRules.LongestShift ? from + ReportRules.LongestShift : last;
                 var minutes = AfterRules.MinutesWithin(position.Select(AfterRules.Connection), from, to);
                 return (Draft: new ReportItemDraft(position.Key, null, null, null, from, to),
-                    Finding: new ItemFinding(null, minutes, null, minutes >= attendanceMinimumMinutes));
+                    Finding: new ItemFinding(null, minutes, null, minutes >= AfterRules.Threshold(attendanceMinimumMinutes, from, to)));
             })
             .Where(item => item.Draft.ToUtc > item.Draft.FromUtc)
             .OrderBy(item => item.Draft.FromUtc)

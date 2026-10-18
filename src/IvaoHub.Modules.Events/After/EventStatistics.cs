@@ -104,8 +104,8 @@ public sealed class EventStatistics(EventsDbContext database, ModuleSettingsStor
         stats.ReportsSubmitted = reports.Sum(group => group.Count);
         stats.ReportsAccepted = reports.Where(group => group.Key == ReportState.Accepted).Sum(group => group.Count);
 
-        // The awards its accepted reports pointed out (E14b): one row per rule met, each a signal in the core's queue.
-        stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id, cancellationToken);
+        // The awards its accepted reports point out (E14b): one row per rule met, each a signal in the core's queue; a row a rejection turned off does not count.
+        stats.AwardSignals = await database.ReportAwards.CountAsync(award => award.EventId == row.Id && award.PointsOut, cancellationToken);
 
         await InPersonAsync(row, stats, now, cancellationToken);
 

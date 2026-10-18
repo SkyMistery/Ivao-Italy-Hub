@@ -343,16 +343,16 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #291 di E10v, con le loro teste `583c54c1` (dopo la revisione della #289, con `main` a `e7b1331`) e `092e0b79` unite)
 
 - **Che cosa c'è** (il dettaglio in `10`, E14b, «Com'è andata»; **una migrazione**, `AddAwardRules`, l'ultima del contesto dopo
-  `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le quattro colonne di persona in `ErasureTests`; una nota nuova,
-  `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 decisa da dalberone, la fase del nucleo E10v):
+  `AddSupportReports`; del nucleo solo `schema.d.ts` generato e le tre colonne di persona in `ErasureTests`; una nota nuova,
+  `2026-10-17-le-regole-di-award`, **Proposta** per le letture; la domanda 1 **decisa** da Carmine, (A), sull'[issue #292](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/292#issuecomment-6246961698); la 2 **Proposta**, il codice sulla fase del nucleo E10v, la strada di dalberone):
   - **Le regole di award**: `evt_award_rules` (`EventAwardRule.cs`), le regole pure dei criteri (`Reports/AwardRules.cs`), la risorsa
     `/api/events/award-rules` con le scelte del form (`Staff/EventAwardRuleEndpoints.cs`), la scheda «Award» (`screens/awardRules.tsx`,
     `screens/awardRuleWords.ts`); «Duplica» le copia (`EventCopy.AwardRule`).
   - **I segnali**: `evt_report_awards` (`EventReportAward.cs`), una riga per regola soddisfatta, ognuna con il suo segnale nella coda del
-    nucleo; scritte e tolte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync`. Un award assegnato congela la decisione
+    nucleo; scritte da `Reports/ReportAwards.cs` dentro `ReportDecisions.DecideAsync` e **mai cancellate**: un rifiuto le spegne (`points_out`), una regola soddisfatta di nuovo ritrova la sua riga e il suo segnale. Un award assegnato congela la decisione
     (`events:errors.reportAwardAssigned`, `Decidable` falso).
   - **I PIREP `Auto`**: la preferenza `events.autoReport`, il passo di `events-after` (`Reports/AutoReports.cs`, il segno
-    `evt_events.auto_reports_after_vid`), l'interruttore in `/events/mine`. Un PIREP ATC (le postazioni dell'evento e della divisione ai suoi
+    `evt_events.auto_reports_cursor`), l'interruttore in `/events/mine`. Un PIREP ATC (le postazioni dell'evento e della divisione ai suoi
     scali) e uno pilota (l'ultima rotta di ogni sessione, sugli scali di **E10v**, #291).
   - **`events-digest`** (`Reports/ReportsDigestJob.cs`), alle 07:15 nel fuso della divisione, `events.reportsToValidate`.
   - **I test**: integrazione `EventsAwardRulesTests` (VID **761262–761268**, slug `evt-test-e14b-…`); unità `EventsAwardRulesTests`; vitest
