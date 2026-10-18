@@ -589,3 +589,72 @@ export async function mailFor(
   const read = await request.get(`${mailpit}/api/v1/message/${found.ID}`);
   return (await read.json()) as { Subject: string; Text: string };
 }
+
+/** What became of a job the bench ran now, and the row it wrote in `hub_jobs_log` (null for a job that wrote none). */
+export interface BenchJobRun {
+  readonly job: string;
+  readonly outcome: 'Ran' | 'Skipped' | 'Running';
+  readonly run: {
+    readonly startedAt: string;
+    readonly finishedAt: string | null;
+    readonly status: string;
+    readonly message: string | null;
+  } | null;
+}
+
+/**
+ * Runs a job of the hub now, by the name its rows carry (`events-roster`, `events-after`, `notification-dispatch`…), and
+ * answers when the run has ended (M4, E10w; note `decisions/2026-10-18-il-banco-fa-girare-un-job.md`). A spec no longer waits
+ * for the job's own hour: `POST /e2e/jobs/{name}`, which only the bench maps, launches the very job Quartz would, through the
+ * same guard — the job's lock —, but does not ask whether it is due. Its run is a run like any other: it writes its row, and
+ * the job's next occurrence finds it done. Asserts that it ran; a name the hub has no job of is a 404, and fails here.
+ */
+export async function runJob(request: APIRequestContext, name: string): Promise<BenchJobRun> {
+  // The server waits for the run as long as a pass waits for one job (ten minutes); a spec's own call waits as long.
+  const response = await request.post(`/e2e/jobs/${encodeURIComponent(name)}`, { timeout: 11 * 60_000 });
+  expect(response.status(), `${name}: ${await response.text()}`).toBe(200);
+
+  const ran = (await response.json()) as BenchJobRun;
+  expect(ran.outcome, `${name}: ${JSON.stringify(ran)}`).toBe('Ran');
+  return ran;
+}
+
+/** A session on the network of a person of the bench, as the network's client reads it. Instants in UTC. */
+export interface BenchSession {
+  readonly id: number;
+  readonly callsign: string;
+  readonly connection: 'Pilot' | 'Atc' | 'Observer' | 'FollowMe' | null;
+  readonly startedAt: string;
+  readonly endedAt: string;
+  readonly departureIcao: string | null;
+  readonly arrivalIcao: string | null;
+}
+
+/**
+ * Gives a person of the bench sessions on the network from `at` (M4, E10w): the fixture client answers them for that VID, so a
+ * check after an event finds their shift, a report of support its items, and a rule of award its signal. They are the template's
+ * (`tests/fixtures/ivao/tracker-sessions-bench.json`), moved so that the first starts at `at`:
+ *
+ * - **`LIRF_TWR`**, a controller, from `at` for 40 minutes and 54 seconds;
+ * - **`TST001`**, a pilot from `LIRF` to `LIMC`, from `at` + 50 minutes 8 seconds for 71 minutes and 52 seconds.
+ *
+ * A second call moves them. They live in the bench's process, never in a file: take them back with `takeSessions` in an
+ * `afterwards`, and a bench that stops forgets them. Only the bench's five people can be given them (their VIDs in
+ * `scripts/e2e-server.mjs`); any other VID is a 404. Answers the sessions as the network's client now reads them, the first
+ * first.
+ */
+export async function giveSessions(
+  request: APIRequestContext,
+  vid: number,
+  at: Date,
+): Promise<BenchSession[]> {
+  const response = await request.put(`/e2e/sessions/${vid}`, { data: { atUtc: at.toISOString() } });
+  expect(response.status(), await response.text()).toBe(200);
+  return ((await response.json()) as { sessions: BenchSession[] }).sessions;
+}
+
+/** Takes back the sessions `giveSessions` gave a person of the bench. */
+export async function takeSessions(request: APIRequestContext, vid: number): Promise<void> {
+  const response = await request.delete(`/e2e/sessions/${vid}`);
+  expect(response.status(), await response.text()).toBe(204);
+}

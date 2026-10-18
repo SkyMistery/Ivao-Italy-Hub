@@ -1,0 +1,43 @@
+[
+  {
+    "time": 4312,
+    "createdAt": "2001-01-01T17:27:44.000Z",
+    "updatedAt": "2001-01-01T18:39:36.000Z",
+    "id": 2,
+    "userId": 0,
+    "callsign": "TST001",
+    "connectionType": "PILOT",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2001-01-01T18:39:36.000Z",
+    "flightPlans": [
+      {
+        "id": 1,
+        "arrivalId": "LIMC",
+        "departureId": "LIRF",
+        "aircraftId": "A320"
+      },
+      {
+        "id": 2,
+        "arrivalId": "LIMC",
+        "departureId": "LIRF",
+        "aircraftId": "A320"
+      }
+    ]
+  },
+  {
+    "time": 2454,
+    "createdAt": "2001-01-01T16:37:36.000Z",
+    "updatedAt": "2001-01-01T17:18:30.000Z",
+    "id": 1,
+    "userId": 0,
+    "callsign": "LIRF_TWR",
+    "connectionType": "ATC",
+    "sandbagging": false,
+    "isMilitary": false,
+    "isWorldTour": false,
+    "completedAt": "2001-01-01T17:18:30.000Z",
+    "flightPlans": []
+  }
+]
