@@ -133,7 +133,121 @@ public sealed class NetworkSessionSourceTests
         Assert.NotEmpty(arrivals!);
         Assert.Equal(
             recorded!.Select(session => new NetworkSession(session.Id, session.Vid, session.Callsign, session.StartedAt, session.EndedAt)),
-            arrivals!);
+            arrivals!.Select(session => new NetworkSession(session.Id, session.Vid, session.Callsign, session.StartedAt, session.EndedAt)));
+    }
+
+    [Fact]
+    public async Task ASessionSaysTheAirportsOfItsLastRevisionAndOfEveryRevisionOldestFirst()
+    {
+        using var hub = Hub();
+        using var scope = hub.CreateScope();
+        var source = scope.ServiceProvider.GetRequiredService<INetworkSessionSource>();
+
+        var departures = (await source.SessionsAsync(
+            new NetworkSessionQuery(null, From, To, "LIRF"),
+            TestContext.Current.CancellationToken))!.ToDictionary(session => session.Id);
+
+        // The recorded flight whose plan went from LIPZ to Rome in its first revision and from Rome to LICR in its second.
+        Assert.Equal(
+            new NetworkSession(1000007, 761023, "TST004", departures[1000007].StartedAt, departures[1000007].EndedAt, "LIRF", "LICR")
+            {
+                Routes = [new("LIPZ", "LIRF"), new("LIRF", "LICR")],
+            },
+            departures[1000007]);
+        Assert.Equal(("LIRF", "LFKJ"), (departures[1000010].DepartureIcao, departures[1000010].ArrivalIcao));
+        Assert.Equal([new("LIRF", "LFKJ"), new("LIRF", "LFKJ")], departures[1000010].Routes);
+        Assert.Equal([new NetworkRoute("LIRF", "LICJ")], departures[1000009].Routes);
+    }
+
+    [Fact]
+    public async Task TheAirportsComeInCapitalsAndARevisionWithoutBothIsLeftOut()
+    {
+        var client = new Client(_ =>
+        [
+            Row("""
+                { "id": 7, "userId": 761073, "callsign": "TST073", "createdAt": "2001-01-01T16:30:00Z", "connectionType": "PILOT",
+                  "flightPlans": [ { "id": 1, "departureId": " lirf ", "arrivalId": "licr" }, { "id": 2, "departureId": "LIRF" } ] }
+                """),
+        ]);
+        using var hub = Hub(client);
+        using var scope = hub.CreateScope();
+        var source = scope.ServiceProvider.GetRequiredService<INetworkSessionSource>();
+
+        var session = Assert.Single((await source.SessionsAsync(new NetworkSessionQuery(761073, From, To), TestContext.Current.CancellationToken))!);
+
+        Assert.Equal(("LIRF", "LICR"), (session.DepartureIcao, session.ArrivalIcao));
+        Assert.Equal([new NetworkRoute("LIRF", "LICR")], session.Routes);
+    }
+
+    [Fact]
+    public async Task TheRevisionsGoInTheOrderOfTheirNumbersWhateverOrderTheRowListsThemIn()
+    {
+        var client = new Client(_ =>
+        [
+            Row("""
+                { "id": 7, "userId": 761073, "callsign": "TST073", "createdAt": "2001-01-01T16:30:00Z", "connectionType": "PILOT",
+                  "flightPlans": [ { "id": 2000007, "departureId": "LIRF", "arrivalId": "LICR" },
+                                   { "id": 2000006, "departureId": "LIPZ", "arrivalId": "LIRF" } ] }
+                """),
+        ]);
+        using var hub = Hub(client);
+        using var scope = hub.CreateScope();
+        var source = scope.ServiceProvider.GetRequiredService<INetworkSessionSource>();
+
+        var session = Assert.Single((await source.SessionsAsync(new NetworkSessionQuery(761073, From, To), TestContext.Current.CancellationToken))!);
+
+        Assert.Equal([new("LIPZ", "LIRF"), new NetworkRoute("LIRF", "LICR")], session.Routes);
+        Assert.Equal(("LIRF", "LICR"), (session.DepartureIcao, session.ArrivalIcao));
+    }
+
+    [Fact]
+    public async Task AControllerOrASessionWithoutAPlanSaysNoAirport()
+    {
+        var tower = IvaoFixtures.Read("tracker-airport-LIRF.json")
+            .EnumerateArray()
+            .Single(row => row.GetProperty("callsign").GetString() == "LIRF_TWR");
+        var client = new Client(_ =>
+        [
+            IvaoTrackerReader.ReadSession(tower)!,
+            Row("""{ "id": 8, "userId": 761074, "callsign": "TST074", "createdAt": "2001-01-01T16:40:00Z", "connectionType": "PILOT", "flightPlans": [] }"""),
+            Row("""{ "id": 9, "userId": 761075, "callsign": "TST075", "createdAt": "2001-01-01T16:50:00Z", "connectionType": "PILOT" }"""),
+        ]);
+        using var hub = Hub(client);
+        using var scope = hub.CreateScope();
+        var source = scope.ServiceProvider.GetRequiredService<INetworkSessionSource>();
+
+        var sessions = (await source.SessionsAsync(new NetworkSessionQuery(null, From, To, "LIRF"), TestContext.Current.CancellationToken))!;
+
+        Assert.Equal(3, sessions.Count);
+        Assert.All(sessions, session =>
+        {
+            Assert.Null(session.DepartureIcao);
+            Assert.Null(session.ArrivalIcao);
+            Assert.Empty(session.Routes);
+        });
+    }
+
+    [Fact]
+    public void TwoSessionsWithTheSameRoutesAreEqual()
+    {
+        var at = new DateTime(2001, 1, 1, 16, 0, 0, DateTimeKind.Utc);
+        NetworkSession Built(params NetworkRoute[] routes) =>
+            new(1, 761072, "TST072", at, at.AddHours(1), routes[^1].DepartureIcao, routes[^1].ArrivalIcao) { Routes = [.. routes] };
+
+        var one = Built(new("LIPZ", "LIRF"), new("LIRF", "LICR"));
+        var same = Built(new("LIPZ", "LIRF"), new("LIRF", "LICR"));
+        var other = Built(new("LIRF", "LIRF"), new("LIRF", "LICR"));
+
+        Assert.Equal(one, same);
+        Assert.Equal(one.GetHashCode(), same.GetHashCode());
+        Assert.NotEqual(one, other);
+    }
+
+    /// <summary>A row of the tracker, read as the clients read it.</summary>
+    private static IvaoTrackerSessionDto Row(string json)
+    {
+        using var row = JsonDocument.Parse(json);
+        return IvaoTrackerReader.ReadSession(row.RootElement)!;
     }
 
     private static IvaoTrackerSessionDto Session(long id, int vid, string callsign, DateTime startedAt, TimeSpan duration) =>
