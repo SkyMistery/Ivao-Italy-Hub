@@ -5850,7 +5850,15 @@ poi **72/72 al secondo giro intero** (43,1 min), il giro di M4b compreso; `core-
   (del nucleo) è caduto alla riga 145** — l'audit conteneva il testo «780095», il VID del test —, e passava da solo, insieme a
   `EventsRetentionTests`, e nel giro intero con una sonda che avrebbe stampato le righe trovate (non ne ha trovate; la sonda è tolta, mai
   committata). Nessun altro test usa quel VID: probabilmente un istante con le sette cifre dei decimali che le contiene per caso. Detto al
-  coordinatore; il test è del maintainer.
+  coordinatore; il test è del maintainer, e il master l'ha preso (una sua sessione lo riproduce sotto carico).
+- **Con `main` a `f436c918` unito** (18 ottobre 2026, l'ultima della coda, la #293 unita): il diff contro `main` è di E15b soltanto (24 file);
+  `dotnet restore --force --no-http-cache` senza avvisi; build Release senza avvisi; `has-pending-model-changes` di `EventsDbContext`: nessuno;
+  `gen:api` e `i18n:sync` senza differenze; unità **1421/1421**; **integrazione intera, da sola, 699/699** (14 min); `lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; vitest `--maxWorkers=2` **815 in 118 file**; smoke `--workers=2` **184/184**; **`e2e:full` intero
+  73/73** sul banco 5153 ricreato (33,8 min; il giro di M4b 19 min); `core-guard.sh` dal merge-base `f436c918`: solo il modulo e i
+  documenti. Il rosso di build-test a `f6fb28a` (`RequestTimingsLog.StopAsync` dopo la sua `Dispose`, della #298: misurato [sulla
+  #301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6252072325), non riprodotto in 20 giri della classe) l'ha chiuso alla
+  radice la #303 del master, ora unita.
 - **Non verificato**: la CI (la dice la PR); un `events-retention` vero sul banco (gira il primo
   del mese: lo provano `EventsRetentionTests`); IVAO vero dietro le prenotazioni accanto al roster (il client delle fixture; il codice della
   sorgente è quello che E15a ha provato contro IVAO); la sezione a 375 px.
