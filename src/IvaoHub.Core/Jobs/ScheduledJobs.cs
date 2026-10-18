@@ -54,6 +54,8 @@ public sealed record JobRunOutcome(string Job, JobRunState Outcome);
 /// the log —, whichever is later: a job that writes no row when it finds nothing to do (the tours' checks) is not launched
 /// again every minute by the process that just ran it, and most minutes ask the database nothing.</para>
 /// <para>A job paused in the scheduler is left alone: no pass launches it.</para>
+/// <para>One run is not asked whether it is due: the one the end to end bench asks for now (<see cref="RunNowAsync"/>, note
+/// 2026-10-18-il-banco-fa-girare-un-job). It takes the job's lock as every run does.</para>
 /// <para>The guard never stops a job by failing: a lock that cannot be asked for, or a last run that cannot be read, lets
 /// the run go ahead as it went before the guard existed, and says so in the log (Carmine, on #239).</para>
 /// </remarks>
@@ -79,6 +81,9 @@ public sealed class ScheduledJobs(
 
     /// <summary>Where a pass leaves the name of a launch it waits for, in the data of its trigger.</summary>
     private const string WaiterKey = "hub.jobs.waiter";
+
+    /// <summary>Where <see cref="RunNowAsync"/> says, in the data of its trigger, that the run was asked for now.</summary>
+    private const string NowKey = "hub.jobs.now";
 
     /// <summary>The latest start of each job this process knows of: the runs it let through, and what it read in the log.</summary>
     private readonly ConcurrentDictionary<string, DateTime> _lastStarts = new(StringComparer.Ordinal);
@@ -115,6 +120,29 @@ public sealed class ScheduledJobs(
 
         await WaitAsync(scheduler, pass.Done, underWay, wait, cancellationToken);
         return pass.Outcomes();
+    }
+
+    /// <summary>
+    /// One job, now, whatever its schedule says: the end to end bench's call (note 2026-10-18-il-banco-fa-girare-un-job), never
+    /// an installation's. The run goes through the guard like every other — the job's lock, so a run in another process is left
+    /// to it — but not through the schedule's question: nobody asks whether it is due, it was asked for. Its start counts as
+    /// the job's last run, as any run's does. Waited for until it ends, or as long as a pass waits for one job.
+    /// </summary>
+    /// <returns>What became of the run; null when the hub has no job of that name.</returns>
+    public async Task<JobRunState?> RunNowAsync(string job, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(job);
+
+        var scheduler = await schedulers.GetScheduler(cancellationToken);
+        if (scheduler.IsShutdown)
+        {
+            return null;
+        }
+
+        var key = (await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), cancellationToken))
+            .FirstOrDefault(candidate => string.Equals(candidate.Name, job, StringComparison.Ordinal));
+
+        return key is null ? null : await RunOneAsync(scheduler, key, cancellationToken, now: true);
     }
 
     // ---- the guard ---------------------------------------------------------------------------------------------------
@@ -158,7 +186,11 @@ public sealed class ScheduledJobs(
                 .Select(JobCron.Of)
                 .ToList();
 
-            if (schedules.Count > 0 && !JobSchedule.IsDue(schedules, await LastStartAsync(hub, job, cancellationToken), now))
+            // A run asked for now (RunNowAsync, the bench's) is not asked whether it is due: the lock is all it shares.
+            var askedNow = context.Trigger.JobDataMap.ContainsKey(NowKey);
+            if (!askedNow
+                && schedules.Count > 0
+                && !JobSchedule.IsDue(schedules, await LastStartAsync(hub, job, cancellationToken), now))
             {
                 if (held)
                 {
@@ -352,17 +384,24 @@ public sealed class ScheduledJobs(
 
     /// <summary>
     /// Launches one job and waits for what the guard says of it: ran, or skipped. A run that outlasts
-    /// <see cref="LongestRun"/> is left running, and the pass goes on.
+    /// <see cref="LongestRun"/> is left running, and the pass goes on. <paramref name="now"/> launches it as asked for now
+    /// (<see cref="RunNowAsync"/>).
     /// </summary>
-    private async Task<JobRunState> RunOneAsync(IScheduler scheduler, JobKey key, CancellationToken stopping)
+    private async Task<JobRunState> RunOneAsync(IScheduler scheduler, JobKey key, CancellationToken stopping, bool now = false)
     {
         var name = Guid.NewGuid().ToString("N");
         var waiter = new TaskCompletionSource<JobRunState>(TaskCreationOptions.RunContinuationsAsynchronously);
         _waiting[name] = waiter;
 
+        var data = new JobDataMap { [WaiterKey] = name };
+        if (now)
+        {
+            data[NowKey] = true;
+        }
+
         try
         {
-            await scheduler.TriggerJob(key, new JobDataMap { [WaiterKey] = name }, stopping);
+            await scheduler.TriggerJob(key, data, stopping);
             return await waiter.Task.WaitAsync(LongestRun, stopping);
         }
         catch (TimeoutException)
