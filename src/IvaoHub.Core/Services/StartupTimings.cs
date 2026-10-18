@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime;
 
 namespace IvaoHub.Core.Services;
 
@@ -14,13 +15,17 @@ public sealed class StartupTimings
     private readonly List<StartupStep> _steps = [];
     private readonly Lock _gate = new();
     private TimeSpan _last;
+    private TimeSpan _lastJit;
 
     /// <param name="beforeMain">What passed between the creation of the process and this object: the runtime loading.</param>
     public StartupTimings(TimeSpan beforeMain)
     {
         _beforeMain = beforeMain < TimeSpan.Zero ? TimeSpan.Zero : beforeMain;
         _last = _beforeMain;
-        _steps.Add(new StartupStep("runtime", _beforeMain));
+
+        // The code the runtime compiled before the program ran, the host's included: from here on each step says its own.
+        _lastJit = JitInfo.GetCompilationTime();
+        _steps.Add(new StartupStep("runtime", _beforeMain, _lastJit));
     }
 
     /// <summary>Starts counting, with the time the runtime took before the program ran as the first step.</summary>
@@ -35,8 +40,10 @@ public sealed class StartupTimings
         lock (_gate)
         {
             var now = Elapsed;
-            _steps.Add(new StartupStep(name, now - _last));
+            var jit = JitInfo.GetCompilationTime();
+            _steps.Add(new StartupStep(name, now - _last, jit - _lastJit));
             _last = now;
+            _lastJit = jit;
         }
     }
 
@@ -73,5 +80,9 @@ public sealed class StartupTimings
     }
 }
 
-/// <summary>One step of a start and how long it took.</summary>
-public sealed record StartupStep(string Name, TimeSpan Duration);
+/// <summary>
+/// One step of a start, how long it took, and how much of that the runtime spent compiling code (note
+/// 2026-10-18-i-tempi-delle-richieste): what ReadyToRun did not cover. The compilation can run on other threads too, so on a
+/// machine with more than one core it may exceed the step.
+/// </summary>
+public sealed record StartupStep(string Name, TimeSpan Duration, TimeSpan Jit = default);

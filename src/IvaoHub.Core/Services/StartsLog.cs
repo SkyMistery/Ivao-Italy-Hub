@@ -55,13 +55,17 @@ public static partial class StartsLog
         string previous,
         ProcessMemory memory,
         IReadOnlyList<StartupStep> steps,
-        string? initialisation = null)
+        string? initialisation = null,
+        StartCosts? costs = null)
     {
         ArgumentNullException.ThrowIfNull(build);
         ArgumentNullException.ThrowIfNull(steps);
 
-        var stepList = string.Join(", ", steps.Select(step => string.Create(
-            CultureInfo.InvariantCulture, $"{step.Name} {step.Duration.TotalMilliseconds:0}")));
+        // The compilation of a step only when there was some (note 2026-10-18-i-tempi-delle-richieste).
+        var stepList = string.Join(", ", steps.Select(step => step.Jit.TotalMilliseconds >= 1
+            ? string.Create(CultureInfo.InvariantCulture, $"{step.Name} {step.Duration.TotalMilliseconds:0} (jit {step.Jit.TotalMilliseconds:0})")
+            : string.Create(CultureInfo.InvariantCulture, $"{step.Name} {step.Duration.TotalMilliseconds:0}")));
+        var cost = costs is { } known ? $"{known}  " : string.Empty;
 
         // Whether the start initialised the database or found it initialised, and why (note
         // 2026-09-28-il-marcatore-d-inizializzazione): right after the time, which it explains.
@@ -70,22 +74,26 @@ public static partial class StartsLog
         return string.Create(
             CultureInfo.InvariantCulture,
             $"{Stamp(atUtc)}  {Start,-6}  pid {pid,-7}  {build.Stamp}  ready in {took.TotalSeconds:0.00} s{init}  previous: {previous}  " +
-            $"{memory}  steps ms: {stepList}");
+            $"{memory}  {cost}steps ms: {stepList}");
     }
 
     /// <summary>
     /// The line of an orderly stop. <c>firstAnswer</c> is when the first response was finished, counted from the creation
     /// of the process: the wait of the visitor whose request woke the hub; null when no request came.
     /// </summary>
-    public static string StopLine(DateTime atUtc, int pid, TimeSpan lived, long requests, TimeSpan? firstAnswer, ProcessMemory memory)
+    public static string StopLine(
+        DateTime atUtc, int pid, TimeSpan lived, long requests, TimeSpan? firstAnswer, ProcessMemory memory, TimeSpan? jit = null)
     {
         var first = firstAnswer is { } answer
             ? string.Create(CultureInfo.InvariantCulture, $"first answer at {answer.TotalSeconds:0.00} s")
             : "no request answered";
+        var compiledAll = jit is { } compiled
+            ? string.Create(CultureInfo.InvariantCulture, $"  jit {compiled.TotalMilliseconds:0} ms in all")
+            : string.Empty;
 
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"{Stamp(atUtc)}  {Stop,-6}  pid {pid,-7}  lived {Duration(lived)}  requests {requests}  {first}  {memory}");
+            $"{Stamp(atUtc)}  {Stop,-6}  pid {pid,-7}  lived {Duration(lived)}  requests {requests}  {first}  {memory}{compiledAll}");
     }
 
     public static string SignalLine(DateTime atUtc, int pid, string signal) =>
@@ -269,15 +277,30 @@ public static partial class StartsLog
         "#\n" +
         "# START   ready in = from the creation of the process to the moment it accepts requests; initialisation = full\n" +
         "#         (and why) or skipped (and which steps: nothing changed since the last full one); previous = what\n" +
-        "#         happened to the process of the start before; memory when ready; steps ms = where the time went.\n" +
+        "#         happened to the process of the start before; memory when ready; jit = code the runtime compiled\n" +
+        "#         before ready; db = connections opened and commands sent before ready; steps ms = where the time went,\n" +
+        "#         with (jit N) the compiling inside a step. Each request has its line in requests-YYYYMMDD.txt.\n" +
         "# STOP    an orderly stop: how long the process lived, the requests it answered, when the first answer left\n" +
-        "#         (from the creation of the process: what the visitor who woke it waited), memory and its peak.\n" +
+        "#         (from the creation of the process: what the visitor who woke it waited), memory and its peak,\n" +
+        "#         and the code the runtime compiled in the whole life of the process.\n" +
         "# SIGNAL  the system asked that pid to stop (Passenger stopping an idle hub sends SIGTERM).\n" +
         "#\n" +
         "# A few starts in quiet hours, each after an orderly stop, is Passenger stopping an idle hub: expected. A start\n" +
         "# that says !! means the process before died without closing: a crash, out of memory, killed by the host, or a file\n" +
         "# overwritten while it ran. Right after an upload that is expected once. Otherwise read logs/ and startup-error.txt.\n" +
         "#\n";
+}
+
+/// <summary>
+/// What a start cost besides its steps (note 2026-10-18-i-tempi-delle-richieste): the code the runtime compiled before the
+/// hub was ready, and the connections and commands it sent to the database before then.
+/// </summary>
+public readonly record struct StartCosts(TimeSpan Jit, long JitMethods, long Opens, TimeSpan OpenTime, long Commands, TimeSpan CommandTime)
+{
+    public override string ToString() => string.Create(
+        CultureInfo.InvariantCulture,
+        $"jit {Jit.TotalMilliseconds:0} ms in {JitMethods} methods  db {Opens} opens {OpenTime.TotalMilliseconds:0} ms, " +
+        $"{Commands} commands {CommandTime.TotalMilliseconds:0} ms");
 }
 
 /// <summary>The memory of the process at one moment: what it uses, its peak, and the managed heap within it.</summary>
