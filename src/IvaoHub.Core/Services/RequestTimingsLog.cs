@@ -20,6 +20,9 @@ namespace IvaoHub.Core.Services;
 /// stops the hub after half a minute of quiet no process sees midnight, so the next day's does the work, away from the
 /// first request it was started for. Two processes alive together write the same summary once: it is moved into place
 /// only if it is not there yet.</para>
+/// <para>The writer is a singleton and the hosted service at once, so the host's stop and the provider's dispose may come in
+/// either order, and more than once (issue #302): whichever comes first stops the work and writes what is queued, the other
+/// finds nothing left to do. The lines are read by the one task only, so none is written twice.</para>
 /// </remarks>
 public sealed partial class RequestTimingsLog : IHostedService, IDisposable
 {
@@ -29,10 +32,12 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
         new BoundedChannelOptions(QueueLength) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
 
     private readonly CancellationTokenSource _stopping = new();
+    private readonly Lock _gate = new();
     private readonly Dictionary<DateOnly, long> _sizes = [];
     private readonly RequestTimingsOptions _options;
     private Task _pump = Task.CompletedTask;
     private Task _housekeeping = Task.CompletedTask;
+    private bool _disposed;
 
     public RequestTimingsLog(IOptions<RequestTimingsOptions> options, HubPaths paths)
     {
@@ -57,9 +62,16 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!Enabled)
+        CancellationToken stopping;
+        lock (_gate)
         {
-            return Task.CompletedTask;
+            if (!Enabled || _disposed)
+            {
+                return Task.CompletedTask;
+            }
+
+            // Taken here, while the source is alive: a token outlives the dispose of its source, the source's Token does not.
+            stopping = _stopping.Token;
         }
 
         _pump = Task.Run(PumpAsync, CancellationToken.None);
@@ -68,7 +80,7 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, _options.HousekeepingDelaySeconds)), _stopping.Token);
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, _options.HousekeepingDelaySeconds)), stopping);
                 }
                 catch (OperationCanceledException)
                 {
@@ -82,11 +94,13 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
-    /// <summary>Writes what is still queued, for at most two seconds: the system that asked the process to stop will not wait longer.</summary>
+    /// <summary>
+    /// Writes what is still queued, for at most two seconds: the system that asked the process to stop will not wait longer.
+    /// Safe after <see cref="Dispose"/> and a second time.
+    /// </summary>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _stopping.CancelAsync();
-        _queue.Writer.TryComplete();
+        Stop();
         await Task.WhenAny(_pump, Task.Delay(TimeSpan.FromSeconds(2), cancellationToken));
     }
 
@@ -130,7 +144,41 @@ public sealed partial class RequestTimingsLog : IHostedService, IDisposable
         }
     }
 
-    public void Dispose() => _stopping.Dispose();
+    /// <summary>Stops like <see cref="StopAsync"/> if the host has not, waiting as long for what is queued; safe twice.</summary>
+    public void Dispose()
+    {
+        Stop();
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+        }
+
+        // No sync context runs the pump, and it never waits for anything but the queue and the disk.
+        _pump.Wait(TimeSpan.FromSeconds(2));
+        lock (_gate)
+        {
+            _stopping.Dispose();
+        }
+    }
+
+    /// <summary>Cancels the housekeeping and closes the queue; the pump then writes what is in it and ends.</summary>
+    private void Stop()
+    {
+        lock (_gate)
+        {
+            if (!_disposed)
+            {
+                _stopping.Cancel();
+            }
+        }
+
+        _queue.Writer.TryComplete();
+    }
 
     private void Summarise(DateOnly day, string file)
     {
