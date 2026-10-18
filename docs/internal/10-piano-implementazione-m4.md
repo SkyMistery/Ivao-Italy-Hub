@@ -5890,6 +5890,10 @@ chiusura da correggere —; `main` a `2d8cb334` unito, la #305 e la #306, senza 
    ora: una riga sulla torre ci sarebbe solo se il giro cadesse fra le 18 e le 20. Le righe le prova l'integrazione.
 5. **I nit**: la nota (§4) diceva che il giro fa girare anche `events-after` (solo `events-roster`); il commento di `EventReportAward` diceva
    «mai cancellata» (lo è con il suo PIREP, dalla conservazione).
+6. **Verificato** (19 ottobre 2026, ogni suite da sola): build Release senza avvisi; `gen:api` senza differenze; unità **1421/1421**;
+   **integrazione intera 700/700** (11 min); `lint`, `typecheck`, `format:check`, `i18n:check` verdi; vitest `--maxWorkers=2` **816 in
+   118 file**; smoke `--workers=2` **184/184**; **`e2e:full` intero 73/73** sul banco 5153 ricreato (33,5 min); `core-guard.sh` dal
+   merge-base `2d8cb334`: solo il modulo e i documenti.
 
 [rv301]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6255654355
 
