@@ -4525,6 +4525,50 @@ cadere.
   verde, build Release 0 avvisi, unità **1353/1353**, integrazione intera da sola **664/664** al primo giro (20 minuti), `gen:api` senza
   differenze, `core-guard.sh` con Git Bash dalla base `e7b1331c`: passa.
 
+### E10x — Nucleo: «questa riga ha dato un award?»
+
+**Da dove viene**: non c'era in E0. La chiede la revisione della #293 (E14b, le regole di award): la decisione su un PIREP non cambia più
+dopo un award (il limite di Carmine sulla #287), ed E14b lo sapeva con due query sue su `cms_award_signals`. Carmine ha risposto (il punto 3
+della [risposta sulla #293](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/293#issuecomment-6248618376)): un piccolo metodo del nucleo,
+per `source_module` e source id, con il lock delle righe dentro una transazione, in una PR del nucleo con una nota nuova, prima che E14b lo
+usi. Branch `m4/e10x-award-signal-assigned`, `--no-track` da `main` a `01fdbed5`. **PR del nucleo**, diretta su `main`, non in coda; E14b
+ne unisce il branch.
+
+1. Una sola domanda, sul contesto di chi chiama: il lock vive nella sua transazione.
+2. Nessun uso nel modulo (regola 6); FlightOps non si tocca.
+
+**Fatta quando**: i test d'integrazione provano `Handled` contro `Pending` e `Dismissed`, nessun id, un altro modulo, il lock nei due
+versi e la lettura senza attesa fuori transazione, e la prova al contrario li fa cadere.
+
+**Com'è andata** (18 ottobre 2026, branch `m4/e10x-award-signal-assigned`, PR #299):
+
+- **Fatto** (nota nuova `2026-10-18-un-segnale-diventato-award`, caso (b), decisa da Carmine):
+  - **`AwardSignalQueries.AssignedAsync(DbContext, string sourceModule, IReadOnlyCollection<string> sourceIds, CancellationToken = default)`
+    → `Task<IReadOnlySet<string>>`** in `src/IvaoHub.Core/Content/AwardSignalQueries.cs`: dentro una transazione una `SELECT source_id,
+    status … ORDER BY id FOR UPDATE` di tutte le righe del segnale di quelle sorgenti; fuori, una lettura LINQ senza tracking.
+  - **`AwardSignalQueriesTests`** (integrazione, 5 casi): `Handled` solo e solo del modulo, dal contesto del hub e da quello del modulo
+    di test, con e senza transazione; nessun id; la chiamata aspetta una transazione che tiene la riga e ne legge il `Handled`; al
+    contrario, un'assegnazione vera (`POST /api/award-assignments`) aspetta chi chiama e, ritirato il segnale, risponde 409 senza award;
+    fuori transazione nessuna attesa, con la riga tenuta.
+- **Scostamenti dalla forma di E14b**: nessuno nella firma. Il file è nuovo, `AwardSignalQueries.cs`, perché quello della classe si chiama
+  `AwardSignal.cs` (il prompt diceva `AwardSignals.cs`).
+- **Che cosa ha detto il codice** (nota §2.4): «diventato award» è **esattamente** `Status == Handled`, senza il registro: solo
+  un'assegnazione lo scrive, i moduli non mappano `hub_award_assignments`, e un'assegnazione cancellata lascia il segnale `Handled`.
+- **Una trappola trovata**: le colonne del tipo non mappato di `SqlQuery` seguono la convenzione dei nomi del hub — con l'alias
+  `AS SourceId` EF cercava `source_id` e non lo trovava. Scritte senza alias.
+- **Verificato, in locale** (18 ottobre 2026, `main` a `01fdbed5`, Docker acceso):
+  - `dotnet restore IvaoHub.sln --force --no-http-cache`: verde; `dotnet build IvaoHub.sln -c Release`: 0 avvisi, 0 errori; unità
+    **1360/1360**; integrazione intera, senza filtro (Release), da sola: **670/670** al primo giro (16 minuti), fra cui `AwardSignalQueriesTests` 5/5;
+  - **la prova al contrario**, in tre giri (modifica locale, poi rimesso, toccato e ricompilato: 5 su 5): senza `FOR UPDATE` cadono i due
+    casi del lock («Nothing ever waited»); con il lock anche fuori transazione cade la lettura senza attesa (annullata dopo 10 secondi);
+    con `Dismissed` contato come award cade il primo caso;
+  - `pnpm -C web gen:api` senza differenze;
+  - le regole di `core-guard` dalla base `01fdbed5`, con Git Bash: nessun file del maintainer; uno del nucleo (`AwardSignalQueries.cs`) con la nota nuova — passa.
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - `e2e:full` e la smoke: una query del nucleo, nessuna schermata e nessun chiamante nel modulo;
+  - l'uso vero, nella decisione e nella lista dei PIREP: è di E14b.
+
 ### E11a — Postazioni e disponibilità
 
 Design §1.7, §4.1, §4.2, §6.3; note `il-roster-atc`, `chi-lavora-sugli-eventi`. Branch `m4/e11a-positions-and-availability`. Dopo E8b
