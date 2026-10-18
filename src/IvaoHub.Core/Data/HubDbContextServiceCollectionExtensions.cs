@@ -80,6 +80,8 @@ public static class HubDbContextServiceCollectionExtensions
     /// A context over the views another site shares with the hub (note 2026-09-14-dati-condivisi-con-vipi §3.3): its own
     /// connection, a user that can only read, no migrations and no interceptor — nothing is ever written through it, and the
     /// context itself refuses to save. The one exception to the two methods above, and the reason it lives beside them.
+    /// The one interceptor it takes only measures: the time of its queries counts in the request that waited for them (note
+    /// 2026-10-18-i-tempi-delle-richieste).
     /// </summary>
     public static IServiceCollection AddSharedViewContext<TContext>(this IServiceCollection services, string connectionStringName)
         where TContext : DbContext
@@ -93,6 +95,11 @@ public static class HubDbContextServiceCollectionExtensions
                 ResolveConnectionString(provider, connectionStringName),
                 new MariaDbServerVersion(HubDbContext.ServerVersion));
             options.UseSnakeCaseNamingConvention();
+            if (provider.GetService<DatabaseTimingInterceptor>() is { } timing)
+            {
+                options.AddInterceptors(timing);
+            }
+
             options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
         return services;
