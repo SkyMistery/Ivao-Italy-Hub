@@ -5374,6 +5374,13 @@ di un PIREP non cambia più: il rifiuto lo scrive E14b):
   `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **808 in 116 file**; lo smoke **184/184**; `e2e:full` sul banco 5151,
   `ivaohub_e2e_e14a` tolto prima, dietro il lock di Mailpit: **65/70** al primo giro (le pulizie sopra), corrette e rifatto da capo
   **70/70** (13,6 min); `core-guard.sh` dal merge-base `e7b1331`: passa, del nucleo solo `ErasureTests.cs` con la nota.
+- **Dopo il merge di `main` a `01fdbed`** (approvabile alla [seconda lettura](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/289#issuecomment-6248390775);
+  `main` con la #290, il piè di pagina, e la #291, E10v — `NetworkSession` con gli scali, che E14a non legge; conflitto solo in `HANDOFF-M4.md`,
+  i due blocchi tenuti; delle pagine degli eventi niente, di loro solo `titlesAndEmptyLists.test.tsx`): il diff contro `main` è solo di E14a;
+  `dotnet restore --force --no-http-cache` senza avvisi; build Release senza avvisi; `has-pending-model-changes` senza cambi; `gen:api`
+  senza diff; unità **1370/1370**; **integrazione intera senza filtro, da sola, 676/676** (16,2 min); `pnpm lint`, `typecheck`,
+  `format:check`, `i18n:check` verdi; `pnpm test` con `--maxWorkers=2` **810 in 116 file**; lo smoke **184/184**; `e2e:full` non rifatto (il
+  merge non tocca le pagine degli eventi: il 70/70 di prima vale); `core-guard.sh` dal merge-base `01fdbed`: passa.
 - **Non verificato**: la CI (la dice la PR); un PIREP verificato contro la rete vera e l'archivio di vIPI (`atcData: vipi` su `main`, assente
   sul banco e nei test); la pagina a 375 px.
 
