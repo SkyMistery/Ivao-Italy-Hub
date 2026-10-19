@@ -459,6 +459,16 @@ sta sulla voce, non sul PIREP**, che porta una decisione dello staff e non si ri
 
 Righe figlie dell'evento, area `Events`. Un criterio nuovo è una riga dell'elenco nel codice, non un'espressione libera.
 
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, letture 1–2, piano 1.39; le letture accettate da Carmine sulla #293):
+la regola (`EventAwardRule`) è un `IEventChild` con la cura e lo scope dell'evento, `[Audited]`, in cascata con l'evento, al più **50
+per evento**; **un evento in presenza non ne ha** (non prende PIREP, `awardRuleInPerson`). **I parametri sono colonne, non un
+`parameters` JSON**: `departure_icao`, `arrival_icao`, `count`, `distance_nm`, `minutes`, `position_type`, ognuna letta dai criteri che
+la prendono e svuotata dal server per gli altri; `kind` lo scrive il server dal criterio. I limiti: un award **attivo** del catalogo;
+gli aeroporti di una rotta noti al nucleo e diversi; `count` da 1 a 20; `distance_nm` da 1 a 10800; `minutes` da 1 a 1440;
+`position_type` uno dei tipi delle postazioni della divisione, o nessuno. Accanto, **`evt_report_awards`**: una riga per PIREP e regola
+soddisfatta (univoca su `(report_id, rule_id)`, mai cancellata), che proietta il segnale (la (A) di Carmine sull'issue #292, §5.4). La
+migrazione è `AddAwardRules`, additiva, con la colonna `evt_events.auto_reports_cursor` (§5.1).
+
 ### 1.10 Le statistiche — `evt_event_stats`
 
 Una riga per evento, **solo numeri, per sempre** (c3): slot pubblici e privati, prenotati, prenotati e volati, prenotati
@@ -482,10 +492,22 @@ senza scali, uno chiuso dopo trenta giorni prima di ogni conto —, e la lettura
 finché non ci sono le tabelle di E14a ed E14b; chi ha volato senza prenotare viene solo dalla verifica, e «Ricalcola» lo tiene com'è.
 La riga si scrive sotto il blocco della riga dell'evento (`FOR UPDATE`), dal job e da «Ricalcola».
 
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, lettura 7, piano 1.39): `award_signals` sono le righe dell'evento in
+`evt_report_awards` che segnalano quando le statistiche si scrivono (`points_out`), cioè le regole soddisfatte dai PIREP accettati.
+**Deciso con E15b** (#301, nota `2026-10-17-la-conservazione-di-m4b`, lettura 3, piano 1.39): dopo la conservazione (§11) **«Ricalcola»
+tiene i numeri** che `events-retention` ha scritto quando le righe non ci sono più — prenotati, volati e non volati, PIREP mandati e
+accettati, segnali, disponibilità. ⚠️ I PIREP mandati e accettati sono un numero solo, piloti e controllori insieme: dopo la conservazione
+un PIREP ATC deciso di nuovo non li sposta più (il limite accettato).
+
 ### 1.11 Le preferenze del membro
 
 Una preferenza del modulo (`IModule.Preferences`, come M2): **«riporta automaticamente la mia partecipazione agli
 eventi»**, spenta di predefinito (c3). Le mail si spengono con le preferenze delle notifiche del nucleo.
+
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, letture 10–11, piano 1.39): la preferenza è `events.autoReport`, un
+booleano; il suo interruttore sta **in cima alla sezione «PIREP di supporto» di `/events/mine`**, che ora si vede sempre, anche a chi non
+ha niente da mandare, perché la preferenza vale per gli eventi che verranno. La mail `events.reportsToValidate` si spegne dal profilo
+come ogni mail del modulo.
 
 ### 1.12 Le impostazioni — `EventsSettings`
 
@@ -510,6 +532,7 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
 | `unflownThreshold` — prenotazioni non volate da cui il pilota ha i limiti (§3.7) | 3 | §17.3 n.1 |
 | `restrictedWindowHours`, `restrictedMaxPerWindow` — per chi ha i limiti: al massimo K slot ogni H ore della finestra | 2 ore, 1 | §17.3 n.1 |
 | `restrictedMaxPerEvent` — per chi ha i limiti: al massimo M slot nell'evento | 2 | §17.3 n.1 |
+| `minimumFlightMinutes` — quanto dura almeno la sessione di una voce di volo verificata (§5.4), da 1 a 120 | 10 | E14b, la risposta 1 di Carmine sulla #293 (piano 1.39) |
 
 **Deciso con E11a** (#256, nota `2026-10-12-le-postazioni-e-la-disponibilita`, piano 1.34; il sì di Carmine alle dieci letture),
 i limiti dell'ATC, che la tabella non diceva: `shiftMinutes` da 15 a 720, e lo stesso intervallo per `shift_minutes` dell'evento
@@ -621,6 +644,12 @@ sull'issue #248):
 l'ordine — **e le attività**, con la finestra spostata della stessa differenza; mai le iscrizioni né i posti. Chi duplica un evento
 con attività ha anche il permesso della loro area, `EventBookings.Edit` (§4-bis.1), come per le rotte. **Non copia i turni dell'ATC**
 (E11b, nota `2026-10-13-la-proposta-del-roster`, piano 1.35): sono righe di membri, e la copia ha il suo roster alla sua chiusura.
+
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, lettura 6, piano 1.39): «Duplica» **copia le regole di award** —
+l'award, il criterio e i parametri come sono, nella cura della copia, senza ricontrollarli (un award ritirato si rifiuta al prossimo
+salvataggio della regola) —; sono dell'area `Events`, e chi duplica non ha bisogno di un permesso in più. Con le postazioni di E11a, la
+riga di E15b «Duplica copia anche postazioni e regole di award» è fatta; E15b ne ha scritto il test (postazioni, regole, e niente dei
+membri né dei segni dei job).
 
 ### 2.4 La fine dell'evento
 
@@ -1035,6 +1064,23 @@ Un turno senza nessuno resta **scoperto**, in evidenza (blocco `events.atcCovera
   controllore, non il VID** (la condizione di Carmine sulla lettura 5); a un visitatore «assegnato» o «scoperto»; una persona cancellata
   con la parola del nucleo; né il perché né gli avvisi. È la **settima lettura scritta a mano** dell'ATC (§7.1).
 
+**Deciso con E15b** (#301, nota `2026-10-17-la-conservazione-di-m4b`, letture 6–7, piano 1.39; le otto letture accettate da Carmine
+[sulla #301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322)) **le prenotazioni ATC della rete accanto
+al roster**:
+
+- **una lettura scritta a mano**, `GET /api/events/atc/events/{id}/network-bookings` (`EventAtc.View`; l'unico handler chiesto su ogni
+  postazione con il suo FIR, come il roster), **l'ottava dell'ATC**, uno scostamento accettato come le sette prima: niente di quello che
+  dice è una riga dell'hub. Una domanda sola a `IAtcBookingSource` per la finestra dell'evento, tenute le prenotazioni sui nominativi
+  delle postazioni dell'evento nelle ore di una postazione con quel nominativo; per ognuna chi ha prenotato (il nome dal lettore del
+  nucleo se l'hub lo conosce, il numero altrimenti), per che cosa (controllo, training, esame) e **se ha quel turno nel roster** (un suo
+  turno sulla stessa postazione che si sovrappone);
+- la risposta porta **`available`**: falso quando la rete non ha risposto o l'evento tocca più di sette giorni di UTC — **mai una lista
+  vuota** al suo posto —; **un evento annullato** risponde 404 senza chiedere niente alla rete, come uno senza roster;
+- **sulla pagina**: la sezione «Prenotazioni sulla rete» sotto il roster, nel pannello dell'ATC, una lista generata in sola lettura con
+  **una query sua**, così con la rete lenta aspetta la sezione e il roster no (la risposta di Carmine sulla #207); nessun secondo
+  tentativo dal browser; `available` falso dice «non disponibili», e un errore dell'hub (un 403, un 500) lo dice con le parole del nucleo
+  (`describeProblem`), mai come la rete giù. Una correzione del roster la rilegge. Niente sezione su un evento annullato.
+
 ### 4.4-bis Cedere un turno
 
 Un controllore che non può più coprire il suo turno **chiede di cederlo** (§17.3 n.3): a un altro membro che nomina — anche
@@ -1323,6 +1369,23 @@ alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
   dello staff mostra i numeri in un form generato in sola lettura e due liste generate, le prenotazioni con il loro esito e i turni con
   l'esito e chi ha coperto; ⚠️ la lista dei turni del motore (`/api/events/atc/shifts`) risponde ora `EventAtcShiftRowDto`.
 
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, letture 3-bis e 8, piano 1.39; le risposte di Carmine sulla #293 e la
+(A) sull'issue #292) **i PIREP automatici**: un passo di `events-after` **dopo i turni e prima della chiusura**, con il suo peso nel lotto
+(**2 unità per membro**), per i membri con `events.autoReport` accesa **nell'ordine dei VID**; quello fatto per ultimo si scrive
+sull'evento (**`auto_reports_cursor`**, un segno del job come `after_done_at`: non muove la versione della riga né il suo audit, e non è
+una colonna di persona), e l'evento si chiude quando sono fatti tutti. Mai dopo i trenta giorni, mai per un evento in presenza, nessun
+limite di `reportDays`; un PIREP che c'è già **non si tocca**, un `Auto` corretto dal membro diventa `Manual`, e un `Auto` non manda mail
+al membro.
+
+- **ATC**: le sessioni del membro come controllore dal tracker (`INetworkSessionSource`) sulle postazioni dell'evento e su quelle della
+  divisione ai suoi scali, o su tutte quelle della divisione per un evento `whole_division`; **una voce per postazione**, al più dodici
+  ore e venti voci, verificata con la soglia di un turno (`attendanceMinimumMinutes`, una regola in un posto solo, `AfterRules.Threshold`);
+- **pilota**: sulle sessioni di E10v, **una voce per sessione con l'ultima rotta del suo piano**, quando quella rotta tocca uno scalo
+  dell'evento, o un aeroporto della divisione per un evento `whole_division`; **un evento senza scali suoi, non di tutta la divisione, non
+  scrive voci di volo `Auto`** (la risposta 2 di Carmine: niente dice quali voli sono suoi); una sessione senza piano, o da un aeroporto a
+  sé stesso, non è un volo; verificata quando è durata almeno `minimumFlightMinutes` (§1.12). Scartato: una voce per ogni revisione di
+  `Routes`.
+
 ### 5.2 Il PIREP di supporto
 
 Chiunque abbia volato o controllato (c2) lo manda da `/events/mine`, entro `reportDays` dalla fine: **pilota** con uno o
@@ -1373,6 +1436,29 @@ soddisfatta il PIREP proietta un **`AwardSignalProjection`** (VID, motivo, `awar
 di chi chiama, con il lock sulle righe del segnale dentro una sua transazione READ COMMITTED; «diventato award» è `Handled`, anche se
 l'assegnazione è stata poi cancellata dal registro (la (A) di Carmine). La decisione su un PIREP lo chiede al nucleo con le sorgenti di
 **tutte** le righe del PIREP, e un PIREP con un award assegnato non si decide di nuovo; mai una query del modulo su `cms_award_signals`.
+
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, letture 3–5-bis, piano 1.39; la (A) di Carmine sull'issue #292 e le sue
+risposte sulla #293):
+
+- **il segnale è di una riga per regola soddisfatta**, `evt_report_awards` (il PIREP, la regola, l'evento, il VID del membro, l'award),
+  scritta dall'accettazione nello stesso salvataggio, ed è lei l'`IProjectable` (`report-award:{id}`): il nucleo tiene un segnale per
+  membro per riga sorgente, e un PIREP con due regole soddisfatte ne darebbe due. Il motivo è nella lingua della divisione, l'evento e il
+  criterio;
+- **che cosa vuol dire ogni criterio**, sulle voci con `verified` vero: `AnyFlight`/`AnyShift` almeno una; `MinFlights` almeno `count`;
+  `Route` una da partenza ad arrivo (il verso conta); `RouteTimes` almeno `count` di quella rotta, **una per sessione**; `MinLegDistance`
+  una con la distanza fra i due aeroporti (`GreatCircle`) **almeno** `distance_nm` — una distanza non nota non basta —; `MinAtcMinutes` la
+  **somma** dei minuti, solo sulle postazioni del tipo scelto quando c'è (dal nucleo, `IAtcPositionDirectory`);
+- **quale rotta conta: sempre l'ultima del piano**, mai una solo depositata (il punto 2 del revisore sulla #291): una voce di volo è
+  verificata solo quando la sessione trovata ha come ultima rotta quella della voce, **e dura almeno `minimumFlightMinutes`** (la risposta
+  1 di Carmine, `ReportRules.LongEnough`). ⚠️ Il prezzo: chi in una connessione sola vola una tratta e poi deposita la successiva ha
+  verificata solo la seconda;
+- **i segnali si calcolano all'accettazione** e restano come sono: cambiare o eliminare una regola dopo non tocca i PIREP già accettati;
+- **una decisione che cambia**: una riga per PIREP e regola, **mai cancellata**; da accettato a rifiutato le righe restano e **smettono di
+  segnalare** (`points_out` falso): un segnale in attesa se ne va, uno scartato resta com'è; da rifiutato ad accettato una regola
+  soddisfatta di nuovo ritrova la sua riga e il suo segnale, uno scartato resta scartato. Se **un segnale è diventato un award**
+  (`Handled`) il cambio è **rifiutato** con `reportAwardAssigned`, e la scheda non offre più «Cambia la decisione» (`Decidable` falso): la
+  domanda guarda **ogni riga** del PIREP, con `AwardSignalQueries.AssignedAsync` del nucleo (E10x, la risposta 3 di Carmine al posto
+  delle due query del modulo).
 
 ---
 
@@ -1798,6 +1884,18 @@ dice), dopo il job dei tour, con le convenzioni di E10j. **Decide dalle date**: 
 transazione le risposte nell'audit delle iscrizioni cancellate (§4-bis.2). Un giro perso o doppio non fa danni: il secondo non trova
 niente. Cambiare `inPersonRetentionMonths` vale dal giro dopo, per ogni evento.
 
+**Deciso con E14b** (#293, nota `2026-10-17-le-regole-di-award`, lettura 9, piano 1.39): **`events-digest`** gira ogni giorno alle
+**07:15 nel fuso della divisione** (il trigger lo dice), dopo il riepilogo dei tour delle 07:00. A chi tiene `EventReports.Edit`
+(`IPermissionHolders` del nucleo), i PIREP `Submitted` degli eventi che **lui** può validare (dipartimento e scope come l'unico handler),
+**i suoi esclusi**, una riga per evento con quanti e da quando e il link alla scheda; nessuna mail a chi non ha niente. **«Già mandato
+oggi» è la riga del giro** (E10j): un giro che trova un giro riuscito dello stesso giorno della divisione non manda niente. Le mail e la
+fine del giro in un commit solo.
+
+**Deciso con E15b** (#301, nota `2026-10-17-la-conservazione-di-m4b`, letture 1–5, piano 1.39): `events-retention` fa anche **la
+conservazione di M4b** (§11), **una transazione per evento**: le statistiche dalle righe con `EventStatistics.WriteAsync` sotto il blocco
+della riga dell'evento, poi le righe dovute delle tre conservazioni — in presenza, piloti, disponibilità — attraverso l'interceptor, poi le
+colonne segnate `[ErasedWith]` svuotate nell'audit con `AuditRedaction.EmptyDeletedAsync`. Un evento che fallisce si lascia al giro dopo.
+
 ---
 
 ## 9. Che cosa legge da IVAO e da vIPI
@@ -1890,6 +1988,17 @@ le somme** in `evt_event_stats`, che le liste rileggono (§4-bis.2). **Dal 16 ot
 `2026-10-16-la-conservazione-nell-audit`, decisa da Carmine sull'issue #267, risposta 3, piano 1.35): **le risposte lasciano anche
 l'audit**, con `AuditRedaction.EmptyDeletedAsync` del nucleo nella stessa transazione; di un posto l'audit tiene che il membro ha preso
 un turno, perché il posto non ha colonne segnate (la lettura 7 di E17, il sì di Carmine sulla #271).
+
+**Deciso con E15b** (#301, nota `2026-10-17-la-conservazione-di-m4b`, piano 1.39; la (A) di Carmine alla domanda 1 sull'issue #294 e le
+otto letture accettate sulla #301): ~~cancellate a roster pubblicato + la fine dell'evento~~ **le disponibilità ATC se ne vanno con
+l'evento finito**, pubblicato o no il roster (`EventRetention.AvailabilitiesDue`), il primo giro del mese dopo la fine: dopo la fine
+nessuno le legge, e un roster non pubblicato a quel punto non lo sarà più. **Prenotazioni e PIREP dei piloti** se ne vanno quando
+l'evento è finito da più di `pilotRetentionMonths`, **con lo stesso confine che conta il registro dei piloti**
+(`EventRetention.PilotsKeptSince`, scritto una volta e usato da tutti e due), così il registro conta uguale prima e dopo un giro. **Le
+statistiche si scrivono prima**, e poi «Ricalcola» tiene i numeri (§1.10, con il suo limite). **I PIREP pilota se ne vanno con le loro
+voci e con le righe delle regole soddisfatte**, cancellate dal modulo perché ognuna lasci la sua riga nell'audit; il nucleo toglie dalla
+coda un segnale **ancora in attesa** della riga che se ne va, uno scartato o diventato award resta. Le colonne segnate `[ErasedWith]` si
+svuotano anche nell'audit delle righe tolte (E10s). Lo fa `events-retention` (§8.4); nessuna migrazione.
 
 ### 11.1 La cancellazione dei dati di una persona
 
@@ -2013,6 +2122,18 @@ di un grant indipendente dal dipartimento della posizione; `TokenAudiences`; `Pr
 `DeletePolicy`; `BeforeAuthorize`; `Refusals`; «persona cancellata» (A12a di M3, #187, unita il 29 settembre: l'helper
 `personName` e il test delle colonne di persona che legge ogni modulo).
 
+**Misurato alla chiusura di M4** (19 ott 2026, `decisions/2026-10-17-m4-review.md`, piano 1.39), accanto alla previsione e non al suo
+posto: **sei estensioni necessarie fatte** (n.1–n.6), la n.7 non servita, la n.8 del master; la tabella è cresciuta a dodici righe
+durante M4 (n.9–n.12), e **diciassette fasi del nucleo non sono in tabella** — **ventisette fasi del nucleo, ventisette note**: 6
+previste, 4 aggiunte alla tabella, 17 fuori, di cui due (E10j, E10q) non nate dagli eventi. Le diciassette: chi è online sugli scali di
+una pagina (E4b), il permesso e non il dipartimento (E2b), `Awards.Assign` con un grant (E10f), la distanza fra due aeroporti (E10e), la
+versione di un contratto (E10g), i job che recuperano (E10j), le parole delle liste e i titoli delle schede (E10k), il `Dialog` del
+nucleo (E10l), un solo lettore dei nomi (E10m), le ore in 24 (E10p), il `Pkcs` corretto (E10q), la conservazione nell'audit (E10s), le
+sessioni della rete sotto un nome neutro (E10t), il permesso tenuto senza un ambito (E10u), gli scali di una sessione (E10v), il banco che
+fa girare un job (E10w), «questa riga ha dato un award?» (E10x). **Nessuna è un meccanismo nuovo**: ognuna estende uno che c'era, con la
+sua nota e prima del codice che la usa; tre le hanno prese i tour (la distanza, la versione del contratto, il lettore dei nomi). Resta da
+scrivere **E10r** (il toast del nucleo, issue #266), che il conto non comprende.
+
 ---
 
 ## 14. Tabelle e migrazioni
@@ -2023,6 +2144,13 @@ di un grant indipendente dal dipartimento della posizione; `TokenAudiences`; `Pr
 `evt_atc_availability` (con le finestre), `evt_atc_shifts`, `evt_atc_shift_transfers`, `evt_reports`, `evt_report_items`, `evt_award_rules`,
 `evt_event_stats`; M4c `evt_questions`, `evt_registrations`, `evt_activities`, `evt_activity_bookings`. La migrazione `Initial` nasce nella fase dello scheletro e non si tocca più; le altre arrivano con la
 loro fase, sempre additive.
+
+**Misurato alla chiusura di M4** (19 ott 2026, `decisions/2026-10-17-m4-review.md`, piano 1.39), accanto alla previsione: **19 tabelle
+`evt_` su 17**, +2 — `evt_atc_availability_windows` (le finestre della disponibilità in una tabella loro, E11a: qui «con le finestre») ed
+`evt_report_awards` (una riga per regola soddisfatta, E14b, la (A) sull'issue #292) —, in **12 migrazioni additive**: `Initial` in E2,
+poi E4, E5, E6a, E16, E11a, E11b, E12, E17, E13a, E14a, E14b (`AddAwardRules`); E15b nessuna. **Nel nucleo una tabella**, `ref_ivao_fras`
+(i minimi delle postazioni, E10c, la n.4 «se serve»: serviva), e una colonna, `cms_award_signals.notified_at` (E10d), in due migrazioni
+additive; i quattro tipi di E1 sono righe del seme.
 
 ---
 
@@ -2064,6 +2192,16 @@ loro fase, sempre additive.
 - **Smoke e giro completo**: M4a — evento RFO, incolla gli slot, genera i privati, pubblica, un pilota prenota una rotazione
   e un privato, ritira; M4b — disponibilità, roster proposto, corretto, pubblicato; PIREP di supporto, validato, segnale;
   M4c — un evento in presenza, iscrizione con le risposte, un turno al simulatore.
+
+**Fatto con E15b** (#301, nota `2026-10-17-la-conservazione-di-m4b`, domanda 2, piano 1.39; la (B) di Carmine sull'issue #294): **il
+giro completo di M4b** è `web/e2e/full/events-m4b-round.spec.ts`, accanto a quelli di M4a (`events-round.spec.ts`, E8b) e di M4c
+(`events-m4c-round.spec.ts`, E17), sul banco di **E10w** (#300), che fa girare un job adesso e dà sessioni della rete a un suo
+personaggio: il coordinatore pubblica una sera di un quarto d'ora con la torre e una regola «un turno qualsiasi»; il trainer dà la
+disponibilità; `events-roster`, fatto girare subito, propone e pubblica, e il controllore riceve la mail; il coordinatore legge il roster
+con le prenotazioni della rete accanto e ne taglia la fine (la mail del cambio); a evento finito il controllore manda il PIREP ATC, la
+rete del banco trova il suo turno, chi valida lo accetta, **il segnale della regola è nella coda degli award**, e arriva la mail della
+decisione. La conservazione, la cancellazione di un controllore e di un pilota con il registro contato uguale, e «Duplica» per l'ATC sono
+in integrazione (`EventsRetentionTests`).
 
 ---
 
