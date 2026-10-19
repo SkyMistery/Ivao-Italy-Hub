@@ -1262,6 +1262,27 @@
       "publishesOn": "Si pubblica il {{date}}: allora i controllori ricevono i turni, e dopo ogni cambio.",
       "published": "Pubblicato il {{date}}: ogni cambio arriva subito al controllore."
     },
+    "network": {
+      "title": "Prenotazioni sulla rete",
+      "intro": "Chi ha prenotato sulla rete le postazioni dell'evento, letto adesso: se ha quel turno nel roster, e le postazioni prese da altri, anche per un training o un esame.",
+      "unavailable": "Le prenotazioni della rete adesso non sono disponibili: la rete non ha risposto, o l'evento dura più di una settimana. Il roster qui sopra non cambia.",
+      "empty": "Nessuno ha prenotato sulla rete le postazioni dell'evento nelle sue ore.",
+      "fields": {
+        "callsign": "Postazione",
+        "fromUtc": "Dalle",
+        "toUtc": "Alle",
+        "booker": "Prenotata da",
+        "kind": "Per",
+        "onRoster": "Nel roster"
+      },
+      "options": {
+        "kind": {
+          "Controlling": "Controllo",
+          "Training": "Training",
+          "Exam": "Esame"
+        }
+      }
+    },
     "shifts": {
       "create": "Nuovo turno",
       "edit": "Turno",

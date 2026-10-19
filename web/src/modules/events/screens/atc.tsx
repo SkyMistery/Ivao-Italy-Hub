@@ -30,6 +30,7 @@ import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from 
 import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
 import { Candidates } from './candidates';
 import { ShiftOutcomesSection } from './registers';
+import { NetworkBookingsSection } from './networkBookings';
 import { RosterSection } from './roster';
 import { TransfersSection } from './transfers';
 
@@ -177,6 +178,8 @@ export function AtcPanel({ eventId }: { eventId: number }) {
         )}
       />
       <RosterSection event={event} />
+      {/* Who booked the positions on the network (E15b): of an event that takes place, never of one cancelled. */}
+      {event.state === 'Cancelled' ? null : <NetworkBookingsSection eventId={event.id} />}
       <TransfersSection event={event} />
       {/* After the event, how its shifts went, decided by the staff (E13b): never on one cancelled, whose shifts nobody held. */}
       {event.state !== 'Cancelled' && isClosed(event) ? <ShiftOutcomesSection eventId={event.id} /> : null}

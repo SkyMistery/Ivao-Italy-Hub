@@ -278,6 +278,7 @@ public sealed class EventsModule : ModuleBase
         endpoints.MapAtcPositionEndpoints();
         endpoints.MapAvailabilityEndpoints();
         endpoints.MapShiftEndpoints();
+        endpoints.MapNetworkBookingEndpoints();
         endpoints.MapTransferEndpoints();
         endpoints.MapPublicRosterEndpoints();
         endpoints.MapStatsEndpoints();

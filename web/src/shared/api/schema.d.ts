@@ -359,6 +359,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/atc/events/{id}/network-bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EventsAtcNetworkBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events/atc/transfers/{id}/warnings": {
         parameters: {
             query?: never;
@@ -4164,6 +4180,11 @@ export interface components {
             latestSessionStart: null | string;
         };
         /**
+         * @description What a booking is for, as the network says it.
+         * @enum {unknown}
+         */
+        AtcBookingKind: "Controlling" | "Training" | "Exam";
+        /**
          * @description A controller available in some of the hours of a position (design M4 §4.2, §6.3, E11a), as the staff of the ATC read them on the
          *     position: the controller named the way the core names a person, their ATC rating as the staff say it (the vocabulary's short name),
          *     whether they cover the position from its opening to its closing, from when to when they are available inside it — instants, which the
@@ -7455,6 +7476,36 @@ export interface components {
              *         null for an entry of the core or of the editorial menu.
              */
             module?: null | string;
+        };
+        /**
+         * @description One booking of a position of the event on the network (design M4 §4.4, §9.1, E15b; note 2026-09-29-il-roster-atc §2.9): the position's
+         *     callsign, its hours, who booked it — named by the core's reader when the hub knows them, by their number otherwise —, what for, and whether
+         *     they hold a shift on that position in those hours (bool NetworkBookingRowDto.OnRoster): the roster and the network agree.
+         */
+        NetworkBookingRowDto: {
+            callsign: string;
+            /** Format: date-time */
+            fromUtc: string;
+            /** Format: date-time */
+            toUtc: string;
+            booker: components["schemas"]["EventMemberDto"];
+            kind: components["schemas"]["AtcBookingKind"];
+            onRoster: boolean;
+        };
+        /**
+         * @description A page of the bookings of the network beside the roster, in the shape of every list of the hub, and whether the network answered:
+         *     bool NetworkBookingsPage.Available false — the network could not be asked, or the event spans more days than the core asks — is never «nobody
+         *     booked» (note 2026-09-30-le-prenotazioni-atc-della-rete §3.2).
+         */
+        NetworkBookingsPage: {
+            items: components["schemas"]["NetworkBookingRowDto"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            available: boolean;
         };
         NextLegDto: {
             /** Format: int64 */
@@ -12166,6 +12217,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PagedResultOfRosterRowDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventsAtcNetworkBookings: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkBookingsPage"];
                 };
             };
             /** @description Not Found */

@@ -64,7 +64,8 @@ public sealed class PilotRegister(EventsDbContext database, HubDbContext hub, Mo
     /// <summary>The bookings not flown of these pilots — of every pilot, when <paramref name="vid"/> is null — still in the record.</summary>
     private async Task<List<Entry>> EntriesAsync(int? vid, DateTime now, int months, CancellationToken cancellationToken)
     {
-        var since = now.AddMonths(-months);
+        // The boundary events-retention deletes by (E15b): a booking leaves the record when it leaves the database.
+        var since = EventRetention.PilotsKeptSince(now, months);
         var bookings = CrudSource.BackOffice<EventBooking>(database).AsNoTracking()
             .Where(booking => booking.FlownCheckedAt != null && booking.FlownAt == null);
         if (vid is { } one)

@@ -6,7 +6,18 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
+**Ultimo aggiornamento:** 18 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
+della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
+`m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **l'ultima della coda**: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha
+unito le teste `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300), e con la #293 unita **`main` a `f436c918`**
+(E14a, E10x, E14b, E10w, il piano 1.38 e la #303); nessuna migrazione. La nota `2026-10-17-la-conservazione-di-m4b` è **decisa**: le otto letture accettate da Carmine sulla
+[#301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322), la 6 compresa; le
+sue due domande sono **decise** da Carmine sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 2, il giro completo
+sul banco, (B) — la fase del nucleo E10w prima, e il giro ora fa girare il job subito, segnale compreso —; la 1, le disponibilità di un evento
+mai pubblicato, (A) — se ne vanno con l'evento finito, com'è il codice. Il rapporto `2026-10-17-m4-review` conta M4 sul codice. Con E15b **M4 è finita nel codice tranne E10r e il Gate Manager nell'hub** (nota `2026-10-18-il-gate-manager-nell-hub`) («Che cosa ha lasciato
+E15b», sotto).
+
+**L'aggiornamento di E10x:** 18 ottobre 2026 — **fase E10x** (nucleo: «questa riga ha dato un award?», per E14b), sul branch
 `m4/e10x-award-signal-assigned`, **PR #299** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `01fdbed5`; dopo la
 revisione, [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6251435462), ha unito `main` a `fa9c29b4` (E14a, #289); di nuovo
 [approvabile](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/299#issuecomment-6252455578), `main` a `11636395` (E10w, #300). Una nota
@@ -356,6 +367,40 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E15b (17–18 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`, PR #301; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b e la #300 di E10w, con le loro teste `e5eb1d17` e `986c6116` unite)
+
+- **Che cosa c'è** (il dettaglio in `10`, E15b, «Com'è andata»; **nessuna migrazione**; del nucleo solo `schema.d.ts` generato e
+  `docs/FORKING.md`; la nota nuova `2026-10-17-la-conservazione-di-m4b`, **decisa** (le due domande sull'issue #294, le otto letture sulla #301); il rapporto di chiusura
+  `2026-10-17-m4-review`): l'ultima fase di **M4b**, e con lei **M4 è finita nel codice tranne E10r (#266, il toast del nucleo) e il Gate Manager nell'hub**, una fase
+  nuova del modulo dopo le altre, dal suo design (nota `2026-10-18-il-gate-manager-nell-hub`).
+  - **La conservazione di M4b**: `EventRetention.cs` (le date in un posto solo, il registro dei piloti compreso) ed `EventsRetentionJob.cs`
+    (piloti dopo `pilotRetentionMonths`, disponibilità a evento finito, in presenza come E17; le statistiche prima, l'audit svuotato dopo);
+    `After/EventStatistics.cs` tiene i numeri quando le righe non ci sono più.
+  - **Le prenotazioni della rete accanto al roster**: `Atc/NetworkBookings.cs` (`GET /api/events/atc/events/{id}/network-bookings`) e
+    `screens/networkBookings.tsx`, sotto il roster nel pannello dell'ATC.
+  - **Il giro completo di M4b**: `web/e2e/full/events-m4b-round.spec.ts`, che fa girare `events-roster` subito e dà al trainer le sessioni
+    di E10w (`runJob`, `giveSessions`): disponibilità, roster proposto e pubblicato, corretto, PIREP trovato sulla rete e validato, segnale.
+  - **I test**: integrazione `EventsRetentionTests` (VID **761300–761308**, slug `evt-test-e15b-…`); unità `EventsRetentionRulesTests`; vitest
+    `networkBookings.test.tsx`.
+- **Che cosa deve sapere chi viene dopo**:
+  - **Le due domande della nota sono decise** sull'[issue #294](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294): la 1 (A), le
+    disponibilità di un evento se ne vanno con l'evento finito, pubblicato o no il roster ([la
+    risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/294#issuecomment-6253529817)); la 2 (B), E10w prima. Le otto letture del §2
+    le ha accettate Carmine sulla [#301](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/301#issuecomment-6256206322), la 6 compresa
+    (l'ottava lettura scritta a mano dell'ATC).
+  - ⚠️ **Il giro aspetta l'orologio, non più il job**: circa un quarto d'ora (l'inizio a due minuti, poi la fine dell'evento), cambia
+    `applicationsCloseDays` e `rosterPublishDays` a 0 per la sua durata e li rimette dopo, e dà le sessioni al trainer (999004) e gliele
+    riprende. Un `e2e:full` ucciso a metà lascia le impostazioni a 0: il giro dopo le rimette come le trova, quindi vanno rimesse a mano sul
+    banco (3 e 2), o il banco ricreato.
+  - ⚠️ **Chi scrive le statistiche dopo questa fase** sa che oltre `pilotRetentionMonths`, senza righe dei piloti, i numeri delle prenotazioni,
+    dei PIREP e dei segnali sono quelli della conservazione, e che `AtcAvailabilities` resta quello che c'era quando le disponibilità se ne
+    sono andate.
+  - ⚠️ **Le prenotazioni della rete** stanno sotto la chiave dell'ATC nel browser: ogni correzione del roster le rilegge da IVAO. Con molte
+    correzioni di fila sono tante chiamate; Carmine ha voluto i dati freschi (#207).
+  - **Il rapporto di chiusura** conta la coda come unita: se la revisione cambia un endpoint o una tabella, il numero si corregge lì, con la
+    colonna «dopo» come per M1.
+  - ⚠️ **I VID di prova**: E15b ha usato **761300–761308** della fascia nuova 761300–761329.
 
 ### Che cosa ha lasciato E14b (17 ottobre 2026, branch `m4/e14b-award-rules`, PR #293; nata dalla testa di E14a `08508e9e`, in coda dopo la #289 di E14a e la #299 di E10x, con le teste di E10v ed E14a `092e0b79` e `77bf5068` unite — E14a dopo la revisione della #289, con `main` a `01fdbed`, E10v unita —, poi E10x `34f9a0fa` (#299) e `main` a `3cdacd9`, e infine `main` a `620aa359` (E14a, E10x ed E10w unite))
 

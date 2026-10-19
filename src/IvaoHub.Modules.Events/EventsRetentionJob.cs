@@ -4,6 +4,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events.After;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Registrations;
 using IvaoHub.Modules.Events.Settings;
@@ -14,26 +15,36 @@ using Quartz;
 namespace IvaoHub.Modules.Events;
 
 /// <summary>
-/// The retention of the events (design M4 §8.4, §11), <c>events-retention</c>, once a month — born with E17 for the events in person, since
-/// M4b is not there yet (plan «Parallelismo possibile»); the retention of the pilots' bookings and reports joins it with E15b. Note
-/// 2026-10-15-le-attivita-e-la-conservazione-breve §4.
-/// <para><b>The events in person</b>: their registrations and the seats of their activities say who came in person and with what, so they go
-/// <c>inPersonRetentionMonths</c> after the event's end (<see cref="InPersonRetention.IsDue"/>). Before they go, in the same save, the event's
-/// statistics (<see cref="EventStats"/>, created when missing, only their own columns written) keep how many registered, the sums of the
-/// answers (<see cref="RegistrationSums"/>) and the seats taken in each activity; the staff's lists read them from there afterwards. One
-/// transaction per event, through the interceptor like every write (no bulk statement), as the retention of the tours; and since the
-/// audit would keep the answers of every registration deleted, the core empties them there too, in the same transaction
-/// (<see cref="AuditRedaction.EmptyDeletedAsync{TEntity, TKey}"/>, E10s).</para>
+/// The retention of the events (design M4 §8.4, §11), <c>events-retention</c>, once a month — born with E17 for the events in person, and
+/// widened by E15b to the rows of M4b. Notes 2026-10-15-le-attivita-e-la-conservazione-breve §4 and 2026-10-17-la-conservazione-di-m4b.
+/// <list type="bullet">
+/// <item><b>The events in person</b>: their registrations and the seats of their activities say who came in person and with what, so they go
+/// <c>inPersonRetentionMonths</c> after the event's end (<see cref="InPersonRetention.IsDue"/>).</item>
+/// <item><b>The pilots</b>: their bookings and their reports of support, with the items and the signals of award of those reports, go
+/// <c>pilotRetentionMonths</c> after the end (<see cref="EventRetention.PilotsDue"/>) — the boundary the register of the pilots counts by,
+/// so the register counts the same before and after a run.</item>
+/// <item><b>The availabilities</b> of the controllers, with their windows, go with the event over (<see cref="EventRetention.AvailabilitiesDue"/>).</item>
+/// <item><b>The shifts, how they went, the reports of the controllers and the requests to hand a shift over stay for good</b>: they are the
+/// register of reliability (c3).</item>
+/// </list>
+/// <para>Before anything goes, in the same transaction, the event's statistics are worked out from its rows (<see cref="EventStatistics"/>,
+/// under the lock of the event's row, as every write of them): how many booked and flew, the availabilities, the reports and the signals,
+/// how many registered, the sums of the answers and the seats by activity. Afterwards the statistics keep those numbers, and the staff's lists
+/// of an event in person read them back. One transaction per event, through the interceptor like every write (no bulk statement), as the
+/// retention of the tours; and since the audit would keep the member's data of every row deleted — the answers of a registration, the flight
+/// of a private booking, the note of an availability, the validator's note on a report, the callsign of an item — the core empties those
+/// columns there too, in the same transaction (<see cref="AuditRedaction.EmptyDeletedAsync{TEntity, TKey}"/>, E10s).</para>
 /// <para><b>It decides from its data, never from the hour it runs</b> (note 2026-09-28-i-job-quando-passenger-spegne-l-hub §8): an event past
-/// its retention with registrations or seats left. A run lost while the hub slept is made up by the next, or by the core's catch up (E10j);
-/// a run done twice finds nothing. Past the filter of the members: the job is nobody. It never throws: a failure is a row in
-/// <c>hub_jobs_log</c>, as for every job of the hub, written with its end on every way out.</para>
+/// a retention with rows of it left. A run lost while the hub slept is made up by the next, or by the core's catch up (E10j); a run done twice
+/// finds nothing. Past the filter of the members: the job is nobody. It never throws: a failure is a row in <c>hub_jobs_log</c>, as for every
+/// job of the hub, written with its end on every way out; an event that fails is logged and left for the next run.</para>
 /// </summary>
 [DisallowConcurrentExecution]
 public sealed class EventsRetentionJob(
     EventsDbContext database,
     HubDbContext hub,
     ModuleSettingsStore settingsStore,
+    EventStatistics statistics,
     IClock clock,
     ILogger<EventsRetentionJob> logger) : IJob
 {
@@ -49,8 +60,25 @@ public sealed class EventsRetentionJob(
 
     public Task Execute(IJobExecutionContext context) => RunAsync(context.CancellationToken);
 
-    /// <summary>What a run did: events in person whose registrations went, registrations and seats deleted.</summary>
-    public sealed record Outcome(int Events, int Registrations, int Seats);
+    /// <summary>
+    /// What a run did: the events some of whose rows went, the registrations and seats of the events in person, the bookings and the reports
+    /// of the pilots, and the availabilities of the controllers deleted.
+    /// </summary>
+    public sealed record Outcome(int Events, int Registrations, int Seats, int Bookings = 0, int Reports = 0, int Availabilities = 0)
+    {
+        public Outcome Add(Outcome other)
+        {
+            ArgumentNullException.ThrowIfNull(other);
+
+            return new(
+                Events + other.Events,
+                Registrations + other.Registrations,
+                Seats + other.Seats,
+                Bookings + other.Bookings,
+                Reports + other.Reports,
+                Availabilities + other.Availabilities);
+        }
+    }
 
     public async Task<Outcome> RunAsync(CancellationToken cancellationToken = default)
     {
@@ -63,16 +91,26 @@ public sealed class EventsRetentionJob(
             var now = entry.StartedAt;
             var settings = await settingsStore.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
 
-            // The events that ended at least that long ago; the exact rule is asked of each below, in one place.
-            var endedBefore = now.AddMonths(-settings.InPersonRetentionMonths);
-            var holding = CrudSource.BackOffice<EventRegistration>(database).Select(registration => registration.EventId)
+            // The events that ended at least that long ago and still hold rows of that kind; the exact rule is asked of each below, in one
+            // place each.
+            var inPersonEnded = now.AddMonths(-settings.InPersonRetentionMonths);
+            var pilotsKeptSince = EventRetention.PilotsKeptSince(now, settings.PilotRetentionMonths);
+            var inPerson = CrudSource.BackOffice<EventRegistration>(database).Select(registration => registration.EventId)
                 .Union(CrudSource.BackOffice<EventActivitySeat>(database).Select(seat => seat.EventId));
+            var pilots = CrudSource.BackOffice<EventBooking>(database).Select(booking => booking.EventId)
+                .Union(CrudSource.BackOffice<EventReport>(database).Where(report => report.Kind == ReportKind.Pilot).Select(report => report.EventId));
+            var available = CrudSource.BackOffice<EventAtcAvailability>(database).Select(availability => availability.EventId);
+
             var due = (await CrudSource.BackOffice<Event>(database).AsNoTracking()
-                    .Where(row => row.EndsAtUtc <= endedBefore && holding.Contains(row.Id))
+                    .Where(row => (row.EndsAtUtc <= inPersonEnded && inPerson.Contains(row.Id))
+                        || (row.EndsAtUtc < pilotsKeptSince && pilots.Contains(row.Id))
+                        || (row.EndsAtUtc <= now && available.Contains(row.Id)))
                     .OrderBy(row => row.EndsAtUtc)
                     .ThenBy(row => row.Id)
                     .ToListAsync(cancellationToken))
-                .Where(row => InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
+                .Where(row => InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now)
+                    || EventRetention.PilotsDue(row, settings.PilotRetentionMonths, now)
+                    || EventRetention.AvailabilitiesDue(row, now))
                 .ToList();
 
             // One event that fails is logged and left for the next run, never a stop for every event after it, month after month (the review
@@ -83,12 +121,11 @@ public sealed class EventsRetentionJob(
             {
                 try
                 {
-                    var (registrations, seats) = await RetireAsync(row, now, cancellationToken);
-                    outcome = new Outcome(outcome.Events + 1, outcome.Registrations + registrations, outcome.Seats + seats);
+                    outcome = outcome.Add(await RetireAsync(row, settings, now, cancellationToken));
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
-                    logger.LogError(exception, "The registrations of the event {EventId} could not be retired.", row.Id);
+                    logger.LogError(exception, "The rows of the event {EventId} could not be retired.", row.Id);
                     database.ChangeTracker.Clear();
                     failed.Add(row.Id);
                 }
@@ -98,10 +135,15 @@ public sealed class EventsRetentionJob(
             entry.Status = "succeeded";
             var done = string.Create(
                 CultureInfo.InvariantCulture,
-                $"{outcome.Events} event(s) in person retired: {outcome.Registrations} registration(s), {outcome.Seats} seat(s) deleted");
+                $"{outcome.Events} event(s) retired: {outcome.Registrations} registration(s), {outcome.Seats} seat(s), {outcome.Bookings} booking(s), {outcome.Reports} pilot report(s), {outcome.Availabilities} availability(ies) deleted");
             entry.Message = failed.Count == 0
                 ? done
                 : string.Create(CultureInfo.InvariantCulture, $"{done}; not done, left for the next run: {string.Join(", ", failed)}");
+            if (entry.Message.Length > MaxMessageLength)
+            {
+                entry.Message = entry.Message[..MaxMessageLength];
+            }
+
             await hub.SaveChangesAsync(cancellationToken);
 
             return outcome;
@@ -123,56 +165,95 @@ public sealed class EventsRetentionJob(
     }
 
     /// <summary>
-    /// One event in person, in one transaction: its statistics written — how many registered, the sums of the answers to the questions it
-    /// has, the seats taken by activity —, then its registrations and seats deleted, and the answers emptied in the audit. Returns how many
-    /// of each went.
+    /// One event, in one transaction: its statistics worked out from its rows, then whatever of it is past its retention deleted, and the
+    /// member's data of every row deleted emptied in the audit. Returns how many of each went.
     /// </summary>
-    private async Task<(int Registrations, int Seats)> RetireAsync(Event row, DateTime now, CancellationToken cancellationToken)
+    private async Task<Outcome> RetireAsync(Event row, EventsSettings settings, DateTime now, CancellationToken cancellationToken)
     {
-        var registrations = await CrudSource.BackOffice<EventRegistration>(database)
-            .Where(registration => registration.EventId == row.Id)
-            .ToListAsync(cancellationToken);
-        var seats = await CrudSource.BackOffice<EventActivitySeat>(database)
-            .Where(seat => seat.EventId == row.Id)
-            .ToListAsync(cancellationToken);
-        var questions = await database.Questions.AsNoTracking()
-            .Where(question => question.EventId == row.Id)
-            .OrderBy(question => question.Ordinal)
-            .ThenBy(question => question.Id)
-            .ToListAsync(cancellationToken);
-
-        var stats = await CrudSource.BackOffice<EventStats>(database).FirstOrDefaultAsync(candidate => candidate.EventId == row.Id, cancellationToken);
-        if (stats is null)
-        {
-            stats = new EventStats { EventId = row.Id };
-            database.Stats.Add(stats);
-        }
-
-        // In the event's care, as every row of the event (§1.1).
-        stats.OwnerDepartment = row.OwnerDepartment;
-        stats.OwnerDepartmentMask = row.OwnerDepartmentMask;
-        stats.Registrations = registrations.Count;
-        stats.AnswerSumsJson = InPersonRetention.SumsJson(RegistrationSums.Of(questions, registrations).Values);
-        stats.ActivitySeatsJson = InPersonRetention.SeatsJson(
-            seats.GroupBy(seat => seat.ActivityId).ToDictionary(activity => activity.Key, activity => activity.Count()));
-        stats.ComputedAt = now;
-
-        // One transaction: the statistics, the rows gone, and the answers emptied in their copies in the audit (E10s, Carmine's answer 3
-        // on issue #267) — a failure takes all of it back, and the next run finds the rows again. The seats have no column marked as the
-        // member's data (reading 7 of the note): there is nothing of theirs to empty, and the core's call refuses such an entity.
+        // One transaction: the statistics, the rows gone, and their columns emptied in their copies in the audit (E10s, Carmine's answer 3
+        // on issue #267) — a failure takes all of it back, and the next run finds the rows again.
         await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
-        database.Seats.RemoveRange(seats);
-        database.Registrations.RemoveRange(registrations);
+
+        // Under the lock of the event's row, from the rows still there: what the statistics keep once they go.
+        await statistics.WriteAsync(row, now, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
 
-        await AuditRedaction.EmptyDeletedAsync<EventRegistration, long>(
-            database,
-            [.. registrations.Select(registration => registration.Id)],
-            cancellationToken);
+        List<EventRegistration> registrations = [];
+        List<EventActivitySeat> seats = [];
+        if (InPersonRetention.IsDue(row, settings.InPersonRetentionMonths, now))
+        {
+            registrations = await CrudSource.BackOffice<EventRegistration>(database)
+                .Where(registration => registration.EventId == row.Id)
+                .ToListAsync(cancellationToken);
+            seats = await CrudSource.BackOffice<EventActivitySeat>(database)
+                .Where(seat => seat.EventId == row.Id)
+                .ToListAsync(cancellationToken);
+            database.Seats.RemoveRange(seats);
+            database.Registrations.RemoveRange(registrations);
+        }
+
+        List<EventBooking> bookings = [];
+        List<EventReport> reports = [];
+        List<EventReportItem> items = [];
+        if (EventRetention.PilotsDue(row, settings.PilotRetentionMonths, now))
+        {
+            // A private arrival and its departure are one pilot's in one event (E7): they go together, as every booking of the event.
+            bookings = await CrudSource.BackOffice<EventBooking>(database)
+                .Where(booking => booking.EventId == row.Id)
+                .ToListAsync(cancellationToken);
+            reports = await CrudSource.BackOffice<EventReport>(database)
+                .Where(report => report.EventId == row.Id && report.Kind == ReportKind.Pilot)
+                .ToListAsync(cancellationToken);
+            var reportIds = reports.Select(report => report.Id).ToList();
+
+            // The keys take the items and the signals along anyway; deleted here, each leaves its row in the audit, and a signal of the
+            // core's queue still waiting for somebody goes with its row (E14b).
+            items = await CrudSource.BackOffice<EventReportItem>(database)
+                .Where(item => reportIds.Contains(item.ReportId))
+                .ToListAsync(cancellationToken);
+            database.ReportAwards.RemoveRange(await CrudSource.BackOffice<EventReportAward>(database)
+                .Where(award => reportIds.Contains(award.ReportId))
+                .ToListAsync(cancellationToken));
+            database.ReportItems.RemoveRange(items);
+            database.Reports.RemoveRange(reports);
+            database.Bookings.RemoveRange(bookings);
+        }
+
+        List<EventAtcAvailability> availabilities = [];
+        if (EventRetention.AvailabilitiesDue(row, now))
+        {
+            availabilities = await CrudSource.BackOffice<EventAtcAvailability>(database)
+                .Where(availability => availability.EventId == row.Id)
+                .ToListAsync(cancellationToken);
+            database.AtcWindows.RemoveRange(await CrudSource.BackOffice<EventAtcWindow>(database)
+                .Where(window => window.EventId == row.Id)
+                .ToListAsync(cancellationToken));
+            database.AtcAvailabilities.RemoveRange(availabilities);
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+
+        // The seats, the windows and the signals have no column marked as the member's data (reading 7 of E17's note): there is nothing of
+        // theirs to empty, and the core's call refuses such an entity.
+        await EmptyAsync<EventRegistration>([.. registrations.Select(registration => registration.Id)], cancellationToken);
+        await EmptyAsync<EventBooking>([.. bookings.Select(booking => booking.Id)], cancellationToken);
+        await EmptyAsync<EventReport>([.. reports.Select(report => report.Id)], cancellationToken);
+        await EmptyAsync<EventReportItem>([.. items.Select(item => item.Id)], cancellationToken);
+        await EmptyAsync<EventAtcAvailability>([.. availabilities.Select(availability => availability.Id)], cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         database.ChangeTracker.Clear();
 
-        return (registrations.Count, seats.Count);
+        return new Outcome(1, registrations.Count, seats.Count, bookings.Count, reports.Count, availabilities.Count);
+    }
+
+    /// <summary>The core's emptying in the audit for the rows of one entity deleted, when there are any.</summary>
+    private async Task EmptyAsync<TEntity>(IReadOnlyCollection<long> keys, CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        if (keys.Count > 0)
+        {
+            await AuditRedaction.EmptyDeletedAsync<TEntity, long>(database, keys, cancellationToken);
+        }
     }
 }
