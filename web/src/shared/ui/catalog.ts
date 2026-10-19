@@ -47,6 +47,11 @@ export const UI_KIT_COMPONENTS = [
   // its `Dialog` draws an «X» whose label is the English "Close" written into the library (#224, note
   // 2026-10-11-il-pulsante-di-chiusura-delle-finestre). The same parts, put back together with the word translated.
   'Dialog',
+  // The twenty-sixth, and the third that replaces something Atmosphere ships, for the same reason: its toasts said
+  // «Close», «Notification» and «Notifications (F8)» in English, written into the library, and it exports no way to pass
+  // the words (#266, note 2026-10-19-il-toast-del-nucleo). The provider, the queue and the viewport, written again on
+  // Radix with Atmosphere's classes; a screen still says a toast through `useNotice`.
+  'Toaster',
 ] as const;
 
 export type UiKitComponent = (typeof UI_KIT_COMPONENTS)[number];

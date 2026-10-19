@@ -31,6 +31,7 @@ import {
   SchemaFormSample,
   SectionHeaderSample,
   StaffSidebarSample,
+  ToasterSample,
   StatTileSample,
 } from './uiKitSamples';
 
@@ -133,6 +134,7 @@ export const UI_KIT_SECTIONS: readonly UiKitSection[] = [
     ),
   },
   { name: 'Dialog' satisfies UiKitComponent, render: () => <DialogSample /> },
+  { name: 'Toaster' satisfies UiKitComponent, render: () => <ToasterSample /> },
 ];
 
 /**
