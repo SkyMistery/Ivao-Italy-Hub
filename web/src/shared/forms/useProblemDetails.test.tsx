@@ -109,5 +109,7 @@ test('a refusal about a control that is not a form becomes one sentence', () => 
   expect(describeProblem(new ApiError(403, undefined), t, 'en')).toBe(englishErrors.errors.forbidden.title);
 
   // A limit of the hub too: the core's 429 is a whole request refused, not a field.
-  expect(describeProblem(new ApiError(429, undefined), t, 'en')).toBe(englishErrors.errors.tooManyRequests.title);
+  expect(describeProblem(new ApiError(429, undefined), t, 'en')).toBe(
+    englishErrors.errors.tooManyRequests.title,
+  );
 });
