@@ -87,7 +87,8 @@ public static class ReportEndpoints
             options.ToDetail = report => Row(report, noNames, [], decidable: false);
         });
 
-        var mine = app.MapGroup(MinePattern).WithTags("EventReports").RequireAuthorization(HubPolicies.SignedIn);
+        var mine = app.MapGroup(MinePattern).WithTags("EventReports").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         mine.MapGet("/", (MemberReports reports, HttpContext http) => reports.MineAsync(http.RequestAborted))
             .WithName("EventsMyReports")

@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Staff;
 using Microsoft.AspNetCore.Authorization;
@@ -61,7 +62,8 @@ public static class BookingEndpoints
             options.ToDetail = booking => StaffBookings.Row(booking, slot: null, noNames);
         });
 
-        var mine = app.MapGroup(MinePattern).WithTags("EventBookings").RequireAuthorization(HubPolicies.SignedIn);
+        var mine = app.MapGroup(MinePattern).WithTags("EventBookings").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         mine.MapGet("/", (PilotBookings bookings, HttpContext http) => bookings.MineAsync(http.RequestAborted))
             .WithName("EventsMyBookings")
