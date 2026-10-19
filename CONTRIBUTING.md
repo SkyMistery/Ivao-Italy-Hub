@@ -49,6 +49,17 @@ them in order on the maintainer's go.
 - **A phase that needs an answer from the maintainer** (a case (c) note, a core change still under review) does not
   queue on top of the question: the parts that depend on it wait for the answer.
 
+## Reporting a bug or a security weakness
+
+- **A bug**: one issue per bug, with the Bug form (`.github/ISSUE_TEMPLATE/bug.yml`: where, as whom, the steps, what you
+  expected, what happened, the version at the bottom of the page). Label it with the module (`events`, `training`, `tours`,
+  `core`, `site`) and the severity (`blocker`, `major`, `minor`); a hardening with no attack (a header, a limit) is an ordinary
+  issue with the `security` label.
+- **A security weakness that can be exploited** never goes into a public issue, since this repository is public: report it
+  privately with GitHub's private vulnerability reporting (Security → Report a vulnerability) or to the maintainer. It is fixed in
+  a pull request that does not explain the attack, and published after the fix. Attack a local instance of the release, never the
+  shared test installation (note `docs/internal/decisions/2026-10-18-la-fase-di-test.md`).
+
 ## Your own IVAO OAuth client
 
 Use a test OAuth client of your own — not the maintainer's — in `config/ivao-oauth.json` (gitignored; copy
