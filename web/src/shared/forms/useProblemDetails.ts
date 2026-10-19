@@ -20,6 +20,7 @@ const TITLE_BY_STATUS: Readonly<Record<number, string>> = {
   403: 'errors.forbidden.title',
   404: 'errors.notFound.title',
   409: 'errors.conflict.title',
+  429: 'errors.tooManyRequests.title',
 };
 
 export interface ProblemState {
