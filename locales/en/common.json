@@ -11,6 +11,10 @@
     "close": "Close",
     "breadcrumb": "Breadcrumb"
   },
+  "toast": {
+    "label": "Notification",
+    "region": "Notifications (F8)"
+  },
   "nav": {
     "home": "Home",
     "staff": "Staff",
@@ -376,7 +380,11 @@
       "noticeInfo": "A draft is only visible to the staff.",
       "noticeToast": "Show it as a toast",
       "dialogTrigger": "Open the dialog",
-      "dialogTitle": "A dialog"
+      "dialogTitle": "A dialog",
+      "toastError": "A refusal",
+      "toastWarning": "A warning",
+      "toastSuccess": "A confirmation",
+      "toastInfo": "A piece of information"
     },
     "registry": {
       "title": "Registries",

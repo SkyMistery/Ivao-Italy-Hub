@@ -206,6 +206,54 @@ export function NoticeSample() {
   );
 }
 
+/**
+ * The core's `Toaster`, through the one door a screen has to it: a toast in each of the four tones, so that the three
+ * borders and the filled red can be seen next to each other, and the «X» of each read in the language on screen.
+ */
+export function ToasterSample() {
+  const { t } = useTranslation();
+  const notice = useNotice();
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => notice({ tone: 'error', title: t('uiKit.sample.noticeError') })}
+      >
+        {t('uiKit.sample.toastError')}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => notice({ tone: 'warning', title: t('uiKit.sample.noticeWarning') })}
+      >
+        {t('uiKit.sample.toastWarning')}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => notice({ tone: 'success', title: t('uiKit.sample.noticeSuccess') })}
+      >
+        {t('uiKit.sample.toastSuccess')}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() =>
+          notice({
+            tone: 'info',
+            title: t('uiKit.sample.noticeInfo'),
+            description: t('uiKit.sample.heroLead'),
+          })
+        }
+      >
+        {t('uiKit.sample.toastInfo')}
+      </Button>
+    </div>
+  );
+}
+
 export function ConfirmDialogSample() {
   const { t } = useTranslation();
   return (

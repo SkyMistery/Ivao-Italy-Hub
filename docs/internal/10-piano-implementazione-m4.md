@@ -4309,6 +4309,77 @@ errori (NU1902/NU1903): `build-test` è rosso sulla #261, la #262 e la #263. Il 
 
 [i264q]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/264
 
+### E10r — Nucleo: il toast del nucleo dice le sue tre parole
+
+**Da dove viene**: non c'era in E0. La trova E4d (#263) e dalberone la porta a Carmine sull'issue #266: ogni toast dell'hub dice
+«Close» al lettore di schermo anche in italiano, come la «X» dei dialog prima di E10l. E10r si ferma una prima volta il 16 ottobre senza
+codice ([il commento][e266r]): con Atmosphere 3.1 il toast non si può comporre dai suoi atomi (non esportati, Radix impacchettato dentro),
+e le parole inglesi sono tre, non una. **Carmine ha deciso** ([la risposta][a266r] che sostituisce la (b), data in chat alla sessione
+master e pubblicata su sua istruzione): **(a)**, un toast del nucleo su `@radix-ui/react-toast`, con le classi di Atmosphere e le tre
+parole tradotte, al posto del `ToastProvider` di Atmosphere e dietro `useNotice`, una voce dell'elenco chiuso, una guardia come quella di
+E10l; la scrive dalberone ([la risposta del 18 ottobre][w266r]). Branch `m4/e10r-core-toast`, da `main` a `893a9b0c` (con E15b, la #301).
+**PR del nucleo**, diretta su `main`, non in coda, con la sua nota (caso b); niente in C#.
+
+1. **Il `Toaster` del nucleo**: provider, coda e viewport su Radix, con le classi di Atmosphere, i cinque secondi, lo swipe e i toni.
+2. **Le tre parole** in `locales/{lang}/common.json`, in ogni lingua della divisione.
+3. **`HubProviders`** lo monta al posto del `ToastProvider` di Atmosphere; **`useNotice`** non cambia forma; nessuna schermata cambia.
+4. **Una voce dell'elenco chiuso**, mostrata dalla galleria; **una guardia** contro il toast di Atmosphere.
+
+**Test**: vitest con le tre parole in italiano e in inglese, i cinque secondi, le classi dei toni, la guardia; la prova che cade sul codice
+di oggi.
+**Fatta quando**: un toast dice le sue tre parole nella lingua dello schermo, e nessun file di `web/src` usa più il toast di Atmosphere.
+
+**Com'è andata** (19 ottobre 2026, branch `m4/e10r-core-toast`, PR #308, del nucleo senza coda, da `main` a `893a9b0c`):
+
+- **Fatto** (nota nuova `2026-10-19-il-toast-del-nucleo`, **decisa**, con i link alle due risposte di Carmine):
+  - **`Toaster`** in `web/src/shared/ui/Toaster.tsx`: un contesto con la funzione che accoda, il `Provider` di Radix con
+    `label={t('toast.label')}` e lo swipe a destra, i toast (`Root` con titolo, descrizione e un `Close` con
+    `aria-label={t('common.close')}`), il `Viewport` con `label={t('toast.region')}`; le classi di `toastVariants`, `ToastViewport`,
+    `ToastClose`, `ToastTitle` e `ToastDescription` di Atmosphere 3.1.0 copiate come sono; cinque secondi se non detto;
+  - **`@radix-ui/react-toast` 1.2.23**, esatta, in `dependencies` di `web/`: la versione che Atmosphere 3.1.0 dichiara e impacchetta
+    (24 luglio 2026, React `^19.0` fra i peer); il lockfile la aveva già e aggiunge solo la riga del progetto;
+  - **`notices.ts`**: `useNotice` chiama `useToastQueue()` del `Toaster` al posto di `useToast()` di Atmosphere, con le stesse props e
+    gli stessi toni; **`Providers.tsx`**: `<Toaster>` al posto di `<ToastProvider>`, nello stesso punto;
+  - **la ventiseiesima voce** dell'elenco chiuso (`catalog.ts`), con la sua sezione nella galleria (`ToasterSample`, quattro bottoni, un
+    toast per tono passando da `useNotice`) e il suo paragrafo in `docs/UI-GUIDELINES.md` §3 (e la frase di `Notice` che nominava la coda
+    di Atmosphere);
+  - **sei chiavi nuove** in `locales/{en,it}/common.json`: `toast.label` («Notification», «Notifica»), `toast.region` («Notifications
+    (F8)», «Notifiche (F8)») e, per la galleria, `uiKit.sample.toastError`, `toastWarning`, `toastSuccess`, `toastInfo`;
+  - **i test** (vitest, 6): `web/src/shared/ui/Toaster.test.tsx`, con la guardia (nessun `Toast`, `ToastProvider` o `useToast` da
+    Atmosphere in `web/src`, e `@radix-ui/react-toast` solo in `Toaster.tsx`).
+- **Scostamenti dal prompt, scritti nella nota** (§2):
+  1. **il nome**: `Toaster`, non `ToastProvider`, perché è anche la coda e il viewport, e perché un nome uguale a quello di Atmosphere
+     avrebbe reso la guardia meno leggibile;
+  2. **`ToastAction` non è copiato**: `useNotice` non ha mai passato un'azione;
+  3. **la guardia guarda anche Radix**: un toast fatto a mano direttamente su `@radix-ui/react-toast` direbbe di nuovo «Close»;
+  4. **la chiave di un toast** è un numero che cresce invece dell'indice nella coda: lo stesso effetto, in una coda che come quella di
+     Atmosphere non toglie niente.
+- **Letti i test del maintainer prima** (19 ottobre): `Notice.test.tsx` (monta `HubProviders` e aspetta il toast: passa senza cambiare),
+  `uiKit.test.ts` (vuole una sezione per voce: c'è), `Chrome.test.tsx` e gli altri che montano `HubProviders`; nessun test o spec del
+  maintainer cerca «Close», «Notification» o «F8». Gli spec della formazione commentano l'annuncio «Notification …» e cercano il testo
+  del toast con `exact: true`: restano giusti.
+- **Verificato, in locale** (19 ottobre 2026, `main` a `893a9b0c`):
+  - `dotnet restore --force --no-http-cache` con l'audit acceso: verde; `dotnet build -c Release`: 0 avvisi, 0 errori; unità **1421/1421**;
+  - `pnpm lint`, `typecheck`, `format:check`, `i18n:check` verdi; `pnpm test` (`--maxWorkers=2`) **822/822** in 119 file; `build`
+    verde; `gen:api` senza differenze;
+  - i test nuovi 6/6, con `Notice.test.tsx`, `Dialog.test.tsx` e `uiKit.test.ts`; **la prova al contrario**: con `notices.ts` e
+    `Providers.tsx` di `main` (il toast di Atmosphere, i test tenuti) cadono 2 su 6 — l'italiano («Unable to find … name "Chiudi"») e la
+    guardia, che trova `app/Providers.tsx` e `shared/ui/notices.ts` —; i quattro che passano (l'inglese, la «X» che chiude, i cinque
+    secondi, le classi e lo swipe) passano anche sul toast di Atmosphere, cioè il nostro si comporta come il suo; rimessi i file, 6/6;
+  - la smoke (`--workers=2`, dietro il suo lock) **184/184** (1,1 minuti; rifatta perché la prima build era caduta durante la prova al
+    contrario: anche lei 184/184);
+  - `pnpm e2e:full` sul banco della fase (porta 5155, `ivaohub_e2e_e10r` creato da zero), dietro il lock di Mailpit: **73/73** al primo giro (33,3 minuti con la publish);
+  - **guardato sul banco** con uno script Playwright usa e getta (il banco riavviato sul 5155, lock di Mailpit tenuto), sulla galleria, i quattro toast in italiano e in inglese, gli attributi letti e non il testo della pagina: in italiano la «X» di ognuno ha `aria-label` «Chiudi», la regione «Notifiche (F8)», l'annuncio «Notifica …», e nessun `aria-label` inglese resta nella pagina; in inglese «Close», «Notifications (F8)», «Notification …»; lo swipe `right`; il rifiuto rosso pieno, gli altri tre col bordo giallo, verde e blu; il viewport `fixed` in basso a destra, largo 420 px; un toast solo se ne va dopo 5,35 s (i cinque secondi più l'animazione); a occhio, uguale al toast di prima;
+  - `.github/scripts/core-guard.sh` con Git Bash, sui file dalla merge base `893a9b0c`: quindici file, nessuno del maintainer, dodici del nucleo con la nota nuova — passa (uscita 0).
+- **Non verificato**:
+  - la CI (la dice la PR);
+  - l'integrazione: niente in C#;
+  - un lettore di schermo vero: i test e il banco leggono gli attributi nel DOM.
+
+[e266r]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6213206387
+[a266r]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6216418088
+[w266r]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6253185099
+
 ### E10s — Nucleo: la conservazione nell'audit
 
 **Da dove viene**: non c'era in E0. La chiede E17 ([la domanda 3 della #267][i267s]): `events-retention` cancella iscrizioni e posti

@@ -11,6 +11,10 @@
     "close": "Chiudi",
     "breadcrumb": "Percorso di navigazione"
   },
+  "toast": {
+    "label": "Notifica",
+    "region": "Notifiche (F8)"
+  },
   "nav": {
     "home": "Home",
     "staff": "Staff",
@@ -376,7 +380,11 @@
       "noticeInfo": "Una bozza la vede solo lo staff.",
       "noticeToast": "Mostralo come toast",
       "dialogTrigger": "Apri la finestra",
-      "dialogTitle": "Una finestra"
+      "dialogTitle": "Una finestra",
+      "toastError": "Un rifiuto",
+      "toastWarning": "Un avviso",
+      "toastSuccess": "Una conferma",
+      "toastInfo": "Un'informazione"
     },
     "registry": {
       "title": "Registri",
