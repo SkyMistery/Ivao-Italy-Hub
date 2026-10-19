@@ -40,7 +40,7 @@ It is exactly:
 `Hero`, `SectionHeader`, `StatTile`, `PageShell`, `EmptyState`, `LocaleSwitcher`, `LocaleFields`,
 `MarkdownContent`, `DataList`, `SchemaForm`, `ProblemAlert`, `DepartmentBadge`, `VisibilityBadge`,
 `StatusBadge`, `ConfirmDialog`, `Notice`, `MediaPicker`, `CalendarView`, `ContactForm`,
-`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`, `RatingBadge`, `Dialog`.
+`LiveStatusStrip`, `StaffSidebar`, `RouteMap`, `MessageThread`, `RatingBadge`, `Dialog`, `Toaster`.
 
 `StaffSidebar` is the navigation of the back office, and it was the first entry on this list that
 replaces something Atmosphere ships rather than adding something it lacks. The reason is narrow and
@@ -73,6 +73,20 @@ Draw a dialog with it, never with Atmosphere's `Dialog` or `Sheet` (whose conten
 «X»): `shared/ui/Dialog.test.tsx` fails on a screen that imports either, except the events' screens
 that are still waiting to move. It is not `ConfirmDialog`, which asks a question and is closed by
 its two buttons, and it is not the search palette, which is a bare `DialogContent` closed by Escape.
+
+`Toaster` is the third. Atmosphere's toast says three English words to a screen reader, written into
+the library: `"Close"` on the «X» of every toast, `"Notification"` before every toast it announces,
+and `"Notifications (F8)"` as the name of the corner they appear in. Unlike the dialog, it exports
+neither its parts nor a way to pass the words, and it bundles Radix inside itself, so nothing of ours
+can sit inside its provider. The hub's `Toaster` is therefore the provider, the queue and the viewport
+written again on `@radix-ui/react-toast` — the version Atmosphere bundles — with Atmosphere's classes
+copied as they are (the root and its two variants, the viewport, the «X», the title and the
+description), the same five seconds and the same swipe to the right; the three words are
+`common.close`, `toast.label` and `toast.region`. `HubProviders` mounts it once, and a screen never
+touches it: it says a toast with `useNotice()`. `shared/ui/Toaster.test.tsx` fails on a file that
+imports Atmosphere's `Toast`, `ToastProvider` or `useToast`, or that imports Radix's toast anywhere
+but in `Toaster.tsx`. When Atmosphere changes its toasts, the classes to bring in step are listed at
+the top of `Toaster.tsx`.
 
 `MediaPicker` chooses a file out of the library of a department, and it is on the list because two
 very different screens mount it: the library itself, and every block property that names a file. It
@@ -132,7 +146,7 @@ field: the form itself is `SchemaForm` reading `shared/ui/contact.ts`.
 something is worth their attention, something worked, something is worth knowing. It is on the list
 because it is mounted from anywhere, in both of its shapes — a panel that stays on the page, and the
 same sentence said in the corner of the screen and then gone, which is what `useNotice()` pushes into
-Atmosphere's toast queue. A confirmation is not something to close: "saved" has been read by the time
+the queue of the core's `Toaster`. A confirmation is not something to close: "saved" has been read by the time
 the eye is back on the page.
 
 ⚠️ It is **not** `ProblemAlert` and does not replace it. That one draws what the server refused,

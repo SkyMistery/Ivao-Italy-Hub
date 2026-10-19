@@ -6,7 +6,15 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 18 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
+**Ultimo aggiornamento:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
+#266), sul branch `m4/e10r-core-toast`, **PR #308** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `893a9b0c` (con
+E15b, #301). Una nota nuova, `2026-10-19-il-toast-del-nucleo`, caso (b), **decisa** da Carmine sull'issue #266 (la (a), [la
+risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6216418088) che sostituisce la (b), e [a
+dalberone](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6253185099)). Da E10r ogni toast dice «Chiudi», «Notifica» e
+«Notifiche (F8)» in italiano: il `Toaster` del nucleo al posto del `ToastProvider` di Atmosphere, dietro `useNotice`, e nessuna schermata
+cambia («Che cosa ha lasciato E10r», sotto). Con E10r **M4 è finita nel codice tranne il Gate Manager nell'hub**.
+
+**L'aggiornamento di E15b:** 18 ottobre 2026 — **fase E15b** (modulo, l'ultima di **M4b** e di M4: la conservazione di M4b, le prenotazioni
 della rete accanto al roster, il giro completo di M4b, `docs/FORKING.md` e il rapporto di chiusura di M4), sul branch
 `m4/e15b-retention-and-m4b-round`, **PR #301** verso `main`, **l'ultima della coda**: nata `--no-track` dalla testa di E14b `b2cd41b9`, ne ha
 unito le teste `1cba4907` ed `e5eb1d17` (con E10x, #299) e la testa di E10w `986c6116` (#300), e con la #293 unita **`main` a `f436c918`**
@@ -367,6 +375,30 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato E10r (19 ottobre 2026, branch `m4/e10r-core-toast`, PR #308, del nucleo; diretta su `main`, nata a `893a9b0c`)
+
+- **Che cosa c'è** (il dettaglio in `10`, E10r, «Com'è andata»; niente in C#, nessuna migrazione; una nota nuova,
+  `2026-10-19-il-toast-del-nucleo`, caso (b), decisa da Carmine):
+  - **`Toaster`** (`web/src/shared/ui/Toaster.tsx`), la **ventiseiesima voce** dell'elenco chiuso (`catalog.ts`), con la sua sezione
+    nella galleria (`ToasterSample`, un toast per tono) e il suo paragrafo in `docs/UI-GUIDELINES.md` §3: il provider, la coda e il
+    viewport dei toast, scritti di nuovo su **`@radix-ui/react-toast` 1.2.23** (dipendenza diretta nuova di `web/`, la versione che
+    Atmosphere 3.1.0 impacchetta) con le classi di Atmosphere copiate (la tabella è nella nota, §2.1), i cinque secondi e lo swipe a
+    destra;
+  - **le tre parole**: `common.close` (la «X», c'era da E10l), `toast.label` («Notifica», prima dell'annuncio di ogni toast) e
+    `toast.region` («Notifiche (F8)», il nome della regione), in `locales/{en,it}/common.json`;
+  - **`HubProviders`** monta il `Toaster` al posto del `ToastProvider` di Atmosphere; **`useNotice`** ci spinge dentro con le stesse
+    props e gli stessi toni (`TOAST_TONES` invariata). Nessuna schermata cambia;
+  - **la guardia** in `web/src/shared/ui/Toaster.test.tsx`: nessun file di `web/src` importa da Atmosphere `Toast`, `ToastProvider` o
+    `useToast`, e solo `Toaster.tsx` importa `@radix-ui/react-toast`.
+- **Che cosa deve sapere chi viene dopo**:
+  - un toast si dice **solo** con `useNotice()`; `useToastQueue` non è esportato da `shared/ui`, e un test che monta una schermata che lo
+    chiama monta `HubProviders` (senza, l'errore del nucleo lo dice);
+  - ⚠️ **quando Atmosphere sale di versione**, i suoi toast possono cambiare classi: la nota (§2.1) dice quali stringhe di `Toaster.tsx`
+    rimettere al passo, e `@radix-ui/react-toast` va portata alla versione che la nuova Atmosphere impacchetta;
+  - ⚠️ gli spec della smoke e di `e2e:full` che cercano il testo di un toast con `exact: true` restano giusti: l'annuncio di Radix
+    («Notifica …» / «Notification …») è ancora una regione viva a parte, ora con la parola della lingua;
+  - `ToastAction` non è copiato: `useNotice` non ha azioni.
 
 ### Che cosa ha lasciato E15b (17–18 ottobre 2026, branch `m4/e15b-retention-and-m4b-round`, PR #301; nata dalla testa di E14b `b2cd41b9`, in coda dopo la #293 di E14b e la #300 di E10w, con le loro teste `e5eb1d17` e `986c6116` unite)
 
