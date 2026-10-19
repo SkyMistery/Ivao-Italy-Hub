@@ -1,7 +1,10 @@
 # Il limite dei verbi dei membri
 
 **Data:** 19 ottobre 2026 — fase di test dopo M4 (nota `2026-10-18-la-fase-di-test.md`), PR del nucleo `fix/member-rate-limit`
-**Stato:** **Proposta** — la domanda del §5 è per Carmine.
+**Stato:** **decisa** da Carmine, in chat al master il 19 ottobre 2026 («Si, vanno bene entrambe»), pubblicata sulla PR su sua
+istruzione ([risposta][a315]): le due raccomandazioni del §5 sono accettate.
+
+[a315]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/315#issuecomment-6270163508
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il limite delle richieste esiste già nel nucleo (`AddRateLimiter` in
 `Program.cs`, la policy `auth` di `/auth` e di `/api/jobs/run`); lo si estende con una seconda policy che un modulo applica per nome,
 invece di lasciare a ogni modulo un contatore suo.
@@ -60,6 +63,9 @@ Le righe nei moduli Training ed Events toccano codice di `dalberone` (`CLAUDE.md
 dopo questa?** Raccomandazione: **in questa PR** — è il nucleo che applica il suo meccanismo, una riga per gruppo più lo `using`, senza
 logica del modulo; e il test sui verbi `/mine` resta verde solo con tutte le righe al loro posto. E **30 scritture al minuto per membro**
 come valore di partenza: va bene?
+
+**Decisa da Carmine** (19 ottobre 2026, [risposta][a315]): sì a entrambe — le righe in Training ed Events stanno in questa PR, e il
+valore di partenza è 30 scritture al minuto per membro.
 
 ## Da portare nel piano
 
