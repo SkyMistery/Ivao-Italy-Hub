@@ -11,6 +11,10 @@
     "close": "Close",
     "breadcrumb": "Breadcrumb"
   },
+  "toast": {
+    "label": "Notification",
+    "region": "Notifications (F8)"
+  },
   "nav": {
     "home": "Home",
     "staff": "Staff",

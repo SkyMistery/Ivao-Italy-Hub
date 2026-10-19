@@ -1,6 +1,7 @@
-import { useToast } from '@ivao/atmosphere-react';
 import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import type { ComponentType } from 'react';
+
+import { useToastQueue } from './Toaster';
 
 /**
  * The four tones a notice is said in, and the confirmation that says one in the corner of the
@@ -58,34 +59,32 @@ export const NOTICE_TONES: Readonly<Record<NoticeTone, Tone>> = {
  * the page, and a box that stays would push the editor down every time somebody pressed save.
  * Carmine chose this shape over a panel at the top of the editor.
  *
- * The toast itself is Atmosphere's — provider, queue, viewport, the swipe to dismiss and the five
- * seconds — so what is added here is only the tone, which its two variants do not carry. A screen
+ * The toast itself is the core's `Toaster` — Atmosphere's provider, queue, viewport, swipe to dismiss
+ * and five seconds written again on Radix with its classes, so that its three words are translated
+ * (#266) — and what is added here is only the tone, which its two variants do not carry. A screen
  * therefore never writes a colour: it says which of the four this is, exactly as it would to
  * `Notice`, and the two look alike because they read the same table.
  *
- * ⚠️ `ToastProvider` is mounted in `HubProviders` and nowhere else. A test that mounts a screen
- * calling this without it gets Atmosphere's own error saying so, which is the right failure.
+ * ⚠️ `Toaster` is mounted in `HubProviders` and nowhere else. A test that mounts a screen calling
+ * this without it gets the core's error saying so, which is the right failure.
  */
 export function useNotice(): (notice: {
   tone: NoticeTone;
   title: string;
   description?: string;
-  /** Milliseconds. Atmosphere's default is five seconds, which is right for a confirmation. */
+  /** Milliseconds. Five seconds unless told otherwise, as Atmosphere's, which is right for a confirmation. */
   duration?: number;
 }) => void {
-  const toast = useToast();
+  const toast = useToastQueue();
 
   return ({ tone, title, description, duration }) =>
     toast({
       title,
       ...(description === undefined ? {} : { description }),
       ...(duration === undefined ? {} : { duration }),
-      toastProps: {
-        // The refusal borrows the toast's own destructive variant, which is a filled red rather
-        // than the tinted panel `Notice` draws: a toast is small and a tint on it does not read.
-        ...(tone === 'error' ? { variant: 'destructive' as const } : {}),
-        ...(tone === 'error' ? {} : { className: TOAST_TONES[tone] }),
-      },
+      // The refusal borrows the toast's own destructive variant, which is a filled red rather
+      // than the tinted panel `Notice` draws: a toast is small and a tint on it does not read.
+      ...(tone === 'error' ? { variant: 'destructive' as const } : { className: TOAST_TONES[tone] }),
     });
 }
 

@@ -11,6 +11,10 @@
     "close": "Chiudi",
     "breadcrumb": "Percorso di navigazione"
   },
+  "toast": {
+    "label": "Notifica",
+    "region": "Notifiche (F8)"
+  },
   "nav": {
     "home": "Home",
     "staff": "Staff",

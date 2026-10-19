@@ -1,8 +1,10 @@
-import { ThemeProvider, ToastProvider, TooltipProvider } from '@ivao/atmosphere-react';
+import { ThemeProvider, TooltipProvider } from '@ivao/atmosphere-react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import type { i18n as I18n } from 'i18next';
 import type { ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
+
+import { Toaster } from '../shared/ui/Toaster';
 
 /**
  * Everything the application needs above the router, in one place.
@@ -15,9 +17,11 @@ import { I18nextProvider } from 'react-i18next';
  *
  * So: a provider the application needs goes here, and nowhere else.
  *
- * `ToastProvider` is here for the same reason and by the same rule. It keeps the queue and draws
- * the viewport a confirmation appears in, `useNotice` pushes into it, and a screen that calls that
- * without this above it gets Atmosphere's own error rather than a silence.
+ * `Toaster` is here for the same reason and by the same rule. It keeps the queue and draws the
+ * viewport a confirmation appears in, `useNotice` pushes into it, and a screen that calls that
+ * without this above it gets the core's error rather than a silence. It is the core's, not
+ * Atmosphere's `ToastProvider`, so that its three words are said in the language on screen (#266);
+ * it sits inside `I18nextProvider` because it asks for them.
  *
  * On `TooltipProvider` in particular — several Atmosphere components wrap themselves in a Radix
  * tooltip, `DarkModeToggle` among them, and it sits in the header of every layout. A tooltip
@@ -37,7 +41,7 @@ export function HubProviders({
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <TooltipProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <Toaster>{children}</Toaster>
           </TooltipProvider>
         </ThemeProvider>
       </QueryClientProvider>
