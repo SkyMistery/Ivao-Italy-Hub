@@ -8,12 +8,12 @@
 
 | # | Lotto | Dove | Righe | Stato |
 |---|---|---|---|---|
-| 1 | **Permessi**: l'unico gestore, il catalogo, i permessi effettivi, i grant e il loro ambito, il filtro globale, la guardia dell'interceptor, `MapCrud` e la lista generata, `/api/me` | `Core/Auth/Permissions/`, `Core/Auth/` (grant, posizioni, superadmin, `ICurrentUser`, `HubClaims`, sincronizzazione), `Core/Data/` (`HubSaveChangesInterceptor`, `VisibilityQueryFilter`, `Crud/`), `Web/Endpoints/MeEndpoints.cs` | ~8 000 | 🔎 |
-| 2 | **Accesso e token**: OIDC di IVAO, cookie, logout, CSRF, token personali e contratti, token dei job, header del proxy, limiti di frequenza, header di sicurezza | `Core/Auth/Ivao*.cs`, `PersonalToken*`, `ContractVersion`, `SecurityStampCache`, `Web/` (`HubPipeline`, `SecurityHeaders`, `AuthEndpoints`, `JobTokenLogMask`, `E2E/`), `Core/Services/MemberWriteLimit.cs` | ~4 000 | 🔎 |
-| 3 | **Contenuti, blocchi e file**: pubblicazione e versioni, walker, blocchi Data, blocco interattivo, upload e media, indirizzi, ricerca, proiezioni | `Core/Content/`, `Data/FullTextSearch.cs`, `web/src/blocks/` | ~15 000 | 🔎 |
+| 1 | **Permessi**: l'unico gestore, il catalogo, i permessi effettivi, i grant e il loro ambito, il filtro globale, la guardia dell'interceptor, `MapCrud` e la lista generata, `/api/me` | `Core/Auth/Permissions/`, `Core/Auth/` (grant, posizioni, superadmin, `ICurrentUser`, `HubClaims`, sincronizzazione), `Core/Data/` (`HubSaveChangesInterceptor`, `VisibilityQueryFilter`, `Crud/`), `Web/Endpoints/MeEndpoints.cs` | ~8 000 | ✅ advisory, #319 |
+| 2 | **Accesso e token**: OIDC di IVAO, cookie, logout, CSRF, token personali e contratti, token dei job, header del proxy, limiti di frequenza, header di sicurezza | `Core/Auth/Ivao*.cs`, `PersonalToken*`, `ContractVersion`, `SecurityStampCache`, `Web/` (`HubPipeline`, `SecurityHeaders`, `AuthEndpoints`, `JobTokenLogMask`, `E2E/`), `Core/Services/MemberWriteLimit.cs` | ~4 000 | ✅ advisory, #320 |
+| 3 | **Contenuti, blocchi e file**: pubblicazione e versioni, walker, blocchi Data, blocco interattivo, upload e media, indirizzi, ricerca, proiezioni | `Core/Content/`, `Data/FullTextSearch.cs`, `web/src/blocks/` | ~15 000 | ✅ advisory, #317, #318, #321 |
 | 4 | **Job, rete e avvio**: job e il loro recupero, client IVAO e sincronizzazioni, spazio aereo, meteo, inizializzazione e migrazioni, diagnostica | `Core/Jobs/`, `Core/Ivao/`, `Core/Airspace/`, `Core/Weather/`, `Core/Atc/`, `Core/Services/` (avvio, blocchi, tempi), `Data/HubDatabaseInitializer.cs` | ~10 000 | ⬜ |
 | 5 | **Persone e tracce**: cancellazione dei dati, audit e conservazione, notifiche e mail, award, preferenze, divisione | `Core/Privacy/`, `Core/People/`, `Services/Audit*`, `Core/Notifications/`, `Core/Awards/`, `Core/Preferences/`, `Core/Division/`, `Core/Localization/`, `Core/Modules/` | ~5 500 | ⬜ |
-| 6 | **Eventi, server** | `src/IvaoHub.Modules.Events/` | ~22 000 | 🔎 |
+| 6 | **Eventi, server** | `src/IvaoHub.Modules.Events/` | ~22 000 | ✅ #322 |
 | 7 | **Training, server** | `src/IvaoHub.Modules.Training/` | ~7 400 | ⬜ |
 | 8 | **Tour, server** | `src/IvaoHub.Modules.FlightOps/` | ~18 000 | ⬜ |
 | 9 | **Web del nucleo**: editor, liste e form generati, `/api/me`, router, pagine pubbliche e staff | `web/src/features/`, `web/src/shared/`, `web/src/routes/` | ~47 000 | ⬜ |
@@ -51,3 +51,13 @@ La lista di sicurezza (`sicurezza-lista-di-controllo.md`) per le falle, e questa
 ## 4. Gli esiti
 
 Qui sotto, per ogni lotto chiuso, una riga: quanti rilievi letti, quanti confermati, con i numeri.
+
+Il primo giro (20–21 ottobre 2026, lotti 1, 2, 3 e 6 in parallelo) ha prodotto tre advisory privati, uno per ciascuno di questi temi:
+contenuti pubblicati che mostrano campi mai pubblicati (lotto 3), sessioni che non scadono (lotti 1 e 2, trovato due volte), grant su una
+riga e liste del dipartimento (lotto 1, con una domanda a Carmine).
+
+- **Lotto 1**: 12 rilievi; uno nell'advisory dei grant, uno in quello delle sessioni, gli altri dieci in #319 (minori, uno ⚖️ per Carmine).
+- **Lotto 2**: 10 rilievi; il primo è lo stesso dell'advisory delle sessioni e il logout è stato messo lì; il resto in #320 (minori).
+- **Lotto 3**: 13 rilievi; due nell'advisory dei contenuti, #317 e #318 (major), sette in #321 (minori), una pagina enorme di ricerca è
+  in #319.
+- **Lotto 6**: 5 rilievi, tutti minori, in #322 a `dalberone`; nessun blocker, niente di nuovo sui dati altrui.
