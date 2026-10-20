@@ -11,11 +11,11 @@
 | 1 | **Permessi**: l'unico gestore, il catalogo, i permessi effettivi, i grant e il loro ambito, il filtro globale, la guardia dell'interceptor, `MapCrud` e la lista generata, `/api/me` | `Core/Auth/Permissions/`, `Core/Auth/` (grant, posizioni, superadmin, `ICurrentUser`, `HubClaims`, sincronizzazione), `Core/Data/` (`HubSaveChangesInterceptor`, `VisibilityQueryFilter`, `Crud/`), `Web/Endpoints/MeEndpoints.cs` | ~8 000 | ✅ advisory, #319 |
 | 2 | **Accesso e token**: OIDC di IVAO, cookie, logout, CSRF, token personali e contratti, token dei job, header del proxy, limiti di frequenza, header di sicurezza | `Core/Auth/Ivao*.cs`, `PersonalToken*`, `ContractVersion`, `SecurityStampCache`, `Web/` (`HubPipeline`, `SecurityHeaders`, `AuthEndpoints`, `JobTokenLogMask`, `E2E/`), `Core/Services/MemberWriteLimit.cs` | ~4 000 | ✅ advisory, #320 |
 | 3 | **Contenuti, blocchi e file**: pubblicazione e versioni, walker, blocchi Data, blocco interattivo, upload e media, indirizzi, ricerca, proiezioni | `Core/Content/`, `Data/FullTextSearch.cs`, `web/src/blocks/` | ~15 000 | ✅ advisory, #317, #318, #321 |
-| 4 | **Job, rete e avvio**: job e il loro recupero, client IVAO e sincronizzazioni, spazio aereo, meteo, inizializzazione e migrazioni, diagnostica | `Core/Jobs/`, `Core/Ivao/`, `Core/Airspace/`, `Core/Weather/`, `Core/Atc/`, `Core/Services/` (avvio, blocchi, tempi), `Data/HubDatabaseInitializer.cs` | ~10 000 | ⬜ |
-| 5 | **Persone e tracce**: cancellazione dei dati, audit e conservazione, notifiche e mail, award, preferenze, divisione | `Core/Privacy/`, `Core/People/`, `Services/Audit*`, `Core/Notifications/`, `Core/Awards/`, `Core/Preferences/`, `Core/Division/`, `Core/Localization/`, `Core/Modules/` | ~5 500 | ⬜ |
+| 4 | **Job, rete e avvio**: job e il loro recupero, client IVAO e sincronizzazioni, spazio aereo, meteo, inizializzazione e migrazioni, diagnostica | `Core/Jobs/`, `Core/Ivao/`, `Core/Airspace/`, `Core/Weather/`, `Core/Atc/`, `Core/Services/` (avvio, blocchi, tempi), `Data/HubDatabaseInitializer.cs` | ~10 000 | ✅ #324, #325 |
+| 5 | **Persone e tracce**: cancellazione dei dati, audit e conservazione, notifiche e mail, award, preferenze, divisione | `Core/Privacy/`, `Core/People/`, `Services/Audit*`, `Core/Notifications/`, `Core/Awards/`, `Core/Preferences/`, `Core/Division/`, `Core/Localization/`, `Core/Modules/` | ~5 500 | ✅ #323, #326 |
 | 6 | **Eventi, server** | `src/IvaoHub.Modules.Events/` | ~22 000 | ✅ #322 |
-| 7 | **Training, server** | `src/IvaoHub.Modules.Training/` | ~7 400 | ⬜ |
-| 8 | **Tour, server** | `src/IvaoHub.Modules.FlightOps/` | ~18 000 | ⬜ |
+| 7 | **Training, server** | `src/IvaoHub.Modules.Training/` | ~7 400 | ✅ #327 |
+| 8 | **Tour, server** | `src/IvaoHub.Modules.FlightOps/` | ~18 000 | ✅ advisory, #328 |
 | 9 | **Web del nucleo**: editor, liste e form generati, `/api/me`, router, pagine pubbliche e staff | `web/src/features/`, `web/src/shared/`, `web/src/routes/` | ~47 000 | ⬜ |
 | 10 | **Web dei moduli** | `web/src/modules/events/`, `training/`, `flightops/` | ~32 000 | ⬜ |
 
@@ -61,3 +61,13 @@ riga e liste del dipartimento (lotto 1, con una domanda a Carmine).
 - **Lotto 3**: 13 rilievi; due nell'advisory dei contenuti, #317 e #318 (major), sette in #321 (minori), una pagina enorme di ricerca è
   in #319.
 - **Lotto 6**: 5 rilievi, tutti minori, in #322 a `dalberone`; nessun blocker, niente di nuovo sui dati altrui.
+
+Il secondo giro (21 ottobre 2026, lotti 4, 5, 7 e 8 in parallelo) ha allargato un advisory privato già aperto, quello delle mail dei
+membri senza freno: un verbo dei Tour (la segnalazione di un leg) che il limite della 0.10.1 non raggiunge.
+
+- **Lotto 4**: 8 rilievi; il client IVAO che lancia dove promette `null` in #324 (major), gli altri sette in #325 (minori).
+- **Lotto 5**: 9 rilievi; il ban tenuto e gli IP degli accessi che riportano alla persona cancellata in #323 (major), sei in #326
+  (minori), la mail della cessione di Eventi aggiunta a #322.
+- **Lotto 7**: 5 rilievi, tutti minori, in #327 a `dalberone` (uno ⚖️ per Carmine); nessun blocker.
+- **Lotto 8**: 13 rilievi; uno nell'advisory delle mail, il job dei controlli cieco sui rapporti precedenti e gli altri undici in #328
+  (due ⚖️ per Carmine).
