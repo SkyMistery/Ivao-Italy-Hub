@@ -16,8 +16,8 @@
 | 6 | **Eventi, server** | `src/IvaoHub.Modules.Events/` | ~22 000 | ✅ #322 |
 | 7 | **Training, server** | `src/IvaoHub.Modules.Training/` | ~7 400 | ✅ #327 |
 | 8 | **Tour, server** | `src/IvaoHub.Modules.FlightOps/` | ~18 000 | ✅ advisory, #328 |
-| 9 | **Web del nucleo**: editor, liste e form generati, `/api/me`, router, pagine pubbliche e staff | `web/src/features/`, `web/src/shared/`, `web/src/routes/` | ~47 000 | ⬜ |
-| 10 | **Web dei moduli** | `web/src/modules/events/`, `training/`, `flightops/` | ~32 000 | ⬜ |
+| 9 | **Web del nucleo**: editor, liste e form generati, `/api/me`, router, pagine pubbliche e staff | `web/src/features/`, `web/src/shared/`, `web/src/routes/` | ~47 000 | ✅ #329–#332 |
+| 10 | **Web dei moduli** | `web/src/modules/events/`, `training/`, `flightops/` | ~32 000 | ✅ #331, #333, #334 |
 
 Le righe sono del codice senza test né migrazioni (conto del 20 ottobre 2026).
 
@@ -71,3 +71,14 @@ membri senza freno: un verbo dei Tour (la segnalazione di un leg) che il limite 
 - **Lotto 7**: 5 rilievi, tutti minori, in #327 a `dalberone` (uno ⚖️ per Carmine); nessun blocker.
 - **Lotto 8**: 13 rilievi; uno nell'advisory delle mail, il job dei controlli cieco sui rapporti precedenti e gli altri undici in #328
   (due ⚖️ per Carmine).
+
+Il terzo giro (21 ottobre 2026, lotti 9 e 10; il 9 diviso fra due letture, `features/` + `routes/` e `shared/`) non ha trovato niente di
+sfruttabile. Uno dei tre major è stato visto anche sulla prova, con una sola lettura senza accesso: `/staff` porta a «pagina non
+trovata» invece che all'accesso di IVAO.
+
+- **Lotto 9**: 21 rilievi; l'accesso dalle pagine protette (#329), l'editor che sovrascrive un altro redattore (#330) e il form che nasconde
+  i rifiuti senza campo (#331) sono major; il permesso del blocco interattivo era già #318; gli altri in #332 (minori).
+- **Lotto 10**: 8 rilievi; i rifiuti di Eventi che non si vedono sono la faccia di #331; Eventi e Training in #333 a `dalberone`, Tour in
+  #334 (minori).
+
+**Tutti e dieci i lotti sono letti.** Quello che resta è nelle issue e negli advisory: la correzione, e le domande ⚖️ a Carmine.
