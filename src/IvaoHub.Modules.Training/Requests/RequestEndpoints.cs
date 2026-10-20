@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Dates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -26,7 +27,8 @@ public static class RequestEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        var mine = app.MapGroup(Pattern).WithTags("TrainingMine").RequireAuthorization(HubPolicies.SignedIn);
+        var mine = app.MapGroup(Pattern).WithTags("TrainingMine").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         mine.MapGet("/", MineAsync)
             .WithName("TrainingMine")

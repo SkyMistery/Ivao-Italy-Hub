@@ -4,6 +4,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.Events.Bookings;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Staff;
@@ -69,7 +70,8 @@ public static class RegistrationEndpoints
             options.ToDetail = registration => StaffRegistrations.Row(registration, noNames);
         });
 
-        var mine = app.MapGroup(MinePattern).WithTags("EventRegistrations").RequireAuthorization(HubPolicies.SignedIn);
+        var mine = app.MapGroup(MinePattern).WithTags("EventRegistrations").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         mine.MapGet("/", (MemberRegistrations registrations, HttpContext http) => registrations.MineAsync(http.RequestAborted))
             .WithName("EventsMyRegistrations")
@@ -115,7 +117,8 @@ public static class RegistrationEndpoints
             options.ToDetail = seat => StaffSeats.Row(seat, activity: null, noSeatNames);
         });
 
-        var seats = app.MapGroup(MySeatsPattern).WithTags("EventSeats").RequireAuthorization(HubPolicies.SignedIn);
+        var seats = app.MapGroup(MySeatsPattern).WithTags("EventSeats").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         seats.MapPost("/", TakeSeatAsync)
             .WithName("EventsTakeSeat")

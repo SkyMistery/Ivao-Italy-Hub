@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -23,7 +24,8 @@ public static class AvailabilityEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        var mine = app.MapGroup(MinePattern).WithTags("EventAtc").RequireAuthorization(HubPolicies.SignedIn);
+        var mine = app.MapGroup(MinePattern).WithTags("EventAtc").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         mine.MapGet("/", (MemberAvailability availability, HttpContext http) => availability.MineAsync(http.RequestAborted))
             .WithName("EventsMyAvailability")

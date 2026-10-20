@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Threads;
 using Microsoft.AspNetCore.Builder;
@@ -31,7 +32,8 @@ public static class PirepEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        var tour = app.MapGroup(TourPattern).WithTags("FlightOpsReports").RequireAuthorization(HubPolicies.SignedIn);
+        var tour = app.MapGroup(TourPattern).WithTags("FlightOpsReports").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         tour.MapGet("/sessions", SessionsAsync)
             .WithName("FlightOpsReportSessions")
@@ -56,7 +58,8 @@ public static class PirepEndpoints
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound);
 
-        var report = app.MapGroup(Pattern).WithTags("FlightOpsReports").RequireAuthorization(HubPolicies.SignedIn);
+        var report = app.MapGroup(Pattern).WithTags("FlightOpsReports").RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites);
 
         report.MapGet("/{id:long}", ReadAsync)
             .WithName("FlightOpsReport")

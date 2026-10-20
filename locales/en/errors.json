@@ -12,6 +12,9 @@
     "notFound": {
       "title": "Not found"
     },
+    "tooManyRequests": {
+      "title": "Too many requests in a short time: wait a minute and try again"
+    },
     "required": "This field is required.",
     "localized": {
       "missing": "Fill this field in for every language of the division.",

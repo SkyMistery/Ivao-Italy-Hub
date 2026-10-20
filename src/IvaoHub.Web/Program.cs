@@ -194,10 +194,15 @@ builder.Services.AddHubAwards();
 builder.Services.AddHubJobs();
 
 // The login is the one place an outsider can make the server do work before proving anything; the address of the host's
-// scheduled task, which refuses a wrong token, is limited the same way, so that refusals cannot fill the log.
+// scheduled task, which refuses a wrong token, is limited the same way, so that refusals cannot fill the log. The writing
+// verbs of members are limited too, each member apart, by the core's policy a module applies by name (note
+// 2026-10-19-il-limite-dei-verbi-dei-membri); every limit answers with the same ProblemDetails.
+builder.Services.AddMemberWriteLimit();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = HubRateLimits.RejectAsync;
+    options.AddMemberWritesPolicy();
     options.AddPolicy(AuthEndpoints.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions
@@ -340,7 +345,6 @@ app.UseSecurityHeaders();
 app.UseCorrelationId();
 app.UseSerilogRequestLogging();
 app.UseNoStoreForApi();
-app.UseRateLimiter();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -350,6 +354,11 @@ app.UseStaticFiles();
 app.UseCrossSiteRequestGuard();
 
 app.UseAuthentication();
+
+// After authentication, so that the members' limit counts a member by VID; before authorization, so that a refused call is
+// counted too.
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
 // A module closed for maintenance answers reads and refuses writes. After authentication so that

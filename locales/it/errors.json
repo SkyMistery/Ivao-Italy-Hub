@@ -12,6 +12,9 @@
     "notFound": {
       "title": "Non trovato"
     },
+    "tooManyRequests": {
+      "title": "Troppe richieste in poco tempo: aspetta un minuto e riprova"
+    },
     "required": "Questo campo è obbligatorio.",
     "localized": {
       "missing": "Compila questo campo in tutte le lingue della divisione.",
