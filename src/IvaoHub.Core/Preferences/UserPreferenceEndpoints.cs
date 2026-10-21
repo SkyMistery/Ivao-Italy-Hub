@@ -101,6 +101,7 @@ public static class UserPreferenceEndpoints
 
             return TypedResults.Ok(new UserPreferenceDto(key, body.Value));
         })
+        .RequireRateLimiting(HubRateLimits.MemberWrites)
         .WithName("MeSetPreference")
         .RequireAuthorization(HubPolicies.SignedIn);
 
