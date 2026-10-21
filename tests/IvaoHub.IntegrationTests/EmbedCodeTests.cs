@@ -122,18 +122,32 @@ public sealed class EmbedCodeTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task APageBornFromATemplateWithCodeIsMadeOnlyByWhoeverMayEmbedIt()
+    public async Task ATemplatesCodeCopiedUnchangedAsksNothingAndChangingItDoes()
     {
+        // Carmine, 21 October 2026, on #341: the code of a template was checked when the template was
+        // saved, so a page born from it carries it unchanged without Content.EmbedCode; adding code, or
+        // changing what came from the template, asks for it on the new page as on any other.
         var token = TestContext.Current.CancellationToken;
-        var (coordinator, coder) = await PeopleAsync(token);
+        var (coordinator, _) = await PeopleAsync(token);
         var template = await TemplateAsync(token);
 
-        using var refused = await FromTemplateAsync(coordinator, template, token);
-        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
-        Assert.Equal("errors.body.sourceNotPermitted", await FirstErrorAsync(refused, "body.sections[0].blocks[1].source", token));
-
-        using var made = await FromTemplateAsync(coder, template, token);
+        using var made = await FromTemplateAsync(coordinator, template, token);
         Assert.True(made.StatusCode == HttpStatusCode.Created, await made.Content.ReadAsStringAsync(token));
+        var page = await made.Content.ReadFromJsonAsync<JsonElement>(token);
+        var id = page.GetProperty("id").GetInt64();
+
+        var current = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{id}", token);
+        var body = JsonNode.Parse(current.GetProperty("body").GetRawText())!;
+        body["sections"]![0]!["blocks"]![1]!["source"] = OtherCode;
+
+        using var changed = await SendAsync(
+            coordinator,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{id}",
+            Payload(current.GetProperty("slug").GetString()!, body, current.GetProperty("rowVersion").GetString()),
+            token);
+        Assert.Equal(HttpStatusCode.BadRequest, changed.StatusCode);
+        Assert.Equal("errors.body.sourceNotPermitted", await FirstErrorAsync(changed, "body.sections[0].blocks[1].source", token));
     }
 
     private static string Slug() => $"c{Guid.NewGuid():N}"[..14];

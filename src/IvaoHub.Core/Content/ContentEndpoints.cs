@@ -290,12 +290,16 @@ public static class ContentEndpoints
     }
 
     /// <summary>
-    /// The code of interactive blocks this body adds or changes against what the row held, refused to
-    /// whoever does not hold <see cref="CorePermissions.ContentEmbedCode"/> on the row (note
-    /// 2026-09-12-il-blocco-interattivo §5, #318): the palette hides the block in the browser, and this is
-    /// the rule. Asked of the one authorization handler, on the row. Code kept as it was, or taken away,
-    /// asks nothing: a coordinator may edit the text around an animation somebody else wrote. One refusal
-    /// per block, on its <c>source</c>, where the editor draws it.
+    /// The code of interactive blocks this body adds or changes against what it came from — the row as it
+    /// was stored, or the template a page is made from —, refused to whoever does not hold
+    /// <see cref="CorePermissions.ContentEmbedCode"/> on the row (note 2026-09-12-il-blocco-interattivo §5,
+    /// #318): the palette hides the block in the browser, and this is the rule. Asked of the one
+    /// authorization handler, on the row. Code kept as it was, or taken away, asks nothing: a coordinator
+    /// may edit the text around an animation somebody else wrote, and a page born from a template carries
+    /// its code unchanged, checked when the template was saved (Carmine, 21 October 2026, on #341). One
+    /// refusal per block, on its <c>source</c>, where the editor draws it.
+    /// <para>Compared as code and not by block: a copy from a template gives every block a new identifier,
+    /// and code already there moved to another block is still not new code.</para>
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, string[]>?> CodeNotTheirsAsync(
         ContentEntry content,
@@ -305,11 +309,11 @@ public static class ContentEndpoints
         ClaimsPrincipal user)
     {
         var held = before is null
-            ? new Dictionary<string, string>(StringComparer.Ordinal)
-            : walker.Sources(JsonNode.Parse(before)).ToDictionary(block => block.Id, block => block.Source, StringComparer.Ordinal);
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : walker.Sources(JsonNode.Parse(before)).Select(block => block.Source).ToHashSet(StringComparer.Ordinal);
 
         var written = walker.Sources(JsonNode.Parse(content.BodyJson))
-            .Where(block => !held.TryGetValue(block.Id, out var source) || !string.Equals(source, block.Source, StringComparison.Ordinal))
+            .Where(block => !held.Contains(block.Source))
             .ToList();
 
         if (written.Count == 0
@@ -415,8 +419,8 @@ public static class ContentEndpoints
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
         }
 
-        // A template's code is code all the same: the page is born with it, so it is added by whoever makes the page.
-        if (await CodeNotTheirsAsync(page, before: null, walker, authorization, http.User) is { } code)
+        // Against the template: its code copied unchanged asks nothing, anything else the page carries does.
+        if (await CodeNotTheirsAsync(page, template.BodyJson, walker, authorization, http.User) is { } code)
         {
             return CrudProblems.Validation(code, new Dictionary<string, string[]>(StringComparer.Ordinal), catalog, currentUser.Locale);
         }
