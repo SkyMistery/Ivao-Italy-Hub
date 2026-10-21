@@ -2,8 +2,12 @@
 
 **Data:** 21 ottobre 2026 — fase di test dopo M4 (nota `2026-10-18-la-fase-di-test.md`), revisione del codice del master, lotto 3
 (nota `2026-10-20-la-revisione-del-codice.md`); accanto alla correzione `2026-10-21-il-pubblico-legge-la-versione.md`.
-**Stato:** **Proposta** — la domanda è di Carmine (§4). Nessun codice in questa nota: la PR `fix/content-published-version` porta
-ricerca, elenchi e lettura pubblica sulla versione per **titolo e corpo**, e si ferma qui.
+**Stato:** **decisa** da Carmine, in chat al master il 21 ottobre 2026 («Tutte e due come suggerisci tu: la 2 per i campi fuori dalla
+versione»), pubblicata sulla PR su sua istruzione ([risposta][a339]): la raccomandazione 2 del §3. Nessun codice in questa nota: la PR
+`fix/content-published-version` porta ricerca, elenchi e lettura pubblica sulla versione per **titolo e corpo**; la 2 è una PR sua,
+dopo quella.
+
+[a339]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/339#issuecomment-6314699258
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: che cosa appartiene alla versione è una scelta di progetto, non un dettaglio della
 correzione.
 
@@ -65,9 +69,16 @@ gestore, e un test per campo.
 Raccomandazione: la 2 del §3 — riassunto, SEO, collezioni, copertina, file e piè di pagina nella versione; visibilità e indirizzo di
 una riga online solo da chi può pubblicarla (e approvarla, per le pagine), con i controlli della pubblicazione.
 
+**Decisa da Carmine** (21 ottobre 2026, [risposta][a339]): la 2. Riassunto, SEO, collezioni, copertina, file e piè di pagina si
+copiano nella versione alla pubblicazione e i lettori pubblici li prendono da lì; su una riga con una versione pubblicata visibilità,
+slug e genitore li cambia solo chi può pubblicarla (`Content.Publish`, e `Content.Approve` dove il tipo passa dall'approvazione), e la
+modifica ripassa i controlli della pubblicazione (immagini, catture); le date di un documento, `Pinned` e `Sort` restano della riga.
+Il codice è una PR del nucleo dopo la #339: migrazione additiva di `cms_content_versions`, i lettori pubblici, il rifiuto nel
+`BeforeSave` dei contenuti attraverso l'unico gestore, un test per campo.
+
 ## Da portare nel piano
 
-Dopo la risposta:
+Con la PR del codice (la 2):
 
 - Design M0 §5.5 (pubblicazione) e §3.5 (visibilità): quali campi porta una versione; chi cambia visibilità e indirizzo di una riga
   online.
