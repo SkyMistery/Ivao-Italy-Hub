@@ -44,6 +44,20 @@ public interface IPublishable
 }
 
 /// <summary>
+/// A publishable row whose public face is a version of its own, kept apart from the draft the row holds: a page, a
+/// news item, a document. It is online from its first publication on, whatever the draft does meanwhile — waiting
+/// for approval included, when the public keeps reading the version before (note
+/// 2026-09-13-contenuti-centralizzati §3.2, #317). For such a row <see cref="IPublishable.Status"/> says where the
+/// draft stands, so the global query filter and the interceptor ask this instead (note
+/// 2026-10-21-il-pubblico-legge-la-versione).
+/// </summary>
+public interface IPublishedAsVersion : IPublishable
+{
+    /// <summary>The version the public reads; null while nothing of the row has been published.</summary>
+    long? PublishedVersionId { get; }
+}
+
+/// <summary>
 /// Who wrote the row and when. The values are filled by the interceptor and never by an endpoint,
 /// so "created_by" always means the same thing.
 /// </summary>

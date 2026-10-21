@@ -77,6 +77,24 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheFrameOfAPageNotForEverybodyIsKeptOnlyByTheBrowserThatAsked()
+    {
+        // Who may read a page can change, so only the frame of a public one may sit in a shared cache
+        // for a year: the rule a file of the library follows.
+        var token = TestContext.Current.CancellationToken;
+        var content = await SeedAsync(publish: true, token, Visibility.Members);
+
+        using var member = _factory.CreateApiClient();
+        await _factory.SignInAsync(member, OtherDepartmentVid, token);
+        using var response = await member.GetAsync($"/embed/{content}/1/b_live", token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.Private);
+        Assert.False(response.Headers.CacheControl?.Public);
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString() ?? "", StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ADraftIsForWhoeverMayEditThatRowAndNobodyElse()
     {
         var token = TestContext.Current.CancellationToken;
@@ -183,7 +201,10 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// written straight into the database: what is being tested is the endpoint, and going through
     /// the editor's own API to get there would be testing that instead.
     /// </summary>
-    private async Task<long> SeedAsync(bool publish, CancellationToken cancellationToken)
+    private async Task<long> SeedAsync(
+        bool publish,
+        CancellationToken cancellationToken,
+        Visibility visibility = Visibility.Public)
     {
         await SeedUserAsync(WebCoordinatorVid, "IT-WM", cancellationToken);
         await SeedUserAsync(OtherDepartmentVid, "IT-EC", cancellationToken);
@@ -225,7 +246,7 @@ public sealed class EmbedFrameTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 new KeyValuePair<string, string>("en", "With an interactive block"),
             ]),
             BodyJson = body.ToJsonString(),
-            Visibility = Visibility.Public,
+            Visibility = visibility,
             CreatedAt = clock.UtcNow,
         };
 

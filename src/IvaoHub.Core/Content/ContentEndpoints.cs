@@ -695,11 +695,16 @@ public static class ContentEndpoints
             .Select(user => user.FirstName + " " + user.LastName)
             .FirstOrDefaultAsync(cancellationToken);
 
+        // The successor by the title it was published with, not the one its draft has now.
         var successor = content.SupersededById is { } successorId
             ? await database.Contents
                 .AsNoTracking()
-                .Where(row => row.Id == successorId && row.PublishedVersionId != null)
-                .Select(row => new { row.Slug, row.Title })
+                .Where(row => row.Id == successorId)
+                .Join(
+                    database.ContentVersions,
+                    row => row.PublishedVersionId,
+                    published => (long?)published.Id,
+                    (row, published) => new { row.Slug, published.Title })
                 .FirstOrDefaultAsync(cancellationToken)
             : null;
 

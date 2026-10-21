@@ -32,7 +32,7 @@ public enum ContentKind
 [Audited]
 [PermissionArea("Content")]
 public sealed class ContentEntry
-    : IOwnedByDepartment, IVisible, IPublishable, IAuditable, IProjectable, ISharedForReading
+    : IOwnedByDepartment, IVisible, IPublishedAsVersion, IAuditable, IProjectsFromAnotherRow, ISharedForReading
 {
     /// <summary>
     /// Which content rows every department may read: the templates, and only those. A template
@@ -49,6 +49,9 @@ public sealed class ContentEntry
         content => content.IsTemplate;
 
     private static readonly Func<ContentEntry, bool> SharedForReadingInMemory = SharedForReading.Compile();
+
+    /// <summary>The published version, handed over by the interceptor before it projects this row.</summary>
+    private ContentVersion? _projectedVersion;
 
     public long Id { get; set; }
 
@@ -218,21 +221,29 @@ public sealed class ContentEntry
 
     string IProjectable.SourceId => $"content:{Id}";
 
+    (Type Entity, object Key)? IProjectsFromAnotherRow.ProjectsFrom =>
+        PublishedVersionId is { } version ? (typeof(ContentVersion), version) : null;
+
+    void IProjectsFromAnotherRow.ProjectFrom(object? row) => _projectedVersion = row as ContentVersion;
+
     /// <summary>
-    /// The text of a page is whatever its blocks say, in each language, extracted by the one
-    /// walker that knows the envelope. A template is a tool of the staff and is never findable;
-    /// a draft is stopped earlier, by the interceptor, for every publishable entity at once.
+    /// What a reader finds of a page is its <b>published version</b>, title and text, never the draft
+    /// the row holds (note 2026-10-21-il-pubblico-legge-la-versione): the address and the visibility
+    /// are the row's, the words are the version's. The text is whatever its blocks say, in each
+    /// language, extracted by the one walker that knows the envelope. A template is a tool of the
+    /// staff and is never findable; a row with nothing published is stopped earlier, by the
+    /// interceptor, for every publishable entity at once.
     /// </summary>
     ProjectionSnapshot? IProjectable.Project(ProjectionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (IsTemplate)
+        if (IsTemplate || _projectedVersion is not { } version)
         {
             return null;
         }
 
-        var body = JsonNode.Parse(BodyJson);
+        var body = JsonNode.Parse(version.BodyJson);
         var text = context.Locales.ToDictionary(
             locale => locale,
             locale => context.Blocks.ExtractText(body, locale),
@@ -243,7 +254,7 @@ public sealed class ContentEntry
             Url: Url,
             OwnerDepartment: OwnerDepartment,
             Visibility: Visibility,
-            Title: Title,
+            Title: version.Title,
             Text: new Localized<string>(text)));
     }
 }

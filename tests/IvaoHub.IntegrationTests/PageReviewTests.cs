@@ -189,6 +189,69 @@ public sealed class PageReviewTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task APageOnlineStaysWhatThePublicReadsWhileItsNextVersionWaits()
+    {
+        // #317: marking ready the next version of a page already online took the page off the site —
+        // the public read, the search, the lists — until somebody decided. The public keeps the
+        // version before (note 2026-09-13-contenuti-centralizzati §3.2).
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, director) = await PeopleAsync(token);
+
+        var slug = Stem();
+        var (online, waiting) = ($"w{Guid.NewGuid():N}"[..14], $"w{Guid.NewGuid():N}"[..14]);
+        var page = await CreateAsync(coordinator, ContentKind.Page, slug, Body(online), token);
+
+        using (var first = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        }
+
+        using (var approved = await ReviewAsync(director, page.Id, new { action = "Approve" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        }
+
+        var current = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{page.Id}", token);
+        using (var edited = await SendAsync(
+            coordinator,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{page.Id}",
+            Payload(ContentKind.Page, slug, Body(waiting), current.GetProperty("rowVersion").GetString()),
+            token))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        }
+
+        using (var second = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+            Assert.Equal("Ready", (await second.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("status").GetString());
+        }
+
+        using var anonymous = _factory.CreateApiClient();
+        var read = await anonymous.GetFromJsonAsync<JsonElement>(
+            $"{ContentEndpoints.Pattern}/public/page?path={Uri.EscapeDataString($"test-shelf-review/{slug}")}",
+            token);
+        Assert.Equal(online, read.GetProperty("page").GetProperty("body").GetProperty("sections")[0]
+            .GetProperty("blocks")[0].GetProperty("props").GetProperty("text").GetProperty("it").GetString());
+
+        var found = await anonymous.GetFromJsonAsync<JsonElement>($"{SearchEndpoints.Pattern}?q={online}&locale=it", token);
+        Assert.Equal(1, found.GetProperty("results").GetProperty("total").GetInt32());
+
+        var notYet = await anonymous.GetFromJsonAsync<JsonElement>($"{SearchEndpoints.Pattern}?q={waiting}&locale=it", token);
+        Assert.Equal(0, notYet.GetProperty("results").GetProperty("total").GetInt32());
+
+        // Approved, the version that waited is what the public reads.
+        using (var approved = await ReviewAsync(director, page.Id, new { action = "Approve" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        }
+
+        var after = await anonymous.GetFromJsonAsync<JsonElement>($"{SearchEndpoints.Pattern}?q={waiting}&locale=it", token);
+        Assert.Equal(1, after.GetProperty("results").GetProperty("total").GetInt32());
+    }
+
+    [Fact]
     public async Task ANewsItemIsPublishedByItsDepartmentWithoutAnybodysLeave()
     {
         var token = TestContext.Current.CancellationToken;

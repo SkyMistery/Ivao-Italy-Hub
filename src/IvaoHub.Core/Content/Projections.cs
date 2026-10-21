@@ -29,6 +29,24 @@ public interface IProjectable
 }
 
 /// <summary>
+/// A row whose projection is made of another row of its context as well as of its own columns: the interceptor reads
+/// that row and hands it over before it asks for the projection. A page is the first (note
+/// 2026-10-21-il-pubblico-legge-la-versione): the row holds the draft, and what the public finds of it is its
+/// published version.
+/// <para>A key and not a query, so the interceptor stays the one that reads, on its own context, on the path of the
+/// save — the synchronous one included — and a row written in the same unit of work, a version just published, is
+/// found where it already is.</para>
+/// </summary>
+public interface IProjectsFromAnotherRow : IProjectable
+{
+    /// <summary>The entity type and the key of the row to read; null when there is none to read now.</summary>
+    (Type Entity, object Key)? ProjectsFrom { get; }
+
+    /// <summary>The row read for <see cref="ProjectsFrom"/>, or null when it is not there; given before every projection.</summary>
+    void ProjectFrom(object? row);
+}
+
+/// <summary>
 /// What an entity is allowed to know about the division while it projects itself: its languages,
 /// and the walker that turns a body of blocks into text. An entity cannot be injected into, and
 /// hardcoding the languages of a division is exactly what a forkable hub must not do.
