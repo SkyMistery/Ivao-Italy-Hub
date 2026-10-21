@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -94,6 +95,7 @@ public static class NotificationPreferenceEndpoints
 
             return TypedResults.Ok(body);
         })
+        .RequireRateLimiting(HubRateLimits.MemberWrites)
         .WithName("MeSetNotificationPreference")
         .RequireAuthorization(HubPolicies.SignedIn);
 

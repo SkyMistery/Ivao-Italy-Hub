@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -21,6 +22,7 @@ public static class ErasureEndpoints
         ArgumentNullException.ThrowIfNull(app);
 
         var group = app.MapGroup(Pattern)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithTags("Erasure")
             .RequireAuthorization(HubPolicies.SignedIn);
 
