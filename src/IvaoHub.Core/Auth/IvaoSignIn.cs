@@ -22,6 +22,7 @@ public sealed class IvaoSignIn(
     ISecurityStampCache stamps,
     IOptions<DivisionOptions> division,
     IOptions<InstallationOptions> installation,
+    IClock clock,
     ILogger<IvaoSignIn> logger)
 {
     /// <summary>IVAO did not say who the person is.</summary>
@@ -63,16 +64,7 @@ public sealed class IvaoSignIn(
             await tokenStore.SaveAsync(profile.Vid, tokens, cancellationToken);
         }
 
-        var identity = HubClaims.BuildIdentity(
-            signedIn.User.Vid,
-            signedIn.User.FirstName,
-            signedIn.User.LastName,
-            signedIn.User.Locale ?? division.Value.DefaultLocale,
-            signedIn.User.SecurityStamp,
-            signedIn.User.IsSuperadmin,
-            signedIn.User.IsStaff,
-            signedIn.Positions,
-            signedIn.Permissions);
+        var identity = HubClaims.BuildCookieIdentity(signedIn, division.Value.DefaultLocale, clock.UtcNow);
 
         stamps.Invalidate(signedIn.User.Vid);
 

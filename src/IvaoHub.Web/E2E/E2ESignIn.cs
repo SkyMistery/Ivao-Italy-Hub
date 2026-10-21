@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
@@ -164,6 +165,7 @@ internal static class E2ESignIn
             UserSyncService users,
             IOptions<E2EOptions> e2e,
             IOptions<DivisionOptions> division,
+            IClock clock,
             string? @as,
             CancellationToken cancellationToken) =>
         {
@@ -211,16 +213,7 @@ internal static class E2ESignIn
                 },
                 cancellationToken);
 
-            var identity = HubClaims.BuildIdentity(
-                signedIn.User.Vid,
-                signedIn.User.FirstName,
-                signedIn.User.LastName,
-                signedIn.User.Locale ?? settings.DefaultLocale,
-                signedIn.User.SecurityStamp,
-                signedIn.User.IsSuperadmin,
-                signedIn.User.IsStaff,
-                signedIn.Positions,
-                signedIn.Permissions);
+            var identity = HubClaims.BuildCookieIdentity(signedIn, settings.DefaultLocale, clock.UtcNow);
 
             await context.SignInAsync(HubClaims.CookieScheme, new ClaimsPrincipal(identity));
 

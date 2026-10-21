@@ -63,6 +63,10 @@ public static class IvaoAuthenticationExtensions
         // Scoped, because it reads through the request context; the cache behind it is a singleton.
         services.AddScoped<ISecurityStampCache, SecurityStampCache>();
 
+        // How long a sign-in lasts at most, checked at the start like every other number an installation may set.
+        services.AddOptions<SignInLifetimeOptions>().BindConfiguration(SignInLifetimeOptions.SectionName).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SignInLifetimeOptions>, SignInLifetimeOptionsValidator>();
+
         services
             .AddAuthentication(options =>
             {
@@ -139,15 +143,25 @@ public static class IvaoAuthenticationExtensions
             return Task.CompletedTask;
         };
 
-        // The stamp says whether the cookie still reflects the truth. It changes when grants or the
-        // super administrator flag change, so a revoked permission bites on the next request rather
-        // than in twelve hours.
+        // The stamp says whether the cookie still reflects the truth. It changes when grants, the
+        // staff positions or the super administrator flag change, so a revoked permission bites on
+        // the next request rather than in twelve hours.
+        //
+        // And a cookie has a lifetime the sliding refresh does not move: the days since the IVAO
+        // sign-in, and the end of the first grant it was computed with (HubClaims.IsWithinLifetime).
+        // Past either, it is refused, and the next sign-in computes the permissions again.
         options.Events.OnValidatePrincipal = async context =>
         {
             var stampInCookie = context.Principal?.FindFirstValue(HubClaims.SecurityStamp);
             var vidClaim = context.Principal?.FindFirstValue(HubClaims.Vid);
 
-            if (stampInCookie is null || !int.TryParse(vidClaim, CultureInfo.InvariantCulture, out var vid))
+            var services = context.HttpContext.RequestServices;
+            var withinLifetime = context.Principal is { } principal && HubClaims.IsWithinLifetime(
+                principal,
+                services.GetRequiredService<IClock>().UtcNow,
+                services.GetRequiredService<IOptions<SignInLifetimeOptions>>().Value.MaximumLifetime);
+
+            if (stampInCookie is null || !int.TryParse(vidClaim, CultureInfo.InvariantCulture, out var vid) || !withinLifetime)
             {
                 // Sign out as well, exactly as the branch below does: rejecting alone leaves the
                 // unusable cookie in the browser, and it comes back on every single request.
@@ -156,7 +170,7 @@ public static class IvaoAuthenticationExtensions
                 return;
             }
 
-            var cache = context.HttpContext.RequestServices.GetRequiredService<ISecurityStampCache>();
+            var cache = services.GetRequiredService<ISecurityStampCache>();
             var current = await cache.GetAsync(vid, context.HttpContext.RequestAborted);
 
             if (current is null || !string.Equals(current, stampInCookie, StringComparison.Ordinal))
