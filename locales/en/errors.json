@@ -60,6 +60,8 @@
       "columnOutOfRange": "This block is in a column its section does not have.",
       "sourceNotText": "The code of this block is not text.",
       "sourceTooLarge": "The code of this block is too long. Keep an animation small: it travels with the page.",
+      "sourceNotInteractive": "Only an interactive block carries code.",
+      "sourceNotPermitted": "Adding or changing the code of an interactive block needs the permission to embed code.",
       "spanUnknown": "This block has a width a dashboard does not have."
     },
     "content": {

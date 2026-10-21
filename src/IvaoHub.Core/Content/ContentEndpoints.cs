@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Nodes;
 using FluentValidation;
@@ -129,20 +130,37 @@ public static class ContentEndpoints
                 // Where a page sits in the site, which only other rows can say (note
                 // 2026-09-13-contenuti-centralizzati, 3.7): free, not reserved, not too deep, at the
                 // top only for whoever may put it there — and the pages under it moved along.
-                options.BeforeSave = (content, saving) =>
-                    !saving.IsNew
-                        && saving.Database.Entry(content).Property(row => row.Status).OriginalValue == PublishStatus.Ready
-                        // A page waiting for approval is written by nobody (note
-                        // 2026-09-13-contenuti-centralizzati, 3.2): what is approved is what was
-                        // marked ready. Withdrawing it from the review is how it is changed again.
-                        ? Task.FromResult<IReadOnlyDictionary<string, string[]>?>(
-                            new Dictionary<string, string[]>(StringComparer.Ordinal)
-                            {
-                                ["status"] = ["errors.content.review.inReview"],
-                            })
-                        : saving.Services
-                            .GetRequiredService<ContentAddresses>()
-                            .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
+                options.BeforeSave = async (content, saving) =>
+                {
+                    var entry = saving.Database.Entry(content);
+
+                    // A page waiting for approval is written by nobody (note
+                    // 2026-09-13-contenuti-centralizzati, 3.2): what is approved is what was
+                    // marked ready. Withdrawing it from the review is how it is changed again.
+                    if (!saving.IsNew && entry.Property(row => row.Status).OriginalValue == PublishStatus.Ready)
+                    {
+                        return new Dictionary<string, string[]>(StringComparer.Ordinal)
+                        {
+                            ["status"] = ["errors.content.review.inReview"],
+                        };
+                    }
+
+                    var http = saving.Services.GetRequiredService<IHttpContextAccessor>().HttpContext;
+                    if (http is not null
+                        && await CodeNotTheirsAsync(
+                            content,
+                            saving.IsNew ? null : entry.Property(row => row.BodyJson).OriginalValue,
+                            saving.Services.GetRequiredService<BlockDocumentWalker>(),
+                            saving.Services.GetRequiredService<IAuthorizationService>(),
+                            http.User) is { } code)
+                    {
+                        return code;
+                    }
+
+                    return await saving.Services
+                        .GetRequiredService<ContentAddresses>()
+                        .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
+                };
             });
 
         group.MapPost("/from-template/{templateId:long}", CreateFromTemplateAsync)
@@ -272,6 +290,41 @@ public static class ContentEndpoints
     }
 
     /// <summary>
+    /// The code of interactive blocks this body adds or changes against what the row held, refused to
+    /// whoever does not hold <see cref="CorePermissions.ContentEmbedCode"/> on the row (note
+    /// 2026-09-12-il-blocco-interattivo §5, #318): the palette hides the block in the browser, and this is
+    /// the rule. Asked of the one authorization handler, on the row. Code kept as it was, or taken away,
+    /// asks nothing: a coordinator may edit the text around an animation somebody else wrote. One refusal
+    /// per block, on its <c>source</c>, where the editor draws it.
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<string, string[]>?> CodeNotTheirsAsync(
+        ContentEntry content,
+        string? before,
+        BlockDocumentWalker walker,
+        IAuthorizationService authorization,
+        ClaimsPrincipal user)
+    {
+        var held = before is null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : walker.Sources(JsonNode.Parse(before)).ToDictionary(block => block.Id, block => block.Source, StringComparer.Ordinal);
+
+        var written = walker.Sources(JsonNode.Parse(content.BodyJson))
+            .Where(block => !held.TryGetValue(block.Id, out var source) || !string.Equals(source, block.Source, StringComparison.Ordinal))
+            .ToList();
+
+        if (written.Count == 0
+            || (await authorization.AuthorizeAsync(user, content, CorePermissions.ContentEmbedCode)).Succeeded)
+        {
+            return null;
+        }
+
+        return written.ToDictionary(
+            block => $"body.{block.Path}.source",
+            _ => new[] { "errors.body.sourceNotPermitted" },
+            StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// <c>filter[usesMedia]=42</c>: the contents that show a file. Named here because the client
     /// writes it too, and a filter name spelled twice is a filter name that drifts.
     /// </summary>
@@ -360,6 +413,12 @@ public static class ContentEndpoints
             return Results.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        // A template's code is code all the same: the page is born with it, so it is added by whoever makes the page.
+        if (await CodeNotTheirsAsync(page, before: null, walker, authorization, http.User) is { } code)
+        {
+            return CrudProblems.Validation(code, new Dictionary<string, string[]>(StringComparer.Ordinal), catalog, currentUser.Locale);
         }
 
         database.Contents.Add(page);
