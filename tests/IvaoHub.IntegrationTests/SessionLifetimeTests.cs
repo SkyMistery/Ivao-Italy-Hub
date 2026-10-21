@@ -18,6 +18,8 @@ namespace IvaoHub.IntegrationTests;
 /// A session has a maximum lifetime, and a permission that ends stops counting: a cookie older than the maximum is refused
 /// however it was used, a cookie computed with a grant that has since ended is refused, and a sign-in that finds other
 /// positions refuses the cookies of the person's other devices. Each time the next sign-in computes the permissions again.
+/// And logout ends the session everywhere: no cookie of that person, a copy of the one that signed out included, opens anything
+/// afterwards.
 /// <para>The host's clock is moved and the cookie's own twelve sliding hours are not: what refuses the cookie here is the
 /// hub's check, never the framework's expiry.</para>
 /// </summary>
@@ -27,6 +29,7 @@ public sealed class SessionLifetimeTests(MariaDbFixture mariaDb) : IAsyncLifetim
     private const int LongSessionVid = 791_001;
     private const int GrantedVid = 791_002;
     private const int TwoDevicesVid = 791_003;
+    private const int LogoutVid = 791_004;
 
     private readonly MovableClock _clock = new();
     private HubWebApplicationFactory _base = null!;
@@ -127,13 +130,65 @@ public sealed class SessionLifetimeTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.Null(await SignedInVidAsync(other, token));
     }
 
+    [Fact]
+    public async Task LogoutEndsTheSessionOnEveryDevice()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SignInWithIvaoAsync(LogoutVid, [$"{Code}-EC"], token);
+
+        // The cookie this device holds, kept aside as it was before the logout...
+        using var device = CreateClient(handleCookies: false);
+        var copy = await SignInForCookieAsync(device, LogoutVid, token);
+        Assert.Equal(LogoutVid, await SignedInVidAsync(device, token, copy));
+
+        // ...and another device of the same person.
+        using var other = CreateClient();
+        await SignInAsync(other, LogoutVid, token);
+        Assert.Equal(LogoutVid, await SignedInVidAsync(other, token));
+
+        using (var logout = new HttpRequestMessage(HttpMethod.Post, "/auth/logout"))
+        {
+            logout.Headers.Add("Cookie", copy);
+            logout.Headers.Add("X-Requested-With", "hub");
+            using var response = await device.SendAsync(logout, token);
+            Assert.Equal(System.Net.HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        Assert.Null(await SignedInVidAsync(device, token, copy));
+        Assert.Null(await SignedInVidAsync(other, token));
+
+        // Signing in again works as ever.
+        await SignInAsync(other, LogoutVid, token);
+        Assert.Equal(LogoutVid, await SignedInVidAsync(other, token));
+    }
+
     private string Code => _factory.Services.GetRequiredService<IOptions<DivisionOptions>>().Value.Code;
 
-    private HttpClient CreateClient() => _factory.CreateClient(new WebApplicationFactoryClientOptions
+    private HttpClient CreateClient(bool handleCookies = true) => _factory.CreateClient(new WebApplicationFactoryClientOptions
     {
         AllowAutoRedirect = false,
-        HandleCookies = true,
+        HandleCookies = handleCookies,
     });
+
+    /// <summary>Signs in on a client that keeps no cookies, and answers the application cookie as a Cookie header.</summary>
+    private static async Task<string> SignInForCookieAsync(HttpClient client, int vid, CancellationToken cancellationToken)
+    {
+        using var response = await client.PostAsync(
+            new Uri($"{TestSignInStartupFilter.Path}?vid={vid}", UriKind.Relative),
+            content: null,
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        // Every piece of it, should the framework ever split it into chunks.
+        var pieces = response.Headers.GetValues("Set-Cookie")
+            .Select(header => header.Split(';')[0])
+            .Where(pair => pair.StartsWith("hub.auth", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.NotEmpty(pieces);
+        return string.Join("; ", pieces);
+    }
 
     /// <summary>A real cookie for an existing VID, through the suite's sign-in (<see cref="TestSignInStartupFilter"/>).</summary>
     private static async Task SignInAsync(HttpClient client, int vid, CancellationToken cancellationToken)
@@ -194,9 +249,18 @@ public sealed class SessionLifetimeTests(MariaDbFixture mariaDb) : IAsyncLifetim
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    private static async Task<int?> SignedInVidAsync(HttpClient client, CancellationToken cancellationToken)
+    private static async Task<int?> SignedInVidAsync(HttpClient client, CancellationToken cancellationToken, string? cookie = null)
     {
-        var user = (await client.GetFromJsonAsync<JsonElement>("/api/me", cancellationToken)).GetProperty("user");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/me");
+        if (cookie is not null)
+        {
+            request.Headers.Add("Cookie", cookie);
+        }
+
+        using var response = await client.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var user = (await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken)).GetProperty("user");
         return user.ValueKind == JsonValueKind.Null ? null : user.GetProperty("vid").GetInt32();
     }
 

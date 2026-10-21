@@ -145,7 +145,8 @@ public static class IvaoAuthenticationExtensions
 
         // The stamp says whether the cookie still reflects the truth. It changes when grants, the
         // staff positions or the super administrator flag change, so a revoked permission bites on
-        // the next request rather than in twelve hours.
+        // the next request rather than in twelve hours; and at logout, which ends the session on
+        // every device.
         //
         // And a cookie has a lifetime the sliding refresh does not move: the days since the IVAO
         // sign-in, and the end of the first grant it was computed with (HubClaims.IsWithinLifetime).
