@@ -362,11 +362,15 @@ public static class HubClaims
         // 2026-10-01-chi-assegna-gli-award-con-un-grant): a grant of a global permission, which has no department to take anybody
         // into, with the View it brings. It names no department, and read as the grants above it would have taken whoever assigns
         // the awards into all of them.
+        //
+        // ⚠️ And except a permission held on one row (note 2026-10-21-il-grant-su-una-riga-elenca-le-sue-righe, decided by Carmine
+        // on 21 October 2026): it opens its row to the single handler and, in a generated list, the rows of its scope — never the
+        // department those rows are in.
         var granted = materialisedPermissions
             .Where(permission => permission.Source.StartsWith(
                 EffectivePermissionsCalculator.GrantSourcePrefix,
                 StringComparison.Ordinal))
-            .Where(permission => permission.Fir is null && !permission.FromOutside)
+            .Where(permission => permission.Fir is null && !permission.FromOutside && permission.ResourceScope is null)
             .ToArray();
 
         var reached = materialised

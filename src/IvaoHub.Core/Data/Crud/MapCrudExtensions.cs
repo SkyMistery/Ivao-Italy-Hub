@@ -181,13 +181,21 @@ public static class MapCrudExtensions
         var scope = CrudScope<TEntity>.From(http, options.ContextType);
 
         var query = Source(scope.Database, options);
+        ListNarrowing<TEntity>? narrowing = null;
 
         if (options.Participating is { } participating)
         {
             // A personal view: the reader's own rows, whatever department they sit in.
             query = TakingPart(query, participating, scope.CurrentUser.Vid);
         }
-        else if (!TryNarrowToDepartments(scope.CurrentUser, options.EffectiveReadPolicy, options.SharedForReading, ref query, out var forbidden))
+        else if (!TryNarrowToDepartments(
+            scope.CurrentUser,
+            options.EffectiveReadPolicy,
+            options.SharedForReading,
+            options.ReadableAcrossScopes,
+            ref query,
+            out narrowing,
+            out var forbidden))
         {
             return forbidden!;
         }
@@ -198,6 +206,11 @@ public static class MapCrudExtensions
         }
 
         query = ApplySearch(request.Q, scope.CurrentUser.Locale, options, query);
+
+        if (narrowing is not null)
+        {
+            query = await NarrowToScopesAsync(scope, options.EffectiveReadPolicy, narrowing, query, http.RequestAborted);
+        }
 
         var total = await query.CountAsync(http.RequestAborted);
 
@@ -436,16 +449,25 @@ public static class MapCrudExtensions
     /// <para>The same way, it holds the rows of a department the reader holds <paramref name="readPermission"/> on from outside
     /// it — a grant to a position of another department (M4, E2b, note 2026-10-01-il-permesso-non-il-dipartimento): that
     /// department's, with that permission only, and nothing else of the department anywhere.</para>
+    /// <para>And on a row that says its scope (<see cref="IHasResourceScope"/>), the rows of the scope the reader holds
+    /// <paramref name="readPermission"/> on (note 2026-10-21-il-grant-su-una-riga-elenca-le-sue-righe): a grant on one row gives no
+    /// department, and the list holds the rows the single handler would let them read. The scope is not a column, so those rows
+    /// are found once the request's own filters are in, by <see cref="NarrowToScopesAsync"/>: then <paramref name="narrowing"/> is
+    /// set and the query is left to it. A resource that declares <paramref name="acrossScopes"/> reads the department of such a
+    /// permission instead, in this list only (the validation queue of the tours, design M2 section 4.1).</para>
     /// </summary>
     private static bool TryNarrowToDepartments<TEntity>(
         ICurrentUser currentUser,
         string readPermission,
         Expression<Func<TEntity, bool>>? shared,
+        bool acrossScopes,
         ref IQueryable<TEntity> query,
+        out ListNarrowing<TEntity>? narrowing,
         out IResult? forbidden)
         where TEntity : class
     {
         forbidden = null;
+        narrowing = null;
 
         if (!typeof(IOwnedByDepartment).IsAssignableFrom(typeof(TEntity)) || currentUser.HasAllDepartments)
         {
@@ -474,15 +496,44 @@ public static class MapCrudExtensions
             .Where(held => held is { FromOutside: true, Fir: null, ResourceScope: null })
             .SelectMany(held => held.Department is { } one ? [one] : RolePermissionMatrix.AllDepartments);
 
-        var departments = currentUser.Departments.Concat(fromOutside).Distinct().ToList();
+        // "Or of a row they read this list on." Held on one row only, the departments its rows may be in: the rows themselves are
+        // picked later, by their scope. Where the resource reads across scopes, the department as a whole — what the department
+        // claim gave such a grant until 21 October 2026, and in this list only.
+        var onTheirRows = reading
+            .Where(held => held is { FromOutside: false, Fir: null, ResourceScope: not null })
+            .SelectMany(held => held.Department is { } one ? [one] : RolePermissionMatrix.AllDepartments)
+            .Distinct()
+            .ToList();
 
-        if (departments.Count == 0 && onTheirFir.Length == 0)
+        var departments = currentUser.Departments
+            .Concat(fromOutside)
+            .Concat(acrossScopes ? onTheirRows : [])
+            .Distinct()
+            .ToList();
+
+        // Of a department they read whole, the rows are in already; held on a FIR, or from outside, a scope is not looked for.
+        var scoped = typeof(IHasResourceScope).IsAssignableFrom(typeof(TEntity)) && !acrossScopes
+            ? reading
+                .Where(held => held.ResourceScope is not null)
+                .SelectMany(held => held.Department is { } one ? [one] : RolePermissionMatrix.AllDepartments)
+                .Except(departments)
+                .ToList()
+            : [];
+
+        if (departments.Count == 0 && onTheirFir.Length == 0 && scoped.Count == 0)
         {
             forbidden = Results.StatusCode(StatusCodes.Status403Forbidden);
             return false;
         }
 
         var entity = Expression.Parameter(typeof(TEntity), "entity");
+
+        if (departments.Count == 0 && onTheirFir.Length == 0)
+        {
+            // Rows of their scope and nothing else: no department of theirs, and so none of the rows shared with every one.
+            narrowing = new ListNarrowing<TEntity>(entity, null, scoped);
+            return true;
+        }
 
         // One of theirs: the row's department in their list, or — for a row in the care of several
         // departments (M2) — a bit in common between the row's mask and theirs. Theirs here counts
@@ -514,9 +565,72 @@ public static class MapCrudExtensions
                 department is { } one ? Expression.AndAlso(sameFir, InDepartments<TEntity>(entity, [one])) : sameFir);
         }
 
+        if (scoped.Count > 0)
+        {
+            narrowing = new ListNarrowing<TEntity>(entity, readable, scoped);
+            return true;
+        }
+
         query = query.Where(Expression.Lambda<Func<TEntity, bool>>(readable, entity));
         return true;
     }
+
+    /// <summary>
+    /// The list's rows once the request's filters and search are in, for a reader holding its read permission on single rows: the
+    /// rows they read otherwise (<see cref="ListNarrowing{TEntity}.Readable"/>), or one of the rows of the candidate departments the
+    /// single handler would let them read — the same question, <see cref="ICurrentUser.Has(string, Department, string?, string?)"/>
+    /// on one of the row's departments with its scope and its FIR, so that the list and the detail cannot disagree.
+    /// <para>The scope is the entity's property, built from its columns and unknown to the database (<see cref="IHasResourceScope"/>):
+    /// the candidates are read, their scope compared in memory, and the list narrowed to their keys in SQL — counting, order and
+    /// pages stay the database's. ⚠️ Every candidate is read: for whoever holds the permission on rows only, the rows of those
+    /// departments that pass the request's filters (an event's lists are asked for one event).</para>
+    /// </summary>
+    private static async Task<IQueryable<TEntity>> NarrowToScopesAsync<TEntity>(
+        CrudScope<TEntity> scope,
+        string readPermission,
+        ListNarrowing<TEntity> narrowing,
+        IQueryable<TEntity> query,
+        CancellationToken cancellationToken)
+        where TEntity : class
+    {
+        var entity = narrowing.Entity;
+        var user = scope.CurrentUser;
+
+        var candidates = await query
+            .Where(Expression.Lambda<Func<TEntity, bool>>(InDepartments<TEntity>(entity, narrowing.Departments), entity))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var key = typeof(TEntity).GetProperty(scope.Key.Name)!;
+        var keys = candidates
+            .Where(row => ((IOwnedByDepartment)row).OwnerDepartments.Any(department =>
+                user.Has(readPermission, department, ((IHasResourceScope)row).ResourceScope, (row as IHasFir)?.Fir)))
+            .Select(key.GetValue)
+            .ToList();
+
+        var held = Array.CreateInstance(scope.Key.ClrType, keys.Count);
+        for (var index = 0; index < keys.Count; index++)
+        {
+            held.SetValue(keys[index], index);
+        }
+
+        Expression ofTheirScope = Expression.Call(
+            typeof(Enumerable),
+            nameof(Enumerable.Contains),
+            [scope.Key.ClrType],
+            Expression.Constant(held),
+            Expression.Property(entity, scope.Key.Name));
+
+        var readable = narrowing.Readable is { } otherwise ? Expression.OrElse(otherwise, ofTheirScope) : ofTheirScope;
+        return query.Where(Expression.Lambda<Func<TEntity, bool>>(readable, entity));
+    }
+
+    /// <summary>
+    /// What <see cref="TryNarrowToDepartments"/> leaves to <see cref="NarrowToScopesAsync"/>: the rows read otherwise (null for
+    /// none), and the departments whose rows may be in the scope of a permission held on single rows.
+    /// </summary>
+    private sealed record ListNarrowing<TEntity>(ParameterExpression Entity, Expression? Readable, List<Department> Departments)
+        where TEntity : class;
 
     /// <summary>A row of one of these departments: in the list, or — in the care of several (M2) — a bit in common.</summary>
     private static Expression InDepartments<TEntity>(ParameterExpression entity, List<Department> departments) =>

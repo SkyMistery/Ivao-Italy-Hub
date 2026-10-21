@@ -49,6 +49,9 @@ public static class ReviewEndpoints
             options.ReadOnly = true;
             options.ContextType = typeof(FlightOpsDbContext);
             options.Source = database => CrudSource.BackOffice<Pirep>(database).Where(report => report.Status != PirepStatus.Withdrawn);
+
+            // A validator enabled on one tour reads the whole queue (§4.1), not only the reports of their tour.
+            options.ReadableAcrossScopes = true;
             options.DefaultOrder = report => report.QueuedAt;
             options.Sortable.Add(nameof(Pirep.QueuedAt));
             options.Sortable.Add(nameof(Pirep.TourId));
