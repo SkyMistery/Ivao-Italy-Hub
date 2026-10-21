@@ -13,6 +13,9 @@ using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -39,6 +42,11 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int PersonVid = 780095;
     private const int OtherVid = 780096;
     private const int SuperadminVid = 780097;
+
+    // Signs in through the IVAO round trip, whose range this is, from two addresses of the documentation range of their own.
+    private const int SignInVid = 648002;
+    private const string HomeAddress = "192.0.2.95";
+    private const string AwayAddress = "192.0.2.96";
 
     // The person's digits by chance, never the person: inside an instant's decimals, inside a hex stamp, inside a longer number.
     private const string CoincidenceJson = """{"UpdatedAt":"2026-10-18T18:37:06.7800951Z","SecurityStamp":"0A780095FF","Count":17800950}""";
@@ -308,6 +316,67 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A sign in writes about the member before they are anybody (issue #323): the callback runs with nobody signed in, so its
+    /// audit rows — their user, and the grants it suspends — carry no VID and the member's address. The erasure takes the
+    /// address out of every one of them: the user's, a grant's erased with the person, and a grant's revoked before.
+    /// </summary>
+    [Fact]
+    public async Task NoAuditRowAboutThePersonKeepsTheAddressOfTheirSignIns()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var text = SignInVid.ToString(CultureInfo.InvariantCulture);
+        long since;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            since = await scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.MaxAsync(row => (long?)row.Id, token) ?? 0;
+        }
+
+        using var ivao = new FakeIvao(SignInVid);
+        await using var host = ivao.Serve(_factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(
+            services => services.AddSingleton<IStartupFilter, TestPeerStartupFilter>())));
+
+        // From home, the first time: their user is born. Then two grants, which the next sign in, from elsewhere, suspends
+        // because the member holds no position; one is revoked before the erasure, the other is erased with them.
+        await SignInFromAsync(host, ivao, HomeAddress, token);
+        var (kept, revoked) = (await SeedGrantAsync(SignInVid, token), await SeedGrantAsync(SignInVid, token));
+        await SignInFromAsync(host, ivao, AwayAddress, token);
+        await RevokeGrantAsync(revoked, token);
+
+        // What the callback really writes: nobody is signed in yet, so no VID, and the member's address.
+        string[] grants = [kept.ToString(CultureInfo.InvariantCulture), revoked.ToString(CultureInfo.InvariantCulture)];
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var audit = scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking().Where(row => row.Id > since);
+            var users = await audit.Where(row => row.Entity == AuditRedaction.UsersTable && row.EntityId == text && row.Ip != null)
+                .ToListAsync(token);
+            Assert.All(users, row => Assert.Equal(0, row.Vid));
+            Assert.Equal([HomeAddress, AwayAddress], users.Select(row => row.Ip).Distinct().Order(StringComparer.Ordinal));
+
+            var suspended = await audit.Where(row => row.Entity == "hub_user_grants" && grants.Contains(row.EntityId) && row.Ip != null)
+                .ToListAsync(token);
+            Assert.Equal(2, suspended.Count);
+            Assert.All(suspended, row => Assert.Equal((0, AwayAddress), (row.Vid, row.Ip)));
+        }
+
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var alias = (await EraseAsync(superadmin, SignInVid, token)).GetProperty("pseudonym").GetInt32().ToString(CultureInfo.InvariantCulture);
+
+        // Every address of theirs, wherever it was: these two belong to no other test. The rows stay, without it.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var audit = scope.ServiceProvider.GetRequiredService<HubDbContext>().AuditLog.AsNoTracking();
+            Assert.Empty(await audit
+                .Where(row => row.Ip == HomeAddress || row.Ip == AwayAddress)
+                .Select(row => $"{row.Id} {row.Action} {row.Entity} {row.EntityId} by {row.Vid}")
+                .ToListAsync(token));
+            Assert.True(await audit.AnyAsync(row => row.Id > since && row.Entity == AuditRedaction.UsersTable && row.EntityId == alias, token));
+            Assert.Equal(2, await audit.CountAsync(
+                row => row.Id > since && row.Entity == "hub_user_grants" && grants.Contains(row.EntityId) && row.Action == "updated",
+                token));
+        }
+    }
+
+    /// <summary>
     /// Every column the erasure gives the pseudonym to, read from the models of the real host (note §3). A new column of a
     /// person that follows the convention changes this list, and whoever adds it sees it here; one that does not follow it
     /// would be missed by the erasure, and this is the list a review compares a new table against.
@@ -528,6 +597,44 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         user.IsSuperadmin = false;
         user.SecurityStamp = SuperadminService.NewStamp();
 
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A browser of its own, from this address, all the way through IVAO and back.</summary>
+    private static async Task SignInFromAsync(
+        WebApplicationFactory<Program> host,
+        FakeIvao ivao,
+        string address,
+        CancellationToken cancellationToken)
+    {
+        using var browser = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+        browser.DefaultRequestHeaders.Add(TestPeerStartupFilter.Header, address);
+        await ivao.SignInAsync(browser, cancellationToken);
+    }
+
+    private async Task<long> SeedGrantAsync(int vid, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var grant = new UserGrant
+        {
+            Vid = vid,
+            Kind = GrantKind.Permission,
+            Value = SampleModule.ViewPermission,
+            Department = Department.ED,
+            Effect = GrantEffect.Grant,
+            Reason = "erasure test",
+        };
+        database.UserGrants.Add(grant);
+        await database.SaveChangesAsync(cancellationToken);
+        return grant.Id;
+    }
+
+    private async Task RevokeGrantAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        database.UserGrants.Remove(await database.UserGrants.SingleAsync(row => row.Id == id, cancellationToken));
         await database.SaveChangesAsync(cancellationToken);
     }
 

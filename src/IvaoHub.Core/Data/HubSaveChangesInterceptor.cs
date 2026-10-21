@@ -276,7 +276,7 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         var pending = new Pending(context);
-        var vid = currentUser.IsAuthenticated ? currentUser.Vid : 0;
+        var vid = currentUser.IsAuthenticated ? currentUser.Vid : AuditLogEntry.Nobody;
         var now = clock.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries().ToArray())
