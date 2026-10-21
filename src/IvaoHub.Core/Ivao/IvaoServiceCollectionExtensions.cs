@@ -83,7 +83,9 @@ public static class IvaoServiceCollectionExtensions
     {
         var ivao = provider.GetRequiredService<IOptions<IvaoOAuthOptions>>().Value;
         client.BaseAddress = new Uri(ivao.Authority);
-        client.Timeout = TimeSpan.FromSeconds(30);
+
+        // No timeout of the client's own: the standard resilience handler leaves it infinite, and its total of thirty
+        // seconds is the limit (issue #325, item 1).
     }
 
     /// <summary>

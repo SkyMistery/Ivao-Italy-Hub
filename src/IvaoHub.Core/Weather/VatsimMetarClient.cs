@@ -1,3 +1,4 @@
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Core.Weather;
@@ -44,7 +45,7 @@ public sealed class VatsimMetarClient(HttpClient http, ILogger<VatsimMetarClient
 
             return new WeatherReport(icao.ToUpperInvariant(), WeatherReportKind.Metar, now, raw, SourceName);
         }
-        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        catch (Exception exception) when (OutboundFailure.CouldNotReach(exception))
         {
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning(exception, "VATSIM could not be reached for the METAR of {Icao}.", icao);

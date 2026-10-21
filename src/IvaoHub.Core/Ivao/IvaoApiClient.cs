@@ -9,8 +9,10 @@ namespace IvaoHub.Core.Ivao;
 /// <summary>
 /// The typed client. Retries and the circuit breaker come from the standard resilience handler, so
 /// a bad afternoon at IVAO slows the hub down instead of taking it out.
-/// <para>Nothing here throws on a failed call: the reference data is a snapshot, and an empty
-/// answer means "keep what is already in the database" rather than "stop".</para>
+/// <para>Nothing here throws on a failed call, and every call fails in one place
+/// (<see cref="SendAsync"/>): the reference data is a snapshot, and an empty answer means "keep what
+/// is already in the database" rather than "stop"; a page or a report waiting on IVAO says "not
+/// available" rather than an error.</para>
 /// </summary>
 public sealed class IvaoApiClient(
     HttpClient http,
@@ -112,21 +114,7 @@ public sealed class IvaoApiClient(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/v2/users/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        using var response = await http.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            logger.LogWarning("IVAO answered /v2/users/me with status {Status}.", (int)response.StatusCode);
-            return null;
-        }
-
-        using var document = await JsonDocument.ParseAsync(
-            await response.Content.ReadAsStreamAsync(cancellationToken),
-            cancellationToken: cancellationToken);
-
-        return document.RootElement.Clone();
+        return await SendAsync("/v2/users/me", _ => Task.FromResult<string?>(accessToken), cancellationToken);
     }
 
     public async Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(
@@ -257,8 +245,8 @@ public sealed class IvaoApiClient(
         // One outline instead of the two IVAO sends by default: the only way the sectors of the world come back before
         // its gateway gives up at fifteen seconds (measured on 25 September 2026: without it, a 504 or a connection
         // closed half way, four times out of four; with it, 12 MB in five seconds). The reader drops the outline.
-        var airportAnswer = await ReadOrNothingAsync("/v2/ATCPositions/all?mapType=regionMapPolygon", cancellationToken);
-        var sectorAnswer = await ReadOrNothingAsync("/v2/subcenters/all?mapType=regionMapPolygon", cancellationToken);
+        var airportAnswer = await ReadAsync("/v2/ATCPositions/all?mapType=regionMapPolygon", cancellationToken);
+        var sectorAnswer = await ReadAsync("/v2/subcenters/all?mapType=regionMapPolygon", cancellationToken);
 
         IReadOnlyList<IvaoAtcPositionDto> airports = airportAnswer is { } airportRoot
             ? IvaoAtcPositionReader.ReadAirportPositions(Items(airportRoot))
@@ -289,7 +277,7 @@ public sealed class IvaoApiClient(
                 return null;
             }
 
-            var payload = await ReadOrNothingAsync(
+            var payload = await ReadAsync(
                 string.Create(
                     CultureInfo.InvariantCulture,
                     $"/v2/fras?countryId={Uri.EscapeDataString(countryId)}&members=false&expand=true&perPage={IvaoFraReader.PageSize}&page={page}"),
@@ -332,7 +320,7 @@ public sealed class IvaoApiClient(
         var asked = query.ToQueryString();
         var answer = await IvaoTrackerReader.ReadPagesAsync(
             query,
-            (page, token) => ReadOrNothingAsync($"/v2/tracker/sessions?{asked}&page={page}&perPage={query.PerPage}", token),
+            (page, token) => ReadAsync($"/v2/tracker/sessions?{asked}&page={page}&perPage={query.PerPage}", token),
             cancellationToken);
 
         if (answer is not { } read)
@@ -432,7 +420,7 @@ public sealed class IvaoApiClient(
         // Asked while somebody waits on a page, never by a job: whatever goes wrong — a status, a network that does not
         // answer, a body that is not JSON — is "not available", never an error page. No cache: the staff reading a roster
         // are a handful, and a minute old answer would hide the booking somebody has just made.
-        if (await ReadOrNothingAsync(path, cancellationToken) is not { } root)
+        if (await ReadAsync(path, cancellationToken) is not { } root)
         {
             return null;
         }
@@ -446,63 +434,44 @@ public sealed class IvaoApiClient(
         return bookings;
     }
 
-    /// <summary>A GET with the application's token, or null when anything at all goes wrong.</summary>
-    private async Task<JsonElement?> ReadAsync(string path, CancellationToken cancellationToken)
-    {
-        var token = await tokens.GetTokenAsync(cancellationToken);
-        if (token is null)
-        {
-            logger.LogWarning("No IVAO application token, so {Path} was not called.", path);
-            return null;
-        }
-
-        using var request = new HttpRequestMessage(HttpMethod.Get, path);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        using var response = await http.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            logger.LogWarning("IVAO answered {Path} with status {Status}.", path, (int)response.StatusCode);
-            return null;
-        }
-
-        using var document = await JsonDocument.ParseAsync(
-            await response.Content.ReadAsStreamAsync(cancellationToken),
-            cancellationToken: cancellationToken);
-
-        return document.RootElement.Clone();
-    }
+    /// <summary>A GET with the application's token, or null when anything at all goes wrong (<see cref="SendAsync"/>).</summary>
+    private Task<JsonElement?> ReadAsync(string path, CancellationToken cancellationToken) =>
+        SendAsync(path, tokens.GetTokenAsync, cancellationToken);
 
     /// <summary>
-    /// <see cref="ReadAsync"/>, with a call that fails read as no answer: for the answers whose failure must stay their own
-    /// (the ATC positions, the bookings a page waits on), and for the pages of the tracker, whose searches answer null when
-    /// IVAO could not be asked (M4, E10a). Every other reference call still fails the run, as it always has. Not the
-    /// caller's cancellation: that one is theirs.
+    /// A GET of something that belongs to nobody, so it carries no token: an installation that has not been given client
+    /// credentials must still be able to read it.
     /// </summary>
-    private async Task<JsonElement?> ReadOrNothingAsync(string path, CancellationToken cancellationToken)
+    private Task<JsonElement?> ReadWithoutTokenAsync(string path, CancellationToken cancellationToken) =>
+        SendAsync(path, bearer: null, cancellationToken);
+
+    /// <summary>
+    /// The one place a call to IVAO is made, and the one place it fails: no token, a status, a network that does not
+    /// answer, a timeout or an open circuit of the resilience handler, a body that is not JSON — each is no answer, a
+    /// warning with the path and never with the token or the body. Until issue #324 only some calls were guarded, one by
+    /// one, and the others threw where their contract promises null: a PIREP already saved answered 500 when IVAO did not.
+    /// The caller's own cancellation is not a failure: that one is theirs.
+    /// </summary>
+    private async Task<JsonElement?> SendAsync(
+        string path,
+        Func<CancellationToken, Task<string?>>? bearer,
+        CancellationToken cancellationToken)
     {
         try
         {
-            return await ReadAsync(path, cancellationToken);
-        }
-        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
-        {
-            logger.LogWarning(exception, "IVAO could not be read at {Path}; it counts as no answer.", path);
-            return null;
-        }
-    }
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            if (bearer is not null)
+            {
+                if (await bearer(cancellationToken) is not { } token)
+                {
+                    logger.LogWarning("No IVAO token, so {Path} was not called.", path);
+                    return null;
+                }
 
-    /// <summary>
-    /// A GET of something that belongs to nobody, so it carries no token — and one that a page is
-    /// waiting on, so nothing it can do gets as far as the reader. The reference calls above are
-    /// made by a job that can afford to fail; this one is made while somebody is looking at a
-    /// page, and a network that is unreachable must read as "no figures", never as an error page.
-    /// </summary>
-    private async Task<JsonElement?> ReadWithoutTokenAsync(string path, CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var response = await http.GetAsync(new Uri(path, UriKind.Relative), cancellationToken);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            using var response = await http.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("IVAO answered {Path} with status {Status}.", path, (int)response.StatusCode);
@@ -515,13 +484,9 @@ public sealed class IvaoApiClient(
 
             return document.RootElement.Clone();
         }
-        catch (Exception exception) when (exception is HttpRequestException or JsonException or TaskCanceledException)
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
-            // Not the cancellation of the request itself: that one is the reader going away, and
-            // it is theirs to make.
-            cancellationToken.ThrowIfCancellationRequested();
-
-            logger.LogWarning(exception, "IVAO could not be reached at {Path}.", path);
+            logger.LogWarning(exception, "IVAO could not be read at {Path}; it counts as no answer.", path);
             return null;
         }
     }

@@ -274,7 +274,7 @@ public sealed class NoaaWeatherClient(HttpClient http, IClock clock, ILogger<Noa
         {
             return await http.GetAsync(new Uri(url, UriKind.Relative), cancellationToken);
         }
-        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        catch (Exception exception) when (OutboundFailure.CouldNotReach(exception))
         {
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning(exception, "NOAA could not be reached at {Url}.", url);
