@@ -24,6 +24,9 @@ namespace IvaoHub.Core.Privacy;
 /// <item>Everywhere else, a property of the JSON that names a person (<see cref="PersonColumns.IsVidName"/>) and holds their
 /// VID takes the pseudonym: the history of a page they wrote stays, with somebody nobody can name as its author.</item>
 /// </list>
+/// Of these, a row that nobody signed in wrote loses its address as well (<see cref="ForgetSignIn"/>): a sign in writes about the
+/// member before they are anybody, so the address there is theirs. The copies of a row a module keeps as it is
+/// (<see cref="ErasureRequest.Keep"/>, a ban in force) stay on the VID, like the row, and lose only the address (<see cref="Kept"/>).
 /// Outside an erasure, one more: a module that deletes rows for retention has the columns marked as a person's data emptied in
 /// their copies (<see cref="EmptyDeletedAsync"/>, M4, E10s).
 /// Tracked rows, saved by the caller; nothing here goes around the context.
@@ -35,7 +38,7 @@ public static class AuditRedaction
 
     private const int Page = 500;
 
-    /// <summary>Empties every audit row of these rows, in the context they were erased through.</summary>
+    /// <summary>Empties every audit row of these rows, in the context they were erased through, and forgets a sign in's address.</summary>
     public static async Task EmptyAsync(
         DbContext context,
         IReadOnlyCollection<(string Table, string Key)> erased,
@@ -50,13 +53,14 @@ public static class AuditRedaction
             {
                 var rows = await context.Set<AuditLogEntry>()
                     .Where(row => row.Entity == table.Key && keys.Contains(row.EntityId)
-                        && (row.BeforeJson != null || row.AfterJson != null))
+                        && (row.BeforeJson != null || row.AfterJson != null || (row.Vid == AuditLogEntry.Nobody && row.Ip != null)))
                     .ToListAsync(cancellationToken);
 
                 foreach (var row in rows)
                 {
                     row.BeforeJson = null;
                     row.AfterJson = null;
+                    ForgetSignIn(row);
                 }
             }
         }
@@ -375,20 +379,47 @@ public static class AuditRedaction
         return changed ? row.ToJsonString() : json;
     }
 
-    /// <summary>Everything else, over the whole log, through the core's context. Returns how many rows it changed.</summary>
-    public static async Task<int> ReplaceAsync(HubDbContext database, int vid, int pseudonym, CancellationToken cancellationToken)
+    /// <summary>
+    /// The rows a module keeps as they are (<see cref="ErasureRequest.Keep"/>) that this context tracks, as table and key: for
+    /// <see cref="ReplaceAsync"/>, which leaves their copies on the VID. The pseudonym there, next to the row that still says the VID,
+    /// would be the one line that ties the two together (issue #323, note <c>2026-10-21-le-tracce-della-persona-nell-audit</c>).
+    /// </summary>
+    public static IReadOnlyList<(string Table, string Key)> Kept(DbContext context, ErasureRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(request);
+
+        return [.. context.ChangeTracker.Entries()
+            .Where(entry => request.IsKept(entry.Entity))
+            .Select(entry => (entry.Metadata.GetTableName() ?? entry.Metadata.ClrType.Name, HubSaveChangesInterceptor.ReadKey(entry)))];
+    }
+
+    /// <summary>
+    /// Everything else, over the whole log, through the core's context, except the copies of the <paramref name="kept"/> rows
+    /// (<see cref="Kept"/>): they keep the VID, as author and in their JSON, and lose only the address. Returns how many rows it
+    /// changed.
+    /// </summary>
+    public static async Task<int> ReplaceAsync(
+        HubDbContext database,
+        int vid,
+        int pseudonym,
+        IReadOnlyCollection<(string Table, string Key)> kept,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(kept);
 
-        var changed = 0;
+        var keep = kept.ToHashSet();
+
+        var changed = new HashSet<long>();
         var text = vid.ToString(CultureInfo.InvariantCulture);
         var alias = pseudonym.ToString(CultureInfo.InvariantCulture);
 
         foreach (var row in await database.AuditLog.Where(row => row.Vid == vid).ToListAsync(cancellationToken))
         {
-            row.Vid = pseudonym;
+            row.Vid = keep.Contains((row.Entity, row.EntityId)) ? vid : pseudonym;
             row.Ip = null;
-            changed++;
+            changed.Add(row.Id);
         }
 
         foreach (var row in await database.AuditLog
@@ -398,13 +429,15 @@ public static class AuditRedaction
             row.EntityId = alias;
             row.BeforeJson = null;
             row.AfterJson = null;
-            changed++;
+            ForgetSignIn(row);
+            changed.Add(row.Id);
         }
 
         // The rows whose JSON mentions the number at all, a page at a time: the walker then decides which of those
         // mentions is a person. A LIKE is a scan of the log, once per erasure, which is rare enough to afford.
         var pattern = $"%{text}%";
         var last = 0L;
+        var named = new HashSet<(string Entity, string Key)>();
         while (true)
         {
             var rows = await database.AuditLog
@@ -419,7 +452,7 @@ public static class AuditRedaction
                 break;
             }
 
-            foreach (var row in rows)
+            foreach (var row in rows.Where(row => !keep.Contains((row.Entity, row.EntityId))))
             {
                 var before = Rewrite(row.BeforeJson, vid, pseudonym);
                 var after = Rewrite(row.AfterJson, vid, pseudonym);
@@ -427,14 +460,46 @@ public static class AuditRedaction
                 {
                     row.BeforeJson = before;
                     row.AfterJson = after;
-                    changed++;
+                    named.Add((row.Entity, row.EntityId));
+                    changed.Add(row.Id);
                 }
             }
 
             last = rows[^1].Id;
         }
 
-        return changed;
+        // By the key, not by the JSON: an updated copy holds only the columns that changed, so the suspension of a grant revoked
+        // since says nothing of whose it was. Its created copy does.
+        foreach (var table in named.GroupBy(row => row.Entity, StringComparer.Ordinal))
+        {
+            foreach (var keys in table.Select(row => row.Key).Chunk(Page))
+            {
+                foreach (var row in await database.AuditLog
+                    .Where(row => row.Entity == table.Key && keys.Contains(row.EntityId)
+                        && row.Vid == AuditLogEntry.Nobody && row.Ip != null)
+                    .ToListAsync(cancellationToken))
+                {
+                    ForgetSignIn(row);
+                    changed.Add(row.Id);
+                }
+            }
+        }
+
+        return changed.Count;
+    }
+
+    /// <summary>
+    /// The address of an audit row about the person that nobody signed in wrote. A sign in writes its rows in the OIDC callback,
+    /// before the cookie exists — their user, the grants it suspends or resumes — so their author is nobody and the address is the
+    /// member's (issue #323): the rows of their user, of a row erased with them and of a row whose copies name them lose it. A row
+    /// somebody signed in wrote about the person keeps the address, which is the author's; a job has none.
+    /// </summary>
+    private static void ForgetSignIn(AuditLogEntry row)
+    {
+        if (row.Vid == AuditLogEntry.Nobody)
+        {
+            row.Ip = null;
+        }
     }
 
     /// <summary>The JSON of one audit row with the person's VID replaced wherever it names a person; the same text when it does not.</summary>

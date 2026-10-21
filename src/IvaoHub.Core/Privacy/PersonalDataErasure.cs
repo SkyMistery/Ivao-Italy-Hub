@@ -99,14 +99,16 @@ public sealed class PersonalDataErasure(
         var pseudonym = await NextPseudonymAsync(cancellationToken);
         var lines = new List<ErasureLine>();
         var named = 0;
+        var kept = new List<(string Table, string Key)>();
 
         using (interceptor.BeginErasure())
         {
             foreach (var module in modules.Enabled)
             {
-                var (moduleLines, moduleNamed) = await EraseModuleAsync(module, new ErasureRequest(vid, pseudonym), cancellationToken);
+                var (moduleLines, moduleNamed, moduleKept) = await EraseModuleAsync(module, new ErasureRequest(vid, pseudonym), cancellationToken);
                 lines.AddRange(moduleLines);
                 named += moduleNamed;
+                kept.AddRange(moduleKept);
             }
 
             await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
@@ -119,7 +121,7 @@ public sealed class PersonalDataErasure(
             await database.SaveChangesAsync(cancellationToken);
 
             await AuditRedaction.EmptyAsync(database, interceptor.TakeErased(database), cancellationToken);
-            var audit = await AuditRedaction.ReplaceAsync(database, vid, pseudonym, cancellationToken);
+            var audit = await AuditRedaction.ReplaceAsync(database, vid, pseudonym, kept, cancellationToken);
 
             lines.Add(new ErasureLine("erasure.lines.named", named, ErasureOutcome.Anonymised));
             lines.Add(new ErasureLine("erasure.lines.audit", audit, ErasureOutcome.Anonymised));
@@ -158,7 +160,7 @@ public sealed class PersonalDataErasure(
         erasers.Where(eraser => modules.Find(eraser.ModuleKey) is not null);
 
     /// <summary>One module: its eraser, then the pseudonym and the audit in each of its contexts, all in one transaction per context.</summary>
-    private async Task<(IReadOnlyList<ErasureLine> Lines, int Named)> EraseModuleAsync(
+    private async Task<(IReadOnlyList<ErasureLine> Lines, int Named, IReadOnlyList<(string Table, string Key)> Kept)> EraseModuleAsync(
         IModule module,
         ErasureRequest request,
         CancellationToken cancellationToken)
@@ -180,8 +182,11 @@ public sealed class PersonalDataErasure(
             var lines = eraser is null ? [] : await eraser.EraseAsync(request, cancellationToken);
 
             var named = 0;
+            var kept = new List<(string Table, string Key)>();
             foreach (var context in contexts)
             {
+                kept.AddRange(AuditRedaction.Kept(context, request));
+
                 // After the eraser, so that what it deleted is gone and emptied whole below; the log keeps the VID until
                 // AuditRedaction.ReplaceAsync, at the very end, and that is what finds the rows gone before today.
                 await AuditRedaction.EmptyGoneAsync(context, request.Vid, cancellationToken);
@@ -197,7 +202,7 @@ public sealed class PersonalDataErasure(
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            return (lines, named);
+            return (lines, named, kept);
         }
         finally
         {
