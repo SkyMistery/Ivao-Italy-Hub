@@ -186,24 +186,16 @@ public static class EmbedEndpoints
     }
 
     /// <summary>
-    /// The source of one block of a body, found by identifier and read off the envelope.
+    /// The source of one interactive block of a body, found by identifier and read off the envelope.
     /// <para>The walker is what enumerates, so a block nested four sections deep is found the same
-    /// way the search index finds its text: nothing here knows what a body looks like.</para>
+    /// way the search index finds its text: nothing here knows what a body looks like. And only an
+    /// interactive block is a frame (#318), whatever another one carries.</para>
     /// </summary>
-    private static string? SourceOf(string bodyJson, string blockId)
-    {
-        var walker = new BlockDocumentWalker([]);
-
-        foreach (var block in walker.EnumerateBlocks(JsonNode.Parse(bodyJson)))
-        {
-            if (string.Equals(block.Id, blockId, StringComparison.Ordinal))
-            {
-                return (block.Node["source"] as JsonValue)?.GetValue<string>();
-            }
-        }
-
-        return null;
-    }
+    private static string? SourceOf(string bodyJson, string blockId) =>
+        new BlockDocumentWalker([])
+            .Sources(JsonNode.Parse(bodyJson))
+            .FirstOrDefault(block => string.Equals(block.Id, blockId, StringComparison.Ordinal))
+            ?.Source;
 
     private static string Compose(string source, string? lang, ContentEntry content)
     {
