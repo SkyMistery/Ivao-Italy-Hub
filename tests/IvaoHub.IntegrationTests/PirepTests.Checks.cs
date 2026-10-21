@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Airspace;
@@ -8,6 +9,7 @@ using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
 using IvaoHub.Modules.FlightOps.Rules;
+using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -89,6 +91,56 @@ public sealed partial class PirepTests
 
         var read = await OkAsync(await pilot.GetAsync($"{PirepEndpoints.Pattern}/{id}", token), token);
         Assert.Empty(read.GetProperty("violatedRules").EnumerateArray());
+    }
+
+    /// <summary>
+    /// The job reads the pilot's other reports as the send does (issue #328, item 1): it runs with nobody signed in, and the
+    /// members' filter left it none, so a route flown already was «new». Rome–Milan rejected, then flown again and accepted; the
+    /// rejected one back in the queue as an upheld dispute leaves it — queued again, its checks older — and the job, the only
+    /// one that runs them then, finds the route flown.
+    /// </summary>
+    [Fact]
+    public async Task TheJobSeesTheRoutesThePilotFlewBefore()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var tourId = await TourAsync(coordinator, TourKind.Distance, parent: null, awardId: null, requiredNm: 600, requiredSubtours: null, token);
+        JsonElement grid = default;
+        foreach (var (from, to) in new[] { (Rome, Milan), (Milan, London) })
+        {
+            grid = await OkAsync(await coordinator.PostAsJsonAsync(LegsUri(tourId), Leg(from, to), token), token);
+        }
+
+        await ReadyAsync(coordinator, tourId, token);
+        var legs = grid.GetProperty("legs").EnumerateArray().Select(Id).ToArray();
+        var error = await CheckedRuleAsync(coordinator, tourId, CheckCatalog.RepeatedRoute, token);
+
+        var first = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-2))), token));
+        var page = await TakeAsync(coordinator, first, token);
+        await StepAsync(coordinator, first, "decide", Decision(PirepStatus.Rejected, [error], RowVersion(page)), token);
+
+        var second = Id(await CreatedAsync(pilot, Reports(tourId), Payload(legs[0], _flights.Add(PilotVid, "XAA100", Rome, Milan, DateTime.UtcNow.AddDays(-1))), token));
+        page = await TakeAsync(coordinator, second, token);
+        await StepAsync(coordinator, second, "decide", Decision(PirepStatus.Accepted, [], RowVersion(page)), token);
+
+        await using var scope = _host.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        await Everything<Pirep>(database).Where(report => report.Id == first)
+            .ExecuteUpdateAsync(
+                set => set
+                    .SetProperty(report => report.Status, PirepStatus.Queued)
+                    .SetProperty(report => report.QueuedAt, DateTime.UtcNow)
+                    .SetProperty(report => report.ChecksRanAt, DateTime.UtcNow.AddMinutes(-1)),
+                token);
+
+        Assert.True(await scope.ServiceProvider.GetRequiredService<FlightCheckJob>().RunAsync(token) >= 1);
+
+        var result = await database.CheckResults.AsNoTracking()
+            .SingleAsync(row => row.PirepId == first && row.CheckKey == CheckCatalog.RepeatedRoute && row.RanBy == CheckRanBy.Server, token);
+        Assert.Equal(CheckOutcome.Failed, result.Outcome);
+        Assert.Equal("flightops:evidence.routeFlownBefore", Assert.Single(FlightChecks.Evidence(result)).Key);
     }
 
     /// <summary>
