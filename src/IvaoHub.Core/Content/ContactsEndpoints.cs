@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -67,6 +68,7 @@ public static class ContactsEndpoints
             });
 
         group.MapPost("/", SubmitAsync)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithName("ContactsSubmit")
             .Produces<ContactSubmittedDto>()
             .ProducesValidationProblem()
@@ -83,6 +85,7 @@ public static class ContactsEndpoints
             .RequireAuthorization(HubPolicies.SignedIn);
 
         group.MapPost("/{id:long}/replies", ReplyAsync)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithName("ContactsReply")
             .Produces<ContactThreadDto>()
             .ProducesValidationProblem()

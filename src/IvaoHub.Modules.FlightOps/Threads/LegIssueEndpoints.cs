@@ -6,6 +6,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Notifications;
+using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
 using IvaoHub.Modules.FlightOps.Pireps;
 using IvaoHub.Modules.FlightOps.Review;
@@ -70,6 +71,7 @@ public static class LegIssueEndpoints
             .WithTags("FlightOpsLegIssues")
             .WithName("FlightOpsLegIssueReport")
             .RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .Produces(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound);

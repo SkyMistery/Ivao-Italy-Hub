@@ -2,10 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.RateLimiting;
@@ -82,23 +84,44 @@ public sealed class MemberWriteLimitTests(MariaDbFixture mariaDb) : IAsyncLifeti
     }
 
     /// <summary>
-    /// Every writing verb of a member's own addresses (<c>/api/…/mine…</c>) carries the limit: a member group added later without it
-    /// is caught here, not by a mail server.
+    /// Every writing verb a member reaches carries the limit: one of a member's own addresses (<c>/api/…/mine…</c>), and any
+    /// other that asks for nothing more than being signed in — no staff permission at the door, like a report on a tour's leg.
+    /// A verb added later without the line is caught here, not by a mail server.
     /// </summary>
     [Fact]
-    public void EveryWritingVerbOfAMembersOwnAddressesCarriesTheLimit()
+    public void EveryWritingVerbAMemberReachesCarriesTheLimit()
     {
         var writes = _factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
-            .Where(endpoint => endpoint.RoutePattern.RawText?.Contains("/mine", StringComparison.Ordinal) == true)
             .Where(endpoint => endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods
-                .Any(method => !HttpMethods.IsGet(method) && !HttpMethods.IsHead(method)) == true)
+                .Any(method => !HttpMethods.IsGet(method) && !HttpMethods.IsHead(method) && !HttpMethods.IsOptions(method)) == true)
+            .Where(endpoint => endpoint.RoutePattern.RawText?.Contains("/mine", StringComparison.Ordinal) == true || OnlySignedIn(endpoint))
             .ToList();
 
-        Assert.NotEmpty(writes);
-        Assert.All(writes, endpoint => Assert.True(
-            endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName == HubRateLimits.MemberWrites,
-            $"{endpoint.RoutePattern.RawText} writes without the members' limit."));
+        Assert.Contains(writes, endpoint => endpoint.RoutePattern.RawText?.Contains("/mine", StringComparison.Ordinal) == true);
+        Assert.Contains(writes, endpoint => endpoint.RoutePattern.RawText?.Contains("/mine", StringComparison.Ordinal) != true);
+
+        var unlimited = writes
+            .Where(endpoint => endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName != HubRateLimits.MemberWrites)
+            .Select(endpoint => $"{string.Join(',', endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()!.HttpMethods)} {endpoint.RoutePattern.RawText}")
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        Assert.True(unlimited.Count == 0, $"These write without the members' limit:\n{string.Join('\n', unlimited)}");
+    }
+
+    /// <summary>
+    /// An endpoint whose door asks only for a signed in user — the core's <c>SignedIn</c>, or the default policy — and no
+    /// permission: what any member reaches.
+    /// </summary>
+    private static bool OnlySignedIn(Endpoint endpoint)
+    {
+        if (endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+        {
+            return false;
+        }
+
+        var policies = endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(data => data.Policy).ToList();
+        return policies.Count > 0 && policies.All(policy => policy is null || policy == HubPolicies.SignedIn);
     }
 
     /// <summary>

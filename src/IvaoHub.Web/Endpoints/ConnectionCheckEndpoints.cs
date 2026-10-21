@@ -6,6 +6,7 @@ using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Modules;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -66,6 +67,7 @@ internal static class ConnectionCheckEndpoints
             return TypedResults.Ok(new ConnectionCheckResponse(hubCheck, archiveCheck));
         })
             .RequireAuthorization(HubPolicies.SignedIn)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithTags("Diagnostics")
             .WithName("ConnectionCheck");
     }

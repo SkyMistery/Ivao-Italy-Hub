@@ -4,6 +4,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -74,6 +75,7 @@ public static class LocaleEndpoints
 
             return TypedResults.Ok(new LocaleResponse(locale));
         })
+        .RequireRateLimiting(HubRateLimits.MemberWrites)
         .WithName("MeSetLocale")
         .RequireAuthorization(HubPolicies.SignedIn);
 
