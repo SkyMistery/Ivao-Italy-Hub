@@ -162,6 +162,16 @@ public sealed class CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto>
     public Expression<Func<TEntity, bool>>? SharedForReading { get; set; }
 
     /// <summary>
+    /// Whether whoever holds the read permission of this list on one row only (<see cref="Division.IHasResourceScope"/>) reads
+    /// every row of that permission's department here, rather than only the rows of its scope. Off by default: a grant on one row
+    /// lists the rows of its scope (note 2026-10-21-il-grant-su-una-riga-elenca-le-sue-righe).
+    /// <para>The queue of the tours' validation is the reason it exists: a validator enabled on one tour reads every report and
+    /// takes only those of their tour (design M2 section 4.1) — the single handler still answers row by row. Only reading, and
+    /// only in this list: the department opens nothing else.</para>
+    /// </summary>
+    public bool ReadableAcrossScopes { get; set; }
+
+    /// <summary>
     /// Which rows of this resource nobody may write, whatever they hold. It is not a permission and
     /// there is no policy that lifts it: these rows are written by something else, and a hand made
     /// change to one would be undone the next time that something else saves.

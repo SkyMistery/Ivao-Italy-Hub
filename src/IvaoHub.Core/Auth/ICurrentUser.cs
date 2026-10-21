@@ -34,7 +34,8 @@ public interface ICurrentUser
     /// the global query filter and the department filter of every list compare a row against.
     /// <para>Not the department of a permission held on one FIR (M3, A11a), nor of one held from outside its department —
     /// a grant to a position of another department (M4, E2b): those reach its rows through the permission itself, and a list
-    /// adds them only when it reads with that permission.</para>
+    /// adds them only when it reads with that permission. Nor of one held on a single row (note
+    /// 2026-10-21-il-grant-su-una-riga-elenca-le-sue-righe): a list adds the rows of its scope.</para>
     /// </summary>
     IReadOnlySet<Department> Departments { get; }
 
