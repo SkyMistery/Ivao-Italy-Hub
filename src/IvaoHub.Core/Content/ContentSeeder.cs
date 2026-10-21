@@ -32,6 +32,7 @@ namespace IvaoHub.Core.Content;
 public sealed class ContentSeeder(
     HubDbContext database,
     ContentPublishService publication,
+    ProjectionRefresh projections,
     BlockDocumentWalker walker,
     HubPaths paths,
     LocaleCatalog catalog,
@@ -54,6 +55,12 @@ public sealed class ContentSeeder(
     /// already have one are not touched.
     /// </summary>
     public const string DashboardSettingPrefix = "page.dashboard:";
+
+    /// <summary>
+    /// The setting that remembers the search index was written again from the published versions, once: before
+    /// 0.10.3 a page projected its draft (note 2026-10-21-il-pubblico-legge-la-versione).
+    /// </summary>
+    public const string SearchFromVersionsKey = "search.content:published-version";
 
     /// <summary>
     /// Templates and the site's own pages belong to whoever owns the site: they are tools of the
@@ -79,7 +86,8 @@ public sealed class ContentSeeder(
                     setting.Key.StartsWith(SettingPrefix)
                     || setting.Key.StartsWith(PageSettingPrefix)
                     || setting.Key.StartsWith(DashboardSettingPrefix)
-                    || setting.Key.StartsWith(CalendarKindSettingPrefix))
+                    || setting.Key.StartsWith(CalendarKindSettingPrefix)
+                    || setting.Key == SearchFromVersionsKey)
                 .Select(setting => setting.Key)
                 .ToListAsync(cancellationToken),
             StringComparer.Ordinal);
@@ -87,6 +95,43 @@ public sealed class ContentSeeder(
         await SeedTemplatesAsync(applied, cancellationToken);
         await SeedPagesAsync(applied, cancellationToken);
         await SeedCalendarKindsAsync(applied, cancellationToken);
+        await ProjectFromVersionsAsync(applied, cancellationToken);
+    }
+
+    /// <summary>
+    /// Writes the search line of every published row again, from its published version, once. Until 0.10.3 a
+    /// page projected the draft its row holds, and a page waiting for approval projected nothing (#317): a line
+    /// stays as it was until its row is saved, so the release that changes the rule rewrites them all, and a
+    /// later one finds the key and does nothing.
+    /// <para>Through the interceptor and not around it (<see cref="ProjectionRefresh"/>), with the versions
+    /// loaded first, so that it reads each where it already is rather than one query a row.</para>
+    /// </summary>
+    private async Task ProjectFromVersionsAsync(HashSet<string> applied, CancellationToken cancellationToken)
+    {
+        if (applied.Contains(SearchFromVersionsKey))
+        {
+            return;
+        }
+
+        var rows = await CrudSource.BackOffice<ContentEntry>(database)
+            .Where(row => row.PublishedVersionId != null && !row.IsTemplate)
+            .ToListAsync(cancellationToken);
+
+        var versions = rows.Select(row => row.PublishedVersionId!.Value).ToList();
+        await database.ContentVersions.Where(version => versions.Contains(version.Id)).LoadAsync(cancellationToken);
+
+        Remember(SearchFromVersionsKey);
+        if (rows.Count == 0)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            // The key is saved by the same save, in the same transaction as the lines.
+            await projections.RefreshAsync(database, rows, cancellationToken);
+        }
+
+        logger.LogInformation("Search index written again from the published versions of {Count} rows.", rows.Count);
     }
 
     /// <summary>

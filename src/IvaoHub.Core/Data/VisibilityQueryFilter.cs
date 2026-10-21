@@ -72,7 +72,17 @@ public static class VisibilityQueryFilter
                         Expression.AndAlso(staff, Is(visibility, Visibility.Staff)),
                         Expression.AndAlso(Is(visibility, Visibility.Department), ofTheirDepartments)))));
 
-        if (typeof(IPublishable).IsAssignableFrom(typeof(TEntity)))
+        if (typeof(IPublishedAsVersion).IsAssignableFrom(typeof(TEntity)))
+        {
+            // A row read through a version of its own is online once it has one, whatever its draft is
+            // doing: a page waiting for approval stays what the public read before (#317).
+            body = Expression.AndAlso(
+                body,
+                Expression.NotEqual(
+                    Expression.Property(entity, nameof(IPublishedAsVersion.PublishedVersionId)),
+                    Expression.Constant(null, typeof(long?))));
+        }
+        else if (typeof(IPublishable).IsAssignableFrom(typeof(TEntity)))
         {
             // EF Core 9 allows a single filter per entity, so the editorial state joins the same
             // expression. The back office reads with IgnoreQueryFilters, inside MapCrud only.

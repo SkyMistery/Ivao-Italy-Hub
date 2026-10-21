@@ -857,6 +857,11 @@ public sealed class HubSaveChangesInterceptor(
 
     private async Task ApplyProjectionsAsync(Pending pending, CancellationToken cancellationToken)
     {
+        foreach (var (reader, from) in RowsToRead(pending))
+        {
+            reader.ProjectFrom(await pending.Context.FindAsync(from.Entity, [from.Key], cancellationToken));
+        }
+
         var requests = BuildRequests(pending);
         if (requests.Count == 0)
         {
@@ -869,6 +874,11 @@ public sealed class HubSaveChangesInterceptor(
 
     private void ApplyProjections(Pending pending)
     {
+        foreach (var (reader, from) in RowsToRead(pending))
+        {
+            reader.ProjectFrom(pending.Context.Find(from.Entity, from.Key));
+        }
+
         var requests = BuildRequests(pending);
         if (requests.Count == 0)
         {
@@ -892,6 +902,34 @@ public sealed class HubSaveChangesInterceptor(
             Snapshot(projection))),
     ];
 
+    /// <summary>
+    /// The rows the projections of this save are made of besides their own (<see cref="IProjectsFromAnotherRow"/>),
+    /// each with the one it reads. A row that is going away reads nothing: it projects nothing.
+    /// </summary>
+    private static List<(IProjectsFromAnotherRow Reader, (Type Entity, object Key) From)> RowsToRead(Pending pending)
+    {
+        var rows = new List<(IProjectsFromAnotherRow, (Type, object))>();
+
+        foreach (var projection in pending.Projections)
+        {
+            if (projection.Removed || projection.Entity is not IProjectsFromAnotherRow reader)
+            {
+                continue;
+            }
+
+            if (reader.ProjectsFrom is { } from)
+            {
+                rows.Add((reader, from));
+            }
+            else
+            {
+                reader.ProjectFrom(null);
+            }
+        }
+
+        return rows;
+    }
+
     private ProjectionSnapshot? Snapshot(PendingProjection projection)
     {
         if (projection.Removed)
@@ -903,10 +941,16 @@ public sealed class HubSaveChangesInterceptor(
 
         // A draft has nothing public to find: the rule lives here, once, instead of in every entity
         // that can be published. What it keeps is the files it uses — a tour being prepared needs its
-        // banner as much as an open one (note 2026-09-15-file-con-scadenza §3).
-        return projection.Entity is IPublishable { Status: not PublishStatus.Published }
-            ? snapshot?.Unpublished()
-            : snapshot;
+        // banner as much as an open one (note 2026-09-15-file-con-scadenza §3). A row read through a
+        // version is published once it has one, whatever its draft is doing (#317).
+        var unpublished = projection.Entity switch
+        {
+            IPublishedAsVersion versioned => versioned.PublishedVersionId is null,
+            IPublishable publishable => publishable.Status != PublishStatus.Published,
+            _ => false,
+        };
+
+        return unpublished ? snapshot?.Unpublished() : snapshot;
     }
 
     private Pending? TakeCompleted(DbContext? context)

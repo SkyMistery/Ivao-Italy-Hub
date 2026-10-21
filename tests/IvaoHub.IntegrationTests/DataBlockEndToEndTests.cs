@@ -410,7 +410,7 @@ public sealed class DataBlockEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifet
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         var clock = scope.ServiceProvider.GetRequiredService<IClock>();
 
-        database.Contents.Add(new ContentEntry
+        var news = new ContentEntry
         {
             Kind = ContentKind.News,
             Slug = $"{category}-{slug}",
@@ -424,9 +424,11 @@ public sealed class DataBlockEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifet
             Title = Both($"Notizia {slug}", $"News {slug}"),
             BodyJson = """{ "schemaVersion": 1, "sections": [] }""",
             Collections = [category],
-        });
+        };
 
+        database.Contents.Add(news);
         await database.SaveChangesAsync(cancellationToken);
+        await PublishedByHand.PublishAsync(database, news, cancellationToken);
     }
 
     /// <summary>

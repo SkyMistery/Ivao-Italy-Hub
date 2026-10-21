@@ -242,9 +242,10 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var sourceId = $"content:{content.Id}";
         Assert.Empty(await ProjectionsOf(database, sourceId, token));
 
-        content.Status = PublishStatus.Published;
-        content.PublishedAt = DateTime.UtcNow;
-        await database.SaveChangesAsync(token);
+        // Published the way publication leaves a row: a version, and the row pointing at it. A content
+        // row is online once it has a published version, and that version is what it projects (note
+        // 2026-10-21-il-pubblico-legge-la-versione).
+        await PublishedByHand.PublishAsync(database, content, token);
 
         var rows = await ProjectionsOf(database, sourceId, token);
         Assert.Equal(2, rows.Count);
@@ -252,8 +253,9 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal("English text", rows.Single(row => row.Locale == "en").Text);
         Assert.Equal($"/{content.Slug}", rows[0].Url);
 
-        // Taking a page back to draft takes it out of the index as well.
+        // Taking a page back to a draft with nothing published takes it out of the index as well.
         content.Status = PublishStatus.Draft;
+        content.PublishedVersionId = null;
         await database.SaveChangesAsync(token);
         Assert.Empty(await ProjectionsOf(database, sourceId, token));
     }

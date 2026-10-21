@@ -403,8 +403,10 @@ public sealed class SearchEndpointTests(MariaDbFixture mariaDb) : IAsyncLifetime
         database.Contents.Add(page);
 
         // The projection into cms_search_index is written by the save changes interceptor, inside
-        // this very transaction. Nothing here writes an index row by hand.
+        // this very transaction. Nothing here writes an index row by hand. What it projects is the
+        // published version, so the page gets one.
         await database.SaveChangesAsync(cancellationToken);
+        await PublishedByHand.PublishAsync(database, page, cancellationToken);
     }
 
     private async Task SeedUserAsync(

@@ -448,13 +448,29 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
             .Take(DataBlockScope.LimitOf(props))
             .ToListAsync(cancellationToken);
 
+        // The title is the published version's, never the draft's: the row goes on being written
+        // after its publication, and a reader is shown what was published (note
+        // 2026-10-21-il-pubblico-legge-la-versione). A second query rather than a join, which would
+        // not keep the order of the first.
+        var versions = rows.Select(row => row.PublishedVersionId).OfType<long>().ToList();
+        var titles = await database.ContentVersions
+            .AsNoTracking()
+            .Where(version => versions.Contains(version.Id))
+            .Select(version => new { version.Id, version.Title })
+            .ToDictionaryAsync(version => version.Id, version => version.Title, cancellationToken);
+
         var items = new JsonArray();
         foreach (var row in rows)
         {
+            if (row.PublishedVersionId is not { } versionId || !titles.TryGetValue(versionId, out var title))
+            {
+                continue;
+            }
+
             var item = new JsonObject
             {
                 ["id"] = row.Id,
-                ["title"] = BlockProps.Translated(row.Title),
+                ["title"] = BlockProps.Translated(title),
                 ["summary"] = BlockProps.Translated(row.Summary),
 
                 // The one place that decides where a row lives is the row itself, so a list and

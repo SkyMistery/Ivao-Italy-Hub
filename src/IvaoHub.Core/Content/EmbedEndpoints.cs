@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -171,10 +172,14 @@ public static class EmbedEndpoints
         }
 
         // A published version never changes, so it is cacheable for as long as a browser will keep
-        // it; a draft changes every ten seconds and is nobody else's business.
+        // it; a draft changes every ten seconds and is nobody else's business. Only the frame of a
+        // public page may be kept by anything other than the browser that asked, and that one for an
+        // hour, the rule a file of the library follows (MediaEndpoints): who may read the page can change.
         http.Response.Headers.CacheControl = draft
             ? "no-store"
-            : "public, max-age=31536000, immutable";
+            : content.Visibility == Visibility.Public
+                ? "public, max-age=31536000, immutable"
+                : "private, max-age=3600";
 
         // Its own policy, and the reason the frame is an endpoint at all. ⚠️ And `X-Frame-Options`
         // goes: the page sends `DENY` on everything, which would stop our own page from framing
