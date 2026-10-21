@@ -3,8 +3,10 @@
 **Data:** 21 ottobre 2026 — revisione del codice del master (nota `2026-10-20-la-revisione-del-codice`, lotto 5), issue #323, PR del
 nucleo `fix/erasure-audit-traces`
 **Stato:** §2 **scelta tecnica**, che applica una regola già decisa (nota `2026-09-25-la-cancellazione-dei-dati-di-una-persona` §4
-punto 2); §3 **Proposta**, perché cambia ciò che la nota `2026-09-25-le-righe-che-restano-con-il-vid` §2 ha deciso: la risposta è di
-Carmine.
+punto 2); §3 **decisa** da Carmine, in chat al master il 21 ottobre 2026 («Tutte come suggerisci tu»), pubblicata su sua istruzione
+([risposta][a323]): l'opzione (A). Cambia il §2 della nota `2026-09-25-le-righe-che-restano-con-il-vid`.
+
+[a323]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/323#issuecomment-6310356156
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si corregge `AuditRedaction`, nessun meccanismo nuovo.
 
 ## 1. Che cosa non va
@@ -31,7 +33,7 @@ cancellazione già riconosce: la riga del suo utente, una riga cancellata con le
 cercata **per chiave**, perché una copia `updated` contiene solo le colonne cambiate e la sospensione di un grant revocato non dice di chi
 era. Una riga sulla persona scritta da qualcuno che era entrato tiene il suo indirizzo, che è di quell'autore; un job non ne ha.
 
-## 3. Le copie di una riga tenuta (Proposta)
+## 3. Le copie di una riga tenuta (decisa: A)
 
 La nota del 25 settembre (§2) ha scelto «le sue righe d'audit prendono lo pseudonimo come tutte le altre» senza vedere che la riga viva
 e la sua storia, una accanto all'altra, sono la chiave dallo pseudonimo al VID.
@@ -42,11 +44,15 @@ e la sua storia, una accanto all'altra, sono la chiave dallo pseudonimo al VID.
 - **(B) Le copie si svuotano** (`before_json`/`after_json` a null, come per una riga cancellata). Nessun legame, ma il ban perde la sua
   storia proprio mentre è in vigore, e la riga tiene comunque il VID.
 
-**Raccomandazione (del master): (A).** Nel codice: la cancellazione raccoglie le chiavi delle righe tenute di ogni contesto (come
-`TakeErased` raccoglie quelle cancellate) e `ReplaceAsync` non riscrive il JSON delle loro copie; un test in `ErasureTests` sulla riga
-tenuta del `SampleEraser`: le sue copie dicono il VID, nessuna lo pseudonimo.
+**Raccomandazione (del master): (A).**
 
-**Risposta di Carmine:** —
+**Risposta di Carmine: (A)** ([risposta][a323]): le copie restano sul VID vero, come la riga, e non prendono mai lo pseudonimo.
+
+Nel codice: dopo l'eraser del modulo, `AuditRedaction.Kept` legge dal contesto le righe tenute (`ErasureRequest.IsKept`) come tabella
+e chiave, come `TakeErased` per quelle cancellate; `ReplaceAsync` le riceve e sulle loro copie lascia il VID **anche come autore**
+(lo pseudonimo nella colonna `vid` accanto al VID del JSON sarebbe lo stesso legame) e toglie solo l'indirizzo, che la riga non
+contiene. Test: `ErasureTests` sulla riga tenuta del `SampleEraser` — le sue copie dicono il VID e nessuna lo pseudonimo, e cercando
+nell'audit lo pseudonimo (autore o JSON) il ban non esce.
 
 ## Da portare nel piano
 
