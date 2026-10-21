@@ -10,11 +10,15 @@ import { loginHref } from '../shared/api/client';
  * The redirect is by `href` and not by `to`, because `/auth/login` is a Kestrel endpoint and not a
  * route of this application: it has to be a full navigation, or the router would look for a page
  * that does not exist.
+ *
+ * ⚠️ `href` alone is not enough: the router reloads the document by itself only for an absolute
+ * address, and `loginHref` returns a path. Without `reloadDocument` the sign-in was an in-app
+ * navigation that `_public/$` answered with "page not found" (issue #329).
  */
 export const Route = createFileRoute('/_member')({
   beforeLoad: ({ context, location }) => {
     if (!context.bootstrap.user) {
-      throw redirect({ href: loginHref(location.href) });
+      throw redirect({ href: loginHref(location.href), reloadDocument: true });
     }
   },
   component: MemberLayout,

@@ -30,7 +30,7 @@ fail while the page is already drawing.
 export const Route = createFileRoute('/_staff')({
   beforeLoad: ({ context, location }) => {
     const me = context.bootstrap;
-    if (!me.user) throw redirect({ href: `/auth/login?returnUrl=${encodeURIComponent(location.href)}` });
+    if (!me.user) throw redirect({ href: loginHref(location.href), reloadDocument: true });
     if (!me.user.isStaff && !me.user.isSuperadmin) throw redirect({ to: '/forbidden' });
   },
   component: StaffLayout,
@@ -41,6 +41,13 @@ Two things are deliberate.
 
 `href`, not `to`, for the login. `/auth/login` is a Kestrel endpoint, not a route of this
 application: it needs a full navigation, and a router `to` would look for a page that does not exist.
+`loginHref` (`shared/api/client.ts`) writes the address, with the return path reduced the way the
+server wants it.
+
+⚠️ And `reloadDocument: true`, because `href` alone does not make the navigation full: the router
+reloads the document by itself only for an absolute address, and `loginHref` returns a path. Without
+it the sign-in was a navigation inside the application, and a signed out visitor opening `/staff`
+read "This page does not exist" at `/auth/login` (#329).
 
 Two different answers. "You are not signed in" sends you to the login; "this is not for you" sends
 you to `/forbidden`. Sending the second to a login screen is how a member ends up in a loop with an
