@@ -25,7 +25,8 @@ namespace IvaoHub.Core.Privacy;
 /// VID takes the pseudonym: the history of a page they wrote stays, with somebody nobody can name as its author.</item>
 /// </list>
 /// Of these, a row that nobody signed in wrote loses its address as well (<see cref="ForgetSignIn"/>): a sign in writes about the
-/// member before they are anybody, so the address there is theirs.
+/// member before they are anybody, so the address there is theirs. The copies of a row a module keeps as it is
+/// (<see cref="ErasureRequest.Keep"/>, a ban in force) stay on the VID, like the row, and lose only the address (<see cref="Kept"/>).
 /// Outside an erasure, one more: a module that deletes rows for retention has the columns marked as a person's data emptied in
 /// their copies (<see cref="EmptyDeletedAsync"/>, M4, E10s).
 /// Tracked rows, saved by the caller; nothing here goes around the context.
@@ -378,10 +379,37 @@ public static class AuditRedaction
         return changed ? row.ToJsonString() : json;
     }
 
-    /// <summary>Everything else, over the whole log, through the core's context. Returns how many rows it changed.</summary>
-    public static async Task<int> ReplaceAsync(HubDbContext database, int vid, int pseudonym, CancellationToken cancellationToken)
+    /// <summary>
+    /// The rows a module keeps as they are (<see cref="ErasureRequest.Keep"/>) that this context tracks, as table and key: for
+    /// <see cref="ReplaceAsync"/>, which leaves their copies on the VID. The pseudonym there, next to the row that still says the VID,
+    /// would be the one line that ties the two together (issue #323, note <c>2026-10-21-le-tracce-della-persona-nell-audit</c>).
+    /// </summary>
+    public static IReadOnlyList<(string Table, string Key)> Kept(DbContext context, ErasureRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(request);
+
+        return [.. context.ChangeTracker.Entries()
+            .Where(entry => request.IsKept(entry.Entity))
+            .Select(entry => (entry.Metadata.GetTableName() ?? entry.Metadata.ClrType.Name, HubSaveChangesInterceptor.ReadKey(entry)))];
+    }
+
+    /// <summary>
+    /// Everything else, over the whole log, through the core's context, except the copies of the <paramref name="kept"/> rows
+    /// (<see cref="Kept"/>): they keep the VID, as author and in their JSON, and lose only the address. Returns how many rows it
+    /// changed.
+    /// </summary>
+    public static async Task<int> ReplaceAsync(
+        HubDbContext database,
+        int vid,
+        int pseudonym,
+        IReadOnlyCollection<(string Table, string Key)> kept,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(kept);
+
+        var keep = kept.ToHashSet();
 
         var changed = new HashSet<long>();
         var text = vid.ToString(CultureInfo.InvariantCulture);
@@ -389,7 +417,7 @@ public static class AuditRedaction
 
         foreach (var row in await database.AuditLog.Where(row => row.Vid == vid).ToListAsync(cancellationToken))
         {
-            row.Vid = pseudonym;
+            row.Vid = keep.Contains((row.Entity, row.EntityId)) ? vid : pseudonym;
             row.Ip = null;
             changed.Add(row.Id);
         }
@@ -424,7 +452,7 @@ public static class AuditRedaction
                 break;
             }
 
-            foreach (var row in rows)
+            foreach (var row in rows.Where(row => !keep.Contains((row.Entity, row.EntityId))))
             {
                 var before = Rewrite(row.BeforeJson, vid, pseudonym);
                 var after = Rewrite(row.AfterJson, vid, pseudonym);

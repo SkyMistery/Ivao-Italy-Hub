@@ -31,8 +31,9 @@ public sealed record ErasureRequest(int Vid, int Pseudonym)
     /// <summary>
     /// Keeps a row as it is, VID included: the core does not write the pseudonym into it. For a row the division keeps about the
     /// person on purpose — a ban still in force, which protects nobody without the VID (note
-    /// <c>2026-09-25-le-righe-che-restano-con-il-vid</c>). The row is the instance the module's context tracks: the core reads
-    /// through the same context, which hands back that very instance.
+    /// <c>2026-09-25-le-righe-che-restano-con-il-vid</c>). Its copies in the audit log stay on the VID too, and lose only the
+    /// address: the pseudonym there would tie it to the VID (note <c>2026-10-21-le-tracce-della-persona-nell-audit</c>). The row is
+    /// the instance the module's context tracks: the core reads through the same context, which hands back that very instance.
     /// </summary>
     public void Keep(object row)
     {

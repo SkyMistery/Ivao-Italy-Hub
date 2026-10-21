@@ -154,9 +154,11 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal((OtherVid, pseudonym), (thread.CreatedBy, thread.UpdatedBy));
         Assert.Equal(pseudonym, (await database.ContactReplies.SingleAsync(row => row.MessageId == theirThread, token)).AuthorVid);
 
-        // The audit log: the VID nowhere, the erased rows' copies empty, the rest of the history kept, one row that says so.
+        // The audit log: the VID nowhere but in the kept row's copies, the erased rows' copies empty, the rest of the history kept,
+        // one row that says so.
         var audit = database.AuditLog.AsNoTracking();
-        Assert.False(await audit.AnyAsync(row => row.Vid == PersonVid, token));
+        var keptKey = kept.ToString(CultureInfo.InvariantCulture);
+        Assert.False(await audit.AnyAsync(row => row.Vid == PersonVid && !(row.Entity == "smp_items" && row.EntityId == keptKey), token));
         Assert.False(await audit.AnyAsync(row => row.Entity == "hub_users" && row.EntityId == text, token));
         // The number alone, wherever it stands: the shared database holds thousands of instants with seven decimals and hex
         // stamps, and its six digits turn up inside one of them by chance (about one six-digit number in sixty, measured on
@@ -167,6 +169,7 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .Select(row => new { row.Id, row.Entity, row.EntityId, row.BeforeJson, row.AfterJson })
             .ToListAsync(token);
         Assert.Empty(mentions
+            .Where(row => !(row.Entity == "smp_items" && row.EntityId == keptKey))
             .Where(row => NamesTheNumber(row.BeforeJson, text) || NamesTheNumber(row.AfterJson, text))
             .Select(row => $"{row.Entity} {row.EntityId}: {row.BeforeJson} {row.AfterJson}"));
         Assert.Contains(mentions, row => row.Id == coincidence && row.AfterJson == CoincidenceJson);
@@ -182,6 +185,22 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             row => row.Action == PersonalDataErasure.AuditAction && row.EntityId == pseudonym.ToString(CultureInfo.InvariantCulture)
                 && row.Vid == SuperadminVid,
             token));
+
+        // The ban kept in force: its copies stay on the VID like the row, as author and in their JSON, without an address. The
+        // pseudonym next to the VID there would tie every other row of theirs back to them, so asking the log for the pseudonym
+        // never finds the ban (issue #323, note 2026-10-21-le-tracce-della-persona-nell-audit).
+        var alias = pseudonym.ToString(CultureInfo.InvariantCulture);
+        var copies = await audit.Where(row => row.Entity == "smp_items" && row.EntityId == keptKey).ToListAsync(token);
+        Assert.NotEmpty(copies);
+        Assert.All(copies, row => Assert.Equal((PersonVid, (string?)null), (row.Vid, row.Ip)));
+        Assert.Contains(copies, row => NamesTheNumber(row.AfterJson, text));
+        Assert.DoesNotContain(copies, row => NamesTheNumber(row.BeforeJson, alias) || NamesTheNumber(row.AfterJson, alias));
+        var byPseudonym = await audit
+            .Where(row => row.Vid == pseudonym || row.BeforeJson!.Contains(alias) || row.AfterJson!.Contains(alias))
+            .Select(row => new { row.Entity, row.EntityId, row.BeforeJson, row.AfterJson, row.Vid })
+            .ToListAsync(token);
+        Assert.NotEmpty(byPseudonym);
+        Assert.DoesNotContain(byPseudonym, row => row.Entity == "smp_items" && row.EntityId == keptKey);
     }
 
     /// <summary>
