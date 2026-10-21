@@ -276,7 +276,7 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         var pending = new Pending(context);
-        var vid = currentUser.IsAuthenticated ? currentUser.Vid : 0;
+        var vid = currentUser.IsAuthenticated ? currentUser.Vid : AuditLogEntry.Nobody;
         var now = clock.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries().ToArray())
@@ -969,7 +969,8 @@ public sealed class HubSaveChangesInterceptor(
         _pending.Remove(pending.Context);
     }
 
-    private static string ReadKey(EntityEntry entry)
+    /// <summary>A tracked row's key as its audit rows hold it in <c>entity_id</c>.</summary>
+    internal static string ReadKey(EntityEntry entry)
     {
         var key = entry.Metadata.FindPrimaryKey();
         if (key is null)

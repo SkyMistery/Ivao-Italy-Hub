@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -46,17 +47,9 @@ internal sealed class TestSignInStartupFilter : IStartupFilter
             }
 
             var division = context.RequestServices.GetRequiredService<IOptions<DivisionOptions>>().Value;
+            var clock = context.RequestServices.GetRequiredService<IClock>();
 
-            var identity = HubClaims.BuildIdentity(
-                signedIn.User.Vid,
-                signedIn.User.FirstName,
-                signedIn.User.LastName,
-                signedIn.User.Locale ?? division.DefaultLocale,
-                signedIn.User.SecurityStamp,
-                signedIn.User.IsSuperadmin,
-                signedIn.User.IsStaff,
-                signedIn.Positions,
-                signedIn.Permissions);
+            var identity = HubClaims.BuildCookieIdentity(signedIn, division.DefaultLocale, clock.UtcNow);
 
             await context.SignInAsync(HubClaims.CookieScheme, new ClaimsPrincipal(identity));
             context.Response.StatusCode = StatusCodes.Status204NoContent;

@@ -6,9 +6,15 @@ namespace IvaoHub.Core.Services;
 /// </summary>
 public sealed class AuditLogEntry
 {
+    /// <summary>
+    /// The author of a write with nobody signed in: a background job, or a sign in, whose rows are written in the callback before
+    /// the member is anybody.
+    /// </summary>
+    public const int Nobody = 0;
+
     public long Id { get; set; }
 
-    /// <summary>VID of the author, 0 for a background job.</summary>
+    /// <summary>VID of the author, <see cref="Nobody"/> for a background job or a sign in.</summary>
     public int Vid { get; set; }
 
     /// <summary>What happened, for example <c>created</c>, <c>updated</c>, <c>deleted</c>.</summary>

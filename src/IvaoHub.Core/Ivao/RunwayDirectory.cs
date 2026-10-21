@@ -2,6 +2,7 @@ using IvaoHub.Core.Data;
 using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace IvaoHub.Core.Ivao;
 
@@ -72,22 +73,64 @@ public sealed class RunwayDirectory(
                 continue;
             }
 
-            foreach (var runway in runways)
+            // A designator IVAO lists twice is one runway end: the table's key is the airport and the designator.
+            var rows = runways.DistinctBy(runway => (runway.AirportIcao, runway.Designator)).ToArray();
+            foreach (var runway in rows)
             {
                 runway.SyncedAt = clock.UtcNow;
                 database.IvaoRunways.Add(runway);
             }
 
-            fetched += runways.Count;
+            if (await SaveAsync(icao, rows, cancellationToken))
+            {
+                fetched += rows.Length;
+            }
         }
 
         if (fetched > 0)
         {
-            await database.SaveChangesAsync(cancellationToken);
             logger.LogInformation("Fetched {Count} runway(s) for {Airports} airport(s).", fetched, missing.Length);
         }
 
         return fetched;
+    }
+
+    /// <summary>
+    /// Saves the runways of one airport, one airport at a time. Two reports to an airport without runways, sent at the same
+    /// moment, both find it missing and both fetch it (issue #324): the second save meets the rows of the first, which are
+    /// the same runways of the same IVAO, so it lets its own go and the report carries on.
+    /// </summary>
+    private async Task<bool> SaveAsync(string icao, IvaoRunway[] rows, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await database.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (IsDuplicate(exception)
+            && exception.Entries.All(entry => entry.Entity is IvaoRunway))
+        {
+            foreach (var row in rows)
+            {
+                database.Entry(row).State = EntityState.Detached;
+            }
+
+            logger.LogInformation("The runways of {Icao} were written by another request first.", icao);
+            return false;
+        }
+    }
+
+    private static bool IsDuplicate(Exception? exception)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public async Task<IReadOnlyList<IvaoRunway>> GetAsync(

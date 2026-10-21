@@ -18,18 +18,18 @@ public static class WeatherServiceCollectionExtensions
 
         // Their policy asks for a user agent of our own and for at most a hundred calls a minute;
         // the standard resilience handler carries the retries and the circuit breaker, as it does
-        // for IVAO.
+        // for IVAO. Its total timeout of thirty seconds is the only one: the handler leaves the client's own timeout
+        // infinite, so the sixty and fifteen seconds once written here were waits nobody got (measured on 21 October 2026,
+        // issue #325 item 1). What it throws when it gives up, the clients read as "could not be reached" (OutboundFailure).
         services.AddHttpClient<NoaaWeatherClient>(client =>
         {
             client.BaseAddress = new Uri("https://aviationweather.gov");
-            client.Timeout = TimeSpan.FromSeconds(60);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
         }).AddStandardResilienceHandler();
 
         services.AddHttpClient<VatsimMetarClient>(client =>
         {
             client.BaseAddress = new Uri("https://metar.vatsim.net");
-            client.Timeout = TimeSpan.FromSeconds(15);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
         }).AddStandardResilienceHandler();
 

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Core.Airspace;
@@ -54,7 +55,7 @@ public sealed class VatSpyFirBoundarySource(HttpClient http, ILogger<VatSpyFirBo
                 await response.Content.ReadAsStreamAsync(cancellationToken),
                 cancellationToken: cancellationToken);
         }
-        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or JsonException)
+        catch (Exception exception) when (OutboundFailure.CouldNotReach(exception) || exception is JsonException)
         {
             cancellationToken.ThrowIfCancellationRequested();
             logger.LogWarning(exception, "The FIR boundaries could not be fetched; keeping what we have.");
