@@ -56,5 +56,5 @@ conseguenze che la correzione porta con sé.
 - §16 (IVAO API, riga 3863 circa): ogni chiamata del client passa da un punto solo e non lancia mai, cancellazione di chi chiama a
   parte; una chiamata di riferimento che cade lascia quella parte della sincronizzazione com'era («partial»), non fa cadere la corsa.
 - §16 (stessa riga): nessun client ha un tempo suo; il limite è il totale del gestore standard, 30 secondi (IVAO, NOAA, VATSIM).
-- Changelog: 0.10.3, il client IVAO non lancia più dove promette null (#324), i client del meteo e dei confini leggono le eccezioni
+- Changelog: 0.10.5, il client IVAO non lancia più dove promette null (#324), i client del meteo e dei confini leggono le eccezioni
   di Polly come «non raggiungibile» (#325 punto 1).
