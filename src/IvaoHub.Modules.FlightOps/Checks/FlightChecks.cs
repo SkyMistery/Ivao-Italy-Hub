@@ -223,7 +223,9 @@ public sealed class FlightChecks(
             [.. callsigns.Where(rule => tour.ParentTourId is { } parent && rule.TourId == parent && rule.LegId == null)],
         ];
 
-        var routes = await database.Pireps.AsNoTracking()
+        // Every report of the pilot, as the job reads them too: the job has nobody signed in, and the members' filter would
+        // leave it none, so every route would be new.
+        var routes = await CrudSource.BackOffice<Pirep>(database).AsNoTracking()
             .Where(report => report.TourId == pirep.TourId && report.Vid == pirep.Vid && report.Id != pirep.Id)
             .Select(report => new { report.Status, report.DepartureIcao, report.ArrivalIcao })
             .ToListAsync(cancellationToken);
