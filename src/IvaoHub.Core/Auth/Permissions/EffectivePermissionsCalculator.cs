@@ -188,25 +188,7 @@ public static class EffectivePermissionsCalculator
 
 
         var held = positions as IReadOnlyCollection<StaffPosition> ?? [.. positions];
-
-        var active = grants
-            .Where(grant => grant.Kind == GrantKind.Permission)
-            // A grant to a position counts for somebody who holds it; a grant to a person has
-            // already been chosen by its VID (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
-            .Where(grant => grant.Vid is not null || grant.IsHeldThrough(held))
-            .Where(grant => grant.SuspendedAt is null)
-            .Where(grant => grant.ExpiresAt is null || grant.ExpiresAt > nowUtc)
-            .Where(grant => catalogue.IsKnown(grant.Value))
-            // A grant may never confer a global permission, nor the right to hand out permissions:
-            // the perimeter of the staff is always decided by IVAO (plan section 6.3).
-            .Where(grant => !catalogue.IsClosedToGrants(grant.Value))
-            // Save a global permission the catalogue says a grant may confer — who assigns the awards (M4, E10f, note
-            // 2026-10-01-chi-assegna-gli-award-con-un-grant) — and that only whole: no department, no row, no FIR team. A global
-            // permission is only ever asked "at all?", which would read any of the three as everywhere. Neither the screen nor
-            // the seed writes such a grant, and one written by hand is not honoured; a deny is taken whole the same way.
-            .Where(grant => !catalogue.IsGlobal(grant.Value)
-                || (grant.Department is null && grant.ResourceScope is null && !grant.PositionFirTeam))
-            .ToArray();
+        var active = Active(grants, held, nowUtc, catalogue);
 
         foreach (var grant in active.Where(grant => grant.Effect == GrantEffect.Grant))
         {
@@ -266,6 +248,53 @@ public static class EffectivePermissionsCalculator
             .ThenBy(permission => permission.Fir, StringComparer.Ordinal)
             .DistinctBy(permission => (permission.Name, permission.Department, permission.ResourceScope, permission.Fir))];
     }
+
+    /// <summary>
+    /// When the first of the grants that count for this person today ends — a grant or a deny: from then on what
+    /// <see cref="Calculate"/> gives is no longer what they hold. Null when none of them ends, and for a super administrator,
+    /// whose permissions no grant decides. The cookie carries it and is refused once it has passed (<see cref="HubClaims.PermissionsUntil"/>).
+    /// </summary>
+    public static DateTime? ValidUntil(
+        IEnumerable<StaffPosition> positions,
+        IEnumerable<UserGrant> grants,
+        bool isSuperadmin,
+        DateTime nowUtc,
+        PermissionCatalog catalogue)
+    {
+        ArgumentNullException.ThrowIfNull(positions);
+        ArgumentNullException.ThrowIfNull(grants);
+        ArgumentNullException.ThrowIfNull(catalogue);
+
+        return isSuperadmin
+            ? null
+            : Active(grants, positions as IReadOnlyCollection<StaffPosition> ?? [.. positions], nowUtc, catalogue)
+                .Min(grant => grant.ExpiresAt);
+    }
+
+    /// <summary>The grants that count for whoever holds <paramref name="held"/>, at <paramref name="nowUtc"/>: the one filter
+    /// <see cref="Calculate"/> and <see cref="ValidUntil"/> both read.</summary>
+    private static UserGrant[] Active(
+        IEnumerable<UserGrant> grants,
+        IReadOnlyCollection<StaffPosition> held,
+        DateTime nowUtc,
+        PermissionCatalog catalogue) =>
+        [.. grants
+            .Where(grant => grant.Kind == GrantKind.Permission)
+            // A grant to a position counts for somebody who holds it; a grant to a person has
+            // already been chosen by its VID (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
+            .Where(grant => grant.Vid is not null || grant.IsHeldThrough(held))
+            .Where(grant => grant.SuspendedAt is null)
+            .Where(grant => grant.ExpiresAt is null || grant.ExpiresAt > nowUtc)
+            .Where(grant => catalogue.IsKnown(grant.Value))
+            // A grant may never confer a global permission, nor the right to hand out permissions:
+            // the perimeter of the staff is always decided by IVAO (plan section 6.3).
+            .Where(grant => !catalogue.IsClosedToGrants(grant.Value))
+            // Save a global permission the catalogue says a grant may confer — who assigns the awards (M4, E10f, note
+            // 2026-10-01-chi-assegna-gli-award-con-un-grant) — and that only whole: no department, no row, no FIR team. A global
+            // permission is only ever asked "at all?", which would read any of the three as everywhere. Neither the screen nor
+            // the seed writes such a grant, and one written by hand is not honoured; a deny is taken whole the same way.
+            .Where(grant => !catalogue.IsGlobal(grant.Value)
+                || (grant.Department is null && grant.ResourceScope is null && !grant.PositionFirTeam))];
 
     /// <summary>Which source is worth keeping when the same permission is reached more than once.</summary>
     private static int Rank(string source) => source switch

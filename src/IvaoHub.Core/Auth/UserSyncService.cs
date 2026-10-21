@@ -42,11 +42,16 @@ public sealed record IvaoUserProfile(
     public decimal? HoursPilot { get; init; }
 }
 
-/// <summary>The identity the hub hands to the cookie once a login has been processed.</summary>
+/// <summary>
+/// The identity the hub hands to the cookie once a login has been processed. <paramref name="PermissionsUntil"/> is when the
+/// first grant behind <paramref name="Permissions"/> ends (<see cref="EffectivePermissionsCalculator.ValidUntil"/>), null when
+/// none does.
+/// </summary>
 public sealed record SignedInUser(
     HubUser User,
     IReadOnlyList<StaffPosition> Positions,
-    IReadOnlyList<EffectivePermission> Permissions);
+    IReadOnlyList<EffectivePermission> Permissions,
+    DateTime? PermissionsUntil = null);
 
 /// <summary>
 /// Turns an IVAO profile into a row of <c>hub_users</c> and a set of effective permissions.
@@ -157,7 +162,11 @@ public sealed class UserSyncService(
             catalogue,
             options.FirStaffScope);
 
-        return new SignedInUser(user, positions, permissions);
+        return new SignedInUser(
+            user,
+            positions,
+            permissions,
+            EffectivePermissionsCalculator.ValidUntil(positions, grants, user.IsSuperadmin, clock.UtcNow, catalogue));
     }
 
     /// <summary>
@@ -217,10 +226,13 @@ public sealed class UserSyncService(
             .Where(grant => grant.Vid == vid || grant.PositionDepartment != null || grant.PositionFirTeam)
             .ToListAsync(cancellationToken);
 
+        var now = clock.UtcNow;
+
         return new SignedInUser(
             user,
             parsed,
-            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, clock.UtcNow, catalogue, options.FirStaffScope));
+            EffectivePermissionsCalculator.Calculate(parsed, grants, user.IsSuperadmin, now, catalogue, options.FirStaffScope),
+            EffectivePermissionsCalculator.ValidUntil(parsed, grants, user.IsSuperadmin, now, catalogue));
     }
 
     /// <summary>
