@@ -547,8 +547,9 @@ Tre layout: `_public` (Navbar Atmosphere + NavigationMenu dal bootstrap + footer
 export const Route = createFileRoute('/_staff')({
   beforeLoad: ({ context, location }) => {
     const me = context.bootstrap;                       // caricato una volta in root con ensureQueryData
-    // /auth/login è un endpoint Kestrel, non una route SPA: redirect per href (navigazione piena), non per `to`
-    if (!me.user) throw redirect({ href: `/auth/login?returnUrl=${encodeURIComponent(location.href)}` });
+    // /auth/login è un endpoint Kestrel, non una route SPA: redirect per href, non per `to`, e con reloadDocument:
+    // il router ricarica da sé solo per un indirizzo assoluto, e loginHref dà un percorso (issue #329, piano 1.41)
+    if (!me.user) throw redirect({ href: loginHref(location.href), reloadDocument: true });
     if (!me.user.isStaff && !me.user.isSuperadmin) throw redirect({ to: '/forbidden' });
   },
   component: StaffLayout,

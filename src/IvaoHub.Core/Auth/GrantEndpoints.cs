@@ -1,5 +1,6 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -72,6 +73,7 @@ public static class GrantEndpoints
         ArgumentNullException.ThrowIfNull(app);
 
         var group = app.MapGroup(SuperadminPattern)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithTags("Superadmins")
             .RequireAuthorization(HubPolicies.SignedIn);
 
