@@ -233,6 +233,7 @@ public static class ModuleSettingsEndpoints
 
             return TypedResults.Ok(await store.WriteAsync(descriptor, key, settings, currentUser.Vid, http.RequestAborted));
         })
+        .RequireRateLimiting(HubRateLimits.MemberWrites)
         .WithName("ModuleSetSettings")
         .RequireAuthorization(Auth.Permissions.HubPolicies.SignedIn);
 
