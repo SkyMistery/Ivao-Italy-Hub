@@ -33,6 +33,12 @@ public sealed record BlockDocumentMissingLocale(string Path, IReadOnlyList<strin
 /// </summary>
 public sealed record BlockDocumentMedia(string Path, long Id);
 
+/// <summary>The code an interactive block carries on its envelope, and where the block is.</summary>
+/// <param name="Id">The identifier of the block.</param>
+/// <param name="Path">Its path in the body, as the errors of the envelope name it.</param>
+/// <param name="Source">The code.</param>
+public sealed record BlockDocumentSource(string Id, string Path, string Source);
+
 /// <summary>The outcome of validating an envelope.</summary>
 public sealed record BlockDocumentValidation(IReadOnlyList<BlockDocumentError> Errors)
 {
@@ -105,6 +111,23 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     private static readonly string[] TemplateOnlyKeys = ["required", "locked"];
 
     private readonly HashSet<string> _locales = new(locales, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The code of every interactive block of the body that carries some, read off the envelope (note
+    /// 2026-09-12-il-blocco-interattivo): what the save compares, to ask for <c>Content.EmbedCode</c> when it
+    /// changes (#318). A block of any other type carries none: the envelope refuses it.
+    /// </summary>
+    public IReadOnlyList<BlockDocumentSource> Sources(JsonNode? body) =>
+    [
+        .. EnumerateBlocks(body)
+            .Where(block => string.Equals(block.Type, CoreBlocks.Interactive, StringComparison.Ordinal)
+                && block.Id is not null)
+            .Select(block => (block, Source: (block.Node["source"] as JsonValue)?.TryGetValue<string>(out var source) == true
+                ? source
+                : null))
+            .Where(read => read.Source is not null)
+            .Select(read => new BlockDocumentSource(read.block.Id!, read.block.Path, read.Source!)),
+    ];
 
     /// <summary>Every block of the body, in reading order, nested sections included.</summary>
     public IEnumerable<BlockDocumentNode> EnumerateBlocks(JsonNode? body) =>
@@ -504,11 +527,19 @@ public sealed class BlockDocumentWalker(IReadOnlyCollection<string> locales)
     /// <para>A block that carries something other than a string is refused rather than ignored: the
     /// endpoint that serves the frame would have nothing to serve, and an empty frame in a published
     /// document is the kind of fault nobody reports because it looks like a missing picture.</para>
+    /// <para>And only an interactive block carries one (#318): code on a block of any other type is code
+    /// nobody sees in the editor and nothing asks <c>Content.EmbedCode</c> about.</para>
     /// </summary>
     private static int CheckSource(BlockDocumentNode block, List<BlockDocumentError> errors)
     {
         if (block.Node["source"] is not JsonNode node)
         {
+            return 0;
+        }
+
+        if (!string.Equals(block.Type, CoreBlocks.Interactive, StringComparison.Ordinal))
+        {
+            errors.Add(new BlockDocumentError("errors.body.sourceNotInteractive", $"{block.Path}.source"));
             return 0;
         }
 

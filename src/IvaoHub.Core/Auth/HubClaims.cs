@@ -42,6 +42,19 @@ public static class HubClaims
     public const string Position = "pos";
     public const string Locale = "locale";
     public const string SecurityStamp = "stamp";
+
+    /// <summary>
+    /// When the person signed in with IVAO, in Unix seconds. The sliding refresh of the cookie moves its issue time and
+    /// never this, so the maximum lifetime of a sign-in counts from here (<see cref="SignInLifetimeOptions"/>).
+    /// </summary>
+    public const string SignedInAt = "signed";
+
+    /// <summary>
+    /// When the first of the grants behind the permissions of the cookie ends, in Unix seconds; absent when none ends. From
+    /// then on the permissions are no longer the ones the person holds, and the cookie is refused.
+    /// </summary>
+    public const string PermissionsUntil = "until";
+
     public const string FirstName = "given_name";
     public const string LastName = "family_name";
 
@@ -197,8 +210,61 @@ public static class HubClaims
     }
 
     /// <summary>
+    /// The identity of the cookie of <paramref name="signedIn"/>, signed in at <paramref name="signedInAtUtc"/>: what the
+    /// IVAO sign-in writes, and the bench's and the tests' sign-ins with it, so that none of them can leave out a claim the
+    /// cookie is checked by.
+    /// </summary>
+    public static ClaimsIdentity BuildCookieIdentity(SignedInUser signedIn, string defaultLocale, DateTime signedInAtUtc)
+    {
+        ArgumentNullException.ThrowIfNull(signedIn);
+
+        return BuildIdentity(
+            signedIn.User.Vid,
+            signedIn.User.FirstName,
+            signedIn.User.LastName,
+            signedIn.User.Locale ?? defaultLocale,
+            signedIn.User.SecurityStamp,
+            signedIn.User.IsSuperadmin,
+            signedIn.User.IsStaff,
+            signedIn.Positions,
+            signedIn.Permissions,
+            signedInAtUtc,
+            signedIn.PermissionsUntil);
+    }
+
+    /// <summary>
+    /// Whether a cookie is still within its lifetime at <paramref name="nowUtc"/>: signed in less than
+    /// <paramref name="maximumLifetime"/> ago, and before the first of its grants ends. A cookie that does not say when it
+    /// was signed in is not.
+    /// </summary>
+    public static bool IsWithinLifetime(ClaimsPrincipal principal, DateTime nowUtc, TimeSpan maximumLifetime)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+
+        if (ReadInstant(principal, SignedInAt) is not { } signedInAt || nowUtc >= signedInAt + maximumLifetime)
+        {
+            return false;
+        }
+
+        // A value that is there and cannot be read is no promise that nothing ends: refused, as a missing stamp is.
+        return principal.FindFirstValue(PermissionsUntil) is null
+            || (ReadInstant(principal, PermissionsUntil) is { } until && nowUtc < until);
+    }
+
+    private static DateTime? ReadInstant(ClaimsPrincipal principal, string type) =>
+        long.TryParse(principal.FindFirstValue(type), NumberStyles.None, CultureInfo.InvariantCulture, out var seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime
+            : null;
+
+    private static string WriteInstant(DateTime utc) =>
+        new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc)).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// Builds the application identity. This is the only place a hub cookie is composed, so a test
     /// authentication handler produces exactly the same principal as a real IVAO login.
+    /// <para><paramref name="signedInAt"/> and <paramref name="permissionsUntil"/> are a cookie's lifetime: an identity that
+    /// never becomes a cookie — a personal token's, a test's principal — leaves them out, and a cookie without the first is
+    /// refused (<see cref="IsWithinLifetime"/>).</para>
     /// </summary>
     public static ClaimsIdentity BuildIdentity(
         int vid,
@@ -209,7 +275,9 @@ public static class HubClaims
         bool isSuperadmin,
         bool isStaff,
         IEnumerable<StaffPosition> positions,
-        IEnumerable<EffectivePermission> permissions)
+        IEnumerable<EffectivePermission> permissions,
+        DateTime? signedInAt = null,
+        DateTime? permissionsUntil = null)
     {
         ArgumentNullException.ThrowIfNull(positions);
         ArgumentNullException.ThrowIfNull(permissions);
@@ -221,6 +289,16 @@ public static class HubClaims
         identity.AddClaim(new Claim(LastName, lastName));
         identity.AddClaim(new Claim(Locale, locale));
         identity.AddClaim(new Claim(SecurityStamp, securityStamp));
+
+        if (signedInAt is { } at)
+        {
+            identity.AddClaim(new Claim(SignedInAt, WriteInstant(at)));
+        }
+
+        if (permissionsUntil is { } until)
+        {
+            identity.AddClaim(new Claim(PermissionsUntil, WriteInstant(until)));
+        }
 
         if (isSuperadmin)
         {
