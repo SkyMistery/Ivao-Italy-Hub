@@ -83,10 +83,12 @@ public static class PersonalTokenEndpoints
         });
 
         group.MapPost("/", CreateAsync)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithName("MyTokensCreate")
             .RequireAuthorization(HubPolicies.SignedIn);
 
         group.MapPost("/{id:long}/revoke", RevokeAsync)
+            .RequireRateLimiting(HubRateLimits.MemberWrites)
             .WithName("MyTokensRevoke")
             .RequireAuthorization(HubPolicies.SignedIn);
 
