@@ -139,3 +139,55 @@ test.each([
     expect(screen.queryAllByText(editor.renderModeHint)).toHaveLength(shown);
   },
 );
+
+test('a locked body is not changed by a key, by the way back, or by the template (issue #332, item 7)', async () => {
+  const user = userEvent.setup();
+  const onChange = vi.fn<(body: Body) => void>();
+  const written = {
+    ...initial,
+    sections: [
+      {
+        ...initial.sections[0],
+        blocks: [
+          {
+            id: 'b1',
+            type: CORE_BLOCK_TYPES.heading,
+            version: 1,
+            props: { level: 2, text: { en: 'Waiting words' } },
+          },
+        ],
+      },
+    ],
+  } as unknown as Body;
+  // A template with a section this page has not got: the panel offers to add it.
+  const template = {
+    schemaVersion: 1,
+    sections: [{ ...initial.sections[0], id: 't1', key: 'extra', blocks: [] }],
+  } as unknown as Body;
+
+  renderWithProviders(
+    <BodyEditor
+      initial={written}
+      onChange={onChange}
+      toolbar={(tools) => <div role="toolbar">{tools}</div>}
+      locales={['en']}
+      division={{ defaultLocale: 'en', timezone: 'UTC' }}
+      mediaLibrary={mediaLibrary}
+      holds={() => false}
+      template={{ body: template, title: { en: 'Template' }, department: 'WD', canManage: false }}
+      locked
+    />,
+  );
+
+  // Picked on the page, which only shows it; then the keys that act on what is picked, and the way back.
+  await user.click(screen.getByText('Waiting words'));
+  await user.keyboard('{Delete}');
+  await user.keyboard('{Control>}d{/Control}');
+  await user.keyboard('{Control>}z{/Control}');
+  await user.keyboard('{Control>}y{/Control}');
+
+  expect(onChange).not.toHaveBeenCalled();
+  expect(screen.getByText('Waiting words')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: editor.undo })).toBeDisabled();
+  expect(screen.getByRole('button', { name: editor.template.apply.added })).toBeDisabled();
+});

@@ -185,7 +185,15 @@ export function BodyEditor({
   // read out, and one line at a time is acted on (design M1 §9.1).
   const differences = templateDiff(body, templateBody);
 
+  // ⚠️ Locked is locked by every road, and this is the one every road goes through. The fieldset
+  // below switches off the buttons inside it and nothing else: Delete and ⌘D on what is picked, ⌘Z,
+  // undo and redo in the toolbar and the template's "align" sit outside it, and a page waiting for
+  // approval was changed by them — then saved by itself once approved (issue #332, item 7).
   const change = (next: Body, options?: { coalesce?: string }) => {
+    if (locked) {
+      return;
+    }
+
     history.change(next, options);
     onChange(next);
   };
@@ -212,8 +220,8 @@ export function BodyEditor({
     return true;
   };
 
-  const undo = () => restore(history.undo());
-  const redo = () => restore(history.redo());
+  const undo = () => !locked && restore(history.undo());
+  const redo = () => !locked && restore(history.redo());
   useHistoryShortcuts(undo, redo);
 
   // A double click on the page: picked, and the cursor in the first field of the panel — the
@@ -558,6 +566,11 @@ export function BodyEditor({
   // is offered down to the level the server still accepts, as in the outline. Written once, and
   // read by the page, by the keys below, and by nothing else.
   const actionsFor = ({ kind, id }: { kind: 'section' | 'block'; id: string }) => {
+    // Nothing on a locked body: neither the bar on the picked thing nor the keys that run its commands.
+    if (locked) {
+      return [];
+    }
+
     if (kind === 'block') {
       const found = findBlock(body, id);
       if (found === undefined || ruleFor(rules, found.section.key).locked) {
@@ -677,12 +690,12 @@ export function BodyEditor({
 
       {/* Also ⌘Z and ⌘⇧Z, outside a field (`useHistoryShortcuts`); the buttons are what says
           the two exist, and the road for anybody who does not know the keys. */}
-      <Button type="button" variant="ghost" disabled={!history.canUndo} onClick={undo}>
+      <Button type="button" variant="ghost" disabled={locked || !history.canUndo} onClick={undo}>
         <Undo2 aria-hidden className="mr-2 size-4" />
         {t('content.editor.undo')}
       </Button>
 
-      <Button type="button" variant="ghost" disabled={!history.canRedo} onClick={redo}>
+      <Button type="button" variant="ghost" disabled={locked || !history.canRedo} onClick={redo}>
         <Redo2 aria-hidden className="mr-2 size-4" />
         {t('content.editor.redo')}
       </Button>
@@ -702,6 +715,7 @@ export function BodyEditor({
           <TemplateDifferences
             body={body}
             differences={differences}
+            locked={locked}
             onAlign={(difference) => change(applyDifference(body, templateBody, difference))}
           />
 

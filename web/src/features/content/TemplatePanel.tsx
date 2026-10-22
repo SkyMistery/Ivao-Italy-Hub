@@ -24,10 +24,13 @@ import { MANAGE_TEMPLATES } from './templateRules';
 export function TemplateDifferences({
   body,
   differences,
+  locked = false,
   onAlign,
 }: {
   body: Body;
   differences: readonly TemplateDifference[];
+  /** A page that is read and not written: the differences are still said, and none can be applied. */
+  locked?: boolean;
   onAlign: (difference: AlignableDifference) => void;
 }) {
   const { t } = useTranslation();
@@ -80,7 +83,13 @@ export function TemplateDifferences({
                 {t('content.editor.template.yoursToDecide')}
               </span>
             ) : (
-              <Button type="button" variant="secondary" size="sm" onClick={() => onAlign(difference)}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={locked}
+                onClick={() => onAlign(difference)}
+              >
                 {t(`content.editor.template.apply.${difference.kind}`)}
               </Button>
             )}

@@ -134,3 +134,98 @@ test('a press on save settles the draft, and flushing saves at once', async () =
   expect(save).toHaveBeenCalledTimes(1);
   expect(result.current.dirty).toBe(false);
 });
+
+/** A save that answers only when told to, so that a second one can be asked for while it is in flight. */
+function heldSaving() {
+  const answers: ((outcome: SaveOutcome) => void)[] = [];
+  const save = vi.fn(
+    () =>
+      new Promise<SaveOutcome>((resolve) => {
+        answers.push(resolve);
+      }),
+  );
+
+  return { save, answer: (outcome: SaveOutcome) => answers.shift()?.(outcome) };
+}
+
+test('a flush while a save is in flight waits for it, and then sends what changed since (issue #332, item 8)', async () => {
+  const { save, answer } = heldSaving();
+  const { result, rerender } = mount(save);
+
+  rerender({ snapshot: 'first', busy: false });
+  let first: Promise<boolean> = Promise.resolve(false);
+  act(() => {
+    first = result.current.flush();
+  });
+  await act(() => Promise.resolve());
+  expect(save).toHaveBeenCalledTimes(1);
+  expect(result.current.saving).toBe(true);
+
+  // Typed while the first is on its way, and saved again at once — leaving the page, say. Sent
+  // now it would carry the version the first one is about to move, and be answered 409.
+  rerender({ snapshot: 'second', busy: false });
+  let second: Promise<boolean> = Promise.resolve(false);
+  act(() => {
+    second = result.current.flush();
+  });
+  await act(() => Promise.resolve());
+  expect(save).toHaveBeenCalledTimes(1);
+
+  await act(async () => {
+    answer('saved');
+    expect(await first).toBe(true);
+  });
+  expect(save).toHaveBeenCalledTimes(2);
+
+  await act(async () => {
+    answer('saved');
+    expect(await second).toBe(true);
+  });
+  expect(result.current.dirty).toBe(false);
+  expect(result.current.saving).toBe(false);
+});
+
+test('a flush asked twice for one draft saves it once', async () => {
+  const { save, answer } = heldSaving();
+  const { result, rerender } = mount(save);
+
+  rerender({ snapshot: 'once', busy: false });
+  let first: Promise<boolean> = Promise.resolve(false);
+  let second: Promise<boolean> = Promise.resolve(false);
+  act(() => {
+    first = result.current.flush();
+    second = result.current.flush();
+  });
+
+  await act(async () => {
+    await Promise.resolve();
+    answer('saved');
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+  });
+  expect(save).toHaveBeenCalledTimes(1);
+});
+
+test('a write of the screen waits for the save in flight, and the pause does not start under it', async () => {
+  const { save, answer } = heldSaving();
+  const { result, rerender } = mount(save);
+
+  rerender({ snapshot: 'autosaved', busy: false });
+  await act(() => vi.advanceTimersByTimeAsync(10_000));
+  expect(save).toHaveBeenCalledTimes(1);
+
+  // "Save draft" pressed — or Enter in a field — while the save after the pause is in flight.
+  const pressed = vi.fn(() => Promise.resolve('stored'));
+  let written: Promise<string> = Promise.resolve('');
+  act(() => {
+    written = result.current.exclusive(pressed);
+  });
+  await act(() => Promise.resolve());
+  expect(pressed).not.toHaveBeenCalled();
+
+  await act(async () => {
+    answer('saved');
+    expect(await written).toBe('stored');
+  });
+  expect(pressed).toHaveBeenCalledTimes(1);
+});

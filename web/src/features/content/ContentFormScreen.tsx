@@ -200,13 +200,18 @@ export function ContentFormScreen({
         locked={waiting}
         {...(reviewed
           ? {
-              review: (flush: () => Promise<boolean>) => (
+              review: (flush: () => Promise<boolean>, adopt: (row: ContentDetailDto) => void) => (
                 <ReviewPanel
                   content={content}
                   locales={locales}
                   mayApprove={mayApprove}
                   flush={flush}
-                  onChanged={askAgain}
+                  onChanged={(row) => {
+                    // A step of the review writes the row too: the draft moves on with it, or the
+                    // next save would be answered as if somebody else had taken it.
+                    adopt(row);
+                    askAgain();
+                  }}
                 />
               ),
             }
@@ -258,22 +263,24 @@ export function ContentFormScreen({
         onPublish={
           !mayPublish
             ? null
-            : (request) =>
-                publish.mutate(request, {
-                  onSuccess: () => {
-                    notice({ tone: 'success', title: t('content.editor.published') });
-                    askAgain();
-                  },
+            : async (request) => {
+                try {
+                  const published = await publish.mutateAsync(request);
+                  notice({ tone: 'success', title: t('content.editor.published') });
+                  askAgain();
+                  // The row as published: the editor's draft moves on with it.
+                  return published;
+                } catch (error) {
                   // The reason stays in `PublishProblems`, which names the block and the language.
                   // This only says that the click was answered, and answered no: the list of
                   // reasons is above the form and may well be off the screen.
-                  onError: () => {
-                    notice({ tone: 'error', title: t('content.editor.publishRefused') });
-                    // The reason is the list above the form, and it is the same list: ask for it
-                    // again rather than reading the refusal, so there is one answer and not two.
-                    askAgain();
-                  },
-                })
+                  notice({ tone: 'error', title: t('content.editor.publishRefused') });
+                  // The reason is the list above the form, and it is the same list: ask for it
+                  // again rather than reading the refusal, so there is one answer and not two.
+                  askAgain();
+                  throw error;
+                }
+              }
         }
         onDelete={
           isNew
