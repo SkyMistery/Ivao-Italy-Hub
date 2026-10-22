@@ -78,8 +78,7 @@ test('a draft refetched after somebody else saved is refused, not saved over the
   // A comes back to the tab: the detail is asked again, and now carries B's version. What the
   // query client does on a real focus, done by hand — two headless pages are both always "visible".
   const refetched = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'GET' && response.url().endsWith(`/api/content/${row.id}`),
+    (response) => response.request().method() === 'GET' && response.url().endsWith(`/api/content/${row.id}`),
   );
   await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
   expect((await refetched).status()).toBe(200);
@@ -87,8 +86,7 @@ test('a draft refetched after somebody else saved is refused, not saved over the
   // A's draft saves itself after the pause, and is refused: it was written over the version A
   // opened, and B has moved the row since.
   const autosaved = await page.waitForResponse(
-    (response) =>
-      response.request().method() === 'PUT' && response.url().endsWith(`/api/content/${row.id}`),
+    (response) => response.request().method() === 'PUT' && response.url().endsWith(`/api/content/${row.id}`),
     { timeout: 20_000 },
   );
   expect(autosaved.status()).toBe(409);
@@ -98,7 +96,7 @@ test('a draft refetched after somebody else saved is refused, not saved over the
   expect((await readContent(context, row.id)).slug).toBe(`${row.slug}-b`);
 });
 
-test("a draft saved twice by its own editor moves on with its own saves, and is never refused", async ({
+test('a draft saved twice by its own editor moves on with its own saves, and is never refused', async ({
   context,
   page,
   afterwards,
@@ -153,6 +151,9 @@ test("a draft saved twice by its own editor moves on with its own saves, and is 
   // Long enough for a second one, when there is one, to have been answered.
   await page.waitForLoadState('networkidle');
   await expect(status).not.toHaveText(words.autosave.stopped);
-  expect(puts.every((code) => code < 300), `PUT answers: ${puts.join(', ')}`).toBe(true);
+  expect(
+    puts.every((code) => code < 300),
+    `PUT answers: ${puts.join(', ')}`,
+  ).toBe(true);
   expect((await readContent(context, row.id)).slug).toBe(`${row.slug}-3`);
 });

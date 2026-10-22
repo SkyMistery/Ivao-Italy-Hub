@@ -149,7 +149,12 @@ test('a locked body is not changed by a key, by the way back, or by the template
       {
         ...initial.sections[0],
         blocks: [
-          { id: 'b1', type: CORE_BLOCK_TYPES.heading, version: 1, props: { level: 2, text: { en: 'Waiting words' } } },
+          {
+            id: 'b1',
+            type: CORE_BLOCK_TYPES.heading,
+            version: 1,
+            props: { level: 2, text: { en: 'Waiting words' } },
+          },
         ],
       },
     ],
