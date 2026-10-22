@@ -1383,9 +1383,22 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(512)")
                         .HasColumnName("changelog");
 
+                    b.Property<string>("CollectionsJson")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("collections_json");
+
                     b.Property<long>("ContentId")
                         .HasColumnType("bigint")
                         .HasColumnName("content_id");
+
+                    b.Property<long?>("CoverMediaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cover_media_id");
+
+                    b.Property<long?>("FileMediaId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_media_id");
 
                     b.Property<DateTime>("PublishedAt")
                         .HasColumnType("datetime(6)")
@@ -1398,6 +1411,20 @@ namespace IvaoHub.Core.Data.Migrations
                     b.Property<int>("SchemaVersion")
                         .HasColumnType("int")
                         .HasColumnName("schema_version");
+
+                    b.Property<string>("Seo")
+                        .HasColumnType("json")
+                        .HasColumnName("seo_i18n");
+
+                    b.Property<bool>("ShowFooter")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_footer");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("json")
+                        .HasColumnName("summary_i18n");
 
                     b.Property<string>("Title")
                         .IsRequired()

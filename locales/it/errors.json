@@ -87,6 +87,12 @@
         "inReview": "Questa pagina è in attesa di approvazione e non si può cambiare. Ritirala dalla revisione per cambiarla.",
         "menuParent": "Una voce di menu va sotto una voce in cima al menu."
       },
+      "position": {
+        "needsPublish": "Questa pagina e' online: chi la legge e dove sta li cambia chi puo' pubblicarla.",
+        "needsApproval": "Questa pagina e' online e passa dall'approvazione: chi la legge e dove sta li cambia chi puo' approvarla.",
+        "picturesHidden": "Un'immagine della pagina online non e' visibile a questi lettori. Rendila visibile nella libreria, oppure cambiala e pubblica di nuovo.",
+        "capturesNarrower": "La pagina online porta dati catturati per meno lettori. Pubblicala di nuovo, cosi' si catturano per questi."
+      },
       "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
       "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."
     },

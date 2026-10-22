@@ -87,6 +87,12 @@
         "inReview": "This page is waiting for approval and cannot be changed. Withdraw it from the review to change it.",
         "menuParent": "A menu entry goes under an entry at the top of the menu."
       },
+      "position": {
+        "needsPublish": "This page is online: who reads it and where it is are changed by whoever may publish it.",
+        "needsApproval": "This page is online and goes through approval: who reads it and where it is are changed by whoever may approve it.",
+        "picturesHidden": "A picture of the page online is not visible to these readers. Make it visible in the media library, or change it and publish again.",
+        "capturesNarrower": "The page online carries data captured for fewer readers. Publish it again, so that it is captured for these."
+      },
       "tooManyCollections": "A row may be filed in twenty collections at most.",
       "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
     },

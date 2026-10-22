@@ -27,6 +27,12 @@ internal static class PublishedByHand
             Title = content.Title,
             BodyJson = content.BodyJson,
             SchemaVersion = content.SchemaVersion,
+            Summary = content.Summary,
+            Seo = content.Seo,
+            CollectionsJson = content.CollectionsJson,
+            CoverMediaId = content.CoverMediaId,
+            FileMediaId = content.FileMediaId,
+            ShowFooter = content.ShowFooter,
             PublishedAt = content.PublishedAt ?? DateTime.UtcNow,
             PublishedBy = publishedBy,
         };

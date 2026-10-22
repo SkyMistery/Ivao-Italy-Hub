@@ -145,7 +145,9 @@ public static class JsonQuery
         var candidate = mediaId.ToString(CultureInfo.InvariantCulture);
 
         return versions.Where(version =>
-            Mentions(version.BodyJson, SingleKeyPath, candidate)
+            version.CoverMediaId == mediaId
+            || version.FileMediaId == mediaId
+            || Mentions(version.BodyJson, SingleKeyPath, candidate)
             || Mentions(version.BodyJson, ManyKeyPath, candidate));
     }
 
@@ -167,6 +169,29 @@ public static class JsonQuery
 
         var pattern = $"%\"{key}\"%";
         return contents.Where(content => EF.Functions.Like(content.CollectionsJson, pattern));
+    }
+
+    /// <summary>
+    /// The rows whose <b>published version</b> is filed in a collection: what a public list asks, since the
+    /// collections of a row are published with it (note 2026-10-21-i-campi-fuori-dalla-versione). The same
+    /// pattern as <see cref="InCollection"/>, on the version's column. A key that is not one answers <c>null</c>.
+    /// </summary>
+    public static IQueryable<ContentEntry>? PublishedInCollection(
+        this IQueryable<ContentEntry> contents,
+        IQueryable<ContentVersion> versions,
+        string? key)
+    {
+        ArgumentNullException.ThrowIfNull(contents);
+        ArgumentNullException.ThrowIfNull(versions);
+
+        if (!IsCollectionKey(key))
+        {
+            return null;
+        }
+
+        var pattern = $"%\"{key}\"%";
+        return contents.Where(content => versions.Any(version =>
+            version.Id == content.PublishedVersionId && EF.Functions.Like(version.CollectionsJson, pattern)));
     }
 
     /// <summary>What a collection key may be: the shape a category key has always been held to.</summary>

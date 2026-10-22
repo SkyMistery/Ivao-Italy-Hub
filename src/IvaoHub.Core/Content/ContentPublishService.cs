@@ -78,7 +78,13 @@ public sealed class ContentPublishService(
         var body = JsonNode.Parse(content.BodyJson) ?? new JsonObject();
 
         return Incomplete(content, body)
-            ?? await PicturesTheReaderCannotSeeAsync(content, body, cancellationToken);
+            ?? await PicturesTheReaderCannotSeeAsync(
+                content.Visibility,
+                content.OwnerDepartment,
+                body,
+                content.CoverMediaId,
+                content.FileMediaId,
+                cancellationToken);
     }
 
     /// <summary>
@@ -109,6 +115,15 @@ public sealed class ContentPublishService(
             Version = await NextVersionAsync(content.Id, cancellationToken),
             Title = content.Title,
             BodyJson = body.ToJsonString(),
+
+            // The text around the body goes with it (note 2026-10-21-i-campi-fuori-dalla-versione):
+            // the public reads these from the version, and the row is free to change them again.
+            Summary = content.Summary,
+            Seo = content.Seo,
+            CollectionsJson = content.CollectionsJson,
+            CoverMediaId = content.CoverMediaId,
+            FileMediaId = content.FileMediaId,
+            ShowFooter = content.ShowFooter,
             SchemaVersion = content.SchemaVersion,
             Changelog = changelog,
             PublishedAt = now,
@@ -136,6 +151,61 @@ public sealed class ContentPublishService(
         await transaction.CommitAsync(cancellationToken);
 
         return null;
+    }
+
+    /// <summary>
+    /// What stands between a row that is online and the readers it is being given — a visibility or a
+    /// department other than the ones it was published for — without publishing it again (note
+    /// 2026-10-21-i-campi-fuori-dalla-versione). The checks of publication, on what is online: every picture
+    /// of the published version has to be one the new readers may be served, and what the version captured
+    /// (<c>frozen</c> data blocks) was captured under the ceiling of the readers it had, so it may go to the
+    /// new ones only when they are no more than those: <see cref="VisibilityCeiling"/> asked of the old
+    /// readers as if they were a row. A row with nothing online has nothing to check.
+    /// <para>The refusals land on <c>visibility</c>, the control that asked for the change: the paths of the
+    /// published body are not the draft's the editor shows.</para>
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string[]>?> NewReadersProblemsAsync(
+        ContentEntry content,
+        Visibility publishedVisibility,
+        Department publishedDepartment,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        if (await PublishedVersionAsync(content, cancellationToken) is not { } version)
+        {
+            return null;
+        }
+
+        var body = JsonNode.Parse(version.BodyJson) ?? new JsonObject();
+        var keys = new List<string>();
+
+        if (await PicturesTheReaderCannotSeeAsync(
+                content.Visibility,
+                content.OwnerDepartment,
+                body,
+                version.CoverMediaId,
+                version.FileMediaId,
+                cancellationToken) is not null)
+        {
+            keys.Add("errors.content.position.picturesHidden");
+        }
+
+        var captured = walker.EnumerateBlocks(body).Any(block => block.Node["frozen"] is JsonNode frozen
+            && frozen.GetValueKind() != System.Text.Json.JsonValueKind.Null);
+
+        if (captured && !VisibilityCeiling.Allows(
+                content.Visibility,
+                content.OwnerDepartment,
+                publishedVisibility,
+                publishedDepartment))
+        {
+            keys.Add("errors.content.position.capturesNarrower");
+        }
+
+        return keys.Count == 0
+            ? null
+            : new Dictionary<string, string[]>(StringComparer.Ordinal) { ["visibility"] = [.. keys] };
     }
 
     /// <summary>
@@ -198,8 +268,11 @@ public sealed class ContentPublishService(
     /// taken away answers 404 whatever its visibility says.</para>
     /// </summary>
     private async Task<ContentPublishFailure?> PicturesTheReaderCannotSeeAsync(
-        ContentEntry content,
+        Visibility visibility,
+        Department department,
         JsonNode body,
+        long? coverMediaId,
+        long? fileMediaId,
         CancellationToken cancellationToken)
     {
         // The body, plus the two a row names in a column of its own: the cover of a news item and
@@ -210,12 +283,12 @@ public sealed class ContentPublishService(
             .Select(reference => (Field: $"body.{reference.Path}", reference.Id))
             .ToList();
 
-        if (content.CoverMediaId is { } cover)
+        if (coverMediaId is { } cover)
         {
             shown.Add((CoverField, cover));
         }
 
-        if (content.FileMediaId is { } file)
+        if (fileMediaId is { } file)
         {
             shown.Add((FileField, file));
         }
@@ -247,8 +320,8 @@ public sealed class ContentPublishService(
                 errors[field] = ["errors.content.mediaMissing"];
             }
             else if (!VisibilityCeiling.Allows(
-                content.Visibility,
-                content.OwnerDepartment,
+                visibility,
+                department,
                 media.Visibility,
                 media.OwnerDepartment))
             {

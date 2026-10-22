@@ -67,6 +67,9 @@ internal sealed class ContentVersionConfiguration : IEntityTypeConfiguration<Con
         builder.HasKey(version => version.Id);
         builder.Property(version => version.BodyJson).HasColumnType("json").IsRequired();
         builder.Property(version => version.Changelog).HasMaxLength(512);
+        builder.Ignore(version => version.Collections);
+        builder.Property(version => version.CollectionsJson).HasColumnType("json").IsRequired();
+        builder.Property(version => version.ShowFooter).HasDefaultValue(true);
         builder.Property<string>(RetiredColumns.Airac).HasMaxLength(4);
         builder.HasOne(version => version.Content)
             .WithMany()

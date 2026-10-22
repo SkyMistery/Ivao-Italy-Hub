@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using IvaoHub.Core.Localization;
 
 namespace IvaoHub.Core.Content;
@@ -19,6 +21,30 @@ public sealed class ContentVersion
 
     /// <summary>The body with the data blocks marked as frozen already resolved.</summary>
     public string BodyJson { get; set; } = "{}";
+
+    // ---- the text of the row around the body, as it was published (note
+    // 2026-10-21-i-campi-fuori-dalla-versione): what the public reads of a row is this, never the
+    // row, which goes on being written. A document's dates, Pinned and Sort stay on the row: they
+    // are management, not text.
+
+    public Localized<string>? Summary { get; set; }
+
+    public Localized<JsonNode>? Seo { get; set; }
+
+    /// <summary>The collections the row was filed in, as a JSON array of keys (G20).</summary>
+    public string CollectionsJson { get; set; } = "[]";
+
+    /// <summary><see cref="CollectionsJson"/>, read as the list it is.</summary>
+    public IReadOnlyList<string> Collections => JsonSerializer.Deserialize<string[]>(CollectionsJson) ?? [];
+
+    /// <summary>News only: the cover image.</summary>
+    public long? CoverMediaId { get; set; }
+
+    /// <summary>Documents only: the attached file.</summary>
+    public long? FileMediaId { get; set; }
+
+    /// <summary>Whether the footer — version, date, publisher, print — is drawn at the end.</summary>
+    public bool ShowFooter { get; set; } = true;
 
     public int SchemaVersion { get; set; } = 1;
 
