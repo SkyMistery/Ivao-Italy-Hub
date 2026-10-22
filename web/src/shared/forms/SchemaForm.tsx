@@ -176,6 +176,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
+  useNewerRow(form, defaults, onChange !== undefined);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -351,6 +352,49 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       subscription.unsubscribe();
     };
   }, [form]);
+}
+
+/**
+ * A form takes the row again when the row's version moves under it (#332, item 1).
+ *
+ * ⚠️ `defaults` are read by `useForm` once, at mount. The screen hands newer ones after another
+ * action on the same row — a reply moves a contact message's status, archiving or replacing a file
+ * moves the media — and the form kept sending the version it was born with, so the next save was
+ * answered 409, "somebody else changed this", about the person themselves.
+ *
+ * So when the version in `defaults` changes, the form starts again from them **but keeps what the
+ * person has written**: a field whose value differs from the defaults the form last took is set back
+ * to what was typed, and stays dirty. A field nobody touched shows what the row now says. Errors
+ * stay where they are: a message somebody is reading does not vanish because the row moved.
+ *
+ * A live form (`onChange`) is left alone: its screen keeps the row itself and adds the version at
+ * the moment it saves (the content editor), and taking the defaults again would hand the version
+ * back to its shadow and make a save of every save.
+ */
+function useNewerRow<TValues extends Record<string, unknown>>(
+  form: UseFormReturn<TValues, unknown, TValues>,
+  defaults: TValues,
+  live: boolean,
+): void {
+  const version = live ? undefined : defaults['rowVersion'];
+  const taken = useRef({ version, defaults });
+
+  useEffect(() => {
+    if (version === taken.current.version) {
+      return;
+    }
+
+    const before = taken.current.defaults;
+    const typed = form.getValues() as Record<string, unknown>;
+    taken.current = { version, defaults };
+
+    form.reset(defaults, { keepErrors: true });
+    for (const [field, value] of Object.entries(typed)) {
+      if (JSON.stringify(value) !== JSON.stringify(before[field])) {
+        form.setValue(field as never, value as never, { shouldDirty: true });
+      }
+    }
+  }, [form, version, defaults]);
 }
 
 /**
