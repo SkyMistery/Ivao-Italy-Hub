@@ -11,8 +11,8 @@ import { ApiError, type HubProblem } from '../api/problem';
  * error of its own (design M0 §7.5).
  *
  * Field errors land on their field. Anything that is not about a field — a 409 because somebody
- * saved first, a 403 because the row belongs to another department — becomes the alert above the
- * form, because there is no field to point at.
+ * saved first, a 403 because the row belongs to another department, a refusal of the whole row
+ * under `id` — becomes the alert above the form, because there is no field to point at.
  */
 
 /** The i18n key for a status the whole form has to report, not one field. */
@@ -32,7 +32,16 @@ export interface ProblemState {
   readonly reset: () => void;
 }
 
-export function useProblemDetails<TValues extends FieldValues>(form: UseFormReturn<TValues>): ProblemState {
+/**
+ * `place` answers where the form draws the error the server sent under a name — as the form names
+ * it — or null when it draws it nowhere (`whereDrawn`). It is asked rather than assumed because the
+ * hook cannot see the fields, and an error handed to `setError` under a name nothing draws is an
+ * error nobody reads: `id`, the server's refusal of the whole row, was the commonest (#331).
+ */
+export function useProblemDetails<TValues extends FieldValues>(
+  form: UseFormReturn<TValues>,
+  place: (field: string) => string | null,
+): ProblemState {
   const { t, i18n } = useTranslation();
   const [summary, setSummary] = useState<string | null>(null);
 
@@ -46,18 +55,26 @@ export function useProblemDetails<TValues extends FieldValues>(form: UseFormRetu
       }
 
       const fields = Object.entries(error.problem?.errors ?? {});
+      const nowhere: string[] = [];
 
       for (const [field, keys] of fields) {
-        setError(field as Path<TValues>, {
-          type: 'server',
-          message: describe(keys, error.problem, field, t, i18n.language),
-        });
+        const message = describe(keys, error.problem, field, t, i18n.language);
+        const at = place(field);
+
+        if (at === null) {
+          nowhere.push(message);
+        } else {
+          setError(at as Path<TValues>, { type: 'server', message });
+        }
       }
 
-      // A validation answer whose errors all found a field needs no banner: the fields say it.
-      setSummary(fields.length > 0 ? null : statusSummary(error, t));
+      // A validation answer whose errors all found a field needs no banner: the fields say it. What
+      // found none is said above the form, in the words `describeProblem` uses for the same keys.
+      setSummary(
+        fields.length === 0 ? statusSummary(error, t) : nowhere.length === 0 ? null : nowhere.join(' '),
+      );
     },
-    [setError, t, i18n.language],
+    [setError, place, t, i18n.language],
   );
 
   const reset = useCallback(() => setSummary(null), []);

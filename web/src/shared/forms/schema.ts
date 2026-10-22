@@ -391,6 +391,85 @@ function pruneEntry(children: FieldNode[], path: string, entry: unknown): unknow
   return kept;
 }
 
+/**
+ * Where the form draws the error the server sent under `path`, as the form names it, or null when it
+ * draws it nowhere — and then the refusal is the sentence above the form (#331).
+ *
+ * ⚠️ The server names what it refuses after its own DTO, and that is not always a field on screen:
+ * `id` is how it refuses the whole row (an event already started, a report already decided), `""`
+ * is how a rule with no property refuses, a field may be hidden (the row version), an entry of a
+ * list may be one the person has removed since, and below a translated object the field sits in a
+ * tab that may not be the open one. An error put there was an error nobody read: the button
+ * stopped spinning and nothing was said.
+ *
+ * The path is read the way the form reads it — `items.0.name` or `items[0].name` — and a name is
+ * matched without regard to case, because the server lowers only the first letter of a nested path
+ * (`items[0].Name`). A list and an object are drawn themselves: their error sits under their title.
+ */
+export function whereDrawn(fields: readonly FieldNode[], path: string, values: unknown): string | null {
+  const segments = path.replace(/\]/g, '').split(/[.[]/);
+  const drawn: string[] = [];
+  let nodes = fields;
+  let value = values;
+  let parent = '';
+
+  for (let at = 0; at < segments.length; at++) {
+    const segment = segments[at] ?? '';
+    const node = nodes.find((candidate) => keyOf(candidate, parent).toLowerCase() === segment.toLowerCase());
+    if (node === undefined || node.meta.hidden === true) {
+      return null;
+    }
+
+    const key = keyOf(node, parent);
+    drawn.push(key);
+    value = childOf(value, key);
+
+    if (at === segments.length - 1) {
+      return drawn.join('.');
+    }
+
+    switch (node.kind) {
+      case 'object':
+        break;
+
+      case 'list': {
+        // An entry by its index, and only one that is still in the list.
+        const index = segments[++at] ?? '';
+        if (!/^\d+$/.test(index) || !Array.isArray(value) || Number(index) >= value.length) {
+          return null;
+        }
+
+        drawn.push(index);
+        value = (value as unknown[])[Number(index)];
+        // An entry has no line of its own to say anything on: only its fields do.
+        if (at === segments.length - 1) {
+          return null;
+        }
+        break;
+      }
+
+      default:
+        // Inside a field that holds no fields — a language of a translated text, a choice of a set —
+        // or inside a translated object, whose fields are drawn only in the tab that is open.
+        return null;
+    }
+
+    nodes = node.children;
+    parent = node.path;
+  }
+
+  return null;
+}
+
+/** A field's own name within whatever holds it: `name` of `aliases.name`. */
+function keyOf(node: FieldNode, parent: string): string {
+  return parent === '' ? node.path : node.path.slice(parent.length + 1);
+}
+
+function childOf(value: unknown, key: string): unknown {
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
+}
+
 /** The shape zod exposes. Narrow on purpose: only what the walk below actually looks at. */
 interface ZodInternals {
   type: string;

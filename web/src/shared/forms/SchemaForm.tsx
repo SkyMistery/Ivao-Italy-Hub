@@ -42,7 +42,7 @@ import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
 import { ProblemAlert } from './ProblemAlert';
-import { NO_CHOICE, blankEntry, readFields, type FieldNode, type Suggestion } from './schema';
+import { NO_CHOICE, blankEntry, readFields, whereDrawn, type FieldNode, type Suggestion } from './schema';
 import { slugify } from './slug';
 import { useProblemDetails } from './useProblemDetails';
 
@@ -166,8 +166,8 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     // showed on a submit would never show at all.
     mode: onChange === undefined ? 'onSubmit' : 'onChange',
   });
-  const problem = useProblemDetails(form);
   const fields = readFields(schema);
+  const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
   const env: FormEnvironment = { locales, labels, mediaLibrary, uploadMedia, division, onSuggestSearch };
 
   // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
@@ -176,6 +176,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
 
   useProposedSlugs(form, fields, division?.defaultLocale);
   useLiveValues(form, schema, onChange);
+  useNewerRow(form, defaults, onChange !== undefined);
 
   const submit = form.handleSubmit(async (values) => {
     if (onSubmit === undefined) {
@@ -351,6 +352,49 @@ function useLiveValues<TValues extends Record<string, unknown>>(
       subscription.unsubscribe();
     };
   }, [form]);
+}
+
+/**
+ * A form takes the row again when the row's version moves under it (#332, item 1).
+ *
+ * ⚠️ `defaults` are read by `useForm` once, at mount. The screen hands newer ones after another
+ * action on the same row — a reply moves a contact message's status, archiving or replacing a file
+ * moves the media — and the form kept sending the version it was born with, so the next save was
+ * answered 409, "somebody else changed this", about the person themselves.
+ *
+ * So when the version in `defaults` changes, the form starts again from them **but keeps what the
+ * person has written**: a field whose value differs from the defaults the form last took is set back
+ * to what was typed, and stays dirty. A field nobody touched shows what the row now says. Errors
+ * stay where they are: a message somebody is reading does not vanish because the row moved.
+ *
+ * A live form (`onChange`) is left alone: its screen keeps the row itself and adds the version at
+ * the moment it saves (the content editor), and taking the defaults again would hand the version
+ * back to its shadow and make a save of every save.
+ */
+function useNewerRow<TValues extends Record<string, unknown>>(
+  form: UseFormReturn<TValues, unknown, TValues>,
+  defaults: TValues,
+  live: boolean,
+): void {
+  const version = live ? undefined : defaults['rowVersion'];
+  const taken = useRef({ version, defaults });
+
+  useEffect(() => {
+    if (version === taken.current.version) {
+      return;
+    }
+
+    const before = taken.current.defaults;
+    const typed = form.getValues() as Record<string, unknown>;
+    taken.current = { version, defaults };
+
+    form.reset(defaults, { keepErrors: true });
+    for (const [field, value] of Object.entries(typed)) {
+      if (JSON.stringify(value) !== JSON.stringify(before[field])) {
+        form.setValue(field as never, value as never, { shouldDirty: true });
+      }
+    }
+  }, [form, version, defaults]);
 }
 
 /**
@@ -1062,6 +1106,8 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
           <legend className="px-1">
             <H4>{label}</H4>
           </legend>
+          {/* What is wrong with the group as a whole, under its title (#331). */}
+          <FieldError error={groupError(formState.errors, name)} />
           {node.children.map((child) => (
             <Field
               key={child.path}
@@ -1074,7 +1120,15 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
       );
 
     case 'list':
-      return <RepeatableList node={node} name={name} env={env} label={label} />;
+      return (
+        <RepeatableList
+          node={node}
+          name={name}
+          env={env}
+          label={label}
+          error={groupError(formState.errors, name)}
+        />
+      );
   }
 }
 
@@ -1084,11 +1138,14 @@ function RepeatableList({
   name,
   env,
   label,
+  error,
 }: {
   node: Extract<FieldNode, { kind: 'list' }>;
   name: string;
   env: FormEnvironment;
   label: string;
+  /** What is wrong with the list as a whole — none, too many — said under its title (#331). */
+  error: string | undefined;
 }) {
   const { t } = useTranslation();
   const { control } = useFormContext();
@@ -1099,6 +1156,7 @@ function RepeatableList({
       <legend className="px-1">
         <H4>{label}</H4>
       </legend>
+      <FieldError error={error} />
 
       {fields.map((entry, index) => (
         <div key={entry.id} className="border-border flex flex-col gap-4 rounded-md border p-3">
@@ -1450,4 +1508,13 @@ function errorAt(errors: FieldErrors, path: string): string | undefined {
 
   const message = (current as { message?: unknown } | undefined)?.message;
   return typeof message === 'string' ? message : undefined;
+}
+
+/**
+ * The error of a list or an object itself. The server's lands on the group's own name; the schema's
+ * own rule on a list (`min`, `max`) lands under `root`, which is where react-hook-form keeps the
+ * error of a field array so that it does not overwrite the errors of the entries.
+ */
+function groupError(errors: FieldErrors, path: string): string | undefined {
+  return errorAt(errors, path) ?? errorAt(errors, `${path}.root`);
 }
