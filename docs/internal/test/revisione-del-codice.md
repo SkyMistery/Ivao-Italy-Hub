@@ -86,11 +86,12 @@ trovata» invece che all'accesso di IVAO.
 ## 5. Le correzioni
 
 Le domande ⚖️ hanno tutte una risposta di Carmine (21 ottobre 2026, in chat al master, «Tutte come suggerisci tu»), scritta come
-«Maintainer's answer» sulla issue, sulla PR o nell'avviso. Lo stato al 22 ottobre 2026 (piano 1.42):
+«Maintainer's answer» sulla issue, sulla PR o nell'avviso. Lo stato al 22 ottobre 2026, sera (piano 1.43):
 
 | Rilievo | Correzione | Stato |
 |---|---|---|
-| Avviso GHSA-4jch (campi non pubblicati che escono) + #317 | #339, `2026-10-21-il-pubblico-legge-la-versione` | ✅ 0.10.5, avviso pubblicato; i campi fuori dalla versione (la 2) in una PR a sé |
+| Avviso GHSA-4jch (campi non pubblicati che escono) + #317 | #339, `2026-10-21-il-pubblico-legge-la-versione` | ✅ 0.10.5, avviso pubblicato |
+| I campi fuori dalla versione (la 2 di Carmine) | #348, `2026-10-21-i-campi-fuori-dalla-versione` | ✅ in `main` con la 0.11.0, non ancora sulla prova |
 | Avviso GHSA-9h6p (la sessione che non scade) + il logout | #338 | ✅ 0.10.5, avviso pubblicato |
 | Avviso GHSA-rxxv (un grant su una riga e le liste) | #343, `2026-10-21-il-grant-su-una-riga-elenca-le-sue-righe` | ✅ 0.10.5, avviso pubblicato |
 | Avviso GHSA-c964 (le mail dei membri) | #315 (0.10.1) e #340 (tutti i verbi dei membri) | ✅ 0.10.5, avviso pubblicato |
@@ -99,7 +100,8 @@ Le domande ⚖️ hanno tutte una risposta di Carmine (21 ottobre 2026, in chat 
 | #324 il client IVAO che lancia, #325 punto 1 | #344, `2026-10-21-il-client-ivao-non-lancia` | ✅ 0.10.5 |
 | #328 punto 1 il job dei controlli | #337 | ✅ 0.10.3 |
 | #329 l'accesso dalle pagine protette | #335 | ✅ 0.10.2 |
-| #330 l'editor che sovrascrive, #331 il form che nasconde i rifiuti | — | ⬜ major aperte |
+| #330 l'editor che sovrascrive, #332 punti 7 e 8 | #346 | ✅ in `main` con la 0.10.6, non ancora sulla prova |
+| #331 il form che nasconde i rifiuti, #332 punto 1 | #347 | ✅ in `main` con la 0.10.6, non ancora sulla prova |
 | #319 punto 2, #328 punti 5 e 7 | — | ⬜ decise, senza codice |
 | Minori #319–#321, #325, #326, #328, #332, #334 | — | ⬜ |
 | `dalberone`: #311–#314, #322, #327, #333, avviso GHSA-h2hw | — | ⬜ |
