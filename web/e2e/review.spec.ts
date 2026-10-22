@@ -109,6 +109,69 @@ test('a coordinator marks a page ready instead of publishing it, and a page wait
   await expect(page.getByRole('button', { name: englishCommon.content.editor.saveDraft })).toBeDisabled();
 });
 
+test('a page waiting for approval is not changed by a key either, so nothing is left to save after', async ({
+  page,
+}) => {
+  const sent: unknown[] = [];
+  await stubTheApiAsStaff(page, approverBootstrap);
+  await stubThePage(
+    page,
+    {
+      ...aPage,
+      status: 'Ready',
+      body: {
+        schemaVersion: 1,
+        sections: [
+          {
+            id: 's_only',
+            layout: 'stacked',
+            background: 'none',
+            padding: 'md',
+            width: 'default',
+            blocks: [
+              {
+                id: 'b_title',
+                type: 'heading',
+                version: 1,
+                props: { level: 2, text: { en: 'Waiting heading', it: 'Titolo in attesa' } },
+              },
+            ],
+            sections: [],
+          },
+        ],
+      },
+    },
+    sent,
+  );
+
+  await page.goto('/staff/content/20');
+
+  const editor = englishCommon.content.editor;
+  const onThePage = page.getByRole('region', { name: editor.preview });
+  const heading = onThePage.getByRole('heading', { name: 'Waiting heading' });
+
+  // Picked, which only shows it: then Delete, Ctrl+D and Ctrl+Z, the keys that reach past the
+  // fieldset that switches every button off (issue #332, item 7).
+  // Asserted after each key: ⌘Z after Delete would put back what Delete took, and hide it.
+  const draft = page.getByRole('status', { name: editor.autosave.title });
+  await heading.click();
+
+  await page.keyboard.press('Delete');
+  await expect(heading).toHaveCount(1);
+  // Nothing became a draft to store, so nothing is stored by itself once the page is approved and
+  // the editor opens again.
+  await expect(draft).toHaveCount(0);
+
+  await page.keyboard.press('ControlOrMeta+d');
+  await expect(heading).toHaveCount(1);
+  await expect(draft).toHaveCount(0);
+
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(heading).toHaveCount(1);
+  await expect(page.getByRole('button', { name: editor.undo })).toBeDisabled();
+  await expect(draft).toHaveCount(0);
+});
+
 test('whoever may approve reads what changed and corrects the address while approving', async ({ page }) => {
   const sent: unknown[] = [];
   await stubTheApiAsStaff(page, approverBootstrap);

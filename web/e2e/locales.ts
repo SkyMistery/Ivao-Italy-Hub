@@ -127,13 +127,19 @@ interface CommonStrings {
       readonly addSection: string;
       readonly components: string;
       readonly outline: string;
+      readonly undo: string;
       readonly onThePage: string;
       readonly componentsHint: string;
       readonly structure: string;
       readonly properties: string;
       readonly preview: string;
       readonly previewWidths: { readonly phone: string; readonly desktop: string };
-      readonly autosave: { readonly title: string; readonly saved: string; readonly unsaved: string };
+      readonly autosave: {
+        readonly title: string;
+        readonly saved: string;
+        readonly unsaved: string;
+        readonly stopped: string;
+      };
       readonly dropHere: string;
       readonly remove: string;
       readonly removeSection: string;
