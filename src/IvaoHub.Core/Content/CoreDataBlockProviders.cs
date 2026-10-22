@@ -409,8 +409,8 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
     /// <summary>How this kind reads: newest first, or in the order somebody put them in.</summary>
     protected abstract IQueryable<ContentEntry> Order(IQueryable<ContentEntry> query, JsonNode? props);
 
-    /// <summary>The three columns that belong to this kind and not to the other.</summary>
-    protected abstract void Describe(ContentEntry entry, JsonObject item);
+    /// <summary>The columns that belong to this kind and not to the other, from the row and from what was published.</summary>
+    protected abstract void Describe(ContentEntry entry, ContentVersion published, JsonObject item);
 
     public async Task<JsonNode> ResolveAsync(
         JsonNode? props,
@@ -441,28 +441,37 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
 
         if (CollectionOf(props) is { } collection)
         {
-            query = query.InCollection(collection) ?? query.Where(_ => false);
+            query = query.PublishedInCollection(database.ContentVersions, collection) ?? query.Where(_ => false);
         }
 
         var rows = await Order(query, props)
             .Take(DataBlockScope.LimitOf(props))
             .ToListAsync(cancellationToken);
 
-        // The title is the published version's, never the draft's: the row goes on being written
-        // after its publication, and a reader is shown what was published (note
-        // 2026-10-21-il-pubblico-legge-la-versione). A second query rather than a join, which would
-        // not keep the order of the first.
+        // The text is the published version's, never the draft's: the row goes on being written
+        // after its publication, and a reader is shown what was published (notes
+        // 2026-10-21-il-pubblico-legge-la-versione, 2026-10-21-i-campi-fuori-dalla-versione). A
+        // second query rather than a join, which would not keep the order of the first; the body,
+        // which a list never shows, is not read.
         var versions = rows.Select(row => row.PublishedVersionId).OfType<long>().ToList();
-        var titles = await database.ContentVersions
+        var faces = await database.ContentVersions
             .AsNoTracking()
             .Where(version => versions.Contains(version.Id))
-            .Select(version => new { version.Id, version.Title })
-            .ToDictionaryAsync(version => version.Id, version => version.Title, cancellationToken);
+            .Select(version => new ContentVersion
+            {
+                Id = version.Id,
+                Title = version.Title,
+                Summary = version.Summary,
+                CollectionsJson = version.CollectionsJson,
+                CoverMediaId = version.CoverMediaId,
+                FileMediaId = version.FileMediaId,
+            })
+            .ToDictionaryAsync(version => version.Id, cancellationToken);
 
         var items = new JsonArray();
         foreach (var row in rows)
         {
-            if (row.PublishedVersionId is not { } versionId || !titles.TryGetValue(versionId, out var title))
+            if (row.PublishedVersionId is not { } versionId || !faces.TryGetValue(versionId, out var version))
             {
                 continue;
             }
@@ -470,18 +479,18 @@ public abstract class ContentListProvider(HubDbContext database) : IDataBlockPro
             var item = new JsonObject
             {
                 ["id"] = row.Id,
-                ["title"] = BlockProps.Translated(title),
-                ["summary"] = BlockProps.Translated(row.Summary),
+                ["title"] = BlockProps.Translated(version.Title),
+                ["summary"] = BlockProps.Translated(version.Summary),
 
                 // The one place that decides where a row lives is the row itself, so a list and
                 // the search index cannot point at two different addresses.
                 ["url"] = row.Url,
-                ["collections"] = new JsonArray([.. row.Collections.Select(key => (JsonNode?)JsonValue.Create(key))]),
+                ["collections"] = new JsonArray([.. version.Collections.Select(key => (JsonNode?)JsonValue.Create(key))]),
                 ["department"] = row.OwnerDepartment.ToString(),
                 ["publishedAt"] = row.PublishedAt is { } published ? BlockProps.Instant(published) : null,
             };
 
-            Describe(row, item);
+            Describe(row, version, item);
             items.Add(item);
         }
 
@@ -577,12 +586,14 @@ public sealed class NewsListProvider(HubDbContext database) : ContentListProvide
         return newest.ThenByDescending(content => content.Id);
     }
 
-    protected override void Describe(ContentEntry entry, JsonObject item)
+    protected override void Describe(ContentEntry entry, ContentVersion published, JsonObject item)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(published);
         ArgumentNullException.ThrowIfNull(item);
 
-        item["coverMediaId"] = entry.CoverMediaId;
+        // The cover is text of the item, published with it; pinning is how the list is managed.
+        item["coverMediaId"] = published.CoverMediaId;
         item["pinned"] = entry.Pinned;
     }
 }
@@ -599,14 +610,15 @@ public sealed class DocumentListProvider(HubDbContext database) : ContentListPro
             .OrderBy(content => content.Sort)
             .ThenBy(content => content.Id);
 
-    protected override void Describe(ContentEntry entry, JsonObject item)
+    protected override void Describe(ContentEntry entry, ContentVersion published, JsonObject item)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(published);
         ArgumentNullException.ThrowIfNull(item);
 
         // A document with a file is a card with a download; one without is read in the browser
-        // like any other page (design M1 section 3).
-        item["fileMediaId"] = entry.FileMediaId;
+        // like any other page (design M1 section 3). The file is published with it, the order is not.
+        item["fileMediaId"] = published.FileMediaId;
         item["sort"] = entry.Sort;
     }
 }

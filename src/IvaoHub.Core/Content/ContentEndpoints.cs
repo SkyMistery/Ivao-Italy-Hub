@@ -157,6 +157,13 @@ public static class ContentEndpoints
                         return code;
                     }
 
+                    if (!saving.IsNew
+                        && http is not null
+                        && await PositionNotTheirsAsync(entry, saving.Services, http.User, saving.CancellationToken) is { } position)
+                    {
+                        return position;
+                    }
+
                     return await saving.Services
                         .GetRequiredService<ContentAddresses>()
                         .PrepareAsync(content, saving.IsNew, saving.CancellationToken);
@@ -326,6 +333,72 @@ public static class ContentEndpoints
             block => $"body.{block.Path}.source",
             _ => new[] { "errors.body.sourceNotPermitted" },
             StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Where a row that is online stands — who reads it, at which address — is changed by whoever may put it
+    /// online, not by whoever may edit its draft (note 2026-10-21-i-campi-fuori-dalla-versione, decided by
+    /// Carmine on #339): on a row with a published version, <c>visibility</c>, <c>slug</c> and <c>parentId</c>
+    /// need <see cref="CorePermissions.ContentPublish"/> on the row, and <see cref="CorePermissions.ContentApprove"/>
+    /// as well where the kind goes through approval — both asked of the one authorization handler, on the row
+    /// as it would become. The approver who corrects an address while approving does it in the review, not here.
+    /// <para>And new readers — another visibility, another department — go through the checks of
+    /// publication on what is online (<see cref="ContentPublishService.NewReadersProblemsAsync"/>).</para>
+    /// <para>A row with nothing online is a draft, and anybody who may edit it places it: publication is the
+    /// step that asks.</para>
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<string, string[]>?> PositionNotTheirsAsync(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ContentEntry> entry,
+        IServiceProvider services,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken)
+    {
+        if (entry.Property(row => row.PublishedVersionId).OriginalValue is null)
+        {
+            return null;
+        }
+
+        var content = entry.Entity;
+        var moved = new List<string>();
+
+        if (entry.Property(row => row.Visibility).OriginalValue != content.Visibility)
+        {
+            moved.Add("visibility");
+        }
+
+        if (!string.Equals(entry.Property(row => row.Slug).OriginalValue, content.Slug, StringComparison.Ordinal))
+        {
+            moved.Add("slug");
+        }
+
+        if (entry.Property(row => row.ParentId).OriginalValue != content.ParentId)
+        {
+            moved.Add("parentId");
+        }
+
+        if (moved.Count > 0)
+        {
+            var authorization = services.GetRequiredService<IAuthorizationService>();
+            var refusal = !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentPublish)).Succeeded
+                ? "errors.content.position.needsPublish"
+                : services.GetRequiredService<ContentReviewService>().RequiresApproval(content)
+                    && !(await authorization.AuthorizeAsync(user, content, CorePermissions.ContentApprove)).Succeeded
+                    ? "errors.content.position.needsApproval"
+                    : null;
+
+            if (refusal is not null)
+            {
+                return moved.ToDictionary(field => field, _ => new[] { refusal }, StringComparer.Ordinal);
+            }
+        }
+
+        var publishedVisibility = entry.Property(row => row.Visibility).OriginalValue;
+        var publishedDepartment = entry.Property(row => row.OwnerDepartment).OriginalValue;
+
+        return publishedVisibility == content.Visibility && publishedDepartment == content.OwnerDepartment
+            ? null
+            : await services.GetRequiredService<ContentPublishService>()
+                .NewReadersProblemsAsync(content, publishedVisibility, publishedDepartment, cancellationToken);
     }
 
     /// <summary>
@@ -797,13 +870,13 @@ public static class ContentEndpoints
             content.Path,
             content.OwnerDepartment,
             version.Title,
-            content.Summary,
-            content.Seo,
+            version.Summary,
+            version.Seo,
             JsonNode.Parse(version.BodyJson) ?? new JsonObject(),
             version.SchemaVersion,
-            content.Collections,
-            content.CoverMediaId,
-            content.FileMediaId,
+            version.Collections,
+            version.CoverMediaId,
+            version.FileMediaId,
             version.Version,
             version.PublishedAt,
             content.EffectiveOn,
@@ -811,7 +884,7 @@ public static class ContentEndpoints
             content.RetiredAt,
             successor?.Slug,
             successor?.Title,
-            content.ShowFooter,
+            version.ShowFooter,
             string.IsNullOrWhiteSpace(publishedBy) ? null : publishedBy.Trim(),
             files.ToDictionary(
                 media => media.Id.ToString(CultureInfo.InvariantCulture),
