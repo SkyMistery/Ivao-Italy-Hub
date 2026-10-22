@@ -41,7 +41,8 @@ export function ReviewPanel({
   mayApprove: boolean;
   /** Stores what is on screen; false when it could not be stored, and then nothing is marked ready. */
   flush: () => Promise<boolean>;
-  onChanged: () => void;
+  /** Told the row a step of the review left, which has a version of its own. */
+  onChanged: (row: ContentDetailDto) => void;
 }) {
   const { t, i18n } = useTranslation();
   const read = useLocalized();
@@ -71,10 +72,10 @@ export function ReviewPanel({
 
   const act = (request: Parameters<typeof review.mutate>[0], done: string) =>
     review.mutate(request, {
-      onSuccess: () => {
+      onSuccess: (row) => {
         notice({ tone: 'success', title: t(done) });
         setNote('');
-        onChanged();
+        onChanged(row);
       },
     });
 

@@ -29,7 +29,7 @@ export type SaveOutcome = 'saved' | 'conflict' | 'failed';
 export interface Autosave {
   /** Whether the draft differs from what was last stored. */
   dirty: boolean;
-  /** Whether a save this hook started is in flight. */
+  /** Whether a write is in flight or waiting its turn: a save after the pause, a flush, or an `exclusive` one. */
   saving: boolean;
   /** When the draft was last stored, by this hook or by `settle`; `null` until the first time. */
   savedAt: Date | null;
@@ -37,10 +37,20 @@ export interface Autosave {
   stopped: boolean;
   /** True while the draft as it stands was refused, and has not changed since. */
   failed: boolean;
-  /** Saves now, if there is anything to save. Resolves `true` when the draft is stored. */
+  /**
+   * Saves now, if there is anything to save, after any write already in flight. Resolves `true`
+   * when the draft is stored.
+   */
   flush: () => Promise<boolean>;
   /** Told that somebody else stored this snapshot — a press on "save draft" — so it is not dirty. */
   settle: (snapshot: string) => void;
+  /**
+   * Runs a write of the screen's own — a press on "save draft", a publication — after the one in
+   * flight, and holds the next one until it is over. ⚠️ Every write of the row goes through here or
+   * through `flush`: two at once carry the same version, and the second is answered 409 (issue #332,
+   * item 8). A task must not call `flush` itself: it would wait for its own end.
+   */
+  exclusive: <T>(task: () => Promise<T>) => Promise<T>;
 }
 
 export function useAutosave({
@@ -61,50 +71,68 @@ export function useAutosave({
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
   const [stopped, setStopped] = useState(false);
-  const [saving, setSaving] = useState(false);
+  // How many writes are in flight or waiting their turn.
+  const [writes, setWrites] = useState(0);
+  const saving = writes > 0;
 
-  // The screen hands a fresh `save` every render. Kept here so that a render for any other reason
-  // — a query answering, a block selected — does not restart the pause.
-  const latestSave = useRef(save);
+  // The screen hands a fresh `save` and a fresh snapshot every render. Kept here so that a render
+  // for any other reason — a query answering, a block selected — does not restart the pause, and so
+  // that a save that waited for another one sends the draft as it stands **then**.
+  const latest = useRef({ save, snapshot });
   useEffect(() => {
-    latestSave.current = save;
+    latest.current = { save, snapshot };
   });
+
+  // What was last stored and whether a conflict came back, as the writes see them: a write that
+  // waited reads them after the one before it ended, which a render may not have drawn yet.
+  const storedNow = useRef(snapshot);
+  const stoppedNow = useRef(false);
+
+  // The writes, one after the other: each one starts when the one before it has ended, however it ended.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   const dirty = snapshot !== stored;
 
-  const flush = useCallback(async (): Promise<boolean> => {
-    if (!dirty) {
-      return true;
-    }
+  const exclusive = useCallback(<T>(task: () => Promise<T>): Promise<T> => {
+    setWrites((count) => count + 1);
+    const run = queue.current.then(task).finally(() => setWrites((count) => count - 1));
+    queue.current = run.catch(() => undefined);
+    return run;
+  }, []);
 
-    if (stopped) {
-      return false;
-    }
+  const flush = useCallback(
+    (): Promise<boolean> =>
+      exclusive(async () => {
+        const attempt = latest.current.snapshot;
+        if (attempt === storedNow.current) {
+          return true;
+        }
 
-    const attempt = snapshot;
-    setSaving(true);
+        if (stoppedNow.current) {
+          return false;
+        }
 
-    try {
-      const outcome = await latestSave.current();
+        const outcome = await latest.current.save();
 
-      if (outcome === 'saved') {
-        setStored(attempt);
-        setSavedAt(new Date());
-        setRefused(null);
-        return true;
-      }
+        if (outcome === 'saved') {
+          storedNow.current = attempt;
+          setStored(attempt);
+          setSavedAt(new Date());
+          setRefused(null);
+          return true;
+        }
 
-      if (outcome === 'conflict') {
-        setStopped(true);
-      } else {
-        setRefused(attempt);
-      }
+        if (outcome === 'conflict') {
+          stoppedNow.current = true;
+          setStopped(true);
+        } else {
+          setRefused(attempt);
+        }
 
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [dirty, stopped, snapshot]);
+        return false;
+      }),
+    [exclusive],
+  );
 
   useEffect(() => {
     if (!enabled || !dirty || busy || saving || stopped || refused === snapshot) {
@@ -126,9 +154,11 @@ export function useAutosave({
     failed: refused === snapshot,
     flush,
     settle: (saved) => {
+      storedNow.current = saved;
       setStored(saved);
       setSavedAt(new Date());
       setRefused(null);
     },
+    exclusive,
   };
 }

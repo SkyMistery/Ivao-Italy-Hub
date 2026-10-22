@@ -1,7 +1,7 @@
 import { Button, Input, Label } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { frameAddress, readBody, type Body } from '../../blocks';
@@ -51,6 +51,29 @@ import { useAutosave, type SaveOutcome } from './useAutosave';
  * form itself lives in the panel on the right (`SchemaForm`'s `id` and `actionsElsewhere`).
  */
 const METADATA_FORM = 'content-metadata';
+
+/**
+ * The version of the row a draft is based on: the one it was opened at, moved on by `adopt` with
+ * every row this editor's own writes answer. Held in a ref, because it is read when a save starts —
+ * after the one before it, which may have moved it — and never drawn.
+ */
+function useDraftBase(opened: string | null) {
+  const base = useRef(opened);
+
+  const adopt = useCallback((row: ContentDetailDto) => {
+    base.current = row.rowVersion;
+  }, []);
+
+  const withVersion = useCallback(
+    (values: ContentFormValues): ContentFormValues => ({
+      ...values,
+      rowVersion: base.current ?? values.rowVersion,
+    }),
+    [],
+  );
+
+  return { adopt, withVersion };
+}
 
 export function ContentEditor({
   content,
@@ -115,10 +138,20 @@ export function ContentEditor({
    * leaves out of the list for whoever may not add code.
    */
   holds: (permission: string) => boolean;
-  /** `autosave` marks a save the editor made by itself: no toast, and audited without the body. */
-  onSave: (values: ContentFormValues, body: Body, options?: { autosave?: boolean }) => Promise<unknown>;
-  /** Null for a row that does not exist yet: there is nothing to publish until it is saved once. */
-  onPublish: ((request: PublishRequest) => void) | null;
+  /**
+   * `autosave` marks a save the editor made by itself: no toast, and audited without the body.
+   * Answers the row as stored, whose version the next save is written over.
+   */
+  onSave: (
+    values: ContentFormValues,
+    body: Body,
+    options?: { autosave?: boolean },
+  ) => Promise<ContentDetailDto>;
+  /**
+   * Null for a row that does not exist yet: there is nothing to publish until it is saved once.
+   * Answers the row as published, and rejects when it was not — the screen has said why.
+   */
+  onPublish: ((request: PublishRequest) => Promise<ContentDetailDto>) | null;
   onDelete: (() => void) | null;
   /**
    * What the server says stands between this row and the public, asked before anybody presses
@@ -133,9 +166,10 @@ export function ContentEditor({
   locked?: boolean;
   /**
    * The review of this page, drawn under the toolbar. Handed the way to store what is on screen, so
-   * that marking a page ready never sends for approval a draft that was not saved.
+   * that marking a page ready never sends for approval a draft that was not saved, and the way to
+   * say what the review left: the row moves on with it, and so does the draft (`adopt`).
    */
-  review?: (flush: () => Promise<boolean>) => ReactNode;
+  review?: (flush: () => Promise<boolean>, adopt: (row: ContentDetailDto) => void) => ReactNode;
 }) {
   const { t } = useTranslation();
   const moment = useMoment();
@@ -183,14 +217,17 @@ export function ContentEditor({
     enabled: typeof content?.templateId === 'number',
   });
 
-  // ⚠️ The version of the row is the **row's**, read at the moment of saving, and not a field of the
-  // form any more. It used to be, and the form was remounted at every save to refresh it — which a
-  // save made by itself would do under somebody's fingers, taking the cursor out of the title. A
-  // row that does not exist yet has the version a new row carries, from the form.
-  const withVersion = (values: ContentFormValues): ContentFormValues => ({
-    ...values,
-    rowVersion: content?.rowVersion ?? values.rowVersion,
-  });
+  // ⚠️ The version a save is written over is the one **this draft is based on**: the row as it was
+  // opened, moved on only by what this editor itself wrote — a save, a publication, a step of the
+  // review (`adopt`). Not the version of the latest fetch: the detail is asked again whenever the
+  // tab comes back into focus, and a draft sent with somebody else's version is a draft saved over
+  // their save without a 409 (issue #330; rule 5 of `decisions/2026-09-11-l-editor-che-risponde.md`).
+  //
+  // Not a field of the form either. It used to be, and the form was remounted at every save to
+  // refresh it — which a save made by itself would do under somebody's fingers, taking the cursor
+  // out of the title. A row that does not exist yet has the version a new row carries, from the
+  // form.
+  const { adopt, withVersion } = useDraftBase(content?.rowVersion ?? null);
 
   // The draft, as one string: what the autosave compares, so that a change undone before the pause
   // ends is not a save.
@@ -204,7 +241,7 @@ export function ContentEditor({
     busy,
     save: async (): Promise<SaveOutcome> => {
       try {
-        await onSave(withVersion(metadata), body, { autosave: true });
+        adopt(await onSave(withVersion(metadata), body, { autosave: true }));
         return 'saved';
       } catch (error) {
         // 409 is somebody else's save, and the one refusal that must not be retried.
@@ -284,17 +321,22 @@ export function ContentEditor({
             autosave.settle(stored);
           }
 
-          try {
-            await onSave(withVersion(values), body);
-          } catch (error) {
-            if (content === null) {
-              autosave.settle('');
+          // After the save in flight, if there is one: sent at once it would carry the version that
+          // save is about to move (issue #332, item 8). Enter in a one-line field submits however
+          // disabled the button is, so the button is not what keeps the two apart.
+          await autosave.exclusive(async () => {
+            try {
+              adopt(await onSave(withVersion(values), body));
+            } catch (error) {
+              if (content === null) {
+                autosave.settle('');
+              }
+              throw error;
             }
-            throw error;
-          }
 
-          // Stored by a press, so the draft as it stands is not dirty any more.
-          autosave.settle(stored);
+            // Stored by a press, so the draft as it stands is not dirty any more.
+            autosave.settle(stored);
+          });
         }}
         submitLabel={t('content.editor.saveDraft')}
       />
@@ -379,10 +421,16 @@ export function ContentEditor({
                 disabled={busy || autosave.stopped}
                 onConfirm={() => {
                   void (async () => {
-                    if (autosave.dirty && !(await autosave.flush())) {
+                    // The draft first — after any save already in flight — and the publication in
+                    // its turn, so that no save of this editor runs beside it.
+                    if (!(await autosave.flush())) {
                       return;
                     }
-                    onPublish(publishRequest);
+                    try {
+                      await autosave.exclusive(async () => adopt(await onPublish(publishRequest)));
+                    } catch {
+                      // Refused: the screen has said so, and the draft is where it was.
+                    }
                   })();
                 }}
               >
@@ -415,7 +463,7 @@ export function ContentEditor({
       )}
       header={
         <>
-          {review?.(async () => !autosave.dirty || (await autosave.flush()))}
+          {review?.(autosave.flush, adopt)}
 
           <PublishProblems body={body} problems={publishProblems} />
 
