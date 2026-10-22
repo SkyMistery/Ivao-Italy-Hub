@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test } from 'vitest';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { createTestI18n, renderWithProviders } from '../../test/harness';
 
 import { SchemaForm } from './SchemaForm';
 import { describeProblem } from './useProblemDetails';
-import { localized } from './schema';
+import { localized, readFields, whereDrawn } from './schema';
 
 /**
  * The server sends i18n keys and never sentences, so this is where a refusal becomes something a
@@ -112,4 +112,124 @@ test('a refusal about a control that is not a form becomes one sentence', () => 
   expect(describeProblem(new ApiError(429, undefined), t, 'en')).toBe(
     englishErrors.errors.tooManyRequests.title,
   );
+});
+
+/**
+ * A refusal the form has no field for (#331). `id` is how the server refuses the whole row — an event
+ * already started, a report already decided — and it used to be handed to a field nobody draws: the
+ * button stopped spinning and nothing was said. Every such key is the sentence above the form now.
+ */
+const rowSchema = z.object({
+  url: z.string(),
+  items: z.array(z.object({ name: z.string() })),
+  rowVersion: z.string().meta({ hidden: true }),
+});
+const rowLabels = { test: { fields: { url: 'Address', items: 'Items', 'items.name': 'Name' } } };
+
+function renderRow(problem: HubProblem, items: { name: string }[] = []) {
+  return renderWithProviders(
+    <SchemaForm
+      schema={rowSchema}
+      defaults={{ url: '', items, rowVersion: 'AAA=' }}
+      locales={LOCALES}
+      labels="test"
+      submitLabel="Save"
+      onSubmit={() => Promise.reject(new ApiError(400, problem))}
+    />,
+    { i18n: createTestI18n(rowLabels) },
+  );
+}
+
+/** The sentence above the form: the one alert that carries the core's title. */
+async function summary(): Promise<HTMLElement> {
+  const alerts = await screen.findAllByRole('alert');
+  const above = alerts.find((alert) => alert.textContent.includes(englishErrors.errors.title));
+  if (above === undefined) {
+    throw new Error('no sentence above the form');
+  }
+  return above;
+}
+
+test('a refusal of the whole row, under a name the form does not draw, is said above the form', async () => {
+  const user = userEvent.setup();
+  renderRow({ errors: { id: ['errors.token.tooMany'] } });
+
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(await summary()).toHaveTextContent(englishErrors.errors.token.tooMany);
+});
+
+test('an empty name and a hidden field are said above the form too, next to a field that is drawn', async () => {
+  const user = userEvent.setup();
+  renderRow({
+    errors: {
+      url: ['errors.url.absolute'],
+      '': ['errors.token.tooMany'],
+      rowVersion: ['errors.conflict.title'],
+    },
+  });
+
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  const above = await summary();
+  expect(above).toHaveTextContent(englishErrors.errors.token.tooMany);
+  expect(above).toHaveTextContent(englishErrors.errors.conflict.title);
+  // The one that has a field stays on it, and is not repeated above.
+  expect(above).not.toHaveTextContent(englishErrors.errors.url.absolute);
+  expect(
+    screen.getAllByRole('alert').some((alert) => alert.textContent === englishErrors.errors.url.absolute),
+  ).toBe(true);
+});
+
+test('an error of a list is drawn under the list, and one of an entry that is not there is said above', async () => {
+  const user = userEvent.setup();
+  renderRow(
+    {
+      errors: {
+        items: ['errors.token.tooMany'],
+        'items[0].Name': ['errors.url.absolute'],
+        'items.3.name': ['errors.conflict.title'],
+      },
+    },
+    [{ name: 'first' }],
+  );
+
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  const list = screen.getByRole('group', { name: 'Items' });
+  expect(await within(list).findByText(englishErrors.errors.token.tooMany)).toBeInTheDocument();
+  // The server lowers only the first letter of a nested path, and the entry's field is found anyway.
+  expect(within(list).getByText(englishErrors.errors.url.absolute)).toBeInTheDocument();
+  // There is no fourth entry to point at.
+  expect(await summary()).toHaveTextContent(englishErrors.errors.conflict.title);
+});
+
+test('where a server path is drawn, as the form names it', () => {
+  const fields = readFields(
+    z.object({
+      title: localized(),
+      seo: z.object({ title: z.string() }),
+      items: z.array(z.object({ name: z.string() })),
+      rowVersion: z.string().meta({ hidden: true }),
+    }),
+  );
+  const values = { title: { en: '' }, seo: { title: '' }, items: [{ name: 'a' }], rowVersion: 'x' };
+  const at = (path: string) => whereDrawn(fields, path, values);
+
+  expect(at('title')).toBe('title');
+  expect(at('Title')).toBe('title');
+  expect(at('seo')).toBe('seo');
+  expect(at('seo.title')).toBe('seo.title');
+  expect(at('items')).toBe('items');
+  expect(at('items[0].name')).toBe('items.0.name');
+  expect(at('items.0.Name')).toBe('items.0.name');
+
+  expect(at('id')).toBeNull();
+  expect(at('')).toBeNull();
+  expect(at('rowVersion')).toBeNull();
+  // Inside a field that holds no fields, an entry by itself, an entry that is not there.
+  expect(at('title.en')).toBeNull();
+  expect(at('items.0')).toBeNull();
+  expect(at('items.1.name')).toBeNull();
+  expect(at('items.x.name')).toBeNull();
 });
