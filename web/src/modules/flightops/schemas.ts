@@ -147,8 +147,9 @@ export type TourFormPart = 'settings' | 'rules';
  * before it opens: a template has no address, no dates and no award (§1.10), the kind of a tour the public already
  * sees no longer changes (§1.2.1), and a subtour is never a container, has no award, and may leave its dates empty to
  * take its container's (§2.7, note 2026-09-21-la-forma-dei-tour). Those fields are carried and not drawn, and so are
- * those of the other `part`: the settings and the rules of a tour are two forms of the one payload (#369). Every rule
- * is the server's.
+ * those of the other `part`: the settings and the rules of a tour are two forms of the one payload (#369). The fields
+ * of one kind of tour only are greyed out on a tour of another `kind` (#367): drawn, so that the form is the same on
+ * every tour, and not written in, since the server ignores them there. Every rule is the server's.
  */
 export function tourSchema({
   types = [],
@@ -158,6 +159,7 @@ export function tourSchema({
   kindLocked = false,
   isSubtour = false,
   part = 'settings',
+  kind,
 }: {
   types?: readonly Suggestion[];
   awards?: readonly ChoiceOption[];
@@ -166,8 +168,11 @@ export function tourSchema({
   kindLocked?: boolean;
   isSubtour?: boolean;
   part?: TourFormPart;
+  /** The kind the tour has, for its fields of one kind only; none for a new tour. */
+  kind?: (typeof TOUR_KINDS)[number];
 } = {}) {
   const rule = part === 'rules';
+  const otherKindThan = (only: (typeof TOUR_KINDS)[number]) => kind !== undefined && kind !== only;
   return z.object({
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     isTemplate: z.boolean().meta({ hidden: true }),
@@ -196,20 +201,27 @@ export function tourSchema({
     bannerMediaId: z.number().int().optional().meta({ media: true, hidden: rule }),
     progression: z.enum(['FlyAhead', 'WaitForValidation']).meta({ hidden: !rule }),
     // Read only on a hub tour; the server leaves it empty on the others.
-    hubRotationOrder: z.enum(['Fixed', 'Free']).optional().meta({ hidden: !rule }),
+    hubRotationOrder: z
+      .enum(['Fixed', 'Free'])
+      .optional()
+      .meta({ hidden: !rule, disabled: otherKindThan('Hub') }),
     reportWindowDays: z.number().int().optional().meta({ hidden: !rule }),
     dailyLegLimit: z.number().int().optional().meta({ hidden: !rule }),
     requiresProcedures: z.boolean().meta({ hidden: !rule }),
     minPilotRating: z.number().int().optional().meta({ hidden: !rule }),
     referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true, hidden: rule }),
     // Read only on a distance tour, like the order of the rotations on a hub tour (T7a).
-    requiredNm: z.number().int().optional().meta({ hidden: !rule }),
+    requiredNm: z
+      .number()
+      .int()
+      .optional()
+      .meta({ hidden: !rule, disabled: otherKindThan('Distance') }),
     // Read only on a container: how many of its subtours complete it (T7b).
     requiredSubtours: z
       .number()
       .int()
       .optional()
-      .meta({ hidden: isSubtour || !rule }),
+      .meta({ hidden: isSubtour || !rule, disabled: otherKindThan('Container') }),
     // The aircraft admitted: types and groups, nothing else (design M2 §1.5); both empty admit all. The types carry the
     // payload's name, so that a refusal of the server — which files it under `allowedAircraft` — lands on a field.
     allowedAircraft: z

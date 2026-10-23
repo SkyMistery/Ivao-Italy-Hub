@@ -423,6 +423,7 @@ export function TourEditor() {
         kindLocked: tour?.isPublic ?? false,
         isSubtour: parentId !== null,
         part,
+        ...(tour === null ? {} : { kind: tour.kind }),
       })}
       defaults={
         tour === null

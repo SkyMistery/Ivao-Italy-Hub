@@ -78,6 +78,22 @@ test('the settings of a tour draw no rule, and its rules draw every rule and not
   );
 });
 
+// The fields of one kind of tour only are greyed out on the others (#367), and on a new tour, whose kind is not known yet,
+// on none.
+test('the fields of one kind of tour are greyed out on a tour of another kind', () => {
+  const greyed = (kind?: 'Free' | 'Distance' | 'Hub' | 'Container') =>
+    readFields(tourSchema({ part: 'rules', ...(kind === undefined ? {} : { kind }) }))
+      .filter((field) => field.meta.disabled === true)
+      .map((field) => field.path)
+      .sort();
+
+  expect(greyed('Free')).toEqual(['hubRotationOrder', 'requiredNm', 'requiredSubtours']);
+  expect(greyed('Distance')).toEqual(['hubRotationOrder', 'requiredSubtours']);
+  expect(greyed('Hub')).toEqual(['requiredNm', 'requiredSubtours']);
+  expect(greyed('Container')).toEqual(['hubRotationOrder', 'requiredNm']);
+  expect(greyed()).toEqual([]);
+});
+
 test('the two lists of the form become the aircraft a tour admits, empty entries dropped', () => {
   expect(
     allowedFromFormValues(
