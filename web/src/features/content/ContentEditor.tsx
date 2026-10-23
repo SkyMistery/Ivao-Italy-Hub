@@ -1,5 +1,5 @@
-import { Button, Input, Label } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
+import { Button, Label, Textarea } from '@ivao/atmosphere-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,17 +8,20 @@ import { frameAddress, readBody, type Body } from '../../blocks';
 import type { Department } from '../../shared/api/bootstrap';
 import { ApiError } from '../../shared/api/problem';
 import { SchemaForm, type ChoiceOption } from '../../shared/forms';
+import { useLocalized } from '../../shared/i18n/useLocalized';
 import { useMoment } from '../../shared/i18n/useMoment';
 import type { MediaLibraryQuery } from '../../shared/ui';
 import { ConfirmDialog, PageActions } from '../../shared/ui';
 
 import { AddressPreview } from './AddressPreview';
 import { BodyEditor } from './BodyEditor';
+import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { emptyContent, toFormValues, type PublishRequest } from './mutations';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
   contentQuery,
+  contentReviewQuery,
   publishedContentQuery,
   type ContentDetailDto,
   type ContentKind,
@@ -31,6 +34,7 @@ import {
   type PageChoices,
 } from './schema';
 import { useAutosave, type SaveOutcome } from './useAutosave';
+import { VersionHistory } from './VersionHistory';
 
 /**
  * The list editor of M0 (design M0 §7.7). Metadata at the top, what the page is made of on the
@@ -173,6 +177,8 @@ export function ContentEditor({
 }) {
   const { t } = useTranslation();
   const moment = useMoment();
+  const read = useLocalized();
+  const queryClient = useQueryClient();
 
   // The body as the editor last said it is: what a save sends. The editor owns the way back.
   const [body, setBody] = useState<Body>(() => readBody(content?.body));
@@ -210,6 +216,10 @@ export function ContentEditor({
   // What the publish dialog is told, kept across its openings: a changelog half written and a
   // dialog closed by mistake should not be a changelog written twice.
   const [publishRequest, setPublishRequest] = useState<PublishRequest>({ changelog: '' });
+
+  // The line the dialog last wrote by itself: replaced by a newer one at the next opening, unless the person has
+  // written over it — then it is theirs, and stays.
+  const suggested = useRef('');
 
   // The template this page was made from: its rules and its differences are the editor's to draw.
   const template = useQuery({
@@ -249,6 +259,25 @@ export function ContentEditor({
       }
     },
   });
+
+  // What changed since the version online, said in the field before anybody writes it (issue #352). Asked of the
+  // server — the comparison an approver reads — on the draft as stored, so it is stored first.
+  const suggestChangelog = async (id: number) => {
+    await autosave.flush();
+    try {
+      const changes = await queryClient.fetchQuery({ ...contentReviewQuery(id), staleTime: 0 });
+      const line = changeSummary(changes, t, read);
+      setPublishRequest((current) => {
+        if (current.changelog !== '' && current.changelog !== suggested.current) {
+          return current;
+        }
+        suggested.current = line;
+        return { ...current, changelog: line };
+      });
+    } catch {
+      // No suggestion: the field stays as it is, and the person writes the line.
+    }
+  };
 
   // On the way out: stored, or asked. The in-application road is the router's blocker; the tab
   // being closed is the browser's own question, which is all a page is allowed to do there.
@@ -353,6 +382,9 @@ export function ContentEditor({
           id={content?.id ?? null}
         />
       )}
+      {content === null || content.isTemplate ? null : (
+        <VersionHistory id={content.id} timezone={division.timezone} />
+      )}
     </>
   );
 
@@ -419,6 +451,11 @@ export function ContentEditor({
                 confirmText={t('content.editor.publishDialog.confirm')}
                 confirmVariant="primary"
                 disabled={busy || autosave.stopped}
+                onOpenChange={(open) => {
+                  if (open && content !== null) {
+                    void suggestChangelog(content.id);
+                  }
+                }}
                 onConfirm={() => {
                   void (async () => {
                     // The draft first — after any save already in flight — and the publication in
@@ -428,6 +465,9 @@ export function ContentEditor({
                     }
                     try {
                       await autosave.exclusive(async () => adopt(await onPublish(publishRequest)));
+                      // Published with its line: the next publication has a line of its own.
+                      suggested.current = '';
+                      setPublishRequest({ changelog: '' });
                     } catch {
                       // Refused: the screen has said so, and the draft is where it was.
                     }
@@ -436,9 +476,10 @@ export function ContentEditor({
               >
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="publish-changelog">{t('content.editor.publishDialog.changelog')}</Label>
-                  <Input
+                  <Textarea
                     id="publish-changelog"
-                    maxLength={512}
+                    rows={3}
+                    maxLength={CHANGELOG_MAX}
                     value={publishRequest.changelog}
                     onChange={(event) =>
                       setPublishRequest({ ...publishRequest, changelog: event.target.value })

@@ -114,7 +114,11 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   await expect(publish).toBeEnabled();
   await publish.click();
   const dialog = page.getByRole('alertdialog');
-  await dialog.getByLabel(content.editor.publishDialog.changelog).fill('First edition');
+  // The line starts from what changed since the version online — here, that nothing is (issue #352) — and is the
+  // person's to rewrite.
+  const changelog = dialog.getByLabel(content.editor.publishDialog.changelog);
+  await expect(changelog).toHaveValue(content.changes.first);
+  await changelog.fill('First edition');
   await whileWaitingFor(page, 'POST', '/publish', async () => {
     await dialog.getByRole('button', { name: content.editor.publishDialog.confirm }).click();
   });
@@ -139,6 +143,9 @@ test('from a template to a page a visitor can read, and a draft that stays priva
   // it. It stays because coming back to a page is what a person does, and the test below is what
   // actually guards the thing this comment used to claim.
   await page.reload();
+
+  // The version is in the row's history, with the line it was published with.
+  await expect(page.getByRole('region', { name: content.versions.title })).toContainText('First edition');
 
   // And a reload puts the middle column back on the page, which is where it opens. The outline is
   // what `selectBlock` reads.
