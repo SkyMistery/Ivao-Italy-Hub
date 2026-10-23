@@ -115,7 +115,7 @@ const NO_AIRCRAFT: DraftAircraft = { types: '', groupIds: [] };
  * The aircraft a leg added after another starts with (#368): the one it follows flies on, or, when that leg names
  * none, the tour's reference aircraft. Written in the row and changed there like anything else.
  */
-export function aircraftAfter(leg: LegDto, referenceAircraftIcao: string | null): DraftAircraft {
+function aircraftAfter(leg: LegDto, referenceAircraftIcao: string | null): DraftAircraft {
   if (leg.aircraft.types.length > 0 || leg.aircraft.groupIds.length > 0) {
     return { types: leg.aircraft.types.join(', '), groupIds: leg.aircraft.groupIds };
   }
