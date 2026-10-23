@@ -1272,6 +1272,7 @@
     "calendar": {
       "label": "Calendario",
       "empty": "Non c’è niente in arrivo.",
+      "retiredKind": "{{key}} (non più in uso)",
       "fields": {
         "kinds": "Tipi",
         "kinds.kind": "Tipo",
@@ -1280,6 +1281,9 @@
         "range": "Quanto in avanti",
         "limit": "Quante al massimo",
         "view": "Vista"
+      },
+      "hints": {
+        "kinds": "Si scelgono fra quelli della schermata «Tipi di calendario». Nessuno scelto mostra tutti i tipi."
       },
       "options": {
         "department": {

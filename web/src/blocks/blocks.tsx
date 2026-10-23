@@ -1,5 +1,7 @@
 import {
-  Alert,
+  AlertDescription,
+  AlertRoot,
+  AlertTitle,
   Badge,
   BlockQuote,
   Button,
@@ -29,7 +31,7 @@ import { ICONS } from '../shared/icons';
 import { useLocalized } from '../shared/i18n/useLocalized';
 import { useMoment } from '../shared/i18n/useMoment';
 import type { BlockComponentProps } from '../shared/modules';
-import { CALENDAR_VIEWS, CalendarView, MarkdownContent, type CalendarItem } from '../shared/ui';
+import { CALENDAR_VIEWS, CalendarView, MarkdownContent, NOTICE_TONES, type CalendarItem } from '../shared/ui';
 
 import { embedSource } from './allowlist';
 import { categoryLabel, shelfOf, type ContentListData } from './data';
@@ -230,28 +232,42 @@ export function TextBlock({ props }: BlockComponentProps) {
 /**
  * The tone a coordinator chooses, in the vocabulary the design system speaks. Atmosphere has three
  * variants and we want four tones, so the icon carries the difference between a warning and a
- * refusal: colour alone would say nothing to a reader who cannot tell the two reds apart
+ * refusal: colour alone would say nothing to a reader who cannot tell two colours apart
  * (docs/UI-GUIDELINES.md).
+ *
+ * «Careful» is yellow and «Important» red (issue #358): a warning drawn in the red of a refusal read
+ * as one. The yellow is the `Notice`'s own (`NOTICE_TONES`), written once for both: the theme has
+ * the scale, and only Atmosphere's alert lacks the variant.
  */
 const CALLOUT_STYLE = {
-  info: { variant: 'default', Icon: Info },
-  success: { variant: 'success', Icon: CircleCheck },
-  warning: { variant: 'destructive', Icon: TriangleAlert },
-  danger: { variant: 'destructive', Icon: OctagonAlert },
+  info: { variant: 'default', className: '', Icon: Info },
+  success: { variant: 'success', className: '', Icon: CircleCheck },
+  warning: {
+    variant: NOTICE_TONES.warning.variant,
+    className: NOTICE_TONES.warning.className,
+    Icon: TriangleAlert,
+  },
+  danger: { variant: 'destructive', className: '', Icon: OctagonAlert },
 } as const;
 
 export function CalloutBlock({ props }: BlockComponentProps) {
   const read = useLocalized();
   const tone = CALLOUT_TONES.find((candidate) => candidate === props.tone) ?? 'info';
-  const style = CALLOUT_STYLE[tone];
+  const { variant, className, Icon } = CALLOUT_STYLE[tone];
+  const title = read(text(props, 'title'));
 
+  // Atmosphere's parts rather than its `Alert`, which always draws a title: a callout may be only its
+  // text, and an empty title pushed that text a line below the icon. The icon is the first child,
+  // which is what the variant places in the corner; with no title the text follows it directly, and
+  // the variant's own `[&>svg+div]` lifts it onto the icon's line once its top margin is gone.
   return (
-    <Alert
-      variant={style.variant}
-      Icon={style.Icon}
-      title={read(text(props, 'title'))}
-      description={read(text(props, 'text'))}
-    />
+    <AlertRoot variant={variant} className={className}>
+      <Icon aria-hidden className="size-4" />
+      {title === '' ? null : <AlertTitle>{title}</AlertTitle>}
+      <AlertDescription className={title === '' ? 'mt-0' : undefined}>
+        {read(text(props, 'text'))}
+      </AlertDescription>
+    </AlertRoot>
   );
 }
 
@@ -935,8 +951,15 @@ export function IconGridBlock({ props }: BlockComponentProps) {
         return (
           <div key={index} className="flex flex-col gap-2">
             {/* `text-primary` was the only colour any of these blocks had; now it is one of four,
-                and it is still the one they start with. */}
-            <ChosenIcon name={plain(item, 'icon')} className={`size-8 ${ACCENT_GLYPH[accent]}`} />
+                and it is still the one they start with. The icon stands on a disc of its own colour
+                (issue #363): a line drawing alone carried too little of it to tell the four apart.
+                `bg-current/15` is the accent's own colour, so the disc follows the pair into a dark
+                ground with no second table, and the icon keeps its 3 : 1 on the tint. */}
+            <span
+              className={`inline-flex size-14 items-center justify-center rounded-full bg-current/15 ${ACCENT_GLYPH[accent]}`}
+            >
+              <ChosenIcon name={plain(item, 'icon')} className="size-7" />
+            </span>
             <H4>{read(text(item, 'title'))}</H4>
             {body === '' ? null : <p className="text-muted-foreground">{body}</p>}
           </div>
