@@ -242,7 +242,11 @@ export function TextBlock({ props }: BlockComponentProps) {
 const CALLOUT_STYLE = {
   info: { variant: 'default', className: '', Icon: Info },
   success: { variant: 'success', className: '', Icon: CircleCheck },
-  warning: { variant: NOTICE_TONES.warning.variant, className: NOTICE_TONES.warning.className, Icon: TriangleAlert },
+  warning: {
+    variant: NOTICE_TONES.warning.variant,
+    className: NOTICE_TONES.warning.className,
+    Icon: TriangleAlert,
+  },
   danger: { variant: 'destructive', className: '', Icon: OctagonAlert },
 } as const;
 
@@ -260,7 +264,9 @@ export function CalloutBlock({ props }: BlockComponentProps) {
     <AlertRoot variant={variant} className={className}>
       <Icon aria-hidden className="size-4" />
       {title === '' ? null : <AlertTitle>{title}</AlertTitle>}
-      <AlertDescription className={title === '' ? 'mt-0' : undefined}>{read(text(props, 'text'))}</AlertDescription>
+      <AlertDescription className={title === '' ? 'mt-0' : undefined}>
+        {read(text(props, 'text'))}
+      </AlertDescription>
     </AlertRoot>
   );
 }
