@@ -723,6 +723,7 @@
     "amends": "amends {{code}}",
     "amending": "Amends {{code}} {{title}}",
     "amendingHint": "This tour holds this rule in place of the general one. Fill in only the numbers it changes: the others stay those of the general rule, even when it changes.",
+    "conditions": "How the tour is flown",
     "effective": "Rules in force",
     "effectiveDescription": "What holds on this tour: the general rules, each replaced by the amendment of this tour where there is one, then the tour's own. A subtour holds its container's first.",
     "noneInForce": "No rule holds on this tour yet.",

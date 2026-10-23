@@ -39,6 +39,7 @@ import {
   tourSaveAsTemplateSchema,
   tourSchema,
   type TourEditorTab,
+  type TourFormPart,
 } from '../schemas';
 
 import { LegGrid } from './LegGrid';
@@ -405,10 +406,12 @@ export function TourEditor() {
     : read(tour?.title ?? {}) || t(`${labels}.edit`);
   const editable = tour !== null && writableDepartments(bootstrap, TOURS_EDIT).includes(tour.ownerDepartment);
 
-  const settings = (
+  // The settings and the rules of a tour are two forms of one payload (#369): each draws its half and carries the other.
+  const tourForm = (part: TourFormPart) => (
     <SchemaForm
-      // A new key when the row changes underneath, so the form reloads what the actions wrote.
-      key={tour?.rowVersion ?? 'new'}
+      // A new key when the row changes underneath, so the form reloads what the actions wrote — and what the other
+      // half saved.
+      key={`${part}-${tour?.rowVersion ?? 'new'}`}
       schema={tourSchema({
         types: keepingCurrent(suggestions, [
           ...(tour?.referenceAircraftIcao ? [tour.referenceAircraftIcao] : []),
@@ -419,6 +422,7 @@ export function TourEditor() {
         isTemplate,
         kindLocked: tour?.isPublic ?? false,
         isSubtour: parentId !== null,
+        part,
       })}
       defaults={
         tour === null
@@ -475,10 +479,13 @@ export function TourEditor() {
       actions={tour === null ? undefined : <TourActions tour={tour} />}
     >
       <div className="flex flex-col gap-6">
-        {saved && tab === 'settings' ? <Notice tone="success" title={t('flightops:tours.saved')} /> : null}
+        {saved && (tab === 'settings' || tab === 'rules') ? (
+          <Notice tone="success" title={t('flightops:tours.saved')} />
+        ) : null}
         <ReadyProblems problems={problems} briefing={readBody(tour?.briefing)} />
         {tour === null ? (
-          settings
+          // A new tour is created from its settings; its rules are written in their tab once it exists.
+          tourForm('settings')
         ) : (
           // The open tab is in the address, so a reload or a link lands on it; a briefing not saved is asked about
           // before the tab changes (`TourBriefing`). Only the open tab is mounted.
@@ -495,7 +502,7 @@ export function TourEditor() {
             tabs={{
               settings: {
                 trigger: t('flightops:tours.tabs.settings'),
-                content: <div className="pt-4">{settings}</div>,
+                content: <div className="pt-4">{tourForm('settings')}</div>,
               },
               briefing: {
                 trigger: t('flightops:tours.tabs.briefing'),
@@ -591,6 +598,8 @@ export function TourEditor() {
                   <div className="pt-4">
                     <TourRulesTab
                       tour={tour}
+                      // Written with the tour's own permission, like its settings: the rules below with theirs.
+                      conditions={tourForm('rules')}
                       editable={
                         editable &&
                         writableDepartments(bootstrap, TOURS_MANAGE_RULES).includes(tour.ownerDepartment) &&

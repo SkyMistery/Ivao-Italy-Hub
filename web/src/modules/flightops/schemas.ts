@@ -121,11 +121,33 @@ export const SUBTOUR_KINDS = [
 ] as const satisfies readonly Exclude<(typeof TOUR_KINDS)[number], 'Container'>[];
 
 /**
+ * The fields of a tour that are rules of how it is flown (#369): drawn in its "Rules" tab, next to the rules it is
+ * validated with, and never in "Settings". The rest — what it is, what it is called, when and where it shows, its award,
+ * and the reference aircraft its estimated times are computed with — stays in "Settings".
+ */
+export const TOUR_RULE_FIELDS = [
+  'progression',
+  'hubRotationOrder',
+  'reportWindowDays',
+  'dailyLegLimit',
+  'requiresProcedures',
+  'minPilotRating',
+  'requiredNm',
+  'requiredSubtours',
+  'allowedAircraft',
+  'allowedGroups',
+] as const;
+
+/** Which half of a tour a form draws: its settings, or its rules. Both carry the whole tour and send it. */
+export type TourFormPart = 'settings' | 'rules';
+
+/**
  * The form of a tour, mirroring `TourWriteDto` (design M2 §1.2, §8.3). A function, because what it offers is known
  * only at runtime — the types as they are typed, the awards of the division — and because three things are decided
  * before it opens: a template has no address, no dates and no award (§1.10), the kind of a tour the public already
  * sees no longer changes (§1.2.1), and a subtour is never a container, has no award, and may leave its dates empty to
- * take its container's (§2.7, note 2026-09-21-la-forma-dei-tour). Those fields are carried and not drawn. Every rule
+ * take its container's (§2.7, note 2026-09-21-la-forma-dei-tour). Those fields are carried and not drawn, and so are
+ * those of the other `part`: the settings and the rules of a tour are two forms of the one payload (#369). Every rule
  * is the server's.
  */
 export function tourSchema({
@@ -135,6 +157,7 @@ export function tourSchema({
   isTemplate = false,
   kindLocked = false,
   isSubtour = false,
+  part = 'settings',
 }: {
   types?: readonly Suggestion[];
   awards?: readonly ChoiceOption[];
@@ -142,7 +165,9 @@ export function tourSchema({
   isTemplate?: boolean;
   kindLocked?: boolean;
   isSubtour?: boolean;
+  part?: TourFormPart;
 } = {}) {
+  const rule = part === 'rules';
   return z.object({
     ownerDepartment: z.enum(DEPARTMENTS).meta({ hidden: true }),
     isTemplate: z.boolean().meta({ hidden: true }),
@@ -154,37 +179,49 @@ export function tourSchema({
         (typeof TOUR_KINDS)[number],
         (typeof TOUR_KINDS)[number]
       >
-    ).meta({ hidden: kindLocked }),
-    title: localized(),
-    slug: z.string().meta({ slugFrom: 'title', hidden: isTemplate }),
-    summary: localized().meta({ localized: true, multiline: true }),
-    releaseAt: z.string().optional().meta({ datetime: true, hidden: isTemplate }),
-    closeAt: z.string().optional().meta({ datetime: true, hidden: isTemplate }),
-    showPreview: z.boolean().meta({ hidden: isTemplate }),
-    coverMediaId: z.number().int().optional().meta({ media: true }),
-    bannerMediaId: z.number().int().optional().meta({ media: true }),
-    progression: z.enum(['FlyAhead', 'WaitForValidation']),
+    ).meta({ hidden: kindLocked || rule }),
+    title: localized().meta({ localized: true, hidden: rule }),
+    slug: z.string().meta({ slugFrom: 'title', hidden: isTemplate || rule }),
+    summary: localized().meta({ localized: true, multiline: true, hidden: rule }),
+    releaseAt: z
+      .string()
+      .optional()
+      .meta({ datetime: true, hidden: isTemplate || rule }),
+    closeAt: z
+      .string()
+      .optional()
+      .meta({ datetime: true, hidden: isTemplate || rule }),
+    showPreview: z.boolean().meta({ hidden: isTemplate || rule }),
+    coverMediaId: z.number().int().optional().meta({ media: true, hidden: rule }),
+    bannerMediaId: z.number().int().optional().meta({ media: true, hidden: rule }),
+    progression: z.enum(['FlyAhead', 'WaitForValidation']).meta({ hidden: !rule }),
     // Read only on a hub tour; the server leaves it empty on the others.
-    hubRotationOrder: z.enum(['Fixed', 'Free']).optional(),
-    reportWindowDays: z.number().int().optional(),
-    dailyLegLimit: z.number().int().optional(),
-    requiresProcedures: z.boolean(),
-    minPilotRating: z.number().int().optional(),
-    referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true }),
+    hubRotationOrder: z.enum(['Fixed', 'Free']).optional().meta({ hidden: !rule }),
+    reportWindowDays: z.number().int().optional().meta({ hidden: !rule }),
+    dailyLegLimit: z.number().int().optional().meta({ hidden: !rule }),
+    requiresProcedures: z.boolean().meta({ hidden: !rule }),
+    minPilotRating: z.number().int().optional().meta({ hidden: !rule }),
+    referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true, hidden: rule }),
     // Read only on a distance tour, like the order of the rotations on a hub tour (T7a).
-    requiredNm: z.number().int().optional(),
+    requiredNm: z.number().int().optional().meta({ hidden: !rule }),
     // Read only on a container: how many of its subtours complete it (T7b).
-    requiredSubtours: z.number().int().optional().meta({ hidden: isSubtour }),
+    requiredSubtours: z
+      .number()
+      .int()
+      .optional()
+      .meta({ hidden: isSubtour || !rule }),
     // The aircraft admitted: types and groups, nothing else (design M2 §1.5); both empty admit all. The types carry the
     // payload's name, so that a refusal of the server — which files it under `allowedAircraft` — lands on a field.
-    allowedAircraft: z.array(
-      z.object({ icao: z.string().meta({ suggestions: types, suggestionsOnly: true }) }),
-    ),
-    allowedGroups: z.array(z.object({ groupId: z.string().optional().meta({ choices: groups }) })),
+    allowedAircraft: z
+      .array(z.object({ icao: z.string().meta({ suggestions: types, suggestionsOnly: true }) }))
+      .meta({ hidden: !rule }),
+    allowedGroups: z
+      .array(z.object({ groupId: z.string().optional().meta({ choices: groups }) }))
+      .meta({ hidden: !rule }),
     awardId: z
       .string()
       .optional()
-      .meta({ choices: awards, hidden: isTemplate || isSubtour }),
+      .meta({ choices: awards, hidden: isTemplate || isSubtour || rule }),
     rowVersion: z.string().meta({ hidden: true }),
   });
 }

@@ -10,6 +10,7 @@ import {
   GOAL_PARAMETERS,
   OPEN_GOALS,
   TOUR_CONSTRAINT_KINDS,
+  TOUR_RULE_FIELDS,
   callsignRuleSchema,
   hubSchema,
   openGoalSchema,
@@ -57,6 +58,24 @@ const TOUR_FIELDS: readonly Exclude<keyof TourWriteDto, 'briefing' | 'openGoal' 
 
 test('the tour form carries the fields of TourWriteDto but the briefing, and the aircraft as two lists', () => {
   expect(Object.keys(tourSchema().shape).sort()).toEqual([...TOUR_FIELDS, 'allowedGroups'].sort());
+});
+
+// Every rule of a tour is in "Rules", and nothing of it in "Settings" (#369); both halves carry the whole payload.
+test('the settings of a tour draw no rule, and its rules draw every rule and nothing else', () => {
+  const drawnBy = (part: 'settings' | 'rules') =>
+    readFields(tourSchema({ part }))
+      .filter((field) => field.meta.hidden !== true)
+      .map((field) => field.path)
+      .sort();
+
+  expect(drawnBy('rules')).toEqual([...TOUR_RULE_FIELDS].sort());
+  expect(
+    drawnBy('settings').filter((path) => (TOUR_RULE_FIELDS as readonly string[]).includes(path)),
+  ).toEqual([]);
+  expect(drawnBy('settings')).toContain('title');
+  expect(Object.keys(tourSchema({ part: 'rules' }).shape).sort()).toEqual(
+    [...TOUR_FIELDS, 'allowedGroups'].sort(),
+  );
 });
 
 test('the two lists of the form become the aircraft a tour admits, empty entries dropped', () => {

@@ -17,6 +17,7 @@ import {
   signIn,
   uploadMedia,
   whileWaitingFor,
+  writeDailyLegLimit,
   writeInBothLanguages,
 } from './bench';
 
@@ -75,12 +76,12 @@ test('a tour gets a briefing with a picture, is asked for its second language, i
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
   await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 24 * 3600 * 1000)));
   await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-  await page.locator('[id="dailyLegLimit"]').fill('5');
 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await writeDailyLegLimit(page, '5');
   const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
 
   // The picture goes in the library of the tour's department, where the picker of its briefing looks.

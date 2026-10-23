@@ -13,9 +13,10 @@ import {
   readInEnglish,
   removeBenchTours,
   signIn,
-  whileWaitingFor,
-  writeInBothLanguages,
   test,
+  whileWaitingFor,
+  writeDailyLegLimit,
+  writeInBothLanguages,
 } from './bench';
 import { replayFlight, type ReplayedFlight } from './replay';
 
@@ -195,11 +196,11 @@ test('a tour from a template, its legs imported, flown, checked, validated, disp
     await expect(page.getByRole('heading', { name: words.tourTemplates.create })).toBeVisible();
     await choose(page, words.tours.fields.kind, words.tours.options.kind.Free);
     await writeInBothLanguages(page.locator('form'), words.tours.fields.title, 'title', templateName);
-    await page.locator('[id="dailyLegLimit"]').fill('5');
     await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
       await page.getByRole('button', { name: common.common.save }).click();
     });
     await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await writeDailyLegLimit(page, '5');
     made.template = idOf(page);
 
     await page.goto('/staff/tours/from-template');
