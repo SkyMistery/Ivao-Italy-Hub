@@ -373,6 +373,9 @@ What the schema may say about how a field is drawn:
 - `localized()` marks a translated field, which becomes one tab per language;
 - `.meta({ multiline: true })` asks for a textarea;
 - `.meta({ hidden: true })` keeps a field in the payload and off the screen — `rowVersion`;
+- `.meta({ disabled: true })` keeps it in the payload **and** on the screen, greyed out and not
+  written in — the distance of a distance tour, on a tour of another kind. Every kind of field is
+  greyed the same way, inside a disabled `fieldset`;
 - `.meta({ choices: [1, 2, 3] })` on a **number** draws a select. A number and not a `z.enum`
   because every string inside a block's properties is extracted as the text of the page for the
   search index, and a heading level is not text;

@@ -30,6 +30,13 @@ export interface FieldMeta {
   /** Carried by the form and submitted, never shown. `rowVersion` is the reason this exists. */
   hidden?: boolean;
   /**
+   * Drawn, greyed out and not written in: carried and submitted as it is, like `hidden`, but shown.
+   * A field that belongs to another kind of row is the case it was built for — the distance of a
+   * distance tour, on a tour that is not one (#367): whoever reads the form sees what the tour
+   * could hold, and cannot write a value the server would ignore.
+   */
+  disabled?: boolean;
+  /**
    * A closed set of values, drawn as a select rather than a free input. Three needs, one
    * annotation:
    * <br />— a **number**, because a `z.enum` would make the value a *string*, and every string
