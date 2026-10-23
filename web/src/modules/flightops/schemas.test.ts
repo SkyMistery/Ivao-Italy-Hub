@@ -63,31 +63,6 @@ test('the tour form carries the fields of TourWriteDto but the briefing, and the
   expect(Object.keys(tourSchema().shape).sort()).toEqual([...TOUR_FIELDS, 'allowedGroups'].sort());
 });
 
-/** Every field the form draws, the fields inside a repeated entry included. */
-function drawn(nodes: readonly FieldNode[]): FieldNode[] {
-  return nodes
-    .filter((node) => node.meta.hidden !== true)
-    .flatMap((node) => [node, ...('children' in node ? drawn(node.children) : [])]);
-}
-
-// A list's entries are labelled `<list>.<field>`, and `tours.fields.allowedAircraft` is already the label of the list:
-// the column read `tours.fields.allowedAircraft.icao` on screen until it had a key of its own (#365).
-test.each([
-  ['en', english],
-  ['it', italian],
-])('every field of the tour form has a label in %s', async (language, words) => {
-  const i18n = i18next.createInstance();
-  await i18n.init({ lng: language, resources: { [language]: { flightops: words } } });
-  const missing = drawn(readFields(tourSchema()))
-    .flatMap((node) => [
-      `flightops:tours.fields.${node.path}`,
-      ...(node.kind === 'text' && node.choices !== null ? [`flightops:tours.options.${node.path}.none`] : []),
-    ])
-    .filter((key) => !i18n.exists(key) || typeof i18n.t(key) !== 'string');
-
-  expect(missing).toEqual([]);
-});
-
 test('the two lists of the form become the aircraft a tour admits, empty entries dropped', () => {
   expect(
     allowedFromFormValues(
@@ -190,4 +165,29 @@ test('the parameters of the form become what the API takes, and come back the sa
   expect(parametersToFormValues(CONSTRAINT_PARAMETERS.AircraftCategory, { categories: ['L', 'M'] })).toEqual({
     categories: ['L', 'M'],
   });
+});
+
+/** Every field the form draws, the fields inside a repeated entry included. */
+function drawn(nodes: readonly FieldNode[]): FieldNode[] {
+  return nodes
+    .filter((node) => node.meta.hidden !== true)
+    .flatMap((node) => [node, ...('children' in node ? drawn(node.children) : [])]);
+}
+
+// A list's entries are labelled `<list>.<field>`, and `tours.fields.allowedAircraft` is already the label of the list:
+// the column read `tours.fields.allowedAircraft.icao` on screen until it had a key of its own (#365).
+test.each([
+  ['en', english],
+  ['it', italian],
+])('every field of the tour form has a label in %s', async (language, words) => {
+  const i18n = i18next.createInstance();
+  await i18n.init({ lng: language, resources: { [language]: { flightops: words } } });
+  const missing = drawn(readFields(tourSchema()))
+    .flatMap((node) => [
+      `flightops:tours.fields.${node.path}`,
+      ...(node.kind === 'text' && node.choices !== null ? [`flightops:tours.options.${node.path}.none`] : []),
+    ])
+    .filter((key) => !i18n.exists(key) || typeof i18n.t(key) !== 'string');
+
+  expect(missing).toEqual([]);
 });
