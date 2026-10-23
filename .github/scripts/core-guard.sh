@@ -13,7 +13,12 @@
 # It is a signal for the reviewer, not the lock: the lock is that only the maintainer merges. It runs from main
 # (pull_request_target), so a branch cannot loosen the guard that judges it.
 #
-# Usage: core-guard.sh < files.tsv      (exit 1 when the pull request has to change)
+# A pull request whose body closes an issue (PR_BODY, "Closes #N", "Fixes #N", "Resolves #N") is a defect's fix: in the test
+# phase whoever is free takes an issue and fixes it (note decisions/2026-10-23-chi-puo-prende-la-issue.md), so it may change
+# the tours' code, which counts as core then, and the core without a new note, marked for the reviewer with the issues it
+# closes. Without one, nothing changes; the files only the maintainer changes stay refused either way.
+#
+# Usage: PR_BODY=... core-guard.sh < files.tsv      (exit 1 when the pull request has to change)
 # Try it locally (git's one-letter statuses mapped to the words of the API the workflow passes, or a new decision note
 # would count as an edited one):
 #   git diff --name-status origin/main... | awk -F'\t' 'BEGIN { w["A"]="added"; w["M"]="modified"; w["D"]="removed";
@@ -21,6 +26,11 @@
 #     bash .github/scripts/core-guard.sh
 
 set -euo pipefail
+
+# The issues the pull request closes, from its body: GitHub's own closing words, case aside.
+closes=$(printf '%s' "${PR_BODY:-}" | grep -oiE '(^|[^a-z])(close[sd]?|fix(e[sd])?|resolve[sd]?):? #[0-9]+' |
+  grep -oE '#[0-9]+' | sort -u | paste -sd ' ' - || true)
+closes=${closes% }
 
 # The contributor's own modules: Training (M3) and Events (M4, note decisions/2026-09-30-m4-al-collaboratore.md). A file
 # named after one is new work even under tests/ or web/e2e/. Their folders (src/IvaoHub.Modules.<Name>/,
@@ -47,10 +57,15 @@ is_maintainer_only() {
   [[ $path =~ ^docs/internal/(0[0-6]-|HANDOFF\.md$|demo-m1\.md$) ]] ||
   [[ $path =~ ^docs/internal/decisions/ && $status != added ]] ||
   [[ $path =~ ^tests/IvaoHub\.UnitTests/ArchitectureTests\.cs$ ]] ||
-  # Another module. A module never references another one (CLAUDE.md section 2).
-  [[ $path =~ ^src/IvaoHub\.Modules\.FlightOps/ ]] ||
-  [[ $path =~ ^web/src/modules/flightops/ ]] ||
-  [[ $path =~ ^locales/[^/]+/flightops\.json$ ]]
+  # Another module, unless the pull request fixes a defect (an issue it closes).
+  { [[ -z $closes ]] && is_other_module "$path"; }
+}
+
+# The tours: the maintainer's module. A module never references another one (CLAUDE.md section 2).
+is_other_module() {
+  [[ $1 =~ ^src/IvaoHub\.Modules\.FlightOps/ ]] ||
+  [[ $1 =~ ^web/src/modules/flightops/ ]] ||
+  [[ $1 =~ ^locales/[^/]+/flightops\.json$ ]]
 }
 
 is_core() {
@@ -64,6 +79,8 @@ is_core() {
   [[ $path =~ ^config/(security\.json|division\.xx\.json)$ ]] ||
   [[ $path =~ ^(Directory\.Build\.props|Directory\.Packages\.props|docker-compose\.yml|\.editorconfig|\.gitattributes|\.gitignore)$ ]] ||
   [[ $path =~ ^docs/UI-GUIDELINES\.md$ ]] ||
+  # Reached only when the pull request closes an issue: the tours' code is then the core of a fix.
+  is_other_module "$path" ||
   # A shared test, fixture, spec, tool or seed that already exists: adding one is fine, changing one is not.
   [[ $path =~ ^(tests|web/e2e|tools|seed)/ && $status != added && ! $path =~ $OWN ]]
 }
@@ -111,6 +128,11 @@ failed=0
       echo "The reviewer reads these first. Notes added:"
       echo
       list "${notes[@]}"
+    elif [[ -n $closes ]]; then
+      echo "### ⚠️ Core files, for the defect it closes"
+      echo
+      echo "A fix of an issue needs no decision note (decisions/2026-10-23-chi-puo-prende-la-issue.md); the reviewer reads"
+      echo "these first, against the issue. Closes: $closes"
     else
       failed=1
       echo "### ❌ Core files without a new decision note"

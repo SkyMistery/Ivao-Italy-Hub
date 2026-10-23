@@ -8,7 +8,9 @@ name: core-guard
 # the files it changes, with a read-only token.
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    # edited: the body says which issues the pull request closes, and the guard reads it (note
+    # decisions/2026-10-23-chi-puo-prende-la-issue.md).
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -37,4 +39,7 @@ jobs:
       # The maintainer's own pull requests change the core on purpose; the guard is for everyone else.
       - name: Judge them
         if: github.event.pull_request.user.login != github.repository_owner
+        # The body only through the environment, never written into the script: it is the contributor's text.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: bash .github/scripts/core-guard.sh < "$RUNNER_TEMP/files.tsv"
