@@ -342,6 +342,7 @@
           "note": "Note",
           "reference": "Reference",
           "weight": "Weight",
+          "locked": "Locked (drawn, not written in)",
           "published": "Published",
           "visibility": "Visible to",
           "picture": "Picture",

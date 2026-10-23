@@ -51,6 +51,8 @@ const sampleSchema = z.object({
   note: z.string().meta({ multiline: true }),
   reference: z.string(),
   weight: z.number().int(),
+  // Drawn greyed out and carried as it is (note 2026-10-24-un-campo-disabilitato-nel-form).
+  locked: z.number().int().optional().meta({ disabled: true }),
   published: z.boolean(),
   visibility: z.enum(['Public', 'Members', 'Staff', 'Department']),
   picture: z.number().optional().meta({ media: true }),
@@ -307,6 +309,7 @@ export function SchemaFormSample({ bootstrap }: { bootstrap: Bootstrap }) {
         note: '',
         reference: '',
         weight: 0,
+        locked: 42,
         published: true,
         visibility: 'Public',
         happensAt: '2026-06-01T12:00:00Z',
