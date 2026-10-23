@@ -84,10 +84,12 @@
       "updatedAt": "Ultima modifica",
       "requiredNm": "Distanza da completare, in NM (solo tour a distanza)",
       "allowedGroups": "Gruppi di aerei ammessi",
+      "allowedGroups.groupId": "Gruppo",
       "icao": "Tipo",
       "groupId": "Gruppo",
       "legs": "Leg",
       "allowedAircraft": "Tipi di aereo ammessi (nessuno, e nessun gruppo: tutti gli aerei)",
+      "allowedAircraft.icao": "Tipo",
       "requiredSubtours": "Sottotour da completare (solo tour con sottotour)",
       "parentTourId": "Tour con sottotour",
       "hubs": "Hub",
@@ -136,6 +138,9 @@
         "none": "Nessun award"
       },
       "groupId": {
+        "none": "Scegli un gruppo"
+      },
+      "allowedGroups.groupId": {
         "none": "Scegli un gruppo"
       },
       "openGoal": {
