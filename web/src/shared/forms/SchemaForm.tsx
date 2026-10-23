@@ -619,7 +619,11 @@ function Suggest({
   // is not. Tab straight after typing put back a value the answer would have offered. So leaving
   // asks at once, if it was not asked yet, and the field decides when the options change; what it
   // holds meanwhile is what was typed, and the server still refuses it if nothing offers it.
+  //
+  // ⚠️ Not forever: an answer may be the very options already on the screen, and nothing changes
+  // then. After two seconds the field decides with what it has, as it did before it waited.
   const [waiting, setWaiting] = useState<string | null>(null);
+  const [gaveUp, setGaveUp] = useState(false);
   const keepWhatWasOffered = () => {
     if (!only) {
       return;
@@ -648,13 +652,23 @@ function Suggest({
   };
 
   useEffect(() => {
-    if (waiting === null || open || asked.current?.options === options) {
+    if (waiting === null || open) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setGaveUp(true), 2000);
+    return () => clearTimeout(timer);
+  }, [waiting, open]);
+
+  useEffect(() => {
+    if (waiting === null || open || (asked.current?.options === options && !gaveUp)) {
       return;
     }
 
     setWaiting(null);
+    setGaveUp(false);
     onChange(match?.value ?? waiting);
-  }, [waiting, open, options, match, onChange]);
+  }, [waiting, open, options, gaveUp, match, onChange]);
 
   // The option lit in the list, by its `value` — what `cmdk` calls the value of its root, and what
   // it chooses on Enter. Held here rather than by `cmdk`, so that the box decides when something is
@@ -758,6 +772,7 @@ function Suggest({
             if (!inList(event.relatedTarget)) {
               setOpened(waiting ?? value);
               setWaiting(null);
+              setGaveUp(false);
             }
 
             show();

@@ -838,6 +838,27 @@ test('a closed field left before an answer that does not offer what was typed pu
   });
 });
 
+test('a closed field whose answer changes nothing stops waiting, and puts back what it held', async () => {
+  const user = userEvent.setup();
+
+  // The answer to anything is the page already on the screen, as the menu's stubbed server gives.
+  renderWithProviders(<AskingForm answers={{}} asked={vi.fn()} />, {
+    i18n: createTestI18n({ test: suggestLabels }),
+  });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'b738');
+  await user.tab();
+
+  await waitFor(
+    () => {
+      expect(box).toHaveValue('');
+    },
+    { timeout: 3000 },
+  );
+});
+
 test('the generator still refuses a type it cannot draw', () => {
   // The reason nobody writes a form by hand is that skipping a field is impossible: the generator
   // throws instead of quietly leaving one out. Five new kinds must not have softened that.
