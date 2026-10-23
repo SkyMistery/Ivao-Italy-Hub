@@ -38,7 +38,8 @@ export const textSchema = z.object({
 
 export const calloutSchema = z.object({
   tone: z.enum(CALLOUT_TONES),
-  title: localized(),
+  // Optional (issue #358): a callout may be its text alone.
+  title: localized().optional(),
   text: localized().meta({ multiline: true }),
 });
 
