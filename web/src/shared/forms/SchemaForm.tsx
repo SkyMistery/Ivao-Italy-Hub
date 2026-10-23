@@ -824,6 +824,17 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
     return null;
   }
 
+  if (node.meta.disabled === true) {
+    // Drawn and carried, never written in (#367): a disabled fieldset turns off every control inside
+    // it, whatever kind of field it is, and greys it with them. The value stays the form's — a
+    // control is not `disabled` itself, so the form still reads and sends it.
+    return (
+      <fieldset disabled className="min-w-0 opacity-60">
+        <Field node={{ ...node, meta: { ...node.meta, disabled: false } }} name={name} env={env} />
+      </fieldset>
+    );
+  }
+
   // A field that holds other fields is named the same way any other is. The children of `seo` are
   // written flat in the language files — `"seo.title"` beside `"seo"` — rather than nested, so the
   // group keeps a name of its own: i18next resolves a dotted key either way, while a nested `seo`
