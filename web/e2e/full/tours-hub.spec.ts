@@ -5,7 +5,15 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchAirports, choose, readInEnglish, signIn, whileWaitingFor, writeInBothLanguages } from './bench';
+import {
+  benchAirports,
+  choose,
+  readInEnglish,
+  signIn,
+  whileWaitingFor,
+  writeDailyLegLimit,
+  writeInBothLanguages,
+} from './bench';
 
 /**
  * The "done when" of T7 (M2, T7b), through the real screens: a hub tour composed from nothing — two hubs, a rotation out
@@ -98,12 +106,12 @@ test('a hub tour is composed from nothing — hubs, rotations, a connection — 
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
   await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 24 * 3600 * 1000)));
   await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-  await page.locator('[id="dailyLegLimit"]').fill('5');
 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
   // No hubs, no ready: said before anybody presses.

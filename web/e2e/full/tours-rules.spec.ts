@@ -12,9 +12,10 @@ import {
   publishContent,
   readInEnglish,
   signIn,
-  whileWaitingFor,
-  writeInBothLanguages,
   test,
+  whileWaitingFor,
+  writeDailyLegLimit,
+  writeInBothLanguages,
 } from './bench';
 
 /**
@@ -158,11 +159,11 @@ test('a general rule with parameters is amended by a tour, and a page shows the 
     await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', tourName);
     await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now + 24 * 3600 * 1000)));
     await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-    await page.locator('[id="dailyLegLimit"]').fill('5');
     await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
       await page.getByRole('button', { name: englishCommon.common.save }).click();
     });
     await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+    await writeDailyLegLimit(page, '5');
 
     await page.getByRole('tab', { name: flightops.tours.tabs.rules }).click();
     const inForce = page.getByTestId('effective-rules');

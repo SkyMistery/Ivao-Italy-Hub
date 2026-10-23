@@ -724,6 +724,7 @@
     "amends": "emenda {{code}}",
     "amending": "Emenda {{code}} {{title}}",
     "amendingHint": "Su questo tour vale questa regola al posto della generale. Scrivi solo i numeri che cambia: gli altri restano quelli della regola generale, anche quando cambia.",
+    "conditions": "Come si vola il tour",
     "effective": "Regole in vigore",
     "effectiveDescription": "Quello che vale su questo tour: le regole generali, ognuna sostituita dall'emendamento di questo tour dove c'è, poi quelle del tour. Un sottotour ha prima quelle del contenitore.",
     "noneInForce": "Su questo tour non vale ancora nessuna regola.",

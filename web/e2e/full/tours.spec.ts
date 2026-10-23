@@ -12,6 +12,7 @@ import {
   readInEnglish,
   signIn,
   whileWaitingFor,
+  writeDailyLegLimit,
   writeInBothLanguages,
 } from './bench';
 
@@ -55,12 +56,12 @@ test('a tour is made from a template, marked ready, found in search and calendar
   await expect(page.getByRole('heading', { name: flightops.tourTemplates.create })).toBeVisible();
 
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', templateName);
-  await page.locator('[id="dailyLegLimit"]').fill('5');
 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await writeDailyLegLimit(page, '5');
   const templateUrl = page.url();
 
   // ---------------------------------------------------------------- a tour out of it
@@ -87,7 +88,10 @@ test('a tour is made from a template, marked ready, found in search and calendar
 
   // What stands in the way of "ready" is said before anybody presses it: the dates are not copied.
   await expect(page.getByText(flightops.tours.readyProblems)).toBeVisible();
+  // The template's limit came with it, in the tour's rules (#369).
+  await page.getByRole('tab', { name: flightops.tours.tabs.rules }).click();
   await expect(page.locator('[id="dailyLegLimit"]')).toHaveValue('5');
+  await page.getByRole('tab', { name: flightops.tours.tabs.settings }).click();
 
   // ---------------------------------------------------------------- dates, summary, ready
   const now = Date.now();
@@ -182,6 +186,7 @@ function flightOpsWords(language: string) {
       saved: string;
       readyProblems: string;
       actions: { ready: string; hide: string };
+      tabs: { settings: string; rules: string };
       fields: { title: string; summary: string };
     };
     tourTemplates: { create: string };

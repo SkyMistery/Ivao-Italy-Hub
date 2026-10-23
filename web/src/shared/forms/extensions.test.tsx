@@ -361,6 +361,37 @@ test('unticking the last one leaves nothing rather than an empty box nobody mean
   expect(onSubmit).toHaveBeenCalledWith({ allowed: [] });
 });
 
+// ---- a field drawn and not written in (#367) ----------------------------------------------------
+
+test('a disabled field is drawn greyed out, cannot be written in, and is sent as it was', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn<(values: { distance?: number | undefined; title: string }) => Promise<void>>(() =>
+    Promise.resolve(),
+  );
+  const schema = z.object({
+    title: z.string(),
+    distance: z.number().int().optional().meta({ disabled: true }),
+  });
+
+  render(
+    schema,
+    { title: 'A tour', distance: 1200 },
+    { labels: { fields: { title: 'Title', distance: 'Distance' } }, onSubmit },
+  );
+
+  const distance = screen.getByLabelText('Distance');
+  expect(distance).toBeDisabled();
+  expect(distance).toHaveValue(1200);
+  await user.type(distance, '5');
+  expect(distance).toHaveValue(1200);
+
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalled();
+  });
+  expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ title: 'A tour', distance: 1200 });
+});
+
 // ---- 7. an address proposes itself from the title --------------------------------------------
 
 const slugSchema = z.object({ title: localized(), slug: z.string().meta({ slugFrom: 'title' }) });

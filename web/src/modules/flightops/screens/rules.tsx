@@ -1,7 +1,7 @@
 import { Button } from '@ivao/atmosphere-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -330,7 +330,18 @@ export function TourRuleForm() {
  * The rules of a tour (design M2 §5.1): what holds on it, its own rules, the general ones with "amend", and the copy from
  * another tour. Read only for who may not write rules.
  */
-export function TourRulesTab({ tour, editable }: { tour: TourDetailDto; editable: boolean }) {
+/**
+ * A tour's rules: how it is flown — the half of its form that is rules (#369) — then the rules it is validated with.
+ */
+export function TourRulesTab({
+  tour,
+  editable,
+  conditions,
+}: {
+  tour: TourDetailDto;
+  editable: boolean;
+  conditions: ReactNode;
+}) {
   const { t } = useTranslation();
   const base = `${TOURS}/${tour.id}`;
   const own = useQuery(tourRulesQuery(tour.id)).data?.items ?? [];
@@ -342,6 +353,10 @@ export function TourRulesTab({ tour, editable }: { tour: TourDetailDto; editable
 
   return (
     <div className="flex flex-col gap-6">
+      <section className="flex flex-col gap-2">
+        <h3 className="text-lg font-semibold">{t('flightops:rules.conditions')}</h3>
+        {conditions}
+      </section>
       <section className="flex flex-col gap-2">
         <h3 className="text-lg font-semibold">{t('flightops:rules.effective')}</h3>
         <p className="text-sm">{t('flightops:rules.effectiveDescription')}</p>

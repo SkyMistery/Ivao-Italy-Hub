@@ -424,8 +424,27 @@ const tourWords = JSON.parse(
     fields: { title: string; summary: string; kind: string };
     options: { kind: { Free: string } };
     actions: { ready: string };
+    tabs: { rules: string };
   };
 };
+
+/**
+ * The legs a day of the tour on screen, written in its "Rules" tab (#369) and saved; the page goes back to where it was.
+ * A tour is not ready without one while the division has none (§3.7).
+ */
+export async function writeDailyLegLimit(page: Page, limit: string): Promise<void> {
+  const where = page.url();
+  await page.getByRole('tab', { name: tourWords.tours.tabs.rules }).click();
+  const field = page.locator('[id="dailyLegLimit"]');
+  await field.fill(limit);
+  await whileWaitingFor(page, 'PUT', '/api/flightops/tours/', async () => {
+    await page
+      .locator('form', { has: field })
+      .getByRole('button', { name: englishCommon.common.save })
+      .click();
+  });
+  await page.goto(where);
+}
 
 function wallClock(date: Date): string {
   return date.toISOString().slice(0, 16);
@@ -451,11 +470,11 @@ export async function releasedTourWithOneLeg(
   });
   await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 48 * 3600 * 1000)));
   await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-  await page.locator('[id="dailyLegLimit"]').fill('5');
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await writeDailyLegLimit(page, '5');
 
   const tourId = Number(/\/staff\/tours\/(\d+)/.exec(page.url())![1]);
   await addLeg(context, tourId, benchAirports.rome, benchAirports.milan);

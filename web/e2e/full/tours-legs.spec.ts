@@ -5,7 +5,15 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { englishCommon } from '../locales';
 
-import { benchAirports, choose, readInEnglish, signIn, whileWaitingFor, writeInBothLanguages } from './bench';
+import {
+  benchAirports,
+  choose,
+  readInEnglish,
+  signIn,
+  whileWaitingFor,
+  writeDailyLegLimit,
+  writeInBothLanguages,
+} from './bench';
 
 /**
  * The legs of a tour (M2, T7a), through the real screens: a tour with a chosen start written from nothing, its legs
@@ -67,12 +75,12 @@ test('a tour with a chosen start is composed in the table of its legs and marked
   await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
   await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 24 * 3600 * 1000)));
   await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
-  await page.locator('[id="dailyLegLimit"]').fill('5');
 
   await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
     await page.getByRole('button', { name: englishCommon.common.save }).click();
   });
   await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  await writeDailyLegLimit(page, '5');
   const tourUrl = page.url();
 
   // No legs, no ready: said before anybody presses.
