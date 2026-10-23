@@ -10,6 +10,7 @@ import { PrintContext } from './print';
 import {
   AccordionBlock,
   ButtonGroupBlock,
+  CalloutBlock,
   CardGridBlock,
   DividerBlock,
   DocumentListBlock,
@@ -304,13 +305,16 @@ describe('the accent of a block', () => {
     expect(screen.getByText('The division')).toHaveClass('text-muted-foreground');
   });
 
-  test('a grid of icons colours the glyph, a grid of cards the rule above the card', () => {
+  test('a grid of icons colours the glyph and its disc, a grid of cards the rule above the card', () => {
     const { unmount } = draw(
       <IconGridBlock
         props={{ columns: 3, accent: 'aurora', items: [{ icon: 'plane', title: en('Fly') }] }}
       />,
     );
-    expect(classesOf('svg')).toContain('text-product-aurora-mid');
+    // One colour for both (issue #363): the disc is the accent itself at 15 %, and the glyph takes it.
+    expect(classesOf('.rounded-full')).toContain('text-product-aurora-mid');
+    expect(classesOf('.rounded-full')).toContain('bg-current/15');
+    expect(document.querySelector('.rounded-full > svg')).not.toBeNull();
     unmount();
 
     draw(<CardGridBlock props={{ columns: 3, accent: 'ocean', cards: [{ title: en('Fly') }] }} />);
@@ -327,7 +331,34 @@ describe('the accent of a block', () => {
     // Nothing in the properties: `brand`, which is `text-primary` — exactly what these blocks drew
     // before there was a choice, so no page written before today looks different when read after it.
     draw(<IconGridBlock props={{ columns: 3, items: [{ icon: 'plane', title: en('Fly') }] }} />);
-    expect(classesOf('svg')).toContain('text-primary');
+    expect(classesOf('.rounded-full')).toContain('text-primary');
+  });
+});
+
+describe('the callout', () => {
+  test('may be its text alone, and then the text follows the icon directly (issue #358)', () => {
+    draw(<CalloutBlock props={{ tone: 'info', text: en('Only the text.') }} />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert.querySelector('h5')).toBeNull();
+    // `[&>svg+div]` of the variant is what puts the text on the icon's line: it needs the text right after the icon.
+    expect(alert.querySelector('svg + div')).toHaveTextContent('Only the text.');
+  });
+
+  test('with a title, the title is the line beside the icon', () => {
+    draw(<CalloutBlock props={{ tone: 'info', title: en('Heads up'), text: en('The text.') }} />);
+
+    expect(screen.getByRole('alert').querySelector('svg + h5')).toHaveTextContent('Heads up');
+  });
+
+  test('«Careful» is yellow and «Important» red', () => {
+    const { unmount } = draw(<CalloutBlock props={{ tone: 'warning', title: en('Careful') }} />);
+    expect(screen.getByRole('alert')).toHaveClass('bg-semantic-yellow-50');
+    expect(screen.getByRole('alert')).not.toHaveClass('bg-red-50');
+    unmount();
+
+    draw(<CalloutBlock props={{ tone: 'danger', title: en('Important') }} />);
+    expect(screen.getByRole('alert')).toHaveClass('bg-red-50');
   });
 });
 

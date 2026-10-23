@@ -945,8 +945,15 @@ export function IconGridBlock({ props }: BlockComponentProps) {
         return (
           <div key={index} className="flex flex-col gap-2">
             {/* `text-primary` was the only colour any of these blocks had; now it is one of four,
-                and it is still the one they start with. */}
-            <ChosenIcon name={plain(item, 'icon')} className={`size-8 ${ACCENT_GLYPH[accent]}`} />
+                and it is still the one they start with. The icon stands on a disc of its own colour
+                (issue #363): a line drawing alone carried too little of it to tell the four apart.
+                `bg-current/15` is the accent's own colour, so the disc follows the pair into a dark
+                ground with no second table, and the icon keeps its 3 : 1 on the tint. */}
+            <span
+              className={`inline-flex size-14 items-center justify-center rounded-full bg-current/15 ${ACCENT_GLYPH[accent]}`}
+            >
+              <ChosenIcon name={plain(item, 'icon')} className="size-7" />
+            </span>
             <H4>{read(text(item, 'title'))}</H4>
             {body === '' ? null : <p className="text-muted-foreground">{body}</p>}
           </div>
