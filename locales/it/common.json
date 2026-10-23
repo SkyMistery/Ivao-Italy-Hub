@@ -562,12 +562,12 @@
         "changelog": "Che cosa è cambiato",
         "confirm": "Pubblica"
       },
-      "renderMode": "Cosa mostra questo blocco",
+      "renderMode": "Come si aggiorna",
       "renderModes": {
-        "live": "La risposta del momento in cui si legge",
-        "frozen": "Quello che diceva quando la pagina e' stata pubblicata"
+        "live": "Aggiornato sempre",
+        "frozen": "Fermo alla pubblicazione"
       },
-      "renderModeHint": "Un blocco catturato smette di cambiare finche' qualcuno non ripubblica la pagina.",
+      "renderModeHint": "«Fermo alla pubblicazione» tiene quello che il blocco mostrava il giorno in cui la pagina è stata pubblicata, finché qualcuno non la ripubblica.",
       "column": "Colonna",
       "columnNumber": "Colonna {{number}}",
       "section": "Sezione",
@@ -876,6 +876,8 @@
     },
     "linkList": {
       "label": "Elenco di link",
+      "about": "Mostra i link della schermata Link, della categoria e del dipartimento scelti qui: nel blocco non si scrive nessun link.",
+      "aboutLink": "Apri la schermata Link",
       "empty": "Nessun link da mostrare.",
       "fields": {
         "category": "Categoria",
@@ -897,7 +899,7 @@
         }
       }
     },
-    "willBeCaptured": "Ora dal vivo, catturato quando pubblichi",
+    "willBeCaptured": "Aggiornato ora, si ferma quando pubblichi",
     "hero": {
       "label": "Testata",
       "fields": {
@@ -975,6 +977,7 @@
     },
     "embed": {
       "label": "Pagina incorporata",
+      "about": "Una pagina di un altro sito, in un riquadro. Si possono incorporare solo questi siti: {{hosts}}.",
       "notAllowed": "Questo indirizzo non e' su un sito che l'hub sa incorporare.",
       "fields": {
         "url": "Indirizzo",
@@ -982,7 +985,8 @@
         "height": "Altezza in pixel"
       },
       "hints": {
-        "title": "Viene letto al posto del riquadro, per questo non e' facoltativo."
+        "title": "Viene letto al posto del riquadro, per questo non e' facoltativo.",
+        "url": "L'indirizzo della pagina, come il sito lo mostra nella barra del browser."
       }
     },
     "interactive": {

@@ -36,6 +36,8 @@ import {
 
 import type { BlockRegistration } from '../shared/modules';
 
+import { EMBED_HOSTS } from './allowlist';
+
 import {
   AccordionBlock,
   ButtonGroupBlock,
@@ -247,6 +249,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       ],
     },
     editorLabelKey: 'blocks.linkList.label',
+    // Nothing is typed into this block: its links are the rows of the Links screen.
+    about: { href: '/staff/links' },
     group: 'content',
     subgroup: 'text',
     icon: Link2,
@@ -318,6 +322,8 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
       height: 360,
     },
     editorLabelKey: 'blocks.embed.label',
+    // The sites it may frame, read off the allow list: a host added there is a host the line names.
+    about: { values: { hosts: EMBED_HOSTS.map((host) => host.hosts[0]).join(', ') } },
     group: 'content',
     subgroup: 'media',
     icon: Frame,

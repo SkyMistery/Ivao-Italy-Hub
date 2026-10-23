@@ -336,7 +336,7 @@ export function BlockProperties({
   /** Whether a data block of this body can be captured at all: without it, no live/frozen choice (`BodyEditor`). */
   captures?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const read = useLocalized();
   const registration = registry.blocks.find((candidate) => candidate.type === block.type);
 
@@ -367,9 +367,29 @@ export function BlockProperties({
   }
 
   const columns = columnsOf(section.layout);
+  const labels = registration.propertyLabels ?? `blocks.${block.type}`;
+  // Beside the block's name, so a module's block has its line in its own language files too.
+  const aboutKey = registration.editorLabelKey.replace(/\.label$/, '.about');
+  const about = i18n.exists(aboutKey) ? t(aboutKey, registration.about?.values) : null;
 
   return (
     <div className="flex flex-col gap-6">
+      {about === null ? null : (
+        // What the properties below do not say: where the block's content comes from (`about`).
+        <p className="text-muted-foreground text-sm">
+          {about}
+          {registration.about?.href === undefined ? null : (
+            <>
+              {' '}
+              {/* A tab of its own: leaving the editor for the other screen would leave the page too. */}
+              <a href={registration.about.href} target="_blank" rel="noopener" className="underline">
+                {t(`${aboutKey}Link`)}
+              </a>
+            </>
+          )}
+        </p>
+      )}
+
       {sections.length > 1 ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="section">{t('content.editor.section')}</Label>
@@ -436,7 +456,7 @@ export function BlockProperties({
         locales={locales}
         // A module's block names its own prefix: its labels are in its own language files, not the
         // core's, which know nothing of tours (`BlockRegistration.propertyLabels`).
-        labels={registration.propertyLabels ?? `blocks.${block.type}`}
+        labels={labels}
         division={division}
         mediaLibrary={mediaLibrary}
         uploadMedia={uploadMedia}

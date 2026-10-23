@@ -562,12 +562,12 @@
         "changelog": "What changed",
         "confirm": "Publish"
       },
-      "renderMode": "What this block shows",
+      "renderMode": "How it updates",
       "renderModes": {
-        "live": "The answer of the moment it is read",
-        "frozen": "What it said when the page was published"
+        "live": "Always up to date",
+        "frozen": "As it was when published"
       },
-      "renderModeHint": "A captured block stops changing until somebody publishes the page again.",
+      "renderModeHint": "\"As it was when published\" keeps what the block showed on the day the page was published, until somebody publishes the page again.",
       "column": "Column",
       "columnNumber": "Column {{number}}",
       "section": "Section",
@@ -876,6 +876,8 @@
     },
     "linkList": {
       "label": "Link list",
+      "about": "It shows the links of the Links screen, of the category and the department chosen here: nothing is typed into the block.",
+      "aboutLink": "Open the Links screen",
       "empty": "No link to show.",
       "fields": {
         "category": "Category",
@@ -897,7 +899,7 @@
         }
       }
     },
-    "willBeCaptured": "Live now, captured when you publish",
+    "willBeCaptured": "Up to date now, held as it is when you publish",
     "hero": {
       "label": "Hero",
       "fields": {
@@ -975,6 +977,7 @@
     },
     "embed": {
       "label": "Embedded page",
+      "about": "A page of another site, in a frame. Only these sites can be embedded: {{hosts}}.",
       "notAllowed": "This address is not on a site the hub can embed.",
       "fields": {
         "url": "Address",
@@ -982,7 +985,8 @@
         "height": "Height in pixels"
       },
       "hints": {
-        "title": "Read out in place of the frame, which is why it is not optional."
+        "title": "Read out in place of the frame, which is why it is not optional.",
+        "url": "The address of the page, as the site shows it in the browser bar."
       }
     },
     "interactive": {

@@ -136,6 +136,20 @@ export interface BlockRegistration {
    * `column` — which are the envelope too.
    */
   readonly carriesSource?: boolean;
+  /**
+   * What the line at the top of the block's properties panel needs besides its words, which sit
+   * beside its name — `editorLabelKey` with `.about` for `.label`; a block without that key has no
+   * line: the values the words name, and a screen of the hub the line leads to, labelled by the
+   * same key with `Link` after it (`blocks.linkList.aboutLink`).
+   *
+   * It is for a block whose properties do not say where its content comes from — a list of links
+   * written on another screen, a frame of another site — which is what staff who did not build the
+   * site could not tell (`decisions/2026-10-22-il-piano-dopo-la-prova-dello-staff.md`, IV and VII).
+   */
+  readonly about?: {
+    readonly values?: Readonly<Record<string, string>>;
+    readonly href?: string;
+  };
 }
 
 /**
