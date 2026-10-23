@@ -709,7 +709,33 @@
         "description": "The pages waiting for approval."
       }
     },
-    "appearsIn": "Appears in: {{pages}}"
+    "appearsIn": "Appears in: {{pages}}",
+    "changes": {
+      "first": "First publication.",
+      "none": "Published again, nothing changed.",
+      "sectionsAdded": "Sections added: {{names}}.",
+      "sectionsChanged": "Sections changed: {{names}}.",
+      "sectionsRemoved": "Sections removed: {{names}}.",
+      "blocks": {
+        "line": "Blocks: {{list}}.",
+        "added_one": "{{count}} added",
+        "added_other": "{{count}} added",
+        "changed_one": "{{count}} changed",
+        "changed_other": "{{count}} changed",
+        "removed_one": "{{count}} removed",
+        "removed_other": "{{count}} removed"
+      },
+      "fields": "Changed: {{names}}.",
+      "footer": "footer"
+    },
+    "versions": {
+      "title": "Versions",
+      "number": "Version {{version}}",
+      "online": "Online",
+      "publishedBy": "Published by {{name}}",
+      "approvedBy": "Approved and published by {{name}}",
+      "noLine": "No line written"
+    }
   },
   "templates": {
     "title": "Templates",

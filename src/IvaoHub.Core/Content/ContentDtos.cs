@@ -154,6 +154,28 @@ public sealed record PublicContentDto(
     // has a new fingerprint here at once, without publishing again.
     IReadOnlyDictionary<string, string> Media);
 
+/// <summary>
+/// One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
+/// staff who may read the row, never for a visitor.
+/// </summary>
+/// <param name="Version">Its number, increasing from 1.</param>
+/// <param name="PublishedAt">When it went online.</param>
+/// <param name="PublishedBy">Who published it: a VID, or the pseudonym of somebody whose data was erased.</param>
+/// <param name="PublishedByName">Their name, when the hub has one (<c>MemberNames</c>).</param>
+/// <param name="ApprovedBy">Who approved it, where the kind goes through approval; null otherwise.</param>
+/// <param name="ApprovedByName">Their name, when the hub has one.</param>
+/// <param name="Changelog">The line written when it was published.</param>
+/// <param name="Online">Whether it is the version the public reads now.</param>
+public sealed record ContentVersionDto(
+    int Version,
+    DateTime PublishedAt,
+    int PublishedBy,
+    string? PublishedByName,
+    int? ApprovedBy,
+    string? ApprovedByName,
+    string? Changelog,
+    bool Online);
+
 /// <summary>What publication is told, beyond which row it is about.</summary>
 /// <param name="Changelog">A line for the staff about what changed. Never shown to a visitor.</param>
 public sealed record ContentPublishRequest(string? Changelog);

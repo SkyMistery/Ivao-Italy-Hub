@@ -1118,6 +1118,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categories": {
         parameters: {
             query?: never;
@@ -4553,6 +4569,15 @@ export interface components {
             /** Format: date-time */
             rowVersion: string;
         };
+        /** @description How many blocks of a page changed since what is online, wherever they sit. */
+        BlockChangesDto: {
+            /** Format: int32 */
+            added: number;
+            /** Format: int32 */
+            removed: number;
+            /** Format: int32 */
+            changed: number;
+        };
         /**
          * @description What a block is made of. A BlockKind.Content block draws what an editor typed into it; a
          *     BlockKind.Data block draws what the hub knows, asked of a provider (design M0 section 5.4).
@@ -5314,7 +5339,10 @@ export interface components {
          * @enum {unknown}
          */
         ContentReviewAction: "Ready" | "Withdraw" | "SendBack" | "Approve";
-        /** @description What the approver of a page is shown before deciding (note 2026-09-13-contenuti-centralizzati, 3.2). */
+        /**
+         * @description What the approver of a page is shown before deciding (note 2026-09-13-contenuti-centralizzati, 3.2), and what
+         *     the line of a publication starts from (note 2026-10-23-la-storia-delle-versioni): what changed since what is online.
+         */
         ContentReviewDto: {
             /** @description True when nothing of this page is online yet. */
             firstPublication: boolean;
@@ -5334,6 +5362,10 @@ export interface components {
             readyAt: null | string;
             /** @description Who marked it ready, as a name. */
             readyByName: null | string;
+            /** @description The blocks added, removed and changed, nested sections included. */
+            blocks: components["schemas"]["BlockChangesDto"];
+            /** @description The fields around the body that are not the ones online, by the name the form gives them. */
+            fields: string[];
         };
         /** @description One request to the review of a page. */
         ContentReviewRequest: {
@@ -5351,6 +5383,40 @@ export interface components {
              * @description Approving: the page it goes under, corrected; null at the top.
              */
             parentId?: null | number;
+        };
+        /**
+         * @description One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
+         *     staff who may read the row, never for a visitor.
+         */
+        ContentVersionDto: {
+            /**
+             * Format: int32
+             * @description Its number, increasing from 1.
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description When it went online.
+             */
+            publishedAt: string;
+            /**
+             * Format: int32
+             * @description Who published it: a VID, or the pseudonym of somebody whose data was erased.
+             */
+            publishedBy: number;
+            /** @description Their name, when the hub has one (`MemberNames`). */
+            publishedByName: null | string;
+            /**
+             * Format: int32
+             * @description Who approved it, where the kind goes through approval; null otherwise.
+             */
+            approvedBy: null | number;
+            /** @description Their name, when the hub has one. */
+            approvedByName: null | string;
+            /** @description The line written when it was published. */
+            changelog: null | string;
+            /** @description Whether it is the version the public reads now. */
+            online: boolean;
         };
         /**
          * @description What a client may set on a content row.
@@ -13934,6 +14000,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentAppearanceDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ContentVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentVersionDto"][];
                 };
             };
             /** @description Not Found */

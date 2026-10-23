@@ -66,7 +66,13 @@ public enum SectionChange
 /// <param name="Change">What happened to it.</param>
 public sealed record SectionChangeDto(string Key, Localized<string>? Title, SectionChange Change);
 
-/// <summary>What the approver of a page is shown before deciding (note 2026-09-13-contenuti-centralizzati, 3.2).</summary>
+/// <summary>How many blocks of a page changed since what is online, wherever they sit.</summary>
+public sealed record BlockChangesDto(int Added, int Removed, int Changed);
+
+/// <summary>
+/// What the approver of a page is shown before deciding (note 2026-09-13-contenuti-centralizzati, 3.2), and what
+/// the line of a publication starts from (note 2026-10-23-la-storia-delle-versioni): what changed since what is online.
+/// </summary>
 /// <param name="FirstPublication">True when nothing of this page is online yet.</param>
 /// <param name="TitleChanged">True when the title is not the one online.</param>
 /// <param name="Path">The address the page will be published at.</param>
@@ -75,6 +81,8 @@ public sealed record SectionChangeDto(string Key, Localized<string>? Title, Sect
 /// <param name="Note">The last word of the review.</param>
 /// <param name="ReadyAt">When it was marked ready.</param>
 /// <param name="ReadyByName">Who marked it ready, as a name.</param>
+/// <param name="Blocks">The blocks added, removed and changed, nested sections included.</param>
+/// <param name="Fields">The fields around the body that are not the ones online, by the name the form gives them.</param>
 public sealed record ContentReviewDto(
     bool FirstPublication,
     bool TitleChanged,
@@ -83,7 +91,9 @@ public sealed record ContentReviewDto(
     ProposedMenuEntry? Menu,
     string? Note,
     DateTime? ReadyAt,
-    string? ReadyByName);
+    string? ReadyByName,
+    BlockChangesDto Blocks,
+    IReadOnlyList<string> Fields);
 
 /// <summary>
 /// The review of a page (G19, note 2026-09-13-contenuti-centralizzati §3.2): a department marks a
@@ -97,6 +107,7 @@ public sealed class ContentReviewService(
     HubDbContext database,
     ContentPublishService publish,
     ContentAddresses addresses,
+    BlockDocumentWalker walker,
     INotificationService notifications,
     ICurrentUser currentUser,
     IClock clock,
@@ -157,7 +168,10 @@ public sealed class ContentReviewService(
         };
     }
 
-    /// <summary>What an approver is shown: the sections that changed, the address, the menu entry.</summary>
+    /// <summary>
+    /// What an approver is shown: the sections, the blocks and the fields that changed, the address, the menu entry.
+    /// Asked of any row, waiting or not: the publish dialog starts its line from the same answer.
+    /// </summary>
     public async Task<ContentReviewDto> DescribeAsync(ContentEntry content, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -184,7 +198,70 @@ public sealed class ContentReviewService(
             Menu: ReadMenu(content),
             Note: content.ReviewNote,
             ReadyAt: content.ReadyAt,
-            ReadyByName: string.IsNullOrWhiteSpace(readyByName) ? null : readyByName.Trim());
+            ReadyByName: string.IsNullOrWhiteSpace(readyByName) ? null : readyByName.Trim(),
+            Blocks: online is null
+                ? new BlockChangesDto(0, 0, 0)
+                : CompareBlocks(JsonNode.Parse(online.BodyJson), JsonNode.Parse(content.BodyJson)),
+            Fields: online is null ? [] : ChangedFields(online, content));
+    }
+
+    /// <summary>
+    /// The text around the body that is not the one online (note 2026-10-21-i-campi-fuori-dalla-versione): the
+    /// fields a version keeps, named as the form names them. A document's dates, Pinned and Sort are not in a
+    /// version, so they are not a change of one.
+    /// </summary>
+    private static IReadOnlyList<string> ChangedFields(ContentVersion online, ContentEntry content)
+    {
+        var fields = new List<string>();
+
+        void Compare<T>(string name, T before, T after)
+        {
+            if (JsonSerializer.Serialize(before, Json) != JsonSerializer.Serialize(after, Json))
+            {
+                fields.Add(name);
+            }
+        }
+
+        Compare("title", online.Title, content.Title);
+        Compare("summary", online.Summary, content.Summary);
+        Compare("seo", online.Seo, content.Seo);
+        Compare("collections", online.Collections, content.Collections);
+        Compare("coverMediaId", online.CoverMediaId, content.CoverMediaId);
+        Compare("fileMediaId", online.FileMediaId, content.FileMediaId);
+        Compare("showFooter", online.ShowFooter, content.ShowFooter);
+
+        return fields;
+    }
+
+    /// <summary>
+    /// Blocks matched by identifier, which a block keeps for its whole life in a page: one only online was
+    /// removed, one only in the draft added, one on both sides with other contents changed — moved to another
+    /// section is not a change of the block, the section says it.
+    /// </summary>
+    private BlockChangesDto CompareBlocks(JsonNode? online, JsonNode? draft)
+    {
+        var before = Blocks(online);
+        var after = Blocks(draft);
+
+        return new BlockChangesDto(
+            Added: after.Keys.Count(id => !before.ContainsKey(id)),
+            Removed: before.Keys.Count(id => !after.ContainsKey(id)),
+            Changed: after.Count(pair => before.TryGetValue(pair.Key, out var previous) && previous != pair.Value));
+    }
+
+    private Dictionary<string, string> Blocks(JsonNode? body)
+    {
+        var blocks = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var block in walker.EnumerateBlocks(body))
+        {
+            if (block.Id is { Length: > 0 } id)
+            {
+                blocks.TryAdd(id, Hash(block.Node));
+            }
+        }
+
+        return blocks;
     }
 
     private async Task<ContentPublishFailure?> ReadyAsync(

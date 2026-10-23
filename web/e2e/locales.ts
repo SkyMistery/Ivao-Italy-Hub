@@ -91,6 +91,8 @@ interface CommonStrings {
       readonly pinned: string;
       readonly parentId: string;
     };
+    readonly changes: { readonly first: string };
+    readonly versions: { readonly title: string };
     readonly review: {
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };

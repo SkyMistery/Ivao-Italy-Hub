@@ -712,6 +712,12 @@ export async function stubTheApiAsStaff(page: Page, bootstrap: unknown = staffBo
     }),
   );
 
+  // The versions of a row (#352): none, a row never published. Without it the list above answered, and the
+  // history drew a page of rows as if it were a list of versions.
+  await page.route('**/api/content/*/versions', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+  );
+
   await stubTheAddressOfAPage(page);
 
   // The vocabulary a department files its news and documents under. Empty: a division decides its

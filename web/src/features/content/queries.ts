@@ -23,6 +23,7 @@ export type ContentAddressDto = components['schemas']['ContentAddressDto'];
 export type ContentPageNodeDto = components['schemas']['ContentPageNodeDto'];
 export type ContentReviewDto = components['schemas']['ContentReviewDto'];
 export type ContentAppearanceDto = components['schemas']['ContentAppearanceDto'];
+export type ContentVersionDto = components['schemas']['ContentVersionDto'];
 
 export const contentKey = ['content'] as const;
 
@@ -352,5 +353,17 @@ export function contentReviewQuery(id: number) {
     queryKey: [...contentKey, 'review', id] as const,
     queryFn: async (): Promise<ContentReviewDto> =>
       unwrap(await api.GET('/api/content/{id}/review', { params: { path: { id } } })),
+  });
+}
+
+/**
+ * The versions of a row, the newest first, with the line each was published with (issue #352). Under the content's
+ * key, so a publication or an approval asks for it again by itself.
+ */
+export function contentVersionsQuery(id: number) {
+  return queryOptions({
+    queryKey: [...contentKey, 'versions', id] as const,
+    queryFn: async (): Promise<ContentVersionDto[]> =>
+      unwrap(await api.GET('/api/content/{id}/versions', { params: { path: { id } } })),
   });
 }

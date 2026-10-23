@@ -9,6 +9,7 @@ import { useMoment } from '../../shared/i18n/useMoment';
 import { ConfirmDialog, Notice, useNotice } from '../../shared/ui';
 import { menuParentsQuery } from '../menu/queries';
 
+import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { useReviewContent } from './mutations';
 import { contentReviewQuery, pageTreeQuery, type ContentDetailDto } from './queries';
 
@@ -245,6 +246,13 @@ export function ReviewPanel({
               confirmText={t('content.review.approveDialog.confirm')}
               confirmVariant="primary"
               disabled={review.isPending}
+              // The line starts from what changed since the version online, as the editor's own publish
+              // dialog does (issue #352): the summary above, in words, for the approver to keep or rewrite.
+              onOpenChange={(open) => {
+                if (open && changelog === '' && facts !== undefined) {
+                  setChangelog(changeSummary(facts, t, read));
+                }
+              }}
               onConfirm={() => {
                 const proposed = menu();
                 act(
@@ -261,9 +269,10 @@ export function ReviewPanel({
             >
               <div className="flex flex-col gap-1">
                 <Label htmlFor="review-changelog">{t('content.editor.publishDialog.changelog')}</Label>
-                <Input
+                <Textarea
                   id="review-changelog"
-                  maxLength={512}
+                  rows={3}
+                  maxLength={CHANGELOG_MAX}
                   value={changelog}
                   onChange={(event) => setChangelog(event.target.value)}
                 />
