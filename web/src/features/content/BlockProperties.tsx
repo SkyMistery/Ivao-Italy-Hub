@@ -13,9 +13,17 @@ import {
   type Layout,
   type SectionEnvelope,
 } from '../../blocks';
-import { SchemaForm, collectionKindOf, suggestCollections, writtenValues } from '../../shared/forms';
+import {
+  SchemaForm,
+  chooseCalendarKinds,
+  collectionKindOf,
+  namesCalendarKinds,
+  suggestCollections,
+  writtenValues,
+} from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { collectionsOfKindQuery } from '../categories/queries';
+import { bootstrapQuery } from '../me/queries';
 import { emptyLocalized } from '../../shared/i18n/localized';
 import type { MediaLibraryQuery } from '../../shared/ui';
 
@@ -347,20 +355,43 @@ export function BlockProperties({
     ...collectionsOfKindQuery(collectionKind ?? 'News'),
     enabled: collectionKind !== null,
   });
-  const schema = useMemo(
-    () =>
-      registration === undefined || collections.data === undefined
-        ? registration?.schema
-        : suggestCollections(
-            registration.schema,
-            collections.data.items.map((collection) => ({
-              value: collection.key,
-              label: read(collection.label) || collection.key,
-              group: t(`departments.${collection.ownerDepartment}`),
-            })),
-          ),
-    [registration, collections.data, read, t],
-  );
+  // The kinds of the calendar a block chooses from (issue #360): the ones in use, from `/api/me`, and
+  // any this block already holds that is no longer among them, said as retired rather than drawn
+  // as an empty select — the block keeps it, and the calendar answers it with nothing.
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const heldKinds = kindsHeld(block.props).join('\n');
+  const schema = useMemo(() => {
+    if (registration === undefined) {
+      return undefined;
+    }
+
+    let shaped = registration.schema;
+
+    if (collections.data !== undefined) {
+      shaped = suggestCollections(
+        shaped,
+        collections.data.items.map((collection) => ({
+          value: collection.key,
+          label: read(collection.label) || collection.key,
+          group: t(`departments.${collection.ownerDepartment}`),
+        })),
+      );
+    }
+
+    if (bootstrap !== undefined && namesCalendarKinds(shaped)) {
+      const inUse = bootstrap.calendarKinds.map((kind) => ({
+        value: kind.key,
+        label: read(kind.label) || kind.key,
+      }));
+      const retired = heldKinds
+        .split('\n')
+        .filter((key) => key !== '' && !inUse.some((kind) => kind.value === key))
+        .map((key) => ({ value: key, label: t('blocks.calendar.retiredKind', { key }) }));
+      shaped = chooseCalendarKinds(shaped, [...inUse, ...retired]);
+    }
+
+    return shaped;
+  }, [registration, collections.data, bootstrap, heldKinds, read, t]);
 
   if (registration === undefined || schema === undefined) {
     return <p className="text-muted-foreground text-sm">{t('blocks.unknown', { type: block.type })}</p>;
@@ -448,6 +479,17 @@ export function BlockProperties({
       />
     </div>
   );
+}
+
+/** The calendar kinds a block's properties already name, out of its `kinds[] { kind }`. */
+function kindsHeld(props: Record<string, unknown>): string[] {
+  return Array.isArray(props.kinds)
+    ? props.kinds.flatMap((entry: unknown) =>
+        typeof entry === 'object' && entry !== null && typeof (entry as { kind?: unknown }).kind === 'string'
+          ? [(entry as { kind: string }).kind]
+          : [],
+      )
+    : [];
 }
 
 /**

@@ -121,3 +121,26 @@ test('a component from the palette lands in the section that was selected', asyn
   await page.getByRole('button', { name: editor.outline, exact: true }).click();
   await expect(page.getByRole('button', { name: editor.removeSection })).toHaveCount(2);
 });
+
+test("a calendar block's kinds are chosen from the calendar's own, not typed (issue #360)", async ({
+  page,
+}) => {
+  await page.goto('/staff/content/1');
+
+  await page.getByRole('button', { name: editor.outline }).click();
+  await page.getByRole('button', { name: editor.addSection }).first().click();
+  await page
+    .getByRole('searchbox', { name: editor.searchComponents })
+    .fill(englishCommon.blocks.calendar.label);
+  await page.getByRole('button', { name: englishCommon.blocks.calendar.label, exact: true }).click();
+
+  await page.getByRole('button', { name: englishCommon.form.addEntry, exact: true }).click();
+
+  // A select, with the words of the division (the fixture's two kinds) and nothing to type into.
+  const kind = page.getByRole('combobox', { name: englishCommon.blocks.calendar.fields['kinds.kind'] });
+  await kind.click();
+  await expect(page.getByRole('option', { name: 'Meeting' })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Deadline' })).toBeVisible();
+  await page.getByRole('option', { name: 'Deadline' }).click();
+  await expect(kind).toHaveText('Deadline');
+});

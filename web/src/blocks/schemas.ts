@@ -399,9 +399,9 @@ export const networkStatsSchema = z.object({
 });
 
 export const calendarSchema = z.object({
-  // Free strings, because the staff writes them: `meeting`, `deadline`, whatever a department
-  // uses. Naming none asks for every kind.
-  kinds: z.array(z.object({ kind: z.string() })),
+  // The kinds of the calendar (`cms_calendar_kinds`), chosen from its list and never typed (issue #360):
+  // a word typed by hand is a word that matches no entry. Naming none asks for every kind.
+  kinds: z.array(z.object({ kind: z.string().meta({ calendarKind: true }) })),
   department: z.enum(DEPARTMENTS).optional(),
   // The departments of whoever is looking, for a dashboard every member of the staff reads (note
   // 2026-09-13-le-dashboard-a-tutto-schermo §3.5). A department named above wins over it.
