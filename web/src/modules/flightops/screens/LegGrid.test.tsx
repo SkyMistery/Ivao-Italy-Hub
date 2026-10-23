@@ -12,7 +12,7 @@ import type { LegDto, TourDetailDto, TourLegsDto } from '../api';
 
 /**
  * The leg editor (M2, T7a) against an API that answers what the test says: a leg added after another, filled in as
- * the one that follows it, and saved where it was put; a leg duplicated; a leg with reports retired with a reason the
+ * the one that follows it, on its aircraft or the tour's, and saved where it was put; a leg duplicated; a leg with reports retired with a reason the
  * dialog asks for, after the server said it would be retired; the reason a leg with reports asks for when it changes;
  * a refusal under its cell. The numbers are always the server's: the grid never computes one.
  */
@@ -83,7 +83,7 @@ beforeEach(() => {
   });
 });
 
-function draw() {
+function draw(drawn: TourDetailDto = tour) {
   const i18n = i18next.createInstance();
   void i18n.use(initReactI18next).init({
     lng: 'en',
@@ -102,7 +102,7 @@ function draw() {
   render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={client}>
-        <LegGrid tour={tour} editable />
+        <LegGrid tour={drawn} editable />
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -149,6 +149,32 @@ test('a leg is added after another as the one that follows it, and saved where i
   // The server's numbers, and no row left unsaved.
   expect((await row('2')).getByRole('combobox', { name: legs.fields.arrivalIcao })).toHaveValue('DDDD');
   expect(screen.queryByText(legs.state.new)).not.toBeInTheDocument();
+});
+
+test("a leg added after another flies its aircraft, or the tour's reference aircraft when it names none", async () => {
+  const user = userEvent.setup();
+  api.get.mockImplementation((path: string) =>
+    Promise.resolve(
+      ok(
+        path === '/api/flightops/tours/{tourId}/legs'
+          ? grid(
+              leg(11, 1, 'AAAA', 'BBBB', { aircraft: { types: ['A320', 'A20N'], groupIds: [] } }),
+              leg(12, 2, 'BBBB', 'CCCC'),
+            )
+          : [],
+      ),
+    ),
+  );
+  draw({ ...tour, referenceAircraftIcao: 'B738' });
+
+  await user.click((await row('1')).getByRole('button', { name: legs.actions.addAfter }));
+  await user.click(await screen.findByRole('menuitem', { name: legs.actions.follows }));
+  expect((await row('+')).getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('A320, A20N');
+  await user.click((await row('+')).getByRole('button', { name: englishCommon.common.cancel }));
+
+  await user.click((await row('2')).getByRole('button', { name: legs.actions.addAfter }));
+  await user.click(await screen.findByRole('menuitem', { name: legs.actions.closeTour }));
+  expect((await row('+')).getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('B738');
 });
 
 test('a duplicate carries every field of the leg it copies', async () => {
