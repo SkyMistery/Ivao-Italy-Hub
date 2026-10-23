@@ -370,7 +370,7 @@ export function BlockProperties({
   const labels = registration.propertyLabels ?? `blocks.${block.type}`;
   // Beside the block's name, so a module's block has its line in its own language files too.
   const aboutKey = registration.editorLabelKey.replace(/\.label$/, '.about');
-  const about = i18n.exists(aboutKey) ? t(aboutKey, registration.about?.values) : null;
+  const about = i18n.exists(aboutKey) ? t(aboutKey, registration.about?.values ?? {}) : null;
 
   return (
     <div className="flex flex-col gap-6">
