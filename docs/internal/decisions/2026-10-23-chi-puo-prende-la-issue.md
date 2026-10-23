@@ -26,7 +26,12 @@ Due cose, dette da Carmine lo stesso giorno:
 3. **`gabbosonc31` è un contributore** come `dalberone` (`CLAUDE.md` §0): valgono per lui e per le sue sessioni tutte le regole
    assolute del collaboratore — mai `main`, mai un merge, mai un tag, mai i file solo del maintainer; il master rivede ogni PR e Carmine
    la unisce.
-4. **Le issue già assegnate restano a chi le ha** finché non le lascia: #311–#314 a `dalberone`, che può lasciarne una scrivendolo
+4. **`gabbosonc31` rivede anche il codice** del sito e dei Tour (Carmine: «gli facciamo fare anche revisione del codice?», e il suo sì
+   alla forma del master): legge il codice cercando difetti, e ogni rilievo è una issue (una debolezza sfruttabile in privato); sulle
+   PR degli altri può commentare, **mai approvare** (`CLAUDE.md` §0 regola 1): la revisione che conta resta quella del master, e unisce
+   Carmine. Prova anche **in locale**, sul banco con le persone finte (`CONTRIBUTING.md`, «Tests»), e le prove di sicurezza sul
+   pacchetto in `Production` (`docs/internal/test/sicurezza-lista-di-controllo.md` §0).
+5. **Le issue già assegnate restano a chi le ha** finché non le lascia: #311–#314 a `dalberone`, che può lasciarne una scrivendolo
    sulla issue.
 
 ## 3. La forma nel controllo (`core-guard`)
