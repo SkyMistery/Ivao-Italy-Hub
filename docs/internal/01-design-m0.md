@@ -471,6 +471,11 @@ proprietario, i lettori nuovi ripassano i controlli della pubblicazione (`NewRea
 online devono poter essere servite a loro, e una versione con catture `frozen` non si apre a più lettori di quelli per cui sono
 state catturate (il tetto qui sopra, chiesto per i vecchi lettori). Una bozza mai pubblicata la sistema chi la modifica.
 
+**La storia delle versioni** (dal 23 ott 2026, nota `2026-10-23-la-storia-delle-versioni`, #353, piano 1.44): l'editor mostra
+le versioni di una riga (numero, data, chi ha pubblicato, chi ha approvato, la riga «che cosa è cambiato»), lette da
+`/api/content/{id}/versions`; il dialog della pubblicazione propone la riga dal confronto con la versione online, e
+`ContentReviewDto` porta i blocchi e i campi cambiati.
+
 ### 5.6 Template seedati
 
 `seed/content-templates/*.json`: `section-page.json` (Landing/Section page: `hero` required+locked con `heading`+`text`; `body` libera; `links` derivata: `linkList` con `renderMode` fissato dal template), `about.json`, `policy.json` (tutto `locked`, sezioni `purpose`, `scope`, `rules`, `changelog`). Seed all'avvio guidato **solo** dalla chiave `template.system:<slug>` in `hub_division_settings`: ogni file di seed viene applicato una volta (così una release successiva può aggiungere template nuovi senza toccare quelli già modificati dallo staff). `OwnerDepartment = WD`, `Visibility = Staff`. «Nuovo da template» = `POST /api/content/from-template/{templateId}` con corpo `{ ownerDepartment, slug }` → copia profonda con nuovi `id` di sezione/blocco, `frozen` azzerato, `required/locked/allowedBlocks` **tolti** (una pagina che li portasse potrebbe sollevarsi le restrizioni da sola), `TemplateId` valorizzato, `Status = Draft`, `Visibility = Staff`. Non è una query su `POST /api/content` perché quella rotta è già la creazione normale generata da `MapCrud`, e le minimal API non instradano per query string: nota `docs/internal/decisions/2026-09-04-nuovo-da-template.md`. Le restrizioni del template continuano a valere sulla pagina perché **l'editor le legge dal template**, per `key` di sezione, non perché la copia le porti con sé. Le pagine di sistema (home, `/start`, `/pilots`, `/about`) si seedano in **M1**; in M0 basta una pagina creata a mano dal template.
