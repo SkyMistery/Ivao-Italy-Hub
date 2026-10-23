@@ -254,6 +254,16 @@ public static class ContentEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(CorePermissions.ContentView);
 
+        // ⚠️ One more hand written read, counted: the versions of a row with the line each was published
+        // with (issue #352, note 2026-10-23-la-storia-delle-versioni). A version is not a row of the CRUD
+        // engine — nobody writes one but publication — so it is read here, behind the permission to read
+        // the row it belongs to, asked of the one handler.
+        group.MapGet("/{id:long}/versions", VersionsAsync)
+            .WithName("ContentVersions")
+            .Produces<IReadOnlyList<ContentVersionDto>>()
+            .Produces(StatusCodes.Status404NotFound)
+            .RequireAuthorization(CorePermissions.ContentView);
+
         return group;
     }
 
@@ -577,6 +587,64 @@ public static class ContentEndpoints
         }
 
         return Results.Ok(await references.AppearancesAsync(content, http.RequestAborted));
+    }
+
+    private static async Task<IResult> VersionsAsync(
+        long id,
+        HubDbContext database,
+        ContentPublishService publish,
+        IAuthorizationService authorization,
+        ICurrentUser currentUser,
+        LocaleCatalog catalog,
+        HttpContext http)
+    {
+        var content = await publish.FindAsync(id, http.RequestAborted);
+        if (content is null)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.NotFoundTitleKey));
+        }
+
+        if (!(await authorization.AuthorizeAsync(http.User, content, CorePermissions.ContentView)).Succeeded)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: catalog.Resolve(currentUser.Locale, CrudProblems.ForbiddenTitleKey));
+        }
+
+        // The newest first, and only what the history draws: never a body.
+        var versions = await database.ContentVersions
+            .AsNoTracking()
+            .Where(version => version.ContentId == content.Id)
+            .OrderByDescending(version => version.Version)
+            .Select(version => new
+            {
+                version.Id,
+                version.Version,
+                version.PublishedAt,
+                version.PublishedBy,
+                version.ApprovedBy,
+                version.Changelog,
+            })
+            .ToListAsync(http.RequestAborted);
+
+        var names = await People.MemberNames.ReadAsync(
+            database,
+            versions.SelectMany(version => new int?[] { version.PublishedBy, version.ApprovedBy }),
+            http.RequestAborted);
+
+        return Results.Ok(versions
+            .Select(version => new ContentVersionDto(
+                version.Version,
+                version.PublishedAt,
+                version.PublishedBy,
+                names.GetValueOrDefault(version.PublishedBy),
+                version.ApprovedBy,
+                version.ApprovedBy is { } approver ? names.GetValueOrDefault(approver) : null,
+                version.Changelog,
+                Online: version.Id == content.PublishedVersionId))
+            .ToList());
     }
 
     private static async Task<IResult> DescribeReviewAsync(

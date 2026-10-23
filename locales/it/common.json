@@ -709,7 +709,33 @@
         "description": "Le pagine in attesa di approvazione."
       }
     },
-    "appearsIn": "Compare in: {{pages}}"
+    "appearsIn": "Compare in: {{pages}}",
+    "changes": {
+      "first": "Prima pubblicazione.",
+      "none": "Ripubblicata, nessuna modifica.",
+      "sectionsAdded": "Sezioni aggiunte: {{names}}.",
+      "sectionsChanged": "Sezioni modificate: {{names}}.",
+      "sectionsRemoved": "Sezioni tolte: {{names}}.",
+      "blocks": {
+        "line": "Blocchi: {{list}}.",
+        "added_one": "{{count}} aggiunto",
+        "added_other": "{{count}} aggiunti",
+        "changed_one": "{{count}} modificato",
+        "changed_other": "{{count}} modificati",
+        "removed_one": "{{count}} tolto",
+        "removed_other": "{{count}} tolti"
+      },
+      "fields": "Modificati: {{names}}.",
+      "footer": "piè di pagina"
+    },
+    "versions": {
+      "title": "Versioni",
+      "number": "Versione {{version}}",
+      "online": "Online",
+      "publishedBy": "Pubblicata da {{name}}",
+      "approvedBy": "Approvata e pubblicata da {{name}}",
+      "noLine": "Nessuna riga scritta"
+    }
   },
   "templates": {
     "title": "Template",

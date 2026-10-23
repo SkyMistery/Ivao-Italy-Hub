@@ -69,6 +69,8 @@ async function stubThePage(page: Page, row: Record<string, unknown>, sent: unkno
         note: 'Ready for the weekend',
         readyAt: '2026-09-13T10:00:00Z',
         readyByName: 'Test Coordinator',
+        blocks: { added: 0, removed: 0, changed: 1 },
+        fields: [],
       }),
     });
   });
@@ -194,10 +196,14 @@ test('whoever may approve reads what changed and corrects the address while appr
 
   await page.getByRole('button', { name: review.approve, exact: true }).click();
   const dialog = page.getByRole('alertdialog');
+  // The line starts from the summary above, in words (#352), and goes with the approval as it stands.
+  const changelog = dialog.getByLabel(englishCommon.content.editor.publishDialog.changelog);
+  await expect(changelog).toHaveValue(/Hero/);
+  const line = await changelog.inputValue();
   await dialog.getByLabel(englishCommon.content.fields.slug, { exact: true }).fill('airshow-2026');
   await dialog.getByRole('button', { name: review.approveDialog.confirm }).click();
 
   await expect
     .poll(() => sent)
-    .toEqual([{ action: 'Approve', changelog: null, slug: 'airshow-2026', parentId: 1 }]);
+    .toEqual([{ action: 'Approve', changelog: line, slug: 'airshow-2026', parentId: 1 }]);
 });

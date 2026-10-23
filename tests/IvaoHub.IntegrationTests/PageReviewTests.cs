@@ -186,6 +186,81 @@ public sealed class PageReviewTests(MariaDbFixture mariaDb) : IAsyncLifetime
             .ToDictionary(section => section.GetProperty("key").GetString()!, section => section.GetProperty("change").GetString());
         Assert.Equal("Changed", changes["hero"]);
         Assert.Equal("Unchanged", changes["closing"]);
+
+        // The block written again, counted wherever it sits; and the fields around the body as they were (#352).
+        var blocks = summary.GetProperty("blocks");
+        Assert.Equal((0, 0, 1), (blocks.GetProperty("added").GetInt32(), blocks.GetProperty("removed").GetInt32(), blocks.GetProperty("changed").GetInt32()));
+        Assert.Empty(summary.GetProperty("fields").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task TheHistorySaysEveryVersionWithWhoPublishedItAndItsLine()
+    {
+        // #352: the line asked at publication was stored and never shown.
+        var token = TestContext.Current.CancellationToken;
+        var (coordinator, director) = await PeopleAsync(token);
+
+        // A news item, published by its department without anybody's leave: no approver.
+        var slug = Stem();
+        var news = await CreateAsync(coordinator, ContentKind.News, slug, Body("Notizia"), token);
+        using (var first = await SendAsync(coordinator, HttpMethod.Post, $"{ContentEndpoints.Pattern}/{news.Id}/publish", new { changelog = "Prima uscita" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        }
+
+        // Its title and a block written again: what the dialog starts the next line from.
+        var current = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{news.Id}", token);
+        using (var edited = await SendAsync(
+            coordinator,
+            HttpMethod.Put,
+            $"{ContentEndpoints.Pattern}/{news.Id}",
+            Payload(ContentKind.News, slug, Body("Notizia corretta"), current.GetProperty("rowVersion").GetString(), title: "Notizia corretta"),
+            token))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        }
+
+        var changed = await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{news.Id}/review", token);
+        Assert.Equal(["title"], changed.GetProperty("fields").EnumerateArray().Select(field => field.GetString()));
+        Assert.Equal(1, changed.GetProperty("blocks").GetProperty("changed").GetInt32());
+
+        using (var second = await SendAsync(coordinator, HttpMethod.Post, $"{ContentEndpoints.Pattern}/{news.Id}/publish", new { changelog = (string?)null }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        }
+
+        var history = (await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{news.Id}/versions", token))
+            .EnumerateArray().ToList();
+        Assert.Equal([2, 1], history.Select(version => version.GetProperty("version").GetInt32()));
+        Assert.Equal([true, false], history.Select(version => version.GetProperty("online").GetBoolean()));
+        Assert.Equal(JsonValueKind.Null, history[0].GetProperty("changelog").ValueKind);
+        Assert.Equal("Prima uscita", history[1].GetProperty("changelog").GetString());
+        Assert.Equal(EventsCoordinatorVid, history[1].GetProperty("publishedBy").GetInt32());
+        Assert.Equal("Test User", history[1].GetProperty("publishedByName").GetString());
+        Assert.Equal(JsonValueKind.Null, history[1].GetProperty("approvedBy").ValueKind);
+
+        // A page goes online by approval, and its version says who approved it.
+        var page = await CreateAsync(coordinator, ContentKind.Page, Stem(), Body("Pagina"), token);
+        using (var ready = await ReviewAsync(coordinator, page.Id, new { action = "Ready" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+        }
+
+        using (var approved = await ReviewAsync(director, page.Id, new { action = "Approve", changelog = "Approvata" }, token))
+        {
+            Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        }
+
+        var approvedVersion = (await coordinator.GetFromJsonAsync<JsonElement>($"{ContentEndpoints.Pattern}/{page.Id}/versions", token))
+            .EnumerateArray().Single();
+        Assert.Equal(DirectorVid, approvedVersion.GetProperty("approvedBy").GetInt32());
+        Assert.Equal("Test User", approvedVersion.GetProperty("approvedByName").GetString());
+        Assert.Equal("Approvata", approvedVersion.GetProperty("changelog").GetString());
+
+        // Behind the permission to read the row: nobody signed in reads the history of anything.
+        using var anonymous = _factory.CreateApiClient();
+        using var refused = await anonymous.GetAsync(new Uri($"{ContentEndpoints.Pattern}/{news.Id}/versions", UriKind.Relative), token);
+        Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
     }
 
     [Fact]
@@ -310,14 +385,14 @@ public sealed class PageReviewTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return (created.GetProperty("id").GetInt64(), created.GetProperty("rowVersion").GetString());
     }
 
-    private object Payload(ContentKind kind, string slug, JsonNode body, string? rowVersion) => new
+    private object Payload(ContentKind kind, string slug, JsonNode body, string? rowVersion, string title = "Pagina in revisione") => new
     {
         kind = kind.ToString(),
         slug,
         ownerDepartment = nameof(Department.ED),
         visibility = nameof(Visibility.Public),
         isTemplate = false,
-        title = new Dictionary<string, string> { ["it"] = "Pagina in revisione", ["en"] = "Page under review" },
+        title = new Dictionary<string, string> { ["it"] = title, ["en"] = "Page under review" },
         summary = (Dictionary<string, string>?)null,
         seo = (Dictionary<string, object>?)null,
         body,
