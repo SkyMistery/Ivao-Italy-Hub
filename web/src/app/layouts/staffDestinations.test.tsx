@@ -202,3 +202,44 @@ test('each module is a section of its own, between the content and the departmen
   const events = groups.find((group) => group.title === 'events:nav.section');
   expect(events?.items.map((item) => item.href)).toEqual(['/staff/events', '/staff/events/bookings']);
 });
+
+test('a department offers its calendar, collections and messages only to whoever may read them there (#389)', () => {
+  const hrefsOf = (permissions: Bootstrap['permissions']) =>
+    staffDestinations(
+      {
+        ...bootstrap,
+        user: { ...bootstrap.user, departments: ['TD'] },
+        permissions,
+      },
+      (key) => key,
+    )
+      .find((group) => group.code === 'TD')
+      ?.items.map((item) => item.href);
+
+  // A trainer: the training's permissions and nothing of these three. The department's home stays, nothing else.
+  expect(
+    hrefsOf([
+      { name: 'Training.View', department: 'TD', resourceScope: null },
+      { name: 'Training.Conduct', department: 'TD', resourceScope: null },
+    ]),
+  ).toEqual(['/staff/td']);
+
+  // Each entry follows the permission its screen is behind, on this department.
+  expect(hrefsOf([{ name: 'Calendar.View', department: 'TD', resourceScope: null }])).toEqual([
+    '/staff/td',
+    '/staff/td/calendar',
+  ]);
+  expect(hrefsOf([{ name: 'Contacts.View', department: 'TD', resourceScope: null }])).toEqual([
+    '/staff/td',
+    '/staff/td/contacts',
+  ]);
+  expect(hrefsOf([{ name: 'Content.View', department: 'TD', resourceScope: null }])).toContain(
+    '/staff/td/categories',
+  );
+
+  // The permission on another department opens nothing here; one on every department (`null`) does.
+  expect(hrefsOf([{ name: 'Calendar.View', department: 'ED', resourceScope: null }])).toEqual(['/staff/td']);
+  expect(hrefsOf([{ name: 'Calendar.View', department: null, resourceScope: null }])).toContain(
+    '/staff/td/calendar',
+  );
+});
