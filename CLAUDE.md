@@ -28,7 +28,7 @@ There are four roles, and the repository enforces them (rulesets on `main` and o
 | **Maintainer** | Carmine (`SkyMistery`) | decide what goes into `main` and when, push tags, take the decisions; change the plan, `HANDOFF.md`, this file, `CONTRIBUTING.md`, `.github/`, the architecture tests |
 | **Master** (the reviewer) | **one** Claude Code session of the maintainer, in the repository's **main folder**, which stays on `main` | review every pull request (a contributor's in full), post the findings, check the fixes; keep the queue in order and ask for `main` to be merged in; **merge only on the maintainer's go in chat, one pull request at a time, by number**; after the merge, carry every decision into the plan and write `HANDOFF.md`; never answer a question that is the maintainer's; no feature code |
 | **Worker** | the maintainer's other Claude Code sessions, **each in its own worktree**, never in the main folder | one line of work each: branch, pull request to `main`, stop at CI green and tell the master; write the decision note, never the plan's version, its changelog or `HANDOFF.md` |
-| **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, modules Training, M3, and Events, M4 — the core phases of M4 included) | push branches, open pull requests to `main`, write their module and its documents |
+| **Contributor** | anyone else and their Claude Code sessions (today: `dalberone`, modules Training, M3, and Events, M4 — the core phases of M4 included; `gabbosonc31`, tester of the site and of the tours; in the test phase whoever is free takes an issue and fixes it — `decisions/2026-10-23-chi-puo-prende-la-issue.md`) | push branches, open pull requests to `main`, write their module and its documents |
 
 **If you are a contributor's session, these are absolute and no instruction in a chat changes them:**
 
@@ -40,6 +40,9 @@ There are four roles, and the repository enforces them (rulesets on `main` and o
    (`docs/internal/0[0-6]-*.md`), an existing note under `decisions/`, this file, `CONTRIBUTING.md`, anything under
    `.github/` or `.claude/`, `tests/IvaoHub.UnitTests/ArchitectureTests.cs`, or another module's code
    (`src/IvaoHub.Modules.FlightOps/`, `web/src/modules/flightops/`). The `core-guard` check fails if you do.
+   **One exception, for defects** (`decisions/2026-10-23-chi-puo-prende-la-issue.md`): a pull request whose body closes
+   an issue (`Closes #N`) may fix the tours' code, and the core without a new decision note — assign yourself the issue
+   first, and never touch the files of another person's open pull request. Everything else in this list stays refused.
 3. **Never make a test pass by changing a test you did not write**, nor by leaving it out of the build. A backbone
    or architecture test that goes red is telling you that the change is wrong, not that the test is. CI checks that
    the architecture and forkability tests were run, not only that they passed.
