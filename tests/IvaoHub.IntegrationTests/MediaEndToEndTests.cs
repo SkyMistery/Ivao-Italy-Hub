@@ -87,6 +87,12 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, oversized.StatusCode);
         Assert.Equal("errors.media.tooLarge", await FirstErrorAsync(oversized, "file", token));
 
+        // An empty file is told it is empty, not that it is too large (#388).
+        using var empty = await UploadAsync(client, Department.WD, [], "empty.png", "image/png", token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+        Assert.Equal("errors.media.empty", await FirstErrorAsync(empty, "file", token));
+
         // And nothing of either attempt is on disk: the row is written after the bytes, so a
         // refusal leaves neither.
         Assert.Empty(FilesOnDisk());

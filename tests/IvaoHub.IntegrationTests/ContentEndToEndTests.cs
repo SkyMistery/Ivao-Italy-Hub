@@ -495,6 +495,62 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task ATextLongerThanItsLimitIsRefusedWhenSavedAndOneAtTheLimitIsPublished()
+    {
+        // #388: nothing held the title, the summary or the SEO texts, and a title over the search index's width was
+        // saved and then answered 500 at publication. Each is now refused at the save, under its own key; one exactly
+        // at the limit goes all the way online.
+        var token = TestContext.Current.CancellationToken;
+        using var publisher = await PublisherAsync(token);
+
+        JsonObject Draft(Action<JsonObject> change)
+        {
+            var payload = JsonSerializer.SerializeToNode(Payload(Department.WD, $"len-{Guid.NewGuid():N}"[..20]))!.AsObject();
+            change(payload);
+            return payload;
+        }
+
+        async Task<JsonElement> RefusedAsync(JsonObject payload)
+        {
+            using var response = await SendAsync(publisher, HttpMethod.Post, ContentEndpoints.Pattern, payload, token);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            return (await response.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+        }
+
+        var tooLongTitle = new string('t', ContentWriteDtoValidator.MaxTitleLength + 1);
+        var tooLongSummary = new string('s', ContentWriteDtoValidator.MaxSummaryLength + 1);
+
+        var title = await RefusedAsync(Draft(payload => payload["title"] = new JsonObject { ["it"] = tooLongTitle, ["en"] = "Fine" }));
+        Assert.Equal(LocalizedRules.TooLongMessageKey, title.GetProperty("title")[0].GetString());
+
+        var summary = await RefusedAsync(Draft(payload => payload["summary"] = new JsonObject { ["it"] = "Breve", ["en"] = tooLongSummary }));
+        Assert.Equal(LocalizedRules.TooLongMessageKey, summary.GetProperty("summary")[0].GetString());
+
+        var seo = await RefusedAsync(Draft(payload => payload["seo"] = new JsonObject
+        {
+            ["it"] = new JsonObject { ["title"] = tooLongTitle, ["description"] = tooLongSummary },
+        }));
+        var seoKeys = seo.EnumerateObject().Select(field => field.Name).ToList();
+        Assert.Contains(seoKeys, key => key.EndsWith(".it.title", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(seoKeys, key => key.EndsWith(".it.description", StringComparison.OrdinalIgnoreCase));
+
+        // At the limit: saved, and published — the search index takes it, which is where 513 used to fail.
+        using var atTheLimit = await SendAsync(
+            publisher,
+            HttpMethod.Post,
+            ContentEndpoints.Pattern,
+            Draft(payload => payload["title"] = new JsonObject
+            {
+                ["it"] = new string('t', ContentWriteDtoValidator.MaxTitleLength),
+                ["en"] = new string('e', ContentWriteDtoValidator.MaxTitleLength),
+            }),
+            token);
+        Assert.Equal(HttpStatusCode.Created, atTheLimit.StatusCode);
+        var id = (await atTheLimit.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        await PublishAsync(publisher, id, token);
+    }
+
+    [Fact]
     public async Task PublishProblemsSayTheSameThingBeforeAnybodyPresses()
     {
         // Asked for by Carmine after the demo: "what is missing to publish", visible *before*

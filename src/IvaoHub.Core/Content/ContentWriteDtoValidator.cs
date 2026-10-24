@@ -1,7 +1,9 @@
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using FluentValidation;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Localization;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Core.Content;
@@ -20,6 +22,15 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
 
     /// <summary>How many collections one row may be filed in.</summary>
     public const int MaxCollections = 20;
+
+    /// <summary>
+    /// The longest title, and SEO title, in any language: what the search index holds. A longer one was saved and then
+    /// failed at publication with a 500, when the index row could not take it (#388).
+    /// </summary>
+    public const int MaxTitleLength = SearchIndexEntry.MaxTitleLength;
+
+    /// <summary>The longest summary, and SEO description, in any language: the hub's long text (#388).</summary>
+    public const int MaxSummaryLength = 2000;
 
     /// <summary>The fields only a document carries, by the name the form uses.</summary>
     private static readonly IReadOnlyList<(string Field, Func<ContentWriteDto, bool> IsSet)> DocumentOnly =
@@ -43,6 +54,37 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
         RuleFor(content => content.Title)
             .Must(title => title.Values.Any(text => !string.IsNullOrWhiteSpace(text)))
             .WithMessage("errors.required");
+
+        // How long each language may be (#388): the title to what the search index holds, the summary to the hub's
+        // long text. Nothing held them before, and a 200 000-character title was saved and pushed every column of
+        // the list off the screen.
+        RuleFor(content => content.Title).AtMost(MaxTitleLength);
+        RuleFor(content => content.Summary).AtMost(MaxSummaryLength);
+
+        // The SEO object of each language (G2): its title stands for the page's title, its description for the
+        // summary, so each is held to the same length, and refused under the language's own key.
+        RuleFor(content => content.Seo).Custom((seo, context) =>
+        {
+            if (seo is null)
+            {
+                return;
+            }
+
+            foreach (var (locale, node) in seo)
+            {
+                foreach (var (field, limit) in new[] { ("title", MaxTitleLength), ("description", MaxSummaryLength) })
+                {
+                    if (node?[field] is JsonValue value
+                        && value.TryGetValue<string>(out var text)
+                        && text.Length > limit)
+                    {
+                        context.AddFailure(new FluentValidation.Results.ValidationFailure(
+                            $"{nameof(ContentWriteDto.Seo)}.{locale}.{field}",
+                            LocalizedRules.TooLongMessageKey));
+                    }
+                }
+            }
+        });
 
         // The collections a row is filed in (G20): keys of the vocabulary, a handful at most. That
         // the key is one the department wrote is not checked, as it never was for a category: a

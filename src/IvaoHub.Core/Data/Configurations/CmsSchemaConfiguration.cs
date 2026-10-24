@@ -185,7 +185,7 @@ internal sealed class SearchIndexEntryConfiguration : IEntityTypeConfiguration<S
         builder.Property(entry => entry.Locale).HasMaxLength(8).IsRequired();
         builder.Property(entry => entry.Kind).HasMaxLength(32).IsRequired();
         builder.Property(entry => entry.Url).HasMaxLength(1024).IsRequired();
-        builder.Property(entry => entry.Title).HasMaxLength(512).IsRequired();
+        builder.Property(entry => entry.Title).HasMaxLength(SearchIndexEntry.MaxTitleLength).IsRequired();
         builder.Property(entry => entry.Text).HasColumnType("mediumtext").IsRequired();
 
         // One row per source row and per language: a FULLTEXT index that works for any set of
