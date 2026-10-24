@@ -61,6 +61,8 @@ export function PublicToursPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10">
+      <PageMetadata title={t('flightops:public.title')} description={t('flightops:public.description')} />
+
       <header className="flex flex-col gap-2">
         <H1>{t('flightops:public.title')}</H1>
         <Lead>{t('flightops:public.description')}</Lead>
