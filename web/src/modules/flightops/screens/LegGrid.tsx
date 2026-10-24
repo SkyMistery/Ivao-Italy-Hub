@@ -106,12 +106,30 @@ function fromLeg(leg: LegDto): Draft {
   };
 }
 
+/** The aircraft of a new row: none, or what `aircraftAfter` carries over. */
+type DraftAircraft = Pick<Draft, 'types' | 'groupIds'>;
+
+const NO_AIRCRAFT: DraftAircraft = { types: '', groupIds: [] };
+
+/**
+ * The aircraft a leg added after another starts with (#368): the one it follows flies on, or, when that leg names
+ * none, the tour's reference aircraft. Written in the row and changed there like anything else.
+ */
+function aircraftAfter(leg: LegDto, referenceAircraftIcao: string | null): DraftAircraft {
+  if (leg.aircraft.types.length > 0 || leg.aircraft.groupIds.length > 0) {
+    return { types: leg.aircraft.types.join(', '), groupIds: leg.aircraft.groupIds };
+  }
+
+  return { types: referenceAircraftIcao ?? '', groupIds: [] };
+}
+
 function blank(
   key: string,
   after: number | null,
   departureIcao = '',
   arrivalIcao = '',
   placement = NOWHERE,
+  aircraft: DraftAircraft = NO_AIRCRAFT,
 ): Draft {
   return {
     key,
@@ -121,8 +139,7 @@ function blank(
     arrivalIcao,
     callsigns: '',
     flightNumbers: '',
-    types: '',
-    groupIds: [],
+    ...aircraft,
     releaseAt: '',
     changeReason: '',
     placement,
@@ -416,6 +433,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
     arrivalIcao = '',
     copy?: Draft,
     placement?: string,
+    aircraft?: DraftAircraft,
   ) => {
     const key = `new-${counter}`;
     setCounter(counter + 1);
@@ -423,7 +441,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
       ...current,
       [key]:
         copy === undefined
-          ? blank(key, after, departureIcao, arrivalIcao, placement)
+          ? blank(key, after, departureIcao, arrivalIcao, placement, aircraft)
           : { ...copy, key, legId: null, after, changeReason: '' },
     }));
   };
@@ -734,6 +752,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                                         '',
                                         undefined,
                                         leg.rotationId === null ? NOWHERE : String(leg.rotationId),
+                                        aircraftAfter(leg, tour.referenceAircraftIcao),
                                       ),
                                   },
                                   ...(first === undefined
@@ -741,7 +760,15 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                                     : [
                                         {
                                           label: t('flightops:legs.actions.closeTour'),
-                                          onSelect: () => add(leg.id, leg.arrivalIcao, first.departureIcao),
+                                          onSelect: () =>
+                                            add(
+                                              leg.id,
+                                              leg.arrivalIcao,
+                                              first.departureIcao,
+                                              undefined,
+                                              undefined,
+                                              aircraftAfter(leg, tour.referenceAircraftIcao),
+                                            ),
                                         },
                                       ]),
                                 ]}
