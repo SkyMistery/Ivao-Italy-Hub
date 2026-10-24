@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -742,6 +743,121 @@ test('in an open field Enter keeps what is typed, unless an arrow lit an option'
 });
 
 // ---- and the property none of the five may weaken --------------------------------------------
+
+// ---- 10. a closed field and a value typed in full (#366) ---------------------------------------
+
+const types = [
+  { value: 'A320', label: 'A320 — Airbus A320' },
+  { value: 'A20N', label: 'A20N — Airbus A320neo' },
+];
+
+test('a closed field takes an option typed in full in other letters, and holds it as it is offered', async () => {
+  const user = userEvent.setup();
+  const closedTypes = z.object({ path: z.string().meta({ suggestions: types, suggestionsOnly: true }) });
+
+  render(closedTypes, { path: '' }, { labels: suggestLabels });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'a320');
+  await user.tab();
+
+  // It put back the empty box under the option it had just lit.
+  expect(box).toHaveValue('A320');
+});
+
+/**
+ * A screen that answers the question of the field the way the tours' types do: a page of the server's, which arrives
+ * after a while, and until then the page of the question before — the first types of all, without the one typed.
+ */
+function AskingForm({
+  answers,
+  asked,
+}: {
+  answers: Record<string, typeof types>;
+  asked: (typed: string) => void;
+}) {
+  const first = [{ value: 'A002', label: 'A002 — Glider' }];
+  const [page, setPage] = useState<typeof types>(first);
+
+  return (
+    <SchemaForm
+      schema={z.object({ path: z.string().meta({ suggestions: page, suggestionsOnly: true }) })}
+      defaults={{ path: '' }}
+      locales={LOCALES}
+      labels="test"
+      submitLabel="Save"
+      onSubmit={() => Promise.resolve()}
+      onSuggestSearch={(_field, typed) => {
+        asked(typed);
+        setTimeout(() => setPage(answers[typed] ?? first), 50);
+      }}
+    />
+  );
+}
+
+test('a closed field left before the answer to what was typed waits for it, and keeps what it offers', async () => {
+  const user = userEvent.setup();
+  const asked = vi.fn();
+
+  renderWithProviders(<AskingForm answers={{ a320: types }} asked={asked} />, {
+    i18n: createTestI18n({ test: suggestLabels }),
+  });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'a320');
+  // Straight away: no three hundred milliseconds, and the options on the screen are still the first page.
+  await user.tab();
+
+  // Asked at once, rather than never, and what was typed stays until the answer says what it is.
+  expect(asked).toHaveBeenCalledWith('a320');
+  expect(box).toHaveValue('a320');
+  await waitFor(() => {
+    expect(box).toHaveValue('A320');
+  });
+});
+
+test('a closed field left before an answer that does not offer what was typed puts back what it held', async () => {
+  const user = userEvent.setup();
+
+  renderWithProviders(
+    <AskingForm answers={{ b738: [{ value: 'B737', label: 'B737 — Boeing 737-700' }] }} asked={vi.fn()} />,
+    {
+      i18n: createTestI18n({ test: suggestLabels }),
+    },
+  );
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'b738');
+  await user.tab();
+
+  await waitFor(() => {
+    expect(box).toHaveValue('');
+  });
+});
+
+test('a closed field whose answer changes nothing stops waiting, and puts back what it held', async () => {
+  const user = userEvent.setup();
+
+  // The answer to anything is the page already on the screen, as the menu's stubbed server gives.
+  renderWithProviders(<AskingForm answers={{}} asked={vi.fn()} />, {
+    i18n: createTestI18n({ test: suggestLabels }),
+  });
+
+  const box = screen.getByRole('combobox', { name: 'Address' });
+  await user.click(box);
+  await user.type(box, 'b738');
+  await user.tab();
+
+  await waitFor(
+    () => {
+      expect(box).toHaveValue('');
+    },
+    { timeout: 3000 },
+  );
+});
 
 test('the generator still refuses a type it cannot draw', () => {
   // The reason nobody writes a form by hand is that skipping a field is impossible: the generator

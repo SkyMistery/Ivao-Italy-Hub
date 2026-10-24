@@ -566,14 +566,31 @@ function Suggest({
   // — the same pause, because it is the same gesture. Only while the box is open: choosing an entry
   // writes a whole address into the field, and asking the server about it would be a request for
   // something already chosen.
+  //
+  // What was asked last, and which options were on the screen when it was: while they are still the
+  // same ones, the answer has not arrived.
+  const asked = useRef<{ text: string; options: string } | null>(null);
+  const options = suggestions.map((suggestion) => suggestion.value).join('\n');
+  const optionsNow = useRef(options);
+  useEffect(() => {
+    optionsNow.current = options;
+  }, [options]);
+  const ask = useCallback(
+    (text: string) => {
+      asked.current = { text, options: optionsNow.current };
+      onSearch?.(text);
+    },
+    [onSearch],
+  );
+
   useEffect(() => {
     if (onSearch === undefined || !open) {
       return undefined;
     }
 
-    const timer = setTimeout(() => onSearch(typed), 300);
+    const timer = setTimeout(() => ask(typed), 300);
     return () => clearTimeout(timer);
-  }, [typed, open, onSearch]);
+  }, [typed, open, onSearch, ask]);
 
   // Kept in the order the caller gave them, grouped by the heading each carries: a `Map` because
   // insertion order is the order the groups are drawn in, and the caller decided it.
@@ -586,12 +603,72 @@ function Suggest({
   // A closed field keeps only what was offered. What is typed is a way of searching the list, so
   // leaving the field with something nobody offered puts back what was there — and the server
   // refuses that value anyway, which is what makes this a rule.
-  const offered = suggestions.some((suggestion) => suggestion.value === value);
+  //
+  // ⚠️ Offered is read the way the list is searched, folded (#366): `a320` typed in full is the
+  // `A320` the list shows and lights, and leaving the field writes the option as it is offered. It
+  // was compared exactly, and the field put back what it held under the option it had just lit.
+  const held = fold(value.trim());
+  const match =
+    suggestions.find((suggestion) => suggestion.value === value) ??
+    (held === '' ? undefined : suggestions.find((suggestion) => fold(suggestion.value) === held));
+  const offered = match !== undefined;
+
+  // ⚠️ And a field left before the answer to what was typed arrived waits for it (#366): the
+  // question goes three hundred milliseconds after the last key, and the options on the screen
+  // until the answer are those of the question before — the first page of every type, where `A320`
+  // is not. Tab straight after typing put back a value the answer would have offered. So leaving
+  // asks at once, if it was not asked yet, and the field decides when the options change; what it
+  // holds meanwhile is what was typed, and the server still refuses it if nothing offers it.
+  //
+  // ⚠️ Not forever: an answer may be the very options already on the screen, and nothing changes
+  // then. After two seconds the field decides with what it has, as it did before it waited.
+  const [waiting, setWaiting] = useState<string | null>(null);
+  const [gaveUp, setGaveUp] = useState(false);
   const keepWhatWasOffered = () => {
-    if (only && !offered) {
-      onChange(opened);
+    if (!only) {
+      return;
     }
+
+    if (match !== undefined) {
+      if (match.value !== value) {
+        onChange(match.value);
+      }
+
+      return;
+    }
+
+    const answered =
+      asked.current !== null && asked.current.text === typed && asked.current.options !== options;
+    if (onSearch !== undefined && typed !== '' && !answered) {
+      if (asked.current?.text !== typed) {
+        ask(typed);
+      }
+
+      setWaiting(opened);
+      return;
+    }
+
+    onChange(opened);
   };
+
+  useEffect(() => {
+    if (waiting === null || open) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setGaveUp(true), 2000);
+    return () => clearTimeout(timer);
+  }, [waiting, open]);
+
+  useEffect(() => {
+    if (waiting === null || open || (asked.current?.options === options && !gaveUp)) {
+      return;
+    }
+
+    setWaiting(null);
+    setGaveUp(false);
+    onChange(match?.value ?? waiting);
+  }, [waiting, open, options, gaveUp, match, onChange]);
 
   // The option lit in the list, by its `value` — what `cmdk` calls the value of its root, and what
   // it chooses on Enter. Held here rather than by `cmdk`, so that the box decides when something is
@@ -689,9 +766,13 @@ function Suggest({
             show();
           }}
           onFocus={(event) => {
-            // Back from the list is not arriving: the search goes on from where it was.
+            // Back from the list is not arriving: the search goes on from where it was. Back while the
+            // field waits for an answer is coming back to the same search, and what it would put back
+            // is still what it held before it.
             if (!inList(event.relatedTarget)) {
-              setOpened(value);
+              setOpened(waiting ?? value);
+              setWaiting(null);
+              setGaveUp(false);
             }
 
             show();
@@ -741,7 +822,12 @@ function Suggest({
 
             // Otherwise what the box holds is a value — chosen, or typed in an open field — and Enter
             // is the form's again: it sends it, as in any line of a form. Deliberately: a field that
-            // swallowed Enter would be the one line of a form where it does nothing.
+            // swallowed Enter would be the one line of a form where it does nothing. What it sends is the
+            // option as it is offered, not as it was typed.
+            if (only && match !== undefined && match.value !== value) {
+              onChange(match.value);
+            }
+
             setOpen(false);
           }}
           onBlur={(event) => {
