@@ -83,10 +83,12 @@
       "updatedAt": "Last change",
       "requiredNm": "Distance to complete, in NM (distance tours only)",
       "allowedGroups": "Aircraft groups allowed",
+      "allowedGroups.groupId": "Group",
       "icao": "Type",
       "groupId": "Group",
       "legs": "Legs",
       "allowedAircraft": "Aircraft types allowed (none, and no group: every aircraft)",
+      "allowedAircraft.icao": "Type",
       "requiredSubtours": "Subtours to complete (container only)",
       "parentTourId": "Container",
       "hubs": "Hubs",
@@ -135,6 +137,9 @@
         "none": "No award"
       },
       "groupId": {
+        "none": "Choose a group"
+      },
+      "allowedGroups.groupId": {
         "none": "Choose a group"
       },
       "openGoal": {
