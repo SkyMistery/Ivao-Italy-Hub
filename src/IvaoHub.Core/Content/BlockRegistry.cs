@@ -1,3 +1,5 @@
+using IvaoHub.Core.Ivao;
+
 namespace IvaoHub.Core.Content;
 
 /// <summary>
@@ -32,6 +34,15 @@ public interface IBlockDescriptor
     bool AlwaysLive { get; }
 
     /// <summary>
+    /// How long a shared cache in front of the hub (Cloudflare) may keep the <b>anonymous</b> answer of
+    /// <c>/api/blocks/data/{type}</c>; null, the default, keeps the rule of every <c>/api</c> answer: <c>no-store</c>.
+    /// Only for a block whose answer is the same for every anonymous reader and changes on a clock of its own — who is
+    /// online, read once a minute —, so that open tabs stop waking the hub (issue #397, note
+    /// 2026-10-26-la-foto-della-rete-oltre-il-processo). A signed-in reader's answer is never shared.
+    /// </summary>
+    TimeSpan? SharedFor { get; }
+
+    /// <summary>
     /// Which <see cref="IDataBlockProvider"/> answers for it. Null for a content block; for a data
     /// block it defaults to the type, and exists so that two blocks can share one provider.
     /// </summary>
@@ -44,7 +55,8 @@ public sealed record BlockDescriptor(
     int Version,
     BlockKind Kind,
     bool AlwaysLive = false,
-    string? ProviderKey = null) : IBlockDescriptor;
+    string? ProviderKey = null,
+    TimeSpan? SharedFor = null) : IBlockDescriptor;
 
 /// <summary>
 /// Every block the installation knows: the ones of the core plus the ones the modules declare. It
@@ -182,7 +194,7 @@ public static class CoreBlocks
         // The one block of the set that is meaningless captured: a picture of who is online, kept
         // from the day a page was published, is an expired figure passed off as the present one
         // (plan section 9.3). The rule is here, in the type, and nowhere else.
-        new BlockDescriptor(NetworkStats, Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor(NetworkStats, Version: 1, BlockKind.Data, AlwaysLive: true, SharedFor: IvaoWhazzup.Freshness),
 
         new BlockDescriptor(Calendar, Version: 1, BlockKind.Data),
         new BlockDescriptor(NewsList, Version: 1, BlockKind.Data),

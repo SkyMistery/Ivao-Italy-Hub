@@ -88,6 +88,7 @@ public sealed class OutboundFailureTests
             cache,
             NullLogger<IvaoApiTokenProvider>.Instance),
         cache,
+        IvaoNetworkPictureStore.None,
         NullLogger<IvaoApiClient>.Instance);
 
     private static IvaoAirspace Airspace() => new(
@@ -170,6 +171,7 @@ public sealed class OutboundFailureTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
 
         using var leaving = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);

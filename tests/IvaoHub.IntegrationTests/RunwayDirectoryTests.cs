@@ -136,6 +136,7 @@ public sealed class RunwayDirectoryTests(MariaDbFixture mariaDb) : IAsyncLifetim
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
 
         return new RunwayDirectory(

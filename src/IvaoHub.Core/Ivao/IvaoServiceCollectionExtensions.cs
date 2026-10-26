@@ -1,8 +1,10 @@
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 
@@ -53,6 +55,12 @@ public static class IvaoServiceCollectionExtensions
         // the connections of the data calls.
         services.AddHttpClient<IvaoApiTokenProvider>(ConfigureAuthority).AddStandardResilienceHandler();
         services.AddHttpClient<IvaoApiClient>(ConfigureAuthority).AddStandardResilienceHandler(WaitLongerThanIvao);
+
+        // The narrowed picture of the network on disk, for the process that comes next (issue #397).
+        services.AddSingleton(provider => new IvaoNetworkPictureStore(
+            provider.GetRequiredService<HubPaths>().Cache,
+            TimeProvider.System,
+            provider.GetRequiredService<ILogger<IvaoNetworkPictureStore>>()));
         services.AddScoped<FixtureIvaoApiClient>();
 
         // Which one answers is decided when the client is built, not when it is registered.

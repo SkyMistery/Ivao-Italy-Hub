@@ -41,6 +41,7 @@ What the package brings, and what belongs to the installation and must never be 
 | `media/` | written by uploads | the media library, on disk. **Persistent: never delete it** |
 | `tiles/basemap.pmtiles` | **installation**, optional | the base map of the tours (`docs/FORKING.md`); without it maps draw on a neutral ground |
 | `logs/`, `diagnostics/` | written by the application | the log of the day; `diagnostics/startup.txt` after a start, `diagnostics/startup-error.txt` after a start that failed, and `diagnostics/starts.txt`, one line for every start and every stop, and `diagnostics/requests-YYYYMMDD.txt`, one line for every request (below) |
+| `cache/` | written by the application | what one process leaves for the next, today only the narrowed picture of the network (`cache/network-picture.txt`: callsigns, stations, frequencies, the two ends of each flight plan, nobody's name). May be deleted at any time; never under `wwwroot/` |
 | `tmp/restart.txt` | **installation** | Passenger restarts the application when this file's date changes |
 
 The application finds its folders from `config/division.json`: its own folder (the one holding `IvaoHub.Web.dll`)
@@ -183,7 +184,7 @@ If the document root has to be the application folder, add these **additional ng
 anyway, as a second lock:
 
 ```nginx
-location ~ ^/(secrets|hub-keys|config|diagnostics|logs|seed|tmp)(/|$) { deny all; }
+location ~ ^/(secrets|hub-keys|config|diagnostics|cache|logs|seed|tmp)(/|$) { deny all; }
 location ~ ^/[^/]+\.(json|dll|pdb|so)$ { deny all; }
 location ~ ^/IvaoHub\.[^/]+\.xml$ { deny all; }
 location ~ ^/(IvaoHub\.Web|createdump)$ { deny all; }
@@ -195,7 +196,34 @@ by their address. Never deny `*.json` below the root either — the language fil
 `/locales/…/*.json` — nor every `*.xml`: `/sitemap.xml` is an address of the application.
 
 `Cache-Control: no-store` on `/api/*` and `/health` is **already sent by the application** (measured), so no
-directive is needed for it; check that the host does not strip it.
+directive is needed for it; check that the host does not strip it. **One exception**: the anonymous answer of the data
+block `networkStats` (who is on the network, read once a minute) carries `public, max-age=0, s-maxage=60`, so that a
+cache in front may answer the open tabs for that minute instead of waking the hub (below).
+
+### Cloudflare: the anonymous answer of who is on the network
+
+On a host that stops the application within the minute, every tab open on a public page wakes it once a minute: the
+strip on top of the page asks who is on the network. Cloudflare can answer those questions for the minute the hub
+allows. It caches nothing under `/api/` by itself, so it takes **one cache rule** (Caching → Cache Rules → Create rule):
+
+| Setting | Value |
+| --- | --- |
+| When incoming requests match | *Custom filter expression*: `(http.request.uri.path eq "/api/blocks/data/networkStats" and http.request.method eq "GET")` |
+| Then | **Eligible for cache** |
+| Edge TTL | **Use cache-control header if present, bypass cache if not** |
+| Browser TTL | **Respect origin TTL** |
+| Cache key | the defaults: the query string is part of the key (it carries the question), the cookies are not |
+
+Nothing else changes: the hub decides what may be kept. A signed-in reader's answer says `no-store` and is never kept,
+so a cached answer is always the anonymous one, which is the same for everybody. An installation without Cloudflare
+needs nothing: the header only speaks to a shared cache.
+
+To check from outside, ask twice within the minute (`e30` is `{}`, the empty question, base64url) and read two headers:
+`cf-cache-status` says `MISS`, then `HIT`, and `Cache-Control` says `public, max-age=0, s-maxage=60`.
+
+```bash
+curl -sI "https://<host>/api/blocks/data/networkStats?props=e30"
+```
 
 After every change of hosting, **check from outside** with `curl -I` that each of these is 403 or 404, or the page
 of the site — never the file: `/secrets/<your file name>.json`, `/config/division.json`, `/appsettings.json`,

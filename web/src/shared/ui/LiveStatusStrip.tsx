@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Plane, TowerControl } from 'lucide-react';
-import type { ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { blockDataQuery } from '../../blocks/data';
@@ -16,6 +16,11 @@ import { blockDataQuery } from '../../blocks/data';
  * ⚠️ **No endpoint of its own.** It asks `/api/blocks/data/networkStats` — the provider of G4, which
  * is anonymous, always live and already the answer to this exact question. A strip with a route of
  * its own would be a second way of asking one thing (CLAUDE.md §2).
+ *
+ * ⚠️ **It stops asking when nobody is reading** (issue #397, note 2026-10-26-la-foto-della-rete-oltre-il-processo). On
+ * a host that stops the hub within the minute, every question of a tab left open woke it — a whole start, about eight
+ * seconds of somebody's wait. After {@link IDLE_AFTER} with no gesture on the page it stops, and the first gesture asks
+ * at once. A hidden tab asks nothing already: React Query does not repeat a question in the background.
  *
  * What it does when the network cannot be reached is the whole of its honesty: **it draws nothing**.
  * React Query keeps the last answer across a failed refresh, so a blip leaves the previous numbers
@@ -36,6 +41,12 @@ const QUESTION = {
 
 /** How often it asks again. The same minute the server caches the reading for. */
 const EVERY_MINUTE = 60_000;
+
+/** After how long without a gesture on the page it stops asking (issue #397). */
+const IDLE_AFTER = 10 * 60_000;
+
+/** What says somebody is still at the page: any of these on the window. */
+const GESTURES = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'wheel', 'touchstart'] as const;
 
 /** What `NetworkStatsProvider` answers with, read defensively: it is JSON off the wire. */
 export interface LiveNetworkStatus {
@@ -58,10 +69,11 @@ export function LiveStatusStrip({
   airports,
 }: { status?: LiveNetworkStatus; airports?: readonly string[] } = {}) {
   const { t, i18n } = useTranslation();
+  const reading = useSomebodyReading();
 
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     ...blockDataQuery('networkStats', airports === undefined ? QUESTION : { ...QUESTION, airports }),
-    refetchInterval: EVERY_MINUTE,
+    refetchInterval: reading ? EVERY_MINUTE : false,
     // The strip is decoration on somebody else's page: a network that is down must cost one attempt
     // a minute, not three in a row every minute.
     retry: false,
@@ -69,6 +81,15 @@ export function LiveStatusStrip({
     // sometimes is a hook that breaks the next render.
     enabled: sample === undefined,
   });
+
+  // Back from a pause, the numbers are minutes old: the first gesture asks at once rather than at the next minute.
+  const wasReading = useRef(reading);
+  useEffect(() => {
+    if (reading && !wasReading.current && sample === undefined) {
+      void refetch();
+    }
+    wasReading.current = reading;
+  }, [reading, refetch, sample]);
 
   const status = sample ?? (data as LiveNetworkStatus | null | undefined);
 
@@ -121,6 +142,36 @@ export function LiveStatusStrip({
       </div>
     </div>
   );
+}
+
+/**
+ * Whether somebody has made a gesture on the page in the last {@link IDLE_AFTER}. A timer reset by every gesture, so a
+ * reader who moves the mouse costs a cleared timer, never a render: the state changes only at the edges.
+ */
+function useSomebodyReading(): boolean {
+  const [reading, setReading] = useState(true);
+
+  useEffect(() => {
+    let timer = window.setTimeout(() => setReading(false), IDLE_AFTER);
+    const seen = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setReading(false), IDLE_AFTER);
+      setReading(true);
+    };
+
+    for (const gesture of GESTURES) {
+      window.addEventListener(gesture, seen, { passive: true });
+    }
+
+    return () => {
+      window.clearTimeout(timer);
+      for (const gesture of GESTURES) {
+        window.removeEventListener(gesture, seen);
+      }
+    };
+  }, []);
+
+  return reading;
 }
 
 /**

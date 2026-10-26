@@ -33,7 +33,7 @@ public sealed class LiveStatusTests
         }
     }
 
-    private static IvaoApiClient Create(Handler handler, MemoryCache cache)
+    private static IvaoApiClient Create(HttpMessageHandler handler, MemoryCache cache)
     {
         var options = Options.Create(new IvaoOAuthOptions
         {
@@ -51,6 +51,7 @@ public sealed class LiveStatusTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
     }
 
@@ -108,6 +109,57 @@ public sealed class LiveStatusTests
         }
 
         Assert.Equal(1, handler.Calls);
+    }
+
+    /// <summary>An IVAO that holds its first answer until the test lets it go, and counts from every thread.</summary>
+    private sealed class HeldHandler : HttpMessageHandler
+    {
+        private int _calls;
+
+        public TaskCompletionSource Asked { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int Calls => Volatile.Read(ref _calls);
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _calls);
+            Asked.TrySetResult();
+            await Answer.Task.WaitAsync(cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"updatedAt":"2026-09-07T09:00:00Z","clients":{"atcs":[],"pilots":[]}}""",
+                    Encoding.UTF8,
+                    "application/json"),
+            };
+        }
+    }
+
+    [Fact]
+    public async Task TwoBlocksOfOnePageDownloadThePictureOnce()
+    {
+        // Issue #397: the blocks of a fresh page ask together, each through a client of its own (one per scope), and
+        // both found the cache empty and downloaded several megabytes each. The second waits for the first and reads
+        // what it kept.
+        var token = TestContext.Current.CancellationToken;
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+
+        var handler = new HeldHandler();
+        var first = Create(handler, cache).GetNetworkStatusAsync(Airspace(), token);
+        await handler.Asked.Task.WaitAsync(token);
+
+        var second = Create(handler, cache).GetNetworkStatusAsync(Airspace(), token);
+        await Task.Delay(TimeSpan.FromMilliseconds(100), token);
+        handler.Answer.SetResult();
+
+        var answers = await Task.WhenAll(first, second);
+
+        Assert.Equal(1, handler.Calls);
+        Assert.All(answers, answer => Assert.NotNull(answer.UpdatedAt));
     }
 
     [Fact]

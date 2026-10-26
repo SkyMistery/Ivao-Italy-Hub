@@ -77,6 +77,7 @@ public sealed class LiveStatusAirportsTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
     }
 

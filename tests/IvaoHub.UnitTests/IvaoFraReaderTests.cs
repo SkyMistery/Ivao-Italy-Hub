@@ -229,6 +229,7 @@ public sealed class IvaoFraReaderTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
     }
 

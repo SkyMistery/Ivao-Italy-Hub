@@ -256,6 +256,29 @@ public sealed class FirTeamPermissionRulesTests
     }
 
     [Fact]
+    public void AStartThatSkippedTheInitialisationReadsTheAreasOnlyWhenFirstAsked()
+    {
+        var catalogue = new PermissionCatalog([.. CorePermissions.All, new PermissionDescriptor(Assign, IsGlobal: false)]);
+        var readings = 0;
+        catalogue.LearnAreasWithAFir(() =>
+        {
+            // The first reading fails, as a model that cannot be built would: the next question reads again.
+            if (++readings == 1)
+            {
+                throw new InvalidOperationException("the models could not be read");
+            }
+
+            return ["Probe"];
+        });
+        Assert.Equal(0, readings);
+
+        Assert.Throws<InvalidOperationException>(() => catalogue.IsOfAnAreaWithAFir(Assign));
+        Assert.True(catalogue.IsOfAnAreaWithAFir(Assign));
+        Assert.False(catalogue.IsOfAnAreaWithAFir(CorePermissions.LinksView));
+        Assert.Equal(2, readings);
+    }
+
+    [Fact]
     public async Task TheScreenRefusesATeamGrantOnAnAreaWithNoFirAndASecondSubject()
     {
         var catalogue = new PermissionCatalog([.. CorePermissions.All, new PermissionDescriptor(Assign, IsGlobal: false)]);
