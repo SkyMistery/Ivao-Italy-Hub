@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
@@ -198,6 +199,31 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         using var refused = await client.SendAsync(request, token);
 
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+    }
+
+    [Fact]
+    public async Task ABearerHeaderDoesNotSpareTheCookieTheCsrfHeader()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(600004, position: "IT-EC", cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, 600004, token);
+
+        // Not a token at all: the cookie is what would authenticate the request (issue #393).
+        using var request = new HttpRequestMessage(HttpMethod.Put, LocaleEndpoints.Pattern)
+        {
+            Content = JsonContent.Create(new { locale = "en" }),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "x");
+        using var refused = await client.SendAsync(request, token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var user = await database.Users.AsNoTracking().FirstAsync(row => row.Vid == 600004, token);
+        Assert.NotEqual("en", user.Locale);
     }
 
     [Fact]

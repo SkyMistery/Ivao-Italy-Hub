@@ -7,6 +7,7 @@ using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog.Context;
@@ -57,23 +58,34 @@ internal static class HubPipeline
             var guarded = path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
                 || path.StartsWithSegments("/auth/logout", StringComparison.OrdinalIgnoreCase);
 
-            // A personal token is not a cookie: the browser never attaches it by itself, and a page of another site cannot
-            // set an Authorization header on a cross site request without a preflight this host never answers (T19a).
-            var bearer = context.Request.Headers.Authorization.ToString()
-                .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-
-            if (guarded && !bearer && !safeMethods.Contains(context.Request.Method, StringComparer.OrdinalIgnoreCase))
+            if (guarded
+                && !safeMethods.Contains(context.Request.Method, StringComparer.OrdinalIgnoreCase)
+                && !string.Equals(context.Request.Headers.XRequestedWith.ToString(), RequestedWithValue, StringComparison.Ordinal)
+                && !await CarriesOnlyABearerAsync(context))
             {
-                var header = context.Request.Headers.XRequestedWith.ToString();
-                if (!string.Equals(header, RequestedWithValue, StringComparison.Ordinal))
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    return;
-                }
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
             }
 
             await next();
         });
+    }
+
+    /// <summary>
+    /// A personal token, or the secret of the scheduled jobs, is not a cookie: the browser never attaches it by itself, and a
+    /// page of another site cannot set an Authorization header on a cross site request without a preflight this host never
+    /// answers (T19a). Such a request needs no header, but only when the cookie does not authenticate it as well: the header
+    /// alone, whatever follows "Bearer ", must not open the lock for the cookie (issue #393).
+    /// </summary>
+    private static async Task<bool> CarriesOnlyABearerAsync(HttpContext context)
+    {
+        if (!context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var cookie = await context.AuthenticateAsync(HubClaims.CookieScheme);
+        return !cookie.Succeeded;
     }
 
     /// <summary>One identifier per request, in the logs and in the response, to match a report to a log line.</summary>
