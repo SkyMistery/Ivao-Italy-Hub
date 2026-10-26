@@ -79,6 +79,17 @@ public sealed class StartsLogTests : IDisposable
     }
 
     [Fact]
+    public void TheChecksOfHealthAreCountedApartFromTheRequestsAndOnlyWhenThereWereSome()
+    {
+        Assert.Contains(
+            "requests 2  probes 5  first answer at 31.00 s",
+            StartsLog.StopLine(Now, 4242, TimeSpan.FromSeconds(48), 2, TimeSpan.FromSeconds(31), Memory, probes: 5),
+            StringComparison.Ordinal);
+
+        Assert.DoesNotContain("probes", StartsLog.StopLine(Now, 4242, TimeSpan.FromSeconds(48), 2, null, Memory), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AnOrderlyStopIsReadForThePidOfTheLastStart()
     {
         string[] lines =

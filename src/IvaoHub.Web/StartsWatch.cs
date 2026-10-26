@@ -19,6 +19,7 @@ internal sealed class StartsWatch
     private readonly List<PosixSignalRegistration> _signals = [];
     private volatile bool _started;
     private long _requests;
+    private long _probes;
     private long _firstAnswerTicks = -1;
     private int _stopped;
 
@@ -48,9 +49,24 @@ internal sealed class StartsWatch
         app.Lifetime.ApplicationStopping.Register(watch.Stopping);
         watch.ListenForSignals();
 
-        // First in the pipeline, so that every request is counted, the ones a later middleware answers included.
+        // First in the pipeline, so that every request is counted, the ones a later middleware answers included. A check of
+        // /health is counted apart: the visitor who woke the hub is the first request, never the probe that kept it awake.
         app.Use(async (context, next) =>
         {
+            if (HubPipeline.IsHealthProbe(context))
+            {
+                try
+                {
+                    await next();
+                }
+                finally
+                {
+                    Interlocked.Increment(ref watch._probes);
+                }
+
+                return;
+            }
+
             try
             {
                 await next();
@@ -120,7 +136,8 @@ internal sealed class StartsWatch
             Interlocked.Read(ref _requests),
             first < 0 ? null : TimeSpan.FromTicks(first),
             ProcessMemory.Now(),
-            JitInfo.GetCompilationTime()));
+            JitInfo.GetCompilationTime(),
+            Interlocked.Read(ref _probes)));
     }
 
     /// <summary>
