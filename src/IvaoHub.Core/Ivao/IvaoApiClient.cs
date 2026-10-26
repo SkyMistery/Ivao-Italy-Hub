@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,9 @@ public sealed class IvaoApiClient(
 {
     /// <summary>The one reading of who is connected the client keeps, whatever the airspace asking.</summary>
     private const string NetworkPictureKey = "ivao-api:network-picture";
+
+    /// <summary>The one download of the picture at a time, for each cache it is kept in (<see cref="GetNetworkStatusAsync"/>).</summary>
+    private static readonly ConditionalWeakTable<IMemoryCache, SemaphoreSlim> DownloadGates = new();
 
     public async Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
         string countryId,
@@ -391,16 +395,33 @@ public sealed class IvaoApiClient(
         // names the airports it wants counted, so the airspaces are as many as anybody cares to
         // invent, and each one of them must not cost a download of the whole picture. The reading
         // counts each airspace, keeps the answers of a few, and they go with it.
-        if (!cache.TryGetValue(NetworkPictureKey, out IvaoNetworkPicture? picture) || picture is null)
+        if (cache.TryGetValue(NetworkPictureKey, out IvaoNetworkPicture? picture) && picture is not null)
         {
-            // No token: the picture of who is connected is the public one, and an installation that
-            // has not been given client credentials must still be able to draw it.
-            var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
-            picture = payload is { } root ? IvaoWhazzup.Read(root) : IvaoNetworkPicture.Unknown;
+            return picture.For(airspace);
+        }
 
-            // A failure is cached too, and for the same minute. Without that, a network that is down
-            // turns every reader of the page into another call to a network that is down.
-            cache.Set(NetworkPictureKey, picture, IvaoWhazzup.Freshness);
+        // One download at a time (issue #397): the blocks of one fresh page ask together, each through a client of its own,
+        // and without the gate each of them downloaded the several megabytes again. Whoever waits finds the picture the
+        // first one kept. The gate belongs to the cache, so it is one per process, as the cache is.
+        var gate = DownloadGates.GetValue(cache, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!cache.TryGetValue(NetworkPictureKey, out picture) || picture is null)
+            {
+                // No token: the picture of who is connected is the public one, and an installation that
+                // has not been given client credentials must still be able to draw it.
+                var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
+                picture = payload is { } root ? IvaoWhazzup.Read(root) : IvaoNetworkPicture.Unknown;
+
+                // A failure is cached too, and for the same minute. Without that, a network that is down
+                // turns every reader of the page into another call to a network that is down.
+                cache.Set(NetworkPictureKey, picture, IvaoWhazzup.Freshness);
+            }
+        }
+        finally
+        {
+            gate.Release();
         }
 
         return picture.For(airspace);
