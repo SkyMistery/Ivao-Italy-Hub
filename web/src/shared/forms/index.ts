@@ -8,6 +8,8 @@ export {
   readFields,
   collectionKindOf,
   suggestCollections,
+  chooseCalendarKinds,
+  namesCalendarKinds,
   blankValue,
   blankValues,
   writtenValues,

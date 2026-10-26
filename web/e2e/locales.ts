@@ -132,6 +132,7 @@ interface CommonStrings {
       readonly undo: string;
       readonly onThePage: string;
       readonly componentsHint: string;
+      readonly searchComponents: string;
       readonly structure: string;
       readonly properties: string;
       readonly preview: string;
@@ -180,6 +181,7 @@ interface CommonStrings {
       readonly titles: { readonly drafts: string };
       readonly empty: { readonly drafts: string };
     };
+    readonly calendar: { readonly label: string; readonly fields: { readonly 'kinds.kind': string } };
     readonly heading: {
       readonly label: string;
       readonly fields: { readonly text: string; readonly level: string };

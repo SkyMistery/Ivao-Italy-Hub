@@ -1273,6 +1273,7 @@
     "calendar": {
       "label": "Calendar",
       "empty": "Nothing coming up.",
+      "retiredKind": "{{key}} (no longer in use)",
       "fields": {
         "kinds": "Kinds",
         "kinds.kind": "Kind",
@@ -1281,6 +1282,9 @@
         "range": "How far ahead",
         "limit": "How many at most",
         "view": "View"
+      },
+      "hints": {
+        "kinds": "Chosen among the kinds of the Calendar kinds screen. None chosen shows every kind."
       },
       "options": {
         "department": {

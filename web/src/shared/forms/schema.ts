@@ -117,6 +117,13 @@ export interface FieldMeta {
    * deleted since keeps its key on the body, and the list shows the rows as they are.
    */
   collectionOf?: 'News' | 'Document';
+  /**
+   * A key of the calendar's kinds (`cms_calendar_kinds`), chosen and never typed (issue #360): the
+   * kinds are rows, so whoever draws the form turns it into `choices` with `chooseCalendarKinds`, out
+   * of the kinds `/api/me` lists. Closed in the form only: the server keeps reading a block's
+   * properties as opaque, and a kind retired or deleted since answers with nothing.
+   */
+  calendarKind?: boolean;
   slugFrom?: string;
   /**
    * What the proposal starts with, for a field that is a **path** rather than a slug: the menu
@@ -534,6 +541,56 @@ export function suggestCollections<T>(schema: T, suggestions: readonly Suggestio
   );
 
   return schema.extend(patched) as unknown as T;
+}
+
+/**
+ * The same schema, with every `calendarKind` property — at any depth: the calendar block holds its
+ * kinds as a list of `{ kind }` — choosing among these. A new schema, like `suggestCollections`.
+ */
+export function chooseCalendarKinds<T>(schema: T, choices: readonly ChoiceOption[]): T {
+  return withChoices(schema, (meta) => meta.calendarKind === true, choices) as T;
+}
+
+/** Whether a property of this schema, at any depth, is a `calendarKind`. */
+export function namesCalendarKinds(schema: unknown): boolean {
+  if (schema instanceof z.ZodObject) {
+    return Object.values(schema.shape).some(namesCalendarKinds);
+  }
+
+  const { inner, meta } = unwrap(schema);
+  if (meta.calendarKind === true) {
+    return true;
+  }
+
+  return inner instanceof z.ZodArray ? namesCalendarKinds(inner.element) : false;
+}
+
+function withChoices(
+  schema: unknown,
+  annotated: (meta: FieldMeta) => boolean,
+  choices: readonly ChoiceOption[],
+): unknown {
+  if (schema instanceof z.ZodObject) {
+    return schema.extend(
+      Object.fromEntries(
+        Object.entries(schema.shape).map(([name, field]) => [name, withChoices(field, annotated, choices)]),
+      ),
+    );
+  }
+
+  if (annotated(annotation(schema))) {
+    return (schema as z.ZodType).meta({ ...annotation(schema), choices: [...choices] });
+  }
+
+  // A list of objects is rebuilt around its patched element, its own annotations kept. Only a bare
+  // list: a wrapped one has no case today, and would be one more branch when it does.
+  if (schema instanceof z.ZodArray && schema.element instanceof z.ZodObject) {
+    return z
+      .array(withChoices(schema.element, annotated, choices) as z.ZodType)
+      .meta({ ...annotation(schema) });
+  }
+
+  return schema;
 }
 
 /**

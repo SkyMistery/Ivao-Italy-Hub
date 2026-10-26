@@ -549,7 +549,9 @@ fix it would still read as secondary.
 
 **A block's accent is four names, and it colours graphics only.** `hero`, `cardGrid`, `iconGrid` and
 `timeline` carry an `accent` property — `brand`, `ocean`, `aurora`, `artifice` — which draws the icon
-of an item, the 2px rule above a card and the short bar above a hero. The default is `brand`, which is
+of an item, the 2px rule above a card and the short bar above a hero; in an `iconGrid` the icon also
+stands on a disc of the same colour at 15 %, because a line drawing alone carried too little of the
+colour to tell the four apart (issue #363). The default is `brand`, which is
 what those blocks already looked like, so no page changes by itself. ⚠️ **Never a word.** WCAG asks
 3 : 1 of a graphic and 4.5 : 1 of text, and the brand's orange does not reach the second: `artifice-low`
 is 4.5 : 1 on white but 3.7 : 1 on the `accent` ground, and `artifice-dark` is 3.2 : 1 on white
