@@ -873,7 +873,7 @@
   },
   "tourErrors": {
     "title": "Errors",
-    "description": "The division's catalogue of the errors a validator marks on a report. Public errors can be shown on a page with the block \"Public errors\".",
+    "description": "The division's catalogue of the errors a validator marks on a report. Public errors can be shown on a page with the block \"Errors of tour reports\".",
     "create": "New error",
     "edit": "Edit error",
     "delete": {
@@ -894,7 +894,7 @@
     },
     "hints": {
       "yearlyMax": "A warning only: beyond this many times in a year, rejection is suggested.",
-      "isPublic": "Shown by the block \"Public errors\"."
+      "isPublic": "Shown by the block \"Errors of tour reports\"."
     },
     "options": {
       "category": {
@@ -906,7 +906,8 @@
   },
   "blocks": {
     "errorCatalog": {
-      "label": "Public errors",
+      "label": "Errors of tour reports",
+      "about": "The errors a validator can mark on a tour report, as the catalogue of the tours lists them: only the ones marked public. Nothing is typed into the block.",
       "empty": "No public error yet.",
       "examples": "Examples",
       "rules": "Rules: {{rules}}",

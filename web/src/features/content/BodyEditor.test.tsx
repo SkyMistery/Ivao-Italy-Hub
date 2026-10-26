@@ -140,6 +140,26 @@ test.each([
   },
 );
 
+test('a block whose content comes from elsewhere says where, above its properties (issue #357)', async () => {
+  const user = userEvent.setup();
+  draw();
+
+  await user.click(screen.getByRole('button', { name: editor.outline }));
+  await user.click(screen.getByRole('button', { name: 'Intro' }));
+  await user.click(screen.getByRole('button', { name: englishCommon.blocks.linkList.label }));
+
+  // The links are the rows of another screen, and the line leads there without leaving the page being edited.
+  expect(screen.getByText(englishCommon.blocks.linkList.about, { exact: false })).toBeInTheDocument();
+  const screenLink = screen.getByRole('link', { name: englishCommon.blocks.linkList.aboutLink });
+  expect(screenLink).toHaveAttribute('href', '/staff/links');
+  expect(screenLink).toHaveAttribute('target', '_blank');
+
+  // The frame names the sites of the allow list, read off the list rather than written in the words.
+  await user.click(screen.getByRole('button', { name: 'Intro' }));
+  await user.click(screen.getByRole('button', { name: englishCommon.blocks.embed.label }));
+  expect(screen.getByText(/youtube\.com, vimeo\.com, twitch\.tv/)).toBeInTheDocument();
+});
+
 test('a locked body is not changed by a key, by the way back, or by the template (issue #332, item 7)', async () => {
   const user = userEvent.setup();
   const onChange = vi.fn<(body: Body) => void>();

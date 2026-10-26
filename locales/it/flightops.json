@@ -874,7 +874,7 @@
   },
   "tourErrors": {
     "title": "Errori",
-    "description": "Il catalogo della divisione degli errori che il validatore segna su un report. Gli errori pubblici si mostrano in una pagina con il blocco «Errori pubblici».",
+    "description": "Il catalogo della divisione degli errori che il validatore segna su un report. Gli errori pubblici si mostrano in una pagina con il blocco «Errori dei rapporti dei tour».",
     "create": "Nuovo errore",
     "edit": "Modifica l'errore",
     "delete": {
@@ -895,7 +895,7 @@
     },
     "hints": {
       "yearlyMax": "Solo per un warning: oltre questo numero di volte in un anno si suggerisce il rifiuto.",
-      "isPublic": "Lo mostra il blocco «Errori pubblici»."
+      "isPublic": "Lo mostra il blocco «Errori dei rapporti dei tour»."
     },
     "options": {
       "category": {
@@ -907,7 +907,8 @@
   },
   "blocks": {
     "errorCatalog": {
-      "label": "Errori pubblici",
+      "label": "Errori dei rapporti dei tour",
+      "about": "Gli errori che un validatore può segnare sul rapporto di un tour, come li elenca il catalogo dei tour: solo quelli marcati come pubblici. Nel blocco non si scrive niente.",
       "empty": "Ancora nessun errore pubblico.",
       "examples": "Esempi",
       "rules": "Regole: {{rules}}",
