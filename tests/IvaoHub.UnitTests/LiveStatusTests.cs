@@ -51,6 +51,7 @@ public sealed class LiveStatusTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
     }
 

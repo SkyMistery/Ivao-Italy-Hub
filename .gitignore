@@ -41,6 +41,7 @@ node_modules/
 /tiles/
 /logs/
 /diagnostics/
+/cache/
 *.db
 *.db-shm
 *.db-wal

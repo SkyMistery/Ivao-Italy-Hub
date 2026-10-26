@@ -2,7 +2,7 @@ namespace IvaoHub.Core.Services;
 
 /// <summary>
 /// Where the files that are not code live: <c>config/</c>, <c>locales/</c>, <c>secrets/</c>,
-/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>seed/</c>, <c>media/</c>, <c>tiles/</c>.
+/// <c>hub-keys/</c>, <c>logs/</c>, <c>diagnostics/</c>, <c>cache/</c>, <c>seed/</c>, <c>media/</c>, <c>tiles/</c>.
 /// </summary>
 /// <remarks>
 /// In production they sit next to the application, and an application folder holding
@@ -64,6 +64,13 @@ public sealed class HubPaths
     public string DataProtectionKeys => Path.Combine(Root, "hub-keys");
     public string Logs => Path.Combine(Root, "logs");
     public string Diagnostics => Path.Combine(Root, "diagnostics");
+
+    /// <summary>
+    /// What one process leaves for the next, because on a host that stops the hub every minute a cache in memory dies
+    /// with its process (issue #397): today only the narrowed picture of the network. Nothing in it is anybody's, and
+    /// everything in it may be deleted at any time.
+    /// </summary>
+    public string Cache => Path.Combine(Root, "cache");
 
     public string DivisionFile => Path.Combine(Config, "division.json");
     public string OAuthFile => Path.Combine(Config, "ivao-oauth.json");

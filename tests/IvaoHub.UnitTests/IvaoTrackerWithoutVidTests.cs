@@ -354,6 +354,7 @@ public sealed class IvaoTrackerWithoutVidTests
             cache,
             NullLogger<IvaoApiTokenProvider>.Instance),
         cache,
+        IvaoNetworkPictureStore.None,
         NullLogger<IvaoApiClient>.Instance);
 
     private static IvaoSessionQuery Departures() => new(null, From, To, "LIRF");
