@@ -73,6 +73,32 @@ public sealed class RequestTimingsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ACheckOfHealthIsNoVisitorItHasNoLineAndTheFirstVisitorStaysTheColdRequest()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var host = _factory.WithWebHostBuilder(builder => builder
+            .UseSetting("Diagnostics:Requests:Enabled", "true")
+            .UseSetting("Diagnostics:Requests:Directory", _folder));
+
+        using (var client = host.CreateClient())
+        {
+            // As the keep-warm Worker asks: a query string that changes every time, so that no cache answers for the hub.
+            using var probe = await client.GetAsync($"/health?t={DateTime.UtcNow.Ticks}", token);
+            Assert.True(probe.IsSuccessStatusCode, $"/health answered {probe.StatusCode}");
+
+            using var visit = await client.GetAsync("/api/version", token);
+        }
+
+        await host.DisposeAsync();
+
+        var file = Path.Combine(_folder, RequestTimingsLog.FileName(DateOnly.FromDateTime(DateTime.UtcNow)));
+        var lines = (await File.ReadAllTextAsync(file, token)).Split('\n').Select(RequestTimingsLine.Parse).OfType<RequestTimingsLine>().ToList();
+
+        Assert.DoesNotContain(lines, line => line.Route.Contains("health", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, Assert.Single(lines, line => line.Route == "/api/version").Number);
+    }
+
+    [Fact]
     public async Task ATestHostWritesNothingUnlessItAsks()
     {
         var token = TestContext.Current.CancellationToken;

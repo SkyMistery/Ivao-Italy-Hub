@@ -343,7 +343,8 @@ if (app.Environment.IsProduction())
 app.UseSecurityHeaders();
 
 app.UseCorrelationId();
-app.UseSerilogRequestLogging();
+// A healthy check of /health leaves no line: the keep-warm Worker sends one every few seconds (HubPipeline.RequestLogLevel).
+app.UseSerilogRequestLogging(options => options.GetLevel = HubPipeline.RequestLogLevel);
 app.UseNoStoreForApi();
 
 app.UseDefaultFiles();
@@ -374,7 +375,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks(HubPipeline.HealthPath);
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapLocaleEndpoints();
