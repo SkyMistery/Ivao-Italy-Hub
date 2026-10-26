@@ -84,6 +84,7 @@ public sealed partial class PirepTests
                 cache,
                 NullLogger<IvaoApiTokenProvider>.Instance),
             cache,
+            IvaoNetworkPictureStore.None,
             NullLogger<IvaoApiClient>.Instance);
     }
 

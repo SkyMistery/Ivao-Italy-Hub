@@ -19,6 +19,7 @@ public sealed class IvaoApiClient(
     HttpClient http,
     IvaoApiTokenProvider tokens,
     IMemoryCache cache,
+    IvaoNetworkPictureStore pictures,
     ILogger<IvaoApiClient> logger) : IIvaoApiClient
 {
     /// <summary>The one reading of who is connected the client keeps, whatever the airspace asking.</summary>
@@ -409,14 +410,26 @@ public sealed class IvaoApiClient(
         {
             if (!cache.TryGetValue(NetworkPictureKey, out picture) || picture is null)
             {
-                // No token: the picture of who is connected is the public one, and an installation that
-                // has not been given client credentials must still be able to draw it.
-                var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
-                picture = payload is { } root ? IvaoWhazzup.Read(root) : IvaoNetworkPicture.Unknown;
+                if (pictures.Read(IvaoWhazzup.Freshness) is { } kept)
+                {
+                    // Another process took it less than a minute ago (issue #397): what is left of its minute, not a
+                    // new one.
+                    picture = kept.Picture;
+                    cache.Set(NetworkPictureKey, picture, kept.Left);
+                }
+                else
+                {
+                    // No token: the picture of who is connected is the public one, and an installation that
+                    // has not been given client credentials must still be able to draw it.
+                    var payload = await ReadWithoutTokenAsync(IvaoWhazzup.Path, cancellationToken);
+                    picture = payload is { } root ? IvaoWhazzup.Read(root) : IvaoNetworkPicture.Unknown;
 
-                // A failure is cached too, and for the same minute. Without that, a network that is down
-                // turns every reader of the page into another call to a network that is down.
-                cache.Set(NetworkPictureKey, picture, IvaoWhazzup.Freshness);
+                    // A failure is cached too, and for the same minute. Without that, a network that is down
+                    // turns every reader of the page into another call to a network that is down — in this
+                    // process and in the next one.
+                    cache.Set(NetworkPictureKey, picture, IvaoWhazzup.Freshness);
+                    pictures.Write(picture);
+                }
             }
         }
         finally

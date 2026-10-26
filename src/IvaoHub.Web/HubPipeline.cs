@@ -28,6 +28,8 @@ internal static class HubPipeline
     /// <summary>
     /// Everything a browser or Cloudflare could cache from the API is explicitly not cacheable.
     /// The static files of the SPA keep their own, normal caching.
+    /// <para>One exception, written by the endpoint over this header: the anonymous answer of a data block whose
+    /// descriptor declares <c>SharedFor</c> (<c>networkStats</c>, issue #397), which Cloudflare may keep for that long.</para>
     /// </summary>
     public static IApplicationBuilder UseNoStoreForApi(this WebApplication app)
     {

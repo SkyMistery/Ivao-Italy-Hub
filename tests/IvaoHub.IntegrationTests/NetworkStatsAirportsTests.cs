@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Ivao;
@@ -122,7 +123,65 @@ public sealed class NetworkStatsAirportsTests(MariaDbFixture mariaDb) : IAsyncLi
         Assert.Equal(["LIMC_APP", "LIRF_TWR", "LIRR_CTR"], Positions(division));
     }
 
+    [Fact]
+    public async Task OnlyTheAnonymousAnswerMayBeKeptByCloudflareForItsMinute()
+    {
+        // Issue #397: the one exception to no-store. The anonymous answer of networkStats is the same for every reader
+        // and changes once a minute, so Cloudflare may answer the open tabs for that minute instead of waking the hub;
+        // the browser keeps nothing (its own query cache decides). A signed-in reader's answer, and every other block's,
+        // stays no-store.
+        var token = TestContext.Current.CancellationToken;
+
+        using var anonymous = _factory.CreateApiClient();
+        using (var answer = await anonymous.GetAsync(BlockAddress(CoreBlocks.NetworkStats), token))
+        {
+            answer.EnsureSuccessStatusCode();
+            Assert.Equal("public, max-age=0, s-maxage=60", answer.Headers.CacheControl?.ToString());
+        }
+
+        using (var other = await anonymous.GetAsync(BlockAddress(CoreBlocks.NewsList), token))
+        {
+            other.EnsureSuccessStatusCode();
+            Assert.Equal("no-store", other.Headers.CacheControl?.ToString());
+        }
+
+        const int Reader = 639703;
+        await SeedReaderAsync(Reader, token);
+        using var signedIn = _factory.CreateApiClient();
+        await _factory.SignInAsync(signedIn, Reader, token);
+        using (var answer = await signedIn.GetAsync(BlockAddress(CoreBlocks.NetworkStats), token))
+        {
+            answer.EnsureSuccessStatusCode();
+            Assert.Equal("no-store", answer.Headers.CacheControl?.ToString());
+        }
+    }
+
     // ---- helpers -----------------------------------------------------------------------------
+
+    private static Uri BlockAddress(string type) =>
+        new($"/api/blocks/data/{type}?props={Convert.ToBase64String("{}"u8).TrimEnd('=')}", UriKind.Relative);
+
+    private async Task SeedReaderAsync(int vid, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+
+        if (!await database.Users.AnyAsync(row => row.Vid == vid, cancellationToken))
+        {
+            database.Users.Add(new HubUser
+            {
+                Vid = vid,
+                FirstName = "Test",
+                LastName = "Reader",
+                Locale = "en",
+                SecurityStamp = SuperadminService.NewStamp(),
+                CreatedAt = clock.UtcNow,
+                UpdatedAt = clock.UtcNow,
+            });
+            await database.SaveChangesAsync(cancellationToken);
+        }
+    }
 
     /// <summary>
     /// The block asked live, as the strip asks it: three figures and the positions, with the airports
