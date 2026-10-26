@@ -14,6 +14,7 @@ import {
   GOAL_PARAMETERS,
   OPEN_GOALS,
   TOUR_CONSTRAINT_KINDS,
+  TOUR_RULE_FIELDS,
   callsignRuleSchema,
   hubSchema,
   openGoalSchema,
@@ -61,6 +62,40 @@ const TOUR_FIELDS: readonly Exclude<keyof TourWriteDto, 'briefing' | 'openGoal' 
 
 test('the tour form carries the fields of TourWriteDto but the briefing, and the aircraft as two lists', () => {
   expect(Object.keys(tourSchema().shape).sort()).toEqual([...TOUR_FIELDS, 'allowedGroups'].sort());
+});
+
+// Every rule of a tour is in "Rules", and nothing of it in "Settings" (#369); both halves carry the whole payload.
+test('the settings of a tour draw no rule, and its rules draw every rule and nothing else', () => {
+  const drawnBy = (part: 'settings' | 'rules') =>
+    readFields(tourSchema({ part }))
+      .filter((field) => field.meta.hidden !== true)
+      .map((field) => field.path)
+      .sort();
+
+  expect(drawnBy('rules')).toEqual([...TOUR_RULE_FIELDS].sort());
+  expect(
+    drawnBy('settings').filter((path) => (TOUR_RULE_FIELDS as readonly string[]).includes(path)),
+  ).toEqual([]);
+  expect(drawnBy('settings')).toContain('title');
+  expect(Object.keys(tourSchema({ part: 'rules' }).shape).sort()).toEqual(
+    [...TOUR_FIELDS, 'allowedGroups'].sort(),
+  );
+});
+
+// The fields of one kind of tour only are greyed out on the others (#367), and on a new tour, whose kind is not known yet,
+// on none.
+test('the fields of one kind of tour are greyed out on a tour of another kind', () => {
+  const greyed = (kind?: 'Free' | 'Distance' | 'Hub' | 'Container') =>
+    readFields(tourSchema({ part: 'rules', ...(kind === undefined ? {} : { kind }) }))
+      .filter((field) => field.meta.disabled === true)
+      .map((field) => field.path)
+      .sort();
+
+  expect(greyed('Free')).toEqual(['hubRotationOrder', 'requiredNm', 'requiredSubtours']);
+  expect(greyed('Distance')).toEqual(['hubRotationOrder', 'requiredSubtours']);
+  expect(greyed('Hub')).toEqual(['requiredNm', 'requiredSubtours']);
+  expect(greyed('Container')).toEqual(['hubRotationOrder', 'requiredNm']);
+  expect(greyed()).toEqual([]);
 });
 
 test('the two lists of the form become the aircraft a tour admits, empty entries dropped', () => {
