@@ -20,7 +20,7 @@ internal static class HubPipeline
     private const string CorrelationIdHeader = "X-Correlation-Id";
 
     /// <summary>What a start skips when the initialisation marker matches it, as <c>starts.txt</c> names the steps.</summary>
-    public static readonly IReadOnlyList<string> SkippableSteps = ["migrations", "module migrations", "position grants", "content"];
+    public static readonly IReadOnlyList<string> SkippableSteps = ["models", "migrations", "module migrations", "position grants", "content"];
 
     /// <summary>What the generated client puts in X-Requested-With on every mutation.</summary>
     public const string RequestedWithValue = "hub";
@@ -192,34 +192,8 @@ internal static class HubPipeline
         scope.ServiceProvider.GetRequiredService<IStartupValidator>().Validate();
         timings.Step("validation");
 
-        // The permissions the entities say they are also written with, checked against the catalogue before anything is
-        // written (M3, A3b): a mark the write guard could not honour stops the start here, rather than turning into a 403
-        // nobody can explain. Building a model reads no table.
         var registry = scope.ServiceProvider.GetRequiredService<ModuleRegistry>();
         var catalogue = scope.ServiceProvider.GetRequiredService<PermissionCatalog>();
-        var areasWithAFir = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes).Prepend(typeof(HubDbContext)))
-        {
-            var model = ((DbContext)scope.ServiceProvider.GetRequiredService(contextType)).Model;
-            var entities = model.GetEntityTypes().Select(entity => entity.ClrType).ToArray();
-            catalogue.VerifyAlternatives(entities, entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity));
-
-            // And a row its member takes back by deleting it (M4, E10h): marked only where the guard knows the member it is about.
-            HubSaveChangesInterceptor.VerifyWithdrawals(entities);
-
-            // And the columns marked as a person's data (M4, E10n): a mark the erasure could not honour stops the start here,
-            // rather than an erasure half way through the modules.
-            PersonColumns.VerifyErasedWith(model);
-
-            // The areas whose rows say their FIR, the only ones a grant to the team of a FIR may name a permission of (M3,
-            // A11a): the seed of positionGrants and the permissions screen ask the catalogue, from here on.
-            areasWithAFir.UnionWith(entities
-                .Where(entity => typeof(IHasFir).IsAssignableFrom(entity))
-                .Select(entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity)));
-        }
-
-        catalogue.LearnAreasWithAFir(areasWithAFir);
-        timings.Step("models");
 
         var division = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value;
         var build = scope.ServiceProvider.GetRequiredService<BuildInfo>();
@@ -254,6 +228,12 @@ internal static class HubPipeline
             key,
             async cancellationToken =>
             {
+                // The marks of the entities, checked against the catalogue before anything is written: their result depends
+                // only on the code and on the enabled modules, both in the key, so a build checks them once and a plain wake
+                // does not build the model of every module for them (note 2026-10-26-l-avvio-senza-i-modelli).
+                catalogue.LearnAreasWithAFir(ReadModels(scope.ServiceProvider, registry, catalogue, verify: true));
+                timings.Step("models");
+
                 var initializer = scope.ServiceProvider.GetRequiredService<HubDatabaseInitializer>();
                 applied.AddRange(await initializer.MigrateAsync(cancellationToken));
                 timings.Step("migrations");
@@ -293,6 +273,15 @@ internal static class HubPipeline
         if (outcome.Skipped)
         {
             await SuperadminsAsync(app.Lifetime.ApplicationStopping);
+
+            // The models this build already checked, read again only when a grant to the team of a FIR is first validated:
+            // the core's is built by the first query anyway, a module's by the first request that uses the module.
+            var services = app.Services;
+            catalogue.LearnAreasWithAFir(() =>
+            {
+                using var reading = services.CreateScope();
+                return ReadModels(reading.ServiceProvider, registry, catalogue, verify: false);
+            });
         }
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
@@ -319,5 +308,40 @@ internal static class HubPipeline
             scope.ServiceProvider.GetRequiredService<IOptions<InstallationOptions>>().Value.Preview,
             app.Lifetime.ApplicationStopping);
         timings.Step("startup.txt");
+    }
+
+    /// <summary>
+    /// Builds the model of every context and answers the areas whose rows say their FIR, the only ones a grant to the team of
+    /// a FIR may name a permission of (M3, A11a). With <paramref name="verify"/>, it first checks the marks of the entities:
+    /// a mark the write guard or the erasure could not honour stops the start here, rather than turning into a 403 nobody
+    /// can explain or an erasure half way through the modules. Building a model reads no table.
+    /// </summary>
+    private static HashSet<string> ReadModels(
+        IServiceProvider services, ModuleRegistry registry, PermissionCatalog catalogue, bool verify)
+    {
+        var areasWithAFir = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var contextType in registry.Enabled.SelectMany(module => module.DbContextTypes).Prepend(typeof(HubDbContext)))
+        {
+            var model = ((DbContext)services.GetRequiredService(contextType)).Model;
+            var entities = model.GetEntityTypes().Select(entity => entity.ClrType).ToArray();
+
+            if (verify)
+            {
+                // The permissions the entities say they are also written with, against the catalogue (M3, A3b).
+                catalogue.VerifyAlternatives(entities, entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity));
+
+                // A row its member takes back by deleting it (M4, E10h): marked only where the guard knows the member it is about.
+                HubSaveChangesInterceptor.VerifyWithdrawals(entities);
+
+                // The columns marked as a person's data (M4, E10n).
+                PersonColumns.VerifyErasedWith(model);
+            }
+
+            areasWithAFir.UnionWith(entities
+                .Where(entity => typeof(IHasFir).IsAssignableFrom(entity))
+                .Select(entity => HubSaveChangesInterceptor.PermissionAreaOf(contextType, entity)));
+        }
+
+        return areasWithAFir;
     }
 }
