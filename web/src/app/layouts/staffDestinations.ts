@@ -90,6 +90,9 @@ const CONTENT_VIEW = 'Content.View';
 const CONTENT_APPROVE = 'Content.Approve';
 const LINKS_VIEW = 'Links.View';
 const MEDIA_VIEW = 'Media.View';
+/** What the calendar, the collections and the messages of a department are behind, on that department. */
+const CALENDAR_VIEW = 'Calendar.View';
+const CONTACTS_VIEW = 'Contacts.View';
 const AUDIT_VIEW = 'Audit.View';
 /** The catalogue of awards, read on any department (M2, T4b). */
 const AWARDS_VIEW = 'Awards.View';
@@ -278,24 +281,39 @@ export function staffDestinations(bootstrap: Bootstrap, t: (key: string) => stri
         },
         // The content screens of this department: the same screens as the group above, filtered.
         ...content(department),
-        {
-          title: t('calendar.title'),
-          description: t('calendar.description'),
-          Icon: CalendarDays,
-          href: at('/calendar'),
-        },
-        {
-          title: t('categories.title'),
-          description: t('categories.description'),
-          Icon: Tags,
-          href: at('/categories'),
-        },
-        {
-          title: t('contacts.title'),
-          description: t('contacts.description'),
-          Icon: Mail,
-          href: at('/contacts'),
-        },
+        // ⚠️ Each one only to whoever may read it on this department (#389): a trainer of TD, who
+        // holds the training's permissions and none of these, was offered all three and landed on
+        // a 403. The question the screen's own endpoint asks, asked of the bootstrap.
+        ...(holdsPermission(bootstrap, CALENDAR_VIEW, department)
+          ? [
+              {
+                title: t('calendar.title'),
+                description: t('calendar.description'),
+                Icon: CalendarDays,
+                href: at('/calendar'),
+              },
+            ]
+          : []),
+        ...(holdsPermission(bootstrap, CONTENT_VIEW, department)
+          ? [
+              {
+                title: t('categories.title'),
+                description: t('categories.description'),
+                Icon: Tags,
+                href: at('/categories'),
+              },
+            ]
+          : []),
+        ...(holdsPermission(bootstrap, CONTACTS_VIEW, department)
+          ? [
+              {
+                title: t('contacts.title'),
+                description: t('contacts.description'),
+                Icon: Mail,
+                href: at('/contacts'),
+              },
+            ]
+          : []),
         // The menu of the site belongs to one department, so the entry exists under that one and
         // nowhere else. Which department it is comes from the bootstrap and never from here.
         ...(department === siteOwner
