@@ -33,6 +33,14 @@ internal static class RequestTimingsMiddleware
 
         return app.Use(async (context, next) =>
         {
+            // A check of /health is a monitor's, not a visitor's: no line and no number, so the cold request of a process
+            // stays the first one a visitor sent (note 2026-10-26-il-ping-che-tiene-sveglio-l-hub). starts.txt counts them.
+            if (HubPipeline.IsHealthProbe(context))
+            {
+                await next();
+                return;
+            }
+
             var number = Interlocked.Increment(ref requests);
             var uptime = timings.Elapsed;
             var started = Stopwatch.GetTimestamp();

@@ -79,11 +79,21 @@ public static partial class StartsLog
 
     /// <summary>
     /// The line of an orderly stop. <c>firstAnswer</c> is when the first response was finished, counted from the creation
-    /// of the process: the wait of the visitor whose request woke the hub; null when no request came.
+    /// of the process: the wait of the visitor whose request woke the hub; null when no request came. <c>probes</c> are the
+    /// checks of <c>/health</c> it answered, which are not requests (note 2026-10-26-il-ping-che-tiene-sveglio-l-hub):
+    /// written only when there were some, so the line of a host nobody probes stays as it was.
     /// </summary>
     public static string StopLine(
-        DateTime atUtc, int pid, TimeSpan lived, long requests, TimeSpan? firstAnswer, ProcessMemory memory, TimeSpan? jit = null)
+        DateTime atUtc,
+        int pid,
+        TimeSpan lived,
+        long requests,
+        TimeSpan? firstAnswer,
+        ProcessMemory memory,
+        TimeSpan? jit = null,
+        long probes = 0)
     {
+        var probed = probes > 0 ? string.Create(CultureInfo.InvariantCulture, $"  probes {probes}") : string.Empty;
         var first = firstAnswer is { } answer
             ? string.Create(CultureInfo.InvariantCulture, $"first answer at {answer.TotalSeconds:0.00} s")
             : "no request answered";
@@ -93,7 +103,7 @@ public static partial class StartsLog
 
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"{Stamp(atUtc)}  {Stop,-6}  pid {pid,-7}  lived {Duration(lived)}  requests {requests}  {first}  {memory}{compiledAll}");
+            $"{Stamp(atUtc)}  {Stop,-6}  pid {pid,-7}  lived {Duration(lived)}  requests {requests}{probed}  {first}  {memory}{compiledAll}");
     }
 
     public static string SignalLine(DateTime atUtc, int pid, string signal) =>
@@ -282,7 +292,9 @@ public static partial class StartsLog
         "#         with (jit N) the compiling inside a step. Each request has its line in requests-YYYYMMDD.txt.\n" +
         "# STOP    an orderly stop: how long the process lived, the requests it answered, when the first answer left\n" +
         "#         (from the creation of the process: what the visitor who woke it waited), memory and its peak,\n" +
-        "#         and the code the runtime compiled in the whole life of the process.\n" +
+        "#         and the code the runtime compiled in the whole life of the process. probes = the checks of /health (a\n" +
+        "#         monitor, the keep-warm Worker), never counted as requests: a first answer long after ready in is a\n" +
+        "#         visitor who found the process already started.\n" +
         "# SIGNAL  the system asked that pid to stop (Passenger stopping an idle hub sends SIGTERM).\n" +
         "#\n" +
         "# A few starts in quiet hours, each after an orderly stop, is Passenger stopping an idle hub: expected. A start\n" +

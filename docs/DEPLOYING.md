@@ -290,6 +290,49 @@ the table `hub_jobs_log`. But Passenger stops an idle hub after 10–30 seconds,
     the two ways it allows (`docs/internal/decisions/2026-10-09-i-job-che-recuperano.md`, §2).
   - With two calls an hour, a mail can wait up to half an hour when nobody uses the site.
 
+## Keeping the hub awake
+
+On a Plesk + Passenger host the process is stopped within a minute of its start **whatever the traffic** (measured on the
+test installation: half a minute in the median, `docs/internal/test/velocita-del-sito.md`), and the visitor who arrives
+while no process runs waits for a whole start, about eight seconds there. Where the host's settings are not yours to change,
+a Cloudflare Worker that asks the hub's `/health` every ten seconds starts the next process before a visitor needs it:
+`tools/cloudflare/keep-warm/`, deployed from your own Cloudflare account. Its `README.md` has the commands; in short, from
+the root of the repository:
+
+```bash
+npx wrangler@4 login
+```
+
+```bash
+npx wrangler@4 deploy --config tools/cloudflare/keep-warm/wrangler.jsonc --var TARGET_URL:https://<host>/health
+```
+
+It needs no secret and changes nothing in the installation. What it does to the hub
+(`docs/internal/decisions/2026-10-26-il-ping-che-tiene-sveglio-l-hub.md`):
+
+- **It does not keep a process alive.** The host still stops each process within a minute; the ping starts the next one
+  within ten seconds. A visitor who arrives in that gap, or while the new process is starting, still waits, for less.
+- **Many more starts**: about one a minute, day and night, instead of one per visit after a silence. Each start costs the
+  host a few seconds of CPU, and runs the catch-up of the jobs (a few queries when nothing is due).
+- **The jobs run on time**: a process is alive every minute, so a night job runs at its hour and not at the first visit of
+  the morning. A long run can still be stopped with its process, and is made up by the next one.
+- **A check is not a visitor.** Each ping is one `SELECT 1` on a pooled connection. `diagnostics/starts.txt` counts the
+  checks of `/health` apart, as `probes N` on the `STOP` line; `requests N` and `first answer at` are the visitors'.
+  `requests-YYYYMMDD.txt` has no line for them, and the log none while the answer is healthy (an unhealthy one is an
+  error line, as before).
+- **`starts.txt` keeps less history**: two lines a minute against its two thousand, about half a day.
+
+**How to tell that it works**, from `diagnostics/starts.txt`:
+
+| Look at | Working | Not working |
+|---|---|---|
+| the `STOP` lines | `probes` on almost every one (about six for every minute the process lived) | no `probes`: the pings do not reach the hub; read the Worker's log |
+| the gap between a `STOP` and the next `START` | ten seconds at most, at any hour | minutes at night: the Worker is not running |
+| `first answer at` on a `STOP` line | often well after that process's `ready in`: a visitor who found the process started | about `ready in` plus a second, as before: the visitor woke the hub |
+
+The summary of a day of requests (`requests-YYYYMMDD-summary.txt`) says the same from the visitors' side: its line
+`cold: the request began N ms after the process was created` moves from the length of a start to tens of seconds.
+
 ## The first installation
 
 1. Create the database and its user (above).
@@ -374,7 +417,8 @@ under `secrets/`, and `config/division.json`. A restore is proven only once it h
   answered at 5.4 s (median of eight). Version 0.2.7 skips the migrations and the seeds on a start that changed nothing:
   measured on one CPU, 2.17 → 1.91 s, **about 0.7 s less** on the host by estimate. *Not yet measured on the server*: its
   `diagnostics/starts.txt` says how long each start takes there, and where the time goes. Where the idle time is not yours to change, that is what a little-visited site feels like
-  (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`, `docs/internal/decisions/2026-09-28-un-avvio-piu-veloce.md`).
+  (`docs/internal/decisions/2026-09-28-l-avvio-a-freddo.md`, `docs/internal/decisions/2026-09-28-un-avvio-piu-veloce.md`),
+  unless a Worker keeps starting the next process ([Keeping the hub awake](#keeping-the-hub-awake)).
 - **The home page without the hub's headers.** With the document root on `wwwroot/`, the web server hands out
   `index.html` for `/` by itself, so the first document of a visit carries no `Content-Security-Policy`, no
   `X-Frame-Options` and, on a private installation, no `X-Robots-Tag`, and the single page application keeps running
@@ -399,3 +443,6 @@ not measured:
 - The host's scheduled task on a real panel: which of the two ways it allows (a command, or only an address), and how
   long the jobs of a night take on the server when they are made up in the morning (`hub_jobs_log` says it: the start and
   the end of every run).
+- The keep-warm Worker on a real host: how often a visitor still meets a start, and what a start a minute costs the other
+  sites of a shared server. Measured only on one CPU of a development machine
+  (`docs/internal/decisions/2026-10-26-il-ping-che-tiene-sveglio-l-hub.md`).

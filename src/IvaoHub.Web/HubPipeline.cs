@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog.Context;
+using Serilog.Events;
 
 namespace IvaoHub.Web;
 
@@ -21,6 +22,35 @@ internal static class HubPipeline
 
     /// <summary>What a start skips when the initialisation marker matches it, as <c>starts.txt</c> names the steps.</summary>
     public static readonly IReadOnlyList<string> SkippableSteps = ["models", "migrations", "module migrations", "position grants", "content"];
+
+    /// <summary>The health check: what a monitor of the host, or the keep-warm Worker (<c>tools/cloudflare/keep-warm/</c>), asks.</summary>
+    public const string HealthPath = "/health";
+
+    /// <summary>
+    /// A check of <see cref="HealthPath"/>, which no visitor sends: <c>starts.txt</c> counts it apart, and it has no line in
+    /// the requests' file nor, when healthy, in the log (note 2026-10-26-il-ping-che-tiene-sveglio-l-hub).
+    /// </summary>
+    public static bool IsHealthProbe(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.Request.Path.Equals(HealthPath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The level of the log line of a request: as Serilog's default (an error for a failure or a 5xx, information for the
+    /// rest), except a healthy check of <see cref="HealthPath"/>, which a monitor sends every few seconds and nobody reads.
+    /// </summary>
+    public static LogEventLevel RequestLogLevel(HttpContext context, double elapsedMs, Exception? exception)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (exception is not null || context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
+        {
+            return LogEventLevel.Error;
+        }
+
+        return IsHealthProbe(context) ? LogEventLevel.Verbose : LogEventLevel.Information;
+    }
 
     /// <summary>What the generated client puts in X-Requested-With on every mutation.</summary>
     public const string RequestedWithValue = "hub";
@@ -36,7 +66,7 @@ internal static class HubPipeline
         return app.Use(async (context, next) =>
         {
             if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-                || context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+                || context.Request.Path.StartsWithSegments(HealthPath, StringComparison.OrdinalIgnoreCase))
             {
                 context.Response.Headers.CacheControl = "no-store";
             }
@@ -122,7 +152,7 @@ internal static class HubPipeline
         "/auth/login",
         "/auth/callback",
         "/auth/logout",
-        "/health",
+        HealthPath,
         "/media",
         // The base map of the tours (T10): an archive of the world served by the hub, not a route of the SPA.
         TileEndpoints.Prefix,

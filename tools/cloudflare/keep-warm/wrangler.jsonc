@@ -1,0 +1,26 @@
+// The keep-warm Worker of one installation of the hub (README.md next to this file).
+// The address to ping is never written here: it is given at deploy time, `--var TARGET_URL:https://<host>/health`.
+{
+  "name": "hub-keep-warm",
+  "main": "index.js",
+  "compatibility_date": "2025-09-01",
+
+  // Nothing to serve: the Worker only runs on its cron, so it has no public address.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // Once a minute, the most a cron does; index.js spreads the pings over the minute.
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+
+  "vars": {
+    // Seconds between two pings, 5 to 60.
+    "INTERVAL_SECONDS": "10",
+  },
+
+  // The warnings of a ping that failed, in the dashboard (Workers & Pages > the Worker > Logs).
+  "observability": {
+    "enabled": true,
+  },
+}
