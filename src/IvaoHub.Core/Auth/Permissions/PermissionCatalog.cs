@@ -18,7 +18,7 @@ public sealed class PermissionCatalog
     private readonly Dictionary<string, PermissionDescriptor> _byName;
 
     // Learnt once, when the hub starts (LearnAreasWithAFir); none until then, which refuses every grant to a FIR team.
-    private volatile IReadOnlySet<string> _areasWithAFir = new HashSet<string>(StringComparer.Ordinal);
+    private volatile Lazy<IReadOnlySet<string>> _areasWithAFir = new(new HashSet<string>(StringComparer.Ordinal));
 
     public PermissionCatalog(IEnumerable<PermissionDescriptor> descriptors)
     {
@@ -127,13 +127,26 @@ public sealed class PermissionCatalog
     /// Remembers the permission areas that have an entity which says its FIR (<see cref="IHasFir"/>): the only areas a grant to
     /// the team of a FIR may name a permission of (M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir §3.1). Anywhere else such a
     /// grant would reach no row, and answer "yes" only to the question asked without one.
-    /// <para>The hub calls it when it starts, from the model of every context, next to <see cref="VerifyAlternatives"/>; the
+    /// <para>The hub calls it when it initialises, from the model of every context, next to <see cref="VerifyAlternatives"/>; the
     /// area of an entity is the one the write guard asks <c>Edit</c> of.</para>
     /// </summary>
     public void LearnAreasWithAFir(IEnumerable<string> areas)
     {
         ArgumentNullException.ThrowIfNull(areas);
-        _areasWithAFir = areas.ToHashSet(StringComparer.Ordinal);
+        _areasWithAFir = new(areas.ToHashSet(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// The same, read only when a grant to the team of a FIR is first validated: a start that skipped the initialisation does
+    /// not build the model of every module for a question most of its life never asks (note 2026-10-26-l-avvio-senza-i-modelli).
+    /// A reading that fails is tried again at the next question.
+    /// </summary>
+    public void LearnAreasWithAFir(Func<IEnumerable<string>> areas)
+    {
+        ArgumentNullException.ThrowIfNull(areas);
+        _areasWithAFir = new(
+            () => areas().ToHashSet(StringComparer.Ordinal),
+            LazyThreadSafetyMode.PublicationOnly);
     }
 
     /// <summary>Whether a grant to the team of a FIR may name this permission: its area has rows that say their FIR.</summary>
@@ -142,7 +155,7 @@ public sealed class PermissionCatalog
         ArgumentNullException.ThrowIfNull(name);
 
         var dot = name.IndexOf('.', StringComparison.Ordinal);
-        return dot > 0 && _areasWithAFir.Contains(name[..dot]);
+        return dot > 0 && _areasWithAFir.Value.Contains(name[..dot]);
     }
 
     /// <summary>
@@ -167,7 +180,7 @@ public sealed class PermissionCatalog
     /// handler falls back on and the guard does not; the entity has no department (<see cref="IOwnedByDepartment"/>), which
     /// the guard asks the alternative on; the entity says whom a row is about (<see cref="IHasStakeholder"/>) and the permission
     /// is not <c>DeniedToStakeholder</c>, when the guard keeps the stakeholder out of every alternative.</para>
-    /// <para>The hub calls it when it starts, on the model of every context, so that a wrong declaration stops the start
+    /// <para>The hub calls it when a start initialises, on the model of every context, so that a wrong declaration stops the start
     /// rather than turning into a 403 nobody can explain. <paramref name="areaOf"/> is the area the guard asks <c>Edit</c> of,
     /// which the hub works out from the context; without it only an area declared with <see cref="PermissionAreaAttribute"/>
     /// is checked.</para>

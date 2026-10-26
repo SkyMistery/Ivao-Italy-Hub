@@ -1,7 +1,9 @@
+using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -43,7 +45,12 @@ public sealed class InitialisationMarkerTests(MariaDbFixture mariaDb) : IAsyncLi
         await using (var again = new HubWebApplicationFactory(mariaDb.ConnectionString))
         {
             Assert.StartsWith("initialisation skipped (marker of ", Initialisation(again), StringComparison.Ordinal);
-            Assert.EndsWith("): migrations, module migrations, position grants, content", Initialisation(again), StringComparison.Ordinal);
+            Assert.EndsWith("): models, migrations, module migrations, position grants, content", Initialisation(again), StringComparison.Ordinal);
+
+            // A wake builds no model for the areas with a FIR: it reads them when a grant to the team of a FIR first asks.
+            var catalogue = again.Services.GetRequiredService<PermissionCatalog>();
+            Assert.True(catalogue.IsOfAnAreaWithAFir(EventsPermissions.AtcView));
+            Assert.False(catalogue.IsOfAnAreaWithAFir(EventsPermissions.View));
         }
 
         // Another value in the division's options, as an edited division.json would be.
