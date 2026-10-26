@@ -342,6 +342,7 @@
           "note": "Nota",
           "reference": "Riferimento",
           "weight": "Peso",
+          "locked": "Bloccato (si vede, non si scrive)",
           "published": "Pubblicato",
           "visibility": "Visibile a",
           "picture": "Immagine",
