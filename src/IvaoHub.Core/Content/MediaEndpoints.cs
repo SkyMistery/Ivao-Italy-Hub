@@ -253,7 +253,13 @@ public static class MediaEndpoints
         IClock clock,
         CancellationToken cancellationToken)
     {
-        if (file.Length <= 0 || file.Length > limits.MaxBytes)
+        // An empty file is not a large one, and was told so (#388).
+        if (file.Length <= 0)
+        {
+            return new ReceivedFile("errors.media.empty", null, 0, null, null, null);
+        }
+
+        if (file.Length > limits.MaxBytes)
         {
             return new ReceivedFile("errors.media.tooLarge", null, 0, null, null, null);
         }

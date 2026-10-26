@@ -15,6 +15,12 @@ namespace IvaoHub.Core.Content;
 /// </summary>
 public sealed class SearchIndexEntry : IOwnedByDepartment, IVisible
 {
+    /// <summary>
+    /// The width of <see cref="Title"/>. A source whose title is longer cannot be projected: the write of the row it
+    /// projects fails with it (#388), so whatever is projected holds its title to this.
+    /// </summary>
+    public const int MaxTitleLength = 512;
+
     public long Id { get; set; }
 
     /// <summary><c>core</c> for the editorial core, otherwise the module key.</summary>
