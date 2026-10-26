@@ -297,6 +297,16 @@ public static class ContentEndpoints
                 // Read live, by whoever is asking: the query filter has already had the last word,
                 // and there is no page keeping the answer afterwards.
                 var resolved = await provider.ResolveAsync(decoded, DataBlockContext.Reader, http.RequestAborted);
+
+                // The one exception to no-store (UseNoStoreForApi), declared by the block and never for a signed-in
+                // reader. max-age=0: the browser asks again, its own query cache decides when; Cloudflare answers.
+                if (descriptor.SharedFor is { } shared && http.User.Identity?.IsAuthenticated != true)
+                {
+                    http.Response.Headers.CacheControl = string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"public, max-age=0, s-maxage={(int)shared.TotalSeconds}");
+                }
+
                 return Results.Ok(resolved);
             })
             .WithName("BlockData")
