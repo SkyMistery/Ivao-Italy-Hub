@@ -1,9 +1,9 @@
 # La fotografia della rete oltre il processo (#397)
 
 **Data:** 26 ottobre 2026, fase di test.
-**Stato:** **Proposta**. La domanda va a Carmine attraverso il master; la risposta si scrive qui con il link.
-**Regola applicata:** `CLAUDE.md` §5, caso **(b)** per la strada 2 (cambia la regola del nucleo `UseNoStoreForApi`), caso **(a)** per
-la strada 3 (un valore della striscia). La strada 1 estende la cache del client IVAO, che è nucleo.
+**Stato:** **decisa da Carmine in chat al master, 26 ottobre 2026**: «2 + 3a + 1, come consigli tu». Le tre strade del §2, tutte.
+**Regola applicata:** `CLAUDE.md` §5, caso **(b)**: si estendono meccanismi del nucleo che ci sono già — la cache del client IVAO
+(strada 1), il descrittore dei blocchi e la regola `no-store` dell'API (strada 2) —; la strada 3 è un valore della striscia.
 **Da dove viene:** l'analisi della velocità del sito di prova (`docs/internal/test/velocita-del-sito.md`, §3.4 e §4, C2; PR #403).
 
 ## 1. Il problema, in tre numeri
@@ -16,41 +16,55 @@ la strada 3 (un valore della striscia). La strada 1 estende la cache del client 
   non ripete la domanda quando la pagina non è visibile (`refetchIntervalInBackground` è spento di default; verificato in
   `query-core` 5.102).
 
-**Già fatto, senza decisione** (PR «Refs #397»): un solo download alla volta dentro un processo. I blocchi di una pagina fresca
-chiedevano insieme, ognuno con il suo client, e scaricavano due volte; ora il secondo aspetta il primo e legge quello che ha tenuto.
+**Fatto prima, senza decisione** (PR #404, «Refs #397»): un solo download alla volta dentro un processo. I blocchi di una pagina
+fresca chiedevano insieme, ognuno con il suo client, e scaricavano due volte; ora il secondo aspetta il primo e legge quello che ha
+tenuto.
 
-## 2. Le tre strade
+## 2. Le tre strade, come erano state proposte
 
 | | Che cosa | Che cosa guadagna | Che cosa costa |
 |---|---|---|---|
-| **1** | La fotografia **ridotta** (pochi KB, nessun nome) **fuori dal processo**, con la sua ora: un file in una cartella dell'installazione (come `diagnostics/`), scritto con un nome temporaneo e rinominato. Un processo nuovo, entro il minuto, la legge invece di scaricarla | ~0,5 s e ~9 MB sulla prima pagina pubblica di un processo nato meno di un minuto dopo un altro che l'aveva scaricata. **Nessun risveglio in meno** | Una forma serializzata di `IvaoNetworkPicture` e un lettore che non si fida del file; una cartella scrivibile in più. Non un record nel database: aprirebbe una connessione del pool condiviso (≤ 15) per risparmiare una chiamata a IVAO |
-| **2** | La risposta **anonima** di `networkStats` con `Cache-Control: public, s-maxage=60` invece di `no-store`, e una regola di cache di Cloudflare su `/api/blocks/data/networkStats` (Carmine, nel pannello). Solo quel blocco: è l'unico che non legge il database né chi chiede | **Con più lettori**: tutte le schede aperte nello stesso minuto ricevono una risposta di Cloudflare e **l'hub non si sveglia**; in produzione, con decine di schede, una richiesta al minuto invece di decine. **Con una scheda sola non guadagna niente**: la sua domanda arriva quando la copia di un minuto è appena scaduta | Un'eccezione nella regola del nucleo «ogni `/api` è `no-store`», scritta per un tipo di blocco (`AlwaysLive` e senza dati di nessuno), con un test. Una risposta che porta `Set-Cookie` (una sessione rinnovata) non va in cache: Cloudflare la passa da sé. Un fork senza Cloudflare non perde niente |
-| **3** | La striscia chiede **meno**: ogni 60 s solo finché chi legge è attivo; dopo **10 minuti** senza un gesto sulla pagina (mouse, tasto, scroll) smette, e riprende al primo gesto. Oppure, più semplice, ogni **5 minuti** sempre | **Toglie i risvegli della scheda dimenticata aperta**, che è il caso di una scheda sola, quello che la strada 2 non copre. Con l'intervallo di 5 minuti i risvegli della striscia si dividono per cinque | I numeri restano vecchi finché il lettore non si muove (strada 3a) o fino a 5 minuti (3b). Una riga di commento della striscia («l'intervallo è il minuto della cache del server») cambia |
+| **1** | La fotografia **ridotta** (pochi KB, nessun nome) **fuori dal processo**, con la sua ora, in un file dell'installazione. Un processo nuovo, entro il minuto, la legge invece di scaricarla | ~0,5 s e ~9 MB sulla prima pagina pubblica di un processo nato meno di un minuto dopo un altro che l'aveva scaricata. **Nessun risveglio in meno** | Una forma scritta della fotografia e un lettore che non si fida del file; una cartella scrivibile in più. Non un record nel database: aprirebbe una connessione del pool condiviso (≤ 15) per risparmiare una chiamata a IVAO |
+| **2** | La risposta **anonima** di `networkStats` con `Cache-Control: public, s-maxage=60` invece di `no-store`, e una regola di cache di Cloudflare su quel percorso | **Con più lettori**: tutte le schede aperte nello stesso minuto ricevono una risposta di Cloudflare e **l'hub non si sveglia**. **Con una scheda sola non guadagna niente**: la sua domanda arriva quando la copia di un minuto è appena scaduta | Un'eccezione nella regola del nucleo «ogni `/api` è `no-store`», con un test. Un fork senza Cloudflare non perde niente |
+| **3a** | La striscia chiede ogni 60 s solo finché chi legge è attivo; dopo **10 minuti** senza un gesto sulla pagina smette, e riprende al primo gesto | **Toglie i risvegli della scheda dimenticata aperta**, il caso che la strada 2 non copre | I numeri restano vecchi finché il lettore non si muove; al primo gesto si aggiornano subito |
+| 3b | Ogni **5 minuti** sempre | I risvegli della striscia si dividono per cinque | Numeri vecchi fino a 5 minuti anche per chi guarda. Non scelta |
 
-## 3. Come si intrecciano con il resto
+## 3. Perché anche la 1
 
-- **Se H1 riesce** (Passenger tiene acceso un processo: `velocita-del-sito.md` §4), la cache in memoria di 60 s torna a funzionare, e la
-  strada 1 non serve più; la 2 e la 3 restano utili, perché riducono il traffico verso l'hub comunque.
-- **Il ping che tiene sveglio l'hub** (sessione parallela, Worker di Cloudflare) va nella stessa direzione di H1. L'analisi dice che su
-  questo server il processo si ferma comunque entro il minuto (§4, «Da non fare»): se è così, la strada 1 resta l'unica che toglie il
-  download dalla prima pagina di un processo nuovo.
+La proposta della sessione teneva la 1 in attesa della risposta di H1 e della prova del ping. Il master ha consigliato di farla subito,
+e Carmine ha scelto così: su vIPI si è misurato (`vIPI Ivao Italy/docs/lavori-aperti.md`, §BG) che **un ping non tiene acceso il
+processo, lo riavvia soltanto** — Passenger lo ferma circa 50 s dopo l'avvio, qualunque sia il traffico. Quindi anche con il ping ogni
+processo nuovo scaricherebbe di nuovo la fotografia, e il file risparmia ~0,5 s a ognuno.
 
-## 4. La raccomandazione
+## 4. Come è fatta
 
-**2 e 3a insieme, la 1 no per ora.**
-
-- La 2 e la 3 sono le sole che **tolgono risvegli**, che costano 8 s, contro i 0,5 s che toglie la 1. La 2 copre i molti lettori, la 3a la
-  scheda sola: insieme coprono i due casi.
-- La 3a e non la 3b: chi guarda la pagina vede i numeri del minuto come oggi; si smette di chiedere solo per chi non c'è.
-- La 1 aspetta la risposta di H1 e la prova del ping: se il processo resta acceso non serve, se non resta acceso si fa in una PR sua.
-
-## 5. La risposta di Carmine
-
-(da scrivere, con il link)
+- **Strada 1** — `IvaoNetworkPictureStore` (`src/IvaoHub.Core/Ivao/`), un singleton con la cartella `cache/` dell'installazione
+  (`HubPaths.Cache`, accanto a `diagnostics/`, **mai sotto `wwwroot/`**):
+  - il file `cache/network-picture.txt` ha solo quello che `IvaoWhazzup.Read` tiene già: callsign, stazione e frequenza dei
+    controllori, i due estremi dei piani di volo, i due totali della rete, l'ora della rete e **l'ora in cui l'installazione l'ha
+    presa**. Nessun nome, nessun VID: lo prova un test;
+  - righe di testo separate da tabulazioni, lette senza reflection: **la lettura costa meno del download che risparmia**. Misurato
+    in sviluppo con una sera più piena di ogni sera misurata (800 controllori, 8 000 voli): 117 KB, letti in **24 ms a freddo** e
+    1,3 ms a caldo, contro i 536 ms del download. Un file oltre 4 MB non si legge;
+  - si scrive con un nome proprio e si rinomina sul file, così chi legge non vede mai mezzo file;
+  - vale per **quello che resta del suo minuto**: un processo nato 20 s dopo la tiene 40 s, non 60. Un file più vecchio, di un'ora
+    «futura», di un'altra forma o a metà è «nessun file», e si scarica come prima. Anche un fallimento si tiene per il suo minuto,
+    come in memoria;
+  - nel client: dentro il cancello di #404, prima la memoria, poi il file, poi il download, che scrive il file.
+- **Strada 2** — il descrittore di un blocco ha `SharedFor` (null di default); `networkStats` lo dichiara con il minuto della
+  fotografia. L'endpoint `/api/blocks/data/{type}` scrive `public, max-age=0, s-maxage=60` sopra il `no-store` di
+  `UseNoStoreForApi` **solo per chi non ha fatto l'accesso**: la risposta anonima è la stessa per tutti; quella di chi ha fatto
+  l'accesso resta `no-store` e Cloudflare non la tiene. `max-age=0`: il browser non tiene niente, decide la sua cache delle domande.
+  **La regola di cache di Cloudflare è di Carmine, nel pannello**: è scritta, generica e senza dominio, in `docs/DEPLOYING.md`
+  («Cloudflare: the anonymous answer of who is on the network»).
+- **Strada 3a** — `LiveStatusStrip`: dopo 10 minuti senza un gesto (`pointerdown`, `pointermove`, `keydown`, `scroll`, `wheel`,
+  `touchstart`) `refetchInterval` diventa `false`; il primo gesto chiede subito e riprende il minuto.
 
 ## Da portare nel piano
 
-- §16 (meccanismi generici), la regola della cache dell'API: `no-store` per tutto `/api`, **tranne** la risposta anonima del blocco dati
-  `networkStats` (se la strada 2 è scelta), con il perché.
-- Design M1 §6.2 (la striscia): l'intervallo e quando smette di chiedere (se la strada 3 è scelta).
-- `docs/DEPLOYING.md`: la regola di cache di Cloudflare per quel percorso (se la strada 2 è scelta).
+- §16 (meccanismi generici), la regola della cache dell'API: `no-store` per tutto `/api`, **tranne** la risposta anonima di un blocco
+  dati che dichiara `SharedFor` (oggi solo `networkStats`, un minuto), con il perché.
+- §16 o §11.3 (cartelle dell'installazione): `cache/`, che un processo lascia al successivo; si può cancellare quando si vuole.
+- Design M1 §6.2 (la striscia e il blocco `networkStats`): la fotografia ridotta anche su disco per il minuto; la striscia smette di
+  chiedere dopo 10 minuti senza un gesto e riprende al primo.
+- `docs/DEPLOYING.md` ha già la cartella, la riga di `deny` e la regola di Cloudflare.
