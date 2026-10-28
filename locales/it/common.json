@@ -970,7 +970,6 @@
       "notAllowed": "Questo indirizzo non e' su un sito da cui l'hub sa riprodurre un video.",
       "fields": {
         "url": "Indirizzo",
-        "mediaId": "Oppure un file della libreria",
         "caption": "Didascalia",
         "aspect": "Formato"
       },

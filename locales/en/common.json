@@ -970,7 +970,6 @@
       "notAllowed": "This address is not on a site the hub can play a video from.",
       "fields": {
         "url": "Address",
-        "mediaId": "Or a file of the library",
         "caption": "Caption",
         "aspect": "Shape"
       },

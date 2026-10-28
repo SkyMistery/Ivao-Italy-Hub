@@ -149,10 +149,9 @@ export const imageSchema = z.object({
 });
 
 export const videoSchema = z.object({
-  // Either an address on a host the hub knows how to frame, or a file of the library. Both are
-  // optional because either one is enough; the block says so when it has neither.
+  // An address on a host the hub knows how to frame; the block says so when it has none. Not a
+  // file of the library: the library takes no video (#359, Carmine, 28 October 2026).
   url: z.string().optional(),
-  mediaId: z.number().int().optional().meta({ media: true }),
   caption: localized().optional(),
   aspect: z.enum(ASPECTS).default('16x9'),
 });
