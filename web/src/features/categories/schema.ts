@@ -24,3 +24,14 @@ export const categorySchema = z.object({
 });
 
 export type CategoryFormValues = z.output<typeof categorySchema>;
+
+/**
+ * The same form as it opens from the page of a news item or a document (#364, `NewCollection`): only
+ * the name and the key are asked. The kind is the page's, and the order and "in use" keep the
+ * defaults of a new collection; whoever wants to change them has the collections' own screen.
+ */
+export const newCollectionSchema = categorySchema.extend({
+  kind: categorySchema.shape.kind.meta({ hidden: true }),
+  sort: categorySchema.shape.sort.meta({ hidden: true }),
+  isActive: categorySchema.shape.isActive.meta({ hidden: true }),
+});
