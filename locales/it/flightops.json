@@ -137,6 +137,9 @@
       "awardId": {
         "none": "Nessun award"
       },
+      "minPilotRating": {
+        "none": "Qualsiasi pilota"
+      },
       "groupId": {
         "none": "Scegli un gruppo"
       },
