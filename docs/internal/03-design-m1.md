@@ -721,6 +721,11 @@ roster di una divisione, e questo non è un limite da aggirare ma il dato che si
   `UI-GUIDELINES.md` §3.
 - **Polling, non SignalR** (piano §16, §14): il proxy Plesk non è il posto per un websocket, e una
   striscia che si aggiorna ogni minuto è più che sufficiente.
+- **Dal 26 ott 2026** (0.12.3–0.12.4, #404 e #405, nota `2026-10-26-la-foto-della-rete-oltre-il-processo`, piano 1.45), perché
+  sulla prova un processo vive meno del minuto della cache: un processo scarica la fotografia **una volta alla volta**; la
+  fotografia **ridotta** (senza nomi né VID) resta anche su disco, in `cache/network-picture.txt`, per il minuto, e il processo dopo
+  la rilegge; la risposta anonima di `networkStats` dichiara `SharedFor` e si può tenere in Cloudflare per un minuto (piano §11.3
+  punto 3); **la striscia smette di chiedere dopo 10 minuti senza un gesto** e riprende al primo.
 
 ---
 
