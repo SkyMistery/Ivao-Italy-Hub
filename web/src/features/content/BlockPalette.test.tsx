@@ -257,3 +257,18 @@ test('a block for fewer readers than the page is greyed out with the reason, and
     unmount();
   }
 });
+
+test('a retired block is not in the list, and stays registered so the pages that carry it still draw it', () => {
+  const retired = registry.blocks.filter((block) => block.retired === true);
+
+  // The two the staff's trial took out (note 2026-10-22-il-piano-dopo-la-prova-dello-staff, III and
+  // XXI); the interactive group's buttons, the piece the button in the text duplicated, stay.
+  expect(retired.map((block) => block.type).sort()).toEqual(['coordination', 'cta']);
+
+  render();
+
+  expect(screen.queryByRole('button', { name: englishCommon.blocks.cta.label })).toBeNull();
+  expect(screen.queryByRole('button', { name: englishCommon.blocks.coordination.label })).toBeNull();
+
+  expect(screen.getByRole('button', { name: englishCommon.blocks.buttonGroup.label })).toBeVisible();
+});
