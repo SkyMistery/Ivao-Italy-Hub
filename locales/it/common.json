@@ -293,7 +293,8 @@
       "deletesOn": "Sarà eliminato il"
     },
     "hints": {
-      "alt": "Che cosa viene detto a chi non può vedere l'immagine. Ogni blocco che mostra questo file lo eredita."
+      "alt": "Che cosa viene detto a chi non può vedere l'immagine. Ogni blocco che mostra questo file lo eredita.",
+      "category": "A che cosa serve il file. Il blocco dei loghi offre solo i loghi."
     },
     "options": {
       "visibility": {
@@ -301,6 +302,14 @@
         "Members": "Membri",
         "Staff": "Staff",
         "Department": "Dipartimento"
+      },
+      "category": {
+        "Image": "Immagine",
+        "Icon": "Icona",
+        "Logo": "Logo",
+        "Banner": "Banner",
+        "Document": "Documento (PDF)",
+        "none": "Nessuna categoria"
       }
     },
     "replace": {
@@ -961,7 +970,6 @@
       "notAllowed": "Questo indirizzo non e' su un sito da cui l'hub sa riprodurre un video.",
       "fields": {
         "url": "Indirizzo",
-        "mediaId": "Oppure un file della libreria",
         "caption": "Didascalia",
         "aspect": "Formato"
       },

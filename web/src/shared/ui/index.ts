@@ -28,6 +28,7 @@ export {
   type CalendarViewMode,
 } from './calendar';
 export { MediaPicker, type PickableMedia, type MediaPage, type MediaLibraryQuery } from './MediaPicker';
+export { narrowLibrary } from './narrowLibrary';
 export { NotFound, Forbidden } from './status-pages';
 export {
   RouteMap,

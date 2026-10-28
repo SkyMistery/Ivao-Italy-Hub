@@ -25,7 +25,7 @@ export function toWriteDto(values: MediaFormValues): MediaWriteDto {
     // a field that quietly became null.
     alt: values.alt,
     title: trimLocalized(values.title),
-    category: values.category.trim() === '' ? null : values.category.trim(),
+    category: values.category ?? null,
     rowVersion: values.rowVersion,
   };
 }
@@ -40,7 +40,7 @@ export function toFormValues(media: MediaDetailDto, locales: readonly string[]):
     visibility: media.visibility,
     alt: spread(media.alt),
     title: spread(media.title),
-    category: media.category ?? '',
+    ...(media.category === null ? {} : { category: media.category }),
     rowVersion: media.rowVersion,
   };
 }
@@ -49,6 +49,8 @@ export function toFormValues(media: MediaDetailDto, locales: readonly string[]):
 export interface MediaUpload {
   file: File;
   ownerDepartment: Department;
+  /** What the file is for, when the picker it was uploaded from knows (#359); otherwise its bytes say. */
+  category?: string;
 }
 
 /**
@@ -74,10 +76,13 @@ export function useUploadMedia() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ file, ownerDepartment }: MediaUpload): Promise<MediaUploaded> => {
+    mutationFn: async ({ file, ownerDepartment, category }: MediaUpload): Promise<MediaUploaded> => {
       const body = new FormData();
       body.set('file', file);
       body.set('ownerDepartment', ownerDepartment);
+      if (category !== undefined) {
+        body.set('category', category);
+      }
 
       const result = await api.POST('/api/media', {
         // The contract types a multipart part as a string, which a `File` is not; the serializer
