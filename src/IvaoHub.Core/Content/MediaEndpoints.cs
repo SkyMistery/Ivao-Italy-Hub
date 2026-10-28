@@ -170,6 +170,7 @@ public static class MediaEndpoints
         [FromForm] IFormFile file,
         [FromForm] Department ownerDepartment,
         [FromForm] Visibility? visibility,
+        [FromForm] MediaCategory? category,
         HubDbContext database,
         MediaStorage storage,
         IOptions<MediaOptions> media,
@@ -187,6 +188,9 @@ public static class MediaEndpoints
             // Staff by default: a file becomes public because somebody said so, never by arriving.
             Visibility = visibility ?? Visibility.Staff,
             FileName = Path.GetFileName(file.FileName ?? string.Empty),
+            // Said by the picker it was uploaded from (#359): a file uploaded where a logo is chosen
+            // is a logo. Left out, the bytes say it.
+            Category = category,
         };
 
         if (!(await authorization.AuthorizeAsync(http.User, entity, CorePermissions.MediaEdit)).Succeeded)

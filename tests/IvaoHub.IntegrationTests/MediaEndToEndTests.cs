@@ -120,6 +120,13 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(nameof(MediaCategory.Image), await CategoryAsync(client, picture, token));
         Assert.Equal(nameof(MediaCategory.Document), await CategoryAsync(client, document, token));
 
+        // Unless the picker it was uploaded from says: a file uploaded where a logo is chosen is a logo.
+        using var fromThePicker = await UploadAsync(
+            client, Department.WD, Png(17, 31), "sponsor.png", "image/png", token, MediaCategory.Logo);
+        fromThePicker.EnsureSuccessStatusCode();
+        var sponsor = (await fromThePicker.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        Assert.Equal(nameof(MediaCategory.Logo), await CategoryAsync(client, sponsor, token));
+
         using (var filed = await WriteCategoryAsync(client, picture, nameof(MediaCategory.Logo), token))
         {
             Assert.Equal(HttpStatusCode.OK, filed.StatusCode);
@@ -131,6 +138,7 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
             token);
         var ids = logos.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetInt64()).ToList();
         Assert.Contains(picture, ids);
+        Assert.Contains(sponsor, ids);
         Assert.DoesNotContain(document, ids);
 
         // A word outside the set is refused, and the row keeps what it had. Refused by the binding,
@@ -521,7 +529,8 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         byte[] bytes,
         string fileName,
         string declaredContentType,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        MediaCategory? category = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(MediaEndpoints.Pattern, UriKind.Relative));
         var form = new MultipartFormDataContent();
@@ -530,6 +539,10 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         file.Headers.ContentType = new MediaTypeHeaderValue(declaredContentType);
         form.Add(file, "file", fileName);
         form.Add(new StringContent(department.ToString()), "ownerDepartment");
+        if (category is { } said)
+        {
+            form.Add(new StringContent(said.ToString()), "category");
+        }
 
         request.Content = form;
         request.Headers.Add("X-Requested-With", "hub");
