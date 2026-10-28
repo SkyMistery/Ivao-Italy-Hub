@@ -14,7 +14,7 @@ import { newCollectionSchema } from './schema';
 /**
  * "New collection" from the page of a news item or a document (#364): a collection is made where it
  * is needed, and the row being written is filed in it at once, rather than on a screen of its own
- * somebody has to know about. The same row and the same call as `/staff/<dept>/collections`, in a
+ * somebody has to know about. The same row and the same call as `/staff/<dept>/categories`, in a
  * dialog; only its name and its key are asked, since the kind is the page's and the rest has a
  * default.
  *
