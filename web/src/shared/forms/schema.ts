@@ -141,6 +141,14 @@ export interface FieldMeta {
    * `allowedBlocks` of a template section is a subset of the block registry (design M1 section 9.1).
    */
   multi?: boolean;
+  /**
+   * A `multi` field whose set may grow from the form itself (#364, note
+   * 2026-10-28-una-collezione-dalla-pagina): the collections of a news item are rows a coordinator
+   * writes, and a document is made and filed in one place only if a new one can be made right there.
+   * The generator draws, under the boxes, what the screen gives it (`createChoice`), and ticks the
+   * value it is handed back; what a new value *is* and how it is made stays the screen's.
+   */
+  creatable?: boolean;
 }
 
 /**
@@ -184,7 +192,7 @@ export type FieldNode =
   | ({ kind: 'number'; choices: number[] | null } & FieldCommon)
   | ({ kind: 'boolean' } & FieldCommon)
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
-  | ({ kind: 'multi'; options: ChoiceOption[] } & FieldCommon)
+  | ({ kind: 'multi'; options: ChoiceOption[]; creatable: boolean } & FieldCommon)
   | ({ kind: 'localized' } & FieldCommon)
   | ({ kind: 'media' } & FieldCommon)
   | ({ kind: 'icon' } & FieldCommon)
@@ -728,7 +736,12 @@ function readField(schema: unknown, path: string): FieldNode {
       // annotation is what tells them apart. Without it an array of plain strings would reach
       // `readFields` below, which needs an object and says so.
       if (meta.multi === true) {
-        return { kind: 'multi', ...common, options: stringChoices(meta.choices) ?? [] };
+        return {
+          kind: 'multi',
+          ...common,
+          options: stringChoices(meta.choices) ?? [],
+          creatable: meta.creatable === true,
+        };
       }
 
       // The children keep the path of the list itself, without an index: `aliases.name` is the
