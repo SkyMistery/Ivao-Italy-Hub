@@ -126,6 +126,18 @@ export interface BlockRegistration {
    */
   readonly permission?: string;
   /**
+   * The block has left the palette: it cannot be added any more, and a page that already carries it
+   * keeps drawing it, because the type stays registered here **and** on the server (`CLAUDE.md` §2,
+   * "a block type is registered in two halves") — taking either half away would refuse the save of
+   * every page that holds one (`decisions/2026-10-22-il-piano-dopo-la-prova-dello-staff.md`, III and
+   * XXI: the coordination table, whose agreements live on the ATC site, and the button in the text,
+   * the same piece as the interactive group's buttons).
+   *
+   * ⚠️ Like `permission`, it gates the **palette** only: the renderer, the properties panel of a block
+   * already in a body and the gallery of the back office still know it.
+   */
+  readonly retired?: boolean;
+  /**
    * Whether the block carries a `source` on its envelope, and therefore a field in the properties
    * panel that the form generator does not draw.
    *

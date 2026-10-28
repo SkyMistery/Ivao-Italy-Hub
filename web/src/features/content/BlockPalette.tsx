@@ -67,8 +67,12 @@ export function BlockPalette({
 }) {
   const { t } = useTranslation();
 
+  // A retired block is not in the list at all, for the reason a permission not held is not: it can
+  // never be added, so an entry for it would be noise (`BlockRegistration.retired`).
   const offered = registry.blocks.filter(
-    (block) => block.permission === undefined || holds === undefined || holds(block.permission),
+    (block) =>
+      block.retired !== true &&
+      (block.permission === undefined || holds === undefined || holds(block.permission)),
   );
 
   const arranged = groupsOf(offered);
