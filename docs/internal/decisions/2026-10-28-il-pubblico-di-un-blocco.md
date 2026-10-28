@@ -1,7 +1,7 @@
 # Il pubblico di un blocco: i blocchi dello staff su una pagina per tutti
 
 - **Data**: 28 ottobre 2026
-- **Stato**: Proposta
+- **Stato**: Decisa da Carmine in chat al master, 28 ottobre 2026
 - **Chi**: una sessione di lavoro di Carmine (issue #362, fase 2 di `2026-10-22-il-piano-dopo-la-prova-dello-staff.md`, XVIII)
 - **Classificazione** (`CLAUDE.md` §5): **(b)**, estensione di due meccanismi del nucleo — il registro dei blocchi
   (`BlockRegistry`, `IBlockDescriptor`) e la validazione del salvataggio (`ContentWriteDtoValidator`) —, quindi una PR del
@@ -66,7 +66,19 @@ I modelli (`is_template = true`) non hanno un pubblico: lì il controllo non si 
 
 ## Risposta di Carmine
 
-_(da scrivere con la sua risposta)_
+Decisa da Carmine in chat al master, 28 ottobre 2026: «Sì, come consigli», sulle raccomandazioni del master. Nella chat della
+sessione di lavoro aveva prima risposto «Sì, tutta la proposta», che metteva a `Members` anche i blocchi «miei»; messo davanti
+alle due risposte, ha scelto: «Public, come il master». Quindi:
+
+1. **`Audience`** sul descrittore C#, pubblicato da `/api/me` (alternativa C).
+2. **Solo le sei code** hanno `Audience: Staff`: `myWork`, `flightops.reviewQueue`, `flightops.openIssues`,
+   `events.staffQueue`, `training.trainerQueue`, `training.approvalQueue`. I blocchi «miei» (`welcome`, `myDepartments`,
+   `events.myEvents`, `flightops.myTours`, `training.myTraining`) **restano `Public`**: una home pubblica con `welcome` deve
+   continuare a salvarsi. `Members` resta un valore possibile del campo, che oggi nessun blocco dichiara.
+3. **Le pagine che hanno già una coda**, se pubbliche o per i membri, non si salvano finché il blocco c'è, e l'errore dice
+   quale; si scrive nella PR e nelle note di rilascio.
+
+La risposta è stata data in chat e non in un commento: la nota è di una sessione di Carmine, non del collaboratore.
 
 ## Da portare nel piano
 
