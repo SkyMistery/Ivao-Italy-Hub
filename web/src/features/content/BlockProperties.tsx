@@ -102,11 +102,15 @@ export function SectionProperties({
   const named = typeof section.key === 'string' && section.key.length > 0;
 
   // The block types this section may allow, labelled the way the palette labels them: the generator
-  // draws the labels it is handed and never translates a value of its own.
-  const blocks = registry.blocks.map((block) => ({
-    value: block.type,
-    label: t(block.editorLabelKey),
-  }));
+  // draws the labels it is handed and never translates a value of its own. A retired block is not
+  // offered to a template either, unless the section already allows it: dropping the entry would
+  // drop the value from the field the next time it is saved.
+  const blocks = registry.blocks
+    .filter((block) => block.retired !== true || section.allowedBlocks?.includes(block.type) === true)
+    .map((block) => ({
+      value: block.type,
+      label: t(block.editorLabelKey),
+    }));
 
   const defaults: SectionFormValues = {
     title: { ...emptyLocalized(locales), ...(section.title ?? {}) },

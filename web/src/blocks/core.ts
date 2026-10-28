@@ -229,6 +229,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'text',
     icon: MousePointerClick,
+    // The same piece as the interactive group's buttons: out of the palette, still drawn (note
+    // 2026-10-22-il-piano-dopo-la-prova-dello-staff, III).
+    retired: true,
   },
   {
     type: CORE_BLOCK_TYPES.linkList,
@@ -796,6 +799,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'data',
     subgroup: 'operational',
     icon: ArrowLeftRight,
+    // Every coordination agreement lives on the ATC site: out of the palette, still drawn (note
+    // 2026-10-22-il-piano-dopo-la-prova-dello-staff, XXI).
+    retired: true,
   },
 
   // --- The personal dashboards (D3) ------------------------------------------------------------
