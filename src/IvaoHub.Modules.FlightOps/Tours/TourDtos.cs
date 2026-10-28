@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using FluentValidation;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using Riok.Mapperly.Abstractions;
 
@@ -123,6 +124,9 @@ public enum TourStatusAction
 }
 
 public sealed record TourStatusRequest(TourStatusAction Action);
+
+/// <summary>A pilot rating of the core's vocabulary as a tour's form offers it: the network's number, and the short name the staff say.</summary>
+public sealed record PilotRatingChoiceDto(int Number, string ShortName);
 
 /// <summary>What stands between a draft and "ready", without marking it: the same checks, nothing written.</summary>
 public sealed record TourReadyProblemsDto(
@@ -256,10 +260,11 @@ public static partial class TourValidation
 /// </summary>
 public sealed class TourWriteDtoValidator : AbstractValidator<TourWriteDto>
 {
-    public TourWriteDtoValidator(BlockDocumentWalker walker, BlockRegistry blocks)
+    public TourWriteDtoValidator(BlockDocumentWalker walker, BlockRegistry blocks, RatingVocabulary ratings)
     {
         ArgumentNullException.ThrowIfNull(walker);
         ArgumentNullException.ThrowIfNull(blocks);
+        ArgumentNullException.ThrowIfNull(ratings);
 
         // A draft may be incomplete, but it has to be findable in a list: a name in at least one language.
         RuleFor(tour => tour.Title)
@@ -296,8 +301,11 @@ public sealed class TourWriteDtoValidator : AbstractValidator<TourWriteDto>
             .WithMessage("errors.number.range");
         RuleFor(tour => tour.DailyLegLimit).InclusiveBetween(1, 100).When(tour => tour.DailyLegLimit is not null)
             .WithMessage("errors.number.range");
-        RuleFor(tour => tour.MinPilotRating).InclusiveBetween(1, 20).When(tour => tour.MinPilotRating is not null)
-            .WithMessage("errors.number.range");
+        // A pilot rating of the core's vocabulary, chosen from its list (#204): never a number the module checks by itself.
+        RuleFor(tour => tour.MinPilotRating)
+            .Must(rating => ratings.Find(RatingKind.Pilot, rating) is not null)
+            .When(tour => tour.MinPilotRating is not null)
+            .WithMessage("flightops:errors.ratingUnknown");
         RuleFor(tour => tour.RequiredNm).InclusiveBetween(1, TourValidation.MaxRequiredNm).When(tour => tour.RequiredNm is not null)
             .WithMessage("errors.number.range");
         RuleFor(tour => tour.AllowedAircraft)

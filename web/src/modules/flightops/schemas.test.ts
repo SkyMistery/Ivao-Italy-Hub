@@ -119,6 +119,18 @@ test('a template carries no address, dates or award, and a public tour no longer
   expect(tourSchema().shape.kind.meta()).toMatchObject({ hidden: false });
 });
 
+// The least rating of a tour is one of the core's, chosen from a list and never typed as a number (phase 6, f).
+test('the least pilot rating of a tour is chosen from the ratings it is given', () => {
+  const ratings = [
+    { value: '2', label: 'FS1' },
+    { value: '5', label: 'PP' },
+  ];
+
+  expect(tourSchema({ part: 'rules', ratings }).shape.minPilotRating.meta()).toMatchObject({
+    choices: ratings,
+  });
+});
+
 test('the pictures of a tour are chosen from the library', () => {
   expect(tourSchema().shape.bannerMediaId.meta()).toMatchObject({ media: true });
   expect(tourSchema().shape.coverMediaId.meta()).toMatchObject({ media: true });

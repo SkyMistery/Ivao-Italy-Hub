@@ -2686,6 +2686,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{tourId}/legs": {
         parameters: {
             query?: never;
@@ -8899,6 +8915,12 @@ export interface components {
             disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
         };
+        /** @description A pilot rating of the core's vocabulary as a tour's form offers it: the network's number, and the short name the staff say. */
+        PilotRatingChoiceDto: {
+            /** Format: int32 */
+            number: number;
+            shortName: string;
+        };
         /**
          * @description A pilot's own record (§3.7, §7.1): the bookings not flown that count, the threshold, whether they have the limits and until when, the limits
          *     valid in the event asked about — its own, or the settings' —, and the bookings not flown themselves, the latest first.
@@ -9602,6 +9624,7 @@ export interface components {
             requiresProcedures: boolean;
             /** Format: int32 */
             minPilotRating: null | number;
+            minPilotRatingName: null | string;
             referenceAircraftIcao: null | string;
             aircraft: components["schemas"]["PublicAircraftDto"];
             /** Format: int32 */
@@ -19312,6 +19335,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    FlightOpsTourRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotRatingChoiceDto"][];
+                };
             };
         };
     };

@@ -346,6 +346,7 @@
     "reportProcedureRequired": "This tour asks for the procedure flown.",
     "reportBanned": "You cannot send reports on this tour.",
     "reportRatingTooLow": "Your pilot rating is below the one this tour asks for. If you were promoted recently, sign in again.",
+    "ratingUnknown": "Choose a rating of the list.",
     "reportToModifyPending": "Correct and send again your report marked to modify before reporting another flight.",
     "reportRouteRepeated": "You have already flown this route in this tour.",
     "reportCountries": "The flight is outside the countries of the tour.",
