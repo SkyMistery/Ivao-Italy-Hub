@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 
@@ -18,6 +18,33 @@ import type { SectionRule } from './templateRules';
  * registered block reachable from it, in a drawer that opens and shuts — and that it never adds a
  * block where the template said it must not.
  */
+
+// What `/api/me` says of two blocks' audience (issue #362): the palette reads it from there, never from a flag of its own.
+const api = vi.hoisted(() => ({ get: vi.fn() }));
+
+vi.mock('../../shared/api/client', async () => ({
+  ...(await vi.importActual<Record<string, unknown>>('../../shared/api/client')),
+  api: { GET: api.get },
+}));
+
+api.get.mockImplementation((path: string) =>
+  Promise.resolve({
+    data:
+      path === '/api/me'
+        ? {
+            registries: {
+              blocks: [
+                { type: 'myWork', version: 1, kind: 'Data', alwaysLive: true, audience: 'Staff' },
+                { type: 'welcome', version: 1, kind: 'Content', alwaysLive: false, audience: 'Public' },
+                { type: 'heading', version: 1, kind: 'Content', alwaysLive: false, audience: 'Public' },
+              ],
+              permissions: [],
+            },
+          }
+        : null,
+    response: new Response(null, { status: 200 }),
+  }),
+);
 
 const editor = englishCommon.content.editor;
 
@@ -201,4 +228,32 @@ test('a block behind a permission is in the list only for somebody who holds it'
 
   render({ holds: () => true });
   expect(screen.getByRole('button', { name: interactive })).toBeVisible();
+});
+
+test('a block for fewer readers than the page is greyed out with the reason, and only there', async () => {
+  const work = englishCommon.blocks.myWork.label;
+  const greeting = englishCommon.blocks.welcome.label;
+  const heading = englishCommon.blocks.heading.label;
+
+  // Disabled and not hidden — like a block the template forbids, unlike one behind a permission: it is a fact about
+  // this page, and staff should see the block exists and what would let them add it.
+  const visitors = render({ visibility: 'Public' });
+  await waitFor(() => expect(screen.getByRole('button', { name: work })).toBeDisabled());
+  expect(screen.getByRole('button', { name: work })).toHaveAttribute('title', editor.notForThisAudience);
+  expect(screen.getByRole('button', { name: greeting })).toBeEnabled();
+  expect(screen.getByRole('button', { name: heading })).toBeEnabled();
+  visitors.unmount();
+
+  const members = render({ visibility: 'Members' });
+  await waitFor(() => expect(screen.getByRole('button', { name: work })).toBeDisabled());
+  members.unmount();
+
+  // The staff's page holds both; a body with no readers of its own (a template, a briefing) greys nothing out.
+  for (const visibility of ['Staff', undefined] as const) {
+    const { onAdd, unmount } = render({ visibility });
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('/api/me'));
+    await userEvent.click(screen.getByRole('button', { name: work }));
+    expect(onAdd).toHaveBeenCalledWith('myWork');
+    unmount();
+  }
 });

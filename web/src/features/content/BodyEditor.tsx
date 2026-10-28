@@ -58,6 +58,7 @@ import {
   updateBlock,
   updateSection,
 } from './body';
+import type { PageVisibility } from './palette';
 import { PreviewFrame, type PublishedView } from './PreviewFrame';
 import { MAX_ROW_DEPTH, SectionTree, type Selection } from './SectionTree';
 import { useBodyHistory, useHistoryShortcuts, useSelectionShortcuts } from './useBodyHistory';
@@ -99,6 +100,7 @@ export function BodyEditor({
   mediaLibrary,
   uploadMedia,
   holds,
+  visibility,
   dashboard = false,
   isTemplate = false,
   template = null,
@@ -125,6 +127,11 @@ export function BodyEditor({
   uploadMedia?: ((file: File) => Promise<number>) | undefined;
   /** Whether this member holds a permission where a block would be added: the palette leaves out what they may not. */
   holds: (permission: string) => boolean;
+  /**
+   * Who reads the row, for the palette to grey out a block for fewer readers (issue #362); absent for a body with no
+   * readers of its own — a template, a module's briefing.
+   */
+  visibility?: PageVisibility | undefined;
   /** A dashboard is composed as a grid of tiles (D2). */
   dashboard?: boolean;
   /** A template's sections carry `key`, `required`, `locked` and `allowedBlocks`; nothing else's do. */
@@ -749,6 +756,7 @@ export function BodyEditor({
                   rule={paletteRule}
                   draggable={preview}
                   holds={holds}
+                  visibility={visibility}
                   onAdd={(type) => {
                     if (paletteTarget !== null) {
                       addBlockTo(paletteTarget.id, type, targetColumn);

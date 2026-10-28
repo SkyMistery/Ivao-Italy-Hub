@@ -532,6 +532,7 @@
       "addsTo": "Aggiunge a: {{section}}",
       "lockedTarget": "«{{section}}» è fissata dal template: non ci si può aggiungere niente.",
       "notAllowedHere": "Il template non permette questo blocco nella sezione selezionata.",
+      "notForThisAudience": "Questo blocco è per meno lettori di questa pagina. Rendi la pagina visibile a meno persone per aggiungerlo.",
       "expandAll": "Espandi tutto",
       "collapseAll": "Comprimi tutto",
       "removeSection": "Elimina questa sezione",

@@ -7,6 +7,7 @@ import {
   Button,
   Input,
 } from '@ivao/atmosphere-react';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,9 +15,10 @@ import { registry } from '../../app/registry';
 import { type BlockRegistration } from '../../shared/modules';
 import { fold } from '../../shared/search/highlight';
 import { SectionHeader } from '../../shared/ui';
+import { bootstrapQuery } from '../me/queries';
 
 import type { PaletteDrag } from './DropZone';
-import { groupsOf } from './palette';
+import { beyondReaders, groupsOf, type PageVisibility } from './palette';
 import type { SectionRule } from './templateRules';
 
 /**
@@ -41,6 +43,7 @@ export function BlockPalette({
   onAdd,
   draggable = false,
   holds,
+  visibility,
 }: {
   /** The section a component would be added to, and what to call it; `null` when none is chosen. */
   target: { id: string; name: string } | null;
@@ -64,8 +67,24 @@ export function BlockPalette({
    * block declares one today: `interactive`, whose source is code (`Content.EmbedCode`).
    */
   holds?: (permission: string) => boolean;
+  /**
+   * Who reads the page being composed; absent where the body has no readers of its own — a template, a module's
+   * briefing. A block for fewer readers (its `audience` in `/api/me`) is shown **disabled with the reason**, the way
+   * a block the template forbids is, and not left out like one behind a permission: it is a fact about this page,
+   * and staff should see the block exists and what would let them add it (issue #362).
+   */
+  visibility?: PageVisibility | undefined;
 }) {
   const { t } = useTranslation();
+
+  const { data: bootstrap } = useQuery(bootstrapQuery);
+  const audiences = new Map(
+    (bootstrap?.registries.blocks ?? []).map((block) => [block.type, block.audience] as const),
+  );
+  const tooFewReaders = (type: string) => {
+    const audience = audiences.get(type);
+    return visibility !== undefined && audience !== undefined && beyondReaders(audience, visibility);
+  };
 
   const offered = registry.blocks.filter(
     (block) => block.permission === undefined || holds === undefined || holds(block.permission),
@@ -169,6 +188,7 @@ export function BlockPalette({
                   rule={rule}
                   onAdd={onAdd}
                   draggable={draggable}
+                  tooFewReaders={tooFewReaders}
                 />
 
                 {group.subgroups.length === 0 ? null : (
@@ -202,6 +222,7 @@ export function BlockPalette({
                               rule={rule}
                               onAdd={onAdd}
                               draggable={draggable}
+                              tooFewReaders={tooFewReaders}
                             />
                           </div>
                         </AccordionContent>
@@ -224,12 +245,14 @@ function Entries({
   rule,
   onAdd,
   draggable,
+  tooFewReaders,
 }: {
   blocks: readonly BlockRegistration[];
   target: { id: string; name: string } | null;
   rule: SectionRule;
   onAdd: (type: string) => void;
   draggable: boolean;
+  tooFewReaders: (type: string) => boolean;
 }) {
   return (
     <>
@@ -239,13 +262,21 @@ function Entries({
         // changes as you click around: a list that changed shape every time would be a palette
         // nobody could learn. The reason is on the button instead.
         const allowed = rule.allowedBlocks === null || rule.allowedBlocks.includes(block.type);
+        // For fewer readers than the page: disabled whatever the target, since no section of this page can hold it.
+        const audience = tooFewReaders(block.type);
 
         return (
           <Entry
             key={block.type}
             block={block}
-            disabled={target === null || !allowed}
-            reason={target !== null && !allowed}
+            disabled={target === null || !allowed || audience}
+            reason={
+              audience
+                ? 'content.editor.notForThisAudience'
+                : target !== null && !allowed
+                  ? 'content.editor.notAllowedHere'
+                  : null
+            }
             draggable={draggable}
             onAdd={onAdd}
           />
@@ -264,8 +295,11 @@ function Entry({
 }: {
   block: BlockRegistration;
   disabled: boolean;
-  /** Whether the button is disabled for a reason worth a tooltip — the template — and not for want of a target. */
-  reason: boolean;
+  /**
+   * The key of the reason worth saying — the template, or a block for fewer readers than the page — and null when the
+   * button is disabled for want of a target, or not at all.
+   */
+  reason: string | null;
   draggable: boolean;
   onAdd: (type: string) => void;
 }) {
@@ -294,7 +328,7 @@ function Entry({
       size="sm"
       className="justify-start"
       disabled={disabled}
-      {...(reason ? { title: t('content.editor.notAllowedHere') } : {})}
+      {...(reason === null ? {} : { title: t(reason) })}
       {...listeners}
       onClick={() => onAdd(block.type)}
     >
