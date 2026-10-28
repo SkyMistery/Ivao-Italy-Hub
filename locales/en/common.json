@@ -293,7 +293,8 @@
       "deletesOn": "Deleted on"
     },
     "hints": {
-      "alt": "What somebody who cannot see the picture is told instead. Every block that shows this file inherits it."
+      "alt": "What somebody who cannot see the picture is told instead. Every block that shows this file inherits it.",
+      "category": "What the file is for. The block of logos offers only the logos."
     },
     "options": {
       "visibility": {
@@ -301,6 +302,14 @@
         "Members": "Members",
         "Staff": "Staff",
         "Department": "Department"
+      },
+      "category": {
+        "Image": "Picture",
+        "Icon": "Icon",
+        "Logo": "Logo",
+        "Banner": "Banner",
+        "Document": "Document (PDF)",
+        "none": "No category"
       }
     },
     "replace": {

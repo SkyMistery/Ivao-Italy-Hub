@@ -299,7 +299,8 @@ export const logoGridSchema = z.object({
   columns: z.number().int().default(4).meta({ choices: GRID_COLUMNS }),
   items: z.array(
     z.object({
-      mediaId: z.number().int().meta({ media: true }),
+      // Only the files filed as logos (#359): the picker of a row of logos is not every picture.
+      mediaId: z.number().int().meta({ media: true, mediaCategory: 'Logo' }),
       // The name of a partner is a name, not a sentence: it reads the same in every language, and
       // it is what a reader who cannot see the logo is told.
       name: z.string(),
