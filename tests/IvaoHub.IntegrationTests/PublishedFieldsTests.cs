@@ -208,6 +208,22 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
 
         // Fewer: what was captured for the members may be read by the staff.
         await EditAsync(coordinator, withCapture, captured with { Visibility = Visibility.Staff }, token);
+
+        // A news item for the staff that carries what waits for them, published (note 2026-10-28-il-pubblico-di-un-blocco).
+        var queued = Fields(ContentKind.News, Slug(), "Con una coda", Key(), coverMediaId: null, fileMediaId: null, showFooter: true) with
+        {
+            Visibility = Visibility.Staff,
+            Body = QueueBody(),
+        };
+        var withQueue = await CreateAsync(coordinator, queued, token);
+        await PublishAsync(coordinator, withQueue, token);
+
+        // Taken out of the draft and given to everybody: what is online still carries it, so refused until published again.
+        using (var wider = await TryEditAsync(coordinator, withQueue, queued with { Visibility = Visibility.Public, Body = Body() }, token))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, wider.StatusCode);
+            Assert.Equal("errors.content.position.blockAudience", await FirstErrorAsync(wider, "visibility", token));
+        }
     }
 
     /// <summary>What the tests write of a row, as the form sends it.</summary>
@@ -274,6 +290,13 @@ public sealed class PublishedFieldsTests(MariaDbFixture mariaDb) : IAsyncLifetim
           { "id": "s_main", "layout": "stacked", "blocks": [
             { "id": "b_news", "type": "newsList", "version": 1, "renderMode": "frozen",
               "props": { "department": "ED", "limit": 3 } } ] } ] }
+        """)!;
+
+    /// <summary>A body with what waits for the staff, a block for the staff only.</summary>
+    private static JsonNode QueueBody() => JsonNode.Parse("""
+        { "schemaVersion": 1, "sections": [
+          { "id": "s_main", "layout": "stacked", "blocks": [
+            { "id": "b_work", "type": "myWork", "version": 1, "props": {} } ] } ] }
         """)!;
 
     private static string Slug() => $"f{Guid.NewGuid():N}"[..14];

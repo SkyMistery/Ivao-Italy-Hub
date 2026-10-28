@@ -63,7 +63,8 @@
       "sourceTooLarge": "The code of this block is too long. Keep an animation small: it travels with the page.",
       "sourceNotInteractive": "Only an interactive block carries code.",
       "sourceNotPermitted": "Adding or changing the code of an interactive block needs the permission to embed code.",
-      "spanUnknown": "This block has a width a dashboard does not have."
+      "spanUnknown": "This block has a width a dashboard does not have.",
+      "blockAudience": "This block is for fewer readers than the page: take it out, or make the page visible to fewer people."
     },
     "content": {
       "templateNotPublishable": "A template is not published: make a page from it and publish that.",
@@ -92,7 +93,8 @@
         "needsPublish": "This page is online: who reads it and where it is are changed by whoever may publish it.",
         "needsApproval": "This page is online and goes through approval: who reads it and where it is are changed by whoever may approve it.",
         "picturesHidden": "A picture of the page online is not visible to these readers. Make it visible in the media library, or change it and publish again.",
-        "capturesNarrower": "The page online carries data captured for fewer readers. Publish it again, so that it is captured for these."
+        "capturesNarrower": "The page online carries data captured for fewer readers. Publish it again, so that it is captured for these.",
+        "blockAudience": "The page online carries a block for fewer readers. Take it out and publish again, then change who reads it."
       },
       "tooManyCollections": "A row may be filed in twenty collections at most.",
       "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
