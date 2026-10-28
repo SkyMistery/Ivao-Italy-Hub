@@ -149,10 +149,9 @@ export const imageSchema = z.object({
 });
 
 export const videoSchema = z.object({
-  // Either an address on a host the hub knows how to frame, or a file of the library. Both are
-  // optional because either one is enough; the block says so when it has neither.
+  // An address on a host the hub knows how to frame; the block says so when it has none. Not a
+  // file of the library: the library takes no video (#359, Carmine, 28 October 2026).
   url: z.string().optional(),
-  mediaId: z.number().int().optional().meta({ media: true }),
   caption: localized().optional(),
   aspect: z.enum(ASPECTS).default('16x9'),
 });
@@ -299,7 +298,8 @@ export const logoGridSchema = z.object({
   columns: z.number().int().default(4).meta({ choices: GRID_COLUMNS }),
   items: z.array(
     z.object({
-      mediaId: z.number().int().meta({ media: true }),
+      // Only the files filed as logos (#359): the picker of a row of logos is not every picture.
+      mediaId: z.number().int().meta({ media: true, mediaCategory: 'Logo' }),
       // The name of a partner is a name, not a sentence: it reads the same in every language, and
       // it is what a reader who cannot see the logo is told.
       name: z.string(),

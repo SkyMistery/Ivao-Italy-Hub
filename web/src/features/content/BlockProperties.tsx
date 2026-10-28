@@ -76,7 +76,7 @@ export function SectionProperties({
   /** The library the picture behind a section is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
   /** Uploads into that library and answers the identifier; the picker offers it beside "choose". */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /**
    * The settings, applied as they are written — with one exception, the `key` of a template's
    * section, which comes through here only when the button under the form is pressed. A key is
@@ -338,7 +338,7 @@ export function BlockProperties({
    * so from G3 on this is not an occasional prop: without it those forms throw, and say why.
    */
   mediaLibrary: MediaLibraryQuery;
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */

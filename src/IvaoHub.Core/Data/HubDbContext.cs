@@ -131,6 +131,8 @@ public class HubDbContext : DbContext, IVisibilityScope
         configurationBuilder.Properties<GrantKind>().HaveConversion<string>().HaveMaxLength(16);
         configurationBuilder.Properties<GrantEffect>().HaveConversion<string>().HaveMaxLength(8);
         configurationBuilder.Properties<AwardSignalStatus>().HaveConversion<string>().HaveMaxLength(16);
+        // No length of its own: the column of the media library keeps the 64 it had as free text.
+        configurationBuilder.Properties<MediaCategory>().HaveConversion<string>();
 
         // ⚠️ Every instant is UTC, and the model has to say so: MariaDB's `datetime` carries no
         // zone, Pomelo returns `Unspecified`, and `System.Text.Json` then writes it without a `Z` —

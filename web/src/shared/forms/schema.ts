@@ -60,6 +60,13 @@ export interface FieldMeta {
    */
   media?: boolean;
   /**
+   * Which category of the library a media field offers (#359): the logos of a `logoGrid` are files
+   * of the category `Logo`, not every picture of the division. A word of the library's closed set,
+   * held as text here because the generator does not know the library; the query it is handed
+   * knows how to narrow itself (`narrowLibrary`).
+   */
+  mediaCategory?: string;
+  /**
    * An icon, held as a `lucide` name out of the allow list in `shared/icons`. A choice among thirty
    * pictures is a choice; a box for any of the thousands `lucide` ships is a text field with extra
    * steps.
@@ -186,7 +193,7 @@ export type FieldNode =
   | ({ kind: 'enum'; options: string[] } & FieldCommon)
   | ({ kind: 'multi'; options: ChoiceOption[] } & FieldCommon)
   | ({ kind: 'localized' } & FieldCommon)
-  | ({ kind: 'media' } & FieldCommon)
+  | ({ kind: 'media'; category: string | null } & FieldCommon)
   | ({ kind: 'icon' } & FieldCommon)
   | ({ kind: 'instant'; withTime: boolean } & FieldCommon)
   | ({ kind: 'localizedObject'; children: FieldNode[] } & FieldCommon)
@@ -690,7 +697,7 @@ function readField(schema: unknown, path: string): FieldNode {
   // promise about the value — an identifier of the media library, a name from the icon allow list,
   // an ISO instant — that the plain type could not carry on its own.
   if (meta.media === true) {
-    return { kind: 'media', ...common };
+    return { kind: 'media', ...common, category: meta.mediaCategory ?? null };
   }
 
   if (meta.icon === true) {

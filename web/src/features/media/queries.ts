@@ -14,6 +14,7 @@ import type { MediaLibraryQuery, MediaPage, PickableMedia } from '../../shared/u
 export type MediaListDto = components['schemas']['MediaListDto'];
 export type MediaDetailDto = components['schemas']['MediaDetailDto'];
 export type MediaWriteDto = components['schemas']['MediaWriteDto'];
+export type MediaCategory = components['schemas']['MediaCategory'];
 export type MediaListPage = components['schemas']['PagedResultOfMediaListDto'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
 
@@ -72,25 +73,36 @@ const PICKER_PAGE_SIZE = 24;
  * picker actually draws — which is also what lets the form generator carry it without knowing that
  * `/api/media` exists.
  */
-export function mediaPickerQuery(department: Department): MediaLibraryQuery {
+export function mediaPickerQuery(department: Department, category?: string): MediaLibraryQuery {
   const search = listSearchSchema.parse({ pageSize: PICKER_PAGE_SIZE, sort: 'createdAt', dir: 'desc' });
 
   // Typed as the loose key the generator's prop declares: a picker is carried around by a
   // component that cannot know which resource it came from, so the key has to stop being specific
   // right here rather than at every place that passes it on.
-  const queryKey: readonly unknown[] = [...mediaKey, 'picker', PICKER_PAGE_SIZE];
+  const queryKey: readonly unknown[] = [...mediaKey, 'picker', PICKER_PAGE_SIZE, category ?? null];
 
   return queryOptions({
     queryKey,
     queryFn: async (): Promise<MediaPage<PickableMedia>> => {
-      const page = unwrap(await api.GET('/api/media', { params: { query: toQuery(search) } }));
+      const page = unwrap(
+        await api.GET('/api/media', {
+          params: { query: toQuery(search) },
+          // Only the files of one category, when a field asks for them (#359): the same filter the
+          // library's own list declares.
+          querySerializer: listQuerySerializer(category === undefined ? {} : { category }),
+        }),
+      );
 
       return { items: page.items, total: page.total };
     },
     // Where this library lives, for the picker to point at (Carmine, 11 September 2026: "a link to
-    // the page where the files are uploaded"). Carried on the query, because the query is the one
-    // thing about the library that reaches the picker through the form generator.
-    meta: { libraryHref: `/staff/media?department=${department}` },
+    // the page where the files are uploaded"), and how it offers one category only (`narrowLibrary`).
+    // Carried on the query, because the query is the one thing about the library that reaches the
+    // picker through the form generator.
+    meta: {
+      libraryHref: `/staff/media?department=${department}`,
+      narrow: (only: string) => mediaPickerQuery(department, only),
+    },
   });
 }
 
