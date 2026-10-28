@@ -31,6 +31,9 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int WebCoordinatorVid = 620001;
     private const int EventsCoordinatorVid = 620002;
 
+    // An empty translation, as the column holds it, for the rows a test writes by hand.
+    private const string NoAlt = "{}";
+
     private HubWebApplicationFactory _factory = null!;
     private string _mediaRoot = null!;
 
@@ -96,6 +99,98 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // And nothing of either attempt is on disk: the row is written after the bytes, so a
         // refusal leaves neither.
         Assert.Empty(FilesOnDisk());
+    }
+
+    [Fact]
+    public async Task AFileGetsACategoryFromItsBytesAndKeepsOneOfTheSet()
+    {
+        // Issue #359: the category is a closed set, so the picker of the logos offers the logos and
+        // nobody files one under "Loghi" and the next under "logos".
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+
+        using var client = await SignedInAsync(WebCoordinatorVid, token);
+
+        var picture = await UploadedAsync(client, Department.WD, Png(31, 17), "partner.png", token);
+        using var uploaded = await UploadAsync(client, Department.WD, Pdf(), "rules.pdf", "application/pdf", token);
+        uploaded.EnsureSuccessStatusCode();
+        var document = (await uploaded.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+
+        // What the bytes are, until somebody says what the file is for.
+        Assert.Equal(nameof(MediaCategory.Image), await CategoryAsync(client, picture, token));
+        Assert.Equal(nameof(MediaCategory.Document), await CategoryAsync(client, document, token));
+
+        using (var filed = await WriteCategoryAsync(client, picture, nameof(MediaCategory.Logo), token))
+        {
+            Assert.Equal(HttpStatusCode.OK, filed.StatusCode);
+        }
+
+        // The filter a picker narrows by.
+        var logos = await client.GetFromJsonAsync<JsonElement>(
+            $"{MediaEndpoints.Pattern}?filter[category]={nameof(MediaCategory.Logo)}&pageSize=100",
+            token);
+        var ids = logos.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetInt64()).ToList();
+        Assert.Contains(picture, ids);
+        Assert.DoesNotContain(document, ids);
+
+        // A word outside the set is refused, and the row keeps what it had. Refused by the binding,
+        // before any validator: the enum does not read it (400 in production; the test host throws
+        // on a body it cannot bind, as every development host does).
+        using (var typo = await WriteCategoryAsync(client, document, "logos", token))
+        {
+            Assert.False(typo.IsSuccessStatusCode);
+        }
+
+        Assert.Equal(nameof(MediaCategory.Document), await CategoryAsync(client, document, token));
+    }
+
+    [Fact]
+    public async Task TheMigrationCarriesWhatStaffWroteOntoTheSet()
+    {
+        // The rows of this test only, written as the free text of before and taken back with the
+        // transaction: the mapping runs on the whole table, and the table is every test's.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(WebCoordinatorVid, "IT-WM", token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        await using var transaction = await database.Database.BeginTransactionAsync(token);
+
+        (string? Written, string ContentType, string Expected)[] cases =
+        [
+            ("Loghi", "image/png", nameof(MediaCategory.Logo)),
+            ("logos", "image/png", nameof(MediaCategory.Logo)),
+            ("LOGO partner", "application/pdf", nameof(MediaCategory.Document)),
+            ("icone", "image/webp", nameof(MediaCategory.Icon)),
+            ("Banner home", "image/jpeg", nameof(MediaCategory.Banner)),
+            ("foto", "image/png", nameof(MediaCategory.Image)),
+            ("Video", "image/gif", nameof(MediaCategory.Image)),
+            (null, "image/png", nameof(MediaCategory.Image)),
+            (null, "application/pdf", nameof(MediaCategory.Document)),
+        ];
+
+        var prefix = Guid.NewGuid().ToString("N");
+        for (var index = 0; index < cases.Length; index++)
+        {
+            var (written, contentType, _) = cases[index];
+            var stored = $"{prefix}/{index:D2}";
+            await database.Database.ExecuteSqlAsync(
+                $"""
+                INSERT INTO cms_media (owner_department, visibility, file_name, stored_name, content_type, byte_size, alt_i18n,
+                    category, has_file, created_at, created_by, updated_at, updated_by)
+                VALUES ('WD', 'Staff', 'old.bin', {stored}, {contentType}, 1, {NoAlt}, {written}, 1, UTC_TIMESTAMP(6), 0,
+                    UTC_TIMESTAMP(6), 0)
+                """,
+                token);
+        }
+
+        await database.Database.ExecuteSqlRawAsync(Core.Data.Migrations.MapMediaCategories.MapSql, token);
+
+        var read = await database.Database
+            .SqlQuery<string>($"SELECT category AS `Value` FROM cms_media WHERE stored_name LIKE {prefix + "/%"} ORDER BY stored_name")
+            .ToListAsync(token);
+
+        Assert.Equal(cases.Select(item => item.Expected), read);
     }
 
     [Fact]
@@ -487,6 +582,38 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
         response.EnsureSuccessStatusCode();
     }
 
+    private static async Task<string?> CategoryAsync(HttpClient client, long id, CancellationToken cancellationToken)
+    {
+        var media = await client.GetFromJsonAsync<JsonElement>($"{MediaEndpoints.Pattern}/{id}", cancellationToken);
+        return media.GetProperty("category").GetString();
+    }
+
+    /// <summary>The metadata as they are, with another category: the one thing the test is about.</summary>
+    private static async Task<HttpResponseMessage> WriteCategoryAsync(
+        HttpClient client,
+        long id,
+        string category,
+        CancellationToken cancellationToken)
+    {
+        var media = await client.GetFromJsonAsync<JsonElement>($"{MediaEndpoints.Pattern}/{id}", cancellationToken);
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{MediaEndpoints.Pattern}/{id}", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                ownerDepartment = media.GetProperty("ownerDepartment").GetString(),
+                visibility = media.GetProperty("visibility").GetString(),
+                alt = new Dictionary<string, string> { ["it"] = "Un file", ["en"] = "A file" },
+                title = (Dictionary<string, string>?)null,
+                category,
+                rowVersion = media.GetProperty("rowVersion").GetString(),
+            }),
+        };
+
+        request.Headers.Add("X-Requested-With", "hub");
+        return await client.SendAsync(request, cancellationToken);
+    }
+
     private static async Task<HttpResponseMessage> DeleteAsync(HttpClient client, long id, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(
@@ -754,4 +881,7 @@ public sealed class MediaEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         return bytes;
     }
+
+    /// <summary>The five bytes a PDF is recognised by, and sixteen random ones, for the reason of <see cref="Png"/>.</summary>
+    private static byte[] Pdf() => [.. Encoding.ASCII.GetBytes("%PDF-1.4\n"), .. Guid.NewGuid().ToByteArray()];
 }

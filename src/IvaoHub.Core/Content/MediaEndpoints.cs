@@ -294,6 +294,8 @@ public static class MediaEndpoints
     private static void Describe(MediaAsset entity, ReceivedFile received)
     {
         entity.ContentType = received.Format!.ContentType;
+        // Only when nobody has said yet: a replaced logo stays a logo.
+        entity.Category ??= MediaCategories.For(entity.ContentType);
         entity.ByteSize = received.ByteSize;
         entity.Width = received.Width;
         entity.Height = received.Height;

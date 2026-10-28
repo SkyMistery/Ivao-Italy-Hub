@@ -20,7 +20,7 @@ public sealed record MediaListDto(
     int? Width,
     int? Height,
     Localized<string> Alt,
-    string? Category,
+    MediaCategory? Category,
     string Url,
     DateTime? ArchivedAt,
     DateTime CreatedAt,
@@ -39,7 +39,7 @@ public sealed record MediaDetailDto(
     int? Height,
     Localized<string> Alt,
     Localized<string>? Title,
-    string? Category,
+    MediaCategory? Category,
     string Url,
     bool HasFile,
     DateTime? ArchivedAt,
@@ -60,7 +60,7 @@ public sealed record MediaWriteDto(
     Visibility Visibility,
     Localized<string> Alt,
     Localized<string>? Title,
-    string? Category,
+    MediaCategory? Category,
     DateTime RowVersion);
 
 /// <summary>Entity to payload and back. Generated, like every other mapping of the hub.</summary>
