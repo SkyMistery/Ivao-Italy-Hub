@@ -128,7 +128,7 @@ export function ContentEditor({
    * "upload" beside "choose" (Carmine, 11 September 2026: "yes, if it lands in the library of the
    * department the document belongs to"). The same call the library screen makes.
    */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /**
    * Whether this member may change a template of that department. Asked as a question rather than
    * handed the bootstrap, because the answer is about the template's department and not this page's

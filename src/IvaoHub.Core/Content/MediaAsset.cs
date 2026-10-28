@@ -71,8 +71,12 @@ public sealed class MediaAsset : IOwnedByDepartment, IVisible, IAuditable, IShar
 
     public Localized<string>? Title { get; set; }
 
-    /// <summary>Free text, chosen by the department; not an enum, like every other category.</summary>
-    public string? Category { get; set; }
+    /// <summary>
+    /// What the file is for, out of a closed set (issue #359): the picker of a block that shows
+    /// logos offers the logos. Given from the bytes at the upload and changed by whoever writes the
+    /// metadata; null only on a row nobody has described since the column was free text.
+    /// </summary>
+    public MediaCategory? Category { get; set; }
 
     /// <summary>
     /// When somebody deleted it. The row survives the deletion on purpose: a page that was already

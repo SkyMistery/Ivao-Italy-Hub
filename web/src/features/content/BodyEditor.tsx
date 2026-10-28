@@ -124,7 +124,7 @@ export function BodyEditor({
   locales: readonly string[];
   division: { defaultLocale: string; timezone: string };
   mediaLibrary: MediaLibraryQuery;
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /** Whether this member holds a permission where a block would be added: the palette leaves out what they may not. */
   holds: (permission: string) => boolean;
   /**

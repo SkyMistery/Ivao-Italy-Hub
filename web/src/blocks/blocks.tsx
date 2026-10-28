@@ -481,22 +481,20 @@ const ASPECT = {
 } as const;
 
 export function VideoBlock({ props }: BlockComponentProps) {
-  const mediaFileUrl = useMediaFileUrl();
   const { t } = useTranslation();
   const read = useLocalized();
   const aspect = ASPECT[choice(props, 'aspect', ['16x9', '4x3', '1x1'] as const, '16x9')];
   const caption = read(text(props, 'caption'));
-  const uploaded = media(props, 'mediaId');
   const address = plain(props, 'url');
 
-  // A file of the library plays as itself; an address plays in a frame, and only on a host the
-  // allow list knows how to build one for (design M1 §1.2).
-  const framed = uploaded === null && address !== '' ? embedSource(address) : null;
+  // An address plays in a frame, and only on a host the allow list knows how to build one for
+  // (design M1 §1.2). There is no file of the library to play: the library takes no video, and a
+  // video lives on its host (#359, Carmine, 28 October 2026). A body written before that with a
+  // `mediaId` here pointed at a picture, the only thing the picker could offer, and shows nothing.
+  const framed = address === '' ? null : embedSource(address);
 
   const player =
-    uploaded !== null ? (
-      <video src={mediaFileUrl(uploaded)} controls className={`w-full rounded-lg ${aspect}`} />
-    ) : framed !== null ? (
+    framed !== null ? (
       <iframe
         src={framed}
         title={caption === '' ? t('blocks.video.label') : caption}

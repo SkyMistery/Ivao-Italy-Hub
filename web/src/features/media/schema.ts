@@ -3,6 +3,21 @@ import { z } from 'zod';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { localized } from '../../shared/forms';
 
+import type { MediaCategory } from './queries';
+
+/**
+ * What a file is for (#359), in the order the select offers them: a closed set and never free text,
+ * so the picker of a block that shows logos can offer the logos. The server holds the same set as
+ * `MediaCategory`; `satisfies` is what tells the two apart the day one of them changes.
+ */
+export const MEDIA_CATEGORIES = [
+  'Image',
+  'Icon',
+  'Logo',
+  'Banner',
+  'Document',
+] as const satisfies readonly NonNullable<MediaCategory>[];
+
 /**
  * The metadata form of a file, as a zod schema mirroring `MediaWriteDto`. Nothing about the file
  * itself is here — its name on disk, its type, its size, its pixels are what the upload measured —
@@ -18,7 +33,9 @@ export const mediaSchema = z.object({
   // shows it (design M1 §1.2). That is why it is required here and optional there.
   alt: localized().meta({ localized: true, multiline: true }),
   title: localized(),
-  category: z.string(),
+  // Optional only for a file nobody has described since the category was free text: an upload is
+  // given the one its bytes say.
+  category: z.enum(MEDIA_CATEGORIES).optional(),
   rowVersion: z.string().meta({ hidden: true }),
 });
 

@@ -7039,6 +7039,8 @@ export interface components {
         LocalizedOfstring: {
             [key: string]: string;
         };
+        /** @enum {unknown} */
+        MediaCategory: "Image" | "Icon" | "Logo" | "Banner" | "Document" | null;
         /** @description A file as the metadata form shows it, with the version to write back. */
         MediaDetailDto: {
             /** Format: int64 */
@@ -7055,7 +7057,7 @@ export interface components {
             height: null | number;
             alt: components["schemas"]["LocalizedOfstring"];
             title: null | components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             url: string;
             hasFile: boolean;
             /** Format: date-time */
@@ -7093,7 +7095,7 @@ export interface components {
             /** Format: int32 */
             height: null | number;
             alt: components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             url: string;
             /** Format: date-time */
             archivedAt: null | string;
@@ -7114,7 +7116,7 @@ export interface components {
             visibility: components["schemas"]["Visibility"];
             alt: components["schemas"]["LocalizedOfstring"];
             title: null | components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             /** Format: date-time */
             rowVersion: string;
         };
@@ -13315,6 +13317,8 @@ export interface operations {
                     ownerDepartment: components["schemas"]["Department"];
                 } & {
                     visibility?: components["schemas"]["Visibility"];
+                } & {
+                    category?: components["schemas"]["MediaCategory"];
                 };
             };
         };
