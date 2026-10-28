@@ -91,6 +91,7 @@ export function ContentEditor({
   division,
   mediaLibrary,
   uploadMedia,
+  createCollection,
   canManageTemplates,
   holds,
   onSave,
@@ -129,6 +130,11 @@ export function ContentEditor({
    * department the document belongs to"). The same call the library screen makes.
    */
   uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  /**
+   * What the field of the collections draws to make a new one and tick it (#364): the screen's,
+   * since it knows the department and the kind. Absent, the field offers the existing ones only.
+   */
+  createCollection?: ((choose: (key: string) => void) => React.ReactNode) | undefined;
   /**
    * Whether this member may change a template of that department. Asked as a question rather than
    * handed the bootstrap, because the answer is about the template's department and not this page's
@@ -336,6 +342,9 @@ export function ContentEditor({
         division={division}
         mediaLibrary={mediaLibrary}
         uploadMedia={uploadMedia}
+        {...(createCollection === undefined
+          ? {}
+          : { createChoice: (_field: string, choose: (value: string) => void) => createCollection(choose) })}
         // The shadow the autosave sends, kept in step with the fields as they are written.
         onChange={setMetadata}
         onSubmit={async (values) => {

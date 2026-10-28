@@ -641,7 +641,8 @@
       "slug": "L'ultima parte dell'indirizzo a cui si legge questa pagina. Proposto dal titolo finché non ne scrivi uno tu; una volta salvata la pagina non si sposta più.",
       "reviewOn": "Passato questo giorno, il dipartimento riceve una volta l'avviso che il documento va rivisto.",
       "retiredAt": "Un documento non più in vigore resta leggibile con un avviso in cima, così un vecchio link trova la strada. Scegli qui sotto che cosa lo ha sostituito, se qualcosa lo ha fatto.",
-      "parentId": "Dove sta la pagina nel sito: il suo indirizzo è quello di questa pagina più il suo. Al massimo tre livelli. La cima del sito è del direttore e del team web."
+      "parentId": "Dove sta la pagina nel sito: il suo indirizzo è quello di questa pagina più il suo. Al massimo tre livelli. La cima del sito è del direttore e del team web.",
+      "collections": "Un blocco News o Documenti che elenca una di queste raccolte mostra questa pagina. Una nuova si aggiunge alle raccolte di questo dipartimento."
     },
     "chooseParent": "Scegli la pagina sotto cui metterla",
     "address": {
@@ -1688,6 +1689,11 @@
     "title": "Raccolte",
     "description": "Le raccolte in cui questo dipartimento sistema news e documenti. Una pagina elenca una raccolta, e una riga può stare in più raccolte.",
     "create": "Nuova raccolta",
+    "newHere": {
+      "action": "Nuova raccolta…",
+      "description": "Si aggiunge alle raccolte di {{department}}, e questa pagina ci viene sistemata.",
+      "submit": "Crea"
+    },
     "edit": "Modifica raccolta",
     "delete": {
       "title": "Eliminare questa raccolta?",
