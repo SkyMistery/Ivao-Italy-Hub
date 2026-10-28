@@ -234,8 +234,6 @@ export function ContentFormScreen({
         // The library of this department: a row picks its pictures out of its own files, and may
         // put a new one there from the picker.
         mediaLibrary={mediaPickerQuery(department)}
-        // A file already in the library is the file chosen, and the picker says nothing about it:
-        // that is exactly what whoever uploaded it was after.
         // A collection made from this page, in this department, and the row filed in it (#364). Only
         // the kinds that have collections draw the field; a template has them too.
         {...(collectionKind === null
@@ -254,6 +252,8 @@ export function ContentFormScreen({
                 />
               ),
             })}
+        // A file already in the library is the file chosen, and the picker says nothing about it:
+        // that is exactly what whoever uploaded it was after.
         uploadMedia={async (file) =>
           (await upload.mutateAsync({ file, ownerDepartment: department })).media.id
         }
