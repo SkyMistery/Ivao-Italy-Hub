@@ -156,8 +156,9 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
       <div className="flex flex-col gap-1">
         <h3 className="font-semibold">{t('flightops:legs.import.title')}</h3>
         <Subtle className="text-sm">
+          {/* The columns of every tour: a hub tour's help names its two more by themselves. */}
           {t(hub ? 'flightops:legs.import.helpHub' : 'flightops:legs.import.help', {
-            columns: columns.join(', '),
+            columns: LEG_FILE_COLUMNS.join(', '),
           })}
         </Subtle>
       </div>
