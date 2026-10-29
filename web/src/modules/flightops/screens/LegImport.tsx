@@ -26,13 +26,22 @@ import {
   type LegImportRequest,
   type TourDetailDto,
 } from '../api';
-import { downloadLegFileModel, LEG_FILE_COLUMNS, readLegFile, type LegWorkbook } from './legFile';
+import {
+  downloadLegFileModel,
+  HUB_FILE_COLUMNS,
+  LEG_FILE_COLUMNS,
+  readLegFile,
+  type LegWorkbook,
+} from './legFile';
 
 /**
  * The import of the legs of a tour from a file (design M2 §8.4, T8), part of the leg editor and of its declared
  * exception. The file is read here; the server answers the differences without writing — added, changed, restored,
  * kept, deleted, retired — and the import is applied only as it was previewed: the server refuses it if the legs
  * changed in between. "Merge" is the default, because a partial file is normal (ADR-051 of Toursystem).
+ *
+ * A hub tour's file names the hub and the rotation of every leg (note 2026-10-28-hub-e-rotazioni-da-file): the preview
+ * says where each leg goes, and the hubs the import adds or deletes. Matched, kept and removed is a rotation, whole.
  */
 
 type Mode = LegImportRequest['mode'];
@@ -52,6 +61,8 @@ const ROW_FIELD = /^rows\[(\d+)\]\.(\w+)(?:\[\d+\])?$/;
 
 export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () => void }) {
   const { t, i18n } = useTranslation();
+  const hub = tour.kind === 'Hub';
+  const columns = hub ? HUB_FILE_COLUMNS : LEG_FILE_COLUMNS;
   const fileId = useId();
   const modeId = useId();
   const sheetId = useId();
@@ -145,7 +156,9 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
       <div className="flex flex-col gap-1">
         <h3 className="font-semibold">{t('flightops:legs.import.title')}</h3>
         <Subtle className="text-sm">
-          {t('flightops:legs.import.help', { columns: LEG_FILE_COLUMNS.join(', ') })}
+          {t(hub ? 'flightops:legs.import.helpHub' : 'flightops:legs.import.help', {
+            columns: columns.join(', '),
+          })}
         </Subtle>
       </div>
 
@@ -191,11 +204,17 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
             />
           </div>
         ) : null}
-        <Button type="button" variant="ghost" onClick={() => void downloadLegFileModel(`legs-${tour.slug}`)}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => void downloadLegFileModel(`legs-${tour.slug}`, columns)}
+        >
           {t('flightops:legs.import.model')}
         </Button>
       </div>
-      <Subtle className="text-sm">{t(`flightops:legs.import.mode.explain.${mode}`)}</Subtle>
+      <Subtle className="text-sm">
+        {t(`flightops:legs.import.mode.${hub ? 'explainHub' : 'explain'}.${mode}`)}
+      </Subtle>
 
       {file !== null && file.problems.length > 0 ? (
         <Notice
@@ -244,6 +263,22 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
                 text={t(`flightops:legs.import.outcome.${outcome}`, { count })}
               />
             ))}
+            {(preview.data.hubsAdded ?? []).length === 0 ? null : (
+              <Badge
+                variant="flat"
+                text={t('flightops:legs.import.hubsAdded', {
+                  hubs: (preview.data.hubsAdded ?? []).join(', '),
+                })}
+              />
+            )}
+            {(preview.data.hubsDeleted ?? []).length === 0 ? null : (
+              <Badge
+                variant="flat"
+                text={t('flightops:legs.import.hubsDeleted', {
+                  hubs: (preview.data.hubsDeleted ?? []).join(', '),
+                })}
+              />
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -252,6 +287,9 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
                 <TableRow>
                   <TableHead className="px-2">{t('flightops:legs.import.columns.number')}</TableHead>
                   <TableHead className="px-2">{t('flightops:legs.import.columns.route')}</TableHead>
+                  {hub ? (
+                    <TableHead className="px-2">{t('flightops:legs.import.columns.place')}</TableHead>
+                  ) : null}
                   <TableHead className="px-2">{t('flightops:legs.import.columns.outcome')}</TableHead>
                   <TableHead className="px-2">{t('flightops:legs.import.columns.changes')}</TableHead>
                 </TableRow>
@@ -277,6 +315,15 @@ export function LegImport({ tour, onClose }: { tour: TourDetailDto; onClose: () 
                         </Subtle>
                       )}
                     </TableCell>
+                    {hub ? (
+                      <TableCell className="px-2">
+                        {line.hub === null || line.hub === undefined
+                          ? t('flightops:legs.import.connection')
+                          : line.rotation === null || line.rotation === undefined
+                            ? line.hub
+                            : t('flightops:legs.import.place', { hub: line.hub, rotation: line.rotation })}
+                      </TableCell>
+                    ) : null}
                     <TableCell className="px-2">
                       <div className="flex flex-wrap gap-1">
                         <Badge

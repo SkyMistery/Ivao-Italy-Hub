@@ -18,6 +18,9 @@ public enum LegImportMode
 /// <summary>
 /// One row of the file, as the browser read it (T8, Carmine 22 September 2026: the file is read in the browser). The
 /// file names aircraft types only: the groups of a leg are the editor's, and a leg the file matches keeps its own.
+/// <para>On a hub tour, <c>Hub</c> and <c>Rotation</c> say where the leg belongs: the rotation of that hub the label names,
+/// or — both empty — the connection between two hubs (note 2026-10-28-hub-e-rotazioni-da-file). Any other tour leaves them
+/// empty.</para>
 /// </summary>
 public sealed record LegImportRowDto(
     string DepartureIcao,
@@ -25,7 +28,9 @@ public sealed record LegImportRowDto(
     IReadOnlyList<string>? Callsigns,
     IReadOnlyList<string>? FlightNumbers,
     IReadOnlyList<string>? AircraftTypes,
-    DateTime? ReleaseAt);
+    DateTime? ReleaseAt,
+    string? Hub = null,
+    string? Rotation = null);
 
 /// <summary>
 /// The rows of the file, in their order — which is the order of the tour — and what to do with the legs it does not
@@ -65,7 +70,8 @@ public enum LegImportOutcome
 
 /// <summary>
 /// One line of the preview: the outcome, the row of the file (from 0) if there is one, the leg if there is one, its
-/// number now and after, and the fields that change.
+/// number now and after, and the fields that change. On a hub tour, the hub of the leg's rotation and the place of the
+/// rotation in its hub after the import; neither for a connection.
 /// </summary>
 public sealed record LegImportLineDto(
     LegImportOutcome Outcome,
@@ -76,13 +82,20 @@ public sealed record LegImportLineDto(
     string DepartureIcao,
     string ArrivalIcao,
     IReadOnlyList<string> Changes,
-    bool HasReports);
+    bool HasReports,
+    string? Hub = null,
+    int? Rotation = null);
 
-/// <summary>The differences, computed by the server and written nowhere; the fingerprint the apply must carry back.</summary>
+/// <summary>
+/// The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. On a hub tour,
+/// the hubs the import adds and the ones it deletes.
+/// </summary>
 public sealed record LegImportPreviewDto(
     IReadOnlyList<LegImportLineDto> Lines,
     bool ReasonRequired,
-    string Fingerprint);
+    string Fingerprint,
+    IReadOnlyList<string>? HubsAdded = null,
+    IReadOnlyList<string>? HubsDeleted = null);
 
 /// <summary>
 /// The comparison of the file with the legs of the tour, and nothing else: a pure function, unit tested (T8).
@@ -288,7 +301,7 @@ public sealed class LegImportPlan
     private static string Pair(Leg leg) => $"{leg.DepartureIcao}>{leg.ArrivalIcao}";
 
     /// <summary>The fields of the file that differ from the leg's, by the names of the payload.</summary>
-    private static List<string> Changes(Leg leg, Leg file)
+    internal static List<string> Changes(Leg leg, Leg file)
     {
         var changes = new List<string>();
         if (!leg.Callsigns.SequenceEqual(file.Callsigns, StringComparer.Ordinal))
@@ -314,7 +327,7 @@ public sealed class LegImportPlan
         return changes;
     }
 
-    private static void Take(Leg leg, Leg file)
+    internal static void Take(Leg leg, Leg file)
     {
         leg.Callsigns = file.Callsigns;
         leg.FlightNumbers = file.FlightNumbers;
