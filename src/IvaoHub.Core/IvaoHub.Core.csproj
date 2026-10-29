@@ -59,4 +59,14 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
 
+  <!--
+    The driver of the database. The core's code names it (MySqlException, the job and start-up locks), and until now it
+    came in only through Pomelo 9.0.0, at 2.4.0, which has a known advisory (GHSA-473q-m89c-ghf8, 28 October 2026): the
+    direct reference lifts it, for the core and every project above it, to the version in Directory.Packages.props, never
+    below 2.6.1 (note 2026-10-29-il-mysqlconnector-corretto).
+  -->
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" />
+  </ItemGroup>
+
 </Project>
