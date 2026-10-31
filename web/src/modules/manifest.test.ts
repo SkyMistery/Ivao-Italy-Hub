@@ -186,6 +186,7 @@ describe('the third side, the gallery', () => {
         version: block.version,
         kind: block.kind,
         alwaysLive: block.alwaysLive ?? false,
+        audience: 'Public' as const,
       })),
     );
 
@@ -194,7 +195,9 @@ describe('the third side, the gallery', () => {
 
   test('a block the server knows and this build cannot draw is reported', () => {
     const difference = compareRegistries(
-      bootstrapWith([{ type: 'events.upcoming', version: 1, kind: 'Data', alwaysLive: true }]),
+      bootstrapWith([
+        { type: 'events.upcoming', version: 1, kind: 'Data', alwaysLive: true, audience: 'Public' },
+      ]),
       registry.blocks,
     );
 

@@ -90,7 +90,7 @@ public sealed class EventsModule : ModuleBase
         new BlockDescriptor("events.eventList", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.myEvents", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("events.atcCoverage", Version: 1, BlockKind.Data, AlwaysLive: true),
-        new BlockDescriptor("events.staffQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("events.staffQueue", Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
     ];
 
     /// <summary>

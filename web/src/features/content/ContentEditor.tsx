@@ -419,6 +419,8 @@ export function ContentEditor({
       mediaLibrary={mediaLibrary}
       uploadMedia={uploadMedia}
       holds={holds}
+      // A template has no readers of its own: the page made from it is the one held to its visibility.
+      visibility={(content?.isTemplate ?? startsAsTemplate) ? undefined : metadata.visibility}
       pageProperties={pageProperties}
       toolbar={(tools) => (
         // ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
