@@ -244,6 +244,25 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A pilot below the tour's least rating sends nothing, and the tour says so before any flight is chosen (§3.2 point 5;
+    /// phase 6 of the staff trial, f): an FS3 on a tour that asks for a PP, on the core's ladder.
+    /// </summary>
+    [Fact]
+    public async Task APilotBelowTheToursRatingSendsNothing()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        using var pilot = await SignedInAsync(OtherPilotVid, token);
+
+        var (tourId, legs) = await ReadyTourAsync(coordinator, dailyLimit: 1, token, minPilotRating: 5);
+        var flight = _flights.Add(OtherPilotVid, "XAA430", Rome, Milan, DateTime.UtcNow.Date.AddDays(-1).AddHours(8));
+
+        var mine = await OkAsync(await pilot.GetAsync($"{Reports(tourId)}/mine", token), token);
+        Assert.Equal("flightops:errors.reportRatingTooLow", mine.GetProperty("blocked").GetString());
+        await RefusedAsync(pilot, Reports(tourId), Payload(legs[0], flight), "tour", "flightops:errors.reportRatingTooLow", token);
+    }
+
+    /// <summary>
     /// What blocks the send (§3.2 point 5, §3.6): the tour's daily limit by the UTC day of the take-off, a flight on the
     /// wrong route, a leg out of order, and a ban — which also says so on the tour, before any flight is chosen.
     /// </summary>
@@ -550,7 +569,8 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
         CancellationToken cancellationToken,
         long? awardId = null,
         int releasedDaysAgo = 4,
-        int? reportWindowDays = null)
+        int? reportWindowDays = null,
+        int minPilotRating = 2)
     {
         var slug = $"fo-test-pirep-{Guid.NewGuid():N}"[..27];
         var tour = await CreatedAsync(
@@ -574,7 +594,7 @@ public sealed partial class PirepTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 HubRotationOrder: null,
                 RequiresProcedures: false,
                 DailyLegLimit: dailyLimit,
-                MinPilotRating: 2,
+                MinPilotRating: minPilotRating,
                 ReferenceAircraftIcao: null,
                 RequiredNm: null,
                 AllowedAircraft: null,
