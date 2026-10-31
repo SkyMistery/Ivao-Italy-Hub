@@ -9,7 +9,8 @@ namespace IvaoHub.Core.Services;
 /// never contains a secret (design M0 section 2.4).
 /// </summary>
 /// <remarks>
-/// The folder is denied by the web server: it is read over FTP, never over HTTP.
+/// The folder is denied by the web server: it is read over FTP, never over HTTP. Like <see cref="StartsLog"/>, it never
+/// throws: a file that cannot be written only loses the report.
 /// </remarks>
 public static class StartupDiagnostics
 {
@@ -52,8 +53,17 @@ public static class StartupDiagnostics
             .Append(CultureInfo.InvariantCulture, $"modules       {Join(enabledModules, "none yet")}\n")
             .ToString();
 
-        Directory.CreateDirectory(paths.Diagnostics);
-        await File.WriteAllTextAsync(Path.Combine(paths.Diagnostics, FileName), report, cancellationToken);
+        try
+        {
+            Directory.CreateDirectory(paths.Diagnostics);
+            await File.WriteAllTextAsync(Path.Combine(paths.Diagnostics, FileName), report, cancellationToken);
+        }
+#pragma warning disable CA1031 // A full disk, a permission, a file held open by FTP: the report is lost, never the start (issue #325, item 4).
+        catch (Exception exception) when (exception is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+            Console.Error.WriteLine($"Could not write {FileName}: {exception.Message}");
+        }
     }
 
     private static string Join(IReadOnlyList<string> values, string empty) =>
