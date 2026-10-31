@@ -370,6 +370,71 @@ public sealed class ContentEndToEndTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task ABlockForFewerReadersThanThePageIsRefusedWhereItSits()
+    {
+        // Issue #362, note 2026-10-28-il-pubblico-di-un-blocco: what waits for the staff draws nothing for anybody else. It
+        // is refused, under its own path, on a page for everybody or for members, and saved on one for the staff; the
+        // greeting stays for any page (a public home greets its members); a template has no readers of its own.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
+
+        using var client = _factory.CreateApiClient();
+        await _factory.SignInAsync(client, SuperadminVid, token);
+
+        static JsonNode Body(string type) => JsonNode.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [ { "id": "s1", "blocks": [
+            { "id": "b1", "type": "heading", "props": {} },
+            { "id": "b2", "type": "{{type}}", "props": {} } ] } ]
+        }
+        """)!;
+
+        async Task<HttpResponseMessage> CreateAsync(string type, Visibility visibility, bool isTemplate = false) =>
+            await SendAsync(
+                client,
+                HttpMethod.Post,
+                ContentEndpoints.Pattern,
+                Payload(
+                    Department.ED,
+                    $"audience-{Guid.NewGuid():N}"[..24],
+                    isTemplate: isTemplate,
+                    visibility: visibility,
+                    body: Body(type)),
+                token);
+
+        foreach (var (type, visibility) in new[]
+                 {
+                     (CoreBlocks.MyWork, Visibility.Public),
+                     (CoreBlocks.MyWork, Visibility.Members),
+                 })
+        {
+            using var refused = await CreateAsync(type, visibility);
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+
+            var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+            Assert.Equal(
+                ContentWriteDtoValidator.BlockAudienceKey,
+                errors.GetProperty("body.sections[0].blocks[1]")[0].GetString());
+            Assert.False(errors.TryGetProperty("body.sections[0].blocks[0]", out _), "the heading is for anybody");
+        }
+
+        foreach (var (type, visibility) in new[]
+                 {
+                     (CoreBlocks.MyWork, Visibility.Staff),
+                     (CoreBlocks.MyWork, Visibility.Department),
+                     (CoreBlocks.Welcome, Visibility.Public),
+                 })
+        {
+            using var saved = await CreateAsync(type, visibility);
+            Assert.Equal(HttpStatusCode.Created, saved.StatusCode);
+        }
+
+        using var template = await CreateAsync(CoreBlocks.MyWork, Visibility.Public, isTemplate: true);
+        Assert.Equal(HttpStatusCode.Created, template.StatusCode);
+    }
+
+    [Fact]
     public async Task EnvelopeValidationRejectsABackgroundTheServerDoesNotKnow()
     {
         // The pair that has to agree by hand: `BACKGROUNDS` in `web/src/blocks/envelope.ts` and

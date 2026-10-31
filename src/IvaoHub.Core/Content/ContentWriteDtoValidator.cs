@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using FluentValidation;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using Microsoft.EntityFrameworkCore;
 
@@ -120,6 +121,26 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
             }
         });
 
+        // Who each block is for (note 2026-10-28-il-pubblico-di-un-blocco): a queue of the staff on a page anybody reads
+        // draws nothing for them, so it is refused where it sits, and the editor puts the message next to it. The table of
+        // what a page may carry is the one publication already asks (`VisibilityCeiling`). A template has no readers of its
+        // own: the page made from it is the one held to its visibility.
+        RuleFor(content => content.Body).Custom((body, context) =>
+        {
+            var payload = context.InstanceToValidate;
+            if (payload.IsTemplate)
+            {
+                return;
+            }
+
+            foreach (var path in BlocksBeyond(walker, blocks, body, payload.Visibility))
+            {
+                context.AddFailure(new FluentValidation.Results.ValidationFailure(
+                    $"{nameof(ContentWriteDto.Body)}.{path}",
+                    BlockAudienceKey));
+            }
+        });
+
         // ---- the life of a document (G14) -----------------------------------------------------
 
         // A page with a review date would be a page the reminder job writes to. The fields belong
@@ -155,6 +176,33 @@ public sealed partial class ContentWriteDtoValidator : AbstractValidator<Content
             .NotNull()
             .When(content => content.SupersededById is not null)
             .WithMessage("errors.content.successorWithoutRetirement");
+    }
+
+    /// <summary>The refusal of a block whose audience is narrower than the page's.</summary>
+    public const string BlockAudienceKey = "errors.body.blockAudience";
+
+    /// <summary>
+    /// The paths of the blocks of a body that a page of this visibility may not carry: their
+    /// <see cref="IBlockDescriptor.Audience"/> is narrower than its readers. A type nobody registered is the envelope's
+    /// refusal, not this one.
+    /// </summary>
+    public static IEnumerable<string> BlocksBeyond(
+        BlockDocumentWalker walker,
+        BlockRegistry blocks,
+        JsonNode? body,
+        Visibility visibility)
+    {
+        ArgumentNullException.ThrowIfNull(walker);
+        ArgumentNullException.ThrowIfNull(blocks);
+
+        var allowed = VisibilityCeiling.For(visibility);
+
+        return walker.EnumerateBlocks(body)
+            .Where(block => block.Node["type"] is JsonValue type
+                && type.TryGetValue<string>(out var name)
+                && blocks.Find(name) is { } descriptor
+                && !allowed.Contains(descriptor.Audience))
+            .Select(block => block.Path);
     }
 
     /// <summary>

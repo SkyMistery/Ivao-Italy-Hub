@@ -80,8 +80,8 @@ public sealed class TrainingModule : ModuleBase
     [
         new BlockDescriptor("training.upcomingSessions", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("training.myTraining", Version: 1, BlockKind.Data, AlwaysLive: true),
-        new BlockDescriptor("training.trainerQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
-        new BlockDescriptor("training.approvalQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("training.trainerQueue", Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
+        new BlockDescriptor("training.approvalQueue", Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
     ];
 
     /// <summary>The pages of the training, the public ones and the member's, live under <c>/training</c>, so no page may be «training».</summary>
