@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text;
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -289,6 +290,9 @@ public static class IvaoAuthenticationExtensions
     /// The IVAO identity is exchanged for the application identity here, by <see cref="IvaoSignIn"/>:
     /// this only hands it what the round trip collected, and turns a refusal into the page that
     /// names it.
+    /// <para>A failure on the way — the database down, or two first sign-ins of the same member at once meeting on the same
+    /// key — ends on that page too, as «unknown», and never as the JSON of a 500 in the middle of a sign-in (issue #320,
+    /// item 7): a second try finds the row the first one wrote.</para>
     /// </summary>
     private static async Task OnTicketReceived(TicketReceivedContext context)
     {
@@ -296,10 +300,27 @@ public static class IvaoAuthenticationExtensions
         var tokens = items[TokensItemKey] as IvaoUserTokens;
         items.Remove(TokensItemKey);
 
-        var outcome = await context.HttpContext.RequestServices.GetRequiredService<IvaoSignIn>().CompleteAsync(
-            items[ProfileItemKey] as IvaoUserProfile,
-            tokens,
-            context.HttpContext.RequestAborted);
+        IvaoSignInOutcome outcome;
+        try
+        {
+            outcome = await context.HttpContext.RequestServices.GetRequiredService<IvaoSignIn>().CompleteAsync(
+                items[ProfileItemKey] as IvaoUserProfile,
+                tokens,
+                context.HttpContext.RequestAborted);
+        }
+#pragma warning disable CA1031 // Whatever failed, the visitor gets the page that says so, and the log the exception.
+        catch (Exception exception) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
+#pragma warning restore CA1031
+        {
+            context.HttpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(IvaoAuthenticationExtensions))
+                .LogError(exception, "The sign in could not be completed; the visitor is sent to the error page.");
+
+            context.HandleResponse();
+            context.Response.Redirect($"{LoginErrorPath}?code=unknown");
+            return;
+        }
 
         if (outcome.Principal is null)
         {
@@ -429,7 +450,39 @@ public static class IvaoAuthenticationExtensions
             return fallback;
         }
 
-        return IsRefusalPage(returnUrl) ? fallback : returnUrl;
+        return IsRefusalPage(returnUrl) ? fallback : AsciiOnly(returnUrl);
+    }
+
+    /// <summary>
+    /// The address with every character above <c>~</c> written as its UTF-8 bytes in percent form, as a browser sends it: the
+    /// server refuses anything else in <c>Location</c>, so <c>/è</c> or a line separator made the callback a 500 and the
+    /// visitor was not signed in (issue #320, item 2). What is already ASCII, a percent included, stays as it was.
+    /// </summary>
+    private static string AsciiOnly(string returnUrl)
+    {
+        if (returnUrl.All(char.IsAscii))
+        {
+            return returnUrl;
+        }
+
+        var written = new StringBuilder(returnUrl.Length * 2);
+        Span<byte> bytes = stackalloc byte[4];
+        foreach (var rune in returnUrl.EnumerateRunes())
+        {
+            if (rune.IsAscii)
+            {
+                written.Append((char)rune.Value);
+                continue;
+            }
+
+            var length = rune.EncodeToUtf8(bytes);
+            foreach (var value in bytes[..length])
+            {
+                written.Append(CultureInfo.InvariantCulture, $"%{value:X2}");
+            }
+        }
+
+        return written.ToString();
     }
 
     private static bool IsRefusalPage(string returnUrl)

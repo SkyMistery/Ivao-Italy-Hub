@@ -204,7 +204,7 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = HubRateLimits.RejectAsync;
     options.AddMemberWritesPolicy();
     options.AddPolicy(AuthEndpoints.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        HubRateLimits.AddressPartition(context.Connection.RemoteIpAddress),
         _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 10,
@@ -367,7 +367,12 @@ app.UseAuthorization();
 // to an address the module does not even have is refused too.
 app.UseModuleMaintenance();
 
-app.MapOpenApi();
+// The contract is public in the repository, but an installation answers only what it needs to (security checklist §6):
+// in Production the document is not served (issue #320, item 8). The build writes it from the host, not from this address.
+if (!app.Environment.IsProduction() || HubConfiguration.IsOpenApiDocumentGeneration)
+{
+    app.MapOpenApi();
+}
 
 if (app.Environment.IsDevelopment())
 {

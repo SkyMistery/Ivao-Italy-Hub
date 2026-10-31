@@ -1,5 +1,7 @@
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace IvaoHub.Web;
 
@@ -76,15 +78,41 @@ internal static class SecurityHeadersPipeline
 
         return app.Use(async (context, next) =>
         {
-            foreach (var (name, value) in headers)
+            // HSTS is written by its own middleware, before this one: kept, so that an error can carry it again.
+            var transport = context.Response.Headers.StrictTransportSecurity;
+
+            void Write()
             {
-                context.Response.Headers[name] = value;
+                foreach (var (name, value) in headers)
+                {
+                    context.Response.Headers[name] = value;
+                }
+
+                if (policy is not null)
+                {
+                    context.Response.Headers.ContentSecurityPolicy = policy;
+                }
             }
 
-            if (policy is not null)
+            Write();
+
+            // The exception handler clears the response, headers included, and writes its problem without coming back
+            // through here: a 500, and every refusal of DomainExceptionHandler, left with no policy and no HSTS (issue #320,
+            // item 1). So an error's answer is given them again as it starts. Only an error's: an endpoint that changed one
+            // on purpose — the frame of an interactive block — keeps what it wrote.
+            context.Response.OnStarting(() =>
             {
-                context.Response.Headers.ContentSecurityPolicy = policy;
-            }
+                if (context.Features.Get<IExceptionHandlerFeature>() is not null)
+                {
+                    Write();
+                    if (!StringValues.IsNullOrEmpty(transport))
+                    {
+                        context.Response.Headers.StrictTransportSecurity = transport;
+                    }
+                }
+
+                return Task.CompletedTask;
+            });
 
             await next();
         });

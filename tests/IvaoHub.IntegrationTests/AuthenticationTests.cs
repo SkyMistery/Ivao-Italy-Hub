@@ -322,6 +322,10 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
     [InlineData("/forbidden#top", "/")]
     [InlineData("/login-errors", "/login-errors")]
     [InlineData("/forbidden-zone", "/forbidden-zone")]
+    // Above ASCII, written as a browser sends it, or the callback cannot write it in Location (issue #320, item 2).
+    [InlineData("/news/caffè", "/news/caff%C3%A8")]
+    [InlineData("/a\u2028b", "/a%E2%80%A8b")]
+    [InlineData("/✈?q=%20x", "/%E2%9C%88?q=%20x")]
     public void OnlyLocalReturnUrlsSurvive(string? returnUrl, string expected)
     {
         Assert.Equal(expected, IvaoAuthenticationExtensions.SafeReturnUrl(returnUrl));
