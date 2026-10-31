@@ -129,7 +129,7 @@ export function ContentEditor({
    * "upload" beside "choose" (Carmine, 11 September 2026: "yes, if it lands in the library of the
    * department the document belongs to"). The same call the library screen makes.
    */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /**
    * What the field of the collections draws to make a new one and tick it (#364): the screen's,
    * since it knows the department and the kind. Absent, the field offers the existing ones only.
@@ -428,6 +428,8 @@ export function ContentEditor({
       mediaLibrary={mediaLibrary}
       uploadMedia={uploadMedia}
       holds={holds}
+      // A template has no readers of its own: the page made from it is the one held to its visibility.
+      visibility={(content?.isTemplate ?? startsAsTemplate) ? undefined : metadata.visibility}
       pageProperties={pageProperties}
       toolbar={(tools) => (
         // ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which

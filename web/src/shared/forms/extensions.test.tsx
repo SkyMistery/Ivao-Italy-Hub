@@ -94,6 +94,29 @@ test('a media field is the library, and never a number to type', async () => {
   expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ picture: 42 }));
 });
 
+test('a media field of one category is offered only the files of that category', async () => {
+  // #359: the logos of a row of logos are the files filed as logos, not every picture. The library
+  // narrows itself, through what its query carries; the generator only says which category.
+  const LOGO: PickableMedia = { ...PICTURE, id: 7, fileName: 'partner-logo.png' };
+  const narrowed = vi.fn((category: string): MediaLibraryQuery =>
+    queryOptions({
+      queryKey: ['extensions-test', 'library', category] as readonly unknown[],
+      queryFn: () => Promise.resolve({ items: [LOGO], total: 1 }),
+    }),
+  );
+  const narrowing: MediaLibraryQuery = { ...library, meta: { narrow: narrowed } };
+
+  render(
+    z.object({ logo: z.number().optional().meta({ media: true, mediaCategory: 'Logo' }) }),
+    { logo: undefined },
+    { labels: { fields: { logo: 'Logo' } }, mediaLibrary: narrowing, division: DIVISION },
+  );
+
+  expect(await screen.findByRole('button', { name: /partner-logo\.png/ })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /hangar\.png/ })).toBeNull();
+  expect(narrowed).toHaveBeenCalledWith('Logo');
+});
+
 test('a media field says what it is missing rather than drawing a picker that cannot work', () => {
   // The same discipline as an unknown type: the generator refuses out loud. A screen that forgot
   // to hand over the library would otherwise render an empty box and look like a bug in the data.

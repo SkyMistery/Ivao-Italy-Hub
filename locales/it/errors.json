@@ -38,7 +38,8 @@
       "tooLarge": "Questo file supera la dimensione che l'hub accetta.",
       "typeNotAllowed": "L'hub non accetta file di questo tipo.",
       "inUse": "Una pagina pubblicata mostra questo file, quindi non si può cancellare. Archivialo.",
-      "inUseByModule": "Qualcosa nell'hub usa ancora questo file, quindi per ora non si può cancellare."
+      "inUseByModule": "Qualcosa nell'hub usa ancora questo file, quindi per ora non si può cancellare.",
+      "categoryInvalid": "Scegli una delle categorie della libreria."
     },
     "unknown": "Qualcosa è andato storto. Riprova.",
     "title": "Non ha funzionato",
@@ -63,7 +64,8 @@
       "sourceTooLarge": "Il codice di questo blocco e' troppo lungo. Un'animazione va tenuta piccola: viaggia con la pagina.",
       "sourceNotInteractive": "Solo un blocco interattivo porta del codice.",
       "sourceNotPermitted": "Per aggiungere o cambiare il codice di un blocco interattivo serve il permesso di inserire codice.",
-      "spanUnknown": "Questo blocco ha una larghezza che una dashboard non ha."
+      "spanUnknown": "Questo blocco ha una larghezza che una dashboard non ha.",
+      "blockAudience": "Questo blocco è per meno lettori della pagina: toglilo, oppure rendi la pagina visibile a meno persone."
     },
     "content": {
       "templateNotPublishable": "Un template non si pubblica: creane una pagina e pubblica quella.",
@@ -92,7 +94,8 @@
         "needsPublish": "Questa pagina e' online: chi la legge e dove sta li cambia chi puo' pubblicarla.",
         "needsApproval": "Questa pagina e' online e passa dall'approvazione: chi la legge e dove sta li cambia chi puo' approvarla.",
         "picturesHidden": "Un'immagine della pagina online non e' visibile a questi lettori. Rendila visibile nella libreria, oppure cambiala e pubblica di nuovo.",
-        "capturesNarrower": "La pagina online porta dati catturati per meno lettori. Pubblicala di nuovo, cosi' si catturano per questi."
+        "capturesNarrower": "La pagina online porta dati catturati per meno lettori. Pubblicala di nuovo, cosi' si catturano per questi.",
+        "blockAudience": "La pagina online porta un blocco per meno lettori. Toglilo e pubblica di nuovo, poi cambia chi la legge."
       },
       "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
       "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."

@@ -38,6 +38,7 @@ import { ICON_NAMES } from '../icons';
 import { iconGlyph } from '../icons/glyphs';
 import { fold } from '../search/highlight';
 import { MediaPicker, type MediaLibraryQuery } from '../ui/MediaPicker';
+import { narrowLibrary } from '../ui/narrowLibrary';
 
 import { LocaleFields } from './LocaleFields';
 import { LocaleTabs } from './LocaleTabs';
@@ -56,8 +57,11 @@ interface FormEnvironment {
   labels: string;
   /** The page a media field chooses from. A media field without one throws, and says why. */
   mediaLibrary?: MediaLibraryQuery | undefined;
-  /** Uploads into that library and answers the identifier, when the screen allows it. */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  /**
+   * Uploads into that library and answers the identifier, when the screen allows it; with the
+   * category of the field it was uploaded from, when the field offers one category only (#359).
+   */
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /** The two facts about the division a media field and an instant need. */
   division?: { defaultLocale: string; timezone: string } | undefined;
   /**
@@ -143,7 +147,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    * picker then offers "upload" beside "choose", and what was uploaded is chosen. It is the same
    * call the library screen makes — one way in, offered from one more place.
    */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /**
    * The default language and the time zone of the division. Only two kinds of field need them — a
    * media field, to announce a thumbnail, and an instant, to say what a UTC time is locally — so a
@@ -998,7 +1002,11 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
         );
       }
 
-      const library = env.mediaLibrary;
+      // A field that offers one category of the library (#359) is offered it, and a file uploaded
+      // there joins it: otherwise the logo just uploaded would be chosen and missing from the grid.
+      const category = node.category;
+      const library = category === null ? env.mediaLibrary : narrowLibrary(env.mediaLibrary, category);
+      const upload = env.uploadMedia;
       const defaultLocale = env.division.defaultLocale;
 
       return (
@@ -1009,7 +1017,9 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
             render={({ field }) => (
               <MediaPicker
                 query={library}
-                onUpload={env.uploadMedia}
+                onUpload={
+                  upload === undefined || category === null ? upload : (file: File) => upload(file, category)
+                }
                 value={typeof field.value === 'number' ? field.value : null}
                 // Undefined and not null when nothing is chosen: an optional field that is absent
                 // is absent, and a null would be a value the contract does not have.

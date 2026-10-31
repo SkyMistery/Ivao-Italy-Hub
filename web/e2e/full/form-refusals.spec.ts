@@ -48,7 +48,11 @@ const words = englishCommon as unknown as {
     options: { status: { Answered: string; Closed: string } };
     thread: { send: string; fields: { body: string } };
   };
-  media: { fields: { alt: string; category: string }; archive: { action: string; notice: string } };
+  media: {
+    fields: { alt: string; category: string };
+    options: { category: { Logo: string } };
+    archive: { action: string; notice: string };
+  };
 };
 const conflict = (
   JSON.parse(
@@ -309,7 +313,8 @@ test('archiving a file moves the row under its form, and saving the metadata aft
     en: `A bench picture ${stamp}`,
     it: `Una figura del banco ${stamp}`,
   });
-  await page.getByLabel(words.media.fields.category, { exact: true }).fill(`bench-${stamp}`);
+  // A category out of the library's closed set (#359), no longer a word to type.
+  await choose(page, words.media.fields.category, words.media.options.category.Logo);
   await whileWaitingFor(page, 'PUT', `/api/media/${id}`, async () => {
     await page.getByRole('button', { name: words.common.save, exact: true }).click();
   });

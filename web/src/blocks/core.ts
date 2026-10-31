@@ -229,6 +229,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'content',
     subgroup: 'text',
     icon: MousePointerClick,
+    // The same piece as the interactive group's buttons: out of the palette, still drawn (note
+    // 2026-10-22-il-piano-dopo-la-prova-dello-staff, III).
+    retired: true,
   },
   {
     type: CORE_BLOCK_TYPES.linkList,
@@ -301,10 +304,10 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     kind: 'Content',
     schema: videoSchema,
     component: VideoBlock,
-    // A file of the library rather than an address: the gallery is a page of the back office, and
-    // it should not quietly call a site on the other side of the world every time somebody opens
-    // it. The other half — an address turned into a player — is what `allowlist.test.ts` is for.
-    example: { mediaId: 1, aspect: '16x9' },
+    // No address: the gallery is a page of the back office, and it should not quietly call a site
+    // on the other side of the world every time somebody opens it, so it shows the block without
+    // one. An address turned into a player is what `allowlist.test.ts` is for.
+    example: { aspect: '16x9' },
     editorLabelKey: 'blocks.video.label',
     group: 'content',
     subgroup: 'media',
@@ -796,6 +799,9 @@ export const coreBlockRegistrations: readonly BlockRegistration[] = [
     group: 'data',
     subgroup: 'operational',
     icon: ArrowLeftRight,
+    // Every coordination agreement lives on the ATC site: out of the palette, still drawn (note
+    // 2026-10-22-il-piano-dopo-la-prova-dello-staff, XXI).
+    retired: true,
   },
 
   // --- The personal dashboards (D3) ------------------------------------------------------------

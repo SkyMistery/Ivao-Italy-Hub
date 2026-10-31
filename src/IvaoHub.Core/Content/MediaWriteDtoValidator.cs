@@ -11,9 +11,6 @@ namespace IvaoHub.Core.Content;
 /// </summary>
 public sealed class MediaWriteDtoValidator : AbstractValidator<MediaWriteDto>
 {
-    /// <summary>Longest category the column holds.</summary>
-    public const int MaxCategoryLength = 64;
-
     public MediaWriteDtoValidator(IOptions<DivisionOptions> division)
     {
         ArgumentNullException.ThrowIfNull(division);
@@ -22,7 +19,8 @@ public sealed class MediaWriteDtoValidator : AbstractValidator<MediaWriteDto>
         // reader using a screen reader is given instead of the picture, in their own language.
         RuleFor(media => media.Alt).Required(division.Value);
 
+        // One of the closed set (issue #359): a number the enum does not name is not a category.
         RuleFor(media => media.Category)
-            .MaximumLength(MaxCategoryLength).WithMessage("errors.text.tooLong");
+            .IsInEnum().WithMessage("errors.media.categoryInvalid");
     }
 }

@@ -254,8 +254,14 @@ export function ContentFormScreen({
             })}
         // A file already in the library is the file chosen, and the picker says nothing about it:
         // that is exactly what whoever uploaded it was after.
-        uploadMedia={async (file) =>
-          (await upload.mutateAsync({ file, ownerDepartment: department })).media.id
+        uploadMedia={async (file, category) =>
+          (
+            await upload.mutateAsync({
+              file,
+              ownerDepartment: department,
+              ...(category === undefined ? {} : { category }),
+            })
+          ).media.id
         }
         // Asked of the template's department and not of this page's: a page of one department can
         // be made from the template of another (design M1 §9.4).

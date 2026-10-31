@@ -4632,6 +4632,8 @@ export interface components {
         /**
          * @description One block, as the server declares it. What it looks like and what its properties mean live in
          *     TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
+         *     Audience is the widest page the block makes sense on, which the palette greys it out beyond
+         *     (note 2026-10-28-il-pubblico-di-un-blocco).
          */
         BootstrapBlock: {
             type: string;
@@ -4639,6 +4641,7 @@ export interface components {
             version: number;
             kind: components["schemas"]["BlockKind"];
             alwaysLive: boolean;
+            audience: components["schemas"]["Visibility"];
         };
         /**
          * @description One person the footer credits. ProfileUrl is built by the core's IVAO half, so the client links to it
@@ -7036,6 +7039,8 @@ export interface components {
         LocalizedOfstring: {
             [key: string]: string;
         };
+        /** @enum {unknown} */
+        MediaCategory: "Image" | "Icon" | "Logo" | "Banner" | "Document" | null;
         /** @description A file as the metadata form shows it, with the version to write back. */
         MediaDetailDto: {
             /** Format: int64 */
@@ -7052,7 +7057,7 @@ export interface components {
             height: null | number;
             alt: components["schemas"]["LocalizedOfstring"];
             title: null | components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             url: string;
             hasFile: boolean;
             /** Format: date-time */
@@ -7090,7 +7095,7 @@ export interface components {
             /** Format: int32 */
             height: null | number;
             alt: components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             url: string;
             /** Format: date-time */
             archivedAt: null | string;
@@ -7111,7 +7116,7 @@ export interface components {
             visibility: components["schemas"]["Visibility"];
             alt: components["schemas"]["LocalizedOfstring"];
             title: null | components["schemas"]["LocalizedOfstring"];
-            category: null | string;
+            category: null | components["schemas"]["MediaCategory"];
             /** Format: date-time */
             rowVersion: string;
         };
@@ -13312,6 +13317,8 @@ export interface operations {
                     ownerDepartment: components["schemas"]["Department"];
                 } & {
                     visibility?: components["schemas"]["Visibility"];
+                } & {
+                    category?: components["schemas"]["MediaCategory"];
                 };
             };
         };

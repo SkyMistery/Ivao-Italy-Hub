@@ -106,7 +106,8 @@ internal static class MeEndpoints
                         block.Type,
                         block.Version,
                         block.Kind,
-                        block.AlwaysLive))],
+                        block.AlwaysLive,
+                        block.Audience))],
                     [.. catalogue.All.Select(permission =>
                         new BootstrapPermissionName(
                             permission.Name,
@@ -343,6 +344,8 @@ internal sealed record BootstrapPermissionName(string Name, bool IsGlobal, bool 
 /// <summary>
 /// One block, as the server declares it. What it looks like and what its properties mean live in
 /// TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
+/// <para><paramref name="Audience"/> is the widest page the block makes sense on, which the palette greys it out beyond
+/// (note 2026-10-28-il-pubblico-di-un-blocco).</para>
 /// </summary>
-internal sealed record BootstrapBlock(string Type, int Version, BlockKind Kind, bool AlwaysLive);
+internal sealed record BootstrapBlock(string Type, int Version, BlockKind Kind, bool AlwaysLive, Visibility Audience);
 

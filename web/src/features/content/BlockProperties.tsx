@@ -76,7 +76,7 @@ export function SectionProperties({
   /** The library the picture behind a section is chosen from — this department's. */
   mediaLibrary: MediaLibraryQuery;
   /** Uploads into that library and answers the identifier; the picker offers it beside "choose". */
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   /**
    * The settings, applied as they are written — with one exception, the `key` of a template's
    * section, which comes through here only when the button under the form is pressed. A key is
@@ -102,11 +102,15 @@ export function SectionProperties({
   const named = typeof section.key === 'string' && section.key.length > 0;
 
   // The block types this section may allow, labelled the way the palette labels them: the generator
-  // draws the labels it is handed and never translates a value of its own.
-  const blocks = registry.blocks.map((block) => ({
-    value: block.type,
-    label: t(block.editorLabelKey),
-  }));
+  // draws the labels it is handed and never translates a value of its own. A retired block is not
+  // offered to a template either, unless the section already allows it: dropping the entry would
+  // drop the value from the field the next time it is saved.
+  const blocks = registry.blocks
+    .filter((block) => block.retired !== true || section.allowedBlocks?.includes(block.type) === true)
+    .map((block) => ({
+      value: block.type,
+      label: t(block.editorLabelKey),
+    }));
 
   const defaults: SectionFormValues = {
     title: { ...emptyLocalized(locales), ...(section.title ?? {}) },
@@ -334,7 +338,7 @@ export function BlockProperties({
    * so from G3 on this is not an occasional prop: without it those forms throw, and say why.
    */
   mediaLibrary: MediaLibraryQuery;
-  uploadMedia?: ((file: File) => Promise<number>) | undefined;
+  uploadMedia?: ((file: File, category?: string) => Promise<number>) | undefined;
   onApplyProps: (props: Record<string, unknown>) => void;
   onEnvelope: (patch: Partial<BlockEnvelope>) => void;
   /** Moves the block to the end of the first column of that section. */
