@@ -1,3 +1,4 @@
+using IvaoHub.Core.Division;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -32,6 +33,19 @@ public static class JobServiceCollectionExtensions
         // The scheduler itself is started by the notifications and the reference data, which register Quartz's own service.
         services.AddHostedService<JobCatchUp>();
 
+        // The log of the runs keeps a month, and the last run of every job (issue #325, item 5), once a day at night in the
+        // division's own zone, after the other nightly jobs of the core.
+        services.AddScoped<JobsLogRetentionJob>();
+        services.AddQuartz(quartz => quartz.AddJob<JobsLogRetentionJob>(job => job.WithIdentity(JobsLogRetentionJob.JobName)));
+        services.AddOptions<QuartzOptions>()
+            .Configure<IOptions<DivisionOptions>>((options, division) => options.AddTrigger(trigger => trigger
+                .ForJob(JobsLogRetentionJob.JobName)
+                .WithIdentity($"{JobsLogRetentionJob.JobName}-daily")
+                .WithCronSchedule(RetentionCron, schedule => schedule.InTimeZone(division.Value.ResolveTimeZone()))));
+
         return services;
     }
+
+    /// <summary>04:30 in the time zone of the division: after the media expiry, before anybody is up.</summary>
+    private const string RetentionCron = "0 30 4 * * ?";
 }
