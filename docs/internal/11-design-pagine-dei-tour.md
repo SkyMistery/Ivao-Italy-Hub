@@ -1,8 +1,8 @@
 # IVAO Division Hub — Design delle pagine dei tour (fase 6, m e q)
 
 **Data:** 28 ottobre 2026, fase di test, fase 6 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.G, voci m e q).
-**Stato:** **Proposta**, da approvare da Carmine. **Nessun codice** finché non è approvata: la nota del 22 ottobre lo chiede («con il
-loro design prima, da approvare»). Le domande sono nel §7.
+**Stato:** **approvato.** Le quattro domande del §7 **le ha decise Carmine in chat al master, 31 ottobre 2026**, ognuna con l'opzione
+raccomandata (§8). Il codice segue nell'ordine deciso (domanda 4), dopo che le PR aperte della fase 6 sono entrate.
 **Che cosa tocca:** solo il modulo dei tour (`web/src/modules/flightops/`) e, per l'archivio, un parametro di una lettura che c'è già.
 Nessuna migrazione, nessun componente nuovo nell'elenco chiuso (§6), il nucleo non cambia.
 
@@ -85,7 +85,14 @@ Nessun componente nuovo: i passi del §5 sono le `Tabs` di Atmosphere con il num
 4. **L'ordine del codice**, dopo l'approvazione: (a) prima la pagina e l'elenco (li vedono i piloti), poi le schermate dello staff —
    **raccomandata**; (b) prima le schermate dello staff.
 
+## 8. Le risposte di Carmine (31 ottobre 2026, in chat al master)
+
+1. **L'archivio: (a)**, una scheda «Archivio» con i tour chiusi nell'elenco.
+2. **La pagina di un tour: (a)**, la testata, «Il tuo tour» e le quattro schede.
+3. **Creare un tour: (a)**, un percorso a passi per il tour nuovo e le stesse schede per quello esistente.
+4. **L'ordine: (a)**, prima la pagina di un tour e l'elenco (li vedono i piloti), poi le schermate dello staff.
+
 ## Da portare nel piano
 
-- **Design M2 §8.1** (le pagine pubbliche dei tour) e **§8.3** (le schermate dei tour nel back office): sostituite da questo documento
-  quando è approvato.
+- **Design M2 §8.1** (le pagine pubbliche dei tour) e **§8.3** (le schermate dei tour nel back office): sostituite da questo documento,
+  approvato da Carmine il 31 ottobre 2026; il codice in due passi, prima le pagine dei piloti e poi le schermate dello staff.
