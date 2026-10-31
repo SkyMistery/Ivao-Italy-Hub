@@ -193,7 +193,8 @@ lo staff lo chiede, con una nota sua (§8 risposta 4).
 
 La risposta è stata data in chat al master e non in un commento: la nota è di una sessione di Carmine, non del collaboratore. Il
 disegno degli identificativi (§4: che cosa sono, dove stanno, rifiutare invece di avvisare) è la proposta di questa sessione sulla
-risposta 3; il master lo porta a Carmine con la PR.
+risposta 3; il master lo ha portato a Carmine con la PR, e Carmine l'ha approvato in chat al master il 31 ottobre 2026, con la
+nota intera: «420 va bene».
 
 ## Da portare nel piano
 
