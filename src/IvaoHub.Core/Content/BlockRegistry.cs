@@ -1,3 +1,4 @@
+using IvaoHub.Core.Division;
 using IvaoHub.Core.Ivao;
 
 namespace IvaoHub.Core.Content;
@@ -47,6 +48,19 @@ public interface IBlockDescriptor
     /// block it defaults to the type, and exists so that two blocks can share one provider.
     /// </summary>
     string? ProviderKey { get; }
+
+    /// <summary>
+    /// The widest page the block makes sense on: <see cref="Visibility.Public"/>, the default, for any page, and
+    /// <see cref="Visibility.Staff"/> for a queue of the staff. The blocks that speak to whoever is signed in (the
+    /// greeting, my tours) stay public: each says something of its own to a visitor, and a public home that greets its
+    /// members has to keep saving (Carmine, 28 October 2026). A page more open than this is refused on save
+    /// (<c>errors.body.blockAudience</c>), and <c>/api/me</c> publishes it so the palette can grey the block out with the
+    /// reason instead of offering it (issue #362, note 2026-10-28-il-pubblico-di-un-blocco).
+    /// <para>⚠️ A fact of the type, like <see cref="AlwaysLive"/>, declared once here and read by both sides; never a
+    /// second flag in TypeScript. It is about the <b>page</b>, not the reader: who may read a queue is still the one
+    /// handler's answer inside its provider.</para>
+    /// </summary>
+    Visibility Audience { get; }
 }
 
 /// <inheritdoc cref="IBlockDescriptor"/>
@@ -56,7 +70,8 @@ public sealed record BlockDescriptor(
     BlockKind Kind,
     bool AlwaysLive = false,
     string? ProviderKey = null,
-    TimeSpan? SharedFor = null) : IBlockDescriptor;
+    TimeSpan? SharedFor = null,
+    Visibility Audience = Visibility.Public) : IBlockDescriptor;
 
 /// <summary>
 /// Every block the installation knows: the ones of the core plus the ones the modules declare. It
@@ -205,8 +220,9 @@ public static class CoreBlocks
         // already knows of whoever is looking, so they are content; what waits for them is answered
         // for them by the server, and is always live — a capture of somebody's work, kept from the
         // day the dashboard was published, would be somebody else's work by the time it is read.
+        // What waits is the staff's work, and nothing to anybody else (note 2026-10-28-il-pubblico-di-un-blocco).
         new BlockDescriptor(Welcome, Version: 1, BlockKind.Content),
         new BlockDescriptor(MyDepartments, Version: 1, BlockKind.Content),
-        new BlockDescriptor(MyWork, Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor(MyWork, Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
     ];
 }

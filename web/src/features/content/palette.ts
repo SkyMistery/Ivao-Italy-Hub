@@ -33,3 +33,18 @@ export function groupsOf(blocks: readonly BlockRegistration[]): readonly Palette
     };
   }).filter((entry) => entry.blocks.length > 0 || entry.subgroups.length > 0);
 }
+
+/** The visibilities of a row, from the most readers to the fewest: the order of the server's own enum. */
+const WIDEST_FIRST = ['Public', 'Members', 'Staff', 'Department'] as const;
+
+export type PageVisibility = (typeof WIDEST_FIRST)[number];
+
+/**
+ * Whether a block declared for `audience` is for fewer readers than a page of `visibility` — a queue of the staff on a
+ * page anybody reads (note 2026-10-28-il-pubblico-di-un-blocco). The audience is the server's, from `/api/me`; this only
+ * reads it to grey the entry out, and the save is what refuses (`errors.body.blockAudience`), so a disagreement here
+ * would cost a click, never a page.
+ */
+export function beyondReaders(audience: PageVisibility, visibility: PageVisibility): boolean {
+  return WIDEST_FIRST.indexOf(audience) > WIDEST_FIRST.indexOf(visibility);
+}
