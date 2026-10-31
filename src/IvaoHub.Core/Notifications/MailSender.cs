@@ -60,6 +60,17 @@ public sealed class SmtpMailSender(IOptions<SmtpOptions> options) : IMailSender
         }
 
         await client.SendAsync(message, cancellationToken);
-        await client.DisconnectAsync(quit: true, cancellationToken);
+
+        // Sent: the server accepted the data. A goodbye that fails after it is no failure of the mail, and counted as one it
+        // went out again at the next run, up to three times (issue #326, item 6); the connection is closed with the client.
+        try
+        {
+            await client.DisconnectAsync(quit: true, cancellationToken);
+        }
+#pragma warning disable CA1031 // Whatever the goodbye throws, the mail is already with the server.
+        catch (Exception exception) when (exception is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+        }
     }
 }
