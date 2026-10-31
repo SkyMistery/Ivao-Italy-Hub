@@ -308,9 +308,9 @@
     "parameterChoice": "Non è una delle scelte possibili.",
     "countryUnknown": "Un paese senza aeroporti che l'hub conosca.",
     "firUnknown": "Un FIR che l'hub non conosce.",
-    "importNotOnHub": "Un tour Hub non importa le leg: stanno in rotazioni che un file non sa nominare. Scrivile nella tabella.",
     "importReasonRequired": "Questo import ritira, ripristina o cambia leg con dei report: scrivi perché.",
     "importTooManyRows": "Il file ha troppe righe per le leg di un tour.",
+    "importRotationSplit": "Le righe di questa rotazione non sono tutte insieme: una rotazione si scrive in un pezzo solo.",
     "tooManySuggestions": "Al massimo 24.",
     "ruleCode": "Lettere, cifre, punti e trattini, fino a 16.",
     "checkUnknown": "Questo controllo non esiste.",
@@ -414,6 +414,8 @@
       "reason": "Motivo",
       "changeReason": "Perché cambia (ha dei report)",
       "rotationId": "Rotazione",
+      "hub": "Hub",
+      "rotation": "Rotazione",
       "callsigns": "Callsign (suggeriti)",
       "flightNumbers": "Numeri di volo (suggeriti)"
     },
@@ -451,6 +453,7 @@
     "import": {
       "title": "Importa le leg da un file",
       "help": "XLSX, XLS, ODS o CSV. L'intestazione può stare in una qualunque delle prime righe; le colonne si trovano per nome ({{columns}}, oppure «Departure ICAO» e «Destination ICAO»), partenza e arrivo sono obbligatorie. L'ordine delle righe è l'ordine del tour, e ogni riga non vuota è una leg: note, totali e bozze vanno tolte dal foglio. Una leg è la stessa se partenza e arrivo sono gli stessi. Una cella può avere più callsign o numeri di volo (ITY1357/1365, oppure separati da virgole); gli aerei sono tipi ICAO, i gruppi di una leg restano come sono; il rilascio è in UTC.",
+      "helpHub": "XLSX, XLS, ODS o CSV, come per ogni tour ({{columns}}), con due colonne in più. «Hub» è l'ICAO dell'hub da cui la rotazione di una leg parte e a cui torna; «Rotation» è un'etichetta qualsiasi (1, A, Sud) che tiene insieme le leg di una rotazione. Le righe di una rotazione stanno una dopo l'altra nell'ordine di volo: 2, 4 o 6, dall'hub e ritorno. Una riga con entrambe vuote è un collegamento fra due hub. Una rotazione è la stessa se hub e leg sono gli stessi, nello stesso ordine.",
       "model": "Scarica il modello",
       "file": {
         "label": "File",
@@ -467,16 +470,25 @@
         "explain": {
           "Merge": "Le leg che il file non contiene restano dove sono. Un file parziale va bene.",
           "Replace": "Le leg che il file non contiene si eliminano se non hanno report, e si ritirano con un motivo se ne hanno."
+        },
+        "explainHub": {
+          "Merge": "Le rotazioni e i collegamenti che il file non contiene restano dove sono. Un file parziale va bene.",
+          "Replace": "Le rotazioni e i collegamenti che il file non contiene si eliminano se non hanno report, e una rotazione con un report si ritira intera, con un motivo. Un hub che il file non nomina più si elimina."
         }
       },
       "summary": "Che cosa fa l'import",
       "columns": {
         "number": "N.",
         "route": "Leg",
+        "place": "Hub e rotazione",
         "outcome": "Che cosa succede",
         "changes": "Che cosa cambia"
       },
       "line": "riga {{line}} del file",
+      "place": "{{hub}}, rotazione {{rotation}}",
+      "connection": "Collegamento fra hub",
+      "hubsAdded": "Hub nuovi: {{hubs}}",
+      "hubsDeleted": "Hub eliminati: {{hubs}}",
       "rowProblem": "Riga {{line}}, {{field}}: {{problem}}",
       "outcome": {
         "Added_one": "{{count}} aggiunta",

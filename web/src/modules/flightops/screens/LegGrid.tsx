@@ -47,8 +47,8 @@ import { splitCodes } from './legFile';
  * On a hub tour one more column says where a leg belongs (§1.3, T7b): a rotation of a hub, the connection between two
  * hubs, or nowhere yet. Its place inside the rotation is the server's, from the order of the legs.
  *
- * Every tour with legs but a hub tour imports them from a file (T8, `LegImport`): a hub tour's legs belong to rotations
- * a file cannot name (Carmine, 22 September 2026).
+ * Every tour with legs imports them from a file (T8, `LegImport`); a hub tour's file names the hub and the rotation of
+ * every leg too (note 2026-10-28-hub-e-rotazioni-da-file).
  */
 
 /** Where a leg of a hub tour belongs: nowhere yet, the connection between two hubs, or a rotation by its identifier. */
@@ -528,16 +528,14 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
         </Subtle>
         {editable ? (
           <div className="flex flex-wrap gap-2">
-            {hub ? null : (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={busy || importing}
-                onClick={() => setImporting(true)}
-              >
-                {t('flightops:legs.actions.import')}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy || importing}
+              onClick={() => setImporting(true)}
+            >
+              {t('flightops:legs.actions.import')}
+            </Button>
             <Button type="button" variant="outline" disabled={busy} onClick={() => add(null)}>
               {t('flightops:legs.actions.add')}
             </Button>
