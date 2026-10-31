@@ -541,6 +541,7 @@
       "addsTo": "Adds to: {{section}}",
       "lockedTarget": "“{{section}}” is fixed by the template: nothing can be added to it.",
       "notAllowedHere": "The template does not allow this block in the selected section.",
+      "notForThisAudience": "This block is for fewer readers than this page. Make the page visible to fewer people to add it.",
       "expandAll": "Expand all",
       "collapseAll": "Collapse all",
       "removeSection": "Remove this section",
