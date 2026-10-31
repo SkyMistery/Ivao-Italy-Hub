@@ -2,7 +2,8 @@
 
 **Data:** 31 ottobre 2026, fase di test, fase 3 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.A, §4.B, §5 riga 3
 e le risposte di Carmine del §7).
-**Stato:** **Proposta.** Le domande del §8 aspettano Carmine; il codice comincia dopo la sua risposta, nell'ordine del §7.
+**Stato:** **approvato.** Le sette domande del §8 **le ha decise Carmine in chat al master, 31 ottobre 2026**, ognuna con l'opzione
+raccomandata (§9). Il codice comincia dopo il merge di #420 e di questo documento, nell'ordine del §7, una sessione per pezzo.
 **Classificazione** (`CLAUDE.md` §5): **(c)**, funzioni nuove dell'editor e dei blocchi del nucleo. Questo documento è la nota della
 fase: ogni pezzo dice quale meccanismo estende, quali file del nucleo tocca e se chiede una nota sua.
 **Che cosa tocca:** il nucleo del browser (`web/src/features/content/`, `web/src/blocks/`, `web/src/shared/forms/`, tre componenti
@@ -180,7 +181,7 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   menu la usa da lì. Nasce nella PR 3.0a (§3).
 - **Nei blocchi**: un campo indirizzo dei blocchi si annota `.meta({ address: true })` (`linkFields`, `cardGrid`, `logoGrid`, `cta`
   ritirato compreso); `BlockProperties` lo trasforma in `suggestions`, come già fa per le collezioni (`suggestCollections`). Il campo
-  resta **aperto**: si sceglie una pagina dall'elenco, oppure si scrive un indirizzo di fuori (domanda 5 del §8).
+  resta **aperto**: si sceglie una pagina dall'elenco, oppure si scrive un indirizzo di fuori (§9, risposta 5).
 - **File del nucleo**: `shared/forms/schema.ts` (l'annotazione), `features/content/BlockProperties.tsx`, `blocks/schemas.ts`, la rotta del
   menu. **Nota sua**: no. Il controllo che l'indirizzo porti a una pagina che esiste è il §5.9.
 
@@ -201,11 +202,13 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   (`remark-directive`), dove il nome è il colore: `:ocean[parola]`. Un nome fuori dall'insieme si disegna come testo semplice. Ogni
   colore è una coppia chiaro/scuro di token del marchio, e dentro uno sfondo scuro prende il valore scuro per costruzione (la classe
   `dark` degli sfondi scuri).
-  - **Quali**: `brand` (blu), `ocean` (azzurro), `aurora` (verde acqua) e `danger` (rosso, per un avviso), **se** raggiungono 4,5 : 1
-    su tutti gli otto sfondi nei due temi. ⚠️ L'**arancione** della domanda di Carmine non ci arriva: `docs/UI-GUIDELINES.md` misura
-    `artifice-low` a 3,7 : 1 sullo sfondo `accent` e `artifice-dark` a 3,2 : 1 sul bianco. È la domanda 3 del §8.
+  - **Quali** (§9, risposta 3): `brand` (blu), `ocean` (azzurro), `aurora` (verde acqua) e `danger` (rosso, per un avviso), ognuno
+    con il tono che arriva a 4,5 : 1 su tutti gli otto sfondi nei due temi. L'**arancione resta fuori**: `docs/UI-GUIDELINES.md`
+    misura `artifice-low` a 3,7 : 1 sullo sfondo `accent` e `artifice-dark` a 3,2 : 1 sul bianco. ⚠️ Se la misura dice che un tono
+    di questi quattro non ci arriva su uno sfondo, la PR si ferma e lo dice: non si toglie lo sfondo e non si abbassa la soglia.
   - **La misura** la fa `e2e/contrast.spec.ts`, che già misura i grigi e i titoli: una frase per colore su ogni sfondo, nei due temi.
-- **Sottolineato e allineamento** non sono Markdown: domanda 4 del §8.
+- **Sottolineato e allineamento** non sono Markdown (§9, risposta 4): **niente sottolineato** — sul sito una parola sottolineata si
+  legge come un link — e l'allineamento è quello **del blocco intero** (§5.6); la barra non ha né l'uno né l'altro.
 - **La ricerca**: `BlockDocumentWalker.Prose` toglie anche `~~` e le direttive di colore tenendone il testo (`:ocean[parola]` →
   «parola»), con il suo test.
 - **Le regole che cambiano** (`docs/UI-GUIDELINES.md`, nella stessa PR): «no free colour» resta, e si aggiunge che **il testo** può
@@ -241,7 +244,10 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   c'è (`readLegFile`) sta nel modulo dei tour, e il nucleo non importa dai moduli: la parte generica («un foglio → righe di celle») sale
   in `web/src/shared/files/sheet.ts` e il modulo la usa da lì. Il codice dei tour è di Carmine: stesso lavoro, commit suo.
   **Crea N × M**: due numeri e un tasto.
-- **Scrivere nella cella**: domanda 1 del §8.
+- **Scrivere nella cella** (§9, risposta 1): «Modifica nella griglia» apre una **griglia** in un `Dialog` largo, una casella per cella
+  nella lingua sullo schermo (con le schede delle lingue), che scrive le stesse `props` con lo stesso `onApplyProps`. È un'eccezione
+  **dichiarata** del form generato, solo per la tabella, come il campo del codice dell'interattivo (`carriesSource`): la registrazione
+  lo dice, e il form generato resta sotto per le colonne e la didascalia.
 - **Le righe**: `rows: 'lines' | 'striped' | 'plain'`, di default quello che si vede oggi.
 - Il testo delle celle resta tradotto (`localized`), quindi un incolla scrive la lingua sullo schermo e le altre restano da scrivere
   (o da far scrivere a Claude, §3).
@@ -288,7 +294,8 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
 
 - `title` (facoltativo, sopra le domande), `numbered` (le domande numerate), `initially: 'closed' | 'first' | 'all'` (come si apre la
   pagina; `all` vale anche «più aperte insieme»).
-- **«Più risposte per domanda»**: domanda 2 del §8.
+- **«Più risposte per domanda»** (§9, risposta 2): la risposta resta **un testo** Markdown, che può avere più paragrafi e un elenco,
+  scritto con la barra del §4.6. Nessun elenco di risposte.
 - In stampa resta tutto aperto, come oggi.
 - **File del nucleo**: `blocks/schemas.ts`, `blocks/blocks.tsx`, i file di lingua. **Nota sua**: no.
 
@@ -339,7 +346,9 @@ Tutto è nella nota `2026-10-30-una-pagina-scritta-con-claude` (decisa, #420). Q
   postazioni sono dati IVAO: stanno nel suo perimetro, `CLAUDE.md` §3). Nel blocco il nominativo si annota `.meta({ atcPosition: true })`
   e `BlockProperties` lo trasforma in suggerimenti, come le collezioni. Il nome della postazione, il tipo e la frequenza si **copiano**
   nella riga quando la si sceglie. Una postazione che IVAO non elenca si scrive ancora a mano.
-- **Copia o lettura viva**: domanda 6 del §8.
+- **Copia, non lettura viva** (§9, risposta 6): i valori stanno nella riga del blocco, come oggi. L'editor segnala una riga diversa
+  da quello che IVAO dice adesso (la stessa lettura) e offre «**Riallinea**», che la ricopia; un SOP si approva com'è scritto e cambia
+  solo quando qualcuno lo ripubblica. Nessun blocco di dati nuovo.
 - **File del nucleo**: `Core/Ivao/IvaoAtcPosition.cs`, `Core/Ivao/AtcPositionDirectory.cs`, la configurazione e la migrazione di
   `HubDbContext`, un file di endpoint in `Core/Ivao/`, `blocks/schemas.ts`, `features/content/BlockProperties.tsx`. ⚠️ È un endpoint
   scritto a mano in più: il conteggio per famiglia del §16.6 del piano lo registra. **Nota sua**: no.
@@ -427,20 +436,39 @@ toccano file loro e possono correre accanto, in sessioni diverse. Dopo 3.6, 3.10
    coordinamento.
 7. **L'ordine del §7**: va bene, o qualcosa va prima?
 
+## 9. Le risposte di Carmine (31 ottobre 2026, in chat al master)
+
+Con le sue parole: «1) ok 2) ok 3) Ok 4) Ok 5) Ok 6) Ok 7) va bene» — ogni domanda con l'opzione raccomandata.
+
+1. **La tabella: (a)**, la griglia in un `Dialog` largo, eccezione dichiarata del form generato solo per la tabella (§5.1).
+2. **Domande e risposte: (a)**, una risposta in un testo Markdown, senza un elenco di risposte (§5.4).
+3. **I colori del testo: (a)**, blu, azzurro, verde acqua e rosso; l'arancione fuori (§4.6).
+4. **Sottolineato e allineamento: (a)**, niente sottolineato, e l'allineamento del blocco intero (§4.6, §5.6).
+5. **Gli indirizzi di fuori nei pulsanti: (a)**, restano liberi, con la scelta delle pagine come suggerimento (§4.5).
+6. **Le frequenze: (a)**, copiate quando si sceglie la postazione, con la segnalazione e «Riallinea» (§5.8).
+7. **L'ordine del §7: approvato.** Il codice comincia dopo il merge di #420 e di questo documento, una sessione per pezzo.
+
+La risposta è stata data in chat al master e non in un commento: il documento è di una sessione di Carmine, non del collaboratore.
+
 ## Da portare nel piano
 
-- **§13** e le fasi della nota del 22 ottobre (§5): la fase 3 in diciassette PR nell'ordine del §7, «importa da Claude» in testa; «scrivere
-  nel blocco», la traduzione e le fasce restano nella fase 7.
+- **§13** e le fasi della nota del 22 ottobre (§5): la fase 3 in diciassette PR nell'ordine del §7, «importa da Claude» in testa,
+  approvata da Carmine il 31 ottobre 2026 (§9); «scrivere nel blocco», la traduzione e le fasce restano nella fase 7.
 - **§9.3** (il modello dei contenuti): le righe di una sezione sono le «sottosezioni» (correzione della nota del 22 ottobre, §4.A); il
   nome di una sezione è solo dell'editor; la busta di un blocco ha `align` accanto a `column` e `span`; un indirizzo del sito dentro un
   blocco si chiama `href`.
 - **§16** (meccanismi generici): un lettore solo degli indirizzi del sito (menu, blocchi, import, fase 4) e un servizio solo del server
   che dice se un indirizzo porta da qualche parte; il controllo dei link alla pubblicazione con la regola della visibilità del pubblico
   di un blocco; il form generato con le voci chiuse, la data che si toglie, le annotazioni `entryTitle`, `address`, `markdown`,
-  `atcPosition`; un blocco ridimensionabile (`resizable`), come le tessere della dashboard; un endpoint in più nel conteggio del §16.6.
+  `atcPosition`; un blocco ridimensionabile (`resizable`), come le tessere della dashboard; la griglia della tabella come seconda
+  eccezione dichiarata del form generato, accanto al codice dell'interattivo (risposta 1); un endpoint in più nel conteggio del
+  §16.6.
 - **§8.3** (i componenti): l'elenco chiuso resta di ventisei; cambiano `MediaPicker` (ricerca, pagine, caricamento in cima),
   `MarkdownContent` (GFM per il barrato, le direttive dei colori) e `StaffSidebar` (il provider nel layout).
-- **`docs/UI-GUIDELINES.md`**: i colori del testo da un insieme chiuso, misurati a 4,5 : 1 (risposta 1 di Carmine); l'immagine a
-  larghezza in percentuale dentro la sua colonna, fra 20 e 100, piena su una colonna stretta (risposta 4); l'allineamento comune dei
+- **`docs/UI-GUIDELINES.md`** (lo cambia la PR 3.6 per il testo e la 3.10 per l'immagine, come conseguenza delle risposte): la regola
+  «no free colour» resta, e il **testo** prende un colore solo dall'insieme chiuso di quattro — blu, azzurro, verde acqua, rosso —
+  misurati a 4,5 : 1 su ogni sfondo (risposta 1 della nota del 22 ottobre, risposta 3 di questo documento), l'arancione fuori;
+  l'accento dei blocchi resta solo sui disegni; niente sottolineato (risposta 4); l'immagine a
+  larghezza in percentuale dentro la sua colonna, fra 20 e 100, piena su una colonna stretta (risposta 4 della nota del 22 ottobre); l'allineamento comune dei
   blocchi; nell'editor le sezioni etichettate, «+ sezione» fra due sezioni e i pannelli che si allargano.
 - **§10** (integrazioni con le API IVAO): la frequenza delle postazioni in `ref_ivao_atc_positions`.
