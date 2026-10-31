@@ -18,7 +18,7 @@ namespace IvaoHub.Core.Auth;
 /// <para>What makes a grant bite immediately is not written here either: <c>UserGrant</c> is
 /// <c>IAffectsUserSession</c>, so the save changes interceptor gives its holder a fresh
 /// <c>security_stamp</c> in the same transaction and the cookie they are carrying is refused on
-/// their very next request.</para>
+/// their very next request to this process, and within a minute in any other (<see cref="SecurityStampCache"/>).</para>
 /// </summary>
 public static class GrantEndpoints
 {

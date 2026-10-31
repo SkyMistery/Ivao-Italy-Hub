@@ -9,7 +9,11 @@ namespace IvaoHub.Core.Auth;
 /// administrator flag of a user change, and the cookie carrying the old value is rejected on the
 /// next request (design M0 section 3.3).
 /// <para>Cached for a minute so that the check does not become a database call per request, and
-/// invalidated on the spot by whoever writes, so that a revoked permission bites immediately.</para>
+/// invalidated on the spot by whoever writes, so that a revoked permission bites immediately — in the
+/// process that wrote. The cache is the process's own: when Passenger keeps two processes alive
+/// together (it does, <c>diagnostics/starts.txt</c> shows it), the other one goes on accepting the
+/// old stamp until its minute runs out. So a revoked grant stops working at once where it was
+/// revoked and within a minute everywhere, as design M0 §3 says (issue #320, item 5).</para>
 /// </summary>
 public interface ISecurityStampCache
 {
