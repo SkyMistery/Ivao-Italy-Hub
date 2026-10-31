@@ -384,6 +384,128 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ACentreOfAnotherCountryARepeatedKeyAndAnOverLongValueCostOnlyTheirRows()
+    {
+        // Issue #325, items 2 and 3: a centre of another country is never stored nor read as one of ours, a key the answer
+        // repeats is written once, and a value longer than its column is left out — the rest of the snapshot is saved.
+        var token = TestContext.Current.CancellationToken;
+        await SyncAsync(token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            // A foreign centre already in the table, from before the filter: the directory does not read it either.
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            database.IvaoCenters.Add(new IvaoCenter { Id = "LSAZ", Name = "Zurich", CountryId = "CH", RawJson = "{}" });
+            await database.SaveChangesAsync(token);
+
+            scope.ServiceProvider.GetRequiredService<IFirDirectory>().Invalidate();
+            Assert.DoesNotContain("LSAZ", await scope.ServiceProvider.GetRequiredService<IFirDirectory>().GetFirIdsAsync(token));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var job = new RefDataSyncJob(
+                new OddAnswersIvaoApiClient(scope.ServiceProvider.GetRequiredService<IIvaoApiClient>()),
+                database,
+                scope.ServiceProvider.GetRequiredService<IFirDirectory>(),
+                scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>(),
+                scope.ServiceProvider.GetRequiredService<IClock>(),
+                NullLogger<RefDataSyncJob>.Instance);
+
+            var (centers, airports) = await job.RunAsync(token);
+            Assert.True(centers > 0 && airports > 0, $"{centers} centre(s), {airports} airport(s)");
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var last = await database.JobsLog.AsNoTracking()
+                .Where(entry => entry.Job == RefDataSyncJob.JobName)
+                .OrderByDescending(entry => entry.Id)
+                .FirstAsync(token);
+            Assert.Equal("succeeded", last.Status);
+
+            Assert.False(await database.IvaoCenters.AnyAsync(center => center.CountryId != "IT", token));
+            Assert.Equal(1, await database.IvaoCenters.CountAsync(center => center.Id == "LIRR", token));
+            Assert.False(await database.IvaoAirports.AnyAsync(airport => airport.Icao == "LIZZ", token));
+
+            // A known row whose new value does not fit keeps yesterday's.
+            var fiumicino = await database.IvaoAirports.AsNoTracking().SingleAsync(airport => airport.Icao == "LIRF", token);
+            Assert.True(fiumicino.Name.Length <= 256);
+        }
+    }
+
+    /// <summary>The fixtures, with what a careless answer of IVAO could add to them.</summary>
+    private sealed class OddAnswersIvaoApiClient(IIvaoApiClient inner) : IIvaoApiClient
+    {
+        public async Task<IReadOnlyList<IvaoCenterDto>> GetCentersAsync(
+            string countryId,
+            CancellationToken cancellationToken = default)
+        {
+            var centers = await inner.GetCentersAsync(countryId, cancellationToken);
+            return
+            [
+                .. centers,
+                centers.First(center => center.Id == "LIRR"),
+                new("LSAS", "Switzerland", "CH", "{}"),
+            ];
+        }
+
+        public async Task<IReadOnlyList<IvaoAirportDto>> GetAirportsAsync(
+            string? countryId,
+            bool includeRunways = true,
+            CancellationToken cancellationToken = default)
+        {
+            var airports = await inner.GetAirportsAsync(countryId, includeRunways, cancellationToken);
+            var fiumicino = airports.First(airport => airport.Icao == "LIRF");
+            return
+            [
+                .. airports,
+                fiumicino with { Name = new string('x', 300) },
+                new("LIZZ", new string('y', 300), "IT", "LIRR", null, "{}"),
+            ];
+        }
+
+        public Task<JsonElement?> GetMeAsync(string accessToken, CancellationToken cancellationToken = default) =>
+            inner.GetMeAsync(accessToken, cancellationToken);
+
+        public Task<IvaoNetworkStatus> GetNetworkStatusAsync(IvaoAirspace airspace, CancellationToken cancellationToken = default) =>
+            inner.GetNetworkStatusAsync(airspace, cancellationToken);
+
+        public Task<IReadOnlyList<IvaoRunway>?> GetRunwaysAsync(string icao, CancellationToken cancellationToken = default) =>
+            inner.GetRunwaysAsync(icao, cancellationToken);
+
+        public Task<IReadOnlyList<IvaoAircraftType>> GetAircraftTypesAsync(CancellationToken cancellationToken = default) =>
+            inner.GetAircraftTypesAsync(cancellationToken);
+
+        public Task<(IReadOnlyList<IvaoAircraftEquipment> Equipments, IReadOnlyList<IvaoTransponderType> Transponders)>
+            GetFlightPlanVocabulariesAsync(CancellationToken cancellationToken = default) =>
+            inner.GetFlightPlanVocabulariesAsync(cancellationToken);
+
+        public Task<(IReadOnlyList<IvaoAtcPositionDto> Airports, IReadOnlyList<IvaoAtcPositionDto> Sectors)>
+            GetAtcPositionsAsync(CancellationToken cancellationToken = default) =>
+            inner.GetAtcPositionsAsync(cancellationToken);
+
+        public Task<IReadOnlyList<IvaoFraDto>?> GetFrasAsync(string countryId, CancellationToken cancellationToken = default) =>
+            inner.GetFrasAsync(countryId, cancellationToken);
+
+        public Task<IReadOnlyList<IvaoTrackerSessionDto>?> SearchSessionsAsync(
+            IvaoSessionQuery query,
+            CancellationToken cancellationToken = default) =>
+            inner.SearchSessionsAsync(query, cancellationToken);
+
+        public Task<IReadOnlyList<IvaoFlightPlanDto>?> GetFlightPlansAsync(long sessionId, CancellationToken cancellationToken = default) =>
+            inner.GetFlightPlansAsync(sessionId, cancellationToken);
+
+        public Task<IReadOnlyList<IvaoTrackPointDto>?> GetTracksAsync(long sessionId, CancellationToken cancellationToken = default) =>
+            inner.GetTracksAsync(sessionId, cancellationToken);
+
+        public Task<IvaoMetarDto?> GetMetarAsync(string icao, CancellationToken cancellationToken = default) =>
+            inner.GetMetarAsync(icao, cancellationToken);
+    }
+
+    [Fact]
     public async Task TheFirDirectoryAnswersFromTheSnapshot()
     {
         var token = TestContext.Current.CancellationToken;
