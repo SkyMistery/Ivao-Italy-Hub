@@ -304,7 +304,10 @@ public sealed class ProjectionWriter(IClock clock, ICurrentUser currentUser)
 
     private void ApplyAwardSignals(DbContext context, ProjectionRequest request, List<AwardSignal> existing)
     {
-        var signals = request.Snapshot?.AwardSignals ?? [];
+        // Only a member's: an erasure writes a pseudonym, a negative number, into the source row, and the save re-projects it.
+        // A signal for it would be a pending line nobody can assign, announced to every assigner the next morning (issue
+        // #326, item 1). A pending signal of the erased person is withdrawn below like any the source no longer gives.
+        var signals = (request.Snapshot?.AwardSignals ?? []).Where(signal => signal.Vid > 0).ToList();
 
         foreach (var signal in signals)
         {
