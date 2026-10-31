@@ -136,6 +136,9 @@
       "awardId": {
         "none": "Nessun award"
       },
+      "minPilotRating": {
+        "none": "Qualsiasi pilota"
+      },
       "groupId": {
         "none": "Scegli un gruppo"
       },
@@ -345,6 +348,7 @@
     "reportProcedureRequired": "Questo tour chiede la procedura volata.",
     "reportBanned": "Non puoi inviare report su questo tour.",
     "reportRatingTooLow": "Il tuo rating pilota è sotto quello chiesto dal tour. Se sei stato promosso da poco, rifai il login.",
+    "ratingUnknown": "Scegli un rating dell'elenco.",
     "reportToModifyPending": "Correggi e reinvia il report da modificare prima di riportare un altro volo.",
     "reportRouteRepeated": "Hai già volato questa rotta in questo tour.",
     "reportCountries": "Il volo è fuori dai paesi del tour.",

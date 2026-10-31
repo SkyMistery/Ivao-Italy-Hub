@@ -51,6 +51,7 @@ public sealed class PirepSubmission(
     ModuleSettingsStore settingsStore,
     WeatherArchive weatherArchive,
     FlightChecks checks,
+    RatingVocabulary ratings,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -732,7 +733,8 @@ public sealed class PirepSubmission(
                 .Select(user => user.RatingPilot)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (rating is null || rating < least)
+            // On the core's ladder, never by the numbers: a rating it does not know is below every one.
+            if (!ratings.IsAtLeast(RatingKind.Pilot, rating, least))
             {
                 refusals.Add("flightops:errors.reportRatingTooLow");
             }

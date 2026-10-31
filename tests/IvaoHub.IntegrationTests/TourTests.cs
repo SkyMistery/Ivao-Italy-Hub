@@ -5,6 +5,7 @@ using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps;
@@ -183,6 +184,32 @@ public sealed class TourTests(MariaDbFixture mariaDb) : IAsyncLifetime
         {
             Assert.Equal(HttpStatusCode.Forbidden, advisorCopy.StatusCode);
         }
+    }
+
+    /// <summary>
+    /// The least pilot rating of a tour is one of the core's (phase 6 of the staff trial, f): the form is offered the core's
+    /// pilot ladder, lowest first, and a number that is no pilot rating of it is refused on its field.
+    /// </summary>
+    [Fact]
+    public async Task TheLeastRatingOfATourIsOneOfTheCoresPilotRatings()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var coordinator = await SignedInAsync(_factory, CoordinatorVid, token);
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        var ratings = await coordinator.GetFromJsonAsync<JsonElement>($"{TourEndpoints.Pattern}/ratings", token);
+        Assert.Equal(
+            IvaoRatings.Vocabulary.Ladder(RatingKind.Pilot).Select(rating => (rating.Number, rating.ShortName)),
+            ratings.EnumerateArray().Select(rating => (rating.GetProperty("number").GetInt32(), rating.GetProperty("shortName").GetString()!)));
+
+        var body = Payload(isTemplate: false, $"fo-test-tour-rating-{suffix}", $"fo-test-tour-rating-{suffix}");
+        using (var refused = await coordinator.PostAsJsonAsync(TourEndpoints.Pattern, body with { MinPilotRating = 11 }, token))
+        {
+            await AssertRefusedAsync(refused, "minPilotRating", "flightops:errors.ratingUnknown", token);
+        }
+
+        var tour = await CreatedAsync(await coordinator.PostAsJsonAsync(TourEndpoints.Pattern, body with { MinPilotRating = 5 }, token), token);
+        Assert.Equal(5, tour.GetProperty("minPilotRating").GetInt32());
     }
 
     [Fact]

@@ -155,6 +155,7 @@ export function tourSchema({
   types = [],
   awards = [],
   groups = [],
+  ratings = [],
   isTemplate = false,
   kindLocked = false,
   isSubtour = false,
@@ -164,6 +165,8 @@ export function tourSchema({
   types?: readonly Suggestion[];
   awards?: readonly ChoiceOption[];
   groups?: readonly ChoiceOption[];
+  /** The pilot ratings of the core's vocabulary, lowest first, the number of each as the text of its choice. */
+  ratings?: readonly ChoiceOption[];
   isTemplate?: boolean;
   kindLocked?: boolean;
   isSubtour?: boolean;
@@ -208,7 +211,8 @@ export function tourSchema({
     reportWindowDays: z.number().int().optional().meta({ hidden: !rule }),
     dailyLegLimit: z.number().int().optional().meta({ hidden: !rule }),
     requiresProcedures: z.boolean().meta({ hidden: !rule }),
-    minPilotRating: z.number().int().optional().meta({ hidden: !rule }),
+    // Chosen among the core's ratings, never typed (#204); empty, any pilot.
+    minPilotRating: z.string().optional().meta({ choices: ratings, hidden: !rule }),
     referenceAircraftIcao: z.string().meta({ suggestions: types, suggestionsOnly: true, hidden: rule }),
     // Read only on a distance tour, like the order of the rotations on a hub tour (T7a).
     requiredNm: z
