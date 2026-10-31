@@ -559,7 +559,7 @@ public sealed class TrainingDates(
     private async Task TellProposedAsync(Training training, IReadOnlyList<TrainingSlot> slots, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([training.TrainerVid], cancellationToken);
-        var dates = string.Join('\n', slots.OrderBy(slot => slot.StartsAtUtc).Select(slot => $"- {TrainingMail.Span(slot.StartsAtUtc, slot.EndsAtUtc)}"));
+        var dates = string.Join('\n', slots.OrderBy(slot => slot.StartsAtUtc).Select(slot => $"- {TrainingMail.Span(slot.StartsAtUtc, slot.EndsAtUtc, mail.Dates)}"));
 
         await mail.SendAsync(
             TrainingNotifications.DatesProposed,

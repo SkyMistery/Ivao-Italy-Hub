@@ -94,9 +94,9 @@ public sealed class EventsRosterPublicationTests
     [Fact]
     public void AMailWritesAShiftWithTheDayOfItsEndOnlyWhenItIsAnother()
     {
-        Assert.Equal("XXAA_TWR 2026-11-21 17:00 – 18:00", EventsMail.Shift("XXAA_TWR", Starts, Starts.AddHours(1)));
+        Assert.Equal("XXAA_TWR 21/11/2026 17:00 – 18:00", EventsMail.Shift("XXAA_TWR", Starts, Starts.AddHours(1), DateOrder.DayMonthYear));
         Assert.Equal(
-            "XXAA_TWR 2026-11-21 23:00 – 2026-11-22 01:00",
-            EventsMail.Shift("XXAA_TWR", Starts.AddHours(6), Starts.AddHours(8)));
+            "XXAA_TWR 21/11/2026 23:00 – 22/11/2026 01:00",
+            EventsMail.Shift("XXAA_TWR", Starts.AddHours(6), Starts.AddHours(8), DateOrder.DayMonthYear));
     }
 }

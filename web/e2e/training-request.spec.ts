@@ -426,7 +426,7 @@ test('a ladder the server refuses says why and until when; the other offers its 
   await expect(page).toHaveURL(/\/training\/request\?kind=Atc$/);
   const refused = page.getByRole('status').filter({ hasText: words.errors.requestWaiting! });
   await expect(refused).toBeVisible();
-  await expect(refused).toContainText('Oct 1, 2036');
+  await expect(refused).toContainText('01/10/2036');
   await expect(page.getByRole('button', { name: words.request.send, exact: true })).toHaveCount(0);
 });
 

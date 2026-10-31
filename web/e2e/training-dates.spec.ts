@@ -581,7 +581,7 @@ test('the dates proposed are asked what they meet first, a warning under Warn is
   await expect(entries).toHaveCount(2);
   await expect(entries.first()).toContainText(otherSessionLine);
   await expect(entries.first()).toContainText(
-    filled(words.staff.dates.proposedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' }),
+    filled(words.staff.dates.proposedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' }),
   );
 
   // The second taken back, asked first.
@@ -739,7 +739,7 @@ test('a training is closed with a reason the dialog asks for first, and the page
   await expect(page.getByRole('heading', { level: 2, name: words.staff.sections.closing })).toBeVisible();
   await expect(
     page.getByText(
-      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: 'Oct 2, 2026' }),
+      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: '02/10/2026' }),
       { exact: true },
     ),
   ).toBeVisible();

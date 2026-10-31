@@ -65,7 +65,7 @@ public sealed class FlightOpsReferences(
         ArgumentNullException.ThrowIfNull(pirep);
 
         var number = PirepSubmission.LegSnapshot(pirep).Number;
-        var date = pirep.TakeoffAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var date = HubDates.Day(pirep.TakeoffAt, division.Value.ResolveDateOrder());
 
         return Label(locale => Words(
             locale,

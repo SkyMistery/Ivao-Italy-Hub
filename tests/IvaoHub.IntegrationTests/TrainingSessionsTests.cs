@@ -213,7 +213,7 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         // The mail: the page of the training, the box of the exam, until when — nothing reserved.
         var mail = await MailAsync(TraineeVid, TrainingNotifications.ReportPublished, token);
         Assert.Contains($"/training/mine/{id}", mail, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(stored.CompletedAt!.Value.AddDays(5)), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(stored.CompletedAt!.Value.AddDays(5), DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
         AssertNothingReserved(mail);
 
         // The item a report marked is not deleted any more; one no report marked still is.
@@ -336,8 +336,8 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Equal(stored.ClosedAt!.Value.AddDays(9), path.GetProperty("waitUntil").GetDateTime());
 
         var mail = await MailAsync(TraineeVid, TrainingNotifications.TrainingClosed, token);
-        Assert.Contains(TrainingMail.Moment(session), mail, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(stored.ClosedAt!.Value.AddDays(9)), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(session, DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(stored.ClosedAt!.Value.AddDays(9), DateOrder.DayMonthYear), mail, StringComparison.Ordinal);
         Assert.Contains($"/training/mine/{id}", mail, StringComparison.Ordinal);
     }
 

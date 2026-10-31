@@ -379,7 +379,7 @@ test('after the session the trainer marks the sheet, writes the report and publi
 
   // Published: who and when, the sheet read with the notes of the staff, the comments and the boxes; no road left.
   await expect(
-    page.getByText(filled(words.report.publishedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' })),
+    page.getByText(filled(words.report.publishedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' })),
   ).toBeVisible();
   await expect(rowOf(page, 'Radio phraseology')).toContainText(filled(words.report.grade, { grade: '4' }));
   await expect(rowOf(page, 'Radio phraseology')).toContainText(
@@ -503,7 +503,7 @@ test('a session rescheduled keeps its internal notes among the sessions, and the
     filled(words.sessions.internalNotes, { notes: 'Two aircraft in an hour.' }),
   );
   await expect(sessions).toContainText(
-    filled(words.sessions.recordedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' }),
+    filled(words.sessions.recordedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' }),
   );
 });
 
@@ -686,7 +686,7 @@ test('the trainee reads the report, never a note of the staff, the sessions over
 
   // The report: the grade, the mark, «N/A», their comment and the general one, the boxes.
   await expect(page.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
-  await expect(page.getByText(filled(words.report.publishedOn, { date: 'Sep 27, 2026' }))).toBeVisible();
+  await expect(page.getByText(filled(words.report.publishedOn, { date: '27/09/2026' }))).toBeVisible();
   await expect(rowOf(page, 'Radio phraseology')).toContainText(filled(words.report.grade, { grade: '4' }));
   await expect(rowOf(page, 'Radio phraseology')).toContainText('Clear readbacks.');
   await expect(rowOf(page, 'Airspace classes')).toContainText(words.marks.ToImprove!);

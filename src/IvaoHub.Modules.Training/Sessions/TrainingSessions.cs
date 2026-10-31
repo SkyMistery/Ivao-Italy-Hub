@@ -127,7 +127,7 @@ public sealed class TrainingSessions(
             TrainingMail.MinePathOf(training.Id),
             (data, locale) =>
             {
-                data["why"] = mail.Word(locale, "training:mail.training.closedNoShow", "session", TrainingMail.Moment(session));
+                data["why"] = mail.Word(locale, "training:mail.training.closedNoShow", "session", TrainingMail.Moment(session, mail.Dates));
                 data["after"] = WaitSentence(locale, until);
             },
             cancellationToken);
@@ -249,7 +249,7 @@ public sealed class TrainingSessions(
     /// <summary>Until when the trainee waits before asking again on the ladder, as a mail says it: from a date, or not at all.</summary>
     private string WaitSentence(string locale, DateTime? until) =>
         until is { } end && end > clock.UtcNow
-            ? mail.Word(locale, "training:mail.training.waitUntil", "date", TrainingMail.Moment(end))
+            ? mail.Word(locale, "training:mail.training.waitUntil", "date", TrainingMail.Moment(end, mail.Dates))
             : mail.Word(locale, "training:mail.training.noWait");
 
     /// <summary>The session in hand, recorded as over: a row of the sessions at the training's date, with what it came to.</summary>

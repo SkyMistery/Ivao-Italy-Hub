@@ -41,10 +41,10 @@ const shift: ReportItemDto = {
 describe('the words of an item of a report of support', () => {
   it('say what a flight and a shift declared, the times in UTC', () => {
     expect(itemLine(flight, 'Pilot', t, 'en')).toBe(
-      'events:reports.flight {"callsign":"TST004","departure":"XEA1","arrival":"XEA2","day":"Oct 15, 2026"}',
+      'events:reports.flight {"callsign":"TST004","departure":"XEA1","arrival":"XEA2","day":"15/10/2026"}',
     );
     expect(itemLine(shift, 'Atc', t, 'en')).toBe(
-      'events:reports.shift {"callsign":"XEA1_TWR","from":"Oct 15, 2026, 10:30","to":"Oct 15, 2026, 11:30"}',
+      'events:reports.shift {"callsign":"XEA1_TWR","from":"15/10/2026 10:30","to":"15/10/2026 11:30"}',
     );
   });
 

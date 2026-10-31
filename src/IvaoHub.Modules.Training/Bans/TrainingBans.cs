@@ -178,7 +178,7 @@ public sealed class TrainingBans(
             {
                 data["reason"] = ban.Reason;
                 data["until"] = ban.EndsAt is { } end
-                    ? mail.Word(locale, "training:mail.training.bannedUntil", "date", TrainingMail.Moment(end))
+                    ? mail.Word(locale, "training:mail.training.bannedUntil", "date", TrainingMail.Moment(end, mail.Dates))
                     : mail.Word(locale, "training:mail.training.bannedUntilLifted");
             },
             cancellationToken);

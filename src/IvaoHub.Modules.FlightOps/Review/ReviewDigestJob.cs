@@ -103,7 +103,7 @@ public sealed class ReviewDigestJob(
                         ["tours"] = string.Join('\n', theirs.Select(group =>
                             string.Create(
                                 CultureInfo.InvariantCulture,
-                                $"- {Text(titles.GetValueOrDefault(group.TourId), locale)}: {group.Count} ({group.Oldest:yyyy-MM-dd})"))),
+                                $"- {Text(titles.GetValueOrDefault(group.TourId), locale)}: {group.Count} ({HubDates.Day(group.Oldest, division.Value.ResolveDateOrder())})"))),
                         ["url"] = $"https://{division.Value.Domain}/staff/tours/review",
                     };
 
