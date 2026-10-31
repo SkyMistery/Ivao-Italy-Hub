@@ -204,7 +204,7 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = HubRateLimits.RejectAsync;
     options.AddMemberWritesPolicy();
     options.AddPolicy(AuthEndpoints.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        HubRateLimits.AddressPartition(context.Connection.RemoteIpAddress),
         _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 10,

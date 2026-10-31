@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using IvaoHub.Core.Auth;
@@ -26,6 +28,33 @@ public static class HubRateLimits
     public const string TooManyRequestsTitleKey = "errors.tooManyRequests.title";
 
     /// <summary>
+    /// What a limit counts a caller by when it has only an address: an IPv4 address as it is, an IPv6 one by its <c>/64</c>.
+    /// A home or a server gets a whole <c>/64</c> and may use any address in it, so counting the full address let one
+    /// caller rotate past every per-address limit (issue #320, item 3). An IPv4 written as IPv6 counts as the IPv4.
+    /// </summary>
+    public static string AddressPartition(IPAddress? address)
+    {
+        if (address is null)
+        {
+            return "unknown";
+        }
+
+        if (address.IsIPv4MappedToIPv6)
+        {
+            address = address.MapToIPv4();
+        }
+
+        if (address.AddressFamily != AddressFamily.InterNetworkV6)
+        {
+            return address.ToString();
+        }
+
+        var bytes = address.GetAddressBytes();
+        bytes.AsSpan(8).Clear();
+        return new IPAddress(bytes).ToString() + "/64";
+    }
+
+    /// <summary>
     /// Registers <see cref="MemberWrites"/>. The numbers are read from <see cref="MemberWriteLimitOptions"/> when a partition
     /// is first used, so a test host and a deployment may set them after this.
     /// </summary>
@@ -44,7 +73,7 @@ public static class HubRateLimits
 
             var vid = context.User.FindFirstValue(HubClaims.Vid);
             var partition = string.IsNullOrEmpty(vid)
-                ? "ip:" + (context.Connection.RemoteIpAddress?.ToString() ?? "unknown")
+                ? "ip:" + AddressPartition(context.Connection.RemoteIpAddress)
                 : "vid:" + vid;
 
             return RateLimitPartition.GetFixedWindowLimiter(partition, _ =>
