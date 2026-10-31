@@ -196,7 +196,7 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var mails = await MailsAsync(MemberVid, EventsNotifications.RegistrationReceived, token);
         Assert.Equal(3, mails.Count);
         Assert.Contains("evt-test-e17 Simulator", mails[^1].DataJson, StringComparison.Ordinal);
-        Assert.Contains(starts.AddHours(1).AddMinutes(30).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), mails[^1].DataJson, StringComparison.Ordinal);
+        Assert.Contains(starts.AddHours(1).AddMinutes(30).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture), mails[^1].DataJson, StringComparison.Ordinal);
 
         // The staff read the seats, with the members named.
         var list = (await OkAsync(await coordinator.GetAsync($"{RegistrationEndpoints.SeatsPattern}?filter[eventId]={id}", token), token))
