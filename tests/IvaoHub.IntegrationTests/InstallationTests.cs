@@ -133,6 +133,12 @@ public sealed class InstallationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var user = await database.Users.AsNoTracking().SingleAsync(row => row.Vid == StaffVid, token);
         Assert.True(user.IsStaff);
         Assert.True(await database.UserTokens.AnyAsync(stored => stored.Vid == StaffVid, token));
+
+        // The access token is kept, the refresh token IVAO sent is not (issue #320, item 6).
+        var stored = await scope.ServiceProvider.GetRequiredService<IvaoUserTokenStore>().GetAsync(StaffVid, token);
+        Assert.Equal("access-token", stored?.AccessToken);
+        Assert.Null(stored?.RefreshToken);
+        Assert.Null(await database.UserTokens.Where(row => row.Vid == StaffVid).Select(row => row.RefreshTokenEnc).SingleAsync(token));
     }
 
     [Fact]
