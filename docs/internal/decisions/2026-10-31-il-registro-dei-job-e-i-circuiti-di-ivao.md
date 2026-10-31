@@ -1,8 +1,10 @@
 # Il registro dei job tiene un mese, e un circuito per ogni famiglia di chiamate a IVAO
 
 **Data:** 31 ottobre 2026, fase di test.
-**Stato:** **decisa** da una sessione di lavoro di Carmine, nelle correzioni minori della revisione del codice (lotto 4, issue #325,
-elementi 5 e 6): due correzioni che non aprono una scelta di Carmine, ma cambiano due righe del piano.
+**Stato:** **decisa da Carmine in chat al master, 31 ottobre 2026**: le due domande della PR #422 (correzioni minori della
+revisione del codice, lotto 4, issue #325, elementi 5 e 6), con la raccomandazione di ciascuna — trenta giorni e l'ultimo giro finito
+di ogni job sempre tenuto, con il job `jobs-log-retention` alle 04:30; un interruttore per ogni famiglia di chiamate a IVAO (accesso,
+rete, tracker, prenotazioni, dati di riferimento), con le stesse soglie. Proposte da una sessione di lavoro di Carmine.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: il registro dei job e il gestore standard di resilienza esistono già; si usano come
 sono. Nessun meccanismo nuovo.
 
