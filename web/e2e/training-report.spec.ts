@@ -3,8 +3,6 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { formatMoment } from '../src/shared/i18n/useMoment';
-
 import { anonymousBootstrap, staffBootstrap, stubTheApi } from './fixtures';
 
 /**
@@ -93,8 +91,14 @@ function at(days: number, hour: number): string {
   return moment.toISOString().replace('.000Z', 'Z');
 }
 
-/** A day as the pages say it (`useMoment` without the time, in English). */
-const day = (instant: string) => formatMoment('en', instant, { time: false });
+/**
+ * A day as the pages say it (`useMoment` without the time): `dd/mm/yyyy`, the test division's default, in UTC. Read off the ISO text by
+ * hand, so that a wrong formatter cannot pass its own test.
+ */
+const day = (instant: string) => {
+  const iso = new Date(instant).toISOString();
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+};
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };
@@ -725,7 +729,7 @@ test('after a no-show the trainee reads why it closed, the session, and until wh
   await expect(
     page.getByText(
       filled(words.refusal.waitUntil_other, {
-        date: formatMoment('en', until),
+        date: `${day(until)} ${until.slice(11, 16)}`,
         count: '4',
       }),
     ),
