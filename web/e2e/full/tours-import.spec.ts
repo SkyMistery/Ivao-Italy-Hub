@@ -20,6 +20,9 @@ import {
  * browser by a library loaded only then; an airport the hub does not know refused on the row of the file; the preview
  * of the server — two legs added — and the import; then a second file on "replace", whose preview deletes the leg it
  * no longer contains. The tour is deleted at the end: the bench database is not thrown away between runs.
+ *
+ * A hub tour imports its hubs and rotations from the same file with two columns more (note
+ * 2026-10-28-hub-e-rotazioni-da-file): the preview says the hub it adds and where every leg goes.
  */
 
 const flightops = englishFlightOps();
@@ -41,11 +44,19 @@ function csv(...rows: string[][]): { name: string; mimeType: string; buffer: Buf
   return { name: 'legs.csv', mimeType: 'text/csv', buffer: Buffer.from(text, 'utf8') };
 }
 
+/** A hub tour's CSV: the hub and the rotation of every leg first. */
+function hubCsv(...rows: string[][]): { name: string; mimeType: string; buffer: Buffer } {
+  const text = [['hub', 'rotation', 'departure', 'arrival'], ...rows]
+    .map((row) => row.join(';'))
+    .join('\r\n');
+  return { name: 'hub.csv', mimeType: 'text/csv', buffer: Buffer.from(text, 'utf8') };
+}
+
 function outcome(key: string, count: number): string {
   return importing.outcome[`${key}_${count === 1 ? 'one' : 'other'}`]!.replace('{{count}}', String(count));
 }
 
-async function chooseFile(page: Page, file: ReturnType<typeof csv>): Promise<void> {
+async function chooseFile(page: Page, file: ReturnType<typeof csv | typeof hubCsv>): Promise<void> {
   await whileWaitingFor(page, 'POST', '/import/preview', async () => {
     await page.getByLabel(importing.file.label, { exact: true }).setInputFiles(file);
   });
@@ -130,6 +141,66 @@ test('the legs of a tour are imported from a file, previewed by the server first
   });
 });
 
+test('a hub tour imports its hubs and rotations from a file', async ({ page, context }) => {
+  await readInEnglish(context);
+  await signIn(context);
+
+  page.on('pageerror', (error) => {
+    throw new Error(`The page threw: ${error.message}`);
+  });
+
+  const now = Date.now();
+  await page.goto('/staff/tours/new');
+  await choose(page, flightops.tours.fields.kind, flightops.tours.options.kind.Hub);
+  await writeInBothLanguages(page.locator('form'), flightops.tours.fields.title, 'title', {
+    en: `Bench hub import ${stamp}`,
+    it: `Import hub del banco ${stamp}`,
+  });
+  await page.locator('[id="slug"]').fill(`bench-hub-import-${stamp}`);
+  await writeInBothLanguages(page.locator('form'), flightops.tours.fields.summary, 'summary', summary);
+  await page.locator('[id="releaseAt"]').fill(wallClock(new Date(now - 24 * 3600 * 1000)));
+  await page.locator('[id="closeAt"]').fill(wallClock(new Date(now + 60 * 24 * 3600 * 1000)));
+
+  await whileWaitingFor(page, 'POST', '/api/flightops/tours', async () => {
+    await page.getByRole('button', { name: englishCommon.common.save }).click();
+  });
+  await expect(page).toHaveURL(/\/staff\/tours\/\d+$/);
+  const tourUrl = page.url();
+
+  await page.getByRole('tab', { name: flightops.tours.tabs.legs }).click();
+  await page.getByRole('button', { name: legs.actions.import }).click();
+  const panel = page.getByRole('region', { name: importing.title });
+
+  // Two rotations of the same hub, which the tour does not have yet.
+  const { rome, milan, bari } = benchAirports;
+  await chooseFile(
+    page,
+    hubCsv(
+      [rome, '1', rome, milan],
+      [rome, '1', milan, rome],
+      [rome, '2', rome, bari],
+      [rome, '2', bari, rome],
+    ),
+  );
+  await expect(panel.getByText(outcome('Added', 4))).toBeVisible();
+  await expect(panel.getByText(importing.hubsAdded.replace('{{hubs}}', rome))).toBeVisible();
+  await expect(
+    panel.getByText(importing.place.replace('{{hub}}', rome).replace('{{rotation}}', '2')).first(),
+  ).toBeVisible();
+
+  await whileWaitingFor(page, 'POST', '/legs/import', async () => {
+    await panel.getByRole('button', { name: importing.apply }).click();
+  });
+  await expect(panel).toBeHidden();
+  await expect(page.getByRole('row', { name: legs.row.replace('{{number}}', '4') })).toBeVisible();
+
+  await page.goto(tourUrl);
+  await page.getByRole('button', { name: englishCommon.common.delete }).first().click();
+  await whileWaitingFor(page, 'DELETE', '/api/flightops/tours/', async () => {
+    await page.getByRole('alertdialog').getByRole('button', { name: englishCommon.common.delete }).click();
+  });
+});
+
 /** The module's own words, read from the copy `pnpm i18n:sync` keeps at the root. */
 function englishFlightOps() {
   return JSON.parse(
@@ -139,7 +210,7 @@ function englishFlightOps() {
       create: string;
       tabs: { legs: string };
       fields: { title: string; summary: string; kind: string };
-      options: { kind: { Free: string } };
+      options: { kind: { Free: string; Hub: string } };
     };
     legs: {
       row: string;
@@ -151,6 +222,8 @@ function englishFlightOps() {
         file: { label: string };
         mode: { label: string; Replace: string };
         outcome: Record<string, string>;
+        hubsAdded: string;
+        place: string;
       };
     };
   };

@@ -309,9 +309,9 @@
     "parameterChoice": "Not one of the possible choices.",
     "countryUnknown": "A country with no airport the hub knows.",
     "firUnknown": "A FIR the hub does not know.",
-    "importNotOnHub": "A hub tour does not import legs: they belong to rotations a file cannot name. Write them in the table.",
     "importReasonRequired": "This import retires, restores or changes legs with reports: say why.",
     "importTooManyRows": "The file has too many rows for the legs of one tour.",
+    "importRotationSplit": "The rows of this rotation are not all together: a rotation is written in one piece.",
     "tooManySuggestions": "At most 24.",
     "ruleCode": "Letters, digits, dots and dashes, up to 16.",
     "checkUnknown": "This check does not exist.",
@@ -415,6 +415,8 @@
       "reason": "Reason",
       "changeReason": "Why it changes (it has reports)",
       "rotationId": "Rotation",
+      "hub": "Hub",
+      "rotation": "Rotation",
       "callsigns": "Callsigns (suggested)",
       "flightNumbers": "Flight numbers (suggested)"
     },
@@ -452,6 +454,7 @@
     "import": {
       "title": "Import legs from a file",
       "help": "XLSX, XLS, ODS or CSV. The header may be in any of the first rows; the columns are found by name ({{columns}}, or “Departure ICAO” and “Destination ICAO”), departure and arrival are required. The order of the rows is the order of the tour, and every row that is not empty is a leg: notes, totals and drafts must be taken out of the sheet. A leg is the same leg when departure and arrival are the same. A cell may hold more than one callsign or flight number (ITY1357/1365, or separated by commas); aircraft are ICAO types, the groups of a leg stay as they are; the release is in UTC.",
+      "helpHub": "XLSX, XLS, ODS or CSV, as for any tour ({{columns}}), with two columns more. “Hub” is the ICAO of the hub a leg's rotation starts from and comes back to; “Rotation” is any label (1, A, South) that keeps the legs of one rotation together. The rows of a rotation follow each other in the order they are flown: 2, 4 or 6 of them, out of the hub and back. A row with both empty is a connection between two hubs. A rotation is the same when its hub and its legs are the same, in the same order.",
       "model": "Download the model",
       "file": {
         "label": "File",
@@ -468,16 +471,25 @@
         "explain": {
           "Merge": "The legs the file does not contain stay where they are. A partial file is fine.",
           "Replace": "The legs the file does not contain are deleted if no report points at them, and retired with a reason if one does."
+        },
+        "explainHub": {
+          "Merge": "The rotations and connections the file does not contain stay where they are. A partial file is fine.",
+          "Replace": "The rotations and connections the file does not contain are deleted if no report points at them, and a rotation with a report is retired whole, with a reason. A hub the file no longer names is deleted."
         }
       },
       "summary": "What the import does",
       "columns": {
         "number": "#",
         "route": "Leg",
+        "place": "Hub and rotation",
         "outcome": "What happens",
         "changes": "What changes"
       },
       "line": "row {{line}} of the file",
+      "place": "{{hub}}, rotation {{rotation}}",
+      "connection": "Connection between hubs",
+      "hubsAdded": "New hubs: {{hubs}}",
+      "hubsDeleted": "Hubs deleted: {{hubs}}",
       "rowProblem": "Row {{line}}, {{field}}: {{problem}}",
       "outcome": {
         "Added_one": "{{count}} added",

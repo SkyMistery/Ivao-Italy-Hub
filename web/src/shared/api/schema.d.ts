@@ -6807,7 +6807,8 @@ export interface components {
         };
         /**
          * @description One line of the preview: the outcome, the row of the file (from 0) if there is one, the leg if there is one, its
-         *     number now and after, and the fields that change.
+         *     number now and after, and the fields that change. On a hub tour, the hub of the leg's rotation and the place of the
+         *     rotation in its hub after the import; neither for a connection.
          */
         LegImportLineDto: {
             outcome: components["schemas"]["LegImportOutcome"];
@@ -6823,6 +6824,9 @@ export interface components {
             arrivalIcao: string;
             changes: string[];
             hasReports: boolean;
+            hub?: null | string;
+            /** Format: int32 */
+            rotation?: null | number;
         };
         /**
          * @description What an import does with the legs the file does not contain (design M2 §8.4, ADR-051 of Toursystem): "merge" leaves
@@ -6835,11 +6839,16 @@ export interface components {
          * @enum {unknown}
          */
         LegImportOutcome: "Added" | "Changed" | "Unchanged" | "Restored" | "Kept" | "Deleted" | "Retired";
-        /** @description The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. */
+        /**
+         * @description The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. On a hub tour,
+         *     the hubs the import adds and the ones it deletes.
+         */
         LegImportPreviewDto: {
             lines: components["schemas"]["LegImportLineDto"][];
             reasonRequired: boolean;
             fingerprint: string;
+            hubsAdded?: null | string[];
+            hubsDeleted?: null | string[];
         };
         /**
          * @description The rows of the file, in their order — which is the order of the tour — and what to do with the legs it does not
@@ -6855,6 +6864,9 @@ export interface components {
         /**
          * @description One row of the file, as the browser read it (T8, Carmine 22 September 2026: the file is read in the browser). The
          *     file names aircraft types only: the groups of a leg are the editor's, and a leg the file matches keeps its own.
+         *     On a hub tour, Hub and Rotation say where the leg belongs: the rotation of that hub the label names,
+         *     or — both empty — the connection between two hubs (note 2026-10-28-hub-e-rotazioni-da-file). Any other tour leaves them
+         *     empty.
          */
         LegImportRowDto: {
             departureIcao: string;
@@ -6864,6 +6876,8 @@ export interface components {
             aircraftTypes: null | string[];
             /** Format: date-time */
             releaseAt: null | string;
+            hub?: null | string;
+            rotation?: null | string;
         };
         /** @description An issue as the staff's list and form show it: the tour, the leg, who wrote it and what, where it is. */
         LegIssueDto: {

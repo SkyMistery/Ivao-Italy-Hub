@@ -371,12 +371,112 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
             line => Assert.Contains(line.GetProperty("outcome").GetString(), new[] { "Unchanged", "Kept" }));
         Assert.False(preview.GetProperty("reasonRequired").GetBoolean());
 
-        // A hub tour's legs belong to rotations a file cannot name.
-        var hub = await CreatedTourAsync(advisor, TourKind.Hub, token);
-        using (var refused = await advisor.PostAsJsonAsync($"{LegsUri(Id(hub))}/import/preview", new { rows, mode = "Merge" }, token))
+        // A hub and a rotation are a hub tour's: a sequential tour refuses the row that names them.
+        using (var refused = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { new { departureIcao = Rome, arrivalIcao = Milan, hub = Rome, rotation = "1" } }, mode = "Merge" },
+            token))
         {
-            await AssertRefusedAsync(refused, "tourId", "flightops:errors.importNotOnHub", token);
+            await AssertRefusedAsync(refused, "rows[0].hub", "flightops:errors.legHubOnly", token);
         }
+    }
+
+    /// <summary>
+    /// A hub tour imports its hubs, its rotations and their connections from the file (note
+    /// 2026-10-28-hub-e-rotazioni-da-file): the shape of the file refused on its rows, the hubs and rotations created in the
+    /// order of the file, a connection between two hubs; the same file again changes nothing.
+    /// </summary>
+    [Fact]
+    public async Task AHubTourImportsItsHubsRotationsAndConnections()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var advisor = await SignedInAsync(_factory, AdvisorVid, token);
+
+        var tour = await CreatedTourAsync(advisor, TourKind.Hub, token);
+        var legs = LegsUri(Id(tour));
+
+        static object Row(string from, string to, string? hub, string? rotation) =>
+            new { departureIcao = from, arrivalIcao = to, hub, rotation };
+
+        // A hub without a rotation; a rotation that does not come back to its hub; one of three legs.
+        using (var noRotation = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview", new { rows = new[] { Row(Rome, Milan, Rome, null) }, mode = "Merge" }, token))
+        {
+            await AssertRefusedAsync(noRotation, "rows[0].rotation", "errors.required", token);
+        }
+
+        using (var notBack = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, Milan, Rome, "1"), Row(Milan, London, Rome, "1") }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(notBack, "rows[1].arrivalIcao", "flightops:errors.rotationNotAtHub", token);
+        }
+
+        using (var three = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, Milan, Rome, "1"), Row(Milan, London, Rome, "1"), Row(London, Rome, Rome, "1") }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(three, "rows[0].rotation", "flightops:errors.rotationSizeChoice", token);
+        }
+
+        // Two hubs, a rotation each, and the connection between them.
+        var rows = new[]
+        {
+            Row(Rome, London, Rome, "1"),
+            Row(London, Rome, Rome, "1"),
+            Row(Rome, Milan, null, null),
+            Row(Milan, London, "xfa2", "A"),
+            Row(London, Milan, "xfa2", "A"),
+        };
+
+        var preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Merge" }, token),
+            token);
+        Assert.All(preview.GetProperty("lines").EnumerateArray(), line => Assert.Equal("Added", line.GetProperty("outcome").GetString()));
+        Assert.Equal([Rome, Milan], preview.GetProperty("hubsAdded").EnumerateArray().Select(hub => hub.GetString()));
+        Assert.Equal(
+            [Rome, Rome, null, Milan, Milan],
+            preview.GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("hub").GetString()));
+
+        var grid = await OkAsync(
+            await advisor.PostAsJsonAsync(
+                $"{legs}/import",
+                new { rows, mode = "Merge", fingerprint = preview.GetProperty("fingerprint").GetString() },
+                token),
+            token);
+        var after = Rows(grid);
+        Assert.Equal([1, 2, 3, 4, 5], after.Select(row => row.GetProperty("number").GetInt32()));
+        Assert.Equal(
+            ["Normal", "Normal", "HubConnection", "Normal", "Normal"],
+            after.Select(row => row.GetProperty("kind").GetString()));
+        Assert.Equal([1, 2, 0, 1, 2], after.Select(row => row.GetProperty("seqInRotation").ValueKind == JsonValueKind.Null ? 0 : row.GetProperty("seqInRotation").GetInt32()));
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var hubs = await database.Hubs.AsNoTracking().Where(hub => hub.TourId == Id(tour)).OrderBy(hub => hub.Sort).ToListAsync(token);
+            var rotations = await database.Rotations.AsNoTracking().Where(rotation => rotation.TourId == Id(tour)).ToListAsync(token);
+
+            Assert.Equal([Rome, Milan], hubs.Select(hub => hub.Icao));
+            Assert.Equal(2, rotations.Count);
+            Assert.All(rotations, rotation => Assert.Equal(2, rotation.Size));
+            Assert.Equal(
+                [hubs[0].Id, hubs[0].Id, hubs[1].Id, hubs[1].Id],
+                after.Where(row => row.GetProperty("kind").GetString() == "Normal")
+                    .Select(row => rotations.Single(rotation => rotation.Id == row.GetProperty("rotationId").GetInt64()).HubId));
+        }
+
+        // The same file again changes nothing.
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.All(
+            preview.GetProperty("lines").EnumerateArray(),
+            line => Assert.Equal("Unchanged", line.GetProperty("outcome").GetString()));
+        Assert.Empty(preview.GetProperty("hubsAdded").EnumerateArray());
+        Assert.Empty(preview.GetProperty("hubsDeleted").EnumerateArray());
     }
 
     // ---- helpers ---------------------------------------------------------------------------------
