@@ -63,6 +63,9 @@ Che cosa c'era, cercato in tutto il codice:
    chiamata»** — l'ordine è un parametro obbligatorio, e nei dieci punti dei test di `dalberone` in cui la chiamata a questi helper
    calcola il valore atteso si passa l'ordine del default, `DateOrder.DayMonthYear`, che è quello della divisione di prova. Scartato: un
    parametro facoltativo col default, che lascia i test intatti ma scrive il default in silenzio a chi lo dimentica.
+   Applicata allo stesso modo, e detta qui perché la si possa controllare, a due spec e2e di Training (`training-dates.spec.ts`,
+   `training-report.spec.ts`) che calcolavano la data attesa con una **loro copia** di `useMoment` (`Intl`, `medium`, in inglese): la
+   copia diventa una chiamata a `formatMoment`, e nient'altro della spec cambia.
 
 **L'ora**, che la richiesta lasciava aperta: è già decisa, 24 ore (nota `2026-10-13-le-ore-in-24`); dopo il giorno, separata da uno
 spazio e senza virgola (`31/10/2026 14:05`), come la scrivevano già le mail. Il fuso resta quello di prima: UTC, con `Z` o «UTC» o il
