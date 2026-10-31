@@ -11,6 +11,7 @@ import {
 } from '../../blocks';
 import { mediaFileUrl } from '../../shared/api/mediaUrl';
 import { useLocalized } from '../../shared/i18n/useLocalized';
+import { useMoment } from '../../shared/i18n/useMoment';
 import { PageMetadata } from '../../shared/seo/PageMetadata';
 
 import { DocumentFooter, DocumentNotice, DocumentStrip } from './DocumentFrame';
@@ -33,7 +34,8 @@ import { usePrintMode } from './usePrintMode';
  * while it is being printed the blocks are told so, which is what unfolds the tabs on paper.
  */
 export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const moment = useMoment();
   const read = useLocalized();
   const printing = usePrintMode();
 
@@ -43,10 +45,8 @@ export function PublicEntryScreen({ content }: { content: PublicContentDto }) {
 
   const isDocument = content.kind === 'Document';
   const summary = read(content.summary);
-  const published = new Intl.DateTimeFormat(i18n.language, {
-    dateStyle: 'long',
-    timeZone: 'UTC',
-  }).format(new Date(content.publishedAt));
+  // The month in words, in the language, as a news item is dated (note 2026-10-31-il-formato-della-data).
+  const published = moment(content.publishedAt, { dateStyle: 'long', time: false });
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">

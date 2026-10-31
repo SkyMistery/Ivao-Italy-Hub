@@ -29,8 +29,8 @@ const noTwelveHourClock = () => {
 
 describe('formatMoment', () => {
   test('writes an evening as 19:00 in English, never 7:00 PM', () => {
-    expect(formatMoment('en', '2026-01-15T19:00:00Z')).toBe('Jan 15, 2026, 19:00');
-    expect(formatMoment('en', EVENING, { timeZone: ZONE, dateStyle: 'short' })).toBe('1/15/26, 19:00');
+    expect(formatMoment('en', '2026-01-15T19:00:00Z')).toBe('15/01/2026 19:00');
+    expect(formatMoment('en', EVENING, { timeZone: ZONE, dateStyle: 'short' })).toBe('15/01/2026 19:00');
   });
 
   test('writes the time alone, and midnight as 00:00', () => {
@@ -58,7 +58,7 @@ test('the line under an instant field is twenty four hours in English', () => {
     { i18n: createTestI18n({ test: { fields: { startsAt: 'Starts' } } }) },
   );
 
-  expect(screen.getByText(/Europe\/Rome/)).toHaveTextContent(/^1\/15\/26, 19:00 Europe\/Rome$/);
+  expect(screen.getByText(/Europe\/Rome/)).toHaveTextContent(/^15\/01\/2026 19:00 Europe\/Rome$/);
   noTwelveHourClock();
 });
 
@@ -87,8 +87,8 @@ test('a date column is twenty four hours in English, in UTC and where the divisi
     { i18n: createTestI18n({ test: { fields: { startsAt: 'Starts' } } }) },
   );
 
-  expect(await screen.findByText('1/15/26, 18:00 UTC')).toBeInTheDocument();
-  expect(screen.getByText('1/15/26, 19:00')).toBeInTheDocument();
+  expect(await screen.findByText('15/01/2026 18:00 UTC')).toBeInTheDocument();
+  expect(screen.getByText('15/01/2026 19:00')).toBeInTheDocument();
   noTwelveHourClock();
 });
 
@@ -119,7 +119,7 @@ test('the times of a conversation are twenty four hours in English', () => {
 
   renderWithProviders(<MessageThread thread={thread} timezone={ZONE} />, { i18n: createTestI18n() });
 
-  expect(document.body.textContent).toContain('Jan 15, 2026, 19:00');
-  expect(document.body.textContent).toContain('Jan 15, 2026, 21:30');
+  expect(document.body.textContent).toContain('15/01/2026 19:00');
+  expect(document.body.textContent).toContain('15/01/2026 21:30');
   noTwelveHourClock();
 });

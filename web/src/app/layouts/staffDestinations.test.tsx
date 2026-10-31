@@ -39,6 +39,7 @@ const bootstrap = {
     locales: ['en'],
     defaultLocale: 'en',
     timezone: 'UTC',
+    dateFormat: 'dd/mm/yyyy',
     logoUrl: null,
     faviconUrl: null,
     firStaffScope: 'all',

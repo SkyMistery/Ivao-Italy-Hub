@@ -104,6 +104,14 @@ public sealed partial class DivisionOptionsValidator : IValidateOptions<Division
             failures.Add($"division.json: 'timezone' ({options.Timezone}) is not a time zone this machine knows.");
         }
 
+        // A typo would not stop anything later: it would write every date in the default, which is the one thing the key is for.
+        if (options.DateFormat is null || !HubDates.Formats.ContainsKey(options.DateFormat))
+        {
+            failures.Add(
+                $"division.json: 'dateFormat' ({options.DateFormat}) must be one of "
+                + $"{string.Join(", ", HubDates.Formats.Keys.Select(format => $"\"{format}\""))}, or left out for \"{HubDates.DefaultFormat}\".");
+        }
+
         // The hour of a daily mail (M4, E10d): a typo here would move it to midnight without a word, or never send it.
         if (!TimeOnly.TryParseExact(options.AwardDigestTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
