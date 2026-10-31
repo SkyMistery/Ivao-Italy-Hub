@@ -335,6 +335,47 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The last pseudonym is read and written under a lock of the database (issue #326, item 3): while another erasure holds
+    /// it, this one waits, and refuses rather than take the same number; nothing of the person has been touched.
+    /// </summary>
+    [Fact]
+    public async Task AnErasureWaitsForTheNumberAnotherOneIsTaking()
+    {
+        var token = TestContext.Current.CancellationToken;
+        const int vid = 780098;
+        await SeedUserAsync(vid, superadmin: false, token);
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        string? connection;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            connection = scope.ServiceProvider.GetRequiredService<HubDbContext>().Database.GetConnectionString();
+        }
+
+        await using (var other = await DatabaseLock.TakeAsync(
+            connection,
+            name => DatabaseLock.NameFor(PersonalDataErasure.PseudonymLockPrefix, name),
+            TimeSpan.Zero,
+            token))
+        {
+            Assert.True(other.Held);
+
+            using var refused = await superadmin.PostAsync(new Uri($"{ErasureEndpoints.Pattern}/{vid}", UriKind.Relative), null, token);
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+            Assert.Contains("errors.erasure.busy", errors.GetProperty("vid").EnumerateArray().Select(error => error.GetString()));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            Assert.True(await scope.ServiceProvider.GetRequiredService<HubDbContext>().Users.AnyAsync(row => row.Vid == vid, token));
+        }
+
+        // Given back, the next erasure takes its number.
+        Assert.Equal(1, Line(await EraseAsync(superadmin, vid, token), "erasure.lines.user"));
+    }
+
+    /// <summary>
     /// A sign in writes about the member before they are anybody (issue #323): the callback runs with nobody signed in, so its
     /// audit rows — their user, and the grants it suspends — carry no VID and the member's address. The erasure takes the
     /// address out of every one of them: the user's, a grant's erased with the person, and a grant's revoked before.
