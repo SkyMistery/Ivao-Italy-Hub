@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
@@ -23,6 +24,7 @@ public sealed class PublicTours(
     FlightOpsDbContext database,
     LegBook legs,
     EffectiveRules effective,
+    RatingVocabulary ratings,
     IClock clock)
 {
     private static readonly ShapeMapper Shapes = new();
@@ -161,6 +163,7 @@ public sealed class PublicTours(
             tour.HubRotationOrder,
             tour.RequiresProcedures,
             tour.MinPilotRating,
+            ratings.Find(RatingKind.Pilot, tour.MinPilotRating)?.ShortName,
             tour.ReferenceAircraftIcao,
             Aircraft(tour.AllowedAircraft, groups),
             tour.RequiredNm,

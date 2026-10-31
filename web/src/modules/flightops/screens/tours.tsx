@@ -20,6 +20,7 @@ import {
   emptyTour,
   groupsListQuery,
   tourQuery,
+  tourRatingsQuery,
   tourReadyProblemsQuery,
   tourToFormValues,
   toursListQuery,
@@ -388,6 +389,11 @@ export function TourEditor() {
   const groups: ChoiceOption[] = (
     useQuery(groupsListQuery(listSearchSchema.parse({ pageSize: 100 }))).data?.items ?? []
   ).map((group) => ({ value: String(group.id), label: read(group.name) }));
+  // The rating as the staff say it, with the network's name for it from the core's words.
+  const ratings: ChoiceOption[] = (useQuery(tourRatingsQuery()).data ?? []).map((rating) => ({
+    value: String(rating.number),
+    label: `${rating.shortName} — ${t(`ratings.Pilot.${rating.shortName}`)}`,
+  }));
   const save = useSaveTour(isNew ? null : Number(id));
   const { suggestions, onSuggestSearch } = useTypeSuggestions();
 
@@ -419,6 +425,7 @@ export function TourEditor() {
         ]),
         awards,
         groups,
+        ratings,
         isTemplate,
         kindLocked: tour?.isPublic ?? false,
         isSubtour: parentId !== null,
