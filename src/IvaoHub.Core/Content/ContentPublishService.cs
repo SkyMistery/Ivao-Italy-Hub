@@ -203,6 +203,13 @@ public sealed class ContentPublishService(
             keys.Add("errors.content.position.capturesNarrower");
         }
 
+        // A block for fewer readers than the new ones — a queue of the staff on a page made public — online already
+        // (note 2026-10-28-il-pubblico-di-un-blocco): the save refuses it in the draft, and this in what is online.
+        if (ContentWriteDtoValidator.BlocksBeyond(walker, blocks, body, content.Visibility).Any())
+        {
+            keys.Add("errors.content.position.blockAudience");
+        }
+
         return keys.Count == 0
             ? null
             : new Dictionary<string, string[]>(StringComparer.Ordinal) { ["visibility"] = [.. keys] };

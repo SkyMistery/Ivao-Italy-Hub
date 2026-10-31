@@ -71,8 +71,8 @@ public sealed class FlightOpsModule : ModuleBase
     [
         new BlockDescriptor("flightops.errorCatalog", Version: 1, BlockKind.Data, AlwaysLive: true),
         new BlockDescriptor("flightops.tourCards", Version: 1, BlockKind.Data, AlwaysLive: true),
-        new BlockDescriptor("flightops.reviewQueue", Version: 1, BlockKind.Data, AlwaysLive: true),
-        new BlockDescriptor("flightops.openIssues", Version: 1, BlockKind.Data, AlwaysLive: true),
+        new BlockDescriptor("flightops.reviewQueue", Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
+        new BlockDescriptor("flightops.openIssues", Version: 1, BlockKind.Data, AlwaysLive: true, Audience: Visibility.Staff),
         new BlockDescriptor("flightops.myTours", Version: 1, BlockKind.Data, AlwaysLive: true),
     ];
 

@@ -4648,6 +4648,8 @@ export interface components {
         /**
          * @description One block, as the server declares it. What it looks like and what its properties mean live in
          *     TypeScript and nowhere else (CLAUDE.md section 2); this is the envelope side of it.
+         *     Audience is the widest page the block makes sense on, which the palette greys it out beyond
+         *     (note 2026-10-28-il-pubblico-di-un-blocco).
          */
         BootstrapBlock: {
             type: string;
@@ -4655,6 +4657,7 @@ export interface components {
             version: number;
             kind: components["schemas"]["BlockKind"];
             alwaysLive: boolean;
+            audience: components["schemas"]["Visibility"];
         };
         /**
          * @description One person the footer credits. ProfileUrl is built by the core's IVAO half, so the client links to it
