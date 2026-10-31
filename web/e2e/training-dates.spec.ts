@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { formatMoment } from '../src/shared/i18n/useMoment';
+
 import { anonymousBootstrap, staffBootstrap, stubTheApi } from './fixtures';
 import { englishCommon } from './locales';
 
@@ -77,16 +79,9 @@ function at(days: number, hour: number): string {
 /** What a `datetime-local` box holds for an instant: the UTC wall clock, to the minute. */
 const box = (instant: string) => instant.slice(0, 16);
 
-/** An instant as the pages say it (`useMoment`, in English): twenty four hours, UTC. */
-const inUtc = new Intl.DateTimeFormat('en', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  hour12: false,
-  timeZone: 'UTC',
-});
-const timeInUtc = new Intl.DateTimeFormat('en', { timeStyle: 'short', hour12: false, timeZone: 'UTC' });
-const moment = (instant: string) => inUtc.format(new Date(instant));
-const span = (start: string, end: string) => `${moment(start)}–${timeInUtc.format(new Date(end))}`;
+/** An instant as the pages say it (`useMoment`, in English): the day in the division's order, twenty four hours, UTC. */
+const moment = (instant: string) => formatMoment('en', instant);
+const span = (start: string, end: string) => `${moment(start)}–${formatMoment('en', end, { date: false })}`;
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };

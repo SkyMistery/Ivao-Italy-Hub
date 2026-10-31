@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import { formatMoment } from '../src/shared/i18n/useMoment';
+
 import { anonymousBootstrap, staffBootstrap, stubTheApi } from './fixtures';
 
 /**
@@ -92,8 +94,7 @@ function at(days: number, hour: number): string {
 }
 
 /** A day as the pages say it (`useMoment` without the time, in English). */
-const day = (instant: string) =>
-  new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(instant));
+const day = (instant: string) => formatMoment('en', instant, { time: false });
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };
@@ -724,12 +725,7 @@ test('after a no-show the trainee reads why it closed, the session, and until wh
   await expect(
     page.getByText(
       filled(words.refusal.waitUntil_other, {
-        date: new Intl.DateTimeFormat('en', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-          hour12: false,
-          timeZone: 'UTC',
-        }).format(new Date(until)),
+        date: formatMoment('en', until),
         count: '4',
       }),
     ),
