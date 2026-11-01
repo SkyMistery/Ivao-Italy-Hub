@@ -831,6 +831,38 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// Another trainer for a training that has its date (the review of the code, #327): the date stays, both are told it — the trainee
+    /// that it stays, the new trainer when it is —, and the reminder leaves again, to both, though the previous trainer had it already.
+    /// </summary>
+    [Fact]
+    public async Task AnotherTrainerOfADatedTrainingIsToldItsDateAndRemindedOfIt()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await WriteSettingsAsync(new { conflictPolicy = "None", reminderLeadHours = 48 }, token);
+
+        var start = DateTime.UtcNow.AddHours(30);
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Scheduled, token, trainer: DepartmentTrainerVid, start: start);
+        await RunRemindersAsync(token);
+        Assert.Equal(1, await MailsAsync(TraineeVid, TrainingNotifications.Reminder, token));
+
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var version = (await PageAsync(coordinator, id, token)).GetProperty("rowVersion").GetDateTime();
+        await DoneAsync(await StepAsync(coordinator, id, "assign", new { trainerVid = TrainerVid, rowVersion = version }, token), token);
+
+        var stored = await StoredAsync(id, token);
+        var moment = TrainingMail.Moment(start);
+        Assert.Equal((TrainingState.Scheduled, moment), (stored.State, TrainingMail.Moment(stored.ScheduledStartUtc!.Value)));
+        Assert.Null(stored.RemindedAt);
+
+        Assert.Contains(moment, await MailAsync(TraineeVid, TrainingNotifications.TrainerAssigned, token), StringComparison.Ordinal);
+        Assert.Contains(moment, await MailAsync(TrainerVid, TrainingNotifications.TrainerAssigned, token), StringComparison.Ordinal);
+
+        await RunRemindersAsync(token);
+        Assert.Equal(2, await MailsAsync(TraineeVid, TrainingNotifications.Reminder, token));
+        Assert.Equal(1, await MailsAsync(TrainerVid, TrainingNotifications.Reminder, token));
+    }
+
+    /// <summary>
     /// The «done when» of A8 (<c>08-piano-implementazione-m3.md</c>), through the API: the trainer proposes two dates, one of them
     /// warned of another training that day; the trainee chooses one; its session is in the public calendar with no name; and the
     /// reminder leaves once. The pages and the mailbox are A8b's round on the bench.

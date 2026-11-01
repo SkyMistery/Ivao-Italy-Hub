@@ -789,6 +789,8 @@
       },
       "assignedTrainee": "Your trainer will propose the dates of the session. Your trainings are on this page:",
       "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office: it is yours to conduct from now on. The page of the training:",
+      "assignedTraineeDated": "The date of the session stays as it was: {{session}} UTC. Your trainings are on this page:",
+      "assignedTrainerDated": "The training already has its date: the session is on {{session}} UTC, and it is yours to conduct from now on. The page of the training:",
       "datesProposed": {
         "subject": "[Training] Dates proposed: {{training}}",
         "body": "{{trainer}} has proposed the dates for the session of your training {{training}}, in UTC:\n\n{{dates}}\n\nChoose yours on the training's page: {{url}}\n\nIf none of them suits you, write to your trainer.\n\n---\nYou can switch these emails off from your profile page."
