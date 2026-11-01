@@ -108,6 +108,16 @@ function draw(drawn: TourDetailDto = tour) {
   );
 }
 
+/** The aircraft types a row holds, as its cell lists them. */
+function chosenTypes(scope: Awaited<ReturnType<typeof row>>): string[] {
+  const list = scope.queryByRole('list', { name: legs.fields.aircraft });
+  return list === null
+    ? []
+    : within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent ?? '');
+}
+
 /** A row of the table by its name: "Leg 2", or "Not saved" for a row the server has not numbered yet. */
 async function row(number: string) {
   const name = number === '+' ? legs.state.new : legs.row.replace('{{number}}', number);
@@ -169,12 +179,12 @@ test("a leg added after another flies its aircraft, or the tour's reference airc
 
   await user.click((await row('1')).getByRole('button', { name: legs.actions.addAfter }));
   await user.click(await screen.findByRole('menuitem', { name: legs.actions.follows }));
-  expect((await row('+')).getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('A320, A20N');
+  expect(chosenTypes(await row('+'))).toEqual(['A320', 'A20N']);
   await user.click((await row('+')).getByRole('button', { name: englishCommon.common.cancel }));
 
   await user.click((await row('2')).getByRole('button', { name: legs.actions.addAfter }));
   await user.click(await screen.findByRole('menuitem', { name: legs.actions.closeTour }));
-  expect((await row('+')).getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('B738');
+  expect(chosenTypes(await row('+'))).toEqual(['B738']);
 });
 
 test('a duplicate carries every field of the leg it copies', async () => {
@@ -202,7 +212,55 @@ test('a duplicate carries every field of the leg it copies', async () => {
   expect(fresh.getByRole('combobox', { name: legs.fields.departureIcao })).toHaveValue('AAAA');
   expect(fresh.getByRole('combobox', { name: legs.fields.arrivalIcao })).toHaveValue('BBBB');
   expect(fresh.getByRole('textbox', { name: legs.fields.flightNumbers })).toHaveValue('XX 100, XX 102');
-  expect(fresh.getByRole('textbox', { name: legs.fields.aircraft })).toHaveValue('A320');
+  expect(chosenTypes(fresh)).toEqual(['A320']);
+});
+
+// The types of a leg are chosen from the ones the core knows, never typed free (phase 6 of the staff trial, g).
+test('a type of a leg is chosen from the types offered, and a text that is none of them is not kept', async () => {
+  const user = userEvent.setup();
+  api.get.mockImplementation((path: string) => {
+    if (path === '/api/flightops/tours/{tourId}/legs') {
+      return Promise.resolve(
+        ok(grid(leg(11, 1, 'AAAA', 'BBBB', { aircraft: { types: ['B738'], groupIds: [] } }))),
+      );
+    }
+
+    if (path === '/api/reference/aircraft-types') {
+      return Promise.resolve(ok([{ icaoCode: 'A320', manufacturer: 'Airbus', model: 'A320' }]));
+    }
+
+    return Promise.resolve(ok([]));
+  });
+  draw();
+
+  const first = await row('1');
+  const box = first.getByRole('combobox', { name: legs.fields.aircraft });
+
+  // Not a type the list offers: put back when the field is left.
+  await user.type(box, 'ZZZZ');
+  await user.tab();
+  expect(box).toHaveValue('');
+  expect(chosenTypes(first)).toEqual(['B738']);
+
+  // Offered: Enter chooses it.
+  await user.type(box, 'a320');
+  await waitFor(() => expect(document.querySelector('option[value="A320"]')).not.toBeNull());
+  await user.keyboard('{Enter}');
+  expect(chosenTypes(first)).toEqual(['B738', 'A320']);
+  expect(box).toHaveValue('');
+
+  // And one is taken off by its own button.
+  await user.click(first.getByRole('button', { name: legs.actions.removeType.replace('{{type}}', 'B738') }));
+  expect(chosenTypes(first)).toEqual(['A320']);
+
+  api.put.mockResolvedValue(
+    ok(grid(leg(11, 1, 'AAAA', 'BBBB', { aircraft: { types: ['A320'], groupIds: [] } }))),
+  );
+  await user.click(first.getByRole('button', { name: englishCommon.common.save }));
+
+  await waitFor(() => expect(api.put).toHaveBeenCalled());
+  const [, request] = api.put.mock.lastCall as [string, { body: { aircraft: { types: string[] } } }];
+  expect(request.body.aircraft.types).toEqual(['A320']);
 });
 
 test('a leg with reports is retired with a reason, after the server said it would be', async () => {

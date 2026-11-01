@@ -119,7 +119,9 @@ Structural rules:
   publishing service, `live` via `/api/blocks/data/{type}`. The back end knows only the envelope, never the `props`.
 - **A block type is registered in two halves**: schema, component and icon in TypeScript, the type and its `kind` in
   C#. With only one half the block draws in the editor and the save refuses it (`errors.body.blockTypeUnknown`).
-  `ArchitectureTests.TheServerKnowsEveryBlockTypeTheBrowserRegisters` catches it.
+  `ArchitectureTests.TheServerKnowsEveryBlockTypeTheBrowserRegisters` catches it. Who a block is for (`Audience`, the widest
+  visibility of a page it makes sense on) sits in the C# half too, and `/api/me` publishes it: the save refuses a block narrower
+  than the row's visibility (`decisions/2026-10-28-il-pubblico-di-un-blocco.md`).
 - **The interactive block** (plan 0.70–0.71, `decisions/2026-09-12-il-blocco-interattivo.md`): the code is in the
   **envelope** (`source`), never in `props`; the frame is served by `/embed/{content}/{version}/{block}` with **its
   own** CSP; the draft goes through `CrudSource.BackOffice` + the one handler, never through a hand-written

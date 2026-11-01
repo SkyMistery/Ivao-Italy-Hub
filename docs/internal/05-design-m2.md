@@ -1132,6 +1132,10 @@ Tutte e due vogliono una **nota di decisione** e i test della spina dorsale este
 
 ### 8.1 Pubblico
 
+> **Sostituita dal 31 ott 2026** da `11-design-pagine-dei-tour.md` (#417, fase 6, approvato da Carmine, piano 1.46): l'elenco
+> `/tours` e la pagina di un tour sono descritti lì; il testo qui sotto resta come storia di M2 e di com'è il codice finché la fase 6
+> non è unita.
+
 - **`/tours`**: tour aperti, in chiusura, e in arrivo con anteprima, come **riquadri** (foto, titolo, riassunto; per un
   pilota barra di avanzamento e prossima leg). Anonimo: niente avanzamento. **Precisato in T15b** (nota
   `2026-09-24-le-pagine-delle-persone` §3.1): il riquadro che il server manda resta uguale per tutti; barra e prossima leg arrivano da
@@ -1161,6 +1165,9 @@ iniziati con la barra e la prossima leg, poi il riepilogo. Un tour nascosto spar
 il blocco risponde `signedIn: false`.
 
 ### 8.3 L'editor del tour
+
+> **Sostituita dal 31 ott 2026** da `11-design-pagine-dei-tour.md` §5 (#417, fase 6, piano 1.46): le schermate per creare un tour,
+> nel secondo passo del codice, dopo le pagine dei piloti.
 
 - **`/staff/tours`**: tutti i tour passati, presenti e futuri (stato calcolato, tipo, date, nascosto, iscritti, in coda); filtro
   «template».
