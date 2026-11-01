@@ -3,12 +3,14 @@
 **Data:** 1 novembre 2026 — issue #327 (revisione del codice, lotto 7, Training lato server)
 **Stato:** **decisa** (Carmine, 21 ottobre 2026, [risposta sull'issue #327][r1]: «Tutte come suggerisci tu», sulla
 raccomandazione del master per il punto 2). Il §2 e il §3 sono la direzione che il master ha scritto nei punti 3 e 1 della stessa
-issue, coperta dalla stessa risposta; il valore del limite (§2) e il secondo promemoria (§3) sono le scelte di questa PR, scritte
-qui perché il revisore le veda.
+issue, coperta dalla stessa risposta; il valore del limite (§2, 366 giorni) e il secondo promemoria (§3), scelte di questa PR, li
+ha confermati Carmine il 1° novembre 2026 ([risposta sulla PR #431][r2]: «Tutte come consigli»), con il punto 4 spostato
+nell'issue #434.
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)**: la regola del job notturno e i rifiuti di un form dentro il modulo, con i
 meccanismi che ci sono (`Refusals`, le chiavi i18n del modulo). Design `07-design-m3.md` §2.4, §2.5, §5.3, §12 n.9.
 
 [r1]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/327#issuecomment-6310356849
+[r2]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/431#issuecomment-6555197779
 
 ## 1. Una data già passata non conta come scelta (punto 2)
 
@@ -37,7 +39,7 @@ meccanismi che ci sono (`Refusals`, le chiavi i18n del modulo). Design `07-desig
   rifiuterebbe per i suoi limiti — più di un anno da adesso in un verso o nell'altro, o più lunga di una sessione — risponde con la
   politica e **nessun avviso**: il rifiuto arriva sul campo quando la si scrive, e la pagina non cambia.
 - **Il valore.** Un anno è molto più di quanto un training aspetta la sua data, e lontano dalla fine del calendario. È la scelta di
-  questa PR dentro la direzione del master («bound the dates»).
+  questa PR dentro la direzione del master («bound the dates»), **confermata da Carmine** ([risposta sulla PR #431][r2]).
 
 ## 3. Un altro trainer per un training che ha la data (punto 1)
 
@@ -45,7 +47,7 @@ meccanismi che ci sono (`Refusals`, le chiavi i18n del modulo). Design `07-desig
   promemoria già partito era andato al trainer di prima, e il nuovo non ne riceveva. La mail diceva al trainee «il tuo trainer
   proporrà le date» per un training che la data l'ha già, e al nuovo trainer niente di quando sia.
 - **La decisione.** Il promemoria **riparte**, a tutti e due, col nome del nuovo trainer: il trainee può riceverne un secondo, che
-  gli dice anche chi lo allena adesso. Le mail dell'assegnazione di un training datato dicono la data: al trainee che resta quella,
+  gli dice anche chi lo allena adesso (**confermato da Carmine**, [risposta sulla PR #431][r2]). Le mail dell'assegnazione di un training datato dicono la data: al trainee che resta quella,
   al trainer quando è (`training:mail.training.assignedTraineeDated`, `assignedTrainerDated`).
 
 ## Che cosa si tocca
@@ -53,7 +55,7 @@ meccanismi che ci sono (`Refusals`, le chiavi i18n del modulo). Design `07-desig
 Solo il modulo Training: `Dates/TrainingDates.cs`, `Staff/TrainerQueue.cs`, `Staff/StaffTrainings.cs`, `Sheets/EvaluationSheet.cs`,
 `Blocks/ApprovalQueueProvider.cs` (il punto 5: il blocco legge tutte le pagine dei training in attesa, non solo le prime 500), le
 chiavi nei file di lingua del modulo. Nessuna migrazione, nessun file del nucleo. Il punto 4 (due ban dati insieme) resta fuori:
-tocca i file dei ban, su cui lavora la PR dell'issue #312.
+tocca i file dei ban, su cui lavora la PR dell'issue #312, e ha ora la sua issue, #434.
 
 ## Da portare nel piano
 
