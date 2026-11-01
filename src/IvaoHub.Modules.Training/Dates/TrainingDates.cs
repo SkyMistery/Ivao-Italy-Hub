@@ -199,7 +199,7 @@ public sealed class TrainingDates(
             {
                 refusals.Add($"{field}.startsAtUtc", SlotTooFar);
             }
-            else if (existing.Exists(slot => slot.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
+            else if (existing.Exists(held => held.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
             {
                 refusals.Add($"{field}.startsAtUtc", SlotTwice);
             }
