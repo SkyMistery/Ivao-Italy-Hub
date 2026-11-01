@@ -337,7 +337,8 @@ estensione n.6). Niente esito, niente voto: sono su IVAO.
 
 VID del trainee, motivo, **fino a quando** (vuoto: finché qualcuno non lo toglie), chi l'ha dato, e chi e quando l'ha
 tolto: la forma della tabella `trainee` di PATS. `IOwnedByDepartment` (TD), `[Audited]`, `IHasStakeholder` con il VID
-bannato. Un ban vale per **entrambi i percorsi**. Lista e form generati (§2.9).
+bannato. Un ban vale per **entrambi i percorsi**. Lista e form generati (§2.9). Un ban dato **chiude i training aperti** del membro
+(§2.9, issue #312): `trn_trainings.closed_by_ban` dice quali (nota `2026-11-01-il-ban-chiude-cio-che-e-aperto`).
 
 ### 1.6 Le impostazioni — `TrainingSettings`
 
@@ -490,7 +491,11 @@ non ha toccato resta **N/A** (d4).
 
 Con `Training.Ban` (TC, TAC; HQ e web per il nucleo), dalla pagina del percorso del trainee o dalla lista dei ban: un
 motivo e, se si vuole, una scadenza (d4: «configurabile»). Il trainee riceve `banned` con il motivo e la scadenza; finché
-dura non chiede training, e quelli già aperti vanno avanti (come i PIREP già inviati in M2, §15.2 n.10). **Togli ban**
+dura non chiede training, e **darlo chiude quelli già aperti** (Carmine sulla issue #312, nota
+`2026-11-01-il-ban-chiude-cio-che-e-aperto`): le richieste in attesa, quelle accettate, quelle con il trainer e quelle con la data,
+chiuse da chi dà il ban, senza motivo, nello stesso salvataggio; le date proposte vanno, la sessione datata esce dal calendario e il
+trainer riceve `closedByBan`. Una sessione già cominciata resta al suo trainer, che la registra; rinviata mentre il ban vale si chiude
+(⚖️ la domanda del §4 della nota). Quando il ban finisce o si toglie **non si riapre niente**: il membro chiede di nuovo. **Togli ban**
 registra chi e quando. I ban restano nello storico. Nessuno si banna da solo (negato all'interessato).
 
 ---
@@ -633,7 +638,8 @@ A un visitatore i blocchi personali rispondono `signedIn: false`, come `myTours`
 | `reminder` | trainee e trainer | `reminderLeadHours` prima (24 ore) |
 | `reportPublished` | trainee | report pubblicato (d4) |
 | `trainingClosed` | trainee | chiuso per nessuna risposta o no-show (d4) |
-| `banned` | trainee | ban dato, con motivo e scadenza |
+| `banned` | trainee | ban dato, con motivo e scadenza, e i training aperti chiusi (#312) |
+| `closedByBan` | trainer | un training suo chiuso da un ban, con la data della sessione, ora libera (#312) |
 
 Il rifiuto automatico non manda mail: basta il messaggio a schermo (d4).
 
