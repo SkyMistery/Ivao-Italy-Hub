@@ -46,6 +46,9 @@ public sealed class TrainingDates(
     /// <summary>A date proposed that has already gone by, or is going by now.</summary>
     public const string SlotPassed = "training:errors.slotPassed";
 
+    /// <summary>A date further ahead than <see cref="MaxLead"/>.</summary>
+    public const string SlotTooFar = "training:errors.slotTooFar";
+
     public const string SlotEndsBeforeItStarts = "training:errors.slotEndsBeforeItStarts";
 
     public const string SlotTooLong = "training:errors.slotTooLong";
@@ -78,6 +81,12 @@ public sealed class TrainingDates(
     /// <summary>How many dates to come may wait for the trainee at once.</summary>
     public const int MaxOpenSlots = 10;
 
+    /// <summary>
+    /// How far ahead a date may be proposed or set: a year, and a day for a leap one. Far more than a training waits for, and short
+    /// of the last day of the calendar, which a day of the division's past would run beyond (the review of the code, #327).
+    /// </summary>
+    public static readonly TimeSpan MaxLead = TimeSpan.FromDays(366);
+
     /// <summary>The states in which a training is dated, or has its date changed, by whoever conducts it (§2.1).</summary>
     public static bool IsDatable(TrainingState state) => state is TrainingState.Assigned or TrainingState.Scheduled;
 
@@ -104,14 +113,22 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// What the hub finds on the days of a date (§2.5), before anybody writes it: the division's policy, and the warnings — none when
-    /// the policy is not to look.
+    /// the policy is not to look, and none for a date the writing refuses for its bounds — more than <see cref="MaxLead"/> away either
+    /// way, or longer than a session —, whose refusal comes on its own field when it is written.
     /// </summary>
     public async Task<DateConflictsDto> ConflictsAsync(Training training, DateTime startsAtUtc, DateTime? endsAtUtc, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(training);
 
         var settings = await SettingsAsync(cancellationToken);
-        var found = await WarningsAsync(training, Utc(startsAtUtc), endsAtUtc is { } end ? Utc(end) : null, settings, cancellationToken);
+        var (start, end) = (Utc(startsAtUtc), endsAtUtc is { } until ? Utc(until) : (DateTime?)null);
+        var now = clock.UtcNow;
+        if (start < now - MaxLead || start > now + MaxLead || end - start > MaxSlotLength)
+        {
+            return new DateConflictsDto(settings.ConflictPolicy, []);
+        }
+
+        var found = await WarningsAsync(training, start, end, settings, cancellationToken);
 
         return new DateConflictsDto(settings.ConflictPolicy, found.Shown);
     }
@@ -158,8 +175,16 @@ public sealed class TrainingDates(
         for (var index = 0; index < proposed.Count; index++)
         {
             var field = $"slots[{index}]";
-            var start = proposed[index].StartsAtUtc is { } written ? Utc(written) : (DateTime?)null;
-            var end = proposed[index].EndsAtUtc is { } until ? Utc(until) : (DateTime?)null;
+
+            // A row sent as nothing at all is a date not written, refused on its own row: no page sends it.
+            if (proposed[index] is not { } slot)
+            {
+                refusals.Add(field, "errors.required");
+                continue;
+            }
+
+            var start = slot.StartsAtUtc is { } written ? Utc(written) : (DateTime?)null;
+            var end = slot.EndsAtUtc is { } until ? Utc(until) : (DateTime?)null;
 
             // A box left empty is required on its own field (A8b); what can be said of the other one still is.
             if (start is not { } from)
@@ -169,6 +194,10 @@ public sealed class TrainingDates(
             else if (from <= now)
             {
                 refusals.Add($"{field}.startsAtUtc", SlotPassed);
+            }
+            else if (from > now + MaxLead)
+            {
+                refusals.Add($"{field}.startsAtUtc", SlotTooFar);
             }
             else if (existing.Exists(slot => slot.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
             {
@@ -310,6 +339,11 @@ public sealed class TrainingDates(
         if (start <= clock.UtcNow)
         {
             return Refuse("startsAtUtc", SlotPassed);
+        }
+
+        if (start > clock.UtcNow + MaxLead)
+        {
+            return Refuse("startsAtUtc", SlotTooFar);
         }
 
         var settings = await SettingsAsync(cancellationToken);

@@ -699,6 +699,7 @@
     "trainerAlready": "They are the trainer of this training already.",
     "datesNotProposable": "Dates are proposed only for a training with its trainer assigned and no date yet.",
     "slotPassed": "This date has already gone by.",
+    "slotTooFar": "A date is at most a year ahead.",
     "slotEndsBeforeItStarts": "The end comes before the start.",
     "slotTooLong": "A date proposed lasts 12 hours at most.",
     "slotTwice": "This date is among the ones proposed already.",

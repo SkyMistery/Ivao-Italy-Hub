@@ -700,6 +700,7 @@
     "trainerAlready": "È già il trainer di questo training.",
     "datesNotProposable": "Le date si propongono solo a un training con il trainer assegnato e ancora senza data.",
     "slotPassed": "Questa data è già passata.",
+    "slotTooFar": "Una data è al massimo fra un anno.",
     "slotEndsBeforeItStarts": "La fine viene prima dell'inizio.",
     "slotTooLong": "Una data proposta dura al massimo 12 ore.",
     "slotTwice": "Questa data è già fra quelle proposte.",

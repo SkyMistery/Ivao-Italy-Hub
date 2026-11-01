@@ -144,6 +144,12 @@ public sealed class TrainingSessionsTests(MariaDbFixture mariaDb) : IAsyncLifeti
             await AssertRefusedAsync(unknown, "sheet", EvaluationSheet.Changed, token);
         }
 
+        // An entry sent as nothing, which no page sends: required on its own row, never a failure (the review of the code, #327).
+        using (var nothing = await StepAsync(trainer, id, "report", Report(version, [Entry(taxi, grade: 3), null!]), token))
+        {
+            await AssertRefusedAsync(nothing, "sheet[1]", "errors.required", token);
+        }
+
         Assert.Equal(TrainingState.Scheduled, (await StoredAsync(id, token)).State);
 
         // Published: the first item graded, the second marked, the third left not applicable.

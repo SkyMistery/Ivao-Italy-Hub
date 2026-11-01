@@ -751,6 +751,59 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A body no page sends, or a date beyond the calendar (the review of the code, #327): a row of the dates sent as nothing is
+    /// required on its own row, a date more than a year ahead is refused on its field — proposed or set by hand —, and asking what a
+    /// date at either end of the calendar meets answers with nothing met. Never a 500.
+    /// </summary>
+    [Fact]
+    public async Task ADateSentAsNothingOrBeyondAYearIsRefusedOnItsFieldAndNeverAFailure()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
+
+        // The policy looks: under None the days of a date are never counted.
+        await WriteSettingsAsync(new { conflictPolicy = "Warn", conflictKinds = new[] { EventKind } }, token);
+
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
+        var version = (await PageAsync(trainer, id, token)).GetProperty("rowVersion").GetDateTime();
+
+        using (var nothing = await StepAsync(trainer, id, "slots", new { slots = new object?[] { null }, confirmed = true, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(nothing, "slots[0]", "errors.required", token);
+        }
+
+        var lastDay = new DateTime(9999, 12, 31, 10, 0, 0, DateTimeKind.Utc);
+        object[] far = [Slot(DateTime.UtcNow.AddDays(367), DateTime.UtcNow.AddDays(367).AddHours(2)), Slot(lastDay, lastDay.AddHours(2))];
+        using (var refused = await StepAsync(trainer, id, "slots", new { slots = far, confirmed = true, rowVersion = version }, token))
+        {
+            var problem = await ProblemAsync(refused, token);
+            Assert.Equal([TrainingDates.SlotTooFar], Keys(problem, "slots[0].startsAtUtc"));
+            Assert.Equal([TrainingDates.SlotTooFar], Keys(problem, "slots[1].startsAtUtc"));
+        }
+
+        using (var set = await StepAsync(trainer, id, "date", new { startsAtUtc = lastDay, confirmed = true, rowVersion = version }, token))
+        {
+            await AssertRefusedAsync(set, "startsAtUtc", TrainingDates.SlotTooFar, token);
+        }
+
+        Assert.Empty(await SlotsOfAsync(id, token));
+        Assert.Equal(TrainingState.Assigned, (await StoredAsync(id, token)).State);
+
+        // What a date meets, at the first moment of the calendar and on its last day, and for a date that ends there: nothing.
+        foreach (var (start, end) in new (DateTime, DateTime?)[]
+        {
+            (DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), null),
+            (lastDay, null),
+            (Day(3).AddHours(16), lastDay),
+        })
+        {
+            using var asked = await trainer.GetAsync(Conflicts(id, start, end), token);
+            var met = await DoneAsync(asked, token);
+            Assert.Empty(met.GetProperty("warnings").EnumerateArray());
+        }
+    }
+
+    /// <summary>
     /// A date gone by is not a choice the trainee failed to make (the maintainer's answer on #327): the night closes a training only
     /// when a date proposed was still to come, and one whose dates have all gone by stays with its trainer, among their dates to
     /// propose, with no closing and no mail.
