@@ -1,6 +1,6 @@
 import { Badge, Button, H2, H3, Subtle } from '@ivao/atmosphere-react';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
@@ -279,12 +279,29 @@ export const AUTO_REPORT_PREFERENCE = 'events.autoReport';
  * «Report my participation in events automatically» (design M4 §1.11, E14b): off until the member switches it on, kept on their account. Then,
  * after each event, the system looks for their flights and their shifts and writes their report of support, which a validator decides as any
  * other; one they sent by hand stays as it is.
+ *
+ * The generated form reads its defaults once, when it is drawn: a save refused draws it again from what the server kept, so the switch
+ * never stays turned on a value nobody saved (#333, item 4). The same when the member switched again while a save was on its way: once
+ * the last one is answered, a switch that does not say what the server keeps is drawn again from it — never redrawn when it does, which
+ * would take the focus off it at every save.
  */
-function AutoReportSwitch() {
+export function AutoReportSwitch() {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const preference = useQuery(preferenceQuery(AUTO_REPORT_PREFERENCE));
   const save = useSavePreference(AUTO_REPORT_PREFERENCE);
   const failed = describeProblem(save.error, t, i18n.language);
+  const [drawn, setDrawn] = useState(0);
+  const shown = useRef<boolean | null>(null);
+
+  // TanStack calls `mutate`'s own callbacks for the last save only: an earlier one, overtaken, is answered by the last.
+  const settled = () => {
+    const kept = queryClient.getQueryData(preferenceQuery(AUTO_REPORT_PREFERENCE).queryKey) === true;
+    if (shown.current !== kept) {
+      shown.current = kept;
+      setDrawn((count) => count + 1);
+    }
+  };
 
   if (preference.isPending) {
     return null;
@@ -293,13 +310,15 @@ function AutoReportSwitch() {
   return (
     <div className="flex flex-col gap-2">
       <SchemaForm
+        key={drawn}
         schema={autoReportSchema}
         defaults={{ autoReport: preference.data === true }}
         locales={[]}
         labels="events:mine.reports.auto"
         onChange={(values) => {
+          shown.current = values.autoReport;
           if (values.autoReport !== (preference.data === true)) {
-            save.mutate(values.autoReport);
+            save.mutate(values.autoReport, { onSettled: settled });
           }
         }}
       />

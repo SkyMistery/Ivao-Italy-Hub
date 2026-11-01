@@ -67,7 +67,8 @@
       "toAssign_one": "{{count}} training to assign",
       "toAssign_other": "{{count}} trainings to assign",
       "empty": "No request is waiting for you."
-    }
+    },
+    "unavailable": "This cannot be read right now. Try again later."
   },
   "states": {
     "Requested": "Waiting for acceptance",

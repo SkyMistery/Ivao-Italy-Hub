@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { formatMoment } from '../../../shared/i18n/useMoment';
 import { createTestI18n } from '../../../test/harness';
 import type { MyBookingDto, PublicEventDto, PublicPrivateSlotDto } from '../api';
 import englishEvents from '../locales/en/events.json';
@@ -329,4 +330,19 @@ describe('the private slots on the page of an event', () => {
     expect(within(dialog).getByText(words.dialog.noneFree)).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: words.dialog.book })).not.toBeInTheDocument();
   });
+});
+
+test('an hour that ends past midnight says the day it ends (#333, item 6)', async () => {
+  const late = [slot(31, true, at(23)), slot(32, true, at(23, 30))];
+  await draw(
+    <PrivateSlots
+      event={event({ startsAtUtc: at(22), endsAtUtc: '2099-11-22T01:00:00Z', privateSlots: late })}
+      viewer={member}
+    />,
+  );
+
+  const arrivals = await screen.findByRole('table', { name: englishEvents.public.arrivals });
+  expect(
+    within(arrivals).getByRole('button', { name: `23:00–${formatMoment('en', '2099-11-22T00:00:00Z')}` }),
+  ).toBeInTheDocument();
 });
