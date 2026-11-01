@@ -57,6 +57,9 @@ public enum TrainingHistoryEvent
     /// <summary>Closed: by the staff with a reason, or by the hub — nobody — because the trainee chose no date in time.</summary>
     Closed,
 
+    /// <summary>Closed because its trainee was banned (issue #312): by whoever gave the ban, with no reason of its own.</summary>
+    ClosedByBan,
+
     /// <summary>Taken back by the trainee.</summary>
     Cancelled,
 
@@ -190,6 +193,11 @@ public sealed class TrainingHistory(TrainingDbContext database, HubDbContext hub
                     Present(after, nameof(Training.ChosenSlotId)) ? TrainingHistoryEvent.DateChosen : TrainingHistoryEvent.DateSet,
                     Date: Moment(after, nameof(Training.ScheduledStartUtc))),
                 TrainingState.Completed => new TrainingHistoryLine(row.At, by, TrainingHistoryEvent.Completed),
+
+                // Closed by a ban (issue #312), in the ban's save or after the trainee's own request or a session rescheduled: by whoever
+                // gave the ban, whoever wrote the row.
+                TrainingState.Closed when Flag(after, nameof(Training.ClosedByBan)) => new TrainingHistoryLine(
+                    row.At, Number(after, nameof(Training.ClosedBy)), TrainingHistoryEvent.ClosedByBan),
                 TrainingState.Closed => new TrainingHistoryLine(
                     row.At, by, TrainingHistoryEvent.Closed, Reason: Text(after, nameof(Training.CloseReason))),
                 TrainingState.Cancelled => new TrainingHistoryLine(row.At, by, TrainingHistoryEvent.Cancelled),
@@ -258,6 +266,9 @@ public sealed class TrainingHistory(TrainingDbContext database, HubDbContext hub
 
     private static int? Number(JsonObject row, string property) =>
         row[property] is JsonValue value && value.TryGetValue<int>(out var number) ? number : null;
+
+    private static bool Flag(JsonObject row, string property) =>
+        row[property] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
     /// <summary>Whether a property holds something: an identifier, a text, a moment — not nothing.</summary>
     private static bool Present(JsonObject row, string property) => row[property] is JsonValue;
