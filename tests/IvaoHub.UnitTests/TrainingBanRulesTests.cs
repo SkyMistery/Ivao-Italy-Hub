@@ -61,6 +61,35 @@ public sealed class TrainingBanRulesTests
         Assert.Null(TrainingBans.Row(new TraineeBan { Vid = 4242, Reason = "trn-test", CreatedAt = Now }, names, Now).GivenBy);
     }
 
+    /// <summary>
+    /// What a ban closes (issue #312): every training of its member still open, but a session that has started, which its trainer
+    /// records (the maintainer's answer on #149); nothing that is over, and nobody else's.
+    /// </summary>
+    [Fact]
+    public void ABanClosesEveryOpenTrainingOfItsMemberButASessionThatHasStarted()
+    {
+        Training Of(long id, TrainingState state, int vid = 4242, DateTime? start = null) =>
+            new() { Id = id, TraineeVid = vid, State = state, ScheduledStartUtc = start };
+
+        Training[] trainings =
+        [
+            Of(1, TrainingState.Requested),
+            Of(2, TrainingState.Accepted),
+            Of(3, TrainingState.Assigned),
+            Of(4, TrainingState.Scheduled, start: Now.AddMinutes(1)),
+            Of(5, TrainingState.Scheduled, start: Now),
+            Of(6, TrainingState.Scheduled, start: Now.AddHours(-1)),
+            Of(7, TrainingState.Completed, start: Now.AddDays(-1)),
+            Of(8, TrainingState.Rejected),
+            Of(9, TrainingState.Cancelled),
+            Of(10, TrainingState.Closed),
+            Of(11, TrainingState.NoShow),
+            Of(12, TrainingState.Requested, vid: 4343),
+        ];
+
+        Assert.Equal([1L, 2L, 3L, 4L], TrainingBans.Closable(trainings.AsQueryable(), 4242, Now).Select(training => training.Id));
+    }
+
     private sealed class StubClock(DateTime now) : IClock
     {
         public DateTime UtcNow => now;

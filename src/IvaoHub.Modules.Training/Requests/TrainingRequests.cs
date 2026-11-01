@@ -35,6 +35,7 @@ public sealed class TrainingRequests(
     ITheoryExamSource theory,
     TrainingMail mail,
     TrainingPeople people,
+    TrainingBans trainingBans,
     ICurrentUser currentUser,
     IOptions<DivisionOptions> division,
     IClock clock)
@@ -244,6 +245,13 @@ public sealed class TrainingRequests(
             return (null, new Refusals().Add("kind", RequestRules.Open).Errors);
         }
 
+        // A ban given while the request was on its way (issue #312): the bans read once more now that it is saved, so that a ban whose
+        // own read of the trainings came too early still closes it — and the trainee is told what a moment later they would have been.
+        if (await trainingBans.CloseIfBannedAsync(training, cancellationToken))
+        {
+            return (null, new Refusals().Add("kind", RequestRules.Banned).Errors);
+        }
+
         if (training.State == TrainingState.Requested)
         {
             await TellTheTraineeAsync(training, cancellationToken);
@@ -360,6 +368,7 @@ public sealed class TrainingRequests(
                 training.CompletedAt,
                 training.ClosedAt,
                 training.CloseReason,
+                training.ClosedByBan,
                 training.ReadyForMockExam,
                 training.ReadyForExam,
                 training.CooldownWaived,

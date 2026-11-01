@@ -1173,6 +1173,19 @@ function ClosingDetails({ training }: { training: StaffTrainingDto }) {
     return null;
   }
 
+  if (closing.by === 'ban') {
+    return (
+      <p className="text-sm">
+        {training.closedBy === null
+          ? t('training:staff.closing.byBanNobody', { date: day(closing.at) })
+          : t('training:staff.closing.byBan', {
+              name: personName(training.closedBy, t),
+              date: day(closing.at),
+            })}
+      </p>
+    );
+  }
+
   return closing.by === 'hub' ? (
     <p className="text-sm">{t('training:staff.closing.byHub', { date: day(closing.at) })}</p>
   ) : (

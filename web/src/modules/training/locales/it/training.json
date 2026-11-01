@@ -194,6 +194,7 @@
     "cancelled": "Richiesta annullata.",
     "closedByStaff": "Chiusa dal dipartimento training: {{reason}}",
     "closedUnanswered": "Chiusa dall'hub: non hai scelto una data fra quelle proposte dal trainer nel tempo che la divisione dà per sceglierla.",
+    "closedByBan": "Chiusa perché il dipartimento training ti ha bannato dal training. Non si riapre quando il ban finisce: allora potrai chiederla di nuovo.",
     "datesWaiting_one": "Il trainer ha proposto {{count}} data: scegli la tua.",
     "datesWaiting_other": "Il trainer ha proposto {{count}} date: scegli la tua.",
     "open": "Apri",
@@ -445,7 +446,9 @@
     },
     "closing": {
       "byStaff": "Chiusa da {{name}} il {{date}}.",
-      "byHub": "Chiusa dall'hub il {{date}}: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla."
+      "byHub": "Chiusa dall'hub il {{date}}: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla.",
+      "byBan": "Chiusa il {{date}}, perché {{name}} ha bannato il trainee dal training.",
+      "byBanNobody": "Chiusa il {{date}}, perché il trainee è stato bannato dal training."
     },
     "history": {
       "hub": "L'hub",
@@ -464,6 +467,8 @@
       "completed": "{{name}} ha pubblicato il report.",
       "closed": "{{name}} ha chiuso il training.",
       "closedByHub": "L'hub ha chiuso il training: il trainee non ha scelto una data nel tempo che la divisione dà per sceglierla.",
+      "closedByBan": "{{name}} ha bannato il trainee dal training: il training si è chiuso.",
+      "closedByBanNobody": "Il trainee è stato bannato dal training: il training si è chiuso.",
       "cancelled": "{{name}} ha annullato la richiesta.",
       "changed": "{{name}} ha modificato il training: che cosa è cambiato non è più registrato.",
       "erased": "{{name}} ha cancellato i dati del trainee: il training resta nel registro, senza i suoi testi."
@@ -519,7 +524,7 @@
   },
   "bans": {
     "title": "Ban",
-    "description": "I membri a cui è vietato chiedere training, su tutti i percorsi: finché il ban vale non chiedono niente, e i training che hanno già aperti vanno avanti. Un ban non si cambia e non si elimina: per cambiarlo, lo si toglie e se ne dà un altro.",
+    "description": "I membri a cui è vietato chiedere training, su tutti i percorsi: finché il ban vale non chiedono niente, e darlo chiude i training che hanno aperti, che non si riaprono quando finisce. Un ban non si cambia e non si elimina: per cambiarlo, lo si toglie e se ne dà un altro.",
     "create": "Nuovo ban",
     "formDescription": "Il membro legge il motivo e la fine in una mail, e non chiede training su nessun percorso fino alla fine — o, senza una fine, finché qualcuno non toglie il ban.",
     "give": "Banna",
@@ -765,6 +770,10 @@
     "banned": {
       "title": "Ban dal training",
       "description": "Una mail, con il motivo e fino a quando, quando il dipartimento training ti vieta di chiedere training."
+    },
+    "closedByBan": {
+      "title": "Training chiusi da un ban",
+      "description": "Una mail quando un training di cui sei il trainer si chiude perché il dipartimento training ha bannato il suo trainee."
     }
   },
   "mail": {
@@ -821,10 +830,16 @@
       },
       "banned": {
         "subject": "[Training] Ban dal training",
-        "body": "Il dipartimento training ti ha vietato di chiedere training, su tutti i percorsi.\n\nIl motivo: {{reason}}\n\n{{until}} I training che hai già aperti vanno avanti come sono.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+        "body": "Il dipartimento training ti ha vietato di chiedere training, su tutti i percorsi.\n\nIl motivo: {{reason}}\n\n{{until}}{{closed}}\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
       },
       "bannedUntil": "Il ban vale fino al {{date}} UTC.",
-      "bannedUntilLifted": "Il ban vale finché il dipartimento training non lo toglie."
+      "bannedUntilLifted": "Il ban vale finché il dipartimento training non lo toglie.",
+      "bannedClosed": " I training che avevi aperti e non ancora cominciati sono chiusi, e non si riaprono quando il ban finisce: allora potrai chiederli di nuovo.",
+      "closedByBan": {
+        "subject": "[Training] Training chiuso: {{training}}",
+        "body": "Il training {{training}} di {{trainee}}, di cui eri il trainer, è stato chiuso: il dipartimento training ha bannato il membro dal training.{{session}}\n\nNon c'è più niente da fare su questo training.\n\nIl training nel back office: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+      },
+      "closedByBanSession": " La sessione del {{session}} UTC non si terrà: la tua data è libera."
     }
   }
 }

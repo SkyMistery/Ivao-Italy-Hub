@@ -55,6 +55,7 @@ function trainee(state: TrainingState, overrides: Partial<TraineeTrainingDto> = 
     completedAt: null,
     closedAt: null,
     closeReason: null,
+    closedByBan: false,
     readyForMockExam: false,
     readyForExam: false,
     cooldownWaived: false,
@@ -101,6 +102,7 @@ function staff(state: TrainingState, overrides: Partial<StaffTrainingDto> = {}):
     closedBy: null,
     closedAt: null,
     closeReason: null,
+    closedByBan: false,
     readyForMockExam: false,
     readyForExam: false,
     cooldownWaived: false,
@@ -338,6 +340,21 @@ test('the staff’s answer tells the two closings by who closed it, so the staff
   });
   // Nobody closed the hub's.
   expect(closingOf(staff('Closed', { closedAt }))).toEqual({ by: 'hub', at: closedAt });
+});
+
+test('a ban’s closing is told by both answers before who closed it or why, and nothing else is a ban’s (issue #312)', () => {
+  const coordinator = { vid: 790097, name: 'Test Coordinator' };
+  const closedAt = '2026-11-01T09:00:00Z';
+
+  // By whoever gave the ban, with no reason: neither the staff's closing nor the hub's.
+  expect(closingOf(staff('Closed', { closedAt, closedBy: coordinator, closedByBan: true }))).toEqual({
+    by: 'ban',
+    at: closedAt,
+  });
+  expect(closingOf(staff('Closed', { closedAt, closedByBan: true }))).toEqual({ by: 'ban', at: closedAt });
+  // The trainee's answer says no who, and no reason: without the flag it would read as the hub's.
+  expect(closingOf(trainee('Closed', { closedAt, closedByBan: true }))).toEqual({ by: 'ban', at: closedAt });
+  expect(closingOf(trainee('Cancelled', { closedAt, closedByBan: true }))).toBeNull();
 });
 
 test('the dates of the form travel with a box left empty as nothing, and a refusal on a row lands on the form', () => {

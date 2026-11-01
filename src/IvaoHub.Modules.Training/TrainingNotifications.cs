@@ -40,13 +40,20 @@ public static class TrainingNotifications
 
     /// <summary>
     /// The member was banned from asking for trainings (§2.9, §5.2, A10a), with the reason and until when. Its audience is the member
-    /// banned. Lifting the ban sends nothing: the design names no mail for it.
+    /// banned, and it says their open trainings are closed (issue #312). Lifting the ban sends nothing: the design names no mail for it,
+    /// and nothing reopens.
     /// </summary>
     public const string Banned = "training.banned";
+
+    /// <summary>
+    /// A training the member trains was closed because its trainee was banned (issue #312): the session, if it had a date, is off
+    /// and the date free. Its audience is the trainer.
+    /// </summary>
+    public const string ClosedByBan = "training.closedByBan";
 
     public static readonly IReadOnlyList<string> All =
     [
         RequestReceived, RequestAccepted, RequestRejected, TrainerAssigned, DatesProposed, DateConfirmed, Reminder, TrainingClosed,
-        ReportPublished, Banned,
+        ReportPublished, Banned, ClosedByBan,
     ];
 }

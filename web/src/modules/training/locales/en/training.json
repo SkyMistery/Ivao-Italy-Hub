@@ -194,6 +194,7 @@
     "cancelled": "Request cancelled.",
     "closedByStaff": "Closed by the training department: {{reason}}",
     "closedUnanswered": "Closed by the hub: you did not choose a date among the ones your trainer proposed in the time the division gives to choose one.",
+    "closedByBan": "Closed because the training department banned you from the training. It does not reopen when the ban ends: you can ask again then.",
     "datesWaiting_one": "Your trainer proposed {{count}} date: choose yours.",
     "datesWaiting_other": "Your trainer proposed {{count}} dates: choose yours.",
     "open": "Open",
@@ -445,7 +446,9 @@
     },
     "closing": {
       "byStaff": "Closed by {{name}} on {{date}}.",
-      "byHub": "Closed by the hub on {{date}}: the trainee chose no date in the time the division gives to choose one."
+      "byHub": "Closed by the hub on {{date}}: the trainee chose no date in the time the division gives to choose one.",
+      "byBan": "Closed on {{date}}, because {{name}} banned the trainee from the training.",
+      "byBanNobody": "Closed on {{date}}, because the trainee was banned from the training."
     },
     "history": {
       "hub": "The hub",
@@ -464,6 +467,8 @@
       "completed": "{{name}} published the report.",
       "closed": "{{name}} closed the training.",
       "closedByHub": "The hub closed the training: the trainee chose no date in the time the division gives to choose one.",
+      "closedByBan": "{{name}} banned the trainee from the training: the training closed.",
+      "closedByBanNobody": "The trainee was banned from the training: the training closed.",
       "cancelled": "{{name}} cancelled the request.",
       "changed": "{{name}} changed the training: what changed is no longer on record.",
       "erased": "{{name}} erased the trainee's data: the training stays in the register, without its texts."
@@ -519,7 +524,7 @@
   },
   "bans": {
     "title": "Bans",
-    "description": "The members banned from asking for trainings, on every path: while a ban holds they ask for nothing, and the trainings they have open go on. A ban is never changed nor deleted: to change one, lift it and give another.",
+    "description": "The members banned from asking for trainings, on every path: while a ban holds they ask for nothing, and giving it closes the trainings they have open, which do not reopen when it ends. A ban is never changed nor deleted: to change one, lift it and give another.",
     "create": "New ban",
     "formDescription": "The member reads the reason and the end in an email, and asks for no training on any path until the end — or, without one, until somebody lifts the ban.",
     "give": "Ban",
@@ -765,6 +770,10 @@
     "banned": {
       "title": "Bans from the training",
       "description": "An email, with the reason and until when, when the training department bans you from asking for trainings."
+    },
+    "closedByBan": {
+      "title": "Trainings closed by a ban",
+      "description": "An email when a training you are the trainer of is closed because the training department banned its trainee."
     }
   },
   "mail": {
@@ -821,10 +830,16 @@
       },
       "banned": {
         "subject": "[Training] Ban from the training",
-        "body": "The training department has banned you from asking for trainings, on every path.\n\nThe reason: {{reason}}\n\n{{until}} The trainings you have open go on as they are.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "body": "The training department has banned you from asking for trainings, on every path.\n\nThe reason: {{reason}}\n\n{{until}}{{closed}}\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "bannedUntil": "The ban holds until {{date}} UTC.",
-      "bannedUntilLifted": "The ban holds until the training department lifts it."
+      "bannedUntilLifted": "The ban holds until the training department lifts it.",
+      "bannedClosed": " The trainings you had open and not yet started are closed, and do not reopen when the ban ends: you can ask again then.",
+      "closedByBan": {
+        "subject": "[Training] Training closed: {{training}}",
+        "body": "The training {{training}} of {{trainee}}, which you were training, has been closed: the training department has banned the member from the training.{{session}}\n\nThere is nothing left for you to do on it.\n\nThe training in the back office: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+      },
+      "closedByBanSession": " Its session of {{session}} UTC will not take place: your date is free."
     }
   }
 }

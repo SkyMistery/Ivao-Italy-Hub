@@ -10531,7 +10531,8 @@ export interface components {
          * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
          *     rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
          *     the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
-         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
+         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason — or by a ban, with
+         *     who gave it and no reason (issue #312) —, the history of its
          *     changes (A13b; empty on a trainee's path, which does not draw it, A13d), and what the reader may do. Never an address. `Sheet` is the copy a completed training's report keeps; while
          *     the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
          *     otherwise. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of
@@ -10583,6 +10584,7 @@ export interface components {
             /** Format: date-time */
             closedAt: null | string;
             closeReason: null | string;
+            closedByBan: boolean;
             readyForMockExam: boolean;
             readyForExam: boolean;
             cooldownWaived: boolean;
@@ -11140,7 +11142,7 @@ export interface components {
          *     `Trainer` is who trains it, as the mail of the assignment names them; `Slots` the dates proposed to choose from, the
          *     ones still to come, while the training waits for its date (A8); `Held` says a dated training shows as held, from the day
          *     after its session in the division's time zone (§1.2); `CloseReason` why the staff closed it — none when the hub did,
-         *     because the trainee chose no date in time (A8). The report (A9): the trainer's boxes, the general comment and the sheet with the
+         *     because the trainee chose no date in time (A8), and none when a ban closed it, which `ClosedByBan` says (issue #312). The report (A9): the trainer's boxes, the general comment and the sheet with the
          *     grades, the marks and the comments for the trainee — empty until it is published —; `Sessions` the sessions that are over,
          *     rescheduled, not attended or held, with nothing the staff wrote of them.
          */
@@ -11172,6 +11174,7 @@ export interface components {
             /** Format: date-time */
             closedAt: null | string;
             closeReason: null | string;
+            closedByBan: boolean;
             readyForMockExam: boolean;
             readyForExam: boolean;
             cooldownWaived: boolean;
@@ -11287,7 +11290,7 @@ export interface components {
          * @description What a line of the history of a training says happened (A13b, note `2026-09-30-lo-storico-di-un-training`). Sent by name.
          * @enum {unknown}
          */
-        TrainingHistoryEvent: "Requested" | "RejectedForTheory" | "Accepted" | "Rejected" | "Assigned" | "TrainerChanged" | "DatesChanged" | "DateChosen" | "DateSet" | "DateMoved" | "Rescheduled" | "NoShow" | "Completed" | "Closed" | "Cancelled" | "Changed" | "Erased";
+        TrainingHistoryEvent: "Requested" | "RejectedForTheory" | "Accepted" | "Rejected" | "Assigned" | "TrainerChanged" | "DatesChanged" | "DateChosen" | "DateSet" | "DateMoved" | "Rescheduled" | "NoShow" | "Completed" | "Closed" | "ClosedByBan" | "Cancelled" | "Changed" | "Erased";
         /** @description A person as the staff's pages name them: the VID that always is, and the name the hub has — none when it has none. */
         TrainingMemberDto: {
             /** Format: int32 */
