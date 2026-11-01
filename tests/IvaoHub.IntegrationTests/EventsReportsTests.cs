@@ -382,6 +382,41 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The one search's answer given out by day (#322, item 1): over an event of two days, the flight of the second day is not credited with the
+    /// session of the first, on the same route, even listed before it.
+    /// </summary>
+    [Fact]
+    public async Task AFlightIsCreditedOnlyWithASessionOfItsOwnDay()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("two-days", Start, Start.AddDays(1).AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        var flights = await CreatedAsync(
+            await SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start.AddDays(1)), Flight("TST004", Home, Away, Start)], token),
+            token);
+        Assert.Equal([false, true], flights.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("verified").GetBoolean()));
+        Assert.Equal(1, _sources.Asked);
+    }
+
+    /// <summary>
+    /// An answer as long as the most a search reads (#322, item 1) may have been cut, and the session left out could be the one the item flew:
+    /// the item is not asked and the report unavailable, never «not flown».
+    /// </summary>
+    [Fact]
+    public async Task AnAnswerAsLongAsTheMostASearchReadsLeavesTheItemsNotAsked()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("cut", Start, Start.AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+
+        _sources.Padding = NetworkSessionQuery.MaxLimit;
+        var cut = await CreatedAsync(await SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start)], token), token);
+        Assert.Equal("Unavailable", cut.GetProperty("verification").GetString());
+        Assert.Equal(JsonValueKind.Null, Assert.Single(cut.GetProperty("items").EnumerateArray()).GetProperty("verified").ValueKind);
+    }
+
+    /// <summary>
     /// The rules of a send (readings 3 and 4): an event over more than <c>reportDays</c> ago takes no report, and is not offered; a flight
     /// touching none of the event's airports, an airport the hub does not know, a day outside the event and shifts that meet are refused on
     /// their fields; an event not over yet takes none either.
@@ -995,6 +1030,9 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         public int Asked { get; set; }
 
         public TimeSpan Shift { get; set; }
+
+        /// <summary>Sessions the tracker answers on top of the evening's, at the head of its answer (#322, item 1: a cut answer).</summary>
+        public int Padding { get; set; }
     }
 
     /// <summary>
@@ -1032,6 +1070,8 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
             using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(paths.Root, FixtureIvaoApiClient.Directory, "tracker-airport-LIRF.json")));
             return Task.FromResult<IReadOnlyList<NetworkSession>?>(
             [
+                .. Enumerable.Range(1, sources.Padding)
+                    .Select(index => new NetworkSession(9_000_000 + index, query.Vid ?? 0, "PAD", query.ToUtc, query.ToUtc)),
                 .. document.RootElement.EnumerateArray()
                     .Where(row => IvaoTrackerReader.Answers(row, question))
                     .Select(IvaoTrackerReader.ReadSession)

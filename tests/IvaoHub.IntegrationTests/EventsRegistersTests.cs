@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -16,6 +18,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -418,6 +421,42 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
     }
 
     /// <summary>
+    /// «Take away» in the instant of the pilot's erasure (#322, item 5): a transaction of the test writes the core's pseudonym into the booking, as
+    /// the erasure does, and holds it; the take-away read the booking before, waits for its lock, and reads it again with its pilot — not found,
+    /// and the booking stays the event's history.
+    /// </summary>
+    [Fact]
+    public async Task ATakeAwayInTheInstantOfThePilotsErasureFindsNoBooking()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var history = await HistoryAsync("erased-race", token);
+        var unflown = await UnflownAsync(history, MemberVid, 1, excused: 0, token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            await database.Bookings.IgnoreQueryFilters()
+                .Where(booking => booking.Id == unflown[0])
+                .ExecuteUpdateAsync(set => set.SetProperty(booking => booking.BookerVid, -761362), token);
+
+            var request = coordinator.PostAsJsonAsync($"{BookingEndpoints.StaffPattern}/{unflown[0]}/remove", new BookingRemovalRequest($"{SlugStem} gone"), token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        using (answered)
+        {
+            Assert.Equal(HttpStatusCode.NotFound, answered.StatusCode);
+        }
+
+        Assert.True((await BookingsAsync(history, token)).ContainsKey(unflown[0]));
+    }
+
+    /// <summary>
     /// The registers count the whole division, so they answer only whoever holds their permission without a resource scope (Carmine's answer
     /// (b) on #283, with the core's <c>HasUnscoped</c> of E10u): a member with <c>EventAtc.View</c> and <c>EventBookings.View</c> granted on
     /// one event reads that event's shifts in the engine's list, and is refused both registers, whose entries their menu does not offer. The
@@ -691,6 +730,26 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
     {
         var starts = Hour(DateTime.UtcNow.AddDays(-10));
         return await EventRowAsync(name, starts, starts.AddHours(6), cancellationToken, checksDone: true);
+    }
+
+    /// <summary>Until a transaction waits for a lock: the request under test, behind the transaction the test holds.</summary>
+    /// <remarks>InnoDB refreshes <c>INNODB_TRX</c> only when nobody has read it for 100 ms: asked more often, it keeps answering what
+    /// it saw the first time (CONTRIBUTING.md).</remarks>
+    private async Task WaitForALockWaitAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(mariaDb.RootConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new MySqlCommand("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'", connection);
+        for (var tries = 0; tries < 40; tries++)
+        {
+            await Task.Delay(250, cancellationToken);
+            if (Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture) > 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("The request never waited for the transaction the test holds.");
     }
 
     /// <summary>Bookings of a pilot in an event over that the check found not flown, the first <paramref name="excused"/> taken out.</summary>
