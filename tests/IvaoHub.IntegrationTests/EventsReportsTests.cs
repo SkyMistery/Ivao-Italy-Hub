@@ -352,6 +352,36 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A send asks the network once, however many items it holds (#322, item 1): three flights on three routes and three shifts at three hours are
+    /// one search each, never one per item — the network is the whole hub's, and the members' limit counts requests, not calls.
+    /// </summary>
+    [Fact]
+    public async Task ASendAsksTheNetworkOnceForAllItsItems()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var id = await EventRowAsync("once", Start, Start.AddHours(2), [Home], token);
+        using var pilot = await SignedInAsync(PilotVid, token);
+        using var controller = await SignedInAsync(ControllerVid, token);
+
+        var flights = await CreatedAsync(
+            await SendAsync(pilot, id, "pilot", [Flight("TST004", Home, Away, Start), Flight("TST004", Away, Home, Start), Flight("TST004", Home, Elsewhere, Start)], token),
+            token);
+        Assert.Equal([true, false, false], flights.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("verified").GetBoolean()));
+        Assert.Equal(1, _sources.Asked);
+
+        var shifts = await CreatedAsync(
+            await SendAsync(
+                controller,
+                id,
+                "atc",
+                [Shift("LIRF_TWR", Start, Start.AddMinutes(30)), Shift("LIRF_TWR", Start.AddMinutes(30), Start.AddMinutes(90)), Shift("LIRF_TWR", Start.AddMinutes(90), Start.AddHours(2))],
+                token),
+            token);
+        Assert.Equal([40, 0], shifts.GetProperty("items").EnumerateArray().Skip(1).Select(item => item.GetProperty("minutes").GetInt32()));
+        Assert.Equal(2, _sources.Asked);
+    }
+
+    /// <summary>
     /// The rules of a send (readings 3 and 4): an event over more than <c>reportDays</c> ago takes no report, and is not offered; a flight
     /// touching none of the event's airports, an airport the hub does not know, a day outside the event and shifts that meet are refused on
     /// their fields; an event not over yet takes none either.
@@ -961,6 +991,9 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         public bool TrackerAnswers { get; set; } = true;
 
+        /// <summary>How many times the network was asked (#322, item 1).</summary>
+        public int Asked { get; set; }
+
         public TimeSpan Shift { get; set; }
     }
 
@@ -973,6 +1006,7 @@ public sealed class EventsReportsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         public Task<IReadOnlyList<NetworkSession>?> SessionsAsync(NetworkSessionQuery query, CancellationToken cancellationToken = default)
         {
+            sources.Asked++;
             if (!sources.TrackerAnswers)
             {
                 return Task.FromResult<IReadOnlyList<NetworkSession>?>(null);
