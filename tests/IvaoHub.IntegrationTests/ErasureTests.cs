@@ -195,10 +195,14 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.All(copies, row => Assert.Equal((PersonVid, (string?)null), (row.Vid, row.Ip)));
         Assert.Contains(copies, row => NamesTheNumber(row.AfterJson, text));
         Assert.DoesNotContain(copies, row => NamesTheNumber(row.BeforeJson, alias) || NamesTheNumber(row.AfterJson, alias));
-        var byPseudonym = await audit
+        // The text match is only a pre-filter: the pseudonym is a small negative number, and "-11" stands inside every date of
+        // November ("2026-11-01"), so the rows found by text are read with the number alone (issue #432).
+        var byPseudonym = (await audit
             .Where(row => row.Vid == pseudonym || row.BeforeJson!.Contains(alias) || row.AfterJson!.Contains(alias))
             .Select(row => new { row.Entity, row.EntityId, row.BeforeJson, row.AfterJson, row.Vid })
-            .ToListAsync(token);
+            .ToListAsync(token))
+            .Where(row => row.Vid == pseudonym || NamesTheNumber(row.BeforeJson, alias) || NamesTheNumber(row.AfterJson, alias))
+            .ToList();
         Assert.NotEmpty(byPseudonym);
         Assert.DoesNotContain(byPseudonym, row => row.Entity == "smp_items" && row.EntityId == keptKey);
     }
@@ -238,6 +242,10 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 null,
             },
             json => Assert.False(NamesTheNumber(json, text), json));
+
+        // A pseudonym is negative and short: alone it is found, inside a date it is not (issue #432).
+        Assert.True(NamesTheNumber("""{"createdBy":-11}""", "-11"));
+        Assert.False(NamesTheNumber("""{"CreatedAt":"2026-11-01T00:14:00.1234567Z"}""", "-11"));
     }
 
     /// <summary>Whether a JSON document holds this number alone, anywhere: see the test above.</summary>
