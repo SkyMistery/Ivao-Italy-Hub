@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@ivao/atmosphere-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,6 +22,7 @@ import { NEW_ROW_VERSION } from '../../../shared/api/rowVersion';
 import { describeProblem } from '../../../shared/forms';
 import { ConfirmDialog, Notice } from '../../../shared/ui';
 import {
+  aircraftTypesQuery,
   airportsQuery,
   legRemoval,
   rotationsQuery,
@@ -65,8 +67,8 @@ interface Draft {
   /** The suggested callsigns, as typed: "ITY1357/1365" or "RYR78RM, RYR42LK" (`splitCodes`). */
   readonly callsigns: string;
   readonly flightNumbers: string;
-  /** The types, as typed: "A320, A20N". */
-  readonly types: string;
+  /** The types, each chosen from the ones the core knows (phase 6 of the staff trial, g). */
+  readonly types: readonly string[];
   readonly groupIds: readonly number[];
   /** `YYYY-MM-DDTHH:mm`, UTC, like every instant a form of the hub writes; empty for none. */
   readonly releaseAt: string;
@@ -97,7 +99,7 @@ function fromLeg(leg: LegDto): Draft {
     arrivalIcao: leg.arrivalIcao,
     callsigns: leg.callsigns.join(', '),
     flightNumbers: leg.flightNumbers.join(', '),
-    types: leg.aircraft.types.join(', '),
+    types: leg.aircraft.types,
     groupIds: leg.aircraft.groupIds,
     releaseAt: leg.releaseAt?.slice(0, 16) ?? '',
     changeReason: '',
@@ -109,7 +111,7 @@ function fromLeg(leg: LegDto): Draft {
 /** The aircraft of a new row: none, or what `aircraftAfter` carries over. */
 type DraftAircraft = Pick<Draft, 'types' | 'groupIds'>;
 
-const NO_AIRCRAFT: DraftAircraft = { types: '', groupIds: [] };
+const NO_AIRCRAFT: DraftAircraft = { types: [], groupIds: [] };
 
 /**
  * The aircraft a leg added after another starts with (#368): the one it follows flies on, or, when that leg names
@@ -117,10 +119,10 @@ const NO_AIRCRAFT: DraftAircraft = { types: '', groupIds: [] };
  */
 function aircraftAfter(leg: LegDto, referenceAircraftIcao: string | null): DraftAircraft {
   if (leg.aircraft.types.length > 0 || leg.aircraft.groupIds.length > 0) {
-    return { types: leg.aircraft.types.join(', '), groupIds: leg.aircraft.groupIds };
+    return { types: leg.aircraft.types, groupIds: leg.aircraft.groupIds };
   }
 
-  return { types: referenceAircraftIcao ?? '', groupIds: [] };
+  return { types: referenceAircraftIcao === null ? [] : [referenceAircraftIcao], groupIds: [] };
 }
 
 function blank(
@@ -153,7 +155,7 @@ function sameAs(draft: Draft, leg: LegDto): boolean {
     draft.arrivalIcao.trim().toUpperCase() === saved.arrivalIcao &&
     splitCodes(draft.callsigns).join() === splitCodes(saved.callsigns).join() &&
     splitCodes(draft.flightNumbers).join() === splitCodes(saved.flightNumbers).join() &&
-    draft.types.trim() === saved.types &&
+    draft.types.join() === saved.types.join() &&
     draft.groupIds.join() === saved.groupIds.join() &&
     draft.releaseAt === saved.releaseAt &&
     draft.placement === saved.placement
@@ -169,10 +171,7 @@ function toPayload(draft: Draft, rowVersion: string): LegWriteDto {
     callsigns: splitCodes(draft.callsigns),
     flightNumbers: splitCodes(draft.flightNumbers),
     aircraft: {
-      types: draft.types
-        .split(/[\s,;]+/)
-        .map((type) => type.trim().toUpperCase())
-        .filter((type) => type !== ''),
+      types: [...draft.types],
       groupIds: [...draft.groupIds],
     },
     releaseAt: draft.releaseAt === '' ? null : `${draft.releaseAt}:00Z`,
@@ -242,6 +241,127 @@ function AirportCell({
         ))}
       </datalist>
       {iata === null ? null : <Subtle className="text-xs">{iata}</Subtle>}
+      {error === undefined ? null : <span className="text-destructive text-xs">{error}</span>}
+    </div>
+  );
+}
+
+/**
+ * The cell of the aircraft types (phase 6 of the staff trial, g): each type is chosen from the ones the core knows, searched
+ * as it is typed — the same search as the tour's form (#366) —, and never typed free. A text that is no type offered is not
+ * kept; the server refuses an unknown type anyway, under this cell.
+ */
+function TypesCell({
+  value,
+  label,
+  error,
+  disabled,
+  width,
+  onChange,
+}: {
+  value: readonly string[];
+  label: string;
+  error: string | undefined;
+  disabled: boolean;
+  width: string;
+  onChange: (next: readonly string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const list = useId();
+  const [typed, setTyped] = useState('');
+  const [asked, setAsked] = useState('');
+  const offered = useQuery({
+    ...aircraftTypesQuery(asked),
+    enabled: asked !== '',
+    placeholderData: keepPreviousData,
+  });
+
+  // The same pause as the airports: a request per word, not per letter.
+  useEffect(() => {
+    const timer = setTimeout(() => setAsked(typed.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [typed]);
+
+  // A type joins the leg only when it is one offered: what is typed is a way of searching the list.
+  const choose = (text: string): boolean => {
+    const code = text.trim().toUpperCase();
+    if (!(offered.data ?? []).some((type) => type.icaoCode === code)) {
+      return false;
+    }
+
+    if (!value.includes(code)) {
+      onChange([...value, code]);
+    }
+
+    setTyped('');
+    return true;
+  };
+
+  return (
+    <div className={`flex ${width} flex-col gap-1`}>
+      {value.length === 0 ? null : (
+        <ul aria-label={label} className="flex flex-wrap gap-1">
+          {value.map((code) => (
+            <li key={code}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-6 gap-1 px-1.5 font-mono text-xs"
+                aria-label={t('flightops:legs.actions.removeType', { type: code })}
+                disabled={disabled}
+                onClick={() => onChange(value.filter((type) => type !== code))}
+              >
+                {code}
+                <X aria-hidden className="size-3" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {disabled ? null : (
+        <>
+          <Input
+            aria-label={label}
+            aria-invalid={error === undefined ? undefined : true}
+            className="px-2 uppercase"
+            list={list}
+            maxLength={4}
+            value={typed}
+            onChange={(event) => {
+              const next = event.target.value.toUpperCase();
+              // An option picked from the list arrives whole, as a replacement of the text: it is chosen at once. A
+              // letter typed is not, or "C17" would be chosen on the way to "C172".
+              const native = event.nativeEvent as Partial<InputEvent>;
+              if (native.inputType === undefined || native.inputType === 'insertReplacementText') {
+                if (choose(next)) {
+                  return;
+                }
+              }
+
+              setTyped(next);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                choose(typed);
+              }
+            }}
+            onBlur={() => {
+              if (!choose(typed)) {
+                setTyped('');
+              }
+            }}
+          />
+          <datalist id={list}>
+            {(offered.data ?? []).map((type) => (
+              <option key={type.icaoCode} value={type.icaoCode}>
+                {[type.manufacturer, type.model].filter(Boolean).join(' ')}
+              </option>
+            ))}
+          </datalist>
+        </>
+      )}
       {error === undefined ? null : <span className="text-destructive text-xs">{error}</span>}
     </div>
   );
@@ -675,7 +795,7 @@ export function LegGrid({ tour, editable }: { tour: TourDetailDto; editable: boo
                       />
                     </TableCell>
                     <TableCell className={cell}>
-                      <TextCell
+                      <TypesCell
                         // A hub tour has one column more: the room comes from here (looked at at 1500 px, T7b).
                         width={hub ? 'w-28' : 'w-32'}
                         label={t('flightops:legs.fields.aircraft')}
