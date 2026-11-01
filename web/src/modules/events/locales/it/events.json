@@ -734,7 +734,8 @@
       "transfers_other": "{{count}} richieste di cedere un turno",
       "reports_one": "{{count}} PIREP di supporto da validare",
       "reports_other": "{{count}} PIREP di supporto da validare"
-    }
+    },
+    "unavailable": "Al momento non si riesce a leggere. Riprova più tardi."
   },
   "settings": {
     "title": "Impostazioni degli eventi",

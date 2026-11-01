@@ -734,7 +734,8 @@
       "transfers_other": "{{count}} requests to hand a shift over",
       "reports_one": "{{count}} report of support to validate",
       "reports_other": "{{count}} reports of support to validate"
-    }
+    },
+    "unavailable": "This cannot be read right now. Try again later."
   },
   "settings": {
     "title": "Events settings",
