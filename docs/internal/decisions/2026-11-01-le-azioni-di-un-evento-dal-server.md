@@ -1,10 +1,11 @@
 # Le azioni di un evento dette dal server (#333, punto 1)
 
 **Data:** 1° novembre 2026, revisione del codice, lotto 10 (web), issue #333.
-**Stato:** **Proposta**. La domanda va a Carmine tramite la sessione coordinatrice; la risposta, con il suo link, si scrive qui prima del
-codice. **Regola applicata:** `CLAUDE.md` §5, caso **(b)** con un'estensione del nucleo: una PR del nucleo a parte, prima di quella del
-modulo (`CLAUDE.md` §0, regola 6). Il punto 1 della #333 resta aperto finché la domanda non ha risposta: la PR del lotto 10 chiude gli
-altri cinque.
+**Stato:** **Proposta**. La domanda a Carmine è sull'[issue #427](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/427), aperta
+dalla sessione coordinatrice con questa raccomandazione (A); la risposta, con il suo link, si scrive qui prima del codice. **Regola
+applicata:** `CLAUDE.md` §5, caso **(b)** con un'estensione del nucleo: una PR del nucleo a parte, prima di quella del modulo
+(`CLAUDE.md` §0, regola 6). Il punto 1 della #333 è passato alla #427 (e il punto 3, un difetto del nucleo, alla #428): la PR del lotto
+10 corregge gli altri quattro e chiude la #333.
 
 ## 1. Che cosa serve
 
@@ -52,7 +53,7 @@ dipartimento)` (`web/src/shared/api/bootstrap.ts`). Quella funzione guarda solo 
 > il server dice le azioni sull'evento e sulla postazione — invece di **B** (la SPA rifà ambito e FIR dal bootstrap) o **C** (un endpoint
 > delle azioni nel modulo)?
 
-**Risposta:** in attesa.
+**Risposta:** in attesa, sulla [#427](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/427).
 
 ## Da portare nel piano
 
