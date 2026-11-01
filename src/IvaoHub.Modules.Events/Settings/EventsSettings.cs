@@ -39,6 +39,12 @@ public sealed record EventsSettings
     /// <summary>The least minutes between two bookings of the same pilot in one event, one way or the other (§3.5).</summary>
     public int BookingGapMinutes { get; init; } = 10;
 
+    /// <summary>
+    /// The most bookings a member makes in one event, for the whole division (issue #314; note 2026-11-01-il-tetto-delle-prenotazioni): a
+    /// rotation is one, whatever its legs (<see cref="Bookings.BookingCap"/>).
+    /// </summary>
+    public int MaxBookingsPerEvent { get; init; } = 5;
+
     /// <summary>Months after an event before the bookings and the reports of its pilots go (§11).</summary>
     public int PilotRetentionMonths { get; init; } = 24;
 
@@ -113,6 +119,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
     /// <summary>A day: two bookings of one pilot further apart than that are not a question of this rule.</summary>
     public const int MaxBookingGapMinutes = 24 * 60;
 
+    /// <summary>Two hundred bookings in an event, as for whoever has the limits: more is no limit at all.</summary>
+    public const int MaxBookingsCeiling = 200;
+
     /// <summary>Ten years: a period longer than that keeps what the division no longer needs.</summary>
     public const int MaxPilotRetentionMonths = 120;
 
@@ -181,6 +190,9 @@ public sealed class EventsSettingsValidator : AbstractValidator<EventsSettings>
         });
 
         RuleFor(settings => settings.BookingGapMinutes).InclusiveBetween(0, MaxBookingGapMinutes).WithMessage("errors.number.range");
+
+        // The cap of the division (issue #314): nought would close the bookings to everybody.
+        RuleFor(settings => settings.MaxBookingsPerEvent).InclusiveBetween(1, MaxBookingsCeiling).WithMessage("errors.number.range");
         RuleFor(settings => settings.PilotRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
         RuleFor(settings => settings.InPersonRetentionMonths).InclusiveBetween(1, MaxPilotRetentionMonths).WithMessage("errors.number.range");
         RuleFor(settings => settings.ReminderLeadHours).InclusiveBetween(1, MaxReminderLeadHours).WithMessage("errors.number.range");
