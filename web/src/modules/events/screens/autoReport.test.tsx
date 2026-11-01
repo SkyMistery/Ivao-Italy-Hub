@@ -1,6 +1,6 @@
 import { TooltipProvider } from '@ivao/atmosphere-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -75,9 +75,44 @@ test('a save that passes keeps the switch on', async () => {
   fireEvent.click(toggle);
 
   await waitFor(() => expect(api.put).toHaveBeenCalledOnce());
-  // Saved: nothing draws the form again, and a redraw would read the value the server now keeps.
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  expect(
-    screen.getByRole('switch', { name: englishEvents.mine.reports.auto.fields.autoReport }),
-  ).toHaveAttribute('aria-checked', 'true');
+  // Saved, and the answer handed over: the switch is the same one, never drawn again (that would take the focus off it).
+  await act(async () => {
+    await api.put.mock.results[0]?.value;
+  });
+  const after = screen.getByRole('switch', { name: englishEvents.mine.reports.auto.fields.autoReport });
+  expect(after).toBe(toggle);
+  expect(after).toHaveAttribute('aria-checked', 'true');
+});
+
+test('a save answered after the member switched back draws what the server kept', async () => {
+  let answer: (value: unknown) => void = () => undefined;
+  api.put.mockReturnValue(
+    new Promise((resolve) => {
+      answer = resolve;
+    }),
+  );
+  draw();
+
+  const toggle = await screen.findByRole('switch', {
+    name: englishEvents.mine.reports.auto.fields.autoReport,
+  });
+  fireEvent.click(toggle);
+  await waitFor(() => expect(api.put).toHaveBeenCalledOnce());
+
+  // Off again while «on» is on its way: the same value the page read, so nothing is sent.
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-checked', 'false');
+  // Past the live form's 150 ms (`LIVE_DELAY`), so the form has told the screen before the answer comes.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
+  await act(async () => {
+    answer({ data: { value: true }, response: new Response(null, { status: 200 }) });
+    await Promise.resolve();
+  });
+
+  await waitFor(() =>
+    expect(
+      screen.getByRole('switch', { name: englishEvents.mine.reports.auto.fields.autoReport }),
+    ).toHaveAttribute('aria-checked', 'true'),
+  );
+  expect(api.put).toHaveBeenCalledOnce();
 });
