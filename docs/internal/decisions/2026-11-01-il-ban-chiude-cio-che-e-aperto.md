@@ -3,14 +3,15 @@
 **Data:** 1 novembre 2026 — fase di test (nota `2026-10-18-la-fase-di-test`), issue #312, branch `fix/training-ban-closes-open`,
 PR #433
 **Stato:** **decisa** da Carmine per il §2, in chat al master il 19 ottobre 2026, pubblicata sulla issue su sua istruzione
-([risposta][a312]). **Proposta** la domanda del §4 (la sessione già cominciata), che il codice fa nel modo raccomandato finché Carmine
-non risponde.
+([risposta][a312]); **decisa** da Carmine anche per il §4 (la sessione già cominciata): la (A), in chat al master il 1° novembre 2026,
+pubblicata sulla PR su sua istruzione ([risposta][a433]).
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: una funzione nuova del modulo, decisa dal maintainer. I meccanismi sono quelli che ci
 sono (la CRUD generica con il suo `BeforeSave`, `AlsoWrittenWith`, le notifiche del nucleo, la proiezione nel calendario): niente del
 nucleo cambia.
 
 [a312]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/312#issuecomment-6269152656
 [q433]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/433#issuecomment-6551675321
+[a433]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/433#issuecomment-6555197149
 
 ## 1. Che cosa serve
 
@@ -53,7 +54,9 @@ Sono letture della risposta, non scelte nuove; le scrivo perché chi rivede le c
   proietta), quindi il giorno del trainer è libero anche per i conflitti delle date (§2.5). La data resta scritta nel registro, come in
   ogni chiusura (§6).
 - **Le mail**, nella lingua di chi le riceve: il trainee riceve la mail del ban, la cui frase «i training che hai già aperti vanno avanti
-  come sono» diventa «sono chiusi, e non si riaprono quando il ban finisce»; il trainer di ogni training chiuso che ne aveva uno
+  come sono» se ne va; al suo posto, solo quando il ban ha chiuso qualcosa, «i training che avevi aperti e non ancora cominciati sono
+  chiusi, e non si riaprono quando il ban finisce» (un frammento, `bannedClosed`, come la data in quella del trainer: la revisione del
+  master); un membro senza niente di aperto, o con la sola sessione già cominciata del §4, non legge di training chiusi. Il trainer di ogni training chiuso che ne aveva uno
   (`Assigned`, `Scheduled`) riceve la notifica nuova `training.closedByBan`, con la data della sessione se c'era, e senza il motivo del
   ban. Una richiesta senza trainer non avvisa nessun altro.
 - **Nella stessa transazione del ban**: il `BeforeSave` della CRUD dei ban chiude i training, e il salvataggio del ban li scrive insieme
@@ -67,17 +70,27 @@ Sono letture della risposta, non scelte nuove; le scrivo perché chi rivede le c
     rileggono i training ancora aperti e si chiudono; dopo il salvataggio di una richiesta si rileggono i ban, e se uno vale la richiesta
     si chiude e il trainee legge «sei bannato». Delle due letture una vede sempre la riga dell'altra già scritta: se la richiesta è
     scritta prima della rilettura del ban, la vede il ban; se no, la sua rilettura dei ban viene dopo il salvataggio del ban. Nessun lock,
-    quindi nessun deadlock fra le due.
+    quindi nessun deadlock fra le due. Se la rilettura del ban incontra un conflitto di versione per tre volte di fila, lascia stare e
+    lo scrive nel log come warning (la revisione del master): una richiesta fra quei training la chiude comunque la sua rilettura dei ban.
+  - una richiesta che la sua rilettura trova sotto un ban resta come riga chiusa per il ban nel percorso del membro, che ha letto «sei
+    bannato»: è il prezzo di non avere un lock, e lo storico dice che cosa è successo.
+- **Il rinvio sotto un ban** (§4): se il ban vale già quando il trainer rinvia, il rinvio e la chiusura sono **un solo salvataggio**; la
+  rilettura dei ban dopo il salvataggio resta per un ban salvato nel frattempo, e solo allora sono due. L'endpoint risponde con la
+  pagina del training, che dice «chiuso per il ban»; lo storico dice prima il rinvio del trainer, poi la chiusura.
+- **`Training.Ban` e il controllo delle scritture**: con l'alternativa su `Training` il controllo lascia passare chi ha `Training.Ban`
+  su ogni scrittura di un training, ma nessun passo dello staff la usa — ognuno chiede il suo permesso sulla riga prima —; un test lo
+  fissa (`TrainingBanAloneTakesNoStepOnATraining`).
 - **La scelta della data** non ha un controllo del ban suo: il training è chiuso e le sue date proposte sono andate con lui.
 
-## 4. La domanda per Carmine — **Proposta**
+## 4. La sessione già cominciata — **decisa: (A)**
 
 **Una sessione già cominciata** — la data è passata, l'esito non è ancora registrato — quando arriva il ban. Qui si incontrano due
 risposte del maintainer: questa («con la data fissata si chiude anche lui») e quella sulla #149 («una sessione cominciata si registra, e
 non si data più a mano né si chiude»). La domanda è posta a Carmine sulla PR ([commento][q433], 1 novembre 2026), in inglese, con la (A)
-raccomandata.
+raccomandata. **Carmine ha scelto la (A)** ([risposta][a433]): «It is not closed; the trainer records its outcome, and if they
+postpone it while the ban holds, the training is closed by the ban».
 
-- **(A), raccomandata, ed è quello che fa il codice**: non si chiude. Il trainer ne registra l'esito — report, no-show o rinvio —; se la
+- **(A), scelta, ed è quello che fa il codice**: non si chiude. Il trainer ne registra l'esito — report, no-show o rinvio —; se la
   rinvia mentre il ban vale, il training non torna alle date (un membro bannato non ne ha) ma si chiude per il ban, da chi l'ha dato.
 - **(B)**: si chiude anche lei, come le altre. La sessione, forse tenuta, non si registra più: né il report né il no-show.
 
@@ -100,4 +113,5 @@ La (A) tiene la risposta sulla #149 e non perde il report di una sessione che c'
 - **§9, il catalogo, la voce Training**: un ban chiude i training aperti del membro, chi lo dà ne è l'autore, il trainer riceve
   `closedByBan` e la data si libera; finito il ban non si riapre niente. `Training.Ban` da solo dà e toglie un ban.
 - **Il design M3** (`07-design-m3.md`) è aggiornato in questa PR: §1.5-bis, §2.9, §5.2.
-- **La risposta al §4**, quando c'è.
+- **La risposta al §4**: una sessione già cominciata quando arriva il ban non si chiude; il trainer ne registra l'esito, e se la rinvia
+  mentre il ban vale il training si chiude per il ban (la (A), [risposta][a433]).

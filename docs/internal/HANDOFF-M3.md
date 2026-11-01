@@ -12,7 +12,8 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 1 novembre 2026 — **la correzione di #312** (un ban chiude i training aperti del membro), branch
-`fix/training-ban-closes-open`, PR #433, da `main` a `b12ec725` («Che cosa ha lasciato la correzione di #312» qui sotto). Prima: 12
+`fix/training-ban-closes-open`, PR #433, da `main` a `b12ec725`, con `main` a `1fc7a039` unito dopo la revisione del master («Che cosa
+ha lasciato la correzione di #312» qui sotto). Prima: 12
 ottobre 2026 — **fase A13f**, due pezzi del nucleo uniti il 12 ottobre: il training legge i nomi con il
 lettore del nucleo (`MemberNames`, E10m) e il trigger dei promemoria dice il suo fuso, UTC (E10j). Branch
 `m3/a13f-training-names-reader`, PR #258, da `main` a `cea6244`.
@@ -134,18 +135,22 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
 
 - **Da dove viene**: la fase di test (nota `2026-10-18-la-fase-di-test`, «chi può si prende la issue»): la revisione del master ha
   trovato che un ban fermava solo le richieste nuove, e Carmine ha deciso il contrario ([risposta sull'issue #312][fix312-answer]). La
-  nota `decisions/2026-11-01-il-ban-chiude-cio-che-e-aperto.md` è **decisa** per la sua risposta e **Proposta** per una domanda (§4).
+  nota `decisions/2026-11-01-il-ban-chiude-cio-che-e-aperto.md` è **decisa**: per la sua risposta, e per la (A) del §4 ([risposta sulla PR][fix312-a433]).
   Codice del modulo, una migrazione additiva, i suoi test e documenti; nessun file del nucleo.
 - **Che cosa c'è**:
   - **Un ban dato chiude ogni training aperto del membro** (`TrainingBans.BeforeGivingAsync`, nel `BeforeSave` della CRUD dei ban):
     `Requested`, `Accepted`, `Assigned` e `Scheduled` con la sessione ancora da venire (`TrainingBans.Closable`), nello stesso
     salvataggio del ban, da chi lo dà, senza motivo, con `trn_trainings.closed_by_ban` (migrazione `AddClosedByBan`). Le date proposte
     vanno, la sessione esce dal calendario.
-  - **Le mail**: la mail del ban dice che i training aperti sono chiusi; il trainer di ogni training chiuso che ne aveva uno riceve la
+  - **Le mail**: la mail del ban dice che i training aperti sono chiusi solo quando ne ha chiusi (il frammento
+    `mail.training.bannedClosed`, come `closedByBanSession`: la revisione del master); il trainer di ogni training chiuso che ne aveva uno riceve la
     notifica nuova **`training.closedByBan`**, con la data della sessione se c'era.
   - **Le riletture**: dopo il salvataggio del ban si rileggono i training aperti (`AfterGivingAsync`); dopo il salvataggio di una
     richiesta e di un rinvio si rileggono i ban (`TrainingBans.CloseIfBannedAsync`). Una richiesta arrivata mentre si dava il ban si
     chiude e risponde `training:errors.requestBanned` (`RequestRules.Banned`); una sessione rinviata sotto un ban si chiude invece di tornare alle date.
+    Se il ban vale già, il rinvio e la chiusura sono un salvataggio solo (`TrainingBans.CloseUnderBanAsync`), e lo storico ne fa due
+    righe, «rinviata» e «chiuso per il ban» (`TrainingHistory.RescheduledUnderBan`: la riga dell'audit toglie la data). Se la rilettura dopo il
+    ban trova un conflitto di versione tre volte di fila, lascia i training aperti e lo scrive come warning nel log.
   - **`Training.Ban` da solo** dà e toglie un ban: `[AlsoWrittenWith(TrainingPermissions.Ban, AlsoOnCreation = true)]` su `TraineeBan`,
     e `[AlsoWrittenWith(TrainingPermissions.Ban)]` su `Training`, che il ban scrive chiudendolo.
   - **Le pagine**: `closedByBan` nei DTO del trainee e dello staff; `closingOf` dà `{ by: 'ban' }`; lo storico ha l'evento
@@ -155,11 +160,15 @@ da dove viene ogni scelta. Quando il documento è pronto, apri la PR con il temp
     lì (chi ha solo `Training.Ban` non poteva dare il ban). Il guard per una riga nuova chiede `AlsoOnCreation`.
   - ⚠️ **Una riga scritta «come l'installazione» dentro una richiesta HTTP eredita l'utente della richiesta** (l'`ICurrentUser` segue il
     flusso): il test che fa arrivare il ban mentre si chiede la teoria lo scrive con `ExecutionContext.SuppressFlow()` e `Task.Run`.
-  - **La domanda del §4 della nota** (una sessione già cominciata quando arriva il ban) è di Carmine: il codice fa la (A). Se sceglie la
-    (B), cambia `TrainingBans.Closable` e il rinvio non chiede più niente al ban.
+  - **Il §4 della nota è deciso**: una sessione già cominciata quando arriva il ban resta al suo trainer, e rinviata sotto il ban si
+    chiude (la (A), [risposta di Carmine][fix312-a433]).
+  - **`Training.Ban` passa il controllo delle scritture su ogni training**, per la chiusura del ban; nessun passo dello staff lo usa,
+    perché ognuno chiede prima il suo permesso sulla riga. `TrainingBanAloneTakesNoStepOnATraining` lo fissa: un passo nuovo che non
+    chiede il suo permesso lo fa diventare rosso.
   - VID: 790140–790146 in `TrainingBanClosingTests`; 790147–790159 restano liberi della stessa fascia.
 
 [fix312-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/312#issuecomment-6269152656
+[fix312-a433]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/433#issuecomment-6555197149
 
 ### Che cosa ha lasciato A13f (12 ottobre 2026, branch `m3/a13f-training-names-reader`, PR #258)
 

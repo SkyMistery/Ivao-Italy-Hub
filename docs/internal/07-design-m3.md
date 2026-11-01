@@ -495,7 +495,7 @@ dura non chiede training, e **darlo chiude quelli già aperti** (Carmine sulla i
 `2026-11-01-il-ban-chiude-cio-che-e-aperto`): le richieste in attesa, quelle accettate, quelle con il trainer e quelle con la data,
 chiuse da chi dà il ban, senza motivo, nello stesso salvataggio; le date proposte vanno, la sessione datata esce dal calendario e il
 trainer riceve `closedByBan`. Una sessione già cominciata resta al suo trainer, che la registra; rinviata mentre il ban vale si chiude
-(⚖️ la domanda del §4 della nota). Quando il ban finisce o si toglie **non si riapre niente**: il membro chiede di nuovo. **Togli ban**
+(Carmine sulla PR #433: la (A) del §4 della nota). Quando il ban finisce o si toglie **non si riapre niente**: il membro chiede di nuovo. **Togli ban**
 registra chi e quando. I ban restano nello storico. Nessuno si banna da solo (negato all'interessato).
 
 ---
@@ -638,7 +638,7 @@ A un visitatore i blocchi personali rispondono `signedIn: false`, come `myTours`
 | `reminder` | trainee e trainer | `reminderLeadHours` prima (24 ore) |
 | `reportPublished` | trainee | report pubblicato (d4) |
 | `trainingClosed` | trainee | chiuso per nessuna risposta o no-show (d4) |
-| `banned` | trainee | ban dato, con motivo e scadenza, e i training aperti chiusi (#312) |
+| `banned` | trainee | ban dato, con motivo e scadenza, e i training aperti chiusi, se ne ha chiusi (#312) |
 | `closedByBan` | trainer | un training suo chiuso da un ban, con la data della sessione, ora libera (#312) |
 
 Il rifiuto automatico non manda mail: basta il messaggio a schermo (d4).
