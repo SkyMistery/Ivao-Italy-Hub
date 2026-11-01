@@ -275,12 +275,15 @@ public sealed class EventsMail(
     /// The staff decided a request to hand a shift over (§4.4-bis, E12): to whoever asked, with the shift, what was decided — in their
     /// language, and for an approval who took the shift (<paramref name="taker"/>, Carmine's answer on #268: the staff may give it to another
     /// member than the one asked) — and the staff's note, as they wrote it.
+    /// <para>The taker's VID goes under <c>takerVid</c> too, a name the erasure reads as a person's (note
+    /// <c>2026-09-25-la-cancellazione-dei-dati-di-una-persona</c> §7), as the training's mails carry theirs: without it, the erasure of the taker
+    /// would leave their name in the mail to whoever asked (#322, item 6).</para>
     /// </summary>
     public Task AtcShiftTransferDecidedAsync(
         Event row,
         int vid,
         (string Callsign, DateTime FromUtc, DateTime ToUtc) shift,
-        string? taker,
+        (int Vid, string Name)? taker,
         string? note,
         CancellationToken cancellationToken)
     {
@@ -289,9 +292,14 @@ public sealed class EventsMail(
         return SendAsync(EventsNotifications.AtcShiftTransferDecided, row, [vid], (data, locale) =>
         {
             data["shift"] = Shift(shift.Callsign, shift.FromUtc, shift.ToUtc);
-            data["decision"] = taker is null
+            data["decision"] = taker is not { } took
                 ? catalog.Resolve(locale, TransferRefusedKey)
-                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", taker, StringComparison.Ordinal);
+                : catalog.Resolve(locale, TransferApprovedKey).Replace("{{taker}}", took.Name, StringComparison.Ordinal);
+            if (taker is { } named)
+            {
+                data["takerVid"] = named.Vid.ToString(CultureInfo.InvariantCulture);
+            }
+
             data["note"] = string.IsNullOrWhiteSpace(note) ? "-" : note;
             data["mine"] = $"https://{division.Value.Domain}{MinePath}";
         }, cancellationToken);

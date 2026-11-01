@@ -498,6 +498,9 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
         var decided = Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftTransferDecided, token));
         Assert.Contains($"Test Publication ({CoordinatorVid})", decided.DataJson, StringComparison.Ordinal);
 
+        // The taker is found in it as the erasure finds a person (#322, item 6): by a key named for a VID, so their erasure takes the mail away.
+        Assert.True(AuditRedaction.Mentions(decided.DataJson, CoordinatorVid));
+
         // Not theirs any more: the staff moved the second shift to the other controller before deciding.
         var second = await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[1].Id), new TransferRequest(null, null), token), token);
         var stored = (await ShiftsAsync(id, token)).Single(shift => shift.Id == shifts[1].Id);
