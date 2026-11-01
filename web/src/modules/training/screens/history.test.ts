@@ -114,6 +114,17 @@ test('a refusal and a closing of the staff say why on a line of their own; the h
   ).toBe('The hub moved the date: Oct 8, 2026, 13:00 UTC → Sep 30, 2026, 09:50 UTC.');
 });
 
+test('a closing by a ban names who gave it, with no reason of its own, and nobody for a ban the installation wrote (issue #312)', () => {
+  expect(says(line('ClosedByBan'))).toEqual({
+    text: 'Test Advisor (790023) banned the trainee from the training: the training closed.',
+    reason: null,
+  });
+  expect(says(line('ClosedByBan', { by: null }))).toEqual({
+    text: 'The trainee was banned from the training: the training closed.',
+    reason: null,
+  });
+});
+
 test('a deleted person is one, and a training an erasure emptied says what happened without what', () => {
   const erased = { vid: -3, name: null };
 
