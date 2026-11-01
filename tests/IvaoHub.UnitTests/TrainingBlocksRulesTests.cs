@@ -68,6 +68,24 @@ public sealed class TrainingBlocksRulesTests
         Assert.Equal([2L, 3L, 4L], upcoming);
     }
 
+    /// <summary>
+    /// A session names who until its day is over in the division (issue #313; note <c>i-nomi-di-una-sessione-fino-al-suo-giorno</c>):
+    /// today's too, begun or reported, whatever its state; never one of a day gone.
+    /// </summary>
+    [Fact]
+    public void ASessionNamesWhoUntilItsDayIsOverInTheDivision()
+    {
+        // Noon of the 11th in UTC: the 11th there too, which began at 22:00 UTC of the 10th.
+        var heldBefore = StaffQueue.HeldBefore(Day.AddHours(36), Zone);
+
+        Assert.False(PublicSessions.NamesWho(Row(1, TrainingState.Scheduled, Day.AddHours(21.99)), heldBefore));   // 23:59 of the 10th there
+        Assert.False(PublicSessions.NamesWho(Row(2, TrainingState.Completed, Day.AddHours(-20)), heldBefore));     // held days ago
+        Assert.True(PublicSessions.NamesWho(Row(3, TrainingState.Scheduled, Day.AddHours(22)), heldBefore));       // 00:00 of the 11th there
+        Assert.True(PublicSessions.NamesWho(Row(4, TrainingState.Completed, Day.AddHours(23)), heldBefore));       // today's, reported
+        Assert.True(PublicSessions.NamesWho(Row(5, TrainingState.Scheduled, Day.AddHours(60)), heldBefore));       // tomorrow
+        Assert.False(PublicSessions.NamesWho(Row(6, TrainingState.Assigned, null), heldBefore));                   // no date
+    }
+
     [Fact]
     public void ATrainersTrainingsSplitIntoTheDatesToProposeTheLateChoicesAndTheReportsToWrite()
     {

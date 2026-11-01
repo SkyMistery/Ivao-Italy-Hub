@@ -18,6 +18,7 @@ function session(id: number, startsAtUtc: string): PublicSessionDto {
     position: 'XXAA_BOX',
     startsAtUtc,
     held: false,
+    named: true,
     trainee: null,
     trainer: null,
   };
