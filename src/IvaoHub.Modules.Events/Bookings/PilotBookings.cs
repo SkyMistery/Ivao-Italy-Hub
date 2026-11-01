@@ -35,6 +35,8 @@ public enum BookingResult
 /// <para><b>The limits of whoever books and does not fly</b> (§3.7, E13b; note 2026-10-16-i-no-show-i-registri-e-i-limiti, reading 7): read
 /// under the same lock, after the compatibility, with the bookings already saved and those of the same request — the legs of a rotation
 /// booked a moment before, a private arrival's linked departure —, so two requests of the same pilot at once never pass them together.</para>
+/// <para><b>The most of the division</b> (issue #314; note 2026-11-01-il-tetto-delle-prenotazioni): <c>maxBookingsPerEvent</c> for every
+/// member, a rotation counting as one (<see cref="BookingCap"/>), read under the same lock after those limits, the same way.</para>
 /// </summary>
 public sealed class PilotBookings(
     EventsDbContext database,
@@ -92,7 +94,7 @@ public sealed class PilotBookings(
             return Refused(problems.Add(AircraftField, BookingRules.AircraftKey));
         }
 
-        var gap = await GapAsync(cancellationToken);
+        var rules = await RulesAsync(cancellationToken);
 
         await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         await LockThePilotAsync(row.Id, cancellationToken);
@@ -108,12 +110,13 @@ public sealed class PilotBookings(
         }
 
         var mine = await MineInEventAsync(row.Id, cancellationToken);
-        if (Refusal(slot.Id, BookingInterval.Of(slot), mine, await TakenAsync([slot.Id], cancellationToken), gap) is { } refused)
+        if (Refusal(slot.Id, BookingInterval.Of(slot), mine, await TakenAsync([slot.Id], cancellationToken), rules.BookingGapMinutes) is { } refused)
         {
             return Refused(problems.Add(SlotField, refused));
         }
 
-        if (LimitRefusal(await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken), current, mine, slot) is { } limited)
+        var limits = await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken);
+        if ((LimitRefusal(limits, current, mine, slot) ?? CapRefusal(rules, mine, slot)) is { } limited)
         {
             return Refused(problems.Add(SlotField, limited));
         }
@@ -175,7 +178,7 @@ public sealed class PilotBookings(
         }
 
         var aircraft = request.AircraftIcao!.Trim().ToUpperInvariant();
-        var gap = await GapAsync(cancellationToken);
+        var rules = await RulesAsync(cancellationToken);
 
         // Its legs, in their order. The database does not mind the case and a rotation does: R1 and r1 are two (note of E5, §1.4).
         var legs = (await database.Slots.AsNoTracking()
@@ -205,12 +208,13 @@ public sealed class PilotBookings(
         var booked = new List<MyBookingDto>();
         var notBooked = new List<RotationLegRefusalDto>();
 
+        // The legs count as one booking for the most of the division (issue #314): the first booked grows the count, the rest do not.
         foreach (var leg in legs)
         {
             var reason = !BookingRules.IsOpen(leg, now) ? BookingRules.ClosedKey
-                : Refusal(leg.Id, BookingInterval.Of(leg), mine, taken, gap) is { } refused ? refused
+                : Refusal(leg.Id, BookingInterval.Of(leg), mine, taken, rules.BookingGapMinutes) is { } refused ? refused
                 : !leg.AircraftTypes.Contains(aircraft, StringComparer.Ordinal) ? BookingRules.AircraftKey
-                : LimitRefusal(limits, current, mine, leg);
+                : LimitRefusal(limits, current, mine, leg) ?? CapRefusal(rules, mine, leg);
 
             if (reason is null)
             {
@@ -330,7 +334,8 @@ public sealed class PilotBookings(
             problems.Add(AircraftField, "events:errors.aircraftUnknown");
         }
 
-        var gap = await GapAsync(cancellationToken);
+        var rules = await RulesAsync(cancellationToken);
+        var gap = rules.BookingGapMinutes;
         var wanted = BookingInterval.Of(slot, booking);
         var wantedDeparture = departureSlot is null ? null : BookingInterval.Of(departureSlot, departure);
 
@@ -370,16 +375,18 @@ public sealed class PilotBookings(
             problems.Add(DepartureSlotField, refusedDeparture);
         }
 
-        // The linked departure counts with its arrival: two bookings (reading 7). Asked of flights that pass everything else.
+        // The linked departure counts with its arrival: two bookings (reading 7), for the most of the division too (issue #314). Asked of
+        // flights that pass everything else.
         if (problems.IsEmpty)
         {
             var limits = await register.LimitsAsync(currentUser.Vid, current, now, cancellationToken);
-            if (LimitRefusal(limits, current, mine, slot) is { } limited)
+            if ((LimitRefusal(limits, current, mine, slot) ?? CapRefusal(rules, mine, slot)) is { } limited)
             {
                 problems.Add(SlotField, limited);
             }
 
-            if (departureSlot is not null && LimitRefusal(limits, current, mine, departureSlot, slot) is { } limitedDeparture)
+            if (departureSlot is not null
+                && (LimitRefusal(limits, current, mine, departureSlot, slot) ?? CapRefusal(rules, mine, departureSlot, slot)) is { } limitedDeparture)
             {
                 problems.Add(DepartureSlotField, limitedDeparture);
             }
@@ -552,19 +559,25 @@ public sealed class PilotBookings(
     /// The pilot's lock on their bookings of an event (§3.5): the row of their first booking of it, or the row of the event when
     /// they have none — so two requests of the same pilot run one after the other, and the second reads what the first saved.
     /// Different pilots with bookings lock different rows; first bookings meet on the event's, one transaction each, briefly.
+    /// <para>A request that waited for the row of the event locks the pilot's first booking once it has it (#322, item 2): while it waited,
+    /// the request before it may have saved that booking, and a third one found it and locked it — without that, the two would read the
+    /// same bookings at once under different locks. The order is always the event's row, then the booking's: nobody holding a booking
+    /// waits for the event's row.</para>
     /// </summary>
     private async Task LockThePilotAsync(long eventId, CancellationToken cancellationToken)
     {
         var vid = currentUser.Vid;
-        var first = await database.Database
+
+        Task<List<long>> FirstBookingAsync() => database.Database
             .SqlQuery<long>($"SELECT id AS `Value` FROM evt_bookings WHERE event_id = {eventId} AND booker_vid = {vid} ORDER BY id LIMIT 1 FOR UPDATE")
             .ToListAsync(cancellationToken);
 
-        if (first.Count == 0)
+        if ((await FirstBookingAsync()).Count == 0)
         {
             await database.Database
                 .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {eventId} FOR UPDATE")
                 .ToListAsync(cancellationToken);
+            await FirstBookingAsync();
         }
     }
 
@@ -650,6 +663,17 @@ public sealed class PilotBookings(
                 [.. mine.Select(entry => BookingLimits.AtTheEventAirport(entry.Slot)), .. alsoBooked.Select(BookingLimits.AtTheEventAirport)],
                 BookingLimits.AtTheEventAirport(slot));
 
+    /// <summary>
+    /// Why one more booking of <paramref name="slot"/> passes the most bookings of the division in an event, or none (issue #314): counted with
+    /// the bookings the pilot keeps and <paramref name="alsoBooked"/>, booked with it in the same request.
+    /// </summary>
+    private static string? CapRefusal(
+        EventsSettings rules,
+        List<(EventBooking Booking, EventSlot Slot)> mine,
+        EventSlot slot,
+        params EventSlot[] alsoBooked) =>
+        BookingCap.Refusal(rules.MaxBookingsPerEvent, [.. mine.Select(entry => entry.Slot), .. alsoBooked], slot);
+
     /// <summary>The pilot's bookings of the event with their slots, as committed now: what a new one is checked against.</summary>
     private async Task<List<(EventBooking Booking, EventSlot Slot)>> MineInEventAsync(long eventId, CancellationToken cancellationToken)
     {
@@ -670,8 +694,9 @@ public sealed class PilotBookings(
             .ToListAsync(cancellationToken))
         .ToHashSet();
 
-    private async Task<int> GapAsync(CancellationToken cancellationToken) =>
-        (await settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken)).BookingGapMinutes;
+    /// <summary>The settings a booking is checked with: the minutes between two of a pilot, the most of the division in an event.</summary>
+    private Task<EventsSettings> RulesAsync(CancellationToken cancellationToken) =>
+        settings.GetAsync<EventsSettings>(EventsModule.ModuleKey, cancellationToken);
 
     /// <summary>A booking of the reader's, in the event's care: the departments and the scope of every row of the event (§1.1).</summary>
     private EventBooking NewBooking(Event row, EventSlot slot, string aircraft, DateTime now) => new()

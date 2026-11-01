@@ -750,6 +750,7 @@
       "kindPresets.wholeDivision": "The whole division",
       "kindPresets.inPerson": "In person",
       "bookingGapMinutes": "Minutes between two bookings of the same pilot",
+      "maxBookingsPerEvent": "Bookings of a member in an event, at most",
       "pilotRetentionMonths": "Months the pilots' bookings are kept after an event",
       "reminderLeadHours": "Hours before the off block time the reminder is sent",
       "inPersonRetentionMonths": "Months the registrations to an event in person are kept after it",
@@ -772,6 +773,7 @@
     "hints": {
       "kindPresets": "The kinds an event chooses from, each with the switches a new event of that kind starts with; the staff can still change them on the event. The kinds are the words of the calendar. No row at all: an event chooses from every kind of the calendar, with every switch off. A kind with every switch off still needs its row to be chosen.",
       "bookingGapMinutes": "Two bookings of one pilot in the same event are at least this far apart, one way or the other, so that one flight can end before the next starts.",
+      "maxBookingsPerEvent": "How many slots any member books in one event, from 1 to 200. A whole rotation is one booking, whatever its legs; a private arrival and its linked departure are two. Whoever has the limits below books no more than those either.",
       "pilotRetentionMonths": "After this many months from the end of an event, the bookings and the reports of support of its pilots are deleted.",
       "reminderLeadHours": "The pilot receives the reminder of a booking this many hours before its off block time.",
       "inPersonRetentionMonths": "After this many months from the end of an event in person, its registrations and the seats of its activities are deleted; the sums stay in its statistics.",
@@ -1058,6 +1060,7 @@
     "statsOfADraft": "A draft has no statistics: it never took place.",
     "bookingRestrictedWindow": "No more slots in these hours: you have the limits of whoever books and does not fly.",
     "bookingRestrictedEvent": "No more slots in this event: you have the limits of whoever books and does not fly.",
+    "bookingMaxPerEvent": "No more slots in this event: you have as many bookings as the division allows a member in one event. A whole rotation counts as one.",
     "attendanceNotOver": "The event is not over: how its shifts went is not known yet.",
     "attendanceNotAllowed": "Choose attended, no-show or excused.",
     "attendanceDecided": "The shift has that outcome already.",
