@@ -84,7 +84,9 @@ public sealed class StaffBookings(EventsDbContext database, EventsPeople people,
             .ToDictionaryAsync(row => row.Id, row => row.Title, cancellationToken);
 
         var excusable = new HashSet<long>();
-        foreach (var booking in bookings.Where(booking => booking.FlownCheckedAt is not null && booking.FlownAt is null && booking.UnflownExcusedBy is null))
+        // Never a pilot whose data was erased: «take out» does not find their booking (#322, item 5).
+        foreach (var booking in bookings.Where(booking =>
+                     booking.BookerVid > 0 && booking.FlownCheckedAt is not null && booking.FlownAt is null && booking.UnflownExcusedBy is null))
         {
             if (http.HttpContext is { } context && (await authorization.AuthorizeAsync(context.User, booking, EventsPermissions.BookingsEdit)).Succeeded)
             {

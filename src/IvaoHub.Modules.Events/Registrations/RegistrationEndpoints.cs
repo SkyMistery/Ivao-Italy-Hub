@@ -241,8 +241,10 @@ public static class RegistrationEndpoints
         LocaleCatalog catalog,
         HttpContext http)
     {
+        // A member whose data was erased has no registration to take away (#322, item 5): what is left is the event's history, with nobody to
+        // tell. The erasure in the same instant meets the lock below, which asks for the registration by its member.
         var registration = await CrudSource.BackOffice<EventRegistration>(database).FirstOrDefaultAsync(candidate => candidate.Id == id, http.RequestAborted);
-        if (registration is null || (await children.AdoptAsync(registration, http.RequestAborted)).Event is not { } row)
+        if (registration is null || registration.Vid <= 0 || (await children.AdoptAsync(registration, http.RequestAborted)).Event is not { } row)
         {
             return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
         }

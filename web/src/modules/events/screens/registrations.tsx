@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
-import { ConfirmDialog, Notice } from '../../../shared/ui';
+import { ConfirmDialog, Notice, isErased } from '../../../shared/ui';
 import {
   questionsQuery,
   staffRegistrationsQuery,
@@ -72,7 +72,10 @@ export function RegistrationsTab({ event, editable }: { event: EventDetailDto; e
       onSearchChange={(patch) => setSearch((current) => ({ ...current, ...patch }))}
       // The registrations are the event's, not a department's: an empty tab says what will be there (#224, E4d).
       emptyDescription={t('events:registrations.empty')}
-      actions={(row) => (editable ? <RemoveRegistration registration={row} /> : null)}
+      // Never on a member whose data was erased: the server does not find their registration (#322, item 5).
+      actions={(row) =>
+        editable && !isErased(row.member.vid) ? <RemoveRegistration registration={row} /> : null
+      }
     />
   );
 }

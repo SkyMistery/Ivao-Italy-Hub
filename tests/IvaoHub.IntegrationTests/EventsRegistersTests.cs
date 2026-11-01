@@ -404,6 +404,17 @@ public sealed class EventsRegistersTests(MariaDbFixture mariaDb) : IAsyncLifetim
         }
 
         Assert.Null((await BookingsAsync(history, token))[unflown[1]].UnflownExcusedNote);
+
+        // Nor offered to take out in the list, nor taken away: the row is the event's history, which its statistics count, and there is nobody
+        // to tell (#322, item 5).
+        var listed = await PageAsync(coordinator, $"{BookingEndpoints.StaffPattern}?filter[eventId]={history}&pageSize=100", token);
+        Assert.False(Assert.Single(listed, booking => booking.GetProperty("id").GetInt64() == unflown[1]).GetProperty("excusable").GetBoolean());
+        using (var removed = await coordinator.PostAsJsonAsync($"{BookingEndpoints.StaffPattern}/{unflown[1]}/remove", new BookingRemovalRequest($"{SlugStem} gone"), token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, removed.StatusCode);
+        }
+
+        Assert.True((await BookingsAsync(history, token)).ContainsKey(unflown[1]));
     }
 
     /// <summary>
