@@ -182,6 +182,12 @@ export interface RouteDefinition {
   readonly area?: 'public' | 'member' | 'staff';
   /** A staff route only: the permission it is behind, held on any department. Without it, `/forbidden`. */
   readonly permission?: string;
+  /**
+   * A staff route only: `permission` must be held **without a row scope** — a register of the whole division, whose list
+   * the server opens with `HasUnscoped`, so that a grant on one event does not lead to a page that answers 403. It is
+   * what `NavItemDescriptor(…, Unscoped: true)` says of the menu entry (note 2026-10-17-il-permesso-senza-ambito).
+   */
+  readonly unscoped?: boolean;
   /** The typed search parameters of the route, as recipe 2 of design M0 §7.3 declares them for a list. */
   readonly validateSearch?: z.ZodType;
 }
