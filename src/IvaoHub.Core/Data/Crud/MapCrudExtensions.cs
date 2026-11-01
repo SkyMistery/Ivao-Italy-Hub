@@ -260,7 +260,7 @@ public static class MapCrudExtensions
             return Forbidden(scope);
         }
 
-        return Results.Ok(options.ToDetail!(entity));
+        return Results.Ok(await DetailAsync(scope, options, entity, http.RequestAborted));
     }
 
     private static async Task<IResult> CreateAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
@@ -306,7 +306,7 @@ public static class MapCrudExtensions
 
         return Results.Created(
             $"{http.Request.Path}/{Convert.ToString(key, CultureInfo.InvariantCulture)}",
-            options.ToDetail!(entity));
+            await DetailAsync(scope, options, entity, http.RequestAborted));
     }
 
     private static async Task<IResult> UpdateAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
@@ -359,7 +359,7 @@ public static class MapCrudExtensions
         await scope.Database.SaveChangesAsync(http.RequestAborted);
         await AfterSaveAsync(scope, options.AfterSave, entity, isNew: false, http.RequestAborted);
 
-        return Results.Ok(options.ToDetail!(entity));
+        return Results.Ok(await DetailAsync(scope, options, entity, http.RequestAborted));
     }
 
     private static async Task<IResult> DeleteAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
@@ -404,6 +404,21 @@ public static class MapCrudExtensions
     }
 
     // ---- the pieces the endpoints share -------------------------------------------------------
+
+    /// <summary>
+    /// The detail row the read, the create and the update answer with: <c>CrudOptions.ToDetailPage</c> when the resource
+    /// sets it, so that what the reader may do on the row is said by the services of the request, and otherwise
+    /// <c>CrudOptions.ToDetail</c>.
+    /// </summary>
+    private static async Task<TDetailDto> DetailAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
+        CrudScope<TEntity> scope,
+        CrudOptions<TEntity, TListDto, TDetailDto, TWriteDto> options,
+        TEntity entity,
+        CancellationToken cancellationToken)
+        where TEntity : class =>
+        options.ToDetailPage is { } toDetailPage
+            ? await toDetailPage(entity, scope.Services, cancellationToken)
+            : options.ToDetail!(entity);
 
     /// <summary>
     /// The base department of the module, put back on a row the payload has just been applied to, so

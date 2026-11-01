@@ -76,6 +76,13 @@ public sealed class SampleModule : ModuleBase
     /// </summary>
     public const string DecidePattern = "/api/sample/items/{id:long}/decide";
 
+    /// <summary>
+    /// The same rows through the generic engine with a detail that says what its reader may do on the row (#427): whether they
+    /// decide it, asked of the single handler — the shape the page of an event takes for its buttons
+    /// (<c>CrudOptions.ToDetailPage</c>).
+    /// </summary>
+    public const string ActionsPattern = "/api/sample/item-actions";
+
     /// <summary>A permission of the module, so that the catalogue is seen to compose it.</summary>
     public const string ReadPermission = "Sample.Read";
 
@@ -174,6 +181,25 @@ public sealed class SampleModule : ModuleBase
             options.ToDetail = SampleRecordDto.Of;
         });
 
+        // The items once more, with a detail that asks the single handler what the reader may do on the row (#427).
+        endpoints.MapCrud<SampleItem, SampleItemDto, SampleItemActionsDto, SampleItemWriteDto>(ActionsPattern, options =>
+        {
+            options.PermissionArea = PermissionArea;
+            options.Name = "SampleItemActions";
+            options.ContextType = typeof(SampleDbContext);
+            options.DefaultOrder = item => item.Id;
+            options.ToList = SampleItemMapping.ToDto;
+            options.ToDetail = item => SampleItemActionsDto.Of(item, decidable: false);
+            options.ToDetailPage = async (item, services, _) =>
+            {
+                var reader = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.User;
+                var decides = reader is not null
+                    && (await services.GetRequiredService<IAuthorizationService>().AuthorizeAsync(reader, item, DecidePermission)).Succeeded;
+                return SampleItemActionsDto.Of(item, decides);
+            };
+            options.Apply = SampleItemMapping.Apply;
+        });
+
         // And through the filter: what an anonymous page of the module would list.
         endpoints.MapGet(VisiblePattern, async (SampleDbContext database, CancellationToken cancellationToken) =>
                 TypedResults.Ok(await database.Items.Select(item => item.Id).ToListAsync(cancellationToken)))
@@ -238,5 +264,11 @@ public sealed class SampleModule : ModuleBase
 }
 
 public sealed record SamplePing(string Module);
+
+/// <summary>An item with what its reader may do on it, as the page of an event will carry its actions (#427).</summary>
+public sealed record SampleItemActionsDto(long Id, string Title, bool Decidable)
+{
+    public static SampleItemActionsDto Of(SampleItem item, bool decidable) => new(item.Id, item.Title, decidable);
+}
 
 public sealed record SampleWhoAmI(int Vid);
