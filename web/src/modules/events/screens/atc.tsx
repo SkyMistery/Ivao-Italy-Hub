@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { RouterAnchor } from '../../../app/layouts/RouterAnchor';
-import { holdsPermission } from '../../../shared/api/bootstrap';
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { useLocalized } from '../../../shared/i18n/useLocalized';
 import { useMoment } from '../../../shared/i18n/useMoment';
@@ -24,7 +23,6 @@ import {
   type AtcEventDto,
   type EventAtcPositionDto,
 } from '../api';
-import { EVENT_ATC_EDIT } from '../permissions';
 import { atcPositionSchema, emptyAtcPosition, type AtcPositionFormValues } from '../schemas';
 
 import { ATC_SECTION, atcHome, isClosed } from './atcPaths';
@@ -124,8 +122,8 @@ const positionColumns: readonly ColumnSpec<EventAtcPositionDto>[] = [
 
 /**
  * The positions of an event, by the hour they open, with how many controllers are available on each, and above them when the
- * availabilities close and how long a shift is. Whoever writes the ATC of the event has «New position»; each position opens on its page,
- * with its candidates.
+ * availabilities close and how long a shift is. Whoever may open a position on the event has «New position» — the server says so of the
+ * event (`canAddPositions`, #427): the staff of a FIR, on a position of their FIR —; each position opens on its page, with its candidates.
  */
 export function AtcPanel({ eventId }: { eventId: number }) {
   const { t, i18n } = useTranslation();
@@ -140,7 +138,7 @@ export function AtcPanel({ eventId }: { eventId: number }) {
 
   const base = `${ATC}/${eventId}/positions`;
   const closed = isClosed(event);
-  const editable = !closed && holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
+  const editable = !closed && event.canAddPositions;
   const create = editable ? (
     <Button asChild>
       <RouterAnchor href={`${base}/new`}>
@@ -190,7 +188,9 @@ export function AtcPanel({ eventId }: { eventId: number }) {
 /**
  * One position of an event: the event in the breadcrumb, the generated form — the callsign among the positions of the division —,
  * «delete» for one that exists, and under it who is available on it. Whoever reads the ATC and does not write it reads the form and the
- * candidates. Back to where the ATC of the event lives for the reader.
+ * candidates. Whether the reader writes it is the server's answer on the position (`editable`), or on the event for a new one
+ * (`canAddPositions`, #427): the staff of a FIR write the positions of their FIR and read the others. Back to where the ATC of the event
+ * lives for the reader.
  */
 export function AtcPositionForm() {
   const { t, i18n } = useTranslation();
@@ -208,7 +208,7 @@ export function AtcPositionForm() {
   const editable =
     event !== undefined &&
     !isClosed(event) &&
-    holdsPermission(bootstrap, EVENT_ATC_EDIT, event.ownerDepartment);
+    (id === null ? event.canAddPositions : position?.editable === true);
   const positions = useQuery({ ...divisionPositionsQuery(eventId), enabled: editable }).data;
   const save = useSaveAtcPosition(id);
   const remove = useDeleteAtcPosition();

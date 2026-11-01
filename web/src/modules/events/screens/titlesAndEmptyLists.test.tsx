@@ -126,6 +126,8 @@ const atcHead: AtcEventDto = {
   rosterProposedAt: '2099-11-18T16:03:00Z',
   publishesAtUtc: '2099-11-19T16:00:00Z',
   rosterPublishedAt: null,
+  // Whoever reads it opens no position on it (#427).
+  canAddPositions: false,
 };
 
 /** What every list and the block of the events answer: nothing at all. */
