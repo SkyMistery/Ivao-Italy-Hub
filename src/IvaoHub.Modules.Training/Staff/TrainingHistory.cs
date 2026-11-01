@@ -152,6 +152,11 @@ public sealed class TrainingHistory(TrainingDbContext database, HubDbContext hub
                 break;
 
             case Updated:
+                if (RescheduledUnderBan(row, by) is { } rescheduled)
+                {
+                    yield return rescheduled;
+                }
+
                 yield return Update(row, by);
                 break;
 
@@ -164,6 +169,20 @@ public sealed class TrainingHistory(TrainingDbContext database, HubDbContext hub
                 break;
         }
     }
+
+    /// <summary>
+    /// A session rescheduled while a ban holds, closed by the ban in the same save (issue #312): the trainer's reschedule, before the
+    /// ban's closing — the row took the date away, which the ban's own closing of a dated session keeps on record.
+    /// </summary>
+    private static TrainingHistoryLine? RescheduledUnderBan(AuditLogEntry row, int? by) =>
+        Parse(row.BeforeJson) is { } before
+        && Parse(row.AfterJson) is { } after
+        && State(before) == TrainingState.Scheduled
+        && State(after) == TrainingState.Closed
+        && Flag(after, nameof(Training.ClosedByBan))
+        && after.ContainsKey(nameof(Training.ScheduledStartUtc))
+            ? new TrainingHistoryLine(row.At, by, TrainingHistoryEvent.Rescheduled, Date: Moment(before, nameof(Training.ScheduledStartUtc)))
+            : null;
 
     /// <summary>
     /// A change, told by what it changed: the state first, which says the step; with the state as it was, the trainer, then the date,
