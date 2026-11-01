@@ -6216,5 +6216,14 @@ prenota in un evento, di divisione, predefinito 5, con una rotazione che conta u
   banco 5159 (`ivaohub_e2e_fix314`, dietro il lock di Mailpit): 81 passati. **Non verificato**: le pagine del pilota nel browser con il
   rifiuto nuovo (la frase sta dove sta ogni altro rifiuto di uno slot); il form delle impostazioni a occhio.
 
+**Nella stessa PR, il punto 2 dell'issue #322** (il blocco del pilota, dalla revisione del codice, lotto 6; lasciato dalla correzione della
+#322 perché sta nello stesso file): tre richieste dello stesso pilota quasi insieme — la seconda non trova prenotazioni e aspetta la riga
+dell'evento dietro la prima, la prima salva, una terza trova quella prenotazione e la blocca — e la seconda e la terza leggevano le stesse
+prenotazioni insieme. `LockThePilotAsync` ora, avuta la riga dell'evento, riprende il `FOR UPDATE` della prima prenotazione del pilota,
+come l'issue indicava. Il test `EventsBookingsTests.ARequestThatWaitedForTheEventLocksThePilotsFirstBookingAgain` tiene la riga dell'evento,
+salva la prima prenotazione, la blocca con una seconda scritta, e lascia andare l'evento: **rosso su `main`** (la richiesta non aspetta,
+alla seconda attesa del test), verde con la correzione. Nessuna nota: è un difetto, e la direzione è quella dell'issue. Con le due
+correzioni insieme, **la suite d'integrazione intera, senza filtro e da sola: 746 verdi**.
+
 [a314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6269204922
 [q314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239

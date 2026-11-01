@@ -399,6 +399,12 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
   - ⚠️ **le due (A) del §4 della nota** sono nel codice: se Carmine sceglie una (B), cambiano solo `BookingCap` (punto 8) o `BookingLimits`
     (punto 7) e i loro test;
   - il rifiuto non dice il numero: le pagine del pilota non leggono le impostazioni.
+- **Nella stessa PR, il punto 2 dell'issue #322** (il blocco del pilota): una richiesta che ha aspettato la riga dell'evento, quando
+  l'ha avuta, **riprende il `FOR UPDATE` della prima prenotazione del pilota** (`LockThePilotAsync`). Prima, se nell'attesa la richiesta
+  davanti salvava la prima prenotazione e una terza la trovava e la bloccava, la seconda e la terza leggevano le stesse prenotazioni
+  insieme, sotto due blocchi diversi, e passavano la compatibilità, i limiti e il tetto. ⚠️ L'ordine è sempre la riga dell'evento, poi
+  quella della prenotazione: chi tiene una prenotazione non aspetta mai la riga dell'evento, e così resta. Il test è
+  `EventsBookingsTests.ARequestThatWaitedForTheEventLocksThePilotsFirstBookingAgain`.
 
 ### Che cosa ha lasciato E10r (19 ottobre 2026, branch `m4/e10r-core-toast`, PR #308, del nucleo; diretta su `main`, nata a `893a9b0c`)
 
