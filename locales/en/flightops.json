@@ -436,7 +436,8 @@
       "remove": "Remove",
       "retire": "Retire",
       "restore": "Restore",
-      "import": "Import from a file"
+      "import": "Import from a file",
+      "removeType": "Remove {{type}}"
     },
     "remove": {
       "title": "Remove leg {{number}}?",

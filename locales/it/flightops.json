@@ -436,7 +436,8 @@
       "remove": "Togli",
       "retire": "Ritira",
       "restore": "Ripristina",
-      "import": "Importa da un file"
+      "import": "Importa da un file",
+      "removeType": "Togli {{type}}"
     },
     "remove": {
       "title": "Togliere la leg {{number}}?",
