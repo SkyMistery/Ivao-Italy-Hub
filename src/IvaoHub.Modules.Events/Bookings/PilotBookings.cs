@@ -559,19 +559,25 @@ public sealed class PilotBookings(
     /// The pilot's lock on their bookings of an event (§3.5): the row of their first booking of it, or the row of the event when
     /// they have none — so two requests of the same pilot run one after the other, and the second reads what the first saved.
     /// Different pilots with bookings lock different rows; first bookings meet on the event's, one transaction each, briefly.
+    /// <para>A request that waited for the row of the event locks the pilot's first booking once it has it (#322, item 2): while it waited,
+    /// the request before it may have saved that booking, and a third one found it and locked it — without that, the two would read the
+    /// same bookings at once under different locks. The order is always the event's row, then the booking's: nobody holding a booking
+    /// waits for the event's row.</para>
     /// </summary>
     private async Task LockThePilotAsync(long eventId, CancellationToken cancellationToken)
     {
         var vid = currentUser.Vid;
-        var first = await database.Database
+
+        Task<List<long>> FirstBookingAsync() => database.Database
             .SqlQuery<long>($"SELECT id AS `Value` FROM evt_bookings WHERE event_id = {eventId} AND booker_vid = {vid} ORDER BY id LIMIT 1 FOR UPDATE")
             .ToListAsync(cancellationToken);
 
-        if (first.Count == 0)
+        if ((await FirstBookingAsync()).Count == 0)
         {
             await database.Database
                 .SqlQuery<long>($"SELECT id AS `Value` FROM evt_events WHERE id = {eventId} FOR UPDATE")
                 .ToListAsync(cancellationToken);
+            await FirstBookingAsync();
         }
     }
 
