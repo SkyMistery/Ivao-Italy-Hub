@@ -1,7 +1,9 @@
 # Chi è cancellato prima del controllo
 
 **Data:** 1 novembre 2026, fase di test.
-**Stato:** **Proposta** — la domanda a Carmine è al §3; la risposta, con il link al suo commento, va scritta qui prima del merge.
+**Stato:** **Proposta** — la domanda a Carmine è al §3, posta sulla issue #322
+([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/322#issuecomment-6551659310)); la risposta, con il link al suo
+commento, va scritta qui prima del merge.
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)** per il §3 (una scelta che il codice non può fare da solo); il §2 è una correzione
 (issue #322, voce 5 (b)), che non decide nulla di nuovo.
 
