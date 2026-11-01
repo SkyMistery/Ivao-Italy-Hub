@@ -68,7 +68,8 @@
       "toAssign_one": "{{count}} training da assegnare",
       "toAssign_other": "{{count}} training da assegnare",
       "empty": "Nessuna richiesta aspetta te."
-    }
+    },
+    "unavailable": "Al momento non si riesce a leggere. Riprova più tardi."
   },
   "states": {
     "Requested": "In attesa di accettazione",
