@@ -279,12 +279,16 @@ export const AUTO_REPORT_PREFERENCE = 'events.autoReport';
  * «Report my participation in events automatically» (design M4 §1.11, E14b): off until the member switches it on, kept on their account. Then,
  * after each event, the system looks for their flights and their shifts and writes their report of support, which a validator decides as any
  * other; one they sent by hand stays as it is.
+ *
+ * The generated form reads its defaults once, when it is drawn: a save refused draws it again from what the server kept, so the switch
+ * never stays turned on a value nobody saved (#333, item 4).
  */
-function AutoReportSwitch() {
+export function AutoReportSwitch() {
   const { t, i18n } = useTranslation();
   const preference = useQuery(preferenceQuery(AUTO_REPORT_PREFERENCE));
   const save = useSavePreference(AUTO_REPORT_PREFERENCE);
   const failed = describeProblem(save.error, t, i18n.language);
+  const [drawn, setDrawn] = useState(0);
 
   if (preference.isPending) {
     return null;
@@ -293,13 +297,14 @@ function AutoReportSwitch() {
   return (
     <div className="flex flex-col gap-2">
       <SchemaForm
+        key={drawn}
         schema={autoReportSchema}
         defaults={{ autoReport: preference.data === true }}
         locales={[]}
         labels="events:mine.reports.auto"
         onChange={(values) => {
           if (values.autoReport !== (preference.data === true)) {
-            save.mutate(values.autoReport);
+            save.mutate(values.autoReport, { onError: () => setDrawn((count) => count + 1) });
           }
         }}
       />
