@@ -10,6 +10,7 @@ sono (la CRUD generica con il suo `BeforeSave`, `AlsoWrittenWith`, le notifiche 
 nucleo cambia.
 
 [a312]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/312#issuecomment-6269152656
+[q433]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/433#issuecomment-6551675321
 
 ## 1. Che cosa serve
 
@@ -73,7 +74,8 @@ Sono letture della risposta, non scelte nuove; le scrivo perché chi rivede le c
 
 **Una sessione già cominciata** — la data è passata, l'esito non è ancora registrato — quando arriva il ban. Qui si incontrano due
 risposte del maintainer: questa («con la data fissata si chiude anche lui») e quella sulla #149 («una sessione cominciata si registra, e
-non si data più a mano né si chiude»).
+non si data più a mano né si chiude»). La domanda è posta a Carmine sulla PR ([commento][q433], 1 novembre 2026), in inglese, con la (A)
+raccomandata.
 
 - **(A), raccomandata, ed è quello che fa il codice**: non si chiude. Il trainer ne registra l'esito — report, no-show o rinvio —; se la
   rinvia mentre il ban vale, il training non torna alle date (un membro bannato non ne ha) ma si chiude per il ban, da chi l'ha dato.
