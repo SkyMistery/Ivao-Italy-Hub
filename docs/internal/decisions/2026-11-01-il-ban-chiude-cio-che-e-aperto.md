@@ -1,7 +1,7 @@
 # Il ban chiude ciò che è aperto
 
 **Data:** 1 novembre 2026 — fase di test (nota `2026-10-18-la-fase-di-test`), issue #312, branch `fix/training-ban-closes-open`,
-PR #PRNUM
+PR #433
 **Stato:** **decisa** da Carmine per il §2, in chat al master il 19 ottobre 2026, pubblicata sulla issue su sua istruzione
 ([risposta][a312]). **Proposta** la domanda del §4 (la sessione già cominciata), che il codice fa nel modo raccomandato finché Carmine
 non risponde.

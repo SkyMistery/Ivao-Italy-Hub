@@ -4426,3 +4426,54 @@ Le due righe tolte da un test del nucleo hanno la loro nota breve, chiesta da Ca
     quello di prima e lo provano le classi d'integrazione del training;
   - **un utente con un VID sotto uno**: il test che lo creava per il training non c'è più, e il lettore lo prova per sé in
     `MemberNamesTests`.
+
+### Correzione di #312 — Il ban chiude ciò che è aperto
+
+Dalla fase di test (nota `2026-10-18-la-fase-di-test`, «chi può si prende la issue»): un ban fermava solo le richieste nuove, e un
+trainee bannato poteva ancora scegliere una data. Carmine ha deciso che **un ban chiude tutto ciò che il membro ha aperto**, che il
+trainer riceve una notifica e la data si libera, e che finito il ban non si riapre niente ([risposta sull'issue #312][fix312-answer]);
+e che `Training.Ban` da solo basta per dare e togliere un ban. Una PR, branch `fix/training-ban-closes-open`, «Closes #312»; nota
+`decisions/2026-11-01-il-ban-chiude-cio-che-e-aperto.md`, caso (c), **decisa** con una domanda **Proposta** (§4).
+
+[fix312-answer]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/312#issuecomment-6269152656
+
+**Com'è andata (#312)** (1 novembre 2026, PR #433, da `main` a `b12ec725`). **Codice del modulo, una migrazione additiva
+(`AddClosedByBan`), nessun file del nucleo.**
+
+- **Fatto**:
+  - **la chiusura nel salvataggio del ban**: `TrainingBans.BeforeGivingAsync` (nel `BeforeSave` della CRUD) chiude i training di
+    `TrainingBans.Closable` — `Requested`, `Accepted`, `Assigned`, `Scheduled` prima della sessione —, da chi dà il ban, senza motivo,
+    con `closed_by_ban`; le date proposte vanno, la sessione esce dal calendario;
+  - **le riletture dopo i salvataggi**: `AfterGivingAsync` rilegge i training ancora aperti e li chiude; `CloseIfBannedAsync` rilegge i
+    ban dopo una richiesta (che risponde `RequestRules.Banned`) e dopo un rinvio (che chiude il training invece di riportarlo alle date);
+  - **le mail**: la frase della mail del ban cambia; la notifica nuova `training.closedByBan` al trainer, con la data se c'era;
+  - **i permessi**: `[AlsoWrittenWith(Ban, AlsoOnCreation = true)]` su `TraineeBan`, `[AlsoWrittenWith(Ban)]` su `Training`;
+  - **le pagine**: `closedByBan` nei due DTO, `closingOf` con `by: 'ban'`, l'evento `ClosedByBan` dello storico, le parole in it/en;
+  - **il design**: `07-design-m3.md` §1.5-bis, §2.9, §5.2.
+- **Trovato**:
+  1. ⚠️ **Senza `AlsoOnCreation` l'alternativa non crea**: con il solo `[AlsoWrittenWith(Ban)]` chiesto dalla issue, chi ha solo
+     `Training.Ban` era ancora rifiutato nel dare il ban (il guard per una riga nuova chiede `AlsoOnCreation`). Il primo giro dei test
+     l'ha mostrato.
+  2. **Due risposte di Carmine si incontrano** sulla sessione già cominciata: questa e quella sulla #149. È la domanda del §4 della nota,
+     **Proposta**; il codice fa la (A), raccomandata.
+  3. **La scelta della data non ha bisogno di un controllo del ban suo**: dopo il ban il training è chiuso e le sue date sono andate.
+- **Scostamenti dal design**: il design diceva «quelli già aperti vanno avanti»; ora dice che il ban li chiude (la decisione).
+- **Verificato** (1 novembre 2026, in locale, sulla testa della PR):
+  - `dotnet build IvaoHub.sln -c Release`: **0 avvisi, 0 errori**; `dotnet restore --force --no-http-cache`: nessun avviso dell'audit;
+  - unità: **1473/1473**;
+  - **integrazione intera, senza filtro: 744/745**. Il rosso è `ContactsAndNotificationsTests.NotificationUsesRecipientLocale` (del nucleo,
+    i contatti: non trova la sua mail inglese fra quelle della coda condivisa); da sola la classe passa **11/11 due volte**.
+    `TrainingBanClosingTests` **5/5**;
+  - **rossa sul comportamento di `main`**: con le chiusure, le riletture e gli `AlsoWrittenWith` tolti per prova (le firme restano, così
+    i test compilano) la classe nuova è **5/5 rossa**; con i soli attributi rimessi, 4/5 (la chiusura, le due corse, il rinvio); con le
+    sole riletture tolte, 2/5 (la richiesta in volo, il rinvio). I file veri rimessi e toccati: di nuovo 5/5;
+  - web: `lint` (un avviso di `Toaster.tsx`, del nucleo, già su `main`), `format:check`, `typecheck`, `i18n:check`, `build` puliti;
+    `test` **870/870**; `gen:api` e `i18n:sync` rigenerati e nel commit;
+  - **`pnpm e2e`** sotto il lucchetto di 4173, `--workers=2`: **188/188**;
+  - `core-guard` in Git Bash, con i file della PR e «Closes #312»: **solo il modulo e i documenti del collaboratore**.
+- **Non verificato**:
+  - **`pnpm e2e:full`**: non girato (il PC era corto di memoria, con altre sessioni sulle loro suite). Le mail della correzione sono
+    provate dall'integrazione sulle righe della coda, non arrivate a Mailpit;
+  - **le pagine nel browser**: le frasi nuove sono provate dai test web (`dates.test.ts`, `history.test.ts`), non guardate sul banco;
+  - **la CI** della PR, che la dice la PR;
+  - **la domanda del §4 della nota**, che è di Carmine.
