@@ -4258,8 +4258,8 @@ export interface components {
         /**
          * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
          *     its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
-         *     published and whether it was (E12) — to whoever holds `EventAtc.View` somewhere, the staff of a FIR among them, who do not read the
-         *     event itself.
+         *     published and whether it was (E12) — to whoever holds `EventAtc.View` without a scope, the staff of a FIR among them, who do not
+         *     read the event itself, and to whoever holds it on that event alone (issue #311).
          */
         AtcEventDto: {
             /** Format: int64 */
@@ -18000,6 +18000,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AtcEventDto"];
                 };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {
