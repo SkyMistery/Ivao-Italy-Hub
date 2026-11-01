@@ -61,7 +61,11 @@ public static class EventEndpoints
             // The page adds the division's word for each kind; one row alone is what the engine asks for when it has no page.
             options.ToList = row => EventMapper.ToList(row, clock.UtcNow, kindLabel: null);
             options.ToListPage = PageAsync;
-            options.ToDetail = row => EventMapper.ToDetail(row, clock.UtcNow);
+            // The detail says the reader's actions on the event (#427), which only the request's services answer; the engine still asks
+            // for a row alone, which says none.
+            options.ToDetail = row => EventMapper.ToDetail(row, clock.UtcNow, EventActionsDto.None);
+            options.ToDetailPage = (row, services, _) =>
+                services.GetRequiredService<EventDetails>().DetailAsync(row, services.GetRequiredService<IClock>().UtcNow);
             options.Apply = EventMapper.Apply;
             options.BeforeSave = (row, saving) =>
                 saving.Services.GetRequiredService<EventSaving>().PrepareAsync(row, saving.IsNew, saving.CancellationToken);
@@ -117,6 +121,7 @@ public static class EventEndpoints
         EventPublishRequest request,
         EventsDbContext database,
         EventPublishing publishing,
+        EventDetails details,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
         LocaleCatalog catalog,
@@ -156,7 +161,7 @@ public static class EventEndpoints
         row.PublishedAt = now;
         await database.SaveChangesAsync(http.RequestAborted);
 
-        return Results.Ok(EventMapper.ToDetail(row, now));
+        return Results.Ok(await details.DetailAsync(row, now));
     }
 
     /// <summary>
@@ -171,6 +176,7 @@ public static class EventEndpoints
         EventsDbContext database,
         EventSaving saving,
         EventsMail mail,
+        EventDetails details,
         IValidator<EventCancelRequest> validator,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
@@ -226,7 +232,7 @@ public static class EventEndpoints
 
         await mail.EventCancelledAsync(row, await saving.PeopleToTellAsync(row.Id, http.RequestAborted), http.RequestAborted);
 
-        return Results.Ok(EventMapper.ToDetail(row, now));
+        return Results.Ok(await details.DetailAsync(row, now));
     }
 
     /// <summary>
@@ -242,6 +248,7 @@ public static class EventEndpoints
         EventDuplicateRequest request,
         EventsDbContext database,
         EventDuplication duplication,
+        EventDetails details,
         IValidator<EventDuplicateRequest> validator,
         IAuthorizationService authorization,
         ICurrentUser currentUser,
@@ -290,7 +297,7 @@ public static class EventEndpoints
 
         return copy is null
             ? CrudProblems.Validation(problems, catalog, currentUser.Locale)
-            : Results.Created($"{Pattern}/{copy.Id}", new EventDuplicatedDto(EventMapper.ToDetail(copy, clock.UtcNow), notGenerated));
+            : Results.Created($"{Pattern}/{copy.Id}", new EventDuplicatedDto(await details.DetailAsync(copy, clock.UtcNow), notGenerated));
     }
 
     /// <summary>The presets of the kinds, as the settings hold them: the form of an event reads them, and changes nothing.</summary>
