@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { SchemaForm, describeProblem } from '../../../shared/forms';
 import { DataList, col, listSearchSchema, type ColumnSpec, type ListSearch } from '../../../shared/list';
-import { ConfirmDialog, Notice } from '../../../shared/ui';
+import { ConfirmDialog, Notice, isErased } from '../../../shared/ui';
 import { staffBookingsQuery, useRemoveBooking, type EventBookingDto, type EventDetailDto } from '../api';
 import { bookingRemovalSchema, type BookingRemovalValues } from '../schemas';
 
@@ -47,7 +47,8 @@ export function BookingsTab({ event, editable }: { event: EventDetailDto; editab
       // The bookings are the event's, not a department's: an empty tab says what will be there (#224, E4c), to whoever takes
       // them away and whoever only reads them.
       emptyDescription={t('events:bookings.empty')}
-      actions={(row) => (editable ? <RemoveBooking booking={row} /> : null)}
+      // Never on a pilot whose data was erased: their booking is the event's history, and the server does not find it (#322, item 5).
+      actions={(row) => (editable && !isErased(row.pilot.vid) ? <RemoveBooking booking={row} /> : null)}
     />
   );
 }

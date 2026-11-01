@@ -181,6 +181,76 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A person whose data was erased between the end and the check (#322, item 5): the network and the archive know them by the VID the hub no
+    /// longer has, so their rows are never asked by the pseudonym — no «booked, not flown» found for it, no shift of theirs given as covered to
+    /// whoever the archive finds on it, themselves by their VID —; they stay not checked, and the event closes without them.
+    /// </summary>
+    [Fact]
+    public async Task TheRowsOfAPersonErasedBeforeTheCheckAreNotAskedAndDoNotKeepTheEventOpen()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _sources.Archive = true;
+        var evening = await EveningAsync("erased", token);
+
+        // As the erasure leaves them: the core's pseudonym in the pilot's two bookings and in the tower's shift.
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await database.Bookings.IgnoreQueryFilters()
+                .Where(booking => booking.Id == evening.Flown || booking.Id == evening.SecondOfARoute)
+                .ExecuteUpdateAsync(set => set.SetProperty(booking => booking.BookerVid, -761360), token);
+            await database.AtcShifts.IgnoreQueryFilters()
+                .Where(shift => shift.Id == evening.Attended)
+                .ExecuteUpdateAsync(set => set.SetProperty(shift => shift.ControllerVid, -761361), token);
+        }
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 3, 1, 1), await RunAtAsync(Due, token));
+        Assert.DoesNotContain(_sources.Asked, vid => vid < 0);
+        Assert.Equal(Due, (await EventAsync(evening.Id, token)).AfterDoneAt);
+
+        var bookings = await BookingsAsync(evening.Id, token);
+        Assert.All([bookings[evening.Flown], bookings[evening.SecondOfARoute]], booking => Assert.Null(booking.FlownCheckedAt));
+        var erased = (await ShiftsAsync(evening.Id, token))[evening.Attended];
+        Assert.Equal((ShiftAttendance.Unknown, (int?)null), (erased.Attendance, erased.CoveredByVid));
+
+        // The numbers: both bookings among the booked, never among the not flown; the shift neither attended nor missed.
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var stats = Assert.Single(await PageAsync(coordinator, $"{StatsEndpoints.Pattern}?filter[eventId]={evening.Id}", token));
+        Assert.Equal(
+            (5, 2, 1, 0, 1),
+            (stats.GetProperty("booked").GetInt32(), stats.GetProperty("bookedFlown").GetInt32(), stats.GetProperty("bookedUnflown").GetInt32(),
+                stats.GetProperty("atcAttended").GetInt32(), stats.GetProperty("atcNoShows").GetInt32()));
+    }
+
+    /// <summary>
+    /// The maintainer's answer to #322, item 5 (b) (option B): while a shift of a controller erased before the check is not checked, no shift of
+    /// the event is given who covered. The archive would name the tower — the erased controller, by the VID the hub no longer has — as who
+    /// covered the absent colleague's shift; the shift is a no-show proposed with nobody, and the archive is not asked who was online.
+    /// </summary>
+    [Fact]
+    public async Task WhileAnErasedControllersShiftIsNotCheckedNobodyIsGivenAsWhoCovered()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _sources.Archive = true;
+        var evening = await EveningAsync("erased-tower", token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await database.AtcShifts.IgnoreQueryFilters()
+                .Where(shift => shift.Id == evening.Attended)
+                .ExecuteUpdateAsync(set => set.SetProperty(shift => shift.ControllerVid, -761361), token);
+        }
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 5, 1, 1), await RunAtAsync(Due, token));
+
+        var shifts = await ShiftsAsync(evening.Id, token);
+        Assert.Equal((ShiftAttendance.NoShowProposed, (int?)null), (shifts[evening.Missed].Attendance, shifts[evening.Missed].CoveredByVid));
+        Assert.Equal((ShiftAttendance.Unknown, (int?)null), (shifts[evening.Attended].Attendance, shifts[evening.Attended].CoveredByVid));
+        Assert.Equal(0, _sources.Online);
+    }
+
+    /// <summary>
     /// Nobody who flew without booking is kept (reading 3, design §5.1: «nessun VID si salva»): after the run, none of the evening's pilots who
     /// booked nothing is in a row of the events, in the audit written since the test started, or in the job's row.
     /// </summary>
@@ -860,6 +930,12 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         /// <summary>No archive at all, as the core registers it for <c>atcData: none</c>.</summary>
         public bool NoArchive { get; set; }
+
+        /// <summary>The VIDs the tracker and the archive were asked by, in order (#322, item 5).</summary>
+        public List<int> Asked { get; } = [];
+
+        /// <summary>How many times the archive was asked who was online (#322, item 5 (b)).</summary>
+        public int Online { get; set; }
     }
 
     private sealed class FixedClock(DateTime now) : IClock
@@ -883,6 +959,11 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     {
         public Task<IReadOnlyList<NetworkSession>?> SessionsAsync(NetworkSessionQuery query, CancellationToken cancellationToken = default)
         {
+            if (query.Vid is { } vid)
+            {
+                sources.Asked.Add(vid);
+            }
+
             if (!sources.TrackerAnswers)
             {
                 return Task.FromResult<IReadOnlyList<NetworkSession>?>(null);
@@ -922,11 +1003,17 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// </summary>
     private sealed class EveningArchive(HubPaths paths, Sources sources) : IAtcActivitySource
     {
-        public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Activity(fromUtc, toUtc, vid: null));
+        public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
+        {
+            sources.Online++;
+            return Task.FromResult(Activity(fromUtc, toUtc, vid: null));
+        }
 
-        public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Activity(fromUtc, toUtc, vid));
+        public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
+        {
+            sources.Asked.Add(vid);
+            return Task.FromResult(Activity(fromUtc, toUtc, vid));
+        }
 
         private AtcActivity? Activity(DateTime fromUtc, DateTime toUtc, int? vid)
         {

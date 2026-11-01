@@ -380,6 +380,15 @@ public sealed class EventsRegistrationsTests(MariaDbFixture mariaDb) : IAsyncLif
         Assert.Equal(JsonNode.Parse($$"""{"q{{dinner}}":true,"q{{gear}}":["1","2"]}"""), JsonNode.Parse(stored[kept].AnswersJson), JsonNode.DeepEquals);
         Assert.Contains(stored.Values, row => row.Vid == OtherVid && row.AnswersJson.Contains("another's words", StringComparison.Ordinal));
 
+        // The staff do not take the kept one away: it is the event's history, with nobody to tell (#322, item 5).
+        using (var coordinator = await SignedInAsync(CoordinatorVid, token))
+        using (var removed = await coordinator.PostAsJsonAsync($"{RegistrationEndpoints.StaffPattern}/{kept}/remove", new BookingRemovalRequest("evt-test-e16 gone"), token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, removed.StatusCode);
+        }
+
+        Assert.Contains(await RegistrationsAsync(over, token), row => row.Id == kept);
+
         // The registration withdrawn before: nothing of its answers in the audit.
         Assert.False(await AuditMentionsAsync(GoneWords, token));
         Assert.False(await AuditMentionsAsync("evt-test-e16 coeliac", token));
