@@ -227,7 +227,8 @@ export function PublicSessionPage() {
 
 /**
  * One session (§4.1): held or still to come, the ladder, then the position, the rating, the date and the time — and who, the trainee
- * and the trainer, when the server says it, which it does to a signed in reader only. A visitor is offered the login.
+ * and the trainer, when the server says it, which it does to a signed in reader only and until the session's day is over (note
+ * i-nomi-di-una-sessione-fino-al-suo-giorno). A visitor is offered the login only while the session still names who.
  */
 function SessionScreen({
   session,
@@ -288,7 +289,7 @@ function SessionScreen({
         )}
       </dl>
 
-      {signedIn ? null : (
+      {signedIn || !session.named ? null : (
         <p className="text-muted-foreground text-sm">
           <a href={loginHref(location.href)} className="underline">
             {t('training:public.session.signIn')}

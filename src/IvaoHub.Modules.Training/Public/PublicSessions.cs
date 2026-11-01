@@ -15,9 +15,11 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.Training.Public;
 
 /// <summary>
-/// A session as the site shows it (design M3 §4.1, §4.3; note <c>il-training-in-pubblico</c>): the position, the rating and when —
-/// in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only, who: the trainee and the trainer, by
-/// VID and by the name the hub has. To a visitor <c>Trainee</c> and <c>Trainer</c> are none, whatever the row holds.
+/// A session as the site shows it (design M3 §4.1, §4.3; notes <c>il-training-in-pubblico</c>, <c>i-nomi-di-una-sessione-fino-al-suo-giorno</c>):
+/// the position, the rating and when — in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only and
+/// until the session's day is over, who: the trainee and the trainer, by VID and by the name the hub has. To a visitor, and to anybody
+/// once the day is over, <c>Trainee</c> and <c>Trainer</c> are none, whatever the row holds: the trainee and the staff read them on
+/// their own pages.
 /// </summary>
 /// <param name="Id">The training, whose page is <c>/training/sessions/{id}</c>: the address of its entry of the calendar.</param>
 /// <param name="Kind">The ladder.</param>
@@ -27,8 +29,12 @@ namespace IvaoHub.Modules.Training.Public;
 /// <param name="Held">
 /// Over: its day is over in the division's time zone (§1.2), or its report is published. The report itself is never public.
 /// </param>
-/// <param name="Trainee">Who the session is for, to a signed in reader only.</param>
-/// <param name="Trainer">Who conducts it, to a signed in reader only.</param>
+/// <param name="Named">
+/// Whether the session still names who: its day is not over in the division's time zone, whatever its state. For a visitor too, who
+/// is offered the login only then.
+/// </param>
+/// <param name="Trainee">Who the session is for, to a signed in reader only, while it is <paramref name="Named"/>.</param>
+/// <param name="Trainer">Who conducts it, to a signed in reader only, while it is <paramref name="Named"/>.</param>
 public sealed record PublicSessionDto(
     long Id,
     RatingKind Kind,
@@ -36,6 +42,7 @@ public sealed record PublicSessionDto(
     string? Position,
     DateTime StartsAtUtc,
     bool Held,
+    bool Named,
     TrainingMemberDto? Trainee,
     TrainingMemberDto? Trainer);
 
@@ -69,7 +76,9 @@ public sealed record PublicExamDto(
 /// <para>A training is read by members only (<c>IVisible</c>), so a visitor passes the filter here, through the back office's source:
 /// what leaves is its public session and nothing else — only a training <see cref="Training.SessionIsPublic"/> says has one, the rule
 /// the calendar reads, and of it only what the calendar shows already, the rating, the position and when. The people are the hub's
-/// answer to a signed in reader alone (§12 n.4): for a visitor their names are not even asked.</para>
+/// answer to a signed in reader alone (§12 n.4), and only until the session's day is over (note
+/// <c>i-nomi-di-una-sessione-fino-al-suo-giorno</c>): the ids are sequential, and the page of every session held would otherwise be
+/// the training history of the division. For a visitor, and for a session whose day is over, their names are not even asked.</para>
 /// </summary>
 public sealed class PublicSessions(
     TrainingDbContext database,
@@ -156,26 +165,44 @@ public sealed class PublicSessions(
         ];
     }
 
+    /// <summary>
+    /// Whether a session still names who (note <c>i-nomi-di-una-sessione-fino-al-suo-giorno</c>): until its day is over in the division's
+    /// time zone — today's too, begun, reported or not —, given the moment today began there (<see cref="StaffQueue.HeldBefore"/>).
+    /// </summary>
+    public static bool NamesWho(Training training, DateTime heldBefore)
+    {
+        ArgumentNullException.ThrowIfNull(training);
+
+        return training.ScheduledStartUtc is { } start && start >= heldBefore;
+    }
+
     private async Task<IReadOnlyList<PublicSessionDto>> DtosAsync(
         IReadOnlyList<Training> trainings,
         DateTime heldBefore,
         CancellationToken cancellationToken)
     {
-        var names = currentUser.IsAuthenticated
-            ? await people.NamesAsync([.. trainings.Select(training => (int?)training.TraineeVid), .. trainings.Select(training => training.TrainerVid)], cancellationToken)
+        var named = trainings.Where(training => NamesWho(training, heldBefore)).ToList();
+        var names = currentUser.IsAuthenticated && named.Count > 0
+            ? await people.NamesAsync([.. named.Select(training => (int?)training.TraineeVid), .. named.Select(training => training.TrainerVid)], cancellationToken)
             : null;
 
         return
         [
-            .. trainings.Select(training => new PublicSessionDto(
-                training.Id,
-                training.Kind,
-                vocabulary.Find(training.Kind, training.Rating)?.ShortName,
-                training.Position,
-                training.ScheduledStartUtc!.Value,
-                training.State == TrainingState.Completed || StaffQueue.IsHeld(training, heldBefore),
-                names is null ? null : TrainingPeople.Member(training.TraineeVid, names),
-                names is null ? null : TrainingPeople.Member(training.TrainerVid, names))),
+            .. trainings.Select(training =>
+            {
+                var shown = NamesWho(training, heldBefore);
+                var who = shown ? names : null;
+                return new PublicSessionDto(
+                    training.Id,
+                    training.Kind,
+                    vocabulary.Find(training.Kind, training.Rating)?.ShortName,
+                    training.Position,
+                    training.ScheduledStartUtc!.Value,
+                    training.State == TrainingState.Completed || StaffQueue.IsHeld(training, heldBefore),
+                    shown,
+                    who is null ? null : TrainingPeople.Member(training.TraineeVid, who),
+                    who is null ? null : TrainingPeople.Member(training.TrainerVid, who));
+            }),
         ];
     }
 
@@ -184,7 +211,8 @@ public sealed class PublicSessions(
 
 /// <summary>
 /// The reads of the site (design M3 §4.1): the sessions still to be held and the exams still to come, for <c>/training</c>, and one
-/// session, for <c>/training/sessions/{id}</c>. Anonymous, and answered for whoever asks: the people only to a signed in reader.
+/// session, for <c>/training/sessions/{id}</c>. Anonymous, and answered for whoever asks: the people only to a signed in reader, and
+/// only until the session's day is over.
 /// </summary>
 public static class PublicSessionEndpoints
 {
