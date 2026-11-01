@@ -25,7 +25,7 @@ const words = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/training.json', import.meta.url)), 'utf8'),
 ) as {
   kinds: Record<string, string>;
-  states: Record<string, string>;
+  states: { Held: string };
   mockExam: string;
   request: { send: string };
   mine: { title: string; canAsk: string; chooseDate: string; datesWaiting_other: string; readReport: string };
