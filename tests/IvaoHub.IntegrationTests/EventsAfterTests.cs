@@ -223,6 +223,34 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The maintainer's answer to #322, item 5 (b) (option B): while a shift of a controller erased before the check is not checked, no shift of
+    /// the event is given who covered. The archive would name the tower — the erased controller, by the VID the hub no longer has — as who
+    /// covered the absent colleague's shift; the shift is a no-show proposed with nobody, and the archive is not asked who was online.
+    /// </summary>
+    [Fact]
+    public async Task WhileAnErasedControllersShiftIsNotCheckedNobodyIsGivenAsWhoCovered()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _sources.Archive = true;
+        var evening = await EveningAsync("erased-tower", token);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await database.AtcShifts.IgnoreQueryFilters()
+                .Where(shift => shift.Id == evening.Attended)
+                .ExecuteUpdateAsync(set => set.SetProperty(shift => shift.ControllerVid, -761361), token);
+        }
+
+        Assert.Equal(new EventsAfterJob.Outcome(1, 5, 1, 1), await RunAtAsync(Due, token));
+
+        var shifts = await ShiftsAsync(evening.Id, token);
+        Assert.Equal((ShiftAttendance.NoShowProposed, (int?)null), (shifts[evening.Missed].Attendance, shifts[evening.Missed].CoveredByVid));
+        Assert.Equal((ShiftAttendance.Unknown, (int?)null), (shifts[evening.Attended].Attendance, shifts[evening.Attended].CoveredByVid));
+        Assert.Equal(0, _sources.Online);
+    }
+
+    /// <summary>
     /// Nobody who flew without booking is kept (reading 3, design §5.1: «nessun VID si salva»): after the run, none of the evening's pilots who
     /// booked nothing is in a row of the events, in the audit written since the test started, or in the job's row.
     /// </summary>
@@ -905,6 +933,9 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         /// <summary>The VIDs the tracker and the archive were asked by, in order (#322, item 5).</summary>
         public List<int> Asked { get; } = [];
+
+        /// <summary>How many times the archive was asked who was online (#322, item 5 (b)).</summary>
+        public int Online { get; set; }
     }
 
     private sealed class FixedClock(DateTime now) : IClock
@@ -972,8 +1003,11 @@ public sealed class EventsAfterTests(MariaDbFixture mariaDb) : IAsyncLifetime
     /// </summary>
     private sealed class EveningArchive(HubPaths paths, Sources sources) : IAtcActivitySource
     {
-        public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Activity(fromUtc, toUtc, vid: null));
+        public Task<AtcActivity?> OnlineAsync(DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
+        {
+            sources.Online++;
+            return Task.FromResult(Activity(fromUtc, toUtc, vid: null));
+        }
 
         public Task<AtcActivity?> SessionsOfAsync(int vid, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default)
         {

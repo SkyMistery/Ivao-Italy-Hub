@@ -1,9 +1,9 @@
 # Chi è cancellato prima del controllo
 
 **Data:** 1 novembre 2026, fase di test.
-**Stato:** **Proposta** — la domanda a Carmine è al §3, posta sulla issue #322
-([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/322#issuecomment-6551659310)); la risposta, con il link al suo
-commento, va scritta qui prima del merge.
+**Stato:** **Decisa** — Carmine ha scelto la **(B)** del §3 ([risposta su #322](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/322#issuecomment-6555196844),
+1 novembre 2026, data in chat alla sessione master e pubblicata da `SkyMistery` su sua istruzione); la domanda era
+[questo commento](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/322#issuecomment-6551659310). Il §4 dice che cosa fa il codice.
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)** per il §3 (una scelta che il codice non può fare da solo); il §2 è una correzione
 (issue #322, voce 5 (b)), che non decide nulla di nuovo.
 
@@ -47,9 +47,22 @@ Le strade:
 - **(C)** come (B) per (2), e per (1) togliere dal conteggio un pilota per ogni prenotazione cancellata non controllata: giusto se ha
   volato, uno in meno se non ha volato.
 
-La correzione di #322 **non fa né (B) né (C)**: aspetta la risposta. Il codice oggi è (A).
+## 4. La risposta: (B)
+
+Carmine ([commento](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/322#issuecomment-6555196844)): **(B)**, come raccomandato.
+
+- **«Chi ha coperto»**: in un evento con un turno non controllato di un controllore cancellato, il controllo non scrive «chi ha coperto» su
+  nessun turno di quell'evento; le assenze restano proposte e lo staff decide come oggi. Nel codice: `EventsAfterJob.ShiftsAsync` guarda una
+  volta per evento se c'è un turno `Unknown` con lo pseudonimo, e allora un'assenza che l'archivio dice è `NoShowProposed` senza
+  `covered_by_vid`, e l'archivio non si chiede chi era in linea (un'unità di meno). Un turno già deciso in un giro precedente non si tocca.
+  Il turno della persona cancellata resta non controllato, quindi l'evento non scrive più «chi ha coperto» su nessun turno.
+  Test: `EventsAfterTests.WhileAnErasedControllersShiftIsNotCheckedNobodyIsGivenAsWhoCovered`.
+- **«Volati senza prenotare»**: il numero resta com'è. Come diceva la (B), lo dice il registro del job: `FlownUnbookedAsync`, quando fra
+  chi ha prenotato c'è uno pseudonimo, scrive un avviso con l'evento e di quanto il numero può essere alto (quanti prenotanti cancellati),
+  accanto a quello che già dice quando il conteggio è un minimo. Nessun VID nell'avviso.
 
 ## Da portare nel piano
 
 - **§9.7, Events** (il controllo dopo l'evento) e design M4 **§5.1**: una riga di una persona cancellata prima del controllo non si chiede
-  alla rete né all'archivio, resta non controllata e non tiene aperto l'evento (§2); e la risposta al §3.
+  alla rete né all'archivio, resta non controllata e non tiene aperto l'evento (§2); finché c'è un turno non controllato di un controllore
+  cancellato, nessun turno dell'evento riceve «chi ha coperto», e «volati senza prenotare» resta com'è (§4, la risposta (B)).

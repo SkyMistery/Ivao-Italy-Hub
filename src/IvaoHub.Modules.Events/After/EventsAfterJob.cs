@@ -314,7 +314,9 @@ public sealed class EventsAfterJob(
     /// The shifts of an event still <c>Unknown</c> (readings 4 and 5), each saved as soon as it is decided: the archive first, the tracker by VID
     /// where the archive does not answer or does not cover the shift. A shift neither source can say stays <c>Unknown</c>, and so does one of a
     /// controller whose data was erased between the end and the check (#322, item 5): never asked by the pseudonym, nor given as covered to
-    /// whoever the archive finds on the position — the person themselves, by the VID the hub no longer has.
+    /// whoever the archive finds on the position — the person themselves, by the VID the hub no longer has. While such a shift is there, no
+    /// shift of the event is given who covered (note 2026-11-01-chi-e-cancellato-prima-del-controllo, option B): the archive could name the
+    /// erased controller on a colleague's position; the no-shows stay proposed, and the staff decide as without the archive.
     /// </summary>
     private async Task<int> ShiftsAsync(Event row, EventsSettings settings, Run run, CancellationToken cancellationToken)
     {
@@ -333,6 +335,11 @@ public sealed class EventsAfterJob(
             .Where(position => positionIds.Contains(position.Id))
             .ToDictionaryAsync(position => position.Id, position => position.Callsign, cancellationToken);
 
+        var nameWhoCovered = !await CrudSource.BackOffice<EventAtcShift>(database)
+            .AnyAsync(
+                shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown && shift.ControllerVid <= 0,
+                cancellationToken);
+
         var decided = 0;
         foreach (var shift in shifts)
         {
@@ -341,7 +348,7 @@ public sealed class EventsAfterJob(
                 continue;
             }
 
-            if (await AttendanceAsync(shift, callsign, settings, run, cancellationToken) is not { } outcome)
+            if (await AttendanceAsync(shift, callsign, nameWhoCovered, settings, run, cancellationToken) is not { } outcome)
             {
                 if (run.TrackerDown || run.Spent >= Budget)
                 {
@@ -364,6 +371,7 @@ public sealed class EventsAfterJob(
     private async Task<(ShiftAttendance Attendance, int? CoveredBy)?> AttendanceAsync(
         EventAtcShift shift,
         string callsign,
+        bool nameWhoCovered,
         EventsSettings settings,
         Run run,
         CancellationToken cancellationToken)
@@ -395,6 +403,11 @@ public sealed class EventsAfterJob(
                 // The archive says «not there» only where it covers the shift (E10b): then whoever covered is asked of it too.
                 if (activity.Covers(callsign, shift.FromUtc))
                 {
+                    if (!nameWhoCovered)
+                    {
+                        return (ShiftAttendance.NoShowProposed, null);
+                    }
+
                     if (!run.Take(ByVidCost))
                     {
                         return null;
@@ -471,6 +484,13 @@ public sealed class EventsAfterJob(
         if (cut)
         {
             logger.LogWarning("The flights without a booking of the event {EventId} reached the most the tracker is read for: the count is a least.", row.Id);
+        }
+
+        // A booker erased before the count has the core's pseudonym, and the network still gives their own VID: if they flew, they are counted
+        // here. The count stays so (note 2026-11-01-chi-e-cancellato-prima-del-controllo, option B), and the log says by how much it may be high.
+        if (bookers.Count(vid => vid <= 0) is > 0 and var erased)
+        {
+            logger.LogWarning("The flights without a booking of the event {EventId} may be high by up to {Erased}: as many bookers' data was erased.", row.Id, erased);
         }
 
         return pilots.Count;
