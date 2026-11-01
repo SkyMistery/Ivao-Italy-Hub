@@ -264,7 +264,8 @@ Four things, and the first two are where all of the module's own code lives:
 2. **`web/src/modules/<key>/`** — all of the module's React code, and no other folder holds any of
    it. `index.ts` exports exactly one `ModuleManifest`: its blocks, its routes and the
    i18n namespaces it brings. A route is public by default; `area: 'staff'` hangs it inside the back
-   office, behind the staff guard and the `permission` the route names; `area: 'member'` puts it behind
+   office, behind the staff guard and the `permission` the route names — with `unscoped: true`, held
+   without a row scope, for a register a grant on one row does not open; `area: 'member'` puts it behind
    the sign in, with the public frame (a form only a signed in member sends, such as a pilot's report);
    and `validateSearch` gives a list its typed search parameters. Its language files live in `web/src/modules/<key>/locales/{lang}/`;
    `pnpm i18n:sync` copies them into `locales/`, which is the one set the browser, the back end and

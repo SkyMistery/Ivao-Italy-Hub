@@ -60,6 +60,18 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
 }
 
 /**
+ * True when the user holds the permission **without a row scope**: on one department, on all of them, on a FIR, from
+ * outside, or as a global permission — anything but a grant on single rows. It is the server's `HasUnscoped`
+ * (note 2026-10-17-il-permesso-senza-ambito), asked by a screen of the whole division — a register — that a grant on one
+ * event does not open. A super administrator's bootstrap carries every permission with no scope, so it holds them all.
+ */
+export function holdsPermissionUnscoped(bootstrap: Bootstrap, name: string): boolean {
+  return bootstrap.permissions.some(
+    (permission) => permission.name === name && permission.resourceScope === null,
+  );
+}
+
+/**
  * The department the site itself belongs to: its menu, its templates and the pages the installation
  * was born with. It comes from the bootstrap and is never written here — a client that knew which
  * department that is would be a client that knows which division it is running for.

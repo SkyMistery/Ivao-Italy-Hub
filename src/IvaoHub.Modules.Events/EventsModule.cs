@@ -135,6 +135,9 @@ public sealed class EventsModule : ModuleBase
         services.AddScoped<EventSaving>();
         services.AddScoped<EventChildren>();
 
+        // What its reader may do on it, which its page draws its buttons and its tabs from (#427).
+        services.AddScoped<EventDetails>();
+
         // Its life (E3b): what publishing it asks, and the job that projects it again when it is seen and when it ends — in UTC, which
         // its trigger says (E10j: a quarter of an hour falls on the same instants in every zone, and the zone is written all the same).
         services.AddScoped<EventPublishing>();

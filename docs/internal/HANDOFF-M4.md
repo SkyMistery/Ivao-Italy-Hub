@@ -6,7 +6,14 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
+**Ultimo aggiornamento:** 1° novembre 2026 — **la metà eventi dell'issue #427** (le azioni di un evento e di una postazione dette dal
+server, la (A) di [Carmine](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/427#issuecomment-6555197465)), sul branch
+`fix/events-actions-from-server`, **PR #439** verso `main`, **in coda dopo la #438** (il nucleo: `CrudOptions.ToDetailPage` e la rotta
+`unscoped`): nata `--no-track` dalla testa della #438 `5fc9d536`, con la #429 della #311 (`fix/events-atc-view-one-event`, `2685af6f`) unita,
+che tocca lo stesso endpoint. Nessuna nota nuova (la decisione è la nota della #438), nessuna migrazione («Che cosa ha lasciato la #427»,
+sotto).
+
+**L'aggiornamento di E10r:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
 #266), sul branch `m4/e10r-core-toast`, **PR #308** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `893a9b0c` (con
 E15b, #301). Una nota nuova, `2026-10-19-il-toast-del-nucleo`, caso (b), **decisa** da Carmine sull'issue #266 (la (a), [la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6216418088) che sostituisce la (b), e [a
@@ -375,6 +382,33 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato la #427, metà eventi (1° novembre 2026, branch `fix/events-actions-from-server`, PR #439; in coda dopo la #438 del nucleo, con la #429 della #311 unita)
+
+- **Che cosa c'è** (non è una fase di `10`: la metà eventi dell'issue #427, la (A) di Carmine; la nota è quella della #438,
+  `2026-11-01-le-azioni-di-un-evento-dal-server`; nessuna migrazione, nessun file del nucleo):
+  - **`EventDetailDto.Actions`** (`EventActionsDto`, `Staff/EventActions.cs`): modifica, elimina, pubblica, annulla, duplica, e per le
+    schede leggere e scrivere le rotte e le prenotazioni, leggere l'ATC e i report. Ognuna è la risposta dell'unico handler sulla riga,
+    in **`EventDetails`** (scoped): `Events.Edit`/`Delete` e le aree sull'evento, «Duplica» sull'evento non ancora nato (come chiede il verbo:
+    un grant su un evento non duplica), l'ATC con `AtcPositionEndpoints.ReachesAsync` (lo stesso della testa dell'ATC, ora `internal`).
+    «Pubblica» e «Annulla» dicono anche quello che i verbi rifiutano per lo stato (una bozza non annullata; un evento non annullato e non
+    finito). Il dettaglio passa da `CrudOptions.ToDetailPage` (della #438), e la pubblicazione, l'annullamento e la duplicazione rispondono
+    con lo stesso dettaglio;
+  - **`EventAtcPositionDto.Editable` anche sul dettaglio**: `ToDetailPage` della postazione è `StaffAvailability.PositionsAsync` su una riga
+    sola, quindi dice anche il nome e i candidati come la lista;
+  - **`AtcEventDto.CanAddPositions`** («Nuova postazione»): sì se una postazione della divisione passa `EventAtc.Edit` come sarebbe sull'evento
+    (`MayOpenAsync`, la stessa prova di `division-positions`), sulla testa di un evento e su ogni riga della lista;
+  - **le pagine** (`screens/events.tsx`, `stats.tsx`, `atc.tsx`) leggono quei flag, mai `holdsPermission`; «Nuovo evento» chiede
+    `holdsPermissionUnscoped` con un dipartimento raggiungibile (un evento nuovo non è mai la riga di un grant);
+  - **le quattro rotte dei registri** in `index.ts` hanno `unscoped: true` (della #438).
+- **Che cosa deve sapere chi viene dopo**:
+  - un pulsante nuovo sulla pagina di un evento si aggiunge a `EventActionsDto` e si chiede all'handler in `EventDetails.ActionsAsync`, mai
+    dal bootstrap; `ToDetail` resta per il motore e dice `EventActionsDto.None`;
+  - ⚠️ `CanAddPositions` scorre le postazioni della divisione finché una passa: per lo staff del dipartimento è la prima, per una squadra di
+    FIR la prima del suo FIR, per chi legge e basta tutte (in memoria, nessuna query per prova);
+  - ⚠️ i test d'integrazione sono `EventsActionsTests` (VID 761410–761414 del range 761410–761429 dato da dalberone per la #427); il test
+    delle pagine `screens/actionsFromServer.test.tsx` dà alla pagina un bootstrap che dice il contrario del server; quello dei registri
+    (`registerRoutes.test.ts`) legge le rotte dal `registry`, perché il manifest importato da solo arriva prima del registry che lo compone.
 
 ### Che cosa ha lasciato E10r (19 ottobre 2026, branch `m4/e10r-core-toast`, PR #308, del nucleo; diretta su `main`, nata a `893a9b0c`)
 

@@ -128,29 +128,34 @@ export const eventsManifest: ModuleManifest = {
       component: ShiftForm,
     },
     // The registers (E13b): the controllers' and the pilots', each with a page per person. Above `/staff/events/$id`, which would take
-    // `controllers` and `pilots` as an id.
+    // `controllers` and `pilots` as an id. Registers of the whole division: held without a row scope, as their lists ask (`HasUnscoped`) and
+    // their menu entries say — a grant on one event does not lead to them (#427).
     {
       area: 'staff',
       path: '/staff/events/controllers',
       permission: EVENT_ATC_VIEW,
+      unscoped: true,
       component: ControllersRegisterPage,
     },
     {
       area: 'staff',
       path: '/staff/events/controllers/$vid',
       permission: EVENT_ATC_VIEW,
+      unscoped: true,
       component: ControllerRegisterPage,
     },
     {
       area: 'staff',
       path: '/staff/events/pilots',
       permission: EVENT_BOOKINGS_VIEW,
+      unscoped: true,
       component: PilotsRegisterPage,
     },
     {
       area: 'staff',
       path: '/staff/events/pilots/$vid',
       permission: EVENT_BOOKINGS_VIEW,
+      unscoped: true,
       component: PilotRegisterPage,
     },
     {
