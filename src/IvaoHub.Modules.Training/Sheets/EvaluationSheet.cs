@@ -57,9 +57,9 @@ public static class EvaluationSheet
     /// <summary>
     /// The sheet a report fills (§1.4, §2.7): one evaluation per item, in the order given, each a copy of its item — the title, the
     /// section, the place — with the entry that marks it. An item no entry names, or whose entry marks nothing, is not applicable (d4).
-    /// Refused, field by field: an entry for an item that is not on the sheet (the sheet changed), or a second one for the same item; a
-    /// grade out of its range, or on an item of theory; a mark on an item of practice, or one the sheet does not have; a comment or a
-    /// note too long. Returns the sheet, or the refusals.
+    /// Refused, field by field: an entry sent as nothing; an entry for an item that is not on the sheet (the sheet changed), or a
+    /// second one for the same item; a grade out of its range, or on an item of theory; a mark on an item of practice, or one the
+    /// sheet does not have; a comment or a note too long. Returns the sheet, or the refusals.
     /// </summary>
     public static (IReadOnlyList<TrainingEvaluation>? Sheet, IReadOnlyDictionary<string, string[]>? Problems) Fill(
         IReadOnlyList<SheetItem> items,
@@ -74,7 +74,13 @@ public static class EvaluationSheet
 
         for (var index = 0; index < entries.Count; index++)
         {
-            var entry = entries[index];
+            // An entry sent as nothing at all marks no item: refused on its own row, which no page sends.
+            if (entries[index] is not { } entry)
+            {
+                refusals.Add($"{Field}[{index}]", "errors.required");
+                continue;
+            }
+
             if (!onTheSheet.TryGetValue(entry.ItemId, out var item))
             {
                 refusals.Add(Field, Changed);

@@ -46,6 +46,9 @@ public sealed class TrainingDates(
     /// <summary>A date proposed that has already gone by, or is going by now.</summary>
     public const string SlotPassed = "training:errors.slotPassed";
 
+    /// <summary>A date further ahead than <see cref="MaxLead"/>.</summary>
+    public const string SlotTooFar = "training:errors.slotTooFar";
+
     public const string SlotEndsBeforeItStarts = "training:errors.slotEndsBeforeItStarts";
 
     public const string SlotTooLong = "training:errors.slotTooLong";
@@ -78,6 +81,12 @@ public sealed class TrainingDates(
     /// <summary>How many dates to come may wait for the trainee at once.</summary>
     public const int MaxOpenSlots = 10;
 
+    /// <summary>
+    /// How far ahead a date may be proposed or set: a year, and a day for a leap one. Far more than a training waits for, and short
+    /// of the last day of the calendar, which a day of the division's past would run beyond (the review of the code, #327).
+    /// </summary>
+    public static readonly TimeSpan MaxLead = TimeSpan.FromDays(366);
+
     /// <summary>The states in which a training is dated, or has its date changed, by whoever conducts it (§2.1).</summary>
     public static bool IsDatable(TrainingState state) => state is TrainingState.Assigned or TrainingState.Scheduled;
 
@@ -87,29 +96,39 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// The trainings the trainee has let wait longer than the division gives them to choose (§2.5, §12 n.9): with their trainer and
-    /// dates proposed, the last of them proposed before <paramref name="before"/>. The trainee who never had a date to choose from
-    /// is not one of them.
+    /// dates proposed, the last of them proposed before <paramref name="before"/>, and one of them still to come at
+    /// <paramref name="now"/>. The trainee who never had a date to choose from is not one of them, nor the one whose dates have all
+    /// gone by: a date gone by is not a choice the trainee failed to make, and the training is the trainer's again, to propose new
+    /// ones (the maintainer's answer on #327, note <c>2026-11-01-una-data-passata-non-e-una-scelta</c>).
     /// </summary>
-    public static IQueryable<Training> Unanswered(IQueryable<Training> trainings, IQueryable<TrainingSlot> slots, DateTime before)
+    public static IQueryable<Training> Unanswered(IQueryable<Training> trainings, IQueryable<TrainingSlot> slots, DateTime before, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(trainings);
         ArgumentNullException.ThrowIfNull(slots);
 
         return trainings.Where(training => training.State == TrainingState.Assigned
-            && slots.Any(slot => slot.TrainingId == training.Id)
+            && slots.Any(slot => slot.TrainingId == training.Id && slot.StartsAtUtc > now)
             && !slots.Any(slot => slot.TrainingId == training.Id && slot.CreatedAt > before));
     }
 
     /// <summary>
     /// What the hub finds on the days of a date (§2.5), before anybody writes it: the division's policy, and the warnings — none when
-    /// the policy is not to look.
+    /// the policy is not to look, and none for a date the writing refuses for its bounds — more than <see cref="MaxLead"/> away either
+    /// way, or longer than a session —, whose refusal comes on its own field when it is written.
     /// </summary>
     public async Task<DateConflictsDto> ConflictsAsync(Training training, DateTime startsAtUtc, DateTime? endsAtUtc, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(training);
 
         var settings = await SettingsAsync(cancellationToken);
-        var found = await WarningsAsync(training, Utc(startsAtUtc), endsAtUtc is { } end ? Utc(end) : null, settings, cancellationToken);
+        var (start, end) = (Utc(startsAtUtc), endsAtUtc is { } until ? Utc(until) : (DateTime?)null);
+        var now = clock.UtcNow;
+        if (start < now - MaxLead || start > now + MaxLead || end - start > MaxSlotLength)
+        {
+            return new DateConflictsDto(settings.ConflictPolicy, []);
+        }
+
+        var found = await WarningsAsync(training, start, end, settings, cancellationToken);
 
         return new DateConflictsDto(settings.ConflictPolicy, found.Shown);
     }
@@ -156,8 +175,16 @@ public sealed class TrainingDates(
         for (var index = 0; index < proposed.Count; index++)
         {
             var field = $"slots[{index}]";
-            var start = proposed[index].StartsAtUtc is { } written ? Utc(written) : (DateTime?)null;
-            var end = proposed[index].EndsAtUtc is { } until ? Utc(until) : (DateTime?)null;
+
+            // A row sent as nothing at all is a date not written, refused on its own row: no page sends it.
+            if (proposed[index] is not { } slot)
+            {
+                refusals.Add(field, "errors.required");
+                continue;
+            }
+
+            var start = slot.StartsAtUtc is { } written ? Utc(written) : (DateTime?)null;
+            var end = slot.EndsAtUtc is { } until ? Utc(until) : (DateTime?)null;
 
             // A box left empty is required on its own field (A8b); what can be said of the other one still is.
             if (start is not { } from)
@@ -168,7 +195,11 @@ public sealed class TrainingDates(
             {
                 refusals.Add($"{field}.startsAtUtc", SlotPassed);
             }
-            else if (existing.Exists(slot => slot.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
+            else if (from > now + MaxLead)
+            {
+                refusals.Add($"{field}.startsAtUtc", SlotTooFar);
+            }
+            else if (existing.Exists(held => held.StartsAtUtc == from) || moments.Exists(moment => moment.Start == from))
             {
                 refusals.Add($"{field}.startsAtUtc", SlotTwice);
             }
@@ -310,6 +341,11 @@ public sealed class TrainingDates(
             return Refuse("startsAtUtc", SlotPassed);
         }
 
+        if (start > clock.UtcNow + MaxLead)
+        {
+            return Refuse("startsAtUtc", SlotTooFar);
+        }
+
         var settings = await SettingsAsync(cancellationToken);
         var found = await WarningsAsync(training, start, endsAtUtc: null, settings, cancellationToken);
         if (DateConflicts.Refusal(settings.ConflictPolicy, found.Shown.Count, payload.Confirmed) is { } refusal)
@@ -445,14 +481,14 @@ public sealed class TrainingDates(
         }
 
         var before = now.AddDays(-days);
-        var ids = await Unanswered(CrudSource.BackOffice<Training>(database).AsNoTracking(), database.Slots, before)
+        var ids = await Unanswered(CrudSource.BackOffice<Training>(database).AsNoTracking(), database.Slots, before, now)
             .Select(training => training.Id)
             .ToListAsync(cancellationToken);
 
         var closed = 0;
         foreach (var id in ids)
         {
-            var training = await Unanswered(CrudSource.BackOffice<Training>(database), database.Slots, before)
+            var training = await Unanswered(CrudSource.BackOffice<Training>(database), database.Slots, before, now)
                 .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
             if (training is null)
             {

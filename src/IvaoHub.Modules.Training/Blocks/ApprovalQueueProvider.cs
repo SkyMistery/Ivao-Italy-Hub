@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace IvaoHub.Modules.Training.Blocks;
 
 /// <summary>One queue of the staff on a dashboard: how many trainings wait in it for the reader, and the oldest of them.</summary>
-/// <param name="Count">How many the reader may move, among the ones read.</param>
+/// <param name="Count">How many the reader may move.</param>
 /// <param name="Oldest">The oldest requests first, at most <see cref="ApprovalQueueProvider.MaxItems"/>, as the staff's list shows them.</param>
 public sealed record TrainingQueueDto(int Count, IReadOnlyList<StaffTrainingRowDto> Oldest);
 
@@ -44,8 +44,11 @@ public sealed class ApprovalQueueProvider(
     /// <summary>How many of a queue a dashboard shows: the whole of it is the list's.</summary>
     public const int MaxItems = 10;
 
-    /// <summary>How many waiting trainings are read before the permissions narrow them: a dashboard is not the list.</summary>
-    private const int Window = 500;
+    /// <summary>
+    /// How many waiting trainings are read at a time before the permissions narrow them. Every page is read, to the last: a reader
+    /// whose trainings are newer than a page of the others' still finds them, and the count is the whole of theirs (#327).
+    /// </summary>
+    public const int Page = 500;
 
     public string Key => BlockType;
 
@@ -71,18 +74,25 @@ public sealed class ApprovalQueueProvider(
             return new TrainingQueueDto(0, []);
         }
 
-        var waiting = await StaffQueue.Narrow(CrudSource.BackOffice<Training>(database).AsNoTracking(), view, heldBefore)!
+        var queue = StaffQueue.Narrow(CrudSource.BackOffice<Training>(database).AsNoTracking(), view, heldBefore)!
             .OrderBy(training => training.CreatedAt)
-            .ThenBy(training => training.Id)
-            .Take(Window)
-            .ToListAsync(cancellationToken);
+            .ThenBy(training => training.Id);
 
-        var theirs = new List<Training>(waiting.Count);
-        foreach (var training in waiting)
+        var theirs = new List<Training>();
+        for (var read = 0; ; read += Page)
         {
-            if (await staff.MayAsync(training, permission))
+            var waiting = await queue.Skip(read).Take(Page).ToListAsync(cancellationToken);
+            foreach (var training in waiting)
             {
-                theirs.Add(training);
+                if (await staff.MayAsync(training, permission))
+                {
+                    theirs.Add(training);
+                }
+            }
+
+            if (waiting.Count < Page)
+            {
+                break;
             }
         }
 
