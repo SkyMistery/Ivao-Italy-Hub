@@ -9,6 +9,7 @@ using IvaoHub.Modules.Training.Staff;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace IvaoHub.Modules.Training.Bans;
 
@@ -72,7 +73,7 @@ public sealed class TraineeBanWriteDtoValidator : AbstractValidator<TraineeBanWr
 /// closes every training of the member still open — a request waiting, one accepted, one with its trainer, one dated —, in the ban's
 /// own save, by whoever gives it, with no reason of its own (<see cref="Training.ClosedByBan"/>): the proposals go, a session dated
 /// leaves the calendar and its trainer's day is free, and the trainer is told. A session that has started is not closed (the
-/// maintainer's answer on #149): its trainer records it, and rescheduling it under a ban closes it (<see cref="CloseIfBannedAsync"/>). When the ban
+/// maintainer's answer on #149): its trainer records it, and rescheduling it under a ban closes it (<see cref="CloseUnderBanAsync"/>). When the ban
 /// is over or lifted nothing reopens: the member asks again.</para>
 /// <para>Two writes can meet a ban. A step on one of the trainings — the trainee choosing a date, the staff assigning — moves its
 /// version, so whichever saves second is a 409. A request sent while the ban is given is a new row, which no version guards: after the
@@ -87,7 +88,8 @@ public sealed class TrainingBans(
     IAuthorizationService authorization,
     IHttpContextAccessor http,
     ICurrentUser currentUser,
-    IClock clock)
+    IClock clock,
+    ILogger<TrainingBans> logger)
 {
     /// <summary>An end that is already over: a ban that ended before it was given says nothing.</summary>
     public const string EndsInThePast = "training:errors.banEndsInThePast";
@@ -101,7 +103,11 @@ public sealed class TrainingBans(
     /// <summary>How many times the trainings still open are read again after a ban, when a step on one of them moved it meanwhile.</summary>
     private const int Attempts = 3;
 
-    /// <summary>The trainings the ban being given closed in its own save, for the mails after it.</summary>
+    /// <summary>
+    /// The trainings the ban being given closed in its own save, for the mails after it: kept from <see cref="BeforeGivingAsync"/> to
+    /// <see cref="AfterGivingAsync"/>, which the CRUD of the bans calls on the same request's instance (the service is scoped). Nothing
+    /// else fills it: the request and the reschedule ask only <see cref="CloseIfBannedAsync"/> and <see cref="CloseUnderBanAsync"/>.
+    /// </summary>
     private readonly List<Closing> _closed = [];
 
     /// <summary>
@@ -154,15 +160,10 @@ public sealed class TrainingBans(
     /// </summary>
     public async Task<bool> CloseIfBannedAsync(Training training, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(training);
-
-        if (!Training.IsOpen(training.State) || await HoldingAsync(training.TraineeVid, cancellationToken) is not { } ban)
+        if (!await CloseUnderBanAsync(training, cancellationToken))
         {
             return false;
         }
-
-        var slots = await database.Slots.Where(slot => slot.TrainingId == training.Id).ToListAsync(cancellationToken);
-        Close(database, training, ban.CreatedBy == 0 ? null : ban.CreatedBy, slots, clock.UtcNow);
 
         try
         {
@@ -174,6 +175,24 @@ public sealed class TrainingBans(
             database.ChangeTracker.Clear();
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// A training still open of a member on whom a ban holds, closed by whoever gave it and not saved: the caller saves it with its own
+    /// write (a session rescheduled, issue #312). Returns whether a ban holds.
+    /// </summary>
+    public async Task<bool> CloseUnderBanAsync(Training training, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(training);
+
+        if (!Training.IsOpen(training.State) || await HoldingAsync(training.TraineeVid, cancellationToken) is not { } ban)
+        {
+            return false;
+        }
+
+        var slots = await database.Slots.Where(slot => slot.TrainingId == training.Id).ToListAsync(cancellationToken);
+        Close(database, training, ban.CreatedBy == 0 ? null : ban.CreatedBy, slots, clock.UtcNow);
         return true;
     }
 
@@ -200,17 +219,18 @@ public sealed class TrainingBans(
     }
 
     /// <summary>
-    /// What follows a ban given, once it is saved (§5.2, issue #312): the member's mail; the trainings still open read once more — a
-    /// request sent while the ban was being saved — and closed; and a mail to the trainer of every training closed that had one.
+    /// What follows a ban given, once it is saved (§5.2, issue #312): the trainings still open read once more — a request sent while the
+    /// ban was being saved — and closed; the member's mail, which says the trainings are closed only when some were; and a mail to the
+    /// trainer of every training closed that had one.
     /// </summary>
     public async Task AfterGivingAsync(TraineeBan ban, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ban);
 
-        await TellAsync(ban, cancellationToken);
-
         List<Closing> closed = [.. _closed, .. await CloseStillOpenAsync(ban, cancellationToken)];
         _closed.Clear();
+
+        await TellAsync(ban, closed.Count > 0, cancellationToken);
 
         foreach (var closing in closed)
         {
@@ -293,9 +313,10 @@ public sealed class TrainingBans(
     }
 
     /// <summary>
-    /// The mail of a ban (§5.2), when it is given: why, until when, and the member's page of their trainings — in their language.
+    /// The mail of a ban (§5.2), when it is given: why, until when, that the trainings open are closed when <paramref name="closed"/>
+    /// some, and the member's page of their trainings — in their language.
     /// </summary>
-    public Task TellAsync(TraineeBan ban, CancellationToken cancellationToken)
+    public Task TellAsync(TraineeBan ban, bool closed, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ban);
 
@@ -309,6 +330,7 @@ public sealed class TrainingBans(
                 data["until"] = ban.EndsAt is { } end
                     ? mail.Word(locale, "training:mail.training.bannedUntil", "date", TrainingMail.Moment(end))
                     : mail.Word(locale, "training:mail.training.bannedUntilLifted");
+                data["closed"] = closed ? mail.Word(locale, "training:mail.training.bannedClosed") : string.Empty;
             },
             cancellationToken);
     }
@@ -377,7 +399,8 @@ public sealed class TrainingBans(
 
     /// <summary>
     /// The trainings still open once the ban is saved, closed and saved: a request sent while it was being saved, which its read before
-    /// the save could not see. A step on one of them saved meanwhile moves its version: they are read again, a few times.
+    /// the save could not see. A step on one of them saved meanwhile moves its version: they are read again, a few times; past them the
+    /// trainings are left open, and a warning says so (a request among them is closed by its own read of the bans).
     /// </summary>
     private async Task<List<Closing>> CloseStillOpenAsync(TraineeBan ban, CancellationToken cancellationToken)
     {
@@ -400,6 +423,10 @@ public sealed class TrainingBans(
             }
         }
 
+        logger.LogWarning(
+            "Ban {BanId}: trainings of the member still open could not be closed after {Attempts} conflicts; they are left open.",
+            ban.Id,
+            Attempts);
         return [];
     }
 

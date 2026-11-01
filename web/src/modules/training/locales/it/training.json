@@ -830,10 +830,11 @@
       },
       "banned": {
         "subject": "[Training] Ban dal training",
-        "body": "Il dipartimento training ti ha vietato di chiedere training, su tutti i percorsi.\n\nIl motivo: {{reason}}\n\n{{until}} I training che avevi aperti sono chiusi, e non si riaprono quando il ban finisce: allora potrai chiederli di nuovo.\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
+        "body": "Il dipartimento training ti ha vietato di chiedere training, su tutti i percorsi.\n\nIl motivo: {{reason}}\n\n{{until}}{{closed}}\n\nI tuoi training: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."
       },
       "bannedUntil": "Il ban vale fino al {{date}} UTC.",
       "bannedUntilLifted": "Il ban vale finché il dipartimento training non lo toglie.",
+      "bannedClosed": " I training che avevi aperti e non ancora cominciati sono chiusi, e non si riaprono quando il ban finisce: allora potrai chiederli di nuovo.",
       "closedByBan": {
         "subject": "[Training] Training chiuso: {{training}}",
         "body": "Il training {{training}} di {{trainee}}, di cui eri il trainer, è stato chiuso: il dipartimento training ha bannato il membro dal training.{{session}}\n\nNon c'è più niente da fare su questo training.\n\nIl training nel back office: {{url}}\n\n---\nPuoi disattivare queste mail dalla pagina del tuo profilo."

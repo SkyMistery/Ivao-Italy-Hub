@@ -830,10 +830,11 @@
       },
       "banned": {
         "subject": "[Training] Ban from the training",
-        "body": "The training department has banned you from asking for trainings, on every path.\n\nThe reason: {{reason}}\n\n{{until}} The trainings you had open are closed, and do not reopen when the ban ends: you can ask again then.\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
+        "body": "The training department has banned you from asking for trainings, on every path.\n\nThe reason: {{reason}}\n\n{{until}}{{closed}}\n\nYour trainings: {{url}}\n\n---\nYou can switch these emails off from your profile page."
       },
       "bannedUntil": "The ban holds until {{date}} UTC.",
       "bannedUntilLifted": "The ban holds until the training department lifts it.",
+      "bannedClosed": " The trainings you had open and not yet started are closed, and do not reopen when the ban ends: you can ask again then.",
       "closedByBan": {
         "subject": "[Training] Training closed: {{training}}",
         "body": "The training {{training}} of {{trainee}}, which you were training, has been closed: the training department has banned the member from the training.{{session}}\n\nThere is nothing left for you to do on it.\n\nThe training in the back office: {{url}}\n\n---\nYou can switch these emails off from your profile page."

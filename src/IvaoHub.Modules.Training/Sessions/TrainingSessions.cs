@@ -85,9 +85,11 @@ public sealed class TrainingSessions(
         Record(training, SessionOutcome.Rescheduled, notes);
         training.State = TrainingState.Assigned;
         Undate(training);
-        await database.SaveChangesAsync(cancellationToken);
 
-        // A banned trainee gets no new date (issue #312): under a ban the training rescheduled closes, as the ban closed the others.
+        // A banned trainee gets no new date (issue #312): under a ban the training rescheduled closes, as the ban closed the others, in
+        // the same save; a ban saved after that read is read once more after it, and closes it then.
+        await bans.CloseUnderBanAsync(training, cancellationToken);
+        await database.SaveChangesAsync(cancellationToken);
         await bans.CloseIfBannedAsync(training, cancellationToken);
 
         return (StaffResult.Done, null);
