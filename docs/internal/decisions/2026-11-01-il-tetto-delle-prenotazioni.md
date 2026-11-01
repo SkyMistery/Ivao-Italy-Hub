@@ -3,10 +3,12 @@
 **Data:** 1 novembre 2026, fase di test (nota `2026-10-18-la-fase-di-test`), branch `fix/events-booking-cap`.
 **Stato:** **decisa** per i punti 1 e 2 — **Carmine in chat al master, 19 ottobre 2026**, pubblicato su sua istruzione sull'issue
 ([la risposta][a314]) —; **i punti 3–6 sono letture** che la correzione ha dovuto fare dove la risposta non dice, scritte qui perché il
-revisore le controlli; **i punti 7 e 8 sono «Proposta»**: scelte che Carmine non ha fatto, con la domanda al §4 e la risposta
-raccomandata già nel codice. La domanda è sull'issue, [qui][q314], con la (A) raccomandata per tutte e due; si aspetta la risposta.
+revisore le controlli; **i punti 7 e 8 sono decisi** — **Carmine in chat al master, 1 novembre 2026** («Tutte come consigli»),
+pubblicato su sua istruzione sull'issue ([la risposta][b314]) —: la (A) raccomandata di tutti e due, come la [domanda][q314] la poneva
+e come il codice già fa.
 
 [q314]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239
+[b314]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6555196512
 **Regola applicata:** `CLAUDE.md` §5, caso **(a)** e **(b)**: un'impostazione in più del modulo (dato), e il controllo nei tre verbi del
 pilota che già leggono i limiti di chi non vola sotto il blocco del pilota (E6a, E7, E13b). Nessuna colonna, nessuna migrazione, nessun
 file del nucleo.
@@ -47,7 +49,7 @@ membro poteva prenotare quanti slot voleva in un evento; solo chi ha i limiti di
    rotazione è il motivo di ogni tratta non prenotata. La frase dice perché, e che una rotazione conta una; **il numero non lo dice**: le
    pagine del pilota non leggono le impostazioni, e i rifiuti del nucleo portano solo chiavi (`Refusals`).
 
-## 4. Le due scelte da fare (Proposta)
+## 4. Le due scelte decise il 1 novembre
 
 7. **Chi ha i limiti di chi prenota e non vola ha tutti e due i tetti.** La domanda: (A) **valgono tutti e due**, quindi decide il più
    basso — i limiti di chi non vola contano ogni tratta di una rotazione come da E13b, il tetto della divisione conta la rotazione una;
@@ -58,13 +60,13 @@ membro poteva prenotare quanti slot voleva in un evento; solo chi ha i limiti di
    (nota `2026-10-16-i-no-show-i-registri-e-i-limiti`, lettura 7); (B) sono una, come una rotazione. **Raccomandata la (A)**: sono due
    voli con due callsign e due slot, che il pilota sceglie a uno a uno; la rotazione è una perché ha gli orari fissi dello staff.
 
-Il codice è scritto con le due (A); una (B) cambia solo `BookingCap` (e, per il punto 7, `BookingLimits`) e i loro test.
+**Carmine ha scelto la (A) di tutti e due** ([la risposta][b314]): chi ha i limiti ha tutti e due i tetti e decide il più basso; un
+arrivo privato e la sua partenza collegata sono due prenotazioni. Il codice era già scritto così: la risposta non cambia una riga.
 
 ## Da portare nel piano
 
 - **Design M4 §3.5** (c1–c2): al posto di «Nessun limite di numero», il tetto `maxBookingsPerEvent` della divisione, una rotazione una,
-  sotto lo stesso blocco del pilota (punti 1–6); e, deciso il §4, come si somma ai limiti di chi non vola e come conta la partenza
-  collegata.
+  sotto lo stesso blocco del pilota (punti 1–6); un arrivo privato e la sua partenza collegata contano due (punto 8).
 - **Design M4 §1.12** (le impostazioni): `maxBookingsPerEvent`, 5, da 1 a 200.
-- **Design M4 §3.7**: il rapporto con il tetto della divisione (punto 7).
+- **Design M4 §3.7**: chi ha i limiti ha anche il tetto della divisione, e decide il più basso (punto 7).
 - **Design M4 §17.1** (le decisioni del 29 settembre), punto 5: «Prenotazioni: nessun limite» corretto dalla risposta del 19 ottobre.

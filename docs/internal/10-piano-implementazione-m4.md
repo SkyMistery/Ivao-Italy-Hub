@@ -6205,8 +6205,9 @@ prenota in un evento, di divisione, predefinito 5, con una rotazione che conta u
 - **La regola** in `Bookings/BookingCap.cs`, pura, e **i tre verbi** di `PilotBookings` che la leggono sotto il blocco del pilota, dopo
   i limiti di chi non vola, con le prenotazioni della stessa richiesta: un pubblico, ogni tratta di una rotazione (la prima nuova fa
   crescere il conto, le altre no), un privato e la sua partenza collegata (due). Il rifiuto è `events:errors.bookingMaxPerEvent`.
-- **Uno scostamento dalla risposta**: nessuno; **due scelte aperte** (§4 della nota, «Proposta»: chi ha i limiti ha tutti e due i tetti;
-  arrivo e partenza collegata sono due), [chieste sull'issue][q314f], con la (A) nel codice.
+- **Uno scostamento dalla risposta**: nessuno; **due scelte** che la risposta non diceva (§4 della nota: chi ha i limiti ha tutti e due i
+  tetti; arrivo e partenza collegata sono due), [chieste sull'issue][q314f] con la (A) nel codice, poi **decise** da Carmine il 1 novembre
+  con la (A) di tutti e due ([la risposta][b314f]): nessuna riga cambiata.
 - **I test**: `EventsBookingCapTests` unitari (3: il valore e il suo intervallo, il conto, il rifiuto al confine e con un tetto
   abbassato) e d'integrazione (5: i pubblici con il ritiro, la rotazione intera e a tratte, il privato con la partenza collegata, due
   prenotazioni nello stesso istante con una transazione tenuta sul blocco del pilota, il pilota con i limiti nei due casi). VID 761340–761341.
@@ -6227,3 +6228,4 @@ correzioni insieme, **la suite d'integrazione intera, senza filtro e da sola: 74
 
 [a314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6269204922
 [q314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239
+[b314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6555196512

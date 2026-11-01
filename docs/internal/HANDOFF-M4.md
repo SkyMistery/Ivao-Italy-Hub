@@ -8,8 +8,8 @@
 
 **Ultimo aggiornamento:** 1 novembre 2026 — **la correzione dell'issue #314** (fase di test: il tetto delle prenotazioni di un membro
 in un evento, `maxBookingsPerEvent`, 5, una rotazione una), sul branch `fix/events-booking-cap`, PR verso `main` con «Closes #314», nata
-`--no-track` da `main` a `b12ec725`. La nota `2026-11-01-il-tetto-delle-prenotazioni` è decisa nei punti di Carmine e «Proposta» in due
-(«Che cosa ha lasciato la correzione dell'issue #314», sotto).
+`--no-track` da `main` a `b12ec725`. La nota `2026-11-01-il-tetto-delle-prenotazioni` è decisa da Carmine, i punti 7–8 il 1 novembre
+con la (A) di tutti e due («Che cosa ha lasciato la correzione dell'issue #314», sotto).
 
 **L'aggiornamento di E10r:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
 #266), sul branch `m4/e10r-core-toast`, **PR #308** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `893a9b0c` (con
@@ -384,8 +384,9 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ### Che cosa ha lasciato la correzione dell'issue #314 (1 novembre 2026, branch `fix/events-booking-cap`, fase di test; da `main` a `b12ec725`)
 
 - **Che cosa c'è** (il dettaglio in `10`, «Le correzioni della fase di test», #314; nessuna migrazione, nessun file del nucleo; una nota
-  nuova, `2026-11-01-il-tetto-delle-prenotazioni`, decisa da Carmine nei punti 1–2, con i punti 7–8 «Proposta» e la domanda
-  sull'[issue](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239)):
+  nuova, `2026-11-01-il-tetto-delle-prenotazioni`, decisa da Carmine nei punti 1–2 e, con la (A) di tutti e due, nei punti 7–8
+  ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6555196512) alla
+  [domanda](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239))):
   - **`maxBookingsPerEvent`** nelle impostazioni (`Settings/EventsSettings.cs`), **5**, da 1 a 200 (`MaxBookingsCeiling`), nel form
     generato dopo `bookingGapMinutes`, con la riga in `docs/FORKING.md`; di divisione, l'evento non ne ha uno suo;
   - **`Bookings/BookingCap.cs`**, pura: le tratte di una rotazione contano **una**, comunque prenotate; ogni altro slot uno, la partenza
@@ -396,8 +397,8 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 - **Che cosa deve sapere chi viene dopo**:
   - ⚠️ **un test che prenota più di cinque slot per lo stesso pilota in un evento** ora è rifiutato: scrive le impostazioni come fa
     `EventsBookingCapTests` (e `EventsRegistersTests`), o usa più piloti;
-  - ⚠️ **le due (A) del §4 della nota** sono nel codice: se Carmine sceglie una (B), cambiano solo `BookingCap` (punto 8) o `BookingLimits`
-    (punto 7) e i loro test;
+  - ⚠️ **chi ha i limiti di chi non vola ha tutti e due i tetti** (decide il più basso: i limiti contano ogni tratta di una rotazione,
+    il tetto la conta una), e **un arrivo privato con la sua partenza collegata conta due** (§4 della nota, decisi da Carmine);
   - il rifiuto non dice il numero: le pagine del pilota non leggono le impostazioni.
 - **Nella stessa PR, il punto 2 dell'issue #322** (il blocco del pilota): una richiesta che ha aspettato la riga dell'evento, quando
   l'ha avuta, **riprende il `FOR UPDATE` della prima prenotazione del pilota** (`LockThePilotAsync`). Prima, se nell'attesa la richiesta
