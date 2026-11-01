@@ -6189,3 +6189,32 @@ chiesto dal coordinatore: la fila ATC migra lo stesso contesto):
 
 [rv271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219791583
 [a271]: https://github.com/SkyMistery/Ivao-Italy-Hub/pull/271#issuecomment-6219830164
+
+## Le correzioni della fase di test
+
+### #314 — Il tetto delle prenotazioni di un membro in un evento
+
+**Che cosa** (issue #314, `major`; nota `2026-11-01-il-tetto-delle-prenotazioni`): Carmine vuole un massimo di slot che un membro
+prenota in un evento, di divisione, predefinito 5, con una rotazione che conta una ([la risposta][a314f]). Branch
+`fix/events-booking-cap`, `--no-track` da `main` a `b12ec725`, una PR con «Closes #314».
+
+**Com'è andata** (1 novembre 2026):
+
+- **L'impostazione** `maxBookingsPerEvent` (5, da 1 a 200) in `EventsSettings`, nel form generato dopo `bookingGapMinutes`, i testi in
+  `locales/{it,en}/events.json` (dal modulo con `i18n:sync`), la riga in `docs/FORKING.md`. Nessuna colonna: l'evento non ha un suo numero.
+- **La regola** in `Bookings/BookingCap.cs`, pura, e **i tre verbi** di `PilotBookings` che la leggono sotto il blocco del pilota, dopo
+  i limiti di chi non vola, con le prenotazioni della stessa richiesta: un pubblico, ogni tratta di una rotazione (la prima nuova fa
+  crescere il conto, le altre no), un privato e la sua partenza collegata (due). Il rifiuto è `events:errors.bookingMaxPerEvent`.
+- **Uno scostamento dalla risposta**: nessuno; **due scelte aperte** (§4 della nota, «Proposta»: chi ha i limiti ha tutti e due i tetti;
+  arrivo e partenza collegata sono due), [chieste sull'issue][q314f], con la (A) nel codice.
+- **I test**: `EventsBookingCapTests` unitari (3: il valore e il suo intervallo, il conto, il rifiuto al confine e con un tetto
+  abbassato) e d'integrazione (5: i pubblici con il ritiro, la rotazione intera e a tratte, il privato con la partenza collegata, due
+  prenotazioni nello stesso istante con una transazione tenuta sul blocco del pilota, il pilota con i limiti nei due casi). VID 761340–761341.
+  **Provati al contrario**: con `PilotBookings.cs` di `main` i 5 d'integrazione sono rossi (le prenotazioni oltre il tetto nascono).
+  Le classi Events d'integrazione con `ErasureTests` 180 verdi, i test unitari 1474, vitest 868 (`--maxWorkers=2`), typecheck, lint,
+  prettier, `i18n:check`, il core-guard locale, il restore con l'audit (`--force --no-http-cache`, nessun avviso) ed `e2e:full` sul
+  banco 5159 (`ivaohub_e2e_fix314`, dietro il lock di Mailpit): 81 passati. **Non verificato**: le pagine del pilota nel browser con il
+  rifiuto nuovo (la frase sta dove sta ogni altro rifiuto di uno slot); il form delle impostazioni a occhio.
+
+[a314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6269204922
+[q314f]: https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239
