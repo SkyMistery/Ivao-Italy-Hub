@@ -181,8 +181,11 @@ public sealed class EventsAfterJob(
         var bookings = givenUp ? 0 : await BookingsAsync(row, run, now, cancellationToken);
         var shifts = givenUp ? 0 : await ShiftsAsync(row, settings, run, cancellationToken);
 
-        var left = await CrudSource.BackOffice<EventBooking>(database).AnyAsync(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null, cancellationToken)
-            || await CrudSource.BackOffice<EventAtcShift>(database).AnyAsync(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown, cancellationToken);
+        // A row of a person whose data was erased after the end is never asked, and does not keep the event open (#322, item 5).
+        var left = await CrudSource.BackOffice<EventBooking>(database)
+                .AnyAsync(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null && booking.BookerVid > 0, cancellationToken)
+            || await CrudSource.BackOffice<EventAtcShift>(database)
+                .AnyAsync(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown && shift.ControllerVid > 0, cancellationToken);
         if (left && !givenUp)
         {
             return (bookings, shifts, false);
@@ -221,11 +224,14 @@ public sealed class EventsAfterJob(
     /// <summary>
     /// The bookings of an event not checked yet, by the time of their departure (reading 2): each saved as soon as it is checked, so a run cut
     /// half way keeps what it did. Two bookings of one pilot on one route share the question, and never the session.
+    /// <para>Never a booking of a pilot whose data was erased between the end and the check (#322, item 5): the network knows them by the VID
+    /// the hub no longer has, so the pseudonym would find nothing and read «booked, not flown». It stays not checked — «we could not look» —,
+    /// which the statistics count among the booked and never among the not flown.</para>
     /// </summary>
     private async Task<int> BookingsAsync(Event row, Run run, DateTime now, CancellationToken cancellationToken)
     {
         var bookings = await CrudSource.BackOffice<EventBooking>(database)
-            .Where(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null)
+            .Where(booking => booking.EventId == row.Id && booking.FlownCheckedAt == null && booking.BookerVid > 0)
             .ToListAsync(cancellationToken);
         if (bookings.Count == 0)
         {
@@ -306,12 +312,14 @@ public sealed class EventsAfterJob(
 
     /// <summary>
     /// The shifts of an event still <c>Unknown</c> (readings 4 and 5), each saved as soon as it is decided: the archive first, the tracker by VID
-    /// where the archive does not answer or does not cover the shift. A shift neither source can say stays <c>Unknown</c>.
+    /// where the archive does not answer or does not cover the shift. A shift neither source can say stays <c>Unknown</c>, and so does one of a
+    /// controller whose data was erased between the end and the check (#322, item 5): never asked by the pseudonym, nor given as covered to
+    /// whoever the archive finds on the position — the person themselves, by the VID the hub no longer has.
     /// </summary>
     private async Task<int> ShiftsAsync(Event row, EventsSettings settings, Run run, CancellationToken cancellationToken)
     {
         var shifts = await CrudSource.BackOffice<EventAtcShift>(database)
-            .Where(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown)
+            .Where(shift => shift.EventId == row.Id && shift.Attendance == ShiftAttendance.Unknown && shift.ControllerVid > 0)
             .OrderBy(shift => shift.FromUtc)
             .ThenBy(shift => shift.Id)
             .ToListAsync(cancellationToken);
