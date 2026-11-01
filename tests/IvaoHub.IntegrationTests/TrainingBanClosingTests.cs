@@ -130,8 +130,9 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Equal(2, mails.Count);
         Assert.Contains(mails, mail => mail.Contains(TrainingMail.Moment(start), StringComparison.Ordinal) && mail.Contains(TrainingMail.StaffPath(scheduled), StringComparison.Ordinal));
         Assert.Contains(mails, mail => mail.Contains(TrainingMail.StaffPath(assigned), StringComparison.Ordinal) && !mail.Contains(" UTC", StringComparison.Ordinal));
-        Assert.Single(await MailsAsync(TraineeVid, TrainingNotifications.Banned, token));
-        Assert.Single(await MailsAsync(OtherTraineeVid, TrainingNotifications.Banned, token));
+        // Each member's mail says their trainings are closed.
+        Assert.NotEmpty(Closed(Assert.Single(await MailsAsync(TraineeVid, TrainingNotifications.Banned, token))));
+        Assert.NotEmpty(Closed(Assert.Single(await MailsAsync(OtherTraineeVid, TrainingNotifications.Banned, token))));
 
         // The staff's page says the ban closed it, and who gave it; so does its history.
         var page = await banner.GetFromJsonAsync<JsonElement>(new Uri($"{StaffEndpoints.Pattern}/{scheduled}", UriKind.Relative), token);
@@ -176,6 +177,9 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         Assert.Equal(TrainingState.Scheduled, (await StoredAsync(id, token)).State);
         Assert.Empty(await MailsAsync(TrainerVid, TrainingNotifications.ClosedByBan, token));
 
+        // Nothing closed: the member's mail says nothing of closed trainings.
+        Assert.Empty(Closed(Assert.Single(await MailsAsync(StartedTraineeVid, TrainingNotifications.Banned, token))));
+
         using var trainer = await SignedInAsync(TrainerVid, token);
         var version = (await StoredAsync(id, token)).RowVersion;
         var page = await ReadAsync(await StepAsync(trainer, id, "reschedule", new { notes = "trn-test: nobody around", rowVersion = version }, token), HttpStatusCode.OK, token);
@@ -218,6 +222,27 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         // Whoever holds the ban alone lifts it.
         using var banner = await SignedInAsync(BannerVid, token);
         await ReadAsync(await LiftAsync(banner, ban.Id, ban.RowVersion, token), HttpStatusCode.OK, token);
+    }
+
+    /// <summary>
+    /// <c>Training.Ban</c> lets the write guard pass a training only for the ban's closing: every step of the staff asks its own permission
+    /// on the row first. Whoever holds the ban and the reading alone accepts, rejects, assigns, dates and closes nothing.
+    /// </summary>
+    [Fact]
+    public async Task TrainingBanAloneTakesNoStepOnATraining()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var requested = await AddTrainingAsync(OtherTraineeVid, RatingKind.Atc, TrainingState.Requested, token);
+        var accepted = await AddTrainingAsync(OtherTraineeVid, RatingKind.Pilot, TrainingState.Accepted, token);
+
+        using var banner = await SignedInAsync(BannerVid, token);
+        foreach (var (id, verb) in new[] { (requested, "accept"), (requested, "reject"), (accepted, "assign"), (accepted, "date"), (accepted, "close") })
+        {
+            var stored = await StoredAsync(id, token);
+            using var step = await StepAsync(banner, id, verb, new { rowVersion = stored.RowVersion, trainerVid = TrainerVid, reason = "trn-test-312" }, token);
+            Assert.True(step.StatusCode == HttpStatusCode.Forbidden, $"{verb}: {step.StatusCode}");
+            Assert.Equal(stored.State, (await StoredAsync(id, token)).State);
+        }
     }
 
     /// <summary>
@@ -375,6 +400,9 @@ public sealed class TrainingBanClosingTests(MariaDbFixture mariaDb) : IAsyncLife
         client.PostAsJsonAsync(new Uri($"{StaffEndpoints.Pattern}/{id}/{verb}", UriKind.Relative), body, cancellationToken);
 
     private static Uri Choose(long id) => new($"{RequestEndpoints.Pattern}/{id}/choose", UriKind.Relative);
+
+    /// <summary>What the mail of a ban says of the trainings it closed, as its data holds it: nothing when it closed none.</summary>
+    private static string Closed(string data) => JsonDocument.Parse(data).RootElement.GetProperty("closed").GetString()!;
 
     private static async Task<JsonElement> ReadAsync(HttpResponseMessage response, HttpStatusCode expected, CancellationToken cancellationToken)
     {
