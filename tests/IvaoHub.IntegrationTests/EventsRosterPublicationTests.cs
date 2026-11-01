@@ -514,6 +514,17 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
             [StaffTransfers.NotTheirsKey],
             (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(second.GetProperty("id").GetInt64(), "approve"), new TransferApproval(CoordinatorVid, null), token), token))["id"]);
 
+        // The new holder is not offered the shift while the request of the one before waits, as «Hand over» refuses it (#322, item 3).
+        using (var other = await SignedInAsync(OtherVid, token))
+        {
+            var theirs = (await ListAsync(await other.GetAsync(TransferEndpoints.MinePattern, token), token)).Single(shift => shift.GetProperty("id").GetInt64() == stored.Id);
+            Assert.False(theirs.GetProperty("transferable").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, theirs.GetProperty("transfer").ValueKind);
+            Assert.Equal(
+                [MemberShifts.PendingKey],
+                (await RefusedAsync(await other.PostAsJsonAsync(TransferUri(stored.Id), new TransferRequest(null, null), token), token))["id"]);
+        }
+
         // A cancelled event hands nothing over: its request is refused only.
         var cancelled = await EventRowAsync("refusals-cancelled", starts, starts.AddHours(6), PublishStatus.Published, proposed: true, token);
         var tower = await PositionRowAsync(cancelled, Tower, starts, starts.AddHours(3), token);

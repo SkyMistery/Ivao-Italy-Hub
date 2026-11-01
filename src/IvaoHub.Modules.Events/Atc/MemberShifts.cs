@@ -103,6 +103,14 @@ public sealed class MemberShifts(EventsDbContext database, HubDbContext hub, ICu
             .ToListAsync(cancellationToken);
 
         var ids = rows.Select(entry => entry.shift.Id).ToList();
+
+        // A request waiting on the shift is anybody's, as «Hand over» asks (reading 7: one waits per shift): one of the holder before, when the
+        // staff gave the shift to this member, waits for the staff to refuse it, and until then the shift is not offered (#322, item 3).
+        var waiting = (await CrudSource.BackOffice<EventAtcTransfer>(database).AsNoTracking()
+                .Where(transfer => ids.Contains(transfer.ShiftId) && transfer.Status == TransferStatus.Pending)
+                .Select(transfer => transfer.ShiftId)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
         var requests = (await CrudSource.BackOffice<EventAtcTransfer>(database).AsNoTracking()
                 .Where(transfer => ids.Contains(transfer.ShiftId)
                     && transfer.ControllerVid == vid
@@ -129,7 +137,7 @@ public sealed class MemberShifts(EventsDbContext database, HubDbContext hub, ICu
                         entry.Callsign,
                         entry.shift.FromUtc,
                         entry.shift.ToUtc,
-                        IsTransferable(entry.row, now) && request?.Status != TransferStatus.Pending,
+                        IsTransferable(entry.row, now) && !waiting.Contains(entry.shift.Id),
                         request is null ? null : Mine(request, names));
                 }),
         ];
