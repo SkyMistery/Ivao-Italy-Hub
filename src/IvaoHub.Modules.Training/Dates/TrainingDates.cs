@@ -87,16 +87,18 @@ public sealed class TrainingDates(
 
     /// <summary>
     /// The trainings the trainee has let wait longer than the division gives them to choose (§2.5, §12 n.9): with their trainer and
-    /// dates proposed, the last of them proposed before <paramref name="before"/>. The trainee who never had a date to choose from
-    /// is not one of them.
+    /// dates proposed, the last of them proposed before <paramref name="before"/>, and one of them still to come at
+    /// <paramref name="now"/>. The trainee who never had a date to choose from is not one of them, nor the one whose dates have all
+    /// gone by: a date gone by is not a choice the trainee failed to make, and the training is the trainer's again, to propose new
+    /// ones (the maintainer's answer on #327, note <c>2026-11-01-una-data-passata-non-e-una-scelta</c>).
     /// </summary>
-    public static IQueryable<Training> Unanswered(IQueryable<Training> trainings, IQueryable<TrainingSlot> slots, DateTime before)
+    public static IQueryable<Training> Unanswered(IQueryable<Training> trainings, IQueryable<TrainingSlot> slots, DateTime before, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(trainings);
         ArgumentNullException.ThrowIfNull(slots);
 
         return trainings.Where(training => training.State == TrainingState.Assigned
-            && slots.Any(slot => slot.TrainingId == training.Id)
+            && slots.Any(slot => slot.TrainingId == training.Id && slot.StartsAtUtc > now)
             && !slots.Any(slot => slot.TrainingId == training.Id && slot.CreatedAt > before));
     }
 
@@ -445,14 +447,14 @@ public sealed class TrainingDates(
         }
 
         var before = now.AddDays(-days);
-        var ids = await Unanswered(CrudSource.BackOffice<Training>(database).AsNoTracking(), database.Slots, before)
+        var ids = await Unanswered(CrudSource.BackOffice<Training>(database).AsNoTracking(), database.Slots, before, now)
             .Select(training => training.Id)
             .ToListAsync(cancellationToken);
 
         var closed = 0;
         foreach (var id in ids)
         {
-            var training = await Unanswered(CrudSource.BackOffice<Training>(database), database.Slots, before)
+            var training = await Unanswered(CrudSource.BackOffice<Training>(database), database.Slots, before, now)
                 .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
             if (training is null)
             {

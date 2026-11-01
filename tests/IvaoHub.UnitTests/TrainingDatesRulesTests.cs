@@ -236,12 +236,15 @@ public sealed class TrainingDatesRulesTests
     public void TheNightClosesOnlyTheTrainingsWhoseTraineeLetTheLastDatesProposedWait()
     {
         var before = Day;
+        var now = before.AddDays(3);
         Training[] all =
         [
             Dated(1, null, state: TrainingState.Assigned),   // dates proposed before, none since
             Dated(2, null, state: TrainingState.Assigned),   // a date proposed since: the trainee has time again
             Dated(3, null, state: TrainingState.Assigned),   // nothing proposed yet: not the trainee's to answer
             Dated(4, Day.AddDays(-5)),                       // dated already
+            Dated(5, null, state: TrainingState.Assigned),   // dates proposed before, all gone by: nothing left to choose (#327)
+            Dated(6, null, state: TrainingState.Assigned),   // one gone by, one still to come: the trainee had a choice
         ];
         TrainingSlot[] slots =
         [
@@ -250,10 +253,14 @@ public sealed class TrainingDatesRulesTests
             Slot(2, created: before.AddDays(-4)),
             Slot(2, created: before.AddHours(1)),
             Slot(4, created: before.AddDays(-9)),
+            Slot(5, created: before.AddDays(-9), starts: before.AddDays(-8)),
+            Slot(5, created: before.AddDays(-1), starts: now),
+            Slot(6, created: before.AddDays(-9), starts: before.AddDays(-8)),
+            Slot(6, created: before.AddDays(-1), starts: now.AddMinutes(1)),
         ];
 
-        var closed = TrainingDates.Unanswered(all.AsQueryable(), slots.AsQueryable(), before).Select(training => training.Id);
-        Assert.Equal([1L], closed);
+        var closed = TrainingDates.Unanswered(all.AsQueryable(), slots.AsQueryable(), before, now).Select(training => training.Id);
+        Assert.Equal([1L, 6L], closed);
     }
 
     private static Training Dated(long id, DateTime? start, TrainingState state = TrainingState.Scheduled, int? trainer = null) => new()
@@ -282,8 +289,8 @@ public sealed class TrainingDatesRulesTests
         Title = $"trn-test {id}".L($"trn-test {id}"),
     };
 
-    private static TrainingSlot Slot(long trainingId, DateTime created) =>
-        new() { TrainingId = trainingId, StartsAtUtc = created.AddDays(10), EndsAtUtc = created.AddDays(10).AddHours(2), CreatedAt = created };
+    private static TrainingSlot Slot(long trainingId, DateTime created, DateTime? starts = null) =>
+        new() { TrainingId = trainingId, StartsAtUtc = starts ?? created.AddDays(10), EndsAtUtc = (starts ?? created.AddDays(10)).AddHours(2), CreatedAt = created };
 
     private sealed class StubClock(DateTime now) : IClock
     {

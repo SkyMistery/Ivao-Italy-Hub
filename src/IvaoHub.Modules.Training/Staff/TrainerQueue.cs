@@ -58,7 +58,7 @@ public static class TrainerQueue
         ArgumentNullException.ThrowIfNull(slots);
 
         var toCome = slots.Where(slot => slot.StartsAtUtc > now).Select(slot => slot.TrainingId).ToHashSet();
-        var late = TrainingDates.Unanswered(trainings.AsQueryable(), slots.AsQueryable(), now.AddDays(-reminderDays))
+        var late = TrainingDates.Unanswered(trainings.AsQueryable(), slots.AsQueryable(), now.AddDays(-reminderDays), now)
             .Select(training => training.Id)
             .ToHashSet();
 
@@ -71,7 +71,7 @@ public static class TrainerQueue
             ],
             [
                 .. trainings
-                    .Where(training => late.Contains(training.Id) && toCome.Contains(training.Id))
+                    .Where(training => late.Contains(training.Id))
                     .Select(training => (Training: training, Days: DaysSince(slots.Where(slot => slot.TrainingId == training.Id).Max(slot => slot.CreatedAt), now)))
                     .OrderByDescending(waiting => waiting.Days)
                     .ThenBy(waiting => waiting.Training.Id),

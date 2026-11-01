@@ -13,6 +13,7 @@ using IvaoHub.Core.Localization;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.Training;
+using IvaoHub.Modules.Training.Blocks;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Dates;
 using IvaoHub.Modules.Training.Reference;
@@ -750,6 +751,33 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// A date gone by is not a choice the trainee failed to make (the maintainer's answer on #327): the night closes a training only
+    /// when a date proposed was still to come, and one whose dates have all gone by stays with its trainer, among their dates to
+    /// propose, with no closing and no mail.
+    /// </summary>
+    [Fact]
+    public async Task TheNightLeavesToItsTrainerATrainingWhoseDatesHaveAllGoneBy()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        // Five days ago a date for the day after, and nothing since: it went by four days ago.
+        var gone = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Assigned, token, trainer: DepartmentTrainerVid);
+        await AddSlotAsync(gone, proposedDaysAgo: 5, token, starts: DateTime.UtcNow.AddDays(-4));
+
+        await WriteSettingsAsync(new { conflictPolicy = "None", maxResponseDays = 3 }, token);
+        await RunExpiryAsync(token);
+
+        Assert.Equal(TrainingState.Assigned, (await StoredAsync(gone, token)).State);
+        Assert.Single(await SlotsOfAsync(gone, token));
+        Assert.Equal(0, await MailsAsync(TraineeVid, TrainingNotifications.TrainingClosed, token));
+
+        using var trainer = await SignedInAsync(DepartmentTrainerVid, token);
+        var queue = await TrainerQueueAsync(trainer, token);
+        Assert.Contains(gone, Ids(queue.GetProperty("toPropose")));
+        Assert.DoesNotContain(gone, queue.GetProperty("waiting").EnumerateArray().Select(waiting => waiting.GetProperty("training").GetProperty("id").GetInt64()));
+    }
+
+    /// <summary>
     /// The «done when» of A8 (<c>08-piano-implementazione-m3.md</c>), through the API: the trainer proposes two dates, one of them
     /// warned of another training that day; the trainee chooses one; its session is in the public calendar with no name; and the
     /// reminder leaves once. The pages and the mailbox are A8b's round on the bench.
@@ -825,6 +853,12 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
     private static async Task<JsonElement> PageAsync(HttpClient client, long id, CancellationToken cancellationToken) =>
         await client.GetFromJsonAsync<JsonElement>(new Uri($"{StaffEndpoints.Pattern}/{id}", UriKind.Relative), cancellationToken);
+
+    /// <summary>The reader's queue of trainings to move, as their dashboard reads it.</summary>
+    private static async Task<JsonElement> TrainerQueueAsync(HttpClient client, CancellationToken cancellationToken) =>
+        await client.GetFromJsonAsync<JsonElement>(new Uri($"/api/blocks/data/{TrainerQueueProvider.BlockType}", UriKind.Relative), cancellationToken);
+
+    private static List<long> Ids(JsonElement rows) => [.. rows.EnumerateArray().Select(row => row.GetProperty("id").GetInt64())];
 
     /// <summary>Dates proposed by the verb of the page, confirmed, at the version the page has now.</summary>
     private static async Task<JsonElement> ProposeAsync(HttpClient client, long id, CancellationToken cancellationToken, params object[] slots)
@@ -949,12 +983,16 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         return training.Id;
     }
 
-    /// <summary>A date proposed some days ago, written as the installation: the day it was proposed is what the night counts from.</summary>
-    private async Task AddSlotAsync(long id, int proposedDaysAgo, CancellationToken cancellationToken)
+    /// <summary>
+    /// A date proposed some days ago, written as the installation: the day it was proposed is what the night counts from. It starts
+    /// twenty days ahead, or at <paramref name="starts"/>.
+    /// </summary>
+    private async Task AddSlotAsync(long id, int proposedDaysAgo, CancellationToken cancellationToken, DateTime? starts = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
-        var slot = new TrainingSlot { TrainingId = id, StartsAtUtc = Day(20).AddHours(16), EndsAtUtc = Day(20).AddHours(18) };
+        var start = starts ?? Day(20).AddHours(16);
+        var slot = new TrainingSlot { TrainingId = id, StartsAtUtc = start, EndsAtUtc = start.AddHours(2) };
         database.Slots.Add(slot);
         await database.SaveChangesAsync(cancellationToken);
 
