@@ -25,6 +25,7 @@ const words = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../locales/en/training.json', import.meta.url)), 'utf8'),
 ) as {
   kinds: Record<string, string>;
+  states: Record<string, string>;
   mockExam: string;
   request: { send: string };
   mine: { title: string; canAsk: string; chooseDate: string; datesWaiting_other: string; readReport: string };
@@ -87,6 +88,7 @@ function session(id: number, overrides: Record<string, unknown> = {}) {
     position: 'XXAA_TWR',
     startsAtUtc: '2026-10-02T18:00:00Z',
     held: false,
+    named: true,
     trainee: null,
     trainer: null,
     ...overrides,
@@ -194,6 +196,23 @@ test('the page of a session tells a visitor where and when, and offers the login
     '/auth/login?returnUrl=%2Ftraining%2Fsessions%2F41',
   );
   await expect(page.getByRole('link', { name: words.public.back })).toHaveAttribute('href', '/training');
+});
+
+test('the page of a session whose day is over names nobody, and offers no login for who', async ({
+  page,
+}) => {
+  // Issue #313: after its day the page stays, with the rating, the position and when, and signing in would show nobody.
+  await stubTheApi(page);
+  await stubTheSessions(page, [], { 41: session(41, { held: true, named: false }) });
+
+  await page.goto('/training/sessions/41');
+
+  await expect(page.getByText(words.states.Held, { exact: true })).toBeVisible();
+  const details = page.locator('dl');
+  await expect(details.getByText('XXAA_TWR', { exact: true })).toBeVisible();
+  await expect(details.getByText(/UTC$/)).toBeVisible();
+  await expect(details.getByText(words.public.session.trainee, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: words.public.session.signIn })).toHaveCount(0);
 });
 
 test('a signed in member reads who is in a session, on its page and on /training', async ({ page }) => {
