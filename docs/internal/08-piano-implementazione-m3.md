@@ -4499,6 +4499,11 @@ e che `Training.Ban` da solo basta per dare e togliere un ban. Una PR, branch `f
     --maxWorkers=2` **871/871**;
   - `core-guard` in Git Bash: **solo il modulo e i documenti del collaboratore**;
   - lo smoke (`pnpm e2e`) **non rigirato**: questo giro non cambia pagine, solo il server, le mail e lo storico.
+- **Dopo l'approvazione del master** (3 novembre 2026): `main` a `345d6ba1` unito (merge, nessun conflitto: #430 e #431 toccano
+  `StaffTrainings.cs`, le parole del training, `blocks/index.ts` e `schema.d.ts`); `gen:api` e `i18n:sync` rigenerati senza differenze;
+  build Release **0 avvisi, 0 errori**; unità **1477/1477**; le classi d'integrazione del training (`Training*Tests`, tredici classi) **87/87**;
+  web: `typecheck`, `i18n:check`, `format:check`, `lint` (lo stesso avviso di `Toaster.tsx`) puliti, `vitest run --maxWorkers=2`
+  **871/871**. L'integrazione intera non rigirata.
 - **Non verificato**:
   - **`pnpm e2e:full`**: non girato (il PC era corto di memoria, con altre sessioni sulle loro suite). Le mail della correzione sono
     provate dall'integrazione sulle righe della coda, non arrivate a Mailpit;

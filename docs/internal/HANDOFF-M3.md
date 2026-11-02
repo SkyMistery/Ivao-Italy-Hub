@@ -12,7 +12,7 @@
 > servono solo per metterli nel calendario.
 
 **Ultimo aggiornamento:** 1 novembre 2026 — **la correzione di #312** (un ban chiude i training aperti del membro), branch
-`fix/training-ban-closes-open`, PR #433, da `main` a `b12ec725`, con `main` a `1fc7a039` unito dopo la revisione del master («Che cosa
+`fix/training-ban-closes-open`, PR #433, da `main` a `b12ec725`, con `main` a `1fc7a039` unito dopo la revisione del master e a `345d6ba1` dopo la sua approvazione (#430, #431) («Che cosa
 ha lasciato la correzione di #312» qui sotto). Prima: 12
 ottobre 2026 — **fase A13f**, due pezzi del nucleo uniti il 12 ottobre: il training legge i nomi con il
 lettore del nucleo (`MemberNames`, E10m) e il trigger dei promemoria dice il suo fuso, UTC (E10j). Branch
