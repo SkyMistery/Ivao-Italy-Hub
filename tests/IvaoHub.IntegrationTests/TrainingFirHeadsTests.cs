@@ -55,6 +55,12 @@ public sealed class TrainingFirHeadsTests(MariaDbFixture mariaDb) : IAsyncLifeti
 
     private static readonly int[] Vids = [ChiefVid, AssistantChiefVid, TraineeVid, OtherTraineeVid, TrainerVid];
 
+    /// <summary>
+    /// The first of the trainees nobody signs in as, one for each training of a page of the approval block (#327): far from the VIDs
+    /// of every person of the tests, and with no row in the hub — the trainings name them, nothing else does.
+    /// </summary>
+    private const int CrowdVid = 790_120_000;
+
     // Two FIRs nobody has: the directory of this host knows them and nothing else.
     private const string Fir = "XXAA";
     private const string OtherFir = "XXBB";
@@ -256,6 +262,42 @@ public sealed class TrainingFirHeadsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         // The exams and the bans say no FIR: their lists stay closed to a head of a FIR, who belongs to no department.
         Assert.Equal(HttpStatusCode.Forbidden, await StatusAsync(chief, new Uri($"{ExamEndpoints.Pattern}?pageSize=100", UriKind.Relative), token));
         Assert.Equal(HttpStatusCode.Forbidden, await StatusAsync(chief, new Uri($"{BanEndpoints.Pattern}?pageSize=100", UriKind.Relative), token));
+    }
+
+    /// <summary>
+    /// The block of the trainings to assign reads every page of the waiting ones before the permissions narrow them (the review of the
+    /// code, #327): with a whole page of older trainings of another FIR, the chief still finds the one of their FIR, and counts it.
+    /// </summary>
+    [Fact]
+    public async Task TheChiefOfAFirFindsTheTrainingOfTheirFirBehindAPageOfOthers()
+    {
+        var token = TestContext.Current.CancellationToken;
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var (atc, _) = Trained();
+            var database = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
+            database.Trainings.AddRange(Enumerable.Range(CrowdVid, ApprovalQueueProvider.Page).Select(vid => new Training
+            {
+                Kind = RatingKind.Atc,
+                Rating = atc.Number,
+                Position = $"{OtherFir}_CTR",
+                Fir = OtherFir,
+                TraineeVid = vid,
+                TraineeHoursAtRequest = 500m,
+                TheoryConfirmedAt = DateTime.UtcNow,
+                State = TrainingState.Accepted,
+                DecidedAt = DateTime.UtcNow,
+            }));
+            await database.SaveChangesAsync(token);
+        }
+
+        var ours = await AddTrainingAsync(TraineeVid, RatingKind.Atc, TrainingState.Accepted, Fir, token);
+
+        using var chief = await SignedInAsync(ChiefVid, token);
+        var toAssign = (await BlockAsync(chief, ApprovalQueueProvider.BlockType, token)).GetProperty("toAssign");
+        Assert.Equal(1, toAssign.GetProperty("count").GetInt32());
+        Assert.Equal([ours], Ids(toAssign.GetProperty("oldest")));
     }
 
     /// <summary>
@@ -572,13 +614,15 @@ public sealed class TrainingFirHeadsTests(MariaDbFixture mariaDb) : IAsyncLifeti
         var training = scope.ServiceProvider.GetRequiredService<TrainingDbContext>();
         var hub = scope.ServiceProvider.GetRequiredService<HubDbContext>();
 
-        var sources = (await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).Select(row => row.Id).ToListAsync(cancellationToken))
+        var theirs = training.Trainings.IgnoreQueryFilters()
+            .Where(row => Vids.Contains(row.TraineeVid) || (row.TraineeVid >= CrowdVid && row.TraineeVid < CrowdVid + ApprovalQueueProvider.Page));
+        var sources = (await theirs.Select(row => row.Id).ToListAsync(cancellationToken))
             .Select(Training.SourceIdOf)
             .ToList();
         await hub.CalendarEntries.IgnoreQueryFilters()
             .Where(entry => entry.SourceModule == TrainingModule.ModuleKey && sources.Contains(entry.SourceId))
             .ExecuteDeleteAsync(cancellationToken);
-        await training.Trainings.IgnoreQueryFilters().Where(row => Vids.Contains(row.TraineeVid)).ExecuteDeleteAsync(cancellationToken);
+        await theirs.ExecuteDeleteAsync(cancellationToken);
         await training.TraineeBans.IgnoreQueryFilters().Where(ban => Vids.Contains(ban.Vid)).ExecuteDeleteAsync(cancellationToken);
         await hub.UserGrants.Where(grant => grant.Vid != null && Vids.Contains(grant.Vid.Value)).ExecuteDeleteAsync(cancellationToken);
         await hub.UserStaffPositions.Where(position => Vids.Contains(position.Vid)).ExecuteDeleteAsync(cancellationToken);

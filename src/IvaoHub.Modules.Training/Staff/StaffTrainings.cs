@@ -377,7 +377,7 @@ public sealed class StaffTrainings(
     /// Assigns the trainer, or changes them (§2.4): somebody the rule of <see cref="TrainerChoice"/> lets train it, asked again
     /// here whatever the page offered. The training is theirs to conduct from then on, and no longer the previous trainer's
     /// (§3.3, A7b): the row alone says so, and nobody's grants change. An accepted training becomes <c>Assigned</c>, a dated one
-    /// keeps its date. Every date proposed that the trainee has not chosen goes (A8), whoever proposed it — the previous trainer,
+    /// keeps its date, and its reminder leaves again, to both and naming the new trainer. Every date proposed that the trainee has not chosen goes (A8), whoever proposed it — the previous trainer,
     /// or the coordinator or the assistant, who conduct every training —: the new trainer proposes their own. A version somebody
     /// moved meanwhile is a conflict. Mails the trainee and the trainer.
     /// </summary>
@@ -425,6 +425,10 @@ public sealed class StaffTrainings(
             training.State = TrainingState.Assigned;
         }
 
+        // A dated training keeps its date, and its reminder leaves again: the one that went out named the previous trainer, and went
+        // to them (#327).
+        training.RemindedAt = null;
+
         database.Slots.RemoveRange(await database.Slots.Where(slot => slot.TrainingId == training.Id).ToListAsync(cancellationToken));
         await database.SaveChangesAsync(cancellationToken);
 
@@ -435,18 +439,20 @@ public sealed class StaffTrainings(
 
     /// <summary>
     /// The mail of a trainer assigned (§5.2): to the trainee, pointing at their trainings, and to the trainer, pointing at the
-    /// training's page — each in their language, with the sentence that is theirs.
+    /// training's page — each in their language, with the sentence that is theirs: the dates still to propose, or, for a training
+    /// that has its date, the session that stays where it was (#327).
     /// </summary>
     private async Task TellAssignedAsync(Training training, int trainerVid, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([training.TraineeVid, trainerVid], cancellationToken);
+        var session = training.State == TrainingState.Scheduled && training.ScheduledStartUtc is { } start ? TrainingMail.Moment(start) : null;
 
         await mail.SendAsync(
             TrainingNotifications.TrainerAssigned,
             training.TraineeVid,
             training,
             TrainingMail.MinePath,
-            (data, locale) => Fill(data, locale, "training:mail.training.assignedTrainee"),
+            (data, locale) => Fill(data, locale, session is null ? "training:mail.training.assignedTrainee" : "training:mail.training.assignedTraineeDated"),
             cancellationToken);
 
         await mail.SendAsync(
@@ -454,14 +460,14 @@ public sealed class StaffTrainings(
             trainerVid,
             training,
             TrainingMail.StaffPath(training.Id),
-            (data, locale) => Fill(data, locale, "training:mail.training.assignedTrainer"),
+            (data, locale) => Fill(data, locale, session is null ? "training:mail.training.assignedTrainer" : "training:mail.training.assignedTrainerDated"),
             cancellationToken);
 
         void Fill(IDictionary<string, string> data, string locale, string next)
         {
             mail.Name(data, locale, "trainer", trainerVid, names);
             mail.Name(data, locale, "trainee", training.TraineeVid, names);
-            data["next"] = mail.Word(locale, next);
+            data["next"] = session is null ? mail.Word(locale, next) : mail.Word(locale, next, "session", session);
         }
     }
 
