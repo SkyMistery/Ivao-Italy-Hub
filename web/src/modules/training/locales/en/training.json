@@ -699,6 +699,7 @@
     "trainerAlready": "They are the trainer of this training already.",
     "datesNotProposable": "Dates are proposed only for a training with its trainer assigned and no date yet.",
     "slotPassed": "This date has already gone by.",
+    "slotTooFar": "A date is at most a year ahead.",
     "slotEndsBeforeItStarts": "The end comes before the start.",
     "slotTooLong": "A date proposed lasts 12 hours at most.",
     "slotTwice": "This date is among the ones proposed already.",
@@ -788,6 +789,8 @@
       },
       "assignedTrainee": "Your trainer will propose the dates of the session. Your trainings are on this page:",
       "assignedTrainer": "You find the training, with the trainee's availability, on its page in the back office: it is yours to conduct from now on. The page of the training:",
+      "assignedTraineeDated": "The date of the session stays as it was: {{session}} UTC. Your trainings are on this page:",
+      "assignedTrainerDated": "The training already has its date: the session is on {{session}} UTC, and it is yours to conduct from now on. The page of the training:",
       "datesProposed": {
         "subject": "[Training] Dates proposed: {{training}}",
         "body": "{{trainer}} has proposed the dates for the session of your training {{training}}, in UTC:\n\n{{dates}}\n\nChoose yours on the training's page: {{url}}\n\nIf none of them suits you, write to your trainer.\n\n---\nYou can switch these emails off from your profile page."
