@@ -4258,8 +4258,8 @@ export interface components {
         /**
          * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
          *     its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
-         *     published and whether it was (E12) — to whoever holds `EventAtc.View` somewhere, the staff of a FIR among them, who do not read the
-         *     event itself.
+         *     published and whether it was (E12) — to whoever holds `EventAtc.View` without a scope, the staff of a FIR among them, who do not
+         *     read the event itself, and to whoever holds it on that event alone (issue #311).
          */
         AtcEventDto: {
             /** Format: int64 */
@@ -9527,9 +9527,11 @@ export interface components {
             size: number;
         };
         /**
-         * @description A session as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when —
-         *     in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only, who: the trainee and the trainer, by
-         *     VID and by the name the hub has. To a visitor `Trainee` and `Trainer` are none, whatever the row holds.
+         * @description A session as the site shows it (design M3 §4.1, §4.3; notes `il-training-in-pubblico`, `i-nomi-di-una-sessione-fino-al-suo-giorno`):
+         *     the position, the rating and when — in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only and
+         *     until the session's day is over, who: the trainee and the trainer, by VID and by the name the hub has. To a visitor, and to anybody
+         *     once the day is over, `Trainee` and `Trainer` are none, whatever the row holds: the trainee and the staff read them on
+         *     their own pages.
          */
         PublicSessionDto: {
             /**
@@ -9550,6 +9552,11 @@ export interface components {
             startsAtUtc: string;
             /** @description Over: its day is over in the division's time zone (§1.2), or its report is published. The report itself is never public. */
             held: boolean;
+            /**
+             * @description Whether the session still names who: its day is not over in the division's time zone, whatever its state. For a visitor too, who
+             *     is offered the login only then.
+             */
+            named: boolean;
             trainee: null | components["schemas"]["TrainingMemberDto"];
             trainer: null | components["schemas"]["TrainingMemberDto"];
         };
@@ -18003,6 +18010,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AtcEventDto"];
                 };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {
