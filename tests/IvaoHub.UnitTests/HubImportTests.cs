@@ -126,6 +126,27 @@ public sealed class HubImportTests
     }
 
     [Fact]
+    public void AHubAKeptConnectionStillReachesStaysOnReplace()
+    {
+        var (hubs, rotations, legs) = Shape();
+
+        // A second hub, DDDD, with one rotation, and a connection AAAA–DDDD that has a report.
+        hubs.Add(new TourHub { Id = 2, Icao = "DDDD", Sort = 2 });
+        rotations.Add(new Rotation { Id = 12, HubId = 2, Sort = 1, Size = 2 });
+        legs.Add(new Leg { Id = 104, Number = 5, RotationId = 12, DepartureIcao = "DDDD", ArrivalIcao = "BBBB" });
+        legs.Add(new Leg { Id = 105, Number = 6, RotationId = 12, DepartureIcao = "BBBB", ArrivalIcao = "DDDD" });
+        legs.Add(new Leg { Id = 106, Number = 7, Kind = LegKind.HubConnection, DepartureIcao = "AAAA", ArrivalIcao = "DDDD" });
+
+        // The file names only AAAA: DDDD's rotation goes, the connection stays retired, and so does DDDD, its end.
+        var plan = LegImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Replace, new HashSet<long> { 106 });
+
+        Assert.Equal(LegImportOutcome.Retired, plan.Steps.Single(step => step.Leg.Id == 106).Outcome);
+        Assert.Equal([rotations[2]], plan.DeletedRotations);
+        Assert.Empty(plan.DeletedHubs);
+        Assert.Equal(["AAAA", "DDDD"], plan.Hubs.Select(hub => hub.Icao));
+    }
+
+    [Fact]
     public void ARetiredRotationTheFileNamesComesBackWhole()
     {
         var (hubs, rotations, legs) = Shape();

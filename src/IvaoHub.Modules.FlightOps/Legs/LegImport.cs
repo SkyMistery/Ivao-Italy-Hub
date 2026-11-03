@@ -514,8 +514,8 @@ public sealed class LegImportPlan
 
     /// <summary>
     /// The hubs after the import: those the units name, in the order they first name them — the tour's own, or new ones —,
-    /// then the tour's others. On "replace", one of those others is deleted when the file names it nowhere, not even as the
-    /// end of a connection — which the file's check has already made a hub of the file or of the tour.
+    /// then the tour's others. On "replace", one of those others is deleted when nothing names it any more: not the file,
+    /// not even as the end of a connection, and not a connection that stays for its reports.
     /// </summary>
     private static (List<TourHub> Hubs, List<TourHub> Deleted) HubsAfter(
         IReadOnlyList<TourHub> hubs,
@@ -531,8 +531,11 @@ public sealed class LegImportPlan
             result.Add(hubs.FirstOrDefault(hub => hub.Icao == icao) ?? new TourHub { Icao = icao });
         }
 
+        // The file's hubs and the ends of its connections, and the ends of every connection that stays: one the file no
+        // longer names, kept for its reports, still needs both its hubs.
         var named = rows
             .SelectMany(row => row.Hub is null ? new[] { row.Leg.DepartureIcao, row.Leg.ArrivalIcao } : [row.Hub])
+            .Concat(after.Where(unit => unit.Rotation is null).SelectMany(unit => unit.Legs).SelectMany(leg => new[] { leg.DepartureIcao, leg.ArrivalIcao }))
             .ToHashSet(StringComparer.Ordinal);
 
         foreach (var hub in hubs.OrderBy(hub => hub.Sort).ThenBy(hub => hub.Id).Where(hub => !result.Contains(hub)))

@@ -470,14 +470,14 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
             await AssertRefusedAsync(three, "rows[0].rotation", "flightops:errors.rotationSizeChoice", token);
         }
 
-        // Two hubs, a rotation each, and the connection between them.
+        // Two hubs, a rotation each, and the connection between them; a hub and a label in any case ("A", "a": one rotation).
         var rows = new[]
         {
             Row(Rome, London, Rome, "1"),
             Row(London, Rome, Rome, "1"),
             Row(Rome, Milan, null, null),
             Row(Milan, London, "xfa2", "A"),
-            Row(London, Milan, "xfa2", "A"),
+            Row(London, Milan, "xfa2", "a"),
         };
 
         var preview = await OkAsync(

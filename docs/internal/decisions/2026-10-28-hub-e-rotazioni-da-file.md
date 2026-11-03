@@ -3,7 +3,8 @@
 **Data:** 28 ottobre 2026, fase di test, fase 6 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.G, voce p).
 **Stato:** **decisa.** Che hub e rotazioni si importino da file l'ha deciso Carmine approvando la nota del 22 ottobre (§7.6); le due
 domande del §4 **le ha decise Carmine in chat alla sessione di lavoro, 29 ottobre 2026**, con le raccomandazioni: «Yes, both» — (a)
-una tabella sola con le colonne `Hub` e `Rotation`, (a) «unisci» e «sostituisci» come le leg.
+una tabella sola con le colonne `Hub` e `Rotation`, (a) «unisci» e «sostituisci» come le leg; **confermate da Carmine sulla PR**:
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/419#issuecomment-6600997738.
 **Regola applicata:** `CLAUDE.md` §5, caso **(c)**: una funzione nuova del modulo (l'import di T8 esteso ai tour `Hub`). Non tocca il
 nucleo: legge il file nel browser e scrive con le regole che hub, rotazioni e leg hanno già.
 
@@ -53,7 +54,8 @@ Lo stesso file (XLSX, XLS, ODS, CSV, letto nel browser come le leg; le stesse co
   elimina se non ha report e si **ritira intero** se ne ha («sostituisci»).
 - **L'ordine dopo**: le leg nell'ordine del file; gli hub nell'ordine in cui le leg li nominano la prima volta; le rotazioni di un hub
   nell'ordine delle loro leg. Su «sostituisci» un hub che il file non nomina — né come hub di una rotazione né come capo di un
-  collegamento — si elimina; uno che resta con rotazioni ritirate resta.
+  collegamento — si elimina; uno che resta con rotazioni ritirate resta, e così uno che è il capo di un collegamento rimasto per i
+  suoi report.
 - **Una transazione sola**, per ogni import (READ COMMITTED): la riga del tour si blocca per prima (`SELECT … FOR UPDATE`), così due import
   dello stesso tour vanno uno dopo l'altro e il secondo trova la forma lasciata dal primo — un 409, mai due hub nuovi con lo stesso ICAO;
   poi gli hub nuovi, le rotazioni nuove (una leg nuova va in una rotazione che ha un identificativo), le leg; il controllo di «pronto» su
@@ -63,7 +65,8 @@ Lo stesso file (XLSX, XLS, ODS, CSV, letto nel browser come le leg; le stesse co
 - **Il file** si controlla prima, riga per riga: hub senza rotazione o rotazione senza hub, righe di una rotazione non consecutive
   (`importRotationSplit`), una dimensione che una rotazione non ha (`rotationSizeChoice`); poi, sulle leg che le righe sono diventate,
   **le regole della forma stesse** (`TourShape.RotationProblem`, `TourShape.ConnectsHubs`): partenza e ritorno all'hub, collegamento fra
-  due hub diversi del file o del tour. La richiesta limita `Hub` a 4 caratteri e `Rotation` a 32. Un tour che non è
+  due hub diversi del file o del tour. La richiesta limita `Hub` a 4 caratteri e `Rotation` a 32; l'etichetta della
+  rotazione, come l'hub, non distingue le maiuscole («a» e «A» sono la stessa rotazione). Un tour che non è
   Hub rifiuta la riga che nomina un hub o una rotazione (`legHubOnly`).
 - **Il browser** legge le colonne `Hub` e `Rotation` quando ci sono; il modello scaricabile di un tour Hub le ha; l'anteprima dice per
   ogni leg hub e rotazione, e gli hub aggiunti o eliminati. Il tasto «Importa da un file» c'è anche sui tour Hub.

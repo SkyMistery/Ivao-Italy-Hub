@@ -493,7 +493,7 @@ public static class LegEndpoints
         var legs = await request.Book.LegsAsync(tour.Id, cancellationToken);
         var withReports = await request.Reports.LegsWithReportsAsync(tour.Id, cancellationToken);
         var rows = incoming
-            .Select((leg, row) => new ImportRow(row, leg!, Hub(body.Rows[row].Hub), Named(body.Rows[row].Rotation)))
+            .Select((leg, row) => new ImportRow(row, leg!, Hub(body.Rows[row].Hub), Label(body.Rows[row].Rotation)))
             .ToList();
 
         return (new ImportShape(legs, hubs, rotations), LegImportPlan.Make(hubs, rotations, legs, rows, body.Mode, withReports), null);
@@ -565,7 +565,7 @@ public static class LegEndpoints
         while (start < rows.Count)
         {
             var hub = Hub(rows[start].Hub);
-            var label = Named(rows[start].Rotation);
+            var label = Label(rows[start].Rotation);
 
             if (hub is null)
             {
@@ -590,7 +590,7 @@ public static class LegEndpoints
             }
 
             var end = start;
-            while (end + 1 < rows.Count && Hub(rows[end + 1].Hub) == hub && Named(rows[end + 1].Rotation) == label)
+            while (end + 1 < rows.Count && Hub(rows[end + 1].Hub) == hub && Label(rows[end + 1].Rotation) == label)
             {
                 end++;
             }
@@ -625,6 +625,9 @@ public static class LegEndpoints
     private static string? Named(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string? Hub(string? value) => Named(value)?.ToUpperInvariant();
+
+    /// <summary>A rotation's label, whatever case it was typed in: "a" and "A" keep the same rows together, as a hub's ICAO does.</summary>
+    private static string? Label(string? value) => Named(value)?.ToUpperInvariant();
 
     /// <summary>The rule of §1.4.1, once: which outcome, and which legs it touches.</summary>
     private static (LegRemovalOutcome Outcome, IReadOnlyList<Leg> Touched) Removal(Leg leg, IReadOnlyList<Leg> legs, IReadOnlySet<long> withReports)
