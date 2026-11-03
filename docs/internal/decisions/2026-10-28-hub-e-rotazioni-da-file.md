@@ -46,18 +46,24 @@ Lo stesso file (XLSX, XLS, ODS, CSV, letto nel browser come le leg; le stesse co
 
 ## 5. Com'è fatto
 
-- **Il server** (`Legs/HubImport.cs`, `HubImportPlan`, accanto a `LegImportPlan`): si confronta per **unità** — una rotazione intera, o
-  un collegamento — invece che per leg. La stessa rotazione è lo stesso hub con le stesse tratte nello stesso ordine; due uguali si
-  appaiano nel loro ordine, come le leg. Quello che il file non contiene resta dopo l'unità che lo precedeva («unisci»), oppure si
+- **Il server** (`Legs/LegImport.cs`, **un solo** `LegImportPlan` per ogni tour, dopo la revisione del master del 1° novembre 2026): si
+  confronta per **unità** — una rotazione intera, o una leg da sola (ogni leg di un tour che non è Hub, un collegamento di un tour Hub) —.
+  La stessa rotazione è lo stesso hub con le stesse tratte nello stesso ordine; due uguali si appaiano nel loro ordine, **prima quelle
+  ancora volate** e poi le ritirate (vale anche per le leg). Quello che il file non contiene resta dopo l'unità che lo precedeva («unisci»), oppure si
   elimina se non ha report e si **ritira intero** se ne ha («sostituisci»).
 - **L'ordine dopo**: le leg nell'ordine del file; gli hub nell'ordine in cui le leg li nominano la prima volta; le rotazioni di un hub
   nell'ordine delle loro leg. Su «sostituisci» un hub che il file non nomina — né come hub di una rotazione né come capo di un
   collegamento — si elimina; uno che resta con rotazioni ritirate resta.
-- **Una transazione sola**: prima gli hub nuovi, poi le rotazioni nuove (una leg nuova va in una rotazione che ha un identificativo),
-  poi le leg; il controllo di «pronto» su tutta la forma com'è lasciata; un rifiuto disfa tutto. L'impronta dell'anteprima copre leg,
-  hub e rotazioni.
+- **Una transazione sola**, per ogni import (READ COMMITTED): la riga del tour si blocca per prima (`SELECT … FOR UPDATE`), così due import
+  dello stesso tour vanno uno dopo l'altro e il secondo trova la forma lasciata dal primo — un 409, mai due hub nuovi con lo stesso ICAO;
+  poi gli hub nuovi, le rotazioni nuove (una leg nuova va in una rotazione che ha un identificativo), le leg; il controllo di «pronto» su
+  tutta la forma com'è lasciata, nello stesso `LegRequest.SaveAsync` di ogni scrittura delle leg, che fa il commit; un rifiuto disfa
+  tutto. L'impronta dell'anteprima copre leg, hub e rotazioni, ed è una sola per ogni tour. I posti (`Sort`) di hub e rotazioni li
+  scrive solo l'applicazione, mai l'anteprima.
 - **Il file** si controlla prima, riga per riga: hub senza rotazione o rotazione senza hub, righe di una rotazione non consecutive
-  (`importRotationSplit`), dimensione, partenza e ritorno all'hub, collegamento fra due hub del file o del tour. Un tour che non è
+  (`importRotationSplit`), una dimensione che una rotazione non ha (`rotationSizeChoice`); poi, sulle leg che le righe sono diventate,
+  **le regole della forma stesse** (`TourShape.RotationProblem`, `TourShape.ConnectsHubs`): partenza e ritorno all'hub, collegamento fra
+  due hub diversi del file o del tour. La richiesta limita `Hub` a 4 caratteri e `Rotation` a 32. Un tour che non è
   Hub rifiuta la riga che nomina un hub o una rotazione (`legHubOnly`).
 - **Il browser** legge le colonne `Hub` e `Rotation` quando ci sono; il modello scaricabile di un tour Hub le ha; l'anteprima dice per
   ogni leg hub e rotazione, e gli hub aggiunti o eliminati. Il tasto «Importa da un file» c'è anche sui tour Hub.

@@ -16,7 +16,7 @@ public sealed class HubImportTests
     [Fact]
     public void AnEmptyHubTourGetsItsHubsAndRotationsInTheOrderOfTheFile()
     {
-        var plan = HubImportPlan.Make(
+        var plan = LegImportPlan.Make(
             [],
             [],
             [],
@@ -33,7 +33,6 @@ public sealed class HubImportTests
 
         Assert.All(plan.Steps, step => Assert.Equal(LegImportOutcome.Added, step.Outcome));
         Assert.Equal(["AAAA", "CCCC"], plan.Hubs.Select(hub => hub.Icao));
-        Assert.Equal([1, 2], plan.Hubs.Select(hub => hub.Sort));
         Assert.Equal(["AAAA", "CCCC"], plan.HubsAdded);
 
         // Three rotations — the hub's first, its second, the other hub's first — and one connection between them.
@@ -41,6 +40,12 @@ public sealed class HubImportTests
         Assert.Equal([1, 1, null, 1, 1, 2, 2], lines.Select(line => line.Rotation));
         Assert.Equal(["AAAA", "AAAA", null, "CCCC", "CCCC", "AAAA", "AAAA"], lines.Select(line => line.Hub));
         Assert.Equal([2, 2, 2], plan.Units.Where(unit => unit.Rotation is not null).Select(unit => unit.Rotation!.Size));
+
+        // The places are the plan's until it is applied: the preview writes nothing.
+        Assert.All(plan.Hubs, hub => Assert.Equal(0, hub.Sort));
+        plan.Place();
+        Assert.Equal([1, 2], plan.Hubs.Select(hub => hub.Sort));
+        Assert.Equal([1, 1, 2], plan.Units.Where(unit => unit.Rotation is not null).Select(unit => unit.Rotation!.Sort));
 
         plan.Apply(DateTime.UtcNow, reason: null);
         Assert.Equal(LegKind.HubConnection, plan.Steps[2].Leg.Kind);
@@ -51,7 +56,7 @@ public sealed class HubImportTests
     public void TheSameFileTwiceChangesNothing()
     {
         var (hubs, rotations, legs) = Shape();
-        var plan = HubImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Replace, NoReports);
+        var plan = LegImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Replace, NoReports);
 
         Assert.All(plan.Steps, step => Assert.Equal(LegImportOutcome.Unchanged, step.Outcome));
         Assert.Empty(plan.HubsAdded);
@@ -70,13 +75,13 @@ public sealed class HubImportTests
             ("AAAA", "2", "AAAA", "FFFF"),
             ("AAAA", "2", "FFFF", "AAAA"));
 
-        var merge = HubImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Merge, NoReports);
+        var merge = LegImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Merge, NoReports);
         Assert.Equal(
             [LegImportOutcome.Unchanged, LegImportOutcome.Unchanged, LegImportOutcome.Kept, LegImportOutcome.Kept,
                 LegImportOutcome.Added, LegImportOutcome.Added],
             merge.Steps.Select(step => step.Outcome));
 
-        var replace = HubImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Replace, NoReports);
+        var replace = LegImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Replace, NoReports);
         Assert.Equal(
             [LegImportOutcome.Unchanged, LegImportOutcome.Unchanged, LegImportOutcome.Added, LegImportOutcome.Added,
                 LegImportOutcome.Deleted, LegImportOutcome.Deleted],
@@ -92,7 +97,7 @@ public sealed class HubImportTests
         var file = File(("AAAA", "1", "AAAA", "BBBB"), ("AAAA", "1", "BBBB", "AAAA"));
 
         // A report points at the second leg of the second rotation: the whole rotation stays, retired.
-        var plan = HubImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Replace, new HashSet<long> { legs[3].Id });
+        var plan = LegImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Replace, new HashSet<long> { legs[3].Id });
 
         Assert.Equal(
             [LegImportOutcome.Unchanged, LegImportOutcome.Unchanged, LegImportOutcome.Retired, LegImportOutcome.Retired],
@@ -111,11 +116,11 @@ public sealed class HubImportTests
         var (hubs, rotations, legs) = Shape();
         hubs.Add(new TourHub { Id = 3, Icao = "ZZZZ", Sort = 2 });
 
-        var merge = HubImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Merge, NoReports);
+        var merge = LegImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Merge, NoReports);
         Assert.Equal(["AAAA", "ZZZZ"], merge.Hubs.Select(hub => hub.Icao));
         Assert.Empty(merge.DeletedHubs);
 
-        var replace = HubImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Replace, NoReports);
+        var replace = LegImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Replace, NoReports);
         Assert.Equal(["AAAA"], replace.Hubs.Select(hub => hub.Icao));
         Assert.Equal(["ZZZZ"], replace.DeletedHubs.Select(hub => hub.Icao));
     }
@@ -126,7 +131,7 @@ public sealed class HubImportTests
         var (hubs, rotations, legs) = Shape();
         legs[2].RetiredAt = legs[3].RetiredAt = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var plan = HubImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Merge, NoReports);
+        var plan = LegImportPlan.Make(hubs, rotations, legs, SameFile(), LegImportMode.Merge, NoReports);
 
         Assert.Equal(
             [LegImportOutcome.Unchanged, LegImportOutcome.Unchanged, LegImportOutcome.Restored, LegImportOutcome.Restored],
@@ -135,13 +140,49 @@ public sealed class HubImportTests
     }
 
     [Fact]
+    public void TheSameRotationTwiceTakesTheOneStillFlownFirst()
+    {
+        var (hubs, rotations, legs) = Shape();
+
+        // A retired AAAA–BBBB–AAAA comes first in the tour, a flown one after it: the file's one rotation is the flown one.
+        legs[2].DepartureIcao = "AAAA";
+        legs[2].ArrivalIcao = "BBBB";
+        legs[3].DepartureIcao = "BBBB";
+        legs[3].ArrivalIcao = "AAAA";
+        legs[0].RetiredAt = legs[1].RetiredAt = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var plan = LegImportPlan.Make(
+            hubs, rotations, legs, File(("AAAA", "1", "AAAA", "BBBB"), ("AAAA", "1", "BBBB", "AAAA")), LegImportMode.Merge, NoReports);
+
+        Assert.False(plan.Restores);
+        Assert.Equal(
+            [(legs[0], LegImportOutcome.Kept), (legs[1], LegImportOutcome.Kept), (legs[2], LegImportOutcome.Unchanged), (legs[3], LegImportOutcome.Unchanged)],
+            plan.Steps.Select(step => (step.Leg, step.Outcome)));
+    }
+
+    [Fact]
+    public void ThePreviewLeavesThePlacesAlone()
+    {
+        var (hubs, rotations, legs) = Shape();
+        var file = File(("AAAA", "1", "AAAA", "CCCC"), ("AAAA", "1", "CCCC", "AAAA"), ("AAAA", "2", "AAAA", "BBBB"), ("AAAA", "2", "BBBB", "AAAA"));
+
+        var plan = LegImportPlan.Make(hubs, rotations, legs, file, LegImportMode.Merge, NoReports);
+
+        Assert.Equal([1, 1, 2, 2], plan.Lines().Select(line => line.Rotation));
+        Assert.Equal([1, 2], rotations.Select(rotation => rotation.Sort));
+
+        plan.Place();
+        Assert.Equal([2, 1], rotations.Select(rotation => rotation.Sort));
+    }
+
+    [Fact]
     public void TheFingerprintMovesWithTheHubsAndTheRotations()
     {
         var (hubs, rotations, legs) = Shape();
-        var before = HubImportPlan.Fingerprint(legs, hubs, rotations);
+        var before = LegImportPlan.Fingerprint(legs, hubs, rotations);
 
         rotations[0].RowVersion = rotations[0].RowVersion.AddSeconds(1);
-        Assert.NotEqual(before, HubImportPlan.Fingerprint(legs, hubs, rotations));
+        Assert.NotEqual(before, LegImportPlan.Fingerprint(legs, hubs, rotations));
     }
 
     /// <summary>A hub tour with one hub, AAAA, and its two rotations of two legs: AAAA–BBBB–AAAA and AAAA–CCCC–AAAA.</summary>
@@ -175,17 +216,22 @@ public sealed class HubImportTests
         };
     }
 
-    private static List<HubImportRow> SameFile() => File(
+    private static List<ImportRow> SameFile() => File(
         ("AAAA", "1", "AAAA", "BBBB"),
         ("AAAA", "1", "BBBB", "AAAA"),
         ("AAAA", "2", "AAAA", "CCCC"),
         ("AAAA", "2", "CCCC", "AAAA"));
 
-    private static List<HubImportRow> File(params (string? Hub, string? Rotation, string From, string To)[] rows) =>
+    private static List<ImportRow> File(params (string? Hub, string? Rotation, string From, string To)[] rows) =>
     [
-        .. rows.Select((row, index) => new HubImportRow(
+        .. rows.Select((row, index) => new ImportRow(
             index,
-            new Leg { DepartureIcao = row.From, ArrivalIcao = row.To },
+            new Leg
+            {
+                DepartureIcao = row.From,
+                ArrivalIcao = row.To,
+                Kind = row.Hub is null ? LegKind.HubConnection : LegKind.Normal,
+            },
             row.Hub,
             row.Rotation)),
     ];
