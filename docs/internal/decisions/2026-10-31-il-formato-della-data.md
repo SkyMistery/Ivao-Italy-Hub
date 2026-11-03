@@ -3,8 +3,9 @@
 **Data:** 31 ottobre 2026 — fase di test, fase 5 della nota `2026-10-22-il-piano-dopo-la-prova-dello-staff` (§4.E, punto a), PR del
 nucleo.
 **Stato:** **decisa**. Il formato e i tre ordini li ha decisi Carmine approvando la nota del 22 ottobre (§4.E, §7.6): «`dd/mm/yyyy` di
-default, con la divisione che sceglie `mm/dd/yyyy` o `yyyy/mm/dd` in `division.json`». Le cinque scelte nuove del §4 le ha prese
-Carmine il 31 ottobre 2026, in chat alla sessione di lavoro, tutte come raccomandato.
+default, con la divisione che sceglie `mm/dd/yyyy` o `yyyy/mm/dd` in `division.json`». Le cinque scelte nuove del §3 le ha prese
+Carmine il 31 ottobre 2026, in chat alla sessione di lavoro, tutte come raccomandato, e le ha confermate sulla PR:
+https://github.com/SkyMistery/Ivao-Italy-Hub/pull/441#issuecomment-6600998155.
 **Regola applicata:** `CLAUDE.md` §5, caso **(b)**: i meccanismi ci sono già — `formatMoment` sul web (nota `2026-10-13-le-ore-in-24`)
 e `DivisionOptions` sul server — e si estendono; nessun meccanismo nuovo.
 
@@ -80,12 +81,13 @@ fuso della divisione accanto, come lo dice chi chiama.
   in `blocks.tsx` su `formatMoment`, `schema.d.ts` rigenerato, `dateFormat` nei sei bootstrap di prova dei test che lo scrivono per
   intero (tipo richiesto).
 - **Moduli**, solo la chiamata: `EventsMail` (`Moment`, `Shift`, `SeatLines`), `MemberSeats`; `TrainingMail` (`Moment`, `Span`),
-  `TrainingBans`, `TrainingSessions`, `TrainingDates`; nei Tour `Bans`, `PirepReview`, `ReviewDigestJob`, `FlightOpsReferences` (nessuno
+  `TrainingBans`, `TrainingSessions`, `TrainingDates`, `Staff/StaffTrainings.cs` (la mail del formatore assegnato, arrivata con
+  `main`); nei Tour `Bans`, `PirepReview`, `ReviewDigestJob`, `FlightOpsReferences` (nessuno
   dei file delle PR #415, #416, #419).
 - **Test**: i valori attesi delle date (web, e2e, server) e le dieci chiamate del punto 5.
 - **Documenti pubblici**: `config/division.example.json`, `docs/FORKING.md`, `docs/UI-GUIDELINES.md` («Times»).
 - **Non toccato**: il selettore del form (punto 2); `ReportsDigestJob` di Eventi, che scrive ancora `yyyy-MM-dd` nel riassunto dei
-  report (fuori da «solo l'helper»: resta a `dalberone`); i nomi dei mesi e dei giorni del calendario, che sono parole.
+  report (fuori da «solo l'helper»: è la issue #442); i nomi dei mesi e dei giorni del calendario, che sono parole.
 
 ## 5. Alternative scartate
 
