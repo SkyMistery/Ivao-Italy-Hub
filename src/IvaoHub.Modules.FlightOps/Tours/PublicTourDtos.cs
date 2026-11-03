@@ -105,6 +105,7 @@ public sealed record PublicTourDto(
     HubRotationOrder? HubRotationOrder,
     bool RequiresProcedures,
     int? MinPilotRating,
+    string? MinPilotRatingName,
     string? ReferenceAircraftIcao,
     PublicAircraftDto Aircraft,
     int? RequiredNm,

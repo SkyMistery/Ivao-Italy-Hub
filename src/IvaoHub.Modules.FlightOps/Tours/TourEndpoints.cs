@@ -3,6 +3,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Ivao;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
@@ -22,6 +23,7 @@ namespace IvaoHub.Modules.FlightOps.Tours;
 /// hidden, shown — is one small state machine and not a field of the form (§1.2.1, §1.2.2); what stands in the way of
 /// "ready", asked before pressing it rather than after being refused; and the two copies of a template (§1.10), which
 /// create a row from another row. Each runs the same rules as the engine's save, <see cref="TourSaving"/>.</para>
+/// <para>One read of reference data sits next to them: the pilot ratings of the core's vocabulary the form offers.</para>
 /// </summary>
 public static class TourEndpoints
 {
@@ -144,6 +146,13 @@ public static class TourEndpoints
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization(TourPermissions.ManageTemplates);
+
+        // The pilot ratings a tour's least rating is chosen from: the core's ladder, lowest first, as the events take theirs.
+        group.MapGet("/ratings", (RatingVocabulary vocabulary) =>
+                vocabulary.Ladder(RatingKind.Pilot).Select(rating => new PilotRatingChoiceDto(rating.Number, rating.ShortName)).ToList())
+            .WithName("FlightOpsTourRatings")
+            .Produces<List<PilotRatingChoiceDto>>()
+            .RequireAuthorization(TourPermissions.View);
 
         return app;
     }

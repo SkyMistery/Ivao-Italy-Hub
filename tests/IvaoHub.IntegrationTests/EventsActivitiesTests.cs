@@ -555,6 +555,45 @@ public sealed class EventsActivitiesTests(MariaDbFixture mariaDb) : IAsyncLifeti
         Assert.Single(await SeatsAsync(id, token));
     }
 
+    /// <summary>
+    /// A change of an activity while a seat is taken in it (#322, item 4): the seat holds the activity's row, as a member taking it does, and the
+    /// change — the window cut to its first turn, the seat on the second — waits for it and reads it, so it is refused; never an activity
+    /// whose seat falls on no turn of it.
+    /// </summary>
+    [Fact]
+    public async Task AnActivityChangedWhileASeatIsTakenReadsTheSeat()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var starts = Today.AddDays(5).AddHours(9);
+        var id = await EventRowAsync("change-race", starts, starts.AddHours(6), token);
+        var activity = await ActivityRowAsync(id, starts.AddHours(1), starts.AddHours(2), seats: 1, token);
+        await RegistrationRowAsync(id, MemberVid, token);
+        using var coordinator = await SignedInAsync(CoordinatorVid, token);
+        var version = (await OkAsync(await coordinator.GetAsync($"{EventActivityEndpoints.Pattern}/{activity}", token), token)).GetProperty("rowVersion").GetDateTime();
+
+        HttpResponseMessage answered;
+        await using (var held = _factory.Services.CreateAsyncScope())
+        {
+            // The seat on the second turn, taken as the member's verb takes it: under the activity's row, not committed yet.
+            var database = held.ServiceProvider.GetRequiredService<EventsDbContext>();
+            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
+            await database.Database.SqlQuery<long>($"SELECT id AS `Value` FROM evt_activities WHERE id = {activity} FOR UPDATE").ToListAsync(token);
+            database.Seats.Add(Seat(id, activity, MemberVid, starts.AddHours(1).AddMinutes(30)));
+            await database.SaveChangesAsync(token);
+
+            var request = coordinator.PutAsJsonAsync(
+                $"{EventActivityEndpoints.Pattern}/{activity}",
+                Activity(id, "activity", starts.AddHours(1), starts.AddHours(1).AddMinutes(30), 30, 1) with { RowVersion = version },
+                token);
+            await WaitForALockWaitAsync(token);
+            await transaction.CommitAsync(token);
+            answered = await request;
+        }
+
+        Assert.Equal(["events:errors.activitySeatsTaken"], (await RefusedAsync(answered, token))["toUtc"]);
+        Assert.Single(await SeatsAsync(id, token));
+    }
+
     [Fact]
     public async Task TheEventIsNotMovedNorShortenedPastItsActivitiesNorTheActivityPastItsSeats()
     {

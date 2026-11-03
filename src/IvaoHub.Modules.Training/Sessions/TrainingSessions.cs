@@ -2,6 +2,7 @@ using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Modules;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Training.Bans;
 using IvaoHub.Modules.Training.Data;
 using IvaoHub.Modules.Training.Requests;
 using IvaoHub.Modules.Training.Settings;
@@ -29,6 +30,7 @@ public sealed class TrainingSessions(
     StaffTrainings staff,
     TrainingPeople people,
     TrainingMail mail,
+    TrainingBans bans,
     ICurrentUser currentUser,
     IClock clock)
 {
@@ -52,7 +54,8 @@ public sealed class TrainingSessions(
     /// <summary>
     /// The session rescheduled for too little traffic (§2.6, R.5): a row <see cref="SessionOutcome.Rescheduled"/> with the internal notes,
     /// and the training back to <c>Assigned</c> with no date, so that its dates are proposed again (A8); its session leaves the
-    /// calendar. No report, and no mail: the next one is the dates proposed.
+    /// calendar. No report, and no mail: the next one is the dates proposed. While a ban holds on the trainee there is none: the training
+    /// closes, by whoever gave the ban (issue #312).
     /// </summary>
     public async Task<(StaffResult Result, IReadOnlyDictionary<string, string[]>? Problems)> RescheduleAsync(
         Training training,
@@ -82,7 +85,12 @@ public sealed class TrainingSessions(
         Record(training, SessionOutcome.Rescheduled, notes);
         training.State = TrainingState.Assigned;
         Undate(training);
+
+        // A banned trainee gets no new date (issue #312): under a ban the training rescheduled closes, as the ban closed the others, in
+        // the same save; a ban saved after that read is read once more after it, and closes it then.
+        await bans.CloseUnderBanAsync(training, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
+        await bans.CloseIfBannedAsync(training, cancellationToken);
 
         return (StaffResult.Done, null);
     }
