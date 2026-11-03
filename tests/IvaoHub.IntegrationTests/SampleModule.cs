@@ -76,6 +76,9 @@ public sealed class SampleModule : ModuleBase
     /// </summary>
     public const string DecidePattern = "/api/sample/items/{id:long}/decide";
 
+    /// <summary>An address that fails, anonymous: <c>?how=refusal</c> as the domain refuses, anything else as a bug does.</summary>
+    public const string FailPattern = "/api/sample/fail";
+
     /// <summary>A permission of the module, so that the catalogue is seen to compose it.</summary>
     public const string ReadPermission = "Sample.Read";
 
@@ -150,6 +153,17 @@ public sealed class SampleModule : ModuleBase
         // open, and a POST to the same address that maintenance closes.
         endpoints.MapGroup($"/api/{ModuleKey}")
             .MapGet("/ping", () => TypedResults.Ok(new SamplePing(ModuleKey)));
+
+        // What the exception handler answers, with the headers every answer carries (issue #320, item 1).
+        endpoints.MapGet(FailPattern, (string? how) =>
+        {
+            if (how == "refusal")
+            {
+                throw new IvaoHub.Core.Services.DomainRefusalException("how", "errors.required");
+            }
+
+            throw new InvalidOperationException("The sample failed on purpose.");
+        });
 
         // A table of the module through the generic engine, exactly as a real module maps one.
         endpoints.MapCrud<SampleItem, SampleItemDto, SampleItemDto, SampleItemWriteDto>(ItemsPattern, options =>

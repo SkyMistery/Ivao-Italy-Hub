@@ -651,7 +651,8 @@
       "slug": "The last part of the address this page is read at. Proposed from the title until you write one yourself; it does not move again once the page has been saved.",
       "reviewOn": "Past this day, the department is told once that the document is due for a look.",
       "retiredAt": "A document no longer in force stays readable with a notice on top, so that an old link finds the way on. Choose what replaced it below, when something did.",
-      "parentId": "Where the page sits in the site: its address is the address of this page and its own. Three levels at most. The top of the site is for the director and the web team."
+      "parentId": "Where the page sits in the site: its address is the address of this page and its own. Three levels at most. The top of the site is for the director and the web team.",
+      "collections": "A News or Documents block that lists one of these collections shows this page. A new one is added to the collections of this department."
     },
     "chooseParent": "Choose the page it goes under",
     "address": {
@@ -1697,6 +1698,11 @@
     "title": "Collections",
     "description": "The collections this department files its news and documents in. A page lists a collection, and a row may be in several.",
     "create": "New collection",
+    "newHere": {
+      "action": "New collection…",
+      "description": "It is added to the collections of {{department}}, and this page is filed in it.",
+      "submit": "Create"
+    },
     "edit": "Edit collection",
     "delete": {
       "title": "Delete this collection?",

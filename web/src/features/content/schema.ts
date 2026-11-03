@@ -83,7 +83,10 @@ export function contentMetadataSchema(
   // 2026-09-13-contenuti-centralizzati §3.3). Keys stored on the row and translated names shown
   // beside the checkboxes: the vocabulary is rows a coordinator writes, so neither a `z.enum` nor an
   // i18n key could carry it (design M1 §3.4).
-  const category = { collections: z.array(z.string()).meta({ multi: true, choices: categories }) };
+  // `creatable`: a new collection is made from here and the row filed in it at once (#364).
+  const category = {
+    collections: z.array(z.string()).meta({ multi: true, choices: categories, creatable: true }),
+  };
 
   if (kind === 'Page') {
     return z.object({

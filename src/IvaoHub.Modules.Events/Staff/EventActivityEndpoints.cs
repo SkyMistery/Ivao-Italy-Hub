@@ -3,6 +3,7 @@ using IvaoHub.Core.Data.Crud;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events.Atc;
 using IvaoHub.Modules.Events.Data;
 using IvaoHub.Modules.Events.Registrations;
 using Microsoft.AspNetCore.Routing;
@@ -155,6 +156,7 @@ public static class EventActivityEndpoints
             options.BeforeAuthorize = async (activity, saving) =>
                 (await saving.Services.GetRequiredService<EventChildren>().AdoptAsync(activity, saving.CancellationToken)).Refusal;
             options.BeforeSave = SaveAsync;
+            options.AfterSave = (_, saving) => saving.Services.GetRequiredService<ShiftLock>().CommitAsync(saving.CancellationToken);
             options.Delete = DeleteAsync;
         });
 
@@ -207,6 +209,9 @@ public static class EventActivityEndpoints
             return null;
         }
 
+        // The seats read under the activity's lock, the one a member taking a seat holds (#322, item 4): a seat taken in the same instant is
+        // read here, or reads the activity as it becomes. Committed once the save is done (AfterSave).
+        await saving.Services.GetRequiredService<ShiftLock>().TakeActivityAsync(database, activity.Id, saving.CancellationToken);
         var taken = await CrudSource.BackOffice<EventActivitySeat>(database).AsNoTracking()
             .Where(seat => seat.ActivityId == activity.Id)
             .Select(seat => seat.StartsAtUtc)

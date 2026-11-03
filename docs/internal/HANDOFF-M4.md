@@ -6,7 +6,12 @@
 > ottiene una decisione — sono in `CLAUDE.md` §0 e in `10-piano-implementazione-m4.md`, «Regole di tutte le fasi», e non si
 > ripetono qui.
 
-**Ultimo aggiornamento:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
+**Ultimo aggiornamento:** 1 novembre 2026 — **la correzione dell'issue #314** (fase di test: il tetto delle prenotazioni di un membro
+in un evento, `maxBookingsPerEvent`, 5, una rotazione una), sul branch `fix/events-booking-cap`, PR verso `main` con «Closes #314», nata
+`--no-track` da `main` a `b12ec725`. La nota `2026-11-01-il-tetto-delle-prenotazioni` è decisa da Carmine, i punti 7–8 il 1 novembre
+con la (A) di tutti e due («Che cosa ha lasciato la correzione dell'issue #314», sotto).
+
+**L'aggiornamento di E10r:** 19 ottobre 2026 — **fase E10r** (del nucleo: il toast del nucleo, con le sue tre parole tradotte; chiude l'issue
 #266), sul branch `m4/e10r-core-toast`, **PR #308** verso `main`, **diretta e non in coda**: nata `--no-track` da `main` a `893a9b0c` (con
 E15b, #301). Una nota nuova, `2026-10-19-il-toast-del-nucleo`, caso (b), **decisa** da Carmine sull'issue #266 (la (a), [la
 risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/266#issuecomment-6216418088) che sostituisce la (b), e [a
@@ -375,6 +380,32 @@ dell'MD con un indirizzo nei test del modulo, i permessi con grant a un VID. Nes
 ## Lo stato
 
 *(Qui, in cima, il paragrafo «Che cosa ha lasciato <fase>» di ogni fase chiusa, la più recente per prima.)*
+
+### Che cosa ha lasciato la correzione dell'issue #314 (1 novembre 2026, branch `fix/events-booking-cap`, fase di test; da `main` a `b12ec725`)
+
+- **Che cosa c'è** (il dettaglio in `10`, «Le correzioni della fase di test», #314; nessuna migrazione, nessun file del nucleo; una nota
+  nuova, `2026-11-01-il-tetto-delle-prenotazioni`, decisa da Carmine nei punti 1–2 e, con la (A) di tutti e due, nei punti 7–8
+  ([la risposta](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6555196512) alla
+  [domanda](https://github.com/SkyMistery/Ivao-Italy-Hub/issues/314#issuecomment-6550988239))):
+  - **`maxBookingsPerEvent`** nelle impostazioni (`Settings/EventsSettings.cs`), **5**, da 1 a 200 (`MaxBookingsCeiling`), nel form
+    generato dopo `bookingGapMinutes`, con la riga in `docs/FORKING.md`; di divisione, l'evento non ne ha uno suo;
+  - **`Bookings/BookingCap.cs`**, pura: le tratte di una rotazione contano **una**, comunque prenotate; ogni altro slot uno, la partenza
+    collegata di un arrivo privato compresa; si rifiuta solo ciò che fa crescere il conto oltre il tetto;
+  - **i tre verbi** di `PilotBookings` la leggono sotto il blocco del pilota, dopo i limiti di chi non vola (`LimitRefusal ?? CapRefusal`),
+    con la chiave `events:errors.bookingMaxPerEvent` sul campo dello slot; le impostazioni si leggono una volta per verbo (`RulesAsync`, al
+    posto di `GapAsync`).
+- **Che cosa deve sapere chi viene dopo**:
+  - ⚠️ **un test che prenota più di cinque slot per lo stesso pilota in un evento** ora è rifiutato: scrive le impostazioni come fa
+    `EventsBookingCapTests` (e `EventsRegistersTests`), o usa più piloti;
+  - ⚠️ **chi ha i limiti di chi non vola ha tutti e due i tetti** (decide il più basso: i limiti contano ogni tratta di una rotazione,
+    il tetto la conta una), e **un arrivo privato con la sua partenza collegata conta due** (§4 della nota, decisi da Carmine);
+  - il rifiuto non dice il numero: le pagine del pilota non leggono le impostazioni.
+- **Nella stessa PR, il punto 2 dell'issue #322** (il blocco del pilota): una richiesta che ha aspettato la riga dell'evento, quando
+  l'ha avuta, **riprende il `FOR UPDATE` della prima prenotazione del pilota** (`LockThePilotAsync`). Prima, se nell'attesa la richiesta
+  davanti salvava la prima prenotazione e una terza la trovava e la bloccava, la seconda e la terza leggevano le stesse prenotazioni
+  insieme, sotto due blocchi diversi, e passavano la compatibilità, i limiti e il tetto. ⚠️ L'ordine è sempre la riga dell'evento, poi
+  quella della prenotazione: chi tiene una prenotazione non aspetta mai la riga dell'evento, e così resta. Il test è
+  `EventsBookingsTests.ARequestThatWaitedForTheEventLocksThePilotsFirstBookingAgain`.
 
 ### Che cosa ha lasciato E10r (19 ottobre 2026, branch `m4/e10r-core-toast`, PR #308, del nucleo; diretta su `main`, nata a `893a9b0c`)
 

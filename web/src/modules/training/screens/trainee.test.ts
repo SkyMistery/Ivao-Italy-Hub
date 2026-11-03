@@ -66,6 +66,7 @@ function training(
     completedAt: null,
     closedAt: null,
     closeReason: null,
+    closedByBan: false,
     readyForMockExam: false,
     readyForExam: false,
     cooldownWaived: false,
