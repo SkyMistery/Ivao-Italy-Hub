@@ -15,7 +15,7 @@ namespace IvaoHub.Core.Auth;
 /// <para>Who may call it is the module's endpoint's to decide (<c>Tours.ManageValidators</c>): a grant is not a row of a
 /// department, and the interceptor has no owner to hold it against.</para>
 /// </summary>
-public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalogue)
+public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalogue, IClock clock)
 {
     /// <summary>The lock a grant is looked for and written under, one per database.</summary>
     public const string LockPrefix = "hub-module-grants:";
@@ -76,7 +76,11 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
             return "errors.grant.busy";
         }
 
-        if (await Matching(vid, permission, department, resourceScope).AnyAsync(cancellationToken))
+        // Held already only by a copy of the module's own that still counts: an expired or suspended one would leave the
+        // person without the permission and the screen saying they have it.
+        var now = clock.UtcNow;
+        if (await Matching(vid, permission, department, resourceScope, reason)
+            .AnyAsync(grant => grant.SuspendedAt == null && (grant.ExpiresAt == null || grant.ExpiresAt > now), cancellationToken))
         {
             return null;
         }
@@ -96,17 +100,19 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
     }
 
     /// <summary>
-    /// Takes that very grant away: the same person, permission, department and scope — every copy of it, so that one written
-    /// twice before the lock (issue #319, item 8) does not outlive its removal. False when there was none.
+    /// Takes that very grant away: the same person, permission, department and scope, written by the module with that reason —
+    /// every copy of it, so that one written twice before the lock (issue #319, item 8) does not outlive its removal. The same
+    /// grant written by hand on the permissions screen is the staff's, and stays. False when there was none.
     /// </summary>
     public async Task<bool> TakeAsync(
         int vid,
         string permission,
         Department department,
         string? resourceScope,
+        string? reason,
         CancellationToken cancellationToken = default)
     {
-        var grants = await Matching(vid, permission, department, resourceScope).ToListAsync(cancellationToken);
+        var grants = await Matching(vid, permission, department, resourceScope, reason).ToListAsync(cancellationToken);
         if (grants.Count == 0)
         {
             return false;
@@ -117,11 +123,13 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
         return true;
     }
 
-    private IQueryable<UserGrant> Matching(int vid, string permission, Department department, string? resourceScope) =>
+    /// <summary>The module's own copies of a grant: the reason it writes them with is what tells them from the staff's.</summary>
+    private IQueryable<UserGrant> Matching(int vid, string permission, Department department, string? resourceScope, string? reason) =>
         database.UserGrants.Where(
             grant => grant.Vid == vid
                 && grant.Value == permission
                 && grant.Department == department
                 && grant.ResourceScope == resourceScope
+                && grant.Reason == reason
                 && grant.Effect == GrantEffect.Grant);
 }

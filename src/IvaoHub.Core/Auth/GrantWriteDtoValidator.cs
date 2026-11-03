@@ -67,9 +67,9 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
             .WithMessage("errors.grant.notStaff")
             .When(grant => grant.Vid is not null && grant.PositionDepartment is null && !grant.PositionFirTeam);
 
-        // A number outside the enum would be a row the calculator reads as neither a grant nor a deny: refused like a missing one.
-        RuleFor(grant => grant.Kind).IsInEnum().WithMessage("errors.required");
-        RuleFor(grant => grant.Effect).IsInEnum().WithMessage("errors.required");
+        // A number outside the enum would be a row the calculator reads as neither a grant nor a deny.
+        RuleFor(grant => grant.Kind).IsInEnum().WithMessage("errors.grant.unknownValue");
+        RuleFor(grant => grant.Effect).IsInEnum().WithMessage("errors.grant.unknownValue");
 
         // A position is a department — or the team of a FIR — at one or more levels: a department alone would be everybody in
         // it, which is a decision the staff positions already make.

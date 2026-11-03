@@ -167,7 +167,7 @@ public sealed class Validators(
     public async Task<bool> RemoveAsync(int vid, long? tourId, CancellationToken cancellationToken)
     {
         var department = Department();
-        if (!await grants.TakeAsync(vid, TourPermissions.Validate, department, ScopeOf(tourId), cancellationToken))
+        if (!await grants.TakeAsync(vid, TourPermissions.Validate, department, ScopeOf(tourId), GrantReason, cancellationToken))
         {
             return false;
         }
@@ -177,7 +177,7 @@ public sealed class Validators(
         if (!left.Any(grant => grant.Vid == vid)
             && pages.Any(grant => grant.Vid == vid && grant.ResourceScope is null && grant.Reason == GrantReason))
         {
-            await grants.TakeAsync(vid, TourPermissions.ViewPilots, department, null, cancellationToken);
+            await grants.TakeAsync(vid, TourPermissions.ViewPilots, department, null, GrantReason, cancellationToken);
         }
 
         return true;

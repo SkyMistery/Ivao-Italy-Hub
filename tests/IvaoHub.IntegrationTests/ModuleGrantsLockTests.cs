@@ -40,19 +40,7 @@ public sealed class ModuleGrantsLockTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await using var scope = _factory.Services.CreateAsyncScope();
         var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
         var grants = scope.ServiceProvider.GetRequiredService<ModuleGrants>();
-        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
-
-        database.Users.Add(new HubUser
-        {
-            Vid = StaffVid,
-            FirstName = "Test",
-            LastName = "Validator",
-            IsStaff = true,
-            SecurityStamp = SuperadminService.NewStamp(),
-            CreatedAt = clock.UtcNow,
-            UpdatedAt = clock.UtcNow,
-        });
-        await database.SaveChangesAsync(token);
+        await SeedStaffAsync(database, scope.ServiceProvider.GetRequiredService<IClock>(), token);
 
         await using (var other = await DatabaseLock.TakeAsync(
             database.Database.GetConnectionString(),
@@ -84,12 +72,81 @@ public sealed class ModuleGrantsLockTests(MariaDbFixture mariaDb) : IAsyncLifeti
         await database.SaveChangesAsync(token);
         Assert.Equal(2, await CountAsync(database, token));
 
-        Assert.True(await grants.TakeAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, Scope, token));
+        Assert.True(await grants.TakeAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, Scope, Scope, token));
         Assert.Equal(0, await CountAsync(database, token));
     }
 
-    private static Task<int> CountAsync(HubDbContext database, CancellationToken cancellationToken) =>
-        database.UserGrants.AsNoTracking().CountAsync(grant => grant.Vid == StaffVid && grant.ResourceScope == Scope, cancellationToken);
+    [Fact]
+    public async Task OnEveryRowOfTheDepartmentTheModuleTouchesOnlyItsOwnLiveCopies()
+    {
+        // The scope NULL — the grant on every row of a department, a validator's Tours.ViewPilots — is the one a unique index
+        // could not guard, and the reason the lock exists. And the module's rows are told from the staff's by their reason.
+        var token = TestContext.Current.CancellationToken;
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var grants = scope.ServiceProvider.GetRequiredService<ModuleGrants>();
+        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+        await SeedStaffAsync(database, clock, token);
+
+        Assert.Null(await grants.GiveAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, null, Scope, token));
+        Assert.Null(await grants.GiveAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, null, Scope, token));
+        Assert.Equal(1, await CountAsync(database, token, scoped: false));
+
+        // The same grant written by hand on the permissions screen: the staff's, untouched by the module's removal.
+        database.UserGrants.Add(new UserGrant
+        {
+            Vid = StaffVid,
+            Kind = GrantKind.Permission,
+            Value = CorePermissions.LinksEdit,
+            Department = Department.FOD,
+            Effect = GrantEffect.Grant,
+            Reason = $"{Scope} by hand",
+        });
+        await database.SaveChangesAsync(token);
+
+        Assert.True(await grants.TakeAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, null, Scope, token));
+        Assert.Equal($"{Scope} by hand", Assert.Single(await database.UserGrants.AsNoTracking()
+            .Where(grant => grant.Vid == StaffVid && grant.ResourceScope == null).Select(grant => grant.Reason).ToListAsync(token)));
+        Assert.False(await grants.TakeAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, null, Scope, token));
+
+        // A copy of the module's that expired holds nothing: asked again, the module writes one that counts.
+        database.UserGrants.Add(new UserGrant
+        {
+            Vid = StaffVid,
+            Kind = GrantKind.Permission,
+            Value = CorePermissions.LinksEdit,
+            Department = Department.FOD,
+            Effect = GrantEffect.Grant,
+            Reason = Scope,
+            ExpiresAt = clock.UtcNow.AddDays(-1),
+        });
+        await database.SaveChangesAsync(token);
+
+        Assert.Null(await grants.GiveAsync(StaffVid, CorePermissions.LinksEdit, Department.FOD, null, Scope, token));
+        Assert.Equal(1, await database.UserGrants.AsNoTracking().CountAsync(
+            grant => grant.Vid == StaffVid && grant.ResourceScope == null && grant.Reason == Scope && grant.ExpiresAt == null,
+            token));
+    }
+
+    private static async Task SeedStaffAsync(HubDbContext database, IClock clock, CancellationToken cancellationToken)
+    {
+        database.Users.Add(new HubUser
+        {
+            Vid = StaffVid,
+            FirstName = "Test",
+            LastName = "Validator",
+            IsStaff = true,
+            SecurityStamp = SuperadminService.NewStamp(),
+            CreatedAt = clock.UtcNow,
+            UpdatedAt = clock.UtcNow,
+        });
+        await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private static Task<int> CountAsync(HubDbContext database, CancellationToken cancellationToken, bool scoped = true) =>
+        database.UserGrants.AsNoTracking().CountAsync(
+            grant => grant.Vid == StaffVid && (scoped ? grant.ResourceScope == Scope : grant.ResourceScope == null),
+            cancellationToken);
 
     private async Task CleanAsync(CancellationToken cancellationToken)
     {

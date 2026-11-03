@@ -62,7 +62,7 @@ public sealed class GrantWriteRulesTests
     {
         var errors = await ErrorsAsync(Position(CorePermissions.LinksEdit) with { Kind = (GrantKind)42, Effect = (GrantEffect)42 });
 
-        Assert.Contains(("Kind", "errors.required"), errors);
-        Assert.Contains(("Effect", "errors.required"), errors);
+        Assert.Contains(("Kind", "errors.grant.unknownValue"), errors);
+        Assert.Contains(("Effect", "errors.grant.unknownValue"), errors);
     }
 }
