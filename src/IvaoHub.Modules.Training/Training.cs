@@ -69,6 +69,9 @@ public enum TrainingRejection
 /// to them before the write and after it (A7b). Each is asked by the write guard as the single handler asks it, with the row's FIR
 /// (A11a), never of its trainee, never to move it; none of them at creation,
 /// because the trainee creates it, and none of them deletes it: no member takes a training out of the register (§6).</para>
+/// <para>A fourth is <c>Training.Ban</c> (issue #312, note <c>2026-11-01-il-ban-chiude-cio-che-e-aperto</c>): a ban closes every training
+/// of its member still open, in the ban's own save, so whoever bans writes those trainings too. No endpoint writes a training with
+/// it but the ban: every step of the staff still asks for its own permission on the row first.</para>
 /// <para>Its session is in the division's one calendar (§5.1, A8; note <c>il-training-in-pubblico</c>): the training projects
 /// the session in hand (<see cref="IProjectable"/>), public, with its rating and position and nobody's name or VID, and the
 /// interceptor keeps the entry where the date is, in the same transaction, until the training stops being dated — or for good
@@ -81,6 +84,7 @@ public enum TrainingRejection
 [AlsoWrittenWith(TrainingPermissions.Approve)]
 [AlsoWrittenWith(TrainingPermissions.Assign)]
 [AlsoWrittenWith(TrainingPermissions.Conduct)]
+[AlsoWrittenWith(TrainingPermissions.Ban)]
 public sealed class Training
     : IOwnedByDepartment, IAuditable, IVisible, ISubmittedByMembers, IHasStakeholder, IHasFir, IHasAssignee, IProjectable
 {
@@ -216,6 +220,12 @@ public sealed class Training
 
     /// <summary>Why the staff closed it by hand (A8); the state says which closure it was.</summary>
     public string? CloseReason { get; set; }
+
+    /// <summary>
+    /// Closed because its trainee was banned (issue #312): by whoever gave the ban, who is <see cref="ClosedBy"/>, with no reason of
+    /// its own — the ban's is the ban's, which a head of a FIR does not read.
+    /// </summary>
+    public bool ClosedByBan { get; set; }
 
     /// <summary>
     /// The ladder while the training is open, none once it is not: the column of the unique key that makes «one open request

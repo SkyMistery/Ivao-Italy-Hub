@@ -157,6 +157,7 @@ public sealed class StaffTrainings(
             TrainingPeople.Member(training.ClosedBy, names),
             training.ClosedAt,
             training.CloseReason,
+            training.ClosedByBan,
             training.ReadyForMockExam,
             training.ReadyForExam,
             training.CooldownWaived,
