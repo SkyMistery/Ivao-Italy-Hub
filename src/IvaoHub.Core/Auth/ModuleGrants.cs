@@ -1,6 +1,7 @@
 using IvaoHub.Core.Auth.Permissions;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
+using IvaoHub.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace IvaoHub.Core.Auth;
@@ -16,6 +17,11 @@ namespace IvaoHub.Core.Auth;
 /// </summary>
 public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalogue)
 {
+    /// <summary>The lock a grant is looked for and written under, one per database.</summary>
+    public const string LockPrefix = "hub-module-grants:";
+
+    private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
+
     /// <summary>The grants to people of this permission in this department, with or without a scope, suspended ones included.</summary>
     public Task<List<UserGrant>> HeldAsync(string permission, Department department, CancellationToken cancellationToken = default) =>
         database.UserGrants.AsNoTracking()
@@ -55,7 +61,22 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
             return "errors.grant.notStaff";
         }
 
-        if (await FindAsync(vid, permission, department, resourceScope, cancellationToken) is not null)
+        // Looked for and written under a lock of the database (issue #319, item 8): two «add a validator» at once each found
+        // none and wrote one. Not a unique index: MariaDB counts two NULL scopes as different, so the grant on every row of the
+        // department would stay unguarded, and the permissions screen may hold the same grant twice on purpose (another
+        // expiry). Still held by another write after the wait, a refusal to ask again; one the database cannot be asked for
+        // goes ahead without it, as the jobs do.
+        await using var held = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => DatabaseLock.NameFor(LockPrefix, name),
+            Wait,
+            cancellationToken);
+        if (held.Busy)
+        {
+            return "errors.grant.busy";
+        }
+
+        if (await Matching(vid, permission, department, resourceScope).AnyAsync(cancellationToken))
         {
             return null;
         }
@@ -74,7 +95,10 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
         return null;
     }
 
-    /// <summary>Takes that very grant away: the same person, permission, department and scope. False when there was none.</summary>
+    /// <summary>
+    /// Takes that very grant away: the same person, permission, department and scope — every copy of it, so that one written
+    /// twice before the lock (issue #319, item 8) does not outlive its removal. False when there was none.
+    /// </summary>
     public async Task<bool> TakeAsync(
         int vid,
         string permission,
@@ -82,23 +106,22 @@ public sealed class ModuleGrants(HubDbContext database, PermissionCatalog catalo
         string? resourceScope,
         CancellationToken cancellationToken = default)
     {
-        var grant = await FindAsync(vid, permission, department, resourceScope, cancellationToken);
-        if (grant is null)
+        var grants = await Matching(vid, permission, department, resourceScope).ToListAsync(cancellationToken);
+        if (grants.Count == 0)
         {
             return false;
         }
 
-        database.UserGrants.Remove(grant);
+        database.UserGrants.RemoveRange(grants);
         await database.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    private Task<UserGrant?> FindAsync(int vid, string permission, Department department, string? resourceScope, CancellationToken cancellationToken) =>
-        database.UserGrants.FirstOrDefaultAsync(
+    private IQueryable<UserGrant> Matching(int vid, string permission, Department department, string? resourceScope) =>
+        database.UserGrants.Where(
             grant => grant.Vid == vid
                 && grant.Value == permission
                 && grant.Department == department
                 && grant.ResourceScope == resourceScope
-                && grant.Effect == GrantEffect.Grant,
-            cancellationToken);
+                && grant.Effect == GrantEffect.Grant);
 }

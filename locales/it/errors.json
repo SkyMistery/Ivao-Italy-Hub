@@ -105,6 +105,7 @@
     },
     "grant": {
       "unknownPermission": "Questa installazione non ha un permesso con questo nome.",
+      "busy": "È in corso un’altra modifica di questi permessi: riprova tra un momento.",
       "globalPermission": "Questo permesso viene solo dalle posizioni dello staff, e non si assegna a mano.",
       "globalDepartment": "Questo permesso non è di un dipartimento e vale ovunque: lascia vuoto il dipartimento.",
       "notStaff": "Quel VID non è staff di questa divisione, o non ha mai fatto login.",
