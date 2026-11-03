@@ -131,7 +131,13 @@ internal static class HubPipeline
                 correlationId = context.TraceIdentifier;
             }
 
-            context.Response.Headers[CorrelationIdHeader] = correlationId;
+            // As the answer starts, not now: the exception handler clears the headers before it writes its problem, and an
+            // error is the answer that needs the identifier most (issue #320, item 1).
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers[CorrelationIdHeader] = correlationId;
+                return Task.CompletedTask;
+            });
 
             using (LogContext.PushProperty("CorrelationId", correlationId))
             {
