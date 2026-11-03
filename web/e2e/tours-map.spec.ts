@@ -45,6 +45,7 @@ const tour = {
   hubRotationOrder: null,
   requiresProcedures: false,
   minPilotRating: null,
+  minPilotRatingName: null,
   referenceAircraftIcao: null,
   aircraft: { types: [], groups: [] },
   requiredNm: null,

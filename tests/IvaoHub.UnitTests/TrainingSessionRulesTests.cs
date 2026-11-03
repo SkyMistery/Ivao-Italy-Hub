@@ -265,6 +265,7 @@ public sealed class TrainingSessionRulesTests
             ClosedBy: null,
             ClosedAt: null,
             CloseReason: null,
+            ClosedByBan: false,
             ReadyForMockExam: true,
             ReadyForExam: false,
             CooldownWaived: false,

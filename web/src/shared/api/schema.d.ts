@@ -2686,6 +2686,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/flightops/tours/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FlightOpsTourRatings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flightops/tours/{tourId}/legs": {
         parameters: {
             query?: never;
@@ -4242,8 +4258,8 @@ export interface components {
         /**
          * @description The head of an event as the staff of the ATC read it (design M4 §6.3, E2's form, E11a): what the page of its ATC shows and needs —
          *     its words, its state, its window, when its availabilities close, how long a shift is, when its roster was proposed (E11b), when it is
-         *     published and whether it was (E12) — to whoever holds `EventAtc.View` somewhere, the staff of a FIR among them, who do not read the
-         *     event itself.
+         *     published and whether it was (E12) — to whoever holds `EventAtc.View` without a scope, the staff of a FIR among them, who do not
+         *     read the event itself, and to whoever holds it on that event alone (issue #311).
          */
         AtcEventDto: {
             /** Format: int64 */
@@ -6810,7 +6826,8 @@ export interface components {
         };
         /**
          * @description One line of the preview: the outcome, the row of the file (from 0) if there is one, the leg if there is one, its
-         *     number now and after, and the fields that change.
+         *     number now and after, and the fields that change. On a hub tour, the hub of the leg's rotation and the place of the
+         *     rotation in its hub after the import; neither for a connection.
          */
         LegImportLineDto: {
             outcome: components["schemas"]["LegImportOutcome"];
@@ -6826,6 +6843,9 @@ export interface components {
             arrivalIcao: string;
             changes: string[];
             hasReports: boolean;
+            hub?: null | string;
+            /** Format: int32 */
+            rotation?: null | number;
         };
         /**
          * @description What an import does with the legs the file does not contain (design M2 §8.4, ADR-051 of Toursystem): "merge" leaves
@@ -6838,11 +6858,16 @@ export interface components {
          * @enum {unknown}
          */
         LegImportOutcome: "Added" | "Changed" | "Unchanged" | "Restored" | "Kept" | "Deleted" | "Retired";
-        /** @description The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. */
+        /**
+         * @description The differences, computed by the server and written nowhere; the fingerprint the apply must carry back. On a hub tour,
+         *     the hubs the import adds and the ones it deletes.
+         */
         LegImportPreviewDto: {
             lines: components["schemas"]["LegImportLineDto"][];
             reasonRequired: boolean;
             fingerprint: string;
+            hubsAdded?: null | string[];
+            hubsDeleted?: null | string[];
         };
         /**
          * @description The rows of the file, in their order — which is the order of the tour — and what to do with the legs it does not
@@ -6858,6 +6883,9 @@ export interface components {
         /**
          * @description One row of the file, as the browser read it (T8, Carmine 22 September 2026: the file is read in the browser). The
          *     file names aircraft types only: the groups of a leg are the editor's, and a leg the file matches keeps its own.
+         *     On a hub tour, Hub and Rotation say where the leg belongs: the rotation of that hub the label names,
+         *     or — both empty — the connection between two hubs (note 2026-10-28-hub-e-rotazioni-da-file). Any other tour leaves them
+         *     empty.
          */
         LegImportRowDto: {
             departureIcao: string;
@@ -6867,6 +6895,8 @@ export interface components {
             aircraftTypes: null | string[];
             /** Format: date-time */
             releaseAt: null | string;
+            hub?: null | string;
+            rotation?: null | string;
         };
         /** @description An issue as the staff's list and form show it: the tour, the leg, who wrote it and what, where it is. */
         LegIssueDto: {
@@ -8904,6 +8934,12 @@ export interface components {
             disputesDismissed: number;
             bans: components["schemas"]["PilotBanDto"][];
         };
+        /** @description A pilot rating of the core's vocabulary as a tour's form offers it: the network's number, and the short name the staff say. */
+        PilotRatingChoiceDto: {
+            /** Format: int32 */
+            number: number;
+            shortName: string;
+        };
         /**
          * @description A pilot's own record (§3.7, §7.1): the bookings not flown that count, the threshold, whether they have the limits and until when, the limits
          *     valid in the event asked about — its own, or the settings' —, and the bookings not flown themselves, the latest first.
@@ -9505,9 +9541,11 @@ export interface components {
             size: number;
         };
         /**
-         * @description A session as the site shows it (design M3 §4.1, §4.3; note `il-training-in-pubblico`): the position, the rating and when —
-         *     in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only, who: the trainee and the trainer, by
-         *     VID and by the name the hub has. To a visitor `Trainee` and `Trainer` are none, whatever the row holds.
+         * @description A session as the site shows it (design M3 §4.1, §4.3; notes `il-training-in-pubblico`, `i-nomi-di-una-sessione-fino-al-suo-giorno`):
+         *     the position, the rating and when — in UTC, as every moment the hub keeps —, whether it is over, and, to a signed in reader only and
+         *     until the session's day is over, who: the trainee and the trainer, by VID and by the name the hub has. To a visitor, and to anybody
+         *     once the day is over, `Trainee` and `Trainer` are none, whatever the row holds: the trainee and the staff read them on
+         *     their own pages.
          */
         PublicSessionDto: {
             /**
@@ -9528,6 +9566,11 @@ export interface components {
             startsAtUtc: string;
             /** @description Over: its day is over in the division's time zone (§1.2), or its report is published. The report itself is never public. */
             held: boolean;
+            /**
+             * @description Whether the session still names who: its day is not over in the division's time zone, whatever its state. For a visitor too, who
+             *     is offered the login only then.
+             */
+            named: boolean;
             trainee: null | components["schemas"]["TrainingMemberDto"];
             trainer: null | components["schemas"]["TrainingMemberDto"];
         };
@@ -9607,6 +9650,7 @@ export interface components {
             requiresProcedures: boolean;
             /** Format: int32 */
             minPilotRating: null | number;
+            minPilotRatingName: null | string;
             referenceAircraftIcao: null | string;
             aircraft: components["schemas"]["PublicAircraftDto"];
             /** Format: int32 */
@@ -10508,7 +10552,8 @@ export interface components {
          * @description A training as the staff reads it on its page (design M3 §2.3, §2.4, §2.5, §2.6, §2.7, §4.2): the request with the trainee's
          *     rating and hours when they asked, the site of the theory exam for the reminder of whoever approves, the decision, the trainer,
          *     the dates proposed with their warnings, the session — held, from the day after it (§1.2), and whether its date was the trainee's
-         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason, the history of its
+         *     choice or set by hand —, the sessions that are over, the sheet and the report, the closing with its reason — or by a ban, with
+         *     who gave it and no reason (issue #312) —, the history of its
          *     changes (A13b; empty on a trainee's path, which does not draw it, A13d), and what the reader may do. Never an address. `Sheet` is the copy a completed training's report keeps; while
          *     the training is dated, the active items of its ladder and rating as a report would mark them now, with nothing marked; none
          *     otherwise. Read with `Training.View`, which the core never denies, so the trainee of the row reads it too: the one rule of
@@ -10560,6 +10605,7 @@ export interface components {
             /** Format: date-time */
             closedAt: null | string;
             closeReason: null | string;
+            closedByBan: boolean;
             readyForMockExam: boolean;
             readyForExam: boolean;
             cooldownWaived: boolean;
@@ -11117,7 +11163,7 @@ export interface components {
          *     `Trainer` is who trains it, as the mail of the assignment names them; `Slots` the dates proposed to choose from, the
          *     ones still to come, while the training waits for its date (A8); `Held` says a dated training shows as held, from the day
          *     after its session in the division's time zone (§1.2); `CloseReason` why the staff closed it — none when the hub did,
-         *     because the trainee chose no date in time (A8). The report (A9): the trainer's boxes, the general comment and the sheet with the
+         *     because the trainee chose no date in time (A8), and none when a ban closed it, which `ClosedByBan` says (issue #312). The report (A9): the trainer's boxes, the general comment and the sheet with the
          *     grades, the marks and the comments for the trainee — empty until it is published —; `Sessions` the sessions that are over,
          *     rescheduled, not attended or held, with nothing the staff wrote of them.
          */
@@ -11149,6 +11195,7 @@ export interface components {
             /** Format: date-time */
             closedAt: null | string;
             closeReason: null | string;
+            closedByBan: boolean;
             readyForMockExam: boolean;
             readyForExam: boolean;
             cooldownWaived: boolean;
@@ -11264,7 +11311,7 @@ export interface components {
          * @description What a line of the history of a training says happened (A13b, note `2026-09-30-lo-storico-di-un-training`). Sent by name.
          * @enum {unknown}
          */
-        TrainingHistoryEvent: "Requested" | "RejectedForTheory" | "Accepted" | "Rejected" | "Assigned" | "TrainerChanged" | "DatesChanged" | "DateChosen" | "DateSet" | "DateMoved" | "Rescheduled" | "NoShow" | "Completed" | "Closed" | "Cancelled" | "Changed" | "Erased";
+        TrainingHistoryEvent: "Requested" | "RejectedForTheory" | "Accepted" | "Rejected" | "Assigned" | "TrainerChanged" | "DatesChanged" | "DateChosen" | "DateSet" | "DateMoved" | "Rescheduled" | "NoShow" | "Completed" | "Closed" | "ClosedByBan" | "Cancelled" | "Changed" | "Erased";
         /** @description A person as the staff's pages name them: the VID that always is, and the name the hub has — none when it has none. */
         TrainingMemberDto: {
             /** Format: int32 */
@@ -17978,6 +18025,13 @@ export interface operations {
                     "application/json": components["schemas"]["AtcEventDto"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -19319,6 +19373,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    FlightOpsTourRatings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotRatingChoiceDto"][];
+                };
             };
         };
     };
