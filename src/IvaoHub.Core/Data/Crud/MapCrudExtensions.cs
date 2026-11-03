@@ -469,7 +469,7 @@ public static class MapCrudExtensions
         forbidden = null;
         narrowing = null;
 
-        if (!typeof(IOwnedByDepartment).IsAssignableFrom(typeof(TEntity)) || currentUser.HasAllDepartments)
+        if (!typeof(IOwnedByDepartment).IsAssignableFrom(typeof(TEntity)) || currentUser.IsSuperadmin)
         {
             return true;
         }
@@ -479,6 +479,27 @@ public static class MapCrudExtensions
         var reading = currentUser.Permissions
             .Where(held => string.Equals(held.Name, readPermission, StringComparison.Ordinal))
             .ToArray();
+
+        // Whoever reaches every department sees the lot, unless a deny took one of them away from this list's reading (issue
+        // #319, item 6): the calculator then writes the permission on each department left, and the list holds those, as the
+        // single handler does for the detail.
+        IReadOnlyCollection<Department> theirs = currentUser.Departments;
+        if (currentUser.HasAllDepartments)
+        {
+            var whole = reading.Where(held => held is { FromOutside: false, Fir: null, ResourceScope: null }).ToArray();
+            if (whole.Any(held => held.Department is null))
+            {
+                return true;
+            }
+
+            var left = whole.Select(held => held.Department!.Value).ToHashSet();
+            if (RolePermissionMatrix.AllDepartments.All(left.Contains))
+            {
+                return true;
+            }
+
+            theirs = left;
+        }
 
         var onTheirFir = typeof(IHasFir).IsAssignableFrom(typeof(TEntity))
             ? reading
@@ -505,7 +526,7 @@ public static class MapCrudExtensions
             .Distinct()
             .ToList();
 
-        var departments = currentUser.Departments
+        var departments = theirs
             .Concat(fromOutside)
             .Concat(acrossScopes ? onTheirRows : [])
             .Distinct()
