@@ -1,5 +1,9 @@
 using System.Text.Json;
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -82,5 +86,76 @@ public sealed class SecurityHeadersTests(MariaDbFixture mariaDb) : IAsyncLifetim
         // string runs and everything above is theatre.
         Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", sent, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-eval'", sent, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("bug", 500)]
+    [InlineData("refusal", 400)]
+    public async Task AnErrorCarriesThemTooAndItsCorrelationId(string how, int status)
+    {
+        // The exception handler clears the response before it writes its problem: until issue #320 (item 1) a 500, and every
+        // refusal the domain raises, left with none of the headers and without the identifier a report needs.
+        using var client = _factory.CreateClient();
+        var declared = Configuration();
+
+        using var response = await client.GetAsync($"{SampleModule.FailPattern}?how={how}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(status, (int)response.StatusCode);
+        foreach (var header in declared.GetProperty("headers").EnumerateObject())
+        {
+            Assert.True(response.Headers.TryGetValues(header.Name, out var values), $"{header.Name} is missing from the error");
+            Assert.Equal(header.Value.GetString(), string.Join(", ", values!));
+        }
+
+        Assert.True(response.Headers.Contains("Content-Security-Policy"), "no content security policy on the error");
+        Assert.True(
+            response.Headers.TryGetValues("X-Correlation-Id", out var correlation) && !string.IsNullOrWhiteSpace(correlation.Single()),
+            "no correlation id on the error");
+    }
+
+    [Fact]
+    public async Task AnErrorCarriesTheTransportPolicyAgain()
+    {
+        // HSTS is written only in Production, by its own middleware before the security headers: the test host stands in for
+        // it with a filter that writes the header first, where UseHsts would.
+        await using var test = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TransportPolicyStartupFilter>()));
+        using var client = test.CreateClient();
+
+        using var response = await client.GetAsync($"{SampleModule.FailPattern}?how=bug", TestContext.Current.CancellationToken);
+
+        Assert.Equal(500, (int)response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("Strict-Transport-Security", out var values), "no HSTS on the error");
+        Assert.Equal(TransportPolicyStartupFilter.Value, Assert.Single(values));
+    }
+
+    [Fact]
+    public async Task AnErrorOfAPrivateInstallationStillAsksNotToBeIndexed()
+    {
+        await using var test = _factory.WithWebHostBuilder(builder => builder.UseSetting("Installation:Preview", "true"));
+        using var client = test.CreateClient();
+
+        using var response = await client.GetAsync($"{SampleModule.FailPattern}?how=bug", TestContext.Current.CancellationToken);
+
+        Assert.Equal(500, (int)response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("X-Robots-Tag", out var values), "no X-Robots-Tag on the error");
+        Assert.Equal("noindex, nofollow", Assert.Single(values));
+    }
+
+    /// <summary>Writes the header UseHsts writes in Production, before anything of the hub runs.</summary>
+    private sealed class TransportPolicyStartupFilter : IStartupFilter
+    {
+        public const string Value = "max-age=31536000";
+
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => builder =>
+        {
+            builder.Use(async (context, continuation) =>
+            {
+                context.Response.Headers.StrictTransportSecurity = Value;
+                await continuation();
+            });
+
+            next(builder);
+        };
     }
 }

@@ -10,9 +10,10 @@ namespace IvaoHub.Core.Auth;
 public sealed record IvaoUserTokens(string AccessToken, string? RefreshToken, DateTime ExpiresAtUtc, string? Scopes);
 
 /// <summary>
-/// Stores the IVAO access and refresh tokens encrypted in <c>hub_user_tokens</c> rather than in the
-/// authentication cookie: some modules call the IVAO API on behalf of the user, and a cookie that
-/// carries credentials travels with every single request.
+/// Stores the IVAO access token encrypted in <c>hub_user_tokens</c> rather than in the
+/// authentication cookie: a module may call the IVAO API on behalf of the user, and a cookie that
+/// carries credentials travels with every single request. The refresh token is not kept (issue
+/// #320, item 6): the column stays, empty.
 /// <para>If the keys in <c>hub-keys/</c> are lost the values cannot be read any more. That is
 /// treated as "no token", never as an error: the user simply logs in again (plan section 16.14).</para>
 /// </summary>
@@ -39,7 +40,11 @@ public sealed class IvaoUserTokenStore(
         }
 
         row.AccessTokenEnc = _protector.Protect(tokens.AccessToken);
-        row.RefreshTokenEnc = tokens.RefreshToken is null ? null : _protector.Protect(tokens.RefreshToken);
+
+        // Never the refresh token, and a stored one goes at the member's next sign in: nothing reads the tokens yet, and a
+        // refresh token is the one that outlives the session (issue #320, item 6). The module that first calls IVAO for a
+        // member decides whether it needs one, and says so in its note (plan §6.1).
+        row.RefreshTokenEnc = null;
         row.ExpiresAt = tokens.ExpiresAtUtc;
         row.Scopes = tokens.Scopes;
         row.UpdatedAt = clock.UtcNow;
