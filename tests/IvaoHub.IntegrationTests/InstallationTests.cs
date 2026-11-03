@@ -27,6 +27,7 @@ public sealed class InstallationTests(MariaDbFixture mariaDb) : IAsyncLifetime
     private const int StaffVid = 927002;
     private const int BootstrapVid = 927003;
     private const int PublicMemberVid = 927004;
+    private const int OldTokenVid = 927005;
 
     private HubWebApplicationFactory _factory = null!;
 
@@ -197,6 +198,42 @@ public sealed class InstallationTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.NotNull(outcome.Principal);
         Assert.True(await scope.ServiceProvider.GetRequiredService<HubDbContext>()
             .Users.AnyAsync(user => user.Vid == PublicMemberVid, token));
+    }
+
+    [Fact]
+    public async Task ARefreshTokenStoredBeforeGoesAtTheNextSignIn()
+    {
+        var token = TestContext.Current.CancellationToken;
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+
+        // A member who signed in before issue #320 (item 6): their row still holds the refresh token of then.
+        database.Users.Add(new HubUser
+        {
+            Vid = OldTokenVid,
+            FirstName = "Test",
+            LastName = "Member",
+            SecurityStamp = SuperadminService.NewStamp(),
+            CreatedAt = clock.UtcNow,
+            UpdatedAt = clock.UtcNow,
+        });
+        database.UserTokens.Add(new UserToken
+        {
+            Vid = OldTokenVid,
+            AccessTokenEnc = "old-access",
+            RefreshTokenEnc = "old-refresh",
+            ExpiresAt = clock.UtcNow,
+            UpdatedAt = clock.UtcNow,
+        });
+        await database.SaveChangesAsync(token);
+
+        var outcome = await scope.ServiceProvider.GetRequiredService<IvaoSignIn>()
+            .CompleteAsync(Profile(OldTokenVid), Tokens(), token);
+
+        Assert.NotNull(outcome.Principal);
+        Assert.Null(await database.UserTokens.AsNoTracking()
+            .Where(row => row.Vid == OldTokenVid).Select(row => row.RefreshTokenEnc).SingleAsync(token));
     }
 
     [Fact]

@@ -292,7 +292,8 @@ public static class IvaoAuthenticationExtensions
     /// names it.
     /// <para>A failure on the way — the database down, or two first sign-ins of the same member at once meeting on the same
     /// key — ends on that page too, as «unknown», and never as the JSON of a 500 in the middle of a sign-in (issue #320,
-    /// item 7): a second try finds the row the first one wrote.</para>
+    /// item 7). For the race the visitor's second try finds the row the first sign-in wrote and goes through; for a database
+    /// that is down it fails the same way until the database is back.</para>
     /// </summary>
     private static async Task OnTicketReceived(TicketReceivedContext context)
     {

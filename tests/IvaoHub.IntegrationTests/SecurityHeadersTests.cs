@@ -1,5 +1,9 @@
 using System.Text.Json;
 using IvaoHub.Core.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace IvaoHub.IntegrationTests;
@@ -107,5 +111,51 @@ public sealed class SecurityHeadersTests(MariaDbFixture mariaDb) : IAsyncLifetim
         Assert.True(
             response.Headers.TryGetValues("X-Correlation-Id", out var correlation) && !string.IsNullOrWhiteSpace(correlation.Single()),
             "no correlation id on the error");
+    }
+
+    [Fact]
+    public async Task AnErrorCarriesTheTransportPolicyAgain()
+    {
+        // HSTS is written only in Production, by its own middleware before the security headers: the test host stands in for
+        // it with a filter that writes the header first, where UseHsts would.
+        await using var test = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, TransportPolicyStartupFilter>()));
+        using var client = test.CreateClient();
+
+        using var response = await client.GetAsync($"{SampleModule.FailPattern}?how=bug", TestContext.Current.CancellationToken);
+
+        Assert.Equal(500, (int)response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("Strict-Transport-Security", out var values), "no HSTS on the error");
+        Assert.Equal(TransportPolicyStartupFilter.Value, Assert.Single(values));
+    }
+
+    [Fact]
+    public async Task AnErrorOfAPrivateInstallationStillAsksNotToBeIndexed()
+    {
+        await using var test = _factory.WithWebHostBuilder(builder => builder.UseSetting("Installation:Preview", "true"));
+        using var client = test.CreateClient();
+
+        using var response = await client.GetAsync($"{SampleModule.FailPattern}?how=bug", TestContext.Current.CancellationToken);
+
+        Assert.Equal(500, (int)response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("X-Robots-Tag", out var values), "no X-Robots-Tag on the error");
+        Assert.Equal("noindex, nofollow", Assert.Single(values));
+    }
+
+    /// <summary>Writes the header UseHsts writes in Production, before anything of the hub runs.</summary>
+    private sealed class TransportPolicyStartupFilter : IStartupFilter
+    {
+        public const string Value = "max-age=31536000";
+
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => builder =>
+        {
+            builder.Use(async (context, continuation) =>
+            {
+                context.Response.Headers.StrictTransportSecurity = Value;
+                await continuation();
+            });
+
+            next(builder);
+        };
     }
 }
