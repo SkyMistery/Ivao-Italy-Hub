@@ -37,8 +37,12 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
         ArgumentNullException.ThrowIfNull(database);
         ArgumentNullException.ThrowIfNull(clock);
 
+        // Apart from the rules below: a trailing When applies to every rule of its chain, and a blank value must still be told
+        // it is required (issue #319, item 3).
         RuleFor(grant => grant.Value)
-            .NotEmpty().WithMessage("errors.required")
+            .NotEmpty().WithMessage("errors.required");
+
+        RuleFor(grant => grant.Value)
             .MaximumLength(MaxValueLength).WithMessage("errors.text.tooLong")
             .Must(catalogue.IsKnown).WithMessage("errors.grant.unknownPermission")
             .Must(value => !catalogue.IsClosedToGrants(value)).WithMessage("errors.grant.globalPermission")
@@ -53,7 +57,7 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
         // A member, a department's position or the team of a FIR, and exactly one of them (M2, note
         // 2026-09-13-moduli-non-subordinati-ai-dipartimenti §3.2; M3, A11a, note 2026-09-27-i-capi-fir-sul-loro-fir).
         RuleFor(grant => grant.Vid)
-            .Must((grant, vid) => (vid is > 0 ? 1 : 0) + (grant.PositionDepartment is not null ? 1 : 0) + (grant.PositionFirTeam ? 1 : 0) == 1)
+            .Must((grant, vid) => (vid is not null ? 1 : 0) + (grant.PositionDepartment is not null ? 1 : 0) + (grant.PositionFirTeam ? 1 : 0) == 1)
             .WithMessage("errors.grant.subject");
 
         RuleFor(grant => grant.Vid)
@@ -61,7 +65,11 @@ public sealed class GrantWriteDtoValidator : AbstractValidator<GrantWriteDto>
                 .AsNoTracking()
                 .AnyAsync(user => user.Vid == vid && (user.IsStaff || user.IsSuperadmin), cancellationToken))
             .WithMessage("errors.grant.notStaff")
-            .When(grant => grant.Vid is > 0 && grant.PositionDepartment is null && !grant.PositionFirTeam);
+            .When(grant => grant.Vid is not null && grant.PositionDepartment is null && !grant.PositionFirTeam);
+
+        // A number outside the enum would be a row the calculator reads as neither a grant nor a deny: refused like a missing one.
+        RuleFor(grant => grant.Kind).IsInEnum().WithMessage("errors.required");
+        RuleFor(grant => grant.Effect).IsInEnum().WithMessage("errors.required");
 
         // A position is a department — or the team of a FIR — at one or more levels: a department alone would be everybody in
         // it, which is a decision the staff positions already make.

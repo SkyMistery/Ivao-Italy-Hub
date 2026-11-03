@@ -281,8 +281,12 @@ public static class EffectivePermissionsCalculator
         [.. grants
             .Where(grant => grant.Kind == GrantKind.Permission)
             // A grant to a position counts for somebody who holds it; a grant to a person has
-            // already been chosen by its VID (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti).
-            .Where(grant => grant.Vid is not null || grant.IsHeldThrough(held))
+            // already been chosen by its VID (M2, note 2026-09-13-moduli-non-subordinati-ai-dipartimenti). A row that names both
+            // counts only through its position: its VID would otherwise give it to whoever the caller loaded it for (issue #319,
+            // item 3).
+            .Where(grant => grant.PositionDepartment is null && !grant.PositionFirTeam
+                ? grant.Vid is not null
+                : grant.IsHeldThrough(held))
             .Where(grant => grant.SuspendedAt is null)
             .Where(grant => grant.ExpiresAt is null || grant.ExpiresAt > nowUtc)
             .Where(grant => catalogue.IsKnown(grant.Value))
