@@ -45,6 +45,7 @@ const saved: EventsSettings = {
     },
   ],
   bookingGapMinutes: 10,
+  maxBookingsPerEvent: 5,
   pilotRetentionMonths: 24,
   inPersonRetentionMonths: 3,
   reminderLeadHours: 24,

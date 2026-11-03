@@ -498,6 +498,9 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
         var decided = Assert.Single(await MailsAsync(ControllerVid, EventsNotifications.AtcShiftTransferDecided, token));
         Assert.Contains($"Test Publication ({CoordinatorVid})", decided.DataJson, StringComparison.Ordinal);
 
+        // The taker is found in it as the erasure finds a person (#322, item 6): by a key named for a VID, so their erasure takes the mail away.
+        Assert.True(AuditRedaction.Mentions(decided.DataJson, CoordinatorVid));
+
         // Not theirs any more: the staff moved the second shift to the other controller before deciding.
         var second = await CreatedAsync(await controller.PostAsJsonAsync(TransferUri(shifts[1].Id), new TransferRequest(null, null), token), token);
         var stored = (await ShiftsAsync(id, token)).Single(shift => shift.Id == shifts[1].Id);
@@ -510,6 +513,17 @@ public sealed class EventsRosterPublicationTests(MariaDbFixture mariaDb) : IAsyn
         Assert.Equal(
             [StaffTransfers.NotTheirsKey],
             (await RefusedAsync(await aod.PostAsJsonAsync(DecideUri(second.GetProperty("id").GetInt64(), "approve"), new TransferApproval(CoordinatorVid, null), token), token))["id"]);
+
+        // The new holder is not offered the shift while the request of the one before waits, as «Hand over» refuses it (#322, item 3).
+        using (var other = await SignedInAsync(OtherVid, token))
+        {
+            var theirs = (await ListAsync(await other.GetAsync(TransferEndpoints.MinePattern, token), token)).Single(shift => shift.GetProperty("id").GetInt64() == stored.Id);
+            Assert.False(theirs.GetProperty("transferable").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, theirs.GetProperty("transfer").ValueKind);
+            Assert.Equal(
+                [MemberShifts.PendingKey],
+                (await RefusedAsync(await other.PostAsJsonAsync(TransferUri(stored.Id), new TransferRequest(null, null), token), token))["id"]);
+        }
 
         // A cancelled event hands nothing over: its request is refused only.
         var cancelled = await EventRowAsync("refusals-cancelled", starts, starts.AddHours(6), PublishStatus.Published, proposed: true, token);

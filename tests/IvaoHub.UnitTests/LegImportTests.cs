@@ -156,15 +156,28 @@ public sealed class LegImportTests
     }
 
     [Fact]
+    public void ThePairTwiceTakesTheLegStillFlownFirst()
+    {
+        var legs = Tour(("AAAA", "BBBB"), ("AAAA", "BBBB"));
+        legs[0].RetiredAt = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var plan = LegImportPlan.Make(legs, File(("AAAA", "BBBB")), LegImportMode.Merge, NoReports);
+
+        Assert.False(plan.Restores);
+        Assert.Equal([LegImportOutcome.Kept, LegImportOutcome.Unchanged], plan.Steps.Select(step => step.Outcome));
+        Assert.Equal(legs[1], plan.Steps[1].Leg);
+    }
+
+    [Fact]
     public void TheFingerprintMovesWithTheLegs()
     {
         var legs = Tour(("AAAA", "BBBB"));
-        var before = LegImportPlan.Fingerprint(legs);
+        var before = LegImportPlan.Fingerprint(legs, [], []);
 
-        Assert.Equal(before, LegImportPlan.Fingerprint(Tour(("AAAA", "BBBB"))));
+        Assert.Equal(before, LegImportPlan.Fingerprint(Tour(("AAAA", "BBBB")), [], []));
 
         legs[0].RowVersion = legs[0].RowVersion.AddSeconds(1);
-        Assert.NotEqual(before, LegImportPlan.Fingerprint(legs));
+        Assert.NotEqual(before, LegImportPlan.Fingerprint(legs, [], []));
     }
 
     private static List<Leg> Tour(params (string From, string To)[] pairs) =>

@@ -74,6 +74,11 @@ export function historySays(entry: TrainingHistoryEntryDto, t: TFunction, moment
       return entry.by === null
         ? said(t('training:staff.history.closedByHub'))
         : said(t('training:staff.history.closed', { name }), entry.reason);
+    case 'ClosedByBan':
+      // By whoever gave the ban (issue #312); nobody for a ban the installation wrote.
+      return entry.by === null
+        ? said(t('training:staff.history.closedByBanNobody'))
+        : said(t('training:staff.history.closedByBan', { name }));
     case 'Cancelled':
       return said(t('training:staff.history.cancelled', { name }));
     case 'Changed':
