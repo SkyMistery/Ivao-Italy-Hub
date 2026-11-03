@@ -122,7 +122,8 @@
     },
     "erasure": {
       "vid": "That is not a VID.",
-      "superadmin": "A super administrator is not erased: take the role away first."
+      "superadmin": "A super administrator is not erased: take the role away first.",
+      "busy": "Another erasure is taking its number right now. Try again in a moment."
     },
     "notifications": {
       "unknownType": "That is not a kind of notification this hub sends."

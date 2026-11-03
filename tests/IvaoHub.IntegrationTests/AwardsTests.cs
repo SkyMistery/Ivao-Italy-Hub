@@ -56,9 +56,31 @@ public sealed class AwardsTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Equal(award, line.GetProperty("awardId").GetInt64());
         Assert.StartsWith("fo-test-award-", line.GetProperty("awardName").GetProperty("en").GetString(), StringComparison.Ordinal);
 
+        JsonElement assignment;
         using (var assigned = await AssignAsync(superadmin, award, PilotVid, signal, token))
         {
             Assert.Equal(HttpStatusCode.Created, assigned.StatusCode);
+            assignment = await assigned.Content.ReadFromJsonAsync<JsonElement>(token);
+        }
+
+        // The member it answered for is a fact of its creation like the line (issue #326, item 5): moved to somebody else, the
+        // line would stay handled for the first one. The reason may still change.
+        var assignmentPath = $"{AwardEndpoints.AssignmentsPattern}/{assignment.GetProperty("id").GetInt64()}";
+        var rowVersion = assignment.GetProperty("rowVersion").GetString();
+        using (var moved = await superadmin.PutAsJsonAsync(
+            assignmentPath,
+            new { awardId = award, vid = OtherPilotVid, reason = "fo-test-award moved", signalId = signal, rowVersion },
+            token))
+        {
+            await AssertRefusedAsync(moved, "vid", "errors.awards.signalOtherMember", token);
+        }
+
+        using (var reworded = await superadmin.PutAsJsonAsync(
+            assignmentPath,
+            new { awardId = award, vid = PilotVid, reason = "fo-test-award reworded", signalId = signal, rowVersion },
+            token))
+        {
+            Assert.Equal(HttpStatusCode.OK, reworded.StatusCode);
         }
 
         var handled = await SignalRowAsync(signal, token);

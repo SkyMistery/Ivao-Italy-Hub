@@ -176,13 +176,9 @@ public static class TourShape
                 active++;
                 var field = $"rotations.{hub.Icao}.{position}";
 
-                if (legs.Count != rotation.Size)
+                if (RotationProblem(hub.Icao, rotation.Size, legs) is { } key)
                 {
-                    problems.Add(new(field, "flightops:errors.rotationSize"));
-                }
-                else if (legs[0].DepartureIcao != hub.Icao || legs[^1].ArrivalIcao != hub.Icao)
-                {
-                    problems.Add(new(field, "flightops:errors.rotationNotAtHub"));
+                    problems.Add(new(field, key));
                 }
             }
 
@@ -201,10 +197,7 @@ public static class TourShape
 
             if (leg.Kind == LegKind.HubConnection)
             {
-                if (leg.RotationId is not null
-                    || leg.DepartureIcao == leg.ArrivalIcao
-                    || !hubs.Contains(leg.DepartureIcao)
-                    || !hubs.Contains(leg.ArrivalIcao))
+                if (leg.RotationId is not null || !ConnectsHubs(leg, hubs))
                 {
                     problems.Add(new(field, "flightops:errors.connectionNotBetweenHubs"));
                 }
@@ -214,6 +207,31 @@ public static class TourShape
                 problems.Add(new(field, "flightops:errors.legNotInRotation"));
             }
         }
+    }
+
+    /// <summary>
+    /// The rule of one rotation, written once for the shape and for the import of a file (note 2026-10-28-hub-e-rotazioni-da-file):
+    /// exactly as many flown legs as its size, out of its hub and back. The i18n key of the refusal, or null.
+    /// </summary>
+    public static string? RotationProblem(string hubIcao, int size, IReadOnlyList<Leg> legs)
+    {
+        ArgumentNullException.ThrowIfNull(legs);
+
+        if (legs.Count == 0 || legs.Count != size)
+        {
+            return "flightops:errors.rotationSize";
+        }
+
+        return legs[0].DepartureIcao != hubIcao || legs[^1].ArrivalIcao != hubIcao ? "flightops:errors.rotationNotAtHub" : null;
+    }
+
+    /// <summary>A connection, written once for the shape and for the import: from one hub of the tour to another.</summary>
+    public static bool ConnectsHubs(Leg leg, IReadOnlySet<string> hubs)
+    {
+        ArgumentNullException.ThrowIfNull(leg);
+        ArgumentNullException.ThrowIfNull(hubs);
+
+        return leg.DepartureIcao != leg.ArrivalIcao && hubs.Contains(leg.DepartureIcao) && hubs.Contains(leg.ArrivalIcao);
     }
 
     /// <summary>A container (design M2 §2.7): at least two subtours, and no more of them required than there are.</summary>

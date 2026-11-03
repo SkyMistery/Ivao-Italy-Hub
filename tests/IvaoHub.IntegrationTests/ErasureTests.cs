@@ -13,6 +13,8 @@ using IvaoHub.Core.Notifications;
 using IvaoHub.Core.Preferences;
 using IvaoHub.Core.Privacy;
 using IvaoHub.Core.Services;
+using IvaoHub.Modules.Events;
+using IvaoHub.Modules.Events.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -343,6 +345,47 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     /// <summary>
+    /// The last pseudonym is read and written under a lock of the database (issue #326, item 3): while another erasure holds
+    /// it, this one waits, and refuses rather than take the same number; nothing of the person has been touched.
+    /// </summary>
+    [Fact]
+    public async Task AnErasureWaitsForTheNumberAnotherOneIsTaking()
+    {
+        var token = TestContext.Current.CancellationToken;
+        const int vid = 780098;
+        await SeedUserAsync(vid, superadmin: false, token);
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+
+        string? connection;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            connection = scope.ServiceProvider.GetRequiredService<HubDbContext>().Database.GetConnectionString();
+        }
+
+        await using (var other = await DatabaseLock.TakeAsync(
+            connection,
+            name => DatabaseLock.NameFor(PersonalDataErasure.PseudonymLockPrefix, name),
+            TimeSpan.Zero,
+            token))
+        {
+            Assert.True(other.Held);
+
+            using var refused = await superadmin.PostAsync(new Uri($"{ErasureEndpoints.Pattern}/{vid}", UriKind.Relative), null, token);
+            Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+            var errors = (await refused.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("errors");
+            Assert.Contains("errors.erasure.busy", errors.GetProperty("vid").EnumerateArray().Select(error => error.GetString()));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            Assert.True(await scope.ServiceProvider.GetRequiredService<HubDbContext>().Users.AnyAsync(row => row.Vid == vid, token));
+        }
+
+        // Given back, the next erasure takes its number.
+        Assert.Equal(1, Line(await EraseAsync(superadmin, vid, token), "erasure.lines.user"));
+    }
+
+    /// <summary>
     /// A sign in writes about the member before they are anybody (issue #323): the callback runs with nobody signed in, so its
     /// audit rows — their user, and the grants it suspends — carry no VID and the member's address. The erasure takes the
     /// address out of every one of them: the user's, a grant's erased with the person, and a grant's revoked before.
@@ -572,6 +615,91 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
         "trn_trainings.trainer_vid",
         "trn_trainings.updated_by",
     ];
+
+    /// <summary>
+    /// A row of a module that points its member out for an award keeps pointing out what the erasure left in that column: the
+    /// pseudonym (issue #326, item 1). Through the erasure itself, whose rewrite of the person columns is a save that projects
+    /// the row again — a report's award of the events module, as an accepted report leaves it.
+    /// </summary>
+    [Fact]
+    public async Task AnErasedAwardeeLeavesNoSignalUnderThePseudonym()
+    {
+        var token = TestContext.Current.CancellationToken;
+        const int vid = 931003;
+        await SeedUserAsync(vid, superadmin: false, token);
+
+        long reportId;
+        string source;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var now = scope.ServiceProvider.GetRequiredService<IClock>().UtcNow;
+            var report = new EventReport
+            {
+                EventId = 931003,
+                Vid = vid,
+                Kind = ReportKind.Pilot,
+                State = ReportState.Accepted,
+                SubmittedAt = now,
+                CheckedAt = now,
+                CreatedAt = now,
+                UpdatedAt = now,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            };
+            events.Reports.Add(report);
+            await events.SaveChangesAsync(token);
+            reportId = report.Id;
+
+            var award = new EventReportAward
+            {
+                ReportId = report.Id,
+                RuleId = 931003,
+                EventId = 931003,
+                Vid = vid,
+                AwardId = 931003,
+                Reason = "erasure-awardee",
+                PointsOut = true,
+                CreatedAt = now,
+                OwnerDepartment = Department.ED,
+                OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+            };
+            events.ReportAwards.Add(award);
+            await events.SaveChangesAsync(token);
+            source = award.SourceId;
+        }
+
+        try
+        {
+            Assert.Equal(vid, Assert.Single(await AwardSignalsAsync(source, token)).Vid);
+
+            using var superadmin = await SignedInAsync(SuperadminVid, token);
+            var pseudonym = (await EraseAsync(superadmin, vid, token)).GetProperty("pseudonym").GetInt32();
+
+            await using (var scope = _factory.Services.CreateAsyncScope())
+            {
+                // The row now names the pseudonym, and the queue has no line for it, nor the person's any more.
+                var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+                Assert.Equal(pseudonym, await events.ReportAwards.IgnoreQueryFilters().Where(row => row.ReportId == reportId).Select(row => row.Vid).SingleAsync(token));
+            }
+
+            Assert.Empty(await AwardSignalsAsync(source, token));
+        }
+        finally
+        {
+            await using var scope = _factory.Services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<EventsDbContext>().Reports.IgnoreQueryFilters().Where(row => row.Id == reportId).ExecuteDeleteAsync(token);
+            await scope.ServiceProvider.GetRequiredService<HubDbContext>().AwardSignals.Where(row => row.SourceModule == EventsModule.ModuleKey && row.SourceId == source).ExecuteDeleteAsync(token);
+        }
+    }
+
+    private async Task<List<AwardSignal>> AwardSignalsAsync(string source, CancellationToken cancellationToken)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<HubDbContext>().AwardSignals.AsNoTracking()
+            .Where(row => row.SourceModule == EventsModule.ModuleKey && row.SourceId == source)
+            .ToListAsync(cancellationToken);
+    }
 
     private static int Line(JsonElement response, string key) =>
         response.GetProperty("lines").EnumerateArray()
