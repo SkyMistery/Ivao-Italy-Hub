@@ -253,7 +253,9 @@ describe('the ATC of an event', () => {
     expect(screen.queryByText(englishEvents.atc.readOnly)).not.toBeInTheDocument();
   });
 
-  test('the chief of a FIR has no «Save» nor «Delete» on a position of another FIR, though the bootstrap names the department', async () => {
+  // The server never hands the chief of a FIR another FIR's position (403): a position it says the reader does not write is one they only
+  // read, as the bootstrap's name and department alone cannot tell.
+  test('a position the server says the reader does not write has no «Save» nor «Delete», though the bootstrap names the department', async () => {
     const bootstrap = bootstrapHolding(held('EventAtc.View'), held('EventAtc.Edit'));
 
     await open('/staff/events/atc/7/positions/70', bootstrap, {

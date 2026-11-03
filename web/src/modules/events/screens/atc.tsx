@@ -189,7 +189,7 @@ export function AtcPanel({ eventId }: { eventId: number }) {
  * One position of an event: the event in the breadcrumb, the generated form — the callsign among the positions of the division —,
  * «delete» for one that exists, and under it who is available on it. Whoever reads the ATC and does not write it reads the form and the
  * candidates. Whether the reader writes it is the server's answer on the position (`editable`), or on the event for a new one
- * (`canAddPositions`, #427): the staff of a FIR write the positions of their FIR and read the others. Back to where the ATC of the event
+ * (`canAddPositions`, #427): the staff of a FIR write the positions of their FIR, and reach no other (403). Back to where the ATC of the event
  * lives for the reader.
  */
 export function AtcPositionForm() {

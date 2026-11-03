@@ -186,7 +186,7 @@ public sealed class EventsActionsTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TheChiefOfAFirWritesThePositionsOfTheirFirAndReadsTheOthers()
+    public async Task TheChiefOfAFirWritesThePositionsOfTheirFirAndReachesNoOther()
     {
         var token = TestContext.Current.CancellationToken;
         var row = await EventRowAsync("fir", token);
