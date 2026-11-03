@@ -115,7 +115,8 @@
     },
     "superadmin": {
       "neverLoggedIn": "Quel VID non ha mai fatto login, quindi l’hub non sa ancora nulla di lui.",
-      "lastOne": "L’ultimo super amministratore non si può togliere."
+      "lastOne": "L’ultimo super amministratore non si può togliere.",
+      "busy": "È in corso un’altra modifica dei super amministratori: riprova tra un momento."
     },
     "erasure": {
       "vid": "Questo non è un VID.",

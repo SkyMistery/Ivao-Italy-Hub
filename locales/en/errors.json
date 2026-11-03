@@ -115,7 +115,8 @@
     },
     "superadmin": {
       "neverLoggedIn": "That VID has never signed in, so the hub knows nothing about them yet.",
-      "lastOne": "The last super administrator cannot be removed."
+      "lastOne": "The last super administrator cannot be removed.",
+      "busy": "Another change of the super administrators is under way: try again in a moment."
     },
     "erasure": {
       "vid": "That is not a VID.",

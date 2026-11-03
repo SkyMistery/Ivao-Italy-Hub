@@ -379,6 +379,36 @@ public sealed class AuthenticationTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ARemovalWaitsForTheCountAnotherOneIsMaking()
+    {
+        // Two removals at once each counted two and left none (issue #319, item 5): the count is made under a lock.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(600021, isSuperadmin: true, cancellationToken: token);
+        await SeedUserAsync(600022, isSuperadmin: true, cancellationToken: token);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var superadmins = scope.ServiceProvider.GetRequiredService<SuperadminService>();
+        var connection = scope.ServiceProvider.GetRequiredService<HubDbContext>().Database.GetConnectionString();
+
+        await using (var other = await DatabaseLock.TakeAsync(
+            connection,
+            name => DatabaseLock.NameFor(SuperadminService.RemovalLockPrefix, name),
+            TimeSpan.Zero,
+            token))
+        {
+            Assert.True(other.Held);
+
+            var refused = await Assert.ThrowsAsync<DomainRefusalException>(() => superadmins.RemoveAsync(600021, token));
+            Assert.Equal("errors.superadmin.busy", refused.MessageKey);
+            Assert.Contains(600021, await superadmins.ListAsync(token));
+        }
+
+        // Given back, the removal goes through.
+        await superadmins.RemoveAsync(600021, token);
+        Assert.DoesNotContain(600021, await superadmins.ListAsync(token));
+    }
+
+    [Fact]
     public async Task ASuperAdministratorHoldsTheWholeCatalogueThroughApiMe()
     {
         var token = TestContext.Current.CancellationToken;
