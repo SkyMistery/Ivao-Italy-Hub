@@ -253,7 +253,9 @@ export function OutcomeText({
     <p className="text-sm whitespace-pre-line">
       {closing.by === 'staff'
         ? t('training:mine.closedByStaff', { reason: closing.reason })
-        : t('training:mine.closedUnanswered')}
+        : closing.by === 'ban'
+          ? t('training:mine.closedByBan')
+          : t('training:mine.closedUnanswered')}
     </p>
   );
 }

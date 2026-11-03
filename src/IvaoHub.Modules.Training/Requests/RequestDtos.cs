@@ -69,7 +69,7 @@ public sealed record MyTrainingPathDto(
 /// <c>Trainer</c> is who trains it, as the mail of the assignment names them; <c>Slots</c> the dates proposed to choose from, the
 /// ones still to come, while the training waits for its date (A8); <c>Held</c> says a dated training shows as held, from the day
 /// after its session in the division's time zone (§1.2); <c>CloseReason</c> why the staff closed it — none when the hub did,
-/// because the trainee chose no date in time (A8). The report (A9): the trainer's boxes, the general comment and the sheet with the
+/// because the trainee chose no date in time (A8), and none when a ban closed it, which <c>ClosedByBan</c> says (issue #312). The report (A9): the trainer's boxes, the general comment and the sheet with the
 /// grades, the marks and the comments for the trainee — empty until it is published —; <c>Sessions</c> the sessions that are over,
 /// rescheduled, not attended or held, with nothing the staff wrote of them.
 /// </summary>
@@ -94,6 +94,7 @@ public sealed record TraineeTrainingDto(
     DateTime? CompletedAt,
     DateTime? ClosedAt,
     string? CloseReason,
+    bool ClosedByBan,
     bool ReadyForMockExam,
     bool ReadyForExam,
     bool CooldownWaived,

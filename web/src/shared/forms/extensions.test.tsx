@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -383,6 +384,92 @@ test('unticking the last one leaves nothing rather than an empty box nobody mean
   await user.click(screen.getByRole('button', { name: 'Save' }));
 
   expect(onSubmit).toHaveBeenCalledWith({ allowed: [] });
+});
+
+// ---- 8. a set that grows from the form (#364) ---------------------------------------------------
+
+const creatableSchema = z.object({
+  title: z.string(),
+  collections: z
+    .array(z.string())
+    .optional()
+    .meta({ multi: true, creatable: true, choices: [{ value: 'guides', label: 'Guides' }] }),
+});
+
+function renderCreatable(
+  onSubmit: (values: z.output<typeof creatableSchema>) => Promise<unknown>,
+  createChoice?: (field: string, choose: (value: string) => void) => React.ReactNode,
+) {
+  return renderWithProviders(
+    <SchemaForm
+      schema={creatableSchema}
+      defaults={{ title: 'A page', collections: ['guides'] }}
+      locales={LOCALES}
+      labels="test"
+      submitLabel="Save"
+      onSubmit={onSubmit}
+      {...(createChoice === undefined ? {} : { createChoice })}
+    />,
+    {
+      i18n: createTestI18n({
+        test: { fields: { title: 'Title', collections: 'Collections', name: 'Name' } },
+      }),
+    },
+  );
+}
+
+test('a creatable set draws what the screen gives under its boxes, and ticks the value it is handed', async () => {
+  const user = userEvent.setup();
+  const onSubmit = vi.fn(() => Promise.resolve());
+  const createChoice = vi.fn((_field: string, choose: (value: string) => void) => (
+    <button type="button" onClick={() => choose('rules')}>
+      New collection
+    </button>
+  ));
+
+  renderCreatable(onSubmit, createChoice);
+
+  await user.click(screen.getByRole('button', { name: 'New collection' }));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  // Added beside what was ticked, even before the screen offers it as a box: the list of choices
+  // arrives a moment later, and what was made must not be lost waiting for it.
+  expect(onSubmit).toHaveBeenCalledWith({ title: 'A page', collections: ['guides', 'rules'] });
+  expect(createChoice).toHaveBeenCalledWith('collections', expect.any(Function));
+});
+
+test('a creatable set without a screen to make one is the set it always was', () => {
+  renderCreatable(() => Promise.resolve());
+
+  expect(screen.getByRole('checkbox', { name: 'Guides' })).toBeChecked();
+  expect(screen.queryByRole('button', { name: 'New collection' })).toBeNull();
+});
+
+test('a form in a dialog of a form sends itself and never the form behind it', async () => {
+  // The dialog is a portal: elsewhere in the page, inside the outer form for React. Enter in the
+  // inner field submitted both — the page was saved by naming a collection (#364).
+  const user = userEvent.setup();
+  const outer = vi.fn(() => Promise.resolve());
+  const inner = vi.fn(() => Promise.resolve());
+
+  renderCreatable(outer, () =>
+    createPortal(
+      <SchemaForm
+        schema={z.object({ name: z.string() })}
+        defaults={{ name: '' }}
+        locales={LOCALES}
+        labels="test"
+        submitLabel="Create"
+        onSubmit={inner}
+      />,
+      document.body,
+    ),
+  );
+
+  await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Rules{Enter}');
+
+  await waitFor(() => expect(inner).toHaveBeenCalledWith({ name: 'Rules' }));
+  expect(outer).not.toHaveBeenCalled();
 });
 
 // ---- a field drawn and not written in (#367) ----------------------------------------------------

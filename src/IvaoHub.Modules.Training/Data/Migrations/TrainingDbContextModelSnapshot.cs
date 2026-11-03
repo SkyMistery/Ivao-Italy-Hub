@@ -49,6 +49,10 @@ namespace IvaoHub.Modules.Training.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("handled_by");
 
+                    b.Property<DateTime?>("NotifiedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("notified_at");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -79,6 +83,9 @@ namespace IvaoHub.Modules.Training.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_cms_award_signals");
+
+                    b.HasIndex("Status", "NotifiedAt")
+                        .HasDatabaseName("ix_cms_award_signals_status_notified_at");
 
                     b.HasIndex("Vid", "Status")
                         .HasDatabaseName("ix_cms_award_signals_vid_status");
@@ -989,6 +996,10 @@ namespace IvaoHub.Modules.Training.Data.Migrations
                     b.Property<int?>("ClosedBy")
                         .HasColumnType("int")
                         .HasColumnName("closed_by");
+
+                    b.Property<bool>("ClosedByBan")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("closed_by_ban");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime(6)")

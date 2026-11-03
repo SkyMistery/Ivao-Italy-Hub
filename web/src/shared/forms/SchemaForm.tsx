@@ -70,6 +70,8 @@ interface FormEnvironment {
    * of filtering in memory a page of rows it already downloaded.
    */
   onSuggestSearch?: ((field: string, typed: string) => void) | undefined;
+  /** What a `creatable` field draws under its boxes to make a new value, and tick it (`choose`). */
+  createChoice?: ((field: string, choose: (value: string) => void) => React.ReactNode) | undefined;
 }
 
 /**
@@ -100,6 +102,7 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   uploadMedia,
   division,
   onSuggestSearch,
+  createChoice,
 }: {
   schema: z.ZodType<TValues, TValues>;
   defaults: TValues;
@@ -161,6 +164,13 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
    * would accept, and that cannot be chosen. So the screen has to be able to ask again.
    */
   onSuggestSearch?: (field: string, typed: string) => void;
+  /**
+   * The eighth extension of the generator (#364): under a `multi` field annotated `creatable`, what
+   * the screen draws to make a new value — a button and its dialog — handed `choose`, which ticks the
+   * new value in the field. Called with the field's path, so one screen can serve several fields. A
+   * screen that gives nothing leaves the field as it always was.
+   */
+  createChoice?: (field: string, choose: (value: string) => void) => React.ReactNode;
 }) {
   const { t } = useTranslation();
   const form = useForm({
@@ -172,7 +182,15 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
   });
   const fields = readFields(schema);
   const problem = useProblemDetails(form, (field) => whereDrawn(fields, field, form.getValues()));
-  const env: FormEnvironment = { locales, labels, mediaLibrary, uploadMedia, division, onSuggestSearch };
+  const env: FormEnvironment = {
+    locales,
+    labels,
+    mediaLibrary,
+    uploadMedia,
+    division,
+    onSuggestSearch,
+    createChoice,
+  };
 
   // What a screen reader is told about Enter, which only a box of one line answers with a save (#224).
   const enter = whereEnterSaves(fields);
@@ -199,7 +217,13 @@ export function SchemaForm<TValues extends Record<string, unknown>>({
     <FormProvider {...form}>
       <form
         {...(id === undefined ? {} : { id })}
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => {
+          // ⚠️ A form drawn in a dialog of another form (a new collection made from the page of a
+          // document, #364) is in a portal in the DOM and inside the other form in React, and React
+          // carries a submit up its own tree: without this, Enter in the dialog would also save the page.
+          event.stopPropagation();
+          void submit(event);
+        }}
         className="flex flex-col gap-6"
         noValidate
       >
@@ -906,7 +930,7 @@ function Suggest({
  */
 function Field({ node, name = node.path, env }: { node: FieldNode; name?: string; env: FormEnvironment }) {
   const { t, i18n } = useTranslation();
-  const { register, control, formState } = useFormContext();
+  const { register, control, formState, getValues } = useFormContext();
   const { locales, labels } = env;
 
   if (node.meta.hidden === true) {
@@ -1175,8 +1199,7 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
             name={name}
             render={({ field }) => {
               const chosen: string[] = Array.isArray(field.value) ? (field.value as string[]) : [];
-
-              return (
+              const boxes = (
                 <div className="flex flex-wrap gap-x-6 gap-y-2" role="group" aria-label={label}>
                   {node.options.map((option) => (
                     <div key={option.value} className="flex items-center gap-2">
@@ -1200,6 +1223,25 @@ function Field({ node, name = node.path, env }: { node: FieldNode; name?: string
                       <Label htmlFor={`${name}.${option.value}`}>{option.label}</Label>
                     </div>
                   ))}
+                </div>
+              );
+
+              if (!node.creatable || env.createChoice === undefined) {
+                return boxes;
+              }
+
+              // The new value is ticked beside what is ticked *now*, read at the moment it arrives:
+              // the dialog that made it was open for a while, and the value seen at render is old.
+              const choose = (value: string) => {
+                const now = getValues(name) as unknown;
+                const ticked = Array.isArray(now) ? (now as string[]) : [];
+                field.onChange(ticked.includes(value) ? ticked : [...ticked, value]);
+              };
+
+              return (
+                <div className="flex flex-col gap-2">
+                  {boxes}
+                  {env.createChoice(node.path, choose)}
                 </div>
               );
             }}
