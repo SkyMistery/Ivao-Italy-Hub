@@ -1,5 +1,6 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MimeKit.Text;
@@ -32,7 +33,7 @@ public interface IMailSender
 /// site; an HTML body would be a second rendering of the same words, with a second way of looking
 /// wrong in somebody's client.</para>
 /// </summary>
-public sealed class SmtpMailSender(IOptions<SmtpOptions> options) : IMailSender
+public sealed class SmtpMailSender(IOptions<SmtpOptions> options, ILogger<SmtpMailSender> logger) : IMailSender
 {
     public async Task SendAsync(OutgoingMail mail, CancellationToken cancellationToken = default)
     {
@@ -71,6 +72,8 @@ public sealed class SmtpMailSender(IOptions<SmtpOptions> options) : IMailSender
         catch (Exception exception) when (exception is not OperationCanceledException)
 #pragma warning restore CA1031
         {
+            // A trace, and nothing more: a server that keeps failing the goodbye is worth knowing about, never worth a resend.
+            logger.LogWarning(exception, "The mail server accepted the mail, then failed the goodbye; the mail is not sent again.");
         }
     }
 }

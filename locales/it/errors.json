@@ -120,7 +120,7 @@
     "erasure": {
       "vid": "Questo non è un VID.",
       "superadmin": "Un super amministratore non si cancella: prima gli si toglie il ruolo.",
-      "busy": "Un’altra cancellazione sta prendendo il suo numero proprio ora. Riprova tra un momento."
+      "busy": "Un'altra cancellazione sta prendendo il suo numero proprio ora. Riprova tra un momento."
     },
     "notifications": {
       "unknownType": "Questo non è un tipo di notifica che l'hub manda."
