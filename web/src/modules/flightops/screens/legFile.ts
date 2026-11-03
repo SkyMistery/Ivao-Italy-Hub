@@ -11,6 +11,10 @@ import type { LegImportRowDto } from '../api';
  * import does not know is ignored, and so is a row with nothing in it; any other row is a leg, and one that is not
  * gets refused on its row (Carmine: the file is cleaned, not guessed). The order of the rows is the order of the tour:
  * there is no column of numbers. The library is loaded only when a file is read, so that nobody else downloads it.
+ *
+ * A hub tour's file has two columns more, "Hub" and "Rotation" (note 2026-10-28-hub-e-rotazioni-da-file): the rows of a
+ * rotation of a hub, or — both empty — a connection between two hubs. Read here as text; whether the file makes sense as a
+ * hub tour is the server's to say, row by row.
  */
 
 /** The columns of the file, as the model writes them. */
@@ -23,7 +27,10 @@ export const LEG_FILE_COLUMNS = [
   'release',
 ] as const;
 
-type Column = (typeof LEG_FILE_COLUMNS)[number];
+/** The columns of a hub tour's file: where each leg belongs, first. */
+export const HUB_FILE_COLUMNS = ['hub', 'rotation', ...LEG_FILE_COLUMNS] as const;
+
+type Column = (typeof HUB_FILE_COLUMNS)[number];
 
 /** Header names, lower case and letters only, with a rank: the lowest one found wins the column. */
 const ALIASES: Readonly<Record<string, readonly [Column, number]>> = {
@@ -41,6 +48,9 @@ const ALIASES: Readonly<Record<string, readonly [Column, number]>> = {
   aircraft: ['aircraft', 0],
   releaseat: ['release', 0],
   release: ['release', 0],
+  hubicao: ['hub', 0],
+  hub: ['hub', 0],
+  rotation: ['rotation', 0],
 };
 
 /** How far down a header may be: a row of totals, a title, a note above it. */
@@ -204,6 +214,9 @@ export function legRowsOf(sheet: readonly (readonly Cell[])[]): LegFile {
         .map((type) => type.toUpperCase())
         .filter((type) => type !== ''),
       releaseAt: release,
+      // Only when the file has them, so that the rows of any other tour stay what they were.
+      ...(header.columns.has('hub') ? { hub: text(at(row, 'hub'))?.toUpperCase() ?? null } : {}),
+      ...(header.columns.has('rotation') ? { rotation: text(at(row, 'rotation')) } : {}),
     });
     lines.push(line);
   });
@@ -248,20 +261,28 @@ export async function readLegFile(file: Blob, sheet?: string): Promise<LegWorkbo
 
 /**
  * The model of the file, downloaded from the editor: the header and nothing else — an example row would name some
- * division's airports. The callsign and flight number columns are text, so that a leading zero survives.
+ * division's airports. The callsign, flight number and rotation columns are text, so that a leading zero survives. A
+ * hub tour's model has the columns of `HUB_FILE_COLUMNS`.
  */
-export async function downloadLegFileModel(name: string): Promise<void> {
+export async function downloadLegFileModel(
+  name: string,
+  columns: readonly Column[] = LEG_FILE_COLUMNS,
+): Promise<void> {
   const XLSX = await import('xlsx');
 
-  const sheet = XLSX.utils.aoa_to_sheet([[...LEG_FILE_COLUMNS]]);
-  sheet['!cols'] = LEG_FILE_COLUMNS.map((column) => ({ wch: column === 'release' ? 18 : 14 }));
-  for (const column of ['callsign', 'flightNumber'] as const) {
-    const letter = XLSX.utils.encode_col(LEG_FILE_COLUMNS.indexOf(column));
+  const sheet = XLSX.utils.aoa_to_sheet([[...columns]]);
+  sheet['!cols'] = columns.map((column) => ({ wch: column === 'release' ? 18 : 14 }));
+  for (const column of ['callsign', 'flightNumber', 'rotation'] as const) {
+    if (!columns.includes(column)) {
+      continue;
+    }
+
+    const letter = XLSX.utils.encode_col(columns.indexOf(column));
     for (let row = 2; row <= 200; row++) {
       sheet[`${letter}${row}`] = { t: 's', v: '', z: '@' };
     }
   }
-  sheet['!ref'] = `A1:${XLSX.utils.encode_col(LEG_FILE_COLUMNS.length - 1)}200`;
+  sheet['!ref'] = `A1:${XLSX.utils.encode_col(columns.length - 1)}200`;
 
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, sheet, 'legs');

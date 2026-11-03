@@ -150,3 +150,28 @@ test('something that is not a spreadsheet is one problem, not an exception', asy
   expect(file.rows).toEqual([]);
   expect(file.problems.length).toBeGreaterThan(0);
 });
+
+// A hub tour's file (note 2026-10-28-hub-e-rotazioni-da-file): the hub and the rotation of every leg, read as text, the
+// hub in upper case; both empty for a connection. A file without the two columns sends rows without them.
+test("a hub tour's file says the hub and the rotation of every leg, and a connection says neither", () => {
+  const file = legRowsOf([
+    ['Hub', 'Rotation', 'Departure', 'Arrival'],
+    ['aaaa', 1, 'AAAA', 'BBBB'],
+    ['AAAA', 1, 'BBBB', 'AAAA'],
+    [null, null, 'AAAA', 'CCCC'],
+  ]);
+
+  expect(file.problems).toEqual([]);
+  expect(file.rows.map((row) => [row.hub, row.rotation])).toEqual([
+    ['AAAA', '1'],
+    ['AAAA', '1'],
+    [null, null],
+  ]);
+
+  const plain = legRowsOf([
+    ['Departure', 'Arrival'],
+    ['AAAA', 'BBBB'],
+  ]);
+  expect(plain.rows[0]).not.toHaveProperty('hub');
+  expect(plain.rows[0]).not.toHaveProperty('rotation');
+});
