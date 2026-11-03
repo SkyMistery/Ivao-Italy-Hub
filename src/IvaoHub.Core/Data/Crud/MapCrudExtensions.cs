@@ -223,7 +223,7 @@ public static class MapCrudExtensions
 
         var rows = await query
             .AsNoTracking()
-            .Skip((page - 1) * pageSize)
+            .Skip(Paging.Skip(page, pageSize))
             .Take(pageSize)
             .ToListAsync(http.RequestAborted);
 
@@ -839,9 +839,8 @@ public static class MapCrudExtensions
     /// A page is capped here rather than trusted: an unbounded page size is the easiest way to
     /// turn a list into a way of dumping a table.
     /// </summary>
-    private static (int Page, int PageSize) ReadPaging(CrudListRequest request) => (
-        request.Page is > 0 ? request.Page.Value : 1,
-        request.PageSize is > 0 ? Math.Min(request.PageSize.Value, MaxPageSize) : DefaultPageSize);
+    private static (int Page, int PageSize) ReadPaging(CrudListRequest request) =>
+        Paging.Read(request.Page, request.PageSize, DefaultPageSize, MaxPageSize);
 
     private static async Task<TEntity?> FindAsync<TEntity, TListDto, TDetailDto, TWriteDto>(
         CrudScope<TEntity> scope,
