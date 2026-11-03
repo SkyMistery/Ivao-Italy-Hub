@@ -341,7 +341,7 @@ public sealed class StaffTransfers(
         var taker = (await MemberNames.ReadAsync(hub, [to], cancellationToken)).GetValueOrDefault(to) is { Length: > 0 } name
             ? $"{name} ({to.ToString(System.Globalization.CultureInfo.InvariantCulture)})"
             : to.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        await mail.AtcShiftTransferDecidedAsync(row, holder, (callsign, before.FromUtc, before.ToUtc), taker, note, cancellationToken);
+        await mail.AtcShiftTransferDecidedAsync(row, holder, (callsign, before.FromUtc, before.ToUtc), (to, taker), note, cancellationToken);
         await publication.TellOneAsync(row, shift.Id, now, cancellationToken);
 
         return (TransferResult.Done, problems);

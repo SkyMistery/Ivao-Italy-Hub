@@ -5,6 +5,7 @@ import { holdsPermission, type Bootstrap, type Department } from '../../shared/a
 import type { ChoiceOption } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { PageShell, useNotice } from '../../shared/ui';
+import { NewCollection } from '../categories/NewCollection';
 import { categoriesOfKindQuery } from '../categories/queries';
 import { useUploadMedia } from '../media/mutations';
 import { mediaPickerQuery } from '../media/queries';
@@ -142,6 +143,9 @@ export function ContentFormScreen({
     .filter((row) => String(row.id) !== id)
     .map((row) => ({ value: String(row.id), label: read(row.title) || row.slug }));
 
+  // The kinds that are filed in collections, and so may make one from their page (#364).
+  const collectionKind = config.kind === 'News' || config.kind === 'Document' ? config.kind : null;
+
   const categories: ChoiceOption[] = (vocabulary.data?.items ?? []).map((category) => ({
     value: category.key,
     // Resolved here, in the language on screen: the generator draws the label it is handed and
@@ -230,6 +234,24 @@ export function ContentFormScreen({
         // The library of this department: a row picks its pictures out of its own files, and may
         // put a new one there from the picker.
         mediaLibrary={mediaPickerQuery(department)}
+        // A collection made from this page, in this department, and the row filed in it (#364). Only
+        // the kinds that have collections draw the field; a template has them too.
+        {...(collectionKind === null
+          ? {}
+          : {
+              createCollection: (choose: (key: string) => void) => (
+                <NewCollection
+                  kind={collectionKind}
+                  department={department}
+                  locales={locales}
+                  division={{
+                    defaultLocale: bootstrap.division.defaultLocale,
+                    timezone: bootstrap.division.timezone,
+                  }}
+                  onCreated={choose}
+                />
+              ),
+            })}
         // A file already in the library is the file chosen, and the picker says nothing about it:
         // that is exactly what whoever uploaded it was after.
         uploadMedia={async (file, category) =>

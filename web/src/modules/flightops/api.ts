@@ -84,6 +84,7 @@ export type RotationListDto = components['schemas']['RotationListDto'];
 export type CallsignRuleDto = components['schemas']['CallsignRuleDto'];
 export type CallsignRuleListDto = components['schemas']['CallsignRuleListDto'];
 export type TourConstraintDto = components['schemas']['TourConstraintDto'];
+export type PilotRatingChoiceDto = components['schemas']['PilotRatingChoiceDto'];
 export type TourConstraintListDto = components['schemas']['TourConstraintListDto'];
 
 // ---- aircraft types -------------------------------------------------------------------------------
@@ -347,6 +348,16 @@ export function tourQuery(id: number) {
   });
 }
 
+/** The pilot ratings of the core's vocabulary, which the least rating of a tour is chosen from. */
+export function tourRatingsQuery() {
+  return queryOptions({
+    queryKey: [...toursKey, 'ratings'] as const,
+    queryFn: async (): Promise<PilotRatingChoiceDto[]> =>
+      unwrap(await api.GET('/api/flightops/tours/ratings')),
+    staleTime: Infinity,
+  });
+}
+
 /** What stands in the way of "ready", asked before anybody presses it and asked again after every save. */
 export function tourReadyProblemsQuery(id: number) {
   return queryOptions({
@@ -406,7 +417,7 @@ export function tourToFormValues(tour: TourDetailDto, locales: readonly string[]
     reportWindowDays: tour.reportWindowDays,
     ...(tour.dailyLegLimit === null ? {} : { dailyLegLimit: tour.dailyLegLimit }),
     requiresProcedures: tour.requiresProcedures,
-    ...(tour.minPilotRating === null ? {} : { minPilotRating: tour.minPilotRating }),
+    ...(tour.minPilotRating === null ? {} : { minPilotRating: String(tour.minPilotRating) }),
     referenceAircraftIcao: tour.referenceAircraftIcao ?? '',
     ...(tour.requiredNm === null ? {} : { requiredNm: tour.requiredNm }),
     ...(tour.requiredSubtours === null ? {} : { requiredSubtours: tour.requiredSubtours }),
@@ -446,6 +457,7 @@ function tourBody(values: TourFormValues, briefing: Body | null, goal: OpenGoalC
   const text = (value: string | undefined) =>
     value === undefined || value.trim() === '' ? null : value.trim();
   const award = text(values.awardId);
+  const rating = text(values.minPilotRating);
 
   return {
     ownerDepartment: values.ownerDepartment,
@@ -465,7 +477,7 @@ function tourBody(values: TourFormValues, briefing: Body | null, goal: OpenGoalC
     hubRotationOrder: values.hubRotationOrder ?? null,
     requiresProcedures: values.requiresProcedures,
     dailyLegLimit: values.dailyLegLimit ?? null,
-    minPilotRating: values.minPilotRating ?? null,
+    minPilotRating: rating === null ? null : Number(rating),
     referenceAircraftIcao: text(values.referenceAircraftIcao)?.toUpperCase() ?? null,
     requiredNm: values.requiredNm ?? null,
     allowedAircraft: allowedFromFormValues(values.allowedAircraft, values.allowedGroups),

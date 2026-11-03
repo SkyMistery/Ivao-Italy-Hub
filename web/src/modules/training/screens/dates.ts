@@ -212,19 +212,28 @@ export function dateSteps(training: StaffTrainingDto): {
  * Nobody is the sure sign of the hub's closing (A8a): the staff's answer says who closed it (`closedBy`), and a closing of the staff
  * keeps saying who once its reason went with the trainee's data (A12b) — `reason` is none then. The trainee's own answer does not say
  * who, and is read by the reason, which the training of a trainee who is still there always keeps.
+ *
+ * A ban closes every training of its member still open (issue #312): by whoever gave it, with no reason, and both answers say so
+ * (`closedByBan`), before anything else is read.
  */
 export type Closing =
   | { readonly by: 'staff'; readonly at: string; readonly reason: string | null }
-  | { readonly by: 'hub'; readonly at: string };
+  | { readonly by: 'hub'; readonly at: string }
+  | { readonly by: 'ban'; readonly at: string };
 
 export function closingOf(training: {
   readonly state: TraineeTrainingDto['state'];
   readonly closedAt: string | null;
   readonly closeReason: string | null;
+  readonly closedByBan: boolean;
   readonly closedBy?: TrainingMemberDto | null;
 }): Closing | null {
   if (training.state !== 'Closed' || training.closedAt === null) {
     return null;
+  }
+
+  if (training.closedByBan) {
+    return { by: 'ban', at: training.closedAt };
   }
 
   const byTheHub =

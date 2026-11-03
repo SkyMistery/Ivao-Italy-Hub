@@ -228,8 +228,12 @@ function TourFacts({ tour }: { tour: PublicTourDto }) {
     },
   ];
 
-  if (tour.minPilotRating !== null) {
-    facts.push({ label: t('flightops:public.facts.minRating'), value: String(tour.minPilotRating) });
+  // The rating by its name, from the core's vocabulary: the number is IVAO's and says nothing to a pilot.
+  if (tour.minPilotRatingName !== null) {
+    facts.push({
+      label: t('flightops:public.facts.minRating'),
+      value: `${tour.minPilotRatingName} — ${t(`ratings.Pilot.${tour.minPilotRatingName}`)}`,
+    });
   }
 
   if (tour.requiresProcedures) {
