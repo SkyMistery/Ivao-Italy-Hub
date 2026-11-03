@@ -371,11 +371,234 @@ public sealed class LegTests(MariaDbFixture mariaDb) : IAsyncLifetime
             line => Assert.Contains(line.GetProperty("outcome").GetString(), new[] { "Unchanged", "Kept" }));
         Assert.False(preview.GetProperty("reasonRequired").GetBoolean());
 
-        // A hub tour's legs belong to rotations a file cannot name.
-        var hub = await CreatedTourAsync(advisor, TourKind.Hub, token);
-        using (var refused = await advisor.PostAsJsonAsync($"{LegsUri(Id(hub))}/import/preview", new { rows, mode = "Merge" }, token))
+        // A hub and a rotation are a hub tour's: a sequential tour refuses the row that names them.
+        using (var refused = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { new { departureIcao = Rome, arrivalIcao = Milan, hub = Rome, rotation = "1" } }, mode = "Merge" },
+            token))
         {
-            await AssertRefusedAsync(refused, "tourId", "flightops:errors.importNotOnHub", token);
+            await AssertRefusedAsync(refused, "rows[0].hub", "flightops:errors.legHubOnly", token);
+        }
+    }
+
+    /// <summary>
+    /// A hub tour imports its hubs, its rotations and their connections from the file (note
+    /// 2026-10-28-hub-e-rotazioni-da-file): the shape of the file refused on its rows, the hubs and rotations created in the
+    /// order of the file, a connection between two hubs; the same file again changes nothing, a stale preview is a 409. Ready,
+    /// an import that would break it writes nothing — not even the hub and rotation it adds first —; "replace" retires a
+    /// rotation with reports whole, and deletes a rotation, a connection and a hub the file no longer names.
+    /// </summary>
+    [Fact]
+    public async Task AHubTourImportsItsHubsRotationsAndConnections()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var reported = new ReportedLegs();
+        await using var withReports = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton<ITourReports>(reported)));
+        using var advisor = await SignedInAsync(withReports, AdvisorVid, token);
+
+        var tour = await CreatedTourAsync(advisor, TourKind.Hub, token);
+        var legs = LegsUri(Id(tour));
+
+        static object Row(string from, string to, string? hub, string? rotation, DateTime? releaseAt = null) =>
+            new { departureIcao = from, arrivalIcao = to, hub, rotation, releaseAt };
+
+        // A hub without a rotation, and a rotation without a hub.
+        using (var noRotation = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview", new { rows = new[] { Row(Rome, Milan, Rome, null) }, mode = "Merge" }, token))
+        {
+            await AssertRefusedAsync(noRotation, "rows[0].rotation", "errors.required", token);
+        }
+
+        using (var noHub = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview", new { rows = new[] { Row(Rome, Milan, null, "1") }, mode = "Merge" }, token))
+        {
+            await AssertRefusedAsync(noHub, "rows[0].hub", "errors.required", token);
+        }
+
+        // A rotation in two places of the file; a connection to an airport that is no hub of the file nor of the tour.
+        using (var split = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new
+            {
+                rows = new[]
+                {
+                    Row(Rome, London, Rome, "1"), Row(London, Rome, Rome, "1"),
+                    Row(Rome, Milan, Rome, "2"), Row(Milan, Rome, Rome, "2"),
+                    Row(Rome, London, Rome, "1"), Row(London, Rome, Rome, "1"),
+                },
+                mode = "Merge",
+            },
+            token))
+        {
+            await AssertRefusedAsync(split, "rows[4].rotation", "flightops:errors.importRotationSplit", token);
+        }
+
+        using (var nowhere = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, London, Rome, "1"), Row(London, Rome, Rome, "1"), Row(Rome, Milan, null, null) }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(nowhere, "rows[2].hub", "flightops:errors.connectionNotBetweenHubs", token);
+        }
+
+        // A label longer than a label: the request's own limit.
+        var longLabel = new string('x', Modules.FlightOps.Legs.LegImportRequestValidator.MaxRotationLength + 1);
+        using (var tooLong = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, London, Rome, longLabel), Row(London, Rome, Rome, longLabel) }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(tooLong, "rows[0].rotation", "errors.text.tooLong", token);
+        }
+
+        // A rotation that does not come back to its hub; one of three legs. The rules of the shape, on the rows' legs.
+
+        using (var notBack = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, Milan, Rome, "1"), Row(Milan, London, Rome, "1") }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(notBack, "rows[0].rotation", "flightops:errors.rotationNotAtHub", token);
+        }
+
+        using (var three = await advisor.PostAsJsonAsync(
+            $"{legs}/import/preview",
+            new { rows = new[] { Row(Rome, Milan, Rome, "1"), Row(Milan, London, Rome, "1"), Row(London, Rome, Rome, "1") }, mode = "Merge" },
+            token))
+        {
+            await AssertRefusedAsync(three, "rows[0].rotation", "flightops:errors.rotationSizeChoice", token);
+        }
+
+        // Two hubs, a rotation each, and the connection between them; a hub and a label in any case ("A", "a": one rotation).
+        var rows = new[]
+        {
+            Row(Rome, London, Rome, "1"),
+            Row(London, Rome, Rome, "1"),
+            Row(Rome, Milan, null, null),
+            Row(Milan, London, "xfa2", "A"),
+            Row(London, Milan, "xfa2", "a"),
+        };
+
+        var preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Merge" }, token),
+            token);
+        Assert.All(preview.GetProperty("lines").EnumerateArray(), line => Assert.Equal("Added", line.GetProperty("outcome").GetString()));
+        Assert.Equal([Rome, Milan], preview.GetProperty("hubsAdded").EnumerateArray().Select(hub => hub.GetString()));
+        Assert.Equal(
+            [Rome, Rome, null, Milan, Milan],
+            preview.GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("hub").GetString()));
+
+        var fingerprint = preview.GetProperty("fingerprint").GetString();
+        var grid = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Merge", fingerprint }, token),
+            token);
+        var after = Rows(grid);
+
+        // The preview of a shape that is no longer there: a conflict, not a second import.
+        using (var stale = await advisor.PostAsJsonAsync($"{legs}/import", new { rows, mode = "Merge", fingerprint }, token))
+        {
+            Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        }
+
+        Assert.Equal([1, 2, 3, 4, 5], after.Select(row => row.GetProperty("number").GetInt32()));
+        Assert.Equal(
+            ["Normal", "Normal", "HubConnection", "Normal", "Normal"],
+            after.Select(row => row.GetProperty("kind").GetString()));
+        Assert.Equal([1, 2, 0, 1, 2], after.Select(row => row.GetProperty("seqInRotation").ValueKind == JsonValueKind.Null ? 0 : row.GetProperty("seqInRotation").GetInt32()));
+
+        long milanRotation;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var hubs = await database.Hubs.AsNoTracking().Where(hub => hub.TourId == Id(tour)).OrderBy(hub => hub.Sort).ToListAsync(token);
+            var rotations = await database.Rotations.AsNoTracking().Where(rotation => rotation.TourId == Id(tour)).ToListAsync(token);
+            milanRotation = rotations.Single(rotation => rotation.HubId == hubs[1].Id).Id;
+
+            Assert.Equal([Rome, Milan], hubs.Select(hub => hub.Icao));
+            Assert.Equal(2, rotations.Count);
+            Assert.All(rotations, rotation => Assert.Equal(2, rotation.Size));
+            Assert.Equal(
+                [hubs[0].Id, hubs[0].Id, hubs[1].Id, hubs[1].Id],
+                after.Where(row => row.GetProperty("kind").GetString() == "Normal")
+                    .Select(row => rotations.Single(rotation => rotation.Id == row.GetProperty("rotationId").GetInt64()).HubId));
+        }
+
+        // The same file again changes nothing.
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows, mode = "Replace" }, token),
+            token);
+        Assert.All(
+            preview.GetProperty("lines").EnumerateArray(),
+            line => Assert.Equal("Unchanged", line.GetProperty("outcome").GetString()));
+        Assert.Empty(preview.GetProperty("hubsAdded").EnumerateArray());
+        Assert.Empty(preview.GetProperty("hubsDeleted").EnumerateArray());
+
+        // Ready, the tour stays ready: a third hub whose rotation opens after the tour closes is refused whole — the hub and
+        // the rotation the import writes before its legs are rolled back with them.
+        await OkAsync(await advisor.PostAsJsonAsync($"{TourEndpoints.Pattern}/{Id(tour)}/status", new { action = "Ready" }, token), token);
+        var late = DateTime.UtcNow.AddDays(90);
+        var breaking = rows.Concat([Row(London, Rome, London, "L", late), Row(Rome, London, London, "L", late)]).ToArray();
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows = breaking, mode = "Merge" }, token),
+            token);
+        Assert.Equal([London], preview.GetProperty("hubsAdded").EnumerateArray().Select(hub => hub.GetString()));
+
+        using (var notReady = await advisor.PostAsJsonAsync(
+            $"{legs}/import",
+            new { rows = breaking, mode = "Merge", fingerprint = preview.GetProperty("fingerprint").GetString() },
+            token))
+        {
+            await AssertRefusedAsync(notReady, "legs.6", "flightops:errors.legReleaseOutsidePeriod", token);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            Assert.Equal(2, await database.Hubs.CountAsync(hub => hub.TourId == Id(tour), token));
+            Assert.Equal(2, await database.Rotations.CountAsync(rotation => rotation.TourId == Id(tour), token));
+            Assert.Equal(5, await database.Legs.CountAsync(leg => leg.TourId == Id(tour), token));
+        }
+
+        // "Replace" with one new rotation of Rome: Rome's rotation has a report and is retired whole; the connection, Milan's
+        // rotation and Milan, which the file no longer names, are deleted.
+        reported.Legs.Add(Id(after[0]));
+        var replacing = new[] { Row(Rome, Milan, Rome, "2"), Row(Milan, Rome, Rome, "2") };
+        preview = await OkAsync(
+            await advisor.PostAsJsonAsync($"{legs}/import/preview", new { rows = replacing, mode = "Replace" }, token),
+            token);
+        Assert.Equal(
+            ["Retired", "Retired", "Added", "Added", "Deleted", "Deleted", "Deleted"],
+            preview.GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("outcome").GetString()));
+        Assert.Equal([Milan], preview.GetProperty("hubsDeleted").EnumerateArray().Select(hub => hub.GetString()));
+        Assert.True(preview.GetProperty("reasonRequired").GetBoolean());
+
+        grid = await OkAsync(
+            await advisor.PostAsJsonAsync(
+                $"{legs}/import",
+                new { rows = replacing, mode = "Replace", reason = "fo-test new season", fingerprint = preview.GetProperty("fingerprint").GetString() },
+                token),
+            token);
+        var replaced = Rows(grid);
+        Assert.Equal(4, replaced.Count);
+        Assert.Equal([Id(after[0]), Id(after[1])], replaced.Take(2).Select(Id));
+        Assert.All(replaced.Take(2), row => Assert.Equal("fo-test new season", row.GetProperty("retiredReason").GetString()));
+        Assert.Equal([Rome, Milan], replaced.Skip(2).Select(row => row.GetProperty("departureIcao").GetString()));
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+            var hubs = await database.Hubs.AsNoTracking().Where(hub => hub.TourId == Id(tour)).ToListAsync(token);
+            var rotations = await database.Rotations.AsNoTracking()
+                .Where(rotation => rotation.TourId == Id(tour))
+                .OrderBy(rotation => rotation.Sort)
+                .ToListAsync(token);
+
+            Assert.Equal([Rome], hubs.Select(hub => hub.Icao));
+            Assert.DoesNotContain(rotations, rotation => rotation.Id == milanRotation);
+            Assert.Equal(
+                [after[0].GetProperty("rotationId").GetInt64(), replaced[2].GetProperty("rotationId").GetInt64()],
+                rotations.Select(rotation => rotation.Id));
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Data;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data.Crud;
@@ -5,12 +6,14 @@ using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
 using IvaoHub.Core.Services;
 using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Shape;
 using IvaoHub.Modules.FlightOps.Tours;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace IvaoHub.Modules.FlightOps.Legs;
 
@@ -322,34 +325,62 @@ public static class LegEndpoints
     }
 
     /// <summary>
-    /// The differences between the file and the legs of the tour, written nowhere (design M2 §8.4): what is added,
-    /// changed, restored, kept, deleted and retired, and whether the import owes a reason.
+    /// The differences between the file and the shape of the tour, written nowhere (design M2 §8.4): what is added,
+    /// changed, restored, kept, deleted and retired, and whether the import owes a reason. On a hub tour, by rotation, and
+    /// the hubs added and deleted (note 2026-10-28-hub-e-rotazioni-da-file).
     /// </summary>
     private static async Task<IResult> PreviewImportAsync(long tourId, LegImportRequest body, LegRequest request, HttpContext http)
     {
-        var (_, legs, plan, refusal) = await PlanImportAsync(tourId, body, request, http);
+        var (tour, refused) = await request.WritableTourAsync(tourId, http);
+        if (tour is null)
+        {
+            return refused!;
+        }
+
+        var (shape, plan, refusal) = await PlanImportAsync(tour, body, request, http);
         if (plan is null)
         {
             return refusal!;
         }
 
-        return Results.Ok(new LegImportPreviewDto(plan.Lines(), plan.ReasonRequired, LegImportPlan.Fingerprint(legs!)));
+        var hubs = tour.Kind == TourKind.Hub;
+        return Results.Ok(new LegImportPreviewDto(
+            plan.Lines(),
+            plan.ReasonRequired,
+            shape!.Fingerprint,
+            hubs ? plan.HubsAdded : null,
+            hubs ? [.. plan.DeletedHubs.Select(hub => hub.Icao)] : null));
     }
 
     /// <summary>
-    /// The import, in one save: the legs the file matches take its values, the new ones are added, the absent ones
-    /// are left, deleted or retired by the mode (§1.4.1), every number is the file's order. Refused if the legs are no
-    /// longer the ones the preview looked at; a ready tour stays ready or nothing is written, as with every write.
+    /// The import, in one transaction: the new hubs, then the new rotations — a new leg goes into a rotation that has an
+    /// identifier —, then the legs the file matches take its values, the new ones are added, the absent units are left,
+    /// deleted or retired by the mode (§1.4.1), every number is the file's order; the rotations and hubs the plan removes go.
+    /// Refused if the shape is no longer the one the preview looked at; a ready tour stays ready or nothing is written, as
+    /// with every write, and a refusal rolls everything back.
+    /// <para>The tour's row is locked first (<c>FOR UPDATE</c>, under READ COMMITTED): a second import of the same tour waits
+    /// for the first, then reads the shape the first left, and is a 409 — never two new hubs of one ICAO.</para>
     /// </summary>
     private static async Task<IResult> ImportAsync(long tourId, LegImportRequest body, LegRequest request, HttpContext http)
     {
-        var (tour, legs, plan, refusal) = await PlanImportAsync(tourId, body, request, http);
+        var (tour, refused) = await request.WritableTourAsync(tourId, http);
+        if (tour is null)
+        {
+            return refused!;
+        }
+
+        var database = request.Database;
+        var cancellationToken = http.RequestAborted;
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await database.Database.ExecuteSqlAsync($"SELECT id FROM fo_tours WHERE id = {tour.Id} FOR UPDATE", cancellationToken);
+
+        var (shape, plan, refusal) = await PlanImportAsync(tour, body, request, http);
         if (plan is null)
         {
             return refusal!;
         }
 
-        if (body.Fingerprint != LegImportPlan.Fingerprint(legs!))
+        if (body.Fingerprint != shape!.Fingerprint)
         {
             return request.Conflict();
         }
@@ -361,52 +392,126 @@ public static class LegEndpoints
         }
 
         // As a restore by hand: nothing comes back into a tour nobody can start any more (§1.4.1).
-        if (plan.Restores && TourState.Of(tour!, request.Clock.UtcNow) is TourStateKind.Closing or TourStateKind.Closed)
+        if (plan.Restores && TourState.Of(tour, request.Clock.UtcNow) is TourStateKind.Closing or TourStateKind.Closed)
         {
             return request.Refused("rows", "flightops:errors.tourClosed");
         }
 
+        plan.Place();
+
+        var newHubs = plan.Hubs.Where(hub => hub.Id == 0).ToList();
+        foreach (var hub in newHubs)
+        {
+            hub.TourId = tour.Id;
+            hub.OwnerDepartment = tour.OwnerDepartment;
+            hub.OwnerDepartmentMask = tour.OwnerDepartmentMask;
+            database.Hubs.Add(hub);
+        }
+
+        if (newHubs.Count > 0)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
+        var hubIds = plan.Hubs.ToDictionary(hub => hub.Icao, hub => hub.Id, StringComparer.Ordinal);
+        var newRotations = plan.Units.Where(unit => unit.Rotation is { Id: 0 }).ToList();
+        foreach (var unit in newRotations)
+        {
+            var rotation = unit.Rotation!;
+            rotation.TourId = tour.Id;
+            rotation.HubId = hubIds[unit.HubIcao!];
+            rotation.OwnerDepartment = tour.OwnerDepartment;
+            rotation.OwnerDepartmentMask = tour.OwnerDepartmentMask;
+            database.Rotations.Add(rotation);
+        }
+
+        if (newRotations.Count > 0)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
         var (added, deleted) = plan.Apply(request.Clock.UtcNow, reason);
-        request.Database.Legs.AddRange(added);
-        request.Database.Legs.RemoveRange(deleted);
+        database.Legs.AddRange(added);
+        database.Legs.RemoveRange(deleted);
+        database.Rotations.RemoveRange(plan.DeletedRotations);
+        database.Hubs.RemoveRange(plan.DeletedHubs);
 
-        var after = legs!.Except(deleted).Concat(added).ToList();
+        var after = shape.Legs.Except(deleted).Concat(added).ToList();
+        if (tour.Kind != TourKind.Hub)
+        {
+            return await request.SaveAsync(tour, after, added, http, transaction: transaction);
+        }
 
-        return await request.SaveAsync(tour!, after, added, http);
+        var rotations = plan.Units.Select(unit => unit.Rotation).OfType<Rotation>().ToList();
+        return await request.SaveAsync(tour, after, added, http, plan.Hubs, rotations, transaction);
     }
 
     /// <summary>
-    /// What the preview and the import share: the tour writable and not a hub tour (Carmine, 22 September 2026: its
-    /// legs belong to rotations the file cannot name), every row made a leg by the same code as a leg of the editor,
-    /// refusals under <c>rows[n].field</c>, and the plan.
+    /// What the preview and the import share: every row made a leg by the same code as a leg of the editor, the file checked
+    /// whole — on a hub tour by <see cref="FileProblems"/>, on any other a row that names a hub or a rotation is refused —,
+    /// refusals under <c>rows[n].field</c>, the shape it is compared with, and the plan.
     /// </summary>
-    private static async Task<(Tour? Tour, List<Leg>? Legs, LegImportPlan? Plan, IResult? Refusal)> PlanImportAsync(
-        long tourId,
+    private static async Task<(ImportShape? Shape, LegImportPlan? Plan, IResult? Refusal)> PlanImportAsync(
+        Tour tour,
         LegImportRequest body,
         LegRequest request,
         HttpContext http)
     {
-        var (tour, refusal) = await request.WritableTourAsync(tourId, http);
-        if (tour is null)
-        {
-            return (null, null, null, refusal);
-        }
-
-        if (tour.Kind == TourKind.Hub)
-        {
-            return (null, null, null, request.Refused("tourId", "flightops:errors.importNotOnHub"));
-        }
-
         if (await request.InvalidAsync(body, http) is { } invalid)
         {
-            return (null, null, null, invalid);
+            return (null, null, invalid);
         }
 
+        var cancellationToken = http.RequestAborted;
+        var isHub = tour.Kind == TourKind.Hub;
+        var (incoming, problems) = await RowsAsync(tour, body, request, http);
+        var hubs = isHub ? await request.Database.Hubs.Where(hub => hub.TourId == tour.Id).ToListAsync(cancellationToken) : [];
+
+        if (isHub)
+        {
+            FileProblems(body.Rows, incoming, hubs, problems);
+        }
+        else
+        {
+            for (var row = 0; row < body.Rows.Count; row++)
+            {
+                if (Named(body.Rows[row].Hub) is not null || Named(body.Rows[row].Rotation) is not null)
+                {
+                    problems[$"rows[{row}].hub"] = ["flightops:errors.legHubOnly"];
+                }
+            }
+        }
+
+        if (problems.Count > 0)
+        {
+            return (null, null, request.Refused(problems));
+        }
+
+        var rotations = isHub
+            ? await request.Database.Rotations.Where(rotation => rotation.TourId == tour.Id).ToListAsync(cancellationToken)
+            : [];
+        var legs = await request.Book.LegsAsync(tour.Id, cancellationToken);
+        var withReports = await request.Reports.LegsWithReportsAsync(tour.Id, cancellationToken);
+        var rows = incoming
+            .Select((leg, row) => new ImportRow(row, leg!, Hub(body.Rows[row].Hub), Label(body.Rows[row].Rotation)))
+            .ToList();
+
+        return (new ImportShape(legs, hubs, rotations), LegImportPlan.Make(hubs, rotations, legs, rows, body.Mode, withReports), null);
+    }
+
+    /// <summary>Every row made a leg by the same code as a leg of the editor; a row that cannot be is null, its refusals filed under it.</summary>
+    private static async Task<(List<Leg?> Legs, Dictionary<string, string[]> Problems)> RowsAsync(
+        Tour tour,
+        LegImportRequest body,
+        LegRequest request,
+        HttpContext http)
+    {
         var problems = new Dictionary<string, string[]>(StringComparer.Ordinal);
-        var incoming = new List<Leg>();
+        var incoming = new List<Leg?>();
         for (var row = 0; row < body.Rows.Count; row++)
         {
             var line = body.Rows[row];
+            var connection = tour.Kind == TourKind.Hub && Hub(line.Hub) is null;
             var payload = new LegWriteDto(
                 line.DepartureIcao ?? string.Empty,
                 line.ArrivalIcao ?? string.Empty,
@@ -415,7 +520,8 @@ public static class LegEndpoints
                 new AllowedAircraft(line.AircraftTypes ?? [], []),
                 line.ReleaseAt,
                 ChangeReason: null,
-                RowVersion: default);
+                RowVersion: default,
+                Kind: connection ? LegKind.HubConnection : LegKind.Normal);
 
             var leg = new Leg();
             var found = request.Check(payload)
@@ -426,22 +532,102 @@ public static class LegEndpoints
                 continue;
             }
 
+            incoming.Add(null);
             foreach (var (field, keys) in found)
             {
                 problems[$"rows[{row}].{field}"] = keys;
             }
         }
 
-        if (problems.Count > 0)
-        {
-            return (null, null, null, request.Refused(problems));
-        }
-
-        var legs = await request.Book.LegsAsync(tourId, http.RequestAborted);
-        var withReports = await request.Reports.LegsWithReportsAsync(tourId, http.RequestAborted);
-
-        return (tour, legs, LegImportPlan.Make(legs, incoming, body.Mode, withReports), null);
+        return (incoming, problems);
     }
+
+    /// <summary>
+    /// The shape of a hub tour's file, which no row says by itself: a hub with a rotation and a rotation with a hub; the
+    /// rows of a rotation together, of a size a rotation has; on the legs the rows made, the rules of
+    /// <see cref="TourShape.RotationProblem"/> and <see cref="TourShape.ConnectsHubs"/>, the shape's own, with the hubs of the
+    /// file and of the tour. Filed under the row and the column the file shows (the first row of a rotation for the rotation).
+    /// </summary>
+    private static void FileProblems(
+        IReadOnlyList<LegImportRowDto> rows,
+        IReadOnlyList<Leg?> legs,
+        IReadOnlyList<TourHub> tourHubs,
+        Dictionary<string, string[]> problems)
+    {
+        var hubs = rows.Select(row => Hub(row.Hub)).OfType<string>()
+            .Concat(tourHubs.Select(hub => hub.Icao))
+            .ToHashSet(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void Refuse(int row, string field, string key) => problems.TryAdd($"rows[{row}].{field}", [key]);
+
+        var start = 0;
+        while (start < rows.Count)
+        {
+            var hub = Hub(rows[start].Hub);
+            var label = Label(rows[start].Rotation);
+
+            if (hub is null)
+            {
+                if (label is not null)
+                {
+                    Refuse(start, "hub", "errors.required");
+                }
+                else if (legs[start] is { } connection && !TourShape.ConnectsHubs(connection, hubs))
+                {
+                    Refuse(start, "hub", "flightops:errors.connectionNotBetweenHubs");
+                }
+
+                start++;
+                continue;
+            }
+
+            if (label is null)
+            {
+                Refuse(start, "rotation", "errors.required");
+                start++;
+                continue;
+            }
+
+            var end = start;
+            while (end + 1 < rows.Count && Hub(rows[end + 1].Hub) == hub && Label(rows[end + 1].Rotation) == label)
+            {
+                end++;
+            }
+
+            var size = end - start + 1;
+            var rotation = legs.Skip(start).Take(size).OfType<Leg>().ToList();
+
+            // The same rotation further down is a second piece of it, not a second rotation with the same name.
+            if (!seen.Add($"{hub}|{label}"))
+            {
+                Refuse(start, "rotation", "flightops:errors.importRotationSplit");
+            }
+            else if (!Rotation.Sizes.Contains(size))
+            {
+                Refuse(start, "rotation", "flightops:errors.rotationSizeChoice");
+            }
+            else if (rotation.Count == size && TourShape.RotationProblem(hub, size, rotation) is { } key)
+            {
+                Refuse(start, "rotation", key);
+            }
+
+            start = end + 1;
+        }
+    }
+
+    /// <summary>The shape of the tour an import is compared with, tracked, and the fingerprint it is made of.</summary>
+    private sealed record ImportShape(List<Leg> Legs, List<TourHub> Hubs, List<Rotation> Rotations)
+    {
+        public string Fingerprint => LegImportPlan.Fingerprint(Legs, Hubs, Rotations);
+    }
+
+    private static string? Named(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? Hub(string? value) => Named(value)?.ToUpperInvariant();
+
+    /// <summary>A rotation's label, whatever case it was typed in: "a" and "A" keep the same rows together, as a hub's ICAO does.</summary>
+    private static string? Label(string? value) => Named(value)?.ToUpperInvariant();
 
     /// <summary>The rule of §1.4.1, once: which outcome, and which legs it touches.</summary>
     private static (LegRemovalOutcome Outcome, IReadOnlyList<Leg> Touched) Removal(Leg leg, IReadOnlyList<Leg> legs, IReadOnlySet<long> withReports)
@@ -548,9 +734,18 @@ public sealed class LegRequest(
 
     /// <summary>
     /// The save of a write: refused with the problems of "ready" when a ready tour would stop being one, then saved,
-    /// then the runways of what was written fetched, and the grid answered.
+    /// then the runways of what was written fetched, and the grid answered. The shape is checked as the write leaves it:
+    /// the legs, and the hubs and rotations when the write changes them too (the import of a hub tour). A write inside a
+    /// transaction has it committed with the save; a refusal leaves it to the caller to roll back.
     /// </summary>
-    public async Task<IResult> SaveAsync(Tour tour, IReadOnlyList<Leg> legs, IReadOnlyList<Leg> written, HttpContext http)
+    public async Task<IResult> SaveAsync(
+        Tour tour,
+        IReadOnlyList<Leg> legs,
+        IReadOnlyList<Leg> written,
+        HttpContext http,
+        IReadOnlyList<TourHub>? hubs = null,
+        IReadOnlyList<Rotation>? rotations = null,
+        IDbContextTransaction? transaction = null)
     {
         ArgumentNullException.ThrowIfNull(tour);
         ArgumentNullException.ThrowIfNull(http);
@@ -559,7 +754,10 @@ public sealed class LegRequest(
 
         if (tour.Status == PublishStatus.Published)
         {
-            var problems = await readiness.ProblemsAsync(tour, legs, http.RequestAborted);
+            var problems = await readiness.ProblemsAsync(
+                tour,
+                parts => parts with { Legs = legs, Hubs = hubs ?? parts.Hubs, Rotations = rotations ?? parts.Rotations },
+                http.RequestAborted);
             if (!problems.IsEmpty)
             {
                 return CrudProblems.Validation(problems, catalog, currentUser.Locale);
@@ -567,6 +765,11 @@ public sealed class LegRequest(
         }
 
         await database.SaveChangesAsync(http.RequestAborted);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(http.RequestAborted);
+        }
+
         await book.FetchRunwaysAsync(written, http.RequestAborted);
 
         return Results.Ok(await book.GridAsync(tour, legs, http.RequestAborted));
