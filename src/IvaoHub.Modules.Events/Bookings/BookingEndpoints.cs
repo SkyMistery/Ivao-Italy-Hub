@@ -1,3 +1,4 @@
+using System.Data;
 using FluentValidation;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
@@ -248,8 +249,10 @@ public static class BookingEndpoints
         LocaleCatalog catalog,
         HttpContext http)
     {
+        // A pilot whose data was erased has no booking to take away (#322, item 5): what is left is the event's history, which its statistics
+        // count, with nobody to tell — as «take out» answers it (RegisterDecisions.ExcuseAsync).
         var booking = await CrudSource.BackOffice<EventBooking>(database).FirstOrDefaultAsync(candidate => candidate.Id == id, http.RequestAborted);
-        if (booking is null || (await children.AdoptAsync(booking, http.RequestAborted)).Event is not { } row)
+        if (booking is null || booking.BookerVid <= 0 || (await children.AdoptAsync(booking, http.RequestAborted)).Event is not { } row)
         {
             return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
         }
@@ -267,6 +270,17 @@ public static class BookingEndpoints
 
         var slot = await database.Slots.AsNoTracking().FirstAsync(candidate => candidate.Id == booking.SlotId, http.RequestAborted);
 
+        // Under the booking's lock, read again with its pilot: the erasure of their data in the same instant runs before — and the booking is
+        // not found — or after.
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, http.RequestAborted);
+        var held = await database.Database
+            .SqlQuery<long>($"SELECT id AS `Value` FROM evt_bookings WHERE id = {id} AND booker_vid > 0 FOR UPDATE")
+            .ToListAsync(http.RequestAborted);
+        if (held.Count == 0)
+        {
+            return Problem(StatusCodes.Status404NotFound, CrudProblems.NotFoundTitleKey, catalog, currentUser);
+        }
+
         // One of a private arrival and its linked departure goes alone: the link dissolves, and the other stays (E7).
         await BookingPairs.LetGoAsync(database, booking, http.RequestAborted);
         database.Bookings.Remove(booking);
@@ -274,6 +288,7 @@ public static class BookingEndpoints
         try
         {
             await database.SaveChangesAsync(http.RequestAborted);
+            await transaction.CommitAsync(http.RequestAborted);
         }
         catch (DbUpdateConcurrencyException)
         {

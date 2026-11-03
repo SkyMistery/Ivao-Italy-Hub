@@ -67,6 +67,39 @@ public sealed class TrainingHistoryRulesTests
     }
 
     [Fact]
+    public void AClosingByABanIsWhoeverGaveItWhoeverWroteTheRow()
+    {
+        var lines = TrainingHistory.Read(
+        [
+            // In the ban's own save, by whoever gave it.
+            Row(1, Advisor, "updated", """{"ClosedAt":null,"ClosedBy":null,"ClosedByBan":false,"OpenKind":"Atc","State":"Requested"}""", """{"ClosedAt":"2026-09-30T10:01:00Z","ClosedBy":2002,"ClosedByBan":true,"OpenKind":null,"State":"Closed"}"""),
+
+            // After the trainee's own request, saved while the ban was being given: the trainee wrote the row, the ban closed it.
+            Row(2, Trainee, "updated", """{"ClosedAt":null,"ClosedBy":null,"ClosedByBan":false,"OpenKind":"Pilot","State":"Requested"}""", """{"ClosedAt":"2026-09-30T10:02:00Z","ClosedBy":2002,"ClosedByBan":true,"OpenKind":null,"State":"Closed"}"""),
+
+            // A ban the installation wrote: nobody gave it.
+            Row(3, 0, "updated", """{"ClosedAt":null,"ClosedByBan":false,"OpenKind":"Atc","State":"Accepted"}""", """{"ClosedAt":"2026-09-30T10:03:00Z","ClosedByBan":true,"OpenKind":null,"State":"Closed"}"""),
+
+            // A session the trainer rescheduled while a ban held, closed by the ban in the same save: the reschedule, then the closing.
+            Row(4, Trainer, "updated", """{"ClosedAt":null,"ClosedBy":null,"ClosedByBan":false,"OpenKind":"Atc","ScheduledStartUtc":"2026-09-30T09:40:00Z","State":"Scheduled"}""", """{"ClosedAt":"2026-09-30T10:04:00Z","ClosedBy":2002,"ClosedByBan":true,"OpenKind":null,"ScheduledStartUtc":null,"State":"Closed"}"""),
+
+            // A dated session the ban closed in its own save keeps its date: no reschedule.
+            Row(5, Advisor, "updated", """{"ClosedAt":null,"ClosedBy":null,"ClosedByBan":false,"OpenKind":"Pilot","State":"Scheduled"}""", """{"ClosedAt":"2026-09-30T10:05:00Z","ClosedBy":2002,"ClosedByBan":true,"OpenKind":null,"State":"Closed"}"""),
+        ]);
+
+        Assert.Equal(
+            [
+                new TrainingHistoryLine(Now.AddMinutes(1), Advisor, TrainingHistoryEvent.ClosedByBan),
+                new TrainingHistoryLine(Now.AddMinutes(2), Advisor, TrainingHistoryEvent.ClosedByBan),
+                new TrainingHistoryLine(Now.AddMinutes(3), null, TrainingHistoryEvent.ClosedByBan),
+                new TrainingHistoryLine(Now.AddMinutes(4), Trainer, TrainingHistoryEvent.Rescheduled, Date: new DateTime(2026, 9, 30, 9, 40, 0, DateTimeKind.Utc)),
+                new TrainingHistoryLine(Now.AddMinutes(4), Advisor, TrainingHistoryEvent.ClosedByBan),
+                new TrainingHistoryLine(Now.AddMinutes(5), Advisor, TrainingHistoryEvent.ClosedByBan),
+            ],
+            lines);
+    }
+
+    [Fact]
     public void ATrainerAndADateAreReadAsTheyWereAndAsTheyBecame()
     {
         var lines = TrainingHistory.Read(

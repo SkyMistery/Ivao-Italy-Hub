@@ -60,12 +60,13 @@ public static class BanEndpoints
                 ban.Reason = payload.Reason?.Trim() ?? string.Empty;
                 ban.EndsAt = payload.EndsAt;
             };
+            // A new ban closes, in its own save, every training of the member still open (issue #312).
             options.BeforeSave = (ban, saving) =>
-                saving.Services.GetRequiredService<TrainingBans>().RefusalAsync(ban, saving.CancellationToken);
+                saving.Services.GetRequiredService<TrainingBans>().BeforeGivingAsync(ban, saving.IsNew, saving.CancellationToken);
 
-            // The member is told once, when the ban is given.
+            // The member is told once, when the ban is given; the trainers of the trainings it closed too.
             options.AfterSave = (ban, saving) =>
-                saving.IsNew ? saving.Services.GetRequiredService<TrainingBans>().TellAsync(ban, saving.CancellationToken) : Task.CompletedTask;
+                saving.IsNew ? saving.Services.GetRequiredService<TrainingBans>().AfterGivingAsync(ban, saving.CancellationToken) : Task.CompletedTask;
         });
 
         app.MapPost($"{Pattern}/{{id:long}}/lift", LiftAsync)

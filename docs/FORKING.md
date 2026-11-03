@@ -590,6 +590,7 @@ division:
 | --- | --- | --- |
 | `kindPresets` | none | the kinds an event chooses from, each with the switches a new event of that kind starts with |
 | `bookingGapMinutes` | 10 | the least minutes between two bookings of one pilot in the same event, one way or the other |
+| `maxBookingsPerEvent` | 5 | the most bookings any member makes in one event, from 1 to 200: a whole rotation is one, whatever its legs; a private arrival and its linked departure are two |
 | `reminderLeadHours` | 24 | how long before the off block of a booking its pilot is reminded of it |
 | `pilotRetentionMonths` | 24 | how long after an event the bookings and the reports of support of its pilots are kept, and how far back the register of the pilots counts |
 | `inPersonRetentionMonths` | 3 | how long after an event in person its registrations and the seats in its activities are kept; the sums of the answers and the seats taken stay in its statistics |

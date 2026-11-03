@@ -750,6 +750,7 @@
       "kindPresets.wholeDivision": "Tutta la divisione",
       "kindPresets.inPerson": "In presenza",
       "bookingGapMinutes": "Minuti fra due prenotazioni dello stesso pilota",
+      "maxBookingsPerEvent": "Prenotazioni di un membro in un evento, al massimo",
       "pilotRetentionMonths": "Mesi per cui si tengono le prenotazioni dei piloti dopo un evento",
       "reminderLeadHours": "Ore prima dell'orario di off block in cui parte il promemoria",
       "inPersonRetentionMonths": "Mesi per cui si tengono le iscrizioni a un evento in presenza dopo l'evento",
@@ -772,6 +773,7 @@
     "hints": {
       "kindPresets": "I tipi fra cui un evento sceglie, ognuno con gli interruttori con cui nasce un evento nuovo di quel tipo; lo staff può ancora cambiarli sull'evento. I tipi sono le parole del calendario. Nessuna riga: un evento sceglie fra tutti i tipi del calendario, con tutto spento. Un tipo con tutto spento ha comunque bisogno della sua riga per essere scelto.",
       "bookingGapMinutes": "Due prenotazioni dello stesso pilota nello stesso evento sono distanti almeno così, in un senso o nell'altro, perché un volo finisca prima che cominci il successivo.",
+      "maxBookingsPerEvent": "Quanti slot prenota ogni membro in un evento, da 1 a 200. Una rotazione intera è una prenotazione sola, qualunque siano le sue tratte; un arrivo privato e la sua partenza collegata sono due. Chi ha i limiti qui sotto non va oltre neanche quelli.",
       "pilotRetentionMonths": "Passati questi mesi dalla fine di un evento, le prenotazioni e i PIREP di supporto dei suoi piloti si cancellano.",
       "reminderLeadHours": "Il pilota riceve il promemoria di una prenotazione queste ore prima del suo orario di off block.",
       "inPersonRetentionMonths": "Dopo questi mesi dalla fine di un evento in presenza, le sue iscrizioni e i posti delle sue attività si cancellano; le somme restano nelle sue statistiche.",
@@ -1058,6 +1060,7 @@
     "statsOfADraft": "Una bozza non ha statistiche: non si è mai svolta.",
     "bookingRestrictedWindow": "Niente più slot in queste ore: hai i limiti di chi prenota e non vola.",
     "bookingRestrictedEvent": "Niente più slot in questo evento: hai i limiti di chi prenota e non vola.",
+    "bookingMaxPerEvent": "Niente più slot in questo evento: hai tante prenotazioni quante la divisione ne concede a un membro in un evento. Una rotazione intera conta una.",
     "attendanceNotOver": "L'evento non è finito: com'è andato un turno non si sa ancora.",
     "attendanceNotAllowed": "Scegli presente, no-show o giustificato.",
     "attendanceDecided": "Il turno ha già questo esito.",
