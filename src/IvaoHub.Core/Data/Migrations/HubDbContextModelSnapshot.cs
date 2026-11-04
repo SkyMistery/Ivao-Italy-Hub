@@ -1115,6 +1115,10 @@ namespace IvaoHub.Core.Data.Migrations
                         .HasColumnType("varchar(8)")
                         .HasColumnName("document_type");
 
+                    b.Property<bool>("DraftFromFile")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("draft_from_file");
+
                     b.Property<DateTime?>("EffectiveOn")
                         .HasColumnType("date")
                         .HasColumnName("effective_on");
