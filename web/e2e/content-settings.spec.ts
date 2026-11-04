@@ -17,40 +17,36 @@ const curator = {
   user: { ...siteStaffBootstrap.user, hasAllDepartments: true },
 };
 
-/** Three pages: one the whole staff reads, one only its department reads, one never published. */
-const pages = {
-  items: [
-    { id: 9, slug: 'style', path: 'about/style', visibility: 'Staff', publishedAt: '2026-10-01T00:00:00Z' },
-    {
-      id: 10,
-      slug: 'team-only',
-      path: 'team-only',
-      visibility: 'Department',
-      publishedAt: '2026-10-01T00:00:00Z',
-    },
-    { id: 11, slug: 'draft', path: 'draft', visibility: 'Staff', publishedAt: null },
-  ].map((page) => ({
-    ...page,
+/**
+ * What `GET /api/content/addresses` answers: what the site shows the curator, published only. A page the whole staff reads,
+ * one only its department reads, and a news item — of which only the first may be the page of the style.
+ */
+const addresses = [
+  {
+    id: 9,
     kind: 'Page',
-    parentId: null,
+    url: '/about/style',
+    title: { en: 'Style', it: 'Stile' },
     ownerDepartment: 'WD',
-    status: page.publishedAt === null ? 'Draft' : 'Published',
-    isTemplate: false,
-    title: { en: page.slug, it: page.slug },
-    collections: [],
-    coverMediaId: null,
-    pinned: false,
-    sort: 0,
-    fileMediaId: null,
-    reviewOn: null,
-    retiredAt: null,
-    supersededById: null,
-    updatedAt: '2026-10-01T00:00:00Z',
-  })),
-  page: 1,
-  pageSize: 100,
-  total: 3,
-};
+    visibility: 'Staff',
+  },
+  {
+    id: 10,
+    kind: 'Page',
+    url: '/team-only',
+    title: { en: 'Team only', it: 'Solo squadra' },
+    ownerDepartment: 'WD',
+    visibility: 'Department',
+  },
+  {
+    id: 12,
+    kind: 'News',
+    url: '/news/launch',
+    title: { en: 'Launch', it: 'Lancio' },
+    ownerDepartment: 'ED',
+    visibility: 'Public',
+  },
+];
 
 test.beforeEach(({ page }) => {
   page.on('pageerror', (error) => {
@@ -62,8 +58,8 @@ test('whoever cures the templates chooses the page of the style among the ones t
   page,
 }) => {
   await stubTheApiAsStaff(page, curator);
-  await page.route('**/api/content?**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(pages) }),
+  await page.route('**/api/content/addresses', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(addresses) }),
   );
 
   const sent: unknown[] = [];
@@ -90,10 +86,10 @@ test('whoever cures the templates chooses the page of the style among the ones t
   await expect(field).toBeVisible();
   await field.click();
 
-  // The page for the whole staff is offered; the one of a department and the draft are not.
+  // The page for the whole staff is offered; the one of a department and a news item are not.
   await expect(page.getByRole('option', { name: /about\/style/ })).toBeVisible();
   await expect(page.getByRole('option', { name: /team-only/ })).toHaveCount(0);
-  await expect(page.getByRole('option', { name: /\/draft/ })).toHaveCount(0);
+  await expect(page.getByRole('option', { name: /news\/launch/ })).toHaveCount(0);
 
   await page.getByRole('option', { name: /about\/style/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: englishCommon.common.save }).click();

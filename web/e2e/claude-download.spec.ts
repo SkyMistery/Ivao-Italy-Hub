@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { oneTemplate, staffBootstrap, stubTheApiAsStaff } from './fixtures';
 import { englishCommon } from './locales';
@@ -44,6 +44,37 @@ const aPage = {
   },
 };
 
+/**
+ * What `GET /api/content/addresses` answers: a page of another department the coordinator may read, and a news item
+ * (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md).
+ */
+async function stubTheSiteAddresses(page: Page) {
+  await page.route('**/api/content/addresses', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 20,
+          kind: 'Page',
+          url: '/about/team',
+          title: { en: 'Team', it: 'Squadra' },
+          ownerDepartment: 'WD',
+          visibility: 'Public',
+        },
+        {
+          id: 21,
+          kind: 'News',
+          url: '/news/launch',
+          title: { en: 'Launch', it: 'Lancio' },
+          ownerDepartment: 'WD',
+          visibility: 'Staff',
+        },
+      ]),
+    }),
+  );
+}
+
 test.beforeEach(async ({ page }) => {
   await stubTheApiAsStaff(page);
 
@@ -51,6 +82,8 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/content/7', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
   );
+
+  await stubTheSiteAddresses(page);
 
   // No page of the style chosen, unless a test says otherwise (decisions/2026-11-04-la-pagina-dello-stile.md).
   await page.route('**/api/content/settings', (route) =>
@@ -125,6 +158,10 @@ test('the editor of a page downloads the instructions, with the draft and the he
   expect(markdown).toContain('`text`, version 1');
   expect(markdown).toContain(englishCommon.blocks.text.about);
   expect(markdown).toContain('"id": "blk-hello"');
+
+  // The site's addresses, of another department too, news included.
+  expect(markdown).toContain('| `/about/team` | page | Team | Public |');
+  expect(markdown).toContain('| `/news/launch` | news | Launch | Staff |');
 
   const header = markdown.slice(markdown.lastIndexOf('## The header to copy'));
   expect(header).toContain('"format": "hub-content"');
@@ -213,6 +250,7 @@ test('whoever edits the page by a grant, without reading the links, still downlo
   await page.route('**/api/content/7', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
   );
+  await stubTheSiteAddresses(page);
   await page.route('**/api/content/settings', (route) =>
     route.fulfill({
       status: 200,

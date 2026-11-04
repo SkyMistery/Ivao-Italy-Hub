@@ -58,8 +58,17 @@ const body: Body = {
 };
 
 const addresses: SiteAddress[] = [
-  { path: '/about', label: 'About', group: 'Web', kind: 'page', published: true, visibility: 'Public' },
   {
+    id: 1,
+    path: '/about',
+    label: 'About',
+    group: 'Web',
+    kind: 'page',
+    published: true,
+    visibility: 'Public',
+  },
+  {
+    id: 2,
     path: '/secret-draft',
     label: 'Draft',
     group: 'Web',
@@ -67,8 +76,26 @@ const addresses: SiteAddress[] = [
     published: false,
     visibility: 'Public',
   },
-  { path: '/news', label: 'News', group: 'Screens', kind: 'screen', published: true, visibility: 'Public' },
   {
+    id: null,
+    path: '/news',
+    label: 'News',
+    group: 'Screens',
+    kind: 'screen',
+    published: true,
+    visibility: 'Public',
+  },
+  {
+    id: 3,
+    path: '/news/launch',
+    label: 'Launch',
+    group: 'Events',
+    kind: 'news',
+    published: true,
+    visibility: 'Public',
+  },
+  {
+    id: null,
     path: 'https://forum.example',
     label: 'Forum',
     group: 'Links',
@@ -208,8 +235,10 @@ describe('what the instructions offer', () => {
   test('only the published addresses of the site, and the links of the library', async () => {
     const { markdown } = await composeInstructions(input());
 
-    // And it does not pretend the list is the whole site (review of #449, finding 2).
-    expect(markdown).toContain('the site may have more pages than these');
+    // The whole site the person may read, news and documents included
+    // (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md).
+    expect(markdown).toContain('An address that is not here');
+    expect(markdown).toContain('| `/news/launch` | news | Launch | Public |');
 
     expect(markdown).toContain('`/about`');
     expect(markdown).toContain('`/news`');

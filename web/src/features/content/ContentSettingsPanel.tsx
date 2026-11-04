@@ -14,7 +14,7 @@ import {
   toSettingsForm,
   useSaveContentSettings,
 } from './contentSettings';
-import { menuDestinationPagesQuery } from './queries';
+import { siteAddressesQuery } from './queries';
 
 /**
  * «Settings» on the screen of the content (`decisions/2026-11-04-la-pagina-dello-stile.md`): the settings that hold for the
@@ -39,12 +39,13 @@ export function ContentSettingsPanel({
   const [open, setOpen] = useState(false);
 
   const settings = useQuery({ ...contentSettingsQuery, enabled: open });
-  const pages = useQuery({ ...menuDestinationPagesQuery(''), enabled: open });
+  const pages = useQuery({ ...siteAddressesQuery(), enabled: open });
   const save = useSaveContentSettings();
 
-  const choices = (pages.data?.items ?? [])
-    .filter((page) => page.publishedAt !== null && page.visibility !== 'Department')
-    .map((page) => ({ value: String(page.id), label: `${read(page.title) || page.slug} — /${page.path}` }));
+  // The pages online the whole staff reads, of every department (`GET /api/content/addresses`, published only).
+  const choices = (pages.data ?? [])
+    .filter((page) => page.kind === 'Page' && page.visibility !== 'Department')
+    .map((page) => ({ value: String(page.id), label: `${read(page.title) || page.url} — ${page.url}` }));
 
   return (
     <Dialog

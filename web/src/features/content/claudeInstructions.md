@@ -84,8 +84,8 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
 - **Dates.** A field marked `"date": true` is an ISO 8601 instant, `2026-11-04T00:00:00Z`.
 - **Collections, categories and kinds** of the site (`collectionOf`, `calendarKind`, the category of a list of links):
   keep the draft's value, or leave the field empty for the person to choose.
-- **Links.** An address of this site starts with `/` and is one of the addresses listed below. The list may not hold
-  every page of the site: never guess an address that is not there. When the page you need is missing, leave `href` empty
+- **Links.** An address of this site starts with `/` and is one of the addresses listed below: they are every page, news
+  item and document the person can read. Never guess one. When the page you would need does not exist, leave `href` empty
   (`""`) in a button or a card, write the words without a link in a text, and tell the person which link is left for them
   to choose. An address outside the site is a whole `https://` URL. A page for everybody does not link to a page only the
   staff can read.

@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 import type { LinkPage } from '../links/queries';
 
 import type { ContentPage } from './queries';
-import { asSuggestions, SITE_SCREENS, siteAddresses } from './siteAddresses';
+import { asSuggestions, pagesOfTheMenu, pagesOfTheSite, SITE_SCREENS, siteAddresses } from './siteAddresses';
 
 /** The words of the screen, as their keys: what is tested is which key goes where, not a language. */
 const t = ((key: string, values?: Record<string, string>) =>
@@ -44,10 +44,11 @@ test('pages, then the screens of the application, then the links of the library'
     items: [{ id: 3, url: 'https://forum.example', title: { en: 'Forum' }, visibility: 'Members' }],
   } as unknown as LinkPage;
 
-  const list = siteAddresses(pages([page({})]), links, t, read);
+  const list = siteAddresses(pagesOfTheMenu(pages([page({})])), links, t, read);
 
   expect(list.map((address) => address.kind)).toEqual(['page', ...SITE_SCREENS.map(() => 'screen'), 'link']);
   expect(list[0]).toEqual({
+    id: 1,
     path: '/about/team',
     label: 'Team',
     group: 'departments.Web',
@@ -63,25 +64,82 @@ test('pages, then the screens of the application, then the links of the library'
 });
 
 test('a draft says so, and a page never published is not published', () => {
-  const [draft] = siteAddresses(pages([page({ status: 'Draft', publishedAt: null })]), undefined, t, read);
+  const [draft] = siteAddresses(
+    pagesOfTheMenu(pages([page({ status: 'Draft', publishedAt: null })])),
+    undefined,
+    t,
+    read,
+  );
 
   expect(draft).toMatchObject({ label: 'menu.draftSuffix(Team)', published: false });
 });
 
 test('a published page being edited again is still an address a visitor can open, and not called a draft', () => {
-  const [edited] = siteAddresses(pages([page({ status: 'Draft' })]), undefined, t, read);
+  const [edited] = siteAddresses(pagesOfTheMenu(pages([page({ status: 'Draft' })])), undefined, t, read);
 
   expect(edited).toMatchObject({ label: 'Team', published: true });
 });
 
 test('a page with no title in the language on screen is named by its slug', () => {
-  const [untitled] = siteAddresses(pages([page({ title: { it: 'Squadra' } })]), undefined, t, read);
+  const [untitled] = siteAddresses(
+    pagesOfTheMenu(pages([page({ title: { it: 'Squadra' } })])),
+    undefined,
+    t,
+    read,
+  );
 
   expect(untitled?.label).toBe('team');
 });
 
 test('the suggestions of a field are the path, the name and the group', () => {
-  const [first] = asSuggestions(siteAddresses(pages([page({})]), undefined, t, read));
+  const [first] = asSuggestions(siteAddresses(pagesOfTheMenu(pages([page({})])), undefined, t, read));
 
   expect(first).toEqual({ value: '/about/team', label: 'Team', group: 'departments.Web' });
+});
+
+test("the site's read gives news and documents too, at their own places, and never a draft", () => {
+  const list = siteAddresses(
+    pagesOfTheSite([
+      {
+        id: 4,
+        kind: 'News',
+        url: '/news/launch',
+        title: { en: 'Launch' },
+        ownerDepartment: 'ED',
+        visibility: 'Public',
+      },
+      {
+        id: 5,
+        kind: 'Document',
+        url: '/documents/sop',
+        title: { en: 'SOP' },
+        ownerDepartment: 'AOD',
+        visibility: 'Staff',
+      },
+    ]),
+    undefined,
+    t,
+    read,
+  );
+
+  expect(list.slice(0, 2)).toEqual([
+    {
+      id: 4,
+      path: '/news/launch',
+      label: 'Launch',
+      group: 'departments.ED',
+      kind: 'news',
+      published: true,
+      visibility: 'Public',
+    },
+    {
+      id: 5,
+      path: '/documents/sop',
+      label: 'SOP',
+      group: 'departments.AOD',
+      kind: 'document',
+      published: true,
+      visibility: 'Staff',
+    },
+  ]);
 });

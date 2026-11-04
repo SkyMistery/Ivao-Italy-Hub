@@ -8,7 +8,12 @@ import { useLocalized } from '../../shared/i18n/useLocalized';
 import type { Visibility } from '../../shared/ui';
 import { activeLinksQuery, type LinkPage } from '../links/queries';
 
-import { menuDestinationPagesQuery, type ContentPage } from './queries';
+import {
+  menuDestinationPagesQuery,
+  type ContentKind,
+  type ContentPage,
+  type ContentSiteAddressDto,
+} from './queries';
 
 /**
  * The addresses of the site, read in one place (design `12-design-editor-fase-3.md` §4.5, born in PR 3.0a).
@@ -20,8 +25,12 @@ import { menuDestinationPagesQuery, type ContentPage } from './queries';
  *
  * Three kinds of address, in the order the menu has always offered them:
  *
- * - **the pages**, grouped by the department that wrote them, drafts included and said so — a menu entry
- *   is written before the page goes out, and waits switched off;
+ * - **the rows of the content**, grouped by the department that wrote them. Two reads give them: the menu's
+ *   (`pagesOfTheMenu`), pages only and drafts included and said so — a menu entry is written before the page
+ *   goes out, and waits switched off —; and the site's (`pagesOfTheSite`, `GET /api/content/addresses`), every
+ *   page, news item and document online that the reader may read, of every department
+ *   (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`), for the instructions for Claude
+ *   and the page of the style;
  * - **the screens of the application**, which are routes and not rows;
  * - **the links of the library**, the only addresses outside the site a menu entry may lead to
  *   (decided 8 September 2026).
@@ -38,15 +47,59 @@ import { menuDestinationPagesQuery, type ContentPage } from './queries';
  */
 export const SITE_SCREENS = ['/', '/calendar', '/news', '/documents', '/search', '/contact'] as const;
 
+/** One row of the content, from either read, as the list is built from it. */
+export interface SitePage {
+  readonly id: number;
+  readonly kind: ContentKind;
+  /** Where it is read: `/about/team`, `/news/<slug>`, `/documents/<slug>`. */
+  readonly url: string;
+  readonly title: LocalizedString;
+  /** What it is called when it has no title in the language on screen. */
+  readonly fallback: string;
+  readonly ownerDepartment: string;
+  readonly visibility: Visibility;
+  readonly published: boolean;
+}
+
+/** The menu's read: the pages of the reader's departments, drafts included. */
+export function pagesOfTheMenu(list: ContentPage | undefined): SitePage[] {
+  return (list?.items ?? []).map((page) => ({
+    id: page.id,
+    kind: page.kind,
+    url: `/${page.path}`,
+    title: page.title,
+    fallback: page.slug,
+    ownerDepartment: page.ownerDepartment,
+    visibility: page.visibility,
+    published: page.publishedAt !== null,
+  }));
+}
+
+/** The site's read: every page, news item and document online that the reader may read, of every department. */
+export function pagesOfTheSite(rows: readonly ContentSiteAddressDto[] | undefined): SitePage[] {
+  return (rows ?? []).map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    url: row.url,
+    title: row.title,
+    fallback: row.url,
+    ownerDepartment: row.ownerDepartment,
+    visibility: row.visibility,
+    published: true,
+  }));
+}
+
 /** One address of the site, with what a screen needs to offer it and what the instructions say of it. */
 export interface SiteAddress {
+  /** The row, for an address that is one; null for a screen or a link. */
+  readonly id: number | null;
   /** Where it leads: `/about/team` for a page or a screen, the whole URL for a link of the library. */
   readonly path: string;
   /** Its name in the language on screen; a draft says so. */
   readonly label: string;
   /** The heading it is offered under: the department of a page, «Screens», «Links». */
   readonly group: string;
-  readonly kind: 'page' | 'screen' | 'link';
+  readonly kind: 'page' | 'news' | 'document' | 'screen' | 'link';
   /**
    * Whether a visitor can open it now. A page that was never published is offered to the menu and
    * not to the instructions; a page published once and being edited again is both.
@@ -58,26 +111,27 @@ export interface SiteAddress {
 
 /** The list, from the two reads it is made of. Kept apart from the hook so that a download can read it once. */
 export function siteAddresses(
-  pages: ContentPage | undefined,
+  pages: readonly SitePage[],
   links: LinkPage | undefined,
   t: TFunction,
   read: (value: LocalizedString | null | undefined) => string,
 ): SiteAddress[] {
   return [
-    ...(pages?.items ?? []).map((page): SiteAddress => ({
-      path: `/${page.path}`,
+    ...pages.map((page): SiteAddress => ({
+      id: page.id,
+      path: page.url,
       // «(draft)» for a page that was never published, not for one online whose draft is being written again: that one
       // is an address a visitor can open (review of #449, finding 7).
-      label:
-        page.publishedAt === null
-          ? t('menu.draftSuffix', { title: read(page.title) || page.slug })
-          : read(page.title) || page.slug,
+      label: page.published
+        ? read(page.title) || page.fallback
+        : t('menu.draftSuffix', { title: read(page.title) || page.fallback }),
       group: t(`departments.${page.ownerDepartment}`),
-      kind: 'page',
-      published: page.publishedAt !== null,
+      kind: page.kind === 'News' ? 'news' : page.kind === 'Document' ? 'document' : 'page',
+      published: page.published,
       visibility: page.visibility,
     })),
     ...SITE_SCREENS.map((path): SiteAddress => ({
+      id: null,
       path,
       label: t(`menu.screens.${path}`),
       group: t('menu.screensGroup'),
@@ -86,6 +140,7 @@ export function siteAddresses(
       visibility: 'Public',
     })),
     ...(links?.items ?? []).map((link): SiteAddress => ({
+      id: null,
       path: link.url,
       label: read(link.title) || link.url,
       group: t('menu.linksGroup'),
@@ -117,5 +172,5 @@ export function useSiteAddresses(typed = ''): SiteAddress[] {
   const pages = useQuery({ ...menuDestinationPagesQuery(typed), placeholderData: keepPreviousData });
   const links = useQuery({ ...activeLinksQuery(typed), placeholderData: keepPreviousData });
 
-  return siteAddresses(pages.data, links.data, t, read);
+  return siteAddresses(pagesOfTheMenu(pages.data), links.data, t, read);
 }
