@@ -934,6 +934,7 @@
     },
     "tourCards": {
       "label": "Riquadri dei tour",
+      "about": "I tour della divisione in riquadri, degli stati scelti.",
       "fields": {
         "states": "Tour mostrati",
         "limit": "Quanti al massimo"
@@ -952,12 +953,14 @@
     },
     "reviewQueue": {
       "label": "Report da validare",
+      "about": "I rapporti dei tour che aspettano un validatore, un tour per riga.",
       "empty": "Nessun report aspetta sui tour che puoi validare.",
       "waiting_one": "{{count}} report, in attesa dal {{since}} UTC",
       "waiting_other": "{{count}} report, il più vecchio dal {{since}} UTC"
     },
     "openIssues": {
       "label": "Che altro aspetta i tour",
+      "about": "Che altro aspetta lo staff dei tour: problemi sulle tappe, contestazioni e chiarimenti senza risposta.",
       "empty": "Non aspetta niente: nessuna segnalazione aperta sulle leg, nessuna contestazione o richiesta di chiarimenti senza risposta.",
       "legIssues_one": "{{count}} segnalazione aperta sulle leg",
       "legIssues_other": "{{count}} segnalazioni aperte sulle leg",
@@ -968,6 +971,7 @@
     },
     "myTours": {
       "label": "I miei tour",
+      "about": "I tour di chi guarda: quelli iniziati, i rapporti da correggere e le risposte da leggere.",
       "signIn": "Accedi per vedere i tuoi tour.",
       "toModify": "Correggi il report su {{tour}}: {{from}} → {{to}}",
       "answered": "Risposta: {{subject}}",
