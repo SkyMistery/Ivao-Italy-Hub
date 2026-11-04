@@ -207,12 +207,18 @@ public sealed class ContentEntry
     /// which one — the slug is the department's own code, so the two agree, and this expression is
     /// the one that would still be right if they ever did not.</para>
     /// </summary>
-    public string Url => Kind switch
+    public string Url => UrlOf(Kind, Slug, ParentPath, OwnerDepartment);
+
+    /// <summary>
+    /// The same address, from the columns alone: for a read that projects them rather than loading rows
+    /// (<c>GET /api/content/addresses</c>).
+    /// </summary>
+    public static string UrlOf(ContentKind kind, string slug, string? parentPath, Department ownerDepartment) => kind switch
     {
-        ContentKind.News => $"/news/{Slug}",
-        ContentKind.Document => $"/documents/{Slug}",
-        ContentKind.Dashboard => $"/staff/{OwnerDepartment.ToString().ToLowerInvariant()}",
-        _ => $"/{Path}",
+        ContentKind.News => $"/news/{slug}",
+        ContentKind.Document => $"/documents/{slug}",
+        ContentKind.Dashboard => $"/staff/{ownerDepartment.ToString().ToLowerInvariant()}",
+        _ => parentPath is null ? $"/{slug}" : $"/{parentPath}/{slug}",
     };
 
     bool ISharedForReading.IsSharedForReading => SharedForReadingInMemory(this);
