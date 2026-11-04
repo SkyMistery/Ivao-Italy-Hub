@@ -1118,7 +1118,10 @@ public sealed class HubSaveChangesInterceptor(
     /// <summary>What an autosave is audited with: which columns moved, as a JSON array of names.</summary>
     private static string ChangedColumns(EntityEntry entry) =>
         JsonSerializer.Serialize(
-            entry.Properties.Where(property => property.IsModified).Select(property => property.Metadata.Name).ToArray(),
+            entry.Properties
+                .Where(property => property.IsModified && !IsNotAudited(property))
+                .Select(property => property.Metadata.Name)
+                .ToArray(),
             AuditJson);
 
     private static string Serialize(EntityEntry entry, bool current, bool changedOnly)
