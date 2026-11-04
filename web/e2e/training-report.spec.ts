@@ -91,9 +91,14 @@ function at(days: number, hour: number): string {
   return moment.toISOString().replace('.000Z', 'Z');
 }
 
-/** A day as the pages say it (`useMoment` without the time, in English). */
-const day = (instant: string) =>
-  new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(instant));
+/**
+ * A day as the pages say it (`useMoment` without the time): `dd/mm/yyyy`, the test division's default, in UTC. Read off the ISO text by
+ * hand, so that a wrong formatter cannot pass its own test.
+ */
+const day = (instant: string) => {
+  const iso = new Date(instant).toISOString();
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+};
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };
@@ -379,7 +384,7 @@ test('after the session the trainer marks the sheet, writes the report and publi
 
   // Published: who and when, the sheet read with the notes of the staff, the comments and the boxes; no road left.
   await expect(
-    page.getByText(filled(words.report.publishedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' })),
+    page.getByText(filled(words.report.publishedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' })),
   ).toBeVisible();
   await expect(rowOf(page, 'Radio phraseology')).toContainText(filled(words.report.grade, { grade: '4' }));
   await expect(rowOf(page, 'Radio phraseology')).toContainText(
@@ -503,7 +508,7 @@ test('a session rescheduled keeps its internal notes among the sessions, and the
     filled(words.sessions.internalNotes, { notes: 'Two aircraft in an hour.' }),
   );
   await expect(sessions).toContainText(
-    filled(words.sessions.recordedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' }),
+    filled(words.sessions.recordedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' }),
   );
 });
 
@@ -686,7 +691,7 @@ test('the trainee reads the report, never a note of the staff, the sessions over
 
   // The report: the grade, the mark, «N/A», their comment and the general one, the boxes.
   await expect(page.getByRole('heading', { level: 2, name: words.detail.report })).toBeVisible();
-  await expect(page.getByText(filled(words.report.publishedOn, { date: 'Sep 27, 2026' }))).toBeVisible();
+  await expect(page.getByText(filled(words.report.publishedOn, { date: '27/09/2026' }))).toBeVisible();
   await expect(rowOf(page, 'Radio phraseology')).toContainText(filled(words.report.grade, { grade: '4' }));
   await expect(rowOf(page, 'Radio phraseology')).toContainText('Clear readbacks.');
   await expect(rowOf(page, 'Airspace classes')).toContainText(words.marks.ToImprove!);
@@ -724,12 +729,7 @@ test('after a no-show the trainee reads why it closed, the session, and until wh
   await expect(
     page.getByText(
       filled(words.refusal.waitUntil_other, {
-        date: new Intl.DateTimeFormat('en', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-          hour12: false,
-          timeZone: 'UTC',
-        }).format(new Date(until)),
+        date: `${day(until)} ${until.slice(11, 16)}`,
         count: '4',
       }),
     ),

@@ -699,22 +699,14 @@ export function InteractiveBlock({ id, staff = false, props }: BlockComponentPro
 // ---- timeline --------------------------------------------------------------------------------
 
 export function TimelineBlock({ props }: BlockComponentProps) {
-  const { i18n } = useTranslation();
+  const moment = useMoment();
   const read = useLocalized();
   const steps = choice(props, 'variant', ['steps', 'timeline'] as const, 'steps') === 'steps';
   const items = entries(props, 'items');
   const accent = accentOf(props);
 
-  const day = (value: unknown): string => {
-    if (typeof value !== 'string' || value === '') {
-      return '';
-    }
-
-    const instant = new Date(value);
-    return Number.isNaN(instant.getTime())
-      ? ''
-      : new Intl.DateTimeFormat(i18n.language, { dateStyle: 'long', timeZone: 'UTC' }).format(instant);
-  };
+  // The month in words, in the language: a step of a timeline is read, not compared (note 2026-10-31-il-formato-della-data).
+  const day = (value: unknown): string => moment(value, { dateStyle: 'long', time: false });
 
   return (
     <ol

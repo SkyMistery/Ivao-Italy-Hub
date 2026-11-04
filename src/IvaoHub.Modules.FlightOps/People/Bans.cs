@@ -1,4 +1,3 @@
-using System.Globalization;
 using FluentValidation;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Data.Crud;
@@ -143,9 +142,9 @@ public static class BanEndpoints
         var data = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["tour"] = tour,
-            ["from"] = ban.StartsAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
+            ["from"] = HubDates.Moment(ban.StartsAt, options.ResolveDateOrder()) + " UTC",
             ["until"] = ban.EndsAt is { } end
-                ? end.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC"
+                ? HubDates.Moment(end, options.ResolveDateOrder()) + " UTC"
                 : catalog.Resolve(locale, "flightops:mail.flightops.forGood"),
             ["reason"] = ban.Reason,
             ["url"] = $"https://{options.Domain}/tours",

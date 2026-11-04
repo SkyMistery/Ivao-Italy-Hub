@@ -126,7 +126,7 @@ public sealed class DocumentReviewJob(
                         // The title in the division's own language: one mail per document, not
                         // one per language, and the address bar is written in that language too.
                         ["title"] = document.Title.Get(settings.DefaultLocale) ?? document.Slug,
-                        ["reviewOn"] = document.ReviewOn!.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        ["reviewOn"] = HubDates.Day(document.ReviewOn!.Value, settings.ResolveDateOrder()),
                         // The one screen of content since G17 (note 2026-09-13-contenuti-centralizzati).
                         ["url"] = $"https://{settings.Domain}/staff/content/{document.Id}",
                     }),

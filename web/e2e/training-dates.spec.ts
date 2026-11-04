@@ -77,16 +77,16 @@ function at(days: number, hour: number): string {
 /** What a `datetime-local` box holds for an instant: the UTC wall clock, to the minute. */
 const box = (instant: string) => instant.slice(0, 16);
 
-/** An instant as the pages say it (`useMoment`, in English): twenty four hours, UTC. */
-const inUtc = new Intl.DateTimeFormat('en', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  hour12: false,
-  timeZone: 'UTC',
-});
-const timeInUtc = new Intl.DateTimeFormat('en', { timeStyle: 'short', hour12: false, timeZone: 'UTC' });
-const moment = (instant: string) => inUtc.format(new Date(instant));
-const span = (start: string, end: string) => `${moment(start)}–${timeInUtc.format(new Date(end))}`;
+/**
+ * An instant as the pages say it (`useMoment`): the day in the division's order — `dd/mm/yyyy`, the test division's default —, twenty
+ * four hours, UTC. Read off the ISO text by hand, so that a wrong formatter cannot pass its own test.
+ */
+const timeInUtc = (instant: string) => new Date(instant).toISOString().slice(11, 16);
+const moment = (instant: string) => {
+  const iso = new Date(instant).toISOString();
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)} ${timeInUtc(instant)}`;
+};
+const span = (start: string, end: string) => `${moment(start)}–${timeInUtc(end)}`;
 
 const trainee = { vid: 790099, name: 'Test Trainee' };
 const trainer = { vid: 790098, name: 'Test Trainer' };
@@ -581,7 +581,7 @@ test('the dates proposed are asked what they meet first, a warning under Warn is
   await expect(entries).toHaveCount(2);
   await expect(entries.first()).toContainText(otherSessionLine);
   await expect(entries.first()).toContainText(
-    filled(words.staff.dates.proposedBy, { name: 'Test Trainer (790098)', date: 'Sep 27, 2026' }),
+    filled(words.staff.dates.proposedBy, { name: 'Test Trainer (790098)', date: '27/09/2026' }),
   );
 
   // The second taken back, asked first.
@@ -739,7 +739,7 @@ test('a training is closed with a reason the dialog asks for first, and the page
   await expect(page.getByRole('heading', { level: 2, name: words.staff.sections.closing })).toBeVisible();
   await expect(
     page.getByText(
-      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: 'Oct 2, 2026' }),
+      filled(words.staff.closing.byStaff, { name: 'Test Coordinator (790097)', date: '02/10/2026' }),
       { exact: true },
     ),
   ).toBeVisible();

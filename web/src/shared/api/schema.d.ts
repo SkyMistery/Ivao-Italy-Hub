@@ -4698,6 +4698,7 @@ export interface components {
             locales: string[];
             defaultLocale: string;
             timezone: string;
+            dateFormat: string;
             logoUrl: null | string;
             faviconUrl: null | string;
             firStaffScope: string;

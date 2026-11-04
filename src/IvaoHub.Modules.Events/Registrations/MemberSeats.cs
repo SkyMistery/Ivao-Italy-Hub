@@ -242,7 +242,7 @@ public sealed class MemberSeats(
             row,
             vid,
             locale => RegistrationAnswers.Lines(questions, answers, locale, fallback, catalog),
-            locale => EventsMail.SeatLines(seats, locale, fallback, catalog),
+            locale => EventsMail.SeatLines(seats, locale, fallback, catalog, mail.Dates),
             cancellationToken);
     }
 

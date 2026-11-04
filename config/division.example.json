@@ -26,6 +26,9 @@
   "$comment.timezone": "IANA time zone, used to show local times next to UTC.",
   "timezone": "UTC",
 
+  "$comment.dateFormat": "How the hub writes a date in numbers, on the pages and in the mails: \"dd/mm/yyyy\", \"mm/dd/yyyy\" or \"yyyy/mm/dd\", whatever the reader's language. Leave it out for dd/mm/yyyy. A date with its month in words (the date of a news item) keeps the language's own order. Times are always 24 hours.",
+  "dateFormat": "dd/mm/yyyy",
+
   "$comment.awardDigestTime": "When, every day and in that time zone, whoever may assign the awards is told about the new signals in the award queue, written HH:mm. A day with no new signal sends nothing. Leave it out for 07:00.",
   "awardDigestTime": "07:00",
   "$comment.logoUrl": "Where the mark of the division is served from, or leave it out for a division that has none. A file of your own under web/public/ is the simplest place; the hub only draws whatever this points at.",

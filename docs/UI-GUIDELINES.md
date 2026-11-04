@@ -871,6 +871,16 @@ component calls `useMoment`, and what is not a component — a list cell, the li
 field — calls `formatMoment` with the language it was handed. A `new Intl.DateTimeFormat` with a
 `timeStyle` of its own is how three formatters once wrote "7:00 PM" in English.
 
+**The day in the division's order, not the language's.** `31/10/2026 14:05`: the day, the month and
+the year in numbers, in the order `division.json → dateFormat` says (`dd/mm/yyyy` when it says
+nothing, or `mm/dd/yyyy`, `yyyy/mm/dd`), whatever language the reader has chosen — an English reader
+of an Italian division must not read 03/11 as the eleventh of March. `formatMoment` takes the order
+from the bootstrap once, at the root route, so a caller never passes it. Only a date with its month
+in words, `dateStyle: 'long'` ("31 October 2026", the date of a news item, the steps of a timeline),
+keeps the language's own order: written that way it cannot be misread. The mails write the same
+through the server's `HubDates` (`Core/Division/`). A date a program reads — a sitemap, an address —
+stays ISO.
+
 **The date goes only where nothing else has said the day.** A square of a calendar grid and the
 heading of a day list have already said it; repeating it is noise on the line a reader actually
 reads. The agenda keeps it, because it is a flat list running forward and has neither. An entry that

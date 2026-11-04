@@ -182,7 +182,7 @@ function Entry({
       <div className="text-muted-foreground flex flex-wrap items-baseline gap-2 text-xs">
         <time className="tabular-nums" dateTime={item.startsAt ?? undefined}>
           {/* ⚠️ `Z` only on an instant. An all-day entry is a **day**, and a day is not a time in
-              UTC: "Sep 20, 2026Z" is a letter glued to something that has no clock in it. Caught by
+              UTC: "20/09/2026Z" is a letter glued to something that has no clock in it. Caught by
               the test that asked for the date to go away everywhere else. */}
           {allDay ? utc : t('calendar.utc', { at: utc })}
         </time>
