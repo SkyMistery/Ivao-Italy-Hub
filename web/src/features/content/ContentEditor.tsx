@@ -63,11 +63,15 @@ const METADATA_FORM = 'content-metadata';
  * every row this editor's own writes answer. Held in a ref, because it is read when a save starts —
  * after the one before it, which may have moved it — and never drawn.
  */
-function useDraftBase(opened: string | null) {
-  const base = useRef(opened);
+function useDraftBase(opened: ContentDetailDto | null) {
+  const base = useRef(opened?.rowVersion ?? null);
+  // The row itself, as the server last answered it to this editor: what the instructions for Claude show beside the
+  // version they name, so that the body and the version in their header are always of the same save.
+  const row = useRef(opened);
 
-  const adopt = useCallback((row: ContentDetailDto) => {
-    base.current = row.rowVersion;
+  const adopt = useCallback((stored: ContentDetailDto) => {
+    base.current = stored.rowVersion;
+    row.current = stored;
   }, []);
 
   const withVersion = useCallback(
@@ -78,9 +82,9 @@ function useDraftBase(opened: string | null) {
     [],
   );
 
-  // Read when the instructions for Claude are composed, after the draft was stored: the version their header names
-  // is the one the next save is written over (PR 3.0a, note 2026-10-30-una-pagina-scritta-con-claude §4).
-  const current = useCallback(() => base.current, []);
+  // Read when the instructions for Claude are composed, after the draft was stored: the row their header names, whose
+  // version the next save is written over (PR 3.0a, note 2026-10-30-una-pagina-scritta-con-claude §4).
+  const current = useCallback(() => row.current, []);
 
   return { adopt, withVersion, current };
 }
@@ -249,7 +253,7 @@ export function ContentEditor({
   // refresh it — which a save made by itself would do under somebody's fingers, taking the cursor
   // out of the title. A row that does not exist yet has the version a new row carries, from the
   // form.
-  const { adopt, withVersion, current: draftBase } = useDraftBase(content?.rowVersion ?? null);
+  const { adopt, withVersion, current: draftBase } = useDraftBase(content);
 
   // What the template still says about this page, for the instructions for Claude; the editor reads its own.
   const rules = useMemo(
@@ -465,16 +469,18 @@ export function ContentEditor({
             <ClaudeDownload
               content={content}
               kind={kind}
-              title={metadata.title}
-              summary={metadata.summary}
-              visibility={metadata.visibility}
-              body={body}
               locales={locales}
               template={rules}
               holds={holds}
               flush={autosave.flush}
               draftBase={draftBase}
-              disabled={busy || locked || autosave.stopped}
+              // Off while the template is on its way: its rules are part of what the instructions give.
+              disabled={
+                busy ||
+                locked ||
+                autosave.stopped ||
+                (typeof content?.templateId === 'number' && template.data === undefined)
+              }
             />
 
             {onPublish === null ? null : (

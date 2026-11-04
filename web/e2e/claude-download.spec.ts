@@ -202,3 +202,40 @@ test('the page of the style chosen in the settings goes at the end, read in the 
   expect(style).toContain('Write *short* sentences.');
   expect(style).not.toContain('Frasi');
 });
+
+test('whoever edits the page by a grant, without reading the links, still downloads', async ({ page }) => {
+  // `Content.Edit` given by a grant does not bring `Links.View` with it (review of #449, finding 1): the links read is
+  // not asked, and if it were it would be refused.
+  await stubTheApiAsStaff(page, {
+    ...staffBootstrap,
+    permissions: staffBootstrap.permissions.filter((permission) => !permission.name.startsWith('Links.')),
+  });
+  await page.route('**/api/content/7', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
+  );
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ stylePageId: null, stylePagePath: null }),
+    }),
+  );
+  const askedForLinks: string[] = [];
+  await page.route('**/api/links**', (route) => {
+    askedForLinks.push(route.request().url());
+    return route.fulfill({ status: 403, contentType: 'application/json', body: '{}' });
+  });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/7');
+
+  const [file] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: download.label }).click(),
+  ]);
+  const markdown = await readFile(await file.path(), 'utf8');
+
+  expect(markdown).toContain('"content": 7');
+  expect(markdown).not.toContain('The links of the library');
+  expect(askedForLinks).toEqual([]);
+});

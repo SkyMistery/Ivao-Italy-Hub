@@ -121,13 +121,12 @@ export function jsonSchemaOf(schema: z.ZodType): unknown {
 
 /**
  * The members of the envelope a page never writes: the template's rules, refused on a row that is not a template
- * (`templateRules.ts`), and what the editor and the server own — the capture of a data block, the width of a tile, the
- * mode of a data block, which the editor offers itself.
+ * (`templateRules.ts`). Everything else stays in the schema — the mode of a data block, the width of a tile, a capture
+ * — because a block already in the draft keeps them as they are, and the fixed part says so (review of #449, finding 5).
  */
-const SECTION_MEMBERS_NOT_WRITTEN = ['required', 'locked', 'allowedBlocks', 'renderMode'] as const;
-const BLOCK_MEMBERS_NOT_WRITTEN = ['frozen', 'span', 'renderMode'] as const;
+const SECTION_MEMBERS_NOT_WRITTEN = ['required', 'locked', 'allowedBlocks'] as const;
 
-/** The JSON Schema of the envelope of a page: `bodySchema`, without what a page never writes. */
+/** The JSON Schema of the envelope of a page: `bodySchema`, without the template's rules. */
 export function envelopeSchema(): unknown {
   const schema = jsonSchemaOf(bodySchema) as {
     $defs?: Record<string, { properties?: Record<string, unknown> }>;
@@ -137,11 +136,6 @@ export function envelopeSchema(): unknown {
     const properties = section.properties ?? {};
     for (const member of SECTION_MEMBERS_NOT_WRITTEN) {
       delete properties[member];
-    }
-
-    const blocks = properties.blocks as { items?: { properties?: Record<string, unknown> } } | undefined;
-    for (const member of BLOCK_MEMBERS_NOT_WRITTEN) {
-      delete blocks?.items?.properties?.[member];
     }
   }
 
@@ -160,7 +154,7 @@ export interface InstructionsInput {
   readonly visibility: string;
   /** The languages of the division, `division.json → locales`. */
   readonly locales: readonly string[];
-  /** The blocks this page offers to this person, in the order of the registry (`offeredBlocks`). */
+  /** The blocks this page offers to this person, in the order of the registry (`palette.ts`: `addableBlocks`, `tooFewReaders`). */
   readonly blocks: readonly BlockRegistration[];
   /** The rules of the template the page was made from, by section `key`; empty without one. */
   readonly template: ReadonlyMap<string, SectionRule>;
@@ -175,24 +169,6 @@ export interface InstructionsInput {
   };
   /** The page of the staff that describes the style of the division, as Markdown; null when none is chosen. */
   readonly style: string | null;
-}
-
-/**
- * The blocks a page offers to whoever downloads: the palette's own answer (`BlockPalette`) — not retired, its
- * permission held — and, as the note asks, not a block for fewer readers than the page (#414): such a block would be
- * refused by the save (`errors.body.blockAudience`), so it is not proposed.
- */
-export function offeredBlocks(
-  blocks: readonly BlockRegistration[],
-  holds: (permission: string) => boolean,
-  tooFewReaders: (type: string) => boolean,
-): BlockRegistration[] {
-  return blocks.filter(
-    (block) =>
-      block.retired !== true &&
-      (block.permission === undefined || holds(block.permission)) &&
-      !tooFewReaders(block.type),
-  );
 }
 
 /**
@@ -269,7 +245,13 @@ function addressesSection(input: InstructionsInput): string {
   const lines = [
     '## The addresses of the site',
     '',
-    'The addresses of this site you may link to, with who reads them. Nothing else of the site exists for you.',
+    // ⚠️ Not the whole site: the pages are the ones the list of the content gives whoever downloads — their own
+    // departments', a hundred at most — and the text says so (review of #449, finding 2). A read of every page they may
+    // read is a question for a core change of its own.
+    'The addresses of this site you may link to, with who reads them. They are the published pages of the departments of',
+    'the person who downloaded these instructions (a hundred at most), the screens of the site and the links of the library:',
+    'the site may have more pages than these. When the page you need is not here, do not guess its address: in a button or',
+    'a card leave `href` empty (`""`), in a text write the words without a link, and say so to the person.',
     '',
     '| address | name | read by |',
     '|---|---|---|',

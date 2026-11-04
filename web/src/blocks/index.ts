@@ -3,6 +3,7 @@ export type { PickAction, SortableBinding } from './picking';
 export { PickingContext, usePicking, type Picking } from './picking';
 export { PrintContext, usePrinting } from './print';
 export {
+  EMBED_GUIDELINES_PATH,
   EmbeddingContext,
   frameAddress,
   useEmbedding,

@@ -18,7 +18,7 @@ import { SectionHeader } from '../../shared/ui';
 import { bootstrapQuery } from '../me/queries';
 
 import type { PaletteDrag } from './DropZone';
-import { beyondReaders, groupsOf, type PageVisibility } from './palette';
+import { addableBlocks, groupsOf, tooFewReaders, type PageVisibility } from './palette';
 import type { SectionRule } from './templateRules';
 
 /**
@@ -78,21 +78,12 @@ export function BlockPalette({
   const { t } = useTranslation();
 
   const { data: bootstrap } = useQuery(bootstrapQuery);
-  const audiences = new Map(
-    (bootstrap?.registries.blocks ?? []).map((block) => [block.type, block.audience] as const),
-  );
-  const tooFewReaders = (type: string) => {
-    const audience = audiences.get(type);
-    return visibility !== undefined && audience !== undefined && beyondReaders(audience, visibility);
-  };
+  const forFewerReaders = tooFewReaders(bootstrap?.registries.blocks ?? [], visibility);
 
   // A retired block is not in the list at all, for the reason a permission not held is not: it can
-  // never be added, so an entry for it would be noise (`BlockRegistration.retired`).
-  const offered = registry.blocks.filter(
-    (block) =>
-      block.retired !== true &&
-      (block.permission === undefined || holds === undefined || holds(block.permission)),
-  );
+  // never be added, so an entry for it would be noise (`BlockRegistration.retired`). The same answer the
+  // instructions for Claude give (`addableBlocks`).
+  const offered = addableBlocks(registry.blocks, holds);
 
   const arranged = groupsOf(offered);
 
@@ -192,7 +183,7 @@ export function BlockPalette({
                   rule={rule}
                   onAdd={onAdd}
                   draggable={draggable}
-                  tooFewReaders={tooFewReaders}
+                  tooFewReaders={forFewerReaders}
                 />
 
                 {group.subgroups.length === 0 ? null : (
@@ -226,7 +217,7 @@ export function BlockPalette({
                               rule={rule}
                               onAdd={onAdd}
                               draggable={draggable}
-                              tooFewReaders={tooFewReaders}
+                              tooFewReaders={forFewerReaders}
                             />
                           </div>
                         </AccordionContent>
