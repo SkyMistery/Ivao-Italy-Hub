@@ -391,6 +391,13 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
         var token = TestContext.Current.CancellationToken;
         await SyncAsync(token);
 
+        string fiumicinoName;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            fiumicinoName = await scope.ServiceProvider.GetRequiredService<HubDbContext>().IvaoAirports.AsNoTracking()
+                .Where(airport => airport.Icao == "LIRF").Select(airport => airport.Name).SingleAsync(token);
+        }
+
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             // A foreign centre already in the table, from before the filter: the directory does not read it either.
@@ -430,11 +437,26 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.Equal(1, await database.IvaoCenters.CountAsync(center => center.Id == "LIRR", token));
             Assert.False(await database.IvaoAirports.AnyAsync(airport => airport.Icao == "LIZZ", token));
 
+            // A key repeated the first time it is seen — not yet in the table — is written once too: the second occurrence
+            // finds the row the first one added.
+            Assert.Equal(1, await database.IvaoCenters.CountAsync(center => center.Id == RepeatedCentre, token));
+            Assert.Equal(1, await database.IvaoAirports.CountAsync(airport => airport.Icao == RepeatedAirport, token));
+
             // A known row whose new value does not fit keeps yesterday's.
             var fiumicino = await database.IvaoAirports.AsNoTracking().SingleAsync(airport => airport.Icao == "LIRF", token);
-            Assert.True(fiumicino.Name.Length <= 256);
+            Assert.Equal(fiumicinoName, fiumicino.Name);
+
+            // The two new rows are this test's only: the next sync of another class would prune them, this one does now.
+            await database.IvaoAirports.Where(airport => airport.Icao == RepeatedAirport).ExecuteDeleteAsync(token);
+            await database.IvaoCenters.Where(center => center.Id == RepeatedCentre).ExecuteDeleteAsync(token);
+            scope.ServiceProvider.GetRequiredService<IFirDirectory>().Invalidate();
         }
     }
+
+    /// <summary>A centre and an airport of no fixture, which the careless answer gives twice.</summary>
+    private const string RepeatedCentre = "LIXR";
+
+    private const string RepeatedAirport = "LIXA";
 
     /// <summary>The fixtures, with what a careless answer of IVAO could add to them.</summary>
     private sealed class OddAnswersIvaoApiClient(IIvaoApiClient inner) : IIvaoApiClient
@@ -448,6 +470,8 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
             [
                 .. centers,
                 centers.First(center => center.Id == "LIRR"),
+                new(RepeatedCentre, "Repeated", "IT", "{}"),
+                new(RepeatedCentre, "Repeated", "IT", "{}"),
                 new("LSAS", "Switzerland", "CH", "{}"),
             ];
         }
@@ -464,6 +488,8 @@ public sealed class RefDataSyncTests(MariaDbFixture mariaDb) : IAsyncLifetime
                 .. airports,
                 fiumicino with { Name = new string('x', 300) },
                 new("LIZZ", new string('y', 300), "IT", "LIRR", null, "{}"),
+                new(RepeatedAirport, "Repeated", "IT", "LIRR", null, "{}"),
+                new(RepeatedAirport, "Repeated", "IT", "LIRR", null, "{}"),
             ];
         }
 
