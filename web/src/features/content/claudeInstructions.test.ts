@@ -10,7 +10,6 @@ import {
   composeInstructions,
   envelopeSchema,
   instructionsHeader,
-  offeredBlocks,
   type InstructionsInput,
 } from './claudeInstructions';
 import type { SiteAddress } from './siteAddresses';
@@ -170,32 +169,15 @@ describe('the fingerprints', () => {
 });
 
 describe('what the instructions offer', () => {
-  test('a retired block, one behind a permission not held and one for fewer readers are not offered', () => {
-    const offered = offeredBlocks(
-      registry.blocks,
-      () => false,
-      (type) => type === 'myWork',
-    ).map((each) => each.type);
-
-    expect(offered).toContain('text');
-    expect(offered).not.toContain('interactive');
-    expect(offered).not.toContain('cta');
-    expect(offered).not.toContain('coordination');
-    expect(offered).not.toContain('myWork');
-  });
-
-  test('the envelope of a page leaves out what only a template, the editor or the server write', () => {
+  test("the envelope of a page leaves out the template's rules and keeps what a block of the draft carries", () => {
     const text = JSON.stringify(envelopeSchema());
 
-    for (const member of [
-      '"required":{',
-      '"locked"',
-      '"allowedBlocks"',
-      '"frozen"',
-      '"span"',
-      '"renderMode"',
-    ]) {
+    for (const member of ['"required":{', '"locked"', '"allowedBlocks"']) {
       expect(text).not.toContain(member);
+    }
+    // A block already in the draft keeps its mode, its width and its capture (review of #449, finding 5).
+    for (const member of ['"renderMode"', '"span"', '"frozen"']) {
+      expect(text).toContain(member);
     }
     expect(text).toContain('"background"');
     expect(text).toContain('"source"');
@@ -225,6 +207,9 @@ describe('what the instructions offer', () => {
 
   test('only the published addresses of the site, and the links of the library', async () => {
     const { markdown } = await composeInstructions(input());
+
+    // And it does not pretend the list is the whole site (review of #449, finding 2).
+    expect(markdown).toContain('the site may have more pages than these');
 
     expect(markdown).toContain('`/about`');
     expect(markdown).toContain('`/news`');

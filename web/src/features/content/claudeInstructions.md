@@ -54,7 +54,9 @@ A page is a list of **sections**; a section holds **blocks** and may hold **rows
 - A **block** in a section with columns says which one with `column` (0 is the first). In a `stacked` section leave it
   out.
 - Every block has `type` and `version`, both exactly as the block's entry below gives them, and `props`, which must
-  satisfy that block's JSON Schema. Leave out `renderMode`, `frozen` and `span`: the editor and the server own them.
+  satisfy that block's JSON Schema.
+- A block **already in the draft** keeps `renderMode`, `span` and `frozen` exactly as they are: they are choices made in
+  the editor, or the site's own capture. A block **you add** leaves them out.
 - `source` is only for the interactive block, when it is offered below.
 
 The JSON Schema of the envelope (sections and the frame of a block) is below, after the blocks.
@@ -82,9 +84,11 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
 - **Dates.** A field marked `"date": true` is an ISO 8601 instant, `2026-11-04T00:00:00Z`.
 - **Collections, categories and kinds** of the site (`collectionOf`, `calendarKind`, the category of a list of links):
   keep the draft's value, or leave the field empty for the person to choose.
-- **Links.** An address of this site starts with `/` and must be one of the addresses listed below. Never guess one. An
-  address outside the site is a whole `https://` URL. A page for everybody does not link to a page only the staff can
-  read.
+- **Links.** An address of this site starts with `/` and is one of the addresses listed below. The list may not hold
+  every page of the site: never guess an address that is not there. When the page you need is missing, leave `href` empty
+  (`""`) in a button or a card, write the words without a link in a text, and tell the person which link is left for them
+  to choose. An address outside the site is a whole `https://` URL. A page for everybody does not link to a page only the
+  staff can read.
 
 ## What you do not do
 
