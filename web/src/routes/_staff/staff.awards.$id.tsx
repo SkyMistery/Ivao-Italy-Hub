@@ -18,7 +18,7 @@ import { mediaPickerQuery } from '../../features/media/queries';
 import { writableDepartments } from '../../shared/api/bootstrap';
 import { DEPARTMENTS } from '../../shared/api/department';
 import { SchemaForm } from '../../shared/forms';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /** What writing an award asks for, on the department of the row. */
 const AWARDS_EDIT = 'Awards.Edit';
@@ -60,6 +60,7 @@ function AwardForm() {
   const create = useCreateAward();
   const update = useUpdateAward(Number(id));
   const remove = useDeleteAward();
+  const refused = useRefusalNotice();
   const upload = useUploadMedia();
 
   const department =
@@ -99,7 +100,7 @@ function AwardForm() {
             description={t('awards.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }

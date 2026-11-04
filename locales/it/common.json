@@ -3,6 +3,7 @@
     "title": "IVAO Division Hub"
   },
   "common": {
+    "notDone": "Non è stato fatto",
     "loading": "Caricamento...",
     "save": "Salva",
     "cancel": "Annulla",

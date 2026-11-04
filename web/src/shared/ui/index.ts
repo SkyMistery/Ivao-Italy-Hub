@@ -6,7 +6,7 @@ export { MarkdownContent } from './MarkdownContent';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Dialog } from './Dialog';
 export { Notice } from './Notice';
-export { NOTICE_TONES, useNotice, type NoticeTone } from './notices';
+export { NOTICE_TONES, useNotice, useRefusalNotice, type NoticeTone } from './notices';
 export { CalendarView } from './CalendarView';
 export { LiveStatusStrip, type LiveNetworkStatus } from './LiveStatusStrip';
 export { ContactForm } from './ContactForm';

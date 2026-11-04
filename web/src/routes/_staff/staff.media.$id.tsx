@@ -16,7 +16,7 @@ import { mediaQuery, mediaUsageQuery, type MediaDetailDto } from '../../features
 import { mediaSchema, type MediaFormValues } from '../../features/media/schema';
 import { ProblemAlert, SchemaForm, describeProblem } from '../../shared/forms';
 import { resolveLocalized } from '../../shared/i18n/localized';
-import { ConfirmDialog, Notice, PageShell, useNotice } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useNotice, useRefusalNotice } from '../../shared/ui';
 
 /**
  * The metadata of one file. There is no `new` here and there is no create: a media is born from an
@@ -47,6 +47,7 @@ function MediaForm() {
 
   const update = useUpdateMedia(Number(id));
   const remove = useDeleteMedia();
+  const refused = useRefusalNotice();
   const replace = useReplaceMediaFile(Number(id));
   const archive = useArchiveMedia(Number(id));
   const notice = useNotice();
@@ -100,6 +101,7 @@ function MediaForm() {
               onConfirm={() =>
                 archive.mutate(true, {
                   onSuccess: () => notice({ tone: 'success', title: t('media.archive.done') }),
+                  onError: refused,
                 })
               }
             />
@@ -114,7 +116,7 @@ function MediaForm() {
             }
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToLibrary })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToLibrary, onError: refused })}
           />
         </div>
       }
@@ -130,6 +132,7 @@ function MediaForm() {
           if (file !== undefined) {
             replace.mutate(file, {
               onSuccess: () => notice({ tone: 'success', title: t('media.replace.done') }),
+              onError: refused,
             });
           }
         }}
@@ -149,6 +152,7 @@ function MediaForm() {
                 onClick={() =>
                   archive.mutate(false, {
                     onSuccess: () => notice({ tone: 'success', title: t('media.archive.restored') }),
+                    onError: refused,
                   })
                 }
               >

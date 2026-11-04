@@ -5,6 +5,8 @@ import { FileText, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ApiError } from '../api/problem';
+import { describeProblem } from '../forms/useProblemDetails';
 import { resolveLocalized } from '../i18n/localized';
 
 import { EmptyState } from './layout-pieces';
@@ -70,7 +72,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
   defaultLocale: string;
   disabled?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data, isPending } = useQuery(query);
 
   const items = data?.items ?? [];
@@ -91,7 +93,12 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
     try {
       onChange(await onUpload(file));
     } catch (error) {
-      setRefused(error instanceof Error ? error.message : String(error));
+      // The server's reason, read as a form reads it (issue #332, item 4): the generic sentence only when it gave none.
+      setRefused(
+        error instanceof ApiError
+          ? (describeProblem(error, t, i18n.language) ?? t('media.picker.uploadRefused'))
+          : t('media.picker.uploadRefused'),
+      );
     } finally {
       setUploading(false);
       if (fileInput.current !== null) {
@@ -125,7 +132,7 @@ export function MediaPicker<TRow extends PickableMedia, TKey extends readonly un
         </div>
         {refused === null ? null : (
           <p role="alert" className="text-destructive text-sm">
-            {t('media.picker.uploadRefused')}
+            {refused}
           </p>
         )}
       </div>

@@ -9,7 +9,7 @@ import { tokensListQuery, type PersonalTokenIssuedDto } from '../../features/tok
 import { audienceWordKey, emptyToken, tokenSchema, type TokenFormValues } from '../../features/tokens/schema';
 import { SchemaForm } from '../../shared/forms';
 import { DataList, listSearchSchema } from '../../shared/list';
-import { ConfirmDialog, Notice, PageShell } from '../../shared/ui';
+import { ConfirmDialog, Notice, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * The member's personal tokens (M2, T19a, note 2026-09-15-token-personali-e-agente-del-validatore §3.1): a program of
@@ -30,6 +30,7 @@ function MyTokensPage() {
   const navigate = Route.useNavigate();
   const create = useCreateToken();
   const revoke = useRevokeToken();
+  const refused = useRefusalNotice();
   const [issued, setIssued] = useState<PersonalTokenIssuedDto | null>(null);
 
   const audiences = useMemo(() => bootstrap.user?.tokenAudiences ?? [], [bootstrap.user]);
@@ -69,7 +70,7 @@ function MyTokensPage() {
               description={t('tokens.revoke.description', { name: row.name })}
               confirmText={t('tokens.revoke.action')}
               disabled={revoke.isPending}
-              onConfirm={() => revoke.mutate(row.id)}
+              onConfirm={() => revoke.mutate(row.id, { onError: refused })}
             />
           )}
         />

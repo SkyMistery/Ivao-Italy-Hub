@@ -18,7 +18,7 @@ import { menuItemSchema, type MenuItemFormValues } from '../../features/menu/sch
 import { deptParam } from '../../shared/api/department';
 import { SchemaForm, type ChoiceOption, type Suggestion } from '../../shared/forms';
 import { useLocalized } from '../../shared/i18n/useLocalized';
-import { ConfirmDialog, PageShell } from '../../shared/ui';
+import { ConfirmDialog, PageShell, useRefusalNotice } from '../../shared/ui';
 
 /**
  * One entry of the site menu, and `new` for one that does not exist yet.
@@ -124,6 +124,7 @@ function MenuItemForm() {
   const create = useCreateMenuItem();
   const update = useUpdateMenuItem(Number(id));
   const remove = useDeleteMenuItem();
+  const refused = useRefusalNotice();
 
   const backToList = () => void navigate({ to: '/staff/$dept/menu', params: { dept } });
 
@@ -152,7 +153,7 @@ function MenuItemForm() {
             description={t('menu.delete.description')}
             confirmText={t('common.delete')}
             disabled={remove.isPending}
-            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList })}
+            onConfirm={() => remove.mutate(Number(id), { onSuccess: backToList, onError: refused })}
           />
         )
       }
