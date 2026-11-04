@@ -151,9 +151,6 @@ export function DataList<TRow, TKey extends readonly unknown[]>({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <SearchBox
-          // Keyed on the parameter so that a back button, which changes the route and not this
-          // component, restarts it on the term the URL now carries.
-          key={search.q ?? ''}
           initial={search.q ?? ''}
           placeholder={t('list.search')}
           onCommit={(q) => onSearchChange({ q: q === '' ? undefined : q, page: 1 })}
@@ -304,13 +301,29 @@ function SearchBox({
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(initial);
+  const [committed, setCommitted] = useState(initial);
+  const [seen, setSeen] = useState(initial);
+
+  // A term the URL brings that this box did not commit — a back button, a link — replaces what is typed. Its own commit coming
+  // back through the URL does not: the box used to be keyed on the term, so it remounted exactly then and lost the focus and
+  // what was typed in the meantime (issue #332, item 10).
+  if (initial !== seen) {
+    setSeen(initial);
+    if (initial !== committed) {
+      setDraft(initial);
+      setCommitted(initial);
+    }
+  }
 
   useEffect(() => {
     if (draft === initial) {
       return undefined;
     }
 
-    const timer = setTimeout(() => onCommit(draft), 300);
+    const timer = setTimeout(() => {
+      setCommitted(draft);
+      onCommit(draft);
+    }, 300);
     return () => clearTimeout(timer);
   }, [draft, initial, onCommit]);
 
