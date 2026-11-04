@@ -446,7 +446,7 @@ Filtering in memory is right for a short, fixed list and wrong for anything a da
 
 ⚠️ And where that set contains **routes of this client**, the two halves agree **by hand**: a route
 is not something the OpenAPI contract can carry. `MenuItemWriteDtoValidator.Screens` and
-`SITE_SCREENS` in `web/src/routes/_staff/staff.$dept.menu.$id.tsx` are one list written twice. A fork
+`SITE_SCREENS` in `web/src/features/content/siteAddresses.ts` are one list written twice. A fork
 that adds or removes a screen edits both, and an integration test posting a screen keeps them honest
 — the same arrangement the backgrounds of a section already use.
 

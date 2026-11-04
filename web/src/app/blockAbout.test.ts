@@ -35,11 +35,13 @@ function sentence(language: string, key: string): unknown {
     readFileSync(resolve(LOCALES, language, `${namespace ?? 'common'}.json`), 'utf8'),
   );
 
-  return (path ?? '').split('.').reduce<unknown>(
-    (node, segment) =>
-      node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[segment] : undefined,
-    catalogue,
-  );
+  return (path ?? '')
+    .split('.')
+    .reduce<unknown>(
+      (node, segment) =>
+        node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[segment] : undefined,
+      catalogue,
+    );
 }
 
 test('the languages of the division are read', () => {
