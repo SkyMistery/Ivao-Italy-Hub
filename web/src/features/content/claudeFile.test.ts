@@ -8,7 +8,9 @@ import {
   forgetImported,
   pendingNow,
   readClaudeFile,
+  readLeftovers,
   rememberImported,
+  rememberLeftovers,
   versionLine,
   type ImportContext,
 } from './claudeFile';
@@ -74,6 +76,7 @@ const context = (over: Partial<ImportContext> = {}): ImportContext => ({
   dirty: false,
   registered: registry.blocks,
   addresses: new Set(['/', '/about', '/news']),
+  holds: () => true,
   ...over,
 });
 
@@ -608,5 +611,225 @@ describe('the line of the version (answer 6)', () => {
     forgetImported(7);
 
     expect(versionLine({ id: 7, publishedAt: null }, 'Two blocks.', t)).toBe('Two blocks.');
+  });
+});
+
+describe('the review of #453', () => {
+  const interactive = (id: string, source: string | null) => ({
+    id,
+    type: 'interactive',
+    version: 1,
+    props: {},
+    renderMode: null,
+    frozen: null,
+    column: null,
+    span: null,
+    source,
+  });
+
+  const withCode = (over: Partial<ImportContext> = {}) =>
+    context({
+      body: withSections([section({ id: 'sec-a', blocks: [interactive('blk-code', 'CODE')] })]) as Body,
+      ...over,
+    });
+
+  describe('the code of an interactive block', () => {
+    const mayNot = (permission: string) => permission !== 'Content.EmbedCode';
+    const dropped = (ctx: ImportContext) =>
+      fileFor(ctx, { body: withSections([section({ id: 'sec-a', blocks: [] })]) });
+
+    test('a file may not take away what the person could not put back', async () => {
+      const ctx = withCode({ holds: mayNot });
+
+      expect((await refused(await dropped(ctx), ctx)).problems).toContainEqual({
+        path: null,
+        key: 'content.import.codeNotTheirs',
+        values: { type: 'interactive' },
+      });
+    });
+
+    test('whoever may write code may take it away', async () => {
+      const ctx = withCode();
+
+      expect((await ready(await dropped(ctx), ctx)).outcome).toBe('ready');
+    });
+
+    test('left out of a kept block, it stays; written, it goes to the server, which decides', async () => {
+      const ctx = withCode({ holds: mayNot });
+
+      const omitted = await ready(
+        await fileFor(ctx, {
+          body: withSections([
+            section({
+              id: 'sec-a',
+              blocks: [{ id: 'blk-code', type: 'interactive', version: 1, props: {} }],
+            }),
+          ]),
+        }),
+        ctx,
+      );
+      expect(allBlocks(omitted.body)[0]?.source).toBe('CODE');
+
+      const written = await ready(
+        await fileFor(withCode(), {
+          body: withSections([section({ id: 'sec-a', blocks: [interactive('blk-code', 'NEW')] })]),
+        }),
+        withCode(),
+      );
+      expect(allBlocks(written.body)[0]?.source).toBe('NEW');
+    });
+
+    test('a new block keeps it only if it is the block that carries code', async () => {
+      const answer = await ready(
+        await fileFor(context(), {
+          body: withSections([
+            section({
+              id: 'sec-a',
+              blocks: [
+                { type: 'text', version: 1, props: text('').props, source: 'SMUGGLED' },
+                {
+                  type: 'interactive',
+                  version: 1,
+                  props: { title: { en: 'A', xx: 'B' } },
+                  source: 'WRITTEN',
+                },
+              ],
+            }),
+          ]),
+        }),
+      );
+
+      expect(allBlocks(answer.body).map((block) => block.source)).toEqual([null, 'WRITTEN']);
+    });
+  });
+
+  test('a kept section newly set on a picture waits for one; one already waiting is not the file’s doing', async () => {
+    const newly = await ready(
+      await fileFor(context(), {
+        body: withSections([section({ id: 'sec-a', background: 'image', blocks: [text('blk-a')] })]),
+      }),
+    );
+    expect(newly.pending).toEqual([{ owner: 'sec-a', field: null, kind: 'picture' }]);
+
+    const waiting = context({
+      body: withSections([section({ id: 'sec-a', background: 'image' })]) as Body,
+    });
+    expect((await ready(await fileFor(waiting), waiting)).pending).toEqual([]);
+  });
+
+  test('what is neither of the site nor a whole address is said, and a whole one is not', async () => {
+    const button = (href: string) => ({ label: { en: 'Go', xx: 'Vai' }, href });
+    const answer = await ready(
+      await fileFor(context(), {
+        body: withSections([
+          section({
+            id: 'sec-a',
+            blocks: [
+              {
+                type: 'buttonGroup',
+                version: 1,
+                props: {
+                  buttons: [
+                    button('about/team'),
+                    button('www.example.org'),
+                    button('javascript:alert(1)'),
+                    button('//example.org/x'),
+                    button('https://example.org/x'),
+                    button('mailto:staff@example.org'),
+                  ],
+                },
+              },
+              {
+                type: 'text',
+                version: 1,
+                props: { markdown: { en: '[a](about/team) [b](https://example.org)', xx: '[c](/about)' } },
+              },
+            ],
+          }),
+        ]),
+      }),
+    );
+
+    expect(answer.pending.map(({ address }) => address)).toEqual([
+      'about/team',
+      'www.example.org',
+      'javascript:alert(1)',
+      '//example.org/x',
+      'about/team',
+    ]);
+  });
+
+  test('a link leaves the list when it is another one, even one that begins the same', () => {
+    const bodyWith = (href: string, markdown: string) =>
+      withSections([
+        section({
+          id: 'sec-a',
+          blocks: [
+            { ...text('blk-b'), type: 'buttonGroup', props: { buttons: [{ label: {}, href }] } },
+            { ...text('blk-t'), props: { markdown: { en: markdown } } },
+          ],
+        }),
+      ]) as Body;
+
+    const pending = [
+      { owner: 'blk-b', field: 'buttons.0.href', kind: 'link' as const, address: '/about' },
+      { owner: 'blk-t', field: 'markdown.en', kind: 'link' as const, address: '/about' },
+    ];
+
+    expect(pendingNow(bodyWith('/about', '[a](/about)'), pending)).toHaveLength(2);
+    expect(pendingNow(bodyWith('/about/team', '[a](/about/team)'), pending)).toEqual([]);
+
+    const empty = [{ owner: 'blk-b', field: 'buttons.0.href', kind: 'link' as const, address: '' }];
+    expect(pendingNow(bodyWith('', ''), empty)).toHaveLength(1);
+    expect(pendingNow(bodyWith('/about', ''), empty)).toEqual([]);
+  });
+
+  test('the version of a kept block follows what read its props', async () => {
+    const older = context({
+      body: withSections([section({ id: 'sec-a', blocks: [{ ...text('blk-a'), version: 0 }] })]) as Body,
+    });
+
+    const untouched = await ready(await fileFor(older), older);
+    expect(allBlocks(untouched.body)[0]?.version).toBe(0);
+
+    const changed = await ready(
+      await fileFor(older, {
+        body: withSections([section({ id: 'sec-a', blocks: [text('blk-a', 'Rewritten')] })]),
+      }),
+      older,
+    );
+    expect(allBlocks(changed.body)[0]?.version).toBe(
+      registry.blocks.find((block) => block.type === 'text')?.version,
+    );
+  });
+
+  test('a member called __proto__ pollutes nothing and reaches no draft', async () => {
+    const base = await fileFor(context());
+    const file = JSON.stringify(base).replace(
+      '"props":{"markdown":{"en":"Hello","xx":"Hello xx"}}',
+      '"props":{"__proto__":{"polluted":true},"markdown":{"__proto__":"x","en":"Rewritten","xx":"Riscritta"}}',
+    );
+    expect(file).toContain('__proto__');
+
+    const answer = await ready(file);
+
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    expect(JSON.stringify(answer.body)).not.toContain('polluted');
+  });
+
+  test('what an import left survives a reload, and anything else in its place is nothing', () => {
+    const pending = [{ owner: 'blk-a', field: 'mediaId', kind: 'picture' as const }];
+
+    rememberLeftovers(7, pending);
+    expect(readLeftovers(7)).toEqual(pending);
+    expect(readLeftovers(8)).toEqual([]);
+
+    rememberLeftovers(7, []);
+    expect(readLeftovers(7)).toEqual([]);
+
+    localStorage.setItem('hub.content.imported.7.left', '{not json');
+    expect(readLeftovers(7)).toEqual([]);
+    localStorage.setItem('hub.content.imported.7.left', '[{"owner":1}]');
+    expect(readLeftovers(7)).toEqual([]);
   });
 });

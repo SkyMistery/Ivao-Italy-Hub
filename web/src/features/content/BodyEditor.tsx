@@ -53,6 +53,7 @@ import {
   removeBlock,
   removeSection,
   setSpan,
+  startingMode,
   reorderBlocks,
   reorderSections,
   updateBlock,
@@ -296,11 +297,10 @@ export function BodyEditor({
       // added and never opened must not carry an empty translated value, which
       // publication would read as a page translated into one language only.
       writtenValues(registration.schema, defaultProps(registration.schema, locales)),
-      // A data block starts live: capturing is a decision somebody makes, and one that
-      // only means anything once the page is published.
-      registration.kind === 'Data' ? 'live' : null,
+      startingMode(registration.kind),
       dashboard ? 0 : column,
       at,
+      registration.version,
     );
 
     change(added.body);

@@ -14,6 +14,7 @@ import type { LocalizedString } from '../../shared/api/bootstrap';
 import { readFields, type FieldNode } from '../../shared/forms';
 import type { BlockRegistration } from '../../shared/modules';
 
+import { newBlock, startingMode } from './body';
 import { CHANGELOG_MAX } from './changeSummary';
 import {
   canonicalJson,
@@ -72,7 +73,7 @@ export interface ImportPending {
   readonly field: string | null;
   readonly kind: 'picture' | 'value' | 'link';
   /** The address a link leads to; empty when it is left for the person to choose. */
-  readonly address?: string;
+  readonly address?: string | undefined;
 }
 
 export interface ImportRefusal {
@@ -107,6 +108,8 @@ export interface ImportContext extends HeaderInput {
   readonly registered: readonly BlockRegistration[];
   /** Where an address of this site may lead (`knownAddresses`). */
   readonly addresses: ReadonlySet<string>;
+  /** Whether this person holds a permission on this row: only the code of an interactive block asks here. */
+  readonly holds: (permission: string) => boolean;
 }
 
 const refuse = (
@@ -305,12 +308,28 @@ function blankTexts(fields: readonly FieldNode[], values: unknown, prefix: strin
   });
 }
 
-const MARKDOWN_LINK = /\]\((\/[^)\s]*)/g;
+const MARKDOWN_LINK = /\]\(([^)\s]*)/g;
+
+/** What needs no list of the site's to be an address: the rest is one of ours, or goes nowhere. */
+const WHOLE_ADDRESS = /^(https?:\/\/|mailto:|tel:|#)/i;
 
 /** An address of this site as the list has it: no query, no anchor, no slash at the end. */
 function addressOf(link: string): string {
   const path = link.split(/[?#]/, 1)[0] ?? link;
   return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+}
+
+/**
+ * Whether a link is one to say something about: empty, left on purpose as the instructions tell Claude to when the page
+ * it needs does not exist; an address of this site the instructions did not list; or neither that nor a whole address
+ * (`about/team`, `www.example.org`, `javascript:…`), which leads nowhere and looks as if it did.
+ */
+function leadsNowhere(link: string, addresses: ReadonlySet<string>): boolean {
+  if (link !== '' && WHOLE_ADDRESS.test(link)) {
+    return false;
+  }
+
+  return !(link.startsWith('/') && !link.startsWith('//') && addresses.has(addressOf(link)));
 }
 
 /**
@@ -331,11 +350,7 @@ function linksToCheck(
       const inner = field === '' ? key : `${field}.${key}`;
 
       if (key === 'href' && typeof member === 'string') {
-        // Left empty on purpose: the instructions tell Claude to, when the page it needs does not exist.
-        if (
-          member === '' ||
-          (member.startsWith('/') && !member.startsWith('//') && !addresses.has(addressOf(member)))
-        ) {
+        if (leadsNowhere(member, addresses)) {
           found.push({ field: inner, address: member });
         }
       } else {
@@ -344,7 +359,7 @@ function linksToCheck(
     }
   } else if (typeof value === 'string') {
     for (const [, link] of value.matchAll(MARKDOWN_LINK)) {
-      if (link !== undefined && !link.startsWith('//') && !addresses.has(addressOf(link))) {
+      if (link !== undefined && leadsNowhere(link, addresses)) {
         found.push({ field, address: link });
       }
     }
@@ -506,28 +521,36 @@ function settleBody(
         ? (before?.block.props ?? block.props)
         : checkProps(block, registration, path);
 
-    const settled: BlockEnvelope =
-      before === undefined
-        ? {
-            ...block,
-            props,
-            // As the editor makes a block it adds (`addBlockTo`): capturing is a decision somebody takes later.
-            version: registration?.version ?? 1,
-            renderMode: registration?.kind === 'Data' ? 'live' : null,
-            frozen: null,
-            span: null,
-            source: registration?.carriesSource === true ? block.source : null,
-          }
-        : {
-            ...block,
-            props,
-            // Choices made in the editor, and the site's own capture: never the file's.
-            version: before.block.version,
-            renderMode: before.block.renderMode,
-            frozen: before.block.frozen,
-            span: before.block.span,
-            source: block.source ?? before.block.source,
-          };
+    let settled: BlockEnvelope;
+    if (before !== undefined) {
+      settled = {
+        ...block,
+        props,
+        // Props read by today's schema are today's shape, and say so; props nobody touched stay the version that wrote them.
+        version: unchanged || registration === undefined ? before.block.version : registration.version,
+        // Choices made in the editor, and the site's own capture: never the file's.
+        renderMode: before.block.renderMode,
+        frozen: before.block.frozen,
+        span: before.block.span,
+        source: block.source ?? before.block.source,
+      };
+    } else {
+      // Not offered and not known returned above; this is for the compiler, which cannot follow a set.
+      if (registration === undefined) {
+        return block;
+      }
+
+      // As the editor makes a block it adds.
+      settled = newBlock({
+        id: block.id,
+        type: block.type,
+        version: registration.version,
+        props,
+        renderMode: startingMode(registration.kind),
+        column: block.column,
+        source: registration.carriesSource === true ? block.source : null,
+      });
+    }
 
     if (!unchanged) {
       links(settled);
@@ -574,7 +597,8 @@ function settleBody(
     if (
       settled.background === 'image' &&
       blank(settled.mediaId) &&
-      (before === undefined || !blank(before.mediaId))
+      // Not when it was so already: that is not the file's doing.
+      !(before?.background === 'image' && blank(before.mediaId))
     ) {
       pending.push({ owner: settled.id, field: null, kind: 'picture' });
     }
@@ -601,6 +625,24 @@ function settleBody(
         key: 'content.import.sectionRequired',
         values: { name: nameOfSection(section) },
       });
+    }
+  }
+
+  // ⚠️ Code the person may not write, gone from the file. The server takes that save, and then refuses every later one that
+  // brings the code back, as new code (`CodeNotTheirsAsync` reads the row as stored): Undo would put the block on screen
+  // and never get it saved, with the imported body on the server (review of #453, finding 2). So the file is
+  // refused here, where nothing has happened yet.
+  const sourcesKept = new Set(allBlocks(body).map((block) => block.source));
+  for (const block of allBlocks(draft)) {
+    const permission = registered.find((candidate) => candidate.type === block.type)?.permission;
+
+    if (
+      !blank(block.source) &&
+      !sourcesKept.has(block.source) &&
+      permission !== undefined &&
+      !context.holds(permission)
+    ) {
+      problems.push({ path: null, key: 'content.import.codeNotTheirs', values: { type: block.type } });
     }
   }
 
@@ -690,6 +732,17 @@ export async function readClaudeFile(text: string, context: ImportContext): Prom
   };
 }
 
+/** Whether a link is still the one that was said: the whole of an `href`, or one of the links of a text. */
+function stillLeadsThere(value: unknown, entry: ImportPending): boolean {
+  const address = entry.address ?? '';
+
+  if (entry.field?.split('.').at(-1) === 'href') {
+    return blank(value) ? address === '' : value === address;
+  }
+
+  return typeof value === 'string' && [...value.matchAll(MARKDOWN_LINK)].some(([, link]) => link === address);
+}
+
 /**
  * What is still to do of what an import left, against the body as it is now: an entry leaves the list when its block is
  * gone or its field is filled in, and each one is given the path that names it today.
@@ -723,13 +776,46 @@ export function pendingNow(
     }
 
     const value = valueAt((place.item as BlockEnvelope).props, entry.field);
-    const open =
-      entry.kind === 'link' && entry.address !== ''
-        ? typeof value === 'string' && value.includes(entry.address ?? '')
-        : blank(value);
+    const open = entry.kind === 'link' ? stillLeadsThere(value, entry) : blank(value);
 
     return open ? [{ path: `${place.path}.props.${entry.field}`, entry }] : [];
   });
+}
+
+const leftoversKey = (id: number) => `hub.content.imported.${id}.left`;
+
+const leftoversSchema = z.array(
+  z.object({
+    owner: z.string(),
+    field: z.string().nullable(),
+    kind: z.enum(['picture', 'value', 'link']),
+    address: z.string().optional(),
+  }),
+);
+
+/**
+ * What an import left to do, across a reload: a picture nobody chose draws nothing, and a page could go out with the hole
+ * and no word about it (review of #453). ⚠️ In this browser, as the line of the version is: another person does not see it.
+ */
+export function rememberLeftovers(id: number, pending: readonly ImportPending[]) {
+  try {
+    if (pending.length === 0) {
+      localStorage.removeItem(leftoversKey(id));
+    } else {
+      localStorage.setItem(leftoversKey(id), JSON.stringify(pending));
+    }
+  } catch {
+    // No storage: the list lasts as long as the editor does.
+  }
+}
+
+export function readLeftovers(id: number): readonly ImportPending[] {
+  try {
+    const parsed = leftoversSchema.safeParse(JSON.parse(localStorage.getItem(leftoversKey(id)) ?? '[]'));
+    return parsed.success ? parsed.data : [];
+  } catch {
+    return [];
+  }
 }
 
 const importedKey = (id: number) => `hub.content.imported.${id}`;

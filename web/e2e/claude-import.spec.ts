@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Page } from '@playwright/test';
 
@@ -11,6 +13,11 @@ import { englishCommon } from './locales';
  * Claude» really gave, the file goes through the browser's own file input, what passes is saved over the version it
  * worked on and replaces the draft on screen, title included, and Undo takes all of it back.
  */
+
+/** The server's own words: a refusal names a key of this file. */
+const serverWords = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../locales/en/errors.json', import.meta.url)), 'utf8'),
+) as { errors: { body: { blockTypeUnknown: string } } };
 
 const words = englishCommon.content.import;
 const download = englishCommon.content.claude.download;
@@ -191,6 +198,13 @@ test('a file written from the instructions replaces the draft, title included, a
   await expect(page.locator('input[name="title.en"]')).toHaveValue('Welcome');
   await expect(left).toHaveCount(0);
 
+  // And it is the old draft that is stored, over the version the import left: the server hears the way back too.
+  await page.getByRole('button', { name: englishCommon.content.editor.saveDraft }).click();
+  await expect.poll(() => writes.length).toBe(2);
+  expect(writes[1]?.rowVersion).toBe('2026-11-04T10:00:01');
+  expect(writes[1]?.title).toEqual({ en: 'Welcome', it: 'Benvenuti' });
+  expect(writes[1]?.body.sections[0]?.blocks.map((block) => block.id)).toEqual(['blk-hello']);
+
   // And forth.
   await page.getByRole('button', { name: englishCommon.content.editor.redo }).click();
   await expect(page.getByText('Hello from the file')).toBeVisible();
@@ -305,7 +319,9 @@ test.describe('a file that is refused leaves the draft where it is', () => {
 
     await importFile(page, answer(header));
 
-    await expect(page.getByRole('dialog')).toContainText(words.refused);
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText(words.refused);
+    await expect(dialog).toContainText(serverWords.errors.body.blockTypeUnknown);
     // What was on screen stays.
     await expect(page.getByText('Hello from the file')).toHaveCount(0);
     await expect(page.locator('input[name="title.en"]')).toHaveValue('Welcome');
@@ -355,4 +371,89 @@ test('a template has no import, and neither has whoever may not edit the page', 
   await page.goto('/staff/content/7');
   await expect(page.getByRole('heading', { name: englishCommon.content.editor.properties })).toBeVisible();
   await expect(page.getByRole('button', { name: words.label })).toHaveCount(0);
+});
+
+test('a save somebody else got in before stops the editor, and says to reload', async ({ page }) => {
+  await stubTheRow(page);
+  await page.goto('/staff/content/7');
+  const header = await downloadTheHeader(page);
+
+  await page.route('**/api/content/7', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ status: 409 }),
+    });
+  });
+
+  await importFile(page, answer(header));
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText(words.conflict);
+  await dialog.getByRole('button', { name: englishCommon.common.close }).click();
+
+  // As when a save of the editor's own hears it: nothing more is written, and no new file can walk into the same wall.
+  await expect(page.getByText(englishCommon.content.editor.autosave.stopped)).toBeVisible();
+  await expect(page.getByRole('button', { name: words.label })).toBeDisabled();
+  await expect(page.getByRole('button', { name: download.label })).toBeDisabled();
+  await expect(page.getByText('Hello from the file')).toHaveCount(0);
+});
+
+test('a refusal with nothing for Claude to mend does not ask for Claude', async ({ page }) => {
+  await stubTheRow(page);
+  await page.goto('/staff/content/7');
+  const header = await downloadTheHeader(page);
+
+  await page.route('**/api/content/7', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({ status: 403, body: '' });
+  });
+
+  await importFile(page, answer(header));
+
+  await expect(page.getByText(words.failed, { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText('Hello from the file')).toHaveCount(0);
+});
+
+test('two imports are undone one at a time, each with its own title', async ({ page }) => {
+  await stubTheRow(page);
+  await page.goto('/staff/content/7');
+  const title = page.locator('input[name="title.en"]');
+  const undo = page.getByRole('button', { name: englishCommon.content.editor.undo });
+
+  await importFile(page, answer(await downloadTheHeader(page)));
+  await expect(title).toHaveValue('Written by Claude');
+
+  await importFile(page, {
+    ...answer(await downloadTheHeader(page)),
+    title: { en: 'Written again', it: 'Scritta di nuovo' },
+  });
+  await expect(title).toHaveValue('Written again');
+
+  await undo.click();
+  await expect(title).toHaveValue('Written by Claude');
+
+  await undo.click();
+  await expect(title).toHaveValue('Welcome');
+  await expect(page.getByText(words.pending.pictureCount_one)).toHaveCount(0);
+});
+
+test('what is left to do is still said after a reload', async ({ page }) => {
+  await stubTheRow(page);
+  await page.goto('/staff/content/7');
+
+  await importFile(page, answer(await downloadTheHeader(page)));
+  await expect(page.getByText(words.pending.pictureCount_one)).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText('Hello from the file')).toBeVisible();
+  await expect(page.getByText(words.pending.pictureCount_one)).toBeVisible();
 });

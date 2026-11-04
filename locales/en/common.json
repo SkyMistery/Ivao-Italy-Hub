@@ -768,6 +768,8 @@
       "rulesChanged": "The rules of this page have changed since you downloaded the instructions (a block, the template, the languages, the visibility): download them again",
       "draftChanged": "The draft has changed since you downloaded the instructions: download them again and give them to Claude with the file it gave you, so that it integrates the changes too",
       "draftNotRead": "Claude did not work on the draft you gave it",
+      "conflict": "Somebody else has saved this page in the meantime, and the file was not imported: reload the page, then download the instructions again",
+      "codeNotTheirs": "The file removes the code of a block «{{type}}», which you may not write: you could not put it back. Ask Claude to keep it, or ask somebody who may write code",
       "idUnknown": "The identifier «{{id}}» was not in the draft you downloaded, or is used twice",
       "startedOverTitle": "The page was started over",
       "startedOver": "Claude has redone the page from nothing: everything in it now will be replaced. Continue?",
@@ -790,7 +792,7 @@
         "picture": "Claude cannot upload pictures: choose this one from the library",
         "value": "Claude cannot know this value: choose it",
         "link": "Claude left this link empty: choose where it leads",
-        "linkUnknown": "«{{address}}» is not among the addresses of the site"
+        "linkUnknown": "«{{address}}» is neither an address of the site nor a whole address beginning with https://"
       }
     },
     "settings": {

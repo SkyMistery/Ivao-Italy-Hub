@@ -18,7 +18,12 @@ interface CommonStrings {
     readonly sidebar: { readonly collapse: string; readonly expand: string };
   };
   readonly auth: { readonly login: string };
-  readonly common: { readonly edit: string; readonly save: string; readonly delete: string };
+  readonly common: {
+    readonly edit: string;
+    readonly save: string;
+    readonly delete: string;
+    readonly close: string;
+  };
   readonly forbidden: { readonly title: string };
   readonly departments: { readonly WD: string; readonly ED: string };
   readonly liveStatus: { readonly title: string; readonly updatedAt: string };
@@ -99,6 +104,8 @@ interface CommonStrings {
     readonly import: {
       readonly label: string;
       readonly refused: string;
+      readonly conflict: string;
+      readonly failed: string;
       readonly notFromInstructions: string;
       readonly draftChanged: string;
       readonly startedOver: string;

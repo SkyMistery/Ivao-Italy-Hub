@@ -19,7 +19,9 @@ import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { ClaudeDownload } from './ClaudeDownload';
 import {
   forgetImported,
+  readLeftovers,
   rememberImported,
+  rememberLeftovers,
   versionLine,
   type ImportPending,
   type ImportReady,
@@ -77,7 +79,8 @@ interface ImportRun {
   readonly after: Body;
   readonly fieldsBefore: Pick<ContentFormValues, 'title' | 'summary'>;
   readonly fieldsAfter: Pick<ContentFormValues, 'title' | 'summary'>;
-  readonly pending: readonly ImportPending[];
+  readonly pendingBefore: readonly ImportPending[];
+  readonly pendingAfter: readonly ImportPending[];
   /** Which side of it the editor is on. */
   applied: boolean;
 }
@@ -258,9 +261,15 @@ export function ContentEditor({
     setFormStart((current) => ({ generation: (current?.generation ?? 0) + 1, values }));
   };
 
-  // What the last import left to do, and the way back over it.
-  const [leftovers, setLeftovers] = useState<readonly ImportPending[]>([]);
-  const importRun = useRef<ImportRun | null>(null);
+  // What the imports left to do, across a reload, and the way back over every import made here.
+  const [leftovers, setLeftoversNow] = useState<readonly ImportPending[]>(() =>
+    content === null ? [] : readLeftovers(content.id),
+  );
+  const setLeftovers = (id: number, pending: readonly ImportPending[]) => {
+    setLeftoversNow(pending);
+    rememberLeftovers(id, pending);
+  };
+  const importRuns = useRef<ImportRun[]>([]);
 
   // What the form of a document offers beyond its own row.
   const documentChoices: DocumentChoices = { successors };
@@ -344,24 +353,30 @@ export function ContentEditor({
   const changeBody = (next: Body) => {
     setBody(next);
 
-    const run = importRun.current;
-    if (run === null || content === null) {
+    if (content === null) {
       return;
     }
 
-    if (run.applied && next === run.before) {
-      run.applied = false;
-      takeFields({ ...metadata, ...run.fieldsBefore });
-      setLeftovers([]);
+    const undone = importRuns.current.findLast((run) => run.applied && next === run.before);
+    const redone = importRuns.current.find((run) => !run.applied && next === run.after);
+
+    if (undone !== undefined) {
+      undone.applied = false;
+      takeFields({ ...metadata, ...undone.fieldsBefore });
+      setLeftovers(content.id, undone.pendingBefore);
+    } else if (redone !== undefined) {
+      redone.applied = true;
+      takeFields({ ...metadata, ...redone.fieldsAfter });
+      setLeftovers(content.id, redone.pendingAfter);
+    } else {
+      return;
+    }
+
+    const row = draftBase();
+    if (importRuns.current.some((run) => run.applied) && row !== null) {
+      rememberImported(row);
+    } else {
       forgetImported(content.id);
-    } else if (!run.applied && next === run.after) {
-      run.applied = true;
-      takeFields({ ...metadata, ...run.fieldsAfter });
-      setLeftovers(run.pending);
-      const row = draftBase();
-      if (row !== null) {
-        rememberImported(row);
-      }
     }
   };
 
@@ -375,23 +390,32 @@ export function ContentEditor({
     const values = { ...metadata, ...fieldsAfter };
 
     const stored = await autosave.exclusive(async () => {
-      const row = await onSave(withVersion(values), file.body);
-      adopt(row);
-      return row;
+      try {
+        const row = await onSave(withVersion(values), file.body);
+        adopt(row);
+        return row;
+      } catch (error) {
+        // Somebody else saved this row: the same as when a save of its own hears it, and reloading is the way on.
+        if (error instanceof ApiError && error.status === 409) {
+          autosave.stop();
+        }
+        throw error;
+      }
     });
 
-    importRun.current = {
+    importRuns.current.push({
       before: body,
       after: file.body,
       fieldsBefore: { title: metadata.title, summary: metadata.summary },
       fieldsAfter,
-      pending: file.pending,
+      pendingBefore: leftovers,
+      pendingAfter: file.pending,
       applied: true,
-    };
+    });
 
     takeFields(values);
     replace(file.body);
-    setLeftovers(file.pending);
+    setLeftovers(stored.id, file.pending);
     rememberImported(stored);
     autosave.settle(JSON.stringify({ metadata: values, body: file.body }));
   };

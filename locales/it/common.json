@@ -768,6 +768,8 @@
       "rulesChanged": "Le regole di questa pagina sono cambiate dopo che hai scaricato le istruzioni (un blocco, il modello, le lingue, la visibilità): scaricale di nuovo",
       "draftChanged": "La bozza è cambiata dopo che hai scaricato le istruzioni: scaricale di nuovo e dalle a Claude con il file che ti ha dato, così integra anche le modifiche",
       "draftNotRead": "Claude non ha lavorato sulla bozza che gli hai dato",
+      "conflict": "Qualcun altro ha salvato questa pagina nel frattempo, e il file non è stato importato: ricarica la pagina, poi scarica di nuovo le istruzioni",
+      "codeNotTheirs": "Il file toglie il codice di un blocco «{{type}}», che tu non puoi scrivere: non potresti rimetterlo. Chiedi a Claude di tenerlo, o rivolgiti a chi può scrivere codice",
       "idUnknown": "L'identificativo «{{id}}» non era nella bozza che hai scaricato, oppure è usato due volte",
       "startedOverTitle": "La pagina è stata rifatta",
       "startedOver": "Claude ha rifatto la pagina da zero: tutto il contenuto di adesso sarà sostituito. Continuo?",
@@ -790,7 +792,7 @@
         "picture": "Claude non può caricare foto: scegli questa dalla libreria",
         "value": "Claude non può sapere questo valore: sceglilo",
         "link": "Claude ha lasciato vuoto questo link: scegli dove porta",
-        "linkUnknown": "«{{address}}» non è fra gli indirizzi del sito"
+        "linkUnknown": "«{{address}}» non è un indirizzo del sito né un indirizzo intero che comincia con https://"
       }
     },
     "settings": {

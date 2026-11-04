@@ -93,7 +93,9 @@ The JSON Schema of the envelope (sections and the frame of a block) is below, af
 
 ## What you do not do
 
-- Do not use a block that is not listed below: it is not offered on this page, or not to this person.
+- Do not use a block that is not listed below: it is not offered on this page, or not to this person. A block of the
+  draft that is not listed stays as it is; in particular, the interactive block of the draft stays, with its `source`,
+  when that block is not offered below: this person may not write code, and the file would be refused without it.
 - Do not break the rules of the template, when the page has one: a section marked required stays, a locked section keeps
   its blocks (you may change their texts), and a section that lists its blocks takes only those.
 - Do not write members a schema does not have, and do not leave out the ones it requires.

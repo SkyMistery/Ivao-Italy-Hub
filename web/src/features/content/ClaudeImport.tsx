@@ -112,20 +112,25 @@ export function ClaudeImport({
       await apply(file);
       notice({ tone: 'success', title: t('content.import.done') });
     } catch (error) {
-      if (!(error instanceof ApiError)) {
-        notice({ tone: 'error', title: t('content.import.failed') });
-      } else if (error.status === 409) {
-        setRefusal({ outcome: 'refused', message: 'content.import.draftChanged', problems: [], body: null });
-      } else {
+      const refusals = error instanceof ApiError ? Object.entries(error.problem?.errors ?? {}) : [];
+
+      if (error instanceof ApiError && error.status === 409) {
+        // Somebody else saved this row, and only a reload shows it: downloading again would compose from the row this
+        // editor still holds, and the next file would be answered 409 too.
+        setRefusal({ outcome: 'refused', message: 'content.import.conflict', problems: [], body: null });
+      } else if (refusals.length > 0) {
         // The server's own checks: the same paths, against the body that was sent.
         setRefusal({
           outcome: 'refused',
           message: 'content.import.refused',
-          problems: Object.entries(error.problem?.errors ?? {}).flatMap(([path, keys]) =>
+          problems: refusals.flatMap(([path, keys]) =>
             keys.map((key) => ({ path: path.replace(/^body\./, ''), key })),
           ),
           body: file.body,
         });
+      } else {
+        // Nothing Claude could mend.
+        notice({ tone: 'error', title: t('content.import.failed') });
       }
     }
   };
@@ -162,6 +167,7 @@ export function ClaudeImport({
         blocks: offeredBlocks(registry.blocks, holds, bootstrap?.registries.blocks ?? [], row.visibility),
         template,
         dirty: isDirty(),
+        holds,
         registered: registry.blocks,
         addresses: knownAddresses(rows),
       });
@@ -174,6 +180,7 @@ export function ClaudeImport({
         await save(answer);
       }
     } catch {
+      // ⚠️ The site's addresses among them: nothing has been written, and the links are not checked against nothing.
       notice({ tone: 'error', title: t('content.import.failed') });
     } finally {
       setWorking(false);
