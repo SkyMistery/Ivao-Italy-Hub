@@ -8,6 +8,11 @@ using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
 using IvaoHub.Core.Localization;
+using IvaoHub.Modules.Events;
+using IvaoHub.Modules.Events.Data;
+using IvaoHub.Modules.FlightOps;
+using IvaoHub.Modules.FlightOps.Data;
+using IvaoHub.Modules.FlightOps.Pireps;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -136,6 +141,60 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
 
         database.ChangeTracker.Clear();
         Assert.True(await database.Links.IgnoreQueryFilters().AnyAsync(row => row.Id == id, token));
+    }
+
+    [Fact]
+    public async Task AMemberWhoChangesTheFirOfTheirOwnRowIsRefused()
+    {
+        // Issue #319, item 4: the exception for a member's own row (T11) asked only for the same departments. A controller's
+        // request moved to another FIR is a move, and the member holds nothing that writes it. The guard answers before the
+        // database: a row attached as if loaded is enough, and a guard that let it through would meet the database instead.
+        var token = TestContext.Current.CancellationToken;
+        const int controller = 931006;
+        _user.Member(controller);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+        var transfer = new EventAtcTransfer
+        {
+            Id = 931006,
+            EventId = 931006,
+            ShiftId = 931006,
+            ControllerVid = controller,
+            Fir = "LIRR",
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.ED),
+        };
+        events.AtcTransfers.Attach(transfer);
+
+        transfer.Fir = "LIMM";
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+    }
+
+    [Fact]
+    public async Task APilotHoldingTheValidationDoesNotHandTheirReportToSomebodyElse()
+    {
+        // Issue #319, item 4: the alternatives refused the stakeholder only as the row is now. A pilot who also validates rewrote
+        // their report to another pilot and decided it.
+        var token = TestContext.Current.CancellationToken;
+        const int pilot = 931007;
+        _user.MemberHolding(pilot, new EffectivePermission(TourPermissions.Validate, Department.FOD, "grant:test"));
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var tours = scope.ServiceProvider.GetRequiredService<FlightOpsDbContext>();
+        var pirep = new Pirep
+        {
+            Id = 931007,
+            TourId = 931007,
+            ScopeTourId = 931007,
+            Vid = pilot,
+            OwnerDepartment = Department.FOD,
+            OwnerDepartmentMask = DepartmentMask.Of(Department.FOD),
+        };
+        tours.Pireps.Attach(pirep);
+
+        pirep.Vid = 931008;
+        await Assert.ThrowsAsync<ForbiddenDomainException>(() => tours.SaveChangesAsync(token));
     }
 
     [Fact]
