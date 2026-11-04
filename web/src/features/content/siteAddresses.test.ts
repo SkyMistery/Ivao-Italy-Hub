@@ -68,10 +68,10 @@ test('a draft says so, and a page never published is not published', () => {
   expect(draft).toMatchObject({ label: 'menu.draftSuffix(Team)', published: false });
 });
 
-test('a published page being edited again is still an address a visitor can open', () => {
+test('a published page being edited again is still an address a visitor can open, and not called a draft', () => {
   const [edited] = siteAddresses(pages([page({ status: 'Draft' })]), undefined, t, read);
 
-  expect(edited?.published).toBe(true);
+  expect(edited).toMatchObject({ label: 'Team', published: true });
 });
 
 test('a page with no title in the language on screen is named by its slug', () => {

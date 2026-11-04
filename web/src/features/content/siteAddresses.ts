@@ -66,8 +66,10 @@ export function siteAddresses(
   return [
     ...(pages?.items ?? []).map((page): SiteAddress => ({
       path: `/${page.path}`,
+      // «(draft)» for a page that was never published, not for one online whose draft is being written again: that one
+      // is an address a visitor can open (review of #449, finding 7).
       label:
-        page.status === 'Draft'
+        page.publishedAt === null
           ? t('menu.draftSuffix', { title: read(page.title) || page.slug })
           : read(page.title) || page.slug,
       group: t(`departments.${page.ownerDepartment}`),
