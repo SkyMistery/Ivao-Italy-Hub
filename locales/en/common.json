@@ -755,6 +755,19 @@
         "notSaved": "The draft was not saved, so the instructions were not downloaded",
         "failed": "The instructions could not be composed: try again"
       }
+    },
+    "settings": {
+      "open": "Settings",
+      "title": "Settings of the content",
+      "description": "They hold for the whole division.",
+      "fields": {
+        "stylePageId": "Page of the division’s style"
+      },
+      "hints": {
+        "stylePageId": "A published page that describes how the division writes: it goes at the end of the instructions «Download for Claude». The whole staff must be able to read it."
+      },
+      "none": "None",
+      "saved": "Settings saved"
     }
   },
   "templates": {

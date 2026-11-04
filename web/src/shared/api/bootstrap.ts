@@ -60,6 +60,19 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
 }
 
 /**
+ * True when the user holds the permission **without the scope of one row**: on a department, on all of them, from
+ * outside, as a global permission, or as the super administrator. A grant on one row never passes. It is the browser's
+ * half of `ICurrentUser.HasUnscoped` (`decisions/2026-10-17-il-permesso-senza-ambito.md`): for something that is about
+ * the whole division, like the settings of the content.
+ */
+export function holdsPermissionUnscoped(bootstrap: Bootstrap, name: string): boolean {
+  return (
+    bootstrap.user?.isSuperadmin === true ||
+    bootstrap.permissions.some((permission) => permission.name === name && permission.resourceScope === null)
+  );
+}
+
+/**
  * The department the site itself belongs to: its menu, its templates and the pages the installation
  * was born with. It comes from the bootstrap and is never written here — a client that knew which
  * department that is would be a client that knows which division it is running for.

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
-import type { Body } from '../../blocks';
+import { readBody, type Body } from '../../blocks';
 import type { LocalizedString } from '../../shared/api/bootstrap';
 import { useLocalized } from '../../shared/i18n/useLocalized';
 import { aboutKeyOf } from '../../shared/modules';
@@ -14,8 +14,14 @@ import { activeLinksQuery } from '../links/queries';
 import { bootstrapQuery } from '../me/queries';
 
 import { CLAUDE_KINDS, composeInstructions, offeredBlocks } from './claudeInstructions';
+import { contentSettingsQuery, styleText } from './contentSettings';
 import { beyondReaders, type PageVisibility } from './palette';
-import { menuDestinationPagesQuery, type ContentDetailDto, type ContentKind } from './queries';
+import {
+  menuDestinationPagesQuery,
+  publicPageQuery,
+  type ContentDetailDto,
+  type ContentKind,
+} from './queries';
 import { siteAddresses } from './siteAddresses';
 import type { SectionRule } from './templateRules';
 
@@ -86,6 +92,32 @@ export function ClaudeDownload({
     return null;
   }
 
+  // The page of the division's style, as text, or null (decisions/2026-11-04-la-pagina-dello-stile.md): read with the
+  // rights of whoever downloads — the settings say its address only when they can read it, and the public read of the
+  // site is the one that answers, with the published version. Anything that goes wrong leaves the part out, as the note
+  // of 30 October asks of a page that is not there; it never stops the download.
+  const readStyle = async (): Promise<string | null> => {
+    try {
+      const settings = await queryClient.fetchQuery({ ...contentSettingsQuery, staleTime: 0 });
+      if (settings.stylePagePath === null) {
+        return null;
+      }
+
+      const answer = await queryClient.fetchQuery({
+        ...publicPageQuery(settings.stylePagePath),
+        staleTime: 0,
+      });
+      if (answer.page === null) {
+        return null;
+      }
+
+      const text = styleText(readBody(answer.page.body), locales, read);
+      return text === '' ? null : text;
+    } catch {
+      return null;
+    }
+  };
+
   const download = async () => {
     setComposing(true);
     try {
@@ -100,9 +132,10 @@ export function ClaudeDownload({
         return;
       }
 
-      const [pages, links] = await Promise.all([
+      const [pages, links, style] = await Promise.all([
         queryClient.fetchQuery(menuDestinationPagesQuery('')),
         queryClient.fetchQuery(activeLinksQuery('')),
+        readStyle(),
       ]);
 
       const audiences = new Map(
@@ -131,7 +164,7 @@ export function ClaudeDownload({
           blockName: (block) => t(block.editorLabelKey),
           blockAbout: (block) => t(aboutKeyOf(block), block.about?.values ?? {}),
         },
-        style: null,
+        style,
       });
 
       save(`${content.slug}.claude.md`, markdown);

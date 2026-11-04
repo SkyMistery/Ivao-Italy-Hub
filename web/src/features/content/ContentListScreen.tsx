@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   holdsPermission,
+  holdsPermissionUnscoped,
   reachableDepartments,
   writableDepartments,
   type Bootstrap,
@@ -20,6 +21,7 @@ import {
   type ContentSearch,
   type RowKind,
 } from './contentSearch';
+import { ContentSettingsPanel } from './ContentSettingsPanel';
 import { CONTENT_KINDS, TEMPLATE_COLUMNS } from './kinds';
 import { contentListQuery, templateListQuery, type ContentListDto, type ContentStatus } from './queries';
 import { MANAGE_TEMPLATES } from './templateRules';
@@ -186,7 +188,18 @@ export function ContentListScreen({
         ...(search.department === undefined ? [] : [{ label: t(`departments.${search.department}`) }]),
         { label: t(`${titles}.title`) },
       ]}
-      actions={create}
+      actions={
+        // The settings of the whole division (decisions/2026-11-04-la-pagina-dello-stile.md): for whoever cures the
+        // templates without the scope of one row, as the server asks.
+        holdsPermissionUnscoped(bootstrap, MANAGE_TEMPLATES) ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <ContentSettingsPanel locales={division.locales} division={division} />
+            {create}
+          </div>
+        ) : (
+          create
+        )
+      }
     >
       <div className="flex flex-col gap-6">
         {/* Every staff member may read every template, whoever owns it, so this offers something
