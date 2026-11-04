@@ -389,6 +389,7 @@ app.MapMediaEndpoints();
 app.MapMediaFileEndpoint();
 app.MapTileEndpoints();
 app.MapContentEndpoints();
+app.MapContentSettingsEndpoints();
 app.MapEmbedEndpoints();
 app.MapCategoriesEndpoints();
 app.MapMenuEndpoints();

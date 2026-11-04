@@ -98,7 +98,11 @@
         "blockAudience": "La pagina online porta un blocco per meno lettori. Toglilo e pubblica di nuovo, poi cambia chi la legge."
       },
       "tooManyCollections": "Una riga può stare al massimo in venti raccolte.",
-      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini."
+      "collectionInvalid": "Una raccolta si indica con la sua chiave: lettere minuscole, cifre e trattini.",
+      "settings": {
+        "stylePageNotFound": "Scegli una pagina pubblicata che puoi leggere.",
+        "stylePageTooNarrow": "Questa pagina la legge un solo dipartimento: chi scarica le istruzioni deve poterla leggere, scegline una per tutto lo staff."
+      }
     },
     "maintenance": {
       "title": "Questa parte del sito al momento non accetta modifiche"
