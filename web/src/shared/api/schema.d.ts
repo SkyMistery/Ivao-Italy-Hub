@@ -1102,6 +1102,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSiteAddresses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/content/pages": {
         parameters: {
             query?: never;
@@ -5437,6 +5453,19 @@ export interface components {
         ContentSettingsWriteDto: {
             /** Format: int64 */
             stylePageId: null | number;
+        };
+        /**
+         * @description One address of the site that whoever asks can read online: a page, a news item or a document, with where it is, what it is
+         *     called, whose it is and who reads it (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`).
+         */
+        ContentSiteAddressDto: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["ContentKind"];
+            url: string;
+            title: components["schemas"]["LocalizedOfstring"];
+            ownerDepartment: components["schemas"]["Department"];
+            visibility: components["schemas"]["Visibility"];
         };
         /**
          * @description One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
@@ -14107,6 +14136,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContentAddressDto"];
+                };
+            };
+        };
+    };
+    ContentSiteAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSiteAddressDto"][];
                 };
             };
         };

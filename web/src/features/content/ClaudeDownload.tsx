@@ -16,20 +16,17 @@ import { bootstrapQuery } from '../me/queries';
 import { CLAUDE_KINDS, composeInstructions } from './claudeInstructions';
 import { contentSettingsQuery, styleText } from './contentSettings';
 import { addableBlocks, tooFewReaders } from './palette';
-import {
-  menuDestinationPagesQuery,
-  publicPageQuery,
-  type ContentDetailDto,
-  type ContentKind,
-} from './queries';
-import { siteAddresses } from './siteAddresses';
+import { publicPageQuery, siteAddressesQuery, type ContentDetailDto, type ContentKind } from './queries';
+import { pagesOfTheSite, siteAddresses } from './siteAddresses';
 import type { SectionRule } from './templateRules';
 
 /** The permission whoever downloads must hold on the row: the instructions are for writing its draft (note §3). */
 const EDIT = 'Content.Edit';
 
-/** What the two reads of the site's addresses ask at the door: the list of the content, the list of the links. */
-const CONTENT_VIEW = 'Content.View';
+/**
+ * What the read of the library's links asks at the door. The site's addresses ask `Content.Edit`, which whoever downloads
+ * holds (decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md).
+ */
 const LINKS_VIEW = 'Links.View';
 
 /** A file of the browser's own making, saved by the browser: nothing is uploaded or stored anywhere. */
@@ -86,9 +83,9 @@ export function ClaudeDownload({
     return null;
   }
 
-  // ⚠️ Each read only when its door would open: `Content.Edit` given by a grant does not bring `Content.View` or
-  // `Links.View` with it, and a refused read would have refused the whole download (review of #449, finding 1). What
-  // somebody may not read is not an address they may be offered.
+  // ⚠️ The links only when their door would open: `Content.Edit` given by a grant does not bring `Links.View` with it,
+  // and a refused read would have refused the whole download (review of #449, finding 1). What somebody may not read is
+  // not an address they may be offered.
   const mayRead = (permission: string) =>
     bootstrap !== undefined && holdsPermissionAnywhere(bootstrap, permission);
 
@@ -133,7 +130,7 @@ export function ClaudeDownload({
       }
 
       const [pages, links, style] = await Promise.all([
-        mayRead(CONTENT_VIEW) ? queryClient.fetchQuery(menuDestinationPagesQuery('')) : undefined,
+        queryClient.fetchQuery({ ...siteAddressesQuery(), staleTime: 0 }),
         mayRead(LINKS_VIEW) ? queryClient.fetchQuery(activeLinksQuery('')) : undefined,
         readStyle(),
       ]);
@@ -152,7 +149,7 @@ export function ClaudeDownload({
         locales,
         blocks,
         template,
-        addresses: siteAddresses(pages, links, t, read),
+        addresses: siteAddresses(pagesOfTheSite(pages), links, t, read),
         embedGuidelines: blocks.some((block) => block.carriesSource === true)
           ? `${window.location.origin}${EMBED_GUIDELINES_PATH}`
           : null,

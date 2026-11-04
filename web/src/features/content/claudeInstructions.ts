@@ -245,17 +245,19 @@ function addressesSection(input: InstructionsInput): string {
   const lines = [
     '## The addresses of the site',
     '',
-    // ⚠️ Not the whole site: the pages are the ones the list of the content gives whoever downloads — their own
-    // departments', a hundred at most — and the text says so (review of #449, finding 2). A read of every page they may
-    // read is a question for a core change of its own.
-    'The addresses of this site you may link to, with who reads them. They are the published pages of the departments of',
-    'the person who downloaded these instructions (a hundred at most), the screens of the site and the links of the library:',
-    'the site may have more pages than these. When the page you need is not here, do not guess its address: in a button or',
-    'a card leave `href` empty (`""`), in a text write the words without a link, and say so to the person.',
+    // The whole site the person may read: every page, news item and document online, of every department
+    // (`GET /api/content/addresses`, decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md), and the
+    // screens of the application.
+    'Every address of this site you may link to, with what it is and who reads it: the pages, news and documents online',
+    'that the person who downloaded these instructions can read, and the screens of the site. An address that is not here',
+    'does not exist for you.',
     '',
-    '| address | name | read by |',
-    '|---|---|---|',
-    ...offered.map((address) => `| \`${address.path}\` | ${cell(address.label)} | ${address.visibility} |`),
+    '| address | kind | name | read by |',
+    '|---|---|---|---|',
+    ...offered.map(
+      (address) =>
+        `| \`${address.path}\` | ${address.kind} | ${cell(address.label)} | ${address.visibility} |`,
+    ),
   ];
 
   if (links.length > 0) {
