@@ -34,7 +34,8 @@ namespace IvaoHub.Core.Data;
 /// (<see cref="IAffectsUserSession"/>), so a permission that changed bites on the next request.</item>
 /// </list>
 /// <para>The last two run in a second pass, after the save: before it, a new row has no identifier
-/// and there would be nothing to point an audit row or a projection at.</para>
+/// and there would be nothing to point an audit row or a projection at — nor anything true to write
+/// in the audit row of its creation, whose copy of the row is taken there too.</para>
 /// </summary>
 public sealed class HubSaveChangesInterceptor(
     ICurrentUser currentUser,
@@ -663,7 +664,8 @@ public sealed class HubSaveChangesInterceptor(
 
         var (action, before, after) = entry.State switch
         {
-            EntityState.Added => ("created", null, Serialize(entry, current: true, changedOnly: false)),
+            // Serialized in the second pass, not now (WriteAuditRows).
+            EntityState.Added => ("created", null, null),
             EntityState.Deleted => ("deleted", Serialize(entry, current: false, changedOnly: false), null),
             _ when IsAutosave() => ("autosaved", null, ChangedColumns(entry)),
             _ => ("updated", Serialize(entry, current: false, changedOnly: true), Serialize(entry, current: true, changedOnly: true)),
@@ -846,7 +848,9 @@ public sealed class HubSaveChangesInterceptor(
                 Entity = audit.Table,
                 EntityId = audit.Key ?? ReadKey(audit.Entry),
                 BeforeJson = audit.Before,
-                AfterJson = audit.After,
+                // A creation is serialized only now, after the save (#412): before it, a key the database gives and a foreign
+                // key to a row added in the same save are still EF's temporary values, which name a row that never existed.
+                AfterJson = audit.Action == "created" ? Serialize(audit.Entry, current: true, changedOnly: false) : audit.After,
                 Ip = ip,
                 TokenId = token,
                 IsSuperadmin = currentUser.IsSuperadmin,

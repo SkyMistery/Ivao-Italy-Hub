@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Auth.Permissions;
+using IvaoHub.Core.Awards;
 using IvaoHub.Core.Content;
 using IvaoHub.Core.Data;
 using IvaoHub.Core.Division;
@@ -156,6 +158,65 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
             Assert.DoesNotContain("\"Url\"", rows[1].AfterJson!, StringComparison.Ordinal);
             Assert.Null(rows[2].AfterJson);
             Assert.Contains("Roma", rows[2].BeforeJson!, StringComparison.Ordinal);
+        }
+    }
+
+    /// <summary>
+    /// A creation is audited with the row as it was saved (#412): its key and its foreign keys are the ones the database gave,
+    /// never the temporary values EF holds before the insert — not even for a row that points at another row added in the
+    /// same save.
+    /// </summary>
+    [Fact]
+    public async Task CreatedRowIsAuditedWithTheKeysTheDatabaseGave()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _user.Superadmin(SuperadminVid);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var award = new Award { OwnerDepartment = Department.ED, Name = "Audit".L("Audit"), IsActive = true };
+        var assignment = new AwardAssignment { Vid = StaffVid, Reason = "Audit of a created row" };
+        database.Awards.Add(award);
+        database.AwardAssignments.Add(assignment);
+
+        // The assignment points at the award by the temporary key the award has until the insert.
+        database.Entry(assignment).Property(row => row.AwardId).CurrentValue = database.Entry(award).Property(row => row.Id).CurrentValue;
+        await database.SaveChangesAsync(token);
+
+        try
+        {
+            Assert.Equal(award.Id, assignment.AwardId);
+
+            var awardKey = award.Id.ToString(CultureInfo.InvariantCulture);
+            var assignmentKey = assignment.Id.ToString(CultureInfo.InvariantCulture);
+            var created = await database.AuditLog.AsNoTracking()
+                .Where(entry => entry.Action == "created"
+                    && ((entry.Entity == "hub_awards" && entry.EntityId == awardKey)
+                        || (entry.Entity == "hub_award_assignments" && entry.EntityId == assignmentKey)))
+                .ToListAsync(token);
+
+            Assert.Equal(2, created.Count);
+
+            foreach (var entry in created)
+            {
+                using var json = JsonDocument.Parse(entry.AfterJson!);
+
+                Assert.Equal(entry.EntityId, json.RootElement.GetProperty("Id").GetInt64().ToString(CultureInfo.InvariantCulture));
+                Assert.All(
+                    json.RootElement.EnumerateObject().Where(property => property.Value.ValueKind == JsonValueKind.Number),
+                    property => Assert.True(property.Value.GetInt64() >= 0, $"{entry.Entity}.{property.Name} is {property.Value}"));
+            }
+
+            var assigned = created.Single(entry => entry.Entity == "hub_award_assignments");
+            using var assignedJson = JsonDocument.Parse(assigned.AfterJson!);
+            Assert.Equal(award.Id, assignedJson.RootElement.GetProperty("AwardId").GetInt64());
+        }
+        finally
+        {
+            database.AwardAssignments.Remove(assignment);
+            database.Awards.Remove(award);
+            await database.SaveChangesAsync(token);
         }
     }
 
