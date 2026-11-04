@@ -79,11 +79,17 @@ test('the content of every department is one group, and a department opens the s
     {
       ...bootstrap,
       permissions: [
-        { name: 'Content.View', department: 'ED', resourceScope: null },
-        { name: 'Content.View', department: 'WD', resourceScope: null },
-        { name: 'Content.ManageTemplates', department: 'WD', resourceScope: null },
-        { name: 'Links.View', department: 'ED', resourceScope: null },
-        { name: 'Media.View', department: 'ED', resourceScope: null },
+        { name: 'Content.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+        { name: 'Content.View', department: 'WD', resourceScope: null, fir: null, fromOutside: false },
+        {
+          name: 'Content.ManageTemplates',
+          department: 'WD',
+          resourceScope: null,
+          fir: null,
+          fromOutside: false,
+        },
+        { name: 'Links.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+        { name: 'Media.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
       ],
     },
     (key) => key,
@@ -119,7 +125,9 @@ test('somebody who works in one department is not offered the same entries twice
     {
       ...bootstrap,
       user: { ...bootstrap.user, departments: ['ED'] },
-      permissions: [{ name: 'Content.View', department: 'ED', resourceScope: null }],
+      permissions: [
+        { name: 'Content.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+      ],
     },
     (key) => key,
   );
@@ -134,8 +142,8 @@ test('the pages waiting for approval are offered to whoever may approve them, an
   // G19: once, at the top of the content of every department, and only while the division
   // publishes some kind by approval.
   const permissions = [
-    { name: 'Content.View', department: 'ED', resourceScope: null },
-    { name: 'Content.View', department: 'WD', resourceScope: null },
+    { name: 'Content.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+    { name: 'Content.View', department: 'WD', resourceScope: null, fir: null, fromOutside: false },
   ];
   const toApprove = (value: Bootstrap) =>
     staffDestinations(value, (key) => key)
@@ -147,7 +155,10 @@ test('the pages waiting for approval are offered to whoever may approve them, an
 
   const approver = {
     ...bootstrap,
-    permissions: [...permissions, { name: 'Content.Approve', department: null, resourceScope: null }],
+    permissions: [
+      ...permissions,
+      { name: 'Content.Approve', department: null, resourceScope: null, fir: null, fromOutside: false },
+    ],
   };
   expect(toApprove(approver)).toEqual(['/staff/content?kind=Page&status=Ready']);
 
@@ -160,7 +171,9 @@ test('each module is a section of its own, between the content and the departmen
   const groups = staffDestinations(
     {
       ...bootstrap,
-      permissions: [{ name: 'Content.View', department: 'ED', resourceScope: null }],
+      permissions: [
+        { name: 'Content.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+      ],
       navigation: {
         ...bootstrap.navigation,
         staff: [
@@ -220,27 +233,35 @@ test('a department offers its calendar, collections and messages only to whoever
   // A trainer: the training's permissions and nothing of these three. The department's home stays, nothing else.
   expect(
     hrefsOf([
-      { name: 'Training.View', department: 'TD', resourceScope: null },
-      { name: 'Training.Conduct', department: 'TD', resourceScope: null },
+      { name: 'Training.View', department: 'TD', resourceScope: null, fir: null, fromOutside: false },
+      { name: 'Training.Conduct', department: 'TD', resourceScope: null, fir: null, fromOutside: false },
     ]),
   ).toEqual(['/staff/td']);
 
   // Each entry follows the permission its screen is behind, on this department.
-  expect(hrefsOf([{ name: 'Calendar.View', department: 'TD', resourceScope: null }])).toEqual([
-    '/staff/td',
-    '/staff/td/calendar',
-  ]);
-  expect(hrefsOf([{ name: 'Contacts.View', department: 'TD', resourceScope: null }])).toEqual([
-    '/staff/td',
-    '/staff/td/contacts',
-  ]);
-  expect(hrefsOf([{ name: 'Content.View', department: 'TD', resourceScope: null }])).toContain(
-    '/staff/td/categories',
-  );
+  expect(
+    hrefsOf([
+      { name: 'Calendar.View', department: 'TD', resourceScope: null, fir: null, fromOutside: false },
+    ]),
+  ).toEqual(['/staff/td', '/staff/td/calendar']);
+  expect(
+    hrefsOf([
+      { name: 'Contacts.View', department: 'TD', resourceScope: null, fir: null, fromOutside: false },
+    ]),
+  ).toEqual(['/staff/td', '/staff/td/contacts']);
+  expect(
+    hrefsOf([{ name: 'Content.View', department: 'TD', resourceScope: null, fir: null, fromOutside: false }]),
+  ).toContain('/staff/td/categories');
 
   // The permission on another department opens nothing here; one on every department (`null`) does.
-  expect(hrefsOf([{ name: 'Calendar.View', department: 'ED', resourceScope: null }])).toEqual(['/staff/td']);
-  expect(hrefsOf([{ name: 'Calendar.View', department: null, resourceScope: null }])).toContain(
-    '/staff/td/calendar',
-  );
+  expect(
+    hrefsOf([
+      { name: 'Calendar.View', department: 'ED', resourceScope: null, fir: null, fromOutside: false },
+    ]),
+  ).toEqual(['/staff/td']);
+  expect(
+    hrefsOf([
+      { name: 'Calendar.View', department: null, resourceScope: null, fir: null, fromOutside: false },
+    ]),
+  ).toContain('/staff/td/calendar');
 });
