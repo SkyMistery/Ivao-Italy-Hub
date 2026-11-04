@@ -84,4 +84,51 @@ public sealed class JobsLogRetentionTests(MariaDbFixture mariaDb) : IAsyncLifeti
             Assert.Equal("succeeded", run.Status);
         }
     }
+
+    [Fact]
+    public async Task TheLastSucceededRunStaysAfterAMonthOfFailures()
+    {
+        // The release jobs of events and tours start their window at the last run that succeeded: kept, however old, even
+        // when every run since has failed.
+        var token = TestContext.Current.CancellationToken;
+        var failing = $"retention-failing-{Guid.NewGuid():N}"[..40];
+
+        long succeeded, olderSuccess, failed, lastFailed;
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            var now = scope.ServiceProvider.GetRequiredService<IClock>().UtcNow;
+
+            JobLogEntry Row(int daysAgo, string status) => new()
+            {
+                Job = failing,
+                StartedAt = now.AddDays(-daysAgo),
+                FinishedAt = now.AddDays(-daysAgo).AddMinutes(1),
+                Status = status,
+            };
+
+            var rows = new[] { Row(60, "succeeded"), Row(50, "succeeded"), Row(45, "failed"), Row(40, "failed") };
+            database.JobsLog.AddRange(rows);
+            await database.SaveChangesAsync(token);
+            (olderSuccess, succeeded, failed, lastFailed) = (rows[0].Id, rows[1].Id, rows[2].Id, rows[3].Id);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<JobsLogRetentionJob>().RunAsync(token);
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var left = await scope.ServiceProvider.GetRequiredService<HubDbContext>().JobsLog.AsNoTracking()
+                .Where(run => run.Job == failing)
+                .Select(run => run.Id)
+                .ToListAsync(token);
+
+            // The last that ended, for the guard, and the last that succeeded, for the release jobs; nothing else of the month before.
+            Assert.Equal([succeeded, lastFailed], left.Order());
+            Assert.DoesNotContain(olderSuccess, left);
+            Assert.DoesNotContain(failed, left);
+        }
+    }
 }

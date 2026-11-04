@@ -76,12 +76,19 @@ public sealed class JobsLogRetentionJob(
 
     private async Task<int> DeleteAsync(DateTime before, long running, CancellationToken cancellationToken)
     {
-        // The row the guard reads for each job: its latest that ended, whatever the outcome.
+        // The row the guard reads for each job: its latest that ended, whatever the outcome. And its latest that succeeded,
+        // which the release jobs of events and tours read as the start of their next window: deleted after a month of
+        // failures, the next run would take everything ever published again at once.
         var lastRuns = await database.JobsLog.AsNoTracking()
             .Where(run => run.FinishedAt != null)
             .GroupBy(run => run.Job)
             .Select(runs => runs.Max(run => run.Id))
             .ToListAsync(cancellationToken);
+        lastRuns.AddRange(await database.JobsLog.AsNoTracking()
+            .Where(run => run.Status == "succeeded")
+            .GroupBy(run => run.Job)
+            .Select(runs => runs.Max(run => run.Id))
+            .ToListAsync(cancellationToken));
         lastRuns.Add(running);
 
         var deleted = 0;
