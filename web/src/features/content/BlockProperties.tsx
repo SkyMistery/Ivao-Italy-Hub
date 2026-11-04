@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { registry } from '../../app/registry';
 import {
+  EMBED_GUIDELINES_PATH,
   SPANS,
   columnsOf,
   spanOf,
@@ -289,7 +290,7 @@ function SourceField({
 
       <p className="text-muted-foreground text-sm">{t('blocks.interactive.sourceHint')}</p>
       <a
-        href="/embed/guidelines"
+        href={EMBED_GUIDELINES_PATH}
         download="interactive-blocks.md"
         className="text-primary text-sm underline underline-offset-2"
       >
