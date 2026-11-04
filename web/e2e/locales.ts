@@ -93,6 +93,9 @@ interface CommonStrings {
     };
     readonly changes: { readonly first: string };
     readonly versions: { readonly title: string };
+    readonly claude: {
+      readonly download: { readonly label: string; readonly hint: string };
+    };
     readonly review: {
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };
@@ -187,7 +190,11 @@ interface CommonStrings {
       readonly fields: { readonly text: string; readonly level: string };
       readonly options: { readonly level: Readonly<Record<string, string>> };
     };
-    readonly text: { readonly label: string; readonly fields: { readonly markdown: string } };
+    readonly text: {
+      readonly label: string;
+      readonly about: string;
+      readonly fields: { readonly markdown: string };
+    };
     readonly image: { readonly label: string };
     readonly callout: {
       readonly label: string;

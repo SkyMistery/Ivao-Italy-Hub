@@ -16,6 +16,7 @@ import { ConfirmDialog, PageActions } from '../../shared/ui';
 import { AddressPreview } from './AddressPreview';
 import { BodyEditor } from './BodyEditor';
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
+import { ClaudeDownload } from './ClaudeDownload';
 import { emptyContent, toFormValues, type PublishRequest } from './mutations';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
@@ -33,6 +34,7 @@ import {
   type DocumentChoices,
   type PageChoices,
 } from './schema';
+import { templateRules } from './templateRules';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { VersionHistory } from './VersionHistory';
 
@@ -61,11 +63,15 @@ const METADATA_FORM = 'content-metadata';
  * every row this editor's own writes answer. Held in a ref, because it is read when a save starts —
  * after the one before it, which may have moved it — and never drawn.
  */
-function useDraftBase(opened: string | null) {
-  const base = useRef(opened);
+function useDraftBase(opened: ContentDetailDto | null) {
+  const base = useRef(opened?.rowVersion ?? null);
+  // The row itself, as the server last answered it to this editor: what the instructions for Claude show beside the
+  // version they name, so that the body and the version in their header are always of the same save.
+  const row = useRef(opened);
 
-  const adopt = useCallback((row: ContentDetailDto) => {
-    base.current = row.rowVersion;
+  const adopt = useCallback((stored: ContentDetailDto) => {
+    base.current = stored.rowVersion;
+    row.current = stored;
   }, []);
 
   const withVersion = useCallback(
@@ -76,7 +82,11 @@ function useDraftBase(opened: string | null) {
     [],
   );
 
-  return { adopt, withVersion };
+  // Read when the instructions for Claude are composed, after the draft was stored: the row their header names, whose
+  // version the next save is written over (PR 3.0a, note 2026-10-30-una-pagina-scritta-con-claude §4).
+  const current = useCallback(() => row.current, []);
+
+  return { adopt, withVersion, current };
 }
 
 export function ContentEditor({
@@ -243,7 +253,13 @@ export function ContentEditor({
   // refresh it — which a save made by itself would do under somebody's fingers, taking the cursor
   // out of the title. A row that does not exist yet has the version a new row carries, from the
   // form.
-  const { adopt, withVersion } = useDraftBase(content?.rowVersion ?? null);
+  const { adopt, withVersion, current: draftBase } = useDraftBase(content);
+
+  // What the template still says about this page, for the instructions for Claude; the editor reads its own.
+  const rules = useMemo(
+    () => templateRules(template.data === undefined ? null : readBody(template.data.body)),
+    [template.data],
+  );
 
   // The draft, as one string: what the autosave compares, so that a change undone before the pause
   // ends is not a save.
@@ -449,6 +465,23 @@ export function ContentEditor({
             </Button>
 
             {tools}
+
+            <ClaudeDownload
+              content={content}
+              kind={kind}
+              locales={locales}
+              template={rules}
+              holds={holds}
+              flush={autosave.flush}
+              draftBase={draftBase}
+              // Off while the template is on its way: its rules are part of what the instructions give.
+              disabled={
+                busy ||
+                locked ||
+                autosave.stopped ||
+                (typeof content?.templateId === 'number' && template.data === undefined)
+              }
+            />
 
             {onPublish === null ? null : (
               // A question on the way: what changed, for the staff. What is on screen is stored first, then

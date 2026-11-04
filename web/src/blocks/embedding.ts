@@ -33,6 +33,12 @@ export function useEmbedding(): Embedding | null {
 }
 
 /**
+ * Where the server serves the guidelines for the code of an interactive block (`EmbedEndpoints.GuidelinesPattern`): the
+ * link of the block's properties panel, and where the instructions for Claude send it instead of repeating them.
+ */
+export const EMBED_GUIDELINES_PATH = '/embed/guidelines';
+
+/**
  * The address of a frame, in the one place that writes it. Both callers — the public page and the
  * editor — go through here, so the shape of that address exists once on this side as it exists once
  * on the other (`EmbedEndpoints.Pattern`).

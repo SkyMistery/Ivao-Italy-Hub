@@ -747,6 +747,14 @@
       "publishedBy": "Pubblicata da {{name}}",
       "approvedBy": "Approvata e pubblicata da {{name}}",
       "noLine": "Nessuna riga scritta"
+    },
+    "claude": {
+      "download": {
+        "label": "Scarica per Claude",
+        "hint": "Scarica le istruzioni per scrivere questa pagina con Claude, insieme alla bozza com’è adesso",
+        "notSaved": "La bozza non è stata salvata, quindi le istruzioni non sono state scaricate",
+        "failed": "Le istruzioni non si sono potute comporre: riprova"
+      }
     }
   },
   "templates": {
@@ -781,6 +789,7 @@
     },
     "frequencyTable": {
       "label": "Tabella delle frequenze",
+      "about": "Le postazioni di un documento operativo: nominativo, frequenza, tipo, CPDLC e rating richiesto.",
       "fields": {
         "caption": "Didascalia",
         "stations": "Postazioni",
@@ -816,6 +825,7 @@
     },
     "coordination": {
       "label": "Coordinamento",
+      "about": "Gli accordi di coordinamento di una lettera di intesa. Non si aggiunge più: gli accordi stanno sul sito ATC.",
       "fields": {
         "caption": "Didascalia",
         "agreements": "Accordi",
@@ -844,6 +854,7 @@
     },
     "heading": {
       "label": "Titolo",
+      "about": "Un titolo che apre una parte della pagina; il livello dice quanto sta in basso nello schema (il 2 è subito sotto il titolo della pagina).",
       "fields": {
         "level": "Livello",
         "text": "Testo"
@@ -859,12 +870,14 @@
     },
     "text": {
       "label": "Testo",
+      "about": "Il testo della pagina: paragrafi, elenchi e link, scritti in Markdown.",
       "fields": {
         "markdown": "Testo"
       }
     },
     "callout": {
       "label": "Riquadro",
+      "about": "Un riquadro colorato che fa notare una cosa sola: un'informazione, una conferma, un avviso o un pericolo.",
       "fields": {
         "tone": "Tono",
         "title": "Titolo",
@@ -881,6 +894,7 @@
     },
     "cta": {
       "label": "Pulsante",
+      "about": "Un pulsante solo, verso un indirizzo. Non si aggiunge più: i pulsanti sono il blocco Pulsanti.",
       "fields": {
         "label": "Etichetta",
         "href": "Indirizzo"
@@ -914,6 +928,7 @@
     "willBeCaptured": "Aggiornato ora, si ferma quando pubblichi",
     "hero": {
       "label": "Testata",
+      "about": "La testata in cima a una pagina: un titolo grande, una riga di testo, un'immagine e fino a due pulsanti.",
       "fields": {
         "eyebrow": "Sopratitolo",
         "title": "Titolo",
@@ -949,6 +964,7 @@
     },
     "image": {
       "label": "Immagine",
+      "about": "Una foto o un disegno della libreria, con il testo alternativo e una didascalia.",
       "fields": {
         "mediaId": "File",
         "alt": "Testo alternativo",
@@ -969,6 +985,7 @@
     },
     "video": {
       "label": "Video",
+      "about": "Un video di un sito che l'hub sa incorniciare, dal suo indirizzo: la libreria non tiene video.",
       "notAllowed": "Questo indirizzo non e' su un sito da cui l'hub sa riprodurre un video.",
       "fields": {
         "url": "Indirizzo",
@@ -1002,6 +1019,7 @@
     },
     "interactive": {
       "label": "Disegno interattivo",
+      "about": "Un disegno o uno strumento interattivo scritto in codice, in un riquadro isolato dal resto della pagina; lo aggiunge solo chi può scrivere codice.",
       "unavailable": "Questo blocco interattivo non ha ancora niente da mostrare qui. Salva la pagina e si disegnera' da se'.",
       "refused": "Lo vedi solo tu: il browser ha rifiutato a questa animazione qualcosa che ha chiesto ({{detail}}). Un frame qui non ha rete ne' storage — vedi le linee guida.",
       "threw": "Lo vedi solo tu: questa animazione si e' fermata con un errore ({{detail}}).",
@@ -1021,6 +1039,7 @@
     },
     "timeline": {
       "label": "Passi",
+      "about": "Dei passi da seguire in ordine, oppure dei momenti con la loro data.",
       "fields": {
         "variant": "Disegnato come",
         "accent": "Colore d'accento",
@@ -1045,6 +1064,7 @@
     },
     "table": {
       "label": "Tabella",
+      "about": "Una tabella di righe e colonne di testo, con una didascalia.",
       "fields": {
         "caption": "Didascalia",
         "columns": "Colonne",
@@ -1064,6 +1084,7 @@
     },
     "cardGrid": {
       "label": "Schede",
+      "about": "Una griglia di schede, ognuna con un titolo, un testo, un'immagine o un'icona e un link facoltativo.",
       "fields": {
         "columns": "Colonne",
         "accent": "Colore d'accento",
@@ -1090,6 +1111,7 @@
     },
     "iconGrid": {
       "label": "Icone",
+      "about": "Una griglia di icone, ognuna con un titolo e una riga di testo: per elencare punti o vantaggi.",
       "fields": {
         "columns": "Colonne",
         "accent": "Colore d'accento",
@@ -1114,6 +1136,7 @@
     },
     "gallery": {
       "label": "Galleria",
+      "about": "Una griglia di foto della libreria; un clic apre la foto intera.",
       "fields": {
         "images": "Immagini",
         "images.mediaId": "File",
@@ -1130,6 +1153,7 @@
     },
     "logoGrid": {
       "label": "Loghi",
+      "about": "Una fila di loghi della libreria (partner, sponsor), ognuno con il suo nome e un link facoltativo.",
       "fields": {
         "columns": "Colonne",
         "items": "Loghi",
@@ -1150,6 +1174,7 @@
     },
     "tabs": {
       "label": "Schede",
+      "about": "Più testi nello stesso spazio, uno per scheda: chi legge vede quello della scheda che sceglie.",
       "fields": {
         "tabs": "Schede",
         "tabs.label": "Etichetta",
@@ -1161,6 +1186,7 @@
     },
     "accordion": {
       "label": "Domande e risposte",
+      "about": "Delle domande, ognuna con la sua risposta che si apre con un clic: per le domande frequenti.",
       "fields": {
         "allowMultiple": "Piu' di una aperta insieme",
         "items": "Voci",
@@ -1170,6 +1196,7 @@
     },
     "testimonial": {
       "label": "Citazione",
+      "about": "Le parole di una persona, con il suo nome, il suo ruolo e una foto facoltativa.",
       "fields": {
         "quote": "Citazione",
         "author": "Chi l'ha detta",
@@ -1179,6 +1206,7 @@
     },
     "buttonGroup": {
       "label": "Pulsanti",
+      "about": "Uno o più pulsanti in fila, ognuno verso un indirizzo del sito o di fuori.",
       "fields": {
         "align": "Allineamento",
         "buttons": "Pulsanti",
@@ -1201,6 +1229,7 @@
     },
     "spacer": {
       "label": "Spazio",
+      "about": "Uno spazio vuoto fra due blocchi, quando lo spazio della sezione non basta.",
       "fields": {
         "size": "Quanto"
       },
@@ -1215,6 +1244,7 @@
     },
     "divider": {
       "label": "Separatore",
+      "about": "Una linea o dei puntini che separano due parti della stessa sezione.",
       "fields": {
         "variant": "Disegnato come",
         "spacing": "Spazio intorno"
@@ -1233,6 +1263,7 @@
     },
     "stats": {
       "label": "Numeri",
+      "about": "Dei numeri della divisione che l'hub conta da sé: membri, staff, news e documenti pubblicati, appuntamenti in arrivo.",
       "empty": "Nessun numero scelto.",
       "fields": {
         "metrics": "Numeri",
@@ -1263,6 +1294,7 @@
     },
     "networkStats": {
       "label": "In diretta sulla rete",
+      "about": "Quanti controllori e piloti sono collegati adesso, nella divisione e su tutta la rete.",
       "unavailable": "La rete non è raggiungibile in questo momento.",
       "fields": {
         "figures": "Numeri",
@@ -1286,6 +1318,7 @@
     },
     "calendar": {
       "label": "Calendario",
+      "about": "Gli appuntamenti del calendario del sito, dei tipi e del dipartimento scelti, in elenco o in griglia.",
       "empty": "Non c’è niente in arrivo.",
       "retiredKind": "{{key}} (non più in uso)",
       "fields": {
@@ -1329,6 +1362,7 @@
     },
     "newsList": {
       "label": "News",
+      "about": "Le ultime news pubblicate di una raccolta, in elenco o in schede.",
       "empty": "Nessuna news da mostrare.",
       "pinned": "In evidenza",
       "fields": {
@@ -1359,6 +1393,7 @@
     },
     "documentList": {
       "label": "Documenti",
+      "about": "I documenti pubblicati di una raccolta, raggruppati per raccolta.",
       "empty": "Nessun documento da mostrare.",
       "download": "Scarica",
       "fields": {
@@ -1384,6 +1419,7 @@
     },
     "staffList": {
       "label": "Staff",
+      "about": "Lo staff della divisione o di un dipartimento, dalle posizioni di chi è entrato nell'hub.",
       "empty": "Non c’è ancora nessuno da mostrare.",
       "profileUrl": "https://www.ivao.aero/Member.aspx?Id={{vid}}",
       "rosterNote": "Qui compaiono solo i membri che hanno fatto almeno un accesso a questo portale.",
@@ -1413,6 +1449,7 @@
     },
     "welcome": {
       "label": "Saluto",
+      "about": "Un saluto per nome a chi guarda la dashboard, con un messaggio sotto.",
       "greeting": "Ciao, {{name}}",
       "anonymous": "Benvenuto",
       "fields": {
@@ -1421,11 +1458,13 @@
     },
     "myDepartments": {
       "label": "I miei dipartimenti",
+      "about": "Le dashboard dei dipartimenti in cui lavora chi guarda, un link per ognuno.",
       "title": "I miei dipartimenti",
       "empty": "Non lavori ancora in nessun dipartimento."
     },
     "myWork": {
       "label": "Cose da fare",
+      "about": "Quello che aspetta chi guarda: pagine da approvare, contatti, documenti da rivedere o bozze.",
       "sentBack": "Rimandata indietro",
       "fields": {
         "what": "Che cosa mostra",
