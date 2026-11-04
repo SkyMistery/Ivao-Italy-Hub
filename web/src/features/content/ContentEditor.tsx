@@ -16,6 +16,7 @@ import { ConfirmDialog, PageActions } from '../../shared/ui';
 import { AddressPreview } from './AddressPreview';
 import { BodyEditor } from './BodyEditor';
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
+import { ClaudeDownload } from './ClaudeDownload';
 import { emptyContent, toFormValues, type PublishRequest } from './mutations';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
@@ -33,6 +34,7 @@ import {
   type DocumentChoices,
   type PageChoices,
 } from './schema';
+import { templateRules } from './templateRules';
 import { useAutosave, type SaveOutcome } from './useAutosave';
 import { VersionHistory } from './VersionHistory';
 
@@ -76,7 +78,11 @@ function useDraftBase(opened: string | null) {
     [],
   );
 
-  return { adopt, withVersion };
+  // Read when the instructions for Claude are composed, after the draft was stored: the version their header names
+  // is the one the next save is written over (PR 3.0a, note 2026-10-30-una-pagina-scritta-con-claude §4).
+  const current = useCallback(() => base.current, []);
+
+  return { adopt, withVersion, current };
 }
 
 export function ContentEditor({
@@ -243,7 +249,13 @@ export function ContentEditor({
   // refresh it — which a save made by itself would do under somebody's fingers, taking the cursor
   // out of the title. A row that does not exist yet has the version a new row carries, from the
   // form.
-  const { adopt, withVersion } = useDraftBase(content?.rowVersion ?? null);
+  const { adopt, withVersion, current: draftBase } = useDraftBase(content?.rowVersion ?? null);
+
+  // What the template still says about this page, for the instructions for Claude; the editor reads its own.
+  const rules = useMemo(
+    () => templateRules(template.data === undefined ? null : readBody(template.data.body)),
+    [template.data],
+  );
 
   // The draft, as one string: what the autosave compares, so that a change undone before the pause
   // ends is not a save.
@@ -449,6 +461,21 @@ export function ContentEditor({
             </Button>
 
             {tools}
+
+            <ClaudeDownload
+              content={content}
+              kind={kind}
+              title={metadata.title}
+              summary={metadata.summary}
+              visibility={metadata.visibility}
+              body={body}
+              locales={locales}
+              template={rules}
+              holds={holds}
+              flush={autosave.flush}
+              draftBase={draftBase}
+              disabled={busy || locked || autosave.stopped}
+            />
 
             {onPublish === null ? null : (
               // A question on the way: what changed, for the staff. What is on screen is stored first, then

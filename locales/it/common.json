@@ -747,6 +747,14 @@
       "publishedBy": "Pubblicata da {{name}}",
       "approvedBy": "Approvata e pubblicata da {{name}}",
       "noLine": "Nessuna riga scritta"
+    },
+    "claude": {
+      "download": {
+        "label": "Scarica per Claude",
+        "hint": "Scarica le istruzioni per scrivere questa pagina con Claude, insieme alla bozza com’è adesso",
+        "notSaved": "La bozza non è stata salvata, quindi le istruzioni non sono state scaricate",
+        "failed": "Le istruzioni non si sono potute comporre: riprova"
+      }
     }
   },
   "templates": {

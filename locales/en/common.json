@@ -747,6 +747,14 @@
       "publishedBy": "Published by {{name}}",
       "approvedBy": "Approved and published by {{name}}",
       "noLine": "No line written"
+    },
+    "claude": {
+      "download": {
+        "label": "Download for Claude",
+        "hint": "Download the instructions for writing this page with Claude, with the draft as it is now",
+        "notSaved": "The draft was not saved, so the instructions were not downloaded",
+        "failed": "The instructions could not be composed: try again"
+      }
     }
   },
   "templates": {
