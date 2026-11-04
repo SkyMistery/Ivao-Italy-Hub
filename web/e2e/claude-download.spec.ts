@@ -52,10 +52,58 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
   );
 
+  // No page of the style chosen, unless a test says otherwise (decisions/2026-11-04-la-pagina-dello-stile.md).
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ stylePageId: null, stylePagePath: null }),
+    }),
+  );
+
   page.on('pageerror', (error) => {
     throw new Error(`The page threw: ${error.message}`);
   });
 });
+
+/** The page of the division's style, as the public read of the site answers it. */
+const theStylePage = {
+  page: {
+    ...aPage,
+    id: 9,
+    slug: 'style',
+    path: 'about/style',
+    visibility: 'Staff',
+    body: {
+      schemaVersion: 1,
+      sections: [
+        {
+          id: 'sec-style',
+          layout: 'stacked',
+          background: 'none',
+          padding: 'md',
+          width: 'default',
+          blocks: [
+            {
+              id: 'blk-tone',
+              type: 'heading',
+              version: 1,
+              props: { level: 2, text: { en: 'Tone', it: 'Tono' } },
+            },
+            {
+              id: 'blk-rule',
+              type: 'text',
+              version: 1,
+              props: { markdown: { en: 'Write *short* sentences.', it: 'Frasi *brevi*.' } },
+            },
+          ],
+          sections: [],
+        },
+      ],
+    },
+  },
+  movedTo: null,
+};
 
 test('the editor of a page downloads the instructions, with the draft and the header to copy', async ({
   page,
@@ -111,6 +159,50 @@ test('whoever may not edit the page has no download', async ({ page }) => {
   await expect(page.getByRole('button', { name: download.label })).toHaveCount(0);
 });
 
+test('without a page of the style the instructions have no part for it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/7');
+
+  const [file] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: download.label }).click(),
+  ]);
+
+  expect(await readFile(await file.path(), 'utf8')).not.toContain('## The style of the division');
+});
+
+test('the page of the style chosen in the settings goes at the end, read in the language on screen', async ({
+  page,
+}) => {
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ stylePageId: 9, stylePagePath: '/about/style' }),
+    }),
+  );
+  await page.route('**/api/content/public/page?**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(theStylePage) }),
+  );
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/staff/content/7');
+
+  const [file] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: download.label }).click(),
+  ]);
+  const markdown = await readFile(await file.path(), 'utf8');
+
+  const style = markdown.slice(
+    markdown.indexOf('## The style of the division'),
+    markdown.indexOf('## The header to copy'),
+  );
+  expect(style).toContain('### Tone');
+  expect(style).toContain('Write *short* sentences.');
+  expect(style).not.toContain('Frasi');
+});
+
 test('whoever edits the page by a grant, without reading the links, still downloads', async ({ page }) => {
   // `Content.Edit` given by a grant does not bring `Links.View` with it (review of #449, finding 1): the links read is
   // not asked, and if it were it would be refused.
@@ -120,6 +212,13 @@ test('whoever edits the page by a grant, without reading the links, still downlo
   });
   await page.route('**/api/content/7', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(aPage) }),
+  );
+  await page.route('**/api/content/settings', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ stylePageId: null, stylePagePath: null }),
+    }),
   );
   const askedForLinks: string[] = [];
   await page.route('**/api/links**', (route) => {

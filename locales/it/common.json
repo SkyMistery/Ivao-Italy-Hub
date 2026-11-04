@@ -755,6 +755,19 @@
         "notSaved": "La bozza non è stata salvata, quindi le istruzioni non sono state scaricate",
         "failed": "Le istruzioni non si sono potute comporre: riprova"
       }
+    },
+    "settings": {
+      "open": "Impostazioni",
+      "title": "Impostazioni dei contenuti",
+      "description": "Valgono per tutta la divisione.",
+      "fields": {
+        "stylePageId": "Pagina dello stile della divisione"
+      },
+      "hints": {
+        "stylePageId": "Una pagina pubblicata che descrive come scrive la divisione: va in coda alle istruzioni «Scarica per Claude». Deve poterla leggere tutto lo staff."
+      },
+      "none": "Nessuna",
+      "saved": "Impostazioni salvate"
     }
   },
   "templates": {

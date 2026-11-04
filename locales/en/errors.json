@@ -98,7 +98,11 @@
         "blockAudience": "The page online carries a block for fewer readers. Take it out and publish again, then change who reads it."
       },
       "tooManyCollections": "A row may be filed in twenty collections at most.",
-      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
+      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes.",
+      "settings": {
+        "stylePageNotFound": "Choose a published page you can read.",
+        "stylePageTooNarrow": "Only one department reads this page: whoever downloads the instructions must be able to read it, so choose one for the whole staff."
+      }
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"

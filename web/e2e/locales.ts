@@ -96,6 +96,13 @@ interface CommonStrings {
     readonly claude: {
       readonly download: { readonly label: string; readonly hint: string };
     };
+    readonly settings: {
+      readonly open: string;
+      readonly title: string;
+      readonly fields: { readonly stylePageId: string };
+      readonly none: string;
+      readonly saved: string;
+    };
     readonly review: {
       readonly ready: string;
       readonly readyDialog: { readonly confirm: string };

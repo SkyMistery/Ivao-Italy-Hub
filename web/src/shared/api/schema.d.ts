@@ -55,6 +55,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/content/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ContentSettings"];
+        put: operations["ContentSettingsWrite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/notifications": {
         parameters: {
             query?: never;
@@ -5403,6 +5419,24 @@ export interface components {
              * @description Approving: the page it goes under, corrected; null at the top.
              */
             parentId?: null | number;
+        };
+        /** @description What the settings of the content say: the page of the staff that describes how the division writes. */
+        ContentSettingsDto: {
+            /**
+             * Format: int64
+             * @description The page chosen, or null when none is.
+             */
+            stylePageId: null | number;
+            /**
+             * @description Its address, read with the visibility of whoever asks and only while it is published: null when they cannot read it, so
+             *     that the instructions for Claude leave the style out rather than promise a page their reader will never open.
+             */
+            stylePagePath: null | string;
+        };
+        /** @description What the settings panel saves. Null takes the choice away. */
+        ContentSettingsWriteDto: {
+            /** Format: int64 */
+            stylePageId: null | number;
         };
         /**
          * @description One version of a row as its history in the editor shows it (note 2026-10-23-la-storia-delle-versioni): for the
@@ -11606,6 +11640,66 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+        };
+    };
+    ContentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+        };
+    };
+    ContentSettingsWrite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentSettingsWriteDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSettingsDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
