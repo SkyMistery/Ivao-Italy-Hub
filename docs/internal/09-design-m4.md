@@ -820,7 +820,9 @@ collegata lo stesso `bookingGapMinutes` (§3.4).
 Il pilota ritira **fino all'EOBT** (c3): la riga si cancella e lo slot torna libero. Lo staff (`EventBookings.Edit`) toglie
 una prenotazione con un motivo: mail `bookingRemoved`. **Deciso con E6a** (#233, piano 1.32; le risposte di Carmine): il motivo è
 **obbligatorio**, va nella mail e **non si conserva** (l'audit dice chi ha tolto che cosa e quando), e lo staff toglie in
-qualunque momento; «togli» si autorizza sulla cura dell'evento **com'è ora**, non com'era il giorno della prenotazione; la mail
+qualunque momento; «togli» si autorizza sulla cura dell'evento **com'è ora**, non com'era il giorno della prenotazione (dal 4 nov
+2026 la prenotazione la prende con `RowCare.Adopt` del nucleo, come valore salvato, perché il guardiano giudica una cancellazione
+sui dipartimenti caricati: nota `2026-11-05-la-cura-che-una-riga-prende-dal-genitore`, #447, piano 1.48); la mail
 parte dopo la cancellazione. **Uno slot prenotato si corregge ancora**: la prenotazione resta, e **il pilota è avvisato quando
 cambia il volo che ha prenotato** — nominativo, orari, aeroporti, tipi ammessi — con `bookingChanged`; lo stand e il numero di
 volo non avvisano nessuno, e la compatibilità con le altre sue prenotazioni non si ricontrolla (un ritocco degli orari di molti
