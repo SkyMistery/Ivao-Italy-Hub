@@ -425,8 +425,8 @@ public sealed class HubSaveChangesInterceptor(
 
         // The one exception after creation: a row somebody sent that is about them, which they keep changing — a pilot
         // withdraws or corrects their own report (M2, T11). Theirs before the write and after it, and in the same
-        // departments, scope and FIR (issue #319, item 4): they may change it, not give it to somebody else or move it. Deleting is still the department's,
-        // unless the entity says its member takes it back (below).
+        // departments, scope and FIR (issue #319, item 4): they may change it, not give it to somebody else or move it.
+        // Deleting is still the department's, unless the entity says its member takes it back (below).
         if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasStakeholder { StakeholderVid: var after } }
             && after == currentUser.Vid
             && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var before }
@@ -502,7 +502,13 @@ public sealed class HubSaveChangesInterceptor(
         var after = owned.OwnerDepartments;
         var baseDepartment = (Department)entry.Property(nameof(IOwnedByDepartment.OwnerDepartment)).OriginalValue!;
 
-        if (Holds(permission, [baseDepartment], OriginalScope(entry), OriginalFir(entry)))
+        // Holding the base department means holding the permission on it whole (the maintainer, 4 November 2026, on #447): a
+        // grant on one row gives no department (CLAUDE.md §2), a grant from outside gives the permission and not the department
+        // (plan 1.28), and the team of a FIR holds it on the rows of its FIR only (plan 1.24). Each of them works on the row, and
+        // changes its set as a collaborator does.
+        if (currentUser.Permissions.Any(held => string.Equals(held.Name, permission, StringComparison.Ordinal)
+            && (held.Department is null || held.Department == baseDepartment)
+            && held is { ResourceScope: null, Fir: null, FromOutside: false }))
         {
             return;
         }

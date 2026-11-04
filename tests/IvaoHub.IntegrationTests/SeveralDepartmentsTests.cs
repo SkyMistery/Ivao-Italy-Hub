@@ -31,6 +31,9 @@ public sealed class SeveralDepartmentsTests(MariaDbFixture mariaDb) : IAsyncLife
     private const int SpecialOpsAssistantVid = 760002;
     private const int FlightOpsAssistantVid = 760003;
 
+    // Staff of training, which holds nothing of the test module, with the module's Edit granted on one row only.
+    private const int OneRowVid = 760004;
+
     private HubWebApplicationFactory _factory = null!;
 
     public async ValueTask InitializeAsync()
@@ -137,6 +140,52 @@ public sealed class SeveralDepartmentsTests(MariaDbFixture mariaDb) : IAsyncLife
         {
             Assert.Equal(HttpStatusCode.OK, rewritten.StatusCode);
             Assert.Equal(["ED", "TD"], Departments(await rewritten.Content.ReadFromJsonAsync<JsonElement>(token)).Order().ToArray());
+        }
+    }
+
+    [Fact]
+    public async Task AGrantOnOneRowDoesNotHoldTheBaseDepartment()
+    {
+        // The maintainer, 4 November 2026, on #447: whoever holds Edit on one row of the base department works on that row, and
+        // changes its «curated by» set as a collaborator does — a grant on one row gives no department.
+        var token = TestContext.Current.CancellationToken;
+        await SeedUserAsync(OneRowVid, "IT-TAC", token);
+        using var events = await SignedInAsync(EventsAssistantVid, token);
+
+        using var created = await events.PostAsJsonAsync(SampleModule.ItemsPattern, Item("Granted on one row", Department.ED), token);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+            await database.UserGrants.Where(grant => grant.Vid == OneRowVid).ExecuteDeleteAsync(token);
+            database.UserGrants.Add(new UserGrant
+            {
+                Vid = OneRowVid,
+                Kind = GrantKind.Permission,
+                Value = SampleModule.EditPermission,
+                Department = Department.ED,
+                ResourceScope = SampleItem.ScopeOf(id),
+                Effect = GrantEffect.Grant,
+                Reason = "test",
+            });
+            await database.SaveChangesAsync(token);
+        }
+
+        using var oneRow = await SignedInAsync(OneRowVid, token);
+        var path = $"{SampleModule.ItemsPattern}/{id}";
+
+        // The row itself, yes.
+        using (var edited = await oneRow.PutAsJsonAsync(path, Item("Granted on one row, edited", Department.ED), token))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        }
+
+        // Another department into its set, no.
+        using (var added = await oneRow.PutAsJsonAsync(path, Item("Granted on one row, edited", Department.ED, Department.SOD), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, added.StatusCode);
         }
     }
 
