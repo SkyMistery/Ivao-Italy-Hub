@@ -54,7 +54,9 @@ public static class IvaoServiceCollectionExtensions
         // The token of the application, on its own client so a slow token endpoint cannot exhaust
         // the connections of the data calls.
         services.AddHttpClient<IvaoApiTokenProvider>(ConfigureAuthority).AddStandardResilienceHandler();
-        services.AddHttpClient<IvaoApiClient>(ConfigureAuthority).AddStandardResilienceHandler(WaitLongerThanIvao);
+        services.AddHttpClient<IvaoApiClient>(ConfigureAuthority)
+            .AddStandardResilienceHandler(WaitLongerThanIvao)
+            .SelectPipelineBy(_ => request => CircuitOf(request.RequestUri));
 
         // The narrowed picture of the network on disk, for the process that comes next (issue #397).
         services.AddSingleton(provider => new IvaoNetworkPictureStore(
@@ -85,6 +87,22 @@ public static class IvaoServiceCollectionExtensions
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         return services;
+    }
+
+    /// <summary>
+    /// The circuit a call of the client goes through: one per family, each with its own breaker and the same options. With one
+    /// breaker for all, a burst of failing tracker searches (the checks of the event reports make many) opened it for the
+    /// sign-in's <c>/v2/users/me</c> too, and nobody could sign in for the break (issue #325, item 6).
+    /// </summary>
+    public static string CircuitOf(Uri? request)
+    {
+        var path = request is null ? string.Empty : request.IsAbsoluteUri ? request.AbsolutePath : request.OriginalString;
+
+        return path.StartsWith("/v2/users/", StringComparison.OrdinalIgnoreCase) ? "sign-in"
+            : path.StartsWith("/v2/tracker/whazzup", StringComparison.OrdinalIgnoreCase) ? "network"
+            : path.StartsWith("/v2/tracker/", StringComparison.OrdinalIgnoreCase) ? "tracker"
+            : path.StartsWith("/v2/atc/bookings", StringComparison.OrdinalIgnoreCase) ? "bookings"
+            : "reference";
     }
 
     private static void ConfigureAuthority(IServiceProvider provider, HttpClient client)
