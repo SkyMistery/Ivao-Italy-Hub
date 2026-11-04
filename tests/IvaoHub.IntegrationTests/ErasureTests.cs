@@ -420,7 +420,10 @@ public sealed class ErasureTests(MariaDbFixture mariaDb) : IAsyncLifetime
             var users = await audit.Where(row => row.Entity == AuditRedaction.UsersTable && row.EntityId == text && row.Ip != null)
                 .ToListAsync(token);
             Assert.All(users, row => Assert.Equal(0, row.Vid));
-            Assert.Equal([HomeAddress, AwayAddress], users.Select(row => row.Ip).Distinct().Order(StringComparer.Ordinal));
+            // The first sign in writes their user; the second changes only what the audit does not copy (issue #326, item 2: its
+            // LastLoginAt, the stamp), so it may leave no row of hub_users — its address is on the grants it suspends below.
+            Assert.Contains(HomeAddress, users.Select(row => row.Ip));
+            Assert.All(users, row => Assert.Contains(row.Ip, new[] { HomeAddress, AwayAddress }));
 
             var suspended = await audit.Where(row => row.Entity == "hub_user_grants" && grants.Contains(row.EntityId) && row.Ip != null)
                 .ToListAsync(token);

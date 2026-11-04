@@ -316,6 +316,10 @@ public sealed class PersonalDataErasure(
     /// tabs — read the same last number and handed out the same pseudonym. A lock still held by another erasure after
     /// <see cref="PseudonymWait"/> is a refusal, to ask again; one the database cannot be asked for goes ahead without it, as
     /// the jobs do.</para>
+    /// <para>⚠️ A new number on every run, a run again after one that failed halfway included: what the first run committed keeps
+    /// its pseudonym, what is left takes the second, and the aggregated counts grow by one. Accepted by the maintainer (issue
+    /// #326, item 4; note 2026-11-04-il-secondo-pseudonimo): reusing the first would mean keeping the link between the VID and
+    /// its pseudonym until somebody ran the erasure again — the very link the erasure removes.</para>
     /// </summary>
     private async Task<int> NextPseudonymAsync(CancellationToken cancellationToken)
     {

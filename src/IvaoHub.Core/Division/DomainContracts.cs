@@ -172,6 +172,9 @@ public sealed class AuditedAttribute : Attribute;
 /// A column of bookkeeping on an audited row: a save that changes only such columns is not a change of the row — no audit
 /// row, and <c>updated_at</c> stays where it was. A personal token's last use is the first (M2, T19a). Nor, on a row that
 /// decides a session (<see cref="IAffectsUserSession"/>), a new stamp: a staff position's last synchronisation is one.
+/// <para>And the audit never copies it, in the before or the after of any row: so it is also how a person's datum on an
+/// audited row — a member's address, their Discord, their session's stamp — stays out of <c>hub_audit_log</c> (issue #326,
+/// item 2, note 2026-11-04-i-dati-della-persona-fuori-dall-audit).</para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class NotAuditedAttribute : Attribute;
