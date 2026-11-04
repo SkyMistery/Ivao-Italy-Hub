@@ -17,7 +17,15 @@ import { AddressPreview } from './AddressPreview';
 import { BodyEditor } from './BodyEditor';
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { ClaudeDownload } from './ClaudeDownload';
-import { emptyContent, toFormValues, type PublishRequest } from './mutations';
+import {
+  forgetImported,
+  rememberImported,
+  versionLine,
+  type ImportPending,
+  type ImportReady,
+} from './claudeFile';
+import { ClaudeImport, ImportLeftovers } from './ClaudeImport';
+import { emptyContent, spreadLocalized, toFormValues, type PublishRequest } from './mutations';
 import type { PublishedView } from './PreviewFrame';
 import { PublishProblems } from './publishProblems';
 import {
@@ -57,6 +65,22 @@ import { VersionHistory } from './VersionHistory';
  * form itself lives in the panel on the right (`SchemaForm`'s `id` and `actionsElsewhere`).
  */
 const METADATA_FORM = 'content-metadata';
+
+/**
+ * The last import of this editor, as the way back and forth over it needs it (`useBodyHistory` undoes the body and
+ * nothing else; note 2026-10-30-una-pagina-scritta-con-claude §3.3: **Annulla** takes the import away, and the import
+ * wrote the title and the summary too). The two bodies are the two sides of it, told apart by identity: what the history
+ * hands back is the very object it was given.
+ */
+interface ImportRun {
+  readonly before: Body;
+  readonly after: Body;
+  readonly fieldsBefore: Pick<ContentFormValues, 'title' | 'summary'>;
+  readonly fieldsAfter: Pick<ContentFormValues, 'title' | 'summary'>;
+  readonly pending: readonly ImportPending[];
+  /** Which side of it the editor is on. */
+  applied: boolean;
+}
 
 /**
  * The version of the row a draft is based on: the one it was opened at, moved on by `adopt` with
@@ -226,6 +250,18 @@ export function ContentEditor({
       : toFormValues(content, locales),
   );
 
+  // The form as it starts again after an import, and a new form for it: `SchemaForm` reads its defaults once, and these
+  // are not the row the screen holds. Nothing else remounts it, so the cursor stays where it is in every other save.
+  const [formStart, setFormStart] = useState<{ generation: number; values: ContentFormValues } | null>(null);
+  const takeFields = (values: ContentFormValues) => {
+    setMetadata(values);
+    setFormStart((current) => ({ generation: (current?.generation ?? 0) + 1, values }));
+  };
+
+  // What the last import left to do, and the way back over it.
+  const [leftovers, setLeftovers] = useState<readonly ImportPending[]>([]);
+  const importRun = useRef<ImportRun | null>(null);
+
   // What the form of a document offers beyond its own row.
   const documentChoices: DocumentChoices = { successors };
 
@@ -288,7 +324,9 @@ export function ContentEditor({
     await autosave.flush();
     try {
       const changes = await queryClient.fetchQuery({ ...contentReviewQuery(id), staleTime: 0 });
-      const line = changeSummary(changes, t, read);
+      const row = draftBase();
+      const line =
+        row === null ? changeSummary(changes, t, read) : versionLine(row, changeSummary(changes, t, read), t);
       setPublishRequest((current) => {
         if (current.changelog !== '' && current.changelog !== suggested.current) {
           return current;
@@ -299,6 +337,63 @@ export function ContentEditor({
     } catch {
       // No suggestion: the field stays as it is, and the person writes the line.
     }
+  };
+
+  // The body as the editor says it is. Undoing back over an import takes its title and its summary with it, and doing it
+  // again puts them back; anything else leaves the fields to whoever is writing them.
+  const changeBody = (next: Body) => {
+    setBody(next);
+
+    const run = importRun.current;
+    if (run === null || content === null) {
+      return;
+    }
+
+    if (run.applied && next === run.before) {
+      run.applied = false;
+      takeFields({ ...metadata, ...run.fieldsBefore });
+      setLeftovers([]);
+      forgetImported(content.id);
+    } else if (!run.applied && next === run.after) {
+      run.applied = true;
+      takeFields({ ...metadata, ...run.fieldsAfter });
+      setLeftovers(run.pending);
+      const row = draftBase();
+      if (row !== null) {
+        rememberImported(row);
+      }
+    }
+  };
+
+  // A file that passed its checks (`ClaudeImport`): saved first, as a press on «save draft» is, over the version it
+  // worked on; only what the server took goes on screen, so a refusal leaves the draft as it was.
+  const importFile = async (file: ImportReady, replace: (next: Body) => void) => {
+    const fieldsAfter = {
+      title: spreadLocalized(file.title, locales),
+      summary: spreadLocalized(file.summary, locales),
+    };
+    const values = { ...metadata, ...fieldsAfter };
+
+    const stored = await autosave.exclusive(async () => {
+      const row = await onSave(withVersion(values), file.body);
+      adopt(row);
+      return row;
+    });
+
+    importRun.current = {
+      before: body,
+      after: file.body,
+      fieldsBefore: { title: metadata.title, summary: metadata.summary },
+      fieldsAfter,
+      pending: file.pending,
+      applied: true,
+    };
+
+    takeFields(values);
+    replace(file.body);
+    setLeftovers(file.pending);
+    rememberImported(stored);
+    autosave.settle(JSON.stringify({ metadata: values, body: file.body }));
   };
 
   // On the way out: stored, or asked. The in-application road is the router's blocker; the tab
@@ -345,13 +440,15 @@ export function ContentEditor({
   const pageProperties = (
     <>
       <SchemaForm
+        key={formStart?.generation ?? 0}
         id={METADATA_FORM}
         actionsElsewhere
         schema={contentMetadataSchema(kind, categories, documentChoices, pageChoices)}
         defaults={
-          content === null
+          formStart?.values ??
+          (content === null
             ? emptyContent(department, locales, kind, startsAsTemplate)
-            : toFormValues(content, locales)
+            : toFormValues(content, locales))
         }
         locales={locales}
         labels="content"
@@ -416,7 +513,7 @@ export function ContentEditor({
   return (
     <BodyEditor
       initial={body}
-      onChange={setBody}
+      onChange={changeBody}
       dashboard={kind === 'Dashboard'}
       isTemplate={content?.isTemplate ?? startsAsTemplate}
       template={
@@ -447,7 +544,7 @@ export function ContentEditor({
       // A template has no readers of its own: the page made from it is the one held to its visibility.
       visibility={(content?.isTemplate ?? startsAsTemplate) ? undefined : metadata.visibility}
       pageProperties={pageProperties}
-      toolbar={(tools) => (
+      toolbar={(tools, editor) => (
         // ⚠️ At the top and sticky, and it used to sit at the **bottom of the metadata form** — which
         // measured 1182 pixels in a window of 950, so the page being composed and the buttons that
         // save it were both below the fold. Measured, not guessed (road A1 of
@@ -475,6 +572,25 @@ export function ContentEditor({
               flush={autosave.flush}
               draftBase={draftBase}
               // Off while the template is on its way: its rules are part of what the instructions give.
+              disabled={
+                busy ||
+                locked ||
+                autosave.stopped ||
+                (typeof content?.templateId === 'number' && template.data === undefined)
+              }
+            />
+
+            <ClaudeImport
+              content={content}
+              kind={kind}
+              locales={locales}
+              template={rules}
+              holds={holds}
+              isDirty={() => leaving.current.autosave.dirty}
+              draftBase={draftBase}
+              apply={(file) => importFile(file, editor.replace)}
+              // Only in the draft: a page waiting for approval is read, not written. Off with the template on its way,
+              // as the download is: its rules are part of what the file is checked against.
               disabled={
                 busy ||
                 locked ||
@@ -551,6 +667,8 @@ export function ContentEditor({
           {review?.(autosave.flush, adopt)}
 
           <PublishProblems body={body} problems={publishProblems} />
+
+          <ImportLeftovers body={body} pending={leftovers} />
 
           {draftStatus === null ? null : (
             // Named, because the drag and drop context draws a live region of its own for its

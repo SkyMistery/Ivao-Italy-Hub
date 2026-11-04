@@ -122,11 +122,16 @@ export function emptyContent(
   };
 }
 
+/** A translated value as the form holds it: every language of the division present, as a tab. */
+export function spreadLocalized(
+  value: LocalizedString | null,
+  locales: readonly string[],
+): Record<string, string> {
+  return Object.fromEntries(locales.map((locale) => [locale, value?.[locale] ?? '']));
+}
+
 /** The form as an existing row fills it, with every language of the division present as a tab. */
 export function toFormValues(content: ContentDetailDto, locales: readonly string[]): ContentFormValues {
-  const spread = (value: LocalizedString | null): Record<string, string> =>
-    Object.fromEntries(locales.map((locale) => [locale, value?.[locale] ?? '']));
-
   return {
     kind: content.kind,
     slug: content.slug,
@@ -134,8 +139,8 @@ export function toFormValues(content: ContentDetailDto, locales: readonly string
     visibility: content.visibility,
     isTemplate: content.isTemplate,
     parentId: content.parentId === null ? '' : String(content.parentId),
-    title: spread(content.title),
-    summary: spread(content.summary),
+    title: spreadLocalized(content.title, locales),
+    summary: spreadLocalized(content.summary, locales),
     seo: spreadSeo(content.seo, locales),
     collections: [...content.collections],
     ...(content.coverMediaId === null ? {} : { coverMediaId: content.coverMediaId }),

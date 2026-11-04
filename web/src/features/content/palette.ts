@@ -66,6 +66,21 @@ export function addableBlocks(
 }
 
 /**
+ * The blocks a page written with Claude may use: what may be added, without what is for fewer readers than the page,
+ * which the save would refuse (#414). The download lists them and the import checks against them and takes the
+ * fingerprint of the rules from them: one answer, or a file would be turned away for a block nobody offered.
+ */
+export function offeredBlocks(
+  blocks: readonly BlockRegistration[],
+  holds: (permission: string) => boolean,
+  audiences: readonly { readonly type: string; readonly audience: PageVisibility }[],
+  visibility: PageVisibility,
+): BlockRegistration[] {
+  const forFewerReaders = tooFewReaders(audiences, visibility);
+  return addableBlocks(blocks, holds).filter((block) => !forFewerReaders(block.type));
+}
+
+/**
  * Whether a block is for fewer readers than the page, from the audiences `/api/me` publishes (#414). The palette shows
  * such a block disabled with the reason; the instructions for Claude leave it out, because the save would refuse it.
  * No visibility — a template, a module's briefing — means no readers of its own, and nothing is too narrow.

@@ -126,38 +126,76 @@ export function jsonSchemaOf(schema: z.ZodType): unknown {
  */
 const SECTION_MEMBERS_NOT_WRITTEN = ['required', 'locked', 'allowedBlocks'] as const;
 
-/** The JSON Schema of the envelope of a page: `bodySchema`, without the template's rules. */
+interface SchemaNode {
+  properties?: Record<string, SchemaNode>;
+  items?: SchemaNode;
+  required?: string[];
+}
+
+/** A section or block that is new has no identifier (note §3.4), and the import gives it one: the schema must not ask. */
+function withoutRequiredId(node: SchemaNode | undefined) {
+  if (node?.required !== undefined) {
+    node.required = node.required.filter((member) => member !== 'id');
+  }
+}
+
+/**
+ * The JSON Schema of the envelope of a file: `bodySchema`, without the template's rules, and without the identifier a
+ * stored body has to have and a new block must not (the first real file written from these instructions found the two
+ * disagreeing, PR 3.0b).
+ */
 export function envelopeSchema(): unknown {
-  const schema = jsonSchemaOf(bodySchema) as {
-    $defs?: Record<string, { properties?: Record<string, unknown> }>;
-  };
+  const schema = jsonSchemaOf(bodySchema) as { $defs?: Record<string, SchemaNode> };
 
   for (const section of Object.values(schema.$defs ?? {})) {
     const properties = section.properties ?? {};
     for (const member of SECTION_MEMBERS_NOT_WRITTEN) {
       delete properties[member];
     }
+
+    withoutRequiredId(section);
+    withoutRequiredId(properties['blocks']?.items);
   }
 
   return schema;
 }
 
-/** What the instructions are composed from. Everything already read: composing asks nobody anything. */
-export interface InstructionsInput {
+/** The permission whoever writes a page with Claude must hold on the row: the file is for writing its draft (note §3). */
+const EDIT = 'Content.Edit';
+
+/**
+ * Whether «Download for Claude» and «Import from Claude» are offered at all (note §3): on a row that exists — before the
+ * first «save draft» there is no row and no version to name — of a kind a page can be written as, not a template, and
+ * to whoever may edit it. One answer, so that nobody may download what they may not import, nor the other way round.
+ */
+export function writesWithClaude(
+  content: { readonly isTemplate: boolean } | null,
+  kind: ContentKind,
+  holds: (permission: string) => boolean,
+): boolean {
+  return content !== null && !content.isTemplate && CLAUDE_KINDS.includes(kind) && holds(EDIT);
+}
+
+/** What the header is taken from, at the download and again at the import: the row, and the rules of this page today. */
+export interface HeaderInput {
   readonly content: { readonly id: number; readonly kind: ContentKind };
   /** The version of the row the draft on screen is based on, after it was stored. */
   readonly rowVersion: string;
-  readonly title: LocalizedString;
-  readonly summary: LocalizedString | null;
   readonly body: Body;
   /** Who reads the page, as the row says. */
   readonly visibility: string;
   /** The languages of the division, `division.json → locales`. */
   readonly locales: readonly string[];
-  /** The blocks this page offers to this person, in the order of the registry (`palette.ts`: `addableBlocks`, `tooFewReaders`). */
+  /** The blocks this page offers to this person, in the order of the registry (`palette.ts`: `offeredBlocks`). */
   readonly blocks: readonly BlockRegistration[];
   /** The rules of the template the page was made from, by section `key`; empty without one. */
   readonly template: ReadonlyMap<string, SectionRule>;
+}
+
+/** What the instructions are composed from. Everything already read: composing asks nobody anything. */
+export interface InstructionsInput extends HeaderInput {
+  readonly title: LocalizedString;
+  readonly summary: LocalizedString | null;
   /** The addresses of the site, `siteAddresses.ts`; only the published ones are offered. */
   readonly addresses: readonly SiteAddress[];
   /** Where the interactive block's own guidelines are served, when it is offered. */
@@ -177,7 +215,7 @@ export interface InstructionsInput {
  * the prose** (note §4): the same page downloaded by somebody reading the editor in another language has the same
  * fingerprint, and a sentence changed in the style of the division does not turn a file away.
  */
-export function instructionRules(input: InstructionsInput): unknown {
+export function instructionRules(input: HeaderInput): unknown {
   return {
     format: CLAUDE_FORMAT,
     version: CLAUDE_FORMAT_VERSION,
@@ -197,7 +235,7 @@ export function instructionRules(input: InstructionsInput): unknown {
 }
 
 /** The header of the file, with both fingerprints taken. */
-export async function instructionsHeader(input: InstructionsInput): Promise<ClaudeHeader> {
+export async function instructionsHeader(input: HeaderInput): Promise<ClaudeHeader> {
   return {
     format: CLAUDE_FORMAT,
     version: CLAUDE_FORMAT_VERSION,
@@ -348,7 +386,12 @@ export async function composeInstructions(
       '',
       'Integrate what is new into this, keeping the identifiers of what you keep.',
       '',
-      fence({ title: input.title, summary: input.summary, body: input.body }),
+      // A summary with nothing in it is stored as an empty object, which the fixed part does not say a summary may be.
+      fence({
+        title: input.title,
+        summary: Object.keys(input.summary ?? {}).length === 0 ? null : input.summary,
+        body: input.body,
+      }),
     ].join('\n'),
     ...(input.style === null
       ? []

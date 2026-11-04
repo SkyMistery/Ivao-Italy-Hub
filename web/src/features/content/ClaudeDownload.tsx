@@ -13,15 +13,12 @@ import { useNotice } from '../../shared/ui';
 import { activeLinksQuery } from '../links/queries';
 import { bootstrapQuery } from '../me/queries';
 
-import { CLAUDE_KINDS, composeInstructions } from './claudeInstructions';
+import { composeInstructions, writesWithClaude } from './claudeInstructions';
 import { contentSettingsQuery, styleText } from './contentSettings';
-import { addableBlocks, tooFewReaders } from './palette';
+import { offeredBlocks } from './palette';
 import { publicPageQuery, siteAddressesQuery, type ContentDetailDto, type ContentKind } from './queries';
 import { pagesOfTheSite, siteAddresses } from './siteAddresses';
 import type { SectionRule } from './templateRules';
-
-/** The permission whoever downloads must hold on the row: the instructions are for writing its draft (note §3). */
-const EDIT = 'Content.Edit';
 
 /**
  * What the read of the library's links asks at the door. The site's addresses ask `Content.Edit`, which whoever downloads
@@ -79,7 +76,7 @@ export function ClaudeDownload({
   const { data: bootstrap } = useQuery(bootstrapQuery);
   const [composing, setComposing] = useState(false);
 
-  if (content === null || content.isTemplate || !CLAUDE_KINDS.includes(kind) || !holds(EDIT)) {
+  if (!writesWithClaude(content, kind, holds)) {
     return null;
   }
 
@@ -135,9 +132,12 @@ export function ClaudeDownload({
         readStyle(),
       ]);
 
-      // The palette's own answer, and not a block for fewer readers than the page: the save would refuse it (#414).
-      const forFewerReaders = tooFewReaders(bootstrap?.registries.blocks ?? [], row.visibility);
-      const blocks = addableBlocks(registry.blocks, holds).filter((block) => !forFewerReaders(block.type));
+      const blocks = offeredBlocks(
+        registry.blocks,
+        holds,
+        bootstrap?.registries.blocks ?? [],
+        row.visibility,
+      );
 
       const { markdown } = await composeInstructions({
         content: { id: row.id, kind },

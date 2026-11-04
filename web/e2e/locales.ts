@@ -96,6 +96,16 @@ interface CommonStrings {
     readonly claude: {
       readonly download: { readonly label: string; readonly hint: string };
     };
+    readonly import: {
+      readonly label: string;
+      readonly refused: string;
+      readonly notFromInstructions: string;
+      readonly draftChanged: string;
+      readonly startedOver: string;
+      readonly startedOverConfirm: string;
+      readonly versionLine: string;
+      readonly pending: { readonly pictureCount_one: string };
+    };
     readonly settings: {
       readonly open: string;
       readonly title: string;
@@ -140,6 +150,7 @@ interface CommonStrings {
       readonly components: string;
       readonly outline: string;
       readonly undo: string;
+      readonly redo: string;
       readonly onThePage: string;
       readonly componentsHint: string;
       readonly searchComponents: string;
