@@ -288,8 +288,9 @@ public sealed class EventChildren(EventsDbContext database)
             return (null, Refusal("eventId", "events:errors.eventUnknown"));
         }
 
-        row.OwnerDepartment = parent.OwnerDepartment;
-        row.OwnerDepartmentMask = parent.OwnerDepartmentMask;
+        // As if stored with it: the write guard judges the row on its event as it is now (note
+        // 2026-11-05-la-cura-che-una-riga-prende-dal-genitore).
+        RowCare.Adopt(database, row, parent.OwnerDepartment, parent.OwnerDepartmentMask);
 
         return (parent, null);
     }

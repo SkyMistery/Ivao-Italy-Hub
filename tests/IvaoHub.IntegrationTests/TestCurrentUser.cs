@@ -63,6 +63,13 @@ public sealed class TestCurrentUser : ICurrentUser
         Vid = vid;
     }
 
+    /// <summary>A member holding these permissions and nothing else, as a grant would give them.</summary>
+    public void MemberHolding(int vid, params EffectivePermission[] permissions)
+    {
+        Member(vid);
+        Permissions = permissions;
+    }
+
     /// <summary>
     /// The coordinator of a department: every departmental permission, on that department only.
     /// It is the identity the write guard is meant to hold in place.
