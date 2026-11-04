@@ -61,8 +61,9 @@ public static class ContentSettingsEndpoints
             .Produces<ContentSettingsDto>()
             .RequireAuthorization(CorePermissions.ContentEdit);
 
-        // At the door, the permission held anywhere; inside, held without the scope of one row, because a grant on one
-        // template does not decide a setting of the whole division (note 2026-10-17-il-permesso-senza-ambito).
+        // At the door, the permission held anywhere; inside, only whoever reaches every department — the direction, the web
+        // team, the superadmin: a setting of the whole division is not one department's to change (Carmine, 4 November
+        // 2026, «Solo chi ha tutti»; note 2026-11-04-la-pagina-dello-stile §2).
         app.MapPut(Pattern, WriteAsync)
             .WithName("ContentSettingsWrite")
             .Produces<ContentSettingsDto>()
@@ -95,7 +96,8 @@ public static class ContentSettingsEndpoints
         LocaleCatalog catalog,
         HttpContext http)
     {
-        if (!currentUser.HasUnscoped(CorePermissions.ContentManageTemplates))
+        if (!(currentUser.IsSuperadmin || currentUser.HasAllDepartments)
+            || !currentUser.HasAny(CorePermissions.ContentManageTemplates))
         {
             return TypedResults.Forbid();
         }

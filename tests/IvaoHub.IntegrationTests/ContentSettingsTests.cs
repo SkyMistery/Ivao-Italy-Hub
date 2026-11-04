@@ -16,7 +16,7 @@ namespace IvaoHub.IntegrationTests;
 /// <summary>
 /// The settings of the content, `/api/content/settings` (<c>decisions/2026-11-04-la-pagina-dello-stile.md</c>): the page of
 /// the division's style, written by whoever cures the templates and read, **with their own visibility**, by whoever
-/// downloads the instructions for Claude. VIDs 784001–784003; the pages are written under a shelf of their own.
+/// downloads the instructions for Claude. VIDs 784001–784004; the pages are written under a shelf of their own.
 /// <para>⚠️ The key is one row of the whole division, so every test sets the value it then asks about.</para>
 /// </summary>
 [Collection(MariaDbCollection.Name)]
@@ -25,6 +25,7 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
     private const int SuperadminVid = 784001;
     private const int EventsCoordinatorVid = 784002;
     private const int MemberVid = 784003;
+    private const int WebCoordinatorVid = 784004;
 
     private HubWebApplicationFactory _factory = null!;
     private long _shelf;
@@ -38,6 +39,7 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         await SeedUserAsync(SuperadminVid, isSuperadmin: true, cancellationToken: token);
         await SeedUserAsync(EventsCoordinatorVid, position: "IT-EC", cancellationToken: token);
         await SeedUserAsync(MemberVid, cancellationToken: token);
+        await SeedUserAsync(WebCoordinatorVid, position: "IT-WM", cancellationToken: token);
     }
 
     public ValueTask DisposeAsync() => _factory.DisposeAsync();
@@ -139,6 +141,29 @@ public sealed class ContentSettingsTests(MariaDbFixture mariaDb) : IAsyncLifetim
         var read = await superadmin.GetFromJsonAsync<JsonElement>(ContentSettingsEndpoints.Pattern, token);
         Assert.Equal(JsonValueKind.Null, read.GetProperty("stylePageId").ValueKind);
         Assert.Equal(JsonValueKind.Null, read.GetProperty("stylePagePath").ValueKind);
+    }
+
+    [Fact]
+    public async Task OnlyWhoeverReachesEveryDepartmentChangesTheStyle()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var superadmin = await SignedInAsync(SuperadminVid, token);
+        var (id, _) = await PublishedPageAsync(superadmin, Visibility.Staff, token);
+
+        // A coordinator cures the templates of their department, and still does not decide for the whole division
+        // (Carmine, 4 November 2026: «Solo chi ha tutti»).
+        using var coordinator = await SignedInAsync(EventsCoordinatorVid, token);
+        using (var refused = await PutAsync(coordinator, id, token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        }
+
+        // The web coordinator reaches every department, and does.
+        using var web = await SignedInAsync(WebCoordinatorVid, token);
+        using (var saved = await PutAsync(web, id, token))
+        {
+            Assert.True(saved.StatusCode == HttpStatusCode.OK, await saved.Content.ReadAsStringAsync(token));
+        }
     }
 
     [Fact]

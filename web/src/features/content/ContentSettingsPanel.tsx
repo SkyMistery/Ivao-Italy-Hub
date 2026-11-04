@@ -18,7 +18,8 @@ import { menuDestinationPagesQuery } from './queries';
 
 /**
  * «Settings» on the screen of the content (`decisions/2026-11-04-la-pagina-dello-stile.md`): the settings that hold for the
- * whole division, for whoever holds `Content.ManageTemplates` without the scope of one row. One today — the page of the
+ * whole division, for whoever holds `Content.ManageTemplates` and reaches every department (Carmine, 4 November 2026,
+ * «Solo chi ha tutti»). One today — the page of the
  * division's style, which the instructions «Download for Claude» end with.
  *
  * A `Dialog` of the closed list with the generated form, like «New collection». The pages offered are the published pages

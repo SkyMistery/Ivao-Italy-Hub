@@ -5,16 +5,16 @@ import { englishCommon } from './locales';
 
 /**
  * «Settings» on the screen of the content (decisions/2026-11-04-la-pagina-dello-stile.md): the page of the division's
- * style, chosen by whoever cures the templates without the scope of one row, from the published pages the whole staff
+ * style, chosen by whoever cures the templates and reaches every department, from the published pages the whole staff
  * reads. What is sent is checked here; what the server refuses, by `ContentSettingsTests`.
  */
 
 const settings = englishCommon.content.settings;
 
-/** The web coordinator, as `/api/me` says a permission: with its scope, which is none. */
+/** The web coordinator, whose role reaches every department (Carmine, 4 November 2026: «Solo chi ha tutti»). */
 const curator = {
   ...siteStaffBootstrap,
-  permissions: siteStaffBootstrap.permissions.map((permission) => ({ ...permission, resourceScope: null })),
+  user: { ...siteStaffBootstrap.user, hasAllDepartments: true },
 };
 
 /** Three pages: one the whole staff reads, one only its department reads, one never published. */
@@ -107,6 +107,16 @@ test('whoever does not cure the templates has no settings', async ({ page }) => 
   await page.goto('/staff/content?kind=Page');
 
   // The screen's own title, not the division's name in the header.
+  await expect(page.locator('h1[aria-current="page"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: settings.open })).toHaveCount(0);
+});
+
+test('whoever cures the templates of one department only has no settings either', async ({ page }) => {
+  // `Content.ManageTemplates` on the web team's department, without the role that reaches all of them.
+  await stubTheApiAsStaff(page, siteStaffBootstrap);
+
+  await page.goto('/staff/content?kind=Page');
+
   await expect(page.locator('h1[aria-current="page"]')).toBeVisible();
   await expect(page.getByRole('button', { name: settings.open })).toHaveCount(0);
 });

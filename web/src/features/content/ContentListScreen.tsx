@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   holdsPermission,
-  holdsPermissionUnscoped,
+  mayChangeTheWholeDivision,
   reachableDepartments,
   writableDepartments,
   type Bootstrap,
@@ -190,8 +190,8 @@ export function ContentListScreen({
       ]}
       actions={
         // The settings of the whole division (decisions/2026-11-04-la-pagina-dello-stile.md): for whoever cures the
-        // templates without the scope of one row, as the server asks.
-        holdsPermissionUnscoped(bootstrap, MANAGE_TEMPLATES) ? (
+        // templates and reaches every department, as the server asks.
+        mayChangeTheWholeDivision(bootstrap, MANAGE_TEMPLATES) ? (
           <div className="flex flex-wrap items-end gap-2">
             <ContentSettingsPanel locales={division.locales} division={division} />
             {create}
