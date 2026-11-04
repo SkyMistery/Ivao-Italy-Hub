@@ -32,6 +32,7 @@ const aPage = {
   visibility: 'Public',
   isTemplate: false,
   publishedAt: null,
+  draftFromFile: false,
   title: { en: 'Welcome', it: 'Benvenuti' },
   rowVersion: '2026-11-04T10:00:00',
   body: {
@@ -54,6 +55,7 @@ const aPage = {
 
 interface Written {
   rowVersion: string;
+  draftFromFile?: boolean;
   title: Record<string, string>;
   body: { sections: { id: string; blocks: { id: string; props: Record<string, unknown> }[] }[] };
 }
@@ -180,6 +182,7 @@ test('a file written from the instructions replaces the draft, title included, a
   // Saved over the version it worked on, with the block of the draft under its own identifier.
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]?.rowVersion).toBe('2026-11-04T10:00:00');
+  expect(writes[0]?.draftFromFile).toBe(true);
   expect(writes[0]?.title).toEqual({ en: 'Written by Claude', it: 'Scritta da Claude' });
   const blocks = writes[0]?.body.sections[0]?.blocks ?? [];
   expect(blocks[0]?.id).toBe('blk-hello');
@@ -202,6 +205,7 @@ test('a file written from the instructions replaces the draft, title included, a
   await page.getByRole('button', { name: englishCommon.content.editor.saveDraft }).click();
   await expect.poll(() => writes.length).toBe(2);
   expect(writes[1]?.rowVersion).toBe('2026-11-04T10:00:01');
+  expect(writes[1]?.draftFromFile).toBe(false);
   expect(writes[1]?.title).toEqual({ en: 'Welcome', it: 'Benvenuti' });
   expect(writes[1]?.body.sections[0]?.blocks.map((block) => block.id)).toEqual(['blk-hello']);
 
@@ -421,6 +425,57 @@ test('a refusal with nothing for Claude to mend does not ask for Claude', async 
   await expect(page.getByText(words.failed, { exact: true })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('Hello from the file')).toHaveCount(0);
+});
+
+test('a save after the import says nothing about where the draft came from', async ({ page }) => {
+  const writes = await stubTheRow(page);
+  await page.goto('/staff/content/7');
+
+  await importFile(page, answer(await downloadTheHeader(page)));
+  await expect.poll(() => writes.length).toBe(1);
+
+  await page.locator('input[name="title.en"]').fill('Corrected by hand');
+  await expect(page.getByText(englishCommon.content.editor.autosave.unsaved)).toBeVisible();
+  await page.getByRole('button', { name: englishCommon.content.editor.saveDraft }).click();
+
+  await expect.poll(() => writes.length).toBe(2);
+  expect(writes[1]).not.toHaveProperty('draftFromFile');
+});
+
+test('the approver, who imported nothing, reads the line from the row', async ({ page }) => {
+  await stubTheApiAsStaff(page, {
+    ...staffBootstrap,
+    permissions: [
+      ...staffBootstrap.permissions,
+      ...staffBootstrap.permissions
+        .filter((permission) => permission.name === 'Content.Edit')
+        .map((permission) => ({ ...permission, name: 'Content.Approve' })),
+    ],
+  });
+  await stubTheSite(page);
+  await stubTheRow(page, { ...aPage, status: 'Ready', readyBy: 704798, draftFromFile: true });
+  await page.route('**/api/content/7/review', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        firstPublication: true,
+        sections: [],
+        blocks: { added: 0, changed: 0, removed: 0 },
+        fields: [],
+        menu: null,
+        note: null,
+      }),
+    }),
+  );
+
+  // Another browser: nothing here remembers any import.
+  await page.goto('/staff/content/7');
+
+  await page.getByRole('button', { name: englishCommon.content.review.approve, exact: true }).click();
+  await expect(page.getByLabel(englishCommon.content.editor.publishDialog.changelog)).toHaveValue(
+    `${words.versionLine} ${englishCommon.content.changes.first}`,
+  );
 });
 
 test('two imports are undone one at a time, each with its own title', async ({ page }) => {

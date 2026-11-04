@@ -193,6 +193,11 @@ interface ContentWrite {
   body: Body;
   /** A save the editor made by itself, after a pause: audited without the body (`AUTOSAVE_HEADER`). */
   autosave?: boolean;
+  /**
+   * Says whether the draft came from a file; absent says nothing, and the row keeps what it has
+   * (`decisions/2026-11-04-la-bozza-che-viene-da-un-file.md`).
+   */
+  draftFromFile?: boolean | undefined;
 }
 
 export function useCreateContent() {
@@ -215,7 +220,10 @@ export function useUpdateContent(id: number) {
       unwrap(
         await api.PUT('/api/content/{id}', {
           params: { path: { id: String(id) } },
-          body: toWriteDto(write.values, write.body),
+          body: {
+            ...toWriteDto(write.values, write.body),
+            ...(write.draftFromFile === undefined ? {} : { draftFromFile: write.draftFromFile }),
+          },
           ...(write.autosave === true ? { headers: { [AUTOSAVE_HEADER]: '1' } } : {}),
         }),
       ),

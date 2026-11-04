@@ -112,7 +112,9 @@ test('a file written from the downloaded instructions goes in the draft, over a 
 
   const stored = await readContent(context, row.id);
   expect(stored.title).toEqual({ en: 'After', it: 'Dopo' });
-  expect((stored as unknown as { publishedAt: string | null }).publishedAt).toBeNull();
+  const said = stored as unknown as { publishedAt: string | null; draftFromFile: boolean };
+  expect(said.publishedAt).toBeNull();
+  expect(said.draftFromFile).toBe(true);
 
   const [written, news] = (stored.body as { sections: { blocks: Record<string, unknown>[] }[] }).sections;
   expect(written?.blocks[0]?.['id']).toMatch(/^b_/);

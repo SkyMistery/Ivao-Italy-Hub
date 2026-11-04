@@ -795,7 +795,7 @@ const leftoversSchema = z.array(
 
 /**
  * What an import left to do, across a reload: a picture nobody chose draws nothing, and a page could go out with the hole
- * and no word about it (review of #453). ⚠️ In this browser, as the line of the version is: another person does not see it.
+ * and no word about it (review of #453). ⚠️ In this browser: another person does not see the list.
  */
 export function rememberLeftovers(id: number, pending: readonly ImportPending[]) {
   try {
@@ -818,44 +818,13 @@ export function readLeftovers(id: number): readonly ImportPending[] {
   }
 }
 
-const importedKey = (id: number) => `hub.content.imported.${id}`;
-
 /**
- * That this row's draft came from a file, for the line of its next version (note §3.3, answer 6: there and nowhere else,
- * the audit stays as it is). ⚠️ Kept in this browser, because nothing on the server holds it and the note wants no write
- * for it: it survives a reload, not another person. It holds as long as the row has not been published since.
+ * The line a publication starts from, with the import's words in front when the draft came from a file (note §3.3,
+ * answer 6). The row says so, for whoever publishes it: the server takes it away with the publication
+ * (`decisions/2026-11-04-la-bozza-che-viene-da-un-file.md`).
  */
-export function rememberImported(row: { readonly id: number; readonly publishedAt: string | null }) {
-  try {
-    localStorage.setItem(importedKey(row.id), row.publishedAt ?? '');
-  } catch {
-    // No storage, no first words on the line: the person writes it.
-  }
-}
-
-export function forgetImported(id: number) {
-  try {
-    localStorage.removeItem(importedKey(id));
-  } catch {
-    // Nothing was kept, then.
-  }
-}
-
-function keptImport(id: number): string | null {
-  try {
-    return localStorage.getItem(importedKey(id));
-  } catch {
-    return null;
-  }
-}
-
-/** The line a publication starts from, with the import's words in front when its draft came from a file. */
-export function versionLine(
-  row: { readonly id: number; readonly publishedAt: string | null },
-  line: string,
-  t: TFunction,
-): string {
-  if (keptImport(row.id) !== (row.publishedAt ?? '')) {
+export function versionLine(row: { readonly draftFromFile: boolean }, line: string, t: TFunction): string {
+  if (!row.draftFromFile) {
     return line;
   }
 

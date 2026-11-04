@@ -18,9 +18,7 @@ import { BodyEditor } from './BodyEditor';
 import { CHANGELOG_MAX, changeSummary } from './changeSummary';
 import { ClaudeDownload } from './ClaudeDownload';
 import {
-  forgetImported,
   readLeftovers,
-  rememberImported,
   rememberLeftovers,
   versionLine,
   type ImportPending,
@@ -79,6 +77,8 @@ interface ImportRun {
   readonly after: Body;
   readonly fieldsBefore: Pick<ContentFormValues, 'title' | 'summary'>;
   readonly fieldsAfter: Pick<ContentFormValues, 'title' | 'summary'>;
+  /** What the row said about its draft before: an import may undo back to another import, of another day. */
+  readonly fromFileBefore: boolean;
   readonly pendingBefore: readonly ImportPending[];
   readonly pendingAfter: readonly ImportPending[];
   /** Which side of it the editor is on. */
@@ -192,7 +192,7 @@ export function ContentEditor({
   onSave: (
     values: ContentFormValues,
     body: Body,
-    options?: { autosave?: boolean },
+    options?: { autosave?: boolean; draftFromFile?: boolean | undefined },
   ) => Promise<ContentDetailDto>;
   /**
    * Null for a row that does not exist yet: there is nothing to publish until it is saved once.
@@ -271,6 +271,10 @@ export function ContentEditor({
   };
   const importRuns = useRef<ImportRun[]>([]);
 
+  // What the next save says about where the draft came from, once Undo or Redo has crossed an import. Every other save
+  // says nothing, and the row keeps what it has (`decisions/2026-11-04-la-bozza-che-viene-da-un-file.md`).
+  const fromFileToSay = useRef<boolean | undefined>(undefined);
+
   // What the form of a document offers beyond its own row.
   const documentChoices: DocumentChoices = { successors };
 
@@ -310,6 +314,17 @@ export function ContentEditor({
   // ends is not a save.
   const snapshot = useMemo(() => JSON.stringify({ metadata, body }), [metadata, body]);
 
+  // A save of the draft as the screen holds it, saying what there is to say about where it came from.
+  const storeDraft = async (values: ContentFormValues, draft: Body, options?: { autosave?: boolean }) => {
+    const said = fromFileToSay.current;
+    const row = await onSave(values, draft, { ...options, draftFromFile: said });
+    // Unless Undo or Redo moved it while this save was on its way: the next one says that.
+    if (fromFileToSay.current === said) {
+      fromFileToSay.current = undefined;
+    }
+    adopt(row);
+  };
+
   const autosave = useAutosave({
     // Never before the first press on "save draft": a row that does not exist is not saved by
     // itself, or every "new page" somebody opened and left would be a page.
@@ -318,7 +333,7 @@ export function ContentEditor({
     busy,
     save: async (): Promise<SaveOutcome> => {
       try {
-        adopt(await onSave(withVersion(metadata), body, { autosave: true }));
+        await storeDraft(withVersion(metadata), body, { autosave: true });
         return 'saved';
       } catch (error) {
         // 409 is somebody else's save, and the one refusal that must not be retried.
@@ -362,21 +377,14 @@ export function ContentEditor({
 
     if (undone !== undefined) {
       undone.applied = false;
+      fromFileToSay.current = undone.fromFileBefore;
       takeFields({ ...metadata, ...undone.fieldsBefore });
       setLeftovers(content.id, undone.pendingBefore);
     } else if (redone !== undefined) {
       redone.applied = true;
+      fromFileToSay.current = true;
       takeFields({ ...metadata, ...redone.fieldsAfter });
       setLeftovers(content.id, redone.pendingAfter);
-    } else {
-      return;
-    }
-
-    const row = draftBase();
-    if (importRuns.current.some((run) => run.applied) && row !== null) {
-      rememberImported(row);
-    } else {
-      forgetImported(content.id);
     }
   };
 
@@ -389,9 +397,11 @@ export function ContentEditor({
     };
     const values = { ...metadata, ...fieldsAfter };
 
+    const fromFileBefore = draftBase()?.draftFromFile ?? false;
+
     const stored = await autosave.exclusive(async () => {
       try {
-        const row = await onSave(withVersion(values), file.body);
+        const row = await onSave(withVersion(values), file.body, { draftFromFile: true });
         adopt(row);
         return row;
       } catch (error) {
@@ -408,6 +418,7 @@ export function ContentEditor({
       after: file.body,
       fieldsBefore: { title: metadata.title, summary: metadata.summary },
       fieldsAfter,
+      fromFileBefore,
       pendingBefore: leftovers,
       pendingAfter: file.pending,
       applied: true,
@@ -416,7 +427,6 @@ export function ContentEditor({
     takeFields(values);
     replace(file.body);
     setLeftovers(stored.id, file.pending);
-    rememberImported(stored);
     autosave.settle(JSON.stringify({ metadata: values, body: file.body }));
   };
 
@@ -501,7 +511,7 @@ export function ContentEditor({
           // disabled the button is, so the button is not what keeps the two apart.
           await autosave.exclusive(async () => {
             try {
-              adopt(await onSave(withVersion(values), body));
+              await storeDraft(withVersion(values), body);
             } catch (error) {
               if (content === null) {
                 autosave.settle('');

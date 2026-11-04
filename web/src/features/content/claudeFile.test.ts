@@ -1,19 +1,18 @@
 import type { TFunction } from 'i18next';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { registry } from '../../app/registry';
 import { allBlocks, allSections, type Body } from '../../blocks';
 
 import {
-  forgetImported,
   pendingNow,
   readClaudeFile,
   readLeftovers,
-  rememberImported,
   rememberLeftovers,
   versionLine,
   type ImportContext,
 } from './claudeFile';
+import { CHANGELOG_MAX } from './changeSummary';
 import { instructionsHeader } from './claudeInstructions';
 import { offeredBlocks } from './palette';
 import type { SectionRule } from './templateRules';
@@ -594,23 +593,18 @@ describe('what is left to do, as the body moves on', () => {
 describe('the line of the version (answer 6)', () => {
   const t = ((key: string) => key) as unknown as TFunction;
 
-  beforeEach(() => localStorage.clear());
-
-  test('starts from the import, as long as the row has not been published since', () => {
-    rememberImported({ id: 7, publishedAt: null });
-
-    expect(versionLine({ id: 7, publishedAt: null }, 'Two blocks.', t)).toBe(
+  test('starts from the import when the row says the draft came from a file', () => {
+    expect(versionLine({ draftFromFile: true }, 'Two blocks.', t)).toBe(
       'content.import.versionLine Two blocks.',
     );
-    expect(versionLine({ id: 7, publishedAt: '2026-11-05T10:00:00' }, 'Two blocks.', t)).toBe('Two blocks.');
-    expect(versionLine({ id: 8, publishedAt: null }, 'Two blocks.', t)).toBe('Two blocks.');
+    expect(versionLine({ draftFromFile: false }, 'Two blocks.', t)).toBe('Two blocks.');
   });
 
-  test('an import undone is no import', () => {
-    rememberImported({ id: 7, publishedAt: null });
-    forgetImported(7);
+  test('stays within what a version keeps', () => {
+    const line = versionLine({ draftFromFile: true }, 'x'.repeat(CHANGELOG_MAX), t);
 
-    expect(versionLine({ id: 7, publishedAt: null }, 'Two blocks.', t)).toBe('Two blocks.');
+    expect(line).toHaveLength(CHANGELOG_MAX);
+    expect(line.endsWith('…')).toBe(true);
   });
 });
 
@@ -818,6 +812,7 @@ describe('the review of #453', () => {
   });
 
   test('what an import left survives a reload, and anything else in its place is nothing', () => {
+    localStorage.clear();
     const pending = [{ owner: 'blk-a', field: 'mediaId', kind: 'picture' as const }];
 
     rememberLeftovers(7, pending);
