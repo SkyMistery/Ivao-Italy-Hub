@@ -518,6 +518,7 @@ divisione** (test «XX»): i valori di IT (AS3, i tipi) li scrive la divisione.
 |---|---|---|
 | `kindPresets` — per tipo di evento, gli interruttori `public_slots`, `private_slots`, `has_roster`, `whole_division`, `in_person`. **Una riga è un tipo degli eventi** (E4, nota `2026-10-06-i-tipi-che-un-evento-sceglie`, piano 1.30): il form di un evento offre i tipi del calendario che hanno una riga qui, e tutti finché non ce n'è nessuna; il server rifiuta gli altri quando il tipo si sceglie | vuoto; IT: `rfe`, `rfo`, `mse`, `onlineDay` | c1, c2 |
 | `bookingGapMinutes` — distanza minima fra due prenotazioni dello stesso pilota | **10** | c1; §17.2 n.6 |
+| `maxBookingsPerEvent` — quante prenotazioni un membro tiene in un evento (§3.5), da 1 a 200; una rotazione conta una | **5** | #314, nota `2026-11-01-il-tetto-delle-prenotazioni` |
 | `shiftMinutes` — durata del turno se l'evento non la dice | 60 | c1 |
 | `minimumAtcRating` — il rating minimo per candidarsi, dal vocabolario | nessuno; IT: AS3 | c1 |
 | `maxConsecutiveShifts` (y), `breakShifts` (x) | 2, 1 | c1; §17.2 n.6 |
@@ -798,8 +799,12 @@ risposte di Carmine sulla #246 e sull'issue #245):
 ### 3.5 La compatibilità
 
 Fra due prenotazioni dello stesso pilota nello stesso evento — intervalli `[EOBT, EIBT]`, per un privato dall'orario allo
-scalo e dall'altro orario — ci sono **almeno `bookingGapMinutes`**, in un senso o nell'altro (c1, c2). Nessun limite di
-numero. Due richieste dello stesso pilota nello stesso istante si serializzano con un blocco (`SELECT … FOR UPDATE`) sulla
+scalo e dall'altro orario — ci sono **almeno `bookingGapMinutes`**, in un senso o nell'altro (c1, c2). ~~Nessun limite di
+numero.~~ **Dal 1 nov 2026 un tetto per tutti** (#435, issue #314, nota `2026-11-01-il-tetto-delle-prenotazioni`, Carmine in chat al
+master il 19 ottobre e il 1 novembre): un membro prenota in un evento al più **`maxBookingsPerEvent`** della divisione (§1.12); le
+tratte di una rotazione contano **una**, comunque siano prenotate, ogni altro slot uno, e un arrivo privato e la sua partenza
+collegata **due**; si controlla nei tre verbi del pilota, dopo la compatibilità e i limiti di chi non vola, sotto lo stesso blocco
+del pilota qui sotto, e si rifiuta solo ciò che fa crescere il conto oltre il tetto (`events:errors.bookingMaxPerEvent`). Due richieste dello stesso pilota nello stesso istante si serializzano con un blocco (`SELECT … FOR UPDATE`) sulla
 riga della sua prima prenotazione dell'evento, o sulla riga dell'evento se è la prima: la regola la controlla il server,
 una volta, con le prenotazioni già salvate davanti. **Deciso con E6a** (#233, piano 1.32): la transazione di una prenotazione legge il
 confermato (**`READ COMMITTED`**) — con l'isolamento predefinito le prime prenotazioni di due piloti bloccherebbero lo stesso
@@ -832,7 +837,9 @@ volo (§3.4).
 ### 3.7 Chi prenota e non vola (M4b)
 
 Con le prenotazioni illimitate, all'apertura qualcuno può prendere molti slot e volarne pochi. **Il registro del pilota**
-(§17.3 n.1), come quello del controllore (§4.5):
+(§17.3 n.1), come quello del controllore (§4.5). **Dal 1 nov 2026** (#435, nota `2026-11-01-il-tetto-delle-prenotazioni`, punto 7, la
+(A) di Carmine) chi ha questi limiti ha anche il tetto della divisione (§3.5), e decide il più basso: i limiti contano ogni tratta di
+una rotazione, il tetto la conta una; se l'evento alza i suoi limiti sopra il tetto, decide il tetto.
 
 - **che cosa conta**: le prenotazioni verificate come **non volate** (§5.1) negli ultimi `pilotRetentionMonths` — le righe
   che il modulo tiene —, meno quelle che lo staff ha tolto a mano (`unflown_excused_*`, per esempio un guasto della rete);
@@ -911,7 +918,9 @@ alle dieci letture):
   (`/staff/events/atc/{id}`) con le sue postazioni. Le intestazioni vengono da **due letture dell'area** (`GET
   /api/events/atc/events` e `/{id}`, con `EventAtc.View` chiesto senza riga: la forma di E2), e chi tiene l'ATC da qualche parte
   legge così l'intestazione — titolo, stato, date, chiusura, durata del turno — di **ogni evento con un roster**, mai una riga dei
-  membri. Per chi legge gli eventi la stessa lista è la scheda «ATC» della pagina dell'evento;
+  membri. **Dal 1 nov 2026** (#429, issue #311, nota `2026-11-01-l-atc-di-un-solo-evento`, Carmine in chat al master il 19 ottobre):
+  le intestazioni di tutti gli eventi con un roster le legge chi tiene `EventAtc.View` **senza un ambito su una riga**
+  (`HasUnscoped`); a chi lo tiene solo su singoli eventi, quelli che l'unico handler gli concede sulla riga, e 403 sugli altri. Per chi legge gli eventi la stessa lista è la scheda «ATC» della pagina dell'evento;
 - **le liste da cui si sceglie**: le postazioni della divisione (`GET /api/events/atc/division-positions?eventId=`,
   `EventAtc.Edit`), ognuna chiesta all'unico handler com'è sull'evento, con il suo FIR — al capo di un FIR quelle del suo FIR, allo
   staff di un dipartimento tutte —, e i rating ATC del vocabolario (`GET /api/events/atc/ratings`, `Events.ManageSettings`) per
@@ -1359,6 +1368,10 @@ alle letture 5 e 7 e il sì alle dieci letture con due condizioni):
   connessioni sovrapposte unite; almeno `attendanceMinimumMinutes`, **e mai più della durata del turno**, è `Attended`, meno è
   `NoShowProposed`; il job non scrive mai `NoShow` né `Excused` (E13b). Una divisione senza archivio non lo chiede affatto;
 - **chi ha coperto**: §1.7, solo dall'archivio;
+- **chi è cancellato prima del controllo** (dal 1 nov 2026, #436, issue #322, nota `2026-11-01-chi-e-cancellato-prima-del-controllo`,
+  la (B) di Carmine): la sua riga non si chiede alla rete né all'archivio, resta non controllata e non tiene aperto l'evento; finché
+  c'è un turno non controllato di un controllore cancellato, nessun turno dell'evento riceve «chi ha coperto», e «volati senza
+  prenotare» resta com'è;
 - **una sorgente che non risponde** (`null`): il giro smette di chiederle, le righe restano da verificare, il giro dopo riprova;
   **trenta giorni dopo la fine** il job chiude l'evento con le righe ancora da verificare, **mai segnate**, e lo staff le può ancora
   segnare (E13b). ⚠️ **Al primo avvio** con E13a gli eventi finiti da più di trenta giorni si chiudono subito, senza chiedere niente, con
@@ -1522,6 +1535,8 @@ posto lo fa già da membro. È la regola «chi ha interesse non decide», una ri
   `/staff/events/pilots`, e le loro voci di menu (`NavItemDescriptor(…, Unscoped: true)`), chiedono `EventAtc.View` ed
   `EventBookings.View` **senza un ambito su una riga** (`HasUnscoped`): lo staff dell'ED, i grant alle posizioni della tabella, i team dei
   FIR, l'HQ e il super amministratore; un grant su un evento o su una riga riceve 403, e la voce non la vede.
+- **Dal 1 nov 2026** (#429, nota `2026-11-01-l-atc-di-un-solo-evento`): accanto ai registri, anche la sezione **«ATC degli eventi»**
+  (§4.1) legge di un grant su un evento solo quell'evento.
 
 ### 6.3 La collaborazione e la cancellazione
 
@@ -2259,8 +2274,9 @@ Carmine ha risposto in chat, nei primi tre giri, alle domande della prima stesur
 2. **Eventi di HQ**: solo quelli in collaborazione, scritti a mano con la loro scheda.
 3. **Tipi**: RFE solo pubblici, RFO pubblici e privati, MSE solo privati, eventi liberi, online day.
 4. **Slot pubblici e rotazioni**: i campi del §1.5; rotazioni come catene, prenotabili intere, a pezzi o a tratte.
-5. **Prenotazioni**: nessun limite, compatibili a `bookingGapMinutes`; fino all'EOBT, anche a evento in corso; ritiro fino
-   all'EOBT.
+5. **Prenotazioni**: ~~nessun limite~~ **al più `maxBookingsPerEvent` (5) per membro, una rotazione una** (corretto dalla risposta di
+   Carmine del 19 ottobre 2026 sull'issue #314, #435, nota `2026-11-01-il-tetto-delle-prenotazioni`; §3.5), compatibili a
+   `bookingGapMinutes`; fino all'EOBT, anche a evento in corso; ritiro fino all'EOBT.
 6. **Slot privati**: generati dalla capacità per evento (movimenti, o arrivi e partenze, per ora); il pilota scrive l'altro
    aeroporto e l'altro orario; l'arrivo può avere la partenza collegata.
 7. **Import**: CSV o tabella incollata; niente `.xlsx`.

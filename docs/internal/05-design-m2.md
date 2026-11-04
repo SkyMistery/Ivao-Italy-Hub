@@ -204,6 +204,8 @@ con `show_preview`), `kind` non si cambia più, anche senza PIREP. Prima del ril
   dall'ordine delle leg, come il numero (T7b). Ogni leg normale di un tour `Hub` sta in una rotazione.
 - **Il collegamento fra hub è una leg** con `kind = HubConnection`: conta come una leg normale. Due hub con
   una leg di collegamento sono **collegati**, senza sono **liberi**.
+- **Hub e rotazioni nascono anche dall'import** (dal 3 nov 2026, #419, nota `2026-10-28-hub-e-rotazioni-da-file`): le colonne `Hub` e
+  `Rotation` del file delle leg (§8.4).
 
 ### 1.4 La leg — `fo_legs`
 
@@ -1185,7 +1187,12 @@ il blocco risponde `signedIn: false`.
 - **Import XLSX/CSV**, letto **nel browser** (risposta 24) con **SheetJS**, caricata solo all'import: anteprima delle differenze
   dal server; «fondi» non tocca le leg assenti; «sostituisci» elimina le assenti senza PIREP e ritira quelle con PIREP, con un motivo.
   **La stessa leg è la stessa coppia partenza→arrivo** (abbinata nell'ordine se ripetuta) e l'ordine delle righe è l'ordine del tour:
-  nessuna colonna di numeri; una leg ritirata che il file nomina torna nel tour. **Non sui tour `Hub`**. Si applica solo ciò che
+  nessuna colonna di numeri; una leg ritirata che il file nomina torna nel tour. ~~**Non sui tour `Hub`**~~ **Anche sui tour `Hub`,
+  dal 3 nov 2026** (#419, nota `2026-10-28-hub-e-rotazioni-da-file`, Carmine sulla #419): lo stesso file con due colonne in più,
+  `Hub` (l'ICAO dell'hub della rotazione della riga) e `Rotation` (un'etichetta che tiene insieme le righe consecutive di una
+  rotazione); hub e rotazioni nell'ordine in cui il file li nomina, una rotazione di 2, 4 o 6 righe che parte dall'hub e ci torna,
+  rifiutata sulla riga; un collegamento fra hub è una riga con `Hub` vuoto fra due hub del file. Un secondo import fa come per le leg:
+  «sostituisci» toglie ciò che il file non nomina e non ha report, e ritira intera una rotazione che ne ha. Si applica solo ciò che
   l'anteprima ha mostrato (un'impronta delle leg). Modello di file con le colonne (`departure`, `arrival`, `callsign`,
   `flightNumber`, `aircraft`, `release`; il file porta solo tipi ICAO, i gruppi di una leg restano). Carmine, 22 settembre 2026, nota
   `2026-09-22-l-import-delle-leg`.
