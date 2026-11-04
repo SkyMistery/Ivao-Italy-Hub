@@ -198,6 +198,48 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AnAdoptedChildIsJudgedOnItsParentAsItIsNowAndNeverOnADepartmentTheWriterPutIn()
+    {
+        // Note 2026-11-05-la-cura-che-una-riga-prende-dal-genitore: a row of an event stored when the event was ED and FOD's, the
+        // event now ED and TD's. Training deletes it once it took the event's care (RowCare.Adopt); a row given TD by the writer
+        // is still judged on what it was loaded with (issue #319, item 1). The guard answers before the database: a deletion it
+        // lets through meets the database and finds no row, which is the proof it passed.
+        var token = TestContext.Current.CancellationToken;
+        const int training = 931009;
+        _user.MemberHolding(training, new EffectivePermission(EventsPermissions.Edit, Department.TD, "grant:test"));
+        var stored = DepartmentMask.Of([Department.ED, Department.FOD]);
+        var now = DepartmentMask.Of([Department.ED, Department.TD]);
+
+        EventAirport Stale() => new()
+        {
+            Id = 931009,
+            EventId = 931009,
+            OwnerDepartment = Department.ED,
+            OwnerDepartmentMask = stored,
+        };
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var adopted = Stale();
+            events.Airports.Attach(adopted);
+            RowCare.Adopt(events, adopted, Department.ED, now);
+            events.Airports.Remove(adopted);
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => events.SaveChangesAsync(token));
+        }
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var events = scope.ServiceProvider.GetRequiredService<EventsDbContext>();
+            var written = Stale();
+            events.Airports.Attach(written);
+            written.OwnerDepartmentMask = now;
+            events.Airports.Remove(written);
+            await Assert.ThrowsAsync<ForbiddenDomainException>(() => events.SaveChangesAsync(token));
+        }
+    }
+
+    [Fact]
     public async Task AuditLogWritten()
     {
         var token = TestContext.Current.CancellationToken;
