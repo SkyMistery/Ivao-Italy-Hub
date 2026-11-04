@@ -21,7 +21,7 @@ those columns»), applicata; nessuna domanda aperta per il maintainer. Scritta p
   — un grant, il ruolo di superadmin — è nell'audit da sé) e `LastLoginAt` (contabilità: un accesso che non cambia altro non lascia righe).
 - **L'uscita non lascia più una riga d'audit** (revisione della #446): `POST /auth/logout` (`IvaoHub.Web/Endpoints/AuthEndpoints.cs`) rinnova
   solo il timbro, e un salvataggio che cambia solo colonne non auditate non è un cambiamento della riga. Che la persona sia uscita non lo
-  dice più l'audit, come non lo diceva per l'entrata.
+  dice più l'audit, come ora per l'entrata che non cambia altro.
 - Le colonne già segnate (`PersonalToken.LastUsedAt`, `UserStaffPosition.SyncedAt` e quelle dei moduli) escono anch'esse dalle copie:
   erano contabilità, e nessuno le leggeva nell'audit.
 
