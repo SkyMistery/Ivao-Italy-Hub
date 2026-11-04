@@ -425,13 +425,13 @@ public sealed class HubSaveChangesInterceptor(
 
         // The one exception after creation: a row somebody sent that is about them, which they keep changing — a pilot
         // withdraws or corrects their own report (M2, T11). Theirs before the write and after it, and in the same
-        // departments: they may change it, not give it to somebody else or move it. Deleting is still the department's,
+        // departments, scope and FIR (issue #319, item 4): they may change it, not give it to somebody else or move it. Deleting is still the department's,
         // unless the entity says its member takes it back (below).
         if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasStakeholder { StakeholderVid: var after } }
             && after == currentUser.Vid
             && entry.OriginalValues.ToObject() is IHasStakeholder { StakeholderVid: var before }
             && before == currentUser.Vid
-            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments))
+            && !IsMoved(entry, owned))
         {
             return;
         }
@@ -450,12 +450,12 @@ public sealed class HubSaveChangesInterceptor(
         }
 
         // Its twin for a row somebody takes part in (M2, T14): the sender or a participant of a thread answers it, and the
-        // answer moves its status. A participant before the write and after it, and in the same departments.
+        // answer moves its status. A participant before the write and after it, and in the same departments, scope and FIR.
         if (entry is { State: EntityState.Modified, Entity: ISubmittedByMembers and IHasParticipants { ParticipantVids: var now } }
             && now.Contains(currentUser.Vid)
             && entry.OriginalValues.ToObject() is IHasParticipants { ParticipantVids: var then }
             && then.Contains(currentUser.Vid)
-            && OriginalDepartments(entry).SequenceEqual(owned.OwnerDepartments))
+            && !IsMoved(entry, owned))
         {
             return;
         }
@@ -476,7 +476,7 @@ public sealed class HubSaveChangesInterceptor(
         // And on its FIR, for a permission held on one (M3, A11a). And with its scope, as the single handler asks (M4, E10i, note
         // 2026-10-09-il-grant-su-una-riga-scrive-la-sua-riga): a permission granted on one row writes that row and the rows that
         // answer with its scope — the slots of an event — and brings those into existence, never another row like it.
-        RequireAny(permission, owned.OwnerDepartments, RowScope(entry), RowFir(entry));
+        RequireAny(permission, RowDepartments(entry, owned), RowScope(entry), RowFir(entry));
 
         if (entry.State == EntityState.Modified && IsMoved(entry, owned))
         {
@@ -485,8 +485,46 @@ public sealed class HubSaveChangesInterceptor(
             // FIRs (M3, A11a): the team of a FIR neither takes a row of another FIR nor gives one away. And between two scopes
             // (M4, E10i): a permission granted on one event neither takes a slot of another event nor gives one away.
             RequireAny(permission, OriginalDepartments(entry), OriginalScope(entry), OriginalFir(entry));
+            RequireOnEveryDepartmentChanged(permission, entry, owned);
         }
     }
+
+    /// <summary>
+    /// Who changes the «curated by» set of a row (issue #319, item 2, decided by the maintainer on 21 October 2026, note
+    /// 2026-11-04-chi-cambia-i-dipartimenti-di-una-riga): whoever holds the permission on the row's base department changes it
+    /// freely; a collaborating department adds or removes only departments it holds the permission on itself — the SOD does
+    /// not touch the other departments' events (note 2026-09-13-moduli-non-subordinati §3.3). Until then one department before
+    /// and one after were enough, so a collaborator could take another away or add any.
+    /// </summary>
+    private void RequireOnEveryDepartmentChanged(string permission, EntityEntry entry, IOwnedByDepartment owned)
+    {
+        var before = OriginalDepartments(entry);
+        var after = owned.OwnerDepartments;
+        var baseDepartment = (Department)entry.Property(nameof(IOwnedByDepartment.OwnerDepartment)).OriginalValue!;
+
+        if (Holds(permission, [baseDepartment], OriginalScope(entry), OriginalFir(entry)))
+        {
+            return;
+        }
+
+        foreach (var added in after.Except(before))
+        {
+            RequireAny(permission, [added], RowScope(entry), RowFir(entry));
+        }
+
+        foreach (var removed in before.Except(after))
+        {
+            RequireAny(permission, [removed], OriginalScope(entry), OriginalFir(entry));
+        }
+    }
+
+    /// <summary>
+    /// The departments a write is judged on: the new row's or the changed row's as it is being written, the removed row's as
+    /// it was loaded (issue #319, item 1) — as its scope and its FIR are read. A row loaded, given another department and removed
+    /// was judged on the department it never had.
+    /// </summary>
+    private static IReadOnlyList<Department> RowDepartments(EntityEntry entry, IOwnedByDepartment owned) =>
+        entry.State == EntityState.Deleted ? OriginalDepartments(entry) : owned.OwnerDepartments;
 
     /// <summary>
     /// Whether one of the permissions the entity declares besides <c>Edit</c> lets this write through
@@ -506,10 +544,16 @@ public sealed class HubSaveChangesInterceptor(
     /// </summary>
     private bool IsWrittenWithAnAlternative(EntityEntry entry, IOwnedByDepartment owned)
     {
-        if ((entry.Entity as IHasStakeholder)?.StakeholderVid == currentUser.Vid)
+        // Whoever the row is about, as it is now or as it was (issue #319, item 4): a stakeholder who rewrites the column is still
+        // the one the row was about.
+        if ((entry.Entity as IHasStakeholder)?.StakeholderVid == currentUser.Vid
+            || (entry.State != EntityState.Added
+                && (entry.OriginalValues.ToObject() as IHasStakeholder)?.StakeholderVid == currentUser.Vid))
         {
             return false;
         }
+
+        var departments = RowDepartments(entry, owned);
 
         var alternatives = entry.Metadata.ClrType.GetCustomAttributes<AlsoWrittenWithAttribute>(inherit: false);
         var scope = RowScope(entry);
@@ -524,15 +568,15 @@ public sealed class HubSaveChangesInterceptor(
         {
             EntityState.Added => alternatives.Any(alternative => alternative.AlsoOnCreation
                 && Reaches(alternative)
-                && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir)),
+                && Holds(alternative.Permission, departments, scope, fir)),
 
             EntityState.Modified => alternatives.Any(alternative => Reaches(alternative)
-                    && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir))
+                    && Holds(alternative.Permission, departments, scope, fir))
                 && !IsMoved(entry, owned),
 
             EntityState.Deleted => theirs && alternatives.Any(alternative => alternative.AlsoOnDeletion
                 && catalogue.IsOnlyForAssignee(alternative.Permission)
-                && Holds(alternative.Permission, owned.OwnerDepartments, scope, fir)),
+                && Holds(alternative.Permission, departments, scope, fir)),
 
             _ => false,
         };

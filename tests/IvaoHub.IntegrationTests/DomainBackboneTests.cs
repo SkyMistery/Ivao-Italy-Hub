@@ -117,6 +117,28 @@ public sealed class DomainBackboneTests(MariaDbFixture mariaDb) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ADeletionIsJudgedOnTheDepartmentTheRowHadWhenItWasLoaded()
+    {
+        // Issue #319, item 1: a row loaded, given a department the writer holds and removed was judged on that department.
+        var token = TestContext.Current.CancellationToken;
+        var id = await SeedAsSuperadminAsync(NewLink(Department.FOD), token);
+
+        _user.Coordinator(StaffVid, Department.ED);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var database = scope.ServiceProvider.GetRequiredService<HubDbContext>();
+
+        var theirs = await database.Links.SingleAsync(row => row.Id == id, token);
+        theirs.OwnerDepartment = Department.ED;
+        database.Links.Remove(theirs);
+        var refused = await Assert.ThrowsAsync<ForbiddenDomainException>(() => database.SaveChangesAsync(token));
+        Assert.Equal(CorePermissions.LinksEdit, refused.Permission);
+
+        database.ChangeTracker.Clear();
+        Assert.True(await database.Links.IgnoreQueryFilters().AnyAsync(row => row.Id == id, token));
+    }
+
+    [Fact]
     public async Task AuditLogWritten()
     {
         var token = TestContext.Current.CancellationToken;

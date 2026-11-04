@@ -105,6 +105,42 @@ public sealed class SeveralDepartmentsTests(MariaDbFixture mariaDb) : IAsyncLife
     }
 
     [Fact]
+    public async Task ACollaboratorChangesOnlyTheDepartmentsItHoldsAndTheBaseDepartmentAny()
+    {
+        // Issue #319, item 2, decided by the maintainer on 21 October 2026: whoever holds the permission on the base department
+        // (Events, for the test module) changes the «curated by» set freely; a collaborating department adds or removes only
+        // departments it holds the permission on itself.
+        var token = TestContext.Current.CancellationToken;
+        using var specialOps = await SignedInAsync(SpecialOpsAssistantVid, token);
+        using var events = await SignedInAsync(EventsAssistantVid, token);
+        using var flightOps = await SignedInAsync(FlightOpsAssistantVid, token);
+
+        // Flight operations writes a row with special operations: three departments, Events the base.
+        using var created = await flightOps.PostAsJsonAsync(SampleModule.ItemsPattern, Item("Curated by three", Department.FOD, Department.SOD), token);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>(token)).GetProperty("id").GetInt64();
+        var path = $"{SampleModule.ItemsPattern}/{id}";
+
+        // Special operations may not take flight operations away, nor bring in a department it does not hold.
+        using (var removed = await specialOps.PutAsJsonAsync(path, Item("Curated by three", Department.SOD), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, removed.StatusCode);
+        }
+
+        using (var added = await specialOps.PutAsJsonAsync(path, Item("Curated by three", Department.SOD, Department.FOD, Department.TD), token))
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, added.StatusCode);
+        }
+
+        // Events, the base, takes both away and brings in one it holds nothing on.
+        using (var rewritten = await events.PutAsJsonAsync(path, Item("Curated by Events", Department.TD), token))
+        {
+            Assert.Equal(HttpStatusCode.OK, rewritten.StatusCode);
+            Assert.Equal(["ED", "TD"], Departments(await rewritten.Content.ReadFromJsonAsync<JsonElement>(token)).Order().ToArray());
+        }
+    }
+
+    [Fact]
     public async Task TheQueryFilterOfAModuleContextReadsTheSet()
     {
         var token = TestContext.Current.CancellationToken;
