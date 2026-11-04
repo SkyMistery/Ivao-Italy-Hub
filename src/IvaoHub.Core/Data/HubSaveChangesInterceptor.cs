@@ -369,8 +369,10 @@ public sealed class HubSaveChangesInterceptor(
 
     private static bool IsBookkeepingOnly(EntityEntry entry) =>
         entry.State == EntityState.Modified
-        && entry.Properties.Where(property => property.IsModified).All(property =>
-            property.Metadata.PropertyInfo?.IsDefined(typeof(NotAuditedAttribute), inherit: false) == true);
+        && entry.Properties.Where(property => property.IsModified).All(IsNotAudited);
+
+    private static bool IsNotAudited(PropertyEntry property) =>
+        property.Metadata.PropertyInfo?.IsDefined(typeof(NotAuditedAttribute), inherit: false) == true;
 
     private static void Stamp(EntityEntry entry, int vid, DateTime now)
     {
@@ -1075,7 +1077,10 @@ public sealed class HubSaveChangesInterceptor(
 
         foreach (var property in entry.Properties)
         {
-            if (property.Metadata.IsConcurrencyToken || (changedOnly && !property.IsModified))
+            // Nor a column marked not audited: bookkeeping, or a person's datum the audit must not copy (issue #326, item 2).
+            if (property.Metadata.IsConcurrencyToken
+                || (changedOnly && !property.IsModified)
+                || IsNotAudited(property))
             {
                 continue;
             }
