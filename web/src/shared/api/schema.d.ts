@@ -87,6 +87,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeDiscordLink"];
+        put?: never;
+        post?: never;
+        delete: operations["MeDiscordUnlink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/preferences/{key}": {
         parameters: {
             query?: never;
@@ -790,6 +806,39 @@ export interface paths {
                 query?: {
                     returnUrl?: string;
                 };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -5644,6 +5693,13 @@ export interface components {
          * @enum {unknown}
          */
         Department: "HQ" | "SOD" | "FOD" | "AOD" | "TD" | "MD" | "ED" | "PRD" | "WD";
+        /** @description What a member sees of their own link. Available says whether this installation offers it. */
+        DiscordLinkDto: {
+            available: boolean;
+            username: null | string;
+            /** Format: date-time */
+            linkedAt: null | string;
+        };
         /**
          * @description Deciding a dispute (§3.8): upheld — the report goes back to the queue — or turned down, with the answer the pilot reads in the
          *     thread (note 2026-09-23-contestazioni-chiarimenti-segnalazioni §2).
@@ -11784,6 +11840,44 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+        };
+    };
+    MeDiscordLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordLinkDto"];
+                };
+            };
+        };
+    };
+    MeDiscordUnlink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

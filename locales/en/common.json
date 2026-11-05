@@ -2093,6 +2093,18 @@
     "label": "Map of the legs",
     "noWebgl": "This browser cannot draw the map (WebGL2 is off or unavailable). The legs are listed below."
   },
+  "discord": {
+    "title": "Discord",
+    "privacy": "The hub keeps your Discord username and id, and asks Discord for nothing else. You see them here and no other member does; the division may use the id to recognise you on its Discord server. You can disconnect whenever you want.",
+    "link": "Connect Discord",
+    "refresh": "Update the username",
+    "unlink": "Disconnect",
+    "linkedAt": "Connected on {{when}}",
+    "refused": {
+      "taken": "That Discord account is connected to another member. Disconnect it there first.",
+      "failed": "The connection with Discord did not complete. Please try again."
+    }
+  },
   "tokens": {
     "title": "My tokens",
     "description": "A program of yours — the validator's agent — signs in with a token instead of your browser. It opens what the program needs and nothing else, and it works with your permissions as they are today.",

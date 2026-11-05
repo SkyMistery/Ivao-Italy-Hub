@@ -2,7 +2,7 @@ import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@ta
 import { useRouter, type AnyRouter } from '@tanstack/react-router';
 
 import type { Bootstrap } from '../../shared/api/bootstrap';
-import { api, unwrap } from '../../shared/api/client';
+import { api, unwrap, unwrapEmpty } from '../../shared/api/client';
 import type { components } from '../../shared/api/schema';
 
 /**
@@ -73,6 +73,30 @@ export function useSaveNotificationPreference() {
       unwrap(await api.PUT('/api/me/notifications', { body: preference })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: notificationPreferencesKey });
+    },
+  });
+}
+
+/** The member's own link with Discord, and whether this installation offers one. */
+export type DiscordLinkDto = components['schemas']['DiscordLinkDto'];
+
+export const discordLinkKey = ['me', 'discord'] as const;
+
+export const discordLinkQuery = queryOptions({
+  queryKey: discordLinkKey,
+  queryFn: async (): Promise<DiscordLinkDto> => unwrap(await api.GET('/api/me/discord')),
+});
+
+/** Forgets the link. Linking is not here: it is a round trip through Discord, started by a plain link. */
+export function useUnlinkDiscord() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<void> => {
+      unwrapEmpty(await api.DELETE('/api/me/discord'));
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: discordLinkKey });
     },
   });
 }
