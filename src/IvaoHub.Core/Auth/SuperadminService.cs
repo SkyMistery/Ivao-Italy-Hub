@@ -26,7 +26,12 @@ public sealed class SuperadminService(
     /// <summary>Key under which the hash of the effective set is remembered between starts.</summary>
     public const string HashSettingKey = "superadmins.hash";
 
+    /// <summary>The lock a removal is counted under, one per database.</summary>
+    public const string RemovalLockPrefix = "hub-superadmins:";
+
     private const string AuditEntity = "hub_users";
+
+    private static readonly TimeSpan RemovalWait = TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// Reads <c>division.json</c> only when the database holds no super administrator at all: the
@@ -61,10 +66,10 @@ public sealed class SuperadminService(
                 user.IsSuperadmin = true;
                 user.SecurityStamp = NewStamp();
                 user.UpdatedAt = clock.UtcNow;
-                stamps.Invalidate(vid);
             }
 
             await database.SaveChangesAsync(cancellationToken);
+            InvalidateAfterTheSave(division.Value.SuperAdmins);
             existing = await database.Users.CountAsync(user => user.IsSuperadmin, cancellationToken);
             logger.LogInformation("Bootstrapped {Count} super administrator(s) from division.json.", existing);
         }
@@ -96,12 +101,12 @@ public sealed class SuperadminService(
         user.IsSuperadmin = true;
         user.SecurityStamp = NewStamp();
         user.UpdatedAt = clock.UtcNow;
-        stamps.Invalidate(vid);
 
         // The audit row is written by the interceptor, because HubUser is marked [Audited]: what
         // changed, who changed it and whether they acted as a super administrator all come from
         // the one place that already knows.
         await database.SaveChangesAsync(cancellationToken);
+        InvalidateAfterTheSave([vid]);
         await ReportChangesAsync(cancellationToken);
     }
 
@@ -112,6 +117,19 @@ public sealed class SuperadminService(
     /// </summary>
     public async Task RemoveAsync(int vid, CancellationToken cancellationToken = default)
     {
+        // Counted and saved under a lock of the database (issue #319, item 5): two removals at once each counted two, and left
+        // none. Still held by another removal after the wait, it is a refusal to ask again; one the database cannot be asked
+        // for goes ahead without it, as the jobs do.
+        await using var held = await DatabaseLock.TakeAsync(
+            database.Database.GetConnectionString(),
+            name => DatabaseLock.NameFor(RemovalLockPrefix, name),
+            RemovalWait,
+            cancellationToken);
+        if (held.Busy)
+        {
+            throw new DomainRefusalException("vid", "errors.superadmin.busy");
+        }
+
         var user = await database.Users.FirstOrDefaultAsync(row => row.Vid == vid && row.IsSuperadmin, cancellationToken);
         if (user is null)
         {
@@ -129,10 +147,23 @@ public sealed class SuperadminService(
         user.IsSuperadmin = false;
         user.SecurityStamp = NewStamp();
         user.UpdatedAt = clock.UtcNow;
-        stamps.Invalidate(vid);
 
         await database.SaveChangesAsync(cancellationToken);
+        InvalidateAfterTheSave([vid]);
         await ReportChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Forgets the cached stamps once the new ones are in the database, never before: a request in between would cache the
+    /// old stamp again for the cache's minute, and the removed super administrator would keep the role that long (issue
+    /// #319, item 5).
+    /// </summary>
+    private void InvalidateAfterTheSave(IEnumerable<int> vids)
+    {
+        foreach (var vid in vids.Distinct())
+        {
+            stamps.Invalidate(vid);
+        }
     }
 
     /// <summary>A fresh stamp makes every cookie of that user stale on the next request.</summary>

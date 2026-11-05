@@ -473,7 +473,8 @@ test('the full round: asked for, accepted, assigned, dates proposed and one chos
   await expect(history.nth(5)).toContainText(filled(words.staff.history.completed, { name: benchTrainer }));
 
   // ---------------------------------------------------------------- the mail of every step, once, to whoever it is for
-  const session = `${training}, ${wallClock(soon).replace('T', ' ')} UTC`;
+  const at = wallClock(soon);
+  const session = `${training}, ${at.slice(8, 10)}/${at.slice(5, 7)}/${at.slice(0, 4)} ${at.slice(11, 16)} UTC`;
   const expected: readonly (readonly [MailType, string, string])[] = [
     ['requestReceived', TRAINEE_ADDRESS, training],
     ['requestAccepted', TRAINEE_ADDRESS, training],

@@ -168,6 +168,13 @@ public static class AwardEndpoints
             var signalProperty = entry.Property(row => row.SignalId);
             signalProperty.CurrentValue = signalProperty.OriginalValue;
             signalProperty.IsModified = false;
+
+            // And so is the member it answered for: moved to somebody else, the line stays handled for the first member, and
+            // the module is told that member's row became an award (issue #326, item 5). A wrong member is a new assignment.
+            if (signalProperty.OriginalValue is not null && entry.Property(row => row.Vid).IsModified)
+            {
+                return Refusal("vid", "errors.awards.signalOtherMember");
+            }
         }
 
         if (saving.IsNew || entry.Property(row => row.AwardId).IsModified)

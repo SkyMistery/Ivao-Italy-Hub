@@ -279,7 +279,12 @@ export function ContentFormScreen({
           }
 
           const autosave = options?.autosave === true;
-          const saved = await update.mutateAsync({ values, body, autosave });
+          const saved = await update.mutateAsync({
+            values,
+            body,
+            autosave,
+            draftFromFile: options?.draftFromFile,
+          });
           // A save the editor made by itself says so in its own line under the toolbar, not in a
           // toast every ten seconds.
           if (!autosave) {

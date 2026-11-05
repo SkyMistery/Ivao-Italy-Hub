@@ -441,7 +441,8 @@ proposti:
 Il server ricontrolla il rating all'assegnazione. **Assegnare affida il training al trainer** (`trainer_vid`), che da lì lo
 conduce con il `Training.Conduct` della sua posizione (§3.3), e manda `trainerAssigned` a trainee e trainer. Riassegnare lo
 affida a un altro, e il trainer di prima non lo conduce più. Nessun grant cambia, e nessuno deve rientrare (A7b). Un training
-resta `Accepted` senza trainer quanto serve (d1).
+resta `Accepted` senza trainer quanto serve (d1). **Un cambio di trainer su un training con la data** fa ripartire il promemoria, e le
+due mail dicono la data (dal 1 nov 2026, #431, issue #327, nota `2026-11-01-una-data-passata-non-e-una-scelta`).
 
 ### 2.5 Le date
 
@@ -456,7 +457,10 @@ resta `Accepted` senza trainer quanto serve (d1).
   disponibilità, con gli stessi avvisi; stessa mail.
 - **Senza risposta**: dopo `responseReminderDays` il training compare in evidenza nel blocco del trainer (§4.3). Con
   `maxResponseDays` impostato, un job chiude i training senza scelta (`Closed`, ⚖️ §12 n.9). Lo staff chiude a mano
-  quando vuole (`Training.Approve`), con un motivo.
+  quando vuole (`Training.Approve`), con un motivo. **Dal 1 nov 2026** (#431, issue #327, nota
+  `2026-11-01-una-data-passata-non-e-una-scelta`): la chiusura della notte chiede una data proposta **ancora da venire**; con sole
+  date passate il training non si chiude e torna al trainer.
+- **Una data si propone o si fissa al massimo un anno avanti** (stessa nota).
 
 ### 2.6 Dopo la sessione
 
@@ -581,7 +585,9 @@ all'interessato, senza spostare la riga. Le righe figlie non ne hanno bisogno (�
 - **`/training`** (pubblico): i prossimi training e gli esami (il blocco `training.upcomingSessions`) e il pulsante
   «Richiedi training». Una pagina di contenuti che spiega il percorso resta del CMS, con lo stesso blocco.
 - **`/training/sessions/{id}`** (pubblico): postazione, rating, data e ora; **VID e nomi** solo a chi ha fatto il login
-  (R.6-bis; §12 n.4: niente VID ai visitatori). È l'indirizzo delle voci di calendario.
+  (R.6-bis; §12 n.4: niente VID ai visitatori), e **solo fino al giorno della sessione**, nel fuso della divisione: dopo, la pagina
+  resta senza persone, e il trainee e lo staff li leggono dalle loro pagine (dal 1 nov 2026, #430, issue #313, nota
+  `2026-11-01-i-nomi-di-una-sessione-fino-al-suo-giorno`). È l'indirizzo delle voci di calendario.
 - **`/training/request`** (membri): la richiesta del §2.2, con la finestra della domanda sul teorico.
 - **`/training/mine`** (membri): le mie richieste e i miei training, stato, attesa residua, «pronto per…».
 - **`/training/mine/{id}`** (membri): scegliere la data **tra i riquadri** (d1); leggere il report — voti, commenti per
@@ -846,7 +852,8 @@ raccomandazione e la decisione; ognuna entra nella nota della fase A0.
 8. **Group training, GCA, flight briefing** (§0.2). **Deciso** ([r1]): **fuori da M3**, da riprendere se lo staff TD li
    chiede.
 9. **Tempo massimo per scegliere la data** (§2.5). **Deciso** ([r1]): **chiusura automatica** (`Closed`), solo se
-   l'impostazione c'è; di default non c'è.
+   l'impostazione c'è; di default non c'è. **Dal 1 nov 2026** la chiusura chiede una data proposta ancora da venire: con sole date
+   passate il training torna al trainer (#431, nota `2026-11-01-una-data-passata-non-e-una-scelta`).
 10. **Gli esami nel calendario** (§2.8). **Deciso** ([r1]): li inserisce **chi ha l'esame assegnato**, quindi
     `Training.ManageExams` a tutto lo staff del training, e la creazione passa il guardiano con la n.7. **Corretta il 26 settembre
     2026** ([commento sulla #131](https://github.com/SkyMistery/Ivao-Italy-Hub/pull/131#issuecomment-5844102750), nota

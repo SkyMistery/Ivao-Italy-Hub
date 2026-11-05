@@ -42,17 +42,20 @@
     "signIn": "Accedi per vedere i tuoi training.",
     "upcomingSessions": {
       "label": "Prossimi training ed esami",
+      "about": "I prossimi training ed esami della divisione.",
       "fields": {
         "limit": "Quanti al massimo (0: tutti)"
       }
     },
     "myTraining": {
       "label": "Il mio training",
+      "about": "Il training di chi guarda, una scala di rating alla volta.",
       "datesToCome": "Il trainer proporrà le date della sessione.",
       "lastReport": "Ultimo report: {{date}}."
     },
     "trainerQueue": {
       "label": "I miei training da muovere",
+      "about": "I training che aspettano un passo dell'istruttore che guarda: scelte, date da proporre, rapporti da scrivere.",
       "waiting": "In attesa della scelta del trainee",
       "waitingDays_one": "senza scelta da {{count}} giorno",
       "waitingDays_other": "senza scelta da {{count}} giorni",
@@ -62,6 +65,7 @@
     },
     "approvalQueue": {
       "label": "Richieste da approvare e da assegnare",
+      "about": "Le richieste di training da accettare o rifiutare e i training da assegnare a un istruttore.",
       "toApprove_one": "{{count}} richiesta da approvare",
       "toApprove_other": "{{count}} richieste da approvare",
       "toAssign_one": "{{count}} training da assegnare",

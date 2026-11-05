@@ -41,7 +41,9 @@ should not start and behave like somebody else's.
 
 1. **`config/division.json`.** `code` and `countryId` are yours, `locales` is the languages you
    publish in, `defaultLocale` is the one a reader gets when theirs is not among them, `timezone`
-   decides when the nightly jobs run, `awardDigestTime` (07:00 when left out) is when, in that
+   decides when the nightly jobs run, `dateFormat` (`dd/mm/yyyy` when left out, or `mm/dd/yyyy` or
+   `yyyy/mm/dd`) is how every date is written in numbers, on the pages and in the mails, whatever the
+   reader's language, `awardDigestTime` (07:00 when left out) is when, in that
    time zone, whoever may assign the awards gets the day's mail about the new signals of the award
    queue, `tagline` and `builtBy` (both optional) are the line in italics under your name in the
    footer and the people the footer credits with a link to their profile, `icaoPrefixes` is validated at start up so a typo is not

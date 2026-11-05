@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using IvaoHub.Core.Auth;
 using IvaoHub.Core.Data;
@@ -613,7 +612,7 @@ public sealed class PirepReview(
         {
             ["tour"] = Text(tour.Title, locale, options.DefaultLocale),
             ["route"] = $"{pirep.DepartureIcao} → {pirep.ArrivalIcao}",
-            ["date"] = pirep.TakeoffAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["date"] = HubDates.Day(pirep.TakeoffAt, options.ResolveDateOrder()),
             ["note"] = pirep.NoteToPilot ?? catalog.Resolve(locale, "flightops:mail.flightops.noNote"),
             ["rules"] = rules.Count == 0
                 ? catalog.Resolve(locale, "flightops:mail.flightops.noRules")

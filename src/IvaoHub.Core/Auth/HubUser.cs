@@ -36,6 +36,8 @@ public sealed class HubUser
     /// <summary>Hours connected as a pilot, the same way as <see cref="HoursAtc"/>.</summary>
     public decimal? HoursPilot { get; set; }
 
+    /// <summary>Kept out of the audit (issue #326, item 2), as the address below: a person's datum, not a decision.</summary>
+    [NotAudited]
     public string? DiscordId { get; set; }
 
     /// <summary>
@@ -44,7 +46,9 @@ public sealed class HubUser
     /// 6 September 2026): no DTO carries it, no screen shows it, and the staff directory of G9 is
     /// explicitly not allowed to. Null for anybody who has not signed in since it was added, which
     /// the queue treats as "cannot be reached" rather than as an error.</para>
+    /// <para>Nor the audit (issue #326, item 2): every holder of <c>Audit.View</c> read it there.</para>
     /// </summary>
+    [NotAudited]
     public string? Email { get; set; }
 
     /// <summary>Preferred language; the SPA falls back to the cookie and then to the browser.</summary>
@@ -66,9 +70,15 @@ public sealed class HubUser
     /// <summary>The truth about super administrators; <c>division.json</c> only bootstraps it.</summary>
     public bool IsSuperadmin { get; set; }
 
-    /// <summary>Changed whenever grants or the super administrator flag change, so the cookie is rejected.</summary>
+    /// <summary>
+    /// Changed whenever grants or the super administrator flag change, so the cookie is rejected. Not in the audit: the
+    /// change it follows is, and the stamp itself is a secret of the session (issue #326, item 2).
+    /// </summary>
+    [NotAudited]
     public string SecurityStamp { get; set; } = string.Empty;
 
+    /// <summary>Bookkeeping, not a change: a sign in that moves only this, and what IVAO says again, leaves no audit row.</summary>
+    [NotAudited]
     public DateTime? LastLoginAt { get; set; }
 
     public DateTime CreatedAt { get; set; }

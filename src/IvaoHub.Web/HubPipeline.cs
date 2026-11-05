@@ -322,8 +322,11 @@ internal static class HubPipeline
 
         // The first start of an installation has no airspace yet, and a hub that does not know its
         // own FIRs cannot recognise a FIR staff position. A failure here is a row in hub_jobs_log,
-        // never a site that refuses to come up.
+        // never a site that refuses to come up. Counted as the FIR directory counts them, of the division's country: a table
+        // that holds only another country's centres — a countryId corrected since — is an airspace this hub does not know yet.
+        var country = scope.ServiceProvider.GetRequiredService<IOptions<DivisionOptions>>().Value.CountryId;
         if (!await scope.ServiceProvider.GetRequiredService<HubDbContext>().IvaoCenters.AnyAsync(
+                center => center.CountryId == country,
                 app.Lifetime.ApplicationStopping))
         {
             await scope.ServiceProvider.GetRequiredService<RefDataSyncJob>()

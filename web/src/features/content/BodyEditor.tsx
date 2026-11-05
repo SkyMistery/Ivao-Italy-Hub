@@ -53,6 +53,7 @@ import {
   removeBlock,
   removeSection,
   setSpan,
+  startingMode,
   reorderBlocks,
   reorderSections,
   updateBlock,
@@ -115,8 +116,11 @@ export function BodyEditor({
   initial: Body;
   /** Every change, undo and redo included. The owner keeps the latest to save it. */
   onChange: (body: Body) => void;
-  /** Where the editor's own buttons go — outline, undo, redo — among the owner's (save, publish…). */
-  toolbar: (tools: ReactNode) => ReactNode;
+  /**
+   * Where the editor's own buttons go — outline, undo, redo — among the owner's (save, publish…). Handed the way to
+   * replace the whole body as one thing that happened to it, which undo takes back: an import (PR 3.0b).
+   */
+  toolbar: (tools: ReactNode, editor: { replace: (next: Body) => void }) => ReactNode;
   /** What the owner says between its toolbar and the page: problems, the state of the draft, a review. */
   header?: ReactNode;
   /** What the panel on the right shows while nothing is picked: the row's own fields, or nothing. */
@@ -293,11 +297,10 @@ export function BodyEditor({
       // added and never opened must not carry an empty translated value, which
       // publication would read as a page translated into one language only.
       writtenValues(registration.schema, defaultProps(registration.schema, locales)),
-      // A data block starts live: capturing is a decision somebody makes, and one that
-      // only means anything once the page is published.
-      registration.kind === 'Data' ? 'live' : null,
+      startingMode(registration.kind),
       dashboard ? 0 : column,
       at,
+      registration.version,
     );
 
     change(added.body);
@@ -715,7 +718,12 @@ export function BodyEditor({
     <PreviewLocaleContext.Provider value={previewLocale}>
       <EmbeddingContext.Provider value={embedding}>
         <div className="flex flex-col gap-8">
-          {toolbar(tools)}
+          {toolbar(tools, {
+            replace: (next) => {
+              change(next);
+              setSelection(null);
+            },
+          })}
 
           {header}
 

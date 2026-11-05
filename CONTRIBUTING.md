@@ -71,7 +71,8 @@ chat, a commit, an issue or a pull request.
 - **Everything runs locally before pushing**: the build, the unit tests, the **whole** integration suite with no
   filter, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm e2e:full` when the change has a screen. The smoke
   suite alone has gone green while CI went red on the full round.
-- **Reserved for the Training module**: VIDs `790001–790099` in integration tests, slugs starting with `trn-test-`.
+- **Reserved for the Training module**: VIDs `790001–790199` in integration tests, slugs starting with `trn-test-`
+  (widened from `790099` on 4 Nov 2026: #430 and #433 had already taken `790100–790159`).
 - **Reserved for the Events module**: VIDs `761001–761099` in integration tests, slugs starting with `evt-test-`.
   Grep a VID before using it (`grep -rn "<vid>" tests/`).
 - **The contacts tests assert the exact recipients of MD and seed an events coordinator with an address**

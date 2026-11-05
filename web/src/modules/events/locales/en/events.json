@@ -676,6 +676,7 @@
   "blocks": {
     "eventList": {
       "label": "Events",
+      "about": "The events in progress and the ones to come, of the chosen kinds.",
       "all": "All the events",
       "fields": {
         "kinds": "Kinds",
@@ -689,6 +690,7 @@
     },
     "myEvents": {
       "label": "My bookings",
+      "about": "The bookings of whoever is looking still to fly, and their shifts still to come.",
       "signIn": "Sign in to see your bookings.",
       "none": "No booking.",
       "toEvents": "Go to the events",
@@ -697,6 +699,7 @@
     },
     "atcCoverage": {
       "label": "ATC coverage",
+      "about": "How well the ATC positions of the events of the next days are covered.",
       "signIn": "Sign in to see the rosters.",
       "none_one": "No roster needs anybody in the next day.",
       "none_other": "No roster needs anybody in the next {{count}} days.",
@@ -724,6 +727,7 @@
     },
     "staffQueue": {
       "label": "Staff queue of the events",
+      "about": "What waits for a decision of the events staff.",
       "signIn": "Sign in to see what waits for you.",
       "none": "Nothing waits for a decision of yours.",
       "noShows_one": "{{count}} no-show to confirm or excuse",

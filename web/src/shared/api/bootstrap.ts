@@ -60,6 +60,19 @@ export function holdsPermissionAnywhere(bootstrap: Bootstrap, name: string): boo
 }
 
 /**
+ * Whether the user may change what holds for the whole division — the settings of the content
+ * (`decisions/2026-11-04-la-pagina-dello-stile.md`, Carmine on 4 November 2026: «Solo chi ha tutti»): the superadmin, or
+ * a role that reaches every department, with the permission. `hasAllDepartments` is the server's fact of the role
+ * (`RolePermissionMatrix.ReachesEveryDepartment`), read here and never worked out again.
+ */
+export function mayChangeTheWholeDivision(bootstrap: Bootstrap, name: string): boolean {
+  const user = bootstrap.user;
+  return (
+    user !== null && (user.isSuperadmin || user.hasAllDepartments) && holdsPermissionAnywhere(bootstrap, name)
+  );
+}
+
+/**
  * The department the site itself belongs to: its menu, its templates and the pages the installation
  * was born with. It comes from the bootstrap and is never written here — a client that knew which
  * department that is would be a client that knows which division it is running for.

@@ -98,13 +98,19 @@
         "blockAudience": "The page online carries a block for fewer readers. Take it out and publish again, then change who reads it."
       },
       "tooManyCollections": "A row may be filed in twenty collections at most.",
-      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes."
+      "collectionInvalid": "A collection is named by its key: lower case letters, digits and dashes.",
+      "settings": {
+        "stylePageNotFound": "Choose a published page you can read.",
+        "stylePageTooNarrow": "Only one department reads this page: whoever downloads the instructions must be able to read it, so choose one for the whole staff."
+      }
     },
     "maintenance": {
       "title": "This part of the site is closed for changes right now"
     },
     "grant": {
       "unknownPermission": "This installation has no permission by that name.",
+      "unknownValue": "This is not a value the hub knows.",
+      "busy": "Another change of these grants is under way: try again in a moment.",
       "globalPermission": "This permission comes only with the staff positions, and cannot be granted by hand.",
       "globalDepartment": "This permission belongs to no department and is held everywhere: leave the department empty.",
       "notStaff": "That VID is not staff of this division, or has never signed in.",
@@ -115,11 +121,13 @@
     },
     "superadmin": {
       "neverLoggedIn": "That VID has never signed in, so the hub knows nothing about them yet.",
-      "lastOne": "The last super administrator cannot be removed."
+      "lastOne": "The last super administrator cannot be removed.",
+      "busy": "Another change of the super administrators is under way: try again in a moment."
     },
     "erasure": {
       "vid": "That is not a VID.",
-      "superadmin": "A super administrator is not erased: take the role away first."
+      "superadmin": "A super administrator is not erased: take the role away first.",
+      "busy": "Another erasure is taking its number right now. Try again in a moment."
     },
     "notifications": {
       "unknownType": "That is not a kind of notification this hub sends."

@@ -165,6 +165,18 @@ export interface BlockRegistration {
 }
 
 /**
+ * The key of the sentence that says what a block is for: `editorLabelKey` with `.about` for `.label`
+ * (`blocks.text.about`, `events:blocks.eventList.about`).
+ *
+ * Every block has one, in every language of the division, and `app/blockAbout.test.ts` asks it of each
+ * (PR 3.0a, `decisions/2026-10-30-una-pagina-scritta-con-claude.md`, answer 1): it is the line at the top
+ * of the properties panel, and how the instructions for Claude say which block is for what.
+ */
+export function aboutKeyOf(block: Pick<BlockRegistration, 'editorLabelKey'>): string {
+  return block.editorLabelKey.replace(/\.label$/, '.about');
+}
+
+/**
  * A route a module adds. TanStack generates the tree from files, so a module's own route files are
  * what normally appear; this is the escape hatch for a route a manifest would rather register.
  */

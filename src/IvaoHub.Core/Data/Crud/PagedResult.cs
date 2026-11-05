@@ -12,6 +12,25 @@ namespace IvaoHub.Core.Data.Crud;
 /// <param name="Total">How many rows the whole filtered set holds.</param>
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int Total);
 
+/// <summary>The page a request asks for, read the same way by every list of the core.</summary>
+public static class Paging
+{
+    /// <summary>
+    /// Page 1 for anything below it, the default size for none, the size capped at <paramref name="maxSize"/>; and a page no
+    /// further than the rows an <see cref="int"/> can skip, so that <c>(page - 1) * size</c> never overflows into a 500 (issue
+    /// #319, item 9). A page that far is empty either way.
+    /// </summary>
+    public static (int Page, int PageSize) Read(int? page, int? pageSize, int defaultSize, int maxSize)
+    {
+        var size = pageSize is > 0 ? Math.Min(pageSize.Value, maxSize) : defaultSize;
+        var number = page is > 0 ? Math.Min(page.Value, int.MaxValue / size) : 1;
+        return (number, size);
+    }
+
+    /// <summary>How many rows come before the page.</summary>
+    public static int Skip(int page, int pageSize) => (page - 1) * pageSize;
+}
+
 /// <summary>
 /// What every list of the hub accepts. Declared as a type rather than read out of the raw query
 /// string so that it reaches the OpenAPI document, and from there the generated client and the

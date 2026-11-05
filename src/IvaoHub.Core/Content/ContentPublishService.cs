@@ -138,6 +138,8 @@ public sealed class ContentPublishService(
 
         content.Status = PublishStatus.Published;
         content.PublishedAt = now;
+        // Said once, in this version's line: the next one is about what happens after it.
+        content.DraftFromFile = false;
         database.ContentVersions.Add(version);
 
         // What the version points at, for "where does this appear" and "may this file go" (G20).

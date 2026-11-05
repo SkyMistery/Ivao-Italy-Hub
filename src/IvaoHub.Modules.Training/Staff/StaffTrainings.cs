@@ -446,7 +446,7 @@ public sealed class StaffTrainings(
     private async Task TellAssignedAsync(Training training, int trainerVid, CancellationToken cancellationToken)
     {
         var names = await people.NamesAsync([training.TraineeVid, trainerVid], cancellationToken);
-        var session = training.State == TrainingState.Scheduled && training.ScheduledStartUtc is { } start ? TrainingMail.Moment(start) : null;
+        var session = training.State == TrainingState.Scheduled && training.ScheduledStartUtc is { } start ? TrainingMail.Moment(start, mail.Dates) : null;
 
         await mail.SendAsync(
             TrainingNotifications.TrainerAssigned,

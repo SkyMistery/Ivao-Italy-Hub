@@ -347,7 +347,7 @@ test('the path is asked by VID, and shows where the trainee stands, their bans a
     page.getByText(filled(words.trainees.readyForExamOn, { rating: 'ADC' }), { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText(filled(words.trainees.standing.bannedUntil!, { date: 'Oct 25, 2026, 10:00' }), {
+    page.getByText(filled(words.trainees.standing.bannedUntil!, { date: '25/10/2026 10:00' }), {
       exact: true,
     }),
   ).toBeVisible();

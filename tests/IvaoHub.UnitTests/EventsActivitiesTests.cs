@@ -121,11 +121,11 @@ public sealed class EventsActivitiesTests
 
         // The shape is the language file's: with the place, and without it.
         Assert.Equal(
-            ["Simulatore (Hangar 2): 2026-11-14 10:00–10:30 UTC", "Simulatore (Hangar 2): 2026-11-14 10:30–11:00 UTC"],
-            EventsMail.SeatLines([(later, activity), (first, activity)], "it", "en", catalog));
+            ["Simulatore (Hangar 2): 14/11/2026 10:00–10:30 UTC", "Simulatore (Hangar 2): 14/11/2026 10:30–11:00 UTC"],
+            EventsMail.SeatLines([(later, activity), (first, activity)], "it", "en", catalog, DateOrder.DayMonthYear));
 
         activity.Place = null;
-        Assert.Equal(["Simulator: 2026-11-14 10:00–10:30 UTC"], EventsMail.SeatLines([(first, activity)], "en", "en", catalog));
+        Assert.Equal(["Simulator: 14/11/2026 10:00–10:30 UTC"], EventsMail.SeatLines([(first, activity)], "en", "en", catalog, DateOrder.DayMonthYear));
     }
 
     /// <summary>The language files of this repository, read the way the server reads them.</summary>

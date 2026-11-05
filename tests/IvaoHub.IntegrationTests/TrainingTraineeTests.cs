@@ -215,7 +215,7 @@ public sealed partial class TrainingTraineeTests(MariaDbFixture mariaDb) : IAsyn
         Assert.Equal(end, endsAt, TimeSpan.FromSeconds(1));
 
         // Until when, in the mail and on the trainee's page.
-        Assert.Contains(TrainingMail.Moment(endsAt), await MailAsync(TraineeVid, TrainingNotifications.Banned, token), StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(endsAt, DateOrder.DayMonthYear), await MailAsync(TraineeVid, TrainingNotifications.Banned, token), StringComparison.Ordinal);
         using var trainee = await SignedInAsync(TraineeVid, token);
         var path = Path(await trainee.GetFromJsonAsync<JsonElement>(RequestEndpoints.Pattern, token), RatingKind.Atc);
         Assert.Equal(RequestRules.Banned, path.GetProperty("refusal").GetString());

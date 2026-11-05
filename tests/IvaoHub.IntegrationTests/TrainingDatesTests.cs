@@ -161,8 +161,8 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         // The data of a mail is JSON, which writes the dash between the hours escaped: the moments are looked for.
         var proposed = await MailAsync(TraineeVid, TrainingNotifications.DatesProposed, token);
         Assert.Contains($"/training/mine/{id}", proposed, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(day.AddHours(16)), proposed, StringComparison.Ordinal);
-        Assert.Contains(TrainingMail.Moment(day.AddDays(1).AddHours(16)), proposed, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(day.AddHours(16), DateOrder.DayMonthYear), proposed, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(day.AddDays(1).AddHours(16), DateOrder.DayMonthYear), proposed, StringComparison.Ordinal);
 
         // What a date keeps names nobody: not the other trainee, not their trainer.
         foreach (var stored in await SlotsOfAsync(id, token))
@@ -618,7 +618,7 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         Assert.Null((await StoredAsync(far, token)).RemindedAt);
 
         var reminder = await MailAsync(TraineeVid, TrainingNotifications.Reminder, token);
-        Assert.Contains(TrainingMail.Moment(before.ScheduledStartUtc!.Value), reminder, StringComparison.Ordinal);
+        Assert.Contains(TrainingMail.Moment(before.ScheduledStartUtc!.Value, DateOrder.DayMonthYear), reminder, StringComparison.Ordinal);
         Assert.Contains($"/training/mine/{near}", reminder, StringComparison.Ordinal);
 
         // Once is once.
@@ -850,8 +850,8 @@ public sealed class TrainingDatesTests(MariaDbFixture mariaDb) : IAsyncLifetime
         await DoneAsync(await StepAsync(coordinator, id, "assign", new { trainerVid = TrainerVid, rowVersion = version }, token), token);
 
         var stored = await StoredAsync(id, token);
-        var moment = TrainingMail.Moment(start);
-        Assert.Equal((TrainingState.Scheduled, moment), (stored.State, TrainingMail.Moment(stored.ScheduledStartUtc!.Value)));
+        var moment = TrainingMail.Moment(start, DateOrder.DayMonthYear);
+        Assert.Equal((TrainingState.Scheduled, moment), (stored.State, TrainingMail.Moment(stored.ScheduledStartUtc!.Value, DateOrder.DayMonthYear)));
         Assert.Null(stored.RemindedAt);
 
         Assert.Contains(moment, await MailAsync(TraineeVid, TrainingNotifications.TrainerAssigned, token), StringComparison.Ordinal);

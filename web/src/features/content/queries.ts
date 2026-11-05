@@ -17,6 +17,7 @@ export type PublicContentDto = components['schemas']['PublicContentDto'];
 export type ContentKind = components['schemas']['ContentKind'];
 export type ContentStatus = components['schemas']['PublishStatus'];
 export type ContentPage = components['schemas']['PagedResultOfContentListDto'];
+export type ContentSiteAddressDto = components['schemas']['ContentSiteAddressDto'];
 export type ContentPublishProblemsDto = components['schemas']['ContentPublishProblemsDto'];
 export type PublicPageDto = components['schemas']['PublicPageDto'];
 export type ContentAddressDto = components['schemas']['ContentAddressDto'];
@@ -180,6 +181,19 @@ export function templatesQuery(kind: ContentKind | null = null) {
  * pages than that was an inconvenience, and since the field decides it was a page nobody could point
  * at. The server searches the title and the slug, which is what the entry shows.
  */
+/**
+ * Every page, news item and document of the site that whoever asks may read online, of every department
+ * (`decisions/2026-11-04-gli-indirizzi-del-sito-che-si-possono-leggere.md`, decided by Carmine on 4 November 2026). Unpaged, and
+ * never drafts: what the instructions for Claude may link to and the page of the style is chosen from. The menu keeps its own
+ * read below, which offers drafts and searches as one types.
+ */
+export function siteAddressesQuery() {
+  return queryOptions({
+    queryKey: [...contentKey, 'site-addresses'] as const,
+    queryFn: async (): Promise<ContentSiteAddressDto[]> => unwrap(await api.GET('/api/content/addresses')),
+  });
+}
+
 export function menuDestinationPagesQuery(q = '') {
   return queryOptions({
     queryKey: menuDestinationsKey(q),
